@@ -1,0 +1,49 @@
+{
+	"name": "developer/reactions-for-indieweb",
+	"description": "Extends IndieBlocks with comprehensive IndieWeb Post Kinds support using Block Patterns and Block Bindings API.",
+	"type": "wordpress-plugin",
+	"license": "GPL-3.0-or-later",
+	"authors": [
+		{
+			"name": "Courtney Robertson",
+			"homepage": "https://developer.example.com"
+		}
+	],
+	"require": {
+		"php": ">=8.0"
+	},
+	"require-dev": {
+		"wp-coding-standards/wpcs": "^3.0",
+		"phpcompatibility/phpcompatibility-wp": "^2.1",
+		"dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+		"phpunit/phpunit": "^9.6",
+		"yoast/phpunit-polyfills": "^2.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"ReactionsForIndieWeb\\": "includes/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"ReactionsForIndieWeb\\Tests\\": "tests/phpunit/"
+		}
+	},
+	"scripts": {
+		"lint": "phpcs",
+		"lint:fix": "phpcbf",
+		"test": "phpunit",
+		"test:coverage": "phpunit --coverage-html coverage"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		},
+		"sort-packages": true,
+		"platform": {
+			"php": "8.0"
+		}
+	},
+	"minimum-stability": "stable",
+	"prefer-stable": true
+}

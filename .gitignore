@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build artifacts
+build/
+dist/
+
+# WordPress
+*.log
+debug.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Package locks (optional - uncomment if you want to ignore)
+# package-lock.json
+# composer.lock
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*~
