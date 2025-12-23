@@ -14,6 +14,7 @@ module.exports = {
 	...defaultConfig,
 	entry: {
 		index: path.resolve( process.cwd(), 'src/editor', 'index.js' ),
+		blocks: path.resolve( process.cwd(), 'src/blocks', 'index.js' ),
 	},
 	output: {
 		...defaultConfig.output,

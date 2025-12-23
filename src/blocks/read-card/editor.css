@@ -1,0 +1,27 @@
+/**
+ * Read Card Block - Editor Styles
+ *
+ * @package Reactions_For_IndieWeb
+ */
+
+.wp-block-reactions-indieweb-read-card .cover-image {
+	cursor: pointer;
+}
+
+.wp-block-reactions-indieweb-read-card .cover-image:hover {
+	opacity: 0.8;
+}
+
+.wp-block-reactions-indieweb-read-card .search-mode {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	width: 100%;
+	max-width: 400px;
+}
+
+.wp-block-reactions-indieweb-read-card .placeholder-actions {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}

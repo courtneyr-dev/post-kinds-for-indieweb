@@ -1,0 +1,140 @@
+/**
+ * Media Lookup Block - Frontend Styles
+ *
+ * @package Reactions_For_IndieWeb
+ */
+
+.wp-block-reactions-indieweb-media-lookup {
+	--media-lookup-gap: 1rem;
+	--media-lookup-radius: 8px;
+}
+
+.media-lookup-inner {
+	display: flex;
+	gap: var(--media-lookup-gap);
+	background: var(--wp--preset--color--base, #fff);
+	border: 1px solid var(--wp--preset--color--contrast, #e0e0e0);
+	border-radius: var(--media-lookup-radius);
+	padding: 1rem;
+}
+
+/* Style variations */
+.media-lookup-block.style-card .media-lookup-inner {
+	flex-direction: row;
+}
+
+.media-lookup-block.style-inline .media-lookup-inner {
+	flex-direction: row;
+	padding: 0.5rem 0.75rem;
+	border: none;
+	background: transparent;
+}
+
+.media-lookup-block.style-compact .media-lookup-inner {
+	flex-direction: row;
+	padding: 0.5rem;
+	align-items: center;
+}
+
+/* Media image */
+.media-lookup-block .media-image {
+	flex-shrink: 0;
+}
+
+.media-lookup-block .media-image img {
+	width: 80px;
+	height: auto;
+	object-fit: cover;
+	border-radius: calc(var(--media-lookup-radius) / 2);
+}
+
+.media-lookup-block.type-book .media-image img {
+	aspect-ratio: 2/3;
+}
+
+.media-lookup-block.type-movie .media-image img {
+	aspect-ratio: 2/3;
+}
+
+.media-lookup-block.type-music .media-image img {
+	aspect-ratio: 1;
+}
+
+.media-lookup-block.style-inline .media-image img {
+	width: 40px;
+}
+
+.media-lookup-block.style-compact .media-image img {
+	width: 50px;
+}
+
+/* Media info */
+.media-lookup-block .media-info {
+	flex: 1;
+	min-width: 0;
+}
+
+/* Media title */
+.media-lookup-block .media-title {
+	margin: 0 0 0.25rem;
+	font-size: 1rem;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.media-lookup-block.style-inline .media-title {
+	display: inline;
+	font-size: inherit;
+	font-weight: 600;
+}
+
+.media-lookup-block .media-title a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.media-lookup-block .media-title a:hover {
+	text-decoration: underline;
+}
+
+/* Media subtitle (author/artist/director) */
+.media-lookup-block .media-subtitle {
+	margin: 0 0 0.25rem;
+	font-size: 0.9rem;
+	color: var(--wp--preset--color--contrast, #666);
+}
+
+.media-lookup-block.style-inline .media-subtitle {
+	display: inline;
+	font-size: inherit;
+}
+
+.media-lookup-block.style-inline .media-subtitle::before {
+	content: " by ";
+	font-weight: normal;
+}
+
+/* Year */
+.media-lookup-block .media-year {
+	font-size: 0.85rem;
+	color: var(--wp--preset--color--contrast, #888);
+}
+
+/* Description */
+.media-lookup-block .media-description {
+	font-size: 0.85rem;
+	color: var(--wp--preset--color--contrast, #777);
+	line-height: 1.5;
+	margin: 0.5rem 0;
+}
+
+/* Additional meta */
+.media-lookup-block .media-meta {
+	font-size: 0.8rem;
+	color: var(--wp--preset--color--contrast, #888);
+	margin-top: 0.5rem;
+}
+
+.media-lookup-block .media-meta span {
+	margin-right: 0.75rem;
+}

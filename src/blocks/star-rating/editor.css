@@ -1,0 +1,33 @@
+/**
+ * Star Rating Block - Editor Styles
+ *
+ * @package Reactions_For_IndieWeb
+ */
+
+.wp-block-reactions-indieweb-star-rating .rating-icons {
+	display: inline-flex;
+}
+
+.wp-block-reactions-indieweb-star-rating .rating-icon {
+	background: none;
+	border: none;
+	padding: 0.125rem;
+	cursor: pointer;
+	transition: transform 0.1s ease;
+}
+
+.wp-block-reactions-indieweb-star-rating .rating-icon:hover {
+	transform: scale(1.1);
+}
+
+.wp-block-reactions-indieweb-star-rating .rating-icon:focus {
+	outline: 2px solid var(--wp-admin-theme-color, #007cba);
+	outline-offset: 2px;
+	border-radius: 2px;
+}
+
+.wp-block-reactions-indieweb-star-rating .rating-numeric {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+}

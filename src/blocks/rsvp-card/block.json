@@ -1,0 +1,91 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "reactions-indieweb/rsvp-card",
+    "version": "1.0.0",
+    "title": "RSVP Card",
+    "category": "reactions-indieweb",
+    "description": "Display an RSVP response to an event with status, event details, and optional note.",
+    "keywords": ["rsvp", "event", "attend", "interested", "maybe", "response"],
+    "textdomain": "reactions-indieweb",
+    "attributes": {
+        "eventName": {
+            "type": "string",
+            "source": "html",
+            "selector": ".event-name"
+        },
+        "eventUrl": {
+            "type": "string"
+        },
+        "eventStart": {
+            "type": "string"
+        },
+        "eventEnd": {
+            "type": "string"
+        },
+        "eventLocation": {
+            "type": "string"
+        },
+        "eventDescription": {
+            "type": "string"
+        },
+        "rsvpStatus": {
+            "type": "string",
+            "default": "yes"
+        },
+        "rsvpNote": {
+            "type": "string",
+            "source": "html",
+            "selector": ".rsvp-note"
+        },
+        "rsvpAt": {
+            "type": "string"
+        },
+        "eventImage": {
+            "type": "string",
+            "source": "attribute",
+            "selector": ".event-image img",
+            "attribute": "src"
+        },
+        "eventImageAlt": {
+            "type": "string",
+            "source": "attribute",
+            "selector": ".event-image img",
+            "attribute": "alt"
+        },
+        "layout": {
+            "type": "string",
+            "default": "horizontal"
+        }
+    },
+    "supports": {
+        "html": false,
+        "align": ["wide", "full"],
+        "color": {
+            "background": true,
+            "text": true
+        },
+        "spacing": {
+            "margin": true,
+            "padding": true
+        },
+        "typography": {
+            "fontSize": true
+        },
+        "__experimentalBorder": {
+            "color": true,
+            "radius": true,
+            "width": true
+        }
+    },
+    "example": {
+        "attributes": {
+            "eventName": "IndieWebCamp 2025",
+            "rsvpStatus": "yes",
+            "eventLocation": "Portland, OR"
+        }
+    },
+    "editorScript": "file:./index.js",
+    "editorStyle": "file:./editor.css",
+    "style": "file:./style.css"
+}

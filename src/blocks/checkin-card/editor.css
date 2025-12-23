@@ -1,0 +1,39 @@
+/**
+ * Checkin Card Block - Editor Styles
+ *
+ * @package Reactions_For_IndieWeb
+ */
+
+.wp-block-reactions-indieweb-checkin-card .checkin-photo {
+	cursor: pointer;
+}
+
+.wp-block-reactions-indieweb-checkin-card .checkin-photo:hover {
+	opacity: 0.8;
+}
+
+.wp-block-reactions-indieweb-checkin-card .photo-placeholder {
+	width: 150px;
+	height: 150px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	background: #f0f0f0;
+	border: 2px dashed #ccc;
+	border-radius: 4px;
+	color: #666;
+	font-size: 0.75rem;
+	text-align: center;
+	gap: 0.5rem;
+}
+
+.wp-block-reactions-indieweb-checkin-card .photo-placeholder .venue-icon {
+	font-size: 2rem;
+}
+
+.wp-block-reactions-indieweb-checkin-card .placeholder-actions {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}

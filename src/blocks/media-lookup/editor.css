@@ -1,0 +1,50 @@
+/**
+ * Media Lookup Block - Editor Styles
+ *
+ * @package Reactions_For_IndieWeb
+ */
+
+.wp-block-reactions-indieweb-media-lookup .media-lookup-search {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	width: 100%;
+	max-width: 400px;
+}
+
+.wp-block-reactions-indieweb-media-lookup .media-type-selector {
+	display: flex;
+	gap: 0.5rem;
+	margin-bottom: 0.5rem;
+}
+
+.wp-block-reactions-indieweb-media-lookup .media-item-preview {
+	display: flex;
+	gap: 1rem;
+	position: relative;
+}
+
+.wp-block-reactions-indieweb-media-lookup .media-item-preview .clear-selection {
+	position: absolute;
+	top: 0;
+	right: 0;
+}
+
+.wp-block-reactions-indieweb-media-lookup .media-source {
+	margin-top: 0.5rem;
+}
+
+.wp-block-reactions-indieweb-media-lookup .source-label {
+	font-size: 0.75rem;
+	color: #888;
+	font-style: italic;
+}
+
+.wp-block-reactions-indieweb-media-lookup .selected-item-details {
+	font-size: 0.85rem;
+	margin: 0.5rem 0;
+}
+
+.wp-block-reactions-indieweb-media-lookup .selected-item-details p {
+	margin: 0.25rem 0;
+}

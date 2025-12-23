@@ -1,0 +1,75 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "reactions-indieweb/star-rating",
+    "version": "1.0.0",
+    "title": "Star Rating",
+    "category": "reactions-indieweb",
+    "description": "Add an interactive star rating to any content with customizable scale and style.",
+    "keywords": ["rating", "stars", "review", "score", "feedback"],
+    "textdomain": "reactions-indieweb",
+    "attributes": {
+        "rating": {
+            "type": "number",
+            "default": 0
+        },
+        "maxRating": {
+            "type": "number",
+            "default": 5
+        },
+        "showLabel": {
+            "type": "boolean",
+            "default": true
+        },
+        "label": {
+            "type": "string",
+            "default": "Rating"
+        },
+        "showValue": {
+            "type": "boolean",
+            "default": true
+        },
+        "size": {
+            "type": "string",
+            "default": "medium"
+        },
+        "style": {
+            "type": "string",
+            "default": "stars"
+        },
+        "allowHalf": {
+            "type": "boolean",
+            "default": false
+        },
+        "itemUrl": {
+            "type": "string"
+        },
+        "itemName": {
+            "type": "string"
+        }
+    },
+    "supports": {
+        "html": false,
+        "align": ["left", "center", "right"],
+        "color": {
+            "text": true
+        },
+        "spacing": {
+            "margin": true,
+            "padding": true
+        },
+        "typography": {
+            "fontSize": true
+        }
+    },
+    "example": {
+        "attributes": {
+            "rating": 4,
+            "maxRating": 5,
+            "label": "My Rating"
+        }
+    },
+    "editorScript": "file:./index.js",
+    "editorStyle": "file:./editor.css",
+    "style": "file:./style.css"
+}

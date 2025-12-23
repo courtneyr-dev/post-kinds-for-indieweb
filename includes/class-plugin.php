@@ -223,8 +223,14 @@ final class Plugin {
 	 * @return void
 	 */
 	private function register_hooks(): void {
+		// Register custom blocks.
+		add_action( 'init', array( $this, 'register_blocks' ) );
+
 		// Enqueue editor assets.
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_editor_assets' ) );
+
+		// Enqueue frontend block styles.
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_block_styles' ) );
 
 		// Register block patterns.
 		add_action( 'init', array( $this, 'register_block_patterns' ) );
@@ -236,6 +242,85 @@ final class Plugin {
 		if ( ! $this->indieblocks_active ) {
 			add_action( 'admin_notices', array( $this, 'indieblocks_notice' ) );
 		}
+	}
+
+	/**
+	 * Register custom Gutenberg blocks.
+	 *
+	 * Registers all custom blocks from the blocks directory.
+	 *
+	 * @return void
+	 */
+	public function register_blocks(): void {
+		// Register block category.
+		add_filter(
+			'block_categories_all',
+			function ( array $categories ): array {
+				return array_merge(
+					array(
+						array(
+							'slug'  => 'reactions-indieweb',
+							'title' => __( 'Reactions for IndieWeb', 'reactions-indieweb' ),
+							'icon'  => 'heart',
+						),
+					),
+					$categories
+				);
+			}
+		);
+
+		// Define blocks to register.
+		$blocks = array(
+			'listen-card',
+			'watch-card',
+			'read-card',
+			'checkin-card',
+			'rsvp-card',
+			'star-rating',
+			'media-lookup',
+		);
+
+		// Register each block.
+		foreach ( $blocks as $block ) {
+			$block_dir = REACTIONS_INDIEWEB_PATH . 'src/blocks/' . $block;
+
+			if ( file_exists( $block_dir . '/block.json' ) ) {
+				register_block_type( $block_dir );
+			}
+		}
+
+		// Enqueue blocks script.
+		$blocks_asset_file = REACTIONS_INDIEWEB_PATH . 'build/blocks.asset.php';
+
+		if ( file_exists( $blocks_asset_file ) ) {
+			$blocks_asset = require $blocks_asset_file;
+
+			wp_register_script(
+				'reactions-indieweb-blocks',
+				REACTIONS_INDIEWEB_URL . 'build/blocks.js',
+				$blocks_asset['dependencies'],
+				$blocks_asset['version'],
+				true
+			);
+
+			wp_set_script_translations(
+				'reactions-indieweb-blocks',
+				'reactions-indieweb',
+				REACTIONS_INDIEWEB_PATH . 'languages'
+			);
+		}
+	}
+
+	/**
+	 * Enqueue frontend block styles.
+	 *
+	 * Loads CSS for blocks on the frontend.
+	 *
+	 * @return void
+	 */
+	public function enqueue_block_styles(): void {
+		// Block styles are automatically enqueued by WordPress when using block.json.
+		// This method is for any additional frontend styles.
 	}
 
 	/**

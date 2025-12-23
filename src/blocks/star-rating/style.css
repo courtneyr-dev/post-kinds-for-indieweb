@@ -1,0 +1,90 @@
+/**
+ * Star Rating Block - Frontend Styles
+ *
+ * @package Reactions_For_IndieWeb
+ */
+
+.wp-block-reactions-indieweb-star-rating {
+	--star-rating-color: #ffc107;
+	--star-rating-empty: #ddd;
+}
+
+.star-rating-inner {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
+/* Label */
+.star-rating-block .rating-label {
+	font-weight: 500;
+	margin-right: 0.25rem;
+}
+
+/* Rating display */
+.star-rating-block .rating-display {
+	display: inline-flex;
+	align-items: center;
+}
+
+.star-rating-block .rating-icon {
+	color: var(--star-rating-empty);
+	transition: color 0.15s ease;
+}
+
+.star-rating-block .rating-icon.filled {
+	color: var(--star-rating-color);
+}
+
+/* Size variations */
+.star-rating-block.size-small .rating-icon {
+	font-size: 1rem;
+}
+
+.star-rating-block.size-medium .rating-icon {
+	font-size: 1.25rem;
+}
+
+.star-rating-block.size-large .rating-icon {
+	font-size: 1.75rem;
+}
+
+/* Half stars */
+.star-rating-block .half-star {
+	position: relative;
+	display: inline-block;
+}
+
+.star-rating-block .half-filled-part {
+	position: absolute;
+	width: 50%;
+	overflow: hidden;
+	color: var(--star-rating-color);
+}
+
+.star-rating-block .half-empty-part {
+	color: var(--star-rating-empty);
+}
+
+/* Style variations */
+.star-rating-block.style-hearts .rating-icon.filled {
+	color: #e91e63;
+}
+
+.star-rating-block.style-circles .rating-icon.filled {
+	color: #2196f3;
+}
+
+/* Rating value */
+.star-rating-block .rating-value {
+	font-size: 0.85em;
+	color: var(--wp--preset--color--contrast, #666);
+	margin-left: 0.25rem;
+}
+
+/* Numeric style */
+.star-rating-block .rating-numeric-display {
+	font-size: 1.1em;
+	font-weight: 600;
+}

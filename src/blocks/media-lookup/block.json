@@ -1,0 +1,72 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "reactions-indieweb/media-lookup",
+    "version": "1.0.0",
+    "title": "Media Lookup",
+    "category": "reactions-indieweb",
+    "description": "Search and embed media info from external APIs (books, movies, music).",
+    "keywords": ["lookup", "search", "media", "book", "movie", "music", "api"],
+    "textdomain": "reactions-indieweb",
+    "attributes": {
+        "mediaType": {
+            "type": "string",
+            "default": "book"
+        },
+        "searchQuery": {
+            "type": "string"
+        },
+        "selectedItem": {
+            "type": "object"
+        },
+        "displayStyle": {
+            "type": "string",
+            "default": "card"
+        },
+        "showImage": {
+            "type": "boolean",
+            "default": true
+        },
+        "showDescription": {
+            "type": "boolean",
+            "default": true
+        },
+        "linkToSource": {
+            "type": "boolean",
+            "default": true
+        }
+    },
+    "supports": {
+        "html": false,
+        "align": ["wide", "full"],
+        "color": {
+            "background": true,
+            "text": true
+        },
+        "spacing": {
+            "margin": true,
+            "padding": true
+        },
+        "typography": {
+            "fontSize": true
+        },
+        "__experimentalBorder": {
+            "color": true,
+            "radius": true,
+            "width": true
+        }
+    },
+    "example": {
+        "attributes": {
+            "mediaType": "book",
+            "selectedItem": {
+                "title": "The Great Gatsby",
+                "author": "F. Scott Fitzgerald",
+                "year": "1925"
+            }
+        }
+    },
+    "editorScript": "file:./index.js",
+    "editorStyle": "file:./editor.css",
+    "style": "file:./style.css"
+}

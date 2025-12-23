@@ -1,0 +1,110 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "reactions-indieweb/read-card",
+    "version": "1.0.0",
+    "title": "Read Card",
+    "category": "reactions-indieweb",
+    "description": "Display a book you're reading or have read with cover, author, and progress.",
+    "keywords": ["read", "book", "reading", "author", "isbn", "library"],
+    "textdomain": "reactions-indieweb",
+    "attributes": {
+        "bookTitle": {
+            "type": "string",
+            "source": "html",
+            "selector": ".book-title"
+        },
+        "authorName": {
+            "type": "string",
+            "source": "html",
+            "selector": ".author-name"
+        },
+        "isbn": {
+            "type": "string"
+        },
+        "publisher": {
+            "type": "string"
+        },
+        "publishDate": {
+            "type": "string"
+        },
+        "pageCount": {
+            "type": "number"
+        },
+        "currentPage": {
+            "type": "number"
+        },
+        "coverImage": {
+            "type": "string",
+            "source": "attribute",
+            "selector": ".cover-image img",
+            "attribute": "src"
+        },
+        "coverImageAlt": {
+            "type": "string",
+            "source": "attribute",
+            "selector": ".cover-image img",
+            "attribute": "alt"
+        },
+        "bookUrl": {
+            "type": "string"
+        },
+        "openlibraryId": {
+            "type": "string"
+        },
+        "readStatus": {
+            "type": "string",
+            "default": "reading"
+        },
+        "rating": {
+            "type": "number",
+            "default": 0
+        },
+        "startedAt": {
+            "type": "string"
+        },
+        "finishedAt": {
+            "type": "string"
+        },
+        "review": {
+            "type": "string",
+            "source": "html",
+            "selector": ".book-review"
+        },
+        "layout": {
+            "type": "string",
+            "default": "horizontal"
+        }
+    },
+    "supports": {
+        "html": false,
+        "align": ["wide", "full"],
+        "color": {
+            "background": true,
+            "text": true
+        },
+        "spacing": {
+            "margin": true,
+            "padding": true
+        },
+        "typography": {
+            "fontSize": true
+        },
+        "__experimentalBorder": {
+            "color": true,
+            "radius": true,
+            "width": true
+        }
+    },
+    "example": {
+        "attributes": {
+            "bookTitle": "The Hitchhiker's Guide to the Galaxy",
+            "authorName": "Douglas Adams",
+            "readStatus": "finished",
+            "rating": 5
+        }
+    },
+    "editorScript": "file:./index.js",
+    "editorStyle": "file:./editor.css",
+    "style": "file:./style.css"
+}
