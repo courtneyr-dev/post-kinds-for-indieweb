@@ -94,7 +94,7 @@ abstract class API_Base {
 	public function __construct() {
 		$this->user_agent = sprintf(
 			'ReactionsForIndieWeb/%s (WordPress/%s; +%s)',
-			REACTIONS_INDIEWEB_VERSION,
+			\REACTIONS_INDIEWEB_VERSION,
 			get_bloginfo( 'version' ),
 			home_url()
 		);
@@ -510,7 +510,7 @@ abstract class API_Base {
 	 * @return void
 	 */
 	protected function log_debug( string $message, array $context = array() ): void {
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG && defined( 'REACTIONS_INDIEWEB_DEBUG' ) && REACTIONS_INDIEWEB_DEBUG ) {
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG && defined( 'REACTIONS_INDIEWEB_DEBUG' ) && \REACTIONS_INDIEWEB_DEBUG ) {
 			error_log(
 				sprintf(
 					'[Reactions for IndieWeb] %s API DEBUG: %s | Context: %s',

@@ -64,6 +64,20 @@ define( 'REACTIONS_INDIEWEB_URL', plugin_dir_url( __FILE__ ) );
 define( 'REACTIONS_INDIEWEB_BASENAME', plugin_basename( __FILE__ ) );
 
 /**
+ * Plugin file constant.
+ *
+ * @var string
+ */
+define( 'REACTIONS_INDIEWEB_PLUGIN_FILE', __FILE__ );
+
+/**
+ * Plugin URL constant (alias for compatibility).
+ *
+ * @var string
+ */
+define( 'REACTIONS_INDIEWEB_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+
+/**
  * Minimum required PHP version.
  *
  * @var string

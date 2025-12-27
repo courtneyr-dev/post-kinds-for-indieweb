@@ -237,7 +237,7 @@ final class Plugin {
 		add_action( 'init', array( $this, 'register_block_patterns' ) );
 
 		// Add plugin action links.
-		add_filter( 'plugin_action_links_' . REACTIONS_INDIEWEB_BASENAME, array( $this, 'add_action_links' ) );
+		add_filter( 'plugin_action_links_' . \REACTIONS_INDIEWEB_BASENAME, array( $this, 'add_action_links' ) );
 
 		// Display admin notice if IndieBlocks is not active.
 		if ( ! $this->indieblocks_active ) {
@@ -283,7 +283,7 @@ final class Plugin {
 
 		// Register each block.
 		foreach ( $blocks as $block ) {
-			$block_dir = REACTIONS_INDIEWEB_PATH . 'src/blocks/' . $block;
+			$block_dir = \REACTIONS_INDIEWEB_PATH . 'src/blocks/' . $block;
 
 			if ( file_exists( $block_dir . '/block.json' ) ) {
 				register_block_type( $block_dir );
@@ -291,14 +291,14 @@ final class Plugin {
 		}
 
 		// Enqueue blocks script.
-		$blocks_asset_file = REACTIONS_INDIEWEB_PATH . 'build/blocks.asset.php';
+		$blocks_asset_file = \REACTIONS_INDIEWEB_PATH . 'build/blocks.asset.php';
 
 		if ( file_exists( $blocks_asset_file ) ) {
 			$blocks_asset = require $blocks_asset_file;
 
 			wp_register_script(
 				'reactions-indieweb-blocks',
-				REACTIONS_INDIEWEB_URL . 'build/blocks.js',
+				\REACTIONS_INDIEWEB_URL . 'build/blocks.js',
 				$blocks_asset['dependencies'],
 				$blocks_asset['version'],
 				true
@@ -307,7 +307,7 @@ final class Plugin {
 			wp_set_script_translations(
 				'reactions-indieweb-blocks',
 				'reactions-indieweb',
-				REACTIONS_INDIEWEB_PATH . 'languages'
+				\REACTIONS_INDIEWEB_PATH . 'languages'
 			);
 		}
 	}
@@ -332,7 +332,7 @@ final class Plugin {
 	 * @return void
 	 */
 	public function enqueue_editor_assets(): void {
-		$asset_file = REACTIONS_INDIEWEB_PATH . 'build/index.asset.php';
+		$asset_file = \REACTIONS_INDIEWEB_PATH . 'build/index.asset.php';
 
 		if ( ! file_exists( $asset_file ) ) {
 			return;
@@ -342,7 +342,7 @@ final class Plugin {
 
 		wp_enqueue_script(
 			'reactions-indieweb-editor',
-			REACTIONS_INDIEWEB_URL . 'build/index.js',
+			\REACTIONS_INDIEWEB_URL . 'build/index.js',
 			$asset['dependencies'],
 			$asset['version'],
 			true
@@ -351,7 +351,7 @@ final class Plugin {
 		wp_set_script_translations(
 			'reactions-indieweb-editor',
 			'reactions-indieweb',
-			REACTIONS_INDIEWEB_PATH . 'languages'
+			\REACTIONS_INDIEWEB_PATH . 'languages'
 		);
 
 		// Pass data to JavaScript.
@@ -366,12 +366,12 @@ final class Plugin {
 		);
 
 		// Enqueue editor styles if they exist.
-		$style_file = REACTIONS_INDIEWEB_PATH . 'build/index.css';
+		$style_file = \REACTIONS_INDIEWEB_PATH . 'build/index.css';
 
 		if ( file_exists( $style_file ) ) {
 			wp_enqueue_style(
 				'reactions-indieweb-editor',
-				REACTIONS_INDIEWEB_URL . 'build/index.css',
+				\REACTIONS_INDIEWEB_URL . 'build/index.css',
 				array(),
 				$asset['version']
 			);
@@ -396,7 +396,7 @@ final class Plugin {
 		);
 
 		// Load pattern files from patterns directory.
-		$patterns_dir = REACTIONS_INDIEWEB_PATH . 'patterns/';
+		$patterns_dir = \REACTIONS_INDIEWEB_PATH . 'patterns/';
 
 		if ( ! is_dir( $patterns_dir ) ) {
 			return;

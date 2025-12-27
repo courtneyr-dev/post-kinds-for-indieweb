@@ -814,7 +814,7 @@ class Settings_Page {
             <table class="form-table">
                 <tr>
                     <th scope="row"><?php esc_html_e( 'Plugin Version', 'reactions-indieweb' ); ?></th>
-                    <td><code><?php echo esc_html( REACTIONS_INDIEWEB_VERSION ); ?></code></td>
+                    <td><code><?php echo esc_html( \REACTIONS_INDIEWEB_VERSION ); ?></code></td>
                 </tr>
                 <tr>
                     <th scope="row"><?php esc_html_e( 'WordPress Version', 'reactions-indieweb' ); ?></th>

@@ -105,7 +105,7 @@ class Admin {
         add_action( 'admin_init', array( $this, 'register_settings' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
         add_action( 'admin_notices', array( $this, 'admin_notices' ) );
-        add_filter( 'plugin_action_links_' . plugin_basename( REACTIONS_INDIEWEB_PLUGIN_FILE ), array( $this, 'plugin_action_links' ) );
+        add_filter( 'plugin_action_links_' . plugin_basename( \REACTIONS_INDIEWEB_PLUGIN_FILE ), array( $this, 'plugin_action_links' ) );
 
         // Initialize sub-components.
         $this->settings_page->init();
@@ -251,17 +251,17 @@ class Admin {
         // Core styles.
         wp_enqueue_style(
             'reactions-indieweb-admin',
-            REACTIONS_INDIEWEB_PLUGIN_URL . 'admin/css/admin.css',
+            \REACTIONS_INDIEWEB_PLUGIN_URL . 'admin/css/admin.css',
             array(),
-            REACTIONS_INDIEWEB_VERSION
+            \REACTIONS_INDIEWEB_VERSION
         );
 
         // Core scripts.
         wp_enqueue_script(
             'reactions-indieweb-admin',
-            REACTIONS_INDIEWEB_PLUGIN_URL . 'admin/js/admin.js',
+            \REACTIONS_INDIEWEB_PLUGIN_URL . 'admin/js/admin.js',
             array( 'jquery', 'wp-util', 'wp-api-fetch' ),
-            REACTIONS_INDIEWEB_VERSION,
+            \REACTIONS_INDIEWEB_VERSION,
             true
         );
 
