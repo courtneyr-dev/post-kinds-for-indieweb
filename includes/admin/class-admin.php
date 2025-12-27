@@ -503,13 +503,14 @@ class Admin {
 
         $api_configs = array(
             'musicbrainz'    => array( 'app_name', 'app_version', 'contact' ),
-            'listenbrainz'   => array( 'token' ),
-            'lastfm'         => array( 'api_key', 'api_secret', 'session_key' ),
+            'listenbrainz'   => array( 'token', 'username' ),
+            'lastfm'         => array( 'api_key', 'api_secret', 'username', 'session_key' ),
             'tmdb'           => array( 'api_key', 'access_token' ),
-            'trakt'          => array( 'client_id', 'client_secret', 'access_token', 'refresh_token' ),
+            'trakt'          => array( 'client_id', 'client_secret', 'username', 'access_token', 'refresh_token', 'token_expires' ),
             'simkl'          => array( 'client_id', 'access_token' ),
+            'tvmaze'         => array(), // No auth needed.
             'openlibrary'    => array(), // No auth needed.
-            'hardcover'      => array( 'api_token' ),
+            'hardcover'      => array( 'api_token', 'username' ),
             'google_books'   => array( 'api_key' ),
             'podcastindex'   => array( 'api_key', 'api_secret' ),
             'foursquare'     => array( 'api_key' ),

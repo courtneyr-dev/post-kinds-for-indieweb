@@ -297,18 +297,13 @@ class API_Settings {
     /**
      * Register settings.
      *
+     * Settings are registered in the main Admin class to avoid duplication.
+     *
      * @return void
      */
     public function register_settings(): void {
-        register_setting(
-            'reactions_indieweb_apis',
-            'reactions_indieweb_api_credentials',
-            array(
-                'type'              => 'array',
-                'sanitize_callback' => array( $this->admin, 'sanitize_api_credentials' ),
-                'default'           => array(),
-            )
-        );
+        // Settings are registered in Admin::register_settings().
+        // This method is kept for potential future API-specific settings sections.
     }
 
     /**
@@ -463,12 +458,6 @@ class API_Settings {
         $id       = "api_{$api_id}_{$field_id}";
         $required = ! empty( $field['required'] ) ? 'required' : '';
 
-        // Mask password values for display.
-        $display_value = $value;
-        if ( 'password' === $field['type'] && ! empty( $value ) ) {
-            $display_value = str_repeat( '*', min( strlen( $value ), 20 ) );
-        }
-
         ?>
         <tr>
             <th scope="row">
@@ -485,11 +474,10 @@ class API_Settings {
                         <input type="password"
                                name="<?php echo esc_attr( $name ); ?>"
                                id="<?php echo esc_attr( $id ); ?>"
-                               value="<?php echo esc_attr( $display_value ); ?>"
+                               value="<?php echo esc_attr( $value ); ?>"
                                class="regular-text"
                                placeholder="<?php echo esc_attr( $field['placeholder'] ?? '' ); ?>"
-                               autocomplete="off"
-                               <?php echo esc_attr( $required ); ?>>
+                               autocomplete="new-password">
                         <button type="button" class="button toggle-password" aria-label="<?php esc_attr_e( 'Toggle password visibility', 'reactions-indieweb' ); ?>">
                             <span class="dashicons dashicons-visibility"></span>
                         </button>

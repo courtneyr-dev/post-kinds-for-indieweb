@@ -155,16 +155,24 @@ final class Plugin {
 	 * @return void
 	 */
 	private function detect_indieblocks(): void {
-		// Check using WordPress plugin functions (most reliable).
-		if ( function_exists( 'is_plugin_active' ) ) {
-			if ( is_plugin_active( 'indieblocks/indieblocks.php' ) ) {
+		// Check using active_plugins option directly (works at plugins_loaded).
+		$active_plugins = (array) get_option( 'active_plugins', array() );
+		if ( in_array( 'indieblocks/indieblocks.php', $active_plugins, true ) ) {
+			$this->indieblocks_active = true;
+			return;
+		}
+
+		// Also check network-activated plugins for multisite.
+		if ( is_multisite() ) {
+			$network_plugins = (array) get_site_option( 'active_sitewide_plugins', array() );
+			if ( isset( $network_plugins['indieblocks/indieblocks.php'] ) ) {
 				$this->indieblocks_active = true;
 				return;
 			}
 		}
 
-		// Fallback: Check if IndieBlocks is active by looking for its main class or function.
-		if ( class_exists( 'IndieBlocks\\IndieBlocks' ) || function_exists( 'IndieBlocks\\plugin' ) ) {
+		// Fallback: Check if IndieBlocks is active by looking for its main class.
+		if ( class_exists( 'IndieBlocks\\IndieBlocks' ) ) {
 			$this->indieblocks_active = true;
 			return;
 		}
@@ -449,10 +457,11 @@ final class Plugin {
 	public function indieblocks_notice(): void {
 		// Re-check IndieBlocks status at runtime (it may have loaded after our initial check).
 		if ( ! $this->indieblocks_active ) {
-			// Check again now that all plugins are loaded.
-			if ( function_exists( 'is_plugin_active' ) && is_plugin_active( 'indieblocks/indieblocks.php' ) ) {
+			// Check active_plugins option directly.
+			$active_plugins = (array) get_option( 'active_plugins', array() );
+			if ( in_array( 'indieblocks/indieblocks.php', $active_plugins, true ) ) {
 				$this->indieblocks_active = true;
-			} elseif ( class_exists( 'IndieBlocks\\IndieBlocks' ) || function_exists( 'IndieBlocks\\plugin' ) ) {
+			} elseif ( class_exists( 'IndieBlocks\\IndieBlocks' ) ) {
 				$this->indieblocks_active = true;
 			}
 		}
