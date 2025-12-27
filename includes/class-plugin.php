@@ -155,23 +155,30 @@ final class Plugin {
 	 * @return void
 	 */
 	private function detect_indieblocks(): void {
-		// Check if IndieBlocks is active by looking for its main class or function.
-		if ( class_exists( 'IndieBlocks\\IndieBlocks' ) || function_exists( 'IndieBlocks\\plugin' ) ) {
-			$this->indieblocks_active = true;
+		// Check using WordPress plugin functions (most reliable).
+		if ( function_exists( 'is_plugin_active' ) ) {
+			if ( is_plugin_active( 'indieblocks/indieblocks.php' ) ) {
+				$this->indieblocks_active = true;
+				return;
+			}
 		}
 
-		// Alternative check: see if IndieBlocks blocks are registered.
-		if ( ! $this->indieblocks_active ) {
-			add_action(
-				'init',
-				function (): void {
-					if ( \WP_Block_Type_Registry::get_instance()->is_registered( 'indieblocks/context' ) ) {
-						$this->indieblocks_active = true;
-					}
-				},
-				20
-			);
+		// Fallback: Check if IndieBlocks is active by looking for its main class or function.
+		if ( class_exists( 'IndieBlocks\\IndieBlocks' ) || function_exists( 'IndieBlocks\\plugin' ) ) {
+			$this->indieblocks_active = true;
+			return;
 		}
+
+		// Alternative check: see if IndieBlocks blocks are registered (runs later).
+		add_action(
+			'init',
+			function (): void {
+				if ( \WP_Block_Type_Registry::get_instance()->is_registered( 'indieblocks/context' ) ) {
+					$this->indieblocks_active = true;
+				}
+			},
+			20
+		);
 	}
 
 	/**
@@ -239,10 +246,8 @@ final class Plugin {
 		// Add plugin action links.
 		add_filter( 'plugin_action_links_' . \REACTIONS_INDIEWEB_BASENAME, array( $this, 'add_action_links' ) );
 
-		// Display admin notice if IndieBlocks is not active.
-		if ( ! $this->indieblocks_active ) {
-			add_action( 'admin_notices', array( $this, 'indieblocks_notice' ) );
-		}
+		// Display admin notice if IndieBlocks is not active (check deferred to admin_notices time).
+		add_action( 'admin_notices', array( $this, 'indieblocks_notice' ) );
 	}
 
 	/**
@@ -442,6 +447,21 @@ final class Plugin {
 	 * @return void
 	 */
 	public function indieblocks_notice(): void {
+		// Re-check IndieBlocks status at runtime (it may have loaded after our initial check).
+		if ( ! $this->indieblocks_active ) {
+			// Check again now that all plugins are loaded.
+			if ( function_exists( 'is_plugin_active' ) && is_plugin_active( 'indieblocks/indieblocks.php' ) ) {
+				$this->indieblocks_active = true;
+			} elseif ( class_exists( 'IndieBlocks\\IndieBlocks' ) || function_exists( 'IndieBlocks\\plugin' ) ) {
+				$this->indieblocks_active = true;
+			}
+		}
+
+		// Don't show notice if IndieBlocks is active.
+		if ( $this->indieblocks_active ) {
+			return;
+		}
+
 		// Only show on relevant admin pages.
 		$screen = get_current_screen();
 
