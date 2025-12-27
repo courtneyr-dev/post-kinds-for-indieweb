@@ -86,9 +86,9 @@ final class Plugin {
 	/**
 	 * Admin component instance.
 	 *
-	 * @var Admin|null
+	 * @var Admin\Admin|null
 	 */
-	private ?Admin $admin = null;
+	private ?Admin\Admin $admin = null;
 
 	/**
 	 * Get the singleton instance.
@@ -210,8 +210,9 @@ final class Plugin {
 		}
 
 		// Admin component - only in admin context.
-		if ( is_admin() && class_exists( __NAMESPACE__ . '\\Admin' ) ) {
-			$this->admin = new Admin();
+		if ( is_admin() && class_exists( __NAMESPACE__ . '\\Admin\\Admin' ) ) {
+			$this->admin = new Admin\Admin( $this );
+			$this->admin->init();
 		}
 	}
 
@@ -540,7 +541,7 @@ final class Plugin {
 	 *
 	 * @return Admin|null The Admin instance or null if not loaded.
 	 */
-	public function get_admin(): ?Admin {
+	public function get_admin(): ?Admin\Admin {
 		return $this->admin;
 	}
 }
