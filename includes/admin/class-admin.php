@@ -426,6 +426,21 @@ class Admin {
 
             // Import storage.
             'import_storage_mode'     => 'standard', // 'standard', 'cpt', 'hidden'.
+
+            // Post Format sync.
+            'sync_formats_to_kinds'   => true,
+            'format_kind_mappings'    => array(
+                'standard' => 'article',
+                'aside'    => 'note',
+                'audio'    => 'listen',
+                'chat'     => '',
+                'gallery'  => 'photo',
+                'image'    => 'photo',
+                'link'     => 'bookmark',
+                'quote'    => 'repost',
+                'status'   => 'note',
+                'video'    => 'watch',
+            ),
         );
     }
 
@@ -470,10 +485,28 @@ class Admin {
             'checkin_auto_import',
             'checkin_include_coords',
             'enable_background_sync',
+            'sync_formats_to_kinds',
         );
 
         foreach ( $bool_fields as $field ) {
             $sanitized[ $field ] = ! empty( $input[ $field ] );
+        }
+
+        // Format to Kind mappings.
+        if ( isset( $input['format_kind_mappings'] ) && is_array( $input['format_kind_mappings'] ) ) {
+            $valid_kinds = array( '', 'note', 'article', 'reply', 'like', 'repost', 'bookmark', 'rsvp', 'checkin', 'listen', 'watch', 'read', 'event', 'photo', 'video', 'review' );
+            $sanitized['format_kind_mappings'] = array();
+
+            foreach ( $input['format_kind_mappings'] as $format => $kind ) {
+                $format = sanitize_key( $format );
+                $kind   = sanitize_key( $kind );
+
+                if ( in_array( $kind, $valid_kinds, true ) ) {
+                    $sanitized['format_kind_mappings'][ $format ] = $kind;
+                }
+            }
+        } else {
+            $sanitized['format_kind_mappings'] = $defaults['format_kind_mappings'];
         }
 
         // Integer fields.

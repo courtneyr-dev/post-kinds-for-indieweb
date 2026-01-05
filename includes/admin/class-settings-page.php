@@ -210,6 +210,31 @@ class Settings_Page {
                 'desc'    => __( 'How imported posts are stored. Standard Posts appear in your blog feed. Custom Post Type keeps imports separate. Hidden removes imports from the main blog but keeps them accessible via kind archives. Only affects new imports.', 'reactions-indieweb' ),
             )
         );
+
+        // Post Format Sync Settings.
+        add_settings_field(
+            'sync_formats_to_kinds',
+            __( 'Sync Post Formats to Kinds', 'reactions-indieweb' ),
+            array( $this, 'render_checkbox_field' ),
+            'reactions_indieweb_general',
+            'reactions_indieweb_general_section',
+            array(
+                'id'   => 'sync_formats_to_kinds',
+                'desc' => __( 'Automatically set Post Kind when Post Format changes (and vice versa).', 'reactions-indieweb' ),
+            )
+        );
+
+        add_settings_field(
+            'format_kind_mappings',
+            __( 'Post Format Mappings', 'reactions-indieweb' ),
+            array( $this, 'render_format_mappings_field' ),
+            'reactions_indieweb_general',
+            'reactions_indieweb_general_section',
+            array(
+                'id'   => 'format_kind_mappings',
+                'desc' => __( 'Map WordPress Post Formats to Reaction Kinds. When a post format is selected, the corresponding kind will be set automatically.', 'reactions-indieweb' ),
+            )
+        );
     }
 
     /**
@@ -967,5 +992,113 @@ class Settings_Page {
         if ( ! empty( $args['desc'] ) ) {
             printf( '<p class="description">%s</p>', esc_html( $args['desc'] ) );
         }
+    }
+
+    /**
+     * Render format to kind mappings field.
+     *
+     * @param array<string, mixed> $args Field arguments.
+     * @return void
+     */
+    public function render_format_mappings_field( array $args ): void {
+        $settings = get_option( 'reactions_indieweb_settings', $this->admin->get_default_settings() );
+        $mappings = $settings['format_kind_mappings'] ?? $this->get_default_format_mappings();
+
+        // WordPress Post Formats.
+        $post_formats = array(
+            'standard' => __( 'Standard', 'reactions-indieweb' ),
+            'aside'    => __( 'Aside', 'reactions-indieweb' ),
+            'audio'    => __( 'Audio', 'reactions-indieweb' ),
+            'chat'     => __( 'Chat', 'reactions-indieweb' ),
+            'gallery'  => __( 'Gallery', 'reactions-indieweb' ),
+            'image'    => __( 'Image', 'reactions-indieweb' ),
+            'link'     => __( 'Link', 'reactions-indieweb' ),
+            'quote'    => __( 'Quote', 'reactions-indieweb' ),
+            'status'   => __( 'Status', 'reactions-indieweb' ),
+            'video'    => __( 'Video', 'reactions-indieweb' ),
+        );
+
+        // Reaction Kinds.
+        $kinds = array(
+            ''         => __( '— No mapping —', 'reactions-indieweb' ),
+            'note'     => __( 'Note', 'reactions-indieweb' ),
+            'article'  => __( 'Article', 'reactions-indieweb' ),
+            'reply'    => __( 'Reply', 'reactions-indieweb' ),
+            'like'     => __( 'Like', 'reactions-indieweb' ),
+            'repost'   => __( 'Repost', 'reactions-indieweb' ),
+            'bookmark' => __( 'Bookmark', 'reactions-indieweb' ),
+            'rsvp'     => __( 'RSVP', 'reactions-indieweb' ),
+            'checkin'  => __( 'Check-in', 'reactions-indieweb' ),
+            'listen'   => __( 'Listen', 'reactions-indieweb' ),
+            'watch'    => __( 'Watch', 'reactions-indieweb' ),
+            'read'     => __( 'Read', 'reactions-indieweb' ),
+            'event'    => __( 'Event', 'reactions-indieweb' ),
+            'photo'    => __( 'Photo', 'reactions-indieweb' ),
+            'video'    => __( 'Video', 'reactions-indieweb' ),
+            'review'   => __( 'Review', 'reactions-indieweb' ),
+        );
+
+        echo '<table class="format-mappings-table widefat" style="max-width: 500px;">';
+        echo '<thead><tr>';
+        echo '<th>' . esc_html__( 'Post Format', 'reactions-indieweb' ) . '</th>';
+        echo '<th>' . esc_html__( 'Reaction Kind', 'reactions-indieweb' ) . '</th>';
+        echo '</tr></thead>';
+        echo '<tbody>';
+
+        foreach ( $post_formats as $format_slug => $format_label ) {
+            $current_value = $mappings[ $format_slug ] ?? '';
+
+            echo '<tr>';
+            printf(
+                '<td><label for="format_mapping_%s">%s</label></td>',
+                esc_attr( $format_slug ),
+                esc_html( $format_label )
+            );
+            echo '<td>';
+            printf(
+                '<select name="reactions_indieweb_settings[format_kind_mappings][%s]" id="format_mapping_%s">',
+                esc_attr( $format_slug ),
+                esc_attr( $format_slug )
+            );
+
+            foreach ( $kinds as $kind_slug => $kind_label ) {
+                printf(
+                    '<option value="%s"%s>%s</option>',
+                    esc_attr( $kind_slug ),
+                    selected( $current_value, $kind_slug, false ),
+                    esc_html( $kind_label )
+                );
+            }
+
+            echo '</select>';
+            echo '</td>';
+            echo '</tr>';
+        }
+
+        echo '</tbody></table>';
+
+        if ( ! empty( $args['desc'] ) ) {
+            printf( '<p class="description" style="margin-top: 10px;">%s</p>', esc_html( $args['desc'] ) );
+        }
+    }
+
+    /**
+     * Get default format to kind mappings.
+     *
+     * @return array<string, string>
+     */
+    private function get_default_format_mappings(): array {
+        return array(
+            'standard' => 'article',
+            'aside'    => 'note',
+            'audio'    => 'listen',
+            'chat'     => '',
+            'gallery'  => 'photo',
+            'image'    => 'photo',
+            'link'     => 'bookmark',
+            'quote'    => 'repost',
+            'status'   => 'note',
+            'video'    => 'watch',
+        );
     }
 }
