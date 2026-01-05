@@ -1038,25 +1038,24 @@ class Settings_Page {
             'review'   => __( 'Review', 'reactions-indieweb' ),
         );
 
-        echo '<table class="format-mappings-table widefat" style="max-width: 500px;">';
-        echo '<thead><tr>';
-        echo '<th>' . esc_html__( 'Post Format', 'reactions-indieweb' ) . '</th>';
-        echo '<th>' . esc_html__( 'Reaction Kind', 'reactions-indieweb' ) . '</th>';
-        echo '</tr></thead>';
-        echo '<tbody>';
+        if ( ! empty( $args['desc'] ) ) {
+            printf( '<p class="description" style="margin-bottom: 12px;">%s</p>', esc_html( $args['desc'] ) );
+        }
+
+        echo '<div class="format-mappings-grid" style="display: grid; grid-template-columns: repeat(2, minmax(200px, 280px)); gap: 8px 24px; max-width: 600px;">';
 
         foreach ( $post_formats as $format_slug => $format_label ) {
             $current_value = $mappings[ $format_slug ] ?? '';
 
-            echo '<tr>';
+            echo '<div class="format-mapping-item" style="display: flex; align-items: center; gap: 8px;">';
             printf(
-                '<td><label for="format_mapping_%s">%s</label></td>',
+                '<label for="format_mapping_%s" style="min-width: 70px; font-weight: 500;">%s</label>',
                 esc_attr( $format_slug ),
                 esc_html( $format_label )
             );
-            echo '<td>';
+            echo '<span style="color: #8c8f94;">→</span>';
             printf(
-                '<select name="reactions_indieweb_settings[format_kind_mappings][%s]" id="format_mapping_%s">',
+                '<select name="reactions_indieweb_settings[format_kind_mappings][%s]" id="format_mapping_%s" style="flex: 1; max-width: 150px;">',
                 esc_attr( $format_slug ),
                 esc_attr( $format_slug )
             );
@@ -1071,15 +1070,10 @@ class Settings_Page {
             }
 
             echo '</select>';
-            echo '</td>';
-            echo '</tr>';
+            echo '</div>';
         }
 
-        echo '</tbody></table>';
-
-        if ( ! empty( $args['desc'] ) ) {
-            printf( '<p class="description" style="margin-top: 10px;">%s</p>', esc_html( $args['desc'] ) );
-        }
+        echo '</div>';
     }
 
     /**
