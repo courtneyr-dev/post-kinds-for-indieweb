@@ -1,0 +1,124 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "reactions-indieweb/watch-card",
+  "version": "1.0.0",
+  "title": "Watch Card",
+  "category": "reactions-indieweb",
+  "description": "Display a movie or TV show you watched with poster, rating, and details.",
+  "keywords": [
+    "watch",
+    "movie",
+    "tv",
+    "film",
+    "show",
+    "episode",
+    "video"
+  ],
+  "textdomain": "reactions-indieweb",
+  "attributes": {
+    "mediaTitle": {
+      "type": "string",
+      "source": "html",
+      "selector": ".media-title"
+    },
+    "mediaType": {
+      "type": "string",
+      "default": "movie"
+    },
+    "showTitle": {
+      "type": "string"
+    },
+    "seasonNumber": {
+      "type": "number"
+    },
+    "episodeNumber": {
+      "type": "number"
+    },
+    "episodeTitle": {
+      "type": "string"
+    },
+    "releaseYear": {
+      "type": "number"
+    },
+    "director": {
+      "type": "string"
+    },
+    "posterImage": {
+      "type": "string",
+      "source": "attribute",
+      "selector": ".poster-image img",
+      "attribute": "src"
+    },
+    "posterImageAlt": {
+      "type": "string",
+      "source": "attribute",
+      "selector": ".poster-image img",
+      "attribute": "alt"
+    },
+    "watchUrl": {
+      "type": "string"
+    },
+    "tmdbId": {
+      "type": "string"
+    },
+    "imdbId": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number",
+      "default": 0
+    },
+    "isRewatch": {
+      "type": "boolean",
+      "default": false
+    },
+    "watchedAt": {
+      "type": "string"
+    },
+    "review": {
+      "type": "string",
+      "source": "html",
+      "selector": ".watch-review"
+    },
+    "layout": {
+      "type": "string",
+      "default": "horizontal"
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ],
+    "color": {
+      "background": true,
+      "text": true
+    },
+    "spacing": {
+      "margin": true,
+      "padding": true
+    },
+    "typography": {
+      "fontSize": true
+    },
+    "__experimentalBorder": {
+      "color": true,
+      "radius": true,
+      "width": true
+    }
+  },
+  "example": {
+    "attributes": {
+      "mediaTitle": "The Shawshank Redemption",
+      "mediaType": "movie",
+      "releaseYear": 1994,
+      "director": "Frank Darabont",
+      "rating": 5
+    }
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./editor.css",
+  "style": "file:./style.css"
+}

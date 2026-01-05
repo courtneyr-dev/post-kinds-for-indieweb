@@ -65,7 +65,18 @@ class Hardcover extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$this->api_token = $this->get_option( 'hardcover_api_token' );
+		$credentials     = get_option( 'reactions_indieweb_api_credentials', array() );
+		$hc_creds        = $credentials['hardcover'] ?? array();
+		$this->api_token = $hc_creds['api_token'] ?? '';
+	}
+
+	/**
+	 * Check if API is configured with valid credentials.
+	 *
+	 * @return bool True if configured.
+	 */
+	public function is_configured(): bool {
+		return ! empty( $this->api_token );
 	}
 
 	/**

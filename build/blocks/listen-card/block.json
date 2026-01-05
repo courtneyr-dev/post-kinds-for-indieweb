@@ -1,0 +1,103 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "reactions-indieweb/listen-card",
+  "version": "1.0.0",
+  "title": "Listen Card",
+  "category": "reactions-indieweb",
+  "description": "Display a listen/scrobble with track, artist, and album information.",
+  "keywords": [
+    "listen",
+    "music",
+    "scrobble",
+    "track",
+    "song",
+    "album",
+    "artist"
+  ],
+  "textdomain": "reactions-indieweb",
+  "attributes": {
+    "trackTitle": {
+      "type": "string",
+      "source": "html",
+      "selector": ".track-title"
+    },
+    "artistName": {
+      "type": "string",
+      "source": "html",
+      "selector": ".artist-name"
+    },
+    "albumTitle": {
+      "type": "string",
+      "source": "html",
+      "selector": ".album-title"
+    },
+    "releaseDate": {
+      "type": "string"
+    },
+    "coverImage": {
+      "type": "string",
+      "source": "attribute",
+      "selector": ".cover-image img",
+      "attribute": "src"
+    },
+    "coverImageAlt": {
+      "type": "string",
+      "source": "attribute",
+      "selector": ".cover-image img",
+      "attribute": "alt"
+    },
+    "listenUrl": {
+      "type": "string"
+    },
+    "musicbrainzId": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number",
+      "default": 0
+    },
+    "listenedAt": {
+      "type": "string"
+    },
+    "layout": {
+      "type": "string",
+      "default": "horizontal"
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ],
+    "color": {
+      "background": true,
+      "text": true
+    },
+    "spacing": {
+      "margin": true,
+      "padding": true
+    },
+    "typography": {
+      "fontSize": true
+    },
+    "__experimentalBorder": {
+      "color": true,
+      "radius": true,
+      "width": true
+    }
+  },
+  "example": {
+    "attributes": {
+      "trackTitle": "Bohemian Rhapsody",
+      "artistName": "Queen",
+      "albumTitle": "A Night at the Opera",
+      "releaseDate": "1975-10-31",
+      "rating": 5
+    }
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./editor.css",
+  "style": "file:./style.css"
+}

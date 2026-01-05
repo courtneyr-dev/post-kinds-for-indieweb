@@ -3,7 +3,7 @@ node_modules/
 vendor/
 
 # Build artifacts
-build/
+# build/ - Intentionally tracked for WordPress plugin distribution
 dist/
 
 # WordPress

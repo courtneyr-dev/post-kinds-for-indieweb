@@ -64,7 +64,9 @@ class GoogleBooks extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$this->api_key = $this->get_option( 'googlebooks_api_key' );
+		$credentials   = get_option( 'reactions_indieweb_api_credentials', array() );
+		$gb_creds      = $credentials['google_books'] ?? array();
+		$this->api_key = $gb_creds['api_key'] ?? '';
 	}
 
 	/**

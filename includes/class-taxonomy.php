@@ -134,6 +134,14 @@ class Taxonomy {
 	 * @return void
 	 */
 	public function register_taxonomy(): void {
+		// Check if CPT mode is enabled and add reaction post type.
+		$settings     = get_option( 'reactions_indieweb_settings', array() );
+		$storage_mode = $settings['import_storage_mode'] ?? 'standard';
+
+		if ( 'cpt' === $storage_mode ) {
+			$this->post_types[] = 'reaction';
+		}
+
 		/**
 		 * Filters the post types that the kind taxonomy is registered for.
 		 *

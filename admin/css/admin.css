@@ -360,9 +360,23 @@ input:checked + .toggle-slider:before {
     margin-bottom: 4px;
 }
 
+.option-field input[type="text"],
+.option-field input[type="date"],
+.option-field input[type="number"],
+.option-field select {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.option-field input[type="number"] {
+    width: 80px;
+}
+
 .source-actions {
     display: flex;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
 /* Active imports */

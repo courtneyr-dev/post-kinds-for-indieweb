@@ -64,7 +64,9 @@ class Nominatim extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$this->custom_server = $this->get_option( 'nominatim_server' );
+		$credentials         = get_option( 'reactions_indieweb_api_credentials', array() );
+		$nom_creds           = $credentials['nominatim'] ?? array();
+		$this->custom_server = $nom_creds['server'] ?? '';
 
 		if ( $this->custom_server ) {
 			$this->base_url = rtrim( $this->custom_server, '/' ) . '/';

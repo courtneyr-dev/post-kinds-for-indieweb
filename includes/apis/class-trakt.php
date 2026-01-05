@@ -85,10 +85,21 @@ class Trakt extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$this->client_id     = $this->get_option( 'trakt_client_id' );
-		$this->client_secret = $this->get_option( 'trakt_client_secret' );
-		$this->access_token  = $this->get_option( 'trakt_access_token' );
-		$this->refresh_token = $this->get_option( 'trakt_refresh_token' );
+		$credentials         = get_option( 'reactions_indieweb_api_credentials', array() );
+		$trakt_creds         = $credentials['trakt'] ?? array();
+		$this->client_id     = $trakt_creds['client_id'] ?? '';
+		$this->client_secret = $trakt_creds['client_secret'] ?? '';
+		$this->access_token  = $trakt_creds['access_token'] ?? '';
+		$this->refresh_token = $trakt_creds['refresh_token'] ?? '';
+	}
+
+	/**
+	 * Check if API is configured with valid credentials.
+	 *
+	 * @return bool True if configured.
+	 */
+	public function is_configured(): bool {
+		return ! empty( $this->client_id ) && ! empty( $this->access_token );
 	}
 
 	/**

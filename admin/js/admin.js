@@ -403,13 +403,20 @@
                 },
                 success: function(response) {
                     if (response.success) {
+                        alert(response.data.message || 'Import completed!');
                         location.reload();
                     } else {
                         alert(response.data.message || reactionsIndieWeb.strings.error);
                     }
                 },
-                error: function() {
-                    alert(reactionsIndieWeb.strings.error);
+                error: function(xhr, status, error) {
+                    let errorMsg = reactionsIndieWeb.strings.error;
+                    if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
+                        errorMsg = xhr.responseJSON.data.message;
+                    } else if (xhr.responseText) {
+                        errorMsg = 'Server error: ' + xhr.responseText.substring(0, 200);
+                    }
+                    alert(errorMsg);
                 },
                 complete: function() {
                     $button.prop('disabled', false).html('<span class="dashicons dashicons-download"></span> Start Import');

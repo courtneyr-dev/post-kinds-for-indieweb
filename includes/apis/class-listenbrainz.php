@@ -64,7 +64,9 @@ class ListenBrainz extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$this->user_token = $this->get_option( 'listenbrainz_token' );
+		$credentials      = get_option( 'reactions_indieweb_api_credentials', array() );
+		$lb_creds         = $credentials['listenbrainz'] ?? array();
+		$this->user_token = $lb_creds['token'] ?? '';
 	}
 
 	/**

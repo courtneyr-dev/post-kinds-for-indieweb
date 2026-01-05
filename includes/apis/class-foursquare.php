@@ -64,7 +64,9 @@ class Foursquare extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$this->api_key = $this->get_option( 'foursquare_api_key' );
+		$credentials   = get_option( 'reactions_indieweb_api_credentials', array() );
+		$fs_creds      = $credentials['foursquare'] ?? array();
+		$this->api_key = $fs_creds['api_key'] ?? '';
 	}
 
 	/**

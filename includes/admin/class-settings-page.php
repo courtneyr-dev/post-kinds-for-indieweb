@@ -193,6 +193,23 @@ class Settings_Page {
                 'desc' => __( 'Allow sending reactions to syndication targets (requires Syndication Links plugin).', 'reactions-indieweb' ),
             )
         );
+
+        add_settings_field(
+            'import_storage_mode',
+            __( 'Import Post Storage', 'reactions-indieweb' ),
+            array( $this, 'render_select_field' ),
+            'reactions_indieweb_general',
+            'reactions_indieweb_general_section',
+            array(
+                'id'      => 'import_storage_mode',
+                'options' => array(
+                    'standard' => __( 'Standard Posts', 'reactions-indieweb' ),
+                    'cpt'      => __( 'Custom Post Type (Reactions)', 'reactions-indieweb' ),
+                    'hidden'   => __( 'Standard Posts (Hidden from Blog)', 'reactions-indieweb' ),
+                ),
+                'desc'    => __( 'How imported posts are stored. Standard Posts appear in your blog feed. Custom Post Type keeps imports separate. Hidden removes imports from the main blog but keeps them accessible via kind archives. Only affects new imports.', 'reactions-indieweb' ),
+            )
+        );
     }
 
     /**

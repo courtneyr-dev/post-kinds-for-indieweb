@@ -78,9 +78,11 @@ class LastFM extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$this->api_key     = $this->get_option( 'lastfm_api_key' );
-		$this->api_secret  = $this->get_option( 'lastfm_api_secret' );
-		$this->session_key = $this->get_option( 'lastfm_session_key' );
+		$credentials       = get_option( 'reactions_indieweb_api_credentials', array() );
+		$lastfm_creds      = $credentials['lastfm'] ?? array();
+		$this->api_key     = $lastfm_creds['api_key'] ?? '';
+		$this->api_secret  = $lastfm_creds['api_secret'] ?? '';
+		$this->session_key = $lastfm_creds['session_key'] ?? '';
 	}
 
 	/**

@@ -590,17 +590,57 @@ class Import_Page {
             wp_send_json_error( array( 'message' => __( 'Invalid import source.', 'reactions-indieweb' ) ) );
         }
 
-        $import_manager = new Import_Manager();
-        $result = $import_manager->start_import( $source, $options );
+        try {
+            $import_manager = new Import_Manager();
+            $result = $import_manager->start_import( $source, $options );
 
-        if ( is_wp_error( $result ) ) {
-            wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+            if ( is_wp_error( $result ) ) {
+                wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+            }
+
+            // Handle array result from Import_Manager.
+            if ( is_array( $result ) ) {
+                if ( empty( $result['success'] ) ) {
+                    wp_send_json_error( array( 'message' => $result['error'] ?? __( 'Import failed to start.', 'reactions-indieweb' ) ) );
+                }
+
+                $job_id = $result['job_id'] ?? '';
+
+                // Process the import immediately instead of waiting for WP-Cron.
+                // This ensures imports work on local dev sites where cron may not run.
+                if ( $job_id ) {
+                    $import_manager->process_import_batch( $job_id, $source );
+
+                    // Get updated job status.
+                    $job_status = $import_manager->get_status( $job_id );
+
+                    wp_send_json_success( array(
+                        'import_id' => $job_id,
+                        'message'   => sprintf(
+                            __( 'Import completed: %d imported, %d skipped.', 'reactions-indieweb' ),
+                            $job_status['imported'] ?? 0,
+                            $job_status['skipped'] ?? 0
+                        ),
+                        'imported'  => $job_status['imported'] ?? 0,
+                        'skipped'   => $job_status['skipped'] ?? 0,
+                    ) );
+                }
+
+                wp_send_json_success( array(
+                    'import_id' => $job_id,
+                    'message'   => $result['message'] ?? __( 'Import started successfully.', 'reactions-indieweb' ),
+                ) );
+            }
+
+            wp_send_json_success( array(
+                'import_id' => $result,
+                'message'   => __( 'Import started successfully.', 'reactions-indieweb' ),
+            ) );
+        } catch ( \Exception $e ) {
+            wp_send_json_error( array( 'message' => $e->getMessage() ) );
+        } catch ( \Error $e ) {
+            wp_send_json_error( array( 'message' => 'PHP Error: ' . $e->getMessage() ) );
         }
-
-        wp_send_json_success( array(
-            'import_id' => $result,
-            'message'   => __( 'Import started successfully.', 'reactions-indieweb' ),
-        ) );
     }
 
     /**
@@ -682,53 +722,95 @@ class Import_Page {
 
         switch ( $source ) {
             case 'listenbrainz':
-                $api = new \ReactionsForIndieWeb\APIs\ListenBrainz( $api_creds );
-                $listens = $api->get_listens( $api_creds['username'] ?? '', $preview_limit );
-                if ( ! is_wp_error( $listens ) ) {
-                    $total_count = $listens['count'] ?? count( $listens['listens'] ?? array() );
-                    $items = array_slice( $listens['listens'] ?? array(), 0, $preview_limit );
+                $lb_creds = $credentials['listenbrainz'] ?? array();
+                $username = $lb_creds['username'] ?? '';
+                if ( empty( $username ) ) {
+                    return new \WP_Error( 'missing_username', __( 'ListenBrainz username not configured. Please set it in API Connections.', 'reactions-indieweb' ) );
                 }
+
+                $api = new \ReactionsForIndieWeb\APIs\ListenBrainz();
+                $listens = $api->get_listens( $username, $preview_limit );
+                if ( is_wp_error( $listens ) ) {
+                    return $listens;
+                }
+
+                $total_count = $listens['count'] ?? count( $listens['listens'] ?? array() );
+                $items = array_slice( $listens['listens'] ?? array(), 0, $preview_limit );
                 break;
 
             case 'lastfm':
-                $api = new \ReactionsForIndieWeb\APIs\LastFM( $api_creds );
-                $tracks = $api->get_recent_tracks( $options['username'] ?? '', $preview_limit );
-                if ( ! is_wp_error( $tracks ) ) {
-                    $total_count = $tracks['total'] ?? count( $tracks['tracks'] ?? array() );
-                    $items = array_slice( $tracks['tracks'] ?? array(), 0, $preview_limit );
+                $username = $options['username'] ?? '';
+                if ( empty( $username ) ) {
+                    return new \WP_Error( 'missing_username', __( 'Please enter your Last.fm username.', 'reactions-indieweb' ) );
+                }
+
+                $api = new \ReactionsForIndieWeb\APIs\LastFM();
+
+                // Check if API is configured.
+                if ( ! $api->test_connection() ) {
+                    return new \WP_Error( 'api_not_configured', __( 'Last.fm API is not configured. Please add your API key in API Connections.', 'reactions-indieweb' ) );
+                }
+
+                $tracks = $api->get_recent_tracks( $username, $preview_limit );
+                if ( is_wp_error( $tracks ) ) {
+                    return $tracks;
+                }
+
+                $total_count = $tracks['total'] ?? count( $tracks['tracks'] ?? array() );
+                $items = array_slice( $tracks['tracks'] ?? array(), 0, $preview_limit );
+
+                if ( empty( $items ) && 0 === $total_count ) {
+                    return new \WP_Error( 'no_tracks', __( 'No tracks found for this username. Check that the username is correct.', 'reactions-indieweb' ) );
                 }
                 break;
 
             case 'trakt_movies':
             case 'trakt_shows':
-                $api = new \ReactionsForIndieWeb\APIs\Trakt( $api_creds );
+                $api = new \ReactionsForIndieWeb\APIs\Trakt();
+                if ( ! $api->is_configured() ) {
+                    return new \WP_Error( 'api_not_configured', __( 'Trakt API is not configured. Please set up OAuth in API Connections.', 'reactions-indieweb' ) );
+                }
+
                 $type = 'trakt_movies' === $source ? 'movies' : 'shows';
                 $history = $api->get_history( $type, 1, $preview_limit );
-                if ( ! is_wp_error( $history ) ) {
-                    $items = $history;
-                    // Get total from header or estimate.
-                    $total_count = count( $history ) * 10; // Rough estimate.
+                if ( is_wp_error( $history ) ) {
+                    return $history;
                 }
+
+                $items = $history;
+                $total_count = count( $history ) * 10; // Rough estimate.
                 break;
 
             case 'simkl':
-                $api = new \ReactionsForIndieWeb\APIs\Simkl( $api_creds );
+                $api = new \ReactionsForIndieWeb\APIs\Simkl();
+                if ( ! $api->is_configured() ) {
+                    return new \WP_Error( 'api_not_configured', __( 'Simkl API is not configured. Please set up OAuth in API Connections.', 'reactions-indieweb' ) );
+                }
+
                 $type = $options['type'] ?? 'movies';
                 $history = $api->get_history( $type );
-                if ( ! is_wp_error( $history ) ) {
-                    $total_count = count( $history );
-                    $items = array_slice( $history, 0, $preview_limit );
+                if ( is_wp_error( $history ) ) {
+                    return $history;
                 }
+
+                $total_count = count( $history );
+                $items = array_slice( $history, 0, $preview_limit );
                 break;
 
             case 'hardcover':
-                $api = new \ReactionsForIndieWeb\APIs\Hardcover( $api_creds );
+                $api = new \ReactionsForIndieWeb\APIs\Hardcover();
+                if ( ! $api->is_configured() ) {
+                    return new \WP_Error( 'api_not_configured', __( 'Hardcover API is not configured. Please add your API token in API Connections.', 'reactions-indieweb' ) );
+                }
+
                 $status = $options['status'] ?? 'finished';
                 $books = $api->get_reading_list( $status, $preview_limit );
-                if ( ! is_wp_error( $books ) ) {
-                    $items = $books;
-                    $total_count = count( $books ) * 5; // Estimate.
+                if ( is_wp_error( $books ) ) {
+                    return $books;
                 }
+
+                $items = $books;
+                $total_count = count( $books ) * 5; // Estimate.
                 break;
 
             default:

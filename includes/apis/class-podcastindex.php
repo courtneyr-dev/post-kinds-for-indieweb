@@ -71,8 +71,10 @@ class PodcastIndex extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$this->api_key    = $this->get_option( 'podcastindex_api_key' );
-		$this->api_secret = $this->get_option( 'podcastindex_api_secret' );
+		$credentials      = get_option( 'reactions_indieweb_api_credentials', array() );
+		$pi_creds         = $credentials['podcastindex'] ?? array();
+		$this->api_key    = $pi_creds['api_key'] ?? '';
+		$this->api_secret = $pi_creds['api_secret'] ?? '';
 	}
 
 	/**

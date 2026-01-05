@@ -394,6 +394,14 @@ class Meta_Fields {
 	 * @return void
 	 */
 	public function register_meta_fields(): void {
+		// Check if CPT mode is enabled and add reaction post type.
+		$settings     = get_option( 'reactions_indieweb_settings', array() );
+		$storage_mode = $settings['import_storage_mode'] ?? 'standard';
+
+		if ( 'cpt' === $storage_mode ) {
+			$this->post_types[] = 'reaction';
+		}
+
 		/**
 		 * Filters the post types that meta fields are registered for.
 		 *

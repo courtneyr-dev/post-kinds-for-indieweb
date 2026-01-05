@@ -488,16 +488,14 @@ class API_Settings {
                            id="<?php echo esc_attr( $id ); ?>"
                            value="<?php echo esc_attr( $value ); ?>"
                            class="regular-text"
-                           placeholder="<?php echo esc_attr( $field['placeholder'] ?? '' ); ?>"
-                           <?php echo esc_attr( $required ); ?>>
+                           placeholder="<?php echo esc_attr( $field['placeholder'] ?? '' ); ?>">
                 <?php else : ?>
                     <input type="text"
                            name="<?php echo esc_attr( $name ); ?>"
                            id="<?php echo esc_attr( $id ); ?>"
                            value="<?php echo esc_attr( $value ); ?>"
                            class="regular-text"
-                           placeholder="<?php echo esc_attr( $field['placeholder'] ?? '' ); ?>"
-                           <?php echo esc_attr( $required ); ?>>
+                           placeholder="<?php echo esc_attr( $field['placeholder'] ?? '' ); ?>">
                 <?php endif; ?>
 
                 <?php if ( ! empty( $field['help'] ) ) : ?>

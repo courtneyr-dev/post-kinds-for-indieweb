@@ -91,6 +91,20 @@ final class Plugin {
 	private ?Admin\Admin $admin = null;
 
 	/**
+	 * Post Type component instance.
+	 *
+	 * @var Post_Type|null
+	 */
+	private ?Post_Type $post_type = null;
+
+	/**
+	 * Query Filter component instance.
+	 *
+	 * @var Query_Filter|null
+	 */
+	private ?Query_Filter $query_filter = null;
+
+	/**
 	 * Get the singleton instance.
 	 *
 	 * @return Plugin The singleton instance.
@@ -229,6 +243,16 @@ final class Plugin {
 			$this->admin = new Admin\Admin( $this );
 			$this->admin->init();
 		}
+
+		// Post Type component (for CPT mode).
+		if ( class_exists( __NAMESPACE__ . '\\Post_Type' ) ) {
+			$this->post_type = new Post_Type();
+		}
+
+		// Query Filter component (for hidden mode).
+		if ( class_exists( __NAMESPACE__ . '\\Query_Filter' ) ) {
+			$this->query_filter = new Query_Filter();
+		}
 	}
 
 	/**
@@ -239,6 +263,9 @@ final class Plugin {
 	 * @return void
 	 */
 	private function register_hooks(): void {
+		// Flush rewrite rules if needed (after storage mode change).
+		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ), 999 );
+
 		// Register custom blocks.
 		add_action( 'init', array( $this, 'register_blocks' ) );
 
@@ -439,7 +466,7 @@ final class Plugin {
 		$plugin_links = array(
 			sprintf(
 				'<a href="%s">%s</a>',
-				esc_url( admin_url( 'options-general.php?page=reactions-indieweb' ) ),
+				esc_url( admin_url( 'admin.php?page=reactions-indieweb' ) ),
 				esc_html__( 'Settings', 'reactions-indieweb' )
 			),
 		);
@@ -572,5 +599,35 @@ final class Plugin {
 	 */
 	public function get_admin(): ?Admin\Admin {
 		return $this->admin;
+	}
+
+	/**
+	 * Get the Post_Type component.
+	 *
+	 * @return Post_Type|null The Post_Type instance or null if not loaded.
+	 */
+	public function get_post_type(): ?Post_Type {
+		return $this->post_type;
+	}
+
+	/**
+	 * Get the Query_Filter component.
+	 *
+	 * @return Query_Filter|null The Query_Filter instance or null if not loaded.
+	 */
+	public function get_query_filter(): ?Query_Filter {
+		return $this->query_filter;
+	}
+
+	/**
+	 * Flush rewrite rules if storage mode changed.
+	 *
+	 * @return void
+	 */
+	public function maybe_flush_rewrite_rules(): void {
+		if ( get_option( 'reactions_indieweb_flush_rewrite' ) ) {
+			flush_rewrite_rules();
+			delete_option( 'reactions_indieweb_flush_rewrite' );
+		}
 	}
 }

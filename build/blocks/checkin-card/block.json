@@ -1,0 +1,119 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "reactions-indieweb/checkin-card",
+  "version": "1.0.0",
+  "title": "Checkin Card",
+  "category": "reactions-indieweb",
+  "description": "Display a location checkin with venue details, map, and optional notes.",
+  "keywords": [
+    "checkin",
+    "location",
+    "venue",
+    "place",
+    "map",
+    "travel"
+  ],
+  "textdomain": "reactions-indieweb",
+  "attributes": {
+    "venueName": {
+      "type": "string",
+      "source": "html",
+      "selector": ".venue-name"
+    },
+    "venueType": {
+      "type": "string",
+      "default": "place"
+    },
+    "address": {
+      "type": "string"
+    },
+    "locality": {
+      "type": "string"
+    },
+    "region": {
+      "type": "string"
+    },
+    "country": {
+      "type": "string"
+    },
+    "postalCode": {
+      "type": "string"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "venueUrl": {
+      "type": "string"
+    },
+    "foursquareId": {
+      "type": "string"
+    },
+    "checkinAt": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string",
+      "source": "html",
+      "selector": ".checkin-note"
+    },
+    "photo": {
+      "type": "string",
+      "source": "attribute",
+      "selector": ".checkin-photo img",
+      "attribute": "src"
+    },
+    "photoAlt": {
+      "type": "string",
+      "source": "attribute",
+      "selector": ".checkin-photo img",
+      "attribute": "alt"
+    },
+    "showMap": {
+      "type": "boolean",
+      "default": true
+    },
+    "layout": {
+      "type": "string",
+      "default": "horizontal"
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ],
+    "color": {
+      "background": true,
+      "text": true
+    },
+    "spacing": {
+      "margin": true,
+      "padding": true
+    },
+    "typography": {
+      "fontSize": true
+    },
+    "__experimentalBorder": {
+      "color": true,
+      "radius": true,
+      "width": true
+    }
+  },
+  "example": {
+    "attributes": {
+      "venueName": "Central Park",
+      "venueType": "park",
+      "locality": "New York",
+      "region": "NY",
+      "country": "United States"
+    }
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./editor.css",
+  "style": "file:./style.css"
+}

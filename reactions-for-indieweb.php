@@ -269,17 +269,26 @@ function init(): void {
 		return;
 	}
 
-	// Load text domain for translations.
-	load_plugin_textdomain(
-		'reactions-indieweb',
-		false,
-		dirname( REACTIONS_INDIEWEB_BASENAME ) . '/languages'
-	);
-
 	// Initialize the main plugin class.
 	$plugin = Plugin::get_instance();
 	$plugin->init();
 }
 
+/**
+ * Load text domain for translations.
+ *
+ * @return void
+ */
+function load_textdomain(): void {
+	load_plugin_textdomain(
+		'reactions-indieweb',
+		false,
+		dirname( REACTIONS_INDIEWEB_BASENAME ) . '/languages'
+	);
+}
+
 // Hook into WordPress init.
 add_action( 'plugins_loaded', __NAMESPACE__ . '\\init' );
+
+// Load translations at init (required since WordPress 6.7).
+add_action( 'init', __NAMESPACE__ . '\\load_textdomain' );

@@ -85,14 +85,10 @@ class TMDB extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$this->api_key      = $this->get_option( 'tmdb_api_key' );
-		$this->access_token = $this->get_option( 'tmdb_access_token' );
-
-		// Get user's language preference.
-		$language = $this->get_option( 'tmdb_language' );
-		if ( $language ) {
-			$this->language = $language;
-		}
+		$credentials        = get_option( 'reactions_indieweb_api_credentials', array() );
+		$tmdb_creds         = $credentials['tmdb'] ?? array();
+		$this->api_key      = $tmdb_creds['api_key'] ?? '';
+		$this->access_token = $tmdb_creds['access_token'] ?? '';
 	}
 
 	/**

@@ -397,7 +397,7 @@ class Import_Manager {
 		);
 
 		$options = $job['options'] ?? array();
-		$create_posts = $options['create_posts'] ?? false;
+		$create_posts = $options['create_posts'] ?? true;  // Default to creating posts.
 		$skip_existing = $options['skip_existing'] ?? true;
 
 		foreach ( $items as $item ) {
@@ -471,7 +471,7 @@ class Import_Manager {
 		}
 
 		$args = array(
-			'post_type'      => 'post',
+			'post_type'      => $this->get_import_post_type(),
 			'posts_per_page' => 1,
 			'meta_query'     => array(
 				array(
@@ -509,7 +509,7 @@ class Import_Manager {
 
 		// Build post data.
 		$post_data = array(
-			'post_type'   => 'post',
+			'post_type'   => $this->get_import_post_type(),
 			'post_status' => 'publish',
 			'post_author' => get_current_user_id(),
 		);
@@ -633,6 +633,18 @@ class Import_Manager {
 		 * @param array<string, mixed> $source_config Source configuration.
 		 */
 		do_action( 'reactions_indieweb_item_imported', $item, $source_config );
+	}
+
+	/**
+	 * Get the post type to use for imports based on settings.
+	 *
+	 * @return string Post type slug.
+	 */
+	private function get_import_post_type(): string {
+		$settings     = get_option( 'reactions_indieweb_settings', array() );
+		$storage_mode = $settings['import_storage_mode'] ?? 'standard';
+
+		return 'cpt' === $storage_mode ? 'reaction' : 'post';
 	}
 
 	/**

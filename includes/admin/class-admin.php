@@ -423,6 +423,9 @@ class Admin {
             'rate_limit_delay'        => 1000, // milliseconds.
             'batch_size'              => 50,
             'enable_background_sync'  => false,
+
+            // Import storage.
+            'import_storage_mode'     => 'standard', // 'standard', 'cpt', 'hidden'.
         );
     }
 
@@ -446,6 +449,7 @@ class Admin {
             'read_default_status',
             'read_import_source',
             'checkin_privacy',
+            'import_storage_mode',
         );
 
         foreach ( $string_fields as $field ) {
@@ -484,6 +488,16 @@ class Admin {
         foreach ( $int_fields as $field => $constraints ) {
             $value = isset( $input[ $field ] ) ? absint( $input[ $field ] ) : $defaults[ $field ];
             $sanitized[ $field ] = max( $constraints['min'], min( $constraints['max'], $value ) );
+        }
+
+        // Check if storage mode changed - need to flush rewrite rules.
+        $old_settings = get_option( 'reactions_indieweb_settings', array() );
+        $old_mode     = $old_settings['import_storage_mode'] ?? 'standard';
+        $new_mode     = $sanitized['import_storage_mode'] ?? 'standard';
+
+        if ( $old_mode !== $new_mode ) {
+            // Schedule rewrite flush for next page load.
+            update_option( 'reactions_indieweb_flush_rewrite', true );
         }
 
         /**
