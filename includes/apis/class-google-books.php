@@ -76,7 +76,7 @@ class GoogleBooks extends API_Base {
 	 * @param array<string, mixed> $params   Parameters.
 	 * @return string Full URL.
 	 */
-	private function build_url( string $endpoint, array $params = array() ): string {
+	protected function build_url( string $endpoint, array $params = array() ): string {
 		if ( $this->api_key ) {
 			$params['key'] = $this->api_key;
 		}

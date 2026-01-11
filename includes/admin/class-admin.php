@@ -423,12 +423,15 @@ class Admin {
             'listen_default_rating'   => 0,
             'listen_auto_import'      => false,
             'listen_import_source'    => 'listenbrainz',
+            'listen_embed_source'     => 'none',
+            'listen_sync_to_lastfm'   => false,
 
             // Watch settings.
             'watch_default_rating'    => 0,
             'watch_auto_import'       => false,
             'watch_import_source'     => 'trakt',
             'watch_include_rewatches' => false,
+            'watch_sync_to_trakt'     => false,
 
             // Read settings.
             'read_default_status'     => 'to-read',
@@ -436,9 +439,10 @@ class Admin {
             'read_import_source'      => 'hardcover',
 
             // Checkin settings.
-            'checkin_auto_import'     => false,
-            'checkin_privacy'         => 'public',
-            'checkin_include_coords'  => true,
+            'checkin_auto_import'       => false,
+            'checkin_privacy'           => 'public',
+            'checkin_include_coords'    => true,
+            'checkin_sync_to_foursquare' => false,
 
             // Performance.
             'rate_limit_delay'        => 1000, // milliseconds.
@@ -476,8 +480,22 @@ class Admin {
      * @return array<string, mixed> Sanitized settings.
      */
     public function sanitize_general_settings( array $input ): array {
-        $defaults  = $this->get_default_settings();
-        $sanitized = array();
+        $defaults     = $this->get_default_settings();
+        $old_settings = get_option( 'reactions_indieweb_settings', array() );
+        $sanitized    = array();
+        $active_tab   = $input['_active_tab'] ?? '';
+
+        // Define which boolean fields belong to which tab.
+        // This is crucial for correctly handling unchecked checkboxes.
+        $tab_bool_fields = array(
+            'general'     => array( 'enable_microformats', 'enable_syndication', 'sync_formats_to_kinds' ),
+            'content'     => array( 'auto_fetch_metadata' ),
+            'listen'      => array( 'listen_auto_import', 'listen_sync_to_lastfm' ),
+            'watch'       => array( 'watch_auto_import', 'watch_include_rewatches', 'watch_sync_to_trakt' ),
+            'read'        => array( 'read_auto_import' ),
+            'checkin'     => array( 'checkin_auto_import', 'checkin_include_coords', 'checkin_sync_to_foursquare' ),
+            'performance' => array( 'enable_background_sync' ),
+        );
 
         // String fields.
         $string_fields = array(
@@ -485,6 +503,7 @@ class Admin {
             'default_post_format',
             'image_handling',
             'listen_import_source',
+            'listen_embed_source',
             'watch_import_source',
             'read_default_status',
             'read_import_source',
@@ -493,28 +512,48 @@ class Admin {
         );
 
         foreach ( $string_fields as $field ) {
-            $sanitized[ $field ] = isset( $input[ $field ] )
-                ? sanitize_text_field( $input[ $field ] )
-                : $defaults[ $field ];
+            if ( isset( $input[ $field ] ) ) {
+                $sanitized[ $field ] = sanitize_text_field( $input[ $field ] );
+            } elseif ( isset( $old_settings[ $field ] ) ) {
+                $sanitized[ $field ] = $old_settings[ $field ];
+            } else {
+                $sanitized[ $field ] = $defaults[ $field ];
+            }
         }
 
-        // Boolean fields.
-        $bool_fields = array(
+        // All boolean fields.
+        $all_bool_fields = array(
             'enable_microformats',
             'enable_syndication',
             'auto_fetch_metadata',
             'listen_auto_import',
+            'listen_sync_to_lastfm',
             'watch_auto_import',
             'watch_include_rewatches',
+            'watch_sync_to_trakt',
             'read_auto_import',
             'checkin_auto_import',
             'checkin_include_coords',
+            'checkin_sync_to_foursquare',
             'enable_background_sync',
             'sync_formats_to_kinds',
         );
 
-        foreach ( $bool_fields as $field ) {
-            $sanitized[ $field ] = ! empty( $input[ $field ] );
+        // Get fields that belong to the active tab (these should be processed).
+        $active_tab_fields = $tab_bool_fields[ $active_tab ] ?? array();
+
+        foreach ( $all_bool_fields as $field ) {
+            if ( in_array( $field, $active_tab_fields, true ) ) {
+                // This field belongs to the current tab - check if it was submitted (checked).
+                // Unchecked checkboxes don't send any data, so empty = unchecked = false.
+                $sanitized[ $field ] = ! empty( $input[ $field ] );
+            } elseif ( isset( $old_settings[ $field ] ) ) {
+                // Field from a different tab - preserve existing value.
+                $sanitized[ $field ] = (bool) $old_settings[ $field ];
+            } else {
+                // Use default.
+                $sanitized[ $field ] = $defaults[ $field ];
+            }
         }
 
         // Format to Kind mappings.
@@ -750,29 +789,35 @@ class Admin {
      * @return void
      */
     public function ajax_test_api(): void {
-        check_ajax_referer( 'reactions_indieweb_admin', 'nonce' );
+        try {
+            check_ajax_referer( 'reactions_indieweb_admin', 'nonce' );
 
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'reactions-for-indieweb' ) ) );
+            if ( ! current_user_can( 'manage_options' ) ) {
+                wp_send_json_error( array( 'message' => __( 'Permission denied.', 'reactions-for-indieweb' ) ) );
+            }
+
+            $api = isset( $_POST['api'] ) ? sanitize_text_field( wp_unslash( $_POST['api'] ) ) : '';
+
+            if ( empty( $api ) ) {
+                wp_send_json_error( array( 'message' => __( 'No API specified.', 'reactions-for-indieweb' ) ) );
+            }
+
+            // Get API instance and test connection.
+            $result = $this->test_api_connection( $api );
+
+            if ( is_wp_error( $result ) ) {
+                wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+            }
+
+            wp_send_json_success( array(
+                'message' => __( 'Connection successful!', 'reactions-for-indieweb' ),
+                'data'    => $result,
+            ) );
+        } catch ( \Exception $e ) {
+            wp_send_json_error( array( 'message' => $e->getMessage() ) );
+        } catch ( \Error $e ) {
+            wp_send_json_error( array( 'message' => __( 'Server error: ', 'reactions-for-indieweb' ) . $e->getMessage() ) );
         }
-
-        $api = isset( $_POST['api'] ) ? sanitize_text_field( wp_unslash( $_POST['api'] ) ) : '';
-
-        if ( empty( $api ) ) {
-            wp_send_json_error( array( 'message' => __( 'No API specified.', 'reactions-for-indieweb' ) ) );
-        }
-
-        // Get API instance and test connection.
-        $result = $this->test_api_connection( $api );
-
-        if ( is_wp_error( $result ) ) {
-            wp_send_json_error( array( 'message' => $result->get_error_message() ) );
-        }
-
-        wp_send_json_success( array(
-            'message' => __( 'Connection successful!', 'reactions-for-indieweb' ),
-            'data'    => $result,
-        ) );
     }
 
     /**
@@ -813,11 +858,16 @@ class Admin {
         }
 
         try {
-            $instance = new $class( $api_creds );
+            // API classes read credentials from options, no constructor params needed.
+            $instance = new $class();
             $result   = $instance->test_connection();
 
-            if ( is_wp_error( $result ) ) {
-                return $result;
+            // test_connection() returns bool.
+            if ( false === $result ) {
+                return new \WP_Error(
+                    'connection_failed',
+                    __( 'Connection test failed. Please check your credentials.', 'reactions-for-indieweb' )
+                );
             }
 
             return array(
@@ -825,8 +875,19 @@ class Admin {
                 'status'  => 'connected',
                 'details' => $result,
             );
-        } catch ( \Exception $e ) {
-            return new \WP_Error( 'exception', $e->getMessage() );
+        } catch ( \Throwable $e ) {
+            // Catch both Exception and Error (PHP 7+).
+            return new \WP_Error(
+                'exception',
+                sprintf(
+                    /* translators: 1: Error class name, 2: Error message, 3: File, 4: Line number */
+                    __( '%1$s: %2$s in %3$s:%4$d', 'reactions-for-indieweb' ),
+                    get_class( $e ),
+                    $e->getMessage(),
+                    basename( $e->getFile() ),
+                    $e->getLine()
+                )
+            );
         }
     }
 

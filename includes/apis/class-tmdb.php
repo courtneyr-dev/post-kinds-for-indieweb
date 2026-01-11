@@ -115,7 +115,7 @@ class TMDB extends API_Base {
 	 * @param array<string, mixed> $params   Parameters.
 	 * @return string Full URL.
 	 */
-	private function build_url( string $endpoint, array $params = array() ): string {
+	protected function build_url( string $endpoint, array $params = array() ): string {
 		// Add API key if not using access token.
 		if ( ! $this->access_token && $this->api_key ) {
 			$params['api_key'] = $this->api_key;
@@ -174,17 +174,39 @@ class TMDB extends API_Base {
 	 * Test API connection.
 	 *
 	 * @return bool
+	 * @throws \Exception If credentials are missing or API request fails.
 	 */
 	public function test_connection(): bool {
 		if ( ! $this->api_key && ! $this->access_token ) {
-			return false;
+			// Debug: show what credentials we actually have.
+			$credentials = get_option( 'reactions_indieweb_api_credentials', array() );
+			$tmdb_creds  = $credentials['tmdb'] ?? array();
+			$has_token   = ! empty( $tmdb_creds['access_token'] );
+			$has_key     = ! empty( $tmdb_creds['api_key'] );
+			$is_enabled  = ! empty( $tmdb_creds['enabled'] );
+
+			throw new \Exception(
+				sprintf(
+					/* translators: Debug info about credentials */
+					__( 'No API credentials loaded. Debug: enabled=%s, has_token=%s, has_key=%s', 'reactions-for-indieweb' ),
+					$is_enabled ? 'yes' : 'no',
+					$has_token ? 'yes' : 'no',
+					$has_key ? 'yes' : 'no'
+				)
+			);
 		}
 
 		try {
 			$this->api_get( 'configuration' );
 			return true;
 		} catch ( \Exception $e ) {
-			return false;
+			throw new \Exception(
+				sprintf(
+					/* translators: %s: Error message */
+					__( 'API request failed: %s', 'reactions-for-indieweb' ),
+					$e->getMessage()
+				)
+			);
 		}
 	}
 
@@ -738,9 +760,9 @@ class TMDB extends API_Base {
 	 * Normalize search result.
 	 *
 	 * @param array<string, mixed> $raw_result Raw result.
-	 * @return array<string, mixed>|null Normalized result.
+	 * @return array<string, mixed> Normalized result.
 	 */
-	protected function normalize_result( array $raw_result ): ?array {
+	protected function normalize_result( array $raw_result ): array {
 		$media_type = $raw_result['media_type'] ?? 'movie';
 
 		if ( 'movie' === $media_type ) {
@@ -751,7 +773,7 @@ class TMDB extends API_Base {
 			return $this->normalize_person( $raw_result );
 		}
 
-		return null;
+		return array();
 	}
 
 	/**

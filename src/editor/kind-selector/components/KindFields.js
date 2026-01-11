@@ -25,7 +25,8 @@ import {
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
 import { useState, useCallback } from '@wordpress/element';
-import { search as searchIcon } from '@wordpress/icons';
+import { search as searchIcon, link as linkIcon } from '@wordpress/icons';
+import apiFetch from '@wordpress/api-fetch';
 
 /**
  * Internal dependencies
@@ -58,6 +59,8 @@ export default function KindFields( { kind } ) {
 			return <EventFields />;
 		case 'review':
 			return <ReviewFields />;
+		case 'play':
+			return <PlayFields />;
 		case 'reply':
 		case 'like':
 		case 'repost':
@@ -238,6 +241,7 @@ function CheckinFields() {
 					step="0.0000001"
 				/>
 			</HStack>
+			<SyndicationControls kind="checkin" />
 		</VStack>
 	);
 }
@@ -249,12 +253,16 @@ function CheckinFields() {
  */
 function ListenFields() {
 	const [ searchQuery, setSearchQuery ] = useState( '' );
+	const [ urlInput, setUrlInput ] = useState( '' );
+	const [ isUrlLoading, setIsUrlLoading ] = useState( false );
+	const [ urlError, setUrlError ] = useState( '' );
 
 	const {
 		listenTrack,
 		listenArtist,
 		listenAlbum,
 		listenCover,
+		listenUrl,
 		isLoading,
 		apiResults,
 	} = useSelect( ( select ) => {
@@ -265,6 +273,7 @@ function ListenFields() {
 			listenArtist: getKindMeta( 'listen_artist' ),
 			listenAlbum: getKindMeta( 'listen_album' ),
 			listenCover: getKindMeta( 'listen_cover' ),
+			listenUrl: getKindMeta( 'listen_url' ),
 			isLoading: store.isApiLoading(),
 			apiResults: store.getApiLookupType() === 'music' ? store.getApiResults() : [],
 		};
@@ -272,11 +281,66 @@ function ListenFields() {
 
 	const { updateKindMeta, performApiLookup, clearApiResults } = useDispatch( STORE_NAME );
 
-	const handleSearch = useCallback( () => {
-		if ( searchQuery.trim() ) {
-			performApiLookup( 'music', searchQuery );
+	// Check if input looks like a URL.
+	const isUrl = useCallback( ( input ) => {
+		return /^https?:\/\//i.test( input.trim() );
+	}, [] );
+
+	// Handle URL lookup.
+	const handleUrlLookup = useCallback( async () => {
+		const url = urlInput.trim();
+		if ( ! url ) {
+			return;
 		}
-	}, [ searchQuery, performApiLookup ] );
+
+		setIsUrlLoading( true );
+		setUrlError( '' );
+
+		try {
+			const result = await apiFetch( {
+				path: `/reactions-indieweb/v1/lookup/music-url?url=${ encodeURIComponent( url ) }`,
+			} );
+
+			// Update metadata from result.
+			if ( result.track ) {
+				updateKindMeta( 'listen_track', result.track );
+			}
+			if ( result.artist ) {
+				updateKindMeta( 'listen_artist', result.artist );
+			}
+			if ( result.album ) {
+				updateKindMeta( 'listen_album', result.album );
+			}
+			if ( result.cover ) {
+				updateKindMeta( 'listen_cover', result.cover );
+			}
+			// Store the URL for embedding.
+			updateKindMeta( 'listen_url', result.url || url );
+
+			setUrlInput( '' );
+		} catch ( error ) {
+			setUrlError( error.message || __( 'Could not fetch track info from URL.', 'reactions-for-indieweb' ) );
+		} finally {
+			setIsUrlLoading( false );
+		}
+	}, [ urlInput, updateKindMeta ] );
+
+	const handleSearch = useCallback( () => {
+		const query = searchQuery.trim();
+		if ( ! query ) {
+			return;
+		}
+
+		// If it looks like a URL, do URL lookup instead.
+		if ( isUrl( query ) ) {
+			setUrlInput( query );
+			setSearchQuery( '' );
+			handleUrlLookup();
+			return;
+		}
+
+		performApiLookup( 'music', query );
+	}, [ searchQuery, isUrl, performApiLookup, handleUrlLookup ] );
 
 	const handleSelectResult = useCallback( ( result ) => {
 		updateKindMeta( 'listen_track', result.track );
@@ -290,7 +354,55 @@ function ListenFields() {
 
 	return (
 		<VStack spacing={ 4 } className="reactions-indieweb-kind-fields">
-			<BaseControl label={ __( 'Search Music', 'reactions-for-indieweb' ) }>
+			{ /* URL Input for Spotify, Apple Music, etc. */ }
+			<BaseControl
+				label={ __( 'Paste Music URL', 'reactions-for-indieweb' ) }
+				help={ __( 'Spotify, Apple Music, YouTube, SoundCloud', 'reactions-for-indieweb' ) }
+			>
+				<HStack>
+					<TextControl
+						value={ urlInput }
+						onChange={ setUrlInput }
+						placeholder="https://open.spotify.com/track/..."
+						onKeyDown={ ( e ) => e.key === 'Enter' && handleUrlLookup() }
+					/>
+					<Button
+						icon={ linkIcon }
+						onClick={ handleUrlLookup }
+						disabled={ isUrlLoading || ! urlInput.trim() }
+						label={ __( 'Fetch', 'reactions-for-indieweb' ) }
+					/>
+				</HStack>
+				{ urlError && (
+					<p style={ { color: '#d63638', fontSize: '12px', marginTop: '4px' } }>
+						{ urlError }
+					</p>
+				) }
+			</BaseControl>
+
+			{ isUrlLoading && <Spinner /> }
+
+			{ /* Saved URL display */ }
+			{ listenUrl && (
+				<div
+					style={ {
+						padding: '8px 12px',
+						backgroundColor: '#f0f6fc',
+						border: '1px solid #c3c4c7',
+						borderRadius: '2px',
+						fontSize: '12px',
+						wordBreak: 'break-all',
+					} }
+				>
+					<strong>{ __( 'Linked:', 'reactions-for-indieweb' ) }</strong>{ ' ' }
+					<a href={ listenUrl } target="_blank" rel="noopener noreferrer">
+						{ listenUrl }
+					</a>
+				</div>
+			) }
+
+			{ /* Or search by name */ }
+			<BaseControl label={ __( 'Or Search by Name', 'reactions-for-indieweb' ) }>
 				<HStack>
 					<TextControl
 						value={ searchQuery }
@@ -363,6 +475,9 @@ function ListenFields() {
  */
 function WatchFields() {
 	const [ searchQuery, setSearchQuery ] = useState( '' );
+	const [ urlInput, setUrlInput ] = useState( '' );
+	const [ isUrlLoading, setIsUrlLoading ] = useState( false );
+	const [ urlError, setUrlError ] = useState( '' );
 
 	const {
 		watchTitle,
@@ -370,6 +485,7 @@ function WatchFields() {
 		watchPoster,
 		watchStatus,
 		watchSpoilers,
+		watchUrl,
 		isLoading,
 		apiResults,
 	} = useSelect( ( select ) => {
@@ -381,6 +497,7 @@ function WatchFields() {
 			watchPoster: getKindMeta( 'watch_poster' ),
 			watchStatus: getKindMeta( 'watch_status' ),
 			watchSpoilers: getKindMeta( 'watch_spoilers' ),
+			watchUrl: getKindMeta( 'watch_url' ),
 			isLoading: store.isApiLoading(),
 			apiResults: store.getApiLookupType() === 'movie' ? store.getApiResults() : [],
 		};
@@ -388,11 +505,72 @@ function WatchFields() {
 
 	const { updateKindMeta, performApiLookup, clearApiResults } = useDispatch( STORE_NAME );
 
-	const handleSearch = useCallback( () => {
-		if ( searchQuery.trim() ) {
-			performApiLookup( 'movie', searchQuery );
+	// Check if input looks like a URL.
+	const isUrl = useCallback( ( input ) => {
+		return /^https?:\/\//i.test( input.trim() );
+	}, [] );
+
+	// Handle URL lookup for IMDB, TMDB, Trakt, Letterboxd.
+	const handleUrlLookup = useCallback( async () => {
+		const url = urlInput.trim();
+		if ( ! url ) {
+			return;
 		}
-	}, [ searchQuery, performApiLookup ] );
+
+		setIsUrlLoading( true );
+		setUrlError( '' );
+
+		try {
+			const result = await apiFetch( {
+				path: `/reactions-indieweb/v1/lookup/watch-url?url=${ encodeURIComponent( url ) }`,
+			} );
+
+			// Update metadata from result.
+			if ( result.title ) {
+				updateKindMeta( 'watch_title', result.title );
+			}
+			if ( result.year ) {
+				updateKindMeta( 'watch_year', result.year );
+			}
+			if ( result.poster ) {
+				updateKindMeta( 'watch_poster', result.poster );
+			}
+			if ( result.tmdb_id ) {
+				updateKindMeta( 'watch_tmdb_id', result.tmdb_id );
+			}
+			if ( result.imdb_id ) {
+				updateKindMeta( 'watch_imdb_id', result.imdb_id );
+			}
+			if ( result.trakt_id ) {
+				updateKindMeta( 'watch_trakt_id', result.trakt_id );
+			}
+			// Store the URL for reference.
+			updateKindMeta( 'watch_url', url );
+
+			setUrlInput( '' );
+		} catch ( error ) {
+			setUrlError( error.message || __( 'Could not fetch movie/TV info from URL.', 'reactions-for-indieweb' ) );
+		} finally {
+			setIsUrlLoading( false );
+		}
+	}, [ urlInput, updateKindMeta ] );
+
+	const handleSearch = useCallback( () => {
+		const query = searchQuery.trim();
+		if ( ! query ) {
+			return;
+		}
+
+		// If it looks like a URL, do URL lookup instead.
+		if ( isUrl( query ) ) {
+			setUrlInput( query );
+			setSearchQuery( '' );
+			handleUrlLookup();
+			return;
+		}
+
+		performApiLookup( 'movie', query );
+	}, [ searchQuery, isUrl, performApiLookup, handleUrlLookup ] );
 
 	const handleSelectResult = useCallback( ( result ) => {
 		updateKindMeta( 'watch_title', result.title );
@@ -405,12 +583,60 @@ function WatchFields() {
 
 	return (
 		<VStack spacing={ 4 } className="reactions-indieweb-kind-fields">
-			<BaseControl label={ __( 'Search Movies/TV', 'reactions-for-indieweb' ) }>
+			{ /* URL Input for IMDB, TMDB, Trakt, Letterboxd */ }
+			<BaseControl
+				label={ __( 'Paste Movie/TV URL', 'reactions-for-indieweb' ) }
+				help={ __( 'IMDB, TMDB, Trakt, or Letterboxd', 'reactions-for-indieweb' ) }
+			>
+				<HStack>
+					<TextControl
+						value={ urlInput }
+						onChange={ setUrlInput }
+						placeholder="https://www.imdb.com/title/..."
+						onKeyDown={ ( e ) => e.key === 'Enter' && handleUrlLookup() }
+					/>
+					<Button
+						icon={ linkIcon }
+						onClick={ handleUrlLookup }
+						disabled={ isUrlLoading || ! urlInput.trim() }
+						label={ __( 'Fetch', 'reactions-for-indieweb' ) }
+					/>
+				</HStack>
+				{ urlError && (
+					<p style={ { color: '#d63638', fontSize: '12px', marginTop: '4px' } }>
+						{ urlError }
+					</p>
+				) }
+			</BaseControl>
+
+			{ isUrlLoading && <Spinner /> }
+
+			{ /* Saved URL display */ }
+			{ watchUrl && (
+				<div
+					style={ {
+						padding: '8px 12px',
+						backgroundColor: '#f0f6fc',
+						border: '1px solid #c3c4c7',
+						borderRadius: '2px',
+						fontSize: '12px',
+						wordBreak: 'break-all',
+					} }
+				>
+					<strong>{ __( 'Linked:', 'reactions-for-indieweb' ) }</strong>{ ' ' }
+					<a href={ watchUrl } target="_blank" rel="noopener noreferrer">
+						{ watchUrl }
+					</a>
+				</div>
+			) }
+
+			{ /* Or search by title */ }
+			<BaseControl label={ __( 'Or Search by Title', 'reactions-for-indieweb' ) }>
 				<HStack>
 					<TextControl
 						value={ searchQuery }
 						onChange={ setSearchQuery }
-						placeholder={ __( 'Title…', 'reactions-for-indieweb' ) }
+						placeholder={ __( 'Movie or TV show title…', 'reactions-for-indieweb' ) }
 						onKeyDown={ ( e ) => e.key === 'Enter' && handleSearch() }
 					/>
 					<Button
@@ -782,6 +1008,315 @@ function ReviewFields() {
 					text-overflow: ellipsis;
 				}
 			` }</style>
+		</VStack>
+	);
+}
+
+/**
+ * Play Fields Component
+ *
+ * Fields for game logging with BGG/RAWG lookup.
+ *
+ * @return {JSX.Element} Play fields.
+ */
+function PlayFields() {
+	const [ searchQuery, setSearchQuery ] = useState( '' );
+	const [ searchSource, setSearchSource ] = useState( 'bgg' );
+	const [ gameType, setGameType ] = useState( 'boardgame' );
+	const [ isSearching, setIsSearching ] = useState( false );
+	const [ searchResults, setSearchResults ] = useState( [] );
+	const [ searchError, setSearchError ] = useState( '' );
+
+	const {
+		playTitle,
+		playPlatform,
+		playStatus,
+		playHours,
+		playCover,
+		playRating,
+		playBggId,
+		playRawgId,
+		playSteamId,
+	} = useSelect( ( select ) => {
+		const getKindMeta = select( STORE_NAME ).getKindMeta;
+		return {
+			playTitle: getKindMeta( 'play_title' ),
+			playPlatform: getKindMeta( 'play_platform' ),
+			playStatus: getKindMeta( 'play_status' ),
+			playHours: getKindMeta( 'play_hours' ),
+			playCover: getKindMeta( 'play_cover' ),
+			playRating: getKindMeta( 'play_rating' ),
+			playBggId: getKindMeta( 'play_bgg_id' ),
+			playRawgId: getKindMeta( 'play_rawg_id' ),
+			playSteamId: getKindMeta( 'play_steam_id' ),
+		};
+	}, [] );
+
+	const { updateKindMeta } = useDispatch( STORE_NAME );
+
+	const handleSearch = useCallback( async () => {
+		const query = searchQuery.trim();
+		if ( ! query ) {
+			return;
+		}
+
+		setIsSearching( true );
+		setSearchError( '' );
+		setSearchResults( [] );
+
+		try {
+			const params = new URLSearchParams( {
+				q: query,
+				source: searchSource,
+			} );
+
+			if ( searchSource === 'bgg' ) {
+				params.set( 'type', gameType );
+			}
+
+			const results = await apiFetch( {
+				path: `/reactions-indieweb/v1/lookup/game?${ params.toString() }`,
+			} );
+
+			setSearchResults( results || [] );
+		} catch ( error ) {
+			setSearchError( error.message || __( 'Search failed.', 'reactions-for-indieweb' ) );
+		} finally {
+			setIsSearching( false );
+		}
+	}, [ searchQuery, searchSource, gameType ] );
+
+	const handleSelectResult = useCallback( async ( result ) => {
+		// For BGG, fetch full details.
+		if ( result.source === 'bgg' && result.id ) {
+			setIsSearching( true );
+			try {
+				const details = await apiFetch( {
+					path: `/reactions-indieweb/v1/lookup/game?source=bgg&id=${ result.id }`,
+				} );
+
+				updateKindMeta( 'play_title', details.title || result.title );
+				updateKindMeta( 'play_cover', details.cover || '' );
+				updateKindMeta( 'play_bgg_id', String( details.id || result.id ) );
+				updateKindMeta( 'play_rawg_id', '' );
+			} catch {
+				// Fallback to search result data.
+				updateKindMeta( 'play_title', result.title );
+				updateKindMeta( 'play_bgg_id', String( result.id ) );
+				updateKindMeta( 'play_rawg_id', '' );
+			} finally {
+				setIsSearching( false );
+			}
+		} else {
+			// RAWG result.
+			updateKindMeta( 'play_title', result.name || result.title );
+			updateKindMeta( 'play_cover', result.cover || '' );
+			updateKindMeta( 'play_rawg_id', String( result.id ) );
+			updateKindMeta( 'play_bgg_id', '' );
+
+			// Set platform from first platform if available.
+			if ( result.platforms && result.platforms.length > 0 ) {
+				updateKindMeta( 'play_platform', result.platforms[ 0 ] );
+			}
+		}
+
+		setSearchResults( [] );
+		setSearchQuery( '' );
+	}, [ updateKindMeta ] );
+
+	const platformOptions = [
+		{ label: __( 'Select Platform', 'reactions-for-indieweb' ), value: '' },
+		{ label: 'PC', value: 'PC' },
+		{ label: 'PlayStation 5', value: 'PlayStation 5' },
+		{ label: 'PlayStation 4', value: 'PlayStation 4' },
+		{ label: 'Xbox Series X/S', value: 'Xbox Series X/S' },
+		{ label: 'Xbox One', value: 'Xbox One' },
+		{ label: 'Nintendo Switch', value: 'Nintendo Switch' },
+		{ label: 'iOS', value: 'iOS' },
+		{ label: 'Android', value: 'Android' },
+		{ label: 'macOS', value: 'macOS' },
+		{ label: 'Board Game', value: 'Board Game' },
+		{ label: 'Card Game', value: 'Card Game' },
+		{ label: 'Tabletop RPG', value: 'Tabletop RPG' },
+		{ label: __( 'Other', 'reactions-for-indieweb' ), value: 'Other' },
+	];
+
+	const statusOptions = [
+		{ label: __( 'Playing', 'reactions-for-indieweb' ), value: 'playing' },
+		{ label: __( 'Completed', 'reactions-for-indieweb' ), value: 'completed' },
+		{ label: __( 'Abandoned', 'reactions-for-indieweb' ), value: 'abandoned' },
+		{ label: __( 'Backlog', 'reactions-for-indieweb' ), value: 'backlog' },
+	];
+
+	const sourceOptions = [
+		{ label: __( 'BGG: Board Games', 'reactions-for-indieweb' ), value: 'bgg-board' },
+		{ label: __( 'BGG: Video Games', 'reactions-for-indieweb' ), value: 'bgg-video' },
+		{ label: __( 'RAWG: Video Games', 'reactions-for-indieweb' ), value: 'rawg' },
+	];
+
+	const handleSourceChange = ( value ) => {
+		if ( value === 'bgg-board' ) {
+			setSearchSource( 'bgg' );
+			setGameType( 'boardgame' );
+		} else if ( value === 'bgg-video' ) {
+			setSearchSource( 'bgg' );
+			setGameType( 'videogame' );
+		} else {
+			setSearchSource( 'rawg' );
+			setGameType( 'videogame' );
+		}
+	};
+
+	const getCurrentSourceValue = () => {
+		if ( searchSource === 'rawg' ) {
+			return 'rawg';
+		}
+		return gameType === 'videogame' ? 'bgg-video' : 'bgg-board';
+	};
+
+	return (
+		<VStack spacing={ 4 } className="reactions-indieweb-kind-fields">
+			{ /* Search Section */ }
+			<BaseControl label={ __( 'Search for Game', 'reactions-for-indieweb' ) }>
+				<VStack spacing={ 2 }>
+					<SelectControl
+						value={ getCurrentSourceValue() }
+						options={ sourceOptions }
+						onChange={ handleSourceChange }
+						__nextHasNoMarginBottom
+					/>
+					<HStack>
+						<TextControl
+							value={ searchQuery }
+							onChange={ setSearchQuery }
+							placeholder={ __( 'Game title...', 'reactions-for-indieweb' ) }
+							onKeyDown={ ( e ) => e.key === 'Enter' && handleSearch() }
+						/>
+						<Button
+							icon={ searchIcon }
+							onClick={ handleSearch }
+							disabled={ isSearching }
+							label={ __( 'Search', 'reactions-for-indieweb' ) }
+						/>
+					</HStack>
+				</VStack>
+			</BaseControl>
+
+			{ isSearching && <Spinner /> }
+
+			{ searchError && (
+				<p style={ { color: '#d63638', fontSize: '12px' } }>{ searchError }</p>
+			) }
+
+			{ searchResults.length > 0 && (
+				<div className="reactions-indieweb-api-results">
+					{ searchResults.slice( 0, 8 ).map( ( result, index ) => (
+						<Button
+							key={ index }
+							className="reactions-indieweb-api-result"
+							onClick={ () => handleSelectResult( result ) }
+						>
+							{ result.cover && (
+								<img src={ result.cover } alt="" width="40" height="40" />
+							) }
+							<span>
+								<strong>{ result.name || result.title }</strong>
+								{ result.year && <> ({ result.year })</> }
+								{ result.platforms && result.platforms.length > 0 && (
+									<>
+										<br />
+										<small>{ result.platforms.slice( 0, 3 ).join( ', ' ) }</small>
+									</>
+								) }
+							</span>
+						</Button>
+					) ) }
+				</div>
+			) }
+
+			{ /* Cover Preview */ }
+			{ playCover && (
+				<div style={ { textAlign: 'center' } }>
+					<img
+						src={ playCover }
+						alt={ playTitle }
+						style={ { maxWidth: '150px', maxHeight: '200px', borderRadius: '4px' } }
+					/>
+				</div>
+			) }
+
+			{ /* Game Details */ }
+			<TextControl
+				label={ __( 'Game Title', 'reactions-for-indieweb' ) }
+				value={ playTitle }
+				onChange={ ( value ) => updateKindMeta( 'play_title', value ) }
+			/>
+
+			<SelectControl
+				label={ __( 'Platform', 'reactions-for-indieweb' ) }
+				value={ playPlatform }
+				options={ platformOptions }
+				onChange={ ( value ) => updateKindMeta( 'play_platform', value ) }
+			/>
+
+			<SelectControl
+				label={ __( 'Status', 'reactions-for-indieweb' ) }
+				value={ playStatus || 'playing' }
+				options={ statusOptions }
+				onChange={ ( value ) => updateKindMeta( 'play_status', value ) }
+			/>
+
+			<TextControl
+				label={ __( 'Hours Played', 'reactions-for-indieweb' ) }
+				type="number"
+				min="0"
+				step="0.5"
+				value={ playHours || '' }
+				onChange={ ( value ) => updateKindMeta( 'play_hours', parseFloat( value ) || 0 ) }
+			/>
+
+			<RangeControl
+				label={ __( 'Rating', 'reactions-for-indieweb' ) }
+				value={ playRating || 0 }
+				onChange={ ( value ) => updateKindMeta( 'play_rating', value ) }
+				min={ 0 }
+				max={ 5 }
+				step={ 0.5 }
+				withInputField
+				renderTooltipContent={ ( value ) => `${ value } / 5` }
+			/>
+
+			<TextControl
+				label={ __( 'Cover Image URL', 'reactions-for-indieweb' ) }
+				type="url"
+				value={ playCover }
+				onChange={ ( value ) => updateKindMeta( 'play_cover', value ) }
+				placeholder="https://"
+			/>
+
+			{ /* ID Fields (collapsible/advanced) */ }
+			<details style={ { fontSize: '12px' } }>
+				<summary style={ { cursor: 'pointer', marginBottom: '8px' } }>
+					{ __( 'Advanced: Game IDs', 'reactions-for-indieweb' ) }
+				</summary>
+				<VStack spacing={ 2 }>
+					<TextControl
+						label={ __( 'BoardGameGeek ID', 'reactions-for-indieweb' ) }
+						value={ playBggId }
+						onChange={ ( value ) => updateKindMeta( 'play_bgg_id', value ) }
+					/>
+					<TextControl
+						label={ __( 'RAWG ID', 'reactions-for-indieweb' ) }
+						value={ playRawgId }
+						onChange={ ( value ) => updateKindMeta( 'play_rawg_id', value ) }
+					/>
+					<TextControl
+						label={ __( 'Steam App ID', 'reactions-for-indieweb' ) }
+						value={ playSteamId }
+						onChange={ ( value ) => updateKindMeta( 'play_steam_id', value ) }
+					/>
+				</VStack>
+			</details>
 		</VStack>
 	);
 }

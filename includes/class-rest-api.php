@@ -25,6 +25,8 @@ use ReactionsForIndieWeb\APIs\GoogleBooks;
 use ReactionsForIndieWeb\APIs\PodcastIndex;
 use ReactionsForIndieWeb\APIs\Foursquare;
 use ReactionsForIndieWeb\APIs\Nominatim;
+use ReactionsForIndieWeb\APIs\BoardGameGeek;
+use ReactionsForIndieWeb\APIs\RAWG;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -75,6 +77,25 @@ class REST_API {
 	 * @return void
 	 */
 	private function register_lookup_routes(): void {
+		// Music URL parsing (Spotify, Apple Music, etc.).
+		register_rest_route(
+			self::NAMESPACE,
+			'/lookup/music-url',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'lookup_music_url' ),
+				'permission_callback' => array( $this, 'can_edit_posts' ),
+				'args'                => array(
+					'url' => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'esc_url_raw',
+						'description'       => __( 'Music service URL (Spotify, Apple Music, YouTube, etc.)', 'reactions-for-indieweb' ),
+					),
+				),
+			)
+		);
+
 		// Music lookup.
 		register_rest_route(
 			self::NAMESPACE,
@@ -102,6 +123,25 @@ class REST_API {
 						'default'           => 'musicbrainz',
 						'enum'              => array( 'musicbrainz', 'lastfm', 'listenbrainz' ),
 						'description'       => __( 'API source to use', 'reactions-for-indieweb' ),
+					),
+				),
+			)
+		);
+
+		// Watch URL parsing (IMDB, TMDB, Trakt, Letterboxd).
+		register_rest_route(
+			self::NAMESPACE,
+			'/lookup/watch-url',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'lookup_watch_url' ),
+				'permission_callback' => array( $this, 'can_edit_posts' ),
+				'args'                => array(
+					'url' => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'esc_url_raw',
+						'description'       => __( 'Movie/TV service URL (IMDB, TMDB, Trakt, Letterboxd)', 'reactions-for-indieweb' ),
 					),
 				),
 			)
@@ -240,6 +280,45 @@ class REST_API {
 						'default'           => 'foursquare',
 						'enum'              => array( 'foursquare', 'nominatim' ),
 						'description'       => __( 'API source to use', 'reactions-for-indieweb' ),
+					),
+				),
+			)
+		);
+
+		// Game lookup.
+		register_rest_route(
+			self::NAMESPACE,
+			'/lookup/game',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'lookup_game' ),
+				'permission_callback' => array( $this, 'can_edit_posts' ),
+				'args'                => array(
+					'q'      => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+						'description'       => __( 'Search query (game name)', 'reactions-for-indieweb' ),
+					),
+					'source' => array(
+						'required'          => false,
+						'type'              => 'string',
+						'default'           => 'bgg',
+						'enum'              => array( 'bgg', 'rawg' ),
+						'description'       => __( 'API source (bgg for BoardGameGeek, rawg for RAWG.io)', 'reactions-for-indieweb' ),
+					),
+					'type'   => array(
+						'required'          => false,
+						'type'              => 'string',
+						'default'           => 'boardgame',
+						'enum'              => array( 'boardgame', 'videogame' ),
+						'description'       => __( 'Game type for BGG (boardgame or videogame)', 'reactions-for-indieweb' ),
+					),
+					'id'     => array(
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+						'description'       => __( 'Game ID for direct lookup', 'reactions-for-indieweb' ),
 					),
 				),
 			)
@@ -758,6 +837,311 @@ class REST_API {
 	// =========================================================================
 
 	/**
+	 * Lookup music from URL (Spotify, Apple Music, YouTube, etc.).
+	 *
+	 * Uses oEmbed to extract metadata from music service URLs.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function lookup_music_url( \WP_REST_Request $request ) {
+		$url = $request->get_param( 'url' );
+
+		if ( empty( $url ) ) {
+			return new \WP_Error(
+				'missing_url',
+				__( 'URL is required.', 'reactions-for-indieweb' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		try {
+			$result = $this->parse_music_url( $url );
+
+			if ( ! $result ) {
+				return new \WP_Error(
+					'parse_failed',
+					__( 'Could not extract music info from this URL. Try a direct track or album URL.', 'reactions-for-indieweb' ),
+					array( 'status' => 400 )
+				);
+			}
+
+			return rest_ensure_response( $result );
+		} catch ( \Exception $e ) {
+			return new \WP_Error(
+				'lookup_failed',
+				$e->getMessage(),
+				array( 'status' => 500 )
+			);
+		}
+	}
+
+	/**
+	 * Parse a music service URL to extract track metadata.
+	 *
+	 * @param string $url Music service URL.
+	 * @return array|null Track metadata or null on failure.
+	 */
+	private function parse_music_url( string $url ): ?array {
+		// Try WordPress oEmbed first.
+		$oembed = _wp_oembed_get_object();
+		$data   = $oembed->get_data( $url );
+
+		if ( $data && ! empty( $data->title ) ) {
+			$result = array(
+				'url'      => $url,
+				'provider' => $data->provider_name ?? '',
+				'embed'    => $data->html ?? '',
+				'track'    => '',
+				'artist'   => '',
+				'album'    => '',
+			);
+
+			// Get album art from thumbnail.
+			if ( ! empty( $data->thumbnail_url ) ) {
+				$result['cover'] = $data->thumbnail_url;
+			}
+
+			// Check for author_name first (some providers use this).
+			if ( ! empty( $data->author_name ) ) {
+				$result['artist'] = $data->author_name;
+				$result['track']  = $this->clean_oembed_title( $data->title, $data->author_name );
+			}
+
+			// For Spotify, try to extract artist from the embed HTML.
+			// Spotify embeds contain aria-label or title with artist info.
+			if ( 'Spotify' === ( $data->provider_name ?? '' ) && ! empty( $data->html ) ) {
+				$spotify_data = $this->parse_spotify_embed( $data->html, $data->title );
+				if ( ! empty( $spotify_data['artist'] ) ) {
+					$result['artist'] = $spotify_data['artist'];
+				}
+				if ( ! empty( $spotify_data['track'] ) ) {
+					$result['track'] = $spotify_data['track'];
+				}
+				if ( ! empty( $spotify_data['album'] ) ) {
+					$result['album'] = $spotify_data['album'];
+				}
+			}
+
+			// If we still don't have track/artist, try parsing the title.
+			if ( empty( $result['track'] ) || empty( $result['artist'] ) ) {
+				$parsed = $this->parse_track_title( $data->title );
+				if ( empty( $result['track'] ) ) {
+					$result['track'] = $parsed['track'];
+				}
+				if ( empty( $result['artist'] ) ) {
+					$result['artist'] = $parsed['artist'];
+				}
+			}
+
+			// Final fallback: title is the track name.
+			if ( empty( $result['track'] ) ) {
+				$result['track'] = $data->title;
+			}
+
+			// If we have a track name but no artist, try looking up via MusicBrainz.
+			if ( ! empty( $result['track'] ) && empty( $result['artist'] ) ) {
+				$lookup = $this->lookup_track_metadata( $result['track'] );
+				if ( $lookup ) {
+					if ( ! empty( $lookup['artist'] ) ) {
+						$result['artist'] = $lookup['artist'];
+					}
+					if ( ! empty( $lookup['album'] ) && empty( $result['album'] ) ) {
+						$result['album'] = $lookup['album'];
+					}
+					if ( ! empty( $lookup['cover'] ) && empty( $result['cover'] ) ) {
+						$result['cover'] = $lookup['cover'];
+					}
+				}
+			}
+
+			return $result;
+		}
+
+		// Fallback: Try to parse URL directly for known services.
+		return $this->parse_url_directly( $url );
+	}
+
+	/**
+	 * Look up track metadata from MusicBrainz/LastFM when only track name is known.
+	 *
+	 * @param string $track Track name to search for.
+	 * @return array|null Metadata array or null if not found.
+	 */
+	private function lookup_track_metadata( string $track ): ?array {
+		// Try LastFM first as it's faster and has good track data.
+		// The LastFM class loads credentials from options automatically.
+		try {
+			$lastfm = new LastFM();
+
+			// Only search if we have an API key configured.
+			if ( $lastfm->test_connection() ) {
+				$result = $lastfm->search( $track );
+
+				if ( ! empty( $result ) && is_array( $result ) ) {
+					$first = $result[0] ?? null;
+					if ( $first ) {
+						return array(
+							'track'  => $first['track'] ?? $track,
+							'artist' => $first['artist'] ?? '',
+							'album'  => $first['album'] ?? '',
+							'cover'  => $first['cover'] ?? '',
+						);
+					}
+				}
+			}
+		} catch ( \Exception $e ) {
+			// Fall through to MusicBrainz.
+		}
+
+		// Try MusicBrainz as fallback (no API key required).
+		try {
+			$musicbrainz = new MusicBrainz();
+			$result      = $musicbrainz->search( $track );
+
+			if ( ! empty( $result ) && is_array( $result ) ) {
+				$first = $result[0] ?? null;
+				if ( $first ) {
+					return array(
+						'track'  => $first['track'] ?? $track,
+						'artist' => $first['artist'] ?? '',
+						'album'  => $first['album'] ?? '',
+						'cover'  => $first['cover'] ?? '',
+					);
+				}
+			}
+		} catch ( \Exception $e ) {
+			// Lookup failed, return null.
+		}
+
+		return null;
+	}
+
+	/**
+	 * Parse Spotify embed HTML to extract track and artist.
+	 *
+	 * @param string $html  Embed HTML.
+	 * @param string $title oEmbed title.
+	 * @return array Array with track, artist, album keys.
+	 */
+	private function parse_spotify_embed( string $html, string $title ): array {
+		$result = array(
+			'track'  => '',
+			'artist' => '',
+			'album'  => '',
+		);
+
+		// Spotify oEmbed title format is usually just the track name.
+		// The artist appears in the iframe title attribute like:
+		// title="Spotify Embed: Track Name"
+		// But artist info is in the page, not directly accessible via oEmbed.
+
+		// Try to parse from the title if it contains " by " or " - ".
+		if ( preg_match( '/^(.+?)\s+by\s+(.+)$/i', $title, $matches ) ) {
+			$result['track']  = trim( $matches[1] );
+			$result['artist'] = trim( $matches[2] );
+		} elseif ( preg_match( '/^(.+?)\s*[-–]\s*(.+)$/', $title, $matches ) ) {
+			// Could be "Artist - Track" or "Track - Artist", hard to know.
+			// Assume "Track - Additional Info" format for Spotify.
+			$result['track'] = trim( $matches[1] );
+		}
+
+		// If title is clean (no separators), it's just the track name.
+		if ( empty( $result['track'] ) ) {
+			$result['track'] = $title;
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Clean oEmbed title by removing artist suffix.
+	 *
+	 * @param string $title       Full title.
+	 * @param string $author_name Author/artist name.
+	 * @return string Clean track title.
+	 */
+	private function clean_oembed_title( string $title, string $author_name ): string {
+		// Remove " - song and lyrics by Artist" suffix (Spotify).
+		$title = preg_replace( '/\s*[-–]\s*song and lyrics by\s*.+$/i', '', $title );
+
+		// Remove " by Artist" suffix.
+		$title = preg_replace( '/\s+by\s+' . preg_quote( $author_name, '/' ) . '$/i', '', $title );
+
+		return trim( $title );
+	}
+
+	/**
+	 * Parse track title in "Artist - Track" or "Track by Artist" format.
+	 *
+	 * @param string $title Full title string.
+	 * @return array Array with 'track' and 'artist' keys.
+	 */
+	private function parse_track_title( string $title ): array {
+		$result = array(
+			'track'  => $title,
+			'artist' => '',
+		);
+
+		// Try "Artist - Track" format.
+		if ( preg_match( '/^(.+?)\s*[-–]\s*(.+)$/', $title, $matches ) ) {
+			$result['artist'] = trim( $matches[1] );
+			$result['track']  = trim( $matches[2] );
+		}
+		// Try "Track by Artist" format.
+		elseif ( preg_match( '/^(.+?)\s+by\s+(.+)$/i', $title, $matches ) ) {
+			$result['track']  = trim( $matches[1] );
+			$result['artist'] = trim( $matches[2] );
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Parse URL directly when oEmbed fails.
+	 *
+	 * @param string $url Music service URL.
+	 * @return array|null Parsed data or null.
+	 */
+	private function parse_url_directly( string $url ): ?array {
+		$host = wp_parse_url( $url, PHP_URL_HOST );
+
+		// Spotify: open.spotify.com/track/ID
+		if ( strpos( $host, 'spotify.com' ) !== false ) {
+			if ( preg_match( '/\/(track|album|artist)\/([a-zA-Z0-9]+)/', $url, $matches ) ) {
+				return array(
+					'url'      => $url,
+					'provider' => 'Spotify',
+					'type'     => $matches[1],
+					'id'       => $matches[2],
+					// We'd need Spotify API to get actual metadata.
+					'track'    => '',
+					'artist'   => '',
+					'note'     => __( 'Paste a Spotify track URL to auto-fill metadata.', 'reactions-for-indieweb' ),
+				);
+			}
+		}
+
+		// Apple Music.
+		if ( strpos( $host, 'music.apple.com' ) !== false ) {
+			return array(
+				'url'      => $url,
+				'provider' => 'Apple Music',
+			);
+		}
+
+		// YouTube / YouTube Music.
+		if ( strpos( $host, 'youtube.com' ) !== false || strpos( $host, 'youtu.be' ) !== false ) {
+			return array(
+				'url'      => $url,
+				'provider' => 'YouTube',
+			);
+		}
+
+		return null;
+	}
+
+	/**
 	 * Lookup music.
 	 *
 	 * @param \WP_REST_Request $request Request object.
@@ -792,6 +1176,381 @@ class REST_API {
 				array( 'status' => 500 )
 			);
 		}
+	}
+
+	/**
+	 * Lookup watch URL (IMDB, TMDB, Trakt, Letterboxd).
+	 *
+	 * Parses a URL from movie/TV services and extracts metadata.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function lookup_watch_url( \WP_REST_Request $request ) {
+		$url = $request->get_param( 'url' );
+
+		if ( empty( $url ) ) {
+			return new \WP_Error(
+				'missing_url',
+				__( 'URL is required.', 'reactions-for-indieweb' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		try {
+			$result = $this->parse_watch_url( $url );
+
+			if ( ! $result ) {
+				return new \WP_Error(
+					'parse_failed',
+					__( 'Could not extract movie/TV info from this URL. Try IMDB, TMDB, or Trakt URLs.', 'reactions-for-indieweb' ),
+					array( 'status' => 400 )
+				);
+			}
+
+			return rest_ensure_response( $result );
+		} catch ( \Exception $e ) {
+			return new \WP_Error(
+				'lookup_failed',
+				$e->getMessage(),
+				array( 'status' => 500 )
+			);
+		}
+	}
+
+	/**
+	 * Parse a watch service URL to extract movie/TV metadata.
+	 *
+	 * Supports:
+	 * - IMDB: imdb.com/title/tt1234567
+	 * - TMDB: themoviedb.org/movie/123 or /tv/456
+	 * - Trakt: trakt.tv/movies/slug or /shows/slug
+	 * - Letterboxd: letterboxd.com/film/slug
+	 *
+	 * @param string $url Watch service URL.
+	 * @return array|null Movie/TV metadata or null on failure.
+	 */
+	private function parse_watch_url( string $url ): ?array {
+		$parsed = wp_parse_url( $url );
+		$host   = $parsed['host'] ?? '';
+		$path   = $parsed['path'] ?? '';
+
+		// Normalize host (remove www.).
+		$host = preg_replace( '/^www\./', '', $host );
+
+		// IMDB: imdb.com/title/tt1234567
+		if ( 'imdb.com' === $host || 'm.imdb.com' === $host ) {
+			return $this->parse_imdb_url( $path );
+		}
+
+		// TMDB: themoviedb.org/movie/123 or /tv/456
+		if ( 'themoviedb.org' === $host ) {
+			return $this->parse_tmdb_url( $path );
+		}
+
+		// Trakt: trakt.tv/movies/slug or /shows/slug
+		if ( 'trakt.tv' === $host ) {
+			return $this->parse_trakt_url( $path );
+		}
+
+		// Letterboxd: letterboxd.com/film/slug
+		if ( 'letterboxd.com' === $host ) {
+			return $this->parse_letterboxd_url( $path, $url );
+		}
+
+		return null;
+	}
+
+	/**
+	 * Parse IMDB URL and fetch metadata via TMDB.
+	 *
+	 * @param string $path URL path.
+	 * @return array|null Movie/TV metadata.
+	 * @throws \Exception If credentials are missing or API request fails.
+	 */
+	private function parse_imdb_url( string $path ): ?array {
+		// Extract IMDB ID (tt followed by digits).
+		if ( ! preg_match( '/\/title\/(tt\d+)/', $path, $matches ) ) {
+			return null;
+		}
+
+		$imdb_id = $matches[1];
+
+		// Get TMDB credentials.
+		$credentials  = get_option( 'reactions_indieweb_api_credentials', array() );
+		$tmdb_creds   = $credentials['tmdb'] ?? array();
+		$access_token = $tmdb_creds['access_token'] ?? '';
+		$api_key      = $tmdb_creds['api_key'] ?? '';
+		$is_enabled   = ! empty( $tmdb_creds['enabled'] );
+
+		// Check if TMDB is enabled.
+		if ( ! $is_enabled ) {
+			throw new \Exception( __( 'IMDB lookup requires TMDB to be enabled. Enable TMDB in Settings > API Connections.', 'reactions-for-indieweb' ) );
+		}
+
+		// IMDB lookup requires TMDB credentials.
+		if ( ! $access_token && ! $api_key ) {
+			throw new \Exception( __( 'IMDB lookup requires TMDB API credentials. Add your TMDB API Read Access Token in Settings > API Connections.', 'reactions-for-indieweb' ) );
+		}
+
+		// Build URL - use API key as query param if no access token.
+		$url = 'https://api.themoviedb.org/3/find/' . $imdb_id . '?external_source=imdb_id';
+		if ( ! $access_token && $api_key ) {
+			$url .= '&api_key=' . $api_key;
+		}
+
+		// Build headers.
+		$headers = array( 'Accept' => 'application/json' );
+		if ( $access_token ) {
+			$headers['Authorization'] = 'Bearer ' . $access_token;
+		}
+
+		// TMDB find endpoint searches by external ID.
+		$response = wp_remote_get(
+			$url,
+			array(
+				'timeout' => 30,
+				'headers' => $headers,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			throw new \Exception(
+				sprintf(
+					/* translators: %s: Error message */
+					__( 'TMDB API request failed: %s', 'reactions-for-indieweb' ),
+					$response->get_error_message()
+				)
+			);
+		}
+
+		$status_code = wp_remote_retrieve_response_code( $response );
+		$body        = wp_remote_retrieve_body( $response );
+		$data        = json_decode( $body, true );
+
+		// Check for HTTP errors.
+		if ( $status_code >= 400 ) {
+			$error_message = $data['status_message'] ?? __( 'Unknown API error', 'reactions-for-indieweb' );
+			throw new \Exception(
+				sprintf(
+					/* translators: 1: HTTP status code, 2: Error message */
+					__( 'TMDB API error (%1$d): %2$s', 'reactions-for-indieweb' ),
+					$status_code,
+					$error_message
+				)
+			);
+		}
+
+		// Check for API errors in response body.
+		if ( isset( $data['success'] ) && false === $data['success'] ) {
+			$error_message = $data['status_message'] ?? __( 'API returned an error', 'reactions-for-indieweb' );
+			throw new \Exception(
+				sprintf(
+					/* translators: %s: Error message */
+					__( 'TMDB error: %s', 'reactions-for-indieweb' ),
+					$error_message
+				)
+			);
+		}
+
+		// Check movie results first.
+		if ( ! empty( $data['movie_results'][0] ) ) {
+			$movie = $data['movie_results'][0];
+			return $this->normalize_tmdb_result( $movie, 'movie', $imdb_id );
+		}
+
+		// Then TV results.
+		if ( ! empty( $data['tv_results'][0] ) ) {
+			$tv = $data['tv_results'][0];
+			return $this->normalize_tmdb_result( $tv, 'tv', $imdb_id );
+		}
+
+		// No results found for this IMDB ID.
+		throw new \Exception(
+			sprintf(
+				/* translators: %s: IMDB ID */
+				__( 'No movie or TV show found for IMDB ID: %s', 'reactions-for-indieweb' ),
+				$imdb_id
+			)
+		);
+	}
+
+	/**
+	 * Parse TMDB URL and fetch metadata.
+	 *
+	 * @param string $path URL path.
+	 * @return array|null Movie/TV metadata.
+	 */
+	private function parse_tmdb_url( string $path ): ?array {
+		$tmdb = new TMDB();
+
+		// Movie: /movie/123 or /movie/123-title-slug
+		if ( preg_match( '/\/movie\/(\d+)/', $path, $matches ) ) {
+			$result = $tmdb->get_movie( (int) $matches[1] );
+			if ( $result ) {
+				return $this->normalize_watch_result( $result, 'tmdb' );
+			}
+		}
+
+		// TV: /tv/456 or /tv/456-title-slug
+		if ( preg_match( '/\/tv\/(\d+)/', $path, $matches ) ) {
+			$result = $tmdb->get_tv( (int) $matches[1] );
+			if ( $result ) {
+				return $this->normalize_watch_result( $result, 'tmdb' );
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Parse Trakt URL and fetch metadata.
+	 *
+	 * @param string $path URL path.
+	 * @return array|null Movie/TV metadata.
+	 */
+	private function parse_trakt_url( string $path ): ?array {
+		$trakt = new Trakt();
+
+		// Movie: /movies/slug-name or /movies/slug-name-2010
+		if ( preg_match( '/\/movies\/([^\/]+)/', $path, $matches ) ) {
+			$result = $trakt->get_movie( $matches[1] );
+			if ( $result ) {
+				return $this->normalize_watch_result( $result, 'trakt' );
+			}
+		}
+
+		// TV Show: /shows/slug-name
+		if ( preg_match( '/\/shows\/([^\/]+)/', $path, $matches ) ) {
+			$result = $trakt->get_show( $matches[1] );
+			if ( $result ) {
+				return $this->normalize_watch_result( $result, 'trakt' );
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Parse Letterboxd URL and fetch metadata via TMDB.
+	 *
+	 * Letterboxd doesn't have a public API, so we scrape the page for TMDB ID.
+	 *
+	 * @param string $path URL path.
+	 * @param string $url  Full URL.
+	 * @return array|null Movie/TV metadata.
+	 */
+	private function parse_letterboxd_url( string $path, string $url ): ?array {
+		// Film: /film/slug or /film/slug/
+		if ( preg_match( '/\/film\/([^\/]+)/', $path, $matches ) ) {
+			// Fetch the Letterboxd page and look for TMDB link.
+			$response = wp_remote_get(
+				$url,
+				array(
+					'timeout'    => 15,
+					'user-agent' => 'Mozilla/5.0 (compatible; WordPress/' . get_bloginfo( 'version' ) . ')',
+				)
+			);
+
+			if ( is_wp_error( $response ) ) {
+				return null;
+			}
+
+			$body = wp_remote_retrieve_body( $response );
+
+			// Letterboxd pages contain data-tmdb-id attribute or link to TMDB.
+			if ( preg_match( '/data-tmdb-id="(\d+)"/', $body, $tmdb_match ) ) {
+				$tmdb   = new TMDB();
+				$result = $tmdb->get_movie( (int) $tmdb_match[1] );
+				if ( $result ) {
+					$normalized              = $this->normalize_watch_result( $result, 'tmdb' );
+					$normalized['letterboxd_url'] = $url;
+					return $normalized;
+				}
+			}
+
+			// Alternative: look for themoviedb.org link.
+			if ( preg_match( '/href="https?:\/\/(?:www\.)?themoviedb\.org\/movie\/(\d+)"/', $body, $tmdb_match ) ) {
+				$tmdb   = new TMDB();
+				$result = $tmdb->get_movie( (int) $tmdb_match[1] );
+				if ( $result ) {
+					$normalized              = $this->normalize_watch_result( $result, 'tmdb' );
+					$normalized['letterboxd_url'] = $url;
+					return $normalized;
+				}
+			}
+
+			// Fallback: Try to extract title from page and search TMDB.
+			if ( preg_match( '/<meta property="og:title" content="([^"]+)"/', $body, $title_match ) ) {
+				$title = html_entity_decode( $title_match[1], ENT_QUOTES, 'UTF-8' );
+				// Remove year if present: "Movie Title (2023)"
+				$title = preg_replace( '/\s*\(\d{4}\)\s*$/', '', $title );
+
+				$tmdb    = new TMDB();
+				$results = $tmdb->search_movies( $title );
+				if ( ! empty( $results[0] ) ) {
+					$normalized              = $this->normalize_watch_result( $results[0], 'tmdb' );
+					$normalized['letterboxd_url'] = $url;
+					return $normalized;
+				}
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Get TMDB access token from stored credentials.
+	 *
+	 * @return string Access token or empty string.
+	 */
+	private function get_tmdb_access_token(): string {
+		$credentials = get_option( 'reactions_indieweb_api_credentials', array() );
+		return $credentials['tmdb']['access_token'] ?? $credentials['tmdb']['api_key'] ?? '';
+	}
+
+	/**
+	 * Normalize TMDB find result.
+	 *
+	 * @param array  $item    Raw TMDB item.
+	 * @param string $type    Content type (movie or tv).
+	 * @param string $imdb_id IMDB ID.
+	 * @return array Normalized result.
+	 */
+	private function normalize_tmdb_result( array $item, string $type, string $imdb_id ): array {
+		$image_base = 'https://image.tmdb.org/t/p/w342';
+
+		return array(
+			'title'    => $item['title'] ?? $item['name'] ?? '',
+			'year'     => substr( $item['release_date'] ?? $item['first_air_date'] ?? '', 0, 4 ),
+			'poster'   => ! empty( $item['poster_path'] ) ? $image_base . $item['poster_path'] : '',
+			'overview' => $item['overview'] ?? '',
+			'type'     => $type,
+			'tmdb_id'  => $item['id'] ?? 0,
+			'imdb_id'  => $imdb_id,
+			'provider' => 'tmdb',
+		);
+	}
+
+	/**
+	 * Normalize watch result from various APIs.
+	 *
+	 * @param array  $result   API result.
+	 * @param string $provider Provider name.
+	 * @return array Normalized result.
+	 */
+	private function normalize_watch_result( array $result, string $provider ): array {
+		return array(
+			'title'    => $result['title'] ?? '',
+			'year'     => $result['year'] ?? '',
+			'poster'   => $result['poster'] ?? '',
+			'overview' => $result['overview'] ?? '',
+			'type'     => $result['type'] ?? 'movie',
+			'tmdb_id'  => $result['tmdb_id'] ?? 0,
+			'imdb_id'  => $result['imdb_id'] ?? '',
+			'trakt_id' => $result['trakt_id'] ?? 0,
+			'provider' => $provider,
+		);
 	}
 
 	/**
@@ -930,6 +1689,90 @@ class REST_API {
 			}
 
 			$results = $api->search( $query, $lat, $lng );
+
+			return rest_ensure_response( $results );
+		} catch ( \Exception $e ) {
+			return new \WP_Error(
+				'lookup_failed',
+				$e->getMessage(),
+				array( 'status' => 500 )
+			);
+		}
+	}
+
+	/**
+	 * Look up game by name or ID.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function lookup_game( \WP_REST_Request $request ) {
+		$query  = $request->get_param( 'q' );
+		$source = $request->get_param( 'source' );
+		$type   = $request->get_param( 'type' );
+		$id     = $request->get_param( 'id' );
+
+		try {
+			// Handle direct ID lookup.
+			if ( ! empty( $id ) ) {
+				if ( 'rawg' === $source ) {
+					$api = new RAWG();
+					if ( ! $api->is_configured() ) {
+						return new \WP_Error(
+							'api_not_configured',
+							__( 'RAWG API is not configured. Add your API key in Settings > API Connections.', 'reactions-for-indieweb' ),
+							array( 'status' => 400 )
+						);
+					}
+					$result = $api->get_by_id( $id );
+				} else {
+					$api    = new BoardGameGeek();
+					$result = $api->get_by_id( $id );
+					if ( $result ) {
+						$result = $api->normalize_result( $result );
+					}
+				}
+
+				if ( ! $result ) {
+					return new \WP_Error(
+						'game_not_found',
+						__( 'Game not found.', 'reactions-for-indieweb' ),
+						array( 'status' => 404 )
+					);
+				}
+
+				return rest_ensure_response( $result );
+			}
+
+			// Search for games.
+			if ( 'rawg' === $source ) {
+				$api = new RAWG();
+				if ( ! $api->is_configured() ) {
+					return new \WP_Error(
+						'api_not_configured',
+						__( 'RAWG API is not configured. Add your API key in Settings > API Connections.', 'reactions-for-indieweb' ),
+						array( 'status' => 400 )
+					);
+				}
+				$results = $api->search( $query );
+			} else {
+				$api     = new BoardGameGeek();
+				$results = $api->search( $query, $type );
+
+				// Normalize search results.
+				$results = array_map(
+					function( $item ) use ( $api ) {
+						return array(
+							'id'     => $item['id'],
+							'title'  => $item['name'],
+							'year'   => $item['year'],
+							'type'   => $item['type'],
+							'source' => 'bgg',
+						);
+					},
+					$results
+				);
+			}
 
 			return rest_ensure_response( $results );
 		} catch ( \Exception $e ) {

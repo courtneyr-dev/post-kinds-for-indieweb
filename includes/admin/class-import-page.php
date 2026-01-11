@@ -63,6 +63,10 @@ class Import_Page {
      * @return array<string, array<string, mixed>>
      */
     private function get_import_sources(): array {
+        // Get stored credentials for auto-filling usernames.
+        $credentials = get_option( 'reactions_indieweb_api_credentials', array() );
+        $lastfm_username = $credentials['lastfm']['username'] ?? '';
+
         return array(
             'listenbrainz' => array(
                 'name'        => 'ListenBrainz',
@@ -97,7 +101,8 @@ class Import_Page {
                     'username' => array(
                         'label'    => __( 'Last.fm Username', 'reactions-for-indieweb' ),
                         'type'     => 'text',
-                        'required' => true,
+                        'required' => empty( $lastfm_username ),
+                        'default'  => $lastfm_username,
                     ),
                     'date_from' => array(
                         'label' => __( 'From Date', 'reactions-for-indieweb' ),
@@ -845,6 +850,25 @@ class Import_Page {
                         $message_parts[] = sprintf( __( '%d failed', 'reactions-for-indieweb' ), $job_status['failed'] );
                     }
 
+                    // If nothing was processed and there are errors, show the first error.
+                    $errors = $job_status['errors'] ?? array();
+                    if ( empty( $message_parts ) && ! empty( $errors ) ) {
+                        wp_send_json_error( array( 'message' => $errors[0] ) );
+                    }
+
+                    // If nothing was processed and no errors, show a helpful message.
+                    if ( empty( $message_parts ) ) {
+                        wp_send_json_success( array(
+                            'import_id' => $job_id,
+                            'message'   => __( 'Import completed but no new items were found.', 'reactions-for-indieweb' ),
+                            'imported'  => 0,
+                            'updated'   => 0,
+                            'skipped'   => 0,
+                            'failed'    => 0,
+                            'errors'    => $errors,
+                        ) );
+                    }
+
                     wp_send_json_success( array(
                         'import_id' => $job_id,
                         'message'   => sprintf(
@@ -856,7 +880,7 @@ class Import_Page {
                         'updated'   => $updated_count,
                         'skipped'   => $job_status['skipped'] ?? 0,
                         'failed'    => $job_status['failed'] ?? 0,
-                        'errors'    => $job_status['errors'] ?? array(),
+                        'errors'    => $errors,
                     ) );
                 }
 
@@ -1349,7 +1373,10 @@ class Import_Page {
 
         // Convert publish_immediately to post_status.
         // Default to 'draft' for safety.
-        if ( ! empty( $sanitized['publish_immediately'] ) ) {
+        // Note: JavaScript sends boolean false as string "false" via AJAX,
+        // so we need to check for truthy values, not just !empty().
+        $publish = $sanitized['publish_immediately'] ?? false;
+        if ( true === $publish || '1' === $publish || 'true' === $publish ) {
             $sanitized['post_status'] = 'publish';
         } else {
             $sanitized['post_status'] = 'draft';

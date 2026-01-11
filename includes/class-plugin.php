@@ -147,6 +147,13 @@ final class Plugin {
 	private ?Scheduled_Sync $scheduled_sync = null;
 
 	/**
+	 * WP Recipe Maker integration instance.
+	 *
+	 * @var Integrations\WP_Recipe_Maker|null
+	 */
+	private ?Integrations\WP_Recipe_Maker $wprm_integration = null;
+
+	/**
 	 * Get the singleton instance.
 	 *
 	 * @return Plugin The singleton instance.
@@ -350,6 +357,30 @@ final class Plugin {
 			$this->scheduled_sync = new Scheduled_Sync( $this->import_manager );
 			$this->scheduled_sync->init();
 		}
+
+		// Initialize third-party integrations.
+		$this->init_integrations();
+	}
+
+	/**
+	 * Initialize third-party plugin integrations.
+	 *
+	 * @return void
+	 */
+	private function init_integrations(): void {
+		// WP Recipe Maker integration.
+		if ( class_exists( __NAMESPACE__ . '\\Integrations\\WP_Recipe_Maker' ) ) {
+			$this->wprm_integration = new Integrations\WP_Recipe_Maker();
+		}
+
+		/**
+		 * Fires after third-party integrations are initialized.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param Plugin $plugin Plugin instance.
+		 */
+		do_action( 'reactions_indieweb_integrations_init', $this );
 	}
 
 	/**
@@ -646,16 +677,23 @@ final class Plugin {
 			\REACTIONS_INDIEWEB_PATH . 'languages'
 		);
 
-		// Pass data to JavaScript.
-		wp_localize_script(
+		// Get syndication services data.
+		$syndication_services = $this->get_available_syndication_services();
+
+		// Data to pass to JavaScript.
+		$localize_data = array(
+			'indieBlocksActive'   => $this->indieblocks_active,
+			'restUrl'             => rest_url( 'reactions-indieweb/v1/' ),
+			'nonce'               => wp_create_nonce( 'wp_rest' ),
+			'syndicationServices' => $syndication_services,
+		);
+
+		// Pass data to JavaScript using wp_add_inline_script for more reliable delivery.
+		// Use a unique name to avoid conflicts with admin.js which also uses reactionsIndieWeb.
+		wp_add_inline_script(
 			'reactions-indieweb-editor',
-			'reactionsIndieWeb',
-			array(
-				'indieBlocksActive'     => $this->indieblocks_active,
-				'restUrl'               => rest_url( 'reactions-indieweb/v1/' ),
-				'nonce'                 => wp_create_nonce( 'wp_rest' ),
-				'syndicationServices'   => $this->get_available_syndication_services(),
-			)
+			'window.reactionsIndieWebEditor = ' . wp_json_encode( $localize_data ) . ';',
+			'before'
 		);
 
 		// Enqueue editor styles if they exist.
@@ -940,37 +978,49 @@ final class Plugin {
 	 * @return array<string, array<string, mixed>> Array of service info.
 	 */
 	private function get_available_syndication_services(): array {
-		$services = array();
-		$settings = get_option( 'reactions_indieweb_settings', array() );
+		$services    = array();
+		$settings    = get_option( 'reactions_indieweb_settings', array() );
+		$credentials = get_option( 'reactions_indieweb_api_credentials', array() );
 
 		// Check Last.fm for listen posts.
 		if ( ! empty( $settings['listen_sync_to_lastfm'] ) ) {
-			$credentials = get_option( 'reactions_indieweb_api_credentials', array() );
-			$lastfm      = $credentials['lastfm'] ?? array();
+			$lastfm = $credentials['lastfm'] ?? array();
 
-			if ( ! empty( $lastfm['session_key'] ) ) {
-				$services['lastfm'] = array(
-					'name'      => 'Last.fm',
-					'kind'      => 'listen',
-					'metaKey'   => '_reactions_syndicate_lastfm',
-					'connected' => true,
-				);
-			}
+			// Include service if enabled, even if not fully connected.
+			// This allows showing a helpful message in the editor.
+			$services['lastfm'] = array(
+				'name'      => 'Last.fm',
+				'kind'      => 'listen',
+				'metaKey'   => '_reactions_syndicate_lastfm',
+				'connected' => ! empty( $lastfm['session_key'] ),
+				'needsAuth' => empty( $lastfm['session_key'] ),
+			);
 		}
 
 		// Check Trakt for watch posts.
 		if ( ! empty( $settings['watch_sync_to_trakt'] ) ) {
-			$credentials = get_option( 'reactions_indieweb_api_credentials', array() );
-			$trakt       = $credentials['trakt'] ?? array();
+			$trakt = $credentials['trakt'] ?? array();
 
-			if ( ! empty( $trakt['access_token'] ) ) {
-				$services['trakt'] = array(
-					'name'      => 'Trakt',
-					'kind'      => 'watch',
-					'metaKey'   => '_reactions_syndicate_trakt',
-					'connected' => true,
-				);
-			}
+			$services['trakt'] = array(
+				'name'      => 'Trakt',
+				'kind'      => 'watch',
+				'metaKey'   => '_reactions_syndicate_trakt',
+				'connected' => ! empty( $trakt['access_token'] ),
+				'needsAuth' => empty( $trakt['access_token'] ),
+			);
+		}
+
+		// Check Foursquare for checkin posts.
+		if ( ! empty( $settings['checkin_sync_to_foursquare'] ) ) {
+			$foursquare = $credentials['foursquare'] ?? array();
+
+			$services['foursquare'] = array(
+				'name'      => 'Foursquare',
+				'kind'      => 'checkin',
+				'metaKey'   => '_reactions_syndicate_foursquare',
+				'connected' => ! empty( $foursquare['access_token'] ),
+				'needsAuth' => empty( $foursquare['access_token'] ),
+			);
 		}
 
 		/**

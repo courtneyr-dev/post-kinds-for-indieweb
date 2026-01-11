@@ -949,6 +949,87 @@ class LastFM extends API_Base {
 	}
 
 	/**
+	 * Check if authenticated (has session key).
+	 *
+	 * @return bool
+	 */
+	public function is_authenticated(): bool {
+		return ! empty( $this->session_key );
+	}
+
+	/**
+	 * Get authentication URL for Last.fm.
+	 *
+	 * Users must visit this URL to authorize the application.
+	 *
+	 * @param string $callback_url URL to redirect to after auth.
+	 * @return string|null Auth URL or null if not configured.
+	 */
+	public function get_auth_url( string $callback_url ): ?string {
+		if ( empty( $this->api_key ) ) {
+			return null;
+		}
+
+		return add_query_arg(
+			array(
+				'api_key' => $this->api_key,
+				'cb'      => $callback_url,
+			),
+			'https://www.last.fm/api/auth/'
+		);
+	}
+
+	/**
+	 * Exchange auth token for session key.
+	 *
+	 * Called after user authorizes at Last.fm and is redirected back with a token.
+	 *
+	 * @param string $token Auth token from callback.
+	 * @return array{session_key: string, username: string}|null Session data or null on failure.
+	 */
+	public function get_session( string $token ): ?array {
+		if ( empty( $this->api_key ) || empty( $this->api_secret ) ) {
+			return null;
+		}
+
+		try {
+			$params = array(
+				'method'  => 'auth.getSession',
+				'api_key' => $this->api_key,
+				'token'   => $token,
+			);
+
+			$params['api_sig'] = $this->generate_signature( $params );
+			$params['format']  = 'json';
+
+			$response = wp_remote_get(
+				add_query_arg( $params, 'https://ws.audioscrobbler.com/2.0/' ),
+				array( 'timeout' => 30 )
+			);
+
+			if ( is_wp_error( $response ) ) {
+				$this->log_error( 'Get session failed', array( 'error' => $response->get_error_message() ) );
+				return null;
+			}
+
+			$body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+			if ( isset( $body['session']['key'] ) ) {
+				return array(
+					'session_key' => $body['session']['key'],
+					'username'    => $body['session']['name'] ?? '',
+				);
+			}
+
+			$this->log_error( 'Get session failed', array( 'response' => $body ) );
+			return null;
+		} catch ( \Exception $e ) {
+			$this->log_error( 'Get session exception', array( 'error' => $e->getMessage() ) );
+			return null;
+		}
+	}
+
+	/**
 	 * Get API documentation URL.
 	 *
 	 * @return string

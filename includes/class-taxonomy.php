@@ -106,6 +106,42 @@ class Taxonomy {
 			'name'        => 'Review',
 			'description' => 'Rating and evaluation of an item, place, or service.',
 		),
+		'favorite' => array(
+			'name'        => 'Favorite',
+			'description' => 'Starred or saved item for later reference.',
+		),
+		'jam'      => array(
+			'name'        => 'Jam',
+			'description' => 'Current music highlight - "this is my jam right now."',
+		),
+		'wish'     => array(
+			'name'        => 'Wish',
+			'description' => 'Wishlist item you want to read, watch, buy, or experience.',
+		),
+		'mood'     => array(
+			'name'        => 'Mood',
+			'description' => 'Emotional state or feeling.',
+		),
+		'acquisition' => array(
+			'name'        => 'Acquisition',
+			'description' => 'Item you acquired or added to your collection.',
+		),
+		'drink'    => array(
+			'name'        => 'Drink',
+			'description' => 'Beverage log - coffee, beer, wine, cocktails.',
+		),
+		'eat'      => array(
+			'name'        => 'Eat',
+			'description' => 'Food or meal log.',
+		),
+		'recipe'   => array(
+			'name'        => 'Recipe',
+			'description' => 'Food recipe with ingredients and instructions.',
+		),
+		'play'     => array(
+			'name'        => 'Play',
+			'description' => 'Video game, board game, or other game play log.',
+		),
 	);
 
 	/**

@@ -184,6 +184,9 @@
 
             // OAuth disconnect
             $(document).on('click', '.oauth-disconnect', this.disconnectOAuth);
+
+            // Last.fm disconnect
+            $(document).on('click', '.lastfm-disconnect', this.disconnectLastfm);
         },
 
         /**
@@ -219,11 +222,18 @@
                             .removeClass('connected disabled')
                             .addClass('error')
                             .text('Not Connected');
-                        alert(reactionsIndieWeb.strings.testFailed + response.data.message);
+                        alert(reactionsIndieWeb.strings.testFailed + (response.data?.message || 'Unknown error'));
                     }
                 },
-                error: function() {
-                    alert(reactionsIndieWeb.strings.error);
+                error: function(xhr, status, error) {
+                    let errorMsg = reactionsIndieWeb.strings.error;
+                    if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
+                        errorMsg = reactionsIndieWeb.strings.testFailed + xhr.responseJSON.data.message;
+                    } else if (xhr.responseText) {
+                        // Try to show a snippet of the response for debugging.
+                        errorMsg = 'Server error: ' + xhr.responseText.substring(0, 200);
+                    }
+                    alert(errorMsg);
                 },
                 complete: function() {
                     $button.prop('disabled', false).html('<span class="dashicons dashicons-update"></span> Test Connection');
@@ -297,6 +307,21 @@
 
             $section.find('.oauth-access-token').val('');
             $section.find('.oauth-refresh-token').val('');
+            $section.closest('form').submit();
+        },
+
+        /**
+         * Disconnect Last.fm
+         */
+        disconnectLastfm: function(e) {
+            e.preventDefault();
+            const $section = $(this).closest('.lastfm-auth-section');
+
+            if (!confirm('Are you sure you want to disconnect from Last.fm?')) {
+                return;
+            }
+
+            $section.find('.lastfm-session-key').val('');
             $section.closest('form').submit();
         },
 
@@ -408,6 +433,11 @@
 
                 if ($input.is(':checkbox')) {
                     options[optionName] = $input.is(':checked');
+                } else if ($input.is(':radio')) {
+                    // Only include radio value if it's checked.
+                    if ($input.is(':checked')) {
+                        options[optionName] = $input.val();
+                    }
                 } else {
                     options[optionName] = $input.val();
                 }

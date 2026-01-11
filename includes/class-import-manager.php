@@ -338,6 +338,23 @@ class Import_Manager {
 
 			$this->save_job( $job_id, $job );
 
+			// Check if we've reached the requested limit.
+			$limit = $job['options']['limit'] ?? 0;
+			$total_processed = $job['imported'] + $job['updated'] + $job['skipped'] + $job['failed'];
+
+			if ( $limit > 0 && $total_processed >= $limit ) {
+				// Reached the limit, mark as completed.
+				$this->update_job(
+					$job_id,
+					array(
+						'status'       => 'completed',
+						'completed_at' => time(),
+						'progress'     => 100,
+					)
+				);
+				return;
+			}
+
 			// Schedule next batch if more items.
 			if ( $batch['has_more'] ?? false ) {
 				wp_schedule_single_event( time() + 2, 'reactions_indieweb_process_import', array( $job_id, $source ) );
@@ -386,6 +403,24 @@ class Import_Manager {
 		$cursor = $job['cursor'];
 		$source = $job['source'] ?? '';
 
+		// Calculate batch size respecting import limit and global settings.
+		$settings = get_option( 'reactions_indieweb_settings', array() );
+		$global_batch_size = (int) ( $settings['batch_size'] ?? 0 );
+		$source_batch_size = $source_config['batch_size'];
+
+		// Use global setting if set, otherwise use source-specific batch size.
+		$base_batch_size = $global_batch_size > 0 ? min( $global_batch_size, $source_batch_size ) : $source_batch_size;
+
+		$limit = $options['limit'] ?? 0;
+		$total_processed = ( $job['imported'] ?? 0 ) + ( $job['updated'] ?? 0 ) + ( $job['skipped'] ?? 0 ) + ( $job['failed'] ?? 0 );
+
+		if ( $limit > 0 ) {
+			$remaining = $limit - $total_processed;
+			$batch_size = min( $base_batch_size, max( 1, $remaining ) );
+		} else {
+			$batch_size = $base_batch_size;
+		}
+
 		// Get sync start date from options or settings.
 		$date_from = $options['date_from'] ?? null;
 		if ( ! $date_from ) {
@@ -399,10 +434,10 @@ class Import_Manager {
 				$max_ts   = $cursor ? (int) $cursor : 0;
 				// Apply min_ts from sync start date.
 				$min_ts   = $date_from ? (int) strtotime( $date_from ) : 0;
-				$result   = $api->$method( $username, $source_config['batch_size'], $max_ts, $min_ts );
+				$result   = $api->$method( $username, $batch_size, $max_ts, $min_ts );
 
 				// Stop if we've gone past the min_ts cutoff.
-				$has_more = count( $result ) >= $source_config['batch_size'];
+				$has_more = count( $result ) >= $batch_size;
 				$new_cursor = ! empty( $result ) ? end( $result )['listened_at'] : null;
 
 				// If min_ts is set and new_cursor is before it, stop pagination.
@@ -419,7 +454,7 @@ class Import_Manager {
 			case APIs\LastFM::class:
 				$username = $options['username'] ?? '';
 				$page     = $cursor ? (int) $cursor : 1;
-				$result   = $api->$method( $username, $source_config['batch_size'], $page );
+				$result   = $api->$method( $username, $batch_size, $page );
 
 				return array(
 					'items'    => $result['tracks'] ?? array(),
@@ -430,11 +465,11 @@ class Import_Manager {
 			case APIs\Trakt::class:
 				$type  = $args[0] ?? 'movies';
 				$page  = $cursor ? (int) $cursor : 1;
-				$result = $api->$method( $type, $page, $source_config['batch_size'] );
+				$result = $api->$method( $type, $page, $batch_size );
 
 				return array(
 					'items'    => $result['items'] ?? array(),
-					'has_more' => count( $result['items'] ?? array() ) >= $source_config['batch_size'],
+					'has_more' => count( $result['items'] ?? array() ) >= $batch_size,
 					'cursor'   => $page + 1,
 				);
 
@@ -979,13 +1014,36 @@ class Import_Manager {
 					$artist = $item['artist'] ?? '';
 					$album  = $item['album'] ?? '';
 
-					$post_data['post_title']   = sprintf( 'Listened to %s', $track );
-					$post_data['post_content'] = sprintf( '<!-- wp:paragraph --><p>Listened to "%s" by %s.</p><!-- /wp:paragraph -->', esc_html( $track ), esc_html( $artist ) );
+					$post_data['post_title'] = sprintf( 'Listened to %s', $track );
+
+					// Build post content with optional embed.
+					$content_parts = array();
+					$content_parts[] = sprintf( '<!-- wp:paragraph --><p>Listened to "%s" by %s.</p><!-- /wp:paragraph -->', esc_html( $track ), esc_html( $artist ) );
+
+					// Get embed preference and generate embed if configured.
+					$settings     = get_option( 'reactions_indieweb_settings', array() );
+					$embed_source = $settings['listen_embed_source'] ?? 'none';
+					$embed_url    = '';
+
+					if ( 'none' !== $embed_source ) {
+						$embed_block = $this->get_music_embed_block( $embed_source, $track, $artist, $album );
+
+						if ( $embed_block ) {
+							$content_parts[] = $embed_block;
+							// Store the embed URL in meta for reference.
+							$embed_url = $this->get_music_service_url( $embed_source, $track, $artist, $album );
+						}
+					}
+
+					$post_data['post_content'] = implode( "\n\n", $content_parts );
 
 					if ( isset( $item['listened_at'] ) ) {
 						$post_data['post_date']     = gmdate( 'Y-m-d H:i:s', $item['listened_at'] );
 						$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', $item['listened_at'] );
 					}
+
+					// Set audio post format for music tracks.
+					$post_format = 'audio';
 
 					// Citation fields for Post Kind editor.
 					$meta['_reactions_cite_name']   = $track;
@@ -997,6 +1055,7 @@ class Import_Manager {
 					$meta['_reactions_listen_album']  = $album;
 					$meta['_reactions_listen_cover']  = $item['cover'] ?? '';
 					$meta['_reactions_listen_mbid']   = $item['mbid'] ?? '';
+					$meta['_reactions_listen_url']    = $embed_url;
 				}
 				break;
 
@@ -1625,5 +1684,169 @@ class Import_Manager {
 		// Mark as re-synced but no API lookup needed.
 		update_post_meta( $post->ID, '_reactions_resynced_at', time() );
 		return true;
+	}
+
+	/**
+	 * Get a music service URL for embedding.
+	 *
+	 * Generates a search URL for the specified music service.
+	 * Note: Search URLs generally don't embed - use get_music_embed_block() for embeds.
+	 *
+	 * @param string $service Service identifier (spotify, apple_music, youtube, etc.).
+	 * @param string $track   Track name.
+	 * @param string $artist  Artist name.
+	 * @param string $album   Album name (optional).
+	 * @return string URL for the music service, or empty string if not supported.
+	 */
+	private function get_music_service_url( string $service, string $track, string $artist, string $album = '' ): string {
+		if ( empty( $track ) || empty( $artist ) ) {
+			return '';
+		}
+
+		// Build a search query.
+		$search_query = $track . ' ' . $artist;
+
+		switch ( $service ) {
+			case 'spotify':
+				// Spotify search URL.
+				return 'https://open.spotify.com/search/' . rawurlencode( $search_query );
+
+			case 'apple_music':
+				// Apple Music search URL.
+				return 'https://music.apple.com/us/search?term=' . rawurlencode( $search_query );
+
+			case 'youtube':
+				// YouTube search URL.
+				return 'https://www.youtube.com/results?search_query=' . rawurlencode( $search_query );
+
+			case 'bandcamp':
+				// Bandcamp search URL.
+				return 'https://bandcamp.com/search?q=' . rawurlencode( $search_query );
+
+			case 'soundcloud':
+				// SoundCloud search URL.
+				return 'https://soundcloud.com/search?q=' . rawurlencode( $search_query );
+
+			default:
+				return '';
+		}
+	}
+
+	/**
+	 * Get a music embed block for the specified service.
+	 *
+	 * Generates proper WordPress embed blocks using service-specific block types.
+	 * Since we don't have direct track IDs, we generate search links that users
+	 * can later replace with direct track URLs for proper embedding.
+	 *
+	 * @param string $service Service identifier (spotify, apple_music, youtube, etc.).
+	 * @param string $track   Track name.
+	 * @param string $artist  Artist name.
+	 * @param string $album   Album name (optional).
+	 * @return string WordPress block markup, or empty string if not supported.
+	 */
+	private function get_music_embed_block( string $service, string $track, string $artist, string $album = '' ): string {
+		if ( empty( $track ) || empty( $artist ) ) {
+			return '';
+		}
+
+		$search_query = $track . ' ' . $artist;
+
+		switch ( $service ) {
+			case 'spotify':
+				// Use the Spotify embed block with a search link.
+				// WordPress will recognize this as a Spotify embed when the URL is a track/album URL.
+				// For search URLs, it creates a clickable link that users can replace.
+				$url = 'https://open.spotify.com/search/' . rawurlencode( $search_query );
+				return sprintf(
+					'<!-- wp:embed {"url":"%s","type":"rich","providerNameSlug":"spotify","responsive":true,"className":"wp-embed-aspect-21-9 wp-has-aspect-ratio"} -->' .
+					'<figure class="wp-block-embed is-type-rich is-provider-spotify wp-block-embed-spotify wp-embed-aspect-21-9 wp-has-aspect-ratio">' .
+					'<div class="wp-block-embed__wrapper">' .
+					'<a href="%s">🎵 Find "%s" by %s on Spotify</a>' .
+					'</div>' .
+					'<figcaption class="wp-element-caption">Replace this link with a Spotify track URL for an embedded player</figcaption>' .
+					'</figure>' .
+					'<!-- /wp:embed -->',
+					esc_url( $url ),
+					esc_url( $url ),
+					esc_html( $track ),
+					esc_html( $artist )
+				);
+
+			case 'apple_music':
+				// Apple Music embed - requires direct track URL for embedding.
+				$url = 'https://music.apple.com/us/search?term=' . rawurlencode( $search_query );
+				return sprintf(
+					'<!-- wp:embed {"url":"%s","type":"rich","providerNameSlug":"apple-music","responsive":true} -->' .
+					'<figure class="wp-block-embed is-type-rich is-provider-apple-music wp-block-embed-apple-music">' .
+					'<div class="wp-block-embed__wrapper">' .
+					'<a href="%s">🎵 Find "%s" by %s on Apple Music</a>' .
+					'</div>' .
+					'<figcaption class="wp-element-caption">Replace this link with an Apple Music track URL for an embedded player</figcaption>' .
+					'</figure>' .
+					'<!-- /wp:embed -->',
+					esc_url( $url ),
+					esc_url( $url ),
+					esc_html( $track ),
+					esc_html( $artist )
+				);
+
+			case 'youtube':
+				// YouTube embed - search URL won't embed, but direct video URLs will.
+				$url = 'https://www.youtube.com/results?search_query=' . rawurlencode( $search_query . ' official audio' );
+				return sprintf(
+					'<!-- wp:embed {"url":"%s","type":"video","providerNameSlug":"youtube","responsive":true,"className":"wp-embed-aspect-16-9 wp-has-aspect-ratio"} -->' .
+					'<figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube wp-embed-aspect-16-9 wp-has-aspect-ratio">' .
+					'<div class="wp-block-embed__wrapper">' .
+					'<a href="%s">🎵 Find "%s" by %s on YouTube</a>' .
+					'</div>' .
+					'<figcaption class="wp-element-caption">Replace this link with a YouTube video URL for an embedded player</figcaption>' .
+					'</figure>' .
+					'<!-- /wp:embed -->',
+					esc_url( $url ),
+					esc_url( $url ),
+					esc_html( $track ),
+					esc_html( $artist )
+				);
+
+			case 'bandcamp':
+				// Bandcamp - search URL provided, user can replace with track URL.
+				$url = 'https://bandcamp.com/search?q=' . rawurlencode( $search_query );
+				return sprintf(
+					'<!-- wp:embed {"url":"%s","type":"rich","providerNameSlug":"bandcamp","responsive":true} -->' .
+					'<figure class="wp-block-embed is-type-rich is-provider-bandcamp wp-block-embed-bandcamp">' .
+					'<div class="wp-block-embed__wrapper">' .
+					'<a href="%s">🎵 Find "%s" by %s on Bandcamp</a>' .
+					'</div>' .
+					'<figcaption class="wp-element-caption">Replace this link with a Bandcamp track URL for an embedded player</figcaption>' .
+					'</figure>' .
+					'<!-- /wp:embed -->',
+					esc_url( $url ),
+					esc_url( $url ),
+					esc_html( $track ),
+					esc_html( $artist )
+				);
+
+			case 'soundcloud':
+				// SoundCloud embed.
+				$url = 'https://soundcloud.com/search?q=' . rawurlencode( $search_query );
+				return sprintf(
+					'<!-- wp:embed {"url":"%s","type":"rich","providerNameSlug":"soundcloud","responsive":true,"className":"wp-embed-aspect-16-9 wp-has-aspect-ratio"} -->' .
+					'<figure class="wp-block-embed is-type-rich is-provider-soundcloud wp-block-embed-soundcloud wp-embed-aspect-16-9 wp-has-aspect-ratio">' .
+					'<div class="wp-block-embed__wrapper">' .
+					'<a href="%s">🎵 Find "%s" by %s on SoundCloud</a>' .
+					'</div>' .
+					'<figcaption class="wp-element-caption">Replace this link with a SoundCloud track URL for an embedded player</figcaption>' .
+					'</figure>' .
+					'<!-- /wp:embed -->',
+					esc_url( $url ),
+					esc_url( $url ),
+					esc_html( $track ),
+					esc_html( $artist )
+				);
+
+			default:
+				return '';
+		}
 	}
 }

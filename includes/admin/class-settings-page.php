@@ -126,6 +126,16 @@ class Settings_Page {
         );
 
         $this->add_performance_fields();
+
+        // Integrations section.
+        add_settings_section(
+            'reactions_indieweb_integrations_section',
+            __( 'Third-Party Integrations', 'reactions-for-indieweb' ),
+            array( $this, 'render_integrations_section' ),
+            'reactions_indieweb_integrations'
+        );
+
+        $this->add_integrations_fields();
     }
 
     /**
@@ -338,6 +348,26 @@ class Settings_Page {
                     'lastfm'       => 'Last.fm',
                 ),
                 'desc'    => __( 'Primary source for importing music/scrobble history.', 'reactions-for-indieweb' ),
+            )
+        );
+
+        add_settings_field(
+            'listen_embed_source',
+            __( 'Embed Player', 'reactions-for-indieweb' ),
+            array( $this, 'render_select_field' ),
+            'reactions_indieweb_listen',
+            'reactions_indieweb_listen_section',
+            array(
+                'id'      => 'listen_embed_source',
+                'options' => array(
+                    'none'        => __( 'None (no embed)', 'reactions-for-indieweb' ),
+                    'spotify'     => __( 'Spotify', 'reactions-for-indieweb' ),
+                    'apple_music' => __( 'Apple Music', 'reactions-for-indieweb' ),
+                    'youtube'     => __( 'YouTube Music', 'reactions-for-indieweb' ),
+                    'bandcamp'    => __( 'Bandcamp', 'reactions-for-indieweb' ),
+                    'soundcloud'  => __( 'SoundCloud', 'reactions-for-indieweb' ),
+                ),
+                'desc'    => __( 'Preferred music service for embedding players in listen posts. The plugin will search for and embed tracks from this service when importing.', 'reactions-for-indieweb' ),
             )
         );
 
@@ -656,8 +686,27 @@ class Settings_Page {
                 'id'   => 'batch_size',
                 'min'  => 1,
                 'max'  => 500,
-                'step' => 10,
+                'step' => 1,
                 'desc' => __( 'Number of items to process per batch during imports.', 'reactions-for-indieweb' ),
+            )
+        );
+    }
+
+    /**
+     * Add integrations settings fields.
+     *
+     * @return void
+     */
+    private function add_integrations_fields(): void {
+        // WP Recipe Maker integration.
+        add_settings_field(
+            'wprm_auto_kind',
+            __( 'WP Recipe Maker', 'reactions-for-indieweb' ),
+            array( $this, 'render_wprm_integration_field' ),
+            'reactions_indieweb_integrations',
+            'reactions_indieweb_integrations_section',
+            array(
+                'id' => 'wprm_auto_kind',
             )
         );
     }
@@ -706,6 +755,9 @@ class Settings_Page {
                     case 'checkin':
                         $this->render_checkin_tab();
                         break;
+                    case 'integrations':
+                        $this->render_integrations_tab();
+                        break;
                     case 'performance':
                         $this->render_performance_tab();
                         break;
@@ -730,14 +782,15 @@ class Settings_Page {
      */
     private function render_tabs(): void {
         $tabs = array(
-            'general'     => __( 'General', 'reactions-for-indieweb' ),
-            'content'     => __( 'Content', 'reactions-for-indieweb' ),
-            'listen'      => __( 'Listen', 'reactions-for-indieweb' ),
-            'watch'       => __( 'Watch', 'reactions-for-indieweb' ),
-            'read'        => __( 'Read', 'reactions-for-indieweb' ),
-            'checkin'     => __( 'Checkin', 'reactions-for-indieweb' ),
-            'performance' => __( 'Performance', 'reactions-for-indieweb' ),
-            'tools'       => __( 'Tools', 'reactions-for-indieweb' ),
+            'general'      => __( 'General', 'reactions-for-indieweb' ),
+            'content'      => __( 'Content', 'reactions-for-indieweb' ),
+            'listen'       => __( 'Listen', 'reactions-for-indieweb' ),
+            'watch'        => __( 'Watch', 'reactions-for-indieweb' ),
+            'read'         => __( 'Read', 'reactions-for-indieweb' ),
+            'checkin'      => __( 'Checkin', 'reactions-for-indieweb' ),
+            'integrations' => __( 'Integrations', 'reactions-for-indieweb' ),
+            'performance'  => __( 'Performance', 'reactions-for-indieweb' ),
+            'tools'        => __( 'Tools', 'reactions-for-indieweb' ),
         );
 
         foreach ( $tabs as $slug => $label ) {
@@ -815,11 +868,21 @@ class Settings_Page {
     }
 
     /**
+     * Render integrations section description.
+     *
+     * @return void
+     */
+    public function render_integrations_section(): void {
+        echo '<p>' . esc_html__( 'Configure integration with third-party WordPress plugins.', 'reactions-for-indieweb' ) . '</p>';
+    }
+
+    /**
      * Render general tab content.
      *
      * @return void
      */
     private function render_general_tab(): void {
+        echo '<input type="hidden" name="reactions_indieweb_settings[_active_tab]" value="general">';
         do_settings_sections( 'reactions_indieweb_general' );
     }
 
@@ -829,6 +892,7 @@ class Settings_Page {
      * @return void
      */
     private function render_content_tab(): void {
+        echo '<input type="hidden" name="reactions_indieweb_settings[_active_tab]" value="content">';
         do_settings_sections( 'reactions_indieweb_content' );
     }
 
@@ -838,6 +902,7 @@ class Settings_Page {
      * @return void
      */
     private function render_listen_tab(): void {
+        echo '<input type="hidden" name="reactions_indieweb_settings[_active_tab]" value="listen">';
         do_settings_sections( 'reactions_indieweb_listen' );
     }
 
@@ -847,6 +912,7 @@ class Settings_Page {
      * @return void
      */
     private function render_watch_tab(): void {
+        echo '<input type="hidden" name="reactions_indieweb_settings[_active_tab]" value="watch">';
         do_settings_sections( 'reactions_indieweb_watch' );
     }
 
@@ -856,6 +922,7 @@ class Settings_Page {
      * @return void
      */
     private function render_read_tab(): void {
+        echo '<input type="hidden" name="reactions_indieweb_settings[_active_tab]" value="read">';
         do_settings_sections( 'reactions_indieweb_read' );
     }
 
@@ -865,6 +932,7 @@ class Settings_Page {
      * @return void
      */
     private function render_checkin_tab(): void {
+        echo '<input type="hidden" name="reactions_indieweb_settings[_active_tab]" value="checkin">';
         do_settings_sections( 'reactions_indieweb_checkin' );
     }
 
@@ -874,7 +942,18 @@ class Settings_Page {
      * @return void
      */
     private function render_performance_tab(): void {
+        echo '<input type="hidden" name="reactions_indieweb_settings[_active_tab]" value="performance">';
         do_settings_sections( 'reactions_indieweb_performance' );
+    }
+
+    /**
+     * Render integrations tab content.
+     *
+     * @return void
+     */
+    private function render_integrations_tab(): void {
+        echo '<input type="hidden" name="reactions_indieweb_settings[_active_tab]" value="integrations">';
+        do_settings_sections( 'reactions_indieweb_integrations' );
     }
 
     /**
@@ -1917,5 +1996,65 @@ class Settings_Page {
             </style>
             <?php
         }
+    }
+
+    /**
+     * Render the WP Recipe Maker integration field.
+     *
+     * @param array<string, mixed> $args Field arguments.
+     * @return void
+     */
+    public function render_wprm_integration_field( array $args ): void {
+        $settings     = get_option( 'reactions_indieweb_settings', $this->admin->get_default_settings() );
+        $wprm_active  = class_exists( 'WPRM_Recipe_Manager' );
+        $auto_enabled = ! empty( $settings[ $args['id'] ] );
+
+        if ( ! $wprm_active ) {
+            ?>
+            <p class="description">
+                <span class="dashicons dashicons-warning" style="color: #d63638;"></span>
+                <?php
+                printf(
+                    /* translators: %s: plugin URL */
+                    esc_html__( 'WP Recipe Maker is not installed. %s to use this integration.', 'reactions-for-indieweb' ),
+                    '<a href="' . esc_url( admin_url( 'plugin-install.php?s=wp+recipe+maker&tab=search&type=term' ) ) . '">' . esc_html__( 'Install it', 'reactions-for-indieweb' ) . '</a>'
+                );
+                ?>
+            </p>
+            <?php
+            return;
+        }
+
+        ?>
+        <fieldset>
+            <label>
+                <input type="checkbox"
+                       name="reactions_indieweb_settings[<?php echo esc_attr( $args['id'] ); ?>]"
+                       id="<?php echo esc_attr( $args['id'] ); ?>"
+                       value="1"
+                       <?php checked( $auto_enabled ); ?>>
+                <?php esc_html_e( 'Auto-detect recipes and set Recipe kind', 'reactions-for-indieweb' ); ?>
+            </label>
+            <p class="description">
+                <?php esc_html_e( 'Automatically sets the "Recipe" post kind when a WP Recipe Maker recipe is detected in a post.', 'reactions-for-indieweb' ); ?>
+            </p>
+
+            <br>
+
+            <p>
+                <span class="dashicons dashicons-yes-alt" style="color: #00a32a;"></span>
+                <?php esc_html_e( 'WP Recipe Maker is active and ready.', 'reactions-for-indieweb' ); ?>
+            </p>
+
+            <p class="description">
+                <?php esc_html_e( 'When enabled, the plugin will:', 'reactions-for-indieweb' ); ?>
+            </p>
+            <ul style="list-style-type: disc; margin-left: 20px;">
+                <li><?php esc_html_e( 'Detect WPRM recipe blocks and shortcodes in posts', 'reactions-for-indieweb' ); ?></li>
+                <li><?php esc_html_e( 'Automatically assign the "Recipe" kind to posts containing recipes', 'reactions-for-indieweb' ); ?></li>
+                <li><?php esc_html_e( 'Sync recipe metadata (servings, prep time, cook time) to reaction fields', 'reactions-for-indieweb' ); ?></li>
+            </ul>
+        </fieldset>
+        <?php
     }
 }

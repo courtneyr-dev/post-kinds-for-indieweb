@@ -57,6 +57,7 @@ class API_Settings {
         add_action( 'admin_post_reactions_trakt_oauth', array( $this, 'handle_trakt_oauth_callback' ) );
         add_action( 'admin_post_reactions_simkl_oauth', array( $this, 'handle_simkl_oauth_callback' ) );
         add_action( 'admin_post_reactions_foursquare_oauth', array( $this, 'handle_foursquare_oauth_callback' ) );
+        add_action( 'admin_post_reactions_lastfm_oauth', array( $this, 'handle_lastfm_oauth_callback' ) );
         // Note: Untappd OAuth removed - API requires commercial agreement.
     }
 
@@ -70,11 +71,11 @@ class API_Settings {
             // Note: MusicBrainz and ListenBrainz removed - complicated setup and credential saving issues.
             'lastfm' => array(
                 'name'        => 'Last.fm',
-                'description' => __( 'Scrobble service and music database. Requires API account.', 'reactions-for-indieweb' ),
+                'description' => __( 'Scrobble service and music database. Requires API account and user authorization for scrobbling.', 'reactions-for-indieweb' ),
                 'category'    => 'music',
                 'docs_url'    => 'https://www.last.fm/api',
                 'signup_url'  => 'https://www.last.fm/api/account/create',
-                'auth_type'   => 'api_key_secret',
+                'auth_type'   => 'lastfm_oauth',
                 'fields'      => array(
                     'api_key' => array(
                         'label'    => __( 'API Key', 'reactions-for-indieweb' ),
@@ -90,6 +91,7 @@ class API_Settings {
                         'label'    => __( 'Username', 'reactions-for-indieweb' ),
                         'type'     => 'text',
                         'required' => false,
+                        'help'     => __( 'For importing scrobbles. Will be set automatically after authorization.', 'reactions-for-indieweb' ),
                     ),
                 ),
             ),
@@ -270,6 +272,30 @@ class API_Settings {
                     ),
                 ),
             ),
+            'bgg' => array(
+                'name'        => 'BoardGameGeek',
+                'description' => __( 'Board game and video game database. No API key required.', 'reactions-for-indieweb' ),
+                'category'    => 'games',
+                'docs_url'    => 'https://boardgamegeek.com/wiki/page/BGG_XML_API2',
+                'auth_type'   => 'none',
+                'fields'      => array(),
+            ),
+            'rawg' => array(
+                'name'        => 'RAWG',
+                'description' => __( 'Video game database with 500,000+ games. Free tier: 20,000 requests/month.', 'reactions-for-indieweb' ),
+                'category'    => 'games',
+                'docs_url'    => 'https://rawg.io/apidocs',
+                'signup_url'  => 'https://rawg.io/apidocs',
+                'auth_type'   => 'api_key',
+                'fields'      => array(
+                    'api_key' => array(
+                        'label'    => __( 'API Key', 'reactions-for-indieweb' ),
+                        'type'     => 'text',
+                        'required' => true,
+                        'help'     => __( 'Get your free API key from rawg.io/apidocs', 'reactions-for-indieweb' ),
+                    ),
+                ),
+            ),
             // Note: Untappd API requires a commercial agreement and is not available for personal use.
             // The sync class code remains in place in case API access becomes available in the future.
         );
@@ -313,6 +339,7 @@ class API_Settings {
             'music'       => __( 'Music', 'reactions-for-indieweb' ),
             'video'       => __( 'Movies & TV', 'reactions-for-indieweb' ),
             'books'       => __( 'Books', 'reactions-for-indieweb' ),
+            'games'       => __( 'Games', 'reactions-for-indieweb' ),
             'audio'       => __( 'Podcasts', 'reactions-for-indieweb' ),
             'location'    => __( 'Location', 'reactions-for-indieweb' ),
             'aggregators' => __( 'Aggregators', 'reactions-for-indieweb' ),
@@ -425,6 +452,10 @@ class API_Settings {
 
                 <?php if ( 'oauth' === $config['auth_type'] ) : ?>
                     <?php $this->render_oauth_section( $api_id, $config, $credentials ); ?>
+                <?php endif; ?>
+
+                <?php if ( 'lastfm_oauth' === $config['auth_type'] ) : ?>
+                    <?php $this->render_lastfm_auth_section( $api_id, $credentials ); ?>
                 <?php endif; ?>
             </div>
 
@@ -617,6 +648,81 @@ class API_Settings {
     }
 
     /**
+     * Render Last.fm authentication section.
+     *
+     * @param string               $api_id      API identifier.
+     * @param array<string, mixed> $credentials Saved credentials.
+     * @return void
+     */
+    private function render_lastfm_auth_section( string $api_id, array $credentials ): void {
+        $has_session   = ! empty( $credentials['session_key'] );
+        $username      = $credentials['username'] ?? '';
+        $has_api_key   = ! empty( $credentials['api_key'] ) && ! empty( $credentials['api_secret'] );
+        $callback_url  = admin_url( 'admin-post.php?action=reactions_lastfm_oauth' );
+
+        ?>
+        <div class="oauth-section lastfm-auth-section">
+            <h4><?php esc_html_e( 'Scrobbling Authorization', 'reactions-for-indieweb' ); ?></h4>
+
+            <?php if ( $has_session ) : ?>
+                <div class="oauth-connected">
+                    <span class="dashicons dashicons-yes-alt" style="color: #46b450;"></span>
+                    <?php esc_html_e( 'Authorized', 'reactions-for-indieweb' ); ?>
+
+                    <?php if ( $username ) : ?>
+                        <span class="oauth-username">
+                            <?php
+                            printf(
+                                /* translators: %s: Username */
+                                esc_html__( 'as %s', 'reactions-for-indieweb' ),
+                                esc_html( $username )
+                            );
+                            ?>
+                        </span>
+                    <?php endif; ?>
+                </div>
+
+                <p class="description">
+                    <?php esc_html_e( 'You can scrobble listen posts to Last.fm.', 'reactions-for-indieweb' ); ?>
+                </p>
+
+                <p>
+                    <button type="button" class="button lastfm-disconnect" data-api="<?php echo esc_attr( $api_id ); ?>">
+                        <?php esc_html_e( 'Disconnect', 'reactions-for-indieweb' ); ?>
+                    </button>
+                </p>
+            <?php else : ?>
+                <div class="oauth-disconnected">
+                    <p class="description">
+                        <?php esc_html_e( 'To scrobble listen posts to Last.fm, you need to authorize this application.', 'reactions-for-indieweb' ); ?>
+                    </p>
+
+                    <?php if ( $has_api_key ) : ?>
+                        <?php
+                        $api = new \ReactionsForIndieWeb\APIs\Lastfm();
+                        $auth_url = $api->get_auth_url( $callback_url );
+                        ?>
+                        <a href="<?php echo esc_url( $auth_url ); ?>" class="button button-primary">
+                            <?php esc_html_e( 'Connect to Last.fm', 'reactions-for-indieweb' ); ?>
+                        </a>
+                    <?php else : ?>
+                        <p class="notice notice-warning" style="padding: 8px;">
+                            <?php esc_html_e( 'Please save your API Key and Shared Secret first, then you can connect.', 'reactions-for-indieweb' ); ?>
+                        </p>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- Hidden field for session key -->
+            <input type="hidden"
+                   name="reactions_indieweb_api_credentials[<?php echo esc_attr( $api_id ); ?>][session_key]"
+                   value="<?php echo esc_attr( $credentials['session_key'] ?? '' ); ?>"
+                   class="lastfm-session-key">
+        </div>
+        <?php
+    }
+
+    /**
      * Check if an API connection is working.
      *
      * @param string               $api_id      API identifier.
@@ -641,6 +747,13 @@ class API_Settings {
         // Check OAuth tokens.
         if ( 'oauth' === $config['auth_type'] ) {
             return ! empty( $credentials['access_token'] );
+        }
+
+        // Check Last.fm session key.
+        if ( 'lastfm_oauth' === $config['auth_type'] ) {
+            // For Last.fm, having session_key means fully authenticated for scrobbling.
+            // Without it, just having API key is enough for lookups but not scrobbling.
+            return ! empty( $credentials['api_key'] );
         }
 
         // Check required fields.
@@ -1039,6 +1152,61 @@ class API_Settings {
      */
     public function handle_foursquare_oauth_callback(): void {
         $this->process_oauth_callback( 'foursquare' );
+    }
+
+    /**
+     * Handle Last.fm OAuth callback via admin-post.php.
+     *
+     * Last.fm uses a token-based auth flow instead of standard OAuth.
+     *
+     * @return void
+     */
+    public function handle_lastfm_oauth_callback(): void {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Permission denied.', 'reactions-for-indieweb' ) );
+        }
+
+        // Last.fm returns 'token' not 'code'.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        if ( ! isset( $_GET['token'] ) ) {
+            set_transient( 'reactions_oauth_error', __( 'No token received from Last.fm.', 'reactions-for-indieweb' ), 60 );
+            wp_safe_redirect( admin_url( 'admin.php?page=reactions-indieweb-apis&oauth_error=1' ) );
+            exit;
+        }
+
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $token = sanitize_text_field( wp_unslash( $_GET['token'] ) );
+
+        // Get credentials.
+        $credentials = get_option( 'reactions_indieweb_api_credentials', array() );
+        $lastfm      = $credentials['lastfm'] ?? array();
+
+        if ( empty( $lastfm['api_key'] ) || empty( $lastfm['api_secret'] ) ) {
+            set_transient( 'reactions_oauth_error', __( 'Last.fm API credentials not configured.', 'reactions-for-indieweb' ), 60 );
+            wp_safe_redirect( admin_url( 'admin.php?page=reactions-indieweb-apis&oauth_error=1' ) );
+            exit;
+        }
+
+        // Exchange token for session key.
+        $api = new \ReactionsForIndieWeb\APIs\Lastfm();
+        $session = $api->get_session( $token );
+
+        if ( ! $session || empty( $session['session_key'] ) ) {
+            set_transient( 'reactions_oauth_error', __( 'Failed to get Last.fm session key.', 'reactions-for-indieweb' ), 60 );
+            wp_safe_redirect( admin_url( 'admin.php?page=reactions-indieweb-apis&oauth_error=1' ) );
+            exit;
+        }
+
+        // Save session key and username.
+        $credentials['lastfm']['session_key'] = $session['session_key'];
+        if ( ! empty( $session['username'] ) ) {
+            $credentials['lastfm']['username'] = $session['username'];
+        }
+        update_option( 'reactions_indieweb_api_credentials', $credentials );
+
+        set_transient( 'reactions_oauth_success', 'lastfm', 60 );
+        wp_safe_redirect( admin_url( 'admin.php?page=reactions-indieweb-apis&oauth_success=1' ) );
+        exit;
     }
 
     /**

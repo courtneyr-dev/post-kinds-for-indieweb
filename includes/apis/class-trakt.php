@@ -514,10 +514,11 @@ class Trakt extends API_Base {
 	 * @param string $start_at   Start date (ISO 8601).
 	 * @param string $end_at     End date (ISO 8601).
 	 * @return array<string, mixed> History with pagination.
+	 * @throws \Exception If not authenticated.
 	 */
 	public function get_history( string $type = 'all', int $page = 1, int $limit = 25, string $start_at = '', string $end_at = '' ): array {
 		if ( ! $this->is_authenticated() ) {
-			return array( 'items' => array(), 'page' => 1, 'limit' => $limit, 'total' => 0 );
+			throw new \Exception( __( 'Trakt authentication required. Please reconnect your Trakt account in API Connections.', 'reactions-for-indieweb' ) );
 		}
 
 		$params = array(
@@ -555,7 +556,8 @@ class Trakt extends API_Base {
 			);
 		} catch ( \Exception $e ) {
 			$this->log_error( 'Get history failed', array( 'type' => $type, 'error' => $e->getMessage() ) );
-			return array( 'items' => array(), 'page' => $page, 'limit' => $limit, 'total' => 0 );
+			// Re-throw to allow import manager to handle the error.
+			throw $e;
 		}
 	}
 

@@ -381,6 +381,270 @@ class Meta_Fields {
 				'default'     => '',
 			),
 
+			// Favorite Fields.
+			'favorite_name'    => array(
+				'type'        => 'string',
+				'description' => __( 'Name of the favorited item.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'favorite_url'     => array(
+				'type'        => 'string',
+				'description' => __( 'URL of the favorited item.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			),
+			'favorite_rating'  => array(
+				'type'        => 'number',
+				'description' => __( 'Rating for the favorited item (0-5).', 'reactions-for-indieweb' ),
+				'sanitize'    => array( $this, 'sanitize_rating' ),
+				'default'     => 0,
+			),
+
+			// Jam Fields (extends listen with "highlight" flag).
+			'jam_track'        => array(
+				'type'        => 'string',
+				'description' => __( 'Track name for jam.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'jam_artist'       => array(
+				'type'        => 'string',
+				'description' => __( 'Artist name for jam.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'jam_album'        => array(
+				'type'        => 'string',
+				'description' => __( 'Album name for jam.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'jam_cover'        => array(
+				'type'        => 'string',
+				'description' => __( 'Cover art URL for jam.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			),
+			'jam_url'          => array(
+				'type'        => 'string',
+				'description' => __( 'URL to the track.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			),
+
+			// Wish Fields.
+			'wish_name'        => array(
+				'type'        => 'string',
+				'description' => __( 'Name of the wished item.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'wish_url'         => array(
+				'type'        => 'string',
+				'description' => __( 'URL of the wished item.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			),
+			'wish_photo'       => array(
+				'type'        => 'string',
+				'description' => __( 'Image URL of the wished item.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			),
+			'wish_type'        => array(
+				'type'        => 'string',
+				'description' => __( 'Type of wish: book, movie, product, experience, etc.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'wish_priority'    => array(
+				'type'        => 'string',
+				'description' => __( 'Priority level: low, medium, high.', 'reactions-for-indieweb' ),
+				'sanitize'    => array( $this, 'sanitize_priority' ),
+				'default'     => 'medium',
+				'enum'        => array( 'low', 'medium', 'high' ),
+			),
+
+			// Mood Fields.
+			'mood_emoji'       => array(
+				'type'        => 'string',
+				'description' => __( 'Emoji representing the mood.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'mood_label'       => array(
+				'type'        => 'string',
+				'description' => __( 'Text label for the mood (e.g., happy, tired, excited).', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'mood_rating'      => array(
+				'type'        => 'number',
+				'description' => __( 'Mood rating on 1-5 scale.', 'reactions-for-indieweb' ),
+				'sanitize'    => array( $this, 'sanitize_mood_rating' ),
+				'default'     => 0,
+			),
+
+			// Acquisition Fields.
+			'acquisition_name' => array(
+				'type'        => 'string',
+				'description' => __( 'Name of the acquired item.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'acquisition_url'  => array(
+				'type'        => 'string',
+				'description' => __( 'URL of the acquired item.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			),
+			'acquisition_photo' => array(
+				'type'        => 'string',
+				'description' => __( 'Image URL of the acquired item.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			),
+			'acquisition_price' => array(
+				'type'        => 'string',
+				'description' => __( 'Price paid for the item.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'acquisition_rating' => array(
+				'type'        => 'number',
+				'description' => __( 'Rating for the acquired item (0-5).', 'reactions-for-indieweb' ),
+				'sanitize'    => array( $this, 'sanitize_rating' ),
+				'default'     => 0,
+			),
+
+			// Drink Fields.
+			'drink_name'       => array(
+				'type'        => 'string',
+				'description' => __( 'Name of the beverage.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'drink_type'       => array(
+				'type'        => 'string',
+				'description' => __( 'Type of drink: coffee, beer, wine, cocktail, tea, etc.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'drink_brewery'    => array(
+				'type'        => 'string',
+				'description' => __( 'Brewery, winery, or producer name.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'drink_photo'      => array(
+				'type'        => 'string',
+				'description' => __( 'Photo URL of the drink.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			),
+			'drink_rating'     => array(
+				'type'        => 'number',
+				'description' => __( 'Rating for the drink (0-5).', 'reactions-for-indieweb' ),
+				'sanitize'    => array( $this, 'sanitize_rating' ),
+				'default'     => 0,
+			),
+
+			// Eat Fields.
+			'eat_name'         => array(
+				'type'        => 'string',
+				'description' => __( 'Name of the meal or dish.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'eat_type'         => array(
+				'type'        => 'string',
+				'description' => __( 'Type of meal: breakfast, lunch, dinner, snack.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'eat_restaurant'   => array(
+				'type'        => 'string',
+				'description' => __( 'Restaurant or venue name.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'eat_photo'        => array(
+				'type'        => 'string',
+				'description' => __( 'Photo URL of the meal.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			),
+			'eat_rating'       => array(
+				'type'        => 'number',
+				'description' => __( 'Rating for the meal (0-5).', 'reactions-for-indieweb' ),
+				'sanitize'    => array( $this, 'sanitize_rating' ),
+				'default'     => 0,
+			),
+
+			// Play Fields (gaming).
+			'play_title'       => array(
+				'type'        => 'string',
+				'description' => __( 'Game title.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'play_platform'    => array(
+				'type'        => 'string',
+				'description' => __( 'Platform: PC, PlayStation, Xbox, Nintendo, Mobile, Board Game, etc.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'play_status'      => array(
+				'type'        => 'string',
+				'description' => __( 'Play status: playing, completed, abandoned, backlog.', 'reactions-for-indieweb' ),
+				'sanitize'    => array( $this, 'sanitize_play_status' ),
+				'default'     => 'playing',
+				'enum'        => array( 'playing', 'completed', 'abandoned', 'backlog' ),
+			),
+			'play_hours'       => array(
+				'type'        => 'number',
+				'description' => __( 'Hours played.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'floatval',
+				'default'     => 0,
+			),
+			'play_cover'       => array(
+				'type'        => 'string',
+				'description' => __( 'Game cover art URL.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			),
+			'play_igdb_id'     => array(
+				'type'        => 'string',
+				'description' => __( 'IGDB game ID.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'play_steam_id'    => array(
+				'type'        => 'string',
+				'description' => __( 'Steam app ID.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'play_bgg_id'      => array(
+				'type'        => 'string',
+				'description' => __( 'BoardGameGeek game ID.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'play_rawg_id'     => array(
+				'type'        => 'string',
+				'description' => __( 'RAWG.io game ID.', 'reactions-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
+			'play_rating'      => array(
+				'type'        => 'number',
+				'description' => __( 'Rating for the game (0-5).', 'reactions-for-indieweb' ),
+				'sanitize'    => array( $this, 'sanitize_rating' ),
+				'default'     => 0,
+			),
+
 			// Syndication Opt-Out Fields.
 			'syndicate_lastfm' => array(
 				'type'        => 'boolean',
@@ -609,6 +873,48 @@ class Meta_Fields {
 		}
 
 		return $value;
+	}
+
+	/**
+	 * Sanitize priority value.
+	 *
+	 * @param mixed $value Value to sanitize.
+	 * @return string Sanitized value.
+	 */
+	public function sanitize_priority( mixed $value ): string {
+		$valid = array( 'low', 'medium', 'high' );
+		$value = sanitize_text_field( (string) $value );
+
+		return in_array( $value, $valid, true ) ? $value : 'medium';
+	}
+
+	/**
+	 * Sanitize mood rating value.
+	 *
+	 * @param mixed $value Value to sanitize.
+	 * @return int Sanitized rating (1-5, or 0 for not set).
+	 */
+	public function sanitize_mood_rating( mixed $value ): int {
+		$value = absint( $value );
+
+		if ( $value < 1 || $value > 5 ) {
+			return 0;
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Sanitize play status value.
+	 *
+	 * @param mixed $value Value to sanitize.
+	 * @return string Sanitized value.
+	 */
+	public function sanitize_play_status( mixed $value ): string {
+		$valid = array( 'playing', 'completed', 'abandoned', 'backlog' );
+		$value = sanitize_text_field( (string) $value );
+
+		return in_array( $value, $valid, true ) ? $value : 'playing';
 	}
 
 	/**

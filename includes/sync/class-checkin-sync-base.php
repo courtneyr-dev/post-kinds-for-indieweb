@@ -283,17 +283,19 @@ abstract class Checkin_Sync_Base {
 	 */
 	protected function is_syndication_enabled( int $post_id ): bool {
 		// Check global setting.
-		$settings = get_option( 'reactions_indieweb_settings', array() );
+		$settings    = get_option( 'reactions_indieweb_settings', array() );
 		$setting_key = 'checkin_sync_to_' . $this->service_id;
 
 		if ( empty( $settings[ $setting_key ] ) ) {
 			return false;
 		}
 
-		// Check post-level override (if set).
-		$post_syndicate = get_post_meta( $post_id, '_reactions_syndicate_' . $this->service_id, true );
+		// Check post-level opt-out (meta field from editor sidebar).
+		$meta_key       = Meta_Fields::PREFIX . 'syndicate_' . $this->service_id;
+		$post_syndicate = get_post_meta( $post_id, $meta_key, true );
 
-		if ( 'no' === $post_syndicate ) {
+		// If explicitly set to false, don't syndicate.
+		if ( false === $post_syndicate || '0' === $post_syndicate ) {
 			return false;
 		}
 
