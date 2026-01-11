@@ -318,6 +318,9 @@
             // Start import
             $(document).on('click', '.import-start-button', this.startImport);
 
+            // Re-sync metadata
+            $(document).on('click', '.import-resync-button', this.resyncMetadata);
+
             // Cancel import
             $(document).on('click', '.import-cancel-button', this.cancelImport);
 
@@ -451,6 +454,48 @@
                 },
                 complete: function() {
                     $button.prop('disabled', false).html('<span class="dashicons dashicons-download"></span> Start Import');
+                }
+            });
+        },
+
+        /**
+         * Re-sync metadata for previously imported posts
+         */
+        resyncMetadata: function(e) {
+            e.preventDefault();
+            const $button = $(this);
+            const source = $button.data('source');
+
+            if (!confirm('This will update metadata for all previously imported posts from this source. Continue?')) {
+                return;
+            }
+
+            $button.prop('disabled', true).html('<span class="dashicons dashicons-update spin"></span> Syncing...');
+
+            $.ajax({
+                url: reactionsIndieWeb.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'reactions_indieweb_resync_metadata',
+                    nonce: reactionsIndieWeb.nonce,
+                    source: source
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert(response.data.message || 'Metadata re-synced successfully!');
+                    } else {
+                        alert(response.data.message || reactionsIndieWeb.strings.error);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    let errorMsg = reactionsIndieWeb.strings.error;
+                    if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
+                        errorMsg = xhr.responseJSON.data.message;
+                    }
+                    alert(errorMsg);
+                },
+                complete: function() {
+                    $button.prop('disabled', false).html('<span class="dashicons dashicons-update"></span> Re-sync');
                 }
             });
         },

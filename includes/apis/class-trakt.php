@@ -928,9 +928,9 @@ class Trakt extends API_Base {
 	 * Normalize search result.
 	 *
 	 * @param array<string, mixed> $raw_result Raw result.
-	 * @return array<string, mixed>|null Normalized result.
+	 * @return array<string, mixed> Normalized result.
 	 */
-	protected function normalize_result( array $raw_result ): ?array {
+	protected function normalize_result( array $raw_result ): array {
 		$type = $raw_result['type'] ?? '';
 
 		if ( 'movie' === $type && isset( $raw_result['movie'] ) ) {
@@ -952,7 +952,7 @@ class Trakt extends API_Base {
 			}
 		}
 
-		return null;
+		return array();
 	}
 
 	/**
@@ -1056,10 +1056,6 @@ class Trakt extends API_Base {
 	 */
 	private function normalize_history_item( array $item ): array {
 		$normalized = $this->normalize_result( $item );
-
-		if ( ! $normalized ) {
-			$normalized = array();
-		}
 
 		$normalized['history_id'] = $item['id'] ?? 0;
 		$normalized['watched_at'] = $item['watched_at'] ?? '';

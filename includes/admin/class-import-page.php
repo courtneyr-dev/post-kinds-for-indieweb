@@ -54,6 +54,7 @@ class Import_Page {
         add_action( 'wp_ajax_reactions_indieweb_start_import', array( $this, 'ajax_start_import' ) );
         add_action( 'wp_ajax_reactions_indieweb_cancel_import', array( $this, 'ajax_cancel_import' ) );
         add_action( 'wp_ajax_reactions_indieweb_get_import_preview', array( $this, 'ajax_get_import_preview' ) );
+        add_action( 'wp_ajax_reactions_indieweb_resync_metadata', array( $this, 'ajax_resync_metadata' ) );
     }
 
     /**
@@ -224,6 +225,131 @@ class Import_Page {
                     ),
                 ),
             ),
+            'foursquare' => array(
+                'name'        => 'Foursquare / Swarm',
+                'description' => __( 'Import your checkin history from Foursquare/Swarm.', 'reactions-indieweb' ),
+                'post_kind'   => 'checkin',
+                'icon'        => 'dashicons-location-alt',
+                'api_key'     => 'foursquare',
+                'options'     => array(
+                    'limit' => array(
+                        'label'   => __( 'Maximum Checkins', 'reactions-indieweb' ),
+                        'type'    => 'number',
+                        'default' => 100,
+                        'max'     => 500,
+                    ),
+                ),
+            ),
+            // Note: Untappd API is no longer available without a commercial agreement.
+            // Keeping the sync class code in place in case API access becomes available again.
+
+            // Readwise imports - multiple content types.
+            'readwise_books' => array(
+                'name'        => 'Readwise Books',
+                'description' => __( 'Import book highlights from Readwise (Kindle, Apple Books, etc.). Each book requires separate API calls for highlights.', 'reactions-indieweb' ),
+                'post_kind'   => 'read',
+                'icon'        => 'dashicons-book',
+                'api_key'     => 'readwise',
+                'options'     => array(
+                    'limit' => array(
+                        'label'   => __( 'Maximum Books', 'reactions-indieweb' ),
+                        'type'    => 'number',
+                        'default' => 20,
+                        'max'     => 100,
+                    ),
+                    'include_highlights' => array(
+                        'label'   => __( 'Include Highlights', 'reactions-indieweb' ),
+                        'type'    => 'checkbox',
+                        'default' => true,
+                    ),
+                    'update_existing' => array(
+                        'label'   => __( 'Update existing posts', 'reactions-indieweb' ),
+                        'type'    => 'checkbox',
+                        'default' => false,
+                    ),
+                ),
+            ),
+            'readwise_articles' => array(
+                'name'        => 'Readwise Articles',
+                'description' => __( 'Import article highlights from Readwise (Reader, Instapaper, Pocket, etc.).', 'reactions-indieweb' ),
+                'post_kind'   => 'bookmark',
+                'icon'        => 'dashicons-admin-links',
+                'api_key'     => 'readwise',
+                'options'     => array(
+                    'limit' => array(
+                        'label'   => __( 'Maximum Articles', 'reactions-indieweb' ),
+                        'type'    => 'number',
+                        'default' => 100,
+                        'max'     => 500,
+                    ),
+                    'include_highlights' => array(
+                        'label'   => __( 'Include Highlights', 'reactions-indieweb' ),
+                        'type'    => 'checkbox',
+                        'default' => true,
+                    ),
+                    'update_existing' => array(
+                        'label'   => __( 'Update existing posts', 'reactions-indieweb' ),
+                        'type'    => 'checkbox',
+                        'default' => false,
+                    ),
+                ),
+            ),
+            'readwise_podcasts' => array(
+                'name'        => 'Readwise Podcasts',
+                'description' => __( 'Import podcast episode highlights from Readwise (Snipd, Airr, etc.). Each episode requires separate API calls, so import in small batches.', 'reactions-indieweb' ),
+                'post_kind'   => 'listen',
+                'icon'        => 'dashicons-microphone',
+                'api_key'     => 'readwise',
+                'options'     => array(
+                    'limit' => array(
+                        'label'   => __( 'Maximum Episodes', 'reactions-indieweb' ),
+                        'type'    => 'number',
+                        'default' => 20,
+                        'max'     => 100,
+                    ),
+                    'include_highlights' => array(
+                        'label'   => __( 'Include Highlights/Snips', 'reactions-indieweb' ),
+                        'type'    => 'checkbox',
+                        'default' => true,
+                    ),
+                    'update_existing' => array(
+                        'label'   => __( 'Update existing posts', 'reactions-indieweb' ),
+                        'type'    => 'checkbox',
+                        'default' => false,
+                        'description' => __( 'Update metadata on previously imported posts instead of skipping them.', 'reactions-indieweb' ),
+                    ),
+                ),
+            ),
+            'readwise_tweets' => array(
+                'name'        => 'Readwise Tweets',
+                'description' => __( 'Import saved tweet threads from Readwise.', 'reactions-indieweb' ),
+                'post_kind'   => 'bookmark',
+                'icon'        => 'dashicons-twitter',
+                'api_key'     => 'readwise',
+                'options'     => array(
+                    'limit' => array(
+                        'label'   => __( 'Maximum Threads', 'reactions-indieweb' ),
+                        'type'    => 'number',
+                        'default' => 100,
+                        'max'     => 500,
+                    ),
+                ),
+            ),
+            'readwise_supplementals' => array(
+                'name'        => 'Readwise Supplementals',
+                'description' => __( 'Import supplemental materials from Readwise (PDFs, notes, etc.).', 'reactions-indieweb' ),
+                'post_kind'   => 'note',
+                'icon'        => 'dashicons-media-document',
+                'api_key'     => 'readwise',
+                'options'     => array(
+                    'limit' => array(
+                        'label'   => __( 'Maximum Items', 'reactions-indieweb' ),
+                        'type'    => 'number',
+                        'default' => 100,
+                        'max'     => 500,
+                    ),
+                ),
+            ),
         );
     }
 
@@ -293,6 +419,10 @@ class Import_Page {
                                     <span class="dashicons dashicons-download"></span>
                                     <?php esc_html_e( 'Start Import', 'reactions-indieweb' ); ?>
                                 </button>
+                                <button type="button" class="button import-resync-button" data-source="<?php echo esc_attr( $source_id ); ?>" title="<?php esc_attr_e( 'Update metadata for previously imported posts', 'reactions-indieweb' ); ?>">
+                                    <span class="dashicons dashicons-update"></span>
+                                    <?php esc_html_e( 'Re-sync', 'reactions-indieweb' ); ?>
+                                </button>
                             </div>
                         <?php else : ?>
                             <div class="source-actions">
@@ -339,6 +469,70 @@ class Import_Page {
     }
 
     /**
+     * Render common import options (import amount, publish checkbox).
+     *
+     * These options are shown for all import sources.
+     *
+     * @param string $source_id Source identifier.
+     * @return void
+     */
+    private function render_common_import_options( string $source_id ): void {
+        ?>
+        <div class="common-import-options">
+            <div class="import-amount-options">
+                <label class="option-label"><?php esc_html_e( 'Import:', 'reactions-indieweb' ); ?></label>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="import_<?php echo esc_attr( $source_id ); ?>_amount"
+                               value="1" class="import-option"
+                               data-source="<?php echo esc_attr( $source_id ); ?>"
+                               data-option="import_amount">
+                        <?php esc_html_e( 'Last 1 (Test)', 'reactions-indieweb' ); ?>
+                    </label>
+                    <label>
+                        <input type="radio" name="import_<?php echo esc_attr( $source_id ); ?>_amount"
+                               value="all" class="import-option"
+                               data-source="<?php echo esc_attr( $source_id ); ?>"
+                               data-option="import_amount" checked>
+                        <?php esc_html_e( 'All', 'reactions-indieweb' ); ?>
+                    </label>
+                    <label class="custom-amount-label">
+                        <input type="radio" name="import_<?php echo esc_attr( $source_id ); ?>_amount"
+                               value="custom" class="import-option import-amount-custom-radio"
+                               data-source="<?php echo esc_attr( $source_id ); ?>"
+                               data-option="import_amount">
+                        <?php esc_html_e( 'Last', 'reactions-indieweb' ); ?>
+                        <input type="number"
+                               name="import_<?php echo esc_attr( $source_id ); ?>_custom_limit"
+                               class="small-text import-option import-custom-limit"
+                               data-source="<?php echo esc_attr( $source_id ); ?>"
+                               data-option="custom_limit"
+                               min="1" max="1000" value="50"
+                               style="width: 60px;">
+                        <?php esc_html_e( 'items', 'reactions-indieweb' ); ?>
+                    </label>
+                </div>
+            </div>
+
+            <div class="publish-option">
+                <label>
+                    <input type="checkbox"
+                           name="import_<?php echo esc_attr( $source_id ); ?>_publish"
+                           value="1" class="import-option import-publish-checkbox"
+                           data-source="<?php echo esc_attr( $source_id ); ?>"
+                           data-option="publish_immediately">
+                    <?php esc_html_e( 'Publish immediately', 'reactions-indieweb' ); ?>
+                </label>
+                <p class="publish-warning" style="display: none; color: #d63638; margin: 5px 0 0 24px;">
+                    <span class="dashicons dashicons-warning"></span>
+                    <?php esc_html_e( 'Warning: Posts will be published to your site immediately. Leave unchecked to create drafts for review.', 'reactions-indieweb' ); ?>
+                </p>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
      * Render source options.
      *
      * @param string                            $source_id Source identifier.
@@ -346,6 +540,9 @@ class Import_Page {
      * @return void
      */
     private function render_source_options( string $source_id, array $options ): void {
+        // Always render common import options (import amount, publish checkbox).
+        $this->render_common_import_options( $source_id );
+
         if ( empty( $options ) ) {
             return;
         }
@@ -549,7 +746,7 @@ class Import_Page {
      */
     private function check_api_connected( string $api_key, array $credentials ): bool {
         // OAuth APIs need access token.
-        if ( in_array( $api_key, array( 'trakt', 'simkl' ), true ) ) {
+        if ( in_array( $api_key, array( 'trakt', 'simkl', 'foursquare', 'untappd' ), true ) ) {
             return ! empty( $credentials['access_token'] );
         }
 
@@ -560,6 +757,10 @@ class Import_Page {
 
         if ( 'hardcover' === $api_key ) {
             return ! empty( $credentials['api_token'] );
+        }
+
+        if ( 'readwise' === $api_key ) {
+            return ! empty( $credentials['access_token'] );
         }
 
         // API key-based.
@@ -606,23 +807,89 @@ class Import_Page {
 
                 $job_id = $result['job_id'] ?? '';
 
-                // Process the import immediately instead of waiting for WP-Cron.
-                // This ensures imports work on local dev sites where cron may not run.
-                if ( $job_id ) {
+                // For Readwise imports (slow due to per-item API calls), don't process synchronously.
+                // Let WP-Cron handle them in the background to avoid timeout/stall issues.
+                $slow_sources = array( 'readwise_books', 'readwise_podcasts', 'readwise_articles' );
+
+                if ( $job_id && ! in_array( $source, $slow_sources, true ) ) {
+                    // Process non-Readwise imports immediately for dev sites where cron may not run.
                     $import_manager->process_import_batch( $job_id, $source );
 
                     // Get updated job status.
                     $job_status = $import_manager->get_status( $job_id );
 
+                    // Check if job failed.
+                    if ( 'failed' === ( $job_status['status'] ?? '' ) ) {
+                        $error_msg = ! empty( $job_status['errors'] )
+                            ? implode( '; ', $job_status['errors'] )
+                            : __( 'Import failed.', 'reactions-indieweb' );
+                        wp_send_json_error( array( 'message' => $error_msg ) );
+                    }
+
+                    $updated_count = $job_status['updated'] ?? 0;
+                    $message_parts = array();
+                    if ( ( $job_status['imported'] ?? 0 ) > 0 ) {
+                        $message_parts[] = sprintf( __( '%d imported', 'reactions-indieweb' ), $job_status['imported'] );
+                    }
+                    if ( $updated_count > 0 ) {
+                        $message_parts[] = sprintf( __( '%d updated', 'reactions-indieweb' ), $updated_count );
+                    }
+                    if ( ( $job_status['skipped'] ?? 0 ) > 0 ) {
+                        $message_parts[] = sprintf( __( '%d skipped', 'reactions-indieweb' ), $job_status['skipped'] );
+                    }
+                    if ( ( $job_status['failed'] ?? 0 ) > 0 ) {
+                        $message_parts[] = sprintf( __( '%d failed', 'reactions-indieweb' ), $job_status['failed'] );
+                    }
+
                     wp_send_json_success( array(
                         'import_id' => $job_id,
                         'message'   => sprintf(
-                            __( 'Import completed: %d imported, %d skipped.', 'reactions-indieweb' ),
-                            $job_status['imported'] ?? 0,
-                            $job_status['skipped'] ?? 0
+                            __( 'Import completed: %s.', 'reactions-indieweb' ),
+                            implode( ', ', $message_parts )
                         ),
                         'imported'  => $job_status['imported'] ?? 0,
+                        'updated'   => $updated_count,
                         'skipped'   => $job_status['skipped'] ?? 0,
+                        'failed'    => $job_status['failed'] ?? 0,
+                        'errors'    => $job_status['errors'] ?? array(),
+                    ) );
+                }
+
+                // For slow imports (Readwise), process one batch synchronously then queue the rest.
+                // This ensures users see immediate results even if WP-Cron isn't working.
+                if ( in_array( $source, $slow_sources, true ) ) {
+                    // Process first batch immediately to ensure at least some items import.
+                    $import_manager->process_import_batch( $job_id, $source );
+
+                    // Get updated job status.
+                    $job_status = $import_manager->get_status( $job_id );
+
+                    // Build result message.
+                    $message_parts = array();
+                    if ( ( $job_status['imported'] ?? 0 ) > 0 ) {
+                        $message_parts[] = sprintf( __( '%d imported', 'reactions-indieweb' ), $job_status['imported'] );
+                    }
+                    if ( ( $job_status['updated'] ?? 0 ) > 0 ) {
+                        $message_parts[] = sprintf( __( '%d updated', 'reactions-indieweb' ), $job_status['updated'] );
+                    }
+                    if ( ( $job_status['skipped'] ?? 0 ) > 0 ) {
+                        $message_parts[] = sprintf( __( '%d skipped', 'reactions-indieweb' ), $job_status['skipped'] );
+                    }
+
+                    // Spawn cron for any remaining items.
+                    spawn_cron();
+
+                    $message = ! empty( $message_parts )
+                        ? sprintf( __( 'Import progress: %s. More items processing in background.', 'reactions-indieweb' ), implode( ', ', $message_parts ) )
+                        : __( 'Import started. Processing in background...', 'reactions-indieweb' );
+
+                    wp_send_json_success( array(
+                        'import_id'  => $job_id,
+                        'message'    => $message,
+                        'imported'   => $job_status['imported'] ?? 0,
+                        'updated'    => $job_status['updated'] ?? 0,
+                        'skipped'    => $job_status['skipped'] ?? 0,
+                        'background' => true,
                     ) );
                 }
 
@@ -777,8 +1044,8 @@ class Import_Page {
                     return $history;
                 }
 
-                $items = $history;
-                $total_count = count( $history ) * 10; // Rough estimate.
+                $items = $history['items'] ?? array();
+                $total_count = ( $history['total'] ?? count( $items ) ) * 10; // Rough estimate.
                 break;
 
             case 'simkl':
@@ -811,6 +1078,92 @@ class Import_Page {
 
                 $items = $books;
                 $total_count = count( $books ) * 5; // Estimate.
+                break;
+
+            case 'foursquare':
+                $foursquare_sync = \ReactionsForIndieWeb\Plugin::get_instance()->get_checkin_sync_service( 'foursquare' );
+                if ( ! $foursquare_sync || ! $foursquare_sync->is_connected() ) {
+                    return new \WP_Error( 'api_not_configured', __( 'Foursquare is not connected. Please authorize in API Connections.', 'reactions-indieweb' ) );
+                }
+
+                $checkins = $foursquare_sync->fetch_recent_checkins( $preview_limit );
+                if ( is_wp_error( $checkins ) ) {
+                    return $checkins;
+                }
+
+                $items = $checkins;
+                $total_count = count( $checkins ) * 10; // Estimate.
+                break;
+
+            case 'untappd':
+                $untappd_sync = \ReactionsForIndieWeb\Plugin::get_instance()->get_checkin_sync_service( 'untappd' );
+                if ( ! $untappd_sync || ! $untappd_sync->is_connected() ) {
+                    return new \WP_Error( 'api_not_configured', __( 'Untappd is not connected. Please authorize in API Connections.', 'reactions-indieweb' ) );
+                }
+
+                $checkins = $untappd_sync->fetch_recent_checkins( $preview_limit );
+                if ( is_wp_error( $checkins ) ) {
+                    return $checkins;
+                }
+
+                $items = $checkins;
+                $total_count = count( $checkins ) * 10; // Estimate.
+                break;
+
+            case 'readwise_books':
+                $api = new \ReactionsForIndieWeb\APIs\Readwise();
+                if ( ! $api->is_configured() ) {
+                    return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'reactions-indieweb' ) );
+                }
+
+                // For preview, don't fetch all highlights (slower), just book info.
+                $books = $api->get_books_with_highlights( $preview_limit, false );
+                $items = $books;
+                $total_count = count( $books ) * 2; // Estimate.
+                break;
+
+            case 'readwise_articles':
+                $api = new \ReactionsForIndieWeb\APIs\Readwise();
+                if ( ! $api->is_configured() ) {
+                    return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'reactions-indieweb' ) );
+                }
+
+                $articles = $api->get_articles( $preview_limit );
+                $items = $articles;
+                $total_count = count( $articles ) * 2; // Estimate.
+                break;
+
+            case 'readwise_podcasts':
+                $api = new \ReactionsForIndieWeb\APIs\Readwise();
+                if ( ! $api->is_configured() ) {
+                    return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'reactions-indieweb' ) );
+                }
+
+                $podcasts = $api->get_podcast_episodes( $preview_limit );
+                $items = $podcasts;
+                $total_count = count( $podcasts ) * 2; // Estimate.
+                break;
+
+            case 'readwise_tweets':
+                $api = new \ReactionsForIndieWeb\APIs\Readwise();
+                if ( ! $api->is_configured() ) {
+                    return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'reactions-indieweb' ) );
+                }
+
+                $tweets = $api->get_tweets( $preview_limit );
+                $items = $tweets;
+                $total_count = count( $tweets ) * 2; // Estimate.
+                break;
+
+            case 'readwise_supplementals':
+                $api = new \ReactionsForIndieWeb\APIs\Readwise();
+                if ( ! $api->is_configured() ) {
+                    return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'reactions-indieweb' ) );
+                }
+
+                $supplementals = $api->get_books( 'supplementals', $preview_limit );
+                $items = $supplementals;
+                $total_count = count( $supplementals ) * 2; // Estimate.
                 break;
 
             default:
@@ -849,16 +1202,20 @@ class Import_Page {
 
                 case 'trakt_movies':
                     $formatted[] = array(
-                        'title' => $item['movie']['title'] ?? 'Unknown Movie',
-                        'year'  => $item['movie']['year'] ?? '',
+                        'title' => $item['title'] ?? 'Unknown Movie',
+                        'year'  => $item['year'] ?? '',
                         'date'  => isset( $item['watched_at'] ) ? wp_date( 'M j, Y g:i a', strtotime( $item['watched_at'] ) ) : '',
                     );
                     break;
 
                 case 'trakt_shows':
+                    // Normalized data has show info in 'show' sub-array for episodes.
+                    $show_title = $item['show']['title'] ?? $item['title'] ?? 'Unknown Show';
+                    $season     = $item['season'] ?? ( $item['show']['season'] ?? 0 );
+                    $number     = $item['number'] ?? ( $item['show']['number'] ?? 0 );
                     $formatted[] = array(
-                        'title'   => $item['show']['title'] ?? 'Unknown Show',
-                        'episode' => sprintf( 'S%02dE%02d', $item['episode']['season'] ?? 0, $item['episode']['number'] ?? 0 ),
+                        'title'   => $show_title,
+                        'episode' => sprintf( 'S%02dE%02d', $season, $number ),
                         'date'    => isset( $item['watched_at'] ) ? wp_date( 'M j, Y g:i a', strtotime( $item['watched_at'] ) ) : '',
                     );
                     break;
@@ -875,6 +1232,66 @@ class Import_Page {
                         'title'  => $item['book']['title'] ?? 'Unknown Book',
                         'author' => $item['book']['author'] ?? '',
                         'rating' => $item['rating'] ?? '',
+                    );
+                    break;
+
+                case 'foursquare':
+                    $formatted[] = array(
+                        'title'   => $item['venue_name'] ?? 'Unknown Venue',
+                        'address' => $item['address'] ?? '',
+                        'date'    => isset( $item['timestamp'] ) ? wp_date( 'M j, Y g:i a', $item['timestamp'] ) : '',
+                    );
+                    break;
+
+                case 'untappd':
+                    $formatted[] = array(
+                        'title'   => $item['beer_name'] ?? 'Unknown Beer',
+                        'brewery' => $item['brewery_name'] ?? '',
+                        'venue'   => $item['venue_name'] ?? '',
+                        'date'    => isset( $item['timestamp'] ) ? wp_date( 'M j, Y g:i a', $item['timestamp'] ) : '',
+                    );
+                    break;
+
+                case 'readwise_books':
+                    $formatted[] = array(
+                        'title'      => $item['title'] ?? 'Unknown Book',
+                        'author'     => $item['author'] ?? '',
+                        'highlights' => $item['highlight_count'] ?? 0,
+                        'source'     => $item['source'] ?? '',
+                    );
+                    break;
+
+                case 'readwise_articles':
+                    $formatted[] = array(
+                        'title'      => $item['title'] ?? 'Unknown Article',
+                        'author'     => $item['author'] ?? '',
+                        'highlights' => $item['highlight_count'] ?? 0,
+                        'source'     => $item['source'] ?? '',
+                    );
+                    break;
+
+                case 'readwise_podcasts':
+                    $formatted[] = array(
+                        'title'      => $item['episode_title'] ?? $item['title'] ?? 'Unknown Episode',
+                        'show'       => $item['show_name'] ?? $item['author'] ?? '',
+                        'highlights' => $item['highlight_count'] ?? 0,
+                        'source'     => $item['source'] ?? 'Snipd',
+                    );
+                    break;
+
+                case 'readwise_tweets':
+                    $formatted[] = array(
+                        'title'      => $item['title'] ?? 'Tweet Thread',
+                        'author'     => $item['author'] ?? '',
+                        'highlights' => $item['highlight_count'] ?? 0,
+                    );
+                    break;
+
+                case 'readwise_supplementals':
+                    $formatted[] = array(
+                        'title'      => $item['title'] ?? 'Untitled',
+                        'type'       => $item['source'] ?? 'PDF',
+                        'highlights' => $item['highlight_count'] ?? 0,
                     );
                     break;
             }
@@ -908,6 +1325,60 @@ class Import_Page {
             }
         }
 
+        // Process common import options.
+        // Convert import_amount to limit.
+        if ( isset( $sanitized['import_amount'] ) ) {
+            $amount = $sanitized['import_amount'];
+            if ( '1' === $amount ) {
+                $sanitized['limit'] = 1;
+            } elseif ( 'custom' === $amount && isset( $sanitized['custom_limit'] ) ) {
+                $sanitized['limit'] = absint( $sanitized['custom_limit'] );
+            }
+            // 'all' = no limit set (uses source default or no limit).
+            unset( $sanitized['import_amount'], $sanitized['custom_limit'] );
+        }
+
+        // Convert publish_immediately to post_status.
+        // Default to 'draft' for safety.
+        if ( ! empty( $sanitized['publish_immediately'] ) ) {
+            $sanitized['post_status'] = 'publish';
+        } else {
+            $sanitized['post_status'] = 'draft';
+        }
+        unset( $sanitized['publish_immediately'] );
+
         return $sanitized;
+    }
+
+    /**
+     * AJAX handler: Re-sync metadata for imported posts.
+     *
+     * @return void
+     */
+    public function ajax_resync_metadata(): void {
+        check_ajax_referer( 'reactions_indieweb_admin', 'nonce' );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'reactions-indieweb' ) ) );
+        }
+
+        $source = isset( $_POST['source'] ) ? sanitize_text_field( wp_unslash( $_POST['source'] ) ) : '';
+
+        if ( empty( $source ) ) {
+            wp_send_json_error( array( 'message' => __( 'No import source specified.', 'reactions-indieweb' ) ) );
+        }
+
+        try {
+            $import_manager = new Import_Manager();
+            $result = $import_manager->resync_metadata( $source );
+
+            if ( empty( $result['success'] ) ) {
+                wp_send_json_error( array( 'message' => $result['error'] ?? __( 'Re-sync failed.', 'reactions-indieweb' ) ) );
+            }
+
+            wp_send_json_success( $result );
+        } catch ( \Exception $e ) {
+            wp_send_json_error( array( 'message' => $e->getMessage() ) );
+        }
     }
 }

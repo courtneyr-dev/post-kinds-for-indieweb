@@ -1,6 +1,8 @@
 /**
  * Checkin Card Block - Edit Component
  *
+ * Enhanced with location search, geolocation, and privacy controls.
+ *
  * @package Reactions_For_IndieWeb
  */
 
@@ -20,10 +22,33 @@ import {
     DateTimePicker,
     Popover,
     ToggleControl,
+    RadioControl,
+    Notice,
+    Spinner,
 } from '@wordpress/components';
-import { useState } from '@wordpress/element';
+import { useState, useEffect, useRef, useCallback } from '@wordpress/element';
+import apiFetch from '@wordpress/api-fetch';
 import { checkinIcon } from '../shared/icons';
 import { BlockPlaceholder, LocationDisplay } from '../shared/components';
+
+/**
+ * Debounce utility function
+ *
+ * @param {Function} func Function to debounce.
+ * @param {number} wait Milliseconds to wait.
+ * @returns {Function} Debounced function.
+ */
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
 
 /**
  * Edit component for the Checkin Card block.
@@ -42,6 +67,8 @@ export default function Edit({ attributes, setAttributes }) {
         postalCode,
         latitude,
         longitude,
+        locationPrivacy,
+        osmId,
         venueUrl,
         foursquareId,
         checkinAt,
@@ -53,6 +80,14 @@ export default function Edit({ attributes, setAttributes }) {
     } = attributes;
 
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [isLocating, setIsLocating] = useState(false);
+    const [error, setError] = useState(null);
+    const [showSearch, setShowSearch] = useState(false);
+
+    const searchInputRef = useRef(null);
 
     const blockProps = useBlockProps({
         className: `checkin-card layout-${layout}`,
@@ -74,6 +109,165 @@ export default function Edit({ attributes, setAttributes }) {
         { label: __('Home', 'reactions-indieweb'), value: 'home' },
         { label: __('Other', 'reactions-indieweb'), value: 'other' },
     ];
+
+    // Privacy options
+    const privacyOptions = [
+        {
+            label: __('Public (exact location)', 'reactions-indieweb'),
+            value: 'public',
+        },
+        {
+            label: __('Approximate (city level)', 'reactions-indieweb'),
+            value: 'approximate',
+        },
+        {
+            label: __('Private (hidden)', 'reactions-indieweb'),
+            value: 'private',
+        },
+    ];
+
+    /**
+     * Search for venues using the REST API proxy
+     */
+    const searchVenues = useCallback(
+        debounce(async (query) => {
+            if (!query || query.trim().length < 3) {
+                setSearchResults([]);
+                return;
+            }
+
+            setIsSearching(true);
+            setError(null);
+
+            try {
+                const results = await apiFetch({
+                    path: `/reactions-indieweb/v1/location/search?query=${encodeURIComponent(query)}`,
+                });
+
+                setSearchResults(results || []);
+            } catch (err) {
+                setError(err.message || __('Search failed. Please try again.', 'reactions-indieweb'));
+                setSearchResults([]);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 500),
+        []
+    );
+
+    /**
+     * Handle search input change
+     */
+    const handleSearchChange = (value) => {
+        setSearchQuery(value);
+        searchVenues(value);
+    };
+
+    /**
+     * Use browser geolocation to get current location
+     */
+    const useCurrentLocation = async () => {
+        if (!navigator.geolocation) {
+            setError(__('Geolocation is not supported by your browser.', 'reactions-indieweb'));
+            return;
+        }
+
+        setIsLocating(true);
+        setError(null);
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                try {
+                    // Reverse geocode via REST API proxy
+                    const result = await apiFetch({
+                        path: `/reactions-indieweb/v1/location/reverse?lat=${lat}&lon=${lng}`,
+                    });
+
+                    if (result) {
+                        selectVenue(result);
+                    } else {
+                        // Just set coords if reverse geocode failed
+                        setAttributes({
+                            latitude: lat,
+                            longitude: lng,
+                            venueName: __('Current Location', 'reactions-indieweb'),
+                        });
+                    }
+                } catch (err) {
+                    // Still set coordinates even if reverse geocode fails
+                    setAttributes({
+                        latitude: lat,
+                        longitude: lng,
+                        venueName: __('Current Location', 'reactions-indieweb'),
+                    });
+                } finally {
+                    setIsLocating(false);
+                    setShowSearch(false);
+                }
+            },
+            (err) => {
+                setIsLocating(false);
+                switch (err.code) {
+                    case err.PERMISSION_DENIED:
+                        setError(__('Location access was denied.', 'reactions-indieweb'));
+                        break;
+                    case err.POSITION_UNAVAILABLE:
+                        setError(__('Location information is unavailable.', 'reactions-indieweb'));
+                        break;
+                    case err.TIMEOUT:
+                        setError(__('Location request timed out.', 'reactions-indieweb'));
+                        break;
+                    default:
+                        setError(__('Could not detect your location.', 'reactions-indieweb'));
+                }
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+    };
+
+    /**
+     * Handle venue selection from search results
+     */
+    const selectVenue = (result) => {
+        const addr = result.address || {};
+
+        setAttributes({
+            venueName: result.name || result.display_name?.split(',')[0] || '',
+            address: [addr.house_number, addr.road].filter(Boolean).join(' ') || addr.road || '',
+            locality: addr.locality || addr.city || addr.town || addr.village || '',
+            region: addr.region || addr.state || '',
+            country: addr.country || '',
+            postalCode: addr.postcode || '',
+            latitude: result.latitude || parseFloat(result.lat) || null,
+            longitude: result.longitude || parseFloat(result.lon) || null,
+            osmId: result.osm_full_id || '',
+            venueUrl: result.extra?.website || '',
+        });
+
+        // Clear search state
+        setSearchQuery('');
+        setSearchResults([]);
+        setShowSearch(false);
+    };
+
+    /**
+     * Handle privacy change with confirmation for public
+     */
+    const handlePrivacyChange = (newPrivacy) => {
+        if (newPrivacy === 'public' && locationPrivacy !== 'public') {
+            // eslint-disable-next-line no-alert
+            const confirmed = window.confirm(
+                __('You are about to make your precise location public. Are you sure?', 'reactions-indieweb')
+            );
+            if (!confirmed) {
+                return;
+            }
+        }
+        setAttributes({ locationPrivacy: newPrivacy });
+    };
 
     /**
      * Handle photo selection
@@ -122,24 +316,75 @@ export default function Edit({ attributes, setAttributes }) {
         if (!latitude || !longitude) {
             return null;
         }
-        return `https://www.openstreetmap.org/export/embed.html?bbox=${longitude - 0.01},${latitude - 0.01},${longitude + 0.01},${latitude + 0.01}&layer=mapnik&marker=${latitude},${longitude}`;
+        // Adjust zoom based on privacy
+        const zoom = locationPrivacy === 'public' ? 16 : 11;
+        const bbox = locationPrivacy === 'public' ? 0.01 : 0.1;
+        return `https://www.openstreetmap.org/export/embed.html?bbox=${longitude - bbox},${latitude - bbox},${longitude + bbox},${latitude + bbox}&layer=mapnik&marker=${latitude},${longitude}`;
+    };
+
+    /**
+     * Clear venue and start fresh
+     */
+    const clearVenue = () => {
+        setAttributes({
+            venueName: '',
+            address: '',
+            locality: '',
+            region: '',
+            country: '',
+            postalCode: '',
+            latitude: null,
+            longitude: null,
+            osmId: '',
+        });
+        setShowSearch(true);
     };
 
     // Show placeholder if no venue info
-    if (!venueName && !locality) {
+    if (!venueName && !locality && !showSearch) {
         return (
             <div {...blockProps}>
                 <BlockPlaceholder
                     icon={checkinIcon}
                     label={__('Checkin Card', 'reactions-indieweb')}
-                    instructions={__('Add a location checkin. Enter the venue details manually.', 'reactions-indieweb')}
+                    instructions={__('Check in to a location. Use your current location or search for a venue.', 'reactions-indieweb')}
                 >
-                    <div className="placeholder-actions">
+                    {error && (
+                        <Notice status="error" isDismissible onDismiss={() => setError(null)}>
+                            {error}
+                        </Notice>
+                    )}
+
+                    <div className="checkin-placeholder-actions">
                         <Button
                             variant="primary"
+                            onClick={useCurrentLocation}
+                            disabled={isLocating}
+                            icon={isLocating ? null : 'location'}
+                        >
+                            {isLocating ? (
+                                <>
+                                    <Spinner />
+                                    {__('Detecting...', 'reactions-indieweb')}
+                                </>
+                            ) : (
+                                __('Use Current Location', 'reactions-indieweb')
+                            )}
+                        </Button>
+
+                        <Button
+                            variant="secondary"
+                            onClick={() => setShowSearch(true)}
+                            icon="search"
+                        >
+                            {__('Search for Venue', 'reactions-indieweb')}
+                        </Button>
+
+                        <Button
+                            variant="tertiary"
                             onClick={() => setAttributes({ venueName: '' })}
                         >
-                            {__('Add Checkin', 'reactions-indieweb')}
+                            {__('Enter Manually', 'reactions-indieweb')}
                         </Button>
                     </div>
                 </BlockPlaceholder>
@@ -147,9 +392,117 @@ export default function Edit({ attributes, setAttributes }) {
         );
     }
 
+    // Show search interface
+    if (showSearch && !venueName) {
+        return (
+            <div {...blockProps}>
+                <div className="checkin-search-state">
+                    <h3>{__('Search for a location', 'reactions-indieweb')}</h3>
+
+                    {error && (
+                        <Notice status="error" isDismissible onDismiss={() => setError(null)}>
+                            {error}
+                        </Notice>
+                    )}
+
+                    <div className="checkin-search-wrapper">
+                        <TextControl
+                            ref={searchInputRef}
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                            placeholder={__('Search for a venue or address...', 'reactions-indieweb')}
+                            autoFocus
+                        />
+
+                        {isSearching && <Spinner />}
+
+                        {searchResults.length > 0 && (
+                            <ul className="checkin-search-results" role="listbox">
+                                {searchResults.map((result, index) => (
+                                    <li key={result.place_id || index}>
+                                        <button
+                                            type="button"
+                                            className="checkin-result-item"
+                                            onClick={() => selectVenue(result)}
+                                        >
+                                            <strong className="result-name">
+                                                {result.name || result.display_name?.split(',')[0]}
+                                            </strong>
+                                            <span className="result-address">
+                                                {result.formatted_address || result.display_name}
+                                            </span>
+                                            {result.type && (
+                                                <span className="result-type">{result.type}</span>
+                                            )}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+
+                    <div className="checkin-search-actions">
+                        <Button
+                            variant="secondary"
+                            onClick={useCurrentLocation}
+                            disabled={isLocating}
+                        >
+                            {isLocating ? __('Detecting...', 'reactions-indieweb') : __('Use Current Location', 'reactions-indieweb')}
+                        </Button>
+
+                        <Button
+                            variant="tertiary"
+                            onClick={() => {
+                                setShowSearch(false);
+                                setAttributes({ venueName: '' });
+                            }}
+                        >
+                            {__('Enter Manually', 'reactions-indieweb')}
+                        </Button>
+
+                        <Button
+                            variant="link"
+                            onClick={() => setShowSearch(false)}
+                        >
+                            {__('Cancel', 'reactions-indieweb')}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <>
             <InspectorControls>
+                <PanelBody title={__('Privacy Settings', 'reactions-indieweb')}>
+                    <RadioControl
+                        label={__('Location Privacy', 'reactions-indieweb')}
+                        help={__('Control how much location detail is shown publicly.', 'reactions-indieweb')}
+                        selected={locationPrivacy || 'approximate'}
+                        options={privacyOptions}
+                        onChange={handlePrivacyChange}
+                    />
+
+                    <div className="privacy-explanations">
+                        {locationPrivacy === 'public' && (
+                            <Notice status="warning" isDismissible={false}>
+                                {__('Your exact coordinates will be visible to everyone.', 'reactions-indieweb')}
+                            </Notice>
+                        )}
+                        {locationPrivacy === 'approximate' && (
+                            <p className="description">
+                                {__('Only city/region will be shown. Coordinates are stored but not displayed.', 'reactions-indieweb')}
+                            </p>
+                        )}
+                        {locationPrivacy === 'private' && (
+                            <p className="description">
+                                {__('Location is saved for your records but not shown publicly.', 'reactions-indieweb')}
+                            </p>
+                        )}
+                    </div>
+                </PanelBody>
+
                 <PanelBody title={__('Venue Details', 'reactions-indieweb')}>
                     <TextControl
                         label={__('Venue Name', 'reactions-indieweb')}
@@ -187,6 +540,14 @@ export default function Edit({ attributes, setAttributes }) {
                         value={postalCode || ''}
                         onChange={(value) => setAttributes({ postalCode: value })}
                     />
+
+                    <Button
+                        variant="secondary"
+                        onClick={() => setShowSearch(true)}
+                        style={{ marginTop: '12px' }}
+                    >
+                        {__('Search Different Location', 'reactions-indieweb')}
+                    </Button>
                 </PanelBody>
 
                 <PanelBody title={__('Coordinates', 'reactions-indieweb')} initialOpen={false}>
@@ -208,7 +569,11 @@ export default function Edit({ attributes, setAttributes }) {
                         label={__('Show Map', 'reactions-indieweb')}
                         checked={showMap}
                         onChange={(value) => setAttributes({ showMap: value })}
-                        help={__('Display an embedded OpenStreetMap', 'reactions-indieweb')}
+                        help={locationPrivacy === 'private'
+                            ? __('Map is hidden when privacy is set to private.', 'reactions-indieweb')
+                            : __('Display an embedded OpenStreetMap.', 'reactions-indieweb')
+                        }
+                        disabled={locationPrivacy === 'private'}
                     />
                 </PanelBody>
 
@@ -266,6 +631,11 @@ export default function Edit({ attributes, setAttributes }) {
                         value={foursquareId || ''}
                         onChange={(value) => setAttributes({ foursquareId: value })}
                     />
+                    {osmId && (
+                        <p className="description">
+                            {__('OSM ID:', 'reactions-indieweb')} {osmId}
+                        </p>
+                    )}
                 </PanelBody>
             </InspectorControls>
 
@@ -298,10 +668,23 @@ export default function Edit({ attributes, setAttributes }) {
                     </div>
 
                     <div className="checkin-info">
-                        <span className="venue-type-badge">
-                            <span className="venue-icon">{getVenueIcon()}</span>
-                            {venueTypes.find(t => t.value === venueType)?.label}
-                        </span>
+                        <div className="checkin-header">
+                            <span className="venue-type-badge">
+                                <span className="venue-icon">{getVenueIcon()}</span>
+                                {venueTypes.find(t => t.value === venueType)?.label}
+                            </span>
+
+                            {locationPrivacy === 'private' && (
+                                <span className="privacy-badge private">
+                                    🔒 {__('Private', 'reactions-indieweb')}
+                                </span>
+                            )}
+                            {locationPrivacy === 'approximate' && (
+                                <span className="privacy-badge approximate">
+                                    📍 {__('Approximate', 'reactions-indieweb')}
+                                </span>
+                            )}
+                        </div>
 
                         <RichText
                             tagName="h3"
@@ -313,7 +696,7 @@ export default function Edit({ attributes, setAttributes }) {
 
                         <div className="venue-location p-location h-card">
                             <LocationDisplay
-                                address={address}
+                                address={locationPrivacy === 'public' ? address : ''}
                                 locality={locality}
                                 region={region}
                                 country={country}
@@ -336,10 +719,19 @@ export default function Edit({ attributes, setAttributes }) {
                             onChange={(value) => setAttributes({ note: value })}
                             placeholder={__('Add a note about this checkin...', 'reactions-indieweb')}
                         />
+
+                        <Button
+                            variant="link"
+                            isDestructive
+                            onClick={clearVenue}
+                            className="change-venue-button"
+                        >
+                            {__('Change venue', 'reactions-indieweb')}
+                        </Button>
                     </div>
 
-                    {/* Map preview */}
-                    {showMap && latitude && longitude && (
+                    {/* Map preview - hidden for private */}
+                    {showMap && latitude && longitude && locationPrivacy !== 'private' && (
                         <div className="checkin-map">
                             <iframe
                                 title={__('Location map', 'reactions-indieweb')}
@@ -351,6 +743,18 @@ export default function Edit({ attributes, setAttributes }) {
                                 marginWidth="0"
                                 src={getMapUrl()}
                             />
+                            {locationPrivacy === 'approximate' && (
+                                <p className="map-note">
+                                    {__('Showing approximate area. Exact location hidden.', 'reactions-indieweb')}
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    {locationPrivacy === 'private' && latitude && longitude && (
+                        <div className="checkin-private-notice">
+                            <span className="dashicons dashicons-lock"></span>
+                            {__('Location saved privately', 'reactions-indieweb')}
                         </div>
                     )}
                 </div>

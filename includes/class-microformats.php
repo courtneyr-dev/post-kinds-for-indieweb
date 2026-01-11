@@ -479,19 +479,79 @@ class Microformats {
 				break;
 
 			case 'checkin':
-				$lat = get_post_meta( $post_id, $prefix . 'geo_latitude', true );
-				$lng = get_post_meta( $post_id, $prefix . 'geo_longitude', true );
-				if ( $lat && $lng ) {
-					$hidden_data .= sprintf(
-						'<data class="p-geo h-geo" value="geo:%s,%s">' .
+				$privacy  = get_post_meta( $post_id, $prefix . 'geo_privacy', true ) ?: 'approximate';
+				$lat      = get_post_meta( $post_id, $prefix . 'geo_latitude', true );
+				$lng      = get_post_meta( $post_id, $prefix . 'geo_longitude', true );
+				$locality = get_post_meta( $post_id, $prefix . 'checkin_locality', true );
+				$region   = get_post_meta( $post_id, $prefix . 'checkin_region', true );
+				$country  = get_post_meta( $post_id, $prefix . 'checkin_country', true );
+				$name     = get_post_meta( $post_id, $prefix . 'checkin_name', true );
+
+				// Build checkin h-card with privacy awareness.
+				$checkin_card = '<span class="p-checkin h-card">';
+
+				// Venue name (always shown if not private).
+				if ( 'private' !== $privacy && $name ) {
+					$checkin_card .= sprintf(
+						'<span class="p-name">%s</span>',
+						esc_html( $name )
+					);
+				}
+
+				// Address data based on privacy level.
+				if ( 'private' !== $privacy ) {
+					$checkin_card .= '<span class="p-adr h-adr">';
+
+					// Only show street address for public.
+					if ( 'public' === $privacy ) {
+						$address = get_post_meta( $post_id, $prefix . 'checkin_address', true );
+						if ( $address ) {
+							$checkin_card .= sprintf(
+								'<span class="p-street-address">%s</span>',
+								esc_html( $address )
+							);
+						}
+					}
+
+					// Locality, region, country shown for public and approximate.
+					if ( $locality ) {
+						$checkin_card .= sprintf(
+							'<span class="p-locality">%s</span>',
+							esc_html( $locality )
+						);
+					}
+					if ( $region ) {
+						$checkin_card .= sprintf(
+							'<span class="p-region">%s</span>',
+							esc_html( $region )
+						);
+					}
+					if ( $country ) {
+						$checkin_card .= sprintf(
+							'<span class="p-country-name">%s</span>',
+							esc_html( $country )
+						);
+					}
+
+					$checkin_card .= '</span>'; // close p-adr.
+				}
+
+				// Geo coordinates only for public privacy.
+				if ( 'public' === $privacy && $lat && $lng ) {
+					$checkin_card .= sprintf(
+						'<span class="p-geo h-geo">' .
 						'<data class="p-latitude" value="%s"></data>' .
 						'<data class="p-longitude" value="%s"></data>' .
-						'</data>',
-						esc_attr( $lat ),
-						esc_attr( $lng ),
+						'</span>',
 						esc_attr( $lat ),
 						esc_attr( $lng )
 					);
+				}
+
+				$checkin_card .= '</span>'; // close p-checkin.
+
+				if ( 'private' !== $privacy ) {
+					$hidden_data .= $checkin_card;
 				}
 				break;
 

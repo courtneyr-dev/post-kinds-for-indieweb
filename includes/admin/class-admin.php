@@ -120,6 +120,8 @@ class Admin {
         add_action( 'wp_ajax_reactions_indieweb_clear_cache', array( $this, 'ajax_clear_cache' ) );
         add_action( 'wp_ajax_reactions_indieweb_lookup_media', array( $this, 'ajax_lookup_media' ) );
         add_action( 'wp_ajax_reactions_indieweb_get_import_status', array( $this, 'ajax_get_import_status' ) );
+        add_action( 'wp_ajax_reactions_foursquare_import', array( $this, 'ajax_foursquare_import' ) );
+        add_action( 'wp_ajax_reactions_foursquare_disconnect', array( $this, 'ajax_foursquare_disconnect' ) );
     }
 
     /**
@@ -427,6 +429,10 @@ class Admin {
             // Import storage.
             'import_storage_mode'     => 'standard', // 'standard', 'cpt', 'hidden'.
 
+            // Sync start dates - per-source cutoff dates for auto-import.
+            // Empty = import all history. ISO 8601 date = only import items after this date.
+            'sync_start_dates'        => array(),
+
             // Post Format sync.
             'sync_formats_to_kinds'   => true,
             'format_kind_mappings'    => array(
@@ -533,6 +539,36 @@ class Admin {
             update_option( 'reactions_indieweb_flush_rewrite', true );
         }
 
+        // Sync start dates - per-source cutoff dates.
+        if ( isset( $input['sync_start_dates'] ) && is_array( $input['sync_start_dates'] ) ) {
+            $sanitized['sync_start_dates'] = array();
+            $valid_sources = array(
+                'listenbrainz', 'lastfm', 'readwise_podcasts',
+                'trakt_movies', 'trakt_shows', 'simkl',
+                'hardcover', 'readwise_books', 'readwise_articles',
+                'foursquare', 'readwise_tweets', 'readwise_supplementals',
+            );
+
+            foreach ( $input['sync_start_dates'] as $source => $date ) {
+                $source = sanitize_key( $source );
+                if ( in_array( $source, $valid_sources, true ) ) {
+                    // Validate and sanitize date (accept empty or valid ISO date).
+                    if ( empty( $date ) ) {
+                        // Empty = no cutoff, import all.
+                        $sanitized['sync_start_dates'][ $source ] = '';
+                    } else {
+                        // Validate date format (YYYY-MM-DD or ISO 8601).
+                        $timestamp = strtotime( $date );
+                        if ( false !== $timestamp ) {
+                            $sanitized['sync_start_dates'][ $source ] = gmdate( 'Y-m-d\TH:i:s\Z', $timestamp );
+                        }
+                    }
+                }
+            }
+        } else {
+            $sanitized['sync_start_dates'] = $old_settings['sync_start_dates'] ?? array();
+        }
+
         /**
          * Filter sanitized general settings.
          *
@@ -558,13 +594,13 @@ class Admin {
             'tmdb'           => array( 'api_key', 'access_token' ),
             'trakt'          => array( 'client_id', 'client_secret', 'username', 'access_token', 'refresh_token', 'token_expires' ),
             'simkl'          => array( 'client_id', 'access_token' ),
-            'tvmaze'         => array(), // No auth needed.
+            'tvmaze'         => array( 'api_key' ), // Optional premium key.
             'openlibrary'    => array(), // No auth needed.
             'hardcover'      => array( 'api_token', 'username' ),
             'google_books'   => array( 'api_key' ),
-            'podcastindex'   => array( 'api_key', 'api_secret' ),
-            'foursquare'     => array( 'api_key' ),
+            'foursquare'     => array( 'api_key', 'client_id', 'client_secret', 'access_token', 'username' ),
             'nominatim'      => array( 'email' ),
+            'readwise'       => array( 'access_token' ),
         );
 
         foreach ( $api_configs as $api => $fields ) {
@@ -735,8 +771,6 @@ class Admin {
         }
 
         $class_map = array(
-            'musicbrainz'   => 'ReactionsForIndieWeb\\APIs\\MusicBrainz',
-            'listenbrainz'  => 'ReactionsForIndieWeb\\APIs\\ListenBrainz',
             'lastfm'        => 'ReactionsForIndieWeb\\APIs\\LastFM',
             'tmdb'          => 'ReactionsForIndieWeb\\APIs\\TMDB',
             'trakt'         => 'ReactionsForIndieWeb\\APIs\\Trakt',
@@ -745,9 +779,9 @@ class Admin {
             'openlibrary'   => 'ReactionsForIndieWeb\\APIs\\OpenLibrary',
             'hardcover'     => 'ReactionsForIndieWeb\\APIs\\Hardcover',
             'google_books'  => 'ReactionsForIndieWeb\\APIs\\GoogleBooks',
-            'podcastindex'  => 'ReactionsForIndieWeb\\APIs\\PodcastIndex',
             'foursquare'    => 'ReactionsForIndieWeb\\APIs\\Foursquare',
             'nominatim'     => 'ReactionsForIndieWeb\\APIs\\Nominatim',
+            'readwise'      => 'ReactionsForIndieWeb\\APIs\\Readwise',
         );
 
         if ( ! isset( $class_map[ $api ] ) ) {
@@ -963,5 +997,72 @@ class Admin {
      */
     public function get_page_hook( string $page ): ?string {
         return $this->page_hooks[ $page ] ?? null;
+    }
+
+    /**
+     * AJAX handler: Import Foursquare checkins.
+     *
+     * @return void
+     */
+    public function ajax_foursquare_import(): void {
+        check_ajax_referer( 'reactions_indieweb_admin', 'nonce' );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'reactions-indieweb' ) ) );
+        }
+
+        $foursquare_sync = $this->plugin->get_checkin_sync_service( 'foursquare' );
+
+        if ( ! $foursquare_sync ) {
+            wp_send_json_error( array( 'message' => __( 'Foursquare sync service not available.', 'reactions-indieweb' ) ) );
+        }
+
+        if ( ! $foursquare_sync->is_connected() ) {
+            wp_send_json_error( array( 'message' => __( 'Foursquare not connected. Please authorize first.', 'reactions-indieweb' ) ) );
+        }
+
+        try {
+            $result = $foursquare_sync->import_checkins();
+
+            if ( is_wp_error( $result ) ) {
+                wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+            }
+
+            wp_send_json_success( array(
+                'message' => sprintf(
+                    /* translators: %d: Number of checkins imported */
+                    __( 'Imported %d new checkins.', 'reactions-indieweb' ),
+                    $result['imported'] ?? 0
+                ),
+                'imported' => $result['imported'] ?? 0,
+                'skipped'  => $result['skipped'] ?? 0,
+            ) );
+        } catch ( \Exception $e ) {
+            wp_send_json_error( array( 'message' => $e->getMessage() ) );
+        }
+    }
+
+    /**
+     * AJAX handler: Disconnect Foursquare.
+     *
+     * @return void
+     */
+    public function ajax_foursquare_disconnect(): void {
+        check_ajax_referer( 'reactions_indieweb_admin', 'nonce' );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( array( 'message' => __( 'Permission denied.', 'reactions-indieweb' ) ) );
+        }
+
+        $credentials = get_option( 'reactions_indieweb_api_credentials', array() );
+
+        if ( isset( $credentials['foursquare'] ) ) {
+            // Remove OAuth tokens but keep API key and client credentials.
+            unset( $credentials['foursquare']['access_token'] );
+            unset( $credentials['foursquare']['username'] );
+            update_option( 'reactions_indieweb_api_credentials', $credentials );
+        }
+
+        wp_send_json_success( array( 'message' => __( 'Disconnected from Foursquare.', 'reactions-indieweb' ) ) );
     }
 }

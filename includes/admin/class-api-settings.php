@@ -50,9 +50,14 @@ class API_Settings {
      */
     public function init(): void {
         add_action( 'admin_init', array( $this, 'register_settings' ) );
-        add_action( 'admin_init', array( $this, 'handle_oauth_return' ) );
         add_action( 'wp_ajax_reactions_indieweb_oauth_callback', array( $this, 'handle_oauth_callback' ) );
         add_action( 'wp_ajax_reactions_indieweb_get_oauth_url', array( $this, 'ajax_get_oauth_url' ) );
+
+        // OAuth callbacks via admin-post.php (cleaner URLs for OAuth redirect URIs).
+        add_action( 'admin_post_reactions_trakt_oauth', array( $this, 'handle_trakt_oauth_callback' ) );
+        add_action( 'admin_post_reactions_simkl_oauth', array( $this, 'handle_simkl_oauth_callback' ) );
+        add_action( 'admin_post_reactions_foursquare_oauth', array( $this, 'handle_foursquare_oauth_callback' ) );
+        // Note: Untappd OAuth removed - API requires commercial agreement.
     }
 
     /**
@@ -62,53 +67,7 @@ class API_Settings {
      */
     private function get_api_configs(): array {
         return array(
-            'musicbrainz' => array(
-                'name'        => 'MusicBrainz',
-                'description' => __( 'Music metadata database. Free, no API key required.', 'reactions-indieweb' ),
-                'category'    => 'music',
-                'docs_url'    => 'https://musicbrainz.org/doc/MusicBrainz_API',
-                'auth_type'   => 'user_agent',
-                'fields'      => array(
-                    'app_name' => array(
-                        'label'       => __( 'Application Name', 'reactions-indieweb' ),
-                        'type'        => 'text',
-                        'required'    => true,
-                        'placeholder' => 'Reactions for IndieWeb',
-                    ),
-                    'app_version' => array(
-                        'label'       => __( 'Application Version', 'reactions-indieweb' ),
-                        'type'        => 'text',
-                        'required'    => true,
-                        'placeholder' => '1.0.0',
-                    ),
-                    'contact' => array(
-                        'label'       => __( 'Contact Email', 'reactions-indieweb' ),
-                        'type'        => 'email',
-                        'required'    => true,
-                        'placeholder' => 'admin@example.com',
-                    ),
-                ),
-            ),
-            'listenbrainz' => array(
-                'name'        => 'ListenBrainz',
-                'description' => __( 'Open-source scrobble service. Get your token from your profile settings.', 'reactions-indieweb' ),
-                'category'    => 'music',
-                'docs_url'    => 'https://listenbrainz.readthedocs.io/',
-                'signup_url'  => 'https://listenbrainz.org/profile/',
-                'auth_type'   => 'token',
-                'fields'      => array(
-                    'token' => array(
-                        'label'    => __( 'User Token', 'reactions-indieweb' ),
-                        'type'     => 'password',
-                        'required' => true,
-                    ),
-                    'username' => array(
-                        'label'    => __( 'Username', 'reactions-indieweb' ),
-                        'type'     => 'text',
-                        'required' => false,
-                    ),
-                ),
-            ),
+            // Note: MusicBrainz and ListenBrainz removed - complicated setup and credential saving issues.
             'lastfm' => array(
                 'name'        => 'Last.fm',
                 'description' => __( 'Scrobble service and music database. Requires API account.', 'reactions-indieweb' ),
@@ -193,11 +152,19 @@ class API_Settings {
             ),
             'tvmaze' => array(
                 'name'        => 'TVmaze',
-                'description' => __( 'TV show database. Free, no API key required.', 'reactions-indieweb' ),
+                'description' => __( 'TV show database. Works without API key, but premium key gives higher rate limits.', 'reactions-indieweb' ),
                 'category'    => 'video',
                 'docs_url'    => 'https://www.tvmaze.com/api',
-                'auth_type'   => 'none',
-                'fields'      => array(),
+                'signup_url'  => 'https://www.tvmaze.com/api#premium',
+                'auth_type'   => 'api_key',
+                'fields'      => array(
+                    'api_key' => array(
+                        'label'    => __( 'API Key (Optional)', 'reactions-indieweb' ),
+                        'type'     => 'password',
+                        'required' => false,
+                        'help'     => __( 'Premium API key for higher rate limits. Free tier works without a key.', 'reactions-indieweb' ),
+                    ),
+                ),
             ),
             'openlibrary' => array(
                 'name'        => 'Open Library',
@@ -243,38 +210,32 @@ class API_Settings {
                     ),
                 ),
             ),
-            'podcastindex' => array(
-                'name'        => 'Podcast Index',
-                'description' => __( 'Open podcast database. Free API access.', 'reactions-indieweb' ),
-                'category'    => 'audio',
-                'docs_url'    => 'https://podcastindex-org.github.io/docs-api/',
-                'signup_url'  => 'https://api.podcastindex.org/',
-                'auth_type'   => 'api_key_secret',
-                'fields'      => array(
-                    'api_key' => array(
-                        'label'    => __( 'API Key', 'reactions-indieweb' ),
-                        'type'     => 'text',
-                        'required' => true,
-                    ),
-                    'api_secret' => array(
-                        'label'    => __( 'API Secret', 'reactions-indieweb' ),
-                        'type'     => 'password',
-                        'required' => true,
-                    ),
-                ),
-            ),
+            // Note: Podcast Index removed - API signup requires app/business email, not personal accounts.
             'foursquare' => array(
                 'name'        => 'Foursquare',
-                'description' => __( 'Venue and place data for checkins.', 'reactions-indieweb' ),
+                'description' => __( 'Venue search and bidirectional checkin sync. API key for venue lookup, OAuth for syncing checkins.', 'reactions-indieweb' ),
                 'category'    => 'location',
                 'docs_url'    => 'https://location.foursquare.com/developer/',
                 'signup_url'  => 'https://foursquare.com/developers/apps',
-                'auth_type'   => 'api_key',
+                'auth_type'   => 'oauth',
+                'oauth_url'   => 'https://foursquare.com/oauth2/authorize',
                 'fields'      => array(
                     'api_key' => array(
-                        'label'    => __( 'API Key', 'reactions-indieweb' ),
+                        'label'    => __( 'API Key (Places API)', 'reactions-indieweb' ),
                         'type'     => 'password',
-                        'required' => true,
+                        'required' => false,
+                        'help'     => __( 'For venue search in the block editor. Get from Foursquare Developer Console.', 'reactions-indieweb' ),
+                    ),
+                    'client_id' => array(
+                        'label'    => __( 'Client ID (OAuth)', 'reactions-indieweb' ),
+                        'type'     => 'text',
+                        'required' => false,
+                        'help'     => __( 'For syncing checkins. Create an app at foursquare.com/developers/apps.', 'reactions-indieweb' ),
+                    ),
+                    'client_secret' => array(
+                        'label'    => __( 'Client Secret (OAuth)', 'reactions-indieweb' ),
+                        'type'     => 'password',
+                        'required' => false,
                     ),
                 ),
             ),
@@ -293,6 +254,24 @@ class API_Settings {
                     ),
                 ),
             ),
+            'readwise' => array(
+                'name'        => 'Readwise',
+                'description' => __( 'Import highlights from books, articles, podcasts (Snipd), tweets, and more.', 'reactions-indieweb' ),
+                'category'    => 'aggregators',
+                'docs_url'    => 'https://readwise.io/api_deets',
+                'signup_url'  => 'https://readwise.io/access_token',
+                'auth_type'   => 'token',
+                'fields'      => array(
+                    'access_token' => array(
+                        'label'    => __( 'Access Token', 'reactions-indieweb' ),
+                        'type'     => 'password',
+                        'required' => true,
+                        'help'     => __( 'Get your token from readwise.io/access_token', 'reactions-indieweb' ),
+                    ),
+                ),
+            ),
+            // Note: Untappd API requires a commercial agreement and is not available for personal use.
+            // The sync class code remains in place in case API access becomes available in the future.
         );
     }
 
@@ -318,18 +297,50 @@ class API_Settings {
             return;
         }
 
+        // Check for OAuth success/error transients.
+        $oauth_error   = get_transient( 'reactions_oauth_error' );
+        $oauth_success = get_transient( 'reactions_oauth_success' );
+
+        if ( $oauth_error ) {
+            delete_transient( 'reactions_oauth_error' );
+        }
+        if ( $oauth_success ) {
+            delete_transient( 'reactions_oauth_success' );
+        }
+
         $credentials = get_option( 'reactions_indieweb_api_credentials', array() );
         $categories  = array(
-            'music'    => __( 'Music', 'reactions-indieweb' ),
-            'video'    => __( 'Movies & TV', 'reactions-indieweb' ),
-            'books'    => __( 'Books', 'reactions-indieweb' ),
-            'audio'    => __( 'Podcasts', 'reactions-indieweb' ),
-            'location' => __( 'Location', 'reactions-indieweb' ),
+            'music'       => __( 'Music', 'reactions-indieweb' ),
+            'video'       => __( 'Movies & TV', 'reactions-indieweb' ),
+            'books'       => __( 'Books', 'reactions-indieweb' ),
+            'audio'       => __( 'Podcasts', 'reactions-indieweb' ),
+            'location'    => __( 'Location', 'reactions-indieweb' ),
+            'aggregators' => __( 'Aggregators', 'reactions-indieweb' ),
         );
 
         ?>
         <div class="wrap reactions-indieweb-api-settings">
             <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+
+            <?php if ( $oauth_error ) : ?>
+                <div class="notice notice-error is-dismissible">
+                    <p>
+                        <?php
+                        printf(
+                            /* translators: %s: Error message */
+                            esc_html__( 'OAuth authentication failed: %s', 'reactions-indieweb' ),
+                            esc_html( $oauth_error )
+                        );
+                        ?>
+                    </p>
+                </div>
+            <?php endif; ?>
+
+            <?php if ( $oauth_success ) : ?>
+                <div class="notice notice-success is-dismissible">
+                    <p><?php esc_html_e( 'Successfully connected! You can now import your watch history.', 'reactions-indieweb' ); ?></p>
+                </div>
+            <?php endif; ?>
 
             <p class="description">
                 <?php esc_html_e( 'Configure API connections for fetching media metadata and importing history.', 'reactions-indieweb' ); ?>
@@ -565,7 +576,7 @@ class API_Settings {
             <?php else : ?>
                 <div class="oauth-disconnected">
                     <?php
-                    $redirect_uri = admin_url( 'admin.php?page=reactions-indieweb-apis&oauth_callback=' . $api_id );
+                    $redirect_uri = $this->get_oauth_redirect_uri( $api_id );
                     ?>
                     <p style="margin-bottom: 8px;">
                         <strong><?php esc_html_e( 'Redirect URI:', 'reactions-indieweb' ); ?></strong><br>
@@ -707,6 +718,10 @@ class API_Settings {
                 return $this->exchange_trakt_code( $code, $api_creds );
             case 'simkl':
                 return $this->exchange_simkl_code( $code, $api_creds );
+            case 'foursquare':
+                return $this->exchange_foursquare_code( $code, $api_creds );
+            case 'untappd':
+                return $this->exchange_untappd_code( $code, $api_creds );
             default:
                 return new \WP_Error( 'unsupported', __( 'OAuth not supported for this API.', 'reactions-indieweb' ) );
         }
@@ -728,7 +743,7 @@ class API_Settings {
                 'code'          => $code,
                 'client_id'     => $credentials['client_id'] ?? '',
                 'client_secret' => $credentials['client_secret'] ?? '',
-                'redirect_uri'  => admin_url( 'admin.php?page=reactions-indieweb-apis&oauth_callback=trakt' ),
+                'redirect_uri'  => $this->get_oauth_redirect_uri( 'trakt' ),
                 'grant_type'    => 'authorization_code',
             ) ),
             'timeout' => 30,
@@ -773,7 +788,7 @@ class API_Settings {
             'body'    => wp_json_encode( array(
                 'code'         => $code,
                 'client_id'    => $credentials['client_id'] ?? '',
-                'redirect_uri' => admin_url( 'admin.php?page=reactions-indieweb-apis&oauth_callback=simkl' ),
+                'redirect_uri' => $this->get_oauth_redirect_uri( 'simkl' ),
                 'grant_type'   => 'authorization_code',
             ) ),
             'timeout' => 30,
@@ -801,6 +816,147 @@ class API_Settings {
     }
 
     /**
+     * Exchange Foursquare authorization code.
+     *
+     * @param string               $code        Authorization code.
+     * @param array<string, mixed> $credentials API credentials.
+     * @return array<string, mixed>|\WP_Error Token data or error.
+     */
+    private function exchange_foursquare_code( string $code, array $credentials ) {
+        $response = wp_remote_post( 'https://foursquare.com/oauth2/access_token', array(
+            'body'    => array(
+                'client_id'     => $credentials['client_id'] ?? '',
+                'client_secret' => $credentials['client_secret'] ?? '',
+                'grant_type'    => 'authorization_code',
+                'redirect_uri'  => $this->get_oauth_redirect_uri( 'foursquare' ),
+                'code'          => $code,
+            ),
+            'timeout' => 30,
+        ) );
+
+        if ( is_wp_error( $response ) ) {
+            return $response;
+        }
+
+        $body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+        if ( empty( $body['access_token'] ) ) {
+            $error_msg = $body['error'] ?? __( 'No access token received.', 'reactions-indieweb' );
+            return new \WP_Error( 'no_token', $error_msg );
+        }
+
+        // Fetch user info to get username.
+        $user_response = wp_remote_get( 'https://api.foursquare.com/v2/users/self', array(
+            'timeout' => 15,
+            'headers' => array(
+                'Accept' => 'application/json',
+            ),
+            'body'    => array(
+                'oauth_token' => $body['access_token'],
+                'v'           => gmdate( 'Ymd' ),
+            ),
+        ) );
+
+        $username = '';
+        if ( ! is_wp_error( $user_response ) ) {
+            $user_body = json_decode( wp_remote_retrieve_body( $user_response ), true );
+            if ( ! empty( $user_body['response']['user']['firstName'] ) ) {
+                $username = $user_body['response']['user']['firstName'];
+                if ( ! empty( $user_body['response']['user']['lastName'] ) ) {
+                    $username .= ' ' . $user_body['response']['user']['lastName'];
+                }
+            }
+        }
+
+        // Save token and username.
+        $all_credentials = get_option( 'reactions_indieweb_api_credentials', array() );
+        $all_credentials['foursquare']['access_token'] = $body['access_token'];
+        $all_credentials['foursquare']['username']     = $username;
+        update_option( 'reactions_indieweb_api_credentials', $all_credentials );
+
+        return array(
+            'success'      => true,
+            'access_token' => $body['access_token'],
+            'username'     => $username,
+        );
+    }
+
+    /**
+     * Exchange Untappd authorization code.
+     *
+     * @param string               $code        Authorization code.
+     * @param array<string, mixed> $credentials API credentials.
+     * @return array<string, mixed>|\WP_Error Token data or error.
+     */
+    private function exchange_untappd_code( string $code, array $credentials ) {
+        // Untappd uses GET request for token exchange.
+        $response = wp_remote_get( add_query_arg( array(
+            'client_id'     => $credentials['client_id'] ?? '',
+            'client_secret' => $credentials['client_secret'] ?? '',
+            'response_type' => 'code',
+            'redirect_url'  => $this->get_oauth_redirect_uri( 'untappd' ),
+            'code'          => $code,
+        ), 'https://untappd.com/oauth/authorize' ), array(
+            'timeout' => 30,
+        ) );
+
+        if ( is_wp_error( $response ) ) {
+            return $response;
+        }
+
+        $body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+        if ( empty( $body['response']['access_token'] ) ) {
+            $error_msg = $body['meta']['error_detail'] ?? __( 'No access token received.', 'reactions-indieweb' );
+            return new \WP_Error( 'no_token', $error_msg );
+        }
+
+        $access_token = $body['response']['access_token'];
+
+        // Fetch user info.
+        $user_response = wp_remote_get( add_query_arg( array(
+            'access_token' => $access_token,
+        ), 'https://api.untappd.com/v4/user/info' ), array(
+            'timeout' => 15,
+            'headers' => array(
+                'User-Agent' => 'Reactions for IndieWeb WordPress Plugin',
+            ),
+        ) );
+
+        $username = '';
+        if ( ! is_wp_error( $user_response ) ) {
+            $user_body = json_decode( wp_remote_retrieve_body( $user_response ), true );
+            if ( ! empty( $user_body['response']['user']['user_name'] ) ) {
+                $username = $user_body['response']['user']['user_name'];
+            }
+        }
+
+        // Save token and username.
+        $all_credentials = get_option( 'reactions_indieweb_api_credentials', array() );
+        $all_credentials['untappd']['access_token'] = $access_token;
+        $all_credentials['untappd']['username']     = $username;
+        update_option( 'reactions_indieweb_api_credentials', $all_credentials );
+
+        return array(
+            'success'      => true,
+            'access_token' => $access_token,
+            'username'     => $username,
+        );
+    }
+
+    /**
+     * Get OAuth redirect URI for an API.
+     *
+     * Uses admin-post.php for cleaner URLs without query parameter encoding issues.
+     *
+     * @param string $api API identifier.
+     * @return string Redirect URI.
+     */
+    public function get_oauth_redirect_uri( string $api ): string {
+        return admin_url( 'admin-post.php?action=reactions_' . $api . '_oauth' );
+    }
+
+    /**
      * Get OAuth authorization URL.
      *
      * @param string $api API identifier.
@@ -810,7 +966,7 @@ class API_Settings {
         $credentials = get_option( 'reactions_indieweb_api_credentials', array() );
         $api_creds   = $credentials[ $api ] ?? array();
 
-        $redirect_uri = admin_url( 'admin.php?page=reactions-indieweb-apis&oauth_callback=' . $api );
+        $redirect_uri = $this->get_oauth_redirect_uri( $api );
 
         switch ( $api ) {
             case 'trakt':
@@ -833,62 +989,102 @@ class API_Settings {
                     'redirect_uri'  => $redirect_uri,
                 ), 'https://simkl.com/oauth/authorize' );
 
+            case 'foursquare':
+                if ( empty( $api_creds['client_id'] ) ) {
+                    return null;
+                }
+                return add_query_arg( array(
+                    'response_type' => 'code',
+                    'client_id'     => $api_creds['client_id'],
+                    'redirect_uri'  => $redirect_uri,
+                ), 'https://foursquare.com/oauth2/authenticate' );
+
+            case 'untappd':
+                if ( empty( $api_creds['client_id'] ) ) {
+                    return null;
+                }
+                return add_query_arg( array(
+                    'response_type' => 'code',
+                    'client_id'     => $api_creds['client_id'],
+                    'redirect_url'  => $redirect_uri, // Untappd uses redirect_url not redirect_uri.
+                ), 'https://untappd.com/oauth/authenticate' );
+
             default:
                 return null;
         }
     }
 
     /**
-     * Handle OAuth return from authorization server.
-     *
-     * This handles the redirect back from Trakt/Simkl with the authorization code.
+     * Handle Trakt OAuth callback via admin-post.php.
      *
      * @return void
      */
-    public function handle_oauth_return(): void {
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-        if ( ! isset( $_GET['page'] ) || 'reactions-indieweb-apis' !== $_GET['page'] ) {
-            return;
-        }
+    public function handle_trakt_oauth_callback(): void {
+        $this->process_oauth_callback( 'trakt' );
+    }
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-        if ( ! isset( $_GET['oauth_callback'] ) || ! isset( $_GET['code'] ) ) {
-            return;
-        }
+    /**
+     * Handle Simkl OAuth callback via admin-post.php.
+     *
+     * @return void
+     */
+    public function handle_simkl_oauth_callback(): void {
+        $this->process_oauth_callback( 'simkl' );
+    }
 
+    /**
+     * Handle Foursquare OAuth callback via admin-post.php.
+     *
+     * @return void
+     */
+    public function handle_foursquare_oauth_callback(): void {
+        $this->process_oauth_callback( 'foursquare' );
+    }
+
+    /**
+     * Handle Untappd OAuth callback via admin-post.php.
+     *
+     * @return void
+     */
+    public function handle_untappd_oauth_callback(): void {
+        $this->process_oauth_callback( 'untappd' );
+    }
+
+    /**
+     * Process OAuth callback for any API.
+     *
+     * @param string $api API identifier.
+     * @return void
+     */
+    private function process_oauth_callback( string $api ): void {
         if ( ! current_user_can( 'manage_options' ) ) {
-            return;
+            wp_die( esc_html__( 'Permission denied.', 'reactions-indieweb' ) );
         }
 
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-        $api  = sanitize_text_field( wp_unslash( $_GET['oauth_callback'] ) );
+        if ( ! isset( $_GET['code'] ) ) {
+            // Check for error from OAuth provider.
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            $error = isset( $_GET['error'] ) ? sanitize_text_field( wp_unslash( $_GET['error'] ) ) : '';
+            if ( $error ) {
+                set_transient( 'reactions_oauth_error', $error, 60 );
+            }
+            wp_safe_redirect( admin_url( 'admin.php?page=reactions-indieweb-apis&oauth_error=1' ) );
+            exit;
+        }
+
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $code = sanitize_text_field( wp_unslash( $_GET['code'] ) );
 
         $result = $this->exchange_oauth_code( $api, $code );
 
         if ( is_wp_error( $result ) ) {
-            add_settings_error(
-                'reactions_indieweb_apis',
-                'oauth_failed',
-                sprintf(
-                    /* translators: %s: Error message */
-                    __( 'OAuth authentication failed: %s', 'reactions-indieweb' ),
-                    $result->get_error_message()
-                ),
-                'error'
-            );
+            set_transient( 'reactions_oauth_error', $result->get_error_message(), 60 );
+            wp_safe_redirect( admin_url( 'admin.php?page=reactions-indieweb-apis&oauth_error=1' ) );
         } else {
-            add_settings_error(
-                'reactions_indieweb_apis',
-                'oauth_success',
-                __( 'Successfully connected! You can now import your watch history.', 'reactions-indieweb' ),
-                'success'
-            );
+            set_transient( 'reactions_oauth_success', $api, 60 );
+            wp_safe_redirect( admin_url( 'admin.php?page=reactions-indieweb-apis&oauth_success=1' ) );
         }
-
-        // Redirect to remove the code from URL.
-        wp_safe_redirect( admin_url( 'admin.php?page=reactions-indieweb-apis&settings-updated=true' ) );
         exit;
     }
 

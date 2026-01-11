@@ -39,7 +39,8 @@ class TVmaze extends API_Base {
 	protected string $base_url = 'https://api.tvmaze.com/';
 
 	/**
-	 * Rate limit: 20 requests per 10 seconds.
+	 * Rate limit: 20 requests per 10 seconds (free tier).
+	 * Premium tier has higher limits.
 	 *
 	 * @var float
 	 */
@@ -51,6 +52,52 @@ class TVmaze extends API_Base {
 	 * @var int
 	 */
 	protected int $cache_duration = DAY_IN_SECONDS;
+
+	/**
+	 * API key (optional, for premium access).
+	 *
+	 * @var string|null
+	 */
+	private ?string $api_key = null;
+
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		parent::__construct();
+		$credentials    = get_option( 'reactions_indieweb_api_credentials', array() );
+		$tvmaze_creds   = $credentials['tvmaze'] ?? array();
+		$this->api_key  = ! empty( $tvmaze_creds['api_key'] ) ? $tvmaze_creds['api_key'] : null;
+
+		// Premium tier has higher rate limits.
+		if ( $this->api_key ) {
+			$this->rate_limit = 0.1; // 10 requests per second for premium.
+		}
+	}
+
+	/**
+	 * Get default headers.
+	 *
+	 * @return array<string, string>
+	 */
+	protected function get_default_headers(): array {
+		$headers = parent::get_default_headers();
+
+		if ( $this->api_key ) {
+			$headers['Authorization'] = 'Basic ' . base64_encode( $this->api_key . ':' );
+		}
+
+		return $headers;
+	}
+
+	/**
+	 * Check if API is configured with premium access.
+	 *
+	 * @return bool True if premium API key is set.
+	 */
+	public function is_configured(): bool {
+		return ! empty( $this->api_key );
+	}
 
 	/**
 	 * Test API connection.

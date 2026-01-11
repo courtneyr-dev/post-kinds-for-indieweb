@@ -39,6 +39,14 @@
         "longitude": {
             "type": "number"
         },
+        "locationPrivacy": {
+            "type": "string",
+            "default": "approximate",
+            "enum": ["public", "approximate", "private"]
+        },
+        "osmId": {
+            "type": "string"
+        },
         "venueUrl": {
             "type": "string"
         },

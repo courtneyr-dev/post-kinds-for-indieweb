@@ -167,6 +167,19 @@ class Meta_Fields {
 				'sanitize'    => array( $this, 'sanitize_coordinate' ),
 				'default'     => 0,
 			),
+			'geo_privacy'      => array(
+				'type'        => 'string',
+				'description' => __( 'Location privacy level: public, approximate, or private.', 'reactions-indieweb' ),
+				'sanitize'    => array( $this, 'sanitize_geo_privacy' ),
+				'default'     => 'approximate',
+				'enum'        => array( 'public', 'approximate', 'private' ),
+			),
+			'checkin_osm_id'   => array(
+				'type'        => 'string',
+				'description' => __( 'OpenStreetMap place ID.', 'reactions-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			),
 
 			// Listen Fields.
 			'listen_track'     => array(
@@ -534,6 +547,19 @@ class Meta_Fields {
 		// Longitude range: -180 to 180.
 		// We allow full range here; validation happens elsewhere.
 		return round( $value, 7 );
+	}
+
+	/**
+	 * Sanitize geo privacy value.
+	 *
+	 * @param mixed $value Value to sanitize.
+	 * @return string Sanitized value.
+	 */
+	public function sanitize_geo_privacy( mixed $value ): string {
+		$valid = array( 'public', 'approximate', 'private' );
+		$value = sanitize_text_field( (string) $value );
+
+		return in_array( $value, $valid, true ) ? $value : 'approximate';
 	}
 
 	/**

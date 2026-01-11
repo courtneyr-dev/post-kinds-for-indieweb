@@ -10,7 +10,7 @@
 /**
  * WordPress dependencies
  */
-import { createReduxStore } from '@wordpress/data';
+import { createReduxStore, createRegistrySelector } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 import { store as editorStore } from '@wordpress/editor';
 import { store as coreStore } from '@wordpress/core-data';
@@ -491,10 +491,10 @@ const selectors = {
 	 * @param {string} key   Meta key (without prefix).
 	 * @return {*} Meta value.
 	 */
-	getKindMeta: ( state, key ) => ( registry ) => {
-		const meta = registry.select( editorStore ).getEditedPostAttribute( 'meta' ) || {};
+	getKindMeta: createRegistrySelector( ( select ) => ( state, key ) => {
+		const meta = select( editorStore ).getEditedPostAttribute( 'meta' ) || {};
 		return meta[ META_PREFIX + key ] || '';
-	},
+	} ),
 
 	/**
 	 * Get all kind meta values.
@@ -502,8 +502,8 @@ const selectors = {
 	 * @param {Object} state Store state.
 	 * @return {Object} All meta values.
 	 */
-	getAllKindMeta: ( state ) => ( registry ) => {
-		const meta = registry.select( editorStore ).getEditedPostAttribute( 'meta' ) || {};
+	getAllKindMeta: createRegistrySelector( ( select ) => ( state ) => {
+		const meta = select( editorStore ).getEditedPostAttribute( 'meta' ) || {};
 		const kindMeta = {};
 
 		Object.keys( meta ).forEach( ( key ) => {
@@ -514,7 +514,7 @@ const selectors = {
 		} );
 
 		return kindMeta;
-	},
+	} ),
 };
 
 /**

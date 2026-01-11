@@ -62,6 +62,7 @@ class REST_API {
 	 */
 	public function register_routes(): void {
 		$this->register_lookup_routes();
+		$this->register_location_routes();
 		$this->register_import_routes();
 		$this->register_webhook_routes();
 		$this->register_oauth_routes();
@@ -294,6 +295,86 @@ class REST_API {
 					'source' => array(
 						'required' => false,
 						'type'     => 'string',
+					),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Register location-specific routes with caching and throttling.
+	 *
+	 * These endpoints proxy Nominatim requests to comply with usage policy.
+	 *
+	 * @return void
+	 */
+	private function register_location_routes(): void {
+		// Location search (geocoding).
+		register_rest_route(
+			self::NAMESPACE,
+			'/location/search',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'location_search' ),
+				'permission_callback' => array( $this, 'can_edit_posts' ),
+				'args'                => array(
+					'query' => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+						'description'       => __( 'Search query for location', 'reactions-indieweb' ),
+					),
+				),
+			)
+		);
+
+		// Reverse geocoding.
+		register_rest_route(
+			self::NAMESPACE,
+			'/location/reverse',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'location_reverse' ),
+				'permission_callback' => array( $this, 'can_edit_posts' ),
+				'args'                => array(
+					'lat' => array(
+						'required'          => true,
+						'type'              => 'number',
+						'description'       => __( 'Latitude', 'reactions-indieweb' ),
+					),
+					'lon' => array(
+						'required'          => true,
+						'type'              => 'number',
+						'description'       => __( 'Longitude', 'reactions-indieweb' ),
+					),
+				),
+			)
+		);
+
+		// Foursquare venue search.
+		register_rest_route(
+			self::NAMESPACE,
+			'/location/venues',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'location_venues' ),
+				'permission_callback' => array( $this, 'can_edit_posts' ),
+				'args'                => array(
+					'query' => array(
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+						'description'       => __( 'Search query', 'reactions-indieweb' ),
+					),
+					'lat'   => array(
+						'required'          => false,
+						'type'              => 'number',
+						'description'       => __( 'Latitude for nearby search', 'reactions-indieweb' ),
+					),
+					'lon'   => array(
+						'required'          => false,
+						'type'              => 'number',
+						'description'       => __( 'Longitude for nearby search', 'reactions-indieweb' ),
 					),
 				),
 			)
@@ -890,6 +971,159 @@ class REST_API {
 		} catch ( \Exception $e ) {
 			return new \WP_Error(
 				'geocode_failed',
+				$e->getMessage(),
+				array( 'status' => 500 )
+			);
+		}
+	}
+
+	/**
+	 * Search for locations via Nominatim proxy with throttling.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function location_search( \WP_REST_Request $request ) {
+		$query = $request->get_param( 'query' );
+
+		// Check throttle.
+		$throttle_key = 'reactions_location_throttle_' . get_current_user_id();
+		$last_request = get_transient( $throttle_key );
+
+		if ( $last_request && ( time() - $last_request ) < 1 ) {
+			return new \WP_Error(
+				'rate_limited',
+				__( 'Please wait a moment before searching again.', 'reactions-indieweb' ),
+				array( 'status' => 429 )
+			);
+		}
+
+		set_transient( $throttle_key, time(), 60 );
+
+		try {
+			$api     = new Nominatim();
+			$results = $api->search( $query );
+
+			return rest_ensure_response( $results );
+		} catch ( \Exception $e ) {
+			return new \WP_Error(
+				'search_failed',
+				$e->getMessage(),
+				array( 'status' => 500 )
+			);
+		}
+	}
+
+	/**
+	 * Reverse geocode coordinates via Nominatim proxy with throttling.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function location_reverse( \WP_REST_Request $request ) {
+		$lat = (float) $request->get_param( 'lat' );
+		$lon = (float) $request->get_param( 'lon' );
+
+		// Validate coordinates.
+		if ( $lat < -90 || $lat > 90 || $lon < -180 || $lon > 180 ) {
+			return new \WP_Error(
+				'invalid_coordinates',
+				__( 'Invalid coordinates provided.', 'reactions-indieweb' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Check throttle.
+		$throttle_key = 'reactions_location_throttle_' . get_current_user_id();
+		$last_request = get_transient( $throttle_key );
+
+		if ( $last_request && ( time() - $last_request ) < 1 ) {
+			return new \WP_Error(
+				'rate_limited',
+				__( 'Please wait a moment before searching again.', 'reactions-indieweb' ),
+				array( 'status' => 429 )
+			);
+		}
+
+		set_transient( $throttle_key, time(), 60 );
+
+		try {
+			$api    = new Nominatim();
+			$result = $api->reverse( $lat, $lon );
+
+			if ( ! $result ) {
+				return new \WP_Error(
+					'not_found',
+					__( 'No location found for these coordinates.', 'reactions-indieweb' ),
+					array( 'status' => 404 )
+				);
+			}
+
+			return rest_ensure_response( $result );
+		} catch ( \Exception $e ) {
+			return new \WP_Error(
+				'reverse_failed',
+				$e->getMessage(),
+				array( 'status' => 500 )
+			);
+		}
+	}
+
+	/**
+	 * Search for venues via Foursquare API.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function location_venues( \WP_REST_Request $request ) {
+		$query = $request->get_param( 'query' );
+		$lat   = $request->get_param( 'lat' );
+		$lon   = $request->get_param( 'lon' );
+
+		// Check throttle.
+		$throttle_key = 'reactions_location_throttle_' . get_current_user_id();
+		$last_request = get_transient( $throttle_key );
+
+		if ( $last_request && ( time() - $last_request ) < 1 ) {
+			return new \WP_Error(
+				'rate_limited',
+				__( 'Please wait a moment before searching again.', 'reactions-indieweb' ),
+				array( 'status' => 429 )
+			);
+		}
+
+		set_transient( $throttle_key, time(), 60 );
+
+		try {
+			$api = new Foursquare();
+
+			// Check if Foursquare is configured.
+			if ( ! $api->test_connection() ) {
+				return new \WP_Error(
+					'foursquare_not_configured',
+					__( 'Foursquare API is not configured. Please add your API key in Settings > APIs.', 'reactions-indieweb' ),
+					array( 'status' => 400 )
+				);
+			}
+
+			if ( $lat && $lon && ! $query ) {
+				// Nearby search.
+				$results = $api->search_nearby( (float) $lat, (float) $lon );
+			} elseif ( $query ) {
+				// Query search, optionally with location bias.
+				$results = $api->search( $query, null, $lat ? (float) $lat : null, $lon ? (float) $lon : null );
+			} else {
+				return new \WP_Error(
+					'missing_params',
+					__( 'Provide either a search query or lat/lon coordinates.', 'reactions-indieweb' ),
+					array( 'status' => 400 )
+				);
+			}
+
+			return rest_ensure_response( $results );
+		} catch ( \Exception $e ) {
+			return new \WP_Error(
+				'venue_search_failed',
 				$e->getMessage(),
 				array( 'status' => 500 )
 			);

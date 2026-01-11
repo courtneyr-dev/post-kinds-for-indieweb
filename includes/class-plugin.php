@@ -105,6 +105,27 @@ final class Plugin {
 	private ?Query_Filter $query_filter = null;
 
 	/**
+	 * Checkin sync services.
+	 *
+	 * @var array<Sync\Checkin_Sync_Base>
+	 */
+	private array $checkin_sync_services = array();
+
+	/**
+	 * Import Manager component instance.
+	 *
+	 * @var Import_Manager|null
+	 */
+	private ?Import_Manager $import_manager = null;
+
+	/**
+	 * Scheduled Sync component instance.
+	 *
+	 * @var Scheduled_Sync|null
+	 */
+	private ?Scheduled_Sync $scheduled_sync = null;
+
+	/**
 	 * Get the singleton instance.
 	 *
 	 * @return Plugin The singleton instance.
@@ -253,6 +274,80 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Query_Filter' ) ) {
 			$this->query_filter = new Query_Filter();
 		}
+
+		// Initialize checkin sync services.
+		$this->init_checkin_sync_services();
+
+		// Initialize import manager and scheduled sync.
+		if ( class_exists( __NAMESPACE__ . '\\Import_Manager' ) ) {
+			$this->import_manager = new Import_Manager();
+		}
+
+		if ( class_exists( __NAMESPACE__ . '\\Scheduled_Sync' ) && $this->import_manager ) {
+			$this->scheduled_sync = new Scheduled_Sync( $this->import_manager );
+			$this->scheduled_sync->init();
+		}
+	}
+
+	/**
+	 * Initialize checkin synchronization services.
+	 *
+	 * Sets up bidirectional sync for supported services.
+	 *
+	 * @return void
+	 */
+	private function init_checkin_sync_services(): void {
+		// Foursquare sync (venues/locations).
+		if ( class_exists( __NAMESPACE__ . '\\Sync\\Foursquare_Checkin_Sync' ) ) {
+			$foursquare_sync = new Sync\Foursquare_Checkin_Sync();
+			$foursquare_sync->init();
+			$this->checkin_sync_services['foursquare'] = $foursquare_sync;
+		}
+
+		// Untappd sync (beer checkins).
+		if ( class_exists( __NAMESPACE__ . '\\Sync\\Untappd_Checkin_Sync' ) ) {
+			$untappd_sync = new Sync\Untappd_Checkin_Sync();
+			$untappd_sync->init();
+			$this->checkin_sync_services['untappd'] = $untappd_sync;
+		}
+
+		// OwnTracks (self-hosted location tracking via webhook).
+		if ( class_exists( __NAMESPACE__ . '\\Sync\\OwnTracks_Checkin_Sync' ) ) {
+			$owntracks_sync = new Sync\OwnTracks_Checkin_Sync();
+			$owntracks_sync->init();
+			$this->checkin_sync_services['owntracks'] = $owntracks_sync;
+		}
+
+		/**
+		 * Filter to add additional checkin sync services.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array<Sync\Checkin_Sync_Base> $services Checkin sync services.
+		 */
+		$this->checkin_sync_services = apply_filters(
+			'reactions_indieweb_checkin_sync_services',
+			$this->checkin_sync_services
+		);
+	}
+
+	/**
+	 * Get a checkin sync service by ID.
+	 *
+	 * @param string $service_id Service ID.
+	 * @return Sync\Checkin_Sync_Base|null
+	 */
+	public function get_checkin_sync_service( string $service_id ): ?Sync\Checkin_Sync_Base {
+		return $this->checkin_sync_services[ $service_id ] ?? null;
+	}
+
+	/**
+	 * Get all checkin sync services.
+	 *
+	 * @return array<Sync\Checkin_Sync_Base>
+	 */
+	public function get_checkin_sync_services(): array {
+		return $this->checkin_sync_services;
 	}
 
 	/**
@@ -617,6 +712,24 @@ final class Plugin {
 	 */
 	public function get_query_filter(): ?Query_Filter {
 		return $this->query_filter;
+	}
+
+	/**
+	 * Get the Import_Manager component.
+	 *
+	 * @return Import_Manager|null The Import_Manager instance or null if not loaded.
+	 */
+	public function get_import_manager(): ?Import_Manager {
+		return $this->import_manager;
+	}
+
+	/**
+	 * Get the Scheduled_Sync component.
+	 *
+	 * @return Scheduled_Sync|null The Scheduled_Sync instance or null if not loaded.
+	 */
+	public function get_scheduled_sync(): ?Scheduled_Sync {
+		return $this->scheduled_sync;
 	}
 
 	/**

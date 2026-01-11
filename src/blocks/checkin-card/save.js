@@ -1,6 +1,8 @@
 /**
  * Checkin Card Block - Save Component
  *
+ * Privacy-aware rendering for IndieWeb microformats.
+ *
  * @package Reactions_For_IndieWeb
  */
 
@@ -23,6 +25,8 @@ export default function Save({ attributes }) {
         postalCode,
         latitude,
         longitude,
+        locationPrivacy = 'approximate',
+        osmId,
         venueUrl,
         foursquareId,
         checkinAt,
@@ -36,6 +40,13 @@ export default function Save({ attributes }) {
     const blockProps = useBlockProps.save({
         className: `checkin-card layout-${layout}`,
     });
+
+    // Don't render location content for private privacy
+    const isPrivate = locationPrivacy === 'private';
+    const isPublic = locationPrivacy === 'public';
+    const showCoords = isPublic && latitude && longitude;
+    const showAddress = isPublic && address;
+    const showMapEmbed = showMap && latitude && longitude && !isPrivate;
 
     /**
      * Get venue type icon
@@ -82,24 +93,13 @@ export default function Save({ attributes }) {
     };
 
     /**
-     * Format full address
-     */
-    const formatAddress = () => {
-        const parts = [];
-        if (address) parts.push(address);
-        if (locality) parts.push(locality);
-        if (region) parts.push(region);
-        if (postalCode) parts.push(postalCode);
-        if (country) parts.push(country);
-        return parts.join(', ');
-    };
-
-    /**
-     * Generate map URL
+     * Generate map URL - adjust zoom based on privacy
      */
     const getMapUrl = () => {
         if (!latitude || !longitude) return null;
-        return `https://www.openstreetmap.org/export/embed.html?bbox=${longitude - 0.01},${latitude - 0.01},${longitude + 0.01},${latitude + 0.01}&layer=mapnik&marker=${latitude},${longitude}`;
+        // Show wider area for approximate privacy
+        const bbox = isPublic ? 0.01 : 0.1;
+        return `https://www.openstreetmap.org/export/embed.html?bbox=${longitude - bbox},${latitude - bbox},${longitude + bbox},${latitude + bbox}&layer=mapnik&marker=${latitude},${longitude}`;
     };
 
     /**
@@ -109,6 +109,57 @@ export default function Save({ attributes }) {
         if (!latitude || !longitude) return null;
         return `geo:${latitude},${longitude}`;
     };
+
+    // Private posts show a placeholder
+    if (isPrivate) {
+        return (
+            <div {...blockProps}>
+                <div className="checkin-card-inner h-entry checkin-private">
+                    {/* Photo */}
+                    {photo && (
+                        <div className="checkin-photo">
+                            <img
+                                src={photo}
+                                alt={photoAlt || `Photo`}
+                                className="u-photo"
+                                loading="lazy"
+                            />
+                        </div>
+                    )}
+
+                    <div className="checkin-info">
+                        <span className="venue-type-badge">
+                            <span className="venue-icon" aria-hidden="true">{getVenueIcon()}</span>
+                            {getVenueTypeLabel()}
+                        </span>
+
+                        {/* For private: show vague indicator, no location data */}
+                        <p className="checkin-private-notice">
+                            <span className="dashicons dashicons-lock" aria-hidden="true"></span>
+                            Location saved privately
+                        </p>
+
+                        {/* Checkin time */}
+                        {checkinAt && (
+                            <time
+                                className="checkin-time dt-published"
+                                dateTime={new Date(checkinAt).toISOString()}
+                            >
+                                {new Date(checkinAt).toLocaleString()}
+                            </time>
+                        )}
+
+                        {/* Note can still be shown */}
+                        {note && (
+                            <div className="checkin-note p-content">
+                                <RichText.Content tagName="p" value={note} />
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div {...blockProps}>
@@ -145,9 +196,12 @@ export default function Save({ attributes }) {
                         </h3>
                     )}
 
-                    {/* Location with microformats */}
+                    {/* Location with microformats - privacy aware */}
                     <div className="venue-location p-location h-card">
-                        {address && <span className="p-street-address">{address}</span>}
+                        {/* Street address only for public */}
+                        {showAddress && <span className="p-street-address">{address}</span>}
+
+                        {/* City/region/country shown for public and approximate */}
                         {(locality || region || country) && (
                             <span className="location-parts">
                                 {locality && <span className="p-locality">{locality}</span>}
@@ -157,10 +211,12 @@ export default function Save({ attributes }) {
                                 {country && <span className="p-country-name">{country}</span>}
                             </span>
                         )}
-                        {postalCode && <span className="p-postal-code">{postalCode}</span>}
 
-                        {/* Geo coordinates */}
-                        {latitude && longitude && (
+                        {/* Postal code only for public */}
+                        {isPublic && postalCode && <span className="p-postal-code">{postalCode}</span>}
+
+                        {/* Geo coordinates only for public */}
+                        {showCoords && (
                             <data className="p-geo h-geo" value={getGeoUri()}>
                                 <data className="p-latitude" value={latitude} hidden />
                                 <data className="p-longitude" value={longitude} hidden />
@@ -186,8 +242,8 @@ export default function Save({ attributes }) {
                     )}
                 </div>
 
-                {/* Map embed */}
-                {showMap && latitude && longitude && (
+                {/* Map embed - not shown for private, shows wider area for approximate */}
+                {showMapEmbed && (
                     <div className="checkin-map">
                         <iframe
                             title={`Map of ${venueName || 'location'}`}
@@ -200,23 +256,35 @@ export default function Save({ attributes }) {
                             src={getMapUrl()}
                             loading="lazy"
                         />
-                        <a
-                            href={`https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=16/${latitude}/${longitude}`}
-                            className="map-link"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            View larger map
-                        </a>
+                        {isPublic && (
+                            <a
+                                href={`https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=16/${latitude}/${longitude}`}
+                                className="map-link"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                View larger map
+                            </a>
+                        )}
+                        {!isPublic && (
+                            <p className="map-note">Showing approximate area</p>
+                        )}
                     </div>
                 )}
 
-                {/* Hidden microformat data */}
+                {/* Hidden microformat data - privacy aware */}
                 <data className="u-checkin" value={venueUrl || ''} hidden />
                 {foursquareId && (
                     <data
                         className="u-uid"
                         value={`https://foursquare.com/v/${foursquareId}`}
+                        hidden
+                    />
+                )}
+                {osmId && (
+                    <data
+                        className="u-uid"
+                        value={`https://www.openstreetmap.org/${osmId}`}
                         hidden
                     />
                 )}
