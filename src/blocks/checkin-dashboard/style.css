@@ -1,0 +1,349 @@
+/**
+ * Check-in Dashboard Block - Frontend Styles
+ *
+ * @package Reactions_For_IndieWeb
+ */
+
+.checkin-dashboard-frontend {
+	--checkin-primary: #2271b1;
+	--checkin-border: #dcdcde;
+	--checkin-bg: #f6f7f7;
+	--checkin-text: #1d2327;
+	--checkin-text-light: #646970;
+}
+
+/* Stats */
+.checkin-dashboard-stats {
+	display: flex;
+	gap: 1rem;
+	margin-bottom: 1.5rem;
+	flex-wrap: wrap;
+}
+
+.checkin-dashboard-stats .stat-item {
+	background: var(--checkin-bg);
+	padding: 1rem 1.5rem;
+	border-radius: 8px;
+	text-align: center;
+}
+
+.checkin-dashboard-stats .stat-value {
+	display: block;
+	font-size: 2rem;
+	font-weight: 700;
+	color: var(--checkin-primary);
+	line-height: 1;
+}
+
+.checkin-dashboard-stats .stat-label {
+	display: block;
+	font-size: 0.75rem;
+	color: var(--checkin-text-light);
+	text-transform: uppercase;
+	margin-top: 0.25rem;
+}
+
+/* Filters */
+.checkin-dashboard-filters {
+	display: flex;
+	gap: 0.5rem;
+	margin-bottom: 1.5rem;
+}
+
+.checkin-dashboard-filters .view-btn {
+	padding: 0.5rem 1rem;
+	border: 1px solid var(--checkin-border);
+	background: #fff;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 0.875rem;
+	transition: all 0.2s;
+}
+
+.checkin-dashboard-filters .view-btn:hover {
+	background: var(--checkin-bg);
+}
+
+.checkin-dashboard-filters .view-btn.active {
+	background: var(--checkin-primary);
+	border-color: var(--checkin-primary);
+	color: #fff;
+}
+
+/* Views */
+.checkin-dashboard-views [class*="checkin-view-"] {
+	display: none;
+}
+
+.checkin-dashboard-views [class*="checkin-view-"].active {
+	display: block;
+}
+
+/* Grid View */
+.checkin-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: 1.5rem;
+}
+
+.checkin-card {
+	background: #fff;
+	border: 1px solid var(--checkin-border);
+	border-radius: 8px;
+	overflow: hidden;
+	transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.checkin-card:hover {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	transform: translateY(-2px);
+}
+
+.checkin-card-photo {
+	aspect-ratio: 16 / 9;
+	overflow: hidden;
+	background: var(--checkin-bg);
+}
+
+.checkin-card-photo img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.checkin-card-content {
+	padding: 1rem;
+}
+
+.checkin-card-venue {
+	font-size: 1rem;
+	font-weight: 600;
+	margin: 0 0 0.25rem;
+	line-height: 1.3;
+}
+
+.checkin-card-venue a {
+	color: var(--checkin-text);
+	text-decoration: none;
+}
+
+.checkin-card-venue a:hover {
+	color: var(--checkin-primary);
+}
+
+.checkin-card-address {
+	font-size: 0.875rem;
+	color: var(--checkin-text-light);
+	margin: 0 0 0.5rem;
+}
+
+.checkin-card-date {
+	font-size: 0.75rem;
+	color: var(--checkin-text-light);
+}
+
+/* Map View */
+.checkin-map {
+	height: 500px;
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+.checkin-popup strong {
+	display: block;
+	margin-bottom: 0.25rem;
+}
+
+.checkin-popup span {
+	display: block;
+	color: #666;
+	font-size: 0.875rem;
+	margin-bottom: 0.5rem;
+}
+
+/* Timeline View */
+.timeline-group {
+	margin-bottom: 2rem;
+}
+
+.timeline-month {
+	font-size: 1.25rem;
+	font-weight: 600;
+	margin: 0 0 1rem;
+	padding-bottom: 0.5rem;
+	border-bottom: 2px solid var(--checkin-primary);
+}
+
+.timeline-items {
+	position: relative;
+	padding-left: 2rem;
+}
+
+.timeline-items::before {
+	content: '';
+	position: absolute;
+	left: 0.5rem;
+	top: 0;
+	bottom: 0;
+	width: 2px;
+	background: var(--checkin-border);
+}
+
+.timeline-item {
+	position: relative;
+	padding: 0.75rem 0;
+}
+
+.timeline-marker {
+	position: absolute;
+	left: -1.5rem;
+	top: 1rem;
+	width: 10px;
+	height: 10px;
+	background: var(--checkin-primary);
+	border-radius: 50%;
+	border: 2px solid #fff;
+	box-shadow: 0 0 0 2px var(--checkin-primary);
+}
+
+.timeline-content {
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+}
+
+.timeline-venue {
+	font-weight: 600;
+	color: var(--checkin-text);
+	text-decoration: none;
+}
+
+.timeline-venue:hover {
+	color: var(--checkin-primary);
+}
+
+.timeline-address {
+	font-size: 0.875rem;
+	color: var(--checkin-text-light);
+}
+
+.timeline-date {
+	font-size: 0.75rem;
+	color: var(--checkin-text-light);
+}
+
+/* Empty State */
+.checkin-empty {
+	text-align: center;
+	padding: 3rem;
+	color: var(--checkin-text-light);
+}
+
+/* Editor Preview Styles */
+.checkin-dashboard-preview {
+	padding: 1rem;
+	background: var(--checkin-bg);
+	border-radius: 8px;
+}
+
+.checkin-stats-preview {
+	display: flex;
+	gap: 1rem;
+	margin-bottom: 1rem;
+}
+
+.checkin-stats-preview .stat-item {
+	background: #fff;
+	padding: 0.75rem 1rem;
+	border-radius: 4px;
+	text-align: center;
+}
+
+.checkin-stats-preview .stat-value {
+	display: block;
+	font-size: 1.5rem;
+	font-weight: 700;
+	color: var(--checkin-primary);
+}
+
+.checkin-stats-preview .stat-label {
+	font-size: 0.625rem;
+	color: var(--checkin-text-light);
+	text-transform: uppercase;
+}
+
+.checkin-grid-preview {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 1rem;
+}
+
+.checkin-card-preview {
+	background: #fff;
+	border-radius: 4px;
+	overflow: hidden;
+	border: 1px solid var(--checkin-border);
+}
+
+.checkin-card-preview img {
+	width: 100%;
+	height: 80px;
+	object-fit: cover;
+}
+
+.checkin-card-preview .no-photo {
+	height: 80px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--checkin-bg);
+	color: var(--checkin-text-light);
+}
+
+.checkin-card-info {
+	padding: 0.5rem;
+}
+
+.checkin-card-info strong {
+	display: block;
+	font-size: 0.75rem;
+	line-height: 1.2;
+	margin-bottom: 0.125rem;
+}
+
+.checkin-card-info span {
+	display: block;
+	font-size: 0.625rem;
+	color: var(--checkin-text-light);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.checkin-more {
+	text-align: center;
+	font-size: 0.75rem;
+	color: var(--checkin-text-light);
+	margin: 1rem 0 0;
+}
+
+.checkin-loading {
+	text-align: center;
+	padding: 2rem;
+	color: var(--checkin-text-light);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+	.checkin-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.checkin-grid-preview {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.checkin-dashboard-stats {
+		flex-direction: column;
+	}
+}

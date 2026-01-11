@@ -69,6 +69,7 @@ class REST_API {
 		$this->register_webhook_routes();
 		$this->register_oauth_routes();
 		$this->register_settings_routes();
+		$this->register_checkin_routes();
 	}
 
 	/**
@@ -769,6 +770,64 @@ class REST_API {
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'regenerate_webhook_secret' ),
 				'permission_callback' => array( $this, 'can_manage_options' ),
+			)
+		);
+	}
+
+	/**
+	 * Register check-in dashboard routes.
+	 *
+	 * @return void
+	 */
+	private function register_checkin_routes(): void {
+		// Get check-ins with filters.
+		register_rest_route(
+			self::NAMESPACE,
+			'/checkins',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'get_checkins' ),
+				'permission_callback' => array( $this, 'can_edit_posts' ),
+				'args'                => array(
+					'page'       => array(
+						'type'    => 'integer',
+						'default' => 1,
+						'minimum' => 1,
+					),
+					'per_page'   => array(
+						'type'    => 'integer',
+						'default' => 50,
+						'minimum' => 1,
+						'maximum' => 100,
+					),
+					'year'       => array(
+						'type' => 'integer',
+					),
+					'venue_type' => array(
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'search'     => array(
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+				),
+			)
+		);
+
+		// Get check-in statistics.
+		register_rest_route(
+			self::NAMESPACE,
+			'/checkins/stats',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'get_checkin_stats' ),
+				'permission_callback' => array( $this, 'can_edit_posts' ),
+				'args'                => array(
+					'year' => array(
+						'type' => 'integer',
+					),
+				),
 			)
 		);
 	}
@@ -2555,5 +2614,201 @@ class REST_API {
 				'message' => __( 'Webhook secret regenerated.', 'reactions-for-indieweb' ),
 			)
 		);
+	}
+
+	// =========================================================================
+	// Check-in Dashboard Callbacks
+	// =========================================================================
+
+	/**
+	 * Get check-ins with filters.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function get_checkins( \WP_REST_Request $request ) {
+		$page       = $request->get_param( 'page' ) ?? 1;
+		$per_page   = $request->get_param( 'per_page' ) ?? 50;
+		$year       = $request->get_param( 'year' );
+		$venue_type = $request->get_param( 'venue_type' );
+		$search     = $request->get_param( 'search' );
+
+		$args = array(
+			'post_type'      => 'post',
+			'post_status'    => 'publish',
+			'posts_per_page' => $per_page,
+			'paged'          => $page,
+			'tax_query'      => array(
+				array(
+					'taxonomy' => 'kind',
+					'field'    => 'slug',
+					'terms'    => 'checkin',
+				),
+			),
+			'meta_query'     => array(),
+		);
+
+		// Filter by year.
+		if ( $year ) {
+			$args['date_query'] = array(
+				array(
+					'year' => $year,
+				),
+			);
+		}
+
+		// Filter by venue type.
+		if ( $venue_type ) {
+			$args['meta_query'][] = array(
+				'key'     => '_reactions_checkin_type',
+				'value'   => $venue_type,
+				'compare' => '=',
+			);
+		}
+
+		// Search by venue name.
+		if ( $search ) {
+			$args['meta_query'][] = array(
+				'key'     => '_reactions_checkin_name',
+				'value'   => $search,
+				'compare' => 'LIKE',
+			);
+		}
+
+		$query    = new \WP_Query( $args );
+		$checkins = array();
+
+		foreach ( $query->posts as $post ) {
+			$checkins[] = $this->format_checkin_for_response( $post );
+		}
+
+		return rest_ensure_response(
+			array(
+				'checkins'    => $checkins,
+				'total'       => $query->found_posts,
+				'total_pages' => $query->max_num_pages,
+				'page'        => $page,
+				'per_page'    => $per_page,
+			)
+		);
+	}
+
+	/**
+	 * Get check-in statistics.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function get_checkin_stats( \WP_REST_Request $request ) {
+		$year = $request->get_param( 'year' );
+
+		$args = array(
+			'post_type'      => 'post',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+			'tax_query'      => array(
+				array(
+					'taxonomy' => 'kind',
+					'field'    => 'slug',
+					'terms'    => 'checkin',
+				),
+			),
+		);
+
+		if ( $year ) {
+			$args['date_query'] = array(
+				array(
+					'year' => $year,
+				),
+			);
+		}
+
+		$query = new \WP_Query( $args );
+
+		$venues    = array();
+		$countries = array();
+		$cities    = array();
+		$most_visited = array();
+
+		foreach ( $query->posts as $post ) {
+			$venue_name = get_post_meta( $post->ID, '_reactions_checkin_name', true );
+			$locality   = get_post_meta( $post->ID, '_reactions_checkin_locality', true );
+			$country    = get_post_meta( $post->ID, '_reactions_checkin_country', true );
+
+			if ( $venue_name ) {
+				$venues[ $venue_name ] = true;
+				if ( ! isset( $most_visited[ $venue_name ] ) ) {
+					$most_visited[ $venue_name ] = array(
+						'name'  => $venue_name,
+						'count' => 0,
+						'locality' => $locality,
+					);
+				}
+				$most_visited[ $venue_name ]['count']++;
+			}
+
+			if ( $locality ) {
+				$cities[ $locality ] = true;
+			}
+
+			if ( $country ) {
+				$countries[ $country ] = true;
+			}
+		}
+
+		// Sort most visited by count.
+		usort( $most_visited, function( $a, $b ) {
+			return $b['count'] - $a['count'];
+		} );
+
+		return rest_ensure_response(
+			array(
+				'total_checkins' => $query->found_posts,
+				'unique_venues'  => count( $venues ),
+				'countries'      => count( $countries ),
+				'cities'         => count( $cities ),
+				'most_visited'   => array_slice( array_values( $most_visited ), 0, 10 ),
+				'countries_list' => array_keys( $countries ),
+				'cities_list'    => array_keys( $cities ),
+			)
+		);
+	}
+
+	/**
+	 * Format a check-in post for REST response.
+	 *
+	 * @param \WP_Post $post Post object.
+	 * @return array Formatted check-in data.
+	 */
+	private function format_checkin_for_response( \WP_Post $post ): array {
+		$privacy = get_post_meta( $post->ID, '_reactions_geo_privacy', true ) ?: 'approximate';
+
+		$data = array(
+			'id'         => $post->ID,
+			'title'      => get_the_title( $post ),
+			'date'       => get_the_date( 'c', $post ),
+			'permalink'  => get_permalink( $post ),
+			'edit_link'  => get_edit_post_link( $post->ID, 'raw' ),
+			'venue_name' => get_post_meta( $post->ID, '_reactions_checkin_name', true ),
+			'venue_type' => get_post_meta( $post->ID, '_reactions_checkin_type', true ),
+			'address'    => get_post_meta( $post->ID, '_reactions_checkin_address', true ),
+			'locality'   => get_post_meta( $post->ID, '_reactions_checkin_locality', true ),
+			'region'     => get_post_meta( $post->ID, '_reactions_checkin_region', true ),
+			'country'    => get_post_meta( $post->ID, '_reactions_checkin_country', true ),
+			'privacy'    => $privacy,
+			'thumbnail'  => get_the_post_thumbnail_url( $post, 'thumbnail' ),
+		);
+
+		// Only include coordinates based on privacy setting.
+		if ( 'public' === $privacy ) {
+			$data['latitude']  = (float) get_post_meta( $post->ID, '_reactions_geo_latitude', true );
+			$data['longitude'] = (float) get_post_meta( $post->ID, '_reactions_geo_longitude', true );
+		} elseif ( 'approximate' === $privacy ) {
+			// For approximate, we could add city-level coords if needed.
+			$data['latitude']  = null;
+			$data['longitude'] = null;
+		}
+
+		return $data;
 	}
 }

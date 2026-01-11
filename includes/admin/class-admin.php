@@ -78,6 +78,13 @@ class Admin {
     private Syndication_Page $syndication_page;
 
     /**
+     * Checkin dashboard instance.
+     *
+     * @var Checkin_Dashboard
+     */
+    private Checkin_Dashboard $checkin_dashboard;
+
+    /**
      * Admin page hook suffixes.
      *
      * @var array<string, string>
@@ -105,8 +112,9 @@ class Admin {
         $this->import_page   = new Import_Page( $this );
         $this->webhooks_page = new Webhooks_Page( $this );
         $this->meta_boxes       = new Meta_Boxes( $this );
-        $this->quick_post       = new Quick_Post( $this );
-        $this->syndication_page = new Syndication_Page( $this );
+        $this->quick_post        = new Quick_Post( $this );
+        $this->syndication_page  = new Syndication_Page( $this );
+        $this->checkin_dashboard = new Checkin_Dashboard( $this );
 
         // Register hooks.
         add_action( 'admin_menu', array( $this, 'register_menu' ) );
@@ -123,6 +131,7 @@ class Admin {
         $this->meta_boxes->init();
         $this->quick_post->init();
         $this->syndication_page->init();
+        $this->checkin_dashboard->init();
 
         // AJAX handlers.
         add_action( 'wp_ajax_reactions_indieweb_test_api', array( $this, 'ajax_test_api' ) );
@@ -208,6 +217,16 @@ class Admin {
             'edit_posts',
             'reactions-indieweb-syndication',
             array( $this->syndication_page, 'render' )
+        );
+
+        // Check-in Dashboard submenu.
+        $this->page_hooks['checkin_dashboard'] = add_submenu_page(
+            'reactions-for-indieweb',
+            __( 'Check-ins', 'reactions-for-indieweb' ),
+            __( 'Check-ins', 'reactions-for-indieweb' ),
+            'edit_posts',
+            'reactions-indieweb-checkins',
+            array( $this->checkin_dashboard, 'render' )
         );
     }
 

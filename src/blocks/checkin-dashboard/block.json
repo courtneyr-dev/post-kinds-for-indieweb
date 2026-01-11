@@ -1,0 +1,46 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "reactions-indieweb/checkin-dashboard",
+	"version": "1.0.0",
+	"title": "Check-in Dashboard",
+	"category": "reactions-indieweb",
+	"icon": "location",
+	"description": "Display a dashboard of your check-ins with grid, map, and timeline views.",
+	"keywords": [ "checkin", "location", "foursquare", "map", "dashboard" ],
+	"textdomain": "reactions-for-indieweb",
+	"attributes": {
+		"layout": {
+			"type": "string",
+			"default": "grid"
+		},
+		"showMap": {
+			"type": "boolean",
+			"default": true
+		},
+		"showStats": {
+			"type": "boolean",
+			"default": true
+		},
+		"limit": {
+			"type": "number",
+			"default": 12
+		},
+		"showFilters": {
+			"type": "boolean",
+			"default": false
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ],
+		"spacing": {
+			"margin": true,
+			"padding": true
+		}
+	},
+	"editorScript": "file:./index.js",
+	"style": "file:./style.css",
+	"viewScript": "file:./view.js",
+	"render": "file:./render.php"
+}

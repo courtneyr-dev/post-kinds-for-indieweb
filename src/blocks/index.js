@@ -20,6 +20,7 @@ import './jam-card';
 import './wish-card';
 import './mood-card';
 import './acquisition-card';
+import './checkin-dashboard';
 import './star-rating';
 import './media-lookup';
 
