@@ -737,41 +737,77 @@ class Admin {
      */
     public function get_post_kinds(): array {
         $kinds = array(
-            'listen'  => array(
+            'listen'      => array(
                 'label' => __( 'Listen', 'reactions-for-indieweb' ),
                 'icon'  => 'dashicons-format-audio',
             ),
-            'watch'   => array(
+            'watch'       => array(
                 'label' => __( 'Watch', 'reactions-for-indieweb' ),
                 'icon'  => 'dashicons-video-alt2',
             ),
-            'read'    => array(
+            'read'        => array(
                 'label' => __( 'Read', 'reactions-for-indieweb' ),
                 'icon'  => 'dashicons-book',
             ),
-            'checkin' => array(
+            'play'        => array(
+                'label' => __( 'Play', 'reactions-for-indieweb' ),
+                'icon'  => 'dashicons-games',
+            ),
+            'checkin'     => array(
                 'label' => __( 'Checkin', 'reactions-for-indieweb' ),
                 'icon'  => 'dashicons-location',
             ),
-            'like'    => array(
+            'eat'         => array(
+                'label' => __( 'Eat', 'reactions-for-indieweb' ),
+                'icon'  => 'dashicons-carrot',
+            ),
+            'drink'       => array(
+                'label' => __( 'Drink', 'reactions-for-indieweb' ),
+                'icon'  => 'dashicons-coffee',
+            ),
+            'like'        => array(
                 'label' => __( 'Like', 'reactions-for-indieweb' ),
                 'icon'  => 'dashicons-heart',
             ),
-            'reply'   => array(
+            'favorite'    => array(
+                'label' => __( 'Favorite', 'reactions-for-indieweb' ),
+                'icon'  => 'dashicons-star-filled',
+            ),
+            'bookmark'    => array(
+                'label' => __( 'Bookmark', 'reactions-for-indieweb' ),
+                'icon'  => 'dashicons-flag',
+            ),
+            'reply'       => array(
                 'label' => __( 'Reply', 'reactions-for-indieweb' ),
                 'icon'  => 'dashicons-format-chat',
             ),
-            'repost'  => array(
+            'repost'      => array(
                 'label' => __( 'Repost', 'reactions-for-indieweb' ),
                 'icon'  => 'dashicons-controls-repeat',
             ),
-            'bookmark' => array(
-                'label' => __( 'Bookmark', 'reactions-for-indieweb' ),
-                'icon'  => 'dashicons-bookmark',
-            ),
-            'rsvp'    => array(
+            'rsvp'        => array(
                 'label' => __( 'RSVP', 'reactions-for-indieweb' ),
                 'icon'  => 'dashicons-calendar-alt',
+            ),
+            'jam'         => array(
+                'label' => __( 'Jam', 'reactions-for-indieweb' ),
+                'icon'  => 'dashicons-playlist-audio',
+            ),
+            'wish'        => array(
+                'label' => __( 'Wish', 'reactions-for-indieweb' ),
+                'icon'  => 'dashicons-pressthis',
+            ),
+            'mood'        => array(
+                'label' => __( 'Mood', 'reactions-for-indieweb' ),
+                'icon'  => 'dashicons-smiley',
+            ),
+            'acquisition' => array(
+                'label' => __( 'Acquisition', 'reactions-for-indieweb' ),
+                'icon'  => 'dashicons-cart',
+            ),
+            'recipe'      => array(
+                'label' => __( 'Recipe', 'reactions-for-indieweb' ),
+                'icon'  => 'dashicons-clipboard',
             ),
         );
 
