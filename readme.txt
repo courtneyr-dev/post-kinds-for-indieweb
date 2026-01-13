@@ -68,7 +68,8 @@ This plugin is a modern, block-editor-compatible successor to David Shanske's In
 
 **Recommended:**
 
-* [IndieBlocks](https://wordpress.org/plugins/indieblocks/) - Core IndieWeb blocks for bookmarks, likes, replies, reposts, and context
+* [IndieWeb](https://wordpress.org/plugins/indieweb/) - people-focused alternative to the ‘corporate web’ that allows you to be the hub of your own web presence.
+* [IndieBlocks](https://wordpress.org/plugins/indieblocks/) - Core IndieWeb blocks register several “theme” blocks (Facepile, Location, Syndication, and Link Preview), to be used in “block theme” templates.
 * [Syndication Links](https://wordpress.org/plugins/syndication-links/) - Stores and displays syndication URLs for POSSE workflows
 * [Webmention](https://wordpress.org/plugins/webmention/) - Cross-site conversations and notifications
 * [Link Extension for XFN](https://wordpress.org/plugins/link-extension-for-xfn/) - Integrates XFN (XHTML Friends Network) relationship options into WordPress’s native link interface.
