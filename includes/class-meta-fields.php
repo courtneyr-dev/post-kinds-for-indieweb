@@ -605,7 +605,7 @@ class Meta_Fields {
 			'play_hours'       => array(
 				'type'        => 'number',
 				'description' => __( 'Hours played.', 'reactions-for-indieweb' ),
-				'sanitize'    => 'floatval',
+				'sanitize'    => array( $this, 'sanitize_float' ),
 				'default'     => 0,
 			),
 			'play_cover'       => array(
@@ -915,6 +915,18 @@ class Meta_Fields {
 		$value = sanitize_text_field( (string) $value );
 
 		return in_array( $value, $valid, true ) ? $value : 'playing';
+	}
+
+	/**
+	 * Sanitize float value.
+	 *
+	 * Wrapper for floatval() that works with WordPress sanitize callbacks.
+	 *
+	 * @param mixed $value Value to sanitize.
+	 * @return float Sanitized float value.
+	 */
+	public function sanitize_float( mixed $value ): float {
+		return (float) $value;
 	}
 
 	/**

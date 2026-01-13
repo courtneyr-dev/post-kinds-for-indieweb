@@ -296,10 +296,10 @@ class REST_API {
 				'permission_callback' => array( $this, 'can_edit_posts' ),
 				'args'                => array(
 					'q'      => array(
-						'required'          => true,
+						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-						'description'       => __( 'Search query (game name)', 'reactions-for-indieweb' ),
+						'description'       => __( 'Search query (game name) - required unless id is provided', 'reactions-for-indieweb' ),
 					),
 					'source' => array(
 						'required'          => false,
@@ -1767,9 +1767,18 @@ class REST_API {
 	 */
 	public function lookup_game( \WP_REST_Request $request ) {
 		$query  = $request->get_param( 'q' );
-		$source = $request->get_param( 'source' );
-		$type   = $request->get_param( 'type' );
+		$source = $request->get_param( 'source' ) ?? 'bgg';
+		$type   = $request->get_param( 'type' ) ?? 'boardgame';
 		$id     = $request->get_param( 'id' );
+
+		// Validate that either q or id is provided.
+		if ( empty( $query ) && empty( $id ) ) {
+			return new \WP_Error(
+				'missing_params',
+				__( 'Either search query (q) or game ID (id) is required.', 'reactions-for-indieweb' ),
+				array( 'status' => 400 )
+			);
+		}
 
 		try {
 			// Handle direct ID lookup.
@@ -1785,7 +1794,14 @@ class REST_API {
 					}
 					$result = $api->get_by_id( $id );
 				} else {
-					$api    = new BoardGameGeek();
+					$api = new BoardGameGeek();
+					if ( ! $api->is_configured() ) {
+						return new \WP_Error(
+							'api_not_configured',
+							__( 'BoardGameGeek API is not configured. Add your API token in Settings > Reactions > API Connections.', 'reactions-for-indieweb' ),
+							array( 'status' => 400 )
+						);
+					}
 					$result = $api->get_by_id( $id );
 					if ( $result ) {
 						$result = $api->normalize_result( $result );
@@ -1815,22 +1831,45 @@ class REST_API {
 				}
 				$results = $api->search( $query );
 			} else {
-				$api     = new BoardGameGeek();
+				$api = new BoardGameGeek();
+				if ( ! $api->is_configured() ) {
+					return new \WP_Error(
+						'api_not_configured',
+						__( 'BoardGameGeek API is not configured. Add your API token in Settings > Reactions > API Connections.', 'reactions-for-indieweb' ),
+						array( 'status' => 400 )
+					);
+				}
 				$results = $api->search( $query, $type );
 
-				// Normalize search results.
-				$results = array_map(
-					function( $item ) use ( $api ) {
-						return array(
-							'id'     => $item['id'],
-							'title'  => $item['name'],
-							'year'   => $item['year'],
-							'type'   => $item['type'],
-							'source' => 'bgg',
-						);
-					},
-					$results
-				);
+				// Enrich results with cover images (fetch details for top 5 results).
+				$enriched_results = array();
+				$count            = 0;
+
+				foreach ( $results as $item ) {
+					$result = array(
+						'id'     => $item['id'],
+						'title'  => $item['name'],
+						'year'   => $item['year'],
+						'type'   => $item['type'],
+						'source' => 'bgg',
+					);
+
+					// Fetch full details for first 5 results to get cover images.
+					if ( $count < 5 ) {
+						$details = $api->get_by_id( $item['id'] );
+						if ( $details ) {
+							$result['cover']     = $details['image'] ?? $details['thumbnail'] ?? '';
+							$result['thumbnail'] = $details['thumbnail'] ?? '';
+							$result['designers'] = $details['designers'] ?? array();
+							$result['publishers'] = $details['publishers'] ?? array();
+						}
+					}
+
+					$enriched_results[] = $result;
+					$count++;
+				}
+
+				$results = $enriched_results;
 			}
 
 			return rest_ensure_response( $results );

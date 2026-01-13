@@ -303,7 +303,7 @@ export default function Edit({ attributes, setAttributes }) {
             </InspectorControls>
 
             <div {...blockProps}>
-                <div className="rsvp-card-inner h-entry">
+                <div className="reactions-card h-entry">
                     {/* Event image */}
                     <div className="event-image">
                         <MediaUploadCheck>

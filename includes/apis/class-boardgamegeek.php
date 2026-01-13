@@ -69,22 +69,43 @@ class BoardGameGeek extends API_Base {
 	);
 
 	/**
+	 * API token for authentication.
+	 *
+	 * @var string
+	 */
+	private string $api_token = '';
+
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		parent::__construct();
+
+		// Get token from API credentials storage.
+		$credentials = get_option( 'reactions_indieweb_api_credentials', array() );
+		$this->api_token = $credentials['bgg']['api_token'] ?? '';
+	}
+
+	/**
 	 * Test API connection.
 	 *
 	 * @return bool True if connection successful.
 	 */
 	public function test_connection(): bool {
+		if ( ! $this->is_configured() ) {
+			return false;
+		}
 		$response = $this->get( 'search', array( 'query' => 'Catan', 'type' => 'boardgame' ) );
 		return ! is_wp_error( $response ) && ! empty( $response );
 	}
 
 	/**
-	 * Check if API is configured (always true - no auth needed).
+	 * Check if API is configured.
 	 *
-	 * @return bool Always true.
+	 * @return bool True if API token is set.
 	 */
 	public function is_configured(): bool {
-		return true;
+		return ! empty( $this->api_token );
 	}
 
 	/**
@@ -99,10 +120,10 @@ class BoardGameGeek extends API_Base {
 			return array();
 		}
 
-		$cache_key = $this->get_cache_key( 'search', array( $query, $type ) );
+		$cache_key = $this->get_cache_key( 'search_' . $query . '_' . $type );
 		$cached    = $this->get_cache( $cache_key );
 
-		if ( false !== $cached ) {
+		if ( null !== $cached ) {
 			return $cached;
 		}
 
@@ -136,10 +157,10 @@ class BoardGameGeek extends API_Base {
 			return null;
 		}
 
-		$cache_key = $this->get_cache_key( 'thing', array( $id, $stats ) );
+		$cache_key = $this->get_cache_key( 'thing_' . $id . '_' . ( $stats ? '1' : '0' ) );
 		$cached    = $this->get_cache( $cache_key );
 
-		if ( false !== $cached ) {
+		if ( null !== $cached ) {
 			return $cached;
 		}
 
@@ -219,19 +240,29 @@ class BoardGameGeek extends API_Base {
 	 * @return string|array|\WP_Error Response data or error.
 	 */
 	public function get( string $endpoint, array $params = array() ) {
+		if ( ! $this->is_configured() ) {
+			return new \WP_Error(
+				'bgg_not_configured',
+				__( 'BoardGameGeek API token is not configured. Add your token in Settings > Reactions.', 'reactions-for-indieweb' )
+			);
+		}
+
 		$url = $this->base_url . $endpoint;
 
 		if ( ! empty( $params ) ) {
 			$url = add_query_arg( $params, $url );
 		}
 
-		$this->rate_limit();
+		$this->respect_rate_limit();
 
 		$response = wp_remote_get(
 			$url,
 			array(
 				'timeout'    => $this->timeout,
 				'user-agent' => $this->user_agent,
+				'headers'    => array(
+					'Authorization' => 'Bearer ' . $this->api_token,
+				),
 			)
 		);
 
@@ -246,6 +277,14 @@ class BoardGameGeek extends API_Base {
 		if ( 202 === $code ) {
 			sleep( 2 );
 			return $this->get( $endpoint, $params );
+		}
+
+		// 401 means token is invalid or missing.
+		if ( 401 === $code ) {
+			return new \WP_Error(
+				'bgg_auth_error',
+				__( 'BoardGameGeek API authentication failed. Please check your API token.', 'reactions-for-indieweb' )
+			);
 		}
 
 		if ( $code < 200 || $code >= 300 ) {
@@ -451,5 +490,24 @@ class BoardGameGeek extends API_Base {
 	 */
 	public function get_game_types(): array {
 		return $this->game_types;
+	}
+
+	/**
+	 * Get required configuration fields.
+	 *
+	 * @return array<string, array<string, mixed>> Configuration fields.
+	 */
+	public function get_config_fields(): array {
+		return array(
+			'bgg_api_token' => array(
+				'label'       => __( 'BoardGameGeek API Token', 'reactions-for-indieweb' ),
+				'type'        => 'password',
+				'description' => sprintf(
+					/* translators: %s: Link to BGG applications page */
+					__( 'Get your token from %s', 'reactions-for-indieweb' ),
+					'<a href="https://boardgamegeek.com/applications" target="_blank">boardgamegeek.com/applications</a>'
+				),
+			),
+		);
 	}
 }

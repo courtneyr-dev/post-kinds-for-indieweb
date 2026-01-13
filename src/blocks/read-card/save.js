@@ -49,7 +49,7 @@ export default function Save({ attributes }) {
         }
 
         return (
-            <div className="rating-display p-rating" aria-label={`Rating: ${rating} out of 5 stars`}>
+            <div className="reactions-card__rating p-rating" aria-label={`Rating: ${rating} out of 5 stars`}>
                 {Array.from({ length: 5 }, (_, i) => (
                     <span
                         key={i}
@@ -59,7 +59,7 @@ export default function Save({ attributes }) {
                         ★
                     </span>
                 ))}
-                <span className="rating-value">{rating}/5</span>
+                <span className="reactions-card__rating-value">{rating}/5</span>
             </div>
         );
     };
@@ -82,28 +82,28 @@ export default function Save({ attributes }) {
 
     return (
         <div {...blockProps}>
-            <div className="read-card-inner h-cite">
+            <div className="reactions-card h-cite">
                 {/* Cover image */}
                 {coverImage && (
-                    <div className="cover-image">
+                    <div className="reactions-card__media reactions-card__media--portrait">
                         <img
                             src={coverImage}
                             alt={coverImageAlt || `Cover of ${bookTitle}`}
-                            className="u-photo"
+                            className="reactions-card__image u-photo"
                             loading="lazy"
                         />
                     </div>
                 )}
 
-                <div className="read-info">
+                <div className="reactions-card__content">
                     {/* Status badge */}
-                    <span className={`status-badge status-${readStatus}`}>
+                    <span className={`reactions-card__badge reactions-card__badge--${readStatus}`}>
                         {getStatusLabel()}
                     </span>
 
                     {/* Book title */}
                     {bookTitle && (
-                        <h3 className="book-title p-name">
+                        <h3 className="reactions-card__title p-name">
                             {bookUrl ? (
                                 <a href={bookUrl} className="u-url" target="_blank" rel="noopener noreferrer">
                                     {bookTitle}
@@ -116,7 +116,7 @@ export default function Save({ attributes }) {
 
                     {/* Author */}
                     {authorName && (
-                        <p className="author-name">
+                        <p className="reactions-card__subtitle">
                             <span className="p-author h-card">
                                 <span className="p-name">{authorName}</span>
                             </span>
@@ -125,19 +125,19 @@ export default function Save({ attributes }) {
 
                     {/* Publisher and date */}
                     {(publisher || publishDate) && (
-                        <p className="publication-info">
-                            {publisher && <span className="publisher">{publisher}</span>}
+                        <p className="reactions-card__meta">
+                            {publisher && <span>{publisher}</span>}
                             {publisher && publishDate && ', '}
-                            {publishDate && <span className="publish-date">{publishDate}</span>}
+                            {publishDate && <span>{publishDate}</span>}
                         </p>
                     )}
 
                     {/* Reading progress */}
                     {readStatus === 'reading' && progressPercent > 0 && (
-                        <div className="progress-container">
-                            <div className="progress-bar">
+                        <div className="reactions-card__progress">
+                            <div className="reactions-card__progress-bar">
                                 <div
-                                    className="progress-fill"
+                                    className="reactions-card__progress-fill"
                                     style={{ width: `${progressPercent}%` }}
                                     role="progressbar"
                                     aria-valuenow={progressPercent}
@@ -145,7 +145,7 @@ export default function Save({ attributes }) {
                                     aria-valuemax="100"
                                 />
                             </div>
-                            <span className="progress-text">
+                            <span className="reactions-card__progress-text">
                                 {currentPage} of {pageCount} pages ({progressPercent}%)
                             </span>
                         </div>
@@ -156,24 +156,26 @@ export default function Save({ attributes }) {
 
                     {/* Review */}
                     {review && (
-                        <div className="book-review p-content">
+                        <div className="reactions-card__notes p-content">
                             <RichText.Content tagName="p" value={review} />
                         </div>
                     )}
 
                     {/* Reading dates */}
-                    <div className="reading-dates">
-                        {startedAt && (
-                            <time className="started-at" dateTime={new Date(startedAt).toISOString()}>
-                                Started: {new Date(startedAt).toLocaleDateString()}
-                            </time>
-                        )}
-                        {finishedAt && (readStatus === 'finished' || readStatus === 'abandoned') && (
-                            <time className="finished-at dt-published" dateTime={new Date(finishedAt).toISOString()}>
-                                Finished: {new Date(finishedAt).toLocaleDateString()}
-                            </time>
-                        )}
-                    </div>
+                    {(startedAt || finishedAt) && (
+                        <div className="reactions-card__dates">
+                            {startedAt && (
+                                <time className="reactions-card__timestamp" dateTime={new Date(startedAt).toISOString()}>
+                                    Started: {new Date(startedAt).toLocaleDateString()}
+                                </time>
+                            )}
+                            {finishedAt && (readStatus === 'finished' || readStatus === 'abandoned') && (
+                                <time className="reactions-card__timestamp dt-published" dateTime={new Date(finishedAt).toISOString()}>
+                                    Finished: {new Date(finishedAt).toLocaleDateString()}
+                                </time>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Hidden microformat data */}

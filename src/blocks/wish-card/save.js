@@ -15,17 +15,51 @@ export default function Save( { attributes } ) {
 
 	return (
 		<div { ...blockProps }>
-			<div className="wish-card-inner h-cite">
-				{ image && <div className="wish-image"><img src={ image } alt={ imageAlt || title } className="u-photo" loading="lazy" /></div> }
-				<div className="wish-info">
-					<div className="wish-header">
-						<span className="wish-type-badge">{ TYPE_LABELS[ wishType ] || wishType }</span>
-						<span className={ `priority-badge priority-${ priority }` }>{ PRIORITY_LABELS[ priority ] }</span>
+			<div className="reactions-card h-cite">
+				{ image && (
+					<div className="reactions-card__media">
+						<img
+							src={ image }
+							alt={ imageAlt || title }
+							className="reactions-card__image u-photo"
+							loading="lazy"
+						/>
 					</div>
-					{ title && <h3 className="wish-title p-name">{ url ? <a href={ url } className="u-url u-wish-of" target="_blank" rel="noopener noreferrer">{ title }</a> : title }</h3> }
-					{ price && <p className="wish-price">{ price }</p> }
-					{ reason && <p className="wish-reason p-content">{ reason }</p> }
-					{ wishedAt && <time className="wished-at dt-published" dateTime={ new Date( wishedAt ).toISOString() }>{ new Date( wishedAt ).toLocaleString() }</time> }
+				) }
+				<div className="reactions-card__content">
+					<div className="reactions-card__badges">
+						<span className="reactions-card__badge">
+							{ TYPE_LABELS[ wishType ] || wishType }
+						</span>
+						<span className={ `reactions-card__badge reactions-card__badge--${ priority }` }>
+							{ PRIORITY_LABELS[ priority ] }
+						</span>
+					</div>
+
+					{ title && (
+						<h3 className="reactions-card__title p-name">
+							{ url ? (
+								<a href={ url } className="u-url u-wish-of" target="_blank" rel="noopener noreferrer">
+									{ title }
+								</a>
+							) : (
+								title
+							) }
+						</h3>
+					) }
+
+					{ price && <p className="reactions-card__subtitle">{ price }</p> }
+
+					{ reason && <p className="reactions-card__notes p-content">{ reason }</p> }
+
+					{ wishedAt && (
+						<time
+							className="reactions-card__timestamp dt-published"
+							dateTime={ new Date( wishedAt ).toISOString() }
+						>
+							{ new Date( wishedAt ).toLocaleString() }
+						</time>
+					) }
 				</div>
 			</div>
 		</div>

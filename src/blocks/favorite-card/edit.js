@@ -1,54 +1,191 @@
 /**
  * Favorite Card Block - Edit Component
  *
+ * Full inline editing with theme-aware styling and full sidebar controls.
+ *
  * @package Reactions_For_IndieWeb
  */
 
 import { __ } from '@wordpress/i18n';
-import { useBlockProps, InspectorControls, RichText, MediaUpload, MediaUploadCheck } from '@wordpress/block-editor';
-import { PanelBody, TextControl, Button, DateTimePicker, Popover } from '@wordpress/components';
-import { useState } from '@wordpress/element';
-import { favoriteIcon } from '../shared/icons';
-import { CoverImage, BlockPlaceholder } from '../shared/components';
+import {
+	useBlockProps,
+	InspectorControls,
+	RichText,
+	MediaUpload,
+	MediaUploadCheck,
+} from '@wordpress/block-editor';
+import {
+	PanelBody,
+	TextControl,
+} from '@wordpress/components';
+import { useEffect } from '@wordpress/element';
+import { useSelect, useDispatch } from '@wordpress/data';
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { title, url, description, image, imageAlt, author, favoritedAt, layout } = attributes;
-	const [ showDatePicker, setShowDatePicker ] = useState( false );
-	const blockProps = useBlockProps( { className: `favorite-card layout-${ layout }` } );
+	const {
+		title,
+		url,
+		description,
+		image,
+		imageAlt,
+		author,
+	} = attributes;
 
-	if ( ! title && ! url ) {
-		return (
-			<div { ...blockProps }>
-				<BlockPlaceholder icon={ favoriteIcon } label={ __( 'Favorite Card', 'reactions-for-indieweb' ) } instructions={ __( 'Add something you favorited.', 'reactions-for-indieweb' ) }>
-					<Button variant="primary" onClick={ () => setAttributes( { title: '' } ) }>{ __( 'Add Favorite', 'reactions-for-indieweb' ) }</Button>
-				</BlockPlaceholder>
-			</div>
-		);
-	}
+	const blockProps = useBlockProps( {
+		className: 'favorite-card-block',
+	} );
+
+	const { editPost } = useDispatch( 'core/editor' );
+	const currentKind = useSelect(
+		( select ) => {
+			const terms = select( 'core/editor' ).getEditedPostAttribute( 'indieblocks_kind' );
+			return terms && terms.length > 0 ? terms[ 0 ] : null;
+		},
+		[]
+	);
+
+	// Set post kind to "favorite" when block is inserted
+	useEffect( () => {
+		if ( ! currentKind ) {
+			wp.apiFetch( { path: '/wp/v2/kind?slug=favorite' } )
+				.then( ( terms ) => {
+					if ( terms && terms.length > 0 ) {
+						editPost( { indieblocks_kind: [ terms[ 0 ].id ] } );
+					}
+				} )
+				.catch( () => {} );
+		}
+	}, [] );
+
+	// Sync block attributes to post meta
+	useEffect( () => {
+		const metaUpdates = {};
+		if ( title !== undefined ) metaUpdates._reactions_favorite_title = title || '';
+		if ( url !== undefined ) metaUpdates._reactions_favorite_url = url || '';
+		if ( author !== undefined ) metaUpdates._reactions_favorite_author = author || '';
+		if ( image !== undefined ) metaUpdates._reactions_favorite_image = image || '';
+
+		if ( Object.keys( metaUpdates ).length > 0 ) {
+			editPost( { meta: metaUpdates } );
+		}
+	}, [ title, url, author, image ] );
+
+	const handleImageSelect = ( media ) => {
+		setAttributes( {
+			image: media.url,
+			imageAlt: media.alt || title || __( 'Favorite image', 'reactions-for-indieweb' ),
+		} );
+	};
+
+	const handleImageRemove = ( e ) => {
+		e.stopPropagation();
+		setAttributes( { image: '', imageAlt: '' } );
+	};
 
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={ __( 'Favorite Details', 'reactions-for-indieweb' ) }>
-					<TextControl label={ __( 'Title', 'reactions-for-indieweb' ) } value={ title || '' } onChange={ ( v ) => setAttributes( { title: v } ) } />
-					<TextControl label={ __( 'URL', 'reactions-for-indieweb' ) } value={ url || '' } onChange={ ( v ) => setAttributes( { url: v } ) } type="url" />
-					<TextControl label={ __( 'Author', 'reactions-for-indieweb' ) } value={ author || '' } onChange={ ( v ) => setAttributes( { author: v } ) } />
+				<PanelBody title={ __( 'Favorite Details', 'reactions-for-indieweb' ) } initialOpen={ true }>
+					<TextControl
+						label={ __( 'Title', 'reactions-for-indieweb' ) }
+						value={ title || '' }
+						onChange={ ( value ) => setAttributes( { title: value } ) }
+						placeholder={ __( 'What did you favorite?', 'reactions-for-indieweb' ) }
+					/>
+					<TextControl
+						label={ __( 'URL', 'reactions-for-indieweb' ) }
+						value={ url || '' }
+						onChange={ ( value ) => setAttributes( { url: value } ) }
+						type="url"
+						placeholder={ __( 'https://...', 'reactions-for-indieweb' ) }
+					/>
+					<TextControl
+						label={ __( 'Author', 'reactions-for-indieweb' ) }
+						value={ author || '' }
+						onChange={ ( value ) => setAttributes( { author: value } ) }
+						placeholder={ __( 'Original author', 'reactions-for-indieweb' ) }
+					/>
 				</PanelBody>
-				<PanelBody title={ __( 'Timing', 'reactions-for-indieweb' ) }>
-					<Button variant="secondary" onClick={ () => setShowDatePicker( true ) }>
-						{ favoritedAt ? new Date( favoritedAt ).toLocaleString() : __( 'Set date/time', 'reactions-for-indieweb' ) }
-					</Button>
-					{ showDatePicker && <Popover onClose={ () => setShowDatePicker( false ) }><DateTimePicker currentDate={ favoritedAt } onChange={ ( v ) => { setAttributes( { favoritedAt: v } ); setShowDatePicker( false ); } } /></Popover> }
+				<PanelBody title={ __( 'Description', 'reactions-for-indieweb' ) } initialOpen={ false }>
+					<TextControl
+						label={ __( 'Description', 'reactions-for-indieweb' ) }
+						value={ description || '' }
+						onChange={ ( value ) => setAttributes( { description: value } ) }
+						placeholder={ __( 'Why did you favorite this?', 'reactions-for-indieweb' ) }
+					/>
 				</PanelBody>
 			</InspectorControls>
+
 			<div { ...blockProps }>
-				<div className="favorite-card-inner h-cite">
-					{ image && <div className="favorite-image"><MediaUploadCheck><MediaUpload onSelect={ ( m ) => setAttributes( { image: m.url, imageAlt: m.alt || title } ) } allowedTypes={ [ 'image' ] } render={ ( { open } ) => <div onClick={ open } role="button" tabIndex={ 0 }><CoverImage src={ image } alt={ imageAlt } size="small" /></div> } /></MediaUploadCheck></div> }
-					<div className="favorite-info">
-						<span className="favorite-badge">★ { __( 'Favorited', 'reactions-for-indieweb' ) }</span>
-						<RichText tagName="h3" className="favorite-title p-name" value={ title } onChange={ ( v ) => setAttributes( { title: v } ) } placeholder={ __( 'Title', 'reactions-for-indieweb' ) } />
-						{ author && <p className="favorite-author p-author h-card"><span className="p-name">{ author }</span></p> }
-						<RichText tagName="p" className="favorite-description p-content" value={ description } onChange={ ( v ) => setAttributes( { description: v } ) } placeholder={ __( 'Why you favorited this...', 'reactions-for-indieweb' ) } />
+				<div className="reactions-card">
+					<div className="reactions-card__media">
+						<MediaUploadCheck>
+							<MediaUpload
+								onSelect={ handleImageSelect }
+								allowedTypes={ [ 'image' ] }
+								render={ ( { open } ) => (
+									<button type="button" className="reactions-card__media-button" onClick={ open }>
+										{ image ? (
+											<>
+												<img src={ image } alt={ imageAlt || title } className="reactions-card__image" />
+												<button
+													type="button"
+													className="reactions-card__media-remove"
+													onClick={ handleImageRemove }
+													aria-label={ __( 'Remove image', 'reactions-for-indieweb' ) }
+												>
+													×
+												</button>
+											</>
+										) : (
+											<div className="reactions-card__media-placeholder">
+												<span className="reactions-card__media-icon">⭐</span>
+												<span className="reactions-card__media-text">{ __( 'Add Image', 'reactions-for-indieweb' ) }</span>
+											</div>
+										) }
+									</button>
+								) }
+							/>
+						</MediaUploadCheck>
+					</div>
+
+					<div className="reactions-card__content">
+						<span className="reactions-card__badge">★ { __( 'Favorited', 'reactions-for-indieweb' ) }</span>
+
+						<RichText
+							tagName="h3"
+							className="reactions-card__title"
+							value={ title }
+							onChange={ ( value ) => setAttributes( { title: value } ) }
+							placeholder={ __( 'What did you favorite?', 'reactions-for-indieweb' ) }
+						/>
+
+						<div className="reactions-card__input-row">
+							<span className="reactions-card__input-icon">🔗</span>
+							<input
+								type="url"
+								className="reactions-card__input reactions-card__input--url"
+								value={ url || '' }
+								onChange={ ( e ) => setAttributes( { url: e.target.value } ) }
+								placeholder={ __( 'https://example.com/...', 'reactions-for-indieweb' ) }
+							/>
+						</div>
+
+						<RichText
+							tagName="p"
+							className="reactions-card__subtitle"
+							value={ author }
+							onChange={ ( value ) => setAttributes( { author: value } ) }
+							placeholder={ __( 'By whom?', 'reactions-for-indieweb' ) }
+						/>
+
+						<RichText
+							tagName="p"
+							className="reactions-card__notes"
+							value={ description }
+							onChange={ ( value ) => setAttributes( { description: value } ) }
+							placeholder={ __( 'Why did you favorite this?', 'reactions-for-indieweb' ) }
+						/>
 					</div>
 				</div>
 			</div>

@@ -19,28 +19,67 @@ export default function Save( { attributes } ) {
 	const renderStars = () => {
 		if ( ! rating || rating <= 0 ) return null;
 		return (
-			<div className="rating-display p-rating" aria-label={ `Rating: ${ rating } out of 5` }>
+			<div className="reactions-card__rating p-rating" aria-label={ `Rating: ${ rating } out of 5` }>
 				{ Array.from( { length: 5 }, ( _, i ) => (
-					<span key={ i } className={ `star ${ i < rating ? 'filled' : '' }` }>★</span>
+					<span key={ i } className={ `star ${ i < rating ? 'filled' : '' }` } aria-hidden="true">★</span>
 				) ) }
-				<span className="rating-value">{ rating }/5</span>
+				<span className="reactions-card__rating-value">{ rating }/5</span>
 			</div>
 		);
 	};
 
 	return (
 		<div { ...blockProps }>
-			<div className="drink-card-inner h-food">
-				{ photo && <div className="drink-photo"><img src={ photo } alt={ photoAlt || name } className="u-photo" loading="lazy" /></div> }
-				<div className="drink-info">
-					<span className="drink-type-badge">{ DRINK_LABELS[ drinkType ] || drinkType }</span>
-					{ name && <h3 className="drink-name p-name">{ venueUrl ? <a href={ venueUrl } className="u-url" target="_blank" rel="noopener noreferrer">{ name }</a> : name }</h3> }
-					{ brand && <p className="drink-brand p-author h-card"><span className="p-name">{ brand }</span></p> }
-					{ venue && <p className="drink-venue p-location">{ venue }</p> }
+			<div className="reactions-card h-food">
+				{ photo && (
+					<div className="reactions-card__media">
+						<img
+							src={ photo }
+							alt={ photoAlt || name }
+							className="reactions-card__image u-photo"
+							loading="lazy"
+						/>
+					</div>
+				) }
+				<div className="reactions-card__content">
+					<span className="reactions-card__badge">
+						{ DRINK_LABELS[ drinkType ] || drinkType }
+					</span>
+
+					{ name && (
+						<h3 className="reactions-card__title p-name">
+							{ venueUrl ? (
+								<a href={ venueUrl } className="u-url" target="_blank" rel="noopener noreferrer">
+									{ name }
+								</a>
+							) : (
+								name
+							) }
+						</h3>
+					) }
+
+					{ brand && (
+						<p className="reactions-card__subtitle p-author h-card">
+							<span className="p-name">{ brand }</span>
+						</p>
+					) }
+
+					{ venue && <p className="reactions-card__meta p-location">{ venue }</p> }
+
 					{ renderStars() }
-					{ notes && <p className="drink-notes p-content">{ notes }</p> }
-					{ drankAt && <time className="drank-at dt-published" dateTime={ new Date( drankAt ).toISOString() }>{ new Date( drankAt ).toLocaleString() }</time> }
+
+					{ notes && <p className="reactions-card__notes p-content">{ notes }</p> }
+
+					{ drankAt && (
+						<time
+							className="reactions-card__timestamp dt-published"
+							dateTime={ new Date( drankAt ).toISOString() }
+						>
+							{ new Date( drankAt ).toLocaleString() }
+						</time>
+					) }
 				</div>
+
 				<data className="u-drank" value={ name || '' } hidden />
 			</div>
 		</div>

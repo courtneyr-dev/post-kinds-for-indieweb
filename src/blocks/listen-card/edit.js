@@ -61,13 +61,15 @@ export default function Edit({ attributes, setAttributes }) {
      * Handle media search result selection
      */
     const handleSearchSelect = (item) => {
+        // MusicBrainz returns 'track', other APIs may return 'title' or 'name'
+        const trackName = item.track || item.title || item.name || '';
         setAttributes({
-            trackTitle: item.title || item.name || '',
+            trackTitle: trackName,
             artistName: item.artist || '',
             albumTitle: item.album || '',
             releaseDate: item.releaseDate || item.date || '',
             coverImage: item.cover || item.image || '',
-            coverImageAlt: `${item.title || ''} by ${item.artist || ''}`,
+            coverImageAlt: `${trackName} by ${item.artist || ''}`,
             musicbrainzId: item.mbid || item.id || '',
         });
         setIsSearching(false);
@@ -130,6 +132,16 @@ export default function Edit({ attributes, setAttributes }) {
     return (
         <>
             <InspectorControls>
+                <PanelBody title={__('Search Music', 'reactions-for-indieweb')} initialOpen={false}>
+                    <MediaSearch
+                        type="music"
+                        placeholder={__('Search for a song or album...', 'reactions-for-indieweb')}
+                        onSelect={handleSearchSelect}
+                    />
+                    <p className="components-base-control__help" style={{ marginTop: '8px' }}>
+                        {__('Search MusicBrainz to auto-fill track details.', 'reactions-for-indieweb')}
+                    </p>
+                </PanelBody>
                 <PanelBody title={__('Track Details', 'reactions-for-indieweb')}>
                     <TextControl
                         label={__('Track Title', 'reactions-for-indieweb')}
@@ -226,7 +238,7 @@ export default function Edit({ attributes, setAttributes }) {
             </InspectorControls>
 
             <div {...blockProps}>
-                <div className="listen-card-inner h-cite">
+                <div className="reactions-card h-cite">
                     <div className="cover-image">
                         <MediaUploadCheck>
                             <MediaUpload

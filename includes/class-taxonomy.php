@@ -161,6 +161,7 @@ class Taxonomy {
 	private function register_hooks(): void {
 		add_action( 'init', array( $this, 'register_taxonomy' ), 5 );
 		add_action( 'init', array( $this, 'maybe_create_default_terms' ), 10 );
+		add_action( 'init', array( $this, 'ensure_all_terms_exist' ), 11 );
 		add_filter( 'term_link', array( $this, 'filter_term_link' ), 10, 3 );
 	}
 
@@ -298,6 +299,44 @@ class Taxonomy {
 
 		// Flush rewrite rules after creating terms.
 		flush_rewrite_rules();
+	}
+
+	/**
+	 * Ensure all default terms exist.
+	 *
+	 * This runs on every init to catch any terms added in plugin updates.
+	 *
+	 * @return void
+	 */
+	public function ensure_all_terms_exist(): void {
+		// Only run in admin to avoid frontend performance hit.
+		if ( ! is_admin() ) {
+			return;
+		}
+
+		// Check version to only run once per plugin version.
+		$version_key = 'reactions_indieweb_terms_version';
+		$current_version = get_option( $version_key, '0' );
+
+		if ( version_compare( $current_version, REACTIONS_INDIEWEB_VERSION, '>=' ) ) {
+			return;
+		}
+
+		// Create any missing terms.
+		foreach ( $this->default_kinds as $slug => $kind_data ) {
+			if ( ! term_exists( $slug, self::TAXONOMY ) ) {
+				wp_insert_term(
+					$kind_data['name'],
+					self::TAXONOMY,
+					array(
+						'slug'        => $slug,
+						'description' => $kind_data['description'],
+					)
+				);
+			}
+		}
+
+		update_option( $version_key, REACTIONS_INDIEWEB_VERSION );
 	}
 
 	/**

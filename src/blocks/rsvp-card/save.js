@@ -99,33 +99,33 @@ export default function Save({ attributes }) {
 
     return (
         <div {...blockProps}>
-            <div className="rsvp-card-inner h-entry">
+            <div className="reactions-card h-entry">
                 {/* Event image */}
                 {eventImage && (
-                    <div className="event-image">
+                    <div className="reactions-card__media">
                         <img
                             src={eventImage}
                             alt={eventImageAlt || `${eventName} event`}
-                            className="u-photo"
+                            className="reactions-card__image u-photo"
                             loading="lazy"
                         />
                     </div>
                 )}
 
-                <div className="rsvp-info">
+                <div className="reactions-card__content">
                     {/* RSVP status badge with p-rsvp microformat */}
-                    <span className={`rsvp-status-badge status-${rsvpStatus}`}>
-                        <span className="status-icon" aria-hidden="true">{getStatusIcon()}</span>
+                    <span className={`reactions-card__badge reactions-card__badge--${rsvpStatus}`}>
+                        <span className="reactions-card__badge-icon" aria-hidden="true">{getStatusIcon()}</span>
                         <data className="p-rsvp" value={rsvpStatus}>
                             {getStatusLabel()}
                         </data>
                     </span>
 
                     {/* Event details with h-event microformat */}
-                    <div className="event-details p-in-reply-to h-event">
+                    <div className="reactions-card__event p-in-reply-to h-event">
                         {/* Event name */}
                         {eventName && (
-                            <h3 className="event-name">
+                            <h3 className="reactions-card__title">
                                 {eventUrl ? (
                                     <a href={eventUrl} className="p-name u-url" target="_blank" rel="noopener noreferrer">
                                         {eventName}
@@ -138,8 +138,8 @@ export default function Save({ attributes }) {
 
                         {/* Event date/time */}
                         {eventStart && (
-                            <div className="event-datetime">
-                                <span className="datetime-icon" aria-hidden="true">📅</span>
+                            <div className="reactions-card__meta-row">
+                                <span className="reactions-card__meta-icon" aria-hidden="true">📅</span>
                                 <time className="dt-start" dateTime={new Date(eventStart).toISOString()}>
                                     {formatDateRange()}
                                 </time>
@@ -151,21 +151,21 @@ export default function Save({ attributes }) {
 
                         {/* Event location */}
                         {eventLocation && (
-                            <div className="event-location">
-                                <span className="location-icon" aria-hidden="true">📍</span>
+                            <div className="reactions-card__meta-row">
+                                <span className="reactions-card__meta-icon" aria-hidden="true">📍</span>
                                 <span className="p-location">{eventLocation}</span>
                             </div>
                         )}
 
                         {/* Event description */}
                         {eventDescription && (
-                            <p className="event-description p-summary">{eventDescription}</p>
+                            <p className="reactions-card__meta p-summary">{eventDescription}</p>
                         )}
                     </div>
 
                     {/* RSVP note */}
                     {rsvpNote && (
-                        <div className="rsvp-note p-content">
+                        <div className="reactions-card__notes p-content">
                             <RichText.Content tagName="p" value={rsvpNote} />
                         </div>
                     )}
@@ -173,7 +173,7 @@ export default function Save({ attributes }) {
                     {/* RSVP timestamp */}
                     {rsvpAt && (
                         <time
-                            className="rsvp-time dt-published"
+                            className="reactions-card__timestamp dt-published"
                             dateTime={new Date(rsvpAt).toISOString()}
                         >
                             RSVPed {new Date(rsvpAt).toLocaleDateString()}

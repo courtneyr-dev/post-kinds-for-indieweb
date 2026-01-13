@@ -87,7 +87,8 @@ export default function KindGrid( { kinds, selectedKind, onSelect } ) {
 		const order = [
 			'note', 'article', 'reply', 'like', 'repost', 'bookmark',
 			'photo', 'video', 'rsvp', 'checkin', 'listen', 'watch',
-			'read', 'event', 'review',
+			'read', 'event', 'review', 'play', 'eat', 'drink',
+			'favorite', 'jam', 'wish', 'mood', 'acquisition', 'recipe',
 		];
 		const aIndex = order.indexOf( a.slug );
 		const bIndex = order.indexOf( b.slug );

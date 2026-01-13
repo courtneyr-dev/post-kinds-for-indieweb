@@ -133,6 +133,44 @@ export function MediaSearch({ type, placeholder, onSelect }) {
     const [isSearching, setIsSearching] = useState(false);
     const [error, setError] = useState('');
 
+    /**
+     * Get the correct API endpoint for the search type.
+     */
+    const getEndpoint = () => {
+        switch (type) {
+            case 'movie':
+            case 'tv':
+                return '/reactions-indieweb/v1/lookup/video';
+            case 'music':
+                return '/reactions-indieweb/v1/lookup/music';
+            case 'book':
+                return '/reactions-indieweb/v1/lookup/book';
+            case 'podcast':
+                return '/reactions-indieweb/v1/lookup/podcast';
+            case 'venue':
+                return '/reactions-indieweb/v1/lookup/venue';
+            case 'game':
+                return '/reactions-indieweb/v1/lookup/game';
+            default:
+                return '/reactions-indieweb/v1/lookup/video';
+        }
+    };
+
+    /**
+     * Build query parameters for the API request.
+     */
+    const buildQueryParams = () => {
+        const params = new URLSearchParams();
+        params.append('q', query.trim());
+
+        // Add type parameter for video searches
+        if (type === 'movie' || type === 'tv') {
+            params.append('type', type);
+        }
+
+        return params.toString();
+    };
+
     const doSearch = async () => {
         if (!query.trim()) {
             return;
@@ -143,19 +181,36 @@ export function MediaSearch({ type, placeholder, onSelect }) {
         setResults([]);
 
         try {
+            const endpoint = getEndpoint();
+            const queryParams = buildQueryParams();
             const response = await wp.apiFetch({
-                path: '/reactions-indieweb/v1/lookup',
-                method: 'POST',
-                data: { type, query },
+                path: `${endpoint}?${queryParams}`,
             });
 
-            if (response.results && response.results.length) {
-                setResults(response.results);
+            // API returns array directly, not wrapped in { results: [] }
+            const resultsArray = Array.isArray(response) ? response : (response.results || []);
+
+            if (resultsArray.length > 0) {
+                setResults(resultsArray);
             } else {
                 setError(__('No results found.', 'reactions-for-indieweb'));
             }
         } catch (err) {
-            setError(err.message || __('Search failed.', 'reactions-for-indieweb'));
+            // Handle different error types
+            let errorMessage = __('Search failed.', 'reactions-for-indieweb');
+
+            if (err.message) {
+                // If error message contains HTML, show generic error
+                if (err.message.includes('<') || err.message.includes('critical error')) {
+                    errorMessage = __('Search service unavailable. Please try again.', 'reactions-for-indieweb');
+                } else {
+                    errorMessage = err.message;
+                }
+            } else if (err.code) {
+                errorMessage = `${__('Error', 'reactions-for-indieweb')}: ${err.code}`;
+            }
+
+            setError(errorMessage);
         } finally {
             setIsSearching(false);
         }
@@ -206,12 +261,12 @@ export function MediaSearch({ type, placeholder, onSelect }) {
                                 className="search-result-item"
                                 onClick={() => handleSelect(item)}
                             >
-                                {item.image && (
-                                    <img src={item.image} alt="" className="result-image" />
+                                {(item.image || item.cover) && (
+                                    <img src={item.image || item.cover} alt="" className="result-image" />
                                 )}
                                 <div className="result-info">
                                     <strong className="result-title">
-                                        {item.title || item.name}
+                                        {item.track || item.title || item.name}
                                     </strong>
                                     {item.artist && (
                                         <span className="result-artist">{item.artist}</span>

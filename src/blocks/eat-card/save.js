@@ -26,46 +26,64 @@ export default function Save( { attributes } ) {
 	const renderStars = () => {
 		if ( ! rating || rating <= 0 ) return null;
 		return (
-			<div className="rating-display p-rating" aria-label={ `Rating: ${ rating } out of 5` }>
+			<div className="reactions-card__rating p-rating" aria-label={ `Rating: ${ rating } out of 5` }>
 				{ Array.from( { length: 5 }, ( _, i ) => (
-					<span key={ i } className={ `star ${ i < rating ? 'filled' : '' }` }>★</span>
+					<span key={ i } className={ `star ${ i < rating ? 'filled' : '' }` } aria-hidden="true">★</span>
 				) ) }
-				<span className="rating-value">{ rating }/5</span>
+				<span className="reactions-card__rating-value">{ rating }/5</span>
 			</div>
 		);
 	};
 
 	return (
 		<div { ...blockProps }>
-			<div className="eat-card-inner h-food">
+			<div className="reactions-card h-food">
 				{ photo && (
-					<div className="food-photo">
-						<img src={ photo } alt={ photoAlt || name } className="u-photo" loading="lazy" />
+					<div className="reactions-card__media">
+						<img
+							src={ photo }
+							alt={ photoAlt || name }
+							className="reactions-card__image u-photo"
+							loading="lazy"
+						/>
 					</div>
 				) }
-				<div className="food-info">
-					{ cuisine && <span className="cuisine-badge">{ cuisine }</span> }
+				<div className="reactions-card__content">
+					{ cuisine && <span className="reactions-card__badge">{ cuisine }</span> }
+
 					{ name && (
-						<h3 className="food-name p-name">
+						<h3 className="reactions-card__title p-name">
 							{ restaurantUrl ? (
-								<a href={ restaurantUrl } className="u-url" target="_blank" rel="noopener noreferrer">{ name }</a>
-							) : name }
+								<a href={ restaurantUrl } className="u-url" target="_blank" rel="noopener noreferrer">
+									{ name }
+								</a>
+							) : (
+								name
+							) }
 						</h3>
 					) }
+
 					{ restaurant && (
-						<p className="restaurant-name p-location h-card">
+						<p className="reactions-card__subtitle p-location h-card">
 							<span className="p-name">{ restaurant }</span>
 							{ locality && <span className="p-locality">, { locality }</span> }
 						</p>
 					) }
+
 					{ renderStars() }
-					{ notes && <p className="food-notes p-content">{ notes }</p> }
+
+					{ notes && <p className="reactions-card__notes p-content">{ notes }</p> }
+
 					{ ateAt && (
-						<time className="ate-at dt-published" dateTime={ new Date( ateAt ).toISOString() }>
+						<time
+							className="reactions-card__timestamp dt-published"
+							dateTime={ new Date( ateAt ).toISOString() }
+						>
 							{ new Date( ateAt ).toLocaleString() }
 						</time>
 					) }
 				</div>
+
 				<data className="u-ate" value={ name || '' } hidden />
 			</div>
 		</div>

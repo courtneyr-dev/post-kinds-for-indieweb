@@ -45,7 +45,7 @@ export default function Save({ attributes }) {
         }
 
         return (
-            <div className="rating-display p-rating" aria-label={`Rating: ${rating} out of 5 stars`}>
+            <div className="reactions-card__rating p-rating" aria-label={`Rating: ${rating} out of 5 stars`}>
                 {Array.from({ length: 5 }, (_, i) => (
                     <span
                         key={i}
@@ -55,7 +55,7 @@ export default function Save({ attributes }) {
                         ★
                     </span>
                 ))}
-                <span className="rating-value">{rating}/5</span>
+                <span className="reactions-card__rating-value">{rating}/5</span>
             </div>
         );
     };
@@ -94,28 +94,38 @@ export default function Save({ attributes }) {
 
     return (
         <div {...blockProps}>
-            <div className="watch-card-inner h-cite">
+            <div className="reactions-card h-cite">
                 {/* Poster image */}
                 {posterImage && (
-                    <div className="poster-image">
+                    <div className="reactions-card__media reactions-card__media--portrait">
                         <img
                             src={posterImage}
                             alt={posterImageAlt || mediaTitle}
-                            className="u-photo"
+                            className="reactions-card__image u-photo"
                             loading="lazy"
                         />
                     </div>
                 )}
 
-                <div className="watch-info">
+                <div className="reactions-card__content">
+                    {/* Badges row */}
+                    <div className="reactions-card__badges">
+                        <span className={`reactions-card__badge reactions-card__badge--${mediaType}`}>
+                            {mediaType === 'movie' ? 'Movie' : mediaType === 'tv' ? 'TV' : 'Episode'}
+                        </span>
+                        {isRewatch && (
+                            <span className="reactions-card__badge reactions-card__badge--rewatch">Rewatch</span>
+                        )}
+                    </div>
+
                     {/* Show title for episodes */}
                     {mediaType === 'episode' && showTitle && (
-                        <p className="show-title">{showTitle}</p>
+                        <p className="reactions-card__meta">{showTitle}</p>
                     )}
 
                     {/* Media title */}
                     {mediaTitle && (
-                        <h3 className="media-title p-name">
+                        <h3 className="reactions-card__title p-name">
                             {watchUrl ? (
                                 <a href={watchUrl} className="u-url" target="_blank" rel="noopener noreferrer">
                                     {mediaTitle}
@@ -128,30 +138,28 @@ export default function Save({ attributes }) {
 
                     {/* Episode info */}
                     {getEpisodeString() && (
-                        <p className="episode-info">{getEpisodeString()}</p>
+                        <p className="reactions-card__subtitle">{getEpisodeString()}</p>
                     )}
 
                     {/* Meta line */}
-                    <div className="meta-line">
-                        {releaseYear && (
-                            <span className="year">({releaseYear})</span>
-                        )}
-                        {director && (
-                            <span className="director p-author h-card">
-                                <span className="p-name">{director}</span>
-                            </span>
-                        )}
-                        {isRewatch && (
-                            <span className="rewatch-badge">Rewatch</span>
-                        )}
-                    </div>
+                    {(releaseYear || director) && (
+                        <p className="reactions-card__meta">
+                            {releaseYear && <span>({releaseYear})</span>}
+                            {releaseYear && director && ' • '}
+                            {director && (
+                                <span className="p-author h-card">
+                                    <span className="p-name">{director}</span>
+                                </span>
+                            )}
+                        </p>
+                    )}
 
                     {/* Rating */}
                     {renderStars()}
 
                     {/* Review */}
                     {review && (
-                        <div className="watch-review p-content">
+                        <div className="reactions-card__notes p-content">
                             <RichText.Content tagName="p" value={review} />
                         </div>
                     )}
@@ -159,7 +167,7 @@ export default function Save({ attributes }) {
                     {/* Watched timestamp */}
                     {watchedAt && (
                         <time
-                            className="watched-at dt-published"
+                            className="reactions-card__timestamp dt-published"
                             dateTime={new Date(watchedAt).toISOString()}
                         >
                             {new Date(watchedAt).toLocaleString()}
@@ -167,18 +175,20 @@ export default function Save({ attributes }) {
                     )}
 
                     {/* External links */}
-                    <div className="external-links">
-                        {getImdbUrl() && (
-                            <a href={getImdbUrl()} target="_blank" rel="noopener noreferrer" className="imdb-link">
-                                IMDb
-                            </a>
-                        )}
-                        {getTmdbUrl() && (
-                            <a href={getTmdbUrl()} target="_blank" rel="noopener noreferrer" className="tmdb-link">
-                                TMDB
-                            </a>
-                        )}
-                    </div>
+                    {(getImdbUrl() || getTmdbUrl()) && (
+                        <div className="reactions-card__links">
+                            {getImdbUrl() && (
+                                <a href={getImdbUrl()} target="_blank" rel="noopener noreferrer">
+                                    IMDb
+                                </a>
+                            )}
+                            {getTmdbUrl() && (
+                                <a href={getTmdbUrl()} target="_blank" rel="noopener noreferrer">
+                                    TMDB
+                                </a>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Hidden microformat data */}

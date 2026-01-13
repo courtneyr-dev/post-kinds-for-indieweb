@@ -158,6 +158,35 @@ export default function Edit({ attributes, setAttributes }) {
     return (
         <>
             <InspectorControls>
+                <PanelBody title={__('Search', 'reactions-for-indieweb')} initialOpen={false}>
+                    <div className="search-type-toggle" style={{ marginBottom: '12px', display: 'flex', gap: '8px' }}>
+                        <Button
+                            variant={searchType === 'movie' ? 'primary' : 'secondary'}
+                            onClick={() => setSearchType('movie')}
+                            size="small"
+                        >
+                            {__('Movie', 'reactions-for-indieweb')}
+                        </Button>
+                        <Button
+                            variant={searchType === 'tv' ? 'primary' : 'secondary'}
+                            onClick={() => setSearchType('tv')}
+                            size="small"
+                        >
+                            {__('TV Show', 'reactions-for-indieweb')}
+                        </Button>
+                    </div>
+                    <MediaSearch
+                        type={searchType}
+                        placeholder={searchType === 'movie'
+                            ? __('Search for a movie...', 'reactions-for-indieweb')
+                            : __('Search for a TV show...', 'reactions-for-indieweb')
+                        }
+                        onSelect={handleSearchSelect}
+                    />
+                    <p className="components-base-control__help" style={{ marginTop: '8px' }}>
+                        {__('Search to auto-fill details from TMDB.', 'reactions-for-indieweb')}
+                    </p>
+                </PanelBody>
                 <PanelBody title={__('Media Details', 'reactions-for-indieweb')}>
                     <SelectControl
                         label={__('Type', 'reactions-for-indieweb')}
@@ -299,7 +328,7 @@ export default function Edit({ attributes, setAttributes }) {
             </InspectorControls>
 
             <div {...blockProps}>
-                <div className="watch-card-inner h-cite">
+                <div className="reactions-card h-cite">
                     <div className="poster-image">
                         <MediaUploadCheck>
                             <MediaUpload

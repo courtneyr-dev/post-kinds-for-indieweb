@@ -114,27 +114,27 @@ export default function Save({ attributes }) {
     if (isPrivate) {
         return (
             <div {...blockProps}>
-                <div className="checkin-card-inner h-entry checkin-private">
+                <div className="reactions-card reactions-card--private h-entry">
                     {/* Photo */}
                     {photo && (
-                        <div className="checkin-photo">
+                        <div className="reactions-card__media">
                             <img
                                 src={photo}
                                 alt={photoAlt || `Photo`}
-                                className="u-photo"
+                                className="reactions-card__image u-photo"
                                 loading="lazy"
                             />
                         </div>
                     )}
 
-                    <div className="checkin-info">
-                        <span className="venue-type-badge">
-                            <span className="venue-icon" aria-hidden="true">{getVenueIcon()}</span>
+                    <div className="reactions-card__content">
+                        <span className="reactions-card__badge">
+                            <span className="reactions-card__badge-icon" aria-hidden="true">{getVenueIcon()}</span>
                             {getVenueTypeLabel()}
                         </span>
 
                         {/* For private: show vague indicator, no location data */}
-                        <p className="checkin-private-notice">
+                        <p className="reactions-card__private-notice">
                             <span className="dashicons dashicons-lock" aria-hidden="true"></span>
                             Location saved privately
                         </p>
@@ -142,7 +142,7 @@ export default function Save({ attributes }) {
                         {/* Checkin time */}
                         {checkinAt && (
                             <time
-                                className="checkin-time dt-published"
+                                className="reactions-card__timestamp dt-published"
                                 dateTime={new Date(checkinAt).toISOString()}
                             >
                                 {new Date(checkinAt).toLocaleString()}
@@ -151,7 +151,7 @@ export default function Save({ attributes }) {
 
                         {/* Note can still be shown */}
                         {note && (
-                            <div className="checkin-note p-content">
+                            <div className="reactions-card__notes p-content">
                                 <RichText.Content tagName="p" value={note} />
                             </div>
                         )}
@@ -163,29 +163,29 @@ export default function Save({ attributes }) {
 
     return (
         <div {...blockProps}>
-            <div className="checkin-card-inner h-entry">
+            <div className="reactions-card h-entry">
                 {/* Photo */}
                 {photo && (
-                    <div className="checkin-photo">
+                    <div className="reactions-card__media">
                         <img
                             src={photo}
                             alt={photoAlt || `Photo at ${venueName}`}
-                            className="u-photo"
+                            className="reactions-card__image u-photo"
                             loading="lazy"
                         />
                     </div>
                 )}
 
-                <div className="checkin-info">
+                <div className="reactions-card__content">
                     {/* Venue type badge */}
-                    <span className="venue-type-badge">
-                        <span className="venue-icon" aria-hidden="true">{getVenueIcon()}</span>
+                    <span className="reactions-card__badge">
+                        <span className="reactions-card__badge-icon" aria-hidden="true">{getVenueIcon()}</span>
                         {getVenueTypeLabel()}
                     </span>
 
                     {/* Venue name */}
                     {venueName && (
-                        <h3 className="venue-name">
+                        <h3 className="reactions-card__title">
                             {venueUrl ? (
                                 <a href={venueUrl} className="p-name u-url" target="_blank" rel="noopener noreferrer">
                                     {venueName}
@@ -197,13 +197,13 @@ export default function Save({ attributes }) {
                     )}
 
                     {/* Location with microformats - privacy aware */}
-                    <div className="venue-location p-location h-card">
+                    <div className="reactions-card__location p-location h-card">
                         {/* Street address only for public */}
                         {showAddress && <span className="p-street-address">{address}</span>}
 
                         {/* City/region/country shown for public and approximate */}
                         {(locality || region || country) && (
-                            <span className="location-parts">
+                            <span className="reactions-card__location-parts">
                                 {locality && <span className="p-locality">{locality}</span>}
                                 {locality && region && ', '}
                                 {region && <span className="p-region">{region}</span>}
@@ -227,7 +227,7 @@ export default function Save({ attributes }) {
                     {/* Checkin time */}
                     {checkinAt && (
                         <time
-                            className="checkin-time dt-published"
+                            className="reactions-card__timestamp dt-published"
                             dateTime={new Date(checkinAt).toISOString()}
                         >
                             {new Date(checkinAt).toLocaleString()}
@@ -236,7 +236,7 @@ export default function Save({ attributes }) {
 
                     {/* Note */}
                     {note && (
-                        <div className="checkin-note p-content">
+                        <div className="reactions-card__notes p-content">
                             <RichText.Content tagName="p" value={note} />
                         </div>
                     )}
@@ -244,7 +244,7 @@ export default function Save({ attributes }) {
 
                 {/* Map embed - not shown for private, shows wider area for approximate */}
                 {showMapEmbed && (
-                    <div className="checkin-map">
+                    <div className="reactions-card__map">
                         <iframe
                             title={`Map of ${venueName || 'location'}`}
                             width="100%"
@@ -259,7 +259,7 @@ export default function Save({ attributes }) {
                         {isPublic && (
                             <a
                                 href={`https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=16/${latitude}/${longitude}`}
-                                className="map-link"
+                                className="reactions-card__map-link"
                                 target="_blank"
                                 rel="noopener noreferrer"
                             >
@@ -267,7 +267,7 @@ export default function Save({ attributes }) {
                             </a>
                         )}
                         {!isPublic && (
-                            <p className="map-note">Showing approximate area</p>
+                            <p className="reactions-card__map-note">Showing approximate area</p>
                         )}
                     </div>
                 )}

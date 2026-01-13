@@ -18,23 +18,6 @@ const STATUS_LABELS = {
 };
 
 /**
- * Get status badge class.
- *
- * @param {string} status Status value.
- * @return {string} CSS class.
- */
-function getStatusClass( status ) {
-	const classes = {
-		playing: 'status-playing',
-		completed: 'status-completed',
-		abandoned: 'status-abandoned',
-		backlog: 'status-backlog',
-		wishlist: 'status-wishlist',
-	};
-	return classes[ status ] || 'status-playing';
-}
-
-/**
  * Save component for the Play Card block.
  *
  * @param {Object} props Block props.
@@ -74,7 +57,7 @@ export default function Save( { attributes } ) {
 
 		return (
 			<div
-				className="rating-display p-rating"
+				className="reactions-card__rating p-rating"
 				aria-label={ `Rating: ${ rating } out of 5 stars` }
 			>
 				{ Array.from( { length: 5 }, ( _, i ) => (
@@ -86,40 +69,40 @@ export default function Save( { attributes } ) {
 						★
 					</span>
 				) ) }
-				<span className="rating-value">{ rating }/5</span>
+				<span className="reactions-card__rating-value">{ rating }/5</span>
 			</div>
 		);
 	};
 
 	return (
 		<div { ...blockProps }>
-			<div className="play-card-inner h-cite">
+			<div className="reactions-card h-cite">
 				{ /* Cover image */ }
 				{ cover && (
-					<div className="game-cover">
+					<div className="reactions-card__media">
 						<img
 							src={ cover }
 							alt={ coverAlt || title }
-							className="u-photo"
+							className="reactions-card__image u-photo"
 							loading="lazy"
 						/>
 					</div>
 				) }
 
-				<div className="game-info">
+				<div className="reactions-card__content">
 					{ /* Status and platform badges */ }
-					<div className="game-header">
+					<div className="reactions-card__badges">
 						{ status && (
-							<span className={ `status-badge ${ getStatusClass( status ) }` }>
+							<span className={ `reactions-card__badge reactions-card__badge--${ status }` }>
 								{ STATUS_LABELS[ status ] || status }
 							</span>
 						) }
-						{ platform && <span className="platform-badge">{ platform }</span> }
+						{ platform && <span className="reactions-card__badge">{ platform }</span> }
 					</div>
 
 					{ /* Game title */ }
 					{ title && (
-						<h3 className="game-title p-name">
+						<h3 className="reactions-card__title p-name">
 							{ gameUrl ? (
 								<a
 									href={ gameUrl }
@@ -137,7 +120,7 @@ export default function Save( { attributes } ) {
 
 					{ /* Developer */ }
 					{ developer && (
-						<p className="game-developer">
+						<p className="reactions-card__subtitle">
 							<span className="p-author h-card">
 								<span className="p-name">{ developer }</span>
 							</span>
@@ -146,18 +129,18 @@ export default function Save( { attributes } ) {
 
 					{ /* Publisher and year */ }
 					{ ( publisher || releaseYear ) && (
-						<p className="game-publisher">
+						<p className="reactions-card__meta">
 							{ publisher }
 							{ releaseYear && (
-								<span className="release-year"> ({ releaseYear })</span>
+								<span> ({ releaseYear })</span>
 							) }
 						</p>
 					) }
 
 					{ /* Hours played */ }
 					{ hoursPlayed > 0 && (
-						<p className="hours-played">
-							<span className="hours-value">{ hoursPlayed }</span> hours played
+						<p className="reactions-card__meta">
+							<strong>{ hoursPlayed }</strong> hours played
 						</p>
 					) }
 
@@ -165,12 +148,12 @@ export default function Save( { attributes } ) {
 					{ renderStars() }
 
 					{ /* Review */ }
-					{ review && <p className="game-review p-content">{ review }</p> }
+					{ review && <p className="reactions-card__notes p-content">{ review }</p> }
 
 					{ /* Played timestamp */ }
 					{ playedAt && (
 						<time
-							className="played-at dt-published"
+							className="reactions-card__timestamp dt-published"
 							dateTime={ new Date( playedAt ).toISOString() }
 						>
 							{ new Date( playedAt ).toLocaleString() }

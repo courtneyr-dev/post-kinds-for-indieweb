@@ -4,8 +4,7 @@
  * @package Reactions_For_IndieWeb
  */
 
-import { useBlockProps, RichText } from '@wordpress/block-editor';
-import { starIcon, starOutlineIcon } from '../shared/icons';
+import { useBlockProps } from '@wordpress/block-editor';
 
 /**
  * Save component for the Listen Card block.
@@ -39,7 +38,7 @@ export default function Save({ attributes }) {
         }
 
         return (
-            <div className="rating-display p-rating" aria-label={`Rating: ${rating} out of 5 stars`}>
+            <div className="reactions-card__rating p-rating" aria-label={`Rating: ${rating} out of 5 stars`}>
                 {Array.from({ length: 5 }, (_, i) => (
                     <span
                         key={i}
@@ -49,30 +48,30 @@ export default function Save({ attributes }) {
                         ★
                     </span>
                 ))}
-                <span className="rating-value">{rating}/5</span>
+                <span className="reactions-card__rating-value">{rating}/5</span>
             </div>
         );
     };
 
     return (
         <div {...blockProps}>
-            <div className="listen-card-inner h-cite">
+            <div className="reactions-card h-cite">
                 {/* Cover image */}
                 {coverImage && (
-                    <div className="cover-image">
+                    <div className="reactions-card__media">
                         <img
                             src={coverImage}
                             alt={coverImageAlt || `${trackTitle} by ${artistName}`}
-                            className="u-photo"
+                            className="reactions-card__image u-photo"
                             loading="lazy"
                         />
                     </div>
                 )}
 
-                <div className="listen-info">
+                <div className="reactions-card__content">
                     {/* Track title */}
                     {trackTitle && (
-                        <h3 className="track-title p-name">
+                        <h3 className="reactions-card__title p-name">
                             {listenUrl ? (
                                 <a href={listenUrl} className="u-url" target="_blank" rel="noopener noreferrer">
                                     {trackTitle}
@@ -85,7 +84,7 @@ export default function Save({ attributes }) {
 
                     {/* Artist */}
                     {artistName && (
-                        <p className="artist-name">
+                        <p className="reactions-card__subtitle">
                             <span className="p-author h-card">
                                 <span className="p-name">{artistName}</span>
                             </span>
@@ -94,10 +93,10 @@ export default function Save({ attributes }) {
 
                     {/* Album */}
                     {albumTitle && (
-                        <p className="album-title">
+                        <p className="reactions-card__meta">
                             {albumTitle}
                             {releaseDate && (
-                                <span className="release-date">
+                                <span className="reactions-card__meta-detail">
                                     {' '}({new Date(releaseDate).getFullYear()})
                                 </span>
                             )}
@@ -110,7 +109,7 @@ export default function Save({ attributes }) {
                     {/* Listened timestamp */}
                     {listenedAt && (
                         <time
-                            className="listened-at dt-published"
+                            className="reactions-card__timestamp dt-published"
                             dateTime={new Date(listenedAt).toISOString()}
                         >
                             {new Date(listenedAt).toLocaleString()}

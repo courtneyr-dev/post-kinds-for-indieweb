@@ -147,6 +147,16 @@ export default function Edit({ attributes, setAttributes }) {
     return (
         <>
             <InspectorControls>
+                <PanelBody title={__('Search Books', 'reactions-for-indieweb')} initialOpen={false}>
+                    <MediaSearch
+                        type="book"
+                        placeholder={__('Search by title, author, or ISBN...', 'reactions-for-indieweb')}
+                        onSelect={handleSearchSelect}
+                    />
+                    <p className="components-base-control__help" style={{ marginTop: '8px' }}>
+                        {__('Search Open Library to auto-fill book details.', 'reactions-for-indieweb')}
+                    </p>
+                </PanelBody>
                 <PanelBody title={__('Book Details', 'reactions-for-indieweb')}>
                     <TextControl
                         label={__('Title', 'reactions-for-indieweb')}
@@ -296,7 +306,7 @@ export default function Edit({ attributes, setAttributes }) {
             </InspectorControls>
 
             <div {...blockProps}>
-                <div className="read-card-inner h-cite">
+                <div className="reactions-card h-cite">
                     <div className="cover-image">
                         <MediaUploadCheck>
                             <MediaUpload

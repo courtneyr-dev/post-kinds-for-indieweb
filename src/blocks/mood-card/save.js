@@ -12,17 +12,25 @@ export default function Save( { attributes } ) {
 
 	return (
 		<div { ...blockProps }>
-			<div className="mood-card-inner h-entry">
-				<div className="mood-emoji-display">
-					<span className="emoji-large" role="img" aria-label={ mood || 'mood' }>{ emoji || '😊' }</span>
-					<div className="intensity-dots" aria-label={ `Intensity: ${ intensity } out of 5` }>
-						{ Array.from( { length: 5 }, ( _, i ) => <span key={ i } className={ `dot ${ i < intensity ? 'filled' : '' }` } /> ) }
+			<div className="reactions-card reactions-card--mood h-entry">
+				<div className="reactions-card__emoji-section">
+					<div className="reactions-card__emoji-display">
+						<span className="reactions-card__emoji-large" role="img" aria-label={ mood || 'mood' }>{ emoji || '😊' }</span>
+					</div>
+					<div className="reactions-card__intensity-dots" aria-label={ `Intensity: ${ intensity } out of 5` }>
+						{ Array.from( { length: 5 }, ( _, i ) => (
+							<span key={ i } className={ `reactions-card__intensity-dot ${ i < intensity ? 'filled' : '' }` } />
+						) ) }
 					</div>
 				</div>
-				<div className="mood-info">
-					{ mood && <h3 className="mood-text p-name">{ mood }</h3> }
-					{ note && <p className="mood-note p-content">{ note }</p> }
-					{ moodAt && <time className="mood-at dt-published" dateTime={ new Date( moodAt ).toISOString() }>{ new Date( moodAt ).toLocaleString() }</time> }
+				<div className="reactions-card__content">
+					{ mood && <h3 className="reactions-card__title p-name">{ mood }</h3> }
+					{ note && <p className="reactions-card__notes p-content">{ note }</p> }
+					{ moodAt && (
+						<time className="reactions-card__timestamp dt-published" dateTime={ new Date( moodAt ).toISOString() }>
+							{ new Date( moodAt ).toLocaleString() }
+						</time>
+					) }
 				</div>
 			</div>
 		</div>

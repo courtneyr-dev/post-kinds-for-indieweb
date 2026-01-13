@@ -59,6 +59,9 @@
 		"rawgId": {
 			"type": "string"
 		},
+		"steamId": {
+			"type": "string"
+		},
 		"developer": {
 			"type": "string"
 		},
@@ -78,19 +81,40 @@
 		"align": ["wide", "full"],
 		"color": {
 			"background": true,
-			"text": true
+			"text": true,
+			"gradients": true,
+			"link": true
 		},
 		"spacing": {
 			"margin": true,
-			"padding": true
+			"padding": true,
+			"blockGap": true
 		},
 		"typography": {
-			"fontSize": true
+			"fontSize": true,
+			"lineHeight": true,
+			"__experimentalFontFamily": true,
+			"__experimentalFontWeight": true,
+			"__experimentalFontStyle": true,
+			"__experimentalTextTransform": true,
+			"__experimentalTextDecoration": true,
+			"__experimentalLetterSpacing": true
 		},
 		"__experimentalBorder": {
 			"color": true,
 			"radius": true,
-			"width": true
+			"width": true,
+			"style": true,
+			"__experimentalDefaultControls": {
+				"color": true,
+				"radius": true,
+				"width": true,
+				"style": true
+			}
+		},
+		"shadow": true,
+		"dimensions": {
+			"minHeight": true
 		}
 	},
 	"example": {
@@ -101,8 +125,5 @@
 			"rating": 5,
 			"hoursPlayed": 120
 		}
-	},
-	"editorScript": "file:./index.js",
-	"editorStyle": "file:./editor.css",
-	"style": "file:./style.css"
+	}
 }

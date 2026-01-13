@@ -274,11 +274,20 @@ class API_Settings {
             ),
             'bgg' => array(
                 'name'        => 'BoardGameGeek',
-                'description' => __( 'Board game and video game database. No API key required.', 'reactions-for-indieweb' ),
+                'description' => __( 'Board game and video game database. As of January 2026, BGG requires API token registration for all API access.', 'reactions-for-indieweb' ),
                 'category'    => 'games',
                 'docs_url'    => 'https://boardgamegeek.com/wiki/page/BGG_XML_API2',
-                'auth_type'   => 'none',
-                'fields'      => array(),
+                'signup_url'  => 'https://boardgamegeek.com/applications',
+                'auth_type'   => 'bearer',
+                'notice'      => __( 'Note: BGG application approval may take a week or more. While waiting, you can still use the Play Card block by manually pasting BGG URLs - the game ID will be extracted automatically.', 'reactions-for-indieweb' ),
+                'fields'      => array(
+                    'api_token' => array(
+                        'label'    => __( 'API Token', 'reactions-for-indieweb' ),
+                        'type'     => 'password',
+                        'required' => true,
+                        'help'     => __( 'Register your app, wait for approval, then create a token from your Applications page.', 'reactions-for-indieweb' ),
+                    ),
+                ),
             ),
             'rawg' => array(
                 'name'        => 'RAWG',
@@ -435,6 +444,12 @@ class API_Settings {
             </div>
 
             <p class="api-description"><?php echo esc_html( $config['description'] ); ?></p>
+
+            <?php if ( ! empty( $config['notice'] ) ) : ?>
+                <div class="api-notice" style="background: #fff8e5; border-left: 4px solid #ffb900; padding: 8px 12px; margin: 8px 0; font-size: 13px;">
+                    <?php echo esc_html( $config['notice'] ); ?>
+                </div>
+            <?php endif; ?>
 
             <div class="api-card-body" <?php echo $is_enabled ? '' : 'style="display: none;"'; ?>>
                 <?php if ( ! empty( $config['fields'] ) ) : ?>

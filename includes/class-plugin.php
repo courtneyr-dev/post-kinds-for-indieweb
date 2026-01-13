@@ -600,20 +600,20 @@ final class Plugin {
 			'read-card',
 			'checkin-card',
 			'rsvp-card',
+			'play-card',
+			'eat-card',
+			'drink-card',
+			'favorite-card',
+			'jam-card',
+			'wish-card',
+			'mood-card',
+			'acquisition-card',
+			'checkin-dashboard',
 			'star-rating',
 			'media-lookup',
 		);
 
-		// Register each block.
-		foreach ( $blocks as $block ) {
-			$block_dir = \REACTIONS_INDIEWEB_PATH . 'src/blocks/' . $block;
-
-			if ( file_exists( $block_dir . '/block.json' ) ) {
-				register_block_type( $block_dir );
-			}
-		}
-
-		// Enqueue blocks script.
+		// Enqueue blocks script first so it's available for registration.
 		$blocks_asset_file = \REACTIONS_INDIEWEB_PATH . 'build/blocks.asset.php';
 
 		if ( file_exists( $blocks_asset_file ) ) {
@@ -633,18 +633,50 @@ final class Plugin {
 				\REACTIONS_INDIEWEB_PATH . 'languages'
 			);
 		}
+
+		// Register shared block styles for editor and frontend.
+		$blocks_style_file = \REACTIONS_INDIEWEB_PATH . 'build/blocks.css';
+
+		if ( file_exists( $blocks_style_file ) ) {
+			wp_register_style(
+				'reactions-indieweb-blocks',
+				\REACTIONS_INDIEWEB_URL . 'build/blocks.css',
+				array(),
+				filemtime( $blocks_style_file )
+			);
+		}
+
+		// Register each block with the shared editor script and styles.
+		foreach ( $blocks as $block ) {
+			$block_dir = \REACTIONS_INDIEWEB_PATH . 'src/blocks/' . $block;
+
+			if ( file_exists( $block_dir . '/block.json' ) ) {
+				register_block_type(
+					$block_dir,
+					array(
+						'editor_script' => 'reactions-indieweb-blocks',
+						'editor_style'  => 'reactions-indieweb-blocks',
+						'style'         => 'reactions-indieweb-blocks',
+					)
+				);
+			}
+		}
 	}
 
 	/**
 	 * Enqueue frontend block styles.
 	 *
-	 * Loads CSS for blocks on the frontend.
+	 * Loads CSS for blocks on the frontend. The style is already registered
+	 * in register_blocks() and will be auto-loaded when blocks are present,
+	 * but we also enqueue it globally for posts with saved block content.
 	 *
 	 * @return void
 	 */
 	public function enqueue_block_styles(): void {
-		// Block styles are automatically enqueued by WordPress when using block.json.
-		// This method is for any additional frontend styles.
+		// Enqueue the already-registered block styles for the frontend.
+		if ( wp_style_is( 'reactions-indieweb-blocks', 'registered' ) ) {
+			wp_enqueue_style( 'reactions-indieweb-blocks' );
+		}
 	}
 
 	/**
@@ -706,6 +738,13 @@ final class Plugin {
 				array(),
 				$asset['version']
 			);
+		}
+
+		// Enqueue block styles in the editor. The style is registered in register_blocks()
+		// and attached to blocks via editor_style, but we also enqueue it directly to ensure
+		// it's available before any block is inserted.
+		if ( wp_style_is( 'reactions-indieweb-blocks', 'registered' ) ) {
+			wp_enqueue_style( 'reactions-indieweb-blocks' );
 		}
 	}
 

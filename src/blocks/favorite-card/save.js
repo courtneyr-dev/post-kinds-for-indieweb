@@ -12,14 +12,48 @@ export default function Save( { attributes } ) {
 
 	return (
 		<div { ...blockProps }>
-			<div className="favorite-card-inner h-cite">
-				{ image && <div className="favorite-image"><img src={ image } alt={ imageAlt || title } className="u-photo" loading="lazy" /></div> }
-				<div className="favorite-info">
-					<span className="favorite-badge">★ Favorited</span>
-					{ title && <h3 className="favorite-title p-name">{ url ? <a href={ url } className="u-url u-favorite-of" target="_blank" rel="noopener noreferrer">{ title }</a> : title }</h3> }
-					{ author && <p className="favorite-author p-author h-card"><span className="p-name">{ author }</span></p> }
-					{ description && <p className="favorite-description p-content">{ description }</p> }
-					{ favoritedAt && <time className="favorited-at dt-published" dateTime={ new Date( favoritedAt ).toISOString() }>{ new Date( favoritedAt ).toLocaleString() }</time> }
+			<div className="reactions-card h-cite">
+				{ image && (
+					<div className="reactions-card__media">
+						<img
+							src={ image }
+							alt={ imageAlt || title }
+							className="reactions-card__image u-photo"
+							loading="lazy"
+						/>
+					</div>
+				) }
+				<div className="reactions-card__content">
+					<span className="reactions-card__badge">★ Favorited</span>
+
+					{ title && (
+						<h3 className="reactions-card__title p-name">
+							{ url ? (
+								<a href={ url } className="u-url u-favorite-of" target="_blank" rel="noopener noreferrer">
+									{ title }
+								</a>
+							) : (
+								title
+							) }
+						</h3>
+					) }
+
+					{ author && (
+						<p className="reactions-card__subtitle p-author h-card">
+							<span className="p-name">{ author }</span>
+						</p>
+					) }
+
+					{ description && <p className="reactions-card__notes p-content">{ description }</p> }
+
+					{ favoritedAt && (
+						<time
+							className="reactions-card__timestamp dt-published"
+							dateTime={ new Date( favoritedAt ).toISOString() }
+						>
+							{ new Date( favoritedAt ).toLocaleString() }
+						</time>
+					) }
 				</div>
 			</div>
 		</div>

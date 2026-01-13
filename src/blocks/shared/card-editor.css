@@ -1,0 +1,705 @@
+/**
+ * Shared Card Block Editor Styles
+ *
+ * Uses WordPress theme color palette variables for consistent styling.
+ * These styles apply to all Reactions card blocks in the editor and frontend.
+ *
+ * Color strategy:
+ * - Background: uses theme's secondary background with dark slate fallback
+ * - Text: uses inherit/currentColor to respect block support overrides
+ * - When no override is set, falls back to light text for dark backgrounds
+ *
+ * @package Reactions_For_IndieWeb
+ */
+
+/* Base card container - theme-aware styling */
+.reactions-card {
+	display: flex;
+	gap: 16px;
+	padding: 16px;
+	background: inherit;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 12px;
+	color: inherit;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Default styling when no block support colors are set */
+.wp-block-reactions-indieweb-mood-card:not(.has-background) .reactions-card,
+.wp-block-reactions-indieweb-listen-card:not(.has-background) .reactions-card,
+.wp-block-reactions-indieweb-watch-card:not(.has-background) .reactions-card,
+.wp-block-reactions-indieweb-read-card:not(.has-background) .reactions-card,
+.wp-block-reactions-indieweb-play-card:not(.has-background) .reactions-card,
+.wp-block-reactions-indieweb-checkin-card:not(.has-background) .reactions-card,
+.wp-block-reactions-indieweb-rsvp-card:not(.has-background) .reactions-card,
+.wp-block-reactions-indieweb-eat-card:not(.has-background) .reactions-card,
+.wp-block-reactions-indieweb-drink-card:not(.has-background) .reactions-card,
+.wp-block-reactions-indieweb-favorite-card:not(.has-background) .reactions-card,
+.wp-block-reactions-indieweb-jam-card:not(.has-background) .reactions-card,
+.wp-block-reactions-indieweb-wish-card:not(.has-background) .reactions-card,
+.wp-block-reactions-indieweb-acquisition-card:not(.has-background) .reactions-card {
+	background: var(--wp--preset--color--base-2, var(--wp--preset--color--tertiary, #1e293b));
+}
+
+.wp-block-reactions-indieweb-mood-card:not(.has-text-color) .reactions-card,
+.wp-block-reactions-indieweb-listen-card:not(.has-text-color) .reactions-card,
+.wp-block-reactions-indieweb-watch-card:not(.has-text-color) .reactions-card,
+.wp-block-reactions-indieweb-read-card:not(.has-text-color) .reactions-card,
+.wp-block-reactions-indieweb-play-card:not(.has-text-color) .reactions-card,
+.wp-block-reactions-indieweb-checkin-card:not(.has-text-color) .reactions-card,
+.wp-block-reactions-indieweb-rsvp-card:not(.has-text-color) .reactions-card,
+.wp-block-reactions-indieweb-eat-card:not(.has-text-color) .reactions-card,
+.wp-block-reactions-indieweb-drink-card:not(.has-text-color) .reactions-card,
+.wp-block-reactions-indieweb-favorite-card:not(.has-text-color) .reactions-card,
+.wp-block-reactions-indieweb-jam-card:not(.has-text-color) .reactions-card,
+.wp-block-reactions-indieweb-wish-card:not(.has-text-color) .reactions-card,
+.wp-block-reactions-indieweb-acquisition-card:not(.has-text-color) .reactions-card {
+	color: #f1f5f9;
+}
+
+/* Media/Image Section */
+.reactions-card__media {
+	flex-shrink: 0;
+	width: 100px;
+}
+
+.reactions-card__media-button {
+	position: relative;
+	display: block;
+	width: 100%;
+	aspect-ratio: 1;
+	border: 2px dashed rgba(255, 255, 255, 0.3);
+	border-radius: 8px;
+	padding: 0;
+	cursor: pointer;
+	background: rgba(0, 0, 0, 0.2);
+	overflow: hidden;
+	transition: border-color 0.2s, opacity 0.2s;
+}
+
+.reactions-card__media-button:hover {
+	border-color: var(--wp--preset--color--primary, #007cba);
+	opacity: 0.9;
+}
+
+.reactions-card__image {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.reactions-card__media-placeholder {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	background: rgba(0, 0, 0, 0.2);
+}
+
+.reactions-card__media-icon {
+	font-size: 32px;
+	line-height: 1;
+}
+
+.reactions-card__media-text {
+	font-size: 11px;
+	color: inherit;
+	opacity: 0.7;
+}
+
+.reactions-card__media-remove {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	width: 24px;
+	height: 24px;
+	border: none;
+	border-radius: 50%;
+	background: rgba(0, 0, 0, 0.6);
+	color: white;
+	font-size: 16px;
+	line-height: 1;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	opacity: 0;
+	transition: opacity 0.2s;
+}
+
+.reactions-card__media-button:hover .reactions-card__media-remove {
+	opacity: 1;
+}
+
+/* Content Section */
+.reactions-card__content {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+/* Type/Badge Row */
+.reactions-card__type-row {
+	margin-bottom: 4px;
+}
+
+.reactions-card__type-select {
+	padding: 6px 12px;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: 16px;
+	font-size: 13px;
+	background: rgba(0, 0, 0, 0.2);
+	color: inherit;
+	cursor: pointer;
+	max-width: 100%;
+}
+
+.reactions-card__type-select:focus {
+	outline: 2px solid var(--wp--preset--color--primary, #007cba);
+	outline-offset: 2px;
+}
+
+.reactions-card__badge {
+	display: inline-block;
+	padding: 4px 10px;
+	background: #ef4444;
+	color: #fff;
+	border-radius: 16px;
+	font-size: 12px;
+	font-weight: 600;
+	width: fit-content;
+}
+
+/* Title - inherits color from parent for block support override */
+.reactions-card__title {
+	margin: 0;
+	font-size: 1.1rem;
+	font-weight: 700;
+	line-height: 1.3;
+	color: inherit;
+}
+
+/* Subtitle - slightly muted but still readable */
+.reactions-card__subtitle {
+	margin: 0;
+	font-size: 14px;
+	color: inherit;
+	opacity: 0.85;
+}
+
+/* Location */
+.reactions-card__location {
+	margin: 0;
+	font-size: 13px;
+	color: inherit;
+	opacity: 0.85;
+}
+
+.reactions-card__location::before {
+	content: '📍 ';
+}
+
+/* Rating */
+.reactions-card__rating {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.reactions-card__rating .reactions-star-rating {
+	display: flex;
+	gap: 2px;
+}
+
+.reactions-card__rating .reactions-star-rating .star {
+	padding: 2px;
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 18px;
+	color: inherit;
+	opacity: 0.4;
+	transition: color 0.15s, opacity 0.15s;
+}
+
+.reactions-card__rating .reactions-star-rating .star.filled {
+	color: #ffc107;
+	opacity: 1;
+}
+
+.reactions-card__rating .reactions-star-rating .star:hover {
+	color: #ffc107;
+	opacity: 1;
+}
+
+/* Notes */
+.reactions-card__notes {
+	margin: 4px 0 0;
+	font-size: 14px;
+	color: inherit;
+	opacity: 0.85;
+	line-height: 1.5;
+	font-style: italic;
+}
+
+/* Input fields inline */
+.reactions-card__input {
+	padding: 6px 10px;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: 6px;
+	font-size: 14px;
+	background: rgba(0, 0, 0, 0.2);
+	color: inherit;
+	width: 100%;
+	max-width: 200px;
+}
+
+.reactions-card__input:focus {
+	outline: 2px solid var(--wp--preset--color--primary, #007cba);
+	outline-offset: 2px;
+}
+
+.reactions-card__input--url {
+	color: #60a5fa;
+}
+
+.reactions-card__input--price {
+	color: #34d399;
+	font-weight: 600;
+	max-width: 120px;
+}
+
+/* Input row with icon */
+.reactions-card__input-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.reactions-card__input-icon {
+	font-size: 14px;
+	flex-shrink: 0;
+}
+
+/* Badges row for multiple badges */
+.reactions-card__badges-row {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+/* Header row with badge and action button */
+.reactions-card__header-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.reactions-card__action-button {
+	width: 28px;
+	height: 28px;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: 50%;
+	background: rgba(0, 0, 0, 0.2);
+	cursor: pointer;
+	font-size: 14px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background 0.2s;
+	color: inherit;
+}
+
+.reactions-card__action-button:hover {
+	background: rgba(0, 0, 0, 0.3);
+}
+
+/* Search bar */
+.reactions-card__search-bar {
+	display: flex;
+	gap: 8px;
+	padding: 12px;
+	background: rgba(0, 0, 0, 0.15);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.reactions-card__search-bar > div {
+	flex: 1;
+}
+
+.reactions-card__search-close {
+	width: 32px;
+	height: 32px;
+	border: none;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.2);
+	cursor: pointer;
+	font-size: 18px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: inherit;
+}
+
+/* Mood card specific - emoji section */
+.reactions-card--mood {
+	flex-direction: row;
+}
+
+.reactions-card__emoji-section {
+	flex-shrink: 0;
+	width: 140px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	align-items: center;
+}
+
+.reactions-card__emoji-display {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 80px;
+	height: 80px;
+	background: #065f46;
+	border-radius: 50%;
+}
+
+.reactions-card__emoji-large {
+	font-size: 48px;
+	line-height: 1;
+}
+
+.reactions-card__intensity-dots {
+	display: flex;
+	justify-content: center;
+	gap: 6px;
+}
+
+.reactions-card__intensity-dot {
+	width: 12px;
+	height: 12px;
+	border: 2px solid rgba(255, 255, 255, 0.4);
+	border-radius: 50%;
+	background: transparent;
+	cursor: pointer;
+	padding: 0;
+	transition: all 0.2s;
+}
+
+.reactions-card__intensity-dot:hover {
+	border-color: #10b981;
+}
+
+.reactions-card__intensity-dot.filled {
+	background: #10b981;
+	border-color: #10b981;
+}
+
+.reactions-card__emoji-picker {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2px;
+	justify-content: center;
+	max-width: 140px;
+}
+
+.reactions-card__emoji-btn {
+	width: 28px;
+	height: 28px;
+	border: none;
+	border-radius: 4px;
+	background: transparent;
+	cursor: pointer;
+	font-size: 18px;
+	padding: 0;
+	transition: all 0.15s;
+}
+
+.reactions-card__emoji-btn:hover {
+	background: rgba(255, 255, 255, 0.15);
+	transform: scale(1.2);
+}
+
+.reactions-card__emoji-btn.selected {
+	background: #065f46;
+}
+
+/* Placeholder text styling */
+.reactions-card__title[data-empty="true"],
+.reactions-card__subtitle[data-empty="true"],
+.reactions-card__location[data-empty="true"],
+.reactions-card__notes[data-empty="true"] {
+	min-height: 1.2em;
+}
+
+/* Wrapper for cards with search bars */
+.reactions-card-wrapper {
+	background: inherit;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 12px;
+	color: inherit;
+	overflow: hidden;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Default styling for wrapper when no block support colors are set */
+[class*="wp-block-reactions-indieweb"]:not(.has-background) .reactions-card-wrapper {
+	background: var(--wp--preset--color--base-2, var(--wp--preset--color--tertiary, #1e293b));
+}
+
+[class*="wp-block-reactions-indieweb"]:not(.has-text-color) .reactions-card-wrapper {
+	color: #f1f5f9;
+}
+
+.reactions-card-wrapper .reactions-card {
+	border: none;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+/* ============================================
+   Frontend-specific styles
+   ============================================ */
+
+/* Portrait aspect ratio for book covers and movie posters */
+.reactions-card__media--portrait {
+	width: 80px;
+}
+
+.reactions-card__media--portrait .reactions-card__image {
+	aspect-ratio: 2 / 3;
+	border-radius: 6px;
+}
+
+/* Multiple badges container */
+.reactions-card__badges {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	margin-bottom: 4px;
+}
+
+/* Meta information */
+.reactions-card__meta {
+	margin: 0;
+	font-size: 13px;
+	color: inherit;
+	opacity: 0.75;
+}
+
+.reactions-card__meta-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+	color: inherit;
+	opacity: 0.75;
+}
+
+.reactions-card__meta-icon {
+	flex-shrink: 0;
+}
+
+/* Timestamp styling */
+.reactions-card__timestamp {
+	display: block;
+	font-size: 12px;
+	color: inherit;
+	opacity: 0.6;
+	margin-top: 8px;
+}
+
+/* Reading progress bar */
+.reactions-card__progress {
+	margin: 4px 0;
+}
+
+.reactions-card__progress-bar {
+	height: 6px;
+	background: rgba(0, 0, 0, 0.2);
+	border-radius: 3px;
+	overflow: hidden;
+}
+
+.reactions-card__progress-fill {
+	height: 100%;
+	background: linear-gradient(90deg, #10b981, #34d399);
+	border-radius: 3px;
+	transition: width 0.3s ease;
+}
+
+.reactions-card__progress-text {
+	display: block;
+	font-size: 11px;
+	color: inherit;
+	opacity: 0.6;
+	margin-top: 4px;
+}
+
+/* Reading dates */
+.reactions-card__dates {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin-top: 8px;
+}
+
+/* External links section */
+.reactions-card__links {
+	display: flex;
+	gap: 12px;
+	margin-top: 8px;
+}
+
+.reactions-card__links a {
+	font-size: 12px;
+	color: var(--wp--preset--color--primary, #60a5fa);
+	text-decoration: none;
+}
+
+.reactions-card__links a:hover {
+	text-decoration: underline;
+}
+
+/* Map section for check-ins */
+.reactions-card__map {
+	margin-top: 8px;
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+.reactions-card__map-link {
+	display: block;
+}
+
+.reactions-card__map-link img {
+	width: 100%;
+	height: auto;
+	display: block;
+}
+
+.reactions-card__map-note {
+	font-size: 11px;
+	color: inherit;
+	opacity: 0.6;
+	font-style: italic;
+	margin-top: 4px;
+}
+
+/* Location parts */
+.reactions-card__location-parts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+/* Private location modifier */
+.reactions-card--private .reactions-card__location {
+	font-style: italic;
+}
+
+/* Event section for RSVP */
+.reactions-card__event {
+	margin-top: 4px;
+}
+
+/* Rating value text */
+.reactions-card__rating-value {
+	font-size: 12px;
+	color: inherit;
+	opacity: 0.75;
+	margin-left: 4px;
+}
+
+/* Badge icon */
+.reactions-card__badge-icon {
+	margin-right: 4px;
+}
+
+/* Title link styling */
+.reactions-card__title a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.reactions-card__title a:hover {
+	color: var(--wp--preset--color--primary, #60a5fa);
+}
+
+/* Frontend star rating (non-interactive) */
+.reactions-card__rating .star {
+	color: inherit;
+	opacity: 0.4;
+	font-size: 16px;
+}
+
+.reactions-card__rating .star.filled {
+	color: #ffc107;
+	opacity: 1;
+}
+
+/* Badge color variants */
+.reactions-card__badge--yes,
+.reactions-card__badge--going {
+	background: #10b981;
+}
+
+.reactions-card__badge--no,
+.reactions-card__badge--not-going {
+	background: #ef4444;
+}
+
+.reactions-card__badge--maybe {
+	background: #f59e0b;
+}
+
+.reactions-card__badge--interested {
+	background: #8b5cf6;
+}
+
+.reactions-card__badge--remote {
+	background: #3b82f6;
+}
+
+.reactions-card__badge--to-read,
+.reactions-card__badge--backlog,
+.reactions-card__badge--wishlist {
+	background: #64748b;
+}
+
+.reactions-card__badge--reading,
+.reactions-card__badge--playing {
+	background: #3b82f6;
+}
+
+.reactions-card__badge--finished,
+.reactions-card__badge--completed {
+	background: #10b981;
+}
+
+.reactions-card__badge--abandoned {
+	background: #ef4444;
+}
+
+.reactions-card__badge--movie {
+	background: #8b5cf6;
+}
+
+.reactions-card__badge--tv {
+	background: #ec4899;
+}
+
+.reactions-card__badge--episode {
+	background: #f59e0b;
+}
+
+.reactions-card__badge--rewatch {
+	background: #475569;
+}
