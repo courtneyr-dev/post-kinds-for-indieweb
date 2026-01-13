@@ -71,6 +71,10 @@ This plugin is a modern, block-editor-compatible successor to David Shanske's In
 * [IndieBlocks](https://wordpress.org/plugins/indieblocks/) - Core IndieWeb blocks for bookmarks, likes, replies, reposts, and context
 * [Syndication Links](https://wordpress.org/plugins/syndication-links/) - Stores and displays syndication URLs for POSSE workflows
 * [Webmention](https://wordpress.org/plugins/webmention/) - Cross-site conversations and notifications
+* [Link Extension for XFN](https://wordpress.org/plugins/link-extension-for-xfn/) - Integrates XFN (XHTML Friends Network) relationship options into WordPress’s native link interface.
+* [Post Formats for Block Themes](https://wordpress.org/plugins/post-formats-for-block-themes/) - Brings the beloved post format functionality from classic WordPress themes to modern block themes, with intelligent pattern insertion, automatic format detection, and a streamlined editing experience that makes creating formatted content effortless.
+
+
 
 **Optional:**
 
