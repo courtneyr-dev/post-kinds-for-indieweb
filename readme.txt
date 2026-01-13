@@ -1,5 +1,5 @@
 === Post Kinds for IndieWeb and Block Themes ===
-Contributors: courtneyr-dev
+Contributors: courane01
 Tags: indieweb, post-kinds, scrobbling, microformats, block-editor
 Requires at least: 6.5
 Tested up to: 6.9
@@ -43,9 +43,11 @@ Track what you're listening to, watching, reading, and where you've been—all o
 * Music: MusicBrainz, Last.fm, ListenBrainz
 * Movies/TV: TMDB, Trakt, TVMaze, Simkl
 * Books: Open Library, Google Books, Hardcover
-* Games: RAWG, BoardGameGeek
-* Podcasts: Podcast Index
+* Games: RAWG, BoardGameGeek, VideoGameGeek
+* Podcasts: Podcast Index, Readwise Snipd imports
 * Locations: Foursquare, OpenStreetMap
+* Other: Readwise
+
 
 **IndieWeb Features**
 * Full microformats2 markup (h-entry, h-cite, h-card, etc.)
@@ -55,7 +57,7 @@ Track what you're listening to, watching, reading, and where you've been—all o
 
 = About This Plugin =
 
-This plugin is a modern, block-editor compatible successor to David Shanske's IndieWeb Post Kinds plugin. It maintains compatibility with the same post kind concepts and IndieWeb microformats while adding full Gutenberg support.
+This plugin is a modern, block-editor-compatible successor to David Shanske's IndieWeb Post Kinds plugin. It maintains compatibility with the same post kind concepts and IndieWeb microformats while adding full Gutenberg support.
 
 **Why a new plugin?**
 * The original Post Kinds plugin is incompatible with the Block Editor
