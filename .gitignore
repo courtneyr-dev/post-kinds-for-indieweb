@@ -35,6 +35,9 @@ Thumbs.db
 *.swp
 *~
 
+# Local WordPress test installations (accidental copies)
+~/
+
 # Development cache files
 .phpcs.cache
 coverage/
