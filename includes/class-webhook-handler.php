@@ -29,7 +29,7 @@ class Webhook_Handler {
 	 *
 	 * @var array<string, array<string, mixed>>
 	 */
-	private array $endpoints = array();
+	private array $endpoints = [];
 
 	/**
 	 * Constructor.
@@ -44,43 +44,43 @@ class Webhook_Handler {
 	 * @return void
 	 */
 	private function register_endpoints(): void {
-		$this->endpoints = array(
-			'plex' => array(
-				'name'        => 'Plex',
-				'description' => 'Receive playback events from Plex Media Server',
-				'handler'     => array( $this, 'handle_plex' ),
-				'auth_type'   => 'token',
-				'content_type'=> 'multipart/form-data',
-			),
-			'jellyfin' => array(
-				'name'        => 'Jellyfin',
-				'description' => 'Receive playback events from Jellyfin',
-				'handler'     => array( $this, 'handle_jellyfin' ),
-				'auth_type'   => 'token',
-				'content_type'=> 'application/json',
-			),
-			'trakt' => array(
-				'name'        => 'Trakt',
-				'description' => 'Receive scrobble events from Trakt',
-				'handler'     => array( $this, 'handle_trakt' ),
-				'auth_type'   => 'none',
-				'content_type'=> 'application/json',
-			),
-			'listenbrainz' => array(
-				'name'        => 'ListenBrainz',
-				'description' => 'Receive listen submissions from ListenBrainz',
-				'handler'     => array( $this, 'handle_listenbrainz' ),
-				'auth_type'   => 'token',
-				'content_type'=> 'application/json',
-			),
-			'generic' => array(
-				'name'        => 'Generic',
-				'description' => 'Generic webhook endpoint for custom integrations',
-				'handler'     => array( $this, 'handle_generic' ),
-				'auth_type'   => 'token',
-				'content_type'=> 'application/json',
-			),
-		);
+		$this->endpoints = [
+			'plex'         => [
+				'name'         => 'Plex',
+				'description'  => 'Receive playback events from Plex Media Server',
+				'handler'      => [ $this, 'handle_plex' ],
+				'auth_type'    => 'token',
+				'content_type' => 'multipart/form-data',
+			],
+			'jellyfin'     => [
+				'name'         => 'Jellyfin',
+				'description'  => 'Receive playback events from Jellyfin',
+				'handler'      => [ $this, 'handle_jellyfin' ],
+				'auth_type'    => 'token',
+				'content_type' => 'application/json',
+			],
+			'trakt'        => [
+				'name'         => 'Trakt',
+				'description'  => 'Receive scrobble events from Trakt',
+				'handler'      => [ $this, 'handle_trakt' ],
+				'auth_type'    => 'none',
+				'content_type' => 'application/json',
+			],
+			'listenbrainz' => [
+				'name'         => 'ListenBrainz',
+				'description'  => 'Receive listen submissions from ListenBrainz',
+				'handler'      => [ $this, 'handle_listenbrainz' ],
+				'auth_type'    => 'token',
+				'content_type' => 'application/json',
+			],
+			'generic'      => [
+				'name'         => 'Generic',
+				'description'  => 'Generic webhook endpoint for custom integrations',
+				'handler'      => [ $this, 'handle_generic' ],
+				'auth_type'    => 'token',
+				'content_type' => 'application/json',
+			],
+		];
 
 		/**
 		 * Filter available webhook endpoints.
@@ -111,7 +111,7 @@ class Webhook_Handler {
 			return new \WP_Error(
 				'unknown_service',
 				'Unknown webhook service: ' . $service,
-				array( 'status' => 404 )
+				[ 'status' => 404 ]
 			);
 		}
 
@@ -136,16 +136,16 @@ class Webhook_Handler {
 		// Call handler.
 		try {
 			$handler = $endpoint['handler'];
-			$result = call_user_func( $handler, $payload, $request );
+			$result  = call_user_func( $handler, $payload, $request );
 
 			$this->log_webhook( $service, 'success', $result );
 
 			return new \WP_REST_Response(
-				array(
+				[
 					'success' => true,
 					'message' => 'Webhook processed',
 					'data'    => $result,
-				),
+				],
 				200
 			);
 		} catch ( \Exception $e ) {
@@ -154,7 +154,7 @@ class Webhook_Handler {
 			return new \WP_Error(
 				'handler_error',
 				$e->getMessage(),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -222,7 +222,7 @@ class Webhook_Handler {
 			return new \WP_Error(
 				'missing_token',
 				'Webhook token required',
-				array( 'status' => 401 )
+				[ 'status' => 401 ]
 			);
 		}
 
@@ -230,7 +230,7 @@ class Webhook_Handler {
 			return new \WP_Error(
 				'invalid_token',
 				'Invalid webhook token',
-				array( 'status' => 403 )
+				[ 'status' => 403 ]
 			);
 		}
 
@@ -251,7 +251,7 @@ class Webhook_Handler {
 			return new \WP_Error(
 				'no_secret',
 				'HMAC secret not configured',
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 
@@ -265,18 +265,18 @@ class Webhook_Handler {
 			return new \WP_Error(
 				'missing_signature',
 				'HMAC signature required',
-				array( 'status' => 401 )
+				[ 'status' => 401 ]
 			);
 		}
 
-		$body = $request->get_body();
+		$body     = $request->get_body();
 		$expected = 'sha256=' . hash_hmac( 'sha256', $body, $secret );
 
 		if ( ! hash_equals( $expected, $signature ) ) {
 			return new \WP_Error(
 				'invalid_signature',
 				'Invalid HMAC signature',
-				array( 'status' => 403 )
+				[ 'status' => 403 ]
 			);
 		}
 
@@ -297,11 +297,11 @@ class Webhook_Handler {
 			return new \WP_Error(
 				'missing_auth',
 				'Basic authentication required',
-				array( 'status' => 401 )
+				[ 'status' => 401 ]
 			);
 		}
 
-		$credentials = base64_decode( substr( $auth_header, 6 ) );
+		$credentials                 = base64_decode( substr( $auth_header, 6 ) );
 		list( $username, $password ) = explode( ':', $credentials, 2 );
 
 		$expected_user = get_option( "post_kinds_webhook_user_{$service}" );
@@ -311,7 +311,7 @@ class Webhook_Handler {
 			return new \WP_Error(
 				'invalid_credentials',
 				'Invalid credentials',
-				array( 'status' => 403 )
+				[ 'status' => 403 ]
 			);
 		}
 
@@ -339,7 +339,7 @@ class Webhook_Handler {
 					return new \WP_Error(
 						'invalid_json',
 						'Invalid JSON in payload parameter',
-						array( 'status' => 400 )
+						[ 'status' => 400 ]
 					);
 				}
 
@@ -363,7 +363,7 @@ class Webhook_Handler {
 			return new \WP_Error(
 				'invalid_json',
 				'Invalid JSON payload: ' . json_last_error_msg(),
-				array( 'status' => 400 )
+				[ 'status' => 400 ]
 			);
 		}
 
@@ -378,30 +378,30 @@ class Webhook_Handler {
 	 * @return array<string, mixed> Result.
 	 */
 	public function handle_plex( array $payload, \WP_REST_Request $request ): array {
-		$event = $payload['event'] ?? '';
-		$metadata = $payload['Metadata'] ?? array();
-		$account = $payload['Account'] ?? array();
-		$player = $payload['Player'] ?? array();
+		$event    = $payload['event'] ?? '';
+		$metadata = $payload['Metadata'] ?? [];
+		$account  = $payload['Account'] ?? [];
+		$player   = $payload['Player'] ?? [];
 
 		// Only process completed plays.
 		if ( 'media.scrobble' !== $event ) {
-			return array(
+			return [
 				'action'  => 'ignored',
 				'event'   => $event,
 				'message' => 'Event type not processed',
-			);
+			];
 		}
 
 		$type = $metadata['type'] ?? '';
 
 		// Build item data.
-		$item = array(
+		$item = [
 			'source'     => 'plex',
 			'plex_key'   => $metadata['key'] ?? '',
 			'watched_at' => time(),
 			'user'       => $account['title'] ?? '',
 			'player'     => $player['title'] ?? '',
-		);
+		];
 
 		if ( 'movie' === $type ) {
 			$item['type']   = 'movie';
@@ -410,7 +410,7 @@ class Webhook_Handler {
 			$item['poster'] = $this->get_plex_thumb( $metadata['thumb'] ?? '' );
 
 			// Try to get external IDs.
-			foreach ( $metadata['Guid'] ?? array() as $guid ) {
+			foreach ( $metadata['Guid'] ?? [] as $guid ) {
 				$id = $guid['id'] ?? '';
 				if ( strpos( $id, 'imdb://' ) === 0 ) {
 					$item['imdb_id'] = substr( $id, 7 );
@@ -426,7 +426,7 @@ class Webhook_Handler {
 			$item['episode'] = $metadata['index'] ?? 0;
 			$item['poster']  = $this->get_plex_thumb( $metadata['grandparentThumb'] ?? '' );
 
-			foreach ( $metadata['Guid'] ?? array() as $guid ) {
+			foreach ( $metadata['Guid'] ?? [] as $guid ) {
 				$id = $guid['id'] ?? '';
 				if ( strpos( $id, 'tvdb://' ) === 0 ) {
 					$item['tvdb_id'] = (int) substr( $id, 7 );
@@ -441,11 +441,11 @@ class Webhook_Handler {
 			$item['album']  = $metadata['parentTitle'] ?? '';
 			$item['cover']  = $this->get_plex_thumb( $metadata['parentThumb'] ?? '' );
 		} else {
-			return array(
+			return [
 				'action'  => 'ignored',
 				'type'    => $type,
 				'message' => 'Media type not supported',
-			);
+			];
 		}
 
 		// Process the scrobble.
@@ -464,31 +464,31 @@ class Webhook_Handler {
 
 		// Only process completed plays.
 		if ( 'PlaybackStop' !== $notification_type ) {
-			return array(
+			return [
 				'action'  => 'ignored',
 				'event'   => $notification_type,
 				'message' => 'Event type not processed',
-			);
+			];
 		}
 
 		// Check if actually completed (played > 90%).
 		$played_percent = $payload['PlayedToCompletion'] ?? false;
 		if ( ! $played_percent ) {
-			return array(
+			return [
 				'action'  => 'ignored',
 				'message' => 'Playback not completed',
-			);
+			];
 		}
 
 		$item_type = $payload['ItemType'] ?? '';
 
-		$item = array(
-			'source'     => 'jellyfin',
-			'jellyfin_id'=> $payload['ItemId'] ?? '',
-			'watched_at' => time(),
-			'user'       => $payload['NotificationUsername'] ?? '',
-			'device'     => $payload['DeviceName'] ?? '',
-		);
+		$item = [
+			'source'      => 'jellyfin',
+			'jellyfin_id' => $payload['ItemId'] ?? '',
+			'watched_at'  => time(),
+			'user'        => $payload['NotificationUsername'] ?? '',
+			'device'      => $payload['DeviceName'] ?? '',
+		];
 
 		if ( 'Movie' === $item_type ) {
 			$item['type']    = 'movie';
@@ -509,11 +509,11 @@ class Webhook_Handler {
 			$item['artist'] = $payload['Artists'][0] ?? '';
 			$item['album']  = $payload['Album'] ?? '';
 		} else {
-			return array(
+			return [
 				'action'  => 'ignored',
 				'type'    => $item_type,
 				'message' => 'Item type not supported',
-			);
+			];
 		}
 
 		return $this->process_scrobble( $item );
@@ -530,20 +530,20 @@ class Webhook_Handler {
 		$action = $payload['action'] ?? '';
 
 		if ( 'scrobble' !== $action && 'watch' !== $action ) {
-			return array(
+			return [
 				'action'  => 'ignored',
 				'event'   => $action,
 				'message' => 'Action type not processed',
-			);
+			];
 		}
 
-		$item = array(
+		$item = [
 			'source'     => 'trakt',
 			'watched_at' => $payload['watched_at'] ?? time(),
-		);
+		];
 
 		if ( isset( $payload['movie'] ) ) {
-			$movie = $payload['movie'];
+			$movie            = $payload['movie'];
 			$item['type']     = 'movie';
 			$item['title']    = $movie['title'] ?? '';
 			$item['year']     = $movie['year'] ?? '';
@@ -552,7 +552,7 @@ class Webhook_Handler {
 			$item['tmdb_id']  = $movie['ids']['tmdb'] ?? '';
 		} elseif ( isset( $payload['episode'] ) ) {
 			$episode = $payload['episode'];
-			$show = $payload['show'] ?? array();
+			$show    = $payload['show'] ?? [];
 
 			$item['type']     = 'episode';
 			$item['title']    = $episode['title'] ?? '';
@@ -562,10 +562,10 @@ class Webhook_Handler {
 			$item['trakt_id'] = $episode['ids']['trakt'] ?? '';
 			$item['tvdb_id']  = $episode['ids']['tvdb'] ?? '';
 		} else {
-			return array(
+			return [
 				'action'  => 'ignored',
 				'message' => 'No movie or episode in payload',
-			);
+			];
 		}
 
 		return $this->process_scrobble( $item );
@@ -581,30 +581,30 @@ class Webhook_Handler {
 	public function handle_listenbrainz( array $payload, \WP_REST_Request $request ): array {
 		$listen_type = $payload['listen_type'] ?? '';
 
-		if ( ! in_array( $listen_type, array( 'single', 'playing_now' ), true ) ) {
-			return array(
+		if ( ! in_array( $listen_type, [ 'single', 'playing_now' ], true ) ) {
+			return [
 				'action'  => 'ignored',
 				'type'    => $listen_type,
 				'message' => 'Listen type not processed',
-			);
+			];
 		}
 
-		$listens = $payload['payload'] ?? array();
+		$listens = $payload['payload'] ?? [];
 
 		if ( empty( $listens ) ) {
-			return array(
+			return [
 				'action'  => 'ignored',
 				'message' => 'No listens in payload',
-			);
+			];
 		}
 
-		$results = array();
+		$results = [];
 
 		foreach ( $listens as $listen ) {
-			$metadata = $listen['track_metadata'] ?? array();
-			$additional = $metadata['additional_info'] ?? array();
+			$metadata   = $listen['track_metadata'] ?? [];
+			$additional = $metadata['additional_info'] ?? [];
 
-			$item = array(
+			$item = [
 				'source'      => 'listenbrainz',
 				'type'        => 'track',
 				'track'       => $metadata['track_name'] ?? '',
@@ -615,16 +615,16 @@ class Webhook_Handler {
 				'artist_mbid' => $additional['artist_mbids'][0] ?? '',
 				'album_mbid'  => $additional['release_mbid'] ?? '',
 				'duration'    => isset( $additional['duration_ms'] ) ? (int) ( $additional['duration_ms'] / 1000 ) : null,
-			);
+			];
 
 			$results[] = $this->process_scrobble( $item );
 		}
 
-		return array(
-			'action'   => 'processed',
-			'count'    => count( $results ),
-			'results'  => $results,
-		);
+		return [
+			'action'  => 'processed',
+			'count'   => count( $results ),
+			'results' => $results,
+		];
 	}
 
 	/**
@@ -650,10 +650,10 @@ class Webhook_Handler {
 		// Default: just store the payload.
 		$this->store_raw_webhook( 'generic', $payload );
 
-		return array(
+		return [
 			'action'  => 'stored',
 			'message' => 'Webhook payload stored for manual processing',
-		);
+		];
 	}
 
 	/**
@@ -669,30 +669,30 @@ class Webhook_Handler {
 			// Store for later.
 			$this->store_pending_scrobble( $item );
 
-			return array(
+			return [
 				'action'  => 'queued',
 				'type'    => $item['type'] ?? 'unknown',
 				'title'   => $item['title'] ?? $item['track'] ?? '',
 				'message' => 'Scrobble queued for review',
-			);
+			];
 		}
 
 		// Create post immediately.
 		$post_id = $this->create_scrobble_post( $item );
 
 		if ( is_wp_error( $post_id ) ) {
-			return array(
+			return [
 				'action' => 'error',
 				'error'  => $post_id->get_error_message(),
-			);
+			];
 		}
 
-		return array(
+		return [
 			'action'  => 'created',
 			'post_id' => $post_id,
 			'type'    => $item['type'] ?? 'unknown',
 			'title'   => $item['title'] ?? $item['track'] ?? '',
-		);
+		];
 	}
 
 	/**
@@ -704,19 +704,19 @@ class Webhook_Handler {
 	private function create_scrobble_post( array $item ) {
 		$type = $item['type'] ?? '';
 
-		$post_data = array(
+		$post_data = [
 			'post_type'   => 'post',
 			'post_status' => 'publish',
 			'post_author' => get_option( 'post_kinds_default_author', 1 ),
-		);
+		];
 
-		$meta = array();
+		$meta = [];
 		$kind = '';
 
 		switch ( $type ) {
 			case 'movie':
-				$kind = 'watch';
-				$post_data['post_title'] = sprintf( 'Watched %s', $item['title'] );
+				$kind                      = 'watch';
+				$post_data['post_title']   = sprintf( 'Watched %s', $item['title'] );
 				$post_data['post_content'] = sprintf( '<!-- wp:paragraph --><p>Watched "%s" (%s).</p><!-- /wp:paragraph -->', esc_html( $item['title'] ), esc_html( $item['year'] ?? '' ) );
 
 				$meta['_postkind_watch_title']  = $item['title'];
@@ -728,9 +728,9 @@ class Webhook_Handler {
 				break;
 
 			case 'episode':
-				$kind = 'watch';
-				$episode_title = sprintf( 'S%02dE%02d', $item['season'] ?? 0, $item['episode'] ?? 0 );
-				$post_data['post_title'] = sprintf( 'Watched %s %s', $item['show'], $episode_title );
+				$kind                      = 'watch';
+				$episode_title             = sprintf( 'S%02dE%02d', $item['season'] ?? 0, $item['episode'] ?? 0 );
+				$post_data['post_title']   = sprintf( 'Watched %s %s', $item['show'], $episode_title );
 				$post_data['post_content'] = sprintf( '<!-- wp:paragraph --><p>Watched %s "%s".</p><!-- /wp:paragraph -->', esc_html( $item['show'] ), esc_html( $item['title'] ) );
 
 				$meta['_postkind_watch_title']   = $item['title'];
@@ -743,8 +743,8 @@ class Webhook_Handler {
 				break;
 
 			case 'track':
-				$kind = 'listen';
-				$post_data['post_title'] = sprintf( 'Listened to %s', $item['track'] );
+				$kind                      = 'listen';
+				$post_data['post_title']   = sprintf( 'Listened to %s', $item['track'] );
 				$post_data['post_content'] = sprintf( '<!-- wp:paragraph --><p>Listened to "%s" by %s.</p><!-- /wp:paragraph -->', esc_html( $item['track'] ), esc_html( $item['artist'] ) );
 
 				$meta['_postkind_listen_track']  = $item['track'];
@@ -799,9 +799,9 @@ class Webhook_Handler {
 	 * @return void
 	 */
 	private function store_pending_scrobble( array $item ): void {
-		$pending = get_option( 'post_kinds_pending_scrobbles', array() );
+		$pending             = get_option( 'post_kinds_pending_scrobbles', [] );
 		$item['received_at'] = time();
-		$pending[] = $item;
+		$pending[]           = $item;
 
 		// Keep only last 100.
 		$pending = array_slice( $pending, -100 );
@@ -817,13 +817,13 @@ class Webhook_Handler {
 	 * @return void
 	 */
 	private function store_raw_webhook( string $service, array $payload ): void {
-		$stored = get_option( 'post_kinds_raw_webhooks', array() );
+		$stored = get_option( 'post_kinds_raw_webhooks', [] );
 
-		$stored[] = array(
+		$stored[] = [
 			'service'     => $service,
 			'payload'     => $payload,
 			'received_at' => time(),
-		);
+		];
 
 		// Keep only last 50.
 		$stored = array_slice( $stored, -50 );
@@ -842,7 +842,7 @@ class Webhook_Handler {
 			return null;
 		}
 
-		$plex_url = get_option( 'post_kinds_plex_url' );
+		$plex_url   = get_option( 'post_kinds_plex_url' );
 		$plex_token = get_option( 'post_kinds_plex_token' );
 
 		if ( ! $plex_url || ! $plex_token ) {
@@ -865,14 +865,14 @@ class Webhook_Handler {
 			return;
 		}
 
-		$log = get_option( 'post_kinds_webhook_log', array() );
+		$log = get_option( 'post_kinds_webhook_log', [] );
 
-		$log[] = array(
+		$log[] = [
 			'service'   => $service,
 			'status'    => $status,
-			'data'      => is_array( $data ) ? $data : array( 'message' => $data ),
+			'data'      => is_array( $data ) ? $data : [ 'message' => $data ],
 			'timestamp' => time(),
-		);
+		];
 
 		// Keep only last 100 entries.
 		$log = array_slice( $log, -100 );
@@ -887,7 +887,7 @@ class Webhook_Handler {
 	 * @return array<int, array<string, mixed>> Log entries.
 	 */
 	public function get_log( int $limit = 50 ): array {
-		$log = get_option( 'post_kinds_webhook_log', array() );
+		$log = get_option( 'post_kinds_webhook_log', [] );
 		return array_slice( array_reverse( $log ), 0, $limit );
 	}
 
@@ -897,7 +897,7 @@ class Webhook_Handler {
 	 * @return array<int, array<string, mixed>> Pending scrobbles.
 	 */
 	public function get_pending_scrobbles(): array {
-		return get_option( 'post_kinds_pending_scrobbles', array() );
+		return get_option( 'post_kinds_pending_scrobbles', [] );
 	}
 
 	/**

@@ -1,0 +1,53 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "post-kinds-for-indieweb/venue-detail",
+	"version": "1.2.0",
+	"title": "Venue Detail",
+	"category": "widgets",
+	"icon": "store",
+	"description": "Display venue information with map and recent check-ins.",
+	"textdomain": "post-kinds-for-indieweb",
+	"keywords": ["venue", "location", "map", "checkin", "place"],
+	"attributes": {
+		"venueId": {
+			"type": "number",
+			"default": 0
+		},
+		"showMap": {
+			"type": "boolean",
+			"default": true
+		},
+		"showAddress": {
+			"type": "boolean",
+			"default": true
+		},
+		"showCheckins": {
+			"type": "boolean",
+			"default": true
+		},
+		"checkinCount": {
+			"type": "number",
+			"default": 5
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"color": {
+			"background": true,
+			"text": true
+		},
+		"typography": {
+			"fontSize": true
+		}
+	},
+	"render": "file:./render.php",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"style": "file:./style.css"
+}

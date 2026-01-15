@@ -123,23 +123,23 @@ export default function Save( { attributes } ) {
 	if ( isPrivate ) {
 		return (
 			<div { ...blockProps }>
-				<div className="reactions-card reactions-card--private h-entry">
+				<div className="post-kinds-card post-kinds-card--private h-entry">
 					{ /* Photo */ }
 					{ photo && (
-						<div className="reactions-card__media">
+						<div className="post-kinds-card__media">
 							<img
 								src={ photo }
 								alt={ photoAlt || `Photo` }
-								className="reactions-card__image u-photo"
+								className="post-kinds-card__image u-photo"
 								loading="lazy"
 							/>
 						</div>
 					) }
 
-					<div className="reactions-card__content">
-						<span className="reactions-card__badge">
+					<div className="post-kinds-card__content">
+						<span className="post-kinds-card__badge">
 							<span
-								className="reactions-card__badge-icon"
+								className="post-kinds-card__badge-icon"
 								aria-hidden="true"
 							>
 								{ getVenueIcon() }
@@ -148,7 +148,7 @@ export default function Save( { attributes } ) {
 						</span>
 
 						{ /* For private: show vague indicator, no location data */ }
-						<p className="reactions-card__private-notice">
+						<p className="post-kinds-card__private-notice">
 							<span
 								className="dashicons dashicons-lock"
 								aria-hidden="true"
@@ -159,7 +159,7 @@ export default function Save( { attributes } ) {
 						{ /* Checkin time */ }
 						{ checkinAt && (
 							<time
-								className="reactions-card__timestamp dt-published"
+								className="post-kinds-card__timestamp dt-published"
 								dateTime={ new Date( checkinAt ).toISOString() }
 							>
 								{ new Date( checkinAt ).toLocaleString() }
@@ -168,7 +168,7 @@ export default function Save( { attributes } ) {
 
 						{ /* Note can still be shown */ }
 						{ note && (
-							<div className="reactions-card__notes p-content">
+							<div className="post-kinds-card__notes p-content">
 								<RichText.Content tagName="p" value={ note } />
 							</div>
 						) }
@@ -180,24 +180,24 @@ export default function Save( { attributes } ) {
 
 	return (
 		<div { ...blockProps }>
-			<div className="reactions-card h-entry">
+			<div className="post-kinds-card h-entry">
 				{ /* Photo */ }
 				{ photo && (
-					<div className="reactions-card__media">
+					<div className="post-kinds-card__media">
 						<img
 							src={ photo }
 							alt={ photoAlt || `Photo at ${ venueName }` }
-							className="reactions-card__image u-photo"
+							className="post-kinds-card__image u-photo"
 							loading="lazy"
 						/>
 					</div>
 				) }
 
-				<div className="reactions-card__content">
+				<div className="post-kinds-card__content">
 					{ /* Venue type badge */ }
-					<span className="reactions-card__badge">
+					<span className="post-kinds-card__badge">
 						<span
-							className="reactions-card__badge-icon"
+							className="post-kinds-card__badge-icon"
 							aria-hidden="true"
 						>
 							{ getVenueIcon() }
@@ -207,7 +207,7 @@ export default function Save( { attributes } ) {
 
 					{ /* Venue name */ }
 					{ venueName && (
-						<h3 className="reactions-card__title">
+						<h3 className="post-kinds-card__title">
 							{ venueUrl ? (
 								<a
 									href={ venueUrl }
@@ -224,7 +224,7 @@ export default function Save( { attributes } ) {
 					) }
 
 					{ /* Location with microformats - privacy aware */ }
-					<div className="reactions-card__location p-location h-card">
+					<div className="post-kinds-card__location p-location h-card">
 						{ /* Street address only for public */ }
 						{ showAddress && (
 							<span className="p-street-address">
@@ -234,7 +234,7 @@ export default function Save( { attributes } ) {
 
 						{ /* City/region/country shown for public and approximate */ }
 						{ ( locality || region || country ) && (
-							<span className="reactions-card__location-parts">
+							<span className="post-kinds-card__location-parts">
 								{ locality && (
 									<span className="p-locality">
 										{ locality }
@@ -280,7 +280,7 @@ export default function Save( { attributes } ) {
 					{ /* Checkin time */ }
 					{ checkinAt && (
 						<time
-							className="reactions-card__timestamp dt-published"
+							className="post-kinds-card__timestamp dt-published"
 							dateTime={ new Date( checkinAt ).toISOString() }
 						>
 							{ new Date( checkinAt ).toLocaleString() }
@@ -289,7 +289,7 @@ export default function Save( { attributes } ) {
 
 					{ /* Note */ }
 					{ note && (
-						<div className="reactions-card__notes p-content">
+						<div className="post-kinds-card__notes p-content">
 							<RichText.Content tagName="p" value={ note } />
 						</div>
 					) }
@@ -297,7 +297,7 @@ export default function Save( { attributes } ) {
 
 				{ /* Map embed - not shown for private, shows wider area for approximate */ }
 				{ showMapEmbed && (
-					<div className="reactions-card__map">
+					<div className="post-kinds-card__map">
 						<iframe
 							title={ `Map of ${ venueName || 'location' }` }
 							width="100%"
@@ -312,7 +312,7 @@ export default function Save( { attributes } ) {
 						{ isPublic && (
 							<a
 								href={ `https://www.openstreetmap.org/?mlat=${ latitude }&mlon=${ longitude }#map=16/${ latitude }/${ longitude }` }
-								className="reactions-card__map-link"
+								className="post-kinds-card__map-link"
 								target="_blank"
 								rel="noopener noreferrer"
 							>
@@ -320,7 +320,7 @@ export default function Save( { attributes } ) {
 							</a>
 						) }
 						{ ! isPublic && (
-							<p className="reactions-card__map-note">
+							<p className="post-kinds-card__map-note">
 								Showing approximate area
 							</p>
 						) }

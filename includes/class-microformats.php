@@ -32,14 +32,14 @@ class Microformats {
 	 *
 	 * @var array<string, array<string, mixed>>
 	 */
-	private array $kind_formats = array();
+	private array $kind_formats = [];
 
 	/**
 	 * IndieBlocks block names to skip (they already have mf2).
 	 *
 	 * @var array<string>
 	 */
-	private array $indieblocks_blocks = array(
+	private array $indieblocks_blocks = [
 		'indieblocks/bookmark',
 		'indieblocks/like',
 		'indieblocks/reply',
@@ -49,7 +49,7 @@ class Microformats {
 		'indieblocks/location',
 		'indieblocks/syndication',
 		'indieblocks/link-preview',
-	);
+	];
 
 	/**
 	 * Constructor.
@@ -67,68 +67,68 @@ class Microformats {
 	 * @return void
 	 */
 	private function define_kind_formats(): void {
-		$this->kind_formats = array(
-			'note'     => array(
-				'root'       => array( 'h-entry' ),
-				'properties' => array(
+		$this->kind_formats = [
+			'note'     => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
 					'content' => 'e-content',
 					'date'    => 'dt-published',
-				),
-			),
-			'article'  => array(
-				'root'       => array( 'h-entry' ),
-				'properties' => array(
+				],
+			],
+			'article'  => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
 					'title'   => 'p-name',
 					'content' => 'e-content',
 					'date'    => 'dt-published',
 					'author'  => 'p-author h-card',
-				),
-			),
-			'reply'    => array(
-				'root'       => array( 'h-entry' ),
-				'properties' => array(
-					'content'    => 'e-content',
-					'date'       => 'dt-published',
-					'reply-to'   => 'u-in-reply-to',
-					'cite'       => 'h-cite',
-				),
-			),
-			'like'     => array(
-				'root'       => array( 'h-entry' ),
-				'properties' => array(
+				],
+			],
+			'reply'    => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'content'  => 'e-content',
+					'date'     => 'dt-published',
+					'reply-to' => 'u-in-reply-to',
+					'cite'     => 'h-cite',
+				],
+			],
+			'like'     => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
 					'like-of' => 'u-like-of',
 					'date'    => 'dt-published',
-				),
-			),
-			'repost'   => array(
-				'root'       => array( 'h-entry' ),
-				'properties' => array(
+				],
+			],
+			'repost'   => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
 					'repost-of' => 'u-repost-of',
 					'cite'      => 'h-cite',
 					'date'      => 'dt-published',
-				),
-			),
-			'bookmark' => array(
-				'root'       => array( 'h-entry' ),
-				'properties' => array(
+				],
+			],
+			'bookmark' => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
 					'bookmark-of' => 'u-bookmark-of',
 					'cite'        => 'h-cite',
 					'content'     => 'e-content',
 					'date'        => 'dt-published',
-				),
-			),
-			'rsvp'     => array(
-				'root'       => array( 'h-entry' ),
-				'properties' => array(
+				],
+			],
+			'rsvp'     => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
 					'rsvp'     => 'p-rsvp',
 					'reply-to' => 'u-in-reply-to',
 					'content'  => 'e-content',
 					'date'     => 'dt-published',
-				),
-			),
-			'checkin'  => array(
-				'root'       => array( 'h-entry' ),
-				'properties' => array(
+				],
+			],
+			'checkin'  => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
 					'checkin'  => 'u-checkin h-card',
 					'location' => 'p-location h-card',
 					'geo'      => 'p-geo h-geo',
@@ -142,11 +142,11 @@ class Microformats {
 					'lng'      => 'p-longitude',
 					'content'  => 'e-content',
 					'date'     => 'dt-published',
-				),
-			),
-			'listen'   => array(
-				'root'       => array( 'h-entry' ),
-				'properties' => array(
+				],
+			],
+			'listen'   => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
 					'listen-of' => 'u-listen-of',
 					'cite'      => 'h-cite',
 					'name'      => 'p-name',
@@ -154,22 +154,22 @@ class Microformats {
 					'photo'     => 'u-photo',
 					'content'   => 'e-content',
 					'date'      => 'dt-published',
-				),
-			),
-			'watch'    => array(
-				'root'       => array( 'h-entry' ),
-				'properties' => array(
+				],
+			],
+			'watch'    => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
 					'watch-of' => 'u-watch-of',
 					'cite'     => 'h-cite',
 					'name'     => 'p-name',
 					'photo'    => 'u-photo',
 					'content'  => 'e-content',
 					'date'     => 'dt-published',
-				),
-			),
-			'read'     => array(
-				'root'       => array( 'h-entry' ),
-				'properties' => array(
+				],
+			],
+			'read'     => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
 					'read-of' => 'u-read-of',
 					'cite'    => 'h-cite',
 					'name'    => 'p-name',
@@ -178,38 +178,38 @@ class Microformats {
 					'photo'   => 'u-photo',
 					'content' => 'e-content',
 					'date'    => 'dt-published',
-				),
-			),
-			'event'    => array(
-				'root'       => array( 'h-event' ),
-				'properties' => array(
+				],
+			],
+			'event'    => [
+				'root'       => [ 'h-event' ],
+				'properties' => [
 					'name'     => 'p-name',
 					'start'    => 'dt-start',
 					'end'      => 'dt-end',
 					'location' => 'p-location',
 					'content'  => 'e-content p-description',
 					'url'      => 'u-url',
-				),
-			),
-			'photo'    => array(
-				'root'       => array( 'h-entry' ),
-				'properties' => array(
+				],
+			],
+			'photo'    => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
 					'photo'   => 'u-photo',
 					'content' => 'e-content',
 					'date'    => 'dt-published',
-				),
-			),
-			'video'    => array(
-				'root'       => array( 'h-entry' ),
-				'properties' => array(
+				],
+			],
+			'video'    => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
 					'video'   => 'u-video',
 					'content' => 'e-content',
 					'date'    => 'dt-published',
-				),
-			),
-			'review'   => array(
-				'root'       => array( 'h-review' ),
-				'properties' => array(
+				],
+			],
+			'review'   => [
+				'root'       => [ 'h-review' ],
+				'properties' => [
 					'item'    => 'p-item h-product',
 					'name'    => 'p-name',
 					'rating'  => 'p-rating',
@@ -218,22 +218,22 @@ class Microformats {
 					'photo'   => 'u-photo',
 					'content' => 'e-content p-description',
 					'date'    => 'dt-published',
-				),
-			),
-			'recipe'   => array(
-				'root'       => array( 'h-recipe' ),
-				'properties' => array(
-					'name'        => 'p-name',
-					'photo'       => 'u-photo',
-					'author'      => 'p-author h-card',
-					'yield'       => 'p-yield',
-					'duration'    => 'dt-duration',
-					'ingredient'  => 'p-ingredient',
-					'instructions'=> 'e-instructions',
-					'content'     => 'e-content',
-				),
-			),
-		);
+				],
+			],
+			'recipe'   => [
+				'root'       => [ 'h-recipe' ],
+				'properties' => [
+					'name'         => 'p-name',
+					'photo'        => 'u-photo',
+					'author'       => 'p-author h-card',
+					'yield'        => 'p-yield',
+					'duration'     => 'dt-duration',
+					'ingredient'   => 'p-ingredient',
+					'instructions' => 'e-instructions',
+					'content'      => 'e-content',
+				],
+			],
+		];
 
 		/**
 		 * Filters the kind to microformat mapping.
@@ -252,13 +252,13 @@ class Microformats {
 	 */
 	private function register_hooks(): void {
 		// Filter the post content wrapper.
-		add_filter( 'post_class', array( $this, 'add_post_classes' ), 10, 3 );
+		add_filter( 'post_class', [ $this, 'add_post_classes' ], 10, 3 );
 
 		// Filter rendered blocks for mf2 classes.
-		add_filter( 'render_block', array( $this, 'filter_block_output' ), 10, 3 );
+		add_filter( 'render_block', [ $this, 'filter_block_output' ], 10, 3 );
 
 		// Add hidden mf2 data elements.
-		add_filter( 'the_content', array( $this, 'add_hidden_mf2_data' ), 99 );
+		add_filter( 'the_content', [ $this, 'add_hidden_mf2_data' ], 99 );
 	}
 
 	/**
@@ -279,7 +279,7 @@ class Microformats {
 		}
 
 		// Add root microformat classes.
-		$root_classes = $this->kind_formats[ $kind ]['root'] ?? array( 'h-entry' );
+		$root_classes = $this->kind_formats[ $kind ]['root'] ?? [ 'h-entry' ];
 		$classes      = array_merge( $classes, $root_classes );
 
 		// Add kind-specific class.
@@ -291,8 +291,8 @@ class Microformats {
 	/**
 	 * Filter block output to add microformat classes.
 	 *
-	 * @param string   $block_content Rendered block content.
-	 * @param array    $block         Block data.
+	 * @param string    $block_content Rendered block content.
+	 * @param array     $block         Block data.
 	 * @param \WP_Block $instance     Block instance.
 	 * @return string Modified block content.
 	 */
@@ -335,14 +335,14 @@ class Microformats {
 	 * @return string Modified content.
 	 */
 	private function add_binding_mf2_classes( string $content, array $block, string $kind ): string {
-		$bindings = $block['attrs']['metadata']['bindings'] ?? array();
+		$bindings = $block['attrs']['metadata']['bindings'] ?? [];
 
 		if ( empty( $bindings ) ) {
 			return $content;
 		}
 
 		// Map binding keys to mf2 properties.
-		$binding_to_mf2 = array(
+		$binding_to_mf2 = [
 			'cite_name'        => 'name',
 			'cite_url'         => 'url',
 			'cite_author'      => 'author',
@@ -364,9 +364,9 @@ class Microformats {
 			'event_location'   => 'location',
 			'review_rating'    => 'rating',
 			'review_item_name' => 'item',
-		);
+		];
 
-		$kind_properties = $this->kind_formats[ $kind ]['properties'] ?? array();
+		$kind_properties = $this->kind_formats[ $kind ]['properties'] ?? [];
 
 		foreach ( $bindings as $attr => $binding_data ) {
 			$source = $binding_data['source'] ?? '';

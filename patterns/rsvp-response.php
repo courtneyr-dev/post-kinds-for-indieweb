@@ -22,15 +22,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 register_block_pattern(
 	'post-kinds-indieweb/rsvp-response',
-	array(
+	[
 		'title'       => __( 'RSVP Response', 'post-kinds-for-indieweb' ),
 		'description' => __( 'Respond to an event with yes, no, maybe, or interested.', 'post-kinds-for-indieweb' ),
-		'categories'  => array( 'post-kinds-for-indieweb' ),
-		'keywords'    => array( 'rsvp', 'event', 'response', 'indieweb', 'reaction' ),
-		'blockTypes'  => array( 'core/group' ),
-		'postTypes'   => array( 'post' ),
-		'content'     => '<!-- wp:group {"className":"h-entry reactions-rsvp","layout":{"type":"constrained"}} -->
-<div class="wp-block-group h-entry reactions-rsvp">
+		'categories'  => [ 'post-kinds-for-indieweb' ],
+		'keywords'    => [ 'rsvp', 'event', 'response', 'indieweb', 'reaction' ],
+		'blockTypes'  => [ 'core/group' ],
+		'postTypes'   => [ 'post' ],
+		'content'     => '<!-- wp:group {"className":"h-entry post-kinds-rsvp","layout":{"type":"constrained"}} -->
+<div class="wp-block-group h-entry post-kinds-rsvp">
 
 	<!-- wp:group {"className":"p-rsvp-context","layout":{"type":"constrained"}} -->
 	<div class="wp-block-group p-rsvp-context">
@@ -46,8 +46,8 @@ register_block_pattern(
 	</div>
 	<!-- /wp:group -->
 
-	<!-- wp:group {"className":"reactions-rsvp-status","style":{"spacing":{"padding":{"top":"var:preset|spacing|20","bottom":"var:preset|spacing|20","left":"var:preset|spacing|30","right":"var:preset|spacing|30"}},"border":{"radius":"4px"}},"backgroundColor":"tertiary","layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"center"}} -->
-	<div class="wp-block-group reactions-rsvp-status has-tertiary-background-color has-background" style="border-radius:4px;padding-top:var(--wp--preset--spacing--20);padding-right:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--20);padding-left:var(--wp--preset--spacing--30)">
+	<!-- wp:group {"className":"post-kinds-rsvp-status","style":{"spacing":{"padding":{"top":"var:preset|spacing|20","bottom":"var:preset|spacing|20","left":"var:preset|spacing|30","right":"var:preset|spacing|30"}},"border":{"radius":"4px"}},"backgroundColor":"tertiary","layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"center"}} -->
+	<div class="wp-block-group post-kinds-rsvp-status has-tertiary-background-color has-background" style="border-radius:4px;padding-top:var(--wp--preset--spacing--20);padding-right:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--20);padding-left:var(--wp--preset--spacing--30)">
 
 		<!-- wp:paragraph {"className":"p-rsvp","fontSize":"large","metadata":{"bindings":{"content":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"rsvp_status"}}}}} -->
 		<p class="p-rsvp has-large-font-size"></p>
@@ -66,8 +66,8 @@ register_block_pattern(
 	</div>
 	<!-- /wp:group -->
 
-	<!-- wp:group {"className":"reactions-meta","style":{"spacing":{"margin":{"top":"var:preset|spacing|20"}}},"layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"space-between"}} -->
-	<div class="wp-block-group reactions-meta" style="margin-top:var(--wp--preset--spacing--20)">
+	<!-- wp:group {"className":"post-kinds-meta","style":{"spacing":{"margin":{"top":"var:preset|spacing|20"}}},"layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"space-between"}} -->
+	<div class="wp-block-group post-kinds-meta" style="margin-top:var(--wp--preset--spacing--20)">
 
 		<!-- wp:post-date {"className":"dt-published","fontSize":"small"} /-->
 
@@ -80,5 +80,5 @@ register_block_pattern(
 
 </div>
 <!-- /wp:group -->',
-	)
+	]
 );

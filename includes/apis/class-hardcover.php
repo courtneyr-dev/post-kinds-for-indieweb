@@ -65,8 +65,8 @@ class Hardcover extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials     = get_option( 'post_kinds_indieweb_api_credentials', array() );
-		$hc_creds        = $credentials['hardcover'] ?? array();
+		$credentials     = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$hc_creds        = $credentials['hardcover'] ?? [];
 		$this->api_token = $hc_creds['api_token'] ?? '';
 	}
 
@@ -85,9 +85,9 @@ class Hardcover extends API_Base {
 	 * @return array<string, string>
 	 */
 	protected function get_default_headers(): array {
-		$headers = array(
+		$headers = [
 			'Content-Type' => 'application/json',
-		);
+		];
 
 		if ( $this->api_token ) {
 			$headers['Authorization'] = 'Bearer ' . $this->api_token;
@@ -104,19 +104,19 @@ class Hardcover extends API_Base {
 	 * @return array<string, mixed> Response data.
 	 * @throws \Exception On error.
 	 */
-	private function graphql( string $query, array $variables = array() ): array {
+	private function graphql( string $query, array $variables = [] ): array {
 		$response = wp_remote_post(
 			$this->base_url,
-			array(
+			[
 				'timeout' => 30,
 				'headers' => $this->get_default_headers(),
 				'body'    => wp_json_encode(
-					array(
+					[
 						'query'     => $query,
 						'variables' => $variables,
-					)
+					]
 				),
-			)
+			]
 		);
 
 		if ( is_wp_error( $response ) ) {
@@ -136,7 +136,7 @@ class Hardcover extends API_Base {
 			throw new \Exception( esc_html( $data['errors'][0]['message'] ?? 'GraphQL error' ) );
 		}
 
-		return $data['data'] ?? array();
+		return $data['data'] ?? [];
 	}
 
 	/**
@@ -211,7 +211,7 @@ class Hardcover extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get me failed', array( 'error' => $e->getMessage() ) );
+			$this->log_error( 'Get me failed', [ 'error' => $e->getMessage() ] );
 			return null;
 		}
 	}
@@ -256,9 +256,9 @@ class Hardcover extends API_Base {
 				}
 			';
 
-			$response = $this->graphql( $gql, array( 'query' => $query ) );
+			$response = $this->graphql( $gql, [ 'query' => $query ] );
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['search_books'] ) ) {
 				foreach ( $response['search_books'] as $book ) {
@@ -270,8 +270,14 @@ class Hardcover extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -351,7 +357,7 @@ class Hardcover extends API_Base {
 				}
 			';
 
-			$variables = array();
+			$variables = [];
 			if ( is_numeric( $id_or_slug ) ) {
 				$variables['id'] = $id_or_slug;
 			} else {
@@ -368,7 +374,13 @@ class Hardcover extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get book failed', array( 'id' => $id_or_slug, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get book failed',
+				[
+					'id'    => $id_or_slug,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -380,7 +392,7 @@ class Hardcover extends API_Base {
 	 * @return array<string, mixed>|null Book data.
 	 */
 	public function get_by_isbn( string $isbn ): ?array {
-		$isbn = str_replace( array( '-', ' ' ), '', $isbn );
+		$isbn = str_replace( [ '-', ' ' ], '', $isbn );
 
 		$cache_key = 'isbn_' . $isbn;
 		$cached    = $this->get_cache( $cache_key );
@@ -422,15 +434,15 @@ class Hardcover extends API_Base {
 				}
 			';
 
-			$response = $this->graphql( $gql, array( 'isbn' => $isbn ) );
+			$response = $this->graphql( $gql, [ 'isbn' => $isbn ] );
 
 			if ( isset( $response['edition'] ) ) {
 				$edition = $response['edition'];
-				$book = $edition['book'] ?? array();
+				$book    = $edition['book'] ?? [];
 
-				$result = $this->normalize_book( $book );
+				$result            = $this->normalize_book( $book );
 				$result['edition'] = $this->normalize_edition( $edition );
-				$result['isbn'] = $isbn;
+				$result['isbn']    = $isbn;
 
 				$this->set_cache( $cache_key, $result );
 				return $result;
@@ -438,7 +450,13 @@ class Hardcover extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get by ISBN failed', array( 'isbn' => $isbn, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get by ISBN failed',
+				[
+					'isbn'  => $isbn,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -452,7 +470,7 @@ class Hardcover extends API_Base {
 	 */
 	public function get_reading_list( string $status = 'reading', int $limit = 50 ): array {
 		if ( ! $this->is_authenticated() ) {
-			return array();
+			return [];
 		}
 
 		$cache_key = "reading_list_{$status}";
@@ -503,18 +521,24 @@ class Hardcover extends API_Base {
 				}
 			';
 
-			$response = $this->graphql( $gql, array( 'status' => $status, 'limit' => $limit ) );
+			$response = $this->graphql(
+				$gql,
+				[
+					'status' => $status,
+					'limit'  => $limit,
+				]
+			);
 
-			$books = array();
+			$books = [];
 
 			if ( isset( $response['me']['user_books'] ) ) {
 				foreach ( $response['me']['user_books'] as $user_book ) {
-					$book = $this->normalize_book( $user_book['book'] ?? array() );
-					$book['user_status']  = $user_book['status'] ?? '';
-					$book['user_rating']  = $user_book['rating'] ?? null;
-					$book['started_at']   = $user_book['started_at'] ?? '';
-					$book['finished_at']  = $user_book['finished_at'] ?? '';
-					$book['progress']     = $user_book['progress'] ?? 0;
+					$book                = $this->normalize_book( $user_book['book'] ?? [] );
+					$book['user_status'] = $user_book['status'] ?? '';
+					$book['user_rating'] = $user_book['rating'] ?? null;
+					$book['started_at']  = $user_book['started_at'] ?? '';
+					$book['finished_at'] = $user_book['finished_at'] ?? '';
+					$book['progress']    = $user_book['progress'] ?? 0;
 
 					if ( isset( $user_book['edition'] ) ) {
 						$book['edition'] = $this->normalize_edition( $user_book['edition'] );
@@ -528,8 +552,14 @@ class Hardcover extends API_Base {
 
 			return $books;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get reading list failed', array( 'status' => $status, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get reading list failed',
+				[
+					'status' => $status,
+					'error'  => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -570,7 +600,7 @@ class Hardcover extends API_Base {
 	 */
 	public function get_reading_activity( int $limit = 50 ): array {
 		if ( ! $this->is_authenticated() ) {
-			return array();
+			return [];
 		}
 
 		try {
@@ -605,13 +635,13 @@ class Hardcover extends API_Base {
 				}
 			';
 
-			$response = $this->graphql( $gql, array( 'limit' => $limit ) );
+			$response = $this->graphql( $gql, [ 'limit' => $limit ] );
 
-			$activities = array();
+			$activities = [];
 
 			if ( isset( $response['me']['activities'] ) ) {
 				foreach ( $response['me']['activities'] as $activity ) {
-					$activities[] = array(
+					$activities[] = [
 						'id'         => $activity['id'] ?? 0,
 						'action'     => $activity['action'] ?? '',
 						'created_at' => $activity['created_at'] ?? '',
@@ -619,22 +649,22 @@ class Hardcover extends API_Base {
 						'edition'    => isset( $activity['edition'] ) ? $this->normalize_edition( $activity['edition'] ) : null,
 						'progress'   => $activity['progress'] ?? null,
 						'rating'     => $activity['rating'] ?? null,
-					);
+					];
 				}
 			}
 
 			return $activities;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get reading activity failed', array( 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error( 'Get reading activity failed', [ 'error' => $e->getMessage() ] );
+			return [];
 		}
 	}
 
 	/**
 	 * Update reading progress.
 	 *
-	 * @param int $book_id  Hardcover book ID.
-	 * @param int $progress Progress percentage or page number.
+	 * @param int    $book_id  Hardcover book ID.
+	 * @param int    $progress Progress percentage or page number.
 	 * @param string $type  Progress type: percent, page.
 	 * @return bool Success.
 	 */
@@ -659,18 +689,24 @@ class Hardcover extends API_Base {
 
 			$this->graphql(
 				$gql,
-				array(
+				[
 					'bookId'       => $book_id,
 					'progress'     => $progress,
 					'progressType' => $type,
-				)
+				]
 			);
 
 			$this->delete_cache( 'reading_list_reading' );
 
 			return true;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Update progress failed', array( 'book_id' => $book_id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Update progress failed',
+				[
+					'book_id' => $book_id,
+					'error'   => $e->getMessage(),
+				]
+			);
 			return false;
 		}
 	}
@@ -697,13 +733,26 @@ class Hardcover extends API_Base {
 				}
 			';
 
-			$this->graphql( $gql, array( 'bookId' => $book_id, 'status' => $status ) );
+			$this->graphql(
+				$gql,
+				[
+					'bookId' => $book_id,
+					'status' => $status,
+				]
+			);
 
 			$this->delete_cache( "reading_list_{$status}" );
 
 			return true;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Add to list failed', array( 'book_id' => $book_id, 'status' => $status, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Add to list failed',
+				[
+					'book_id' => $book_id,
+					'status'  => $status,
+					'error'   => $e->getMessage(),
+				]
+			);
 			return false;
 		}
 	}
@@ -730,11 +779,24 @@ class Hardcover extends API_Base {
 				}
 			';
 
-			$this->graphql( $gql, array( 'bookId' => $book_id, 'rating' => $rating ) );
+			$this->graphql(
+				$gql,
+				[
+					'bookId' => $book_id,
+					'rating' => $rating,
+				]
+			);
 
 			return true;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Rate book failed', array( 'book_id' => $book_id, 'rating' => $rating, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Rate book failed',
+				[
+					'book_id' => $book_id,
+					'rating'  => $rating,
+					'error'   => $e->getMessage(),
+				]
+			);
 			return false;
 		}
 	}
@@ -778,7 +840,7 @@ class Hardcover extends API_Base {
 				}
 			';
 
-			$variables = array();
+			$variables = [];
 			if ( is_numeric( $id_or_slug ) ) {
 				$variables['id'] = $id_or_slug;
 			} else {
@@ -795,7 +857,13 @@ class Hardcover extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get author failed', array( 'id' => $id_or_slug, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get author failed',
+				[
+					'id'    => $id_or_slug,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -841,7 +909,7 @@ class Hardcover extends API_Base {
 				}
 			';
 
-			$variables = array();
+			$variables = [];
 			if ( is_numeric( $id_or_slug ) ) {
 				$variables['id'] = $id_or_slug;
 			} else {
@@ -853,22 +921,22 @@ class Hardcover extends API_Base {
 			if ( isset( $response['series'] ) ) {
 				$series = $response['series'];
 
-				$result = array(
+				$result = [
 					'id'          => $series['id'] ?? 0,
 					'name'        => $series['name'] ?? '',
 					'slug'        => $series['slug'] ?? '',
 					'description' => $series['description'] ?? '',
 					'books_count' => $series['books_count'] ?? 0,
-					'books'       => array(),
+					'books'       => [],
 					'type'        => 'series',
 					'source'      => 'hardcover',
-				);
+				];
 
 				if ( isset( $series['books'] ) ) {
 					foreach ( $series['books'] as $book ) {
-						$normalized = $this->normalize_book( $book );
+						$normalized             = $this->normalize_book( $book );
 						$normalized['position'] = $book['position'] ?? null;
-						$result['books'][] = $normalized;
+						$result['books'][]      = $normalized;
 					}
 				}
 
@@ -878,7 +946,13 @@ class Hardcover extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get series failed', array( 'id' => $id_or_slug, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get series failed',
+				[
+					'id'    => $id_or_slug,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -919,9 +993,9 @@ class Hardcover extends API_Base {
 				}
 			';
 
-			$response = $this->graphql( $gql, array( 'limit' => $limit ) );
+			$response = $this->graphql( $gql, [ 'limit' => $limit ] );
 
-			$books = array();
+			$books = [];
 
 			if ( isset( $response['trending_books'] ) ) {
 				foreach ( $response['trending_books'] as $book ) {
@@ -933,8 +1007,8 @@ class Hardcover extends API_Base {
 
 			return $books;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get trending failed', array( 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error( 'Get trending failed', [ 'error' => $e->getMessage() ] );
+			return [];
 		}
 	}
 
@@ -956,21 +1030,21 @@ class Hardcover extends API_Base {
 	 * @return array<string, mixed> Normalized book.
 	 */
 	private function normalize_book( array $book, bool $detailed = false ): array {
-		$authors = array();
+		$authors = [];
 		if ( isset( $book['contributions'] ) ) {
 			foreach ( $book['contributions'] as $contribution ) {
 				if ( isset( $contribution['author'] ) ) {
-					$authors[] = array(
+					$authors[] = [
 						'id'   => $contribution['author']['id'] ?? 0,
 						'name' => $contribution['author']['name'] ?? '',
 						'slug' => $contribution['author']['slug'] ?? '',
 						'role' => $contribution['role'] ?? 'author',
-					);
+					];
 				}
 			}
 		}
 
-		$result = array(
+		$result = [
 			'id'              => $book['id'] ?? 0,
 			'hardcover_id'    => $book['id'] ?? 0,
 			'title'           => $book['title'] ?? '',
@@ -984,14 +1058,14 @@ class Hardcover extends API_Base {
 			'ratings_count'   => $book['ratings_count'] ?? 0,
 			'type'            => 'book',
 			'source'          => 'hardcover',
-		);
+		];
 
 		if ( $detailed ) {
 			$result['editions_count'] = $book['editions_count'] ?? 0;
 			$result['reviews_count']  = $book['reviews_count'] ?? 0;
 
 			// Genres.
-			$result['genres'] = array();
+			$result['genres'] = [];
 			if ( isset( $book['genres'] ) ) {
 				foreach ( $book['genres'] as $genre_item ) {
 					if ( isset( $genre_item['genre'] ) ) {
@@ -1002,15 +1076,15 @@ class Hardcover extends API_Base {
 
 			// Series.
 			if ( isset( $book['series'] ) ) {
-				$result['series'] = array(
+				$result['series'] = [
 					'id'   => $book['series']['id'] ?? 0,
 					'name' => $book['series']['name'] ?? '',
 					'slug' => $book['series']['slug'] ?? '',
-				);
+				];
 			}
 
 			// Editions.
-			$result['editions'] = array();
+			$result['editions'] = [];
 			if ( isset( $book['editions'] ) ) {
 				foreach ( $book['editions'] as $edition ) {
 					$result['editions'][] = $this->normalize_edition( $edition );
@@ -1028,7 +1102,7 @@ class Hardcover extends API_Base {
 	 * @return array<string, mixed> Normalized edition.
 	 */
 	private function normalize_edition( array $edition ): array {
-		return array(
+		return [
 			'id'           => $edition['id'] ?? 0,
 			'title'        => $edition['title'] ?? '',
 			'isbn_10'      => $edition['isbn_10'] ?? '',
@@ -1041,7 +1115,7 @@ class Hardcover extends API_Base {
 			'cover'        => $edition['image']['url'] ?? null,
 			'type'         => 'edition',
 			'source'       => 'hardcover',
-		);
+		];
 	}
 
 	/**
@@ -1051,17 +1125,17 @@ class Hardcover extends API_Base {
 	 * @return array<string, mixed> Normalized author.
 	 */
 	private function normalize_author( array $author ): array {
-		$result = array(
+		$result = [
 			'id'          => $author['id'] ?? 0,
 			'name'        => $author['name'] ?? '',
 			'slug'        => $author['slug'] ?? '',
 			'bio'         => $author['bio'] ?? '',
 			'image'       => $author['image']['url'] ?? null,
 			'books_count' => $author['books_count'] ?? 0,
-			'books'       => array(),
+			'books'       => [],
 			'type'        => 'author',
 			'source'      => 'hardcover',
-		);
+		];
 
 		if ( isset( $author['books'] ) ) {
 			foreach ( $author['books'] as $book ) {
@@ -1079,7 +1153,7 @@ class Hardcover extends API_Base {
 	 * @return array<string, mixed> Normalized user.
 	 */
 	private function normalize_user( array $user ): array {
-		return array(
+		return [
 			'id'              => $user['id'] ?? 0,
 			'username'        => $user['username'] ?? '',
 			'name'            => $user['name'] ?? '',
@@ -1091,7 +1165,7 @@ class Hardcover extends API_Base {
 			'created_at'      => $user['created_at'] ?? '',
 			'type'            => 'user',
 			'source'          => 'hardcover',
-		);
+		];
 	}
 
 	/**

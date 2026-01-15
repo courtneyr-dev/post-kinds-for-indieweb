@@ -42,11 +42,26 @@ registerPlugin( 'post-kinds-indieweb-kind-selector', {
  *
  * Valid kind slugs: note, article, reply, like, repost, bookmark, rsvp,
  *                   checkin, listen, watch, read, event, photo, video, review
+ * @param event
  */
-window.addEventListener( 'post-kinds-indieweb-set-kind', ( event ) => {
+const handleExternalKindChange = ( event ) => {
 	const { kind } = event.detail || {};
 
 	if ( kind && select( STORE_NAME ) ) {
 		dispatch( STORE_NAME ).updatePostKind( kind );
 	}
-} );
+};
+
+// Listen for the current event name.
+window.addEventListener(
+	'post-kinds-indieweb-set-kind',
+	handleExternalKindChange
+);
+
+// Backward compatibility: also listen for the legacy event name.
+// This maintains integration with Post Formats for Block Themes and other plugins
+// that may still use the old event name from before the plugin rename.
+window.addEventListener(
+	'reactions-indieweb-set-kind',
+	handleExternalKindChange
+);

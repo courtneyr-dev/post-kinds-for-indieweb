@@ -64,8 +64,8 @@ class GoogleBooks extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials   = get_option( 'post_kinds_indieweb_api_credentials', array() );
-		$gb_creds      = $credentials['google_books'] ?? array();
+		$credentials   = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$gb_creds      = $credentials['google_books'] ?? [];
 		$this->api_key = $gb_creds['api_key'] ?? '';
 	}
 
@@ -76,7 +76,7 @@ class GoogleBooks extends API_Base {
 	 * @param array<string, mixed> $params   Parameters.
 	 * @return string Full URL.
 	 */
-	protected function build_url( string $endpoint, array $params = array() ): string {
+	protected function build_url( string $endpoint, array $params = [] ): string {
 		if ( $this->api_key ) {
 			$params['key'] = $this->api_key;
 		}
@@ -98,15 +98,15 @@ class GoogleBooks extends API_Base {
 	 * @return array<string, mixed> Response.
 	 * @throws \Exception On error.
 	 */
-	private function api_get( string $endpoint, array $params = array() ): array {
+	private function api_get( string $endpoint, array $params = [] ): array {
 		$url = $this->build_url( $endpoint, $params );
 
 		$response = wp_remote_get(
 			$url,
-			array(
+			[
 				'timeout' => 30,
-				'headers' => array( 'Accept' => 'application/json' ),
-			)
+				'headers' => [ 'Accept' => 'application/json' ],
+			]
 		);
 
 		if ( is_wp_error( $response ) ) {
@@ -122,7 +122,7 @@ class GoogleBooks extends API_Base {
 			throw new \Exception( esc_html( $message ), (int) $code );
 		}
 
-		return $data ?? array();
+		return $data ?? [];
 	}
 
 	/**
@@ -132,7 +132,13 @@ class GoogleBooks extends API_Base {
 	 */
 	public function test_connection(): bool {
 		try {
-			$this->api_get( 'volumes', array( 'q' => 'test', 'maxResults' => 1 ) );
+			$this->api_get(
+				'volumes',
+				[
+					'q'          => 'test',
+					'maxResults' => 1,
+				]
+			);
 			return true;
 		} catch ( \Exception $e ) {
 			return false;
@@ -157,10 +163,10 @@ class GoogleBooks extends API_Base {
 		}
 
 		try {
-			$params = array(
+			$params = [
 				'q'          => $query,
 				'maxResults' => 40,
-			);
+			];
 
 			if ( $filter ) {
 				$params['filter'] = $filter;
@@ -168,7 +174,7 @@ class GoogleBooks extends API_Base {
 
 			$response = $this->api_get( 'volumes', $params );
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['items'] ) && is_array( $response['items'] ) ) {
 				foreach ( $response['items'] as $item ) {
@@ -180,8 +186,14 @@ class GoogleBooks extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -258,7 +270,13 @@ class GoogleBooks extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get volume failed', array( 'id' => $volume_id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get volume failed',
+				[
+					'id'    => $volume_id,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -270,7 +288,7 @@ class GoogleBooks extends API_Base {
 	 * @return array<string, mixed>|null Book data.
 	 */
 	public function get_by_isbn( string $isbn ): ?array {
-		$isbn = str_replace( array( '-', ' ' ), '', $isbn );
+		$isbn = str_replace( [ '-', ' ' ], '', $isbn );
 
 		$cache_key = 'isbn_' . $isbn;
 		$cached    = $this->get_cache( $cache_key );
@@ -280,10 +298,10 @@ class GoogleBooks extends API_Base {
 		}
 
 		try {
-			$response = $this->api_get( 'volumes', array( 'q' => 'isbn:' . $isbn ) );
+			$response = $this->api_get( 'volumes', [ 'q' => 'isbn:' . $isbn ] );
 
 			if ( isset( $response['items'][0] ) ) {
-				$result = $this->normalize_volume( $response['items'][0], true );
+				$result         = $this->normalize_volume( $response['items'][0], true );
 				$result['isbn'] = $isbn;
 
 				$this->set_cache( $cache_key, $result );
@@ -292,7 +310,13 @@ class GoogleBooks extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get by ISBN failed', array( 'isbn' => $isbn, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get by ISBN failed',
+				[
+					'isbn'  => $isbn,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -315,14 +339,14 @@ class GoogleBooks extends API_Base {
 		try {
 			$response = $this->api_get(
 				'volumes',
-				array(
+				[
 					'q'          => 'subject:' . $category,
 					'orderBy'    => 'newest',
 					'maxResults' => min( $limit, 40 ),
-				)
+				]
 			);
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['items'] ) ) {
 				foreach ( $response['items'] as $item ) {
@@ -334,8 +358,14 @@ class GoogleBooks extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get new releases failed', array( 'category' => $category, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get new releases failed',
+				[
+					'category' => $category,
+					'error'    => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -346,7 +376,7 @@ class GoogleBooks extends API_Base {
 	 * @return array<int, array<string, mixed>> Results.
 	 */
 	public function advanced_search( array $params ): array {
-		$query_parts = array();
+		$query_parts = [];
 
 		if ( ! empty( $params['title'] ) ) {
 			$query_parts[] = 'intitle:' . $params['title'];
@@ -373,7 +403,7 @@ class GoogleBooks extends API_Base {
 		}
 
 		if ( empty( $query_parts ) ) {
-			return array();
+			return [];
 		}
 
 		$query = implode( '+', $query_parts );
@@ -386,10 +416,10 @@ class GoogleBooks extends API_Base {
 		}
 
 		try {
-			$api_params = array(
+			$api_params = [
 				'q'          => $query,
 				'maxResults' => min( $params['limit'] ?? 25, 40 ),
-			);
+			];
 
 			if ( ! empty( $params['orderBy'] ) ) {
 				$api_params['orderBy'] = $params['orderBy'];
@@ -409,7 +439,7 @@ class GoogleBooks extends API_Base {
 
 			$response = $this->api_get( 'volumes', $api_params );
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['items'] ) ) {
 				foreach ( $response['items'] as $item ) {
@@ -421,8 +451,14 @@ class GoogleBooks extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Advanced search failed', array( 'params' => $params, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Advanced search failed',
+				[
+					'params' => $params,
+					'error'  => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -436,25 +472,31 @@ class GoogleBooks extends API_Base {
 		try {
 			$response = $this->api_get( "users/{$user_id}/bookshelves" );
 
-			$shelves = array();
+			$shelves = [];
 
 			if ( isset( $response['items'] ) ) {
 				foreach ( $response['items'] as $shelf ) {
-					$shelves[] = array(
-						'id'          => $shelf['id'] ?? 0,
-						'title'       => $shelf['title'] ?? '',
-						'description' => $shelf['description'] ?? '',
-						'access'      => $shelf['access'] ?? 'PRIVATE',
-						'volume_count'=> $shelf['volumeCount'] ?? 0,
-						'updated'     => $shelf['updated'] ?? '',
-					);
+					$shelves[] = [
+						'id'           => $shelf['id'] ?? 0,
+						'title'        => $shelf['title'] ?? '',
+						'description'  => $shelf['description'] ?? '',
+						'access'       => $shelf['access'] ?? 'PRIVATE',
+						'volume_count' => $shelf['volumeCount'] ?? 0,
+						'updated'      => $shelf['updated'] ?? '',
+					];
 				}
 			}
 
 			return $shelves;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get bookshelves failed', array( 'user_id' => $user_id, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get bookshelves failed',
+				[
+					'user_id' => $user_id,
+					'error'   => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -470,10 +512,10 @@ class GoogleBooks extends API_Base {
 		try {
 			$response = $this->api_get(
 				"users/{$user_id}/bookshelves/{$shelf_id}/volumes",
-				array( 'maxResults' => min( $max, 40 ) )
+				[ 'maxResults' => min( $max, 40 ) ]
 			);
 
-			$volumes = array();
+			$volumes = [];
 
 			if ( isset( $response['items'] ) ) {
 				foreach ( $response['items'] as $item ) {
@@ -483,8 +525,14 @@ class GoogleBooks extends API_Base {
 
 			return $volumes;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get bookshelf volumes failed', array( 'shelf_id' => $shelf_id, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get bookshelf volumes failed',
+				[
+					'shelf_id' => $shelf_id,
+					'error'    => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -506,7 +554,7 @@ class GoogleBooks extends API_Base {
 	 * @return array<string, mixed> Normalized volume.
 	 */
 	private function normalize_volume( array $volume, bool $detailed = false ): array {
-		$info = $volume['volumeInfo'] ?? array();
+		$info = $volume['volumeInfo'] ?? [];
 
 		// Get best image.
 		$cover = null;
@@ -536,12 +584,12 @@ class GoogleBooks extends API_Base {
 			}
 		}
 
-		$result = array(
+		$result = [
 			'id'             => $volume['id'] ?? '',
 			'google_id'      => $volume['id'] ?? '',
 			'title'          => $info['title'] ?? '',
 			'subtitle'       => $info['subtitle'] ?? '',
-			'authors'        => $info['authors'] ?? array(),
+			'authors'        => $info['authors'] ?? [],
 			'publisher'      => $info['publisher'] ?? '',
 			'published_date' => $info['publishedDate'] ?? '',
 			'description'    => $info['description'] ?? '',
@@ -549,7 +597,7 @@ class GoogleBooks extends API_Base {
 			'isbn_13'        => $isbn_13,
 			'isbn'           => $isbn_13 ?: $isbn_10,
 			'page_count'     => $info['pageCount'] ?? null,
-			'categories'     => $info['categories'] ?? array(),
+			'categories'     => $info['categories'] ?? [],
 			'average_rating' => $info['averageRating'] ?? null,
 			'ratings_count'  => $info['ratingsCount'] ?? 0,
 			'language'       => $info['language'] ?? '',
@@ -558,34 +606,34 @@ class GoogleBooks extends API_Base {
 			'info_link'      => $info['infoLink'] ?? '',
 			'type'           => 'book',
 			'source'         => 'googlebooks',
-		);
+		];
 
 		if ( $detailed ) {
 			// Additional detailed info.
-			$result['maturity_rating']   = $info['maturityRating'] ?? '';
-			$result['content_version']   = $info['contentVersion'] ?? '';
-			$result['print_type']        = $info['printType'] ?? '';
-			$result['dimensions']        = $info['dimensions'] ?? array();
+			$result['maturity_rating'] = $info['maturityRating'] ?? '';
+			$result['content_version'] = $info['contentVersion'] ?? '';
+			$result['print_type']      = $info['printType'] ?? '';
+			$result['dimensions']      = $info['dimensions'] ?? [];
 
 			// Sale info.
 			if ( isset( $volume['saleInfo'] ) ) {
-				$sale = $volume['saleInfo'];
-				$result['is_ebook']      = ( 'EBOOK' === ( $sale['saleability'] ?? '' ) );
-				$result['for_sale']      = ( 'FOR_SALE' === ( $sale['saleability'] ?? '' ) );
-				$result['list_price']    = $sale['listPrice'] ?? null;
-				$result['retail_price']  = $sale['retailPrice'] ?? null;
-				$result['buy_link']      = $sale['buyLink'] ?? '';
+				$sale                   = $volume['saleInfo'];
+				$result['is_ebook']     = ( 'EBOOK' === ( $sale['saleability'] ?? '' ) );
+				$result['for_sale']     = ( 'FOR_SALE' === ( $sale['saleability'] ?? '' ) );
+				$result['list_price']   = $sale['listPrice'] ?? null;
+				$result['retail_price'] = $sale['retailPrice'] ?? null;
+				$result['buy_link']     = $sale['buyLink'] ?? '';
 			}
 
 			// Access info.
 			if ( isset( $volume['accessInfo'] ) ) {
-				$access = $volume['accessInfo'];
-				$result['embeddable']    = $access['embeddable'] ?? false;
-				$result['public_domain'] = $access['publicDomain'] ?? false;
-				$result['viewability']   = $access['viewability'] ?? '';
-				$result['epub_available']= $access['epub']['isAvailable'] ?? false;
-				$result['pdf_available'] = $access['pdf']['isAvailable'] ?? false;
-				$result['web_reader']    = $access['webReaderLink'] ?? '';
+				$access                   = $volume['accessInfo'];
+				$result['embeddable']     = $access['embeddable'] ?? false;
+				$result['public_domain']  = $access['publicDomain'] ?? false;
+				$result['viewability']    = $access['viewability'] ?? '';
+				$result['epub_available'] = $access['epub']['isAvailable'] ?? false;
+				$result['pdf_available']  = $access['pdf']['isAvailable'] ?? false;
+				$result['web_reader']     = $access['webReaderLink'] ?? '';
 			}
 		}
 

@@ -36,7 +36,7 @@ export default function Save( { attributes } ) {
 		}
 		return (
 			<div
-				className="reactions-card__rating p-rating"
+				className="post-kinds-card__rating p-rating"
 				aria-label={ `Rating: ${ rating } out of 5` }
 			>
 				{ Array.from( { length: 5 }, ( _, i ) => (
@@ -48,7 +48,7 @@ export default function Save( { attributes } ) {
 						★
 					</span>
 				) ) }
-				<span className="reactions-card__rating-value">
+				<span className="post-kinds-card__rating-value">
 					{ rating }/5
 				</span>
 			</div>
@@ -57,33 +57,33 @@ export default function Save( { attributes } ) {
 
 	return (
 		<div { ...blockProps }>
-			<div className="reactions-card h-food">
+			<div className="post-kinds-card h-food">
 				{ photo && (
-					<div className="reactions-card__media">
+					<div className="post-kinds-card__media">
 						<img
 							src={ photo }
 							alt={ photoAlt || name }
-							className="reactions-card__image u-photo"
+							className="post-kinds-card__image u-photo"
 							loading="lazy"
 						/>
 					</div>
 				) }
-				<div className="reactions-card__content">
+				<div className="post-kinds-card__content">
 					{ cuisine && (
-						<span className="reactions-card__badge">
+						<span className="post-kinds-card__badge">
 							{ cuisine }
 						</span>
 					) }
 
 					{ name && (
-						<h3 className="reactions-card__title p-name">
+						<h3 className="post-kinds-card__title p-name">
 							{ name }
 						</h3>
 					) }
 
 					{ locationName && (
-						<div className="reactions-card__location p-location h-card">
-							<p className="reactions-card__venue">
+						<div className="post-kinds-card__location p-location h-card">
+							<p className="post-kinds-card__venue">
 								{ restaurantUrl ? (
 									<a
 										href={ restaurantUrl }
@@ -100,14 +100,14 @@ export default function Save( { attributes } ) {
 								) }
 							</p>
 							{ locationAddress && (
-								<p className="reactions-card__address p-street-address">
+								<p className="post-kinds-card__address p-street-address">
 									{ locationAddress }
 								</p>
 							) }
 							{ ( locationLocality ||
 								locationRegion ||
 								locationCountry ) && (
-								<p className="reactions-card__city">
+								<p className="post-kinds-card__city">
 									{ locationLocality && (
 										<span className="p-locality">
 											{ locationLocality }
@@ -151,14 +151,14 @@ export default function Save( { attributes } ) {
 					{ renderStars() }
 
 					{ notes && (
-						<p className="reactions-card__notes p-content">
+						<p className="post-kinds-card__notes p-content">
 							{ notes }
 						</p>
 					) }
 
 					{ ateAt && (
 						<time
-							className="reactions-card__timestamp dt-published"
+							className="post-kinds-card__timestamp dt-published"
 							dateTime={ new Date( ateAt ).toISOString() }
 						>
 							{ new Date( ateAt ).toLocaleString() }

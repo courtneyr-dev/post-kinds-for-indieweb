@@ -61,8 +61,8 @@ class RAWG extends API_Base {
 	 * @return array<string, string> Credentials.
 	 */
 	private function get_credentials(): array {
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', array() );
-		return $credentials['rawg'] ?? array();
+		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		return $credentials['rawg'] ?? [];
 	}
 
 	/**
@@ -108,10 +108,10 @@ class RAWG extends API_Base {
 	 */
 	public function search( string $query, int $page = 1, int $per_page = 20 ): array {
 		if ( empty( $query ) || ! $this->is_configured() ) {
-			return array();
+			return [];
 		}
 
-		$cache_key = $this->get_cache_key( 'search', array( $query, $page, $per_page ) );
+		$cache_key = $this->get_cache_key( 'search', [ $query, $page, $per_page ] );
 		$cached    = $this->get_cache( $cache_key );
 
 		if ( false !== $cached ) {
@@ -120,20 +120,20 @@ class RAWG extends API_Base {
 
 		$response = $this->get(
 			'games',
-			array(
+			[
 				'key'       => $this->get_api_key(),
 				'search'    => $query,
 				'page'      => $page,
 				'page_size' => $per_page,
-			)
+			]
 		);
 
 		if ( is_wp_error( $response ) || empty( $response['results'] ) ) {
-			return array();
+			return [];
 		}
 
 		$results = array_map(
-			function( $item ) {
+			function ( $item ) {
 				return $this->normalize_search_result( $item );
 			},
 			$response['results']
@@ -155,7 +155,7 @@ class RAWG extends API_Base {
 			return null;
 		}
 
-		$cache_key = $this->get_cache_key( 'game', array( $id ) );
+		$cache_key = $this->get_cache_key( 'game', [ $id ] );
 		$cached    = $this->get_cache( $cache_key );
 
 		if ( false !== $cached ) {
@@ -164,7 +164,7 @@ class RAWG extends API_Base {
 
 		$response = $this->get(
 			'games/' . rawurlencode( $id ),
-			array( 'key' => $this->get_api_key() )
+			[ 'key' => $this->get_api_key() ]
 		);
 
 		if ( is_wp_error( $response ) || empty( $response ) ) {
@@ -184,7 +184,7 @@ class RAWG extends API_Base {
 	 * @return array<string, mixed> Normalized search result.
 	 */
 	private function normalize_search_result( array $item ): array {
-		$platforms = array();
+		$platforms = [];
 		if ( ! empty( $item['platforms'] ) ) {
 			foreach ( $item['platforms'] as $platform ) {
 				if ( isset( $platform['platform']['name'] ) ) {
@@ -193,17 +193,17 @@ class RAWG extends API_Base {
 			}
 		}
 
-		return array(
-			'id'        => $item['id'] ?? 0,
-			'slug'      => $item['slug'] ?? '',
-			'name'      => $item['name'] ?? '',
-			'year'      => ! empty( $item['released'] ) ? substr( $item['released'], 0, 4 ) : '',
-			'cover'     => $item['background_image'] ?? '',
-			'rating'    => $item['rating'] ?? 0,
-			'metacritic'=> $item['metacritic'] ?? null,
-			'platforms' => $platforms,
-			'source'    => 'rawg',
-		);
+		return [
+			'id'         => $item['id'] ?? 0,
+			'slug'       => $item['slug'] ?? '',
+			'name'       => $item['name'] ?? '',
+			'year'       => ! empty( $item['released'] ) ? substr( $item['released'], 0, 4 ) : '',
+			'cover'      => $item['background_image'] ?? '',
+			'rating'     => $item['rating'] ?? 0,
+			'metacritic' => $item['metacritic'] ?? null,
+			'platforms'  => $platforms,
+			'source'     => 'rawg',
+		];
 	}
 
 	/**
@@ -213,7 +213,7 @@ class RAWG extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	public function normalize_result( array $item ): array {
-		$platforms = array();
+		$platforms = [];
 		if ( ! empty( $item['platforms'] ) ) {
 			foreach ( $item['platforms'] as $platform ) {
 				if ( isset( $platform['platform']['name'] ) ) {
@@ -222,60 +222,60 @@ class RAWG extends API_Base {
 			}
 		}
 
-		$genres = array();
+		$genres = [];
 		if ( ! empty( $item['genres'] ) ) {
 			foreach ( $item['genres'] as $genre ) {
 				$genres[] = $genre['name'] ?? '';
 			}
 		}
 
-		$developers = array();
+		$developers = [];
 		if ( ! empty( $item['developers'] ) ) {
 			foreach ( $item['developers'] as $dev ) {
 				$developers[] = $dev['name'] ?? '';
 			}
 		}
 
-		$publishers = array();
+		$publishers = [];
 		if ( ! empty( $item['publishers'] ) ) {
 			foreach ( $item['publishers'] as $pub ) {
 				$publishers[] = $pub['name'] ?? '';
 			}
 		}
 
-		$stores = array();
+		$stores = [];
 		if ( ! empty( $item['stores'] ) ) {
 			foreach ( $item['stores'] as $store ) {
 				if ( isset( $store['store']['name'] ) ) {
-					$stores[] = array(
+					$stores[] = [
 						'name' => $store['store']['name'],
 						'url'  => $store['url'] ?? '',
-					);
+					];
 				}
 			}
 		}
 
-		return array(
-			'id'          => $item['id'] ?? 0,
-			'slug'        => $item['slug'] ?? '',
-			'title'       => $item['name'] ?? '',
-			'year'        => ! empty( $item['released'] ) ? substr( $item['released'], 0, 4 ) : '',
-			'released'    => $item['released'] ?? '',
-			'cover'       => $item['background_image'] ?? '',
-			'description' => $this->strip_html( $item['description'] ?? $item['description_raw'] ?? '' ),
-			'rating'      => $item['rating'] ?? 0,
-			'rating_count'=> $item['ratings_count'] ?? 0,
-			'metacritic'  => $item['metacritic'] ?? null,
-			'playtime'    => $item['playtime'] ?? 0,
-			'platforms'   => $platforms,
-			'genres'      => $genres,
-			'developers'  => $developers,
-			'publishers'  => $publishers,
-			'stores'      => $stores,
-			'website'     => $item['website'] ?? '',
-			'url'         => ! empty( $item['slug'] ) ? 'https://rawg.io/games/' . $item['slug'] : '',
-			'source'      => 'rawg',
-		);
+		return [
+			'id'           => $item['id'] ?? 0,
+			'slug'         => $item['slug'] ?? '',
+			'title'        => $item['name'] ?? '',
+			'year'         => ! empty( $item['released'] ) ? substr( $item['released'], 0, 4 ) : '',
+			'released'     => $item['released'] ?? '',
+			'cover'        => $item['background_image'] ?? '',
+			'description'  => $this->strip_html( $item['description'] ?? $item['description_raw'] ?? '' ),
+			'rating'       => $item['rating'] ?? 0,
+			'rating_count' => $item['ratings_count'] ?? 0,
+			'metacritic'   => $item['metacritic'] ?? null,
+			'playtime'     => $item['playtime'] ?? 0,
+			'platforms'    => $platforms,
+			'genres'       => $genres,
+			'developers'   => $developers,
+			'publishers'   => $publishers,
+			'stores'       => $stores,
+			'website'      => $item['website'] ?? '',
+			'url'          => ! empty( $item['slug'] ) ? 'https://rawg.io/games/' . $item['slug'] : '',
+			'source'       => 'rawg',
+		];
 	}
 
 	/**
@@ -300,7 +300,7 @@ class RAWG extends API_Base {
 	 * @param array<string, mixed> $params   Query parameters.
 	 * @return array<string, mixed>|\WP_Error Response data or error.
 	 */
-	public function get( string $endpoint, array $params = array() ) {
+	public function get( string $endpoint, array $params = [] ) {
 		$url = $this->base_url . $endpoint;
 
 		if ( ! empty( $params ) ) {
@@ -311,13 +311,13 @@ class RAWG extends API_Base {
 
 		$response = wp_remote_get(
 			$url,
-			array(
+			[
 				'timeout'    => $this->timeout,
 				'user-agent' => $this->user_agent,
-				'headers'    => array(
+				'headers'    => [
 					'Accept' => 'application/json',
-				),
-			)
+				],
+			]
 		);
 
 		if ( is_wp_error( $response ) ) {
@@ -356,26 +356,26 @@ class RAWG extends API_Base {
 	 */
 	public function get_by_platform( int $platform_id, int $page = 1, int $per_page = 20 ): array {
 		if ( ! $this->is_configured() ) {
-			return array();
+			return [];
 		}
 
 		$response = $this->get(
 			'games',
-			array(
+			[
 				'key'       => $this->get_api_key(),
 				'platforms' => $platform_id,
 				'page'      => $page,
 				'page_size' => $per_page,
 				'ordering'  => '-rating',
-			)
+			]
 		);
 
 		if ( is_wp_error( $response ) || empty( $response['results'] ) ) {
-			return array();
+			return [];
 		}
 
 		return array_map(
-			function( $item ) {
+			function ( $item ) {
 				return $this->normalize_search_result( $item );
 			},
 			$response['results']
@@ -389,10 +389,10 @@ class RAWG extends API_Base {
 	 */
 	public function get_platforms(): array {
 		if ( ! $this->is_configured() ) {
-			return array();
+			return [];
 		}
 
-		$cache_key = $this->get_cache_key( 'platforms', array() );
+		$cache_key = $this->get_cache_key( 'platforms', [] );
 		$cached    = $this->get_cache( $cache_key );
 
 		if ( false !== $cached ) {
@@ -401,23 +401,23 @@ class RAWG extends API_Base {
 
 		$response = $this->get(
 			'platforms',
-			array(
+			[
 				'key'       => $this->get_api_key(),
 				'page_size' => 50,
-			)
+			]
 		);
 
 		if ( is_wp_error( $response ) || empty( $response['results'] ) ) {
-			return array();
+			return [];
 		}
 
 		$platforms = array_map(
-			function( $platform ) {
-				return array(
+			function ( $platform ) {
+				return [
 					'id'   => $platform['id'],
 					'name' => $platform['name'],
 					'slug' => $platform['slug'],
-				);
+				];
 			},
 			$response['results']
 		);

@@ -78,8 +78,8 @@ class Simkl extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials         = get_option( 'post_kinds_indieweb_api_credentials', array() );
-		$simkl_creds         = $credentials['simkl'] ?? array();
+		$credentials         = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$simkl_creds         = $credentials['simkl'] ?? [];
 		$this->client_id     = $simkl_creds['client_id'] ?? '';
 		$this->client_secret = $simkl_creds['client_secret'] ?? '';
 		$this->access_token  = $simkl_creds['access_token'] ?? '';
@@ -100,10 +100,10 @@ class Simkl extends API_Base {
 	 * @return array<string, string>
 	 */
 	protected function get_default_headers(): array {
-		$headers = array(
+		$headers = [
 			'Content-Type'  => 'application/json',
 			'simkl-api-key' => $this->client_id ?? '',
-		);
+		];
 
 		if ( $this->access_token ) {
 			$headers['Authorization'] = 'Bearer ' . $this->access_token;
@@ -123,7 +123,13 @@ class Simkl extends API_Base {
 		}
 
 		try {
-			$this->get( 'search/movie', array( 'q' => 'test', 'limit' => 1 ) );
+			$this->get(
+				'search/movie',
+				[
+					'q'     => 'test',
+					'limit' => 1,
+				]
+			);
 			return true;
 		} catch ( \Exception $e ) {
 			return false;
@@ -147,11 +153,11 @@ class Simkl extends API_Base {
 	 */
 	public function get_authorization_url( string $redirect_uri ): string {
 		return 'https://simkl.com/oauth/authorize?' . http_build_query(
-			array(
+			[
 				'response_type' => 'code',
 				'client_id'     => $this->client_id,
 				'redirect_uri'  => $redirect_uri,
-			)
+			]
 		);
 	}
 
@@ -166,19 +172,19 @@ class Simkl extends API_Base {
 		try {
 			$response = wp_remote_post(
 				'https://api.simkl.com/oauth/token',
-				array(
+				[
 					'timeout' => 30,
-					'headers' => array( 'Content-Type' => 'application/json' ),
+					'headers' => [ 'Content-Type' => 'application/json' ],
 					'body'    => wp_json_encode(
-						array(
+						[
 							'code'          => $code,
 							'client_id'     => $this->client_id,
 							'client_secret' => $this->client_secret,
 							'redirect_uri'  => $redirect_uri,
 							'grant_type'    => 'authorization_code',
-						)
+						]
 					),
-				)
+				]
 			);
 
 			if ( is_wp_error( $response ) ) {
@@ -190,14 +196,14 @@ class Simkl extends API_Base {
 			if ( isset( $body['access_token'] ) ) {
 				$this->access_token = $body['access_token'];
 
-				return array(
+				return [
 					'access_token' => $body['access_token'],
-				);
+				];
 			}
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Token exchange failed', array( 'error' => $e->getMessage() ) );
+			$this->log_error( 'Token exchange failed', [ 'error' => $e->getMessage() ] );
 			return null;
 		}
 	}
@@ -224,13 +230,13 @@ class Simkl extends API_Base {
 
 			$response = $this->get(
 				$endpoint,
-				array(
+				[
 					'q'     => $query,
 					'limit' => 25,
-				)
+				]
 			);
 
-			$results = array();
+			$results = [];
 
 			foreach ( $response as $item ) {
 				$results[] = $this->normalize_result( $item );
@@ -240,8 +246,14 @@ class Simkl extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -312,7 +324,7 @@ class Simkl extends API_Base {
 		}
 
 		try {
-			$response = $this->get( "movies/{$id}", array( 'extended' => 'full' ) );
+			$response = $this->get( "movies/{$id}", [ 'extended' => 'full' ] );
 
 			$result = $this->normalize_movie( $response );
 
@@ -320,7 +332,13 @@ class Simkl extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get movie failed', array( 'id' => $id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get movie failed',
+				[
+					'id'    => $id,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -340,7 +358,7 @@ class Simkl extends API_Base {
 		}
 
 		try {
-			$response = $this->get( "tv/{$id}", array( 'extended' => 'full' ) );
+			$response = $this->get( "tv/{$id}", [ 'extended' => 'full' ] );
 
 			$result = $this->normalize_show( $response );
 
@@ -348,7 +366,13 @@ class Simkl extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get show failed', array( 'id' => $id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get show failed',
+				[
+					'id'    => $id,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -368,7 +392,7 @@ class Simkl extends API_Base {
 		}
 
 		try {
-			$response = $this->get( "anime/{$id}", array( 'extended' => 'full' ) );
+			$response = $this->get( "anime/{$id}", [ 'extended' => 'full' ] );
 
 			$result = $this->normalize_anime( $response );
 
@@ -376,7 +400,13 @@ class Simkl extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get anime failed', array( 'id' => $id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get anime failed',
+				[
+					'id'    => $id,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -396,9 +426,9 @@ class Simkl extends API_Base {
 		}
 
 		try {
-			$response = $this->get( "tv/{$show_id}/episodes", array( 'extended' => 'full' ) );
+			$response = $this->get( "tv/{$show_id}/episodes", [ 'extended' => 'full' ] );
 
-			$episodes = array();
+			$episodes = [];
 
 			foreach ( $response as $episode ) {
 				$episodes[] = $this->normalize_episode( $episode );
@@ -408,8 +438,14 @@ class Simkl extends API_Base {
 
 			return $episodes;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get episodes failed', array( 'show_id' => $show_id, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get episodes failed',
+				[
+					'show_id' => $show_id,
+					'error'   => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -421,7 +457,7 @@ class Simkl extends API_Base {
 	 */
 	public function get_history( string $type = 'all' ): array {
 		if ( ! $this->is_authenticated() ) {
-			return array();
+			return [];
 		}
 
 		$cache_key = 'history_' . $type;
@@ -432,38 +468,38 @@ class Simkl extends API_Base {
 		}
 
 		try {
-			$response = $this->get( 'sync/all-items/' . $type, array( 'extended' => 'full' ) );
+			$response = $this->get( 'sync/all-items/' . $type, [ 'extended' => 'full' ] );
 
-			$items = array();
+			$items = [];
 
 			if ( isset( $response['movies'] ) ) {
 				foreach ( $response['movies'] as $item ) {
-					$movie = $this->normalize_movie( $item['movie'] ?? $item );
-					$movie['status']      = $item['status'] ?? 'completed';
-					$movie['last_watched']= $item['last_watched_at'] ?? '';
-					$items[] = $movie;
+					$movie                 = $this->normalize_movie( $item['movie'] ?? $item );
+					$movie['status']       = $item['status'] ?? 'completed';
+					$movie['last_watched'] = $item['last_watched_at'] ?? '';
+					$items[]               = $movie;
 				}
 			}
 
 			if ( isset( $response['shows'] ) ) {
 				foreach ( $response['shows'] as $item ) {
-					$show = $this->normalize_show( $item['show'] ?? $item );
-					$show['status']          = $item['status'] ?? 'watching';
-					$show['last_watched']    = $item['last_watched_at'] ?? '';
-					$show['watched_episodes']= $item['watched_episodes_count'] ?? 0;
-					$show['total_episodes']  = $item['total_episodes_count'] ?? 0;
-					$items[] = $show;
+					$show                     = $this->normalize_show( $item['show'] ?? $item );
+					$show['status']           = $item['status'] ?? 'watching';
+					$show['last_watched']     = $item['last_watched_at'] ?? '';
+					$show['watched_episodes'] = $item['watched_episodes_count'] ?? 0;
+					$show['total_episodes']   = $item['total_episodes_count'] ?? 0;
+					$items[]                  = $show;
 				}
 			}
 
 			if ( isset( $response['anime'] ) ) {
 				foreach ( $response['anime'] as $item ) {
-					$anime = $this->normalize_anime( $item['show'] ?? $item );
-					$anime['status']          = $item['status'] ?? 'watching';
-					$anime['last_watched']    = $item['last_watched_at'] ?? '';
-					$anime['watched_episodes']= $item['watched_episodes_count'] ?? 0;
-					$anime['total_episodes']  = $item['total_episodes_count'] ?? 0;
-					$items[] = $anime;
+					$anime                     = $this->normalize_anime( $item['show'] ?? $item );
+					$anime['status']           = $item['status'] ?? 'watching';
+					$anime['last_watched']     = $item['last_watched_at'] ?? '';
+					$anime['watched_episodes'] = $item['watched_episodes_count'] ?? 0;
+					$anime['total_episodes']   = $item['total_episodes_count'] ?? 0;
+					$items[]                   = $anime;
 				}
 			}
 
@@ -471,8 +507,14 @@ class Simkl extends API_Base {
 
 			return $items;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get history failed', array( 'type' => $type, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get history failed',
+				[
+					'type'  => $type,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -483,7 +525,7 @@ class Simkl extends API_Base {
 	 */
 	public function get_recent_activity(): array {
 		if ( ! $this->is_authenticated() ) {
-			return array();
+			return [];
 		}
 
 		try {
@@ -491,8 +533,8 @@ class Simkl extends API_Base {
 
 			return $response;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get recent activity failed', array( 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error( 'Get recent activity failed', [ 'error' => $e->getMessage() ] );
+			return [];
 		}
 	}
 
@@ -512,7 +554,7 @@ class Simkl extends API_Base {
 			$this->delete_cache( 'history_all' );
 			return true;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Add to history failed', array( 'error' => $e->getMessage() ) );
+			$this->log_error( 'Add to history failed', [ 'error' => $e->getMessage() ] );
 			return false;
 		}
 	}
@@ -525,14 +567,14 @@ class Simkl extends API_Base {
 	 * @return bool Success.
 	 */
 	public function add_movie_to_history( int $movie_id, string $watched_at = '' ): bool {
-		$payload = array(
-			'movies' => array(
-				array(
-					'ids'        => array( 'simkl' => $movie_id ),
+		$payload = [
+			'movies' => [
+				[
+					'ids'        => [ 'simkl' => $movie_id ],
 					'watched_at' => $watched_at ?: gmdate( 'c' ),
-				),
-			),
-		);
+				],
+			],
+		];
 
 		return $this->add_to_history( $payload );
 	}
@@ -547,24 +589,24 @@ class Simkl extends API_Base {
 	 * @return bool Success.
 	 */
 	public function add_episode_to_history( int $show_id, int $season_number, int $episode_number, string $watched_at = '' ): bool {
-		$payload = array(
-			'shows' => array(
-				array(
-					'ids'      => array( 'simkl' => $show_id ),
-					'seasons'  => array(
-						array(
+		$payload = [
+			'shows' => [
+				[
+					'ids'     => [ 'simkl' => $show_id ],
+					'seasons' => [
+						[
 							'number'   => $season_number,
-							'episodes' => array(
-								array(
+							'episodes' => [
+								[
 									'number'     => $episode_number,
 									'watched_at' => $watched_at ?: gmdate( 'c' ),
-								),
-							),
-						),
-					),
-				),
-			),
-		);
+								],
+							],
+						],
+					],
+				],
+			],
+		];
 
 		return $this->add_to_history( $payload );
 	}
@@ -577,25 +619,31 @@ class Simkl extends API_Base {
 	 */
 	public function get_ratings( string $type = 'all' ): array {
 		if ( ! $this->is_authenticated() ) {
-			return array();
+			return [];
 		}
 
 		try {
 			$response = $this->get( 'sync/ratings/' . $type );
 
-			$items = array();
+			$items = [];
 
 			foreach ( $response as $item ) {
-				$normalized = $this->normalize_result( $item );
+				$normalized             = $this->normalize_result( $item );
 				$normalized['rating']   = $item['rating'] ?? 0;
 				$normalized['rated_at'] = $item['rated_at'] ?? '';
-				$items[] = $normalized;
+				$items[]                = $normalized;
 			}
 
 			return $items;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get ratings failed', array( 'type' => $type, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get ratings failed',
+				[
+					'type'  => $type,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -612,21 +660,29 @@ class Simkl extends API_Base {
 			return false;
 		}
 
-		$payload = array(
-			$type . 's' => array(
-				array(
-					'ids'      => array( 'simkl' => $id ),
+		$payload = [
+			$type . 's' => [
+				[
+					'ids'      => [ 'simkl' => $id ],
 					'rating'   => min( 10, max( 1, $rating ) ),
 					'rated_at' => gmdate( 'c' ),
-				),
-			),
-		);
+				],
+			],
+		];
 
 		try {
 			$this->post( 'sync/ratings', $payload );
 			return true;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Add rating failed', array( 'type' => $type, 'id' => $id, 'rating' => $rating, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Add rating failed',
+				[
+					'type'   => $type,
+					'id'     => $id,
+					'rating' => $rating,
+					'error'  => $e->getMessage(),
+				]
+			);
 			return false;
 		}
 	}
@@ -639,24 +695,30 @@ class Simkl extends API_Base {
 	 */
 	public function get_watchlist( string $type = 'all' ): array {
 		if ( ! $this->is_authenticated() ) {
-			return array();
+			return [];
 		}
 
 		try {
 			$response = $this->get( 'sync/plantowatch/' . $type );
 
-			$items = array();
+			$items = [];
 
 			foreach ( $response as $item ) {
-				$normalized = $this->normalize_result( $item );
+				$normalized             = $this->normalize_result( $item );
 				$normalized['added_at'] = $item['added_at'] ?? '';
-				$items[] = $normalized;
+				$items[]                = $normalized;
 			}
 
 			return $items;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get watchlist failed', array( 'type' => $type, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get watchlist failed',
+				[
+					'type'  => $type,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -680,17 +742,17 @@ class Simkl extends API_Base {
 		try {
 			$response = $this->get( 'users/settings' );
 
-			$stats = array(
-				'user'       => $response['user'] ?? array(),
-				'account'    => $response['account'] ?? array(),
-				'connections'=> $response['connections'] ?? array(),
-			);
+			$stats = [
+				'user'        => $response['user'] ?? [],
+				'account'     => $response['account'] ?? [],
+				'connections' => $response['connections'] ?? [],
+			];
 
 			$this->set_cache( $cache_key, $stats, HOUR_IN_SECONDS );
 
 			return $stats;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get stats failed', array( 'error' => $e->getMessage() ) );
+			$this->log_error( 'Get stats failed', [ 'error' => $e->getMessage() ] );
 			return null;
 		}
 	}
@@ -711,7 +773,7 @@ class Simkl extends API_Base {
 		}
 
 		try {
-			$response = $this->get( 'search/id', array( $source => $id ) );
+			$response = $this->get( 'search/id', [ $source => $id ] );
 
 			if ( ! empty( $response ) ) {
 				$result = $this->normalize_result( $response[0] );
@@ -721,7 +783,14 @@ class Simkl extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Lookup failed', array( 'source' => $source, 'id' => $id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Lookup failed',
+				[
+					'source' => $source,
+					'id'     => $id,
+					'error'  => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -753,28 +822,28 @@ class Simkl extends API_Base {
 	 * @return array<string, mixed> Normalized movie.
 	 */
 	private function normalize_movie( array $movie ): array {
-		$ids = $movie['ids'] ?? array();
+		$ids = $movie['ids'] ?? [];
 
-		return array(
-			'id'           => $ids['simkl'] ?? 0,
-			'simkl_id'     => $ids['simkl'] ?? 0,
-			'imdb_id'      => $ids['imdb'] ?? '',
-			'tmdb_id'      => $ids['tmdb'] ?? null,
-			'slug'         => $ids['slug'] ?? '',
-			'title'        => $movie['title'] ?? '',
-			'year'         => $movie['year'] ?? null,
-			'poster'       => $this->get_poster_url( $movie['poster'] ?? '' ),
-			'fanart'       => $movie['fanart'] ?? '',
-			'runtime'      => $movie['runtime'] ?? null,
-			'overview'     => $movie['overview'] ?? '',
-			'genres'       => $movie['genres'] ?? array(),
-			'certification'=> $movie['certification'] ?? '',
-			'released'     => $movie['released'] ?? '',
-			'trailer'      => $movie['trailer'] ?? '',
-			'ratings'      => $movie['ratings'] ?? array(),
-			'type'         => 'movie',
-			'source'       => 'simkl',
-		);
+		return [
+			'id'            => $ids['simkl'] ?? 0,
+			'simkl_id'      => $ids['simkl'] ?? 0,
+			'imdb_id'       => $ids['imdb'] ?? '',
+			'tmdb_id'       => $ids['tmdb'] ?? null,
+			'slug'          => $ids['slug'] ?? '',
+			'title'         => $movie['title'] ?? '',
+			'year'          => $movie['year'] ?? null,
+			'poster'        => $this->get_poster_url( $movie['poster'] ?? '' ),
+			'fanart'        => $movie['fanart'] ?? '',
+			'runtime'       => $movie['runtime'] ?? null,
+			'overview'      => $movie['overview'] ?? '',
+			'genres'        => $movie['genres'] ?? [],
+			'certification' => $movie['certification'] ?? '',
+			'released'      => $movie['released'] ?? '',
+			'trailer'       => $movie['trailer'] ?? '',
+			'ratings'       => $movie['ratings'] ?? [],
+			'type'          => 'movie',
+			'source'        => 'simkl',
+		];
 	}
 
 	/**
@@ -784,9 +853,9 @@ class Simkl extends API_Base {
 	 * @return array<string, mixed> Normalized show.
 	 */
 	private function normalize_show( array $show ): array {
-		$ids = $show['ids'] ?? array();
+		$ids = $show['ids'] ?? [];
 
-		return array(
+		return [
 			'id'             => $ids['simkl'] ?? 0,
 			'simkl_id'       => $ids['simkl'] ?? 0,
 			'imdb_id'        => $ids['imdb'] ?? '',
@@ -799,17 +868,17 @@ class Simkl extends API_Base {
 			'fanart'         => $show['fanart'] ?? '',
 			'runtime'        => $show['runtime'] ?? null,
 			'overview'       => $show['overview'] ?? '',
-			'genres'         => $show['genres'] ?? array(),
+			'genres'         => $show['genres'] ?? [],
 			'certification'  => $show['certification'] ?? '',
 			'first_aired'    => $show['first_aired'] ?? '',
 			'network'        => $show['network'] ?? '',
 			'status'         => $show['status'] ?? '',
 			'total_episodes' => $show['total_episodes'] ?? 0,
 			'aired_episodes' => $show['aired_episodes'] ?? 0,
-			'ratings'        => $show['ratings'] ?? array(),
+			'ratings'        => $show['ratings'] ?? [],
 			'type'           => 'tv',
 			'source'         => 'simkl',
-		);
+		];
 	}
 
 	/**
@@ -819,9 +888,9 @@ class Simkl extends API_Base {
 	 * @return array<string, mixed> Normalized anime.
 	 */
 	private function normalize_anime( array $anime ): array {
-		$ids = $anime['ids'] ?? array();
+		$ids = $anime['ids'] ?? [];
 
-		return array(
+		return [
 			'id'             => $ids['simkl'] ?? 0,
 			'simkl_id'       => $ids['simkl'] ?? 0,
 			'mal_id'         => $ids['mal'] ?? null,
@@ -838,16 +907,16 @@ class Simkl extends API_Base {
 			'fanart'         => $anime['fanart'] ?? '',
 			'runtime'        => $anime['runtime'] ?? null,
 			'overview'       => $anime['overview'] ?? '',
-			'genres'         => $anime['genres'] ?? array(),
+			'genres'         => $anime['genres'] ?? [],
 			'first_aired'    => $anime['first_aired'] ?? '',
 			'anime_type'     => $anime['anime_type'] ?? '',
 			'status'         => $anime['status'] ?? '',
 			'total_episodes' => $anime['total_episodes'] ?? 0,
 			'aired_episodes' => $anime['aired_episodes'] ?? 0,
-			'ratings'        => $anime['ratings'] ?? array(),
+			'ratings'        => $anime['ratings'] ?? [],
 			'type'           => 'anime',
 			'source'         => 'simkl',
-		);
+		];
 	}
 
 	/**
@@ -857,17 +926,17 @@ class Simkl extends API_Base {
 	 * @return array<string, mixed> Normalized episode.
 	 */
 	private function normalize_episode( array $episode ): array {
-		return array(
-			'id'             => $episode['ids']['simkl'] ?? 0,
-			'title'          => $episode['title'] ?? '',
-			'season'         => $episode['season'] ?? 0,
-			'episode'        => $episode['episode'] ?? 0,
-			'description'    => $episode['description'] ?? '',
-			'img'            => $episode['img'] ?? '',
-			'date'           => $episode['date'] ?? '',
-			'type'           => 'episode',
-			'source'         => 'simkl',
-		);
+		return [
+			'id'          => $episode['ids']['simkl'] ?? 0,
+			'title'       => $episode['title'] ?? '',
+			'season'      => $episode['season'] ?? 0,
+			'episode'     => $episode['episode'] ?? 0,
+			'description' => $episode['description'] ?? '',
+			'img'         => $episode['img'] ?? '',
+			'date'        => $episode['date'] ?? '',
+			'type'        => 'episode',
+			'source'      => 'simkl',
+		];
 	}
 
 	/**

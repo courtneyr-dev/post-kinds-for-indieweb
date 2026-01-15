@@ -16,38 +16,45 @@ export default function Save( { attributes } ) {
 		url,
 		note,
 		jammedAt,
+		rel,
 		layout,
 	} = attributes;
 	const blockProps = useBlockProps.save( {
 		className: `jam-card layout-${ layout }`,
 	} );
 
+	// Build rel attribute - always includes noopener noreferrer for security
+	const linkRel = rel
+		? `noopener noreferrer ${ rel }`
+		: 'noopener noreferrer';
+
 	return (
 		<div { ...blockProps }>
-			<div className="reactions-card h-cite">
+			<div className="post-kinds-card h-cite">
 				{ cover && (
-					<div className="reactions-card__media">
+					<div className="post-kinds-card__media">
 						<img
 							src={ cover }
 							alt={ coverAlt || `${ title } by ${ artist }` }
-							className="reactions-card__image u-photo"
+							className="post-kinds-card__image u-photo"
 							loading="lazy"
 						/>
 					</div>
 				) }
-				<div className="reactions-card__content">
-					<span className="reactions-card__badge">
+				<div className="post-kinds-card__content">
+					<span className="post-kinds-card__badge">
 						🎵 Now Playing
 					</span>
 
 					{ title && (
-						<h3 className="reactions-card__title p-name">
+						<h3 className="post-kinds-card__title p-name">
 							{ url ? (
+								// eslint-disable-next-line react/jsx-no-target-blank -- linkRel always includes noreferrer
 								<a
 									href={ url }
 									className="u-url u-jam-of"
 									target="_blank"
-									rel="noopener noreferrer"
+									rel={ linkRel }
 								>
 									{ title }
 								</a>
@@ -58,24 +65,24 @@ export default function Save( { attributes } ) {
 					) }
 
 					{ artist && (
-						<p className="reactions-card__subtitle p-author h-card">
+						<p className="post-kinds-card__subtitle p-author h-card">
 							<span className="p-name">{ artist }</span>
 						</p>
 					) }
 
 					{ album && (
-						<p className="reactions-card__meta">{ album }</p>
+						<p className="post-kinds-card__meta">{ album }</p>
 					) }
 
 					{ note && (
-						<p className="reactions-card__notes p-content">
+						<p className="post-kinds-card__notes p-content">
 							{ note }
 						</p>
 					) }
 
 					{ jammedAt && (
 						<time
-							className="reactions-card__timestamp dt-published"
+							className="post-kinds-card__timestamp dt-published"
 							dateTime={ new Date( jammedAt ).toISOString() }
 						>
 							{ new Date( jammedAt ).toLocaleString() }

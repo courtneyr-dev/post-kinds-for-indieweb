@@ -59,7 +59,7 @@ const v1Save = ( { attributes } ) => {
 		}
 		return (
 			<div
-				className="reactions-card__rating p-rating"
+				className="post-kinds-card__rating p-rating"
 				aria-label={ `Rating: ${ rating } out of 5 stars` }
 			>
 				{ Array.from( { length: 5 }, ( _, i ) => (
@@ -71,7 +71,7 @@ const v1Save = ( { attributes } ) => {
 						★
 					</span>
 				) ) }
-				<span className="reactions-card__rating-value">
+				<span className="post-kinds-card__rating-value">
 					{ rating }/5
 				</span>
 			</div>
@@ -80,34 +80,34 @@ const v1Save = ( { attributes } ) => {
 
 	return (
 		<div { ...blockProps }>
-			<div className="reactions-card h-cite">
+			<div className="post-kinds-card h-cite">
 				{ cover && (
-					<div className="reactions-card__media">
+					<div className="post-kinds-card__media">
 						<img
 							src={ cover }
 							alt={ coverAlt || title }
-							className="reactions-card__image u-photo"
+							className="post-kinds-card__image u-photo"
 							loading="lazy"
 						/>
 					</div>
 				) }
-				<div className="reactions-card__content">
-					<div className="reactions-card__badges">
+				<div className="post-kinds-card__content">
+					<div className="post-kinds-card__badges">
 						{ status && (
 							<span
-								className={ `reactions-card__badge reactions-card__badge--${ status }` }
+								className={ `post-kinds-card__badge post-kinds-card__badge--${ status }` }
 							>
 								{ STATUS_LABELS[ status ] || status }
 							</span>
 						) }
 						{ platform && (
-							<span className="reactions-card__badge">
+							<span className="post-kinds-card__badge">
 								{ platform }
 							</span>
 						) }
 					</div>
 					{ title && (
-						<h3 className="reactions-card__title p-name">
+						<h3 className="post-kinds-card__title p-name">
 							{ gameUrl ? (
 								<a
 									href={ gameUrl }
@@ -123,32 +123,32 @@ const v1Save = ( { attributes } ) => {
 						</h3>
 					) }
 					{ developer && (
-						<p className="reactions-card__subtitle">
+						<p className="post-kinds-card__subtitle">
 							<span className="p-author h-card">
 								<span className="p-name">{ developer }</span>
 							</span>
 						</p>
 					) }
 					{ ( publisher || releaseYear ) && (
-						<p className="reactions-card__meta">
+						<p className="post-kinds-card__meta">
 							{ publisher }
 							{ releaseYear && <span> ({ releaseYear })</span> }
 						</p>
 					) }
 					{ hoursPlayed > 0 && (
-						<p className="reactions-card__meta">
+						<p className="post-kinds-card__meta">
 							<strong>{ hoursPlayed }</strong> hours played
 						</p>
 					) }
 					{ renderStars() }
 					{ review && (
-						<p className="reactions-card__notes p-content">
+						<p className="post-kinds-card__notes p-content">
 							{ review }
 						</p>
 					) }
 					{ playedAt && (
 						<time
-							className="reactions-card__timestamp dt-published"
+							className="post-kinds-card__timestamp dt-published"
 							dateTime={ new Date( playedAt ).toISOString() }
 						>
 							{ new Date( playedAt ).toLocaleString() }

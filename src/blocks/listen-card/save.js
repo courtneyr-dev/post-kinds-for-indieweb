@@ -40,7 +40,7 @@ export default function Save( { attributes } ) {
 
 		return (
 			<div
-				className="reactions-card__rating p-rating"
+				className="post-kinds-card__rating p-rating"
 				aria-label={ `Rating: ${ rating } out of 5 stars` }
 			>
 				{ Array.from( { length: 5 }, ( _, i ) => (
@@ -52,7 +52,7 @@ export default function Save( { attributes } ) {
 						★
 					</span>
 				) ) }
-				<span className="reactions-card__rating-value">
+				<span className="post-kinds-card__rating-value">
 					{ rating }/5
 				</span>
 			</div>
@@ -61,26 +61,26 @@ export default function Save( { attributes } ) {
 
 	return (
 		<div { ...blockProps }>
-			<div className="reactions-card h-cite">
+			<div className="post-kinds-card h-cite">
 				{ /* Cover image */ }
 				{ coverImage && (
-					<div className="reactions-card__media">
+					<div className="post-kinds-card__media">
 						<img
 							src={ coverImage }
 							alt={
 								coverImageAlt ||
 								`${ trackTitle } by ${ artistName }`
 							}
-							className="reactions-card__image u-photo"
+							className="post-kinds-card__image u-photo"
 							loading="lazy"
 						/>
 					</div>
 				) }
 
-				<div className="reactions-card__content">
+				<div className="post-kinds-card__content">
 					{ /* Track title */ }
 					{ trackTitle && (
-						<h3 className="reactions-card__title p-name">
+						<h3 className="post-kinds-card__title p-name">
 							{ listenUrl ? (
 								<a
 									href={ listenUrl }
@@ -98,7 +98,7 @@ export default function Save( { attributes } ) {
 
 					{ /* Artist */ }
 					{ artistName && (
-						<p className="reactions-card__subtitle">
+						<p className="post-kinds-card__subtitle">
 							<span className="p-author h-card">
 								<span className="p-name">{ artistName }</span>
 							</span>
@@ -107,10 +107,10 @@ export default function Save( { attributes } ) {
 
 					{ /* Album */ }
 					{ albumTitle && (
-						<p className="reactions-card__meta">
+						<p className="post-kinds-card__meta">
 							{ albumTitle }
 							{ releaseDate && (
-								<span className="reactions-card__meta-detail">
+								<span className="post-kinds-card__meta-detail">
 									{ ' ' }
 									({ new Date( releaseDate ).getFullYear() })
 								</span>
@@ -124,7 +124,7 @@ export default function Save( { attributes } ) {
 					{ /* Listened timestamp */ }
 					{ listenedAt && (
 						<time
-							className="reactions-card__timestamp dt-published"
+							className="post-kinds-card__timestamp dt-published"
 							dateTime={ new Date( listenedAt ).toISOString() }
 						>
 							{ new Date( listenedAt ).toLocaleString() }

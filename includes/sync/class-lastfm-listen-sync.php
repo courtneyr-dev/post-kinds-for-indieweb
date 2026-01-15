@@ -69,8 +69,8 @@ class Lastfm_Listen_Sync extends Listen_Sync_Base {
 	public function __construct() {
 		parent::__construct();
 
-		$credentials       = get_option( 'post_kinds_indieweb_api_credentials', array() );
-		$lastfm_creds      = $credentials['lastfm'] ?? array();
+		$credentials       = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$lastfm_creds      = $credentials['lastfm'] ?? [];
 		$this->session_key = $lastfm_creds['session_key'] ?? '';
 		$this->username    = $lastfm_creds['username'] ?? '';
 	}
@@ -111,10 +111,10 @@ class Lastfm_Listen_Sync extends Listen_Sync_Base {
 		$api = $this->get_api();
 
 		// Build track data for scrobbling.
-		$track = array(
+		$track = [
 			'track'  => $listen_data['track'] ?? '',
 			'artist' => $listen_data['artist'] ?? '',
-		);
+		];
 
 		if ( ! empty( $listen_data['album'] ) ) {
 			$track['album'] = $listen_data['album'];
@@ -148,10 +148,10 @@ class Lastfm_Listen_Sync extends Listen_Sync_Base {
 				$url = "https://www.last.fm/user/{$this->username}/library";
 			}
 
-			return array(
+			return [
 				'id'  => $scrobble_id,
 				'url' => $url,
-			);
+			];
 		}
 
 		return false;

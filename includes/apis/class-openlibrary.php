@@ -66,7 +66,13 @@ class OpenLibrary extends API_Base {
 	 */
 	public function test_connection(): bool {
 		try {
-			$this->get( 'search.json', array( 'q' => 'test', 'limit' => 1 ) );
+			$this->get(
+				'search.json',
+				[
+					'q'     => 'test',
+					'limit' => 1,
+				]
+			);
 			return true;
 		} catch ( \Exception $e ) {
 			return false;
@@ -91,10 +97,10 @@ class OpenLibrary extends API_Base {
 		}
 
 		try {
-			$params = array(
+			$params = [
 				'q'     => $query,
 				'limit' => 25,
-			);
+			];
 
 			if ( $author ) {
 				$params['author'] = $author;
@@ -102,7 +108,7 @@ class OpenLibrary extends API_Base {
 
 			$response = $this->get( 'search.json', $params );
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['docs'] ) && is_array( $response['docs'] ) ) {
 				foreach ( $response['docs'] as $doc ) {
@@ -114,8 +120,14 @@ class OpenLibrary extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -136,13 +148,13 @@ class OpenLibrary extends API_Base {
 		try {
 			$response = $this->get(
 				'search.json',
-				array(
+				[
 					'title' => $title,
 					'limit' => 25,
-				)
+				]
 			);
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['docs'] ) ) {
 				foreach ( $response['docs'] as $doc ) {
@@ -154,8 +166,14 @@ class OpenLibrary extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search by title failed', array( 'title' => $title, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search by title failed',
+				[
+					'title' => $title,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -176,13 +194,13 @@ class OpenLibrary extends API_Base {
 		try {
 			$response = $this->get(
 				'search.json',
-				array(
+				[
 					'author' => $author,
 					'limit'  => 25,
-				)
+				]
 			);
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['docs'] ) ) {
 				foreach ( $response['docs'] as $doc ) {
@@ -194,8 +212,14 @@ class OpenLibrary extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search by author failed', array( 'author' => $author, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search by author failed',
+				[
+					'author' => $author,
+					'error'  => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -226,7 +250,7 @@ class OpenLibrary extends API_Base {
 	 * @return array<string, mixed>|null Book data.
 	 */
 	public function get_by_isbn( string $isbn ): ?array {
-		$isbn = str_replace( array( '-', ' ' ), '', $isbn );
+		$isbn = str_replace( [ '-', ' ' ], '', $isbn );
 
 		$cache_key = 'isbn_' . $isbn;
 		$cached    = $this->get_cache( $cache_key );
@@ -239,11 +263,11 @@ class OpenLibrary extends API_Base {
 			// Try the books API first.
 			$response = $this->get(
 				'api/books',
-				array(
-					'bibkeys'  => 'ISBN:' . $isbn,
-					'format'   => 'json',
-					'jscmd'    => 'data',
-				)
+				[
+					'bibkeys' => 'ISBN:' . $isbn,
+					'format'  => 'json',
+					'jscmd'   => 'data',
+				]
 			);
 
 			$key = 'ISBN:' . $isbn;
@@ -255,7 +279,13 @@ class OpenLibrary extends API_Base {
 			}
 
 			// Fallback to search.
-			$search_response = $this->get( 'search.json', array( 'isbn' => $isbn, 'limit' => 1 ) );
+			$search_response = $this->get(
+				'search.json',
+				[
+					'isbn'  => $isbn,
+					'limit' => 1,
+				]
+			);
 
 			if ( isset( $search_response['docs'][0] ) ) {
 				$result = $this->normalize_result( $search_response['docs'][0] );
@@ -265,7 +295,13 @@ class OpenLibrary extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get by ISBN failed', array( 'isbn' => $isbn, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get by ISBN failed',
+				[
+					'isbn'  => $isbn,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -294,7 +330,7 @@ class OpenLibrary extends API_Base {
 
 			// Get author details.
 			if ( isset( $response['authors'] ) ) {
-				$result['authors'] = array();
+				$result['authors'] = [];
 
 				foreach ( $response['authors'] as $author_ref ) {
 					$author_key = $author_ref['author']['key'] ?? null;
@@ -324,7 +360,13 @@ class OpenLibrary extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get work failed', array( 'work_key' => $work_key, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get work failed',
+				[
+					'work_key' => $work_key,
+					'error'    => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -354,7 +396,13 @@ class OpenLibrary extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get edition failed', array( 'edition_key' => $edition_key, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get edition failed',
+				[
+					'edition_key' => $edition_key,
+					'error'       => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -377,9 +425,9 @@ class OpenLibrary extends API_Base {
 		}
 
 		try {
-			$response = $this->get( "works/{$work_key}/editions.json", array( 'limit' => $limit ) );
+			$response = $this->get( "works/{$work_key}/editions.json", [ 'limit' => $limit ] );
 
-			$editions = array();
+			$editions = [];
 
 			if ( isset( $response['entries'] ) ) {
 				foreach ( $response['entries'] as $entry ) {
@@ -391,8 +439,14 @@ class OpenLibrary extends API_Base {
 
 			return $editions;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get work editions failed', array( 'work_key' => $work_key, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get work editions failed',
+				[
+					'work_key' => $work_key,
+					'error'    => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -415,24 +469,30 @@ class OpenLibrary extends API_Base {
 		try {
 			$response = $this->get( "authors/{$author_key}.json" );
 
-			$result = array(
-				'key'         => $response['key'] ?? "/authors/{$author_key}",
-				'ol_id'       => $author_key,
-				'name'        => $response['name'] ?? '',
-				'birth_date'  => $response['birth_date'] ?? '',
-				'death_date'  => $response['death_date'] ?? '',
-				'bio'         => is_array( $response['bio'] ?? '' ) ? ( $response['bio']['value'] ?? '' ) : ( $response['bio'] ?? '' ),
-				'photo'       => $this->get_author_photo( $author_key ),
-				'links'       => $response['links'] ?? array(),
-				'type'        => 'author',
-				'source'      => 'openlibrary',
-			);
+			$result = [
+				'key'        => $response['key'] ?? "/authors/{$author_key}",
+				'ol_id'      => $author_key,
+				'name'       => $response['name'] ?? '',
+				'birth_date' => $response['birth_date'] ?? '',
+				'death_date' => $response['death_date'] ?? '',
+				'bio'        => is_array( $response['bio'] ?? '' ) ? ( $response['bio']['value'] ?? '' ) : ( $response['bio'] ?? '' ),
+				'photo'      => $this->get_author_photo( $author_key ),
+				'links'      => $response['links'] ?? [],
+				'type'       => 'author',
+				'source'     => 'openlibrary',
+			];
 
 			$this->set_cache( $cache_key, $result );
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get author failed', array( 'author_key' => $author_key, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get author failed',
+				[
+					'author_key' => $author_key,
+					'error'      => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -455,9 +515,9 @@ class OpenLibrary extends API_Base {
 		}
 
 		try {
-			$response = $this->get( "authors/{$author_key}/works.json", array( 'limit' => $limit ) );
+			$response = $this->get( "authors/{$author_key}/works.json", [ 'limit' => $limit ] );
 
-			$works = array();
+			$works = [];
 
 			if ( isset( $response['entries'] ) ) {
 				foreach ( $response['entries'] as $entry ) {
@@ -469,8 +529,14 @@ class OpenLibrary extends API_Base {
 
 			return $works;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get author works failed', array( 'author_key' => $author_key, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get author works failed',
+				[
+					'author_key' => $author_key,
+					'error'      => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -489,27 +555,33 @@ class OpenLibrary extends API_Base {
 		}
 
 		try {
-			$response = $this->get( 'search/authors.json', array( 'q' => $query, 'limit' => 25 ) );
+			$response = $this->get(
+				'search/authors.json',
+				[
+					'q'     => $query,
+					'limit' => 25,
+				]
+			);
 
-			$authors = array();
+			$authors = [];
 
 			if ( isset( $response['docs'] ) ) {
 				foreach ( $response['docs'] as $doc ) {
-					$key = $doc['key'] ?? '';
+					$key   = $doc['key'] ?? '';
 					$ol_id = preg_replace( '/^\/authors\//', '', $key );
 
-					$authors[] = array(
-						'key'         => $key,
-						'ol_id'       => $ol_id,
-						'name'        => $doc['name'] ?? '',
-						'birth_date'  => $doc['birth_date'] ?? '',
-						'death_date'  => $doc['death_date'] ?? '',
-						'top_work'    => $doc['top_work'] ?? '',
-						'work_count'  => $doc['work_count'] ?? 0,
-						'photo'       => $this->get_author_photo( $ol_id ),
-						'type'        => 'author',
-						'source'      => 'openlibrary',
-					);
+					$authors[] = [
+						'key'        => $key,
+						'ol_id'      => $ol_id,
+						'name'       => $doc['name'] ?? '',
+						'birth_date' => $doc['birth_date'] ?? '',
+						'death_date' => $doc['death_date'] ?? '',
+						'top_work'   => $doc['top_work'] ?? '',
+						'work_count' => $doc['work_count'] ?? 0,
+						'photo'      => $this->get_author_photo( $ol_id ),
+						'type'       => 'author',
+						'source'     => 'openlibrary',
+					];
 				}
 			}
 
@@ -517,8 +589,14 @@ class OpenLibrary extends API_Base {
 
 			return $authors;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search authors failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search authors failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -540,35 +618,35 @@ class OpenLibrary extends API_Base {
 		}
 
 		try {
-			$response = $this->get( "subjects/{$subject}.json", array( 'limit' => $limit ) );
+			$response = $this->get( "subjects/{$subject}.json", [ 'limit' => $limit ] );
 
-			$result = array(
+			$result = [
 				'name'       => $response['name'] ?? $subject,
 				'work_count' => $response['work_count'] ?? 0,
-				'works'      => array(),
+				'works'      => [],
 				'type'       => 'subject',
 				'source'     => 'openlibrary',
-			);
+			];
 
 			if ( isset( $response['works'] ) ) {
 				foreach ( $response['works'] as $work ) {
-					$result['works'][] = array(
-						'key'         => $work['key'] ?? '',
-						'title'       => $work['title'] ?? '',
-						'edition_count' => $work['edition_count'] ?? 0,
-						'cover_id'    => $work['cover_id'] ?? null,
-						'cover'       => $work['cover_id'] ? $this->get_cover_url( $work['cover_id'], 'M' ) : null,
+					$result['works'][] = [
+						'key'                => $work['key'] ?? '',
+						'title'              => $work['title'] ?? '',
+						'edition_count'      => $work['edition_count'] ?? 0,
+						'cover_id'           => $work['cover_id'] ?? null,
+						'cover'              => $work['cover_id'] ? $this->get_cover_url( $work['cover_id'], 'M' ) : null,
 						'first_publish_year' => $work['first_publish_year'] ?? null,
-						'authors'     => array_map(
+						'authors'            => array_map(
 							function ( $a ) {
-								return array(
+								return [
 									'key'  => $a['key'] ?? '',
 									'name' => $a['name'] ?? '',
-								);
+								];
 							},
-							$work['authors'] ?? array()
+							$work['authors'] ?? []
 						),
-					);
+					];
 				}
 			}
 
@@ -576,7 +654,13 @@ class OpenLibrary extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get subject failed', array( 'subject' => $subject, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get subject failed',
+				[
+					'subject' => $subject,
+					'error'   => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -597,9 +681,9 @@ class OpenLibrary extends API_Base {
 		}
 
 		try {
-			$response = $this->get( "trending/{$type}.json", array( 'limit' => $limit ) );
+			$response = $this->get( "trending/{$type}.json", [ 'limit' => $limit ] );
 
-			$books = array();
+			$books = [];
 
 			if ( isset( $response['works'] ) ) {
 				foreach ( $response['works'] as $work ) {
@@ -613,8 +697,14 @@ class OpenLibrary extends API_Base {
 
 			return $books;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get trending failed', array( 'type' => $type, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get trending failed',
+				[
+					'type'  => $type,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -633,14 +723,14 @@ class OpenLibrary extends API_Base {
 		}
 
 		try {
-			$response = $this->get( 'recentchanges.json', array( 'limit' => $limit ) );
+			$response = $this->get( 'recentchanges.json', [ 'limit' => $limit ] );
 
 			$this->set_cache( $cache_key, $response, HOUR_IN_SECONDS );
 
 			return $response;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get recent changes failed', array( 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error( 'Get recent changes failed', [ 'error' => $e->getMessage() ] );
+			return [];
 		}
 	}
 
@@ -651,31 +741,31 @@ class OpenLibrary extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	protected function normalize_result( array $raw_result ): array {
-		$cover_id = $raw_result['cover_i'] ?? null;
+		$cover_id   = $raw_result['cover_i'] ?? null;
 		$ol_work_id = str_replace( '/works/', '', $raw_result['key'] ?? '' );
 
-		return array(
-			'key'              => $raw_result['key'] ?? '',
-			'ol_work_id'       => $ol_work_id,
-			'title'            => $raw_result['title'] ?? '',
-			'subtitle'         => $raw_result['subtitle'] ?? '',
-			'authors'          => $raw_result['author_name'] ?? array(),
-			'author_keys'      => $raw_result['author_key'] ?? array(),
+		return [
+			'key'                => $raw_result['key'] ?? '',
+			'ol_work_id'         => $ol_work_id,
+			'title'              => $raw_result['title'] ?? '',
+			'subtitle'           => $raw_result['subtitle'] ?? '',
+			'authors'            => $raw_result['author_name'] ?? [],
+			'author_keys'        => $raw_result['author_key'] ?? [],
 			'first_publish_year' => $raw_result['first_publish_year'] ?? null,
-			'edition_count'    => $raw_result['edition_count'] ?? 0,
-			'isbn'             => $raw_result['isbn'] ?? array(),
-			'publisher'        => $raw_result['publisher'] ?? array(),
-			'language'         => $raw_result['language'] ?? array(),
-			'subjects'         => $raw_result['subject'] ?? array(),
-			'cover_id'         => $cover_id,
-			'cover'            => $cover_id ? $this->get_cover_url( $cover_id, 'M' ) : null,
-			'cover_large'      => $cover_id ? $this->get_cover_url( $cover_id, 'L' ) : null,
-			'number_of_pages'  => $raw_result['number_of_pages_median'] ?? null,
-			'ratings_average'  => $raw_result['ratings_average'] ?? null,
-			'ratings_count'    => $raw_result['ratings_count'] ?? null,
-			'type'             => 'book',
-			'source'           => 'openlibrary',
-		);
+			'edition_count'      => $raw_result['edition_count'] ?? 0,
+			'isbn'               => $raw_result['isbn'] ?? [],
+			'publisher'          => $raw_result['publisher'] ?? [],
+			'language'           => $raw_result['language'] ?? [],
+			'subjects'           => $raw_result['subject'] ?? [],
+			'cover_id'           => $cover_id,
+			'cover'              => $cover_id ? $this->get_cover_url( $cover_id, 'M' ) : null,
+			'cover_large'        => $cover_id ? $this->get_cover_url( $cover_id, 'L' ) : null,
+			'number_of_pages'    => $raw_result['number_of_pages_median'] ?? null,
+			'ratings_average'    => $raw_result['ratings_average'] ?? null,
+			'ratings_count'      => $raw_result['ratings_count'] ?? null,
+			'type'               => 'book',
+			'source'             => 'openlibrary',
+		];
 	}
 
 	/**
@@ -685,7 +775,7 @@ class OpenLibrary extends API_Base {
 	 * @return array<string, mixed> Normalized work.
 	 */
 	private function normalize_work( array $work ): array {
-		$key = $work['key'] ?? '';
+		$key   = $work['key'] ?? '';
 		$ol_id = preg_replace( '/^\/works\//', '', $key );
 
 		$description = '';
@@ -698,21 +788,21 @@ class OpenLibrary extends API_Base {
 			$cover_id = $work['covers'][0];
 		}
 
-		return array(
-			'key'             => $key,
-			'ol_work_id'      => $ol_id,
-			'title'           => $work['title'] ?? '',
-			'description'     => $description,
-			'subjects'        => $work['subjects'] ?? array(),
-			'subject_places'  => $work['subject_places'] ?? array(),
-			'subject_times'   => $work['subject_times'] ?? array(),
-			'subject_people'  => $work['subject_people'] ?? array(),
-			'cover_id'        => $cover_id,
-			'cover'           => $cover_id ? $this->get_cover_url( $cover_id, 'M' ) : null,
+		return [
+			'key'                => $key,
+			'ol_work_id'         => $ol_id,
+			'title'              => $work['title'] ?? '',
+			'description'        => $description,
+			'subjects'           => $work['subjects'] ?? [],
+			'subject_places'     => $work['subject_places'] ?? [],
+			'subject_times'      => $work['subject_times'] ?? [],
+			'subject_people'     => $work['subject_people'] ?? [],
+			'cover_id'           => $cover_id,
+			'cover'              => $cover_id ? $this->get_cover_url( $cover_id, 'M' ) : null,
 			'first_publish_date' => $work['first_publish_date'] ?? '',
-			'type'            => 'work',
-			'source'          => 'openlibrary',
-		);
+			'type'               => 'work',
+			'source'             => 'openlibrary',
+		];
 	}
 
 	/**
@@ -722,7 +812,7 @@ class OpenLibrary extends API_Base {
 	 * @return array<string, mixed> Normalized edition.
 	 */
 	private function normalize_edition( array $edition ): array {
-		$key = $edition['key'] ?? '';
+		$key   = $edition['key'] ?? '';
 		$ol_id = preg_replace( '/^\/books\//', '', $key );
 
 		$cover_id = null;
@@ -733,28 +823,28 @@ class OpenLibrary extends API_Base {
 		$isbn_10 = $edition['isbn_10'][0] ?? '';
 		$isbn_13 = $edition['isbn_13'][0] ?? '';
 
-		return array(
-			'key'              => $key,
-			'ol_edition_id'    => $ol_id,
-			'title'            => $edition['title'] ?? '',
-			'subtitle'         => $edition['subtitle'] ?? '',
-			'full_title'       => $edition['full_title'] ?? '',
-			'authors'          => $edition['authors'] ?? array(),
-			'publishers'       => $edition['publishers'] ?? array(),
-			'publish_date'     => $edition['publish_date'] ?? '',
-			'publish_places'   => $edition['publish_places'] ?? array(),
-			'number_of_pages'  => $edition['number_of_pages'] ?? null,
-			'isbn_10'          => $isbn_10,
-			'isbn_13'          => $isbn_13,
-			'isbn'             => $isbn_13 ?: $isbn_10,
-			'languages'        => $edition['languages'] ?? array(),
-			'physical_format'  => $edition['physical_format'] ?? '',
-			'cover_id'         => $cover_id,
-			'cover'            => $cover_id ? $this->get_cover_url( $cover_id, 'M' ) : null,
-			'work_key'         => $edition['works'][0]['key'] ?? '',
-			'type'             => 'edition',
-			'source'           => 'openlibrary',
-		);
+		return [
+			'key'             => $key,
+			'ol_edition_id'   => $ol_id,
+			'title'           => $edition['title'] ?? '',
+			'subtitle'        => $edition['subtitle'] ?? '',
+			'full_title'      => $edition['full_title'] ?? '',
+			'authors'         => $edition['authors'] ?? [],
+			'publishers'      => $edition['publishers'] ?? [],
+			'publish_date'    => $edition['publish_date'] ?? '',
+			'publish_places'  => $edition['publish_places'] ?? [],
+			'number_of_pages' => $edition['number_of_pages'] ?? null,
+			'isbn_10'         => $isbn_10,
+			'isbn_13'         => $isbn_13,
+			'isbn'            => $isbn_13 ?: $isbn_10,
+			'languages'       => $edition['languages'] ?? [],
+			'physical_format' => $edition['physical_format'] ?? '',
+			'cover_id'        => $cover_id,
+			'cover'           => $cover_id ? $this->get_cover_url( $cover_id, 'M' ) : null,
+			'work_key'        => $edition['works'][0]['key'] ?? '',
+			'type'            => 'edition',
+			'source'          => 'openlibrary',
+		];
 	}
 
 	/**
@@ -772,25 +862,25 @@ class OpenLibrary extends API_Base {
 			$cover = $data['cover']['small'];
 		}
 
-		$authors = array();
+		$authors = [];
 		if ( isset( $data['authors'] ) ) {
 			foreach ( $data['authors'] as $author ) {
 				$authors[] = $author['name'] ?? '';
 			}
 		}
 
-		$subjects = array();
+		$subjects = [];
 		if ( isset( $data['subjects'] ) ) {
 			foreach ( $data['subjects'] as $subject ) {
 				$subjects[] = $subject['name'] ?? '';
 			}
 		}
 
-		return array(
+		return [
 			'title'           => $data['title'] ?? '',
 			'subtitle'        => $data['subtitle'] ?? '',
 			'authors'         => $authors,
-			'publishers'      => isset( $data['publishers'] ) ? array_column( $data['publishers'], 'name' ) : array(),
+			'publishers'      => isset( $data['publishers'] ) ? array_column( $data['publishers'], 'name' ) : [],
 			'publish_date'    => $data['publish_date'] ?? '',
 			'number_of_pages' => $data['number_of_pages'] ?? null,
 			'isbn'            => $isbn,
@@ -800,7 +890,7 @@ class OpenLibrary extends API_Base {
 			'key'             => $data['key'] ?? '',
 			'type'            => 'book',
 			'source'          => 'openlibrary',
-		);
+		];
 	}
 
 	/**
@@ -815,22 +905,22 @@ class OpenLibrary extends API_Base {
 			$cover = $this->get_cover_url( $work['cover_i'], 'M' );
 		}
 
-		$authors = array();
+		$authors = [];
 		if ( isset( $work['author_name'] ) ) {
 			$authors = $work['author_name'];
 		}
 
-		return array(
-			'key'               => $work['key'] ?? '',
-			'title'             => $work['title'] ?? '',
-			'authors'           => $authors,
-			'author_keys'       => $work['author_key'] ?? array(),
-			'first_publish_year'=> $work['first_publish_year'] ?? null,
-			'cover'             => $cover,
-			'availability'      => $work['availability'] ?? array(),
-			'type'              => 'book',
-			'source'            => 'openlibrary',
-		);
+		return [
+			'key'                => $work['key'] ?? '',
+			'title'              => $work['title'] ?? '',
+			'authors'            => $authors,
+			'author_keys'        => $work['author_key'] ?? [],
+			'first_publish_year' => $work['first_publish_year'] ?? null,
+			'cover'              => $cover,
+			'availability'       => $work['availability'] ?? [],
+			'type'               => 'book',
+			'source'             => 'openlibrary',
+		];
 	}
 
 	/**
@@ -852,7 +942,7 @@ class OpenLibrary extends API_Base {
 	 * @return string Cover URL.
 	 */
 	public function get_cover_by_isbn( string $isbn, string $size = 'M' ): string {
-		$isbn = str_replace( array( '-', ' ' ), '', $isbn );
+		$isbn = str_replace( [ '-', ' ' ], '', $isbn );
 		return $this->covers_url . "b/isbn/{$isbn}-{$size}.jpg";
 	}
 

@@ -384,8 +384,8 @@ export default function Edit( { attributes, setAttributes } ) {
 			</InspectorControls>
 
 			<div { ...blockProps }>
-				<div className="reactions-card">
-					<div className="reactions-card__media">
+				<div className="post-kinds-card">
+					<div className="post-kinds-card__media">
 						<MediaUploadCheck>
 							<MediaUpload
 								onSelect={ handleImageSelect }
@@ -393,7 +393,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								render={ ( { open } ) => (
 									<button
 										type="button"
-										className="reactions-card__media-button"
+										className="post-kinds-card__media-button"
 										onClick={ open }
 									>
 										{ photo ? (
@@ -401,11 +401,11 @@ export default function Edit( { attributes, setAttributes } ) {
 												<img
 													src={ photo }
 													alt={ photoAlt || name }
-													className="reactions-card__image"
+													className="post-kinds-card__image"
 												/>
 												<button
 													type="button"
-													className="reactions-card__media-remove"
+													className="post-kinds-card__media-remove"
 													onClick={
 														handleImageRemove
 													}
@@ -418,11 +418,11 @@ export default function Edit( { attributes, setAttributes } ) {
 												</button>
 											</>
 										) : (
-											<div className="reactions-card__media-placeholder">
-												<span className="reactions-card__media-icon">
+											<div className="post-kinds-card__media-placeholder">
+												<span className="post-kinds-card__media-icon">
 													{ cuisineInfo.emoji }
 												</span>
-												<span className="reactions-card__media-text">
+												<span className="post-kinds-card__media-text">
 													{ __(
 														'Add Photo',
 														'post-kinds-for-indieweb'
@@ -436,10 +436,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						</MediaUploadCheck>
 					</div>
 
-					<div className="reactions-card__content">
-						<div className="reactions-card__type-row">
+					<div className="post-kinds-card__content">
+						<div className="post-kinds-card__type-row">
 							<select
-								className="reactions-card__type-select"
+								className="post-kinds-card__type-select"
 								value={ cuisine || '' }
 								onChange={ ( e ) =>
 									setAttributes( { cuisine: e.target.value } )
@@ -458,7 +458,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 						<RichText
 							tagName="h3"
-							className="reactions-card__title"
+							className="post-kinds-card__title"
 							value={ name }
 							onChange={ ( value ) =>
 								setAttributes( { name: value } )
@@ -471,7 +471,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 						<RichText
 							tagName="p"
-							className="reactions-card__subtitle"
+							className="post-kinds-card__subtitle"
 							value={ locationName }
 							onChange={ ( value ) =>
 								setAttributes( { locationName: value } )
@@ -485,7 +485,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						{ ( locationLocality ||
 							locationRegion ||
 							locationCountry ) && (
-							<p className="reactions-card__location">
+							<p className="post-kinds-card__location">
 								{ [
 									locationLocality,
 									locationRegion,
@@ -500,7 +500,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							! locationCountry && (
 								<RichText
 									tagName="p"
-									className="reactions-card__location"
+									className="post-kinds-card__location"
 									value={ locationLocality }
 									onChange={ ( value ) =>
 										setAttributes( {
@@ -514,7 +514,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								/>
 							) }
 
-						<div className="reactions-card__rating">
+						<div className="post-kinds-card__rating">
 							<StarRating
 								value={ rating }
 								onChange={ ( value ) =>
@@ -526,7 +526,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 						<RichText
 							tagName="p"
-							className="reactions-card__notes"
+							className="post-kinds-card__notes"
 							value={ notes }
 							onChange={ ( value ) =>
 								setAttributes( { notes: value } )

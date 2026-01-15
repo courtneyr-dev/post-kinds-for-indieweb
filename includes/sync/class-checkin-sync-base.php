@@ -74,13 +74,13 @@ abstract class Checkin_Sync_Base {
 	 */
 	public function init(): void {
 		// POSSE: Syndicate to external service on publish.
-		add_action( 'transition_post_status', array( $this, 'maybe_syndicate_checkin' ), 10, 3 );
+		add_action( 'transition_post_status', [ $this, 'maybe_syndicate_checkin' ], 10, 3 );
 
 		// Register REST routes for OAuth and webhooks.
-		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
+		add_action( 'rest_api_init', [ $this, 'register_routes' ] );
 
 		// Add syndication target to Syndication Links (if available).
-		add_filter( 'syn_syndication_targets', array( $this, 'add_syndication_target' ) );
+		add_filter( 'syn_syndication_targets', [ $this, 'add_syndication_target' ] );
 	}
 
 	/**
@@ -199,10 +199,13 @@ abstract class Checkin_Sync_Base {
 			}
 
 			// Log success.
-			$this->log( 'Syndicated checkin to ' . $this->service_name, array(
-				'post_id'     => $post->ID,
-				'external_id' => $result['id'],
-			) );
+			$this->log(
+				'Syndicated checkin to ' . $this->service_name,
+				[
+					'post_id'     => $post->ID,
+					'external_id' => $result['id'],
+				]
+			);
 		}
 	}
 
@@ -244,19 +247,22 @@ abstract class Checkin_Sync_Base {
 			}
 		}
 
-		$this->log( 'Import completed', array(
-			'service'  => $this->service_id,
-			'imported' => $imported,
-			'skipped'  => $skipped,
-			'errors'   => $errors,
-		) );
+		$this->log(
+			'Import completed',
+			[
+				'service'  => $this->service_id,
+				'imported' => $imported,
+				'skipped'  => $skipped,
+				'errors'   => $errors,
+			]
+		);
 
-		return array(
+		return [
 			'imported' => $imported,
 			'skipped'  => $skipped,
 			'errors'   => $errors,
 			'total'    => count( $checkins ),
-		);
+		];
 	}
 
 	/**
@@ -266,7 +272,7 @@ abstract class Checkin_Sync_Base {
 	 * @return bool
 	 */
 	protected function is_checkin_post( int $post_id ): bool {
-		$terms = wp_get_post_terms( $post_id, 'kind', array( 'fields' => 'slugs' ) );
+		$terms = wp_get_post_terms( $post_id, 'kind', [ 'fields' => 'slugs' ] );
 
 		if ( is_wp_error( $terms ) ) {
 			return false;
@@ -283,7 +289,7 @@ abstract class Checkin_Sync_Base {
 	 */
 	protected function is_syndication_enabled( int $post_id ): bool {
 		// Check global setting.
-		$settings    = get_option( 'post_kinds_indieweb_settings', array() );
+		$settings    = get_option( 'post_kinds_indieweb_settings', [] );
 		$setting_key = 'checkin_sync_to_' . $this->service_id;
 
 		if ( empty( $settings[ $setting_key ] ) ) {
@@ -339,13 +345,15 @@ abstract class Checkin_Sync_Base {
 		}
 
 		// Check by external ID.
-		$existing = get_posts( array(
-			'post_type'   => 'post',
-			'meta_key'    => $this->external_id_meta_key,
-			'meta_value'  => $external_id,
-			'numberposts' => 1,
-			'fields'      => 'ids',
-		) );
+		$existing = get_posts(
+			[
+				'post_type'   => 'post',
+				'meta_key'    => $this->external_id_meta_key,
+				'meta_value'  => $external_id,
+				'numberposts' => 1,
+				'fields'      => 'ids',
+			]
+		);
 
 		if ( ! empty( $existing ) ) {
 			return true;
@@ -360,25 +368,27 @@ abstract class Checkin_Sync_Base {
 			$start = gmdate( 'Y-m-d H:i:s', $timestamp - 300 );
 			$end   = gmdate( 'Y-m-d H:i:s', $timestamp + 300 );
 
-			$fuzzy_match = get_posts( array(
-				'post_type'   => 'post',
-				'date_query'  => array(
-					array(
-						'after'     => $start,
-						'before'    => $end,
-						'inclusive' => true,
-					),
-				),
-				'meta_query'  => array(
-					array(
-						'key'     => Meta_Fields::PREFIX . 'checkin_name',
-						'value'   => $venue,
-						'compare' => '=',
-					),
-				),
-				'numberposts' => 1,
-				'fields'      => 'ids',
-			) );
+			$fuzzy_match = get_posts(
+				[
+					'post_type'   => 'post',
+					'date_query'  => [
+						[
+							'after'     => $start,
+							'before'    => $end,
+							'inclusive' => true,
+						],
+					],
+					'meta_query'  => [
+						[
+							'key'     => Meta_Fields::PREFIX . 'checkin_name',
+							'value'   => $venue,
+							'compare' => '=',
+						],
+					],
+					'numberposts' => 1,
+					'fields'      => 'ids',
+				]
+			);
 
 			if ( ! empty( $fuzzy_match ) ) {
 				return true;
@@ -397,7 +407,7 @@ abstract class Checkin_Sync_Base {
 	protected function get_checkin_data_from_post( int $post_id ): array {
 		$prefix = Meta_Fields::PREFIX;
 
-		$data = array(
+		$data = [
 			'venue_name' => get_post_meta( $post_id, $prefix . 'checkin_name', true ),
 			'address'    => get_post_meta( $post_id, $prefix . 'checkin_address', true ),
 			'locality'   => get_post_meta( $post_id, $prefix . 'checkin_locality', true ),
@@ -407,7 +417,7 @@ abstract class Checkin_Sync_Base {
 			'longitude'  => get_post_meta( $post_id, $prefix . 'geo_longitude', true ),
 			'note'       => get_the_content( null, false, $post_id ),
 			'created_at' => get_the_date( 'c', $post_id ),
-		);
+		];
 
 		// Get Foursquare venue ID if available.
 		$fsq_id = get_post_meta( $post_id, $prefix . 'checkin_foursquare_id', true );
@@ -440,7 +450,7 @@ abstract class Checkin_Sync_Base {
 			$existing = get_post_meta( $post_id, 'mf2_syndication', true );
 
 			if ( ! is_array( $existing ) ) {
-				$existing = array();
+				$existing = [];
 			}
 
 			if ( ! in_array( $url, $existing, true ) ) {
@@ -458,10 +468,10 @@ abstract class Checkin_Sync_Base {
 	 */
 	public function add_syndication_target( array $targets ): array {
 		if ( $this->is_connected() ) {
-			$targets[ $this->service_id ] = array(
+			$targets[ $this->service_id ] = [
 				'uid'  => $this->service_id,
 				'name' => $this->service_name,
-			);
+			];
 		}
 
 		return $targets;
@@ -474,15 +484,17 @@ abstract class Checkin_Sync_Base {
 	 * @param array  $context Context data.
 	 * @return void
 	 */
-	protected function log( string $message, array $context = array() ): void {
+	protected function log( string $message, array $context = [] ): void {
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-			error_log( sprintf(
-				'[Reactions IndieWeb] [%s Sync] %s: %s',
-				$this->service_name,
-				$message,
-				wp_json_encode( $context )
-			) );
+			error_log(
+				sprintf(
+					'[Reactions IndieWeb] [%s Sync] %s: %s',
+					$this->service_name,
+					$message,
+					wp_json_encode( $context )
+				)
+			);
 		}
 	}
 

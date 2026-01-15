@@ -71,8 +71,8 @@ class PodcastIndex extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials      = get_option( 'post_kinds_indieweb_api_credentials', array() );
-		$pi_creds         = $credentials['podcastindex'] ?? array();
+		$credentials      = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$pi_creds         = $credentials['podcastindex'] ?? [];
 		$this->api_key    = $pi_creds['api_key'] ?? '';
 		$this->api_secret = $pi_creds['api_secret'] ?? '';
 	}
@@ -83,16 +83,16 @@ class PodcastIndex extends API_Base {
 	 * @return array<string, string>
 	 */
 	protected function get_default_headers(): array {
-		$time = time();
+		$time        = time();
 		$auth_string = $this->api_key . $this->api_secret . $time;
-		$auth_hash = hash( 'sha1', $auth_string );
+		$auth_hash   = hash( 'sha1', $auth_string );
 
-		return array(
+		return [
 			'X-Auth-Date'   => (string) $time,
 			'X-Auth-Key'    => $this->api_key ?? '',
 			'Authorization' => $auth_hash,
 			'User-Agent'    => $this->user_agent,
-		);
+		];
 	}
 
 	/**
@@ -106,7 +106,13 @@ class PodcastIndex extends API_Base {
 		}
 
 		try {
-			$this->get( 'search/byterm', array( 'q' => 'test', 'max' => 1 ) );
+			$this->get(
+				'search/byterm',
+				[
+					'q'   => 'test',
+					'max' => 1,
+				]
+			);
 			return true;
 		} catch ( \Exception $e ) {
 			return false;
@@ -130,13 +136,13 @@ class PodcastIndex extends API_Base {
 		try {
 			$response = $this->get(
 				'search/byterm',
-				array(
+				[
 					'q'   => $query,
 					'max' => 25,
-				)
+				]
 			);
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['feeds'] ) && is_array( $response['feeds'] ) ) {
 				foreach ( $response['feeds'] as $feed ) {
@@ -148,8 +154,14 @@ class PodcastIndex extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -170,13 +182,13 @@ class PodcastIndex extends API_Base {
 		try {
 			$response = $this->get(
 				'search/bytitle',
-				array(
+				[
 					'q'   => $title,
 					'max' => 25,
-				)
+				]
 			);
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['feeds'] ) ) {
 				foreach ( $response['feeds'] as $feed ) {
@@ -188,8 +200,14 @@ class PodcastIndex extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search by title failed', array( 'title' => $title, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search by title failed',
+				[
+					'title' => $title,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -210,13 +228,13 @@ class PodcastIndex extends API_Base {
 		try {
 			$response = $this->get(
 				'search/byperson',
-				array(
+				[
 					'q'   => $person,
 					'max' => 25,
-				)
+				]
 			);
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['items'] ) ) {
 				foreach ( $response['items'] as $item ) {
@@ -228,8 +246,14 @@ class PodcastIndex extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search by person failed', array( 'person' => $person, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search by person failed',
+				[
+					'person' => $person,
+					'error'  => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -258,7 +282,7 @@ class PodcastIndex extends API_Base {
 		}
 
 		try {
-			$response = $this->get( 'podcasts/byfeedid', array( 'id' => $feed_id ) );
+			$response = $this->get( 'podcasts/byfeedid', [ 'id' => $feed_id ] );
 
 			if ( isset( $response['feed'] ) ) {
 				$result = $this->normalize_podcast( $response['feed'], true );
@@ -268,7 +292,13 @@ class PodcastIndex extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get podcast failed', array( 'feed_id' => $feed_id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get podcast failed',
+				[
+					'feed_id' => $feed_id,
+					'error'   => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -288,7 +318,7 @@ class PodcastIndex extends API_Base {
 		}
 
 		try {
-			$response = $this->get( 'podcasts/byitunesid', array( 'id' => $itunes_id ) );
+			$response = $this->get( 'podcasts/byitunesid', [ 'id' => $itunes_id ] );
 
 			if ( isset( $response['feed'] ) ) {
 				$result = $this->normalize_podcast( $response['feed'], true );
@@ -298,7 +328,13 @@ class PodcastIndex extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get by iTunes ID failed', array( 'itunes_id' => $itunes_id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get by iTunes ID failed',
+				[
+					'itunes_id' => $itunes_id,
+					'error'     => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -318,7 +354,7 @@ class PodcastIndex extends API_Base {
 		}
 
 		try {
-			$response = $this->get( 'podcasts/byfeedurl', array( 'url' => $url ) );
+			$response = $this->get( 'podcasts/byfeedurl', [ 'url' => $url ] );
 
 			if ( isset( $response['feed'] ) ) {
 				$result = $this->normalize_podcast( $response['feed'], true );
@@ -328,7 +364,13 @@ class PodcastIndex extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get by feed URL failed', array( 'url' => $url, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get by feed URL failed',
+				[
+					'url'   => $url,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -348,7 +390,7 @@ class PodcastIndex extends API_Base {
 		}
 
 		try {
-			$response = $this->get( 'podcasts/byguid', array( 'guid' => $guid ) );
+			$response = $this->get( 'podcasts/byguid', [ 'guid' => $guid ] );
 
 			if ( isset( $response['feed'] ) ) {
 				$result = $this->normalize_podcast( $response['feed'], true );
@@ -358,7 +400,13 @@ class PodcastIndex extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get by GUID failed', array( 'guid' => $guid, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get by GUID failed',
+				[
+					'guid'  => $guid,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -381,13 +429,13 @@ class PodcastIndex extends API_Base {
 		try {
 			$response = $this->get(
 				'episodes/byfeedid',
-				array(
+				[
 					'id'  => $feed_id,
 					'max' => min( $max, 1000 ),
-				)
+				]
 			);
 
-			$episodes = array();
+			$episodes = [];
 
 			if ( isset( $response['items'] ) ) {
 				foreach ( $response['items'] as $item ) {
@@ -399,8 +447,14 @@ class PodcastIndex extends API_Base {
 
 			return $episodes;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get episodes failed', array( 'feed_id' => $feed_id, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get episodes failed',
+				[
+					'feed_id' => $feed_id,
+					'error'   => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -419,7 +473,7 @@ class PodcastIndex extends API_Base {
 		}
 
 		try {
-			$response = $this->get( 'episodes/byid', array( 'id' => $episode_id ) );
+			$response = $this->get( 'episodes/byid', [ 'id' => $episode_id ] );
 
 			if ( isset( $response['episode'] ) ) {
 				$result = $this->normalize_episode( $response['episode'], true );
@@ -429,7 +483,13 @@ class PodcastIndex extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get episode failed', array( 'episode_id' => $episode_id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get episode failed',
+				[
+					'episode_id' => $episode_id,
+					'error'      => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -450,7 +510,7 @@ class PodcastIndex extends API_Base {
 		}
 
 		try {
-			$params = array( 'guid' => $guid );
+			$params = [ 'guid' => $guid ];
 			if ( $feedurl ) {
 				$params['feedurl'] = $feedurl;
 			}
@@ -465,7 +525,13 @@ class PodcastIndex extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get episode by GUID failed', array( 'guid' => $guid, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get episode by GUID failed',
+				[
+					'guid'  => $guid,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -482,14 +548,14 @@ class PodcastIndex extends API_Base {
 		try {
 			$response = $this->get(
 				'episodes/byfeedid',
-				array(
+				[
 					'id'       => $feed_id,
 					'max'      => $max,
 					'fulltext' => $fulltext ? 'true' : 'false',
-				)
+				]
 			);
 
-			$episodes = array();
+			$episodes = [];
 
 			if ( isset( $response['items'] ) ) {
 				foreach ( $response['items'] as $item ) {
@@ -499,8 +565,14 @@ class PodcastIndex extends API_Base {
 
 			return $episodes;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get recent episodes failed', array( 'feed_id' => $feed_id, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get recent episodes failed',
+				[
+					'feed_id' => $feed_id,
+					'error'   => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -514,7 +586,7 @@ class PodcastIndex extends API_Base {
 	 */
 	public function get_random_episodes( int $max = 10, string $lang = '', string $category = '' ): array {
 		try {
-			$params = array( 'max' => $max );
+			$params = [ 'max' => $max ];
 
 			if ( $lang ) {
 				$params['lang'] = $lang;
@@ -526,7 +598,7 @@ class PodcastIndex extends API_Base {
 
 			$response = $this->get( 'episodes/random', $params );
 
-			$episodes = array();
+			$episodes = [];
 
 			if ( isset( $response['episodes'] ) ) {
 				foreach ( $response['episodes'] as $item ) {
@@ -536,8 +608,8 @@ class PodcastIndex extends API_Base {
 
 			return $episodes;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get random episodes failed', array( 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error( 'Get random episodes failed', [ 'error' => $e->getMessage() ] );
+			return [];
 		}
 	}
 
@@ -558,7 +630,7 @@ class PodcastIndex extends API_Base {
 		}
 
 		try {
-			$params = array( 'max' => $max );
+			$params = [ 'max' => $max ];
 
 			if ( $lang ) {
 				$params['lang'] = $lang;
@@ -570,13 +642,13 @@ class PodcastIndex extends API_Base {
 
 			$response = $this->get( 'podcasts/trending', $params );
 
-			$podcasts = array();
+			$podcasts = [];
 
 			if ( isset( $response['feeds'] ) ) {
 				foreach ( $response['feeds'] as $feed ) {
-					$podcast = $this->normalize_podcast( $feed );
+					$podcast                = $this->normalize_podcast( $feed );
 					$podcast['trend_score'] = $feed['trendScore'] ?? 0;
-					$podcasts[] = $podcast;
+					$podcasts[]             = $podcast;
 				}
 			}
 
@@ -584,8 +656,8 @@ class PodcastIndex extends API_Base {
 
 			return $podcasts;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get trending failed', array( 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error( 'Get trending failed', [ 'error' => $e->getMessage() ] );
+			return [];
 		}
 	}
 
@@ -606,7 +678,7 @@ class PodcastIndex extends API_Base {
 		}
 
 		try {
-			$params = array( 'max' => $max );
+			$params = [ 'max' => $max ];
 
 			if ( $lang ) {
 				$params['lang'] = $lang;
@@ -618,7 +690,7 @@ class PodcastIndex extends API_Base {
 
 			$response = $this->get( 'recent/feeds', $params );
 
-			$podcasts = array();
+			$podcasts = [];
 
 			if ( isset( $response['feeds'] ) ) {
 				foreach ( $response['feeds'] as $feed ) {
@@ -630,8 +702,8 @@ class PodcastIndex extends API_Base {
 
 			return $podcasts;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get recent feeds failed', array( 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error( 'Get recent feeds failed', [ 'error' => $e->getMessage() ] );
+			return [];
 		}
 	}
 
@@ -651,7 +723,7 @@ class PodcastIndex extends API_Base {
 		}
 
 		try {
-			$params = array( 'max' => $max );
+			$params = [ 'max' => $max ];
 
 			if ( $lang ) {
 				$params['lang'] = $lang;
@@ -659,7 +731,7 @@ class PodcastIndex extends API_Base {
 
 			$response = $this->get( 'recent/episodes', $params );
 
-			$episodes = array();
+			$episodes = [];
 
 			if ( isset( $response['items'] ) ) {
 				foreach ( $response['items'] as $item ) {
@@ -671,8 +743,8 @@ class PodcastIndex extends API_Base {
 
 			return $episodes;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get new episodes failed', array( 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error( 'Get new episodes failed', [ 'error' => $e->getMessage() ] );
+			return [];
 		}
 	}
 
@@ -692,14 +764,14 @@ class PodcastIndex extends API_Base {
 		try {
 			$response = $this->get( 'categories/list' );
 
-			$categories = array();
+			$categories = [];
 
 			if ( isset( $response['feeds'] ) ) {
 				foreach ( $response['feeds'] as $cat ) {
-					$categories[] = array(
+					$categories[] = [
 						'id'   => $cat['id'] ?? 0,
 						'name' => $cat['name'] ?? '',
-					);
+					];
 				}
 			}
 
@@ -707,8 +779,8 @@ class PodcastIndex extends API_Base {
 
 			return $categories;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get categories failed', array( 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error( 'Get categories failed', [ 'error' => $e->getMessage() ] );
+			return [];
 		}
 	}
 
@@ -730,28 +802,28 @@ class PodcastIndex extends API_Base {
 	 * @return array<string, mixed> Normalized podcast.
 	 */
 	private function normalize_podcast( array $feed, bool $detailed = false ): array {
-		$result = array(
-			'id'              => $feed['id'] ?? 0,
-			'podcastindex_id' => $feed['id'] ?? 0,
-			'title'           => $feed['title'] ?? '',
-			'url'             => $feed['url'] ?? '',
-			'original_url'    => $feed['originalUrl'] ?? '',
-			'link'            => $feed['link'] ?? '',
-			'description'     => $feed['description'] ?? '',
-			'author'          => $feed['author'] ?? '',
-			'owner_name'      => $feed['ownerName'] ?? '',
-			'image'           => $feed['image'] ?? $feed['artwork'] ?? '',
-			'artwork'         => $feed['artwork'] ?? $feed['image'] ?? '',
-			'language'        => $feed['language'] ?? '',
-			'categories'      => $this->parse_categories( $feed['categories'] ?? array() ),
-			'itunes_id'       => $feed['itunesId'] ?? null,
-			'generator'       => $feed['generator'] ?? '',
-			'explicit'        => $feed['explicit'] ?? false,
-			'episode_count'   => $feed['episodeCount'] ?? 0,
-			'newest_item_date'=> $feed['newestItemPublishTime'] ?? null,
-			'type'            => 'podcast',
-			'source'          => 'podcastindex',
-		);
+		$result = [
+			'id'               => $feed['id'] ?? 0,
+			'podcastindex_id'  => $feed['id'] ?? 0,
+			'title'            => $feed['title'] ?? '',
+			'url'              => $feed['url'] ?? '',
+			'original_url'     => $feed['originalUrl'] ?? '',
+			'link'             => $feed['link'] ?? '',
+			'description'      => $feed['description'] ?? '',
+			'author'           => $feed['author'] ?? '',
+			'owner_name'       => $feed['ownerName'] ?? '',
+			'image'            => $feed['image'] ?? $feed['artwork'] ?? '',
+			'artwork'          => $feed['artwork'] ?? $feed['image'] ?? '',
+			'language'         => $feed['language'] ?? '',
+			'categories'       => $this->parse_categories( $feed['categories'] ?? [] ),
+			'itunes_id'        => $feed['itunesId'] ?? null,
+			'generator'        => $feed['generator'] ?? '',
+			'explicit'         => $feed['explicit'] ?? false,
+			'episode_count'    => $feed['episodeCount'] ?? 0,
+			'newest_item_date' => $feed['newestItemPublishTime'] ?? null,
+			'type'             => 'podcast',
+			'source'           => 'podcastindex',
+		];
 
 		if ( $detailed ) {
 			$result['last_update_time'] = $feed['lastUpdateTime'] ?? null;
@@ -760,8 +832,8 @@ class PodcastIndex extends API_Base {
 			$result['content_type']     = $feed['contentType'] ?? '';
 			$result['chash']            = $feed['chash'] ?? '';
 			$result['dead']             = $feed['dead'] ?? 0;
-			$result['funding']          = $feed['funding'] ?? array();
-			$result['value']            = $feed['value'] ?? array();
+			$result['funding']          = $feed['funding'] ?? [];
+			$result['value']            = $feed['value'] ?? [];
 		}
 
 		return $result;
@@ -775,39 +847,39 @@ class PodcastIndex extends API_Base {
 	 * @return array<string, mixed> Normalized episode.
 	 */
 	private function normalize_episode( array $episode, bool $detailed = false ): array {
-		$result = array(
-			'id'              => $episode['id'] ?? 0,
-			'podcastindex_id' => $episode['id'] ?? 0,
-			'title'           => $episode['title'] ?? '',
-			'link'            => $episode['link'] ?? '',
-			'description'     => $episode['description'] ?? '',
-			'guid'            => $episode['guid'] ?? '',
-			'date_published'  => $episode['datePublished'] ?? null,
-			'date_crawled'    => $episode['dateCrawled'] ?? null,
-			'enclosure_url'   => $episode['enclosureUrl'] ?? '',
-			'enclosure_type'  => $episode['enclosureType'] ?? '',
-			'enclosure_length'=> $episode['enclosureLength'] ?? 0,
-			'duration'        => $episode['duration'] ?? 0,
-			'explicit'        => $episode['explicit'] ?? 0,
-			'episode'         => $episode['episode'] ?? null,
-			'season'          => $episode['season'] ?? null,
-			'image'           => $episode['image'] ?? $episode['feedImage'] ?? '',
-			'feed_id'         => $episode['feedId'] ?? 0,
-			'feed_title'      => $episode['feedTitle'] ?? '',
-			'feed_image'      => $episode['feedImage'] ?? '',
-			'feed_language'   => $episode['feedLanguage'] ?? '',
-			'type'            => 'episode',
-			'source'          => 'podcastindex',
-		);
+		$result = [
+			'id'               => $episode['id'] ?? 0,
+			'podcastindex_id'  => $episode['id'] ?? 0,
+			'title'            => $episode['title'] ?? '',
+			'link'             => $episode['link'] ?? '',
+			'description'      => $episode['description'] ?? '',
+			'guid'             => $episode['guid'] ?? '',
+			'date_published'   => $episode['datePublished'] ?? null,
+			'date_crawled'     => $episode['dateCrawled'] ?? null,
+			'enclosure_url'    => $episode['enclosureUrl'] ?? '',
+			'enclosure_type'   => $episode['enclosureType'] ?? '',
+			'enclosure_length' => $episode['enclosureLength'] ?? 0,
+			'duration'         => $episode['duration'] ?? 0,
+			'explicit'         => $episode['explicit'] ?? 0,
+			'episode'          => $episode['episode'] ?? null,
+			'season'           => $episode['season'] ?? null,
+			'image'            => $episode['image'] ?? $episode['feedImage'] ?? '',
+			'feed_id'          => $episode['feedId'] ?? 0,
+			'feed_title'       => $episode['feedTitle'] ?? '',
+			'feed_image'       => $episode['feedImage'] ?? '',
+			'feed_language'    => $episode['feedLanguage'] ?? '',
+			'type'             => 'episode',
+			'source'           => 'podcastindex',
+		];
 
 		if ( $detailed ) {
-			$result['chapters_url']   = $episode['chaptersUrl'] ?? '';
-			$result['transcript_url'] = $episode['transcriptUrl'] ?? '';
-			$result['soundbite']      = $episode['soundbite'] ?? null;
-			$result['soundbites']     = $episode['soundbites'] ?? array();
-			$result['persons']        = $episode['persons'] ?? array();
-			$result['social_interact']= $episode['socialInteract'] ?? array();
-			$result['value']          = $episode['value'] ?? array();
+			$result['chapters_url']    = $episode['chaptersUrl'] ?? '';
+			$result['transcript_url']  = $episode['transcriptUrl'] ?? '';
+			$result['soundbite']       = $episode['soundbite'] ?? null;
+			$result['soundbites']      = $episode['soundbites'] ?? [];
+			$result['persons']         = $episode['persons'] ?? [];
+			$result['social_interact'] = $episode['socialInteract'] ?? [];
+			$result['value']           = $episode['value'] ?? [];
 		}
 
 		return $result;
@@ -821,7 +893,7 @@ class PodcastIndex extends API_Base {
 	 */
 	private function parse_categories( $categories ): array {
 		if ( empty( $categories ) ) {
-			return array();
+			return [];
 		}
 
 		if ( is_object( $categories ) ) {
@@ -839,7 +911,7 @@ class PodcastIndex extends API_Base {
 	 * @return void
 	 */
 	public function set_credentials( string $key, string $secret ): void {
-		$this->api_key = $key;
+		$this->api_key    = $key;
 		$this->api_secret = $secret;
 	}
 

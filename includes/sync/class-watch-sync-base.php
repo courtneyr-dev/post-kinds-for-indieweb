@@ -73,10 +73,10 @@ abstract class Watch_Sync_Base {
 	 */
 	public function init(): void {
 		// POSSE: Syndicate to external service on publish.
-		add_action( 'transition_post_status', array( $this, 'maybe_syndicate_watch' ), 10, 3 );
+		add_action( 'transition_post_status', [ $this, 'maybe_syndicate_watch' ], 10, 3 );
 
 		// Add syndication target to Syndication Links (if available).
-		add_filter( 'syn_syndication_targets', array( $this, 'add_syndication_target' ) );
+		add_filter( 'syn_syndication_targets', [ $this, 'add_syndication_target' ] );
 	}
 
 	/**
@@ -177,7 +177,7 @@ abstract class Watch_Sync_Base {
 	 * @return bool
 	 */
 	protected function is_watch_post( int $post_id ): bool {
-		$terms = wp_get_post_terms( $post_id, 'kind', array( 'fields' => 'slugs' ) );
+		$terms = wp_get_post_terms( $post_id, 'kind', [ 'fields' => 'slugs' ] );
 
 		if ( is_wp_error( $terms ) ) {
 			return false;
@@ -194,7 +194,7 @@ abstract class Watch_Sync_Base {
 	 */
 	protected function is_syndication_enabled( int $post_id ): bool {
 		// Check global setting.
-		$settings    = get_option( 'post_kinds_indieweb_settings', array() );
+		$settings    = get_option( 'post_kinds_indieweb_settings', [] );
 		$setting_key = 'watch_sync_to_' . $this->service_id;
 
 		if ( empty( $settings[ $setting_key ] ) ) {
@@ -245,7 +245,7 @@ abstract class Watch_Sync_Base {
 	protected function get_watch_data_from_post( int $post_id ): array {
 		$prefix = Meta_Fields::PREFIX;
 
-		$data = array(
+		$data = [
 			'title'      => get_post_meta( $post_id, $prefix . 'watch_title', true ),
 			'year'       => get_post_meta( $post_id, $prefix . 'watch_year', true ),
 			'tmdb_id'    => get_post_meta( $post_id, $prefix . 'watch_tmdb_id', true ),
@@ -257,7 +257,7 @@ abstract class Watch_Sync_Base {
 			'is_rewatch' => get_post_meta( $post_id, $prefix . 'watch_rewatch', true ),
 			'created_at' => get_the_date( 'c', $post_id ),
 			'timestamp'  => get_post_time( 'U', true, $post_id ),
-		);
+		];
 
 		// Determine if this is a movie or TV show based on season/episode.
 		$data['type'] = ( ! empty( $data['season'] ) || ! empty( $data['episode'] ) ) ? 'episode' : 'movie';
@@ -287,7 +287,7 @@ abstract class Watch_Sync_Base {
 			$existing = get_post_meta( $post_id, 'mf2_syndication', true );
 
 			if ( ! is_array( $existing ) ) {
-				$existing = array();
+				$existing = [];
 			}
 
 			if ( ! in_array( $url, $existing, true ) ) {
@@ -305,10 +305,10 @@ abstract class Watch_Sync_Base {
 	 */
 	public function add_syndication_target( array $targets ): array {
 		if ( $this->is_connected() ) {
-			$targets[ $this->service_id ] = array(
+			$targets[ $this->service_id ] = [
 				'uid'  => $this->service_id,
 				'name' => $this->service_name,
-			);
+			];
 		}
 
 		return $targets;

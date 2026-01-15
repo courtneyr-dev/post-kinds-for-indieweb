@@ -93,12 +93,12 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 	public function __construct() {
 		parent::__construct();
 
-		$credentials          = get_option( 'post_kinds_indieweb_api_credentials', array() );
-		$fs_creds             = $credentials['foursquare'] ?? array();
-		$this->client_id      = $fs_creds['client_id'] ?? '';
-		$this->client_secret  = $fs_creds['client_secret'] ?? '';
+		$credentials         = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$fs_creds            = $credentials['foursquare'] ?? [];
+		$this->client_id     = $fs_creds['client_id'] ?? '';
+		$this->client_secret = $fs_creds['client_secret'] ?? '';
 		// Check both keys for backwards compatibility (API settings uses 'access_token', sync class used 'user_access_token').
-		$this->access_token   = $fs_creds['access_token'] ?? $fs_creds['user_access_token'] ?? '';
+		$this->access_token = $fs_creds['access_token'] ?? $fs_creds['user_access_token'] ?? '';
 	}
 
 	/**
@@ -111,37 +111,37 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 		register_rest_route(
 			'post-kinds-indieweb/v1',
 			'/foursquare/oauth/callback',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'handle_oauth_callback_request' ),
+				'callback'            => [ $this, 'handle_oauth_callback_request' ],
 				'permission_callback' => '__return_true',
-			)
+			]
 		);
 
 		// Manual import trigger.
 		register_rest_route(
 			'post-kinds-indieweb/v1',
 			'/foursquare/import',
-			array(
+			[
 				'methods'             => 'POST',
-				'callback'            => array( $this, 'handle_import_request' ),
+				'callback'            => [ $this, 'handle_import_request' ],
 				'permission_callback' => function () {
 					return current_user_can( 'manage_options' );
 				},
-			)
+			]
 		);
 
 		// Disconnect.
 		register_rest_route(
 			'post-kinds-indieweb/v1',
 			'/foursquare/disconnect',
-			array(
+			[
 				'methods'             => 'POST',
-				'callback'            => array( $this, 'handle_disconnect_request' ),
+				'callback'            => [ $this, 'handle_disconnect_request' ],
 				'permission_callback' => function () {
 					return current_user_can( 'manage_options' );
 				},
-			)
+			]
 		);
 	}
 
@@ -171,11 +171,11 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 		set_transient( 'post_kinds_foursquare_oauth_state', $state, HOUR_IN_SECONDS );
 
 		return add_query_arg(
-			array(
+			[
 				'client_id'     => $this->client_id,
 				'response_type' => 'code',
 				'redirect_uri'  => $redirect_uri,
-			),
+			],
 			self::OAUTH_URL . 'authenticate'
 		);
 	}
@@ -218,31 +218,31 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 
 		$response = wp_remote_post(
 			self::OAUTH_URL . 'access_token',
-			array(
-				'body' => array(
+			[
+				'body' => [
 					'client_id'     => $this->client_id,
 					'client_secret' => $this->client_secret,
 					'grant_type'    => 'authorization_code',
 					'redirect_uri'  => $redirect_uri,
 					'code'          => $code,
-				),
-			)
+				],
+			]
 		);
 
 		if ( is_wp_error( $response ) ) {
-			$this->log( 'OAuth token exchange failed', array( 'error' => $response->get_error_message() ) );
+			$this->log( 'OAuth token exchange failed', [ 'error' => $response->get_error_message() ] );
 			return false;
 		}
 
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( empty( $body['access_token'] ) ) {
-			$this->log( 'OAuth response missing access_token', array( 'body' => $body ) );
+			$this->log( 'OAuth response missing access_token', [ 'body' => $body ] );
 			return false;
 		}
 
 		// Store the user access token.
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', array() );
+		$credentials                                    = get_option( 'post_kinds_indieweb_api_credentials', [] );
 		$credentials['foursquare']['user_access_token'] = $body['access_token'];
 		update_option( 'post_kinds_indieweb_api_credentials', $credentials );
 
@@ -265,13 +265,13 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 			$user = $this->api_get( 'users/self' );
 
 			if ( ! empty( $user['response']['user'] ) ) {
-				$credentials = get_option( 'post_kinds_indieweb_api_credentials', array() );
+				$credentials                            = get_option( 'post_kinds_indieweb_api_credentials', [] );
 				$credentials['foursquare']['user_id']   = $user['response']['user']['id'] ?? '';
 				$credentials['foursquare']['user_name'] = $user['response']['user']['firstName'] ?? '';
 				update_option( 'post_kinds_indieweb_api_credentials', $credentials );
 			}
 		} catch ( \Exception $e ) {
-			$this->log( 'Failed to fetch user info', array( 'error' => $e->getMessage() ) );
+			$this->log( 'Failed to fetch user info', [ 'error' => $e->getMessage() ] );
 		}
 	}
 
@@ -286,7 +286,7 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 			return new \WP_Error(
 				'not_connected',
 				__( 'Foursquare is not connected. Please authorize first.', 'post-kinds-for-indieweb' ),
-				array( 'status' => 400 )
+				[ 'status' => 400 ]
 			);
 		}
 
@@ -303,7 +303,7 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 	 * @return \WP_REST_Response
 	 */
 	public function handle_disconnect_request( \WP_REST_Request $request ) {
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', array() );
+		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
 
 		unset( $credentials['foursquare']['user_access_token'] );
 		unset( $credentials['foursquare']['user_id'] );
@@ -313,10 +313,12 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 
 		$this->access_token = null;
 
-		return rest_ensure_response( array(
-			'success' => true,
-			'message' => __( 'Foursquare disconnected.', 'post-kinds-for-indieweb' ),
-		) );
+		return rest_ensure_response(
+			[
+				'success' => true,
+				'message' => __( 'Foursquare disconnected.', 'post-kinds-for-indieweb' ),
+			]
+		);
 	}
 
 	/**
@@ -332,7 +334,7 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 		}
 
 		// Build checkin parameters.
-		$params = array();
+		$params = [];
 
 		// If we have a Foursquare venue ID, use it.
 		if ( ! empty( $checkin_data['foursquare_id'] ) ) {
@@ -345,11 +347,11 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 				$params['venueId'] = $venue['id'];
 			} else {
 				// Can't checkin without a venue.
-				$this->log( 'No venue found for checkin', array( 'data' => $checkin_data ) );
+				$this->log( 'No venue found for checkin', [ 'data' => $checkin_data ] );
 				return false;
 			}
 		} else {
-			$this->log( 'Missing location data for checkin', array( 'post_id' => $post_id ) );
+			$this->log( 'Missing location data for checkin', [ 'post_id' => $post_id ] );
 			return false;
 		}
 
@@ -372,16 +374,19 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 			if ( ! empty( $response['response']['checkin'] ) ) {
 				$checkin = $response['response']['checkin'];
 
-				return array(
+				return [
 					'id'  => $checkin['id'],
 					'url' => 'https://foursquare.com/user/' . ( $checkin['user']['id'] ?? 'self' ) . '/checkin/' . $checkin['id'],
-				);
+				];
 			}
 		} catch ( \Exception $e ) {
-			$this->log( 'Failed to syndicate checkin', array(
-				'post_id' => $post_id,
-				'error'   => $e->getMessage(),
-			) );
+			$this->log(
+				'Failed to syndicate checkin',
+				[
+					'post_id' => $post_id,
+					'error'   => $e->getMessage(),
+				]
+			);
 		}
 
 		return false;
@@ -394,10 +399,10 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 	 * @return array|null Venue data or null.
 	 */
 	private function find_venue_for_checkin( array $checkin_data ): ?array {
-		$params = array(
+		$params = [
 			'll'    => $checkin_data['latitude'] . ',' . $checkin_data['longitude'],
 			'limit' => 10,
-		);
+		];
 
 		if ( ! empty( $checkin_data['venue_name'] ) ) {
 			$params['query'] = $checkin_data['venue_name'];
@@ -422,7 +427,7 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 				return $venues[0];
 			}
 		} catch ( \Exception $e ) {
-			$this->log( 'Venue search failed', array( 'error' => $e->getMessage() ) );
+			$this->log( 'Venue search failed', [ 'error' => $e->getMessage() ] );
 		}
 
 		return null;
@@ -435,16 +440,16 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 	 * @return int|false Post ID or false on failure.
 	 */
 	protected function import_checkin( array $external_checkin ) {
-		$venue = $external_checkin['venue'] ?? array();
+		$venue = $external_checkin['venue'] ?? [];
 
 		if ( empty( $venue ) ) {
 			return false;
 		}
 
-		$location = $venue['location'] ?? array();
+		$location = $venue['location'] ?? [];
 
 		// Prepare post data.
-		$post_data = array(
+		$post_data = [
 			'post_type'    => 'post',
 			'post_status'  => 'publish',
 			'post_date'    => gmdate( 'Y-m-d H:i:s', $external_checkin['createdAt'] ?? time() ),
@@ -454,13 +459,13 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 				__( 'Checked in at %s', 'post-kinds-for-indieweb' ),
 				$venue['name'] ?? __( 'Unknown venue', 'post-kinds-for-indieweb' )
 			),
-		);
+		];
 
 		// Create post.
 		$post_id = wp_insert_post( $post_data, true );
 
 		if ( is_wp_error( $post_id ) ) {
-			$this->log( 'Failed to create checkin post', array( 'error' => $post_id->get_error_message() ) );
+			$this->log( 'Failed to create checkin post', [ 'error' => $post_id->get_error_message() ] );
 			return false;
 		}
 
@@ -486,7 +491,7 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 		update_post_meta( $post_id, $prefix . 'checkin_foursquare_id', $venue['id'] ?? '' );
 
 		// Apply default privacy setting.
-		$settings = get_option( 'post_kinds_indieweb_settings', array() );
+		$settings        = get_option( 'post_kinds_indieweb_settings', [] );
 		$default_privacy = $settings['checkin_default_privacy'] ?? 'approximate';
 		update_post_meta( $post_id, $prefix . 'geo_privacy', $default_privacy );
 
@@ -501,23 +506,26 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 	 */
 	public function fetch_recent_checkins( int $limit = 50 ): array {
 		if ( ! $this->is_connected() ) {
-			return array();
+			return [];
 		}
 
 		try {
-			$response = $this->api_get( 'users/self/checkins', array(
-				'limit' => min( $limit, 250 ),
-				'sort'  => 'newestfirst',
-			) );
+			$response = $this->api_get(
+				'users/self/checkins',
+				[
+					'limit' => min( $limit, 250 ),
+					'sort'  => 'newestfirst',
+				]
+			);
 
 			if ( ! empty( $response['response']['checkins']['items'] ) ) {
 				return $response['response']['checkins']['items'];
 			}
 		} catch ( \Exception $e ) {
-			$this->log( 'Failed to fetch checkins', array( 'error' => $e->getMessage() ) );
+			$this->log( 'Failed to fetch checkins', [ 'error' => $e->getMessage() ] );
 		}
 
-		return array();
+		return [];
 	}
 
 	/**
@@ -528,15 +536,18 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 	 * @return array Response data.
 	 * @throws \Exception On error.
 	 */
-	private function api_get( string $endpoint, array $params = array() ): array {
+	private function api_get( string $endpoint, array $params = [] ): array {
 		$params['oauth_token'] = $this->access_token;
 		$params['v']           = self::API_VERSION;
 
 		$url = self::API_URL . ltrim( $endpoint, '/' ) . '?' . http_build_query( $params );
 
-		$response = wp_remote_get( $url, array(
-			'timeout' => 30,
-		) );
+		$response = wp_remote_get(
+			$url,
+			[
+				'timeout' => 30,
+			]
+		);
 
 		return $this->handle_response( $response );
 	}
@@ -549,16 +560,19 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 	 * @return array Response data.
 	 * @throws \Exception On error.
 	 */
-	private function api_post( string $endpoint, array $params = array() ): array {
+	private function api_post( string $endpoint, array $params = [] ): array {
 		$params['oauth_token'] = $this->access_token;
 		$params['v']           = self::API_VERSION;
 
 		$url = self::API_URL . ltrim( $endpoint, '/' );
 
-		$response = wp_remote_post( $url, array(
-			'timeout' => 30,
-			'body'    => $params,
-		) );
+		$response = wp_remote_post(
+			$url,
+			[
+				'timeout' => 30,
+				'body'    => $params,
+			]
+		);
 
 		return $this->handle_response( $response );
 	}
@@ -583,7 +597,7 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 			throw new \Exception( esc_html( $error_msg ), (int) $code );
 		}
 
-		return $body ?? array();
+		return $body ?? [];
 	}
 
 	/**
@@ -594,11 +608,11 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 	 */
 	private function oauth_redirect_with_error( string $error ) {
 		$redirect_url = add_query_arg(
-			array(
+			[
 				'page'            => 'post-kinds-indieweb-apis',
 				'foursquare_auth' => 'error',
 				'error'           => $error,
-			),
+			],
 			admin_url( 'admin.php' )
 		);
 
@@ -613,10 +627,10 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 	 */
 	private function oauth_redirect_with_success() {
 		$redirect_url = add_query_arg(
-			array(
+			[
 				'page'            => 'post-kinds-indieweb-apis',
 				'foursquare_auth' => 'success',
-			),
+			],
 			admin_url( 'admin.php' )
 		);
 

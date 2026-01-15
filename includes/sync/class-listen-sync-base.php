@@ -73,10 +73,10 @@ abstract class Listen_Sync_Base {
 	 */
 	public function init(): void {
 		// POSSE: Syndicate to external service on publish.
-		add_action( 'transition_post_status', array( $this, 'maybe_syndicate_listen' ), 10, 3 );
+		add_action( 'transition_post_status', [ $this, 'maybe_syndicate_listen' ], 10, 3 );
 
 		// Add syndication target to Syndication Links (if available).
-		add_filter( 'syn_syndication_targets', array( $this, 'add_syndication_target' ) );
+		add_filter( 'syn_syndication_targets', [ $this, 'add_syndication_target' ] );
 	}
 
 	/**
@@ -177,7 +177,7 @@ abstract class Listen_Sync_Base {
 	 * @return bool
 	 */
 	protected function is_listen_post( int $post_id ): bool {
-		$terms = wp_get_post_terms( $post_id, 'kind', array( 'fields' => 'slugs' ) );
+		$terms = wp_get_post_terms( $post_id, 'kind', [ 'fields' => 'slugs' ] );
 
 		if ( is_wp_error( $terms ) ) {
 			return false;
@@ -194,7 +194,7 @@ abstract class Listen_Sync_Base {
 	 */
 	protected function is_syndication_enabled( int $post_id ): bool {
 		// Check global setting.
-		$settings    = get_option( 'post_kinds_indieweb_settings', array() );
+		$settings    = get_option( 'post_kinds_indieweb_settings', [] );
 		$setting_key = 'listen_sync_to_' . $this->service_id;
 
 		if ( empty( $settings[ $setting_key ] ) ) {
@@ -245,7 +245,7 @@ abstract class Listen_Sync_Base {
 	protected function get_listen_data_from_post( int $post_id ): array {
 		$prefix = Meta_Fields::PREFIX;
 
-		$data = array(
+		$data = [
 			'track'      => get_post_meta( $post_id, $prefix . 'listen_track', true ),
 			'artist'     => get_post_meta( $post_id, $prefix . 'listen_artist', true ),
 			'album'      => get_post_meta( $post_id, $prefix . 'listen_album', true ),
@@ -253,7 +253,7 @@ abstract class Listen_Sync_Base {
 			'mbid'       => get_post_meta( $post_id, $prefix . 'listen_mbid', true ),
 			'created_at' => get_the_date( 'c', $post_id ),
 			'timestamp'  => get_post_time( 'U', true, $post_id ),
-		);
+		];
 
 		// Get album MBID if available.
 		$album_mbid = get_post_meta( $post_id, $prefix . 'listen_album_mbid', true );
@@ -286,7 +286,7 @@ abstract class Listen_Sync_Base {
 			$existing = get_post_meta( $post_id, 'mf2_syndication', true );
 
 			if ( ! is_array( $existing ) ) {
-				$existing = array();
+				$existing = [];
 			}
 
 			if ( ! in_array( $url, $existing, true ) ) {
@@ -304,10 +304,10 @@ abstract class Listen_Sync_Base {
 	 */
 	public function add_syndication_target( array $targets ): array {
 		if ( $this->is_connected() ) {
-			$targets[ $this->service_id ] = array(
+			$targets[ $this->service_id ] = [
 				'uid'  => $this->service_id,
 				'name' => $this->service_name,
-			);
+			];
 		}
 
 		return $targets;

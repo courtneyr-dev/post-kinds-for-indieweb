@@ -41,7 +41,7 @@ class Checkin_Dashboard {
 	 * @return void
 	 */
 	public function init(): void {
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 	}
 
 	/**
@@ -59,14 +59,14 @@ class Checkin_Dashboard {
 		wp_enqueue_style(
 			'leaflet',
 			'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-			array(),
+			[],
 			'1.9.4'
 		);
 
 		wp_enqueue_script(
 			'leaflet',
 			'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
-			array(),
+			[],
 			'1.9.4',
 			true
 		);
@@ -75,21 +75,21 @@ class Checkin_Dashboard {
 		wp_enqueue_style(
 			'leaflet-markercluster',
 			'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css',
-			array( 'leaflet' ),
+			[ 'leaflet' ],
 			'1.4.1'
 		);
 
 		wp_enqueue_style(
 			'leaflet-markercluster-default',
 			'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css',
-			array( 'leaflet-markercluster' ),
+			[ 'leaflet-markercluster' ],
 			'1.4.1'
 		);
 
 		wp_enqueue_script(
 			'leaflet-markercluster',
 			'https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js',
-			array( 'leaflet' ),
+			[ 'leaflet' ],
 			'1.4.1',
 			true
 		);
@@ -98,7 +98,7 @@ class Checkin_Dashboard {
 		wp_enqueue_style(
 			'post-kinds-checkin-dashboard',
 			POST_KINDS_INDIEWEB_URL . 'assets/css/checkin-dashboard.css',
-			array( 'leaflet', 'leaflet-markercluster' ),
+			[ 'leaflet', 'leaflet-markercluster' ],
 			POST_KINDS_INDIEWEB_VERSION
 		);
 
@@ -106,7 +106,7 @@ class Checkin_Dashboard {
 		wp_enqueue_script(
 			'post-kinds-checkin-dashboard',
 			POST_KINDS_INDIEWEB_URL . 'assets/js/checkin-dashboard.js',
-			array( 'jquery', 'leaflet', 'leaflet-markercluster', 'wp-api-fetch' ),
+			[ 'jquery', 'leaflet', 'leaflet-markercluster', 'wp-api-fetch' ],
 			POST_KINDS_INDIEWEB_VERSION,
 			true
 		);
@@ -114,22 +114,22 @@ class Checkin_Dashboard {
 		wp_localize_script(
 			'post-kinds-checkin-dashboard',
 			'postKindsCheckinDashboard',
-			array(
-				'restUrl'   => rest_url( 'post-kinds-indieweb/v1/' ),
-				'nonce'     => wp_create_nonce( 'wp_rest' ),
-				'siteUrl'   => home_url(),
-				'i18n'      => array(
-					'loading'      => __( 'Loading check-ins...', 'post-kinds-for-indieweb' ),
-					'noCheckins'   => __( 'No check-ins found.', 'post-kinds-for-indieweb' ),
-					'viewOnMap'    => __( 'View on map', 'post-kinds-for-indieweb' ),
-					'editPost'     => __( 'Edit', 'post-kinds-for-indieweb' ),
-					'viewPost'     => __( 'View', 'post-kinds-for-indieweb' ),
-					'totalCheckins'=> __( 'Total Check-ins', 'post-kinds-for-indieweb' ),
-					'uniqueVenues' => __( 'Unique Venues', 'post-kinds-for-indieweb' ),
-					'countries'    => __( 'Countries', 'post-kinds-for-indieweb' ),
-					'cities'       => __( 'Cities', 'post-kinds-for-indieweb' ),
-				),
-			)
+			[
+				'restUrl' => rest_url( 'post-kinds-indieweb/v1/' ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				'siteUrl' => home_url(),
+				'i18n'    => [
+					'loading'       => __( 'Loading check-ins...', 'post-kinds-for-indieweb' ),
+					'noCheckins'    => __( 'No check-ins found.', 'post-kinds-for-indieweb' ),
+					'viewOnMap'     => __( 'View on map', 'post-kinds-for-indieweb' ),
+					'editPost'      => __( 'Edit', 'post-kinds-for-indieweb' ),
+					'viewPost'      => __( 'View', 'post-kinds-for-indieweb' ),
+					'totalCheckins' => __( 'Total Check-ins', 'post-kinds-for-indieweb' ),
+					'uniqueVenues'  => __( 'Unique Venues', 'post-kinds-for-indieweb' ),
+					'countries'     => __( 'Countries', 'post-kinds-for-indieweb' ),
+					'cities'        => __( 'Cities', 'post-kinds-for-indieweb' ),
+				],
+			]
 		);
 	}
 

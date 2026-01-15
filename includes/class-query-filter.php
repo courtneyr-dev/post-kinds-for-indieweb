@@ -37,7 +37,7 @@ class Query_Filter {
 	 * @return void
 	 */
 	private function register_hooks(): void {
-		add_action( 'pre_get_posts', array( $this, 'filter_main_query' ) );
+		add_action( 'pre_get_posts', [ $this, 'filter_main_query' ] );
 	}
 
 	/**
@@ -100,22 +100,22 @@ class Query_Filter {
 		// Exclude posts with the imported meta key.
 		$meta_query = $query->get( 'meta_query' );
 		if ( ! is_array( $meta_query ) ) {
-			$meta_query = array();
+			$meta_query = [];
 		}
 
 		// Add exclusion for imported posts.
-		$meta_query[] = array(
+		$meta_query[] = [
 			'relation' => 'OR',
-			array(
+			[
 				'key'     => '_postkind_imported_from',
 				'compare' => 'NOT EXISTS',
-			),
-			array(
+			],
+			[
 				'key'     => '_postkind_imported_from',
 				'value'   => '',
 				'compare' => '=',
-			),
-		);
+			],
+		];
 
 		$query->set( 'meta_query', $meta_query );
 	}

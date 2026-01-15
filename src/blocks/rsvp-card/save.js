@@ -26,12 +26,18 @@ export default function Save( { attributes } ) {
 		rsvpAt,
 		eventImage,
 		eventImageAlt,
+		rel,
 		layout,
 	} = attributes;
 
 	const blockProps = useBlockProps.save( {
 		className: `rsvp-card layout-${ layout } rsvp-${ rsvpStatus }`,
 	} );
+
+	// Build rel attribute - always includes noopener noreferrer for security
+	const linkRel = rel
+		? `noopener noreferrer ${ rel }`
+		: 'noopener noreferrer';
 
 	/**
 	 * Get RSVP status icon
@@ -104,26 +110,26 @@ export default function Save( { attributes } ) {
 
 	return (
 		<div { ...blockProps }>
-			<div className="reactions-card h-entry">
+			<div className="post-kinds-card h-entry">
 				{ /* Event image */ }
 				{ eventImage && (
-					<div className="reactions-card__media">
+					<div className="post-kinds-card__media">
 						<img
 							src={ eventImage }
 							alt={ eventImageAlt || `${ eventName } event` }
-							className="reactions-card__image u-photo"
+							className="post-kinds-card__image u-photo"
 							loading="lazy"
 						/>
 					</div>
 				) }
 
-				<div className="reactions-card__content">
+				<div className="post-kinds-card__content">
 					{ /* RSVP status badge with p-rsvp microformat */ }
 					<span
-						className={ `reactions-card__badge reactions-card__badge--${ rsvpStatus }` }
+						className={ `post-kinds-card__badge post-kinds-card__badge--${ rsvpStatus }` }
 					>
 						<span
-							className="reactions-card__badge-icon"
+							className="post-kinds-card__badge-icon"
 							aria-hidden="true"
 						>
 							{ getStatusIcon() }
@@ -134,16 +140,17 @@ export default function Save( { attributes } ) {
 					</span>
 
 					{ /* Event details with h-event microformat */ }
-					<div className="reactions-card__event p-in-reply-to h-event">
+					<div className="post-kinds-card__event p-in-reply-to h-event">
 						{ /* Event name */ }
 						{ eventName && (
-							<h3 className="reactions-card__title">
+							<h3 className="post-kinds-card__title">
 								{ eventUrl ? (
+									// eslint-disable-next-line react/jsx-no-target-blank -- linkRel always includes noreferrer
 									<a
 										href={ eventUrl }
 										className="p-name u-url"
 										target="_blank"
-										rel="noopener noreferrer"
+										rel={ linkRel }
 									>
 										{ eventName }
 									</a>
@@ -157,9 +164,9 @@ export default function Save( { attributes } ) {
 
 						{ /* Event date/time */ }
 						{ eventStart && (
-							<div className="reactions-card__meta-row">
+							<div className="post-kinds-card__meta-row">
 								<span
-									className="reactions-card__meta-icon"
+									className="post-kinds-card__meta-icon"
 									aria-hidden="true"
 								>
 									📅
@@ -186,9 +193,9 @@ export default function Save( { attributes } ) {
 
 						{ /* Event location */ }
 						{ eventLocation && (
-							<div className="reactions-card__meta-row">
+							<div className="post-kinds-card__meta-row">
 								<span
-									className="reactions-card__meta-icon"
+									className="post-kinds-card__meta-icon"
 									aria-hidden="true"
 								>
 									📍
@@ -201,7 +208,7 @@ export default function Save( { attributes } ) {
 
 						{ /* Event description */ }
 						{ eventDescription && (
-							<p className="reactions-card__meta p-summary">
+							<p className="post-kinds-card__meta p-summary">
 								{ eventDescription }
 							</p>
 						) }
@@ -209,7 +216,7 @@ export default function Save( { attributes } ) {
 
 					{ /* RSVP note */ }
 					{ rsvpNote && (
-						<div className="reactions-card__notes p-content">
+						<div className="post-kinds-card__notes p-content">
 							<RichText.Content tagName="p" value={ rsvpNote } />
 						</div>
 					) }
@@ -217,7 +224,7 @@ export default function Save( { attributes } ) {
 					{ /* RSVP timestamp */ }
 					{ rsvpAt && (
 						<time
-							className="reactions-card__timestamp dt-published"
+							className="post-kinds-card__timestamp dt-published"
 							dateTime={ new Date( rsvpAt ).toISOString() }
 						>
 							RSVPed { new Date( rsvpAt ).toLocaleDateString() }

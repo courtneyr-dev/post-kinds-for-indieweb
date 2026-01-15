@@ -65,9 +65,9 @@ class MusicBrainz extends API_Base {
 	 * @return array<string, string>
 	 */
 	protected function get_default_headers(): array {
-		return array(
+		return [
 			'Accept' => 'application/json',
-		);
+		];
 	}
 
 	/**
@@ -77,7 +77,7 @@ class MusicBrainz extends API_Base {
 	 */
 	public function test_connection(): bool {
 		try {
-			$this->get( 'artist/5b11f4ce-a62d-471e-81fc-a69a8278c7da', array( 'fmt' => 'json' ) );
+			$this->get( 'artist/5b11f4ce-a62d-471e-81fc-a69a8278c7da', [ 'fmt' => 'json' ] );
 			return true;
 		} catch ( \Exception $e ) {
 			return false;
@@ -111,14 +111,14 @@ class MusicBrainz extends API_Base {
 		try {
 			$response = $this->get(
 				'recording',
-				array(
+				[
 					'query' => $lucene_query,
 					'fmt'   => 'json',
 					'limit' => 25,
-				)
+				]
 			);
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['recordings'] ) && is_array( $response['recordings'] ) ) {
 				foreach ( $response['recordings'] as $recording ) {
@@ -130,8 +130,14 @@ class MusicBrainz extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -152,25 +158,25 @@ class MusicBrainz extends API_Base {
 		try {
 			$response = $this->get(
 				'artist',
-				array(
+				[
 					'query' => 'artist:"' . $this->escape_lucene( $artist ) . '"',
 					'fmt'   => 'json',
 					'limit' => 10,
-				)
+				]
 			);
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['artists'] ) && is_array( $response['artists'] ) ) {
 				foreach ( $response['artists'] as $artist_data ) {
-					$results[] = array(
-						'id'       => $artist_data['id'],
-						'name'     => $artist_data['name'],
-						'sort_name'=> $artist_data['sort-name'] ?? $artist_data['name'],
-						'type'     => $artist_data['type'] ?? 'Unknown',
-						'country'  => $artist_data['country'] ?? '',
-						'score'    => $artist_data['score'] ?? 0,
-					);
+					$results[] = [
+						'id'        => $artist_data['id'],
+						'name'      => $artist_data['name'],
+						'sort_name' => $artist_data['sort-name'] ?? $artist_data['name'],
+						'type'      => $artist_data['type'] ?? 'Unknown',
+						'country'   => $artist_data['country'] ?? '',
+						'score'     => $artist_data['score'] ?? 0,
+					];
 				}
 			}
 
@@ -178,8 +184,14 @@ class MusicBrainz extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Artist search failed', array( 'artist' => $artist, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Artist search failed',
+				[
+					'artist' => $artist,
+					'error'  => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -207,14 +219,14 @@ class MusicBrainz extends API_Base {
 		try {
 			$response = $this->get(
 				'release',
-				array(
+				[
 					'query' => $lucene_query,
 					'fmt'   => 'json',
 					'limit' => 25,
-				)
+				]
 			);
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['releases'] ) && is_array( $response['releases'] ) ) {
 				foreach ( $response['releases'] as $release ) {
@@ -226,8 +238,14 @@ class MusicBrainz extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Release search failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Release search failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -248,10 +266,10 @@ class MusicBrainz extends API_Base {
 		try {
 			$response = $this->get(
 				'recording/' . $id,
-				array(
+				[
 					'fmt' => 'json',
 					'inc' => 'artists+releases+release-groups',
-				)
+				]
 			);
 
 			$result = $this->normalize_result( $response );
@@ -260,7 +278,13 @@ class MusicBrainz extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get recording failed', array( 'id' => $id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get recording failed',
+				[
+					'id'    => $id,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -282,10 +306,10 @@ class MusicBrainz extends API_Base {
 		try {
 			$response = $this->get(
 				'release/' . $id,
-				array(
+				[
 					'fmt' => 'json',
 					'inc' => 'artists+recordings+release-groups',
-				)
+				]
 			);
 
 			$result = $this->normalize_release( $response );
@@ -297,7 +321,13 @@ class MusicBrainz extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get release failed', array( 'id' => $id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get release failed',
+				[
+					'id'    => $id,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -327,11 +357,11 @@ class MusicBrainz extends API_Base {
 
 			$response = wp_safe_remote_head(
 				$this->cover_art_url . $endpoint,
-				array(
+				[
 					'timeout'     => 10,
 					'redirection' => 0, // Don't follow redirects, just get the Location.
 					'user-agent'  => $this->user_agent,
-				)
+				]
 			);
 
 			if ( is_wp_error( $response ) ) {
@@ -354,7 +384,13 @@ class MusicBrainz extends API_Base {
 			$this->set_cache( $cache_key, '', HOUR_IN_SECONDS );
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get cover art failed', array( 'mbid' => $release_mbid, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get cover art failed',
+				[
+					'mbid'  => $release_mbid,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -366,11 +402,11 @@ class MusicBrainz extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	protected function normalize_result( array $raw_result ): array {
-		$artist = '';
+		$artist      = '';
 		$artist_mbid = '';
 
 		if ( isset( $raw_result['artist-credit'] ) && ! empty( $raw_result['artist-credit'] ) ) {
-			$artist_parts = array();
+			$artist_parts = [];
 
 			foreach ( $raw_result['artist-credit'] as $credit ) {
 				if ( isset( $credit['artist']['name'] ) ) {
@@ -389,13 +425,13 @@ class MusicBrainz extends API_Base {
 			$artist = trim( implode( '', $artist_parts ) );
 		}
 
-		$album = '';
+		$album      = '';
 		$album_mbid = '';
-		$cover = null;
+		$cover      = null;
 
 		if ( isset( $raw_result['releases'] ) && ! empty( $raw_result['releases'] ) ) {
-			$release = $raw_result['releases'][0];
-			$album = $release['title'] ?? '';
+			$release    = $raw_result['releases'][0];
+			$album      = $release['title'] ?? '';
 			$album_mbid = $release['id'] ?? '';
 
 			// Try to get cover art.
@@ -404,18 +440,18 @@ class MusicBrainz extends API_Base {
 			}
 		}
 
-		return array(
-			'track'        => $raw_result['title'] ?? '',
-			'artist'       => $artist,
-			'album'        => $album,
-			'mbid'         => $raw_result['id'] ?? '',
-			'artist_mbid'  => $artist_mbid,
-			'album_mbid'   => $album_mbid,
-			'cover'        => $cover,
-			'duration'     => isset( $raw_result['length'] ) ? (int) ( $raw_result['length'] / 1000 ) : null,
-			'score'        => $raw_result['score'] ?? 0,
-			'source'       => 'musicbrainz',
-		);
+		return [
+			'track'       => $raw_result['title'] ?? '',
+			'artist'      => $artist,
+			'album'       => $album,
+			'mbid'        => $raw_result['id'] ?? '',
+			'artist_mbid' => $artist_mbid,
+			'album_mbid'  => $album_mbid,
+			'cover'       => $cover,
+			'duration'    => isset( $raw_result['length'] ) ? (int) ( $raw_result['length'] / 1000 ) : null,
+			'score'       => $raw_result['score'] ?? 0,
+			'source'      => 'musicbrainz',
+		];
 	}
 
 	/**
@@ -428,7 +464,7 @@ class MusicBrainz extends API_Base {
 		$artist = '';
 
 		if ( isset( $release['artist-credit'] ) && ! empty( $release['artist-credit'] ) ) {
-			$artist_parts = array();
+			$artist_parts = [];
 
 			foreach ( $release['artist-credit'] as $credit ) {
 				if ( isset( $credit['artist']['name'] ) ) {
@@ -444,13 +480,13 @@ class MusicBrainz extends API_Base {
 		}
 
 		$release_mbid = $release['id'] ?? '';
-		$cover = null;
+		$cover        = null;
 
 		if ( $release_mbid ) {
 			$cover = $this->get_cover_art( $release_mbid, '250' );
 		}
 
-		return array(
+		return [
 			'album'       => $release['title'] ?? '',
 			'artist'      => $artist,
 			'mbid'        => $release_mbid,
@@ -460,7 +496,7 @@ class MusicBrainz extends API_Base {
 			'track_count' => $release['track-count'] ?? null,
 			'score'       => $release['score'] ?? 0,
 			'source'      => 'musicbrainz',
-		);
+		];
 	}
 
 	/**
@@ -470,9 +506,27 @@ class MusicBrainz extends API_Base {
 	 * @return string Escaped string.
 	 */
 	private function escape_lucene( string $string ): string {
-		$special_chars = array(
-			'+', '-', '&&', '||', '!', '(', ')', '{', '}', '[', ']', '^', '"', '~', '*', '?', ':', '\\', '/',
-		);
+		$special_chars = [
+			'+',
+			'-',
+			'&&',
+			'||',
+			'!',
+			'(',
+			')',
+			'{',
+			'}',
+			'[',
+			']',
+			'^',
+			'"',
+			'~',
+			'*',
+			'?',
+			':',
+			'\\',
+			'/',
+		];
 
 		foreach ( $special_chars as $char ) {
 			$string = str_replace( $char, '\\' . $char, $string );

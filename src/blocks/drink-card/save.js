@@ -49,7 +49,7 @@ export default function Save( { attributes } ) {
 		}
 		return (
 			<div
-				className="reactions-card__rating p-rating"
+				className="post-kinds-card__rating p-rating"
 				aria-label={ `Rating: ${ rating } out of 5` }
 			>
 				{ Array.from( { length: 5 }, ( _, i ) => (
@@ -61,7 +61,7 @@ export default function Save( { attributes } ) {
 						★
 					</span>
 				) ) }
-				<span className="reactions-card__rating-value">
+				<span className="post-kinds-card__rating-value">
 					{ rating }/5
 				</span>
 			</div>
@@ -70,37 +70,37 @@ export default function Save( { attributes } ) {
 
 	return (
 		<div { ...blockProps }>
-			<div className="reactions-card h-food">
+			<div className="post-kinds-card h-food">
 				{ photo && (
-					<div className="reactions-card__media">
+					<div className="post-kinds-card__media">
 						<img
 							src={ photo }
 							alt={ photoAlt || name }
-							className="reactions-card__image u-photo"
+							className="post-kinds-card__image u-photo"
 							loading="lazy"
 						/>
 					</div>
 				) }
-				<div className="reactions-card__content">
-					<span className="reactions-card__badge">
+				<div className="post-kinds-card__content">
+					<span className="post-kinds-card__badge">
 						{ DRINK_LABELS[ drinkType ] || drinkType }
 					</span>
 
 					{ name && (
-						<h3 className="reactions-card__title p-name">
+						<h3 className="post-kinds-card__title p-name">
 							{ name }
 						</h3>
 					) }
 
 					{ brand && (
-						<p className="reactions-card__subtitle p-author h-card">
+						<p className="post-kinds-card__subtitle p-author h-card">
 							<span className="p-name">{ brand }</span>
 						</p>
 					) }
 
 					{ locationName && (
-						<div className="reactions-card__location p-location h-card">
-							<p className="reactions-card__venue">
+						<div className="post-kinds-card__location p-location h-card">
+							<p className="post-kinds-card__venue">
 								{ venueUrl ? (
 									<a
 										href={ venueUrl }
@@ -117,14 +117,14 @@ export default function Save( { attributes } ) {
 								) }
 							</p>
 							{ locationAddress && (
-								<p className="reactions-card__address p-street-address">
+								<p className="post-kinds-card__address p-street-address">
 									{ locationAddress }
 								</p>
 							) }
 							{ ( locationLocality ||
 								locationRegion ||
 								locationCountry ) && (
-								<p className="reactions-card__city">
+								<p className="post-kinds-card__city">
 									{ locationLocality && (
 										<span className="p-locality">
 											{ locationLocality }
@@ -168,14 +168,14 @@ export default function Save( { attributes } ) {
 					{ renderStars() }
 
 					{ notes && (
-						<p className="reactions-card__notes p-content">
+						<p className="post-kinds-card__notes p-content">
 							{ notes }
 						</p>
 					) }
 
 					{ drankAt && (
 						<time
-							className="reactions-card__timestamp dt-published"
+							className="post-kinds-card__timestamp dt-published"
 							dateTime={ new Date( drankAt ).toISOString() }
 						>
 							{ new Date( drankAt ).toLocaleString() }

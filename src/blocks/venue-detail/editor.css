@@ -1,0 +1,67 @@
+/**
+ * Venue Detail Block - Editor Styles
+ */
+
+.venue-detail {
+	padding: 1rem;
+}
+
+.venue-detail__preview {
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+.venue-detail__map-placeholder {
+	background: #f0f0f0;
+	border-bottom: 1px solid #ddd;
+	padding: 2rem;
+}
+
+.venue-detail__map-preview {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	color: #666;
+}
+
+.venue-detail__map-preview .dashicons {
+	font-size: 2rem;
+	width: 2rem;
+	height: 2rem;
+}
+
+.venue-detail__info {
+	padding: 1rem;
+}
+
+.venue-detail__name {
+	margin: 0 0 0.5rem;
+	font-size: 1.25rem;
+	font-weight: 600;
+}
+
+.venue-detail__address {
+	color: #666;
+	font-size: 0.875rem;
+	margin-bottom: 0.5rem;
+}
+
+.venue-detail__checkins-preview {
+	margin-top: 1rem;
+	padding-top: 1rem;
+	border-top: 1px solid #eee;
+}
+
+.venue-detail__checkins-preview h3 {
+	margin: 0 0 0.5rem;
+	font-size: 1rem;
+}
+
+.venue-detail__checkins-preview .description {
+	color: #666;
+	font-size: 0.875rem;
+	font-style: italic;
+}

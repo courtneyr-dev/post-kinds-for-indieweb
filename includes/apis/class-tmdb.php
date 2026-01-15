@@ -85,8 +85,8 @@ class TMDB extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials        = get_option( 'post_kinds_indieweb_api_credentials', array() );
-		$tmdb_creds         = $credentials['tmdb'] ?? array();
+		$credentials        = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$tmdb_creds         = $credentials['tmdb'] ?? [];
 		$this->api_key      = $tmdb_creds['api_key'] ?? '';
 		$this->access_token = $tmdb_creds['access_token'] ?? '';
 	}
@@ -97,9 +97,9 @@ class TMDB extends API_Base {
 	 * @return array<string, string>
 	 */
 	protected function get_default_headers(): array {
-		$headers = array(
+		$headers = [
 			'Accept' => 'application/json',
-		);
+		];
 
 		if ( $this->access_token ) {
 			$headers['Authorization'] = 'Bearer ' . $this->access_token;
@@ -115,7 +115,7 @@ class TMDB extends API_Base {
 	 * @param array<string, mixed> $params   Parameters.
 	 * @return string Full URL.
 	 */
-	protected function build_url( string $endpoint, array $params = array() ): string {
+	protected function build_url( string $endpoint, array $params = [] ): string {
 		// Add API key if not using access token.
 		if ( ! $this->access_token && $this->api_key ) {
 			$params['api_key'] = $this->api_key;
@@ -143,15 +143,15 @@ class TMDB extends API_Base {
 	 * @return array<string, mixed> Response.
 	 * @throws \Exception On error.
 	 */
-	private function api_get( string $endpoint, array $params = array() ): array {
+	private function api_get( string $endpoint, array $params = [] ): array {
 		$url = $this->build_url( $endpoint, $params );
 
 		$response = wp_remote_get(
 			$url,
-			array(
+			[
 				'timeout' => 30,
 				'headers' => $this->get_default_headers(),
-			)
+			]
 		);
 
 		if ( is_wp_error( $response ) ) {
@@ -167,7 +167,7 @@ class TMDB extends API_Base {
 			throw new \Exception( esc_html( $message ), (int) $code );
 		}
 
-		return $data ?? array();
+		return $data ?? [];
 	}
 
 	/**
@@ -179,8 +179,8 @@ class TMDB extends API_Base {
 	public function test_connection(): bool {
 		if ( ! $this->api_key && ! $this->access_token ) {
 			// Debug: show what credentials we actually have.
-			$credentials = get_option( 'post_kinds_indieweb_api_credentials', array() );
-			$tmdb_creds  = $credentials['tmdb'] ?? array();
+			$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+			$tmdb_creds  = $credentials['tmdb'] ?? [];
 			$has_token   = ! empty( $tmdb_creds['access_token'] );
 			$has_key     = ! empty( $tmdb_creds['api_key'] );
 			$is_enabled  = ! empty( $tmdb_creds['enabled'] );
@@ -230,9 +230,9 @@ class TMDB extends API_Base {
 		try {
 			$endpoint = $type ? "search/{$type}" : 'search/multi';
 
-			$response = $this->api_get( $endpoint, array( 'query' => $query ) );
+			$response = $this->api_get( $endpoint, [ 'query' => $query ] );
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['results'] ) && is_array( $response['results'] ) ) {
 				foreach ( $response['results'] as $item ) {
@@ -247,8 +247,14 @@ class TMDB extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -268,7 +274,7 @@ class TMDB extends API_Base {
 		}
 
 		try {
-			$params = array( 'query' => $query );
+			$params = [ 'query' => $query ];
 
 			if ( $year > 0 ) {
 				$params['year'] = $year;
@@ -276,7 +282,7 @@ class TMDB extends API_Base {
 
 			$response = $this->api_get( 'search/movie', $params );
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['results'] ) ) {
 				foreach ( $response['results'] as $movie ) {
@@ -288,8 +294,14 @@ class TMDB extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Movie search failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Movie search failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -309,7 +321,7 @@ class TMDB extends API_Base {
 		}
 
 		try {
-			$params = array( 'query' => $query );
+			$params = [ 'query' => $query ];
 
 			if ( $year > 0 ) {
 				$params['first_air_date_year'] = $year;
@@ -317,7 +329,7 @@ class TMDB extends API_Base {
 
 			$response = $this->api_get( 'search/tv', $params );
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['results'] ) ) {
 				foreach ( $response['results'] as $show ) {
@@ -329,8 +341,14 @@ class TMDB extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'TV search failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'TV search failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -372,16 +390,16 @@ class TMDB extends API_Base {
 		try {
 			$response = $this->api_get(
 				"movie/{$id}",
-				array( 'append_to_response' => 'credits,external_ids,videos,watch/providers' )
+				[ 'append_to_response' => 'credits,external_ids,videos,watch/providers' ]
 			);
 
 			$result = $this->normalize_movie( $response, true );
 
 			// Add credits.
 			if ( isset( $response['credits'] ) ) {
-				$result['cast']     = $this->normalize_cast( $response['credits']['cast'] ?? array() );
-				$result['crew']     = $this->normalize_crew( $response['credits']['crew'] ?? array() );
-				$result['director'] = $this->get_director( $response['credits']['crew'] ?? array() );
+				$result['cast']     = $this->normalize_cast( $response['credits']['cast'] ?? [] );
+				$result['crew']     = $this->normalize_crew( $response['credits']['crew'] ?? [] );
+				$result['director'] = $this->get_director( $response['credits']['crew'] ?? [] );
 			}
 
 			// Add external IDs.
@@ -404,7 +422,13 @@ class TMDB extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get movie failed', array( 'id' => $id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get movie failed',
+				[
+					'id'    => $id,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -426,26 +450,26 @@ class TMDB extends API_Base {
 		try {
 			$response = $this->api_get(
 				"tv/{$id}",
-				array( 'append_to_response' => 'credits,external_ids,videos,watch/providers' )
+				[ 'append_to_response' => 'credits,external_ids,videos,watch/providers' ]
 			);
 
 			$result = $this->normalize_tv( $response, true );
 
 			// Add credits.
 			if ( isset( $response['credits'] ) ) {
-				$result['cast'] = $this->normalize_cast( $response['credits']['cast'] ?? array() );
-				$result['crew'] = $this->normalize_crew( $response['credits']['crew'] ?? array() );
+				$result['cast'] = $this->normalize_cast( $response['credits']['cast'] ?? [] );
+				$result['crew'] = $this->normalize_crew( $response['credits']['crew'] ?? [] );
 			}
 
 			// Add creators.
 			if ( isset( $response['created_by'] ) ) {
 				$result['creators'] = array_map(
 					function ( $creator ) {
-						return array(
+						return [
 							'id'    => $creator['id'],
 							'name'  => $creator['name'],
 							'image' => $this->get_image_url( $creator['profile_path'] ?? '', 'w185' ),
-						);
+						];
 					},
 					$response['created_by']
 				);
@@ -472,7 +496,13 @@ class TMDB extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get TV failed', array( 'id' => $id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get TV failed',
+				[
+					'id'    => $id,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -495,18 +525,18 @@ class TMDB extends API_Base {
 		try {
 			$response = $this->api_get( "tv/{$tv_id}/season/{$season_number}" );
 
-			$result = array(
+			$result = [
 				'id'            => $response['id'] ?? 0,
 				'name'          => $response['name'] ?? '',
 				'overview'      => $response['overview'] ?? '',
 				'poster'        => $this->get_image_url( $response['poster_path'] ?? '', 'w342' ),
 				'air_date'      => $response['air_date'] ?? '',
 				'season_number' => $response['season_number'] ?? $season_number,
-				'episode_count' => count( $response['episodes'] ?? array() ),
-				'episodes'      => array(),
+				'episode_count' => count( $response['episodes'] ?? [] ),
+				'episodes'      => [],
 				'type'          => 'season',
 				'source'        => 'tmdb',
-			);
+			];
 
 			if ( isset( $response['episodes'] ) ) {
 				foreach ( $response['episodes'] as $episode ) {
@@ -518,7 +548,14 @@ class TMDB extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get season failed', array( 'tv_id' => $tv_id, 'season' => $season_number, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get season failed',
+				[
+					'tv_id'  => $tv_id,
+					'season' => $season_number,
+					'error'  => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -542,22 +579,30 @@ class TMDB extends API_Base {
 		try {
 			$response = $this->api_get(
 				"tv/{$tv_id}/season/{$season_number}/episode/{$episode_number}",
-				array( 'append_to_response' => 'credits' )
+				[ 'append_to_response' => 'credits' ]
 			);
 
 			$result = $this->normalize_episode( $response, $tv_id );
 
 			// Add episode-specific credits.
 			if ( isset( $response['credits'] ) ) {
-				$result['guest_stars'] = $this->normalize_cast( $response['credits']['guest_stars'] ?? array() );
-				$result['crew']        = $this->normalize_crew( $response['credits']['crew'] ?? array() );
+				$result['guest_stars'] = $this->normalize_cast( $response['credits']['guest_stars'] ?? [] );
+				$result['crew']        = $this->normalize_crew( $response['credits']['crew'] ?? [] );
 			}
 
 			$this->set_cache( $cache_key, $result );
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get episode failed', array( 'tv_id' => $tv_id, 'season' => $season_number, 'episode' => $episode_number, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get episode failed',
+				[
+					'tv_id'   => $tv_id,
+					'season'  => $season_number,
+					'episode' => $episode_number,
+					'error'   => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -577,9 +622,9 @@ class TMDB extends API_Base {
 		}
 
 		try {
-			$response = $this->api_get( 'movie/popular', array( 'page' => $page ) );
+			$response = $this->api_get( 'movie/popular', [ 'page' => $page ] );
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['results'] ) ) {
 				foreach ( $response['results'] as $movie ) {
@@ -591,8 +636,8 @@ class TMDB extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get popular movies failed', array( 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error( 'Get popular movies failed', [ 'error' => $e->getMessage() ] );
+			return [];
 		}
 	}
 
@@ -611,9 +656,9 @@ class TMDB extends API_Base {
 		}
 
 		try {
-			$response = $this->api_get( 'tv/popular', array( 'page' => $page ) );
+			$response = $this->api_get( 'tv/popular', [ 'page' => $page ] );
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['results'] ) ) {
 				foreach ( $response['results'] as $show ) {
@@ -625,8 +670,8 @@ class TMDB extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get popular TV failed', array( 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error( 'Get popular TV failed', [ 'error' => $e->getMessage() ] );
+			return [];
 		}
 	}
 
@@ -648,7 +693,7 @@ class TMDB extends API_Base {
 		try {
 			$response = $this->api_get( "trending/{$type}/{$window}" );
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['results'] ) ) {
 				foreach ( $response['results'] as $item ) {
@@ -663,8 +708,14 @@ class TMDB extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get trending failed', array( 'type' => $type, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get trending failed',
+				[
+					'type'  => $type,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -684,14 +735,14 @@ class TMDB extends API_Base {
 		try {
 			$response = $this->api_get( 'genre/movie/list' );
 
-			$genres = $response['genres'] ?? array();
+			$genres = $response['genres'] ?? [];
 
 			$this->set_cache( $cache_key, $genres, MONTH_IN_SECONDS );
 
 			return $genres;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get movie genres failed', array( 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error( 'Get movie genres failed', [ 'error' => $e->getMessage() ] );
+			return [];
 		}
 	}
 
@@ -711,14 +762,14 @@ class TMDB extends API_Base {
 		try {
 			$response = $this->api_get( 'genre/tv/list' );
 
-			$genres = $response['genres'] ?? array();
+			$genres = $response['genres'] ?? [];
 
 			$this->set_cache( $cache_key, $genres, MONTH_IN_SECONDS );
 
 			return $genres;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get TV genres failed', array( 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error( 'Get TV genres failed', [ 'error' => $e->getMessage() ] );
+			return [];
 		}
 	}
 
@@ -728,7 +779,7 @@ class TMDB extends API_Base {
 	 * @param array<string, mixed> $filters Filters.
 	 * @return array<int, array<string, mixed>> Movies.
 	 */
-	public function discover_movies( array $filters = array() ): array {
+	public function discover_movies( array $filters = [] ): array {
 		$cache_key = 'discover_movies_' . md5( wp_json_encode( $filters ) );
 		$cached    = $this->get_cache( $cache_key );
 
@@ -739,7 +790,7 @@ class TMDB extends API_Base {
 		try {
 			$response = $this->api_get( 'discover/movie', $filters );
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['results'] ) ) {
 				foreach ( $response['results'] as $movie ) {
@@ -751,8 +802,14 @@ class TMDB extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Discover movies failed', array( 'filters' => $filters, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Discover movies failed',
+				[
+					'filters' => $filters,
+					'error'   => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -773,7 +830,7 @@ class TMDB extends API_Base {
 			return $this->normalize_person( $raw_result );
 		}
 
-		return array();
+		return [];
 	}
 
 	/**
@@ -784,57 +841,57 @@ class TMDB extends API_Base {
 	 * @return array<string, mixed> Normalized movie.
 	 */
 	private function normalize_movie( array $movie, bool $detailed = false ): array {
-		$result = array(
-			'id'           => $movie['id'] ?? 0,
-			'tmdb_id'      => $movie['id'] ?? 0,
-			'title'        => $movie['title'] ?? '',
+		$result = [
+			'id'             => $movie['id'] ?? 0,
+			'tmdb_id'        => $movie['id'] ?? 0,
+			'title'          => $movie['title'] ?? '',
 			'original_title' => $movie['original_title'] ?? '',
-			'overview'     => $movie['overview'] ?? '',
-			'poster'       => $this->get_image_url( $movie['poster_path'] ?? '', 'w342' ),
-			'backdrop'     => $this->get_image_url( $movie['backdrop_path'] ?? '', 'w1280' ),
-			'release_date' => $movie['release_date'] ?? '',
-			'year'         => $movie['release_date'] ? substr( $movie['release_date'], 0, 4 ) : '',
-			'vote_average' => $movie['vote_average'] ?? 0,
-			'vote_count'   => $movie['vote_count'] ?? 0,
-			'popularity'   => $movie['popularity'] ?? 0,
-			'type'         => 'movie',
-			'source'       => 'tmdb',
-		);
+			'overview'       => $movie['overview'] ?? '',
+			'poster'         => $this->get_image_url( $movie['poster_path'] ?? '', 'w342' ),
+			'backdrop'       => $this->get_image_url( $movie['backdrop_path'] ?? '', 'w1280' ),
+			'release_date'   => $movie['release_date'] ?? '',
+			'year'           => $movie['release_date'] ? substr( $movie['release_date'], 0, 4 ) : '',
+			'vote_average'   => $movie['vote_average'] ?? 0,
+			'vote_count'     => $movie['vote_count'] ?? 0,
+			'popularity'     => $movie['popularity'] ?? 0,
+			'type'           => 'movie',
+			'source'         => 'tmdb',
+		];
 
 		if ( $detailed ) {
-			$result['runtime']   = $movie['runtime'] ?? null;
-			$result['tagline']   = $movie['tagline'] ?? '';
-			$result['status']    = $movie['status'] ?? '';
-			$result['budget']    = $movie['budget'] ?? 0;
-			$result['revenue']   = $movie['revenue'] ?? 0;
-			$result['homepage']  = $movie['homepage'] ?? '';
+			$result['runtime']  = $movie['runtime'] ?? null;
+			$result['tagline']  = $movie['tagline'] ?? '';
+			$result['status']   = $movie['status'] ?? '';
+			$result['budget']   = $movie['budget'] ?? 0;
+			$result['revenue']  = $movie['revenue'] ?? 0;
+			$result['homepage'] = $movie['homepage'] ?? '';
 
 			$result['genres'] = array_map(
 				function ( $genre ) {
 					return $genre['name'];
 				},
-				$movie['genres'] ?? array()
+				$movie['genres'] ?? []
 			);
 
 			$result['production_companies'] = array_map(
 				function ( $company ) {
-					return array(
+					return [
 						'id'   => $company['id'],
 						'name' => $company['name'],
 						'logo' => $this->get_image_url( $company['logo_path'] ?? '', 'w92' ),
-					);
+					];
 				},
-				$movie['production_companies'] ?? array()
+				$movie['production_companies'] ?? []
 			);
 
 			$result['spoken_languages'] = array_map(
 				function ( $lang ) {
 					return $lang['english_name'] ?? $lang['name'];
 				},
-				$movie['spoken_languages'] ?? array()
+				$movie['spoken_languages'] ?? []
 			);
 		} else {
-			$result['genre_ids'] = $movie['genre_ids'] ?? array();
+			$result['genre_ids'] = $movie['genre_ids'] ?? [];
 		}
 
 		return $result;
@@ -848,7 +905,7 @@ class TMDB extends API_Base {
 	 * @return array<string, mixed> Normalized TV show.
 	 */
 	private function normalize_tv( array $show, bool $detailed = false ): array {
-		$result = array(
+		$result = [
 			'id'             => $show['id'] ?? 0,
 			'tmdb_id'        => $show['id'] ?? 0,
 			'title'          => $show['name'] ?? '',
@@ -863,48 +920,48 @@ class TMDB extends API_Base {
 			'popularity'     => $show['popularity'] ?? 0,
 			'type'           => 'tv',
 			'source'         => 'tmdb',
-		);
+		];
 
 		if ( $detailed ) {
-			$result['last_air_date']     = $show['last_air_date'] ?? '';
-			$result['tagline']           = $show['tagline'] ?? '';
-			$result['status']            = $show['status'] ?? '';
-			$result['homepage']          = $show['homepage'] ?? '';
-			$result['in_production']     = $show['in_production'] ?? false;
-			$result['number_of_seasons'] = $show['number_of_seasons'] ?? 0;
+			$result['last_air_date']      = $show['last_air_date'] ?? '';
+			$result['tagline']            = $show['tagline'] ?? '';
+			$result['status']             = $show['status'] ?? '';
+			$result['homepage']           = $show['homepage'] ?? '';
+			$result['in_production']      = $show['in_production'] ?? false;
+			$result['number_of_seasons']  = $show['number_of_seasons'] ?? 0;
 			$result['number_of_episodes'] = $show['number_of_episodes'] ?? 0;
-			$result['episode_run_time']  = $show['episode_run_time'] ?? array();
+			$result['episode_run_time']   = $show['episode_run_time'] ?? [];
 
 			$result['genres'] = array_map(
 				function ( $genre ) {
 					return $genre['name'];
 				},
-				$show['genres'] ?? array()
+				$show['genres'] ?? []
 			);
 
 			$result['networks'] = array_map(
 				function ( $network ) {
-					return array(
+					return [
 						'id'   => $network['id'],
 						'name' => $network['name'],
 						'logo' => $this->get_image_url( $network['logo_path'] ?? '', 'w92' ),
-					);
+					];
 				},
-				$show['networks'] ?? array()
+				$show['networks'] ?? []
 			);
 
 			// Normalize seasons.
-			$result['seasons'] = array();
+			$result['seasons'] = [];
 			if ( isset( $show['seasons'] ) ) {
 				foreach ( $show['seasons'] as $season ) {
-					$result['seasons'][] = array(
+					$result['seasons'][] = [
 						'id'            => $season['id'] ?? 0,
 						'name'          => $season['name'] ?? '',
 						'season_number' => $season['season_number'] ?? 0,
 						'episode_count' => $season['episode_count'] ?? 0,
 						'air_date'      => $season['air_date'] ?? '',
 						'poster'        => $this->get_image_url( $season['poster_path'] ?? '', 'w185' ),
-					);
+					];
 				}
 			}
 
@@ -918,7 +975,7 @@ class TMDB extends API_Base {
 				$result['next_episode'] = $this->normalize_episode( $show['next_episode_to_air'], $show['id'] );
 			}
 		} else {
-			$result['genre_ids'] = $show['genre_ids'] ?? array();
+			$result['genre_ids'] = $show['genre_ids'] ?? [];
 		}
 
 		return $result;
@@ -932,7 +989,7 @@ class TMDB extends API_Base {
 	 * @return array<string, mixed> Normalized episode.
 	 */
 	private function normalize_episode( array $episode, int $tv_id ): array {
-		return array(
+		return [
 			'id'             => $episode['id'] ?? 0,
 			'tv_id'          => $tv_id,
 			'name'           => $episode['name'] ?? '',
@@ -946,7 +1003,7 @@ class TMDB extends API_Base {
 			'vote_count'     => $episode['vote_count'] ?? 0,
 			'type'           => 'episode',
 			'source'         => 'tmdb',
-		);
+		];
 	}
 
 	/**
@@ -956,15 +1013,15 @@ class TMDB extends API_Base {
 	 * @return array<string, mixed> Normalized person.
 	 */
 	private function normalize_person( array $person ): array {
-		return array(
-			'id'                 => $person['id'] ?? 0,
-			'name'               => $person['name'] ?? '',
-			'image'              => $this->get_image_url( $person['profile_path'] ?? '', 'w185' ),
+		return [
+			'id'                   => $person['id'] ?? 0,
+			'name'                 => $person['name'] ?? '',
+			'image'                => $this->get_image_url( $person['profile_path'] ?? '', 'w185' ),
 			'known_for_department' => $person['known_for_department'] ?? '',
-			'popularity'         => $person['popularity'] ?? 0,
-			'type'               => 'person',
-			'source'             => 'tmdb',
-		);
+			'popularity'           => $person['popularity'] ?? 0,
+			'type'                 => 'person',
+			'source'               => 'tmdb',
+		];
 	}
 
 	/**
@@ -975,16 +1032,16 @@ class TMDB extends API_Base {
 	 * @return array<int, array<string, mixed>> Normalized cast.
 	 */
 	private function normalize_cast( array $cast, int $limit = 15 ): array {
-		$result = array();
+		$result = [];
 
 		foreach ( array_slice( $cast, 0, $limit ) as $member ) {
-			$result[] = array(
+			$result[] = [
 				'id'        => $member['id'] ?? 0,
 				'name'      => $member['name'] ?? '',
 				'character' => $member['character'] ?? '',
 				'image'     => $this->get_image_url( $member['profile_path'] ?? '', 'w185' ),
 				'order'     => $member['order'] ?? 0,
-			);
+			];
 		}
 
 		return $result;
@@ -997,11 +1054,11 @@ class TMDB extends API_Base {
 	 * @return array<int, array<string, mixed>> Normalized crew.
 	 */
 	private function normalize_crew( array $crew ): array {
-		$result = array();
-		$seen   = array();
+		$result = [];
+		$seen   = [];
 
 		// Prioritize key roles.
-		$priority_jobs = array( 'Director', 'Writer', 'Screenplay', 'Producer', 'Executive Producer', 'Composer', 'Director of Photography' );
+		$priority_jobs = [ 'Director', 'Writer', 'Screenplay', 'Producer', 'Executive Producer', 'Composer', 'Director of Photography' ];
 
 		usort(
 			$crew,
@@ -1031,13 +1088,13 @@ class TMDB extends API_Base {
 				break;
 			}
 
-			$result[] = array(
+			$result[] = [
 				'id'         => $id,
 				'name'       => $member['name'] ?? '',
 				'job'        => $job,
 				'department' => $member['department'] ?? '',
 				'image'      => $this->get_image_url( $member['profile_path'] ?? '', 'w185' ),
-			);
+			];
 		}
 
 		return $result;
@@ -1069,22 +1126,22 @@ class TMDB extends API_Base {
 		// Prefer official YouTube trailers.
 		foreach ( $videos as $video ) {
 			if ( 'Trailer' === ( $video['type'] ?? '' ) && 'YouTube' === ( $video['site'] ?? '' ) && ( $video['official'] ?? false ) ) {
-				return array(
+				return [
 					'key'  => $video['key'],
 					'name' => $video['name'],
 					'url'  => 'https://www.youtube.com/watch?v=' . $video['key'],
-				);
+				];
 			}
 		}
 
 		// Fallback to any YouTube trailer.
 		foreach ( $videos as $video ) {
 			if ( 'Trailer' === ( $video['type'] ?? '' ) && 'YouTube' === ( $video['site'] ?? '' ) ) {
-				return array(
+				return [
 					'key'  => $video['key'],
 					'name' => $video['name'],
 					'url'  => 'https://www.youtube.com/watch?v=' . $video['key'],
-				);
+				];
 			}
 		}
 

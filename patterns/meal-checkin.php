@@ -22,15 +22,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 register_block_pattern(
 	'post-kinds-indieweb/meal-checkin',
-	array(
+	[
 		'title'       => __( 'Meal Check-in', 'post-kinds-for-indieweb' ),
 		'description' => __( 'Log a restaurant visit with food, drink, and location.', 'post-kinds-for-indieweb' ),
-		'categories'  => array( 'post-kinds-for-indieweb' ),
-		'keywords'    => array( 'meal', 'food', 'drink', 'restaurant', 'checkin', 'dining', 'indieweb' ),
-		'blockTypes'  => array( 'core/group' ),
-		'postTypes'   => array( 'post' ),
-		'content'     => '<!-- wp:group {"className":"h-entry reactions-meal-checkin","layout":{"type":"constrained"}} -->
-<div class="wp-block-group h-entry reactions-meal-checkin">
+		'categories'  => [ 'post-kinds-for-indieweb' ],
+		'keywords'    => [ 'meal', 'food', 'drink', 'restaurant', 'checkin', 'dining', 'indieweb' ],
+		'blockTypes'  => [ 'core/group' ],
+		'postTypes'   => [ 'post' ],
+		'content'     => '<!-- wp:group {"className":"h-entry post-kinds-meal-checkin","layout":{"type":"constrained"}} -->
+<div class="wp-block-group h-entry post-kinds-meal-checkin">
 
 	<!-- wp:post-kinds-indieweb/checkin-card /-->
 
@@ -62,5 +62,5 @@ register_block_pattern(
 
 </div>
 <!-- /wp:group -->',
-	)
+	]
 );

@@ -45,6 +45,10 @@
     "jammedAt": {
       "type": "string"
     },
+    "rel": {
+      "type": "string",
+      "default": ""
+    },
     "layout": {
       "type": "string",
       "default": "horizontal"

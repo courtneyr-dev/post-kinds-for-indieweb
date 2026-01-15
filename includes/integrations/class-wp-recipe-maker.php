@@ -67,7 +67,7 @@ class WP_Recipe_Maker {
 		}
 
 		// Check active plugins.
-		$active_plugins = get_option( 'active_plugins', array() );
+		$active_plugins = get_option( 'active_plugins', [] );
 		foreach ( $active_plugins as $plugin ) {
 			if ( strpos( $plugin, 'wp-recipe-maker' ) !== false ) {
 				$this->wprm_active = true;
@@ -83,16 +83,16 @@ class WP_Recipe_Maker {
 	 */
 	private function register_hooks(): void {
 		// Auto-set recipe kind when saving a post with a WPRM recipe.
-		add_action( 'save_post', array( $this, 'maybe_set_recipe_kind' ), 20, 2 );
+		add_action( 'save_post', [ $this, 'maybe_set_recipe_kind' ], 20, 2 );
 
 		// Add recipe data to post meta when WPRM recipe is detected.
-		add_action( 'save_post', array( $this, 'sync_recipe_meta' ), 25, 2 );
+		add_action( 'save_post', [ $this, 'sync_recipe_meta' ], 25, 2 );
 
 		// Add editor script to suggest recipe kind.
-		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_editor_assets' ) );
+		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_editor_assets' ] );
 
 		// REST API endpoint to check if post has recipe.
-		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
+		add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
 	}
 
 	/**
@@ -119,7 +119,7 @@ class WP_Recipe_Maker {
 		}
 
 		// Check if auto-detection is enabled.
-		$settings = get_option( 'post_kinds_indieweb_settings', array() );
+		$settings = get_option( 'post_kinds_indieweb_settings', [] );
 		if ( empty( $settings['wprm_auto_kind'] ) ) {
 			return;
 		}
@@ -136,7 +136,7 @@ class WP_Recipe_Maker {
 		}
 
 		// Set the recipe kind.
-		wp_set_post_terms( $post_id, array( 'recipe' ), Taxonomy::TAXONOMY );
+		wp_set_post_terms( $post_id, [ 'recipe' ], Taxonomy::TAXONOMY );
 	}
 
 	/**
@@ -194,7 +194,7 @@ class WP_Recipe_Maker {
 	 * @return string|null Kind slug or null.
 	 */
 	private function get_post_kind( int $post_id ): ?string {
-		$terms = wp_get_post_terms( $post_id, Taxonomy::TAXONOMY, array( 'fields' => 'slugs' ) );
+		$terms = wp_get_post_terms( $post_id, Taxonomy::TAXONOMY, [ 'fields' => 'slugs' ] );
 
 		if ( is_wp_error( $terms ) || empty( $terms ) ) {
 			return null;
@@ -223,10 +223,10 @@ class WP_Recipe_Maker {
 	public function get_recipe_ids_in_post( int $post_id ): array {
 		$post = get_post( $post_id );
 		if ( ! $post ) {
-			return array();
+			return [];
 		}
 
-		$recipe_ids = array();
+		$recipe_ids = [];
 
 		// Method 1: Check for WPRM shortcodes in content.
 		if ( has_shortcode( $post->post_content, 'wprm-recipe' ) ) {
@@ -239,7 +239,7 @@ class WP_Recipe_Maker {
 
 		// Method 2: Check for WPRM blocks (Gutenberg).
 		if ( function_exists( 'parse_blocks' ) ) {
-			$blocks = parse_blocks( $post->post_content );
+			$blocks     = parse_blocks( $post->post_content );
 			$recipe_ids = array_merge( $recipe_ids, $this->find_recipe_blocks( $blocks ) );
 		}
 
@@ -261,7 +261,7 @@ class WP_Recipe_Maker {
 	 * @return array<int> Recipe IDs found.
 	 */
 	private function find_recipe_blocks( array $blocks ): array {
-		$recipe_ids = array();
+		$recipe_ids = [];
 
 		foreach ( $blocks as $block ) {
 			// Check for WPRM recipe block.
@@ -297,30 +297,30 @@ class WP_Recipe_Maker {
 		if ( class_exists( 'WPRM_Recipe_Manager' ) && method_exists( 'WPRM_Recipe_Manager', 'get_recipe' ) ) {
 			$recipe = \WPRM_Recipe_Manager::get_recipe( $recipe_id );
 			if ( $recipe ) {
-				return array(
-					'id'          => $recipe_id,
-					'name'        => $recipe->name(),
-					'servings'    => $recipe->servings(),
+				return [
+					'id'            => $recipe_id,
+					'name'          => $recipe->name(),
+					'servings'      => $recipe->servings(),
 					'servings_unit' => $recipe->servings_unit(),
-					'prep_time'   => $recipe->prep_time(),
-					'cook_time'   => $recipe->cook_time(),
-					'total_time'  => $recipe->total_time(),
-					'image_id'    => $recipe->image_id(),
-				);
+					'prep_time'     => $recipe->prep_time(),
+					'cook_time'     => $recipe->cook_time(),
+					'total_time'    => $recipe->total_time(),
+					'image_id'      => $recipe->image_id(),
+				];
 			}
 		}
 
 		// Fallback: Read meta directly.
-		return array(
-			'id'          => $recipe_id,
-			'name'        => $recipe_post->post_title,
-			'servings'    => get_post_meta( $recipe_id, 'wprm_servings', true ),
+		return [
+			'id'            => $recipe_id,
+			'name'          => $recipe_post->post_title,
+			'servings'      => get_post_meta( $recipe_id, 'wprm_servings', true ),
 			'servings_unit' => get_post_meta( $recipe_id, 'wprm_servings_unit', true ),
-			'prep_time'   => get_post_meta( $recipe_id, 'wprm_prep_time', true ),
-			'cook_time'   => get_post_meta( $recipe_id, 'wprm_cook_time', true ),
-			'total_time'  => get_post_meta( $recipe_id, 'wprm_total_time', true ),
-			'image_id'    => get_post_thumbnail_id( $recipe_id ),
-		);
+			'prep_time'     => get_post_meta( $recipe_id, 'wprm_prep_time', true ),
+			'cook_time'     => get_post_meta( $recipe_id, 'wprm_cook_time', true ),
+			'total_time'    => get_post_meta( $recipe_id, 'wprm_total_time', true ),
+			'image_id'      => get_post_thumbnail_id( $recipe_id ),
+		];
 	}
 
 	/**
@@ -351,8 +351,8 @@ class WP_Recipe_Maker {
 
 		if ( $total_time <= 0 ) {
 			// Calculate from prep + cook time.
-			$prep_time = (int) ( $recipe['prep_time'] ?? 0 );
-			$cook_time = (int) ( $recipe['cook_time'] ?? 0 );
+			$prep_time  = (int) ( $recipe['prep_time'] ?? 0 );
+			$cook_time  = (int) ( $recipe['cook_time'] ?? 0 );
 			$total_time = $prep_time + $cook_time;
 		}
 
@@ -466,21 +466,21 @@ class WP_Recipe_Maker {
 		register_rest_route(
 			'post-kinds-indieweb/v1',
 			'/post/(?P<id>\d+)/has-recipe',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'rest_check_recipe' ),
-				'permission_callback' => function() {
+				'callback'            => [ $this, 'rest_check_recipe' ],
+				'permission_callback' => function () {
 					return current_user_can( 'edit_posts' );
 				},
-				'args'                => array(
-					'id' => array(
+				'args'                => [
+					'id' => [
 						'required'          => true,
-						'validate_callback' => function( $param ) {
+						'validate_callback' => function ( $param ) {
 							return is_numeric( $param );
 						},
-					),
-				),
-			)
+					],
+				],
+			]
 		);
 	}
 
@@ -493,14 +493,14 @@ class WP_Recipe_Maker {
 	public function rest_check_recipe( \WP_REST_Request $request ): \WP_REST_Response {
 		$post_id    = (int) $request->get_param( 'id' );
 		$has_recipe = $this->post_has_recipe( $post_id );
-		$recipe_ids = $has_recipe ? $this->get_recipe_ids_in_post( $post_id ) : array();
+		$recipe_ids = $has_recipe ? $this->get_recipe_ids_in_post( $post_id ) : [];
 
 		return new \WP_REST_Response(
-			array(
+			[
 				'has_recipe'  => $has_recipe,
 				'recipe_ids'  => $recipe_ids,
 				'recipe_data' => $has_recipe && ! empty( $recipe_ids ) ? $this->get_wprm_recipe( $recipe_ids[0] ) : null,
-			),
+			],
 			200
 		);
 	}

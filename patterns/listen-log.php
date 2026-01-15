@@ -22,15 +22,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 register_block_pattern(
 	'post-kinds-indieweb/listen-log',
-	array(
+	[
 		'title'       => __( 'Listen Log', 'post-kinds-for-indieweb' ),
 		'description' => __( 'Log a music track or podcast episode you listened to.', 'post-kinds-for-indieweb' ),
-		'categories'  => array( 'post-kinds-for-indieweb' ),
-		'keywords'    => array( 'listen', 'music', 'scrobble', 'podcast', 'audio', 'indieweb', 'reaction' ),
-		'blockTypes'  => array( 'core/group' ),
-		'postTypes'   => array( 'post' ),
-		'content'     => '<!-- wp:group {"className":"h-entry reactions-listen","layout":{"type":"constrained"}} -->
-<div class="wp-block-group h-entry reactions-listen">
+		'categories'  => [ 'post-kinds-for-indieweb' ],
+		'keywords'    => [ 'listen', 'music', 'scrobble', 'podcast', 'audio', 'indieweb', 'reaction' ],
+		'blockTypes'  => [ 'core/group' ],
+		'postTypes'   => [ 'post' ],
+		'content'     => '<!-- wp:group {"className":"h-entry post-kinds-listen","layout":{"type":"constrained"}} -->
+<div class="wp-block-group h-entry post-kinds-listen">
 
 	<!-- wp:columns {"className":"h-cite u-listen-of"} -->
 	<div class="wp-block-columns h-cite u-listen-of">
@@ -38,8 +38,8 @@ register_block_pattern(
 		<!-- wp:column {"width":"120px"} -->
 		<div class="wp-block-column" style="flex-basis:120px">
 
-			<!-- wp:image {"className":"u-photo reactions-listen-cover","width":"120px","height":"120px","scale":"cover","metadata":{"bindings":{"url":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"listen_cover"}},"alt":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"listen_album"}}}}} -->
-			<figure class="wp-block-image is-resized u-photo reactions-listen-cover"><img src="" alt="" style="object-fit:cover;width:120px;height:120px"/></figure>
+			<!-- wp:image {"className":"u-photo post-kinds-listen-cover","width":"120px","height":"120px","scale":"cover","metadata":{"bindings":{"url":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"listen_cover"}},"alt":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"listen_album"}}}}} -->
+			<figure class="wp-block-image is-resized u-photo post-kinds-listen-cover"><img src="" alt="" style="object-fit:cover;width:120px;height:120px"/></figure>
 			<!-- /wp:image -->
 
 		</div>
@@ -56,8 +56,8 @@ register_block_pattern(
 			<p class="p-author h-card has-medium-font-size"></p>
 			<!-- /wp:paragraph -->
 
-			<!-- wp:paragraph {"className":"reactions-listen-album","style":{"typography":{"fontStyle":"italic","fontWeight":"400"}},"textColor":"secondary","fontSize":"small","metadata":{"bindings":{"content":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"listen_album"}}}}} -->
-			<p class="reactions-listen-album has-secondary-color has-text-color has-small-font-size" style="font-style:italic;font-weight:400"></p>
+			<!-- wp:paragraph {"className":"post-kinds-listen-album","style":{"typography":{"fontStyle":"italic","fontWeight":"400"}},"textColor":"secondary","fontSize":"small","metadata":{"bindings":{"content":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"listen_album"}}}}} -->
+			<p class="post-kinds-listen-album has-secondary-color has-text-color has-small-font-size" style="font-style:italic;font-weight:400"></p>
 			<!-- /wp:paragraph -->
 
 		</div>
@@ -76,8 +76,8 @@ register_block_pattern(
 	</div>
 	<!-- /wp:group -->
 
-	<!-- wp:group {"className":"reactions-meta","style":{"spacing":{"margin":{"top":"var:preset|spacing|20"}}},"layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"space-between"}} -->
-	<div class="wp-block-group reactions-meta" style="margin-top:var(--wp--preset--spacing--20)">
+	<!-- wp:group {"className":"post-kinds-meta","style":{"spacing":{"margin":{"top":"var:preset|spacing|20"}}},"layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"space-between"}} -->
+	<div class="wp-block-group post-kinds-meta" style="margin-top:var(--wp--preset--spacing--20)">
 
 		<!-- wp:post-date {"className":"dt-published","fontSize":"small"} /-->
 
@@ -86,5 +86,5 @@ register_block_pattern(
 
 </div>
 <!-- /wp:group -->',
-	)
+	]
 );

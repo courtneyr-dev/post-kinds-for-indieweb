@@ -64,8 +64,8 @@ class Foursquare extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials   = get_option( 'post_kinds_indieweb_api_credentials', array() );
-		$fs_creds      = $credentials['foursquare'] ?? array();
+		$credentials   = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$fs_creds      = $credentials['foursquare'] ?? [];
 		$this->api_key = $fs_creds['api_key'] ?? '';
 	}
 
@@ -75,10 +75,10 @@ class Foursquare extends API_Base {
 	 * @return array<string, string>
 	 */
 	protected function get_default_headers(): array {
-		return array(
+		return [
 			'Accept'        => 'application/json',
 			'Authorization' => $this->api_key ?? '',
-		);
+		];
 	}
 
 	/**
@@ -89,7 +89,7 @@ class Foursquare extends API_Base {
 	 * @return array<string, mixed> Response.
 	 * @throws \Exception On error.
 	 */
-	private function api_get( string $endpoint, array $params = array() ): array {
+	private function api_get( string $endpoint, array $params = [] ): array {
 		$url = $this->base_url . ltrim( $endpoint, '/' );
 
 		if ( ! empty( $params ) ) {
@@ -98,10 +98,10 @@ class Foursquare extends API_Base {
 
 		$response = wp_remote_get(
 			$url,
-			array(
+			[
 				'timeout' => 30,
 				'headers' => $this->get_default_headers(),
-			)
+			]
 		);
 
 		if ( is_wp_error( $response ) ) {
@@ -117,7 +117,7 @@ class Foursquare extends API_Base {
 			throw new \Exception( esc_html( $message ), (int) $code );
 		}
 
-		return $data ?? array();
+		return $data ?? [];
 	}
 
 	/**
@@ -131,7 +131,13 @@ class Foursquare extends API_Base {
 		}
 
 		try {
-			$this->api_get( 'places/search', array( 'query' => 'coffee', 'limit' => 1 ) );
+			$this->api_get(
+				'places/search',
+				[
+					'query' => 'coffee',
+					'limit' => 1,
+				]
+			);
 			return true;
 		} catch ( \Exception $e ) {
 			return false;
@@ -160,10 +166,10 @@ class Foursquare extends API_Base {
 		}
 
 		try {
-			$params = array(
+			$params = [
 				'query' => $query,
 				'limit' => 25,
-			);
+			];
 
 			if ( $lat && $lng ) {
 				$params['ll'] = "{$lat},{$lng}";
@@ -173,7 +179,7 @@ class Foursquare extends API_Base {
 
 			$response = $this->api_get( 'places/search', $params );
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['results'] ) && is_array( $response['results'] ) ) {
 				foreach ( $response['results'] as $place ) {
@@ -185,8 +191,14 @@ class Foursquare extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -209,11 +221,11 @@ class Foursquare extends API_Base {
 		}
 
 		try {
-			$params = array(
+			$params = [
 				'll'     => "{$lat},{$lng}",
 				'radius' => min( $radius, 100000 ),
 				'limit'  => min( $limit, 50 ),
-			);
+			];
 
 			if ( $query ) {
 				$params['query'] = $query;
@@ -221,7 +233,7 @@ class Foursquare extends API_Base {
 
 			$response = $this->api_get( 'places/nearby', $params );
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['results'] ) ) {
 				foreach ( $response['results'] as $place ) {
@@ -233,8 +245,15 @@ class Foursquare extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search nearby failed', array( 'lat' => $lat, 'lng' => $lng, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search nearby failed',
+				[
+					'lat'   => $lat,
+					'lng'   => $lng,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -265,7 +284,7 @@ class Foursquare extends API_Base {
 		try {
 			$response = $this->api_get(
 				"places/{$fsq_id}",
-				array( 'fields' => 'fsq_id,name,location,categories,chains,closed_bucket,date_closed,description,email,features,geocodes,hours,hours_popular,link,menu,photos,popularity,price,rating,related_places,social_media,stats,tastes,tel,timezone,tips,verified,website' )
+				[ 'fields' => 'fsq_id,name,location,categories,chains,closed_bucket,date_closed,description,email,features,geocodes,hours,hours_popular,link,menu,photos,popularity,price,rating,related_places,social_media,stats,tastes,tel,timezone,tips,verified,website' ]
 			);
 
 			$result = $this->normalize_place( $response, true );
@@ -274,7 +293,13 @@ class Foursquare extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get place failed', array( 'fsq_id' => $fsq_id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get place failed',
+				[
+					'fsq_id' => $fsq_id,
+					'error'  => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -297,10 +322,10 @@ class Foursquare extends API_Base {
 		try {
 			$response = $this->api_get(
 				"places/{$fsq_id}/photos",
-				array( 'limit' => min( $limit, 50 ) )
+				[ 'limit' => min( $limit, 50 ) ]
 			);
 
-			$photos = array();
+			$photos = [];
 
 			if ( is_array( $response ) ) {
 				foreach ( $response as $photo ) {
@@ -312,8 +337,14 @@ class Foursquare extends API_Base {
 
 			return $photos;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get photos failed', array( 'fsq_id' => $fsq_id, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get photos failed',
+				[
+					'fsq_id' => $fsq_id,
+					'error'  => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -335,19 +366,19 @@ class Foursquare extends API_Base {
 		try {
 			$response = $this->api_get(
 				"places/{$fsq_id}/tips",
-				array( 'limit' => min( $limit, 50 ) )
+				[ 'limit' => min( $limit, 50 ) ]
 			);
 
-			$tips = array();
+			$tips = [];
 
 			if ( is_array( $response ) ) {
 				foreach ( $response as $tip ) {
-					$tips[] = array(
-						'id'         => $tip['id'] ?? '',
-						'text'       => $tip['text'] ?? '',
-						'created_at' => $tip['created_at'] ?? '',
-						'agree_count'=> $tip['agree_count'] ?? 0,
-					);
+					$tips[] = [
+						'id'          => $tip['id'] ?? '',
+						'text'        => $tip['text'] ?? '',
+						'created_at'  => $tip['created_at'] ?? '',
+						'agree_count' => $tip['agree_count'] ?? 0,
+					];
 				}
 			}
 
@@ -355,8 +386,14 @@ class Foursquare extends API_Base {
 
 			return $tips;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get tips failed', array( 'fsq_id' => $fsq_id, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get tips failed',
+				[
+					'fsq_id' => $fsq_id,
+					'error'  => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -370,10 +407,10 @@ class Foursquare extends API_Base {
 	 */
 	public function autocomplete( string $query, ?float $lat = null, ?float $lng = null ): array {
 		try {
-			$params = array(
+			$params = [
 				'query' => $query,
 				'limit' => 10,
-			);
+			];
 
 			if ( $lat && $lng ) {
 				$params['ll'] = "{$lat},{$lng}";
@@ -381,7 +418,7 @@ class Foursquare extends API_Base {
 
 			$response = $this->api_get( 'autocomplete', $params );
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['results'] ) ) {
 				foreach ( $response['results'] as $item ) {
@@ -393,8 +430,14 @@ class Foursquare extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Autocomplete failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Autocomplete failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -410,7 +453,7 @@ class Foursquare extends API_Base {
 	 */
 	public function match_place( string $name, string $address = '', string $city = '', string $state = '', string $country = '' ): ?array {
 		try {
-			$params = array( 'name' => $name );
+			$params = [ 'name' => $name ];
 
 			if ( $address ) {
 				$params['address'] = $address;
@@ -436,7 +479,13 @@ class Foursquare extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Match place failed', array( 'name' => $name, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Match place failed',
+				[
+					'name'  => $name,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -461,15 +510,15 @@ class Foursquare extends API_Base {
 		try {
 			$response = $this->api_get(
 				'places/search',
-				array(
+				[
 					'll'         => "{$lat},{$lng}",
 					'categories' => implode( ',', $categories ),
 					'radius'     => min( $radius, 100000 ),
 					'limit'      => 50,
-				)
+				]
 			);
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['results'] ) ) {
 				foreach ( $response['results'] as $place ) {
@@ -481,8 +530,14 @@ class Foursquare extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search by category failed', array( 'categories' => $categories, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search by category failed',
+				[
+					'categories' => $categories,
+					'error'      => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -493,20 +548,68 @@ class Foursquare extends API_Base {
 	 */
 	public function get_categories(): array {
 		// Common Foursquare categories - could be expanded.
-		return array(
-			array( 'id' => '13000', 'name' => 'Dining & Drinking', 'icon' => 'food' ),
-			array( 'id' => '13065', 'name' => 'Restaurant', 'icon' => 'food' ),
-			array( 'id' => '13003', 'name' => 'Bar', 'icon' => 'nightlife' ),
-			array( 'id' => '13032', 'name' => 'Cafe', 'icon' => 'coffee' ),
-			array( 'id' => '13035', 'name' => 'Coffee Shop', 'icon' => 'coffee' ),
-			array( 'id' => '17000', 'name' => 'Retail', 'icon' => 'shops' ),
-			array( 'id' => '18000', 'name' => 'Sports & Recreation', 'icon' => 'outdoors' ),
-			array( 'id' => '19000', 'name' => 'Travel & Transportation', 'icon' => 'travel' ),
-			array( 'id' => '10000', 'name' => 'Arts & Entertainment', 'icon' => 'arts' ),
-			array( 'id' => '12000', 'name' => 'Community & Government', 'icon' => 'building' ),
-			array( 'id' => '15000', 'name' => 'Health & Medicine', 'icon' => 'medical' ),
-			array( 'id' => '11000', 'name' => 'Business & Professional', 'icon' => 'office' ),
-		);
+		return [
+			[
+				'id'   => '13000',
+				'name' => 'Dining & Drinking',
+				'icon' => 'food',
+			],
+			[
+				'id'   => '13065',
+				'name' => 'Restaurant',
+				'icon' => 'food',
+			],
+			[
+				'id'   => '13003',
+				'name' => 'Bar',
+				'icon' => 'nightlife',
+			],
+			[
+				'id'   => '13032',
+				'name' => 'Cafe',
+				'icon' => 'coffee',
+			],
+			[
+				'id'   => '13035',
+				'name' => 'Coffee Shop',
+				'icon' => 'coffee',
+			],
+			[
+				'id'   => '17000',
+				'name' => 'Retail',
+				'icon' => 'shops',
+			],
+			[
+				'id'   => '18000',
+				'name' => 'Sports & Recreation',
+				'icon' => 'outdoors',
+			],
+			[
+				'id'   => '19000',
+				'name' => 'Travel & Transportation',
+				'icon' => 'travel',
+			],
+			[
+				'id'   => '10000',
+				'name' => 'Arts & Entertainment',
+				'icon' => 'arts',
+			],
+			[
+				'id'   => '12000',
+				'name' => 'Community & Government',
+				'icon' => 'building',
+			],
+			[
+				'id'   => '15000',
+				'name' => 'Health & Medicine',
+				'icon' => 'medical',
+			],
+			[
+				'id'   => '11000',
+				'name' => 'Business & Professional',
+				'icon' => 'office',
+			],
+		];
 	}
 
 	/**
@@ -527,16 +630,16 @@ class Foursquare extends API_Base {
 	 * @return array<string, mixed> Normalized place.
 	 */
 	private function normalize_place( array $place, bool $detailed = false ): array {
-		$location = $place['location'] ?? array();
-		$geocodes = $place['geocodes'] ?? array();
-		$main_geocode = $geocodes['main'] ?? array();
+		$location     = $place['location'] ?? [];
+		$geocodes     = $place['geocodes'] ?? [];
+		$main_geocode = $geocodes['main'] ?? [];
 
 		// Get primary category.
-		$categories = $place['categories'] ?? array();
-		$primary_category = ! empty( $categories ) ? $categories[0] : array();
+		$categories       = $place['categories'] ?? [];
+		$primary_category = ! empty( $categories ) ? $categories[0] : [];
 
 		// Build address string.
-		$address_parts = array();
+		$address_parts = [];
 		if ( ! empty( $location['address'] ) ) {
 			$address_parts[] = $location['address'];
 		}
@@ -550,38 +653,38 @@ class Foursquare extends API_Base {
 			$address_parts[] = $location['country'];
 		}
 
-		$result = array(
-			'id'             => $place['fsq_id'] ?? '',
-			'fsq_id'         => $place['fsq_id'] ?? '',
-			'name'           => $place['name'] ?? '',
-			'address'        => $location['address'] ?? '',
-			'address_extended' => $location['address_extended'] ?? '',
-			'cross_street'   => $location['cross_street'] ?? '',
-			'locality'       => $location['locality'] ?? '',
-			'region'         => $location['region'] ?? '',
-			'postcode'       => $location['postcode'] ?? '',
-			'country'        => $location['country'] ?? '',
+		$result = [
+			'id'                => $place['fsq_id'] ?? '',
+			'fsq_id'            => $place['fsq_id'] ?? '',
+			'name'              => $place['name'] ?? '',
+			'address'           => $location['address'] ?? '',
+			'address_extended'  => $location['address_extended'] ?? '',
+			'cross_street'      => $location['cross_street'] ?? '',
+			'locality'          => $location['locality'] ?? '',
+			'region'            => $location['region'] ?? '',
+			'postcode'          => $location['postcode'] ?? '',
+			'country'           => $location['country'] ?? '',
 			'formatted_address' => $location['formatted_address'] ?? implode( ', ', $address_parts ),
-			'latitude'       => $main_geocode['latitude'] ?? null,
-			'longitude'      => $main_geocode['longitude'] ?? null,
-			'distance'       => $place['distance'] ?? null,
-			'category'       => $primary_category['name'] ?? '',
-			'category_id'    => $primary_category['id'] ?? '',
-			'category_icon'  => $this->get_category_icon( $primary_category ),
-			'categories'     => array_map(
+			'latitude'          => $main_geocode['latitude'] ?? null,
+			'longitude'         => $main_geocode['longitude'] ?? null,
+			'distance'          => $place['distance'] ?? null,
+			'category'          => $primary_category['name'] ?? '',
+			'category_id'       => $primary_category['id'] ?? '',
+			'category_icon'     => $this->get_category_icon( $primary_category ),
+			'categories'        => array_map(
 				function ( $cat ) {
-					return array(
+					return [
 						'id'   => $cat['id'] ?? '',
 						'name' => $cat['name'] ?? '',
 						'icon' => $this->get_category_icon( $cat ),
-					);
+					];
 				},
 				$categories
 			),
-			'timezone'       => $place['timezone'] ?? '',
-			'type'           => 'venue',
-			'source'         => 'foursquare',
-		);
+			'timezone'          => $place['timezone'] ?? '',
+			'type'              => 'venue',
+			'source'            => 'foursquare',
+		];
 
 		if ( $detailed ) {
 			$result['description'] = $place['description'] ?? '';
@@ -605,7 +708,7 @@ class Foursquare extends API_Base {
 			}
 
 			// Photos.
-			$result['photos'] = array();
+			$result['photos'] = [];
 			if ( isset( $place['photos'] ) ) {
 				foreach ( $place['photos'] as $photo ) {
 					$result['photos'][] = $this->normalize_photo( $photo );
@@ -619,11 +722,11 @@ class Foursquare extends API_Base {
 
 			// Stats.
 			if ( isset( $place['stats'] ) ) {
-				$result['stats'] = array(
-					'total_photos' => $place['stats']['total_photos'] ?? 0,
-					'total_tips'   => $place['stats']['total_tips'] ?? 0,
-					'total_ratings'=> $place['stats']['total_ratings'] ?? 0,
-				);
+				$result['stats'] = [
+					'total_photos'  => $place['stats']['total_photos'] ?? 0,
+					'total_tips'    => $place['stats']['total_tips'] ?? 0,
+					'total_ratings' => $place['stats']['total_ratings'] ?? 0,
+				];
 			}
 
 			// Tastes/tags.
@@ -640,10 +743,10 @@ class Foursquare extends API_Base {
 			if ( isset( $place['chains'] ) ) {
 				$result['chains'] = array_map(
 					function ( $chain ) {
-						return array(
+						return [
 							'id'   => $chain['id'] ?? '',
 							'name' => $chain['name'] ?? '',
-						);
+						];
 					},
 					$place['chains']
 				);
@@ -663,18 +766,18 @@ class Foursquare extends API_Base {
 		$prefix = $photo['prefix'] ?? '';
 		$suffix = $photo['suffix'] ?? '';
 
-		return array(
-			'id'         => $photo['id'] ?? '',
-			'created_at' => $photo['created_at'] ?? '',
-			'prefix'     => $prefix,
-			'suffix'     => $suffix,
-			'width'      => $photo['width'] ?? 0,
-			'height'     => $photo['height'] ?? 0,
-			'url_small'  => $prefix . '100x100' . $suffix,
-			'url_medium' => $prefix . '300x300' . $suffix,
-			'url_large'  => $prefix . '500x500' . $suffix,
+		return [
+			'id'           => $photo['id'] ?? '',
+			'created_at'   => $photo['created_at'] ?? '',
+			'prefix'       => $prefix,
+			'suffix'       => $suffix,
+			'width'        => $photo['width'] ?? 0,
+			'height'       => $photo['height'] ?? 0,
+			'url_small'    => $prefix . '100x100' . $suffix,
+			'url_medium'   => $prefix . '300x300' . $suffix,
+			'url_large'    => $prefix . '500x500' . $suffix,
 			'url_original' => $prefix . 'original' . $suffix,
-		);
+		];
 	}
 
 	/**
@@ -689,7 +792,7 @@ class Foursquare extends API_Base {
 			return null;
 		}
 
-		$icon = $category['icon'];
+		$icon   = $category['icon'];
 		$prefix = $icon['prefix'] ?? '';
 		$suffix = $icon['suffix'] ?? '';
 

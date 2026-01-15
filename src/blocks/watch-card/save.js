@@ -62,7 +62,7 @@ export default function Save( { attributes } ) {
 
 		return (
 			<div
-				className="reactions-card__rating p-rating"
+				className="post-kinds-card__rating p-rating"
 				aria-label={ `Rating: ${ rating } out of 5 stars` }
 			>
 				{ Array.from( { length: 5 }, ( _, i ) => (
@@ -74,7 +74,7 @@ export default function Save( { attributes } ) {
 						★
 					</span>
 				) ) }
-				<span className="reactions-card__rating-value">
+				<span className="post-kinds-card__rating-value">
 					{ rating }/5
 				</span>
 			</div>
@@ -119,29 +119,29 @@ export default function Save( { attributes } ) {
 
 	return (
 		<div { ...blockProps }>
-			<div className="reactions-card h-cite">
+			<div className="post-kinds-card h-cite">
 				{ /* Poster image */ }
 				{ posterImage && (
-					<div className="reactions-card__media reactions-card__media--portrait">
+					<div className="post-kinds-card__media post-kinds-card__media--portrait">
 						<img
 							src={ posterImage }
 							alt={ posterImageAlt || mediaTitle }
-							className="reactions-card__image u-photo"
+							className="post-kinds-card__image u-photo"
 							loading="lazy"
 						/>
 					</div>
 				) }
 
-				<div className="reactions-card__content">
+				<div className="post-kinds-card__content">
 					{ /* Badges row */ }
-					<div className="reactions-card__badges">
+					<div className="post-kinds-card__badges">
 						<span
-							className={ `reactions-card__badge reactions-card__badge--${ mediaType }` }
+							className={ `post-kinds-card__badge post-kinds-card__badge--${ mediaType }` }
 						>
 							{ getMediaTypeLabel() }
 						</span>
 						{ isRewatch && (
-							<span className="reactions-card__badge reactions-card__badge--rewatch">
+							<span className="post-kinds-card__badge post-kinds-card__badge--rewatch">
 								Rewatch
 							</span>
 						) }
@@ -149,12 +149,12 @@ export default function Save( { attributes } ) {
 
 					{ /* Show title for episodes */ }
 					{ mediaType === 'episode' && showTitle && (
-						<p className="reactions-card__meta">{ showTitle }</p>
+						<p className="post-kinds-card__meta">{ showTitle }</p>
 					) }
 
 					{ /* Media title */ }
 					{ mediaTitle && (
-						<h3 className="reactions-card__title p-name">
+						<h3 className="post-kinds-card__title p-name">
 							{ watchUrl ? (
 								<a
 									href={ watchUrl }
@@ -172,14 +172,14 @@ export default function Save( { attributes } ) {
 
 					{ /* Episode info */ }
 					{ getEpisodeString() && (
-						<p className="reactions-card__subtitle">
+						<p className="post-kinds-card__subtitle">
 							{ getEpisodeString() }
 						</p>
 					) }
 
 					{ /* Meta line */ }
 					{ ( releaseYear || director ) && (
-						<p className="reactions-card__meta">
+						<p className="post-kinds-card__meta">
 							{ releaseYear && <span>({ releaseYear })</span> }
 							{ releaseYear && director && ' • ' }
 							{ director && (
@@ -195,7 +195,7 @@ export default function Save( { attributes } ) {
 
 					{ /* Review */ }
 					{ review && (
-						<div className="reactions-card__notes p-content">
+						<div className="post-kinds-card__notes p-content">
 							<RichText.Content tagName="p" value={ review } />
 						</div>
 					) }
@@ -203,7 +203,7 @@ export default function Save( { attributes } ) {
 					{ /* Watched timestamp */ }
 					{ watchedAt && (
 						<time
-							className="reactions-card__timestamp dt-published"
+							className="post-kinds-card__timestamp dt-published"
 							dateTime={ new Date( watchedAt ).toISOString() }
 						>
 							{ new Date( watchedAt ).toLocaleString() }
@@ -212,7 +212,7 @@ export default function Save( { attributes } ) {
 
 					{ /* External links */ }
 					{ ( getImdbUrl() || getTmdbUrl() ) && (
-						<div className="reactions-card__links">
+						<div className="post-kinds-card__links">
 							{ getImdbUrl() && (
 								<a
 									href={ getImdbUrl() }

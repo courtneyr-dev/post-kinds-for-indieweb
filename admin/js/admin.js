@@ -1,7 +1,7 @@
 /**
  * Post Kinds for IndieWeb - Admin JavaScript
  *
- * @package Reactions_For_IndieWeb
+ * @package PostKindsForIndieWeb
  * @since 1.0.0
  */
 
@@ -11,7 +11,7 @@
     /**
      * Main admin module
      */
-    const ReactionsAdmin = {
+    const PostKindsAdmin = {
         /**
          * Initialize
          */
@@ -35,12 +35,12 @@
             $(document).on('click', '.copy-webhook-url', this.copyToClipboard);
 
             // Clear cache buttons
-            $(document).on('click', '.reactions-clear-cache', this.clearCache);
+            $(document).on('click', '.post-kinds-clear-cache', this.clearCache);
 
             // Export/Import settings
-            $(document).on('click', '.reactions-export-settings', this.exportSettings);
-            $(document).on('change', '#reactions-import-file', this.enableImportButton);
-            $(document).on('click', '.reactions-import-settings', this.importSettings);
+            $(document).on('click', '.post-kinds-export-settings', this.exportSettings);
+            $(document).on('change', '#post-kinds-import-file', this.enableImportButton);
+            $(document).on('click', '.post-kinds-import-settings', this.importSettings);
         },
 
         /**
@@ -140,7 +140,7 @@
          * Enable import button
          */
         enableImportButton: function() {
-            $('.reactions-import-settings').prop('disabled', !$(this).val());
+            $('.post-kinds-import-settings').prop('disabled', !$(this).val());
         },
 
         /**
@@ -166,7 +166,7 @@
 
             // Toggle API card body
             $(document).on('change', '.api-enable-toggle', function() {
-                const $card = $(this).closest('.reactions-api-card');
+                const $card = $(this).closest('.post-kinds-api-card');
                 const $body = $card.find('.api-card-body');
 
                 if ($(this).is(':checked')) {
@@ -196,7 +196,7 @@
             e.preventDefault();
             const $button = $(this);
             const api = $button.data('api');
-            const $card = $button.closest('.reactions-api-card');
+            const $card = $button.closest('.post-kinds-api-card');
 
             $button.prop('disabled', true).text(postKindsIndieWeb.strings.testingApi);
 
@@ -247,7 +247,7 @@
         initiateOAuth: function(e) {
             e.preventDefault();
             const api = $(this).data('api');
-            const $card = $(this).closest('.reactions-api-card');
+            const $card = $(this).closest('.post-kinds-api-card');
             const $button = $(this);
 
             // Get credentials from the card (more specific selector)
@@ -365,7 +365,7 @@
         showImportPreview: function(e) {
             e.preventDefault();
             const source = $(this).data('source');
-            const options = ReactionsAdmin.getImportOptions(source);
+            const options = PostKindsAdmin.getImportOptions(source);
 
             $('#import-preview-modal').show();
             $('.preview-loading').show();
@@ -386,7 +386,7 @@
                     $('.preview-content').show();
 
                     if (response.success) {
-                        ReactionsAdmin.renderPreview(response.data);
+                        PostKindsAdmin.renderPreview(response.data);
                     } else {
                         $('.preview-content').html('<p class="error">' + response.data.message + '</p>');
                     }
@@ -452,7 +452,7 @@
             e.preventDefault();
             const $button = $(this);
             const source = $button.data('source');
-            const options = ReactionsAdmin.getImportOptions(source);
+            const options = PostKindsAdmin.getImportOptions(source);
 
             $button.prop('disabled', true).text(postKindsIndieWeb.strings.importing);
 
@@ -537,7 +537,7 @@
             e.preventDefault();
             const source = $('#import-preview-modal').data('source');
             $(`.import-start-button[data-source="${source}"]`).click();
-            ReactionsAdmin.closeModal();
+            PostKindsAdmin.closeModal();
         },
 
         /**
@@ -573,7 +573,7 @@
          * Close modal
          */
         closeModal: function() {
-            $('.reactions-modal').hide();
+            $('.post-kinds-modal').hide();
         },
 
         /**
@@ -748,12 +748,12 @@
          * Initialize meta boxes
          */
         initMetaBoxes: function() {
-            if (!$('.reactions-meta-box').length) {
+            if (!$('.post-kinds-meta-box').length) {
                 return;
             }
 
             // Post kind change
-            $(document).on('change', '#reactions_post_kind', this.onPostKindChange);
+            $(document).on('change', '#post_kinds_post_kind', this.onPostKindChange);
 
             // Conditional fields
             $(document).on('change', '[data-controls-visibility]', this.handleConditionalFields);
@@ -1244,7 +1244,7 @@
 
     // Initialize on document ready
     $(document).ready(function() {
-        ReactionsAdmin.init();
+        PostKindsAdmin.init();
     });
 
 })(jQuery);

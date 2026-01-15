@@ -44,7 +44,7 @@ class Post_Type {
 	 * @return void
 	 */
 	private function register_hooks(): void {
-		add_action( 'init', array( $this, 'maybe_register_post_type' ), 5 );
+		add_action( 'init', [ $this, 'maybe_register_post_type' ], 5 );
 	}
 
 	/**
@@ -66,7 +66,7 @@ class Post_Type {
 	 * @return void
 	 */
 	private function register_post_type(): void {
-		$labels = array(
+		$labels = [
 			'name'                  => _x( 'Reactions', 'post type general name', 'post-kinds-for-indieweb' ),
 			'singular_name'         => _x( 'Reaction', 'post type singular name', 'post-kinds-for-indieweb' ),
 			'menu_name'             => _x( 'Reactions', 'admin menu', 'post-kinds-for-indieweb' ),
@@ -85,30 +85,30 @@ class Post_Type {
 			'filter_items_list'     => __( 'Filter reactions list', 'post-kinds-for-indieweb' ),
 			'items_list_navigation' => __( 'Reactions list navigation', 'post-kinds-for-indieweb' ),
 			'items_list'            => __( 'Reactions list', 'post-kinds-for-indieweb' ),
-		);
+		];
 
-		$args = array(
-			'labels'              => $labels,
-			'description'         => __( 'Imported reactions from external services.', 'post-kinds-for-indieweb' ),
-			'public'              => true,
-			'publicly_queryable'  => true,
-			'show_ui'             => true,
-			'show_in_menu'        => true,
-			'show_in_nav_menus'   => true,
-			'show_in_rest'        => true,
-			'rest_base'           => 'post-kinds',
-			'query_var'           => true,
-			'rewrite'             => array(
+		$args = [
+			'labels'             => $labels,
+			'description'        => __( 'Imported reactions from external services.', 'post-kinds-for-indieweb' ),
+			'public'             => true,
+			'publicly_queryable' => true,
+			'show_ui'            => true,
+			'show_in_menu'       => true,
+			'show_in_nav_menus'  => true,
+			'show_in_rest'       => true,
+			'rest_base'          => 'post-kinds',
+			'query_var'          => true,
+			'rewrite'            => [
 				'slug'       => 'post-kinds',
 				'with_front' => false,
-			),
-			'capability_type'     => 'post',
-			'map_meta_cap'        => true,
-			'has_archive'         => true,
-			'hierarchical'        => false,
-			'menu_position'       => 5,
-			'menu_icon'           => 'dashicons-heart',
-			'supports'            => array(
+			],
+			'capability_type'    => 'post',
+			'map_meta_cap'       => true,
+			'has_archive'        => true,
+			'hierarchical'       => false,
+			'menu_position'      => 5,
+			'menu_icon'          => 'dashicons-heart',
+			'supports'           => [
 				'title',
 				'editor',
 				'author',
@@ -116,9 +116,9 @@ class Post_Type {
 				'excerpt',
 				'custom-fields',
 				'comments',
-			),
-			'taxonomies'          => array( 'kind' ),
-		);
+			],
+			'taxonomies'         => [ 'kind' ],
+		];
 
 		/**
 		 * Filters the reaction post type arguments.
@@ -138,7 +138,7 @@ class Post_Type {
 	 * @return bool
 	 */
 	public static function is_cpt_mode(): bool {
-		$settings = get_option( 'post_kinds_indieweb_settings', array() );
+		$settings = get_option( 'post_kinds_indieweb_settings', [] );
 		return ( $settings['import_storage_mode'] ?? 'standard' ) === 'cpt';
 	}
 
@@ -148,7 +148,7 @@ class Post_Type {
 	 * @return bool
 	 */
 	public static function is_hidden_mode(): bool {
-		$settings = get_option( 'post_kinds_indieweb_settings', array() );
+		$settings = get_option( 'post_kinds_indieweb_settings', [] );
 		return ( $settings['import_storage_mode'] ?? 'standard' ) === 'hidden';
 	}
 
@@ -158,11 +158,11 @@ class Post_Type {
 	 * @return string One of 'standard', 'cpt', or 'hidden'.
 	 */
 	public static function get_storage_mode(): string {
-		$settings = get_option( 'post_kinds_indieweb_settings', array() );
+		$settings = get_option( 'post_kinds_indieweb_settings', [] );
 		$mode     = $settings['import_storage_mode'] ?? 'standard';
 
 		// Validate mode.
-		if ( ! in_array( $mode, array( 'standard', 'cpt', 'hidden' ), true ) ) {
+		if ( ! in_array( $mode, [ 'standard', 'cpt', 'hidden' ], true ) ) {
 			return 'standard';
 		}
 

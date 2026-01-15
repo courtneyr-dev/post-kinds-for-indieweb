@@ -28,45 +28,52 @@ export default function Save( { attributes } ) {
 		reason,
 		priority,
 		wishedAt,
+		rel,
 		layout,
 	} = attributes;
 	const blockProps = useBlockProps.save( {
 		className: `wish-card layout-${ layout } priority-${ priority }`,
 	} );
 
+	// Build rel attribute - always includes noopener noreferrer for security
+	const linkRel = rel
+		? `noopener noreferrer ${ rel }`
+		: 'noopener noreferrer';
+
 	return (
 		<div { ...blockProps }>
-			<div className="reactions-card h-cite">
+			<div className="post-kinds-card h-cite">
 				{ image && (
-					<div className="reactions-card__media">
+					<div className="post-kinds-card__media">
 						<img
 							src={ image }
 							alt={ imageAlt || title }
-							className="reactions-card__image u-photo"
+							className="post-kinds-card__image u-photo"
 							loading="lazy"
 						/>
 					</div>
 				) }
-				<div className="reactions-card__content">
-					<div className="reactions-card__badges">
-						<span className="reactions-card__badge">
+				<div className="post-kinds-card__content">
+					<div className="post-kinds-card__badges">
+						<span className="post-kinds-card__badge">
 							{ TYPE_LABELS[ wishType ] || wishType }
 						</span>
 						<span
-							className={ `reactions-card__badge reactions-card__badge--${ priority }` }
+							className={ `post-kinds-card__badge post-kinds-card__badge--${ priority }` }
 						>
 							{ PRIORITY_LABELS[ priority ] }
 						</span>
 					</div>
 
 					{ title && (
-						<h3 className="reactions-card__title p-name">
+						<h3 className="post-kinds-card__title p-name">
 							{ url ? (
+								// eslint-disable-next-line react/jsx-no-target-blank -- linkRel always includes noreferrer
 								<a
 									href={ url }
 									className="u-url u-wish-of"
 									target="_blank"
-									rel="noopener noreferrer"
+									rel={ linkRel }
 								>
 									{ title }
 								</a>
@@ -77,18 +84,18 @@ export default function Save( { attributes } ) {
 					) }
 
 					{ price && (
-						<p className="reactions-card__subtitle">{ price }</p>
+						<p className="post-kinds-card__subtitle">{ price }</p>
 					) }
 
 					{ reason && (
-						<p className="reactions-card__notes p-content">
+						<p className="post-kinds-card__notes p-content">
 							{ reason }
 						</p>
 					) }
 
 					{ wishedAt && (
 						<time
-							className="reactions-card__timestamp dt-published"
+							className="post-kinds-card__timestamp dt-published"
 							dateTime={ new Date( wishedAt ).toISOString() }
 						>
 							{ new Date( wishedAt ).toLocaleString() }

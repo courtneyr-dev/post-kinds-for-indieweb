@@ -36,7 +36,7 @@ class Import_Manager {
 	 *
 	 * @var array<string, array<string, mixed>>
 	 */
-	private array $sources = array();
+	private array $sources = [];
 
 	/**
 	 * Constructor.
@@ -52,8 +52,8 @@ class Import_Manager {
 	 * @return void
 	 */
 	private function init_hooks(): void {
-		add_action( 'post_kinds_indieweb_process_import', array( $this, 'process_import_batch' ), 10, 2 );
-		add_action( 'admin_init', array( $this, 'cleanup_old_jobs' ) );
+		add_action( 'post_kinds_indieweb_process_import', [ $this, 'process_import_batch' ], 10, 2 );
+		add_action( 'admin_init', [ $this, 'cleanup_old_jobs' ] );
 	}
 
 	/**
@@ -62,120 +62,120 @@ class Import_Manager {
 	 * @return void
 	 */
 	private function register_sources(): void {
-		$this->sources = array(
-			'listenbrainz' => array(
-				'name'        => 'ListenBrainz',
-				'type'        => 'music',
-				'kind'        => 'listen',
-				'api_class'   => APIs\ListenBrainz::class,
-				'fetch_method'=> 'get_listens',
-				'batch_size'  => 100,
+		$this->sources = [
+			'listenbrainz'           => [
+				'name'          => 'ListenBrainz',
+				'type'          => 'music',
+				'kind'          => 'listen',
+				'api_class'     => APIs\ListenBrainz::class,
+				'fetch_method'  => 'get_listens',
+				'batch_size'    => 100,
 				'requires_auth' => true,
-			),
-			'lastfm' => array(
-				'name'        => 'Last.fm',
-				'type'        => 'music',
-				'kind'        => 'listen',
-				'api_class'   => APIs\LastFM::class,
-				'fetch_method'=> 'get_recent_tracks',
-				'batch_size'  => 200,
-				'requires_auth' => false,
+			],
+			'lastfm'                 => [
+				'name'              => 'Last.fm',
+				'type'              => 'music',
+				'kind'              => 'listen',
+				'api_class'         => APIs\LastFM::class,
+				'fetch_method'      => 'get_recent_tracks',
+				'batch_size'        => 200,
+				'requires_auth'     => false,
 				'requires_username' => true,
-			),
-			'trakt_movies' => array(
-				'name'        => 'Trakt Movies',
-				'type'        => 'video',
-				'kind'        => 'watch',
-				'api_class'   => APIs\Trakt::class,
-				'fetch_method'=> 'get_history',
-				'fetch_args'  => array( 'movies' ),
-				'batch_size'  => 100,
+			],
+			'trakt_movies'           => [
+				'name'          => 'Trakt Movies',
+				'type'          => 'video',
+				'kind'          => 'watch',
+				'api_class'     => APIs\Trakt::class,
+				'fetch_method'  => 'get_history',
+				'fetch_args'    => [ 'movies' ],
+				'batch_size'    => 100,
 				'requires_auth' => true,
-			),
-			'trakt_shows' => array(
-				'name'        => 'Trakt TV Shows',
-				'type'        => 'video',
-				'kind'        => 'watch',
-				'api_class'   => APIs\Trakt::class,
-				'fetch_method'=> 'get_history',
-				'fetch_args'  => array( 'episodes' ),
-				'batch_size'  => 100,
+			],
+			'trakt_shows'            => [
+				'name'          => 'Trakt TV Shows',
+				'type'          => 'video',
+				'kind'          => 'watch',
+				'api_class'     => APIs\Trakt::class,
+				'fetch_method'  => 'get_history',
+				'fetch_args'    => [ 'episodes' ],
+				'batch_size'    => 100,
 				'requires_auth' => true,
-			),
-			'simkl' => array(
-				'name'        => 'Simkl',
-				'type'        => 'video',
-				'kind'        => 'watch',
-				'api_class'   => APIs\Simkl::class,
-				'fetch_method'=> 'get_history',
-				'batch_size'  => 100,
+			],
+			'simkl'                  => [
+				'name'          => 'Simkl',
+				'type'          => 'video',
+				'kind'          => 'watch',
+				'api_class'     => APIs\Simkl::class,
+				'fetch_method'  => 'get_history',
+				'batch_size'    => 100,
 				'requires_auth' => true,
-			),
-			'hardcover' => array(
-				'name'        => 'Hardcover',
-				'type'        => 'book',
-				'kind'        => 'read',
-				'api_class'   => APIs\Hardcover::class,
-				'fetch_method'=> 'get_read_books',
-				'batch_size'  => 50,
+			],
+			'hardcover'              => [
+				'name'          => 'Hardcover',
+				'type'          => 'book',
+				'kind'          => 'read',
+				'api_class'     => APIs\Hardcover::class,
+				'fetch_method'  => 'get_read_books',
+				'batch_size'    => 50,
 				'requires_auth' => true,
-			),
-			'foursquare' => array(
-				'name'        => 'Foursquare / Swarm',
-				'type'        => 'location',
-				'kind'        => 'checkin',
-				'api_class'   => Sync\Foursquare_Checkin_Sync::class,
-				'fetch_method'=> 'fetch_recent_checkins',
-				'batch_size'  => 100,
+			],
+			'foursquare'             => [
+				'name'          => 'Foursquare / Swarm',
+				'type'          => 'location',
+				'kind'          => 'checkin',
+				'api_class'     => Sync\Foursquare_Checkin_Sync::class,
+				'fetch_method'  => 'fetch_recent_checkins',
+				'batch_size'    => 100,
 				'requires_auth' => true,
-			),
-			'readwise_books' => array(
-				'name'        => 'Readwise Books',
-				'type'        => 'book',
-				'kind'        => 'read',
-				'api_class'   => APIs\Readwise::class,
-				'fetch_method'=> 'get_books_with_highlights',
-				'batch_size'  => 10, // Lower batch size - each book requires API calls for highlights.
+			],
+			'readwise_books'         => [
+				'name'          => 'Readwise Books',
+				'type'          => 'book',
+				'kind'          => 'read',
+				'api_class'     => APIs\Readwise::class,
+				'fetch_method'  => 'get_books_with_highlights',
+				'batch_size'    => 10, // Lower batch size - each book requires API calls for highlights.
 				'requires_auth' => true,
-			),
-			'readwise_articles' => array(
-				'name'        => 'Readwise Articles',
-				'type'        => 'article',
-				'kind'        => 'bookmark',
-				'api_class'   => APIs\Readwise::class,
-				'fetch_method'=> 'get_articles',
-				'batch_size'  => 100,
+			],
+			'readwise_articles'      => [
+				'name'          => 'Readwise Articles',
+				'type'          => 'article',
+				'kind'          => 'bookmark',
+				'api_class'     => APIs\Readwise::class,
+				'fetch_method'  => 'get_articles',
+				'batch_size'    => 100,
 				'requires_auth' => true,
-			),
-			'readwise_podcasts' => array(
-				'name'        => 'Readwise Podcasts',
-				'type'        => 'podcast',
-				'kind'        => 'listen',
-				'api_class'   => APIs\Readwise::class,
-				'fetch_method'=> 'get_podcast_episodes',
-				'batch_size'  => 10, // Lower batch size - each episode requires API calls for highlights.
+			],
+			'readwise_podcasts'      => [
+				'name'          => 'Readwise Podcasts',
+				'type'          => 'podcast',
+				'kind'          => 'listen',
+				'api_class'     => APIs\Readwise::class,
+				'fetch_method'  => 'get_podcast_episodes',
+				'batch_size'    => 10, // Lower batch size - each episode requires API calls for highlights.
 				'requires_auth' => true,
-			),
-			'readwise_tweets' => array(
-				'name'        => 'Readwise Tweets',
-				'type'        => 'tweet',
-				'kind'        => 'bookmark',
-				'api_class'   => APIs\Readwise::class,
-				'fetch_method'=> 'get_tweets',
-				'batch_size'  => 100,
+			],
+			'readwise_tweets'        => [
+				'name'          => 'Readwise Tweets',
+				'type'          => 'tweet',
+				'kind'          => 'bookmark',
+				'api_class'     => APIs\Readwise::class,
+				'fetch_method'  => 'get_tweets',
+				'batch_size'    => 100,
 				'requires_auth' => true,
-			),
-			'readwise_supplementals' => array(
-				'name'        => 'Readwise Supplementals',
-				'type'        => 'supplemental',
-				'kind'        => 'note',
-				'api_class'   => APIs\Readwise::class,
-				'fetch_method'=> 'get_books',
-				'fetch_args'  => array( 'supplementals' ),
-				'batch_size'  => 100,
+			],
+			'readwise_supplementals' => [
+				'name'          => 'Readwise Supplementals',
+				'type'          => 'supplemental',
+				'kind'          => 'note',
+				'api_class'     => APIs\Readwise::class,
+				'fetch_method'  => 'get_books',
+				'fetch_args'    => [ 'supplementals' ],
+				'batch_size'    => 100,
 				'requires_auth' => true,
-			),
-		);
+			],
+		];
 
 		/**
 		 * Filter available import sources.
@@ -201,12 +201,12 @@ class Import_Manager {
 	 * @param array<string, mixed> $options Import options.
 	 * @return array<string, mixed> Job info.
 	 */
-	public function start_import( string $source, array $options = array() ): array {
+	public function start_import( string $source, array $options = [] ): array {
 		if ( ! isset( $this->sources[ $source ] ) ) {
-			return array(
+			return [
 				'success' => false,
 				'error'   => 'Unknown import source: ' . $source,
-			);
+			];
 		}
 
 		$source_config = $this->sources[ $source ];
@@ -215,24 +215,24 @@ class Import_Manager {
 		if ( $source_config['requires_auth'] ?? false ) {
 			$api = $this->get_api_instance( $source_config['api_class'] );
 			if ( method_exists( $api, 'is_authenticated' ) && ! $api->is_authenticated() ) {
-				return array(
+				return [
 					'success' => false,
 					'error'   => 'Authentication required for ' . $source_config['name'],
-				);
+				];
 			}
 		}
 
 		if ( ( $source_config['requires_username'] ?? false ) && empty( $options['username'] ) ) {
-			return array(
+			return [
 				'success' => false,
 				'error'   => 'Username required for ' . $source_config['name'],
-			);
+			];
 		}
 
 		// Create job.
 		$job_id = wp_generate_uuid4();
 
-		$job = array(
+		$job = [
 			'id'           => $job_id,
 			'source'       => $source,
 			'status'       => 'pending',
@@ -243,24 +243,24 @@ class Import_Manager {
 			'updated'      => 0,
 			'skipped'      => 0,
 			'failed'       => 0,
-			'errors'       => array(),
+			'errors'       => [],
 			'created_at'   => time(),
 			'updated_at'   => time(),
 			'started_at'   => null,
 			'completed_at' => null,
 			'cursor'       => null,
-		);
+		];
 
 		$this->save_job( $job_id, $job );
 
 		// Schedule first batch.
-		wp_schedule_single_event( time(), 'post_kinds_indieweb_process_import', array( $job_id, $source ) );
+		wp_schedule_single_event( time(), 'post_kinds_indieweb_process_import', [ $job_id, $source ] );
 
-		return array(
+		return [
 			'success' => true,
 			'job_id'  => $job_id,
 			'message' => 'Import started',
-		);
+		];
 	}
 
 	/**
@@ -282,10 +282,10 @@ class Import_Manager {
 		if ( ! $source_config ) {
 			$this->update_job(
 				$job_id,
-				array(
+				[
 					'status' => 'failed',
-					'errors' => array( 'Unknown source: ' . $source ),
-				)
+					'errors' => [ 'Unknown source: ' . $source ],
+				]
 			);
 			return;
 		}
@@ -307,11 +307,11 @@ class Import_Manager {
 				// No more items.
 				$this->update_job(
 					$job_id,
-					array(
+					[
 						'status'       => 'completed',
 						'completed_at' => time(),
 						'progress'     => 100,
-					)
+					]
 				);
 				return;
 			}
@@ -339,33 +339,33 @@ class Import_Manager {
 			$this->save_job( $job_id, $job );
 
 			// Check if we've reached the requested limit.
-			$limit = $job['options']['limit'] ?? 0;
+			$limit           = $job['options']['limit'] ?? 0;
 			$total_processed = $job['imported'] + $job['updated'] + $job['skipped'] + $job['failed'];
 
 			if ( $limit > 0 && $total_processed >= $limit ) {
 				// Reached the limit, mark as completed.
 				$this->update_job(
 					$job_id,
-					array(
+					[
 						'status'       => 'completed',
 						'completed_at' => time(),
 						'progress'     => 100,
-					)
+					]
 				);
 				return;
 			}
 
 			// Schedule next batch if more items.
 			if ( $batch['has_more'] ?? false ) {
-				wp_schedule_single_event( time() + 2, 'post_kinds_indieweb_process_import', array( $job_id, $source ) );
+				wp_schedule_single_event( time() + 2, 'post_kinds_indieweb_process_import', [ $job_id, $source ] );
 			} else {
 				$this->update_job(
 					$job_id,
-					array(
+					[
 						'status'       => 'completed',
 						'completed_at' => time(),
 						'progress'     => 100,
-					)
+					]
 				);
 			}
 		} catch ( \Exception $e ) {
@@ -382,9 +382,9 @@ class Import_Manager {
 	 * @return string|null ISO 8601 date string or null if no cutoff.
 	 */
 	private function get_sync_start_date( string $source ): ?string {
-		$settings = get_option( 'post_kinds_indieweb_settings', array() );
-		$sync_start_dates = $settings['sync_start_dates'] ?? array();
-		$date = $sync_start_dates[ $source ] ?? '';
+		$settings         = get_option( 'post_kinds_indieweb_settings', [] );
+		$sync_start_dates = $settings['sync_start_dates'] ?? [];
+		$date             = $sync_start_dates[ $source ] ?? '';
 		return ! empty( $date ) ? $date : null;
 	}
 
@@ -397,25 +397,25 @@ class Import_Manager {
 	 * @return array<string, mixed> Batch result.
 	 */
 	private function fetch_batch( object $api, array $source_config, array $job ): array {
-		$method = $source_config['fetch_method'];
-		$args   = $source_config['fetch_args'] ?? array();
-		$options = $job['options'] ?? array();
-		$cursor = $job['cursor'];
-		$source = $job['source'] ?? '';
+		$method  = $source_config['fetch_method'];
+		$args    = $source_config['fetch_args'] ?? [];
+		$options = $job['options'] ?? [];
+		$cursor  = $job['cursor'];
+		$source  = $job['source'] ?? '';
 
 		// Calculate batch size respecting import limit and global settings.
-		$settings = get_option( 'post_kinds_indieweb_settings', array() );
+		$settings          = get_option( 'post_kinds_indieweb_settings', [] );
 		$global_batch_size = (int) ( $settings['batch_size'] ?? 0 );
 		$source_batch_size = $source_config['batch_size'];
 
 		// Use global setting if set, otherwise use source-specific batch size.
 		$base_batch_size = $global_batch_size > 0 ? min( $global_batch_size, $source_batch_size ) : $source_batch_size;
 
-		$limit = $options['limit'] ?? 0;
+		$limit           = $options['limit'] ?? 0;
 		$total_processed = ( $job['imported'] ?? 0 ) + ( $job['updated'] ?? 0 ) + ( $job['skipped'] ?? 0 ) + ( $job['failed'] ?? 0 );
 
 		if ( $limit > 0 ) {
-			$remaining = $limit - $total_processed;
+			$remaining  = $limit - $total_processed;
 			$batch_size = min( $base_batch_size, max( 1, $remaining ) );
 		} else {
 			$batch_size = $base_batch_size;
@@ -433,11 +433,11 @@ class Import_Manager {
 				$username = $options['username'] ?? '';
 				$max_ts   = $cursor ? (int) $cursor : 0;
 				// Apply min_ts from sync start date.
-				$min_ts   = $date_from ? (int) strtotime( $date_from ) : 0;
-				$result   = $api->$method( $username, $batch_size, $max_ts, $min_ts );
+				$min_ts = $date_from ? (int) strtotime( $date_from ) : 0;
+				$result = $api->$method( $username, $batch_size, $max_ts, $min_ts );
 
 				// Stop if we've gone past the min_ts cutoff.
-				$has_more = count( $result ) >= $batch_size;
+				$has_more   = count( $result ) >= $batch_size;
 				$new_cursor = ! empty( $result ) ? end( $result )['listened_at'] : null;
 
 				// If min_ts is set and new_cursor is before it, stop pagination.
@@ -445,65 +445,65 @@ class Import_Manager {
 					$has_more = false;
 				}
 
-				return array(
+				return [
 					'items'    => $result,
 					'has_more' => $has_more,
 					'cursor'   => $new_cursor,
-				);
+				];
 
 			case APIs\LastFM::class:
 				$username = $options['username'] ?? '';
 				$page     = $cursor ? (int) $cursor : 1;
 				$result   = $api->$method( $username, $batch_size, $page );
 
-				return array(
-					'items'    => $result['tracks'] ?? array(),
+				return [
+					'items'    => $result['tracks'] ?? [],
 					'has_more' => $page < ( $result['total_pages'] ?? 0 ),
 					'cursor'   => $page + 1,
-				);
+				];
 
 			case APIs\Trakt::class:
-				$type  = $args[0] ?? 'movies';
-				$page  = $cursor ? (int) $cursor : 1;
+				$type   = $args[0] ?? 'movies';
+				$page   = $cursor ? (int) $cursor : 1;
 				$result = $api->$method( $type, $page, $batch_size );
 
-				return array(
-					'items'    => $result['items'] ?? array(),
-					'has_more' => count( $result['items'] ?? array() ) >= $batch_size,
+				return [
+					'items'    => $result['items'] ?? [],
+					'has_more' => count( $result['items'] ?? [] ) >= $batch_size,
 					'cursor'   => $page + 1,
-				);
+				];
 
 			case APIs\Simkl::class:
 				$result = $api->$method();
 
-				return array(
+				return [
 					'items'    => $result,
 					'has_more' => false,
 					'cursor'   => null,
-				);
+				];
 
 			case APIs\Hardcover::class:
 				$result = $api->$method( $source_config['batch_size'] );
 
-				return array(
+				return [
 					'items'    => $result,
 					'has_more' => false,
 					'cursor'   => null,
-				);
+				];
 
 			case Sync\Foursquare_Checkin_Sync::class:
 				$limit  = (int) ( $options['limit'] ?? $source_config['batch_size'] );
 				$result = $api->$method( $limit );
 
-				return array(
+				return [
 					'items'    => $result,
 					'has_more' => false,
 					'cursor'   => null,
-				);
+				];
 
 			case APIs\Readwise::class:
-				$limit = (int) ( $options['limit'] ?? $source_config['batch_size'] );
-				$fetch_args = $source_config['fetch_args'] ?? array();
+				$limit      = (int) ( $options['limit'] ?? $source_config['batch_size'] );
+				$fetch_args = $source_config['fetch_args'] ?? [];
 
 				// Different Readwise methods have different signatures.
 				// get_podcast_episodes: (limit, include_highlights, updated_after)
@@ -519,18 +519,18 @@ class Import_Manager {
 					$result = $api->$method( $limit, $date_from );
 				}
 
-				return array(
+				return [
 					'items'    => $result,
 					'has_more' => false,
 					'cursor'   => null,
-				);
+				];
 
 			default:
-				return array(
-					'items'    => array(),
+				return [
+					'items'    => [],
 					'has_more' => false,
 					'cursor'   => null,
-				);
+				];
 		}
 	}
 
@@ -543,15 +543,15 @@ class Import_Manager {
 	 * @return array<string, mixed> Processing result.
 	 */
 	private function process_items( array $items, array $source_config, array $job ): array {
-		$result = array(
+		$result = [
 			'imported' => 0,
 			'updated'  => 0,
 			'skipped'  => 0,
 			'failed'   => 0,
-			'errors'   => array(),
-		);
+			'errors'   => [],
+		];
 
-		$options = $job['options'] ?? array();
+		$options         = $job['options'] ?? [];
 		$create_posts    = $options['create_posts'] ?? true;  // Default to creating posts.
 		$skip_existing   = $options['skip_existing'] ?? true;
 		$update_existing = $options['update_existing'] ?? false; // Update metadata on existing posts.
@@ -666,26 +666,26 @@ class Import_Manager {
 			return false;
 		}
 
-		$args = array(
+		$args = [
 			'post_type'      => $this->get_import_post_type(),
 			'posts_per_page' => 1,
-			'meta_query'     => array(
-				array(
+			'meta_query'     => [
+				[
 					'key'   => $meta_key,
 					'value' => $meta_value,
-				),
-			),
+				],
+			],
 			'fields'         => 'ids',
-		);
+		];
 
 		if ( $date ) {
-			$args['date_query'] = array(
-				array(
+			$args['date_query'] = [
+				[
 					'year'  => (int) gmdate( 'Y', strtotime( $date ) ),
 					'month' => (int) gmdate( 'm', strtotime( $date ) ),
 					'day'   => (int) gmdate( 'd', strtotime( $date ) ),
-				),
-			);
+				],
+			];
 		}
 
 		$query = new \WP_Query( $args );
@@ -750,26 +750,26 @@ class Import_Manager {
 		}
 
 		// First try to find by meta key (most accurate).
-		$args = array(
+		$args = [
 			'post_type'      => $this->get_import_post_type(),
 			'posts_per_page' => 1,
-			'meta_query'     => array(
-				array(
+			'meta_query'     => [
+				[
 					'key'   => $meta_key,
 					'value' => $meta_value,
-				),
-			),
+				],
+			],
 			'fields'         => 'ids',
-		);
+		];
 
 		if ( $date ) {
-			$args['date_query'] = array(
-				array(
+			$args['date_query'] = [
+				[
 					'year'  => (int) gmdate( 'Y', strtotime( $date ) ),
 					'month' => (int) gmdate( 'm', strtotime( $date ) ),
 					'day'   => (int) gmdate( 'd', strtotime( $date ) ),
-				),
-			);
+				],
+			];
 		}
 
 		$query = new \WP_Query( $args );
@@ -780,12 +780,12 @@ class Import_Manager {
 
 		// Fallback: search by post title (for posts imported before meta was added).
 		if ( ! empty( $post_title ) ) {
-			$title_args = array(
+			$title_args = [
 				'post_type'      => $this->get_import_post_type(),
 				'posts_per_page' => 1,
 				'title'          => $post_title,
 				'fields'         => 'ids',
-			);
+			];
 
 			if ( $date ) {
 				$title_args['date_query'] = $args['date_query'];
@@ -811,7 +811,7 @@ class Import_Manager {
 	 */
 	public function update_post_metadata( int $post_id, array $item, array $source_config ): bool {
 		$kind = $source_config['kind'];
-		$meta = array();
+		$meta = [];
 
 		switch ( $kind ) {
 			case 'listen':
@@ -821,16 +821,16 @@ class Import_Manager {
 					$show       = $item['show_name'] ?? $item['author'] ?? '';
 					$source_url = $item['source_url'] ?? '';
 
-					$meta['_postkind_cite_name']     = $episode;
-					$meta['_postkind_cite_author']   = $show;
-					$meta['_postkind_cite_photo']    = $item['cover_image'] ?? '';
-					$meta['_postkind_cite_url']      = $source_url;
-					$meta['_postkind_listen_track']  = $episode;
-					$meta['_postkind_listen_artist'] = $show;
-					$meta['_postkind_listen_album']  = $show;
-					$meta['_postkind_listen_cover']  = $item['cover_image'] ?? '';
-					$meta['_postkind_listen_url']    = $source_url;
-					$meta['_postkind_source']        = $item['source'] ?? 'Snipd';
+					$meta['_postkind_cite_name']       = $episode;
+					$meta['_postkind_cite_author']     = $show;
+					$meta['_postkind_cite_photo']      = $item['cover_image'] ?? '';
+					$meta['_postkind_cite_url']        = $source_url;
+					$meta['_postkind_listen_track']    = $episode;
+					$meta['_postkind_listen_artist']   = $show;
+					$meta['_postkind_listen_album']    = $show;
+					$meta['_postkind_listen_cover']    = $item['cover_image'] ?? '';
+					$meta['_postkind_listen_url']      = $source_url;
+					$meta['_postkind_source']          = $item['source'] ?? 'Snipd';
 					$meta['_postkind_highlight_count'] = $item['highlight_count'] ?? 0;
 				} else {
 					// Music track.
@@ -852,13 +852,13 @@ class Import_Manager {
 				$title = $item['title'] ?? '';
 				$year  = $item['year'] ?? '';
 
-				$meta['_postkind_cite_name']       = $title;
-				$meta['_postkind_cite_photo']      = $item['poster'] ?? '';
-				$meta['_postkind_watch_title']     = $title;
-				$meta['_postkind_watch_year']      = $year;
-				$meta['_postkind_watch_poster']    = $item['poster'] ?? '';
-				$meta['_postkind_watch_tmdb_id']   = $item['tmdb_id'] ?? '';
-				$meta['_postkind_watch_status']    = 'watched';
+				$meta['_postkind_cite_name']     = $title;
+				$meta['_postkind_cite_photo']    = $item['poster'] ?? '';
+				$meta['_postkind_watch_title']   = $title;
+				$meta['_postkind_watch_year']    = $year;
+				$meta['_postkind_watch_poster']  = $item['poster'] ?? '';
+				$meta['_postkind_watch_tmdb_id'] = $item['tmdb_id'] ?? '';
+				$meta['_postkind_watch_status']  = 'watched';
 				break;
 
 			case 'read':
@@ -914,17 +914,17 @@ class Import_Manager {
 	 * @param array<string, mixed> $options       Job options (post_status, etc.).
 	 * @return int|\WP_Error Post ID or error.
 	 */
-	private function create_post_from_item( array $item, array $source_config, array $options = array() ) {
+	private function create_post_from_item( array $item, array $source_config, array $options = [] ) {
 		$kind = $source_config['kind'];
 
 		// Build post data. Default to draft for safety - user must explicitly choose to publish.
-		$post_data = array(
+		$post_data = [
 			'post_type'   => $this->get_import_post_type(),
 			'post_status' => $options['post_status'] ?? 'draft',
 			'post_author' => get_current_user_id(),
-		);
+		];
 
-		$meta        = array();
+		$meta        = [];
 		$post_format = ''; // Post format to set after insert (audio, video, etc.).
 
 		switch ( $kind ) {
@@ -936,12 +936,12 @@ class Import_Manager {
 					$episode    = $item['episode_title'] ?? $item['title'] ?? '';
 					$show       = $item['show_name'] ?? $item['author'] ?? '';
 					$source_url = $item['source_url'] ?? '';
-					$highlights = $item['highlights'] ?? array();
+					$highlights = $item['highlights'] ?? [];
 
 					$post_data['post_title'] = sprintf( 'Listened to %s', $episode );
 
 					// Build content with highlights.
-					$content_parts = array();
+					$content_parts   = [];
 					$content_parts[] = sprintf(
 						'<!-- wp:paragraph --><p>Listened to "%s" from %s.</p><!-- /wp:paragraph -->',
 						esc_html( $episode ),
@@ -1017,11 +1017,11 @@ class Import_Manager {
 					$post_data['post_title'] = sprintf( 'Listened to %s', $track );
 
 					// Build post content with optional embed.
-					$content_parts = array();
+					$content_parts   = [];
 					$content_parts[] = sprintf( '<!-- wp:paragraph --><p>Listened to "%s" by %s.</p><!-- /wp:paragraph -->', esc_html( $track ), esc_html( $artist ) );
 
 					// Get embed preference and generate embed if configured.
-					$settings     = get_option( 'post_kinds_indieweb_settings', array() );
+					$settings     = get_option( 'post_kinds_indieweb_settings', [] );
 					$embed_source = $settings['listen_embed_source'] ?? 'none';
 					$embed_url    = '';
 
@@ -1064,11 +1064,11 @@ class Import_Manager {
 				$year  = $item['year'] ?? '';
 				$type  = $item['type'] ?? 'movie';
 
-				$post_data['post_title'] = sprintf( 'Watched %s', $title );
+				$post_data['post_title']   = sprintf( 'Watched %s', $title );
 				$post_data['post_content'] = sprintf( '<!-- wp:paragraph --><p>Watched "%s".</p><!-- /wp:paragraph -->', esc_html( $title ) );
 
 				if ( isset( $item['watched_at'] ) ) {
-					$timestamp = is_numeric( $item['watched_at'] ) ? $item['watched_at'] : strtotime( $item['watched_at'] );
+					$timestamp                  = is_numeric( $item['watched_at'] ) ? $item['watched_at'] : strtotime( $item['watched_at'] );
 					$post_data['post_date']     = gmdate( 'Y-m-d H:i:s', $timestamp );
 					$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', $timestamp );
 				}
@@ -1077,8 +1077,8 @@ class Import_Manager {
 				$post_format = 'video';
 
 				// Citation fields for Post Kind editor.
-				$meta['_postkind_cite_name']   = $title;
-				$meta['_postkind_cite_photo']  = $item['poster'] ?? '';
+				$meta['_postkind_cite_name']  = $title;
+				$meta['_postkind_cite_photo'] = $item['poster'] ?? '';
 
 				// Watch-specific fields.
 				$meta['_postkind_watch_title']   = $title;
@@ -1088,10 +1088,10 @@ class Import_Manager {
 				$meta['_postkind_watch_status']  = 'watched';
 
 				// Legacy field names for compatibility.
-				$meta['_postkind_watch_type']   = $type;
-				$meta['_postkind_watch_tmdb']   = $item['tmdb_id'] ?? '';
-				$meta['_postkind_watch_imdb']   = $item['imdb_id'] ?? '';
-				$meta['_postkind_watch_trakt']  = $item['trakt_id'] ?? '';
+				$meta['_postkind_watch_type']  = $type;
+				$meta['_postkind_watch_tmdb']  = $item['tmdb_id'] ?? '';
+				$meta['_postkind_watch_imdb']  = $item['imdb_id'] ?? '';
+				$meta['_postkind_watch_trakt'] = $item['trakt_id'] ?? '';
 
 				if ( 'episode' === $type || 'tv' === $type ) {
 					$meta['_postkind_watch_show']    = $item['show']['title'] ?? '';
@@ -1116,7 +1116,7 @@ class Import_Manager {
 				$post_data['post_title'] = sprintf( 'Read %s', $title );
 
 				// Build content with optional Kindle embed and highlights.
-				$content_parts = array();
+				$content_parts = [];
 
 				// Add intro paragraph.
 				$content_parts[] = sprintf(
@@ -1140,7 +1140,7 @@ class Import_Manager {
 				}
 
 				// Add highlights in a details block if available.
-				$highlights = $item['highlights'] ?? array();
+				$highlights = $item['highlights'] ?? [];
 				if ( ! empty( $highlights ) ) {
 					// Build the inner content for the details block.
 					$highlights_content = '';
@@ -1217,10 +1217,10 @@ class Import_Manager {
 				}
 
 				// Checkin-specific fields for Post Kind editor.
-				$meta['_postkind_checkin_name']      = $venue;
-				$meta['_postkind_checkin_address']   = $address;
-				$meta['_postkind_geo_latitude']      = $item['latitude'] ?? '';
-				$meta['_postkind_geo_longitude']     = $item['longitude'] ?? '';
+				$meta['_postkind_checkin_name']    = $venue;
+				$meta['_postkind_checkin_address'] = $address;
+				$meta['_postkind_geo_latitude']    = $item['latitude'] ?? '';
+				$meta['_postkind_geo_longitude']   = $item['longitude'] ?? '';
 
 				// Legacy/internal fields.
 				$meta['_postkind_checkin_venue']     = $venue;
@@ -1266,8 +1266,8 @@ class Import_Manager {
 				}
 
 				// Citation fields for Post Kind editor.
-				$meta['_postkind_cite_name']   = $title;
-				$meta['_postkind_cite_url']    = $item['source_url'] ?? '';
+				$meta['_postkind_cite_name'] = $title;
+				$meta['_postkind_cite_url']  = $item['source_url'] ?? '';
 
 				// Import tracking.
 				$meta['_postkind_source']          = $item['source'] ?? '';
@@ -1330,7 +1330,7 @@ class Import_Manager {
 	 * @return string Post type slug.
 	 */
 	private function get_import_post_type(): string {
-		$settings     = get_option( 'post_kinds_indieweb_settings', array() );
+		$settings     = get_option( 'post_kinds_indieweb_settings', [] );
 		$storage_mode = $settings['import_storage_mode'] ?? 'standard';
 
 		return 'cpt' === $storage_mode ? 'reaction' : 'post';
@@ -1379,7 +1379,7 @@ class Import_Manager {
 		$job = $this->get_job( $job_id );
 
 		if ( $job ) {
-			$job = array_merge( $job, $updates );
+			$job               = array_merge( $job, $updates );
 			$job['updated_at'] = time();
 			$this->save_job( $job_id, $job );
 		}
@@ -1400,10 +1400,10 @@ class Import_Manager {
 
 		$this->update_job(
 			$job_id,
-			array(
+			[
 				'status'       => 'cancelled',
 				'completed_at' => time(),
-			)
+			]
 		);
 
 		return true;
@@ -1422,7 +1422,7 @@ class Import_Manager {
 			return null;
 		}
 
-		return array(
+		return [
 			'id'           => $job['id'],
 			'source'       => $job['source'],
 			'status'       => $job['status'],
@@ -1435,7 +1435,7 @@ class Import_Manager {
 			'started_at'   => $job['started_at'],
 			'completed_at' => $job['completed_at'],
 			'elapsed'      => $job['started_at'] ? time() - $job['started_at'] : 0,
-		);
+		];
 	}
 
 	/**
@@ -1455,12 +1455,12 @@ class Import_Manager {
 			)
 		);
 
-		$jobs = array();
+		$jobs = [];
 
 		foreach ( $results as $row ) {
 			$job = maybe_unserialize( $row->option_value );
 
-			if ( in_array( $job['status'] ?? '', array( 'pending', 'running' ), true ) ) {
+			if ( in_array( $job['status'] ?? '', [ 'pending', 'running' ], true ) ) {
 				$jobs[] = $job;
 			}
 		}
@@ -1506,43 +1506,45 @@ class Import_Manager {
 	 */
 	public function resync_metadata( string $source ): array {
 		if ( ! isset( $this->sources[ $source ] ) ) {
-			return array(
+			return [
 				'success' => false,
 				'error'   => __( 'Invalid import source.', 'post-kinds-for-indieweb' ),
-			);
+			];
 		}
 
 		$source_config = $this->sources[ $source ];
 		$kind          = $source_config['kind'];
 
 		// Find posts imported from this source.
-		$posts = get_posts( array(
-			'post_type'      => array( 'post', 'reaction' ),
-			'post_status'    => 'any',
-			'posts_per_page' => -1,
-			'meta_query'     => array(
-				array(
-					'key'     => '_postkind_imported_from',
-					'value'   => $source_config['name'],
-					'compare' => '=',
-				),
-			),
-			'tax_query'      => array(
-				array(
-					'taxonomy' => 'kind',
-					'field'    => 'slug',
-					'terms'    => $kind,
-				),
-			),
-		) );
+		$posts = get_posts(
+			[
+				'post_type'      => [ 'post', 'reaction' ],
+				'post_status'    => 'any',
+				'posts_per_page' => -1,
+				'meta_query'     => [
+					[
+						'key'     => '_postkind_imported_from',
+						'value'   => $source_config['name'],
+						'compare' => '=',
+					],
+				],
+				'tax_query'      => [
+					[
+						'taxonomy' => 'kind',
+						'field'    => 'slug',
+						'terms'    => $kind,
+					],
+				],
+			]
+		);
 
 		if ( empty( $posts ) ) {
-			return array(
+			return [
 				'success' => true,
 				'updated' => 0,
 				'skipped' => 0,
 				'message' => __( 'No imported posts found to re-sync.', 'post-kinds-for-indieweb' ),
-			);
+			];
 		}
 
 		$updated = 0;
@@ -1558,7 +1560,7 @@ class Import_Manager {
 			}
 		}
 
-		return array(
+		return [
 			'success' => true,
 			'updated' => $updated,
 			'skipped' => $skipped,
@@ -1568,7 +1570,7 @@ class Import_Manager {
 				$updated,
 				$skipped
 			),
-		);
+		];
 	}
 
 	/**
@@ -1628,7 +1630,7 @@ class Import_Manager {
 				$results = $api->search( $title, $type );
 
 				if ( ! empty( $results ) ) {
-					$item = $results[0];
+					$item     = $results[0];
 					$trakt_id = $item['trakt_id'] ?? '';
 				}
 			}

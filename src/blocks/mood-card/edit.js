@@ -252,21 +252,21 @@ export default function Edit( { attributes, setAttributes } ) {
 			</InspectorControls>
 
 			<div { ...blockProps }>
-				<div className="reactions-card reactions-card--mood">
-					<div className="reactions-card__emoji-section">
-						<div className="reactions-card__emoji-display">
-							<span className="reactions-card__emoji-large">
+				<div className="post-kinds-card post-kinds-card--mood">
+					<div className="post-kinds-card__emoji-section">
+						<div className="post-kinds-card__emoji-display">
+							<span className="post-kinds-card__emoji-large">
 								{ emoji || '😊' }
 							</span>
 						</div>
 
 						{ /* Intensity Dots */ }
-						<div className="reactions-card__intensity-dots">
+						<div className="post-kinds-card__intensity-dots">
 							{ Array.from( { length: 5 }, ( _, i ) => (
 								<button
 									key={ i }
 									type="button"
-									className={ `reactions-card__intensity-dot ${
+									className={ `post-kinds-card__intensity-dot ${
 										i < ( intensity || 3 ) ? 'filled' : ''
 									}` }
 									onClick={ () =>
@@ -281,17 +281,17 @@ export default function Edit( { attributes, setAttributes } ) {
 						</div>
 
 						{ /* Emoji Picker */ }
-						<div className="reactions-card__emoji-picker">
+						<div className="post-kinds-card__emoji-picker">
 							{ MOOD_CATEGORIES.map( ( category ) => (
 								<div
 									key={ category.name }
-									className="reactions-card__emoji-category"
+									className="post-kinds-card__emoji-category"
 								>
 									{ category.emojis.map( ( e ) => (
 										<button
 											key={ e }
 											type="button"
-											className={ `reactions-card__emoji-btn ${
+											className={ `post-kinds-card__emoji-btn ${
 												emoji === e ? 'selected' : ''
 											}` }
 											onClick={ () =>
@@ -306,14 +306,14 @@ export default function Edit( { attributes, setAttributes } ) {
 						</div>
 					</div>
 
-					<div className="reactions-card__content">
-						<span className="reactions-card__badge">
+					<div className="post-kinds-card__content">
+						<span className="post-kinds-card__badge">
 							😊 { __( 'Feeling', 'post-kinds-for-indieweb' ) }
 						</span>
 
 						<RichText
 							tagName="h3"
-							className="reactions-card__title"
+							className="post-kinds-card__title"
 							value={ mood }
 							onChange={ ( value ) =>
 								setAttributes( { mood: value } )
@@ -326,7 +326,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 						<RichText
 							tagName="p"
-							className="reactions-card__notes"
+							className="post-kinds-card__notes"
 							value={ note }
 							onChange={ ( value ) =>
 								setAttributes( { note: value } )

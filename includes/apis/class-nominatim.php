@@ -64,8 +64,8 @@ class Nominatim extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials         = get_option( 'post_kinds_indieweb_api_credentials', array() );
-		$nom_creds           = $credentials['nominatim'] ?? array();
+		$credentials         = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$nom_creds           = $credentials['nominatim'] ?? [];
 		$this->custom_server = $nom_creds['server'] ?? '';
 
 		if ( $this->custom_server ) {
@@ -79,10 +79,10 @@ class Nominatim extends API_Base {
 	 * @return array<string, string>
 	 */
 	protected function get_default_headers(): array {
-		return array(
+		return [
 			'Accept'     => 'application/json',
 			'User-Agent' => $this->user_agent,
-		);
+		];
 	}
 
 	/**
@@ -92,7 +92,14 @@ class Nominatim extends API_Base {
 	 */
 	public function test_connection(): bool {
 		try {
-			$this->get( 'search', array( 'q' => 'New York', 'format' => 'json', 'limit' => 1 ) );
+			$this->get(
+				'search',
+				[
+					'q'      => 'New York',
+					'format' => 'json',
+					'limit'  => 1,
+				]
+			);
 			return true;
 		} catch ( \Exception $e ) {
 			return false;
@@ -116,16 +123,16 @@ class Nominatim extends API_Base {
 		try {
 			$response = $this->get(
 				'search',
-				array(
+				[
 					'q'              => $query,
 					'format'         => 'json',
 					'addressdetails' => 1,
 					'extratags'      => 1,
 					'limit'          => 25,
-				)
+				]
 			);
 
-			$results = array();
+			$results = [];
 
 			if ( is_array( $response ) ) {
 				foreach ( $response as $item ) {
@@ -137,8 +144,14 @@ class Nominatim extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -149,11 +162,11 @@ class Nominatim extends API_Base {
 	 * @return array<int, array<string, mixed>> Results.
 	 */
 	public function structured_search( array $params ): array {
-		$allowed_params = array( 'street', 'city', 'county', 'state', 'country', 'postalcode' );
-		$search_params = array_intersect_key( $params, array_flip( $allowed_params ) );
+		$allowed_params = [ 'street', 'city', 'county', 'state', 'country', 'postalcode' ];
+		$search_params  = array_intersect_key( $params, array_flip( $allowed_params ) );
 
 		if ( empty( $search_params ) ) {
-			return array();
+			return [];
 		}
 
 		$cache_key = 'structured_' . md5( wp_json_encode( $search_params ) );
@@ -170,7 +183,7 @@ class Nominatim extends API_Base {
 
 			$response = $this->get( 'search', $search_params );
 
-			$results = array();
+			$results = [];
 
 			if ( is_array( $response ) ) {
 				foreach ( $response as $item ) {
@@ -182,8 +195,14 @@ class Nominatim extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Structured search failed', array( 'params' => $search_params, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Structured search failed',
+				[
+					'params' => $search_params,
+					'error'  => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -222,14 +241,14 @@ class Nominatim extends API_Base {
 		try {
 			$response = $this->get(
 				'reverse',
-				array(
+				[
 					'lat'            => $lat,
 					'lon'            => $lng,
 					'format'         => 'json',
 					'addressdetails' => 1,
 					'extratags'      => 1,
 					'zoom'           => min( 18, max( 0, $zoom ) ),
-				)
+				]
 			);
 
 			if ( isset( $response['lat'] ) ) {
@@ -240,7 +259,14 @@ class Nominatim extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Reverse geocode failed', array( 'lat' => $lat, 'lng' => $lng, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Reverse geocode failed',
+				[
+					'lat'   => $lat,
+					'lng'   => $lng,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -272,12 +298,12 @@ class Nominatim extends API_Base {
 		try {
 			$response = $this->get(
 				'lookup',
-				array(
+				[
 					'osm_ids'        => $osm_id,
 					'format'         => 'json',
 					'addressdetails' => 1,
 					'extratags'      => 1,
-				)
+				]
 			);
 
 			if ( ! empty( $response ) && is_array( $response ) ) {
@@ -288,7 +314,13 @@ class Nominatim extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Lookup failed', array( 'osm_id' => $osm_id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Lookup failed',
+				[
+					'osm_id' => $osm_id,
+					'error'  => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -301,12 +333,12 @@ class Nominatim extends API_Base {
 	 */
 	public function lookup_multiple( array $osm_ids ): array {
 		if ( empty( $osm_ids ) ) {
-			return array();
+			return [];
 		}
 
 		$ids_string = implode( ',', $osm_ids );
-		$cache_key = 'lookup_multi_' . md5( $ids_string );
-		$cached    = $this->get_cache( $cache_key );
+		$cache_key  = 'lookup_multi_' . md5( $ids_string );
+		$cached     = $this->get_cache( $cache_key );
 
 		if ( null !== $cached ) {
 			return $cached;
@@ -315,14 +347,14 @@ class Nominatim extends API_Base {
 		try {
 			$response = $this->get(
 				'lookup',
-				array(
+				[
 					'osm_ids'        => $ids_string,
 					'format'         => 'json',
 					'addressdetails' => 1,
-				)
+				]
 			);
 
-			$results = array();
+			$results = [];
 
 			if ( is_array( $response ) ) {
 				foreach ( $response as $item ) {
@@ -334,8 +366,14 @@ class Nominatim extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Lookup multiple failed', array( 'osm_ids' => $osm_ids, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Lookup multiple failed',
+				[
+					'osm_ids' => $osm_ids,
+					'error'   => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -363,17 +401,17 @@ class Nominatim extends API_Base {
 		try {
 			$response = $this->get(
 				'search',
-				array(
+				[
 					'q'              => $query,
 					'format'         => 'json',
 					'viewbox'        => $viewbox,
 					'bounded'        => $bounded ? 1 : 0,
 					'addressdetails' => 1,
 					'limit'          => 25,
-				)
+				]
 			);
 
-			$results = array();
+			$results = [];
 
 			if ( is_array( $response ) ) {
 				foreach ( $response as $item ) {
@@ -385,8 +423,14 @@ class Nominatim extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Bounded search failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Bounded search failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -414,16 +458,16 @@ class Nominatim extends API_Base {
 		}
 
 		try {
-			$params = array(
+			$params = [
 				'q'              => $query,
 				'format'         => 'json',
 				'addressdetails' => 1,
 				'limit'          => 25,
-			);
+			];
 
 			$response = $this->get( 'search', $params );
 
-			$results = array();
+			$results = [];
 
 			if ( is_array( $response ) ) {
 				foreach ( $response as $item ) {
@@ -457,8 +501,14 @@ class Nominatim extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search by type failed', array( 'type' => $type, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search by type failed',
+				[
+					'type'  => $type,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -479,11 +529,11 @@ class Nominatim extends API_Base {
 	 * @return array<string, mixed> Normalized location.
 	 */
 	private function normalize_location( array $location ): array {
-		$address = $location['address'] ?? array();
-		$extratags = $location['extratags'] ?? array();
+		$address   = $location['address'] ?? [];
+		$extratags = $location['extratags'] ?? [];
 
 		// Build display name from address parts.
-		$address_parts = array();
+		$address_parts = [];
 
 		// Street-level.
 		if ( ! empty( $address['house_number'] ) ) {
@@ -508,73 +558,73 @@ class Nominatim extends API_Base {
 			?? '';
 
 		// Get OSM type prefix.
-		$osm_type = $location['osm_type'] ?? '';
-		$osm_id   = $location['osm_id'] ?? '';
+		$osm_type    = $location['osm_type'] ?? '';
+		$osm_id      = $location['osm_id'] ?? '';
 		$osm_full_id = '';
 
 		if ( $osm_type && $osm_id ) {
-			$prefix = strtoupper( substr( $osm_type, 0, 1 ) );
+			$prefix      = strtoupper( substr( $osm_type, 0, 1 ) );
 			$osm_full_id = $prefix . $osm_id;
 		}
 
 		// Parse bounding box.
 		$bbox = null;
 		if ( isset( $location['boundingbox'] ) && count( $location['boundingbox'] ) === 4 ) {
-			$bbox = array(
+			$bbox = [
 				'min_lat' => (float) $location['boundingbox'][0],
 				'max_lat' => (float) $location['boundingbox'][1],
 				'min_lng' => (float) $location['boundingbox'][2],
 				'max_lng' => (float) $location['boundingbox'][3],
-			);
+			];
 		}
 
-		return array(
-			'place_id'         => $location['place_id'] ?? 0,
-			'osm_type'         => $osm_type,
-			'osm_id'           => $osm_id,
-			'osm_full_id'      => $osm_full_id,
-			'latitude'         => (float) ( $location['lat'] ?? 0 ),
-			'longitude'        => (float) ( $location['lon'] ?? 0 ),
-			'display_name'     => $location['display_name'] ?? '',
-			'name'             => $location['name'] ?? $location['namedetails']['name'] ?? '',
-			'class'            => $location['class'] ?? '',
-			'type'             => $location['type'] ?? '',
-			'importance'       => $location['importance'] ?? 0,
-			'place_rank'       => $location['place_rank'] ?? 0,
-			'address'          => array(
-				'house_number'   => $address['house_number'] ?? '',
-				'road'           => $address['road'] ?? '',
-				'neighbourhood'  => $address['neighbourhood'] ?? $address['suburb'] ?? '',
-				'locality'       => $locality,
-				'county'         => $address['county'] ?? '',
-				'region'         => $region,
-				'postcode'       => $address['postcode'] ?? '',
-				'country'        => $address['country'] ?? '',
-				'country_code'   => $address['country_code'] ?? '',
-			),
-			'formatted_address'=> implode(
+		return [
+			'place_id'          => $location['place_id'] ?? 0,
+			'osm_type'          => $osm_type,
+			'osm_id'            => $osm_id,
+			'osm_full_id'       => $osm_full_id,
+			'latitude'          => (float) ( $location['lat'] ?? 0 ),
+			'longitude'         => (float) ( $location['lon'] ?? 0 ),
+			'display_name'      => $location['display_name'] ?? '',
+			'name'              => $location['name'] ?? $location['namedetails']['name'] ?? '',
+			'class'             => $location['class'] ?? '',
+			'type'              => $location['type'] ?? '',
+			'importance'        => $location['importance'] ?? 0,
+			'place_rank'        => $location['place_rank'] ?? 0,
+			'address'           => [
+				'house_number'  => $address['house_number'] ?? '',
+				'road'          => $address['road'] ?? '',
+				'neighbourhood' => $address['neighbourhood'] ?? $address['suburb'] ?? '',
+				'locality'      => $locality,
+				'county'        => $address['county'] ?? '',
+				'region'        => $region,
+				'postcode'      => $address['postcode'] ?? '',
+				'country'       => $address['country'] ?? '',
+				'country_code'  => $address['country_code'] ?? '',
+			],
+			'formatted_address' => implode(
 				', ',
 				array_filter(
-					array(
+					[
 						implode( ' ', $address_parts ),
 						$locality,
 						$region,
 						$address['country'] ?? '',
-					)
+					]
 				)
 			),
-			'bounding_box'     => $bbox,
-			'category'         => $location['category'] ?? '',
-			'icon'             => $location['icon'] ?? '',
-			'extra'            => array(
-				'wikipedia'    => $extratags['wikipedia'] ?? '',
-				'wikidata'     => $extratags['wikidata'] ?? '',
-				'website'      => $extratags['website'] ?? '',
-				'phone'        => $extratags['phone'] ?? '',
-				'opening_hours'=> $extratags['opening_hours'] ?? '',
-			),
-			'source'           => 'nominatim',
-		);
+			'bounding_box'      => $bbox,
+			'category'          => $location['category'] ?? '',
+			'icon'              => $location['icon'] ?? '',
+			'extra'             => [
+				'wikipedia'     => $extratags['wikipedia'] ?? '',
+				'wikidata'      => $extratags['wikidata'] ?? '',
+				'website'       => $extratags['website'] ?? '',
+				'phone'         => $extratags['phone'] ?? '',
+				'opening_hours' => $extratags['opening_hours'] ?? '',
+			],
+			'source'            => 'nominatim',
+		];
 	}
 
 	/**
@@ -589,8 +639,8 @@ class Nominatim extends API_Base {
 	private function calculate_distance( float $lat1, float $lng1, float $lat2, float $lng2 ): float {
 		$earth_radius = 6371000; // meters.
 
-		$lat1_rad = deg2rad( $lat1 );
-		$lat2_rad = deg2rad( $lat2 );
+		$lat1_rad  = deg2rad( $lat1 );
+		$lat2_rad  = deg2rad( $lat2 );
 		$delta_lat = deg2rad( $lat2 - $lat1 );
 		$delta_lng = deg2rad( $lng2 - $lng1 );
 
@@ -611,7 +661,7 @@ class Nominatim extends API_Base {
 	 */
 	public function set_server( string $server ): void {
 		$this->custom_server = $server;
-		$this->base_url = rtrim( $server, '/' ) . '/';
+		$this->base_url      = rtrim( $server, '/' ) . '/';
 	}
 
 	/**

@@ -86,7 +86,7 @@ abstract class API_Base {
 	 *
 	 * @var float
 	 */
-	private static array $last_request_times = array();
+	private static array $last_request_times = [];
 
 	/**
 	 * Constructor.
@@ -114,8 +114,8 @@ abstract class API_Base {
 	 * @return array<string, mixed> Response data.
 	 * @throws \Exception On request failure.
 	 */
-	protected function get( string $endpoint, array $params = array(), array $headers = array() ): array {
-		return $this->request( 'GET', $endpoint, $params, array(), $headers );
+	protected function get( string $endpoint, array $params = [], array $headers = [] ): array {
+		return $this->request( 'GET', $endpoint, $params, [], $headers );
 	}
 
 	/**
@@ -127,8 +127,8 @@ abstract class API_Base {
 	 * @return array<string, mixed> Response data.
 	 * @throws \Exception On request failure.
 	 */
-	protected function post( string $endpoint, array $body = array(), array $headers = array() ): array {
-		return $this->request( 'POST', $endpoint, array(), $body, $headers );
+	protected function post( string $endpoint, array $body = [], array $headers = [] ): array {
+		return $this->request( 'POST', $endpoint, [], $body, $headers );
 	}
 
 	/**
@@ -145,9 +145,9 @@ abstract class API_Base {
 	protected function request(
 		string $method,
 		string $endpoint,
-		array $params = array(),
-		array $body = array(),
-		array $headers = array()
+		array $params = [],
+		array $body = [],
+		array $headers = []
 	): array {
 		// Respect rate limiting.
 		$this->respect_rate_limit();
@@ -156,20 +156,20 @@ abstract class API_Base {
 		$url = $this->build_url( $endpoint, $params );
 
 		// Build request args.
-		$args = array(
+		$args = [
 			'method'     => $method,
 			'timeout'    => $this->timeout,
 			'user-agent' => $this->user_agent,
 			'headers'    => array_merge(
-				array(
+				[
 					'Accept' => 'application/json',
-				),
+				],
 				$this->get_default_headers(),
 				$headers
 			),
-		);
+		];
 
-		if ( ! empty( $body ) && in_array( $method, array( 'POST', 'PUT', 'PATCH' ), true ) ) {
+		if ( ! empty( $body ) && in_array( $method, [ 'POST', 'PUT', 'PATCH' ], true ) ) {
 			$args['headers']['Content-Type'] = 'application/json';
 			$args['body']                    = wp_json_encode( $body );
 		}
@@ -202,11 +202,14 @@ abstract class API_Base {
 				$last_error = $response;
 
 				// Log the error.
-				$this->log_error( 'Request failed', array(
-					'url'     => $url,
-					'attempt' => $attempt,
-					'error'   => $response->get_error_message(),
-				) );
+				$this->log_error(
+					'Request failed',
+					[
+						'url'     => $url,
+						'attempt' => $attempt,
+						'error'   => $response->get_error_message(),
+					]
+				);
 
 				// Exponential backoff.
 				if ( $attempt < $this->max_retries ) {
@@ -228,11 +231,14 @@ abstract class API_Base {
 				$retry_after = wp_remote_retrieve_header( $response, 'retry-after' );
 				$wait_time   = $retry_after ? (int) $retry_after : pow( 2, $attempt );
 
-				$this->log_error( 'Rate limited', array(
-					'url'        => $url,
-					'attempt'    => $attempt,
-					'retry_after'=> $wait_time,
-				) );
+				$this->log_error(
+					'Rate limited',
+					[
+						'url'         => $url,
+						'attempt'     => $attempt,
+						'retry_after' => $wait_time,
+					]
+				);
 
 				if ( $attempt < $this->max_retries ) {
 					sleep( min( $wait_time, 30 ) ); // Cap at 30 seconds.
@@ -243,11 +249,14 @@ abstract class API_Base {
 
 			// Server error - retry.
 			if ( $code >= 500 ) {
-				$this->log_error( 'Server error', array(
-					'url'     => $url,
-					'attempt' => $attempt,
-					'code'    => $code,
-				) );
+				$this->log_error(
+					'Server error',
+					[
+						'url'     => $url,
+						'attempt' => $attempt,
+						'code'    => $code,
+					]
+				);
 
 				if ( $attempt < $this->max_retries ) {
 					usleep( (int) pow( 2, $attempt ) * 100000 );
@@ -302,7 +311,7 @@ abstract class API_Base {
 
 		if ( json_last_error() !== JSON_ERROR_NONE ) {
 			// Not JSON, return raw body.
-			$data = array( 'raw' => $body );
+			$data = [ 'raw' => $body ];
 		}
 
 		// Handle error responses.
@@ -312,7 +321,7 @@ abstract class API_Base {
 			throw new \Exception( esc_html( $error_message ) );
 		}
 
-		return $data ?? array();
+		return $data ?? [];
 	}
 
 	/**
@@ -324,7 +333,7 @@ abstract class API_Base {
 	 */
 	protected function extract_error_message( ?array $data, int $code ): string {
 		// Common error message fields.
-		$error_fields = array( 'error', 'message', 'error_message', 'error_description', 'status_message' );
+		$error_fields = [ 'error', 'message', 'error_message', 'error_description', 'status_message' ];
 
 		if ( $data ) {
 			foreach ( $error_fields as $field ) {
@@ -359,7 +368,7 @@ abstract class API_Base {
 	 * @param array<string, mixed> $params   Query parameters.
 	 * @return string Full URL.
 	 */
-	protected function build_url( string $endpoint, array $params = array() ): string {
+	protected function build_url( string $endpoint, array $params = [] ): string {
 		$url = $this->base_url . ltrim( $endpoint, '/' );
 
 		if ( ! empty( $params ) ) {
@@ -375,7 +384,7 @@ abstract class API_Base {
 	 * @return array<string, string> Headers.
 	 */
 	protected function get_default_headers(): array {
-		return array();
+		return [];
 	}
 
 	/**
@@ -458,7 +467,7 @@ abstract class API_Base {
 	 * @return array<string, mixed> Response data.
 	 * @throws \Exception On request failure.
 	 */
-	protected function cached_get( string $endpoint, array $params = array(), ?int $duration = null ): array {
+	protected function cached_get( string $endpoint, array $params = [], ?int $duration = null ): array {
 		$cache_key = $endpoint . '_' . wp_json_encode( $params );
 		$cached    = $this->get_cache( $cache_key );
 
@@ -480,7 +489,7 @@ abstract class API_Base {
 	 * @param array<string, mixed> $context Additional context.
 	 * @return void
 	 */
-	protected function log_error( string $message, array $context = array() ): void {
+	protected function log_error( string $message, array $context = [] ): void {
 		/**
 		 * Fires when an API error occurs.
 		 *
@@ -500,7 +509,7 @@ abstract class API_Base {
 	 * @param array<string, mixed> $context Additional context.
 	 * @return void
 	 */
-	protected function log_debug( string $message, array $context = array() ): void {
+	protected function log_debug( string $message, array $context = [] ): void {
 		/**
 		 * Fires when an API debug message is logged.
 		 *
@@ -582,6 +591,6 @@ abstract class API_Base {
 	 * @return array<string, array<string, mixed>> Configuration fields.
 	 */
 	public function get_config_fields(): array {
-		return array();
+		return [];
 	}
 }

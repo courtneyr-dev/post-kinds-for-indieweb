@@ -41,7 +41,7 @@ class Syndication_Page {
 	 *
 	 * @var array<string, array<string, mixed>>
 	 */
-	private array $services = array();
+	private array $services = [];
 
 	/**
 	 * Constructor.
@@ -58,8 +58,8 @@ class Syndication_Page {
 	 * @return void
 	 */
 	public function init(): void {
-		add_action( 'admin_init', array( $this, 'handle_actions' ) );
-		add_action( 'wp_ajax_postkind_syndicate_now', array( $this, 'ajax_syndicate_now' ) );
+		add_action( 'admin_init', [ $this, 'handle_actions' ] );
+		add_action( 'wp_ajax_postkind_syndicate_now', [ $this, 'ajax_syndicate_now' ] );
 	}
 
 	/**
@@ -72,33 +72,33 @@ class Syndication_Page {
 			return $this->services;
 		}
 
-		$settings = get_option( 'post_kinds_indieweb_settings', array() );
+		$settings = get_option( 'post_kinds_indieweb_settings', [] );
 
 		// Check Last.fm.
 		if ( ! empty( $settings['listen_sync_to_lastfm'] ) ) {
-			$credentials = get_option( 'post_kinds_indieweb_api_credentials', array() );
-			$lastfm      = $credentials['lastfm'] ?? array();
+			$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+			$lastfm      = $credentials['lastfm'] ?? [];
 
 			if ( ! empty( $lastfm['session_key'] ) ) {
-				$this->services['lastfm'] = array(
+				$this->services['lastfm'] = [
 					'name'     => 'Last.fm',
 					'kind'     => 'listen',
 					'meta_key' => Meta_Fields::PREFIX . 'syndicate_lastfm',
-				);
+				];
 			}
 		}
 
 		// Check Trakt.
 		if ( ! empty( $settings['watch_sync_to_trakt'] ) ) {
-			$credentials = get_option( 'post_kinds_indieweb_api_credentials', array() );
-			$trakt       = $credentials['trakt'] ?? array();
+			$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+			$trakt       = $credentials['trakt'] ?? [];
 
 			if ( ! empty( $trakt['access_token'] ) ) {
-				$this->services['trakt'] = array(
+				$this->services['trakt'] = [
 					'name'     => 'Trakt',
 					'kind'     => 'watch',
 					'meta_key' => Meta_Fields::PREFIX . 'syndicate_trakt',
-				);
+				];
 			}
 		}
 
@@ -164,31 +164,31 @@ class Syndication_Page {
 		check_ajax_referer( 'post_kinds_syndicate_now', 'nonce' );
 
 		if ( ! current_user_can( 'edit_posts' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ) );
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
 		}
 
 		$post_id = isset( $_POST['post_id'] ) ? (int) $_POST['post_id'] : 0;
 		$service = isset( $_POST['service'] ) ? sanitize_key( $_POST['service'] ) : '';
 
 		if ( ! $post_id || ! $service ) {
-			wp_send_json_error( array( 'message' => __( 'Invalid parameters.', 'post-kinds-for-indieweb' ) ) );
+			wp_send_json_error( [ 'message' => __( 'Invalid parameters.', 'post-kinds-for-indieweb' ) ] );
 		}
 
 		$result = $this->syndicate_post( $post_id, $service );
 
 		if ( $result ) {
 			wp_send_json_success(
-				array(
+				[
 					'message' => sprintf(
 						/* translators: %s: service name */
 						__( 'Syndicated to %s', 'post-kinds-for-indieweb' ),
 						$this->get_services()[ $service ]['name'] ?? $service
 					),
 					'url'     => $result['url'] ?? '',
-				)
+				]
 			);
 		} else {
-			wp_send_json_error( array( 'message' => __( 'Syndication failed.', 'post-kinds-for-indieweb' ) ) );
+			wp_send_json_error( [ 'message' => __( 'Syndication failed.', 'post-kinds-for-indieweb' ) ] );
 		}
 	}
 
@@ -239,12 +239,12 @@ class Syndication_Page {
 
 		// Get listen data from post.
 		$prefix = Meta_Fields::PREFIX;
-		$data   = array(
+		$data   = [
 			'track'     => get_post_meta( $post_id, $prefix . 'listen_track', true ),
 			'artist'    => get_post_meta( $post_id, $prefix . 'listen_artist', true ),
 			'album'     => get_post_meta( $post_id, $prefix . 'listen_album', true ),
 			'timestamp' => get_post_time( 'U', true, $post_id ),
-		);
+		];
 
 		if ( empty( $data['track'] ) || empty( $data['artist'] ) ) {
 			return false;
@@ -282,7 +282,7 @@ class Syndication_Page {
 
 		// Get watch data from post.
 		$prefix = Meta_Fields::PREFIX;
-		$data   = array(
+		$data   = [
 			'title'      => get_post_meta( $post_id, $prefix . 'watch_title', true ),
 			'year'       => get_post_meta( $post_id, $prefix . 'watch_year', true ),
 			'tmdb_id'    => get_post_meta( $post_id, $prefix . 'watch_tmdb_id', true ),
@@ -292,7 +292,7 @@ class Syndication_Page {
 			'episode'    => get_post_meta( $post_id, $prefix . 'watch_episode', true ),
 			'created_at' => get_the_date( 'c', $post_id ),
 			'timestamp'  => get_post_time( 'U', true, $post_id ),
-		);
+		];
 
 		// Determine type.
 		$data['type'] = ( ! empty( $data['season'] ) || ! empty( $data['episode'] ) ) ? 'episode' : 'movie';
@@ -328,32 +328,32 @@ class Syndication_Page {
 		$services = $this->get_services();
 
 		if ( ! isset( $services[ $service ] ) ) {
-			return array();
+			return [];
 		}
 
 		$kind     = $services[ $service ]['kind'];
 		$meta_key = $services[ $service ]['meta_key'];
 
 		// Get posts of this kind that have syndication disabled.
-		$args = array(
+		$args = [
 			'post_type'      => 'post',
 			'post_status'    => 'publish',
 			'posts_per_page' => 50,
-			'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-				array(
+			'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+				[
 					'key'     => $meta_key,
 					'value'   => '0',
 					'compare' => '=',
-				),
-			),
-			'tax_query'      => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-				array(
+				],
+			],
+			'tax_query'      => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+				[
 					'taxonomy' => 'kind',
 					'field'    => 'slug',
 					'terms'    => $kind,
-				),
-			),
-		);
+				],
+			],
+		];
 
 		$query = new \WP_Query( $args );
 
@@ -369,17 +369,17 @@ class Syndication_Page {
 	private function get_syndicated_posts( string $service ): array {
 		$syndication_meta_key = '_postkind_syndication_' . $service;
 
-		$args = array(
+		$args = [
 			'post_type'      => 'post',
 			'post_status'    => 'publish',
 			'posts_per_page' => 50,
-			'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-				array(
+			'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+				[
 					'key'     => $syndication_meta_key,
 					'compare' => 'EXISTS',
-				),
-			),
-		);
+				],
+			],
+		];
 
 		$query = new \WP_Query( $args );
 
@@ -427,7 +427,7 @@ class Syndication_Page {
 				<nav class="nav-tab-wrapper">
 					<?php foreach ( $services as $id => $service ) : ?>
 						<a href="<?php echo esc_url( admin_url( 'admin.php?page=post-kinds-indieweb-syndication&service=' . $id ) ); ?>"
-						   class="nav-tab <?php echo $current_service === $id ? 'nav-tab-active' : ''; ?>">
+							class="nav-tab <?php echo $current_service === $id ? 'nav-tab-active' : ''; ?>">
 							<?php echo esc_html( $service['name'] ); ?>
 						</a>
 					<?php endforeach; ?>
@@ -438,13 +438,13 @@ class Syndication_Page {
 						<ul class="subsubsub">
 							<li>
 								<a href="<?php echo esc_url( admin_url( 'admin.php?page=post-kinds-indieweb-syndication&service=' . $current_service . '&tab=skipped' ) ); ?>"
-								   class="<?php echo 'skipped' === $current_tab ? 'current' : ''; ?>">
+									class="<?php echo 'skipped' === $current_tab ? 'current' : ''; ?>">
 									<?php esc_html_e( 'Skipped', 'post-kinds-for-indieweb' ); ?>
 								</a> |
 							</li>
 							<li>
 								<a href="<?php echo esc_url( admin_url( 'admin.php?page=post-kinds-indieweb-syndication&service=' . $current_service . '&tab=syndicated' ) ); ?>"
-								   class="<?php echo 'syndicated' === $current_tab ? 'current' : ''; ?>">
+									class="<?php echo 'syndicated' === $current_tab ? 'current' : ''; ?>">
 									<?php esc_html_e( 'Syndicated', 'post-kinds-for-indieweb' ); ?>
 								</a>
 							</li>
@@ -585,12 +585,12 @@ class Syndication_Page {
 					<?php
 					$syndicate_url = wp_nonce_url(
 						add_query_arg(
-							array(
+							[
 								'page'    => 'post-kinds-indieweb-syndication',
 								'action'  => 'syndicate_now',
 								'post_id' => $post->ID,
 								'service' => $service,
-							),
+							],
 							admin_url( 'admin.php' )
 						),
 						'syndicate_now_' . $post->ID

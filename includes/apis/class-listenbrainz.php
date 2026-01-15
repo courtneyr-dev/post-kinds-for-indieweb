@@ -64,8 +64,8 @@ class ListenBrainz extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials      = get_option( 'post_kinds_indieweb_api_credentials', array() );
-		$lb_creds         = $credentials['listenbrainz'] ?? array();
+		$credentials      = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$lb_creds         = $credentials['listenbrainz'] ?? [];
 		$this->user_token = $lb_creds['token'] ?? '';
 	}
 
@@ -75,10 +75,10 @@ class ListenBrainz extends API_Base {
 	 * @return array<string, string>
 	 */
 	protected function get_default_headers(): array {
-		$headers = array(
+		$headers = [
 			'Accept'       => 'application/json',
 			'Content-Type' => 'application/json',
-		);
+		];
 
 		if ( $this->user_token ) {
 			$headers['Authorization'] = 'Token ' . $this->user_token;
@@ -119,15 +119,15 @@ class ListenBrainz extends API_Base {
 			$response = $this->get( 'validate-token' );
 
 			if ( isset( $response['valid'] ) && true === $response['valid'] ) {
-				return array(
+				return [
 					'valid'    => true,
 					'username' => $response['user_name'] ?? '',
-				);
+				];
 			}
 
-			return array( 'valid' => false );
+			return [ 'valid' => false ];
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Token validation failed', array( 'error' => $e->getMessage() ) );
+			$this->log_error( 'Token validation failed', [ 'error' => $e->getMessage() ] );
 			return null;
 		}
 	}
@@ -141,7 +141,7 @@ class ListenBrainz extends API_Base {
 	 */
 	public function search( string $query, ...$args ): array {
 		// ListenBrainz doesn't have search - use MusicBrainz instead.
-		return array();
+		return [];
 	}
 
 	/**
@@ -164,7 +164,7 @@ class ListenBrainz extends API_Base {
 	 * @return array<int, array<string, mixed>> Recent listens.
 	 */
 	public function get_listens( string $username, int $count = 25, int $max_ts = 0, int $min_ts = 0 ): array {
-		$params = array( 'count' => min( $count, 100 ) );
+		$params = [ 'count' => min( $count, 100 ) ];
 
 		if ( $max_ts > 0 ) {
 			$params['max_ts'] = $max_ts;
@@ -187,7 +187,7 @@ class ListenBrainz extends API_Base {
 		try {
 			$response = $this->get( 'user/' . rawurlencode( $username ) . '/listens', $params );
 
-			$listens = array();
+			$listens = [];
 
 			if ( isset( $response['payload']['listens'] ) && is_array( $response['payload']['listens'] ) ) {
 				foreach ( $response['payload']['listens'] as $listen ) {
@@ -201,8 +201,14 @@ class ListenBrainz extends API_Base {
 
 			return $listens;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get listens failed', array( 'username' => $username, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get listens failed',
+				[
+					'username' => $username,
+					'error'    => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -222,7 +228,13 @@ class ListenBrainz extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get playing now failed', array( 'username' => $username, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get playing now failed',
+				[
+					'username' => $username,
+					'error'    => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -240,25 +252,25 @@ class ListenBrainz extends API_Base {
 			return false;
 		}
 
-		$payload = array(
+		$payload = [
 			'listen_type' => $listened_at > 0 ? 'single' : 'playing_now',
-			'payload'     => array(
-				array(
-					'track_metadata' => array(
+			'payload'     => [
+				[
+					'track_metadata' => [
 						'artist_name'  => $track['artist'] ?? '',
 						'track_name'   => $track['track'] ?? '',
 						'release_name' => $track['album'] ?? '',
-					),
-				),
-			),
-		);
+					],
+				],
+			],
+		];
 
 		if ( $listened_at > 0 ) {
 			$payload['payload'][0]['listened_at'] = $listened_at;
 		}
 
 		// Add additional metadata if available.
-		$additional_info = array();
+		$additional_info = [];
 
 		if ( ! empty( $track['duration'] ) ) {
 			$additional_info['duration_ms'] = (int) $track['duration'] * 1000;
@@ -269,7 +281,7 @@ class ListenBrainz extends API_Base {
 		}
 
 		if ( ! empty( $track['artist_mbid'] ) ) {
-			$additional_info['artist_mbids'] = array( $track['artist_mbid'] );
+			$additional_info['artist_mbids'] = [ $track['artist_mbid'] ];
 		}
 
 		if ( ! empty( $track['album_mbid'] ) ) {
@@ -284,7 +296,13 @@ class ListenBrainz extends API_Base {
 			$this->post( 'submit-listens', $payload );
 			return true;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Submit listen failed', array( 'track' => $track, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Submit listen failed',
+				[
+					'track' => $track,
+					'error' => $e->getMessage(),
+				]
+			);
 			return false;
 		}
 	}
@@ -297,26 +315,26 @@ class ListenBrainz extends API_Base {
 	 */
 	public function import_listens( array $listens ): array {
 		if ( ! $this->user_token ) {
-			return array(
+			return [
 				'success'  => false,
 				'imported' => 0,
 				'error'    => 'No user token configured',
-			);
+			];
 		}
 
-		$payload_items = array();
+		$payload_items = [];
 
 		foreach ( $listens as $listen ) {
-			$item = array(
+			$item = [
 				'listened_at'    => $listen['listened_at'] ?? time(),
-				'track_metadata' => array(
+				'track_metadata' => [
 					'artist_name'  => $listen['artist'] ?? '',
 					'track_name'   => $listen['track'] ?? '',
 					'release_name' => $listen['album'] ?? '',
-				),
-			);
+				],
+			];
 
-			$additional_info = array();
+			$additional_info = [];
 
 			if ( ! empty( $listen['duration'] ) ) {
 				$additional_info['duration_ms'] = (int) $listen['duration'] * 1000;
@@ -334,15 +352,15 @@ class ListenBrainz extends API_Base {
 		}
 
 		// ListenBrainz accepts up to 1000 listens per request.
-		$chunks    = array_chunk( $payload_items, 1000 );
-		$imported  = 0;
-		$errors    = array();
+		$chunks   = array_chunk( $payload_items, 1000 );
+		$imported = 0;
+		$errors   = [];
 
 		foreach ( $chunks as $chunk ) {
-			$payload = array(
+			$payload = [
 				'listen_type' => 'import',
 				'payload'     => $chunk,
-			);
+			];
 
 			try {
 				$this->post( 'submit-listens', $payload );
@@ -352,12 +370,12 @@ class ListenBrainz extends API_Base {
 			}
 		}
 
-		return array(
+		return [
 			'success'  => empty( $errors ),
 			'imported' => $imported,
 			'total'    => count( $listens ),
 			'errors'   => $errors,
-		);
+		];
 	}
 
 	/**
@@ -378,20 +396,20 @@ class ListenBrainz extends API_Base {
 		try {
 			$response = $this->get(
 				'stats/user/' . rawurlencode( $username ) . '/artists',
-				array(
+				[
 					'range' => $range,
 					'count' => 25,
-				)
+				]
 			);
 
 			if ( isset( $response['payload']['artists'] ) ) {
-				$stats = array(
+				$stats = [
 					'artists'     => $response['payload']['artists'],
 					'total_count' => $response['payload']['total_artist_count'] ?? 0,
 					'range'       => $response['payload']['range'] ?? $range,
 					'from_ts'     => $response['payload']['from_ts'] ?? null,
 					'to_ts'       => $response['payload']['to_ts'] ?? null,
-				);
+				];
 
 				$this->set_cache( $cache_key, $stats, HOUR_IN_SECONDS );
 				return $stats;
@@ -399,7 +417,13 @@ class ListenBrainz extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get artist stats failed', array( 'username' => $username, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get artist stats failed',
+				[
+					'username' => $username,
+					'error'    => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -422,18 +446,18 @@ class ListenBrainz extends API_Base {
 		try {
 			$response = $this->get(
 				'stats/user/' . rawurlencode( $username ) . '/recordings',
-				array(
+				[
 					'range' => $range,
 					'count' => 25,
-				)
+				]
 			);
 
 			if ( isset( $response['payload']['recordings'] ) ) {
-				$stats = array(
+				$stats = [
 					'recordings'  => $response['payload']['recordings'],
 					'total_count' => $response['payload']['total_recording_count'] ?? 0,
 					'range'       => $response['payload']['range'] ?? $range,
-				);
+				];
 
 				$this->set_cache( $cache_key, $stats, HOUR_IN_SECONDS );
 				return $stats;
@@ -441,7 +465,13 @@ class ListenBrainz extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get recording stats failed', array( 'username' => $username, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get recording stats failed',
+				[
+					'username' => $username,
+					'error'    => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -471,7 +501,13 @@ class ListenBrainz extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get listen count failed', array( 'username' => $username, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get listen count failed',
+				[
+					'username' => $username,
+					'error'    => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -491,14 +527,14 @@ class ListenBrainz extends API_Base {
 		try {
 			$this->post(
 				'delete-listen',
-				array(
+				[
 					'listened_at'    => (int) $listened_at,
 					'recording_msid' => $recording_msid,
-				)
+				]
 			);
 			return true;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Delete listen failed', array( 'error' => $e->getMessage() ) );
+			$this->log_error( 'Delete listen failed', [ 'error' => $e->getMessage() ] );
 			return false;
 		}
 	}
@@ -520,22 +556,28 @@ class ListenBrainz extends API_Base {
 		try {
 			$response = $this->get( 'user/' . rawurlencode( $username ) . '/similar-users' );
 
-			$users = array();
+			$users = [];
 
 			if ( isset( $response['payload'] ) && is_array( $response['payload'] ) ) {
 				foreach ( $response['payload'] as $user ) {
-					$users[] = array(
+					$users[] = [
 						'username'   => $user['user_name'] ?? '',
 						'similarity' => $user['similarity'] ?? 0,
-					);
+					];
 				}
 			}
 
 			$this->set_cache( $cache_key, $users, DAY_IN_SECONDS );
 			return $users;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get similar users failed', array( 'username' => $username, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get similar users failed',
+				[
+					'username' => $username,
+					'error'    => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -556,8 +598,8 @@ class ListenBrainz extends API_Base {
 	 * @return array<string, mixed> Normalized listen.
 	 */
 	private function normalize_listen( array $listen ): array {
-		$metadata        = $listen['track_metadata'] ?? array();
-		$additional_info = $metadata['additional_info'] ?? array();
+		$metadata        = $listen['track_metadata'] ?? [];
+		$additional_info = $metadata['additional_info'] ?? [];
 
 		$mbid        = $additional_info['recording_mbid'] ?? '';
 		$artist_mbid = '';
@@ -567,20 +609,20 @@ class ListenBrainz extends API_Base {
 			$artist_mbid = $additional_info['artist_mbids'][0];
 		}
 
-		return array(
-			'track'           => $metadata['track_name'] ?? '',
-			'artist'          => $metadata['artist_name'] ?? '',
-			'album'           => $metadata['release_name'] ?? '',
-			'listened_at'     => $listen['listened_at'] ?? null,
-			'recording_msid'  => $listen['recording_msid'] ?? '',
-			'mbid'            => $mbid,
-			'artist_mbid'     => $artist_mbid,
-			'album_mbid'      => $album_mbid,
-			'duration'        => isset( $additional_info['duration_ms'] ) ? (int) ( $additional_info['duration_ms'] / 1000 ) : null,
-			'spotify_id'      => $additional_info['spotify_id'] ?? '',
-			'origin_url'      => $additional_info['origin_url'] ?? '',
-			'source'          => 'listenbrainz',
-		);
+		return [
+			'track'          => $metadata['track_name'] ?? '',
+			'artist'         => $metadata['artist_name'] ?? '',
+			'album'          => $metadata['release_name'] ?? '',
+			'listened_at'    => $listen['listened_at'] ?? null,
+			'recording_msid' => $listen['recording_msid'] ?? '',
+			'mbid'           => $mbid,
+			'artist_mbid'    => $artist_mbid,
+			'album_mbid'     => $album_mbid,
+			'duration'       => isset( $additional_info['duration_ms'] ) ? (int) ( $additional_info['duration_ms'] / 1000 ) : null,
+			'spotify_id'     => $additional_info['spotify_id'] ?? '',
+			'origin_url'     => $additional_info['origin_url'] ?? '',
+			'source'         => 'listenbrainz',
+		];
 	}
 
 	/**

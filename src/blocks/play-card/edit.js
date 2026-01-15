@@ -622,10 +622,10 @@ export default function Edit( { attributes, setAttributes } ) {
 			</InspectorControls>
 
 			<div { ...blockProps }>
-				<div className="reactions-card-wrapper">
+				<div className="post-kinds-card-wrapper">
 					{ /* Search Bar */ }
 					{ isSearching && (
-						<div className="reactions-card__search-bar">
+						<div className="post-kinds-card__search-bar">
 							<MediaSearch
 								type="game"
 								placeholder={ __(
@@ -636,7 +636,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							/>
 							<button
 								type="button"
-								className="reactions-card__search-close"
+								className="post-kinds-card__search-close"
 								onClick={ () => setIsSearching( false ) }
 							>
 								×
@@ -644,9 +644,9 @@ export default function Edit( { attributes, setAttributes } ) {
 						</div>
 					) }
 
-					<div className="reactions-card">
+					<div className="post-kinds-card">
 						<div
-							className="reactions-card__media"
+							className="post-kinds-card__media"
 							style={ { width: '120px' } }
 						>
 							<MediaUploadCheck>
@@ -656,7 +656,7 @@ export default function Edit( { attributes, setAttributes } ) {
 									render={ ( { open } ) => (
 										<button
 											type="button"
-											className="reactions-card__media-button"
+											className="post-kinds-card__media-button"
 											onClick={ open }
 											style={ { aspectRatio: '3/4' } }
 										>
@@ -667,11 +667,11 @@ export default function Edit( { attributes, setAttributes } ) {
 														alt={
 															coverAlt || title
 														}
-														className="reactions-card__image"
+														className="post-kinds-card__image"
 													/>
 													<button
 														type="button"
-														className="reactions-card__media-remove"
+														className="post-kinds-card__media-remove"
 														onClick={
 															handleImageRemove
 														}
@@ -684,11 +684,11 @@ export default function Edit( { attributes, setAttributes } ) {
 													</button>
 												</>
 											) : (
-												<div className="reactions-card__media-placeholder">
-													<span className="reactions-card__media-icon">
+												<div className="post-kinds-card__media-placeholder">
+													<span className="post-kinds-card__media-icon">
 														🎮
 													</span>
-													<span className="reactions-card__media-text">
+													<span className="post-kinds-card__media-text">
 														{ __(
 															'Add Cover',
 															'post-kinds-for-indieweb'
@@ -702,11 +702,11 @@ export default function Edit( { attributes, setAttributes } ) {
 							</MediaUploadCheck>
 						</div>
 
-						<div className="reactions-card__content">
-							<div className="reactions-card__header-row">
-								<div className="reactions-card__badges-row">
+						<div className="post-kinds-card__content">
+							<div className="post-kinds-card__header-row">
+								<div className="post-kinds-card__badges-row">
 									<select
-										className="reactions-card__type-select"
+										className="post-kinds-card__type-select"
 										value={ status || 'playing' }
 										onChange={ ( e ) =>
 											setAttributes( {
@@ -726,7 +726,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								</div>
 								<button
 									type="button"
-									className="reactions-card__action-button"
+									className="post-kinds-card__action-button"
 									onClick={ () => setIsSearching( true ) }
 									title={ __(
 										'Search for game',
@@ -739,7 +739,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 							<RichText
 								tagName="h3"
-								className="reactions-card__title"
+								className="post-kinds-card__title"
 								value={ title }
 								onChange={ ( value ) =>
 									setAttributes( { title: value } )
@@ -750,13 +750,13 @@ export default function Edit( { attributes, setAttributes } ) {
 								) }
 							/>
 
-							<div className="reactions-card__input-row">
-								<span className="reactions-card__input-icon">
+							<div className="post-kinds-card__input-row">
+								<span className="post-kinds-card__input-icon">
 									🎮
 								</span>
 								<input
 									type="text"
-									className="reactions-card__input"
+									className="post-kinds-card__input"
 									value={ platform || '' }
 									onChange={ ( e ) =>
 										setAttributes( {
@@ -770,13 +770,13 @@ export default function Edit( { attributes, setAttributes } ) {
 								/>
 							</div>
 
-							<div className="reactions-card__input-row">
-								<span className="reactions-card__input-icon">
+							<div className="post-kinds-card__input-row">
+								<span className="post-kinds-card__input-icon">
 									⏱️
 								</span>
 								<input
 									type="number"
-									className="reactions-card__input"
+									className="post-kinds-card__input"
 									value={ hoursPlayed || '' }
 									onChange={ ( e ) =>
 										setAttributes( {
@@ -795,7 +795,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								</span>
 							</div>
 
-							<div className="reactions-card__rating">
+							<div className="post-kinds-card__rating">
 								<StarRating
 									value={ rating }
 									onChange={ ( value ) =>
@@ -807,7 +807,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 							<RichText
 								tagName="p"
-								className="reactions-card__notes"
+								className="post-kinds-card__notes"
 								value={ review }
 								onChange={ ( value ) =>
 									setAttributes( { review: value } )
@@ -819,11 +819,11 @@ export default function Edit( { attributes, setAttributes } ) {
 							/>
 
 							{ /* Links */ }
-							<div className="reactions-card__links">
+							<div className="post-kinds-card__links">
 								{ gameUrl && (
 									<a
 										href={ gameUrl }
-										className="reactions-card__link"
+										className="post-kinds-card__link"
 										target="_blank"
 										rel="noopener noreferrer"
 										onClick={ ( e ) => e.preventDefault() }
@@ -837,7 +837,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								{ officialUrl && (
 									<a
 										href={ officialUrl }
-										className="reactions-card__link"
+										className="post-kinds-card__link"
 										target="_blank"
 										rel="noopener noreferrer"
 										onClick={ ( e ) => e.preventDefault() }
@@ -851,7 +851,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								{ purchaseUrl && (
 									<a
 										href={ purchaseUrl }
-										className="reactions-card__link reactions-card__link--buy"
+										className="post-kinds-card__link post-kinds-card__link--buy"
 										target="_blank"
 										rel="noopener noreferrer"
 										onClick={ ( e ) => e.preventDefault() }
@@ -867,12 +867,12 @@ export default function Edit( { attributes, setAttributes } ) {
 							{ /* Input fields for links when none are set */ }
 							{ ! gameUrl && ! officialUrl && ! purchaseUrl && (
 								<div
-									className="reactions-card__input-row"
+									className="post-kinds-card__input-row"
 									style={ { flexWrap: 'wrap', gap: '8px' } }
 								>
 									<input
 										type="url"
-										className="reactions-card__input reactions-card__input--url"
+										className="post-kinds-card__input post-kinds-card__input--url"
 										value={ officialUrl || '' }
 										onChange={ ( e ) =>
 											setAttributes( {
@@ -890,7 +890,7 @@ export default function Edit( { attributes, setAttributes } ) {
 									/>
 									<input
 										type="url"
-										className="reactions-card__input reactions-card__input--url"
+										className="post-kinds-card__input post-kinds-card__input--url"
 										value={ purchaseUrl || '' }
 										onChange={ ( e ) =>
 											setAttributes( {

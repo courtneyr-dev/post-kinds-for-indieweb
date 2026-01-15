@@ -59,13 +59,13 @@ class Readwise extends API_Base {
 	 *
 	 * @var array<string, string>
 	 */
-	public const SOURCE_CATEGORIES = array(
-		'books'          => 'Books',
-		'articles'       => 'Articles',
-		'tweets'         => 'Tweets',
-		'podcasts'       => 'Podcasts',
-		'supplementals'  => 'Supplementals',
-	);
+	public const SOURCE_CATEGORIES = [
+		'books'         => 'Books',
+		'articles'      => 'Articles',
+		'tweets'        => 'Tweets',
+		'podcasts'      => 'Podcasts',
+		'supplementals' => 'Supplementals',
+	];
 
 	/**
 	 * Constructor.
@@ -73,9 +73,9 @@ class Readwise extends API_Base {
 	public function __construct() {
 		parent::__construct();
 
-		$credentials         = get_option( 'post_kinds_indieweb_api_credentials', array() );
-		$readwise_creds      = $credentials['readwise'] ?? array();
-		$this->access_token  = $readwise_creds['access_token'] ?? '';
+		$credentials        = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$readwise_creds     = $credentials['readwise'] ?? [];
+		$this->access_token = $readwise_creds['access_token'] ?? '';
 	}
 
 	/**
@@ -116,7 +116,7 @@ class Readwise extends API_Base {
 			$result = $this->get( 'auth/' );
 			return true;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Connection test failed', array( 'error' => $e->getMessage() ) );
+			$this->log_error( 'Connection test failed', [ 'error' => $e->getMessage() ] );
 			return false;
 		}
 	}
@@ -131,18 +131,18 @@ class Readwise extends API_Base {
 	 */
 	public function get_books( ?string $category = null, int $limit = 100, ?string $updated_after = null ): array {
 		if ( ! $this->is_configured() ) {
-			return array();
+			return [];
 		}
 
-		$all_books = array();
-		$page_size = min( $limit, 1000 ); // Readwise max page size.
+		$all_books   = [];
+		$page_size   = min( $limit, 1000 ); // Readwise max page size.
 		$next_cursor = null;
 
 		try {
 			do {
-				$params = array(
+				$params = [
 					'page_size' => $page_size,
-				);
+				];
 
 				if ( $category && isset( self::SOURCE_CATEGORIES[ $category ] ) ) {
 					$params['category'] = $category;
@@ -159,7 +159,7 @@ class Readwise extends API_Base {
 
 				$response = $this->get( 'books/', $params );
 
-				$books = $response['results'] ?? array();
+				$books = $response['results'] ?? [];
 				foreach ( $books as $book ) {
 					$all_books[] = $this->normalize_book( $book );
 
@@ -173,7 +173,7 @@ class Readwise extends API_Base {
 			} while ( $next_cursor && count( $all_books ) < $limit );
 
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Failed to fetch books', array( 'error' => $e->getMessage() ) );
+			$this->log_error( 'Failed to fetch books', [ 'error' => $e->getMessage() ] );
 		}
 
 		return $all_books;
@@ -189,18 +189,18 @@ class Readwise extends API_Base {
 	 */
 	public function get_highlights( ?int $book_id = null, ?string $category = null, int $limit = 100 ): array {
 		if ( ! $this->is_configured() ) {
-			return array();
+			return [];
 		}
 
-		$all_highlights = array();
-		$page_size = min( $limit, 1000 );
-		$next_cursor = null;
+		$all_highlights = [];
+		$page_size      = min( $limit, 1000 );
+		$next_cursor    = null;
 
 		try {
 			do {
-				$params = array(
+				$params = [
 					'page_size' => $page_size,
-				);
+				];
 
 				if ( $book_id ) {
 					$params['book_id'] = $book_id;
@@ -212,7 +212,7 @@ class Readwise extends API_Base {
 
 				$response = $this->get( 'highlights/', $params );
 
-				$highlights = $response['results'] ?? array();
+				$highlights = $response['results'] ?? [];
 				foreach ( $highlights as $highlight ) {
 					// Filter by category if specified (need to check book category).
 					if ( $category ) {
@@ -234,7 +234,7 @@ class Readwise extends API_Base {
 			} while ( $next_cursor && count( $all_highlights ) < $limit );
 
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Failed to fetch highlights', array( 'error' => $e->getMessage() ) );
+			$this->log_error( 'Failed to fetch highlights', [ 'error' => $e->getMessage() ] );
 		}
 
 		return $all_highlights;
@@ -253,32 +253,38 @@ class Readwise extends API_Base {
 		$podcasts = $this->get_books( 'podcasts', $limit, $updated_after );
 
 		// Each "book" in the podcasts category is actually an episode.
-		return array_map( function( $podcast ) use ( $include_highlights ) {
-			$episode = array(
-				'id'              => $podcast['id'],
-				'episode_title'   => $podcast['title'],
-				'show_name'       => $podcast['author'],
-				'source_url'      => $podcast['source_url'],
-				'cover_image'     => $podcast['cover_image'],
-				'highlight_count' => $podcast['highlight_count'],
-				'last_highlight'  => $podcast['last_highlight_at'],
-				'source'          => $podcast['source'],
-				'highlights'      => array(),
-			);
+		return array_map(
+			function ( $podcast ) use ( $include_highlights ) {
+				$episode = [
+					'id'              => $podcast['id'],
+					'episode_title'   => $podcast['title'],
+					'show_name'       => $podcast['author'],
+					'source_url'      => $podcast['source_url'],
+					'cover_image'     => $podcast['cover_image'],
+					'highlight_count' => $podcast['highlight_count'],
+					'last_highlight'  => $podcast['last_highlight_at'],
+					'source'          => $podcast['source'],
+					'highlights'      => [],
+				];
 
-			// Fetch highlights for this episode if requested.
-			if ( $include_highlights && $podcast['highlight_count'] > 0 ) {
-				$highlights = $this->get_highlights( (int) $podcast['id'], null, $podcast['highlight_count'] );
-				$episode['highlights'] = array_map( function( $h ) {
-					return array(
-						'text' => $h['text'] ?? '',
-						'note' => $h['note'] ?? '',
+				// Fetch highlights for this episode if requested.
+				if ( $include_highlights && $podcast['highlight_count'] > 0 ) {
+					$highlights            = $this->get_highlights( (int) $podcast['id'], null, $podcast['highlight_count'] );
+					$episode['highlights'] = array_map(
+						function ( $h ) {
+							return [
+								'text' => $h['text'] ?? '',
+								'note' => $h['note'] ?? '',
+							];
+						},
+						$highlights
 					);
-				}, $highlights );
-			}
+				}
 
-			return $episode;
-		}, $podcasts );
+				return $episode;
+			},
+			$podcasts
+		);
 	}
 
 	/**
@@ -325,35 +331,41 @@ class Readwise extends API_Base {
 	public function get_books_with_highlights( int $limit = 100, bool $include_highlights = true, ?string $updated_after = null ): array {
 		$books = $this->get_books( 'books', $limit, $updated_after );
 
-		return array_map( function( $book ) use ( $include_highlights ) {
-			$result = array(
-				'id'               => $book['id'],
-				'title'            => $book['title'],
-				'author'           => $book['author'],
-				'cover_image'      => $book['cover_image'],
-				'source_url'       => $book['source_url'],
-				'highlight_count'  => $book['highlight_count'],
-				'last_highlight_at'=> $book['last_highlight_at'],
-				'source'           => $book['source'],
-				'asin'             => $book['asin'],
-				'highlights'       => array(),
-			);
+		return array_map(
+			function ( $book ) use ( $include_highlights ) {
+				$result = [
+					'id'                => $book['id'],
+					'title'             => $book['title'],
+					'author'            => $book['author'],
+					'cover_image'       => $book['cover_image'],
+					'source_url'        => $book['source_url'],
+					'highlight_count'   => $book['highlight_count'],
+					'last_highlight_at' => $book['last_highlight_at'],
+					'source'            => $book['source'],
+					'asin'              => $book['asin'],
+					'highlights'        => [],
+				];
 
-			// Fetch highlights for this book if requested.
-			if ( $include_highlights && $book['highlight_count'] > 0 ) {
-				$highlights = $this->get_highlights( (int) $book['id'], null, $book['highlight_count'] );
-				$result['highlights'] = array_map( function( $h ) {
-					return array(
-						'text'     => $h['text'] ?? '',
-						'note'     => $h['note'] ?? '',
-						'location' => $h['location'] ?? 0,
-						'color'    => $h['color'] ?? '',
+				// Fetch highlights for this book if requested.
+				if ( $include_highlights && $book['highlight_count'] > 0 ) {
+					$highlights           = $this->get_highlights( (int) $book['id'], null, $book['highlight_count'] );
+					$result['highlights'] = array_map(
+						function ( $h ) {
+							return [
+								'text'     => $h['text'] ?? '',
+								'note'     => $h['note'] ?? '',
+								'location' => $h['location'] ?? 0,
+								'color'    => $h['color'] ?? '',
+							];
+						},
+						$highlights
 					);
-				}, $highlights );
-			}
+				}
 
-			return $result;
-		}, $books );
+				return $result;
+			},
+			$books
+		);
 	}
 
 	/**
@@ -363,21 +375,21 @@ class Readwise extends API_Base {
 	 * @return array<string, mixed> Normalized book data.
 	 */
 	private function normalize_book( array $book ): array {
-		return array(
-			'id'               => $book['id'] ?? 0,
-			'title'            => $book['title'] ?? '',
-			'author'           => $book['author'] ?? '',
-			'category'         => $book['category'] ?? '',
-			'source'           => $book['source'] ?? '',
-			'source_url'       => $book['source_url'] ?? '',
-			'cover_image'      => $book['cover_image_url'] ?? '',
-			'highlight_count'  => $book['num_highlights'] ?? 0,
-			'last_highlight_at'=> $book['last_highlight_at'] ?? '',
-			'updated_at'       => $book['updated'] ?? '',
-			'asin'             => $book['asin'] ?? '',
-			'tags'             => $book['tags'] ?? array(),
-			'document_note'    => $book['document_note'] ?? '',
-		);
+		return [
+			'id'                => $book['id'] ?? 0,
+			'title'             => $book['title'] ?? '',
+			'author'            => $book['author'] ?? '',
+			'category'          => $book['category'] ?? '',
+			'source'            => $book['source'] ?? '',
+			'source_url'        => $book['source_url'] ?? '',
+			'cover_image'       => $book['cover_image_url'] ?? '',
+			'highlight_count'   => $book['num_highlights'] ?? 0,
+			'last_highlight_at' => $book['last_highlight_at'] ?? '',
+			'updated_at'        => $book['updated'] ?? '',
+			'asin'              => $book['asin'] ?? '',
+			'tags'              => $book['tags'] ?? [],
+			'document_note'     => $book['document_note'] ?? '',
+		];
 	}
 
 	/**
@@ -387,7 +399,7 @@ class Readwise extends API_Base {
 	 * @return array<string, mixed> Normalized highlight data.
 	 */
 	private function normalize_highlight( array $highlight ): array {
-		return array(
+		return [
 			'id'            => $highlight['id'] ?? 0,
 			'text'          => $highlight['text'] ?? '',
 			'note'          => $highlight['note'] ?? '',
@@ -398,14 +410,14 @@ class Readwise extends API_Base {
 			'created_at'    => $highlight['created_at'] ?? '',
 			'updated_at'    => $highlight['updated'] ?? '',
 			'book_id'       => $highlight['book_id'] ?? 0,
-			'book'          => array(
+			'book'          => [
 				'id'       => $highlight['book']['id'] ?? 0,
 				'title'    => $highlight['book']['title'] ?? '',
 				'author'   => $highlight['book']['author'] ?? '',
 				'category' => $highlight['book']['category'] ?? '',
-			),
-			'tags'          => $highlight['tags'] ?? array(),
-		);
+			],
+			'tags'          => $highlight['tags'] ?? [],
+		];
 	}
 
 	/**
@@ -422,10 +434,13 @@ class Readwise extends API_Base {
 
 		$query_lower = strtolower( $query );
 
-		return array_filter( $all_books, function( $book ) use ( $query_lower ) {
-			return str_contains( strtolower( $book['title'] ), $query_lower )
+		return array_filter(
+			$all_books,
+			function ( $book ) use ( $query_lower ) {
+				return str_contains( strtolower( $book['title'] ), $query_lower )
 				|| str_contains( strtolower( $book['author'] ), $query_lower );
-		} );
+			}
+		);
 	}
 
 	/**
@@ -443,7 +458,13 @@ class Readwise extends API_Base {
 			$response = $this->get( 'books/' . $id . '/' );
 			return $this->normalize_book( $response );
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Failed to fetch book by ID', array( 'id' => $id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Failed to fetch book by ID',
+				[
+					'id'    => $id,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}

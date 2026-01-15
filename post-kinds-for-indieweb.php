@@ -273,5 +273,13 @@ function init(): void {
 	$plugin->init();
 }
 
+// Load helper functions.
+require_once POST_KINDS_INDIEWEB_PATH . 'includes/functions-checkin.php';
+
 // Hook into WordPress init.
 add_action( 'plugins_loaded', __NAMESPACE__ . '\\init' );
+
+// Load WP-CLI commands.
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	require_once POST_KINDS_INDIEWEB_PATH . 'includes/class-cli-commands.php';
+}

@@ -57,7 +57,7 @@ export default function Save( { attributes } ) {
 
 		return (
 			<div
-				className="reactions-card__rating p-rating"
+				className="post-kinds-card__rating p-rating"
 				aria-label={ `Rating: ${ rating } out of 5 stars` }
 			>
 				{ Array.from( { length: 5 }, ( _, i ) => (
@@ -69,7 +69,7 @@ export default function Save( { attributes } ) {
 						★
 					</span>
 				) ) }
-				<span className="reactions-card__rating-value">
+				<span className="post-kinds-card__rating-value">
 					{ rating }/5
 				</span>
 			</div>
@@ -78,31 +78,31 @@ export default function Save( { attributes } ) {
 
 	return (
 		<div { ...blockProps }>
-			<div className="reactions-card h-cite">
+			<div className="post-kinds-card h-cite">
 				{ /* Cover image */ }
 				{ cover && (
-					<div className="reactions-card__media">
+					<div className="post-kinds-card__media">
 						<img
 							src={ cover }
 							alt={ coverAlt || title }
-							className="reactions-card__image u-photo"
+							className="post-kinds-card__image u-photo"
 							loading="lazy"
 						/>
 					</div>
 				) }
 
-				<div className="reactions-card__content">
+				<div className="post-kinds-card__content">
 					{ /* Status and platform badges */ }
-					<div className="reactions-card__badges">
+					<div className="post-kinds-card__badges">
 						{ status && (
 							<span
-								className={ `reactions-card__badge reactions-card__badge--${ status }` }
+								className={ `post-kinds-card__badge post-kinds-card__badge--${ status }` }
 							>
 								{ STATUS_LABELS[ status ] || status }
 							</span>
 						) }
 						{ platform && (
-							<span className="reactions-card__badge">
+							<span className="post-kinds-card__badge">
 								{ platform }
 							</span>
 						) }
@@ -110,7 +110,7 @@ export default function Save( { attributes } ) {
 
 					{ /* Game title */ }
 					{ title && (
-						<h3 className="reactions-card__title p-name">
+						<h3 className="post-kinds-card__title p-name">
 							{ gameUrl ? (
 								<a
 									href={ gameUrl }
@@ -128,7 +128,7 @@ export default function Save( { attributes } ) {
 
 					{ /* Hours played */ }
 					{ hoursPlayed > 0 && (
-						<p className="reactions-card__meta">
+						<p className="post-kinds-card__meta">
 							<strong>{ hoursPlayed }</strong> hours played
 						</p>
 					) }
@@ -138,18 +138,18 @@ export default function Save( { attributes } ) {
 
 					{ /* Review */ }
 					{ review && (
-						<p className="reactions-card__notes p-content">
+						<p className="post-kinds-card__notes p-content">
 							{ review }
 						</p>
 					) }
 
 					{ /* Links */ }
 					{ ( officialUrl || purchaseUrl || gameUrl ) && (
-						<div className="reactions-card__links">
+						<div className="post-kinds-card__links">
 							{ gameUrl && (
 								<a
 									href={ gameUrl }
-									className="reactions-card__link"
+									className="post-kinds-card__link"
 									target="_blank"
 									rel="noopener noreferrer"
 								>
@@ -159,7 +159,7 @@ export default function Save( { attributes } ) {
 							{ officialUrl && (
 								<a
 									href={ officialUrl }
-									className="reactions-card__link"
+									className="post-kinds-card__link"
 									target="_blank"
 									rel="noopener noreferrer"
 								>
@@ -169,7 +169,7 @@ export default function Save( { attributes } ) {
 							{ purchaseUrl && (
 								<a
 									href={ purchaseUrl }
-									className="reactions-card__link reactions-card__link--buy"
+									className="post-kinds-card__link post-kinds-card__link--buy"
 									target="_blank"
 									rel="noopener noreferrer"
 								>
@@ -182,7 +182,7 @@ export default function Save( { attributes } ) {
 					{ /* Played timestamp */ }
 					{ playedAt && (
 						<time
-							className="reactions-card__timestamp dt-published"
+							className="post-kinds-card__timestamp dt-published"
 							dateTime={ new Date( playedAt ).toISOString() }
 						>
 							{ new Date( playedAt ).toLocaleString() }

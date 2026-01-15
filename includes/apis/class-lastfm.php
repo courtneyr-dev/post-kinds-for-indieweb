@@ -78,8 +78,8 @@ class LastFM extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials       = get_option( 'post_kinds_indieweb_api_credentials', array() );
-		$lastfm_creds      = $credentials['lastfm'] ?? array();
+		$credentials       = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$lastfm_creds      = $credentials['lastfm'] ?? [];
 		$this->api_key     = $lastfm_creds['api_key'] ?? '';
 		$this->api_secret  = $lastfm_creds['api_secret'] ?? '';
 		$this->session_key = $lastfm_creds['session_key'] ?? '';
@@ -97,7 +97,7 @@ class LastFM extends API_Base {
 
 		try {
 			// Test with a simple artist info request.
-			$this->call_method( 'artist.getInfo', array( 'artist' => 'Radiohead' ) );
+			$this->call_method( 'artist.getInfo', [ 'artist' => 'Radiohead' ] );
 			return true;
 		} catch ( \Exception $e ) {
 			return false;
@@ -113,13 +113,13 @@ class LastFM extends API_Base {
 	 * @return array<string, mixed> Response.
 	 * @throws \Exception On API error.
 	 */
-	private function call_method( string $method, array $params = array(), bool $signed = false ): array {
+	private function call_method( string $method, array $params = [], bool $signed = false ): array {
 		$params['method']  = $method;
 		$params['api_key'] = $this->api_key;
 		$params['format']  = 'json';
 
 		if ( $signed && $this->session_key ) {
-			$params['sk'] = $this->session_key;
+			$params['sk']      = $this->session_key;
 			$params['api_sig'] = $this->generate_signature( $params );
 		}
 
@@ -164,10 +164,10 @@ class LastFM extends API_Base {
 		}
 
 		try {
-			$params = array(
+			$params = [
 				'track' => $query,
 				'limit' => 25,
-			);
+			];
 
 			if ( $artist ) {
 				$params['artist'] = $artist;
@@ -175,14 +175,14 @@ class LastFM extends API_Base {
 
 			$response = $this->call_method( 'track.search', $params );
 
-			$results = array();
+			$results = [];
 
 			if ( isset( $response['results']['trackmatches']['track'] ) ) {
 				$tracks = $response['results']['trackmatches']['track'];
 
 				// Ensure it's an array of tracks.
 				if ( isset( $tracks['name'] ) ) {
-					$tracks = array( $tracks );
+					$tracks = [ $tracks ];
 				}
 
 				foreach ( $tracks as $track ) {
@@ -194,8 +194,14 @@ class LastFM extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -238,11 +244,11 @@ class LastFM extends API_Base {
 		try {
 			$response = $this->call_method(
 				'track.getInfo',
-				array(
+				[
 					'track'       => $track,
 					'artist'      => $artist,
 					'autocorrect' => 1,
-				)
+				]
 			);
 
 			if ( isset( $response['track'] ) ) {
@@ -253,7 +259,14 @@ class LastFM extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get track info failed', array( 'track' => $track, 'artist' => $artist, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get track info failed',
+				[
+					'track'  => $track,
+					'artist' => $artist,
+					'error'  => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -273,7 +286,7 @@ class LastFM extends API_Base {
 		}
 
 		try {
-			$response = $this->call_method( 'track.getInfo', array( 'mbid' => $mbid ) );
+			$response = $this->call_method( 'track.getInfo', [ 'mbid' => $mbid ] );
 
 			if ( isset( $response['track'] ) ) {
 				$result = $this->normalize_track_info( $response['track'] );
@@ -283,7 +296,13 @@ class LastFM extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get track by MBID failed', array( 'mbid' => $mbid, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get track by MBID failed',
+				[
+					'mbid'  => $mbid,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -299,12 +318,12 @@ class LastFM extends API_Base {
 	 * @return array<string, mixed> Recent tracks with pagination info.
 	 */
 	public function get_recent_tracks( string $username, int $limit = 50, int $page = 1, int $from = 0, int $to = 0 ): array {
-		$params = array(
+		$params = [
 			'user'     => $username,
 			'limit'    => min( $limit, 200 ),
 			'page'     => $page,
 			'extended' => 1,
-		);
+		];
 
 		if ( $from > 0 ) {
 			$params['from'] = $from;
@@ -327,26 +346,26 @@ class LastFM extends API_Base {
 		try {
 			$response = $this->call_method( 'user.getRecentTracks', $params );
 
-			$result = array(
-				'tracks'      => array(),
+			$result = [
+				'tracks'      => [],
 				'total'       => 0,
 				'page'        => $page,
 				'per_page'    => $limit,
 				'total_pages' => 0,
-			);
+			];
 
 			if ( isset( $response['recenttracks'] ) ) {
-				$attr = $response['recenttracks']['@attr'] ?? array();
+				$attr                  = $response['recenttracks']['@attr'] ?? [];
 				$result['total']       = (int) ( $attr['total'] ?? 0 );
 				$result['page']        = (int) ( $attr['page'] ?? 1 );
 				$result['per_page']    = (int) ( $attr['perPage'] ?? $limit );
 				$result['total_pages'] = (int) ( $attr['totalPages'] ?? 0 );
 
-				$tracks = $response['recenttracks']['track'] ?? array();
+				$tracks = $response['recenttracks']['track'] ?? [];
 
 				// Ensure it's an array of tracks.
 				if ( isset( $tracks['name'] ) ) {
-					$tracks = array( $tracks );
+					$tracks = [ $tracks ];
 				}
 
 				foreach ( $tracks as $track ) {
@@ -365,14 +384,20 @@ class LastFM extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get recent tracks failed', array( 'username' => $username, 'error' => $e->getMessage() ) );
-			return array(
-				'tracks'      => array(),
+			$this->log_error(
+				'Get recent tracks failed',
+				[
+					'username' => $username,
+					'error'    => $e->getMessage(),
+				]
+			);
+			return [
+				'tracks'      => [],
 				'total'       => 0,
 				'page'        => $page,
 				'per_page'    => $limit,
 				'total_pages' => 0,
-			);
+			];
 		}
 	}
 
@@ -386,10 +411,10 @@ class LastFM extends API_Base {
 		try {
 			$response = $this->call_method(
 				'user.getRecentTracks',
-				array(
+				[
 					'user'  => $username,
 					'limit' => 1,
-				)
+				]
 			);
 
 			if ( isset( $response['recenttracks']['track'][0] ) ) {
@@ -402,7 +427,13 @@ class LastFM extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get now playing failed', array( 'username' => $username, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get now playing failed',
+				[
+					'username' => $username,
+					'error'    => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -426,31 +457,31 @@ class LastFM extends API_Base {
 		try {
 			$response = $this->call_method(
 				'user.getTopArtists',
-				array(
+				[
 					'user'   => $username,
 					'period' => $period,
 					'limit'  => min( $limit, 100 ),
-				)
+				]
 			);
 
-			$artists = array();
+			$artists = [];
 
 			if ( isset( $response['topartists']['artist'] ) ) {
 				$list = $response['topartists']['artist'];
 
 				// Ensure it's an array.
 				if ( isset( $list['name'] ) ) {
-					$list = array( $list );
+					$list = [ $list ];
 				}
 
 				foreach ( $list as $artist ) {
-					$artists[] = array(
-						'name'       => $artist['name'] ?? '',
-						'playcount'  => (int) ( $artist['playcount'] ?? 0 ),
-						'mbid'       => $artist['mbid'] ?? '',
-						'url'        => $artist['url'] ?? '',
-						'image'      => $this->get_best_image( $artist['image'] ?? array() ),
-					);
+					$artists[] = [
+						'name'      => $artist['name'] ?? '',
+						'playcount' => (int) ( $artist['playcount'] ?? 0 ),
+						'mbid'      => $artist['mbid'] ?? '',
+						'url'       => $artist['url'] ?? '',
+						'image'     => $this->get_best_image( $artist['image'] ?? [] ),
+					];
 				}
 			}
 
@@ -458,8 +489,14 @@ class LastFM extends API_Base {
 
 			return $artists;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get top artists failed', array( 'username' => $username, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get top artists failed',
+				[
+					'username' => $username,
+					'error'    => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -482,31 +519,31 @@ class LastFM extends API_Base {
 		try {
 			$response = $this->call_method(
 				'user.getTopTracks',
-				array(
+				[
 					'user'   => $username,
 					'period' => $period,
 					'limit'  => min( $limit, 100 ),
-				)
+				]
 			);
 
-			$tracks = array();
+			$tracks = [];
 
 			if ( isset( $response['toptracks']['track'] ) ) {
 				$list = $response['toptracks']['track'];
 
 				if ( isset( $list['name'] ) ) {
-					$list = array( $list );
+					$list = [ $list ];
 				}
 
 				foreach ( $list as $track ) {
-					$tracks[] = array(
-						'track'      => $track['name'] ?? '',
-						'artist'     => $track['artist']['name'] ?? '',
-						'playcount'  => (int) ( $track['playcount'] ?? 0 ),
-						'mbid'       => $track['mbid'] ?? '',
-						'url'        => $track['url'] ?? '',
-						'image'      => $this->get_best_image( $track['image'] ?? array() ),
-					);
+					$tracks[] = [
+						'track'     => $track['name'] ?? '',
+						'artist'    => $track['artist']['name'] ?? '',
+						'playcount' => (int) ( $track['playcount'] ?? 0 ),
+						'mbid'      => $track['mbid'] ?? '',
+						'url'       => $track['url'] ?? '',
+						'image'     => $this->get_best_image( $track['image'] ?? [] ),
+					];
 				}
 			}
 
@@ -514,8 +551,14 @@ class LastFM extends API_Base {
 
 			return $tracks;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get top tracks failed', array( 'username' => $username, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get top tracks failed',
+				[
+					'username' => $username,
+					'error'    => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -534,20 +577,20 @@ class LastFM extends API_Base {
 		}
 
 		try {
-			$response = $this->call_method( 'user.getInfo', array( 'user' => $username ) );
+			$response = $this->call_method( 'user.getInfo', [ 'user' => $username ] );
 
 			if ( isset( $response['user'] ) ) {
 				$user = $response['user'];
 
-				$result = array(
-					'username'    => $user['name'] ?? '',
-					'real_name'   => $user['realname'] ?? '',
-					'url'         => $user['url'] ?? '',
-					'country'     => $user['country'] ?? '',
-					'playcount'   => (int) ( $user['playcount'] ?? 0 ),
-					'registered'  => $user['registered']['unixtime'] ?? null,
-					'image'       => $this->get_best_image( $user['image'] ?? array() ),
-				);
+				$result = [
+					'username'   => $user['name'] ?? '',
+					'real_name'  => $user['realname'] ?? '',
+					'url'        => $user['url'] ?? '',
+					'country'    => $user['country'] ?? '',
+					'playcount'  => (int) ( $user['playcount'] ?? 0 ),
+					'registered' => $user['registered']['unixtime'] ?? null,
+					'image'      => $this->get_best_image( $user['image'] ?? [] ),
+				];
 
 				$this->set_cache( $cache_key, $result, DAY_IN_SECONDS );
 				return $result;
@@ -555,7 +598,13 @@ class LastFM extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get user info failed', array( 'username' => $username, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get user info failed',
+				[
+					'username' => $username,
+					'error'    => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -578,39 +627,39 @@ class LastFM extends API_Base {
 		try {
 			$response = $this->call_method(
 				'album.getInfo',
-				array(
+				[
 					'album'       => $album,
 					'artist'      => $artist,
 					'autocorrect' => 1,
-				)
+				]
 			);
 
 			if ( isset( $response['album'] ) ) {
 				$data = $response['album'];
 
-				$result = array(
-					'album'    => $data['name'] ?? '',
-					'artist'   => $data['artist'] ?? '',
-					'mbid'     => $data['mbid'] ?? '',
-					'url'      => $data['url'] ?? '',
-					'image'    => $this->get_best_image( $data['image'] ?? array() ),
-					'tracks'   => array(),
-					'tags'     => array(),
-				);
+				$result = [
+					'album'  => $data['name'] ?? '',
+					'artist' => $data['artist'] ?? '',
+					'mbid'   => $data['mbid'] ?? '',
+					'url'    => $data['url'] ?? '',
+					'image'  => $this->get_best_image( $data['image'] ?? [] ),
+					'tracks' => [],
+					'tags'   => [],
+				];
 
 				// Parse tracks.
 				if ( isset( $data['tracks']['track'] ) ) {
 					$tracks = $data['tracks']['track'];
 					if ( isset( $tracks['name'] ) ) {
-						$tracks = array( $tracks );
+						$tracks = [ $tracks ];
 					}
 
 					foreach ( $tracks as $track ) {
-						$result['tracks'][] = array(
+						$result['tracks'][] = [
 							'name'     => $track['name'] ?? '',
 							'duration' => (int) ( $track['duration'] ?? 0 ),
 							'rank'     => (int) ( $track['@attr']['rank'] ?? 0 ),
-						);
+						];
 					}
 				}
 
@@ -618,7 +667,7 @@ class LastFM extends API_Base {
 				if ( isset( $data['tags']['tag'] ) ) {
 					$tags = $data['tags']['tag'];
 					if ( isset( $tags['name'] ) ) {
-						$tags = array( $tags );
+						$tags = [ $tags ];
 					}
 
 					foreach ( $tags as $tag ) {
@@ -632,7 +681,14 @@ class LastFM extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get album info failed', array( 'album' => $album, 'artist' => $artist, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get album info failed',
+				[
+					'album'  => $album,
+					'artist' => $artist,
+					'error'  => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -654,32 +710,32 @@ class LastFM extends API_Base {
 		try {
 			$response = $this->call_method(
 				'artist.getInfo',
-				array(
+				[
 					'artist'      => $artist,
 					'autocorrect' => 1,
-				)
+				]
 			);
 
 			if ( isset( $response['artist'] ) ) {
 				$data = $response['artist'];
 
-				$result = array(
+				$result = [
 					'name'      => $data['name'] ?? '',
 					'mbid'      => $data['mbid'] ?? '',
 					'url'       => $data['url'] ?? '',
-					'image'     => $this->get_best_image( $data['image'] ?? array() ),
+					'image'     => $this->get_best_image( $data['image'] ?? [] ),
 					'listeners' => (int) ( $data['stats']['listeners'] ?? 0 ),
 					'playcount' => (int) ( $data['stats']['playcount'] ?? 0 ),
 					'bio'       => $data['bio']['summary'] ?? '',
-					'tags'      => array(),
-					'similar'   => array(),
-				);
+					'tags'      => [],
+					'similar'   => [],
+				];
 
 				// Parse tags.
 				if ( isset( $data['tags']['tag'] ) ) {
 					$tags = $data['tags']['tag'];
 					if ( isset( $tags['name'] ) ) {
-						$tags = array( $tags );
+						$tags = [ $tags ];
 					}
 
 					foreach ( $tags as $tag ) {
@@ -691,15 +747,15 @@ class LastFM extends API_Base {
 				if ( isset( $data['similar']['artist'] ) ) {
 					$similar = $data['similar']['artist'];
 					if ( isset( $similar['name'] ) ) {
-						$similar = array( $similar );
+						$similar = [ $similar ];
 					}
 
 					foreach ( $similar as $sim ) {
-						$result['similar'][] = array(
+						$result['similar'][] = [
 							'name'  => $sim['name'] ?? '',
 							'url'   => $sim['url'] ?? '',
-							'image' => $this->get_best_image( $sim['image'] ?? array() ),
-						);
+							'image' => $this->get_best_image( $sim['image'] ?? [] ),
+						];
 					}
 				}
 
@@ -709,7 +765,13 @@ class LastFM extends API_Base {
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get artist info failed', array( 'artist' => $artist, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get artist info failed',
+				[
+					'artist' => $artist,
+					'error'  => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -728,11 +790,11 @@ class LastFM extends API_Base {
 		}
 
 		try {
-			$params = array(
+			$params = [
 				'artist'    => $track['artist'] ?? '',
 				'track'     => $track['track'] ?? '',
 				'timestamp' => $timestamp > 0 ? $timestamp : time(),
-			);
+			];
 
 			if ( ! empty( $track['album'] ) ) {
 				$params['album'] = $track['album'];
@@ -746,20 +808,37 @@ class LastFM extends API_Base {
 				$params['mbid'] = $track['mbid'];
 			}
 
-			$this->post( '', array_merge( $params, array(
-				'method'  => 'track.scrobble',
-				'api_key' => $this->api_key,
-				'sk'      => $this->session_key,
-				'api_sig' => $this->generate_signature( array_merge( $params, array(
-					'method'  => 'track.scrobble',
-					'api_key' => $this->api_key,
-					'sk'      => $this->session_key,
-				) ) ),
-			) ) );
+			$this->post(
+				'',
+				array_merge(
+					$params,
+					[
+						'method'  => 'track.scrobble',
+						'api_key' => $this->api_key,
+						'sk'      => $this->session_key,
+						'api_sig' => $this->generate_signature(
+							array_merge(
+								$params,
+								[
+									'method'  => 'track.scrobble',
+									'api_key' => $this->api_key,
+									'sk'      => $this->session_key,
+								]
+							)
+						),
+					]
+				)
+			);
 
 			return true;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Scrobble failed', array( 'track' => $track, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Scrobble failed',
+				[
+					'track' => $track,
+					'error' => $e->getMessage(),
+				]
+			);
 			return false;
 		}
 	}
@@ -776,10 +855,10 @@ class LastFM extends API_Base {
 		}
 
 		try {
-			$params = array(
+			$params = [
 				'artist' => $track['artist'] ?? '',
 				'track'  => $track['track'] ?? '',
-			);
+			];
 
 			if ( ! empty( $track['album'] ) ) {
 				$params['album'] = $track['album'];
@@ -789,20 +868,37 @@ class LastFM extends API_Base {
 				$params['duration'] = (int) $track['duration'];
 			}
 
-			$this->post( '', array_merge( $params, array(
-				'method'  => 'track.updateNowPlaying',
-				'api_key' => $this->api_key,
-				'sk'      => $this->session_key,
-				'api_sig' => $this->generate_signature( array_merge( $params, array(
-					'method'  => 'track.updateNowPlaying',
-					'api_key' => $this->api_key,
-					'sk'      => $this->session_key,
-				) ) ),
-			) ) );
+			$this->post(
+				'',
+				array_merge(
+					$params,
+					[
+						'method'  => 'track.updateNowPlaying',
+						'api_key' => $this->api_key,
+						'sk'      => $this->session_key,
+						'api_sig' => $this->generate_signature(
+							array_merge(
+								$params,
+								[
+									'method'  => 'track.updateNowPlaying',
+									'api_key' => $this->api_key,
+									'sk'      => $this->session_key,
+								]
+							)
+						),
+					]
+				)
+			);
 
 			return true;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Update now playing failed', array( 'track' => $track, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Update now playing failed',
+				[
+					'track' => $track,
+					'error' => $e->getMessage(),
+				]
+			);
 			return false;
 		}
 	}
@@ -814,14 +910,14 @@ class LastFM extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	protected function normalize_result( array $raw_result ): array {
-		return array(
-			'track'   => $raw_result['name'] ?? '',
-			'artist'  => $raw_result['artist'] ?? '',
-			'mbid'    => $raw_result['mbid'] ?? '',
-			'url'     => $raw_result['url'] ?? '',
-			'image'   => $this->get_best_image( $raw_result['image'] ?? array() ),
-			'source'  => 'lastfm',
-		);
+		return [
+			'track'  => $raw_result['name'] ?? '',
+			'artist' => $raw_result['artist'] ?? '',
+			'mbid'   => $raw_result['mbid'] ?? '',
+			'url'    => $raw_result['url'] ?? '',
+			'image'  => $this->get_best_image( $raw_result['image'] ?? [] ),
+			'source' => 'lastfm',
+		];
 	}
 
 	/**
@@ -831,21 +927,21 @@ class LastFM extends API_Base {
 	 * @return array<string, mixed> Normalized track.
 	 */
 	private function normalize_track_info( array $track ): array {
-		return array(
-			'track'      => $track['name'] ?? '',
-			'artist'     => $track['artist']['name'] ?? '',
-			'album'      => $track['album']['title'] ?? '',
-			'mbid'       => $track['mbid'] ?? '',
-			'artist_mbid'=> $track['artist']['mbid'] ?? '',
-			'album_mbid' => $track['album']['mbid'] ?? '',
-			'url'        => $track['url'] ?? '',
-			'image'      => $this->get_best_image( $track['album']['image'] ?? array() ),
-			'duration'   => isset( $track['duration'] ) ? (int) ( $track['duration'] / 1000 ) : null,
-			'listeners'  => (int) ( $track['listeners'] ?? 0 ),
-			'playcount'  => (int) ( $track['playcount'] ?? 0 ),
-			'tags'       => $this->extract_tags( $track['toptags']['tag'] ?? array() ),
-			'source'     => 'lastfm',
-		);
+		return [
+			'track'       => $track['name'] ?? '',
+			'artist'      => $track['artist']['name'] ?? '',
+			'album'       => $track['album']['title'] ?? '',
+			'mbid'        => $track['mbid'] ?? '',
+			'artist_mbid' => $track['artist']['mbid'] ?? '',
+			'album_mbid'  => $track['album']['mbid'] ?? '',
+			'url'         => $track['url'] ?? '',
+			'image'       => $this->get_best_image( $track['album']['image'] ?? [] ),
+			'duration'    => isset( $track['duration'] ) ? (int) ( $track['duration'] / 1000 ) : null,
+			'listeners'   => (int) ( $track['listeners'] ?? 0 ),
+			'playcount'   => (int) ( $track['playcount'] ?? 0 ),
+			'tags'        => $this->extract_tags( $track['toptags']['tag'] ?? [] ),
+			'source'      => 'lastfm',
+		];
 	}
 
 	/**
@@ -855,7 +951,7 @@ class LastFM extends API_Base {
 	 * @return array<string, mixed> Normalized scrobble.
 	 */
 	private function normalize_scrobble( array $scrobble ): array {
-		return array(
+		return [
 			'track'       => $scrobble['name'] ?? '',
 			'artist'      => $scrobble['artist']['name'] ?? ( $scrobble['artist']['#text'] ?? '' ),
 			'album'       => $scrobble['album']['#text'] ?? '',
@@ -863,11 +959,11 @@ class LastFM extends API_Base {
 			'artist_mbid' => $scrobble['artist']['mbid'] ?? '',
 			'album_mbid'  => $scrobble['album']['mbid'] ?? '',
 			'url'         => $scrobble['url'] ?? '',
-			'image'       => $this->get_best_image( $scrobble['image'] ?? array() ),
+			'image'       => $this->get_best_image( $scrobble['image'] ?? [] ),
 			'listened_at' => isset( $scrobble['date']['uts'] ) ? (int) $scrobble['date']['uts'] : null,
 			'loved'       => isset( $scrobble['loved'] ) && '1' === $scrobble['loved'],
 			'source'      => 'lastfm',
-		);
+		];
 	}
 
 	/**
@@ -882,7 +978,7 @@ class LastFM extends API_Base {
 		}
 
 		// Prefer extralarge, then large, then medium.
-		$preferred = array( 'extralarge', 'large', 'medium', 'small' );
+		$preferred = [ 'extralarge', 'large', 'medium', 'small' ];
 
 		foreach ( $preferred as $size ) {
 			foreach ( $images as $image ) {
@@ -910,15 +1006,15 @@ class LastFM extends API_Base {
 	 */
 	private function extract_tags( array $tags ): array {
 		if ( empty( $tags ) ) {
-			return array();
+			return [];
 		}
 
 		// Handle single tag.
 		if ( isset( $tags['name'] ) ) {
-			return array( $tags['name'] );
+			return [ $tags['name'] ];
 		}
 
-		$result = array();
+		$result = [];
 		foreach ( $tags as $tag ) {
 			if ( isset( $tag['name'] ) ) {
 				$result[] = $tag['name'];
@@ -971,10 +1067,10 @@ class LastFM extends API_Base {
 		}
 
 		return add_query_arg(
-			array(
+			[
 				'api_key' => $this->api_key,
 				'cb'      => $callback_url,
-			),
+			],
 			'https://www.last.fm/api/auth/'
 		);
 	}
@@ -993,38 +1089,38 @@ class LastFM extends API_Base {
 		}
 
 		try {
-			$params = array(
+			$params = [
 				'method'  => 'auth.getSession',
 				'api_key' => $this->api_key,
 				'token'   => $token,
-			);
+			];
 
 			$params['api_sig'] = $this->generate_signature( $params );
 			$params['format']  = 'json';
 
 			$response = wp_remote_get(
 				add_query_arg( $params, 'https://ws.audioscrobbler.com/2.0/' ),
-				array( 'timeout' => 30 )
+				[ 'timeout' => 30 ]
 			);
 
 			if ( is_wp_error( $response ) ) {
-				$this->log_error( 'Get session failed', array( 'error' => $response->get_error_message() ) );
+				$this->log_error( 'Get session failed', [ 'error' => $response->get_error_message() ] );
 				return null;
 			}
 
 			$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 			if ( isset( $body['session']['key'] ) ) {
-				return array(
+				return [
 					'session_key' => $body['session']['key'],
 					'username'    => $body['session']['name'] ?? '',
-				);
+				];
 			}
 
-			$this->log_error( 'Get session failed', array( 'response' => $body ) );
+			$this->log_error( 'Get session failed', [ 'response' => $body ] );
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get session exception', array( 'error' => $e->getMessage() ) );
+			$this->log_error( 'Get session exception', [ 'error' => $e->getMessage() ] );
 			return null;
 		}
 	}

@@ -85,7 +85,7 @@ class Trakt_Watch_Sync extends Watch_Sync_Base {
 		$api = $this->get_api();
 
 		// Build IDs array for Trakt.
-		$ids = array();
+		$ids = [];
 
 		// Prefer Trakt ID if available.
 		if ( ! empty( $watch_data['trakt_id'] ) ) {
@@ -111,11 +111,11 @@ class Trakt_Watch_Sync extends Watch_Sync_Base {
 		$type = $watch_data['type'] ?? 'movie';
 
 		// Build the item payload.
-		$item = array(
+		$item = [
 			'type'       => $type,
 			'ids'        => $ids,
 			'watched_at' => $watch_data['created_at'] ?? gmdate( 'c' ),
-		);
+		];
 
 		// Sync to Trakt history.
 		$success = $api->add_to_history( $item );
@@ -127,10 +127,10 @@ class Trakt_Watch_Sync extends Watch_Sync_Base {
 			// Build Trakt URL.
 			$url = $this->build_trakt_url( $watch_data, $ids );
 
-			return array(
+			return [
 				'id'  => $sync_id,
 				'url' => $url,
-			);
+			];
 		}
 
 		return false;

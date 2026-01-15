@@ -22,15 +22,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 register_block_pattern(
 	'post-kinds-indieweb/checkin-card',
-	array(
+	[
 		'title'       => __( 'Check-in Card', 'post-kinds-for-indieweb' ),
 		'description' => __( 'Check in at a location or venue.', 'post-kinds-for-indieweb' ),
-		'categories'  => array( 'post-kinds-for-indieweb' ),
-		'keywords'    => array( 'checkin', 'check-in', 'location', 'venue', 'place', 'geo', 'indieweb', 'reaction' ),
-		'blockTypes'  => array( 'core/group' ),
-		'postTypes'   => array( 'post' ),
-		'content'     => '<!-- wp:group {"className":"h-entry reactions-checkin","layout":{"type":"constrained"}} -->
-<div class="wp-block-group h-entry reactions-checkin">
+		'categories'  => [ 'post-kinds-for-indieweb' ],
+		'keywords'    => [ 'checkin', 'check-in', 'location', 'venue', 'place', 'geo', 'indieweb', 'reaction' ],
+		'blockTypes'  => [ 'core/group' ],
+		'postTypes'   => [ 'post' ],
+		'content'     => '<!-- wp:group {"className":"h-entry post-kinds-checkin","layout":{"type":"constrained"}} -->
+<div class="wp-block-group h-entry post-kinds-checkin">
 
 	<!-- wp:group {"className":"p-location h-card u-checkin","style":{"spacing":{"padding":{"top":"var:preset|spacing|20","bottom":"var:preset|spacing|20","left":"var:preset|spacing|30","right":"var:preset|spacing|30"}},"border":{"radius":"8px"}},"backgroundColor":"tertiary","layout":{"type":"constrained"}} -->
 	<div class="wp-block-group p-location h-card u-checkin has-tertiary-background-color has-background" style="border-radius:8px;padding-top:var(--wp--preset--spacing--20);padding-right:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--20);padding-left:var(--wp--preset--spacing--30)">
@@ -56,8 +56,8 @@ register_block_pattern(
 			<p class="p-street-address has-secondary-color has-text-color has-small-font-size"></p>
 			<!-- /wp:paragraph -->
 
-			<!-- wp:paragraph {"className":"reactions-checkin-locality","textColor":"secondary","fontSize":"small","metadata":{"bindings":{"content":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"checkin_full_address"}}}}} -->
-			<p class="reactions-checkin-locality has-secondary-color has-text-color has-small-font-size"></p>
+			<!-- wp:paragraph {"className":"post-kinds-checkin-locality","textColor":"secondary","fontSize":"small","metadata":{"bindings":{"content":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"checkin_full_address"}}}}} -->
+			<p class="post-kinds-checkin-locality has-secondary-color has-text-color has-small-font-size"></p>
 			<!-- /wp:paragraph -->
 
 		</div>
@@ -87,8 +87,8 @@ register_block_pattern(
 	</div>
 	<!-- /wp:group -->
 
-	<!-- wp:group {"className":"reactions-meta","style":{"spacing":{"margin":{"top":"var:preset|spacing|20"}}},"layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"space-between"}} -->
-	<div class="wp-block-group reactions-meta" style="margin-top:var(--wp--preset--spacing--20)">
+	<!-- wp:group {"className":"post-kinds-meta","style":{"spacing":{"margin":{"top":"var:preset|spacing|20"}}},"layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"space-between"}} -->
+	<div class="wp-block-group post-kinds-meta" style="margin-top:var(--wp--preset--spacing--20)">
 
 		<!-- wp:post-date {"className":"dt-published","fontSize":"small"} /-->
 
@@ -101,5 +101,5 @@ register_block_pattern(
 
 </div>
 <!-- /wp:group -->',
-	)
+	]
 );

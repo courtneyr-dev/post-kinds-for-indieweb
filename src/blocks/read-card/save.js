@@ -52,7 +52,7 @@ export default function Save( { attributes } ) {
 
 		return (
 			<div
-				className="reactions-card__rating p-rating"
+				className="post-kinds-card__rating p-rating"
 				aria-label={ `Rating: ${ rating } out of 5 stars` }
 			>
 				{ Array.from( { length: 5 }, ( _, i ) => (
@@ -64,7 +64,7 @@ export default function Save( { attributes } ) {
 						★
 					</span>
 				) ) }
-				<span className="reactions-card__rating-value">
+				<span className="post-kinds-card__rating-value">
 					{ rating }/5
 				</span>
 			</div>
@@ -89,30 +89,30 @@ export default function Save( { attributes } ) {
 
 	return (
 		<div { ...blockProps }>
-			<div className="reactions-card h-cite">
+			<div className="post-kinds-card h-cite">
 				{ /* Cover image */ }
 				{ coverImage && (
-					<div className="reactions-card__media reactions-card__media--portrait">
+					<div className="post-kinds-card__media post-kinds-card__media--portrait">
 						<img
 							src={ coverImage }
 							alt={ coverImageAlt || `Cover of ${ bookTitle }` }
-							className="reactions-card__image u-photo"
+							className="post-kinds-card__image u-photo"
 							loading="lazy"
 						/>
 					</div>
 				) }
 
-				<div className="reactions-card__content">
+				<div className="post-kinds-card__content">
 					{ /* Status badge */ }
 					<span
-						className={ `reactions-card__badge reactions-card__badge--${ readStatus }` }
+						className={ `post-kinds-card__badge post-kinds-card__badge--${ readStatus }` }
 					>
 						{ getStatusLabel() }
 					</span>
 
 					{ /* Book title */ }
 					{ bookTitle && (
-						<h3 className="reactions-card__title p-name">
+						<h3 className="post-kinds-card__title p-name">
 							{ bookUrl ? (
 								<a
 									href={ bookUrl }
@@ -130,7 +130,7 @@ export default function Save( { attributes } ) {
 
 					{ /* Author */ }
 					{ authorName && (
-						<p className="reactions-card__subtitle">
+						<p className="post-kinds-card__subtitle">
 							<span className="p-author h-card">
 								<span className="p-name">{ authorName }</span>
 							</span>
@@ -139,7 +139,7 @@ export default function Save( { attributes } ) {
 
 					{ /* Publisher and date */ }
 					{ ( publisher || publishDate ) && (
-						<p className="reactions-card__meta">
+						<p className="post-kinds-card__meta">
 							{ publisher && <span>{ publisher }</span> }
 							{ publisher && publishDate && ', ' }
 							{ publishDate && <span>{ publishDate }</span> }
@@ -148,10 +148,10 @@ export default function Save( { attributes } ) {
 
 					{ /* Reading progress */ }
 					{ readStatus === 'reading' && progressPercent > 0 && (
-						<div className="reactions-card__progress">
-							<div className="reactions-card__progress-bar">
+						<div className="post-kinds-card__progress">
+							<div className="post-kinds-card__progress-bar">
 								<div
-									className="reactions-card__progress-fill"
+									className="post-kinds-card__progress-fill"
 									style={ { width: `${ progressPercent }%` } }
 									role="progressbar"
 									aria-valuenow={ progressPercent }
@@ -159,7 +159,7 @@ export default function Save( { attributes } ) {
 									aria-valuemax="100"
 								/>
 							</div>
-							<span className="reactions-card__progress-text">
+							<span className="post-kinds-card__progress-text">
 								{ currentPage } of { pageCount } pages (
 								{ progressPercent }%)
 							</span>
@@ -171,17 +171,17 @@ export default function Save( { attributes } ) {
 
 					{ /* Review */ }
 					{ review && (
-						<div className="reactions-card__notes p-content">
+						<div className="post-kinds-card__notes p-content">
 							<RichText.Content tagName="p" value={ review } />
 						</div>
 					) }
 
 					{ /* Reading dates */ }
 					{ ( startedAt || finishedAt ) && (
-						<div className="reactions-card__dates">
+						<div className="post-kinds-card__dates">
 							{ startedAt && (
 								<time
-									className="reactions-card__timestamp"
+									className="post-kinds-card__timestamp"
 									dateTime={ new Date(
 										startedAt
 									).toISOString() }
@@ -196,7 +196,7 @@ export default function Save( { attributes } ) {
 								( readStatus === 'finished' ||
 									readStatus === 'abandoned' ) && (
 									<time
-										className="reactions-card__timestamp dt-published"
+										className="post-kinds-card__timestamp dt-published"
 										dateTime={ new Date(
 											finishedAt
 										).toISOString() }

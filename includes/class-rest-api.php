@@ -54,7 +54,7 @@ class REST_API {
 	 * Constructor.
 	 */
 	public function __construct() {
-		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
+		add_action( 'rest_api_init', [ $this, 'register_routes' ] );
 	}
 
 	/**
@@ -83,302 +83,302 @@ class REST_API {
 		register_rest_route(
 			self::NAMESPACE,
 			'/lookup/music-url',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'lookup_music_url' ),
-				'permission_callback' => array( $this, 'can_edit_posts' ),
-				'args'                => array(
-					'url' => array(
+				'callback'            => [ $this, 'lookup_music_url' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'url' => [
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'esc_url_raw',
 						'description'       => __( 'Music service URL (Spotify, Apple Music, YouTube, etc.)', 'post-kinds-for-indieweb' ),
-					),
-				),
-			)
+					],
+				],
+			]
 		);
 
 		// Music lookup.
 		register_rest_route(
 			self::NAMESPACE,
 			'/lookup/music',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'lookup_music' ),
-				'permission_callback' => array( $this, 'can_edit_posts' ),
-				'args'                => array(
-					'q'      => array(
+				'callback'            => [ $this, 'lookup_music' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'q'      => [
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 						'description'       => __( 'Search query (track name, artist, or both)', 'post-kinds-for-indieweb' ),
-					),
-					'artist' => array(
+					],
+					'artist' => [
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 						'description'       => __( 'Artist name to narrow search', 'post-kinds-for-indieweb' ),
-					),
-					'source' => array(
-						'required'          => false,
-						'type'              => 'string',
-						'default'           => 'musicbrainz',
-						'enum'              => array( 'musicbrainz', 'lastfm', 'listenbrainz' ),
-						'description'       => __( 'API source to use', 'post-kinds-for-indieweb' ),
-					),
-				),
-			)
+					],
+					'source' => [
+						'required'    => false,
+						'type'        => 'string',
+						'default'     => 'musicbrainz',
+						'enum'        => [ 'musicbrainz', 'lastfm', 'listenbrainz' ],
+						'description' => __( 'API source to use', 'post-kinds-for-indieweb' ),
+					],
+				],
+			]
 		);
 
 		// Watch URL parsing (IMDB, TMDB, Trakt, Letterboxd).
 		register_rest_route(
 			self::NAMESPACE,
 			'/lookup/watch-url',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'lookup_watch_url' ),
-				'permission_callback' => array( $this, 'can_edit_posts' ),
-				'args'                => array(
-					'url' => array(
+				'callback'            => [ $this, 'lookup_watch_url' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'url' => [
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'esc_url_raw',
 						'description'       => __( 'Movie/TV service URL (IMDB, TMDB, Trakt, Letterboxd)', 'post-kinds-for-indieweb' ),
-					),
-				),
-			)
+					],
+				],
+			]
 		);
 
 		// Movie/TV lookup.
 		register_rest_route(
 			self::NAMESPACE,
 			'/lookup/video',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'lookup_video' ),
-				'permission_callback' => array( $this, 'can_edit_posts' ),
-				'args'                => array(
-					'q'      => array(
+				'callback'            => [ $this, 'lookup_video' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'q'      => [
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 						'description'       => __( 'Search query (title)', 'post-kinds-for-indieweb' ),
-					),
-					'type'   => array(
-						'required'          => false,
-						'type'              => 'string',
-						'default'           => 'multi',
-						'enum'              => array( 'movie', 'tv', 'multi' ),
-						'description'       => __( 'Content type to search', 'post-kinds-for-indieweb' ),
-					),
-					'year'   => array(
+					],
+					'type'   => [
+						'required'    => false,
+						'type'        => 'string',
+						'default'     => 'multi',
+						'enum'        => [ 'movie', 'tv', 'multi' ],
+						'description' => __( 'Content type to search', 'post-kinds-for-indieweb' ),
+					],
+					'year'   => [
 						'required'          => false,
 						'type'              => 'integer',
 						'sanitize_callback' => 'absint',
 						'description'       => __( 'Release year to narrow search', 'post-kinds-for-indieweb' ),
-					),
-					'source' => array(
-						'required'          => false,
-						'type'              => 'string',
-						'default'           => 'tmdb',
-						'enum'              => array( 'tmdb', 'trakt', 'tvmaze', 'simkl' ),
-						'description'       => __( 'API source to use', 'post-kinds-for-indieweb' ),
-					),
-				),
-			)
+					],
+					'source' => [
+						'required'    => false,
+						'type'        => 'string',
+						'default'     => 'tmdb',
+						'enum'        => [ 'tmdb', 'trakt', 'tvmaze', 'simkl' ],
+						'description' => __( 'API source to use', 'post-kinds-for-indieweb' ),
+					],
+				],
+			]
 		);
 
 		// Book lookup.
 		register_rest_route(
 			self::NAMESPACE,
 			'/lookup/book',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'lookup_book' ),
-				'permission_callback' => array( $this, 'can_edit_posts' ),
-				'args'                => array(
-					'q'      => array(
+				'callback'            => [ $this, 'lookup_book' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'q'      => [
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 						'description'       => __( 'Search query (title, author, or ISBN)', 'post-kinds-for-indieweb' ),
-					),
-					'isbn'   => array(
+					],
+					'isbn'   => [
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 						'description'       => __( 'ISBN for direct lookup', 'post-kinds-for-indieweb' ),
-					),
-					'author' => array(
+					],
+					'author' => [
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 						'description'       => __( 'Author name to narrow search', 'post-kinds-for-indieweb' ),
-					),
-					'source' => array(
-						'required'          => false,
-						'type'              => 'string',
-						'default'           => 'openlibrary',
-						'enum'              => array( 'openlibrary', 'hardcover', 'googlebooks' ),
-						'description'       => __( 'API source to use', 'post-kinds-for-indieweb' ),
-					),
-				),
-			)
+					],
+					'source' => [
+						'required'    => false,
+						'type'        => 'string',
+						'default'     => 'openlibrary',
+						'enum'        => [ 'openlibrary', 'hardcover', 'googlebooks' ],
+						'description' => __( 'API source to use', 'post-kinds-for-indieweb' ),
+					],
+				],
+			]
 		);
 
 		// Podcast lookup.
 		register_rest_route(
 			self::NAMESPACE,
 			'/lookup/podcast',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'lookup_podcast' ),
-				'permission_callback' => array( $this, 'can_edit_posts' ),
-				'args'                => array(
-					'q'    => array(
+				'callback'            => [ $this, 'lookup_podcast' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'q'    => [
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 						'description'       => __( 'Search query (podcast name)', 'post-kinds-for-indieweb' ),
-					),
-					'feed' => array(
+					],
+					'feed' => [
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'esc_url_raw',
 						'description'       => __( 'RSS feed URL for direct lookup', 'post-kinds-for-indieweb' ),
-					),
-				),
-			)
+					],
+				],
+			]
 		);
 
 		// Venue/location lookup.
 		register_rest_route(
 			self::NAMESPACE,
 			'/lookup/venue',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'lookup_venue' ),
-				'permission_callback' => array( $this, 'can_edit_posts' ),
-				'args'                => array(
-					'q'      => array(
+				'callback'            => [ $this, 'lookup_venue' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'q'      => [
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 						'description'       => __( 'Search query (venue name or address)', 'post-kinds-for-indieweb' ),
-					),
-					'lat'    => array(
-						'required'          => false,
-						'type'              => 'number',
-						'description'       => __( 'Latitude for nearby search', 'post-kinds-for-indieweb' ),
-					),
-					'lng'    => array(
-						'required'          => false,
-						'type'              => 'number',
-						'description'       => __( 'Longitude for nearby search', 'post-kinds-for-indieweb' ),
-					),
-					'source' => array(
-						'required'          => false,
-						'type'              => 'string',
-						'default'           => 'foursquare',
-						'enum'              => array( 'foursquare', 'nominatim' ),
-						'description'       => __( 'API source to use', 'post-kinds-for-indieweb' ),
-					),
-				),
-			)
+					],
+					'lat'    => [
+						'required'    => false,
+						'type'        => 'number',
+						'description' => __( 'Latitude for nearby search', 'post-kinds-for-indieweb' ),
+					],
+					'lng'    => [
+						'required'    => false,
+						'type'        => 'number',
+						'description' => __( 'Longitude for nearby search', 'post-kinds-for-indieweb' ),
+					],
+					'source' => [
+						'required'    => false,
+						'type'        => 'string',
+						'default'     => 'foursquare',
+						'enum'        => [ 'foursquare', 'nominatim' ],
+						'description' => __( 'API source to use', 'post-kinds-for-indieweb' ),
+					],
+				],
+			]
 		);
 
 		// Game lookup.
 		register_rest_route(
 			self::NAMESPACE,
 			'/lookup/game',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'lookup_game' ),
-				'permission_callback' => array( $this, 'can_edit_posts' ),
-				'args'                => array(
-					'q'      => array(
+				'callback'            => [ $this, 'lookup_game' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'q'      => [
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 						'description'       => __( 'Search query (game name) - required unless id is provided', 'post-kinds-for-indieweb' ),
-					),
-					'source' => array(
-						'required'          => false,
-						'type'              => 'string',
-						'default'           => 'bgg',
-						'enum'              => array( 'bgg', 'rawg' ),
-						'description'       => __( 'API source (bgg for BoardGameGeek, rawg for RAWG.io)', 'post-kinds-for-indieweb' ),
-					),
-					'type'   => array(
-						'required'          => false,
-						'type'              => 'string',
-						'default'           => 'boardgame',
-						'enum'              => array( 'boardgame', 'videogame' ),
-						'description'       => __( 'Game type for BGG (boardgame or videogame)', 'post-kinds-for-indieweb' ),
-					),
-					'id'     => array(
+					],
+					'source' => [
+						'required'    => false,
+						'type'        => 'string',
+						'default'     => 'bgg',
+						'enum'        => [ 'bgg', 'rawg' ],
+						'description' => __( 'API source (bgg for BoardGameGeek, rawg for RAWG.io)', 'post-kinds-for-indieweb' ),
+					],
+					'type'   => [
+						'required'    => false,
+						'type'        => 'string',
+						'default'     => 'boardgame',
+						'enum'        => [ 'boardgame', 'videogame' ],
+						'description' => __( 'Game type for BGG (boardgame or videogame)', 'post-kinds-for-indieweb' ),
+					],
+					'id'     => [
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 						'description'       => __( 'Game ID for direct lookup', 'post-kinds-for-indieweb' ),
-					),
-				),
-			)
+					],
+				],
+			]
 		);
 
 		// Geocoding.
 		register_rest_route(
 			self::NAMESPACE,
 			'/geocode',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'geocode' ),
-				'permission_callback' => array( $this, 'can_edit_posts' ),
-				'args'                => array(
-					'address' => array(
+				'callback'            => [ $this, 'geocode' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'address' => [
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 						'description'       => __( 'Address to geocode', 'post-kinds-for-indieweb' ),
-					),
-					'lat'     => array(
-						'required'          => false,
-						'type'              => 'number',
-						'description'       => __( 'Latitude for reverse geocoding', 'post-kinds-for-indieweb' ),
-					),
-					'lng'     => array(
-						'required'          => false,
-						'type'              => 'number',
-						'description'       => __( 'Longitude for reverse geocoding', 'post-kinds-for-indieweb' ),
-					),
-				),
-			)
+					],
+					'lat'     => [
+						'required'    => false,
+						'type'        => 'number',
+						'description' => __( 'Latitude for reverse geocoding', 'post-kinds-for-indieweb' ),
+					],
+					'lng'     => [
+						'required'    => false,
+						'type'        => 'number',
+						'description' => __( 'Longitude for reverse geocoding', 'post-kinds-for-indieweb' ),
+					],
+				],
+			]
 		);
 
 		// Get details by ID (for all types).
 		register_rest_route(
 			self::NAMESPACE,
 			'/details/(?P<type>[a-z]+)/(?P<id>[a-zA-Z0-9-]+)',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'get_details' ),
-				'permission_callback' => array( $this, 'can_edit_posts' ),
-				'args'                => array(
-					'type'   => array(
+				'callback'            => [ $this, 'get_details' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'type'   => [
 						'required' => true,
 						'type'     => 'string',
-						'enum'     => array( 'music', 'movie', 'tv', 'book', 'podcast', 'venue' ),
-					),
-					'id'     => array(
+						'enum'     => [ 'music', 'movie', 'tv', 'book', 'podcast', 'venue' ],
+					],
+					'id'     => [
 						'required' => true,
 						'type'     => 'string',
-					),
-					'source' => array(
+					],
+					'source' => [
 						'required' => false,
 						'type'     => 'string',
-					),
-				),
-			)
+					],
+				],
+			]
 		);
 	}
 
@@ -394,71 +394,71 @@ class REST_API {
 		register_rest_route(
 			self::NAMESPACE,
 			'/location/search',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'location_search' ),
-				'permission_callback' => array( $this, 'can_edit_posts' ),
-				'args'                => array(
-					'query' => array(
+				'callback'            => [ $this, 'location_search' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'query' => [
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 						'description'       => __( 'Search query for location', 'post-kinds-for-indieweb' ),
-					),
-				),
-			)
+					],
+				],
+			]
 		);
 
 		// Reverse geocoding.
 		register_rest_route(
 			self::NAMESPACE,
 			'/location/reverse',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'location_reverse' ),
-				'permission_callback' => array( $this, 'can_edit_posts' ),
-				'args'                => array(
-					'lat' => array(
-						'required'          => true,
-						'type'              => 'number',
-						'description'       => __( 'Latitude', 'post-kinds-for-indieweb' ),
-					),
-					'lon' => array(
-						'required'          => true,
-						'type'              => 'number',
-						'description'       => __( 'Longitude', 'post-kinds-for-indieweb' ),
-					),
-				),
-			)
+				'callback'            => [ $this, 'location_reverse' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'lat' => [
+						'required'    => true,
+						'type'        => 'number',
+						'description' => __( 'Latitude', 'post-kinds-for-indieweb' ),
+					],
+					'lon' => [
+						'required'    => true,
+						'type'        => 'number',
+						'description' => __( 'Longitude', 'post-kinds-for-indieweb' ),
+					],
+				],
+			]
 		);
 
 		// Foursquare venue search.
 		register_rest_route(
 			self::NAMESPACE,
 			'/location/venues',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'location_venues' ),
-				'permission_callback' => array( $this, 'can_edit_posts' ),
-				'args'                => array(
-					'query' => array(
+				'callback'            => [ $this, 'location_venues' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'query' => [
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 						'description'       => __( 'Search query', 'post-kinds-for-indieweb' ),
-					),
-					'lat'   => array(
-						'required'          => false,
-						'type'              => 'number',
-						'description'       => __( 'Latitude for nearby search', 'post-kinds-for-indieweb' ),
-					),
-					'lon'   => array(
-						'required'          => false,
-						'type'              => 'number',
-						'description'       => __( 'Longitude for nearby search', 'post-kinds-for-indieweb' ),
-					),
-				),
-			)
+					],
+					'lat'   => [
+						'required'    => false,
+						'type'        => 'number',
+						'description' => __( 'Latitude for nearby search', 'post-kinds-for-indieweb' ),
+					],
+					'lon'   => [
+						'required'    => false,
+						'type'        => 'number',
+						'description' => __( 'Longitude for nearby search', 'post-kinds-for-indieweb' ),
+					],
+				],
+			]
 		);
 	}
 
@@ -472,89 +472,89 @@ class REST_API {
 		register_rest_route(
 			self::NAMESPACE,
 			'/import/(?P<service>[a-z]+)',
-			array(
+			[
 				'methods'             => 'POST',
-				'callback'            => array( $this, 'import_from_service' ),
-				'permission_callback' => array( $this, 'can_manage_options' ),
-				'args'                => array(
-					'service'    => array(
+				'callback'            => [ $this, 'import_from_service' ],
+				'permission_callback' => [ $this, 'can_manage_options' ],
+				'args'                => [
+					'service'     => [
 						'required' => true,
 						'type'     => 'string',
-						'enum'     => array(
+						'enum'     => [
 							'listenbrainz',
 							'lastfm',
 							'trakt',
 							'simkl',
 							'hardcover',
 							'foursquare',
-						),
-					),
-					'date_from'  => array(
+						],
+					],
+					'date_from'   => [
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 						'description'       => __( 'Start date (ISO 8601)', 'post-kinds-for-indieweb' ),
-					),
-					'date_to'    => array(
+					],
+					'date_to'     => [
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 						'description'       => __( 'End date (ISO 8601)', 'post-kinds-for-indieweb' ),
-					),
-					'limit'      => array(
+					],
+					'limit'       => [
 						'required'          => false,
 						'type'              => 'integer',
 						'default'           => 50,
 						'sanitize_callback' => 'absint',
 						'description'       => __( 'Maximum items to import', 'post-kinds-for-indieweb' ),
-					),
-					'dry_run'    => array(
+					],
+					'dry_run'     => [
 						'required' => false,
 						'type'     => 'boolean',
 						'default'  => false,
-					),
-					'post_status'=> array(
+					],
+					'post_status' => [
 						'required' => false,
 						'type'     => 'string',
 						'default'  => 'draft',
-						'enum'     => array( 'draft', 'publish', 'private' ),
-					),
-				),
-			)
+						'enum'     => [ 'draft', 'publish', 'private' ],
+					],
+				],
+			]
 		);
 
 		// Get import status/progress.
 		register_rest_route(
 			self::NAMESPACE,
 			'/import/status/(?P<job_id>[a-zA-Z0-9]+)',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'get_import_status' ),
-				'permission_callback' => array( $this, 'can_manage_options' ),
-				'args'                => array(
-					'job_id' => array(
+				'callback'            => [ $this, 'get_import_status' ],
+				'permission_callback' => [ $this, 'can_manage_options' ],
+				'args'                => [
+					'job_id' => [
 						'required' => true,
 						'type'     => 'string',
-					),
-				),
-			)
+					],
+				],
+			]
 		);
 
 		// Cancel import.
 		register_rest_route(
 			self::NAMESPACE,
 			'/import/cancel/(?P<job_id>[a-zA-Z0-9]+)',
-			array(
+			[
 				'methods'             => 'POST',
-				'callback'            => array( $this, 'cancel_import' ),
-				'permission_callback' => array( $this, 'can_manage_options' ),
-				'args'                => array(
-					'job_id' => array(
+				'callback'            => [ $this, 'cancel_import' ],
+				'permission_callback' => [ $this, 'can_manage_options' ],
+				'args'                => [
+					'job_id' => [
 						'required' => true,
 						'type'     => 'string',
-					),
-				),
-			)
+					],
+				],
+			]
 		);
 	}
 
@@ -568,55 +568,55 @@ class REST_API {
 		register_rest_route(
 			self::NAMESPACE,
 			'/webhook/listenbrainz',
-			array(
+			[
 				'methods'             => 'POST',
-				'callback'            => array( $this, 'webhook_listenbrainz' ),
-				'permission_callback' => array( $this, 'verify_webhook_signature' ),
-			)
+				'callback'            => [ $this, 'webhook_listenbrainz' ],
+				'permission_callback' => [ $this, 'verify_webhook_signature' ],
+			]
 		);
 
 		// Trakt webhook (scrobble).
 		register_rest_route(
 			self::NAMESPACE,
 			'/webhook/trakt',
-			array(
+			[
 				'methods'             => 'POST',
-				'callback'            => array( $this, 'webhook_trakt' ),
-				'permission_callback' => array( $this, 'verify_webhook_signature' ),
-			)
+				'callback'            => [ $this, 'webhook_trakt' ],
+				'permission_callback' => [ $this, 'verify_webhook_signature' ],
+			]
 		);
 
 		// Plex webhook.
 		register_rest_route(
 			self::NAMESPACE,
 			'/webhook/plex',
-			array(
+			[
 				'methods'             => 'POST',
-				'callback'            => array( $this, 'webhook_plex' ),
-				'permission_callback' => array( $this, 'verify_webhook_signature' ),
-			)
+				'callback'            => [ $this, 'webhook_plex' ],
+				'permission_callback' => [ $this, 'verify_webhook_signature' ],
+			]
 		);
 
 		// Jellyfin webhook.
 		register_rest_route(
 			self::NAMESPACE,
 			'/webhook/jellyfin',
-			array(
+			[
 				'methods'             => 'POST',
-				'callback'            => array( $this, 'webhook_jellyfin' ),
-				'permission_callback' => array( $this, 'verify_webhook_signature' ),
-			)
+				'callback'            => [ $this, 'webhook_jellyfin' ],
+				'permission_callback' => [ $this, 'verify_webhook_signature' ],
+			]
 		);
 
 		// Generic webhook (for custom integrations).
 		register_rest_route(
 			self::NAMESPACE,
 			'/webhook/generic',
-			array(
+			[
 				'methods'             => 'POST',
-				'callback'            => array( $this, 'webhook_generic' ),
-				'permission_callback' => array( $this, 'verify_webhook_token' ),
-			)
+				'callback'            => [ $this, 'webhook_generic' ],
+				'permission_callback' => [ $this, 'verify_webhook_token' ],
+			]
 		);
 	}
 
@@ -630,80 +630,80 @@ class REST_API {
 		register_rest_route(
 			self::NAMESPACE,
 			'/oauth/callback/(?P<service>[a-z]+)',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'oauth_callback' ),
+				'callback'            => [ $this, 'oauth_callback' ],
 				'permission_callback' => '__return_true', // OAuth callbacks need to be public.
-				'args'                => array(
-					'service' => array(
+				'args'                => [
+					'service' => [
 						'required' => true,
 						'type'     => 'string',
-						'enum'     => array( 'trakt', 'foursquare', 'lastfm' ),
-					),
-					'code'    => array(
+						'enum'     => [ 'trakt', 'foursquare', 'lastfm' ],
+					],
+					'code'    => [
 						'required' => true,
 						'type'     => 'string',
-					),
-					'state'   => array(
+					],
+					'state'   => [
 						'required' => true,
 						'type'     => 'string',
-					),
-				),
-			)
+					],
+				],
+			]
 		);
 
 		// Get OAuth authorization URL.
 		register_rest_route(
 			self::NAMESPACE,
 			'/oauth/authorize/(?P<service>[a-z]+)',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'get_oauth_url' ),
-				'permission_callback' => array( $this, 'can_manage_options' ),
-				'args'                => array(
-					'service' => array(
+				'callback'            => [ $this, 'get_oauth_url' ],
+				'permission_callback' => [ $this, 'can_manage_options' ],
+				'args'                => [
+					'service' => [
 						'required' => true,
 						'type'     => 'string',
-						'enum'     => array( 'trakt', 'foursquare', 'lastfm' ),
-					),
-				),
-			)
+						'enum'     => [ 'trakt', 'foursquare', 'lastfm' ],
+					],
+				],
+			]
 		);
 
 		// Revoke OAuth token.
 		register_rest_route(
 			self::NAMESPACE,
 			'/oauth/revoke/(?P<service>[a-z]+)',
-			array(
+			[
 				'methods'             => 'POST',
-				'callback'            => array( $this, 'revoke_oauth' ),
-				'permission_callback' => array( $this, 'can_manage_options' ),
-				'args'                => array(
-					'service' => array(
+				'callback'            => [ $this, 'revoke_oauth' ],
+				'permission_callback' => [ $this, 'can_manage_options' ],
+				'args'                => [
+					'service' => [
 						'required' => true,
 						'type'     => 'string',
-						'enum'     => array( 'trakt', 'foursquare', 'lastfm' ),
-					),
-				),
-			)
+						'enum'     => [ 'trakt', 'foursquare', 'lastfm' ],
+					],
+				],
+			]
 		);
 
 		// Check connection status.
 		register_rest_route(
 			self::NAMESPACE,
 			'/oauth/status/(?P<service>[a-z]+)',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'get_oauth_status' ),
-				'permission_callback' => array( $this, 'can_manage_options' ),
-				'args'                => array(
-					'service' => array(
+				'callback'            => [ $this, 'get_oauth_status' ],
+				'permission_callback' => [ $this, 'can_manage_options' ],
+				'args'                => [
+					'service' => [
 						'required' => true,
 						'type'     => 'string',
-						'enum'     => array( 'trakt', 'foursquare', 'lastfm', 'listenbrainz', 'simkl', 'hardcover' ),
-					),
-				),
-			)
+						'enum'     => [ 'trakt', 'foursquare', 'lastfm', 'listenbrainz', 'simkl', 'hardcover' ],
+					],
+				],
+			]
 		);
 	}
 
@@ -717,61 +717,61 @@ class REST_API {
 		register_rest_route(
 			self::NAMESPACE,
 			'/settings/apis',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'get_api_settings' ),
-				'permission_callback' => array( $this, 'can_manage_options' ),
-			)
+				'callback'            => [ $this, 'get_api_settings' ],
+				'permission_callback' => [ $this, 'can_manage_options' ],
+			]
 		);
 
 		// Update API settings.
 		register_rest_route(
 			self::NAMESPACE,
 			'/settings/apis',
-			array(
+			[
 				'methods'             => 'POST',
-				'callback'            => array( $this, 'update_api_settings' ),
-				'permission_callback' => array( $this, 'can_manage_options' ),
-			)
+				'callback'            => [ $this, 'update_api_settings' ],
+				'permission_callback' => [ $this, 'can_manage_options' ],
+			]
 		);
 
 		// Test API connection.
 		register_rest_route(
 			self::NAMESPACE,
 			'/settings/test/(?P<service>[a-z]+)',
-			array(
+			[
 				'methods'             => 'POST',
-				'callback'            => array( $this, 'test_api_connection' ),
-				'permission_callback' => array( $this, 'can_manage_options' ),
-				'args'                => array(
-					'service' => array(
+				'callback'            => [ $this, 'test_api_connection' ],
+				'permission_callback' => [ $this, 'can_manage_options' ],
+				'args'                => [
+					'service' => [
 						'required' => true,
 						'type'     => 'string',
-					),
-				),
-			)
+					],
+				],
+			]
 		);
 
 		// Get webhook URLs.
 		register_rest_route(
 			self::NAMESPACE,
 			'/settings/webhooks',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'get_webhook_urls' ),
-				'permission_callback' => array( $this, 'can_manage_options' ),
-			)
+				'callback'            => [ $this, 'get_webhook_urls' ],
+				'permission_callback' => [ $this, 'can_manage_options' ],
+			]
 		);
 
 		// Regenerate webhook secret.
 		register_rest_route(
 			self::NAMESPACE,
 			'/settings/webhooks/regenerate',
-			array(
+			[
 				'methods'             => 'POST',
-				'callback'            => array( $this, 'regenerate_webhook_secret' ),
-				'permission_callback' => array( $this, 'can_manage_options' ),
-			)
+				'callback'            => [ $this, 'regenerate_webhook_secret' ],
+				'permission_callback' => [ $this, 'can_manage_options' ],
+			]
 		);
 	}
 
@@ -785,51 +785,51 @@ class REST_API {
 		register_rest_route(
 			self::NAMESPACE,
 			'/checkins',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'get_checkins' ),
-				'permission_callback' => array( $this, 'can_edit_posts' ),
-				'args'                => array(
-					'page'       => array(
+				'callback'            => [ $this, 'get_checkins' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'page'       => [
 						'type'    => 'integer',
 						'default' => 1,
 						'minimum' => 1,
-					),
-					'per_page'   => array(
+					],
+					'per_page'   => [
 						'type'    => 'integer',
 						'default' => 50,
 						'minimum' => 1,
 						'maximum' => 100,
-					),
-					'year'       => array(
+					],
+					'year'       => [
 						'type' => 'integer',
-					),
-					'venue_type' => array(
+					],
+					'venue_type' => [
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-					),
-					'search'     => array(
+					],
+					'search'     => [
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-					),
-				),
-			)
+					],
+				],
+			]
 		);
 
 		// Get check-in statistics.
 		register_rest_route(
 			self::NAMESPACE,
 			'/checkins/stats',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'get_checkin_stats' ),
-				'permission_callback' => array( $this, 'can_edit_posts' ),
-				'args'                => array(
-					'year' => array(
+				'callback'            => [ $this, 'get_checkin_stats' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'year' => [
 						'type' => 'integer',
-					),
-				),
-			)
+					],
+				],
+			]
 		);
 	}
 
@@ -843,19 +843,19 @@ class REST_API {
 		register_rest_route(
 			self::NAMESPACE,
 			'/check-oembed',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( $this, 'check_oembed_support' ),
-				'permission_callback' => array( $this, 'can_edit_posts' ),
-				'args'                => array(
-					'url' => array(
+				'callback'            => [ $this, 'check_oembed_support' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'url' => [
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'esc_url_raw',
 						'description'       => __( 'URL to check for oEmbed support', 'post-kinds-for-indieweb' ),
-					),
-				),
-			)
+					],
+				],
+			]
 		);
 	}
 
@@ -937,7 +937,7 @@ class REST_API {
 			return new \WP_Error(
 				'missing_url',
 				__( 'URL is required.', 'post-kinds-for-indieweb' ),
-				array( 'status' => 400 )
+				[ 'status' => 400 ]
 			);
 		}
 
@@ -948,7 +948,7 @@ class REST_API {
 				return new \WP_Error(
 					'parse_failed',
 					__( 'Could not extract music info from this URL. Try a direct track or album URL.', 'post-kinds-for-indieweb' ),
-					array( 'status' => 400 )
+					[ 'status' => 400 ]
 				);
 			}
 
@@ -957,7 +957,7 @@ class REST_API {
 			return new \WP_Error(
 				'lookup_failed',
 				esc_html( $e->getMessage() ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -974,14 +974,14 @@ class REST_API {
 		$data   = $oembed->get_data( $url );
 
 		if ( $data && ! empty( $data->title ) ) {
-			$result = array(
+			$result = [
 				'url'      => $url,
 				'provider' => $data->provider_name ?? '',
 				'embed'    => $data->html ?? '',
 				'track'    => '',
 				'artist'   => '',
 				'album'    => '',
-			);
+			];
 
 			// Get album art from thumbnail.
 			if ( ! empty( $data->thumbnail_url ) ) {
@@ -1067,12 +1067,12 @@ class REST_API {
 				if ( ! empty( $result ) && is_array( $result ) ) {
 					$first = $result[0] ?? null;
 					if ( $first ) {
-						return array(
+						return [
 							'track'  => $first['track'] ?? $track,
 							'artist' => $first['artist'] ?? '',
 							'album'  => $first['album'] ?? '',
 							'cover'  => $first['cover'] ?? '',
-						);
+						];
 					}
 				}
 			}
@@ -1088,12 +1088,12 @@ class REST_API {
 			if ( ! empty( $result ) && is_array( $result ) ) {
 				$first = $result[0] ?? null;
 				if ( $first ) {
-					return array(
+					return [
 						'track'  => $first['track'] ?? $track,
 						'artist' => $first['artist'] ?? '',
 						'album'  => $first['album'] ?? '',
 						'cover'  => $first['cover'] ?? '',
-					);
+					];
 				}
 			}
 		} catch ( \Exception $e ) {
@@ -1111,11 +1111,11 @@ class REST_API {
 	 * @return array Array with track, artist, album keys.
 	 */
 	private function parse_spotify_embed( string $html, string $title ): array {
-		$result = array(
+		$result = [
 			'track'  => '',
 			'artist' => '',
 			'album'  => '',
-		);
+		];
 
 		// Spotify oEmbed title format is usually just the track name.
 		// The artist appears in the iframe title attribute like:
@@ -1164,10 +1164,10 @@ class REST_API {
 	 * @return array Array with 'track' and 'artist' keys.
 	 */
 	private function parse_track_title( string $title ): array {
-		$result = array(
+		$result = [
 			'track'  => $title,
 			'artist' => '',
-		);
+		];
 
 		// Try "Artist - Track" format.
 		if ( preg_match( '/^(.+?)\s*[-–]\s*(.+)$/', $title, $matches ) ) {
@@ -1195,7 +1195,7 @@ class REST_API {
 		// Spotify: open.spotify.com/track/ID
 		if ( strpos( $host, 'spotify.com' ) !== false ) {
 			if ( preg_match( '/\/(track|album|artist)\/([a-zA-Z0-9]+)/', $url, $matches ) ) {
-				return array(
+				return [
 					'url'      => $url,
 					'provider' => 'Spotify',
 					'type'     => $matches[1],
@@ -1204,24 +1204,24 @@ class REST_API {
 					'track'    => '',
 					'artist'   => '',
 					'note'     => __( 'Paste a Spotify track URL to auto-fill metadata.', 'post-kinds-for-indieweb' ),
-				);
+				];
 			}
 		}
 
 		// Apple Music.
 		if ( strpos( $host, 'music.apple.com' ) !== false ) {
-			return array(
+			return [
 				'url'      => $url,
 				'provider' => 'Apple Music',
-			);
+			];
 		}
 
 		// YouTube / YouTube Music.
 		if ( strpos( $host, 'youtube.com' ) !== false || strpos( $host, 'youtu.be' ) !== false ) {
-			return array(
+			return [
 				'url'      => $url,
 				'provider' => 'YouTube',
-			);
+			];
 		}
 
 		return null;
@@ -1259,7 +1259,7 @@ class REST_API {
 			return new \WP_Error(
 				'lookup_failed',
 				esc_html( $e->getMessage() ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -1279,7 +1279,7 @@ class REST_API {
 			return new \WP_Error(
 				'missing_url',
 				__( 'URL is required.', 'post-kinds-for-indieweb' ),
-				array( 'status' => 400 )
+				[ 'status' => 400 ]
 			);
 		}
 
@@ -1290,7 +1290,7 @@ class REST_API {
 				return new \WP_Error(
 					'parse_failed',
 					__( 'Could not extract movie/TV info from this URL. Try IMDB, TMDB, or Trakt URLs.', 'post-kinds-for-indieweb' ),
-					array( 'status' => 400 )
+					[ 'status' => 400 ]
 				);
 			}
 
@@ -1299,7 +1299,7 @@ class REST_API {
 			return new \WP_Error(
 				'lookup_failed',
 				esc_html( $e->getMessage() ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -1363,8 +1363,8 @@ class REST_API {
 		$imdb_id = $matches[1];
 
 		// Get TMDB credentials.
-		$credentials  = get_option( 'post_kinds_indieweb_api_credentials', array() );
-		$tmdb_creds   = $credentials['tmdb'] ?? array();
+		$credentials  = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$tmdb_creds   = $credentials['tmdb'] ?? [];
 		$access_token = $tmdb_creds['access_token'] ?? '';
 		$api_key      = $tmdb_creds['api_key'] ?? '';
 		$is_enabled   = ! empty( $tmdb_creds['enabled'] );
@@ -1386,7 +1386,7 @@ class REST_API {
 		}
 
 		// Build headers.
-		$headers = array( 'Accept' => 'application/json' );
+		$headers = [ 'Accept' => 'application/json' ];
 		if ( $access_token ) {
 			$headers['Authorization'] = 'Bearer ' . $access_token;
 		}
@@ -1394,10 +1394,10 @@ class REST_API {
 		// TMDB find endpoint searches by external ID.
 		$response = wp_remote_get(
 			$url,
-			array(
+			[
 				'timeout' => 30,
 				'headers' => $headers,
-			)
+			]
 		);
 
 		if ( is_wp_error( $response ) ) {
@@ -1532,10 +1532,10 @@ class REST_API {
 			// Fetch the Letterboxd page and look for TMDB link.
 			$response = wp_remote_get(
 				$url,
-				array(
+				[
 					'timeout'    => 15,
 					'user-agent' => 'Mozilla/5.0 (compatible; WordPress/' . get_bloginfo( 'version' ) . ')',
-				)
+				]
 			);
 
 			if ( is_wp_error( $response ) ) {
@@ -1549,7 +1549,7 @@ class REST_API {
 				$tmdb   = new TMDB();
 				$result = $tmdb->get_movie( (int) $tmdb_match[1] );
 				if ( $result ) {
-					$normalized              = $this->normalize_watch_result( $result, 'tmdb' );
+					$normalized                   = $this->normalize_watch_result( $result, 'tmdb' );
 					$normalized['letterboxd_url'] = $url;
 					return $normalized;
 				}
@@ -1560,7 +1560,7 @@ class REST_API {
 				$tmdb   = new TMDB();
 				$result = $tmdb->get_movie( (int) $tmdb_match[1] );
 				if ( $result ) {
-					$normalized              = $this->normalize_watch_result( $result, 'tmdb' );
+					$normalized                   = $this->normalize_watch_result( $result, 'tmdb' );
 					$normalized['letterboxd_url'] = $url;
 					return $normalized;
 				}
@@ -1575,7 +1575,7 @@ class REST_API {
 				$tmdb    = new TMDB();
 				$results = $tmdb->search_movies( $title );
 				if ( ! empty( $results[0] ) ) {
-					$normalized              = $this->normalize_watch_result( $results[0], 'tmdb' );
+					$normalized                   = $this->normalize_watch_result( $results[0], 'tmdb' );
 					$normalized['letterboxd_url'] = $url;
 					return $normalized;
 				}
@@ -1591,7 +1591,7 @@ class REST_API {
 	 * @return string Access token or empty string.
 	 */
 	private function get_tmdb_access_token(): string {
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', array() );
+		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
 		return $credentials['tmdb']['access_token'] ?? $credentials['tmdb']['api_key'] ?? '';
 	}
 
@@ -1606,7 +1606,7 @@ class REST_API {
 	private function normalize_tmdb_result( array $item, string $type, string $imdb_id ): array {
 		$image_base = 'https://image.tmdb.org/t/p/w342';
 
-		return array(
+		return [
 			'title'    => $item['title'] ?? $item['name'] ?? '',
 			'year'     => substr( $item['release_date'] ?? $item['first_air_date'] ?? '', 0, 4 ),
 			'poster'   => ! empty( $item['poster_path'] ) ? $image_base . $item['poster_path'] : '',
@@ -1615,7 +1615,7 @@ class REST_API {
 			'tmdb_id'  => $item['id'] ?? 0,
 			'imdb_id'  => $imdb_id,
 			'provider' => 'tmdb',
-		);
+		];
 	}
 
 	/**
@@ -1626,7 +1626,7 @@ class REST_API {
 	 * @return array Normalized result.
 	 */
 	private function normalize_watch_result( array $result, string $provider ): array {
-		return array(
+		return [
 			'title'    => $result['title'] ?? '',
 			'year'     => $result['year'] ?? '',
 			'poster'   => $result['poster'] ?? '',
@@ -1636,7 +1636,7 @@ class REST_API {
 			'imdb_id'  => $result['imdb_id'] ?? '',
 			'trakt_id' => $result['trakt_id'] ?? 0,
 			'provider' => $provider,
-		);
+		];
 	}
 
 	/**
@@ -1675,7 +1675,7 @@ class REST_API {
 			return new \WP_Error(
 				'lookup_failed',
 				esc_html( $e->getMessage() ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -1717,7 +1717,7 @@ class REST_API {
 			return new \WP_Error(
 				'lookup_failed',
 				esc_html( $e->getMessage() ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -1746,7 +1746,7 @@ class REST_API {
 			return new \WP_Error(
 				'lookup_failed',
 				esc_html( $e->getMessage() ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -1781,7 +1781,7 @@ class REST_API {
 			return new \WP_Error(
 				'lookup_failed',
 				esc_html( $e->getMessage() ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -1803,7 +1803,7 @@ class REST_API {
 			return new \WP_Error(
 				'missing_params',
 				__( 'Either search query (q) or game ID (id) is required.', 'post-kinds-for-indieweb' ),
-				array( 'status' => 400 )
+				[ 'status' => 400 ]
 			);
 		}
 
@@ -1816,7 +1816,7 @@ class REST_API {
 						return new \WP_Error(
 							'api_not_configured',
 							__( 'RAWG API is not configured. Add your API key in Settings > API Connections.', 'post-kinds-for-indieweb' ),
-							array( 'status' => 400 )
+							[ 'status' => 400 ]
 						);
 					}
 					$result = $api->get_by_id( $id );
@@ -1826,7 +1826,7 @@ class REST_API {
 						return new \WP_Error(
 							'api_not_configured',
 							__( 'BoardGameGeek API is not configured. Add your API token in Settings > Reactions > API Connections.', 'post-kinds-for-indieweb' ),
-							array( 'status' => 400 )
+							[ 'status' => 400 ]
 						);
 					}
 					$result = $api->get_by_id( $id );
@@ -1839,7 +1839,7 @@ class REST_API {
 					return new \WP_Error(
 						'game_not_found',
 						__( 'Game not found.', 'post-kinds-for-indieweb' ),
-						array( 'status' => 404 )
+						[ 'status' => 404 ]
 					);
 				}
 
@@ -1853,7 +1853,7 @@ class REST_API {
 					return new \WP_Error(
 						'api_not_configured',
 						__( 'RAWG API is not configured. Add your API key in Settings > API Connections.', 'post-kinds-for-indieweb' ),
-						array( 'status' => 400 )
+						[ 'status' => 400 ]
 					);
 				}
 				$results = $api->search( $query );
@@ -1863,37 +1863,37 @@ class REST_API {
 					return new \WP_Error(
 						'api_not_configured',
 						__( 'BoardGameGeek API is not configured. Add your API token in Settings > Reactions > API Connections.', 'post-kinds-for-indieweb' ),
-						array( 'status' => 400 )
+						[ 'status' => 400 ]
 					);
 				}
 				$results = $api->search( $query, $type );
 
 				// Enrich results with cover images (fetch details for top 5 results).
-				$enriched_results = array();
+				$enriched_results = [];
 				$count            = 0;
 
 				foreach ( $results as $item ) {
-					$result = array(
+					$result = [
 						'id'     => $item['id'],
 						'title'  => $item['name'],
 						'year'   => $item['year'],
 						'type'   => $item['type'],
 						'source' => 'bgg',
-					);
+					];
 
 					// Fetch full details for first 5 results to get cover images.
 					if ( $count < 5 ) {
 						$details = $api->get_by_id( $item['id'] );
 						if ( $details ) {
-							$result['cover']     = $details['image'] ?? $details['thumbnail'] ?? '';
-							$result['thumbnail'] = $details['thumbnail'] ?? '';
-							$result['designers'] = $details['designers'] ?? array();
-							$result['publishers'] = $details['publishers'] ?? array();
+							$result['cover']      = $details['image'] ?? $details['thumbnail'] ?? '';
+							$result['thumbnail']  = $details['thumbnail'] ?? '';
+							$result['designers']  = $details['designers'] ?? [];
+							$result['publishers'] = $details['publishers'] ?? [];
 						}
 					}
 
 					$enriched_results[] = $result;
-					$count++;
+					++$count;
 				}
 
 				$results = $enriched_results;
@@ -1904,7 +1904,7 @@ class REST_API {
 			return new \WP_Error(
 				'lookup_failed',
 				esc_html( $e->getMessage() ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -1931,7 +1931,7 @@ class REST_API {
 				return new \WP_Error(
 					'missing_params',
 					__( 'Provide either address or lat/lng coordinates.', 'post-kinds-for-indieweb' ),
-					array( 'status' => 400 )
+					[ 'status' => 400 ]
 				);
 			}
 
@@ -1940,7 +1940,7 @@ class REST_API {
 			return new \WP_Error(
 				'geocode_failed',
 				esc_html( $e->getMessage() ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -1962,7 +1962,7 @@ class REST_API {
 			return new \WP_Error(
 				'rate_limited',
 				__( 'Please wait a moment before searching again.', 'post-kinds-for-indieweb' ),
-				array( 'status' => 429 )
+				[ 'status' => 429 ]
 			);
 		}
 
@@ -1977,7 +1977,7 @@ class REST_API {
 			return new \WP_Error(
 				'search_failed',
 				esc_html( $e->getMessage() ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -1997,7 +1997,7 @@ class REST_API {
 			return new \WP_Error(
 				'invalid_coordinates',
 				__( 'Invalid coordinates provided.', 'post-kinds-for-indieweb' ),
-				array( 'status' => 400 )
+				[ 'status' => 400 ]
 			);
 		}
 
@@ -2009,7 +2009,7 @@ class REST_API {
 			return new \WP_Error(
 				'rate_limited',
 				__( 'Please wait a moment before searching again.', 'post-kinds-for-indieweb' ),
-				array( 'status' => 429 )
+				[ 'status' => 429 ]
 			);
 		}
 
@@ -2023,7 +2023,7 @@ class REST_API {
 				return new \WP_Error(
 					'not_found',
 					__( 'No location found for these coordinates.', 'post-kinds-for-indieweb' ),
-					array( 'status' => 404 )
+					[ 'status' => 404 ]
 				);
 			}
 
@@ -2032,7 +2032,7 @@ class REST_API {
 			return new \WP_Error(
 				'reverse_failed',
 				esc_html( $e->getMessage() ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -2056,7 +2056,7 @@ class REST_API {
 			return new \WP_Error(
 				'rate_limited',
 				__( 'Please wait a moment before searching again.', 'post-kinds-for-indieweb' ),
-				array( 'status' => 429 )
+				[ 'status' => 429 ]
 			);
 		}
 
@@ -2070,7 +2070,7 @@ class REST_API {
 				return new \WP_Error(
 					'foursquare_not_configured',
 					__( 'Foursquare API is not configured. Please add your API key in Settings > APIs.', 'post-kinds-for-indieweb' ),
-					array( 'status' => 400 )
+					[ 'status' => 400 ]
 				);
 			}
 
@@ -2084,7 +2084,7 @@ class REST_API {
 				return new \WP_Error(
 					'missing_params',
 					__( 'Provide either a search query or lat/lon coordinates.', 'post-kinds-for-indieweb' ),
-					array( 'status' => 400 )
+					[ 'status' => 400 ]
 				);
 			}
 
@@ -2093,7 +2093,7 @@ class REST_API {
 			return new \WP_Error(
 				'venue_search_failed',
 				esc_html( $e->getMessage() ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -2116,7 +2116,7 @@ class REST_API {
 				return new \WP_Error(
 					'invalid_type',
 					__( 'Invalid content type.', 'post-kinds-for-indieweb' ),
-					array( 'status' => 400 )
+					[ 'status' => 400 ]
 				);
 			}
 
@@ -2127,7 +2127,7 @@ class REST_API {
 			return new \WP_Error(
 				'details_failed',
 				esc_html( $e->getMessage() ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -2180,27 +2180,27 @@ class REST_API {
 
 			$job_id = $import_manager->start_import(
 				$service,
-				array(
+				[
 					'date_from'   => $date_from,
 					'date_to'     => $date_to,
 					'limit'       => $limit,
 					'dry_run'     => $dry_run,
 					'post_status' => $post_status,
-				)
+				]
 			);
 
 			return rest_ensure_response(
-				array(
+				[
 					'job_id'  => $job_id,
 					'message' => __( 'Import started.', 'post-kinds-for-indieweb' ),
 					'status'  => 'processing',
-				)
+				]
 			);
 		} catch ( \Exception $e ) {
 			return new \WP_Error(
 				'import_failed',
 				esc_html( $e->getMessage() ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -2221,7 +2221,7 @@ class REST_API {
 			return new \WP_Error(
 				'job_not_found',
 				__( 'Import job not found.', 'post-kinds-for-indieweb' ),
-				array( 'status' => 404 )
+				[ 'status' => 404 ]
 			);
 		}
 
@@ -2244,14 +2244,14 @@ class REST_API {
 			return new \WP_Error(
 				'cancel_failed',
 				__( 'Could not cancel import.', 'post-kinds-for-indieweb' ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 
 		return rest_ensure_response(
-			array(
+			[
 				'message' => __( 'Import cancelled.', 'post-kinds-for-indieweb' ),
-			)
+			]
 		);
 	}
 
@@ -2336,7 +2336,7 @@ class REST_API {
 			return new \WP_Error(
 				'invalid_state',
 				__( 'Invalid OAuth state. Please try again.', 'post-kinds-for-indieweb' ),
-				array( 'status' => 400 )
+				[ 'status' => 400 ]
 			);
 		}
 
@@ -2400,12 +2400,12 @@ class REST_API {
 
 			$url = $api->get_authorization_url( $state );
 
-			return rest_ensure_response( array( 'url' => $url ) );
+			return rest_ensure_response( [ 'url' => $url ] );
 		} catch ( \Exception $e ) {
 			return new \WP_Error(
 				'oauth_failed',
 				esc_html( $e->getMessage() ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -2435,15 +2435,15 @@ class REST_API {
 			delete_option( 'post_kinds_indieweb_' . $service . '_token_expires' );
 
 			return rest_ensure_response(
-				array(
+				[
 					'message' => __( 'Connection revoked.', 'post-kinds-for-indieweb' ),
-				)
+				]
 			);
 		} catch ( \Exception $e ) {
 			return new \WP_Error(
 				'revoke_failed',
 				esc_html( $e->getMessage() ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -2463,18 +2463,18 @@ class REST_API {
 		$connected = ! empty( $access_token );
 		$expired   = $expires && $expires < time();
 
-		$response = array(
+		$response = [
 			'connected' => $connected && ! $expired,
 			'expired'   => $expired,
-		);
+		];
 
 		// Try to get user info if connected.
 		if ( $connected && ! $expired ) {
 			try {
 				$api = $this->get_oauth_api( $service );
 				if ( $api && method_exists( $api, 'get_user' ) ) {
-					$user              = $api->get_user();
-					$response['user']  = $user;
+					$user             = $api->get_user();
+					$response['user'] = $user;
 				}
 			} catch ( \Exception $e ) {
 				$response['error'] = esc_html( $e->getMessage() );
@@ -2513,21 +2513,21 @@ class REST_API {
 	 * @return \WP_REST_Response
 	 */
 	public function get_api_settings() {
-		$settings = array(
-			'tmdb_api_key'          => get_option( 'post_kinds_indieweb_tmdb_api_key', '' ),
-			'trakt_client_id'       => get_option( 'post_kinds_indieweb_trakt_client_id', '' ),
-			'trakt_client_secret'   => get_option( 'post_kinds_indieweb_trakt_client_secret', '' ) ? '••••••••' : '',
-			'lastfm_api_key'        => get_option( 'post_kinds_indieweb_lastfm_api_key', '' ),
-			'lastfm_api_secret'     => get_option( 'post_kinds_indieweb_lastfm_api_secret', '' ) ? '••••••••' : '',
-			'listenbrainz_token'    => get_option( 'post_kinds_indieweb_listenbrainz_token', '' ) ? '••••••••' : '',
-			'simkl_client_id'       => get_option( 'post_kinds_indieweb_simkl_client_id', '' ),
-			'foursquare_client_id'  => get_option( 'post_kinds_indieweb_foursquare_client_id', '' ),
+		$settings = [
+			'tmdb_api_key'             => get_option( 'post_kinds_indieweb_tmdb_api_key', '' ),
+			'trakt_client_id'          => get_option( 'post_kinds_indieweb_trakt_client_id', '' ),
+			'trakt_client_secret'      => get_option( 'post_kinds_indieweb_trakt_client_secret', '' ) ? '••••••••' : '',
+			'lastfm_api_key'           => get_option( 'post_kinds_indieweb_lastfm_api_key', '' ),
+			'lastfm_api_secret'        => get_option( 'post_kinds_indieweb_lastfm_api_secret', '' ) ? '••••••••' : '',
+			'listenbrainz_token'       => get_option( 'post_kinds_indieweb_listenbrainz_token', '' ) ? '••••••••' : '',
+			'simkl_client_id'          => get_option( 'post_kinds_indieweb_simkl_client_id', '' ),
+			'foursquare_client_id'     => get_option( 'post_kinds_indieweb_foursquare_client_id', '' ),
 			'foursquare_client_secret' => get_option( 'post_kinds_indieweb_foursquare_client_secret', '' ) ? '••••••••' : '',
-			'hardcover_api_key'     => get_option( 'post_kinds_indieweb_hardcover_api_key', '' ) ? '••••••••' : '',
-			'podcastindex_api_key'  => get_option( 'post_kinds_indieweb_podcastindex_api_key', '' ),
-			'podcastindex_api_secret' => get_option( 'post_kinds_indieweb_podcastindex_api_secret', '' ) ? '••••••••' : '',
-			'google_books_api_key'  => get_option( 'post_kinds_indieweb_google_books_api_key', '' ),
-		);
+			'hardcover_api_key'        => get_option( 'post_kinds_indieweb_hardcover_api_key', '' ) ? '••••••••' : '',
+			'podcastindex_api_key'     => get_option( 'post_kinds_indieweb_podcastindex_api_key', '' ),
+			'podcastindex_api_secret'  => get_option( 'post_kinds_indieweb_podcastindex_api_secret', '' ) ? '••••••••' : '',
+			'google_books_api_key'     => get_option( 'post_kinds_indieweb_google_books_api_key', '' ),
+		];
 
 		return rest_ensure_response( $settings );
 	}
@@ -2541,7 +2541,7 @@ class REST_API {
 	public function update_api_settings( \WP_REST_Request $request ) {
 		$settings = $request->get_json_params();
 
-		$allowed_keys = array(
+		$allowed_keys = [
 			'tmdb_api_key',
 			'trakt_client_id',
 			'trakt_client_secret',
@@ -2555,7 +2555,7 @@ class REST_API {
 			'podcastindex_api_key',
 			'podcastindex_api_secret',
 			'google_books_api_key',
-		);
+		];
 
 		foreach ( $settings as $key => $value ) {
 			if ( in_array( $key, $allowed_keys, true ) ) {
@@ -2567,9 +2567,9 @@ class REST_API {
 		}
 
 		return rest_ensure_response(
-			array(
+			[
 				'message' => __( 'Settings saved.', 'post-kinds-for-indieweb' ),
-			)
+			]
 		);
 	}
 
@@ -2592,18 +2592,18 @@ class REST_API {
 			$result = $api->test_connection();
 
 			return rest_ensure_response(
-				array(
+				[
 					'success' => $result,
 					'message' => $result
 						? __( 'Connection successful!', 'post-kinds-for-indieweb' )
 						: __( 'Connection failed.', 'post-kinds-for-indieweb' ),
-				)
+				]
 			);
 		} catch ( \Exception $e ) {
 			return new \WP_Error(
 				'test_failed',
 				esc_html( $e->getMessage() ),
-				array( 'status' => 500 )
+				[ 'status' => 500 ]
 			);
 		}
 	}
@@ -2615,21 +2615,21 @@ class REST_API {
 	 * @return object|null API instance or null.
 	 */
 	private function get_api_for_service( string $service ): ?object {
-		$map = array(
-			'musicbrainz'   => MusicBrainz::class,
-			'listenbrainz'  => ListenBrainz::class,
-			'lastfm'        => LastFM::class,
-			'tmdb'          => TMDB::class,
-			'trakt'         => Trakt::class,
-			'simkl'         => Simkl::class,
-			'tvmaze'        => TVmaze::class,
-			'openlibrary'   => OpenLibrary::class,
-			'hardcover'     => Hardcover::class,
-			'googlebooks'   => GoogleBooks::class,
-			'podcastindex'  => PodcastIndex::class,
-			'foursquare'    => Foursquare::class,
-			'nominatim'     => Nominatim::class,
-		);
+		$map = [
+			'musicbrainz'  => MusicBrainz::class,
+			'listenbrainz' => ListenBrainz::class,
+			'lastfm'       => LastFM::class,
+			'tmdb'         => TMDB::class,
+			'trakt'        => Trakt::class,
+			'simkl'        => Simkl::class,
+			'tvmaze'       => TVmaze::class,
+			'openlibrary'  => OpenLibrary::class,
+			'hardcover'    => Hardcover::class,
+			'googlebooks'  => GoogleBooks::class,
+			'podcastindex' => PodcastIndex::class,
+			'foursquare'   => Foursquare::class,
+			'nominatim'    => Nominatim::class,
+		];
 
 		if ( isset( $map[ $service ] ) ) {
 			return new $map[ $service ]();
@@ -2654,14 +2654,14 @@ class REST_API {
 		$base_url = rest_url( self::NAMESPACE . '/webhook/' );
 
 		return rest_ensure_response(
-			array(
+			[
 				'listenbrainz' => $base_url . 'listenbrainz',
 				'trakt'        => $base_url . 'trakt',
 				'plex'         => $base_url . 'plex',
 				'jellyfin'     => $base_url . 'jellyfin',
 				'generic'      => $base_url . 'generic?token=' . $secret,
 				'secret'       => $secret,
-			)
+			]
 		);
 	}
 
@@ -2675,10 +2675,10 @@ class REST_API {
 		update_option( 'post_kinds_indieweb_webhook_secret', $secret );
 
 		return rest_ensure_response(
-			array(
+			[
 				'secret'  => $secret,
 				'message' => __( 'Webhook secret regenerated.', 'post-kinds-for-indieweb' ),
-			)
+			]
 		);
 	}
 
@@ -2699,63 +2699,63 @@ class REST_API {
 		$venue_type = $request->get_param( 'venue_type' );
 		$search     = $request->get_param( 'search' );
 
-		$args = array(
+		$args = [
 			'post_type'      => 'post',
 			'post_status'    => 'publish',
 			'posts_per_page' => $per_page,
 			'paged'          => $page,
-			'tax_query'      => array(
-				array(
+			'tax_query'      => [
+				[
 					'taxonomy' => 'kind',
 					'field'    => 'slug',
 					'terms'    => 'checkin',
-				),
-			),
-			'meta_query'     => array(),
-		);
+				],
+			],
+			'meta_query'     => [],
+		];
 
 		// Filter by year.
 		if ( $year ) {
-			$args['date_query'] = array(
-				array(
+			$args['date_query'] = [
+				[
 					'year' => $year,
-				),
-			);
+				],
+			];
 		}
 
 		// Filter by venue type.
 		if ( $venue_type ) {
-			$args['meta_query'][] = array(
+			$args['meta_query'][] = [
 				'key'     => '_postkind_checkin_type',
 				'value'   => $venue_type,
 				'compare' => '=',
-			);
+			];
 		}
 
 		// Search by venue name.
 		if ( $search ) {
-			$args['meta_query'][] = array(
+			$args['meta_query'][] = [
 				'key'     => '_postkind_checkin_name',
 				'value'   => $search,
 				'compare' => 'LIKE',
-			);
+			];
 		}
 
 		$query    = new \WP_Query( $args );
-		$checkins = array();
+		$checkins = [];
 
 		foreach ( $query->posts as $post ) {
 			$checkins[] = $this->format_checkin_for_response( $post );
 		}
 
 		return rest_ensure_response(
-			array(
+			[
 				'checkins'    => $checkins,
 				'total'       => $query->found_posts,
 				'total_pages' => $query->max_num_pages,
 				'page'        => $page,
 				'per_page'    => $per_page,
-			)
+			]
 		);
 	}
 
@@ -2768,33 +2768,33 @@ class REST_API {
 	public function get_checkin_stats( \WP_REST_Request $request ) {
 		$year = $request->get_param( 'year' );
 
-		$args = array(
+		$args = [
 			'post_type'      => 'post',
 			'post_status'    => 'publish',
 			'posts_per_page' => -1,
-			'tax_query'      => array(
-				array(
+			'tax_query'      => [
+				[
 					'taxonomy' => 'kind',
 					'field'    => 'slug',
 					'terms'    => 'checkin',
-				),
-			),
-		);
+				],
+			],
+		];
 
 		if ( $year ) {
-			$args['date_query'] = array(
-				array(
+			$args['date_query'] = [
+				[
 					'year' => $year,
-				),
-			);
+				],
+			];
 		}
 
 		$query = new \WP_Query( $args );
 
-		$venues    = array();
-		$countries = array();
-		$cities    = array();
-		$most_visited = array();
+		$venues       = [];
+		$countries    = [];
+		$cities       = [];
+		$most_visited = [];
 
 		foreach ( $query->posts as $post ) {
 			$venue_name = get_post_meta( $post->ID, '_postkind_checkin_name', true );
@@ -2804,13 +2804,13 @@ class REST_API {
 			if ( $venue_name ) {
 				$venues[ $venue_name ] = true;
 				if ( ! isset( $most_visited[ $venue_name ] ) ) {
-					$most_visited[ $venue_name ] = array(
-						'name'  => $venue_name,
-						'count' => 0,
+					$most_visited[ $venue_name ] = [
+						'name'     => $venue_name,
+						'count'    => 0,
 						'locality' => $locality,
-					);
+					];
 				}
-				$most_visited[ $venue_name ]['count']++;
+				++$most_visited[ $venue_name ]['count'];
 			}
 
 			if ( $locality ) {
@@ -2823,12 +2823,15 @@ class REST_API {
 		}
 
 		// Sort most visited by count.
-		usort( $most_visited, function( $a, $b ) {
-			return $b['count'] - $a['count'];
-		} );
+		usort(
+			$most_visited,
+			function ( $a, $b ) {
+				return $b['count'] - $a['count'];
+			}
+		);
 
 		return rest_ensure_response(
-			array(
+			[
 				'total_checkins' => $query->found_posts,
 				'unique_venues'  => count( $venues ),
 				'countries'      => count( $countries ),
@@ -2836,7 +2839,7 @@ class REST_API {
 				'most_visited'   => array_slice( array_values( $most_visited ), 0, 10 ),
 				'countries_list' => array_keys( $countries ),
 				'cities_list'    => array_keys( $cities ),
-			)
+			]
 		);
 	}
 
@@ -2856,7 +2859,7 @@ class REST_API {
 			return new \WP_Error(
 				'invalid_url',
 				__( 'URL is required.', 'post-kinds-for-indieweb' ),
-				array( 'status' => 400 )
+				[ 'status' => 400 ]
 			);
 		}
 
@@ -2876,7 +2879,7 @@ class REST_API {
 			}
 
 			// Map common providers to friendly names.
-			$provider_names = array(
+			$provider_names = [
 				'youtube'     => 'YouTube',
 				'vimeo'       => 'Vimeo',
 				'twitter'     => 'Twitter/X',
@@ -2896,7 +2899,7 @@ class REST_API {
 				'dailymotion' => 'Dailymotion',
 				'crowdsignal' => 'Crowdsignal',
 				'imgur'       => 'Imgur',
-			);
+			];
 
 			$normalized = strtolower( $provider_name );
 			if ( isset( $provider_names[ $normalized ] ) ) {
@@ -2904,21 +2907,21 @@ class REST_API {
 			}
 
 			return rest_ensure_response(
-				array(
+				[
 					'supported' => true,
 					'provider'  => $provider_name,
 					'url'       => $url,
-				)
+				]
 			);
 		}
 
 		// No native provider found.
 		return rest_ensure_response(
-			array(
+			[
 				'supported' => false,
 				'provider'  => null,
 				'url'       => $url,
-			)
+			]
 		);
 	}
 
@@ -2931,7 +2934,7 @@ class REST_API {
 	private function format_checkin_for_response( \WP_Post $post ): array {
 		$privacy = get_post_meta( $post->ID, '_postkind_geo_privacy', true ) ?: 'approximate';
 
-		$data = array(
+		$data = [
 			'id'         => $post->ID,
 			'title'      => get_the_title( $post ),
 			'date'       => get_the_date( 'c', $post ),
@@ -2945,7 +2948,7 @@ class REST_API {
 			'country'    => get_post_meta( $post->ID, '_postkind_checkin_country', true ),
 			'privacy'    => $privacy,
 			'thumbnail'  => get_the_post_thumbnail_url( $post, 'thumbnail' ),
-		);
+		];
 
 		// Only include coordinates based on privacy setting.
 		if ( 'public' === $privacy ) {

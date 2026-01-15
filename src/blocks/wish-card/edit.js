@@ -83,8 +83,16 @@ function getWishTypeInfo( type ) {
 }
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { title, wishType, url, image, imageAlt, price, reason, priority } =
-		attributes;
+	const {
+		title,
+		wishType,
+		url,
+		image,
+		imageAlt,
+		price,
+		reason,
+		priority,
+	} = attributes;
 
 	const blockProps = useBlockProps( {
 		className: 'wish-card-block',
@@ -241,8 +249,8 @@ export default function Edit( { attributes, setAttributes } ) {
 			</InspectorControls>
 
 			<div { ...blockProps }>
-				<div className="reactions-card">
-					<div className="reactions-card__media">
+				<div className="post-kinds-card">
+					<div className="post-kinds-card__media">
 						<MediaUploadCheck>
 							<MediaUpload
 								onSelect={ handleImageSelect }
@@ -250,7 +258,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								render={ ( { open } ) => (
 									<button
 										type="button"
-										className="reactions-card__media-button"
+										className="post-kinds-card__media-button"
 										onClick={ open }
 									>
 										{ image ? (
@@ -258,11 +266,11 @@ export default function Edit( { attributes, setAttributes } ) {
 												<img
 													src={ image }
 													alt={ imageAlt || title }
-													className="reactions-card__image"
+													className="post-kinds-card__image"
 												/>
 												<button
 													type="button"
-													className="reactions-card__media-remove"
+													className="post-kinds-card__media-remove"
 													onClick={
 														handleImageRemove
 													}
@@ -275,11 +283,11 @@ export default function Edit( { attributes, setAttributes } ) {
 												</button>
 											</>
 										) : (
-											<div className="reactions-card__media-placeholder">
-												<span className="reactions-card__media-icon">
+											<div className="post-kinds-card__media-placeholder">
+												<span className="post-kinds-card__media-icon">
 													{ typeInfo.emoji }
 												</span>
-												<span className="reactions-card__media-text">
+												<span className="post-kinds-card__media-text">
 													{ __(
 														'Add Image',
 														'post-kinds-for-indieweb'
@@ -293,10 +301,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						</MediaUploadCheck>
 					</div>
 
-					<div className="reactions-card__content">
-						<div className="reactions-card__badges-row">
+					<div className="post-kinds-card__content">
+						<div className="post-kinds-card__badges-row">
 							<select
-								className="reactions-card__type-select"
+								className="post-kinds-card__type-select"
 								value={ wishType || 'item' }
 								onChange={ ( e ) =>
 									setAttributes( {
@@ -315,7 +323,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							</select>
 
 							<select
-								className="reactions-card__type-select"
+								className="post-kinds-card__type-select"
 								value={ priority || 'medium' }
 								onChange={ ( e ) =>
 									setAttributes( {
@@ -333,7 +341,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 						<RichText
 							tagName="h3"
-							className="reactions-card__title"
+							className="post-kinds-card__title"
 							value={ title }
 							onChange={ ( value ) =>
 								setAttributes( { title: value } )
@@ -344,13 +352,13 @@ export default function Edit( { attributes, setAttributes } ) {
 							) }
 						/>
 
-						<div className="reactions-card__input-row">
-							<span className="reactions-card__input-icon">
+						<div className="post-kinds-card__input-row">
+							<span className="post-kinds-card__input-icon">
 								💰
 							</span>
 							<input
 								type="text"
-								className="reactions-card__input reactions-card__input--price"
+								className="post-kinds-card__input post-kinds-card__input--price"
 								value={ price || '' }
 								onChange={ ( e ) =>
 									setAttributes( { price: e.target.value } )
@@ -362,13 +370,13 @@ export default function Edit( { attributes, setAttributes } ) {
 							/>
 						</div>
 
-						<div className="reactions-card__input-row">
-							<span className="reactions-card__input-icon">
+						<div className="post-kinds-card__input-row">
+							<span className="post-kinds-card__input-icon">
 								🔗
 							</span>
 							<input
 								type="url"
-								className="reactions-card__input reactions-card__input--url"
+								className="post-kinds-card__input post-kinds-card__input--url"
 								value={ url || '' }
 								onChange={ ( e ) =>
 									setAttributes( { url: e.target.value } )
@@ -382,7 +390,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 						<RichText
 							tagName="p"
-							className="reactions-card__notes"
+							className="post-kinds-card__notes"
 							value={ reason }
 							onChange={ ( value ) =>
 								setAttributes( { reason: value } )

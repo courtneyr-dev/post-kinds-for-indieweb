@@ -65,9 +65,9 @@ class TVmaze extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials    = get_option( 'post_kinds_indieweb_api_credentials', array() );
-		$tvmaze_creds   = $credentials['tvmaze'] ?? array();
-		$this->api_key  = ! empty( $tvmaze_creds['api_key'] ) ? $tvmaze_creds['api_key'] : null;
+		$credentials   = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$tvmaze_creds  = $credentials['tvmaze'] ?? [];
+		$this->api_key = ! empty( $tvmaze_creds['api_key'] ) ? $tvmaze_creds['api_key'] : null;
 
 		// Premium tier has higher rate limits.
 		if ( $this->api_key ) {
@@ -128,15 +128,15 @@ class TVmaze extends API_Base {
 		}
 
 		try {
-			$response = $this->get( 'search/shows', array( 'q' => $query ) );
+			$response = $this->get( 'search/shows', [ 'q' => $query ] );
 
-			$results = array();
+			$results = [];
 
 			foreach ( $response as $item ) {
 				if ( isset( $item['show'] ) ) {
-					$result = $this->normalize_result( $item['show'] );
+					$result          = $this->normalize_result( $item['show'] );
 					$result['score'] = $item['score'] ?? 0;
-					$results[] = $result;
+					$results[]       = $result;
 				}
 			}
 
@@ -144,8 +144,14 @@ class TVmaze extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -164,7 +170,7 @@ class TVmaze extends API_Base {
 		}
 
 		try {
-			$response = $this->get( 'singlesearch/shows', array( 'q' => $query ) );
+			$response = $this->get( 'singlesearch/shows', [ 'q' => $query ] );
 
 			$result = $this->normalize_result( $response );
 
@@ -172,7 +178,13 @@ class TVmaze extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Single search failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Single search failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -203,9 +215,9 @@ class TVmaze extends API_Base {
 		}
 
 		try {
-			$params = array();
+			$params = [];
 			if ( $embed ) {
-				$params['embed[]'] = array( 'episodes', 'cast', 'crew' );
+				$params['embed[]'] = [ 'episodes', 'cast', 'crew' ];
 			}
 
 			$response = $this->get( "shows/{$id}", $params );
@@ -216,7 +228,7 @@ class TVmaze extends API_Base {
 			if ( isset( $response['_embedded'] ) ) {
 				if ( isset( $response['_embedded']['episodes'] ) ) {
 					$result['episodes'] = array_map(
-						array( $this, 'normalize_episode' ),
+						[ $this, 'normalize_episode' ],
 						$response['_embedded']['episodes']
 					);
 				}
@@ -234,7 +246,13 @@ class TVmaze extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get show failed', array( 'id' => $id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get show failed',
+				[
+					'id'    => $id,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -255,7 +273,7 @@ class TVmaze extends API_Base {
 		}
 
 		try {
-			$response = $this->get( 'lookup/shows', array( $source => $id ) );
+			$response = $this->get( 'lookup/shows', [ $source => $id ] );
 
 			$result = $this->normalize_show( $response );
 
@@ -263,7 +281,14 @@ class TVmaze extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Lookup failed', array( 'source' => $source, 'id' => $id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Lookup failed',
+				[
+					'source' => $source,
+					'id'     => $id,
+					'error'  => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -285,14 +310,20 @@ class TVmaze extends API_Base {
 		try {
 			$response = $this->get( "shows/{$show_id}/episodes" );
 
-			$episodes = array_map( array( $this, 'normalize_episode' ), $response );
+			$episodes = array_map( [ $this, 'normalize_episode' ], $response );
 
 			$this->set_cache( $cache_key, $episodes );
 
 			return $episodes;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get episodes failed', array( 'show_id' => $show_id, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get episodes failed',
+				[
+					'show_id' => $show_id,
+					'error'   => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -312,16 +343,23 @@ class TVmaze extends API_Base {
 		}
 
 		try {
-			$response = $this->get( "shows/{$show_id}/episodesbydate", array( 'date' => $date ) );
+			$response = $this->get( "shows/{$show_id}/episodesbydate", [ 'date' => $date ] );
 
-			$episodes = array_map( array( $this, 'normalize_episode' ), $response );
+			$episodes = array_map( [ $this, 'normalize_episode' ], $response );
 
 			$this->set_cache( $cache_key, $episodes );
 
 			return $episodes;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get episodes by date failed', array( 'show_id' => $show_id, 'date' => $date, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get episodes by date failed',
+				[
+					'show_id' => $show_id,
+					'date'    => $date,
+					'error'   => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -342,14 +380,20 @@ class TVmaze extends API_Base {
 		try {
 			$response = $this->get( "shows/{$show_id}/seasons" );
 
-			$seasons = array_map( array( $this, 'normalize_season' ), $response );
+			$seasons = array_map( [ $this, 'normalize_season' ], $response );
 
 			$this->set_cache( $cache_key, $seasons );
 
 			return $seasons;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get seasons failed', array( 'show_id' => $show_id, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get seasons failed',
+				[
+					'show_id' => $show_id,
+					'error'   => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -370,14 +414,20 @@ class TVmaze extends API_Base {
 		try {
 			$response = $this->get( "seasons/{$season_id}/episodes" );
 
-			$episodes = array_map( array( $this, 'normalize_episode' ), $response );
+			$episodes = array_map( [ $this, 'normalize_episode' ], $response );
 
 			$this->set_cache( $cache_key, $episodes );
 
 			return $episodes;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get season episodes failed', array( 'season_id' => $season_id, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get season episodes failed',
+				[
+					'season_id' => $season_id,
+					'error'     => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -400,10 +450,10 @@ class TVmaze extends API_Base {
 		try {
 			$response = $this->get(
 				"shows/{$show_id}/episodebynumber",
-				array(
+				[
 					'season' => $season,
 					'number' => $episode,
-				)
+				]
 			);
 
 			$result = $this->normalize_episode( $response );
@@ -412,7 +462,15 @@ class TVmaze extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get episode failed', array( 'show_id' => $show_id, 'season' => $season, 'episode' => $episode, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get episode failed',
+				[
+					'show_id' => $show_id,
+					'season'  => $season,
+					'episode' => $episode,
+					'error'   => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -440,7 +498,13 @@ class TVmaze extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get episode by ID failed', array( 'episode_id' => $episode_id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get episode by ID failed',
+				[
+					'episode_id' => $episode_id,
+					'error'      => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -468,8 +532,14 @@ class TVmaze extends API_Base {
 
 			return $cast;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get cast failed', array( 'show_id' => $show_id, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get cast failed',
+				[
+					'show_id' => $show_id,
+					'error'   => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -496,8 +566,14 @@ class TVmaze extends API_Base {
 
 			return $crew;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get crew failed', array( 'show_id' => $show_id, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get crew failed',
+				[
+					'show_id' => $show_id,
+					'error'   => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -521,13 +597,13 @@ class TVmaze extends API_Base {
 		try {
 			$response = $this->get(
 				'schedule',
-				array(
+				[
 					'country' => $country,
 					'date'    => $date,
-				)
+				]
 			);
 
-			$schedule = array();
+			$schedule = [];
 
 			foreach ( $response as $item ) {
 				$episode = $this->normalize_episode( $item );
@@ -543,8 +619,15 @@ class TVmaze extends API_Base {
 
 			return $schedule;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get schedule failed', array( 'country' => $country, 'date' => $date, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get schedule failed',
+				[
+					'country' => $country,
+					'date'    => $date,
+					'error'   => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -565,9 +648,9 @@ class TVmaze extends API_Base {
 		}
 
 		try {
-			$response = $this->get( 'schedule/web', array( 'date' => $date ) );
+			$response = $this->get( 'schedule/web', [ 'date' => $date ] );
 
-			$schedule = array();
+			$schedule = [];
 
 			foreach ( $response as $item ) {
 				$episode = $this->normalize_episode( $item );
@@ -583,8 +666,14 @@ class TVmaze extends API_Base {
 
 			return $schedule;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get web schedule failed', array( 'date' => $date, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get web schedule failed',
+				[
+					'date'  => $date,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -611,7 +700,13 @@ class TVmaze extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get person failed', array( 'person_id' => $person_id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get person failed',
+				[
+					'person_id' => $person_id,
+					'error'     => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -631,15 +726,15 @@ class TVmaze extends API_Base {
 		}
 
 		try {
-			$response = $this->get( "people/{$person_id}/castcredits", array( 'embed' => 'show' ) );
+			$response = $this->get( "people/{$person_id}/castcredits", [ 'embed' => 'show' ] );
 
-			$credits = array();
+			$credits = [];
 
 			foreach ( $response as $credit ) {
-				$item = array(
-					'self'      => $credit['self'] ?? false,
-					'voice'     => $credit['voice'] ?? false,
-				);
+				$item = [
+					'self'  => $credit['self'] ?? false,
+					'voice' => $credit['voice'] ?? false,
+				];
 
 				if ( isset( $credit['_embedded']['show'] ) ) {
 					$item['show'] = $this->normalize_show( $credit['_embedded']['show'] );
@@ -656,8 +751,14 @@ class TVmaze extends API_Base {
 
 			return $credits;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get person credits failed', array( 'person_id' => $person_id, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get person credits failed',
+				[
+					'person_id' => $person_id,
+					'error'     => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -676,14 +777,20 @@ class TVmaze extends API_Base {
 		}
 
 		try {
-			$response = $this->get( 'updates/shows', array( 'since' => $since ) );
+			$response = $this->get( 'updates/shows', [ 'since' => $since ] );
 
 			$this->set_cache( $cache_key, $response, HOUR_IN_SECONDS );
 
 			return $response;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get updates failed', array( 'since' => $since, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get updates failed',
+				[
+					'since' => $since,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -705,33 +812,33 @@ class TVmaze extends API_Base {
 	 * @return array<string, mixed> Normalized show.
 	 */
 	private function normalize_show( array $show, bool $detailed = false ): array {
-		$result = array(
-			'id'             => $show['id'] ?? 0,
-			'tvmaze_id'      => $show['id'] ?? 0,
-			'url'            => $show['url'] ?? '',
-			'title'          => $show['name'] ?? '',
-			'type'           => 'tv',
-			'language'       => $show['language'] ?? '',
-			'genres'         => $show['genres'] ?? array(),
-			'status'         => $show['status'] ?? '',
-			'runtime'        => $show['runtime'] ?? $show['averageRuntime'] ?? null,
-			'premiered'      => $show['premiered'] ?? '',
-			'ended'          => $show['ended'] ?? '',
-			'schedule'       => $show['schedule'] ?? array(),
-			'rating'         => $show['rating']['average'] ?? null,
-			'weight'         => $show['weight'] ?? 0,
-			'network'        => isset( $show['network'] ) ? $show['network']['name'] ?? '' : '',
-			'web_channel'    => isset( $show['webChannel'] ) ? $show['webChannel']['name'] ?? '' : '',
-			'externals'      => array(
-				'tvrage' => $show['externals']['tvrage'] ?? null,
-				'thetvdb'=> $show['externals']['thetvdb'] ?? null,
-				'imdb'   => $show['externals']['imdb'] ?? '',
-			),
-			'poster'         => $show['image']['medium'] ?? null,
-			'poster_original'=> $show['image']['original'] ?? null,
-			'overview'       => $show['summary'] ?? '',
-			'source'         => 'tvmaze',
-		);
+		$result = [
+			'id'              => $show['id'] ?? 0,
+			'tvmaze_id'       => $show['id'] ?? 0,
+			'url'             => $show['url'] ?? '',
+			'title'           => $show['name'] ?? '',
+			'type'            => 'tv',
+			'language'        => $show['language'] ?? '',
+			'genres'          => $show['genres'] ?? [],
+			'status'          => $show['status'] ?? '',
+			'runtime'         => $show['runtime'] ?? $show['averageRuntime'] ?? null,
+			'premiered'       => $show['premiered'] ?? '',
+			'ended'           => $show['ended'] ?? '',
+			'schedule'        => $show['schedule'] ?? [],
+			'rating'          => $show['rating']['average'] ?? null,
+			'weight'          => $show['weight'] ?? 0,
+			'network'         => isset( $show['network'] ) ? $show['network']['name'] ?? '' : '',
+			'web_channel'     => isset( $show['webChannel'] ) ? $show['webChannel']['name'] ?? '' : '',
+			'externals'       => [
+				'tvrage'  => $show['externals']['tvrage'] ?? null,
+				'thetvdb' => $show['externals']['thetvdb'] ?? null,
+				'imdb'    => $show['externals']['imdb'] ?? '',
+			],
+			'poster'          => $show['image']['medium'] ?? null,
+			'poster_original' => $show['image']['original'] ?? null,
+			'overview'        => $show['summary'] ?? '',
+			'source'          => 'tvmaze',
+		];
 
 		// Clean HTML from summary.
 		if ( $result['overview'] ) {
@@ -753,25 +860,25 @@ class TVmaze extends API_Base {
 	 * @return array<string, mixed> Normalized episode.
 	 */
 	private function normalize_episode( array $episode ): array {
-		$result = array(
-			'id'              => $episode['id'] ?? 0,
-			'tvmaze_id'       => $episode['id'] ?? 0,
-			'url'             => $episode['url'] ?? '',
-			'title'           => $episode['name'] ?? '',
-			'season'          => $episode['season'] ?? 0,
-			'number'          => $episode['number'] ?? 0,
-			'type'            => $episode['type'] ?? 'regular',
-			'airdate'         => $episode['airdate'] ?? '',
-			'airtime'         => $episode['airtime'] ?? '',
-			'airstamp'        => $episode['airstamp'] ?? '',
-			'runtime'         => $episode['runtime'] ?? null,
-			'rating'          => $episode['rating']['average'] ?? null,
-			'image'           => $episode['image']['medium'] ?? null,
-			'image_original'  => $episode['image']['original'] ?? null,
-			'overview'        => $episode['summary'] ?? '',
-			'content_type'    => 'episode',
-			'source'          => 'tvmaze',
-		);
+		$result = [
+			'id'             => $episode['id'] ?? 0,
+			'tvmaze_id'      => $episode['id'] ?? 0,
+			'url'            => $episode['url'] ?? '',
+			'title'          => $episode['name'] ?? '',
+			'season'         => $episode['season'] ?? 0,
+			'number'         => $episode['number'] ?? 0,
+			'type'           => $episode['type'] ?? 'regular',
+			'airdate'        => $episode['airdate'] ?? '',
+			'airtime'        => $episode['airtime'] ?? '',
+			'airstamp'       => $episode['airstamp'] ?? '',
+			'runtime'        => $episode['runtime'] ?? null,
+			'rating'         => $episode['rating']['average'] ?? null,
+			'image'          => $episode['image']['medium'] ?? null,
+			'image_original' => $episode['image']['original'] ?? null,
+			'overview'       => $episode['summary'] ?? '',
+			'content_type'   => 'episode',
+			'source'         => 'tvmaze',
+		];
 
 		// Clean HTML from summary.
 		if ( $result['overview'] ) {
@@ -788,23 +895,23 @@ class TVmaze extends API_Base {
 	 * @return array<string, mixed> Normalized season.
 	 */
 	private function normalize_season( array $season ): array {
-		return array(
-			'id'            => $season['id'] ?? 0,
-			'tvmaze_id'     => $season['id'] ?? 0,
-			'url'           => $season['url'] ?? '',
-			'number'        => $season['number'] ?? 0,
-			'name'          => $season['name'] ?? '',
-			'episode_order' => $season['episodeOrder'] ?? null,
-			'premiere_date' => $season['premiereDate'] ?? '',
-			'end_date'      => $season['endDate'] ?? '',
-			'network'       => isset( $season['network'] ) ? $season['network']['name'] ?? '' : '',
-			'web_channel'   => isset( $season['webChannel'] ) ? $season['webChannel']['name'] ?? '' : '',
-			'image'         => $season['image']['medium'] ?? null,
-			'image_original'=> $season['image']['original'] ?? null,
-			'overview'      => wp_strip_all_tags( $season['summary'] ?? '' ),
-			'type'          => 'season',
-			'source'        => 'tvmaze',
-		);
+		return [
+			'id'             => $season['id'] ?? 0,
+			'tvmaze_id'      => $season['id'] ?? 0,
+			'url'            => $season['url'] ?? '',
+			'number'         => $season['number'] ?? 0,
+			'name'           => $season['name'] ?? '',
+			'episode_order'  => $season['episodeOrder'] ?? null,
+			'premiere_date'  => $season['premiereDate'] ?? '',
+			'end_date'       => $season['endDate'] ?? '',
+			'network'        => isset( $season['network'] ) ? $season['network']['name'] ?? '' : '',
+			'web_channel'    => isset( $season['webChannel'] ) ? $season['webChannel']['name'] ?? '' : '',
+			'image'          => $season['image']['medium'] ?? null,
+			'image_original' => $season['image']['original'] ?? null,
+			'overview'       => wp_strip_all_tags( $season['summary'] ?? '' ),
+			'type'           => 'season',
+			'source'         => 'tvmaze',
+		];
 	}
 
 	/**
@@ -814,20 +921,20 @@ class TVmaze extends API_Base {
 	 * @return array<int, array<string, mixed>> Normalized cast.
 	 */
 	private function normalize_cast( array $cast ): array {
-		$result = array();
+		$result = [];
 
 		foreach ( $cast as $member ) {
-			$person = $member['person'] ?? array();
-			$character = $member['character'] ?? array();
+			$person    = $member['person'] ?? [];
+			$character = $member['character'] ?? [];
 
-			$result[] = array(
-				'person_id'  => $person['id'] ?? 0,
-				'name'       => $person['name'] ?? '',
-				'image'      => $person['image']['medium'] ?? null,
-				'character'  => $character['name'] ?? '',
-				'self'       => $member['self'] ?? false,
-				'voice'      => $member['voice'] ?? false,
-			);
+			$result[] = [
+				'person_id' => $person['id'] ?? 0,
+				'name'      => $person['name'] ?? '',
+				'image'     => $person['image']['medium'] ?? null,
+				'character' => $character['name'] ?? '',
+				'self'      => $member['self'] ?? false,
+				'voice'     => $member['voice'] ?? false,
+			];
 		}
 
 		return $result;
@@ -840,17 +947,17 @@ class TVmaze extends API_Base {
 	 * @return array<int, array<string, mixed>> Normalized crew.
 	 */
 	private function normalize_crew( array $crew ): array {
-		$result = array();
+		$result = [];
 
 		foreach ( $crew as $member ) {
-			$person = $member['person'] ?? array();
+			$person = $member['person'] ?? [];
 
-			$result[] = array(
+			$result[] = [
 				'person_id' => $person['id'] ?? 0,
 				'name'      => $person['name'] ?? '',
 				'image'     => $person['image']['medium'] ?? null,
 				'type'      => $member['type'] ?? '',
-			);
+			];
 		}
 
 		return $result;
@@ -863,20 +970,20 @@ class TVmaze extends API_Base {
 	 * @return array<string, mixed> Normalized person.
 	 */
 	private function normalize_person( array $person ): array {
-		return array(
-			'id'            => $person['id'] ?? 0,
-			'tvmaze_id'     => $person['id'] ?? 0,
-			'url'           => $person['url'] ?? '',
-			'name'          => $person['name'] ?? '',
-			'country'       => $person['country']['name'] ?? '',
-			'birthday'      => $person['birthday'] ?? '',
-			'deathday'      => $person['deathday'] ?? '',
-			'gender'        => $person['gender'] ?? '',
-			'image'         => $person['image']['medium'] ?? null,
-			'image_original'=> $person['image']['original'] ?? null,
-			'type'          => 'person',
-			'source'        => 'tvmaze',
-		);
+		return [
+			'id'             => $person['id'] ?? 0,
+			'tvmaze_id'      => $person['id'] ?? 0,
+			'url'            => $person['url'] ?? '',
+			'name'           => $person['name'] ?? '',
+			'country'        => $person['country']['name'] ?? '',
+			'birthday'       => $person['birthday'] ?? '',
+			'deathday'       => $person['deathday'] ?? '',
+			'gender'         => $person['gender'] ?? '',
+			'image'          => $person['image']['medium'] ?? null,
+			'image_original' => $person['image']['original'] ?? null,
+			'type'           => 'person',
+			'source'         => 'tvmaze',
+		];
 	}
 
 	/**

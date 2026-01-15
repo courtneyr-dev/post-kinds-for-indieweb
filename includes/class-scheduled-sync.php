@@ -54,19 +54,19 @@ class Scheduled_Sync {
 	 */
 	public function init(): void {
 		// Register the cron action.
-		add_action( self::CRON_HOOK, array( $this, 'run_scheduled_sync' ) );
+		add_action( self::CRON_HOOK, [ $this, 'run_scheduled_sync' ] );
 
 		// Schedule cron on settings save.
-		add_action( 'update_option_postkind_indieweb_settings', array( $this, 'maybe_schedule_cron' ), 10, 2 );
+		add_action( 'update_option_postkind_indieweb_settings', [ $this, 'maybe_schedule_cron' ], 10, 2 );
 
 		// Schedule on plugin activation.
-		add_action( 'post_kinds_indieweb_activate', array( $this, 'schedule_cron' ) );
+		add_action( 'post_kinds_indieweb_activate', [ $this, 'schedule_cron' ] );
 
 		// Unschedule on plugin deactivation.
-		add_action( 'post_kinds_indieweb_deactivate', array( $this, 'unschedule_cron' ) );
+		add_action( 'post_kinds_indieweb_deactivate', [ $this, 'unschedule_cron' ] );
 
 		// Check and schedule if needed on admin init.
-		add_action( 'admin_init', array( $this, 'ensure_scheduled' ) );
+		add_action( 'admin_init', [ $this, 'ensure_scheduled' ] );
 	}
 
 	/**
@@ -86,7 +86,7 @@ class Scheduled_Sync {
 	 * @return bool
 	 */
 	private function is_auto_sync_enabled(): bool {
-		$settings = get_option( 'post_kinds_indieweb_settings', array() );
+		$settings = get_option( 'post_kinds_indieweb_settings', [] );
 
 		// Check if background sync is enabled.
 		if ( empty( $settings['enable_background_sync'] ) ) {
@@ -94,14 +94,14 @@ class Scheduled_Sync {
 		}
 
 		// Check if any individual auto-import is enabled.
-		$auto_import_keys = array(
+		$auto_import_keys = [
 			'listen_auto_import',
 			'listen_podcast_auto_import',
 			'watch_auto_import',
 			'read_auto_import',
 			'read_articles_auto_import',
 			'checkin_auto_import',
-		);
+		];
 
 		foreach ( $auto_import_keys as $key ) {
 			if ( ! empty( $settings[ $key ] ) ) {
@@ -157,7 +157,7 @@ class Scheduled_Sync {
 	 * @return void
 	 */
 	public function run_scheduled_sync(): void {
-		$settings = get_option( 'post_kinds_indieweb_settings', array() );
+		$settings = get_option( 'post_kinds_indieweb_settings', [] );
 
 		// Check if background sync is enabled.
 		if ( empty( $settings['enable_background_sync'] ) ) {
@@ -207,10 +207,10 @@ class Scheduled_Sync {
 		$source = $settings['listen_import_source'] ?? 'lastfm';
 
 		// Map source to import manager source.
-		$source_map = array(
+		$source_map = [
 			'lastfm'       => 'lastfm',
 			'listenbrainz' => 'listenbrainz',
-		);
+		];
 
 		if ( isset( $source_map[ $source ] ) ) {
 			$this->run_import( $source_map[ $source ] );
@@ -223,14 +223,17 @@ class Scheduled_Sync {
 	 * @return void
 	 */
 	private function sync_listen_podcasts(): void {
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', array() );
+		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
 		if ( ! empty( $credentials['readwise']['access_token'] ) ) {
 			// Enable update_existing to fill in metadata on previously imported posts.
 			// Use smaller limit - each episode requires API calls for highlights.
-			$this->run_import( 'readwise_podcasts', array(
-				'update_existing' => true,
-				'limit'           => 20,
-			) );
+			$this->run_import(
+				'readwise_podcasts',
+				[
+					'update_existing' => true,
+					'limit'           => 20,
+				]
+			);
 		}
 	}
 
@@ -243,10 +246,10 @@ class Scheduled_Sync {
 	private function sync_watch( array $settings ): void {
 		$source = $settings['watch_import_source'] ?? 'trakt';
 
-		$source_map = array(
-			'trakt' => array( 'trakt_movies', 'trakt_shows' ),
-			'simkl' => array( 'simkl' ),
-		);
+		$source_map = [
+			'trakt' => [ 'trakt_movies', 'trakt_shows' ],
+			'simkl' => [ 'simkl' ],
+		];
 
 		if ( isset( $source_map[ $source ] ) ) {
 			foreach ( $source_map[ $source ] as $import_source ) {
@@ -262,13 +265,13 @@ class Scheduled_Sync {
 	 * @return void
 	 */
 	private function sync_read_books( array $settings ): void {
-		$source = $settings['read_import_source'] ?? 'hardcover';
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', array() );
+		$source      = $settings['read_import_source'] ?? 'hardcover';
+		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
 
 		if ( 'readwise_books' === $source ) {
 			// Use smaller limit - each book requires API calls for highlights.
 			if ( ! empty( $credentials['readwise']['access_token'] ) ) {
-				$this->run_import( 'readwise_books', array( 'limit' => 20 ) );
+				$this->run_import( 'readwise_books', [ 'limit' => 20 ] );
 			}
 		} elseif ( 'hardcover' === $source ) {
 			if ( ! empty( $credentials['hardcover']['api_token'] ) ) {
@@ -283,9 +286,9 @@ class Scheduled_Sync {
 	 * @return void
 	 */
 	private function sync_read_articles(): void {
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', array() );
+		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
 		if ( ! empty( $credentials['readwise']['access_token'] ) ) {
-			$this->run_import( 'readwise_articles', array( 'limit' => 30 ) );
+			$this->run_import( 'readwise_articles', [ 'limit' => 30 ] );
 		}
 	}
 
@@ -296,7 +299,7 @@ class Scheduled_Sync {
 	 * @return void
 	 */
 	private function sync_checkin( array $settings ): void {
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', array() );
+		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
 
 		// Sync Foursquare if connected.
 		if ( ! empty( $credentials['foursquare']['access_token'] ) ) {
@@ -311,15 +314,15 @@ class Scheduled_Sync {
 	 * @param array<string, mixed> $options Additional import options.
 	 * @return void
 	 */
-	private function run_import( string $source, array $options = array() ): void {
+	private function run_import( string $source, array $options = [] ): void {
 		$this->log( "Running import: {$source}" );
 
-		$default_options = array(
+		$default_options = [
 			'skip_existing'   => true,
 			'update_existing' => false,
 			'create_posts'    => true,
 			'limit'           => 50, // Limit per sync to avoid overload.
-		);
+		];
 
 		$result = $this->import_manager->start_import(
 			$source,

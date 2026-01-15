@@ -85,8 +85,8 @@ class Trakt extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials         = get_option( 'post_kinds_indieweb_api_credentials', array() );
-		$trakt_creds         = $credentials['trakt'] ?? array();
+		$credentials         = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$trakt_creds         = $credentials['trakt'] ?? [];
 		$this->client_id     = $trakt_creds['client_id'] ?? '';
 		$this->client_secret = $trakt_creds['client_secret'] ?? '';
 		$this->access_token  = $trakt_creds['access_token'] ?? '';
@@ -108,11 +108,11 @@ class Trakt extends API_Base {
 	 * @return array<string, string>
 	 */
 	protected function get_default_headers(): array {
-		$headers = array(
+		$headers = [
 			'Content-Type'      => 'application/json',
 			'trakt-api-version' => '2',
 			'trakt-api-key'     => $this->client_id ?? '',
-		);
+		];
 
 		if ( $this->access_token ) {
 			$headers['Authorization'] = 'Bearer ' . $this->access_token;
@@ -137,7 +137,7 @@ class Trakt extends API_Base {
 		} catch ( \Exception $e ) {
 			// Try without auth.
 			try {
-				$this->get( 'movies/trending', array( 'limit' => 1 ) );
+				$this->get( 'movies/trending', [ 'limit' => 1 ] );
 				return true;
 			} catch ( \Exception $e ) {
 				return false;
@@ -162,11 +162,11 @@ class Trakt extends API_Base {
 	 * @return string Authorization URL.
 	 */
 	public function get_authorization_url( string $redirect_uri, string $state = '' ): string {
-		$params = array(
+		$params = [
 			'response_type' => 'code',
 			'client_id'     => $this->client_id,
 			'redirect_uri'  => $redirect_uri,
-		);
+		];
 
 		if ( $state ) {
 			$params['state'] = $state;
@@ -186,19 +186,19 @@ class Trakt extends API_Base {
 		try {
 			$response = wp_remote_post(
 				'https://api.trakt.tv/oauth/token',
-				array(
+				[
 					'timeout' => 30,
-					'headers' => array( 'Content-Type' => 'application/json' ),
+					'headers' => [ 'Content-Type' => 'application/json' ],
 					'body'    => wp_json_encode(
-						array(
+						[
 							'code'          => $code,
 							'client_id'     => $this->client_id,
 							'client_secret' => $this->client_secret,
 							'redirect_uri'  => $redirect_uri,
 							'grant_type'    => 'authorization_code',
-						)
+						]
 					),
-				)
+				]
 			);
 
 			if ( is_wp_error( $response ) ) {
@@ -211,17 +211,17 @@ class Trakt extends API_Base {
 				$this->access_token  = $body['access_token'];
 				$this->refresh_token = $body['refresh_token'] ?? '';
 
-				return array(
+				return [
 					'access_token'  => $body['access_token'],
 					'refresh_token' => $body['refresh_token'] ?? '',
 					'expires_in'    => $body['expires_in'] ?? 7776000,
 					'created_at'    => $body['created_at'] ?? time(),
-				);
+				];
 			}
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Token exchange failed', array( 'error' => $e->getMessage() ) );
+			$this->log_error( 'Token exchange failed', [ 'error' => $e->getMessage() ] );
 			return null;
 		}
 	}
@@ -239,18 +239,18 @@ class Trakt extends API_Base {
 		try {
 			$response = wp_remote_post(
 				'https://api.trakt.tv/oauth/token',
-				array(
+				[
 					'timeout' => 30,
-					'headers' => array( 'Content-Type' => 'application/json' ),
+					'headers' => [ 'Content-Type' => 'application/json' ],
 					'body'    => wp_json_encode(
-						array(
+						[
 							'refresh_token' => $this->refresh_token,
 							'client_id'     => $this->client_id,
 							'client_secret' => $this->client_secret,
 							'grant_type'    => 'refresh_token',
-						)
+						]
 					),
-				)
+				]
 			);
 
 			if ( is_wp_error( $response ) ) {
@@ -263,17 +263,17 @@ class Trakt extends API_Base {
 				$this->access_token  = $body['access_token'];
 				$this->refresh_token = $body['refresh_token'] ?? $this->refresh_token;
 
-				return array(
+				return [
 					'access_token'  => $body['access_token'],
 					'refresh_token' => $body['refresh_token'] ?? $this->refresh_token,
 					'expires_in'    => $body['expires_in'] ?? 7776000,
 					'created_at'    => $body['created_at'] ?? time(),
-				);
+				];
 			}
 
 			return null;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Token refresh failed', array( 'error' => $e->getMessage() ) );
+			$this->log_error( 'Token refresh failed', [ 'error' => $e->getMessage() ] );
 			return null;
 		}
 	}
@@ -300,13 +300,13 @@ class Trakt extends API_Base {
 
 			$response = $this->get(
 				$endpoint,
-				array(
+				[
 					'query' => $query,
 					'limit' => 25,
-				)
+				]
 			);
 
-			$results = array();
+			$results = [];
 
 			foreach ( $response as $item ) {
 				$normalized = $this->normalize_result( $item );
@@ -319,8 +319,14 @@ class Trakt extends API_Base {
 
 			return $results;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Search failed', array( 'query' => $query, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Search failed',
+				[
+					'query' => $query,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -359,7 +365,7 @@ class Trakt extends API_Base {
 		}
 
 		try {
-			$response = $this->get( "movies/{$id}", array( 'extended' => 'full' ) );
+			$response = $this->get( "movies/{$id}", [ 'extended' => 'full' ] );
 
 			$result = $this->normalize_movie( $response );
 
@@ -367,7 +373,13 @@ class Trakt extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get movie failed', array( 'id' => $id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get movie failed',
+				[
+					'id'    => $id,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -387,7 +399,7 @@ class Trakt extends API_Base {
 		}
 
 		try {
-			$response = $this->get( "shows/{$id}", array( 'extended' => 'full' ) );
+			$response = $this->get( "shows/{$id}", [ 'extended' => 'full' ] );
 
 			$result = $this->normalize_show( $response );
 
@@ -395,7 +407,13 @@ class Trakt extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get show failed', array( 'id' => $id, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get show failed',
+				[
+					'id'    => $id,
+					'error' => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -415,30 +433,36 @@ class Trakt extends API_Base {
 		}
 
 		try {
-			$response = $this->get( "shows/{$show_id}/seasons", array( 'extended' => 'full' ) );
+			$response = $this->get( "shows/{$show_id}/seasons", [ 'extended' => 'full' ] );
 
-			$seasons = array();
+			$seasons = [];
 
 			foreach ( $response as $season ) {
-				$seasons[] = array(
-					'number'        => $season['number'] ?? 0,
-					'ids'           => $season['ids'] ?? array(),
-					'title'         => $season['title'] ?? '',
-					'overview'      => $season['overview'] ?? '',
-					'first_aired'   => $season['first_aired'] ?? '',
-					'episode_count' => $season['episode_count'] ?? 0,
-					'aired_episodes'=> $season['aired_episodes'] ?? 0,
-					'rating'        => $season['rating'] ?? 0,
-					'votes'         => $season['votes'] ?? 0,
-				);
+				$seasons[] = [
+					'number'         => $season['number'] ?? 0,
+					'ids'            => $season['ids'] ?? [],
+					'title'          => $season['title'] ?? '',
+					'overview'       => $season['overview'] ?? '',
+					'first_aired'    => $season['first_aired'] ?? '',
+					'episode_count'  => $season['episode_count'] ?? 0,
+					'aired_episodes' => $season['aired_episodes'] ?? 0,
+					'rating'         => $season['rating'] ?? 0,
+					'votes'          => $season['votes'] ?? 0,
+				];
 			}
 
 			$this->set_cache( $cache_key, $seasons );
 
 			return $seasons;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get seasons failed', array( 'show_id' => $show_id, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get seasons failed',
+				[
+					'show_id' => $show_id,
+					'error'   => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -458,9 +482,9 @@ class Trakt extends API_Base {
 		}
 
 		try {
-			$response = $this->get( "shows/{$show_id}/seasons/{$season_number}", array( 'extended' => 'full' ) );
+			$response = $this->get( "shows/{$show_id}/seasons/{$season_number}", [ 'extended' => 'full' ] );
 
-			$episodes = array();
+			$episodes = [];
 
 			foreach ( $response as $episode ) {
 				$episodes[] = $this->normalize_episode( $episode );
@@ -470,8 +494,15 @@ class Trakt extends API_Base {
 
 			return $episodes;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get episodes failed', array( 'show_id' => $show_id, 'season' => $season_number, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get episodes failed',
+				[
+					'show_id' => $show_id,
+					'season'  => $season_number,
+					'error'   => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -492,7 +523,7 @@ class Trakt extends API_Base {
 		}
 
 		try {
-			$response = $this->get( "shows/{$show_id}/seasons/{$season_number}/episodes/{$episode_number}", array( 'extended' => 'full' ) );
+			$response = $this->get( "shows/{$show_id}/seasons/{$season_number}/episodes/{$episode_number}", [ 'extended' => 'full' ] );
 
 			$result = $this->normalize_episode( $response );
 
@@ -500,7 +531,15 @@ class Trakt extends API_Base {
 
 			return $result;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get episode failed', array( 'show_id' => $show_id, 'season' => $season_number, 'episode' => $episode_number, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get episode failed',
+				[
+					'show_id' => $show_id,
+					'season'  => $season_number,
+					'episode' => $episode_number,
+					'error'   => $e->getMessage(),
+				]
+			);
 			return null;
 		}
 	}
@@ -521,10 +560,10 @@ class Trakt extends API_Base {
 			throw new \Exception( __( 'Trakt authentication required. Please reconnect your Trakt account in API Connections.', 'post-kinds-for-indieweb' ) );
 		}
 
-		$params = array(
+		$params = [
 			'page'  => $page,
 			'limit' => min( $limit, 100 ),
-		);
+		];
 
 		if ( $start_at ) {
 			$params['start_at'] = $start_at;
@@ -542,20 +581,26 @@ class Trakt extends API_Base {
 		try {
 			$response = $this->get( $endpoint, $params );
 
-			$items = array();
+			$items = [];
 
 			foreach ( $response as $item ) {
 				$items[] = $this->normalize_history_item( $item );
 			}
 
-			return array(
-				'items'     => $items,
-				'page'      => $page,
-				'limit'     => $limit,
-				'total'     => count( $items ), // Would need headers for real total.
-			);
+			return [
+				'items' => $items,
+				'page'  => $page,
+				'limit' => $limit,
+				'total' => count( $items ), // Would need headers for real total.
+			];
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get history failed', array( 'type' => $type, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Get history failed',
+				[
+					'type'  => $type,
+					'error' => $e->getMessage(),
+				]
+			);
 			// Re-throw to allow import manager to handle the error.
 			throw $e;
 		}
@@ -569,7 +614,7 @@ class Trakt extends API_Base {
 	 * @return \Generator History items.
 	 */
 	public function get_all_history( string $type = 'all', string $start_at = '' ): \Generator {
-		$page = 1;
+		$page  = 1;
 		$limit = 100;
 
 		do {
@@ -600,38 +645,44 @@ class Trakt extends API_Base {
 		}
 
 		$type = $item['type'] ?? 'movie';
-		$ids  = $item['ids'] ?? array();
+		$ids  = $item['ids'] ?? [];
 
-		$payload = array();
+		$payload = [];
 
 		if ( 'movie' === $type ) {
-			$payload['movies'] = array(
-				array(
+			$payload['movies'] = [
+				[
 					'ids'        => $ids,
 					'watched_at' => $item['watched_at'] ?? gmdate( 'c' ),
-				),
-			);
+				],
+			];
 		} elseif ( 'episode' === $type ) {
-			$payload['episodes'] = array(
-				array(
+			$payload['episodes'] = [
+				[
 					'ids'        => $ids,
 					'watched_at' => $item['watched_at'] ?? gmdate( 'c' ),
-				),
-			);
+				],
+			];
 		} elseif ( 'show' === $type ) {
-			$payload['shows'] = array(
-				array(
+			$payload['shows'] = [
+				[
 					'ids'        => $ids,
 					'watched_at' => $item['watched_at'] ?? gmdate( 'c' ),
-				),
-			);
+				],
+			];
 		}
 
 		try {
 			$this->post( 'sync/history', $payload );
 			return true;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Add to history failed', array( 'item' => $item, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Add to history failed',
+				[
+					'item'  => $item,
+					'error' => $e->getMessage(),
+				]
+			);
 			return false;
 		}
 	}
@@ -648,21 +699,27 @@ class Trakt extends API_Base {
 		}
 
 		$type = $item['type'] ?? 'movie';
-		$ids  = $item['ids'] ?? array();
+		$ids  = $item['ids'] ?? [];
 
-		$payload = array();
+		$payload = [];
 
 		if ( 'movie' === $type ) {
-			$payload['movies'] = array( array( 'ids' => $ids ) );
+			$payload['movies'] = [ [ 'ids' => $ids ] ];
 		} elseif ( 'episode' === $type ) {
-			$payload['episodes'] = array( array( 'ids' => $ids ) );
+			$payload['episodes'] = [ [ 'ids' => $ids ] ];
 		}
 
 		try {
 			$this->post( 'sync/history/remove', $payload );
 			return true;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Remove from history failed', array( 'item' => $item, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Remove from history failed',
+				[
+					'item'  => $item,
+					'error' => $e->getMessage(),
+				]
+			);
 			return false;
 		}
 	}
@@ -675,7 +732,7 @@ class Trakt extends API_Base {
 	 */
 	public function get_watchlist( string $type = 'all' ): array {
 		if ( ! $this->is_authenticated() ) {
-			return array();
+			return [];
 		}
 
 		$cache_key = 'watchlist_' . $type;
@@ -691,15 +748,15 @@ class Trakt extends API_Base {
 		}
 
 		try {
-			$response = $this->get( $endpoint, array( 'extended' => 'full' ) );
+			$response = $this->get( $endpoint, [ 'extended' => 'full' ] );
 
-			$items = array();
+			$items = [];
 
 			foreach ( $response as $item ) {
 				$normalized = $this->normalize_result( $item );
 				if ( $normalized ) {
 					$normalized['listed_at'] = $item['listed_at'] ?? '';
-					$items[] = $normalized;
+					$items[]                 = $normalized;
 				}
 			}
 
@@ -707,8 +764,14 @@ class Trakt extends API_Base {
 
 			return $items;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get watchlist failed', array( 'type' => $type, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get watchlist failed',
+				[
+					'type'  => $type,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -724,14 +787,14 @@ class Trakt extends API_Base {
 		}
 
 		$type = $item['type'] ?? 'movie';
-		$ids  = $item['ids'] ?? array();
+		$ids  = $item['ids'] ?? [];
 
-		$payload = array();
+		$payload = [];
 
 		if ( 'movie' === $type ) {
-			$payload['movies'] = array( array( 'ids' => $ids ) );
+			$payload['movies'] = [ [ 'ids' => $ids ] ];
 		} elseif ( 'show' === $type ) {
-			$payload['shows'] = array( array( 'ids' => $ids ) );
+			$payload['shows'] = [ [ 'ids' => $ids ] ];
 		}
 
 		try {
@@ -740,7 +803,13 @@ class Trakt extends API_Base {
 			$this->delete_cache( 'watchlist_all' );
 			return true;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Add to watchlist failed', array( 'item' => $item, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Add to watchlist failed',
+				[
+					'item'  => $item,
+					'error' => $e->getMessage(),
+				]
+			);
 			return false;
 		}
 	}
@@ -753,7 +822,7 @@ class Trakt extends API_Base {
 	 */
 	public function get_ratings( string $type = 'all' ): array {
 		if ( ! $this->is_authenticated() ) {
-			return array();
+			return [];
 		}
 
 		$cache_key = 'ratings_' . $type;
@@ -769,16 +838,16 @@ class Trakt extends API_Base {
 		}
 
 		try {
-			$response = $this->get( $endpoint, array( 'extended' => 'full' ) );
+			$response = $this->get( $endpoint, [ 'extended' => 'full' ] );
 
-			$items = array();
+			$items = [];
 
 			foreach ( $response as $item ) {
 				$normalized = $this->normalize_result( $item );
 				if ( $normalized ) {
 					$normalized['rating']   = $item['rating'] ?? 0;
 					$normalized['rated_at'] = $item['rated_at'] ?? '';
-					$items[] = $normalized;
+					$items[]                = $normalized;
 				}
 			}
 
@@ -786,8 +855,14 @@ class Trakt extends API_Base {
 
 			return $items;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get ratings failed', array( 'type' => $type, 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error(
+				'Get ratings failed',
+				[
+					'type'  => $type,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
 		}
 	}
 
@@ -804,29 +879,36 @@ class Trakt extends API_Base {
 		}
 
 		$type = $item['type'] ?? 'movie';
-		$ids  = $item['ids'] ?? array();
+		$ids  = $item['ids'] ?? [];
 
-		$payload = array();
+		$payload = [];
 
-		$rating_item = array(
+		$rating_item = [
 			'ids'      => $ids,
 			'rating'   => min( 10, max( 1, $rating ) ),
 			'rated_at' => gmdate( 'c' ),
-		);
+		];
 
 		if ( 'movie' === $type ) {
-			$payload['movies'] = array( $rating_item );
+			$payload['movies'] = [ $rating_item ];
 		} elseif ( 'show' === $type ) {
-			$payload['shows'] = array( $rating_item );
+			$payload['shows'] = [ $rating_item ];
 		} elseif ( 'episode' === $type ) {
-			$payload['episodes'] = array( $rating_item );
+			$payload['episodes'] = [ $rating_item ];
 		}
 
 		try {
 			$this->post( 'sync/ratings', $payload );
 			return true;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Add rating failed', array( 'item' => $item, 'rating' => $rating, 'error' => $e->getMessage() ) );
+			$this->log_error(
+				'Add rating failed',
+				[
+					'item'   => $item,
+					'rating' => $rating,
+					'error'  => $e->getMessage(),
+				]
+			);
 			return false;
 		}
 	}
@@ -845,22 +927,28 @@ class Trakt extends API_Base {
 		}
 
 		try {
-			$response = $this->get( 'movies/trending', array( 'extended' => 'full', 'limit' => 25 ) );
+			$response = $this->get(
+				'movies/trending',
+				[
+					'extended' => 'full',
+					'limit'    => 25,
+				]
+			);
 
-			$movies = array();
+			$movies = [];
 
 			foreach ( $response as $item ) {
-				$movie = $this->normalize_movie( $item['movie'] ?? $item );
+				$movie             = $this->normalize_movie( $item['movie'] ?? $item );
 				$movie['watchers'] = $item['watchers'] ?? 0;
-				$movies[] = $movie;
+				$movies[]          = $movie;
 			}
 
 			$this->set_cache( $cache_key, $movies, HOUR_IN_SECONDS * 6 );
 
 			return $movies;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get trending movies failed', array( 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error( 'Get trending movies failed', [ 'error' => $e->getMessage() ] );
+			return [];
 		}
 	}
 
@@ -878,22 +966,28 @@ class Trakt extends API_Base {
 		}
 
 		try {
-			$response = $this->get( 'shows/trending', array( 'extended' => 'full', 'limit' => 25 ) );
+			$response = $this->get(
+				'shows/trending',
+				[
+					'extended' => 'full',
+					'limit'    => 25,
+				]
+			);
 
-			$shows = array();
+			$shows = [];
 
 			foreach ( $response as $item ) {
-				$show = $this->normalize_show( $item['show'] ?? $item );
+				$show             = $this->normalize_show( $item['show'] ?? $item );
 				$show['watchers'] = $item['watchers'] ?? 0;
-				$shows[] = $show;
+				$shows[]          = $show;
 			}
 
 			$this->set_cache( $cache_key, $shows, HOUR_IN_SECONDS * 6 );
 
 			return $shows;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get trending shows failed', array( 'error' => $e->getMessage() ) );
-			return array();
+			$this->log_error( 'Get trending shows failed', [ 'error' => $e->getMessage() ] );
+			return [];
 		}
 	}
 
@@ -921,7 +1015,7 @@ class Trakt extends API_Base {
 
 			return $response;
 		} catch ( \Exception $e ) {
-			$this->log_error( 'Get stats failed', array( 'error' => $e->getMessage() ) );
+			$this->log_error( 'Get stats failed', [ 'error' => $e->getMessage() ] );
 			return null;
 		}
 	}
@@ -954,7 +1048,7 @@ class Trakt extends API_Base {
 			}
 		}
 
-		return array();
+		return [];
 	}
 
 	/**
@@ -964,29 +1058,29 @@ class Trakt extends API_Base {
 	 * @return array<string, mixed> Normalized movie.
 	 */
 	private function normalize_movie( array $movie ): array {
-		return array(
-			'id'           => $movie['ids']['trakt'] ?? 0,
-			'trakt_id'     => $movie['ids']['trakt'] ?? 0,
-			'tmdb_id'      => $movie['ids']['tmdb'] ?? null,
-			'imdb_id'      => $movie['ids']['imdb'] ?? '',
-			'slug'         => $movie['ids']['slug'] ?? '',
-			'title'        => $movie['title'] ?? '',
-			'year'         => $movie['year'] ?? null,
-			'overview'     => $movie['overview'] ?? '',
-			'runtime'      => $movie['runtime'] ?? null,
-			'tagline'      => $movie['tagline'] ?? '',
-			'released'     => $movie['released'] ?? '',
-			'certification'=> $movie['certification'] ?? '',
-			'trailer'      => $movie['trailer'] ?? '',
-			'homepage'     => $movie['homepage'] ?? '',
-			'rating'       => $movie['rating'] ?? 0,
-			'votes'        => $movie['votes'] ?? 0,
-			'genres'       => $movie['genres'] ?? array(),
-			'language'     => $movie['language'] ?? '',
-			'country'      => $movie['country'] ?? '',
-			'type'         => 'movie',
-			'source'       => 'trakt',
-		);
+		return [
+			'id'            => $movie['ids']['trakt'] ?? 0,
+			'trakt_id'      => $movie['ids']['trakt'] ?? 0,
+			'tmdb_id'       => $movie['ids']['tmdb'] ?? null,
+			'imdb_id'       => $movie['ids']['imdb'] ?? '',
+			'slug'          => $movie['ids']['slug'] ?? '',
+			'title'         => $movie['title'] ?? '',
+			'year'          => $movie['year'] ?? null,
+			'overview'      => $movie['overview'] ?? '',
+			'runtime'       => $movie['runtime'] ?? null,
+			'tagline'       => $movie['tagline'] ?? '',
+			'released'      => $movie['released'] ?? '',
+			'certification' => $movie['certification'] ?? '',
+			'trailer'       => $movie['trailer'] ?? '',
+			'homepage'      => $movie['homepage'] ?? '',
+			'rating'        => $movie['rating'] ?? 0,
+			'votes'         => $movie['votes'] ?? 0,
+			'genres'        => $movie['genres'] ?? [],
+			'language'      => $movie['language'] ?? '',
+			'country'       => $movie['country'] ?? '',
+			'type'          => 'movie',
+			'source'        => 'trakt',
+		];
 	}
 
 	/**
@@ -996,32 +1090,32 @@ class Trakt extends API_Base {
 	 * @return array<string, mixed> Normalized show.
 	 */
 	private function normalize_show( array $show ): array {
-		return array(
-			'id'              => $show['ids']['trakt'] ?? 0,
-			'trakt_id'        => $show['ids']['trakt'] ?? 0,
-			'tmdb_id'         => $show['ids']['tmdb'] ?? null,
-			'imdb_id'         => $show['ids']['imdb'] ?? '',
-			'tvdb_id'         => $show['ids']['tvdb'] ?? null,
-			'slug'            => $show['ids']['slug'] ?? '',
-			'title'           => $show['title'] ?? '',
-			'year'            => $show['year'] ?? null,
-			'overview'        => $show['overview'] ?? '',
-			'runtime'         => $show['runtime'] ?? null,
-			'first_aired'     => $show['first_aired'] ?? '',
-			'certification'   => $show['certification'] ?? '',
-			'network'         => $show['network'] ?? '',
-			'trailer'         => $show['trailer'] ?? '',
-			'homepage'        => $show['homepage'] ?? '',
-			'status'          => $show['status'] ?? '',
-			'rating'          => $show['rating'] ?? 0,
-			'votes'           => $show['votes'] ?? 0,
-			'aired_episodes'  => $show['aired_episodes'] ?? 0,
-			'genres'          => $show['genres'] ?? array(),
-			'language'        => $show['language'] ?? '',
-			'country'         => $show['country'] ?? '',
-			'type'            => 'tv',
-			'source'          => 'trakt',
-		);
+		return [
+			'id'             => $show['ids']['trakt'] ?? 0,
+			'trakt_id'       => $show['ids']['trakt'] ?? 0,
+			'tmdb_id'        => $show['ids']['tmdb'] ?? null,
+			'imdb_id'        => $show['ids']['imdb'] ?? '',
+			'tvdb_id'        => $show['ids']['tvdb'] ?? null,
+			'slug'           => $show['ids']['slug'] ?? '',
+			'title'          => $show['title'] ?? '',
+			'year'           => $show['year'] ?? null,
+			'overview'       => $show['overview'] ?? '',
+			'runtime'        => $show['runtime'] ?? null,
+			'first_aired'    => $show['first_aired'] ?? '',
+			'certification'  => $show['certification'] ?? '',
+			'network'        => $show['network'] ?? '',
+			'trailer'        => $show['trailer'] ?? '',
+			'homepage'       => $show['homepage'] ?? '',
+			'status'         => $show['status'] ?? '',
+			'rating'         => $show['rating'] ?? 0,
+			'votes'          => $show['votes'] ?? 0,
+			'aired_episodes' => $show['aired_episodes'] ?? 0,
+			'genres'         => $show['genres'] ?? [],
+			'language'       => $show['language'] ?? '',
+			'country'        => $show['country'] ?? '',
+			'type'           => 'tv',
+			'source'         => 'trakt',
+		];
 	}
 
 	/**
@@ -1031,23 +1125,23 @@ class Trakt extends API_Base {
 	 * @return array<string, mixed> Normalized episode.
 	 */
 	private function normalize_episode( array $episode ): array {
-		return array(
-			'id'             => $episode['ids']['trakt'] ?? 0,
-			'trakt_id'       => $episode['ids']['trakt'] ?? 0,
-			'tmdb_id'        => $episode['ids']['tmdb'] ?? null,
-			'imdb_id'        => $episode['ids']['imdb'] ?? '',
-			'tvdb_id'        => $episode['ids']['tvdb'] ?? null,
-			'title'          => $episode['title'] ?? '',
-			'season'         => $episode['season'] ?? 0,
-			'number'         => $episode['number'] ?? 0,
-			'overview'       => $episode['overview'] ?? '',
-			'runtime'        => $episode['runtime'] ?? null,
-			'first_aired'    => $episode['first_aired'] ?? '',
-			'rating'         => $episode['rating'] ?? 0,
-			'votes'          => $episode['votes'] ?? 0,
-			'type'           => 'episode',
-			'source'         => 'trakt',
-		);
+		return [
+			'id'          => $episode['ids']['trakt'] ?? 0,
+			'trakt_id'    => $episode['ids']['trakt'] ?? 0,
+			'tmdb_id'     => $episode['ids']['tmdb'] ?? null,
+			'imdb_id'     => $episode['ids']['imdb'] ?? '',
+			'tvdb_id'     => $episode['ids']['tvdb'] ?? null,
+			'title'       => $episode['title'] ?? '',
+			'season'      => $episode['season'] ?? 0,
+			'number'      => $episode['number'] ?? 0,
+			'overview'    => $episode['overview'] ?? '',
+			'runtime'     => $episode['runtime'] ?? null,
+			'first_aired' => $episode['first_aired'] ?? '',
+			'rating'      => $episode['rating'] ?? 0,
+			'votes'       => $episode['votes'] ?? 0,
+			'type'        => 'episode',
+			'source'      => 'trakt',
+		];
 	}
 
 	/**

@@ -863,7 +863,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			</InspectorControls>
 
 			<div { ...blockProps }>
-				<div className="reactions-card h-entry">
+				<div className="post-kinds-card h-entry">
 					{ /* Photo */ }
 					<div className="checkin-photo">
 						<MediaUploadCheck>

@@ -38,111 +38,111 @@ class Taxonomy {
 	 *
 	 * @var array<string>
 	 */
-	private array $post_types = array( 'post' );
+	private array $post_types = [ 'post' ];
 
 	/**
 	 * Default kind terms with their properties.
 	 *
 	 * @var array<string, array<string, string>>
 	 */
-	private array $default_kinds = array(
-		'note'     => array(
+	private array $default_kinds = [
+		'note'        => [
 			'name'        => 'Note',
 			'description' => 'Short, untitled post similar to a tweet or status update.',
-		),
-		'article'  => array(
+		],
+		'article'     => [
 			'name'        => 'Article',
 			'description' => 'Long-form content with a title, like a blog post or essay.',
-		),
-		'reply'    => array(
+		],
+		'reply'       => [
 			'name'        => 'Reply',
 			'description' => 'Response to external content on another website.',
-		),
-		'like'     => array(
+		],
+		'like'        => [
 			'name'        => 'Like',
 			'description' => 'Appreciation or approval of external content.',
-		),
-		'repost'   => array(
+		],
+		'repost'      => [
 			'name'        => 'Repost',
 			'description' => 'Reshare of external content with attribution.',
-		),
-		'bookmark' => array(
+		],
+		'bookmark'    => [
 			'name'        => 'Bookmark',
 			'description' => 'Saved link with optional annotation.',
-		),
-		'rsvp'     => array(
+		],
+		'rsvp'        => [
 			'name'        => 'RSVP',
 			'description' => 'Response to an event invitation (yes, no, maybe, interested).',
-		),
-		'checkin'  => array(
+		],
+		'checkin'     => [
 			'name'        => 'Check-in',
 			'description' => 'Location check-in at a venue or place.',
-		),
-		'listen'   => array(
+		],
+		'listen'      => [
 			'name'        => 'Listen',
 			'description' => 'Music or podcast listening log (scrobble).',
-		),
-		'watch'    => array(
+		],
+		'watch'       => [
 			'name'        => 'Watch',
 			'description' => 'Film or TV show watching log.',
-		),
-		'read'     => array(
+		],
+		'read'        => [
 			'name'        => 'Read',
 			'description' => 'Book or article reading progress and log.',
-		),
-		'event'    => array(
+		],
+		'event'       => [
 			'name'        => 'Event',
 			'description' => 'Event announcement with date, time, and location.',
-		),
-		'photo'    => array(
+		],
+		'photo'       => [
 			'name'        => 'Photo',
 			'description' => 'Image-centric post, like a photo gallery.',
-		),
-		'video'    => array(
+		],
+		'video'       => [
 			'name'        => 'Video',
 			'description' => 'Video-centric post.',
-		),
-		'review'   => array(
+		],
+		'review'      => [
 			'name'        => 'Review',
 			'description' => 'Rating and evaluation of an item, place, or service.',
-		),
-		'favorite' => array(
+		],
+		'favorite'    => [
 			'name'        => 'Favorite',
 			'description' => 'Starred or saved item for later reference.',
-		),
-		'jam'      => array(
+		],
+		'jam'         => [
 			'name'        => 'Jam',
 			'description' => 'Current music highlight - "this is my jam right now."',
-		),
-		'wish'     => array(
+		],
+		'wish'        => [
 			'name'        => 'Wish',
 			'description' => 'Wishlist item you want to read, watch, buy, or experience.',
-		),
-		'mood'     => array(
+		],
+		'mood'        => [
 			'name'        => 'Mood',
 			'description' => 'Emotional state or feeling.',
-		),
-		'acquisition' => array(
+		],
+		'acquisition' => [
 			'name'        => 'Acquisition',
 			'description' => 'Item you acquired or added to your collection.',
-		),
-		'drink'    => array(
+		],
+		'drink'       => [
 			'name'        => 'Drink',
 			'description' => 'Beverage log - coffee, beer, wine, cocktails.',
-		),
-		'eat'      => array(
+		],
+		'eat'         => [
 			'name'        => 'Eat',
 			'description' => 'Food or meal log.',
-		),
-		'recipe'   => array(
+		],
+		'recipe'      => [
 			'name'        => 'Recipe',
 			'description' => 'Food recipe with ingredients and instructions.',
-		),
-		'play'     => array(
+		],
+		'play'        => [
 			'name'        => 'Play',
 			'description' => 'Video game, board game, or other game play log.',
-		),
-	);
+		],
+	];
 
 	/**
 	 * Constructor.
@@ -159,10 +159,10 @@ class Taxonomy {
 	 * @return void
 	 */
 	private function register_hooks(): void {
-		add_action( 'init', array( $this, 'register_taxonomy' ), 5 );
-		add_action( 'init', array( $this, 'maybe_create_default_terms' ), 10 );
-		add_action( 'init', array( $this, 'ensure_all_terms_exist' ), 11 );
-		add_filter( 'term_link', array( $this, 'filter_term_link' ), 10, 3 );
+		add_action( 'init', [ $this, 'register_taxonomy' ], 5 );
+		add_action( 'init', [ $this, 'maybe_create_default_terms' ], 10 );
+		add_action( 'init', [ $this, 'ensure_all_terms_exist' ], 11 );
+		add_filter( 'term_link', [ $this, 'filter_term_link' ], 10, 3 );
 	}
 
 	/**
@@ -172,7 +172,7 @@ class Taxonomy {
 	 */
 	public function register_taxonomy(): void {
 		// Check if CPT mode is enabled and add reaction post type.
-		$settings     = get_option( 'post_kinds_indieweb_settings', array() );
+		$settings     = get_option( 'post_kinds_indieweb_settings', [] );
 		$storage_mode = $settings['import_storage_mode'] ?? 'standard';
 
 		if ( 'cpt' === $storage_mode ) {
@@ -188,7 +188,7 @@ class Taxonomy {
 		 */
 		$this->post_types = apply_filters( 'post_kinds_indieweb_kind_post_types', $this->post_types );
 
-		$labels = array(
+		$labels = [
 			'name'                       => _x( 'Kinds', 'taxonomy general name', 'post-kinds-for-indieweb' ),
 			'singular_name'              => _x( 'Kind', 'taxonomy singular name', 'post-kinds-for-indieweb' ),
 			'search_items'               => __( 'Search Kinds', 'post-kinds-for-indieweb' ),
@@ -208,9 +208,9 @@ class Taxonomy {
 			'back_to_items'              => __( '&larr; Back to Kinds', 'post-kinds-for-indieweb' ),
 			'item_link'                  => __( 'Kind Link', 'post-kinds-for-indieweb' ),
 			'item_link_description'      => __( 'A link to a kind archive.', 'post-kinds-for-indieweb' ),
-		);
+		];
 
-		$args = array(
+		$args = [
 			'labels'                => $labels,
 			'description'           => __( 'IndieWeb post kinds for categorizing content types.', 'post-kinds-for-indieweb' ),
 			'public'                => true,
@@ -226,23 +226,23 @@ class Taxonomy {
 			'show_in_quick_edit'    => true,
 			'show_admin_column'     => true,
 			'query_var'             => 'kind',
-			'rewrite'               => array(
+			'rewrite'               => [
 				'slug'         => 'kind',
 				'with_front'   => false,
 				'hierarchical' => false,
-			),
-			'capabilities'          => array(
+			],
+			'capabilities'          => [
 				'manage_terms' => 'manage_categories',
 				'edit_terms'   => 'manage_categories',
 				'delete_terms' => 'manage_categories',
 				'assign_terms' => 'edit_posts',
-			),
-			'default_term'          => array(
+			],
+			'default_term'          => [
 				'name'        => 'Note',
 				'slug'        => 'note',
 				'description' => 'Short, untitled post similar to a tweet or status update.',
-			),
-		);
+			],
+		];
 
 		/**
 		 * Filters the taxonomy registration arguments.
@@ -289,10 +289,10 @@ class Taxonomy {
 				wp_insert_term(
 					$kind_data['name'],
 					self::TAXONOMY,
-					array(
+					[
 						'slug'        => $slug,
 						'description' => $kind_data['description'],
-					)
+					]
 				);
 			}
 		}
@@ -315,7 +315,7 @@ class Taxonomy {
 		}
 
 		// Check version to only run once per plugin version.
-		$version_key = 'post_kinds_indieweb_terms_version';
+		$version_key     = 'post_kinds_indieweb_terms_version';
 		$current_version = get_option( $version_key, '0' );
 
 		if ( version_compare( $current_version, POST_KINDS_INDIEWEB_VERSION, '>=' ) ) {
@@ -328,10 +328,10 @@ class Taxonomy {
 				wp_insert_term(
 					$kind_data['name'],
 					self::TAXONOMY,
-					array(
+					[
 						'slug'        => $slug,
 						'description' => $kind_data['description'],
-					)
+					]
 				);
 			}
 		}
@@ -372,14 +372,14 @@ class Taxonomy {
 	 */
 	public function get_kinds(): array {
 		$terms = get_terms(
-			array(
+			[
 				'taxonomy'   => self::TAXONOMY,
 				'hide_empty' => false,
-			)
+			]
 		);
 
 		if ( is_wp_error( $terms ) ) {
-			return array();
+			return [];
 		}
 
 		return $terms;
@@ -409,7 +409,7 @@ class Taxonomy {
 	 * @return bool True on success, false on failure.
 	 */
 	public function set_post_kind( int $post_id, string $kind ): bool {
-		$result = wp_set_post_terms( $post_id, array( $kind ), self::TAXONOMY );
+		$result = wp_set_post_terms( $post_id, [ $kind ], self::TAXONOMY );
 
 		return ! is_wp_error( $result );
 	}

@@ -193,10 +193,10 @@ export default function Edit( { attributes, setAttributes } ) {
 			</InspectorControls>
 
 			<div { ...blockProps }>
-				<div className="reactions-card-wrapper">
+				<div className="post-kinds-card-wrapper">
 					{ /* Search Bar */ }
 					{ isSearching && (
-						<div className="reactions-card__search-bar">
+						<div className="post-kinds-card__search-bar">
 							<MediaSearch
 								type="music"
 								placeholder={ __(
@@ -207,7 +207,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							/>
 							<button
 								type="button"
-								className="reactions-card__search-close"
+								className="post-kinds-card__search-close"
 								onClick={ () => setIsSearching( false ) }
 							>
 								×
@@ -215,8 +215,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						</div>
 					) }
 
-					<div className="reactions-card">
-						<div className="reactions-card__media">
+					<div className="post-kinds-card">
+						<div className="post-kinds-card__media">
 							<MediaUploadCheck>
 								<MediaUpload
 									onSelect={ handleImageSelect }
@@ -224,7 +224,7 @@ export default function Edit( { attributes, setAttributes } ) {
 									render={ ( { open } ) => (
 										<button
 											type="button"
-											className="reactions-card__media-button"
+											className="post-kinds-card__media-button"
 											onClick={ open }
 										>
 											{ cover ? (
@@ -234,11 +234,11 @@ export default function Edit( { attributes, setAttributes } ) {
 														alt={
 															coverAlt || title
 														}
-														className="reactions-card__image"
+														className="post-kinds-card__image"
 													/>
 													<button
 														type="button"
-														className="reactions-card__media-remove"
+														className="post-kinds-card__media-remove"
 														onClick={
 															handleImageRemove
 														}
@@ -251,11 +251,11 @@ export default function Edit( { attributes, setAttributes } ) {
 													</button>
 												</>
 											) : (
-												<div className="reactions-card__media-placeholder">
-													<span className="reactions-card__media-icon">
+												<div className="post-kinds-card__media-placeholder">
+													<span className="post-kinds-card__media-icon">
 														🎵
 													</span>
-													<span className="reactions-card__media-text">
+													<span className="post-kinds-card__media-text">
 														{ __(
 															'Add Cover',
 															'post-kinds-for-indieweb'
@@ -269,9 +269,9 @@ export default function Edit( { attributes, setAttributes } ) {
 							</MediaUploadCheck>
 						</div>
 
-						<div className="reactions-card__content">
-							<div className="reactions-card__header-row">
-								<span className="reactions-card__badge">
+						<div className="post-kinds-card__content">
+							<div className="post-kinds-card__header-row">
+								<span className="post-kinds-card__badge">
 									🎵{ ' ' }
 									{ __(
 										'Now Playing',
@@ -280,7 +280,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								</span>
 								<button
 									type="button"
-									className="reactions-card__action-button"
+									className="post-kinds-card__action-button"
 									onClick={ () => setIsSearching( true ) }
 									title={ __(
 										'Search for music',
@@ -293,7 +293,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 							<RichText
 								tagName="h3"
-								className="reactions-card__title"
+								className="post-kinds-card__title"
 								value={ title }
 								onChange={ ( value ) =>
 									setAttributes( { title: value } )
@@ -306,7 +306,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 							<RichText
 								tagName="p"
-								className="reactions-card__subtitle"
+								className="post-kinds-card__subtitle"
 								value={ artist }
 								onChange={ ( value ) =>
 									setAttributes( { artist: value } )
@@ -319,7 +319,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 							<RichText
 								tagName="p"
-								className="reactions-card__location"
+								className="post-kinds-card__location"
 								value={ album }
 								onChange={ ( value ) =>
 									setAttributes( { album: value } )
@@ -332,7 +332,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 							<RichText
 								tagName="p"
-								className="reactions-card__notes"
+								className="post-kinds-card__notes"
 								value={ note }
 								onChange={ ( value ) =>
 									setAttributes( { note: value } )

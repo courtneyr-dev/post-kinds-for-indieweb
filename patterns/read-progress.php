@@ -22,15 +22,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 register_block_pattern(
 	'post-kinds-indieweb/read-progress',
-	array(
+	[
 		'title'       => __( 'Read Progress', 'post-kinds-for-indieweb' ),
 		'description' => __( 'Track your reading progress on a book.', 'post-kinds-for-indieweb' ),
-		'categories'  => array( 'post-kinds-for-indieweb' ),
-		'keywords'    => array( 'read', 'book', 'reading', 'progress', 'library', 'indieweb', 'reaction' ),
-		'blockTypes'  => array( 'core/group' ),
-		'postTypes'   => array( 'post' ),
-		'content'     => '<!-- wp:group {"className":"h-entry reactions-read","layout":{"type":"constrained"}} -->
-<div class="wp-block-group h-entry reactions-read">
+		'categories'  => [ 'post-kinds-for-indieweb' ],
+		'keywords'    => [ 'read', 'book', 'reading', 'progress', 'library', 'indieweb', 'reaction' ],
+		'blockTypes'  => [ 'core/group' ],
+		'postTypes'   => [ 'post' ],
+		'content'     => '<!-- wp:group {"className":"h-entry post-kinds-read","layout":{"type":"constrained"}} -->
+<div class="wp-block-group h-entry post-kinds-read">
 
 	<!-- wp:columns {"className":"h-cite u-read-of"} -->
 	<div class="wp-block-columns h-cite u-read-of">
@@ -38,8 +38,8 @@ register_block_pattern(
 		<!-- wp:column {"width":"120px"} -->
 		<div class="wp-block-column" style="flex-basis:120px">
 
-			<!-- wp:image {"className":"u-photo reactions-read-cover","width":"120px","height":"180px","scale":"cover","metadata":{"bindings":{"url":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"read_cover"}},"alt":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"read_title"}}}}} -->
-			<figure class="wp-block-image is-resized u-photo reactions-read-cover"><img src="" alt="" style="object-fit:cover;width:120px;height:180px"/></figure>
+			<!-- wp:image {"className":"u-photo post-kinds-read-cover","width":"120px","height":"180px","scale":"cover","metadata":{"bindings":{"url":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"read_cover"}},"alt":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"read_title"}}}}} -->
+			<figure class="wp-block-image is-resized u-photo post-kinds-read-cover"><img src="" alt="" style="object-fit:cover;width:120px;height:180px"/></figure>
 			<!-- /wp:image -->
 
 		</div>
@@ -56,12 +56,12 @@ register_block_pattern(
 			<p class="p-author has-medium-font-size"></p>
 			<!-- /wp:paragraph -->
 
-			<!-- wp:paragraph {"className":"u-uid reactions-read-isbn","fontSize":"small","textColor":"secondary"} -->
-			<p class="u-uid reactions-read-isbn has-secondary-color has-text-color has-small-font-size">ISBN: <span data-binding="read_isbn"></span></p>
+			<!-- wp:paragraph {"className":"u-uid post-kinds-read-isbn","fontSize":"small","textColor":"secondary"} -->
+			<p class="u-uid post-kinds-read-isbn has-secondary-color has-text-color has-small-font-size">ISBN: <span data-binding="read_isbn"></span></p>
 			<!-- /wp:paragraph -->
 
-			<!-- wp:group {"className":"reactions-read-status-badge","style":{"spacing":{"padding":{"top":"4px","bottom":"4px","left":"12px","right":"12px"}},"border":{"radius":"4px"}},"backgroundColor":"tertiary","layout":{"type":"flex","flexWrap":"nowrap"}} -->
-			<div class="wp-block-group reactions-read-status-badge has-tertiary-background-color has-background" style="border-radius:4px;padding-top:4px;padding-right:12px;padding-bottom:4px;padding-left:12px">
+			<!-- wp:group {"className":"post-kinds-read-status-badge","style":{"spacing":{"padding":{"top":"4px","bottom":"4px","left":"12px","right":"12px"}},"border":{"radius":"4px"}},"backgroundColor":"tertiary","layout":{"type":"flex","flexWrap":"nowrap"}} -->
+			<div class="wp-block-group post-kinds-read-status-badge has-tertiary-background-color has-background" style="border-radius:4px;padding-top:4px;padding-right:12px;padding-bottom:4px;padding-left:12px">
 
 				<!-- wp:paragraph {"fontSize":"small","metadata":{"bindings":{"content":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"read_status"}}}}} -->
 				<p class="has-small-font-size"></p>
@@ -76,8 +76,8 @@ register_block_pattern(
 	</div>
 	<!-- /wp:columns -->
 
-	<!-- wp:group {"className":"reactions-read-progress","style":{"spacing":{"padding":{"top":"var:preset|spacing|10","bottom":"var:preset|spacing|10"}}},"layout":{"type":"constrained"}} -->
-	<div class="wp-block-group reactions-read-progress" style="padding-top:var(--wp--preset--spacing--10);padding-bottom:var(--wp--preset--spacing--10)">
+	<!-- wp:group {"className":"post-kinds-read-progress","style":{"spacing":{"padding":{"top":"var:preset|spacing|10","bottom":"var:preset|spacing|10"}}},"layout":{"type":"constrained"}} -->
+	<div class="wp-block-group post-kinds-read-progress" style="padding-top:var(--wp--preset--spacing--10);padding-bottom:var(--wp--preset--spacing--10)">
 
 		<!-- wp:group {"layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"space-between"}} -->
 		<div class="wp-block-group">
@@ -93,8 +93,8 @@ register_block_pattern(
 		</div>
 		<!-- /wp:group -->
 
-		<!-- wp:separator {"className":"reactions-progress-bar","style":{"color":{"background":"#007cba"}},"opacity":"css"} -->
-		<hr class="wp-block-separator has-text-color has-alpha-channel-opacity has-background reactions-progress-bar" style="background-color:#007cba;color:#007cba"/>
+		<!-- wp:separator {"className":"post-kinds-progress-bar","style":{"color":{"background":"#007cba"}},"opacity":"css"} -->
+		<hr class="wp-block-separator has-text-color has-alpha-channel-opacity has-background post-kinds-progress-bar" style="background-color:#007cba;color:#007cba"/>
 		<!-- /wp:separator -->
 
 	</div>
@@ -110,8 +110,8 @@ register_block_pattern(
 	</div>
 	<!-- /wp:group -->
 
-	<!-- wp:group {"className":"reactions-meta","style":{"spacing":{"margin":{"top":"var:preset|spacing|20"}}},"layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"space-between"}} -->
-	<div class="wp-block-group reactions-meta" style="margin-top:var(--wp--preset--spacing--20)">
+	<!-- wp:group {"className":"post-kinds-meta","style":{"spacing":{"margin":{"top":"var:preset|spacing|20"}}},"layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"space-between"}} -->
+	<div class="wp-block-group post-kinds-meta" style="margin-top:var(--wp--preset--spacing--20)">
 
 		<!-- wp:post-date {"className":"dt-published","fontSize":"small"} /-->
 
@@ -120,5 +120,5 @@ register_block_pattern(
 
 </div>
 <!-- /wp:group -->',
-	)
+	]
 );

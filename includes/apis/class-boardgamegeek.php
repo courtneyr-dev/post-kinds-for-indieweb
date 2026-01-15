@@ -61,12 +61,12 @@ class BoardGameGeek extends API_Base {
 	 *
 	 * @var array<string, string>
 	 */
-	private array $game_types = array(
-		'boardgame'      => 'Board Games',
+	private array $game_types = [
+		'boardgame'          => 'Board Games',
 		'boardgameexpansion' => 'Board Game Expansions',
-		'videogame'      => 'Video Games',
-		'rpgitem'        => 'RPG Items',
-	);
+		'videogame'          => 'Video Games',
+		'rpgitem'            => 'RPG Items',
+	];
 
 	/**
 	 * API token for authentication.
@@ -82,7 +82,7 @@ class BoardGameGeek extends API_Base {
 		parent::__construct();
 
 		// Get token from API credentials storage.
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', array() );
+		$credentials     = get_option( 'post_kinds_indieweb_api_credentials', [] );
 		$this->api_token = $credentials['bgg']['api_token'] ?? '';
 	}
 
@@ -95,7 +95,13 @@ class BoardGameGeek extends API_Base {
 		if ( ! $this->is_configured() ) {
 			return false;
 		}
-		$response = $this->get( 'search', array( 'query' => 'Catan', 'type' => 'boardgame' ) );
+		$response = $this->get(
+			'search',
+			[
+				'query' => 'Catan',
+				'type'  => 'boardgame',
+			]
+		);
 		return ! is_wp_error( $response ) && ! empty( $response );
 	}
 
@@ -117,7 +123,7 @@ class BoardGameGeek extends API_Base {
 	 */
 	public function search( string $query, string $type = 'boardgame' ): array {
 		if ( empty( $query ) ) {
-			return array();
+			return [];
 		}
 
 		$cache_key = $this->get_cache_key( 'search_' . $query . '_' . $type );
@@ -129,14 +135,14 @@ class BoardGameGeek extends API_Base {
 
 		$response = $this->get(
 			'search',
-			array(
+			[
 				'query' => $query,
 				'type'  => $type,
-			)
+			]
 		);
 
 		if ( is_wp_error( $response ) || empty( $response ) ) {
-			return array();
+			return [];
 		}
 
 		$results = $this->parse_search_results( $response );
@@ -164,7 +170,7 @@ class BoardGameGeek extends API_Base {
 			return $cached;
 		}
 
-		$params = array( 'id' => $id );
+		$params = [ 'id' => $id ];
 		if ( $stats ) {
 			$params['stats'] = 1;
 		}
@@ -191,26 +197,26 @@ class BoardGameGeek extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	public function normalize_result( array $item ): array {
-		return array(
-			'id'          => $item['id'] ?? '',
-			'title'       => $item['name'] ?? '',
-			'year'        => $item['year'] ?? '',
-			'cover'       => $item['image'] ?? $item['thumbnail'] ?? '',
-			'thumbnail'   => $item['thumbnail'] ?? '',
-			'description' => $item['description'] ?? '',
-			'rating'      => $item['rating'] ?? 0,
-			'rating_count'=> $item['rating_count'] ?? 0,
-			'type'        => $item['type'] ?? 'boardgame',
-			'designers'   => $item['designers'] ?? array(),
-			'publishers'  => $item['publishers'] ?? array(),
-			'min_players' => $item['min_players'] ?? 0,
-			'max_players' => $item['max_players'] ?? 0,
-			'play_time'   => $item['play_time'] ?? 0,
-			'categories'  => $item['categories'] ?? array(),
-			'mechanics'   => $item['mechanics'] ?? array(),
-			'url'         => $this->get_game_url( $item['id'] ?? '', $item['type'] ?? 'boardgame' ),
-			'source'      => 'bgg',
-		);
+		return [
+			'id'           => $item['id'] ?? '',
+			'title'        => $item['name'] ?? '',
+			'year'         => $item['year'] ?? '',
+			'cover'        => $item['image'] ?? $item['thumbnail'] ?? '',
+			'thumbnail'    => $item['thumbnail'] ?? '',
+			'description'  => $item['description'] ?? '',
+			'rating'       => $item['rating'] ?? 0,
+			'rating_count' => $item['rating_count'] ?? 0,
+			'type'         => $item['type'] ?? 'boardgame',
+			'designers'    => $item['designers'] ?? [],
+			'publishers'   => $item['publishers'] ?? [],
+			'min_players'  => $item['min_players'] ?? 0,
+			'max_players'  => $item['max_players'] ?? 0,
+			'play_time'    => $item['play_time'] ?? 0,
+			'categories'   => $item['categories'] ?? [],
+			'mechanics'    => $item['mechanics'] ?? [],
+			'url'          => $this->get_game_url( $item['id'] ?? '', $item['type'] ?? 'boardgame' ),
+			'source'       => 'bgg',
+		];
 	}
 
 	/**
@@ -239,7 +245,7 @@ class BoardGameGeek extends API_Base {
 	 * @param array<string, mixed> $params   Query parameters.
 	 * @return string|array|\WP_Error Response data or error.
 	 */
-	public function get( string $endpoint, array $params = array() ) {
+	public function get( string $endpoint, array $params = [] ) {
 		if ( ! $this->is_configured() ) {
 			return new \WP_Error(
 				'bgg_not_configured',
@@ -257,13 +263,13 @@ class BoardGameGeek extends API_Base {
 
 		$response = wp_remote_get(
 			$url,
-			array(
+			[
 				'timeout'    => $this->timeout,
 				'user-agent' => $this->user_agent,
-				'headers'    => array(
+				'headers'    => [
 					'Authorization' => 'Bearer ' . $this->api_token,
-				),
-			)
+				],
+			]
 		);
 
 		if ( is_wp_error( $response ) ) {
@@ -304,7 +310,7 @@ class BoardGameGeek extends API_Base {
 	 * @return array<int, array<string, mixed>> Parsed results.
 	 */
 	private function parse_search_results( string $xml ): array {
-		$results = array();
+		$results = [];
 
 		libxml_use_internal_errors( true );
 		$doc = simplexml_load_string( $xml );
@@ -333,22 +339,22 @@ class BoardGameGeek extends API_Base {
 			// Fallback to first name.
 			if ( empty( $name ) && isset( $item->name[0] ) ) {
 				$name_attrs = $item->name[0]->attributes();
-				$name = (string) $name_attrs->value;
+				$name       = (string) $name_attrs->value;
 			}
 
 			// Get year.
 			if ( isset( $item->yearpublished ) ) {
 				$year_attrs = $item->yearpublished->attributes();
-				$year = (string) $year_attrs->value;
+				$year       = (string) $year_attrs->value;
 			}
 
 			if ( ! empty( $id ) && ! empty( $name ) ) {
-				$results[] = array(
+				$results[] = [
 					'id'   => $id,
 					'name' => $name,
 					'year' => $year,
 					'type' => $type,
-				);
+				];
 			}
 		}
 
@@ -372,24 +378,24 @@ class BoardGameGeek extends API_Base {
 		$item  = $doc->item[0];
 		$attrs = $item->attributes();
 
-		$result = array(
-			'id'          => (string) $attrs->id,
-			'type'        => (string) $attrs->type,
-			'name'        => '',
-			'year'        => '',
-			'description' => '',
-			'image'       => '',
-			'thumbnail'   => '',
-			'min_players' => 0,
-			'max_players' => 0,
-			'play_time'   => 0,
-			'rating'      => 0,
-			'rating_count'=> 0,
-			'designers'   => array(),
-			'publishers'  => array(),
-			'categories'  => array(),
-			'mechanics'   => array(),
-		);
+		$result = [
+			'id'           => (string) $attrs->id,
+			'type'         => (string) $attrs->type,
+			'name'         => '',
+			'year'         => '',
+			'description'  => '',
+			'image'        => '',
+			'thumbnail'    => '',
+			'min_players'  => 0,
+			'max_players'  => 0,
+			'play_time'    => 0,
+			'rating'       => 0,
+			'rating_count' => 0,
+			'designers'    => [],
+			'publishers'   => [],
+			'categories'   => [],
+			'mechanics'    => [],
+		];
 
 		// Get primary name.
 		foreach ( $item->name as $name_elem ) {
@@ -402,7 +408,7 @@ class BoardGameGeek extends API_Base {
 
 		// Year published.
 		if ( isset( $item->yearpublished ) ) {
-			$year_attrs = $item->yearpublished->attributes();
+			$year_attrs     = $item->yearpublished->attributes();
 			$result['year'] = (string) $year_attrs->value;
 		}
 
@@ -421,17 +427,17 @@ class BoardGameGeek extends API_Base {
 
 		// Player counts (for board games).
 		if ( isset( $item->minplayers ) ) {
-			$mp_attrs = $item->minplayers->attributes();
+			$mp_attrs              = $item->minplayers->attributes();
 			$result['min_players'] = (int) $mp_attrs->value;
 		}
 		if ( isset( $item->maxplayers ) ) {
-			$mp_attrs = $item->maxplayers->attributes();
+			$mp_attrs              = $item->maxplayers->attributes();
 			$result['max_players'] = (int) $mp_attrs->value;
 		}
 
 		// Play time.
 		if ( isset( $item->playingtime ) ) {
-			$pt_attrs = $item->playingtime->attributes();
+			$pt_attrs            = $item->playingtime->attributes();
 			$result['play_time'] = (int) $pt_attrs->value;
 		}
 
@@ -440,11 +446,11 @@ class BoardGameGeek extends API_Base {
 			$ratings = $item->statistics->ratings;
 
 			if ( isset( $ratings->average ) ) {
-				$avg_attrs = $ratings->average->attributes();
+				$avg_attrs        = $ratings->average->attributes();
 				$result['rating'] = round( (float) $avg_attrs->value, 1 );
 			}
 			if ( isset( $ratings->usersrated ) ) {
-				$ur_attrs = $ratings->usersrated->attributes();
+				$ur_attrs               = $ratings->usersrated->attributes();
 				$result['rating_count'] = (int) $ur_attrs->value;
 			}
 		}
@@ -498,8 +504,8 @@ class BoardGameGeek extends API_Base {
 	 * @return array<string, array<string, mixed>> Configuration fields.
 	 */
 	public function get_config_fields(): array {
-		return array(
-			'bgg_api_token' => array(
+		return [
+			'bgg_api_token' => [
 				'label'       => __( 'BoardGameGeek API Token', 'post-kinds-for-indieweb' ),
 				'type'        => 'password',
 				'description' => sprintf(
@@ -507,7 +513,7 @@ class BoardGameGeek extends API_Base {
 					__( 'Get your token from %s', 'post-kinds-for-indieweb' ),
 					'<a href="https://boardgamegeek.com/applications" target="_blank">boardgamegeek.com/applications</a>'
 				),
-			),
-		);
+			],
+		];
 	}
 }

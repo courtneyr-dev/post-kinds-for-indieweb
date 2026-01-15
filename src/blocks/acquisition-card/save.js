@@ -35,24 +35,24 @@ export default function Save( { attributes } ) {
 
 	return (
 		<div { ...blockProps }>
-			<div className="reactions-card h-cite">
+			<div className="post-kinds-card h-cite">
 				{ photo && (
-					<div className="reactions-card__media">
+					<div className="post-kinds-card__media">
 						<img
 							src={ photo }
 							alt={ photoAlt || title }
-							className="reactions-card__image u-photo"
+							className="post-kinds-card__image u-photo"
 							loading="lazy"
 						/>
 					</div>
 				) }
-				<div className="reactions-card__content">
-					<span className="reactions-card__badge">
+				<div className="post-kinds-card__content">
+					<span className="post-kinds-card__badge">
 						{ TYPE_LABELS[ acquisitionType ] || acquisitionType }
 					</span>
 
 					{ title && (
-						<h3 className="reactions-card__title p-name">
+						<h3 className="post-kinds-card__title p-name">
 							{ whereUrl ? (
 								<a
 									href={ whereUrl }
@@ -69,24 +69,24 @@ export default function Save( { attributes } ) {
 					) }
 
 					{ cost && (
-						<p className="reactions-card__subtitle">{ cost }</p>
+						<p className="post-kinds-card__subtitle">{ cost }</p>
 					) }
 
 					{ where && (
-						<p className="reactions-card__meta p-location">
+						<p className="post-kinds-card__meta p-location">
 							from { where }
 						</p>
 					) }
 
 					{ notes && (
-						<p className="reactions-card__notes p-content">
+						<p className="post-kinds-card__notes p-content">
 							{ notes }
 						</p>
 					) }
 
 					{ acquiredAt && (
 						<time
-							className="reactions-card__timestamp dt-published"
+							className="post-kinds-card__timestamp dt-published"
 							dateTime={ new Date( acquiredAt ).toISOString() }
 						>
 							{ new Date( acquiredAt ).toLocaleString() }

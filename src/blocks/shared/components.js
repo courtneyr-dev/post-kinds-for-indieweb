@@ -59,7 +59,7 @@ export function StarRating( {
 
 	return (
 		<div
-			className="reactions-star-rating"
+			className="post-kinds-star-rating"
 			onMouseLeave={ handleMouseLeave }
 			role="group"
 			aria-label={ __( 'Rating', 'post-kinds-for-indieweb' ) }
@@ -116,7 +116,7 @@ export function CoverImage( {
 	if ( ! src || hasError ) {
 		return (
 			<div
-				className={ `reactions-cover-placeholder ${ size } ${ className }` }
+				className={ `post-kinds-cover-placeholder ${ size } ${ className }` }
 			>
 				{ imageIcon }
 			</div>
@@ -124,7 +124,7 @@ export function CoverImage( {
 	}
 
 	return (
-		<div className={ `reactions-cover-image ${ size } ${ className }` }>
+		<div className={ `post-kinds-cover-image ${ size } ${ className }` }>
 			{ isLoading && (
 				<div className="cover-loading">
 					<Spinner />
@@ -273,7 +273,7 @@ export function MediaSearch( { type, placeholder, onSelect } ) {
 	};
 
 	return (
-		<div className="reactions-media-search">
+		<div className="post-kinds-media-search">
 			<div className="search-input-group">
 				<TextControl
 					value={ query }
@@ -357,7 +357,7 @@ export function ProgressBar( { value = 0, label = '', showPercent = true } ) {
 
 	return (
 		<div
-			className="reactions-progress-bar"
+			className="post-kinds-progress-bar"
 			role="progressbar"
 			aria-valuenow={ clampedValue }
 			aria-valuemin="0"
@@ -390,7 +390,7 @@ export function ExternalLinkWithIcon( { href, children } ) {
 	}
 
 	return (
-		<ExternalLink href={ href } className="reactions-external-link">
+		<ExternalLink href={ href } className="post-kinds-external-link">
 			{ children }
 			{ externalLinkIcon }
 		</ExternalLink>
@@ -412,7 +412,7 @@ export function MicroformatData( { data } ) {
 
 	return (
 		<div
-			className="reactions-microformat-data"
+			className="post-kinds-microformat-data"
 			style={ { display: 'none' } }
 		>
 			{ Object.entries( data ).map( ( [ key, value ] ) => (
@@ -439,7 +439,7 @@ export function BlockPlaceholder( { icon, label, instructions, children } ) {
 			icon={ icon }
 			label={ label }
 			instructions={ instructions }
-			className="reactions-block-placeholder"
+			className="post-kinds-block-placeholder"
 		>
 			{ children }
 		</Placeholder>
@@ -463,7 +463,7 @@ export function CiteBlock( { url, name, author, type = 'u-cite' } ) {
 	}
 
 	return (
-		<div className={ `reactions-cite h-cite ${ type }` }>
+		<div className={ `post-kinds-cite h-cite ${ type }` }>
 			<a
 				href={ url }
 				className="u-url p-name"
@@ -524,7 +524,7 @@ export function DateDisplay( { date, format = 'long', className = '' } ) {
 	return (
 		<time
 			dateTime={ isoDate }
-			className={ `reactions-date ${ className }` }
+			className={ `post-kinds-date ${ className }` }
 		>
 			{ displayDate }
 		</time>
@@ -584,7 +584,7 @@ export function LocationDisplay( {
 		: null;
 
 	return (
-		<div className="reactions-location h-adr">
+		<div className="post-kinds-location h-adr">
 			{ name && <strong className="p-name">{ name }</strong> }
 			{ address && <span className="p-street-address">{ address }</span> }
 			{ city && <span className="p-locality">{ city }</span> }

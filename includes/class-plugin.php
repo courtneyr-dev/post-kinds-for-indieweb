@@ -123,21 +123,21 @@ final class Plugin {
 	 *
 	 * @var array<Sync\Checkin_Sync_Base>
 	 */
-	private array $checkin_sync_services = array();
+	private array $checkin_sync_services = [];
 
 	/**
 	 * Listen sync services.
 	 *
 	 * @var array<Sync\Listen_Sync_Base>
 	 */
-	private array $listen_sync_services = array();
+	private array $listen_sync_services = [];
 
 	/**
 	 * Watch sync services.
 	 *
 	 * @var array<Sync\Watch_Sync_Base>
 	 */
-	private array $watch_sync_services = array();
+	private array $watch_sync_services = [];
 
 	/**
 	 * Import Manager component instance.
@@ -209,7 +209,7 @@ final class Plugin {
 	public function init(): void {
 		// Check for Post Kinds plugin conflict.
 		if ( $this->detect_post_kinds_conflict() ) {
-			add_action( 'admin_notices', array( $this, 'post_kinds_conflict_notice' ) );
+			add_action( 'admin_notices', [ $this, 'post_kinds_conflict_notice' ] );
 			return; // Don't initialize - Post Kinds is active.
 		}
 
@@ -236,7 +236,7 @@ final class Plugin {
 	 */
 	private function detect_post_kinds_conflict(): bool {
 		// Check for Post Kinds plugin file.
-		$active_plugins = (array) get_option( 'active_plugins', array() );
+		$active_plugins = (array) get_option( 'active_plugins', [] );
 		if ( in_array( 'indieweb-post-kinds/indieweb-post-kinds.php', $active_plugins, true ) ) {
 			$this->post_kinds_conflict = true;
 			return true;
@@ -244,7 +244,7 @@ final class Plugin {
 
 		// Check network-activated plugins for multisite.
 		if ( is_multisite() ) {
-			$network_plugins = (array) get_site_option( 'active_sitewide_plugins', array() );
+			$network_plugins = (array) get_site_option( 'active_sitewide_plugins', [] );
 			if ( isset( $network_plugins['indieweb-post-kinds/indieweb-post-kinds.php'] ) ) {
 				$this->post_kinds_conflict = true;
 				return true;
@@ -269,7 +269,7 @@ final class Plugin {
 	 */
 	private function detect_indieblocks(): void {
 		// Check using active_plugins option directly (works at plugins_loaded).
-		$active_plugins = (array) get_option( 'active_plugins', array() );
+		$active_plugins = (array) get_option( 'active_plugins', [] );
 		if ( in_array( 'indieblocks/indieblocks.php', $active_plugins, true ) ) {
 			$this->indieblocks_active = true;
 			return;
@@ -277,7 +277,7 @@ final class Plugin {
 
 		// Also check network-activated plugins for multisite.
 		if ( is_multisite() ) {
-			$network_plugins = (array) get_site_option( 'active_sitewide_plugins', array() );
+			$network_plugins = (array) get_site_option( 'active_sitewide_plugins', [] );
 			if ( isset( $network_plugins['indieblocks/indieblocks.php'] ) ) {
 				$this->indieblocks_active = true;
 				return;
@@ -312,7 +312,7 @@ final class Plugin {
 	 */
 	private function detect_bookmark_card(): void {
 		// Check using active_plugins option directly.
-		$active_plugins = (array) get_option( 'active_plugins', array() );
+		$active_plugins = (array) get_option( 'active_plugins', [] );
 		if ( in_array( 'bookmark-card/bookmark-card.php', $active_plugins, true ) ) {
 			$this->bookmark_card_active = true;
 			return;
@@ -320,7 +320,7 @@ final class Plugin {
 
 		// Check network-activated plugins for multisite.
 		if ( is_multisite() ) {
-			$network_plugins = (array) get_site_option( 'active_sitewide_plugins', array() );
+			$network_plugins = (array) get_site_option( 'active_sitewide_plugins', [] );
 			if ( isset( $network_plugins['bookmark-card/bookmark-card.php'] ) ) {
 				$this->bookmark_card_active = true;
 				return;
@@ -392,6 +392,16 @@ final class Plugin {
 		// Post Type component (for CPT mode).
 		if ( class_exists( __NAMESPACE__ . '\\Post_Type' ) ) {
 			$this->post_type = new Post_Type();
+		}
+
+		// Checkin Post Type component (optional dedicated CPT).
+		if ( class_exists( __NAMESPACE__ . '\\Checkin_Post_Type' ) ) {
+			new Checkin_Post_Type();
+		}
+
+		// Venue Taxonomy component.
+		if ( class_exists( __NAMESPACE__ . '\\Venue_Taxonomy' ) ) {
+			new Venue_Taxonomy();
 		}
 
 		// Query Filter component (for hidden mode).
@@ -603,25 +613,29 @@ final class Plugin {
 	 */
 	private function register_hooks(): void {
 		// Flush rewrite rules if needed (after storage mode change).
-		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ), 999 );
+		add_action( 'init', [ $this, 'maybe_flush_rewrite_rules' ], 999 );
 
 		// Register custom blocks.
-		add_action( 'init', array( $this, 'register_blocks' ) );
+		add_action( 'init', [ $this, 'register_blocks' ] );
 
 		// Enqueue editor assets.
-		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_editor_assets' ) );
+		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_editor_assets' ] );
 
 		// Enqueue frontend block styles.
-		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_block_styles' ) );
+		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_block_styles' ] );
 
 		// Register block patterns.
-		add_action( 'init', array( $this, 'register_block_patterns' ) );
+		add_action( 'init', [ $this, 'register_block_patterns' ] );
+
+		// Register block templates for CPT and taxonomy archives.
+		add_filter( 'get_block_templates', [ $this, 'add_plugin_templates' ], 10, 3 );
+		add_filter( 'pre_get_block_file_template', [ $this, 'get_plugin_template' ], 10, 3 );
 
 		// Add plugin action links.
-		add_filter( 'plugin_action_links_' . \POST_KINDS_INDIEWEB_BASENAME, array( $this, 'add_action_links' ) );
+		add_filter( 'plugin_action_links_' . \POST_KINDS_INDIEWEB_BASENAME, [ $this, 'add_action_links' ] );
 
 		// Display admin notice if IndieBlocks is not active (check deferred to admin_notices time).
-		add_action( 'admin_notices', array( $this, 'indieblocks_notice' ) );
+		add_action( 'admin_notices', [ $this, 'indieblocks_notice' ] );
 	}
 
 	/**
@@ -637,20 +651,20 @@ final class Plugin {
 			'block_categories_all',
 			function ( array $categories ): array {
 				return array_merge(
-					array(
-						array(
+					[
+						[
 							'slug'  => 'post-kinds-for-indieweb',
 							'title' => __( 'Post Kinds for IndieWeb', 'post-kinds-for-indieweb' ),
 							'icon'  => 'heart',
-						),
-					),
+						],
+					],
 					$categories
 				);
 			}
 		);
 
 		// Define blocks to register.
-		$blocks = array(
+		$blocks = [
 			'listen-card',
 			'watch-card',
 			'read-card',
@@ -665,9 +679,11 @@ final class Plugin {
 			'mood-card',
 			'acquisition-card',
 			'checkin-dashboard',
+			'checkins-feed',
+			'venue-detail',
 			'star-rating',
 			'media-lookup',
-		);
+		];
 
 		// Enqueue blocks script first so it's available for registration.
 		$blocks_asset_file = \POST_KINDS_INDIEWEB_PATH . 'build/blocks.asset.php';
@@ -697,7 +713,7 @@ final class Plugin {
 			wp_register_style(
 				'post-kinds-indieweb-blocks',
 				\POST_KINDS_INDIEWEB_URL . 'build/blocks.css',
-				array(),
+				[],
 				filemtime( $blocks_style_file )
 			);
 		}
@@ -709,11 +725,11 @@ final class Plugin {
 			if ( file_exists( $block_dir . '/block.json' ) ) {
 				register_block_type(
 					$block_dir,
-					array(
+					[
 						'editor_script' => 'post-kinds-indieweb-blocks',
 						'editor_style'  => 'post-kinds-indieweb-blocks',
 						'style'         => 'post-kinds-indieweb-blocks',
-					)
+					]
 				);
 			}
 		}
@@ -769,13 +785,13 @@ final class Plugin {
 		$syndication_services = $this->get_available_syndication_services();
 
 		// Data to pass to JavaScript.
-		$localize_data = array(
+		$localize_data = [
 			'indieBlocksActive'   => $this->indieblocks_active,
 			'bookmarkCardActive'  => $this->bookmark_card_active,
 			'restUrl'             => rest_url( 'post-kinds-indieweb/v1/' ),
 			'nonce'               => wp_create_nonce( 'wp_rest' ),
 			'syndicationServices' => $syndication_services,
-		);
+		];
 
 		// Pass data to JavaScript using wp_add_inline_script for more reliable delivery.
 		// Use a unique name to avoid conflicts with admin.js which also uses postKindsIndieWeb.
@@ -792,7 +808,7 @@ final class Plugin {
 			wp_enqueue_style(
 				'post-kinds-indieweb-editor',
 				\POST_KINDS_INDIEWEB_URL . 'build/index.css',
-				array(),
+				[],
 				$asset['version']
 			);
 		}
@@ -816,10 +832,10 @@ final class Plugin {
 		// Register pattern category.
 		register_block_pattern_category(
 			'post-kinds-for-indieweb',
-			array(
+			[
 				'label'       => __( 'Post Kinds for IndieWeb', 'post-kinds-for-indieweb' ),
 				'description' => __( 'Patterns for IndieWeb post kinds and reactions.', 'post-kinds-for-indieweb' ),
-			)
+			]
 		);
 
 		// Load pattern files from patterns directory.
@@ -842,6 +858,150 @@ final class Plugin {
 	}
 
 	/**
+	 * Get plugin template definitions.
+	 *
+	 * Returns template slugs and their metadata for registration.
+	 *
+	 * @return array<string, array<string, string>> Template definitions.
+	 */
+	private function get_plugin_template_definitions(): array {
+		$templates = [];
+
+		// Only register checkin archive template if CPT is enabled.
+		if ( Checkin_Post_Type::is_enabled() ) {
+			$templates['archive-checkin'] = [
+				'title'       => __( 'Check-in Archive', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Template for displaying the check-in post type archive.', 'post-kinds-for-indieweb' ),
+				'post_types'  => [ 'checkin' ],
+			];
+		}
+
+		// Venue taxonomy template.
+		$templates['taxonomy-venue'] = [
+			'title'       => __( 'Venue Archive', 'post-kinds-for-indieweb' ),
+			'description' => __( 'Template for displaying venue taxonomy archives.', 'post-kinds-for-indieweb' ),
+			'post_types'  => [],
+		];
+
+		return $templates;
+	}
+
+	/**
+	 * Add plugin templates to the block templates list.
+	 *
+	 * Injects our custom templates for CPT and taxonomy archives when
+	 * the theme doesn't provide them.
+	 *
+	 * @param \WP_Block_Template[] $query_result Array of templates.
+	 * @param array                $query        Query parameters.
+	 * @param string               $template_type Type of template.
+	 * @return \WP_Block_Template[] Modified array of templates.
+	 */
+	public function add_plugin_templates( array $query_result, array $query, string $template_type ): array {
+		// Only handle wp_template type.
+		if ( 'wp_template' !== $template_type ) {
+			return $query_result;
+		}
+
+		$template_definitions = $this->get_plugin_template_definitions();
+
+		foreach ( $template_definitions as $slug => $definition ) {
+			// Check if template already exists in results.
+			$exists = false;
+			foreach ( $query_result as $template ) {
+				if ( $template->slug === $slug ) {
+					$exists = true;
+					break;
+				}
+			}
+
+			// If template doesn't exist and we have a file for it, add it.
+			if ( ! $exists ) {
+				$template_file = \POST_KINDS_INDIEWEB_PATH . 'templates/' . $slug . '.html';
+
+				if ( file_exists( $template_file ) ) {
+					$template = $this->build_template_object( $slug, $definition, $template_file );
+
+					if ( $template ) {
+						$query_result[] = $template;
+					}
+				}
+			}
+		}
+
+		return $query_result;
+	}
+
+	/**
+	 * Get a plugin template by ID.
+	 *
+	 * Handles requests for specific plugin templates.
+	 *
+	 * @param \WP_Block_Template|null $template The template to return.
+	 * @param string                  $id       Template ID in format theme//slug.
+	 * @param string                  $template_type Type of template.
+	 * @return \WP_Block_Template|null The template object or null.
+	 */
+	public function get_plugin_template( $template, string $id, string $template_type ) {
+		// Only handle wp_template type.
+		if ( 'wp_template' !== $template_type ) {
+			return $template;
+		}
+
+		// Extract slug from ID (format: theme//slug).
+		$parts = explode( '//', $id );
+		$slug  = end( $parts );
+
+		$template_definitions = $this->get_plugin_template_definitions();
+
+		// Check if this is one of our templates.
+		if ( ! isset( $template_definitions[ $slug ] ) ) {
+			return $template;
+		}
+
+		$template_file = \POST_KINDS_INDIEWEB_PATH . 'templates/' . $slug . '.html';
+
+		if ( file_exists( $template_file ) ) {
+			return $this->build_template_object( $slug, $template_definitions[ $slug ], $template_file );
+		}
+
+		return $template;
+	}
+
+	/**
+	 * Build a WP_Block_Template object from a file.
+	 *
+	 * @param string $slug       Template slug.
+	 * @param array  $definition Template definition with title and description.
+	 * @param string $file_path  Path to the template file.
+	 * @return \WP_Block_Template|null Template object or null on failure.
+	 */
+	private function build_template_object( string $slug, array $definition, string $file_path ): ?\WP_Block_Template {
+		$content = file_get_contents( $file_path );
+
+		if ( false === $content ) {
+			return null;
+		}
+
+		$template                 = new \WP_Block_Template();
+		$template->id             = 'post-kinds-for-indieweb//' . $slug;
+		$template->theme          = 'post-kinds-for-indieweb';
+		$template->source         = 'plugin';
+		$template->slug           = $slug;
+		$template->type           = 'wp_template';
+		$template->title          = $definition['title'];
+		$template->description    = $definition['description'];
+		$template->status         = 'publish';
+		$template->has_theme_file = true;
+		$template->is_custom      = false;
+		$template->content        = $content;
+		$template->post_types     = $definition['post_types'] ?? [];
+		$template->origin         = 'plugin';
+
+		return $template;
+	}
+
+	/**
 	 * Add plugin action links.
 	 *
 	 * Adds settings and documentation links to the plugins page.
@@ -850,13 +1010,13 @@ final class Plugin {
 	 * @return array<string> Modified action links.
 	 */
 	public function add_action_links( array $links ): array {
-		$plugin_links = array(
+		$plugin_links = [
 			sprintf(
 				'<a href="%s">%s</a>',
 				esc_url( admin_url( 'admin.php?page=post-kinds-indieweb' ) ),
 				esc_html__( 'Settings', 'post-kinds-for-indieweb' )
 			),
-		);
+		];
 
 		return array_merge( $plugin_links, $links );
 	}
@@ -883,9 +1043,9 @@ final class Plugin {
 			'<div class="notice notice-error"><p>%s</p></div>',
 			wp_kses(
 				$message,
-				array(
-					'strong' => array(),
-				)
+				[
+					'strong' => [],
+				]
 			)
 		);
 	}
@@ -901,7 +1061,7 @@ final class Plugin {
 		// Re-check IndieBlocks status at runtime (it may have loaded after our initial check).
 		if ( ! $this->indieblocks_active ) {
 			// Check active_plugins option directly.
-			$active_plugins = (array) get_option( 'active_plugins', array() );
+			$active_plugins = (array) get_option( 'active_plugins', [] );
 			if ( in_array( 'indieblocks/indieblocks.php', $active_plugins, true ) ) {
 				$this->indieblocks_active = true;
 			} elseif ( class_exists( 'IndieBlocks\\IndieBlocks' ) ) {
@@ -917,7 +1077,7 @@ final class Plugin {
 		// Only show on relevant admin pages.
 		$screen = get_current_screen();
 
-		if ( ! $screen || ! in_array( $screen->id, array( 'plugins', 'dashboard', 'options-general' ), true ) ) {
+		if ( ! $screen || ! in_array( $screen->id, [ 'plugins', 'dashboard', 'options-general' ], true ) ) {
 			return;
 		}
 
@@ -934,13 +1094,13 @@ final class Plugin {
 			'<div class="notice notice-info"><p>%s</p></div>',
 			wp_kses(
 				$message,
-				array(
-					'a' => array(
-						'href'   => array(),
-						'target' => array(),
-						'rel'    => array(),
-					),
-				)
+				[
+					'a' => [
+						'href'   => [],
+						'target' => [],
+						'rel'    => [],
+					],
+				]
 			)
 		);
 	}
@@ -1074,49 +1234,49 @@ final class Plugin {
 	 * @return array<string, array<string, mixed>> Array of service info.
 	 */
 	private function get_available_syndication_services(): array {
-		$services    = array();
-		$settings    = get_option( 'post_kinds_indieweb_settings', array() );
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', array() );
+		$services    = [];
+		$settings    = get_option( 'post_kinds_indieweb_settings', [] );
+		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
 
 		// Check Last.fm for listen posts.
 		if ( ! empty( $settings['listen_sync_to_lastfm'] ) ) {
-			$lastfm = $credentials['lastfm'] ?? array();
+			$lastfm = $credentials['lastfm'] ?? [];
 
 			// Include service if enabled, even if not fully connected.
 			// This allows showing a helpful message in the editor.
-			$services['lastfm'] = array(
+			$services['lastfm'] = [
 				'name'      => 'Last.fm',
 				'kind'      => 'listen',
 				'metaKey'   => '_postkind_syndicate_lastfm',
 				'connected' => ! empty( $lastfm['session_key'] ),
 				'needsAuth' => empty( $lastfm['session_key'] ),
-			);
+			];
 		}
 
 		// Check Trakt for watch posts.
 		if ( ! empty( $settings['watch_sync_to_trakt'] ) ) {
-			$trakt = $credentials['trakt'] ?? array();
+			$trakt = $credentials['trakt'] ?? [];
 
-			$services['trakt'] = array(
+			$services['trakt'] = [
 				'name'      => 'Trakt',
 				'kind'      => 'watch',
 				'metaKey'   => '_postkind_syndicate_trakt',
 				'connected' => ! empty( $trakt['access_token'] ),
 				'needsAuth' => empty( $trakt['access_token'] ),
-			);
+			];
 		}
 
 		// Check Foursquare for checkin posts.
 		if ( ! empty( $settings['checkin_sync_to_foursquare'] ) ) {
-			$foursquare = $credentials['foursquare'] ?? array();
+			$foursquare = $credentials['foursquare'] ?? [];
 
-			$services['foursquare'] = array(
+			$services['foursquare'] = [
 				'name'      => 'Foursquare',
 				'kind'      => 'checkin',
 				'metaKey'   => '_postkind_syndicate_foursquare',
 				'connected' => ! empty( $foursquare['access_token'] ),
 				'needsAuth' => empty( $foursquare['access_token'] ),
-			);
+			];
 		}
 
 		/**
