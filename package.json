@@ -51,11 +51,11 @@
 		"@wordpress/primitives": "^4.0.0"
 	},
 	"devDependencies": {
-		"@axe-core/playwright": "^4.10.0",
-		"@lhci/cli": "^0.14.0",
-		"@playwright/test": "^1.49.0",
+		"@axe-core/playwright": "^4.11.1",
+		"@lhci/cli": "^0.15.1",
+		"@playwright/test": "^1.58.2",
 		"@testing-library/jest-dom": "^6.6.0",
-		"@testing-library/react": "^16.0.0",
+		"@testing-library/react": "^16.3.2",
 		"@wordpress/env": "^10.0.0",
 		"@wordpress/scripts": "^31.2.0",
 		"husky": "^9.0.0",
