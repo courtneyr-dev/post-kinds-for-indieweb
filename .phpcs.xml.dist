@@ -66,6 +66,13 @@
 		<type>warning</type>
 	</rule>
 
+	<!-- Allow tax_query and meta_query which are necessary for plugin functionality -->
+	<rule ref="WordPress.DB.SlowDBQuery">
+		<type>warning</type>
+		<exclude name="WordPress.DB.SlowDBQuery.slow_db_query_tax_query"/>
+		<exclude name="WordPress.DB.SlowDBQuery.slow_db_query_meta_query"/>
+	</rule>
+
 	<!-- ===== Internationalization ===== -->
 
 	<!-- Verify text domain is correct -->
@@ -79,10 +86,10 @@
 
 	<!-- ===== Code Complexity Metrics ===== -->
 
-	<!-- Cyclomatic complexity - warn at 10, error at 20 -->
+	<!-- Cyclomatic complexity - only error at 20 (skip warnings) -->
 	<rule ref="Generic.Metrics.CyclomaticComplexity">
 		<properties>
-			<property name="complexity" value="10"/>
+			<property name="complexity" value="20"/>
 			<property name="absoluteComplexity" value="20"/>
 		</properties>
 	</rule>

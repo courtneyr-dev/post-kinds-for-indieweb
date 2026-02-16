@@ -123,16 +123,22 @@ function CitationFields() {
 				onChange={ ( value ) => updateKindMeta( 'cite_url', value ) }
 				type="url"
 				placeholder="https://"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Title', 'post-kinds-for-indieweb' ) }
 				value={ citeName }
 				onChange={ ( value ) => updateKindMeta( 'cite_name', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Author', 'post-kinds-for-indieweb' ) }
 				value={ citeAuthor }
 				onChange={ ( value ) => updateKindMeta( 'cite_author', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextareaControl
 				label={ __( 'Summary', 'post-kinds-for-indieweb' ) }
@@ -141,6 +147,7 @@ function CitationFields() {
 					updateKindMeta( 'cite_summary', value )
 				}
 				rows={ 3 }
+				__nextHasNoMarginBottom
 			/>
 		</Flex>
 	);
@@ -245,6 +252,8 @@ function BookmarkFields() {
 				} }
 				type="url"
 				placeholder="https://"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 
 			{ isCheckingEmbed && (
@@ -298,17 +307,23 @@ function BookmarkFields() {
 					'Choose how the bookmark URL should be displayed in the post.',
 					'post-kinds-for-indieweb'
 				) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 
 			<TextControl
 				label={ __( 'Title', 'post-kinds-for-indieweb' ) }
 				value={ citeName }
 				onChange={ ( value ) => updateKindMeta( 'cite_name', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Author', 'post-kinds-for-indieweb' ) }
 				value={ citeAuthor }
 				onChange={ ( value ) => updateKindMeta( 'cite_author', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextareaControl
 				label={ __( 'Summary', 'post-kinds-for-indieweb' ) }
@@ -317,6 +332,7 @@ function BookmarkFields() {
 					updateKindMeta( 'cite_summary', value )
 				}
 				rows={ 3 }
+				__nextHasNoMarginBottom
 			/>
 		</Flex>
 	);
@@ -351,11 +367,15 @@ function RSVPFields() {
 				onChange={ ( value ) => updateKindMeta( 'cite_url', value ) }
 				type="url"
 				placeholder="https://"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Event Name', 'post-kinds-for-indieweb' ) }
 				value={ citeName }
 				onChange={ ( value ) => updateKindMeta( 'cite_name', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<SelectControl
 				label={ __( 'RSVP Status', 'post-kinds-for-indieweb' ) }
@@ -392,6 +412,8 @@ function RSVPFields() {
 						value: 'interested',
 					},
 				] }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 		</Flex>
 	);
@@ -403,6 +425,10 @@ function RSVPFields() {
  * @return {JSX.Element} Checkin fields.
  */
 function CheckinFields() {
+	const [ searchQuery, setSearchQuery ] = useState( '' );
+	const [ searchResults, setSearchResults ] = useState( [] );
+	const [ isSearching, setIsSearching ] = useState( false );
+
 	const {
 		checkinName,
 		checkinAddress,
@@ -426,18 +452,191 @@ function CheckinFields() {
 
 	const { updateKindMeta } = useDispatch( STORE_NAME );
 
+	/**
+	 * Search for venues using Foursquare/Nominatim
+	 */
+	const doVenueSearch = async () => {
+		if ( ! searchQuery || searchQuery.trim().length < 2 ) {
+			return;
+		}
+
+		setIsSearching( true );
+
+		// Set a timeout to stop searching after 15 seconds
+		const timeoutId = setTimeout( () => {
+			// eslint-disable-next-line no-console
+			console.error( 'Venue search timed out after 15 seconds' );
+			setIsSearching( false );
+			setSearchResults( [] );
+		}, 15000 );
+
+		try {
+			// Try Foursquare first
+			const results = await apiFetch( {
+				path: `/post-kinds-indieweb/v1/location/venues?query=${ encodeURIComponent(
+					searchQuery
+				) }`,
+			} );
+			clearTimeout( timeoutId );
+			// eslint-disable-next-line no-console
+			console.log( 'Foursquare results:', results );
+			setSearchResults( results || [] );
+			setIsSearching( false );
+		} catch ( err ) {
+			// eslint-disable-next-line no-console
+			console.log( 'Foursquare failed, trying Nominatim:', err );
+			// Fall back to Nominatim
+			try {
+				const fallbackResults = await apiFetch( {
+					path: `/post-kinds-indieweb/v1/location/search?query=${ encodeURIComponent(
+						searchQuery
+					) }`,
+				} );
+				clearTimeout( timeoutId );
+				// eslint-disable-next-line no-console
+				console.log( 'Nominatim results:', fallbackResults );
+				setSearchResults( fallbackResults || [] );
+				setIsSearching( false );
+			} catch ( fallbackErr ) {
+				clearTimeout( timeoutId );
+				// eslint-disable-next-line no-console
+				console.error(
+					'Both Foursquare and Nominatim failed:',
+					fallbackErr
+				);
+				setSearchResults( [] );
+				setIsSearching( false );
+			}
+		}
+	};
+
+	/**
+	 * Select a venue from search results
+	 *
+	 * @param {Object} result Selected venue.
+	 */
+	const selectVenue = ( result ) => {
+		// Auto-fill all venue fields from Foursquare or Nominatim result
+		updateKindMeta(
+			'checkin_name',
+			result.name || result.display_name?.split( ',' )[ 0 ] || ''
+		);
+		updateKindMeta(
+			'checkin_address',
+			result.address || result.street || ''
+		);
+		updateKindMeta(
+			'checkin_locality',
+			result.locality || result.city || ''
+		);
+		updateKindMeta( 'checkin_region', result.region || result.state || '' );
+		updateKindMeta( 'checkin_country', result.country || '' );
+
+		if ( result.latitude || result.lat ) {
+			updateKindMeta(
+				'geo_latitude',
+				parseFloat( result.latitude || result.lat ) || 0
+			);
+		}
+		if ( result.longitude || result.lon ) {
+			updateKindMeta(
+				'geo_longitude',
+				parseFloat( result.longitude || result.lon ) || 0
+			);
+		}
+
+		// Clear search
+		setSearchQuery( '' );
+		setSearchResults( [] );
+	};
+
 	return (
 		<Flex
 			direction="column"
 			gap={ 4 }
 			className="post-kinds-indieweb-kind-fields"
 		>
+			<BaseControl
+				id="checkin-venue-search"
+				label={ __( 'Look Up Venue', 'post-kinds-for-indieweb' ) }
+				__nextHasNoMarginBottom
+			>
+				<Flex>
+					<TextControl
+						value={ searchQuery }
+						onChange={ setSearchQuery }
+						placeholder={ __(
+							'Search venues…',
+							'post-kinds-for-indieweb'
+						) }
+						onKeyDown={ ( e ) => {
+							if ( e.key === 'Enter' ) {
+								e.preventDefault();
+								doVenueSearch();
+							}
+						} }
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+					/>
+					<Button
+						variant="secondary"
+						onClick={ doVenueSearch }
+						disabled={ isSearching }
+						icon={ searchIcon }
+					>
+						{ isSearching ? (
+							<Spinner />
+						) : (
+							__( 'Search', 'post-kinds-for-indieweb' )
+						) }
+					</Button>
+				</Flex>
+			</BaseControl>
+
+			{ searchResults.length > 0 && (
+				<div
+					className="venue-search-results"
+					style={ {
+						maxHeight: '200px',
+						overflowY: 'auto',
+						border: '1px solid #ddd',
+						borderRadius: '4px',
+					} }
+				>
+					{ searchResults.slice( 0, 5 ).map( ( result, index ) => (
+						<Button
+							key={ result.fsq_id || result.place_id || index }
+							variant="tertiary"
+							onClick={ () => selectVenue( result ) }
+							style={ {
+								display: 'block',
+								width: '100%',
+								textAlign: 'left',
+								padding: '8px',
+							} }
+						>
+							<strong>
+								{ result.name ||
+									result.display_name?.split( ',' )[ 0 ] }
+							</strong>
+							<br />
+							<small style={ { opacity: 0.7 } }>
+								{ result.formatted_address ||
+									result.display_name }
+							</small>
+						</Button>
+					) ) }
+				</div>
+			) }
+
 			<TextControl
 				label={ __( 'Venue Name', 'post-kinds-for-indieweb' ) }
 				value={ checkinName }
 				onChange={ ( value ) =>
 					updateKindMeta( 'checkin_name', value )
 				}
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Address', 'post-kinds-for-indieweb' ) }
@@ -445,6 +644,8 @@ function CheckinFields() {
 				onChange={ ( value ) =>
 					updateKindMeta( 'checkin_address', value )
 				}
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<Flex>
 				<TextControl
@@ -453,6 +654,8 @@ function CheckinFields() {
 					onChange={ ( value ) =>
 						updateKindMeta( 'checkin_locality', value )
 					}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 				<TextControl
 					label={ __( 'State/Region', 'post-kinds-for-indieweb' ) }
@@ -460,6 +663,8 @@ function CheckinFields() {
 					onChange={ ( value ) =>
 						updateKindMeta( 'checkin_region', value )
 					}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 			</Flex>
 			<TextControl
@@ -468,6 +673,8 @@ function CheckinFields() {
 				onChange={ ( value ) =>
 					updateKindMeta( 'checkin_country', value )
 				}
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<Flex>
 				<TextControl
@@ -481,6 +688,8 @@ function CheckinFields() {
 					}
 					type="number"
 					step="0.0000001"
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 				<TextControl
 					label={ __( 'Longitude', 'post-kinds-for-indieweb' ) }
@@ -493,6 +702,8 @@ function CheckinFields() {
 					}
 					type="number"
 					step="0.0000001"
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 			</Flex>
 			<SyndicationControls kind="checkin" />
@@ -646,6 +857,8 @@ function ListenFields() {
 						onKeyDown={ ( e ) =>
 							e.key === 'Enter' && handleUrlLookup()
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<Button
 						icon={ linkIcon }
@@ -710,6 +923,8 @@ function ListenFields() {
 						onKeyDown={ ( e ) =>
 							e.key === 'Enter' && handleSearch()
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<Button
 						icon={ searchIcon }
@@ -754,6 +969,8 @@ function ListenFields() {
 				onChange={ ( value ) =>
 					updateKindMeta( 'listen_track', value )
 				}
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Artist', 'post-kinds-for-indieweb' ) }
@@ -761,6 +978,8 @@ function ListenFields() {
 				onChange={ ( value ) =>
 					updateKindMeta( 'listen_artist', value )
 				}
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Album', 'post-kinds-for-indieweb' ) }
@@ -768,6 +987,8 @@ function ListenFields() {
 				onChange={ ( value ) =>
 					updateKindMeta( 'listen_album', value )
 				}
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Album Art URL', 'post-kinds-for-indieweb' ) }
@@ -776,6 +997,8 @@ function ListenFields() {
 					updateKindMeta( 'listen_cover', value )
 				}
 				type="url"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<SyndicationControls kind="listen" />
 		</Flex>
@@ -935,6 +1158,8 @@ function WatchFields() {
 						onKeyDown={ ( e ) =>
 							e.key === 'Enter' && handleUrlLookup()
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<Button
 						icon={ linkIcon }
@@ -999,6 +1224,8 @@ function WatchFields() {
 						onKeyDown={ ( e ) =>
 							e.key === 'Enter' && handleSearch()
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<Button
 						icon={ searchIcon }
@@ -1040,11 +1267,15 @@ function WatchFields() {
 				label={ __( 'Title', 'post-kinds-for-indieweb' ) }
 				value={ watchTitle }
 				onChange={ ( value ) => updateKindMeta( 'watch_title', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Year', 'post-kinds-for-indieweb' ) }
 				value={ watchYear }
 				onChange={ ( value ) => updateKindMeta( 'watch_year', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<SelectControl
 				label={ __( 'Status', 'post-kinds-for-indieweb' ) }
@@ -1069,6 +1300,8 @@ function WatchFields() {
 						value: 'abandoned',
 					},
 				] }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<ToggleControl
 				label={ __( 'Contains spoilers', 'post-kinds-for-indieweb' ) }
@@ -1076,6 +1309,7 @@ function WatchFields() {
 				onChange={ ( value ) =>
 					updateKindMeta( 'watch_spoilers', value )
 				}
+				__nextHasNoMarginBottom
 			/>
 			<TextControl
 				label={ __( 'Poster URL', 'post-kinds-for-indieweb' ) }
@@ -1084,6 +1318,8 @@ function WatchFields() {
 					updateKindMeta( 'watch_poster', value )
 				}
 				type="url"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<SyndicationControls kind="watch" />
 		</Flex>
@@ -1171,6 +1407,8 @@ function ReadFields() {
 						onKeyDown={ ( e ) =>
 							e.key === 'Enter' && handleSearch()
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<Button
 						icon={ searchIcon }
@@ -1213,16 +1451,22 @@ function ReadFields() {
 				label={ __( 'Title', 'post-kinds-for-indieweb' ) }
 				value={ readTitle }
 				onChange={ ( value ) => updateKindMeta( 'read_title', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Author', 'post-kinds-for-indieweb' ) }
 				value={ readAuthor }
 				onChange={ ( value ) => updateKindMeta( 'read_author', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'ISBN', 'post-kinds-for-indieweb' ) }
 				value={ readIsbn }
 				onChange={ ( value ) => updateKindMeta( 'read_isbn', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<SelectControl
 				label={ __( 'Status', 'post-kinds-for-indieweb' ) }
@@ -1249,6 +1493,8 @@ function ReadFields() {
 						value: 'abandoned',
 					},
 				] }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<Flex>
 				<TextControl
@@ -1262,6 +1508,8 @@ function ReadFields() {
 					}
 					type="number"
 					min="0"
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 				<TextControl
 					label={ __( 'Total Pages', 'post-kinds-for-indieweb' ) }
@@ -1274,6 +1522,8 @@ function ReadFields() {
 					}
 					type="number"
 					min="0"
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 			</Flex>
 			<TextControl
@@ -1281,6 +1531,8 @@ function ReadFields() {
 				value={ readCover }
 				onChange={ ( value ) => updateKindMeta( 'read_cover', value ) }
 				type="url"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 		</Flex>
 	);
@@ -1318,12 +1570,16 @@ function EventFields() {
 				value={ eventStart }
 				onChange={ ( value ) => updateKindMeta( 'event_start', value ) }
 				type="datetime-local"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'End Date/Time', 'post-kinds-for-indieweb' ) }
 				value={ eventEnd }
 				onChange={ ( value ) => updateKindMeta( 'event_end', value ) }
 				type="datetime-local"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Location', 'post-kinds-for-indieweb' ) }
@@ -1331,6 +1587,8 @@ function EventFields() {
 				onChange={ ( value ) =>
 					updateKindMeta( 'event_location', value )
 				}
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Event URL', 'post-kinds-for-indieweb' ) }
@@ -1338,6 +1596,8 @@ function EventFields() {
 				onChange={ ( value ) => updateKindMeta( 'event_url', value ) }
 				type="url"
 				placeholder="https://"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 		</Flex>
 	);
@@ -1389,6 +1649,8 @@ function ReviewFields() {
 				onChange={ ( value ) =>
 					updateKindMeta( 'review_item_name', value )
 				}
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Item URL', 'post-kinds-for-indieweb' ) }
@@ -1398,6 +1660,8 @@ function ReviewFields() {
 				}
 				type="url"
 				placeholder="https://"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<BaseControl
 				id={ ratingId }
@@ -1419,6 +1683,8 @@ function ReviewFields() {
 						max={ best }
 						step={ 0.5 }
 						withInputField={ true }
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 				</div>
 			</BaseControl>
@@ -1431,6 +1697,8 @@ function ReviewFields() {
 				type="number"
 				min="1"
 				max="10"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 
 			<style>{ `
@@ -1833,6 +2101,8 @@ function PlayFields() {
 							onKeyDown={ ( e ) =>
 								e.key === 'Enter' && handleSearch()
 							}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
 						/>
 						<Button
 							icon={ searchIcon }
@@ -1908,6 +2178,8 @@ function PlayFields() {
 				label={ __( 'Game Title', 'post-kinds-for-indieweb' ) }
 				value={ playTitle }
 				onChange={ ( value ) => updateKindMeta( 'play_title', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 
 			<SelectControl
@@ -1923,6 +2195,8 @@ function PlayFields() {
 						updateKindMeta( 'play_platform', value );
 					}
 				} }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			{ ( showCustomPlatform ||
 				( playPlatform && ! isPredefinedPlatform ) ) && (
@@ -1936,6 +2210,8 @@ function PlayFields() {
 						'Enter platform name…',
 						'post-kinds-for-indieweb'
 					) }
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 			) }
 
@@ -1944,6 +2220,8 @@ function PlayFields() {
 				value={ playStatus || 'playing' }
 				options={ statusOptions }
 				onChange={ ( value ) => updateKindMeta( 'play_status', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 
 			<TextControl
@@ -1955,6 +2233,8 @@ function PlayFields() {
 				onChange={ ( value ) =>
 					updateKindMeta( 'play_hours', parseFloat( value ) || 0 )
 				}
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 
 			<RangeControl
@@ -1966,6 +2246,8 @@ function PlayFields() {
 				step={ 0.5 }
 				withInputField
 				renderTooltipContent={ ( value ) => `${ value } / 5` }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 
 			<TextControl
@@ -1974,6 +2256,8 @@ function PlayFields() {
 				value={ playCover }
 				onChange={ ( value ) => updateKindMeta( 'play_cover', value ) }
 				placeholder="https://"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 
 			<TextControl
@@ -1988,6 +2272,8 @@ function PlayFields() {
 					'Link to the official game website.',
 					'post-kinds-for-indieweb'
 				) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 
 			<TextControl
@@ -2002,6 +2288,8 @@ function PlayFields() {
 					'Link to buy the game.',
 					'post-kinds-for-indieweb'
 				) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 
 			{ /* ID Fields (collapsible/advanced) */ }
@@ -2019,6 +2307,8 @@ function PlayFields() {
 						onChange={ ( value ) =>
 							updateKindMeta( 'play_bgg_id', value )
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<TextControl
 						label={ __( 'RAWG ID', 'post-kinds-for-indieweb' ) }
@@ -2026,6 +2316,8 @@ function PlayFields() {
 						onChange={ ( value ) =>
 							updateKindMeta( 'play_rawg_id', value )
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<TextControl
 						label={ __(
@@ -2036,6 +2328,8 @@ function PlayFields() {
 						onChange={ ( value ) =>
 							updateKindMeta( 'play_steam_id', value )
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 				</Flex>
 			</details>
@@ -2050,13 +2344,99 @@ function PlayFields() {
  *
  * @return {JSX.Element} Eat fields.
  */
+const EAT_CUISINE_TYPES = [
+	{
+		label: __( 'Select cuisine…', 'post-kinds-for-indieweb' ),
+		value: '',
+		emoji: '🍽️',
+	},
+	{
+		label: __( 'American', 'post-kinds-for-indieweb' ),
+		value: 'american',
+		emoji: '🍔',
+	},
+	{
+		label: __( 'Chinese', 'post-kinds-for-indieweb' ),
+		value: 'chinese',
+		emoji: '🥡',
+	},
+	{
+		label: __( 'French', 'post-kinds-for-indieweb' ),
+		value: 'french',
+		emoji: '🥐',
+	},
+	{
+		label: __( 'Indian', 'post-kinds-for-indieweb' ),
+		value: 'indian',
+		emoji: '🍛',
+	},
+	{
+		label: __( 'Italian', 'post-kinds-for-indieweb' ),
+		value: 'italian',
+		emoji: '🍝',
+	},
+	{
+		label: __( 'Japanese', 'post-kinds-for-indieweb' ),
+		value: 'japanese',
+		emoji: '🍱',
+	},
+	{
+		label: __( 'Korean', 'post-kinds-for-indieweb' ),
+		value: 'korean',
+		emoji: '🍜',
+	},
+	{
+		label: __( 'Mexican', 'post-kinds-for-indieweb' ),
+		value: 'mexican',
+		emoji: '🌮',
+	},
+	{
+		label: __( 'Thai', 'post-kinds-for-indieweb' ),
+		value: 'thai',
+		emoji: '🍲',
+	},
+	{
+		label: __( 'Vietnamese', 'post-kinds-for-indieweb' ),
+		value: 'vietnamese',
+		emoji: '🍜',
+	},
+	{
+		label: __( 'Mediterranean', 'post-kinds-for-indieweb' ),
+		value: 'mediterranean',
+		emoji: '🥙',
+	},
+	{
+		label: __( 'Seafood', 'post-kinds-for-indieweb' ),
+		value: 'seafood',
+		emoji: '🦐',
+	},
+	{
+		label: __( 'Breakfast', 'post-kinds-for-indieweb' ),
+		value: 'breakfast',
+		emoji: '🥞',
+	},
+	{
+		label: __( 'Dessert', 'post-kinds-for-indieweb' ),
+		value: 'dessert',
+		emoji: '🍰',
+	},
+	{
+		label: __( 'Other', 'post-kinds-for-indieweb' ),
+		value: 'other',
+		emoji: '🍽️',
+	},
+];
+
 function EatFields() {
 	const eatLocationId = useId();
 	const {
 		eatName,
+		eatCuisine,
 		eatType,
 		eatPhoto,
 		eatRating,
+		eatNotes,
+		eatRestaurantUrl,
 		eatLocationName,
 		eatLocationAddress,
 		eatLocationLocality,
@@ -2068,9 +2448,12 @@ function EatFields() {
 		const getKindMeta = select( STORE_NAME ).getKindMeta;
 		return {
 			eatName: getKindMeta( 'eat_name' ),
+			eatCuisine: getKindMeta( 'eat_cuisine' ),
 			eatType: getKindMeta( 'eat_type' ),
 			eatPhoto: getKindMeta( 'eat_photo' ),
 			eatRating: getKindMeta( 'eat_rating' ),
+			eatNotes: getKindMeta( 'eat_notes' ),
+			eatRestaurantUrl: getKindMeta( 'eat_restaurant_url' ),
 			eatLocationName: getKindMeta( 'eat_location_name' ),
 			eatLocationAddress: getKindMeta( 'eat_location_address' ),
 			eatLocationLocality: getKindMeta( 'eat_location_locality' ),
@@ -2082,6 +2465,11 @@ function EatFields() {
 	}, [] );
 
 	const { updateKindMeta } = useDispatch( STORE_NAME );
+
+	const cuisineOptions = EAT_CUISINE_TYPES.map( ( type ) => ( {
+		label: `${ type.emoji } ${ type.label }`,
+		value: type.value,
+	} ) );
 
 	const typeOptions = [
 		{ label: __( 'Select type…', 'post-kinds-for-indieweb' ), value: '' },
@@ -2109,12 +2497,24 @@ function EatFields() {
 					'What did you eat?',
 					'post-kinds-for-indieweb'
 				) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
+			<SelectControl
+				label={ __( 'Cuisine', 'post-kinds-for-indieweb' ) }
+				value={ eatCuisine }
+				options={ cuisineOptions }
+				onChange={ ( value ) => updateKindMeta( 'eat_cuisine', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<SelectControl
 				label={ __( 'Meal Type', 'post-kinds-for-indieweb' ) }
 				value={ eatType }
 				options={ typeOptions }
 				onChange={ ( value ) => updateKindMeta( 'eat_type', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<RangeControl
 				label={ __( 'Rating', 'post-kinds-for-indieweb' ) }
@@ -2124,6 +2524,8 @@ function EatFields() {
 				max={ 5 }
 				step={ 0.5 }
 				withInputField
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Photo URL', 'post-kinds-for-indieweb' ) }
@@ -2131,6 +2533,16 @@ function EatFields() {
 				value={ eatPhoto }
 				onChange={ ( value ) => updateKindMeta( 'eat_photo', value ) }
 				placeholder="https://"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
+			<TextControl
+				label={ __( 'Notes', 'post-kinds-for-indieweb' ) }
+				value={ eatNotes }
+				onChange={ ( value ) => updateKindMeta( 'eat_notes', value ) }
+				placeholder={ __( 'How was it?', 'post-kinds-for-indieweb' ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 
 			{ /* Location Section */ }
@@ -2152,6 +2564,8 @@ function EatFields() {
 							'Where did you eat?',
 							'post-kinds-for-indieweb'
 						) }
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<TextControl
 						label={ __( 'Address', 'post-kinds-for-indieweb' ) }
@@ -2159,6 +2573,8 @@ function EatFields() {
 						onChange={ ( value ) =>
 							updateKindMeta( 'eat_location_address', value )
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<Flex>
 						<TextControl
@@ -2167,6 +2583,8 @@ function EatFields() {
 							onChange={ ( value ) =>
 								updateKindMeta( 'eat_location_locality', value )
 							}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
 						/>
 						<TextControl
 							label={ __(
@@ -2177,6 +2595,8 @@ function EatFields() {
 							onChange={ ( value ) =>
 								updateKindMeta( 'eat_location_region', value )
 							}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
 						/>
 					</Flex>
 					<TextControl
@@ -2185,6 +2605,19 @@ function EatFields() {
 						onChange={ ( value ) =>
 							updateKindMeta( 'eat_location_country', value )
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+					/>
+					<TextControl
+						label={ __( 'Website URL', 'post-kinds-for-indieweb' ) }
+						type="url"
+						value={ eatRestaurantUrl }
+						onChange={ ( value ) =>
+							updateKindMeta( 'eat_restaurant_url', value )
+						}
+						placeholder="https://"
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<Flex>
 						<TextControl
@@ -2201,6 +2634,8 @@ function EatFields() {
 							}
 							type="number"
 							step="0.0000001"
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
 						/>
 						<TextControl
 							label={ __(
@@ -2216,6 +2651,8 @@ function EatFields() {
 							}
 							type="number"
 							step="0.0000001"
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
 						/>
 					</Flex>
 				</Flex>
@@ -2297,12 +2734,16 @@ function DrinkFields() {
 					'What are you drinking?',
 					'post-kinds-for-indieweb'
 				) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<SelectControl
 				label={ __( 'Type', 'post-kinds-for-indieweb' ) }
 				value={ drinkType }
 				options={ typeOptions }
 				onChange={ ( value ) => updateKindMeta( 'drink_type', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Brewery/Brand', 'post-kinds-for-indieweb' ) }
@@ -2310,6 +2751,8 @@ function DrinkFields() {
 				onChange={ ( value ) =>
 					updateKindMeta( 'drink_brewery', value )
 				}
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<RangeControl
 				label={ __( 'Rating', 'post-kinds-for-indieweb' ) }
@@ -2321,6 +2764,8 @@ function DrinkFields() {
 				max={ 5 }
 				step={ 0.5 }
 				withInputField
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Photo URL', 'post-kinds-for-indieweb' ) }
@@ -2328,6 +2773,8 @@ function DrinkFields() {
 				value={ drinkPhoto }
 				onChange={ ( value ) => updateKindMeta( 'drink_photo', value ) }
 				placeholder="https://"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 
 			{ /* Location Section */ }
@@ -2349,6 +2796,8 @@ function DrinkFields() {
 							'Where are you drinking?',
 							'post-kinds-for-indieweb'
 						) }
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<TextControl
 						label={ __( 'Address', 'post-kinds-for-indieweb' ) }
@@ -2356,6 +2805,8 @@ function DrinkFields() {
 						onChange={ ( value ) =>
 							updateKindMeta( 'drink_location_address', value )
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<Flex>
 						<TextControl
@@ -2367,6 +2818,8 @@ function DrinkFields() {
 									value
 								)
 							}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
 						/>
 						<TextControl
 							label={ __(
@@ -2377,6 +2830,8 @@ function DrinkFields() {
 							onChange={ ( value ) =>
 								updateKindMeta( 'drink_location_region', value )
 							}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
 						/>
 					</Flex>
 					<TextControl
@@ -2385,6 +2840,8 @@ function DrinkFields() {
 						onChange={ ( value ) =>
 							updateKindMeta( 'drink_location_country', value )
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<Flex>
 						<TextControl
@@ -2401,6 +2858,8 @@ function DrinkFields() {
 							}
 							type="number"
 							step="0.0000001"
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
 						/>
 						<TextControl
 							label={ __(
@@ -2416,6 +2875,8 @@ function DrinkFields() {
 							}
 							type="number"
 							step="0.0000001"
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
 						/>
 					</Flex>
 				</Flex>
@@ -2458,6 +2919,8 @@ function FavoriteFields() {
 				onChange={ ( value ) =>
 					updateKindMeta( 'favorite_name', value )
 				}
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'URL', 'post-kinds-for-indieweb' ) }
@@ -2467,6 +2930,8 @@ function FavoriteFields() {
 					updateKindMeta( 'favorite_url', value )
 				}
 				placeholder="https://"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<RangeControl
 				label={ __( 'Rating', 'post-kinds-for-indieweb' ) }
@@ -2478,6 +2943,8 @@ function FavoriteFields() {
 				max={ 5 }
 				step={ 0.5 }
 				withInputField
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 		</Flex>
 	);
@@ -2526,16 +2993,22 @@ function JamFields() {
 				label={ __( 'Track', 'post-kinds-for-indieweb' ) }
 				value={ jamTrack }
 				onChange={ ( value ) => updateKindMeta( 'jam_track', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Artist', 'post-kinds-for-indieweb' ) }
 				value={ jamArtist }
 				onChange={ ( value ) => updateKindMeta( 'jam_artist', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Album', 'post-kinds-for-indieweb' ) }
 				value={ jamAlbum }
 				onChange={ ( value ) => updateKindMeta( 'jam_album', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Link', 'post-kinds-for-indieweb' ) }
@@ -2543,6 +3016,8 @@ function JamFields() {
 				value={ jamUrl }
 				onChange={ ( value ) => updateKindMeta( 'jam_url', value ) }
 				placeholder="https://open.spotify.com/..."
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Cover Image URL', 'post-kinds-for-indieweb' ) }
@@ -2550,6 +3025,8 @@ function JamFields() {
 				value={ jamCover }
 				onChange={ ( value ) => updateKindMeta( 'jam_cover', value ) }
 				placeholder="https://"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 		</Flex>
 	);
@@ -2616,6 +3093,8 @@ function WishFields() {
 					'What do you wish for?',
 					'post-kinds-for-indieweb'
 				) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'URL', 'post-kinds-for-indieweb' ) }
@@ -2623,12 +3102,16 @@ function WishFields() {
 				value={ wishUrl }
 				onChange={ ( value ) => updateKindMeta( 'wish_url', value ) }
 				placeholder="https://"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<SelectControl
 				label={ __( 'Type', 'post-kinds-for-indieweb' ) }
 				value={ wishType }
 				options={ typeOptions }
 				onChange={ ( value ) => updateKindMeta( 'wish_type', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<SelectControl
 				label={ __( 'Priority', 'post-kinds-for-indieweb' ) }
@@ -2637,6 +3120,8 @@ function WishFields() {
 				onChange={ ( value ) =>
 					updateKindMeta( 'wish_priority', value )
 				}
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Photo URL', 'post-kinds-for-indieweb' ) }
@@ -2644,6 +3129,8 @@ function WishFields() {
 				value={ wishPhoto }
 				onChange={ ( value ) => updateKindMeta( 'wish_photo', value ) }
 				placeholder="https://"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 		</Flex>
 	);
@@ -2700,6 +3187,8 @@ function MoodFields() {
 				onChange={ ( value ) => updateKindMeta( 'mood_emoji', value ) }
 				placeholder="😊"
 				maxLength={ 10 }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Mood Label', 'post-kinds-for-indieweb' ) }
@@ -2709,6 +3198,8 @@ function MoodFields() {
 					'How are you feeling?',
 					'post-kinds-for-indieweb'
 				) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<SelectControl
 				label={ __( 'Level (1–5)', 'post-kinds-for-indieweb' ) }
@@ -2717,6 +3208,8 @@ function MoodFields() {
 				onChange={ ( value ) =>
 					updateKindMeta( 'mood_rating', parseInt( value ) || 0 )
 				}
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 		</Flex>
 	);
@@ -2774,6 +3267,8 @@ function AcquisitionFields() {
 					'What did you get?',
 					'post-kinds-for-indieweb'
 				) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'URL', 'post-kinds-for-indieweb' ) }
@@ -2783,6 +3278,8 @@ function AcquisitionFields() {
 					updateKindMeta( 'acquisition_url', value )
 				}
 				placeholder="https://"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Price', 'post-kinds-for-indieweb' ) }
@@ -2791,6 +3288,8 @@ function AcquisitionFields() {
 					updateKindMeta( 'acquisition_price', value )
 				}
 				placeholder="$0.00"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<RangeControl
 				label={ __( 'Rating', 'post-kinds-for-indieweb' ) }
@@ -2802,6 +3301,8 @@ function AcquisitionFields() {
 				max={ 5 }
 				step={ 0.5 }
 				withInputField
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Photo URL', 'post-kinds-for-indieweb' ) }
@@ -2811,6 +3312,8 @@ function AcquisitionFields() {
 					updateKindMeta( 'acquisition_photo', value )
 				}
 				placeholder="https://"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 		</Flex>
 	);
@@ -2858,6 +3361,8 @@ function RecipeFields() {
 				label={ __( 'Recipe Name', 'post-kinds-for-indieweb' ) }
 				value={ recipeName }
 				onChange={ ( value ) => updateKindMeta( 'recipe_name', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Yield/Servings', 'post-kinds-for-indieweb' ) }
@@ -2866,6 +3371,8 @@ function RecipeFields() {
 					updateKindMeta( 'recipe_yield', value )
 				}
 				placeholder={ __( '4 servings', 'post-kinds-for-indieweb' ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Total Time', 'post-kinds-for-indieweb' ) }
@@ -2881,6 +3388,8 @@ function RecipeFields() {
 					'Format: PT1H30M = 1 hour 30 minutes',
 					'post-kinds-for-indieweb'
 				) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 			<TextControl
 				label={ __( 'Recipe Source URL', 'post-kinds-for-indieweb' ) }
@@ -2888,6 +3397,8 @@ function RecipeFields() {
 				value={ recipeUrl }
 				onChange={ ( value ) => updateKindMeta( 'recipe_url', value ) }
 				placeholder="https://"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 		</Flex>
 	);

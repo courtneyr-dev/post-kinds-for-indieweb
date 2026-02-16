@@ -1,10 +1,10 @@
 {
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 3,
-  "name": "post-kinds-for-indieweb/checkins-feed",
+  "name": "post-kinds-indieweb/checkins-feed",
   "version": "1.2.0",
   "title": "Check-ins Feed",
-  "category": "widgets",
+  "category": "post-kinds-indieweb",
   "icon": "location-alt",
   "description": "Display a feed of recent check-ins with optional map.",
   "textdomain": "post-kinds-for-indieweb",
@@ -67,8 +67,5 @@
       "fontSize": true
     }
   },
-  "render": "file:./render.php",
-  "editorScript": "file:./index.js",
-  "editorStyle": "file:./editor.css",
-  "style": "file:./style.css"
+  "render": "file:./render.php"
 }

@@ -64,9 +64,10 @@ class Foursquare extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials   = get_option( 'post_kinds_indieweb_api_credentials', [] );
-		$fs_creds      = $credentials['foursquare'] ?? [];
-		$this->api_key = $fs_creds['api_key'] ?? '';
+		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$fs_creds    = $credentials['foursquare'] ?? [];
+		// Check both api_key and access_token for flexibility.
+		$this->api_key = $fs_creds['api_key'] ?? $fs_creds['access_token'] ?? '';
 	}
 
 	/**
@@ -96,11 +97,15 @@ class Foursquare extends API_Base {
 			$url .= '?' . http_build_query( $params );
 		}
 
+		// Allow SSL verification bypass for local development.
+		$sslverify = ! ( defined( 'WP_LOCAL_DEV' ) && WP_LOCAL_DEV );
+
 		$response = wp_remote_get(
 			$url,
 			[
-				'timeout' => 30,
-				'headers' => $this->get_default_headers(),
+				'timeout'   => 30,
+				'headers'   => $this->get_default_headers(),
+				'sslverify' => $sslverify,
 			]
 		);
 
@@ -147,11 +152,11 @@ class Foursquare extends API_Base {
 	/**
 	 * Search for places/venues.
 	 *
-	 * @param string      $query    Search query.
-	 * @param string|null $near     Location (city, address, etc).
-	 * @param float|null  $lat      Latitude.
-	 * @param float|null  $lng      Longitude.
+	 * @param string $query   Search query.
+	 * @param mixed  ...$args Optional arguments: near (string|null), lat (float|null), lng (float|null).
 	 * @return array<int, array<string, mixed>> Search results.
+	 *
+	 * phpcs:ignore Generic.Metrics.CyclomaticComplexity.TooHigh -- Complex API response handling.
 	 */
 	public function search( string $query, ...$args ): array {
 		$near = $args[0] ?? null;
@@ -629,7 +634,7 @@ class Foursquare extends API_Base {
 	 * @param bool                 $detailed Whether this is detailed data.
 	 * @return array<string, mixed> Normalized place.
 	 */
-	private function normalize_place( array $place, bool $detailed = false ): array {
+	private function normalize_place( array $place, bool $detailed = false ): array { // phpcs:ignore Generic.Metrics.CyclomaticComplexity.MaxExceeded -- Complex API normalization.
 		$location     = $place['location'] ?? [];
 		$geocodes     = $place['geocodes'] ?? [];
 		$main_geocode = $geocodes['main'] ?? [];

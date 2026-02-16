@@ -155,11 +155,15 @@ abstract class API_Base {
 		// Build URL.
 		$url = $this->build_url( $endpoint, $params );
 
+		// Allow SSL verification bypass for local development.
+		$sslverify = ! ( defined( 'WP_LOCAL_DEV' ) && WP_LOCAL_DEV );
+
 		// Build request args.
 		$args = [
 			'method'     => $method,
 			'timeout'    => $this->timeout,
 			'user-agent' => $this->user_agent,
+			'sslverify'  => $sslverify,
 			'headers'    => array_merge(
 				[
 					'Accept' => 'application/json',
@@ -270,7 +274,7 @@ abstract class API_Base {
 		}
 
 		if ( $last_error ) {
-			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are not output directly.
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are not output directly.
 			throw new \Exception(
 				sprintf(
 					/* translators: 1: API name, 2: Error message */
@@ -279,9 +283,10 @@ abstract class API_Base {
 					esc_html( $last_error->get_error_message() )
 				)
 			);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 
-		// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are not output directly.
+		// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are not output directly.
 		throw new \Exception(
 			sprintf(
 				/* translators: %s: API name */
@@ -289,6 +294,7 @@ abstract class API_Base {
 				esc_html( $this->api_name )
 			)
 		);
+		// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 	}
 
 	/**
@@ -559,12 +565,12 @@ abstract class API_Base {
 	/**
 	 * Get option value.
 	 *
-	 * @param string $key     Option key (without prefix).
-	 * @param mixed  $default Default value.
+	 * @param string $key           Option key (without prefix).
+	 * @param mixed  $default_value Default value.
 	 * @return mixed Option value.
 	 */
-	protected function get_option( string $key, $default = '' ) {
-		return get_option( 'post_kinds_indieweb_' . $key, $default );
+	protected function get_option( string $key, $default_value = '' ) {
+		return get_option( 'post_kinds_indieweb_' . $key, $default_value );
 	}
 
 	/**

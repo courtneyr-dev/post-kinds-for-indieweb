@@ -349,7 +349,6 @@ class API_Settings {
 			'video'       => __( 'Movies & TV', 'post-kinds-for-indieweb' ),
 			'books'       => __( 'Books', 'post-kinds-for-indieweb' ),
 			'games'       => __( 'Games', 'post-kinds-for-indieweb' ),
-			'audio'       => __( 'Podcasts', 'post-kinds-for-indieweb' ),
 			'location'    => __( 'Location', 'post-kinds-for-indieweb' ),
 			'aggregators' => __( 'Aggregators', 'post-kinds-for-indieweb' ),
 		];

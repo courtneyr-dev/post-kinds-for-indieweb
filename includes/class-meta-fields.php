@@ -671,6 +671,24 @@ class Meta_Fields {
 				'sanitize'    => [ $this, 'sanitize_coordinate' ],
 				'default'     => 0,
 			],
+			'eat_cuisine'             => [
+				'type'        => 'string',
+				'description' => __( 'Cuisine type (american, italian, etc.).', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'eat_notes'               => [
+				'type'        => 'string',
+				'description' => __( 'Notes about the meal.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'eat_restaurant_url'      => [
+				'type'        => 'string',
+				'description' => __( 'Restaurant website URL.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			],
 
 			// Play Fields (gaming).
 			'play_title'              => [

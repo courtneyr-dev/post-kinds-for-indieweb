@@ -1077,7 +1077,8 @@ class REST_API {
 				}
 			}
 		} catch ( \Exception $e ) {
-			// Fall through to MusicBrainz.
+			// Fall through to MusicBrainz - exception is expected.
+			unset( $e );
 		}
 
 		// Try MusicBrainz as fallback (no API key required).
@@ -1097,7 +1098,8 @@ class REST_API {
 				}
 			}
 		} catch ( \Exception $e ) {
-			// Lookup failed, return null.
+			// Lookup failed, return null - exception is expected.
+			unset( $e );
 		}
 
 		return null;
@@ -1173,9 +1175,8 @@ class REST_API {
 		if ( preg_match( '/^(.+?)\s*[-–]\s*(.+)$/', $title, $matches ) ) {
 			$result['artist'] = trim( $matches[1] );
 			$result['track']  = trim( $matches[2] );
-		}
-		// Try "Track by Artist" format.
-		elseif ( preg_match( '/^(.+?)\s+by\s+(.+)$/i', $title, $matches ) ) {
+		} elseif ( preg_match( '/^(.+?)\s+by\s+(.+)$/i', $title, $matches ) ) {
+			// Try "Track by Artist" format.
 			$result['track']  = trim( $matches[1] );
 			$result['artist'] = trim( $matches[2] );
 		}
@@ -1192,7 +1193,7 @@ class REST_API {
 	private function parse_url_directly( string $url ): ?array {
 		$host = wp_parse_url( $url, PHP_URL_HOST );
 
-		// Spotify: open.spotify.com/track/ID
+		// Spotify: open.spotify.com/track/ID.
 		if ( strpos( $host, 'spotify.com' ) !== false ) {
 			if ( preg_match( '/\/(track|album|artist)\/([a-zA-Z0-9]+)/', $url, $matches ) ) {
 				return [
@@ -1324,22 +1325,22 @@ class REST_API {
 		// Normalize host (remove www.).
 		$host = preg_replace( '/^www\./', '', $host );
 
-		// IMDB: imdb.com/title/tt1234567
+		// IMDB: imdb.com/title/tt1234567.
 		if ( 'imdb.com' === $host || 'm.imdb.com' === $host ) {
 			return $this->parse_imdb_url( $path );
 		}
 
-		// TMDB: themoviedb.org/movie/123 or /tv/456
+		// TMDB: themoviedb.org/movie/123 or /tv/456.
 		if ( 'themoviedb.org' === $host ) {
 			return $this->parse_tmdb_url( $path );
 		}
 
-		// Trakt: trakt.tv/movies/slug or /shows/slug
+		// Trakt: trakt.tv/movies/slug or /shows/slug.
 		if ( 'trakt.tv' === $host ) {
 			return $this->parse_trakt_url( $path );
 		}
 
-		// Letterboxd: letterboxd.com/film/slug
+		// Letterboxd: letterboxd.com/film/slug.
 		if ( 'letterboxd.com' === $host ) {
 			return $this->parse_letterboxd_url( $path, $url );
 		}
@@ -1371,11 +1372,13 @@ class REST_API {
 
 		// Check if TMDB is enabled.
 		if ( ! $is_enabled ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are not output directly.
 			throw new \Exception( __( 'IMDB lookup requires TMDB to be enabled. Enable TMDB in Settings > API Connections.', 'post-kinds-for-indieweb' ) );
 		}
 
 		// IMDB lookup requires TMDB credentials.
 		if ( ! $access_token && ! $api_key ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are not output directly.
 			throw new \Exception( __( 'IMDB lookup requires TMDB API credentials. Add your TMDB API Read Access Token in Settings > API Connections.', 'post-kinds-for-indieweb' ) );
 		}
 
@@ -1401,13 +1404,15 @@ class REST_API {
 		);
 
 		if ( is_wp_error( $response ) ) {
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are not output directly.
 			throw new \Exception(
 				sprintf(
 					/* translators: %s: Error message */
 					__( 'TMDB API request failed: %s', 'post-kinds-for-indieweb' ),
-					$response->get_error_message()
+					esc_html( $response->get_error_message() )
 				)
 			);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 
 		$status_code = wp_remote_retrieve_response_code( $response );
@@ -1417,26 +1422,30 @@ class REST_API {
 		// Check for HTTP errors.
 		if ( $status_code >= 400 ) {
 			$error_message = $data['status_message'] ?? __( 'Unknown API error', 'post-kinds-for-indieweb' );
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are not output directly.
 			throw new \Exception(
 				sprintf(
 					/* translators: 1: HTTP status code, 2: Error message */
 					__( 'TMDB API error (%1$d): %2$s', 'post-kinds-for-indieweb' ),
 					$status_code,
-					$error_message
+					esc_html( $error_message )
 				)
 			);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 
 		// Check for API errors in response body.
 		if ( isset( $data['success'] ) && false === $data['success'] ) {
 			$error_message = $data['status_message'] ?? __( 'API returned an error', 'post-kinds-for-indieweb' );
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are not output directly.
 			throw new \Exception(
 				sprintf(
 					/* translators: %s: Error message */
 					__( 'TMDB error: %s', 'post-kinds-for-indieweb' ),
-					$error_message
+					esc_html( $error_message )
 				)
 			);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 
 		// Check movie results first.
@@ -1445,20 +1454,22 @@ class REST_API {
 			return $this->normalize_tmdb_result( $movie, 'movie', $imdb_id );
 		}
 
-		// Then TV results.
+		// Check TV results.
 		if ( ! empty( $data['tv_results'][0] ) ) {
 			$tv = $data['tv_results'][0];
 			return $this->normalize_tmdb_result( $tv, 'tv', $imdb_id );
 		}
 
 		// No results found for this IMDB ID.
+		// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are not output directly.
 		throw new \Exception(
 			sprintf(
 				/* translators: %s: IMDB ID */
 				__( 'No movie or TV show found for IMDB ID: %s', 'post-kinds-for-indieweb' ),
-				$imdb_id
+				esc_html( $imdb_id )
 			)
 		);
+		// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 	}
 
 	/**
@@ -1470,7 +1481,7 @@ class REST_API {
 	private function parse_tmdb_url( string $path ): ?array {
 		$tmdb = new TMDB();
 
-		// Movie: /movie/123 or /movie/123-title-slug
+		// Movie: /movie/123 or /movie/123-title-slug.
 		if ( preg_match( '/\/movie\/(\d+)/', $path, $matches ) ) {
 			$result = $tmdb->get_movie( (int) $matches[1] );
 			if ( $result ) {
@@ -1478,7 +1489,7 @@ class REST_API {
 			}
 		}
 
-		// TV: /tv/456 or /tv/456-title-slug
+		// TV: /tv/456 or /tv/456-title-slug.
 		if ( preg_match( '/\/tv\/(\d+)/', $path, $matches ) ) {
 			$result = $tmdb->get_tv( (int) $matches[1] );
 			if ( $result ) {
@@ -1498,7 +1509,7 @@ class REST_API {
 	private function parse_trakt_url( string $path ): ?array {
 		$trakt = new Trakt();
 
-		// Movie: /movies/slug-name or /movies/slug-name-2010
+		// Movie: /movies/slug-name or /movies/slug-name-2010.
 		if ( preg_match( '/\/movies\/([^\/]+)/', $path, $matches ) ) {
 			$result = $trakt->get_movie( $matches[1] );
 			if ( $result ) {
@@ -1506,7 +1517,7 @@ class REST_API {
 			}
 		}
 
-		// TV Show: /shows/slug-name
+		// TV Show: /shows/slug-name.
 		if ( preg_match( '/\/shows\/([^\/]+)/', $path, $matches ) ) {
 			$result = $trakt->get_show( $matches[1] );
 			if ( $result ) {
@@ -1527,7 +1538,7 @@ class REST_API {
 	 * @return array|null Movie/TV metadata.
 	 */
 	private function parse_letterboxd_url( string $path, string $url ): ?array {
-		// Film: /film/slug or /film/slug/
+		// Film: /film/slug or /film/slug/.
 		if ( preg_match( '/\/film\/([^\/]+)/', $path, $matches ) ) {
 			// Fetch the Letterboxd page and look for TMDB link.
 			$response = wp_remote_get(
@@ -1555,7 +1566,7 @@ class REST_API {
 				}
 			}
 
-			// Alternative: look for themoviedb.org link.
+			// Alternative: look for themoviedb.org link on the page.
 			if ( preg_match( '/href="https?:\/\/(?:www\.)?themoviedb\.org\/movie\/(\d+)"/', $body, $tmdb_match ) ) {
 				$tmdb   = new TMDB();
 				$result = $tmdb->get_movie( (int) $tmdb_match[1] );
@@ -1569,7 +1580,7 @@ class REST_API {
 			// Fallback: Try to extract title from page and search TMDB.
 			if ( preg_match( '/<meta property="og:title" content="([^"]+)"/', $body, $title_match ) ) {
 				$title = html_entity_decode( $title_match[1], ENT_QUOTES, 'UTF-8' );
-				// Remove year if present: "Movie Title (2023)"
+				// Remove year if present: "Movie Title (2023)".
 				$title = preg_replace( '/\s*\(\d{4}\)\s*$/', '', $title );
 
 				$tmdb    = new TMDB();
@@ -1792,7 +1803,7 @@ class REST_API {
 	 * @param \WP_REST_Request $request Request object.
 	 * @return \WP_REST_Response|\WP_Error
 	 */
-	public function lookup_game( \WP_REST_Request $request ) {
+	public function lookup_game( \WP_REST_Request $request ) { // phpcs:ignore Generic.Metrics.CyclomaticComplexity.MaxExceeded -- Complex multi-source lookup.
 		$query  = $request->get_param( 'q' );
 		$source = $request->get_param( 'source' ) ?? 'bgg';
 		$type   = $request->get_param( 'type' ) ?? 'boardgame';
@@ -1954,8 +1965,8 @@ class REST_API {
 	public function location_search( \WP_REST_Request $request ) {
 		$query = $request->get_param( 'query' );
 
-		// Check throttle.
-		$throttle_key = 'post_kinds_location_throttle_' . get_current_user_id();
+		// Check throttle - use separate key for Nominatim to allow fallback from Foursquare.
+		$throttle_key = 'post_kinds_nominatim_throttle_' . get_current_user_id();
 		$last_request = get_transient( $throttle_key );
 
 		if ( $last_request && ( time() - $last_request ) < 1 ) {
@@ -2048,8 +2059,8 @@ class REST_API {
 		$lat   = $request->get_param( 'lat' );
 		$lon   = $request->get_param( 'lon' );
 
-		// Check throttle.
-		$throttle_key = 'post_kinds_location_throttle_' . get_current_user_id();
+		// Check throttle - use separate key for Foursquare.
+		$throttle_key = 'post_kinds_foursquare_throttle_' . get_current_user_id();
 		$last_request = get_transient( $throttle_key );
 
 		if ( $last_request && ( time() - $last_request ) < 1 ) {
@@ -2142,16 +2153,16 @@ class REST_API {
 	private function get_api_for_type( string $type, ?string $source = null ): ?object {
 		switch ( $type ) {
 			case 'music':
-				return $source === 'lastfm' ? new LastFM() : new MusicBrainz();
+				return 'lastfm' === $source ? new LastFM() : new MusicBrainz();
 			case 'movie':
 			case 'tv':
-				return $source === 'trakt' ? new Trakt() : new TMDB();
+				return 'trakt' === $source ? new Trakt() : new TMDB();
 			case 'book':
-				return $source === 'hardcover' ? new Hardcover() : new OpenLibrary();
+				return 'hardcover' === $source ? new Hardcover() : new OpenLibrary();
 			case 'podcast':
 				return new PodcastIndex();
 			case 'venue':
-				return $source === 'nominatim' ? new Nominatim() : new Foursquare();
+				return 'nominatim' === $source ? new Nominatim() : new Foursquare();
 			default:
 				return null;
 		}
@@ -2323,6 +2334,7 @@ class REST_API {
 	 *
 	 * @param \WP_REST_Request $request Request object.
 	 * @return \WP_REST_Response|\WP_Error
+	 * @throws \Exception If token exchange fails.
 	 */
 	public function oauth_callback( \WP_REST_Request $request ) {
 		$service = $request->get_param( 'service' );
@@ -2383,6 +2395,7 @@ class REST_API {
 	 *
 	 * @param \WP_REST_Request $request Request object.
 	 * @return \WP_REST_Response|\WP_Error
+	 * @throws \Exception If service is unknown.
 	 */
 	public function get_oauth_url( \WP_REST_Request $request ) {
 		$service = $request->get_param( 'service' );
@@ -2560,7 +2573,7 @@ class REST_API {
 		foreach ( $settings as $key => $value ) {
 			if ( in_array( $key, $allowed_keys, true ) ) {
 				// Don't overwrite with masked values.
-				if ( $value !== '••••••••' ) {
+				if ( '••••••••' !== $value ) {
 					update_option( 'post_kinds_indieweb_' . $key, sanitize_text_field( $value ) );
 				}
 			}
@@ -2578,6 +2591,7 @@ class REST_API {
 	 *
 	 * @param \WP_REST_Request $request Request object.
 	 * @return \WP_REST_Response|\WP_Error
+	 * @throws \Exception If service is unknown.
 	 */
 	public function test_api_connection( \WP_REST_Request $request ) {
 		$service = $request->get_param( 'service' );
@@ -2932,7 +2946,8 @@ class REST_API {
 	 * @return array Formatted check-in data.
 	 */
 	private function format_checkin_for_response( \WP_Post $post ): array {
-		$privacy = get_post_meta( $post->ID, '_postkind_geo_privacy', true ) ?: 'approximate';
+		$privacy_value = get_post_meta( $post->ID, '_postkind_geo_privacy', true );
+		$privacy       = ! empty( $privacy_value ) ? $privacy_value : 'approximate';
 
 		$data = [
 			'id'         => $post->ID,
