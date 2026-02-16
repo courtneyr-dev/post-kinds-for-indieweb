@@ -94,9 +94,9 @@ This project uses Semantic Versioning:
 
 ### Links
 
-- [Repository](https://github.com/courtneyr-dev/reactions-for-indieweb)
-- [Issues](https://github.com/courtneyr-dev/reactions-for-indieweb/issues)
+- [Repository](https://github.com/courtneyr-dev/post-kinds-for-indieweb)
+- [Issues](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues)
 - [IndieWeb Wiki](https://indieweb.org/)
 
-[Unreleased]: https://github.com/courtneyr-dev/reactions-for-indieweb/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/courtneyr-dev/reactions-for-indieweb/releases/tag/v1.0.0
+[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/releases/tag/v1.0.0

@@ -224,6 +224,24 @@ class Meta_Fields {
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
+			'listen_rating'           => [
+				'type'        => 'integer',
+				'description' => __( 'Rating for the track (0-5).', 'post-kinds-for-indieweb' ),
+				'sanitize'    => [ $this, 'sanitize_rating' ],
+				'default'     => 0,
+			],
+			'listen_release_date'     => [
+				'type'        => 'string',
+				'description' => __( 'Album release date.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'listen_listened_at'      => [
+				'type'        => 'string',
+				'description' => __( 'When the track was listened to.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
 
 			// Watch Fields.
 			'watch_title'             => [
@@ -254,8 +272,8 @@ class Meta_Fields {
 				'type'        => 'string',
 				'description' => __( 'Watch status: watched, watching, or abandoned.', 'post-kinds-for-indieweb' ),
 				'sanitize'    => [ $this, 'sanitize_watch_status' ],
-				'default'     => 'watched',
-				'enum'        => [ 'watched', 'watching', 'abandoned' ],
+				'default'     => 'to-watch',
+				'enum'        => [ 'to-watch', 'watching', 'watched', 'rewatching', 'abandoned' ],
 			],
 			'watch_spoilers'          => [
 				'type'        => 'boolean',
@@ -267,6 +285,66 @@ class Meta_Fields {
 				'type'        => 'string',
 				'description' => __( 'URL to the film or show page.', 'post-kinds-for-indieweb' ),
 				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			],
+			'watch_rating'            => [
+				'type'        => 'number',
+				'description' => __( 'Rating out of 5.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => [ $this, 'sanitize_rating' ],
+				'default'     => 0,
+			],
+			'watch_review'            => [
+				'type'        => 'string',
+				'description' => __( 'Review or notes about the film/show.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'sanitize_textarea_field',
+				'default'     => '',
+			],
+			'watch_is_rewatch'        => [
+				'type'        => 'boolean',
+				'description' => __( 'Whether this is a rewatch.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'rest_sanitize_boolean',
+				'default'     => false,
+			],
+			'watch_media_type'        => [
+				'type'        => 'string',
+				'description' => __( 'Media type: movie or tv.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => 'movie',
+			],
+			'watch_director'          => [
+				'type'        => 'string',
+				'description' => __( 'Director name.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'watch_imdb_id'           => [
+				'type'        => 'string',
+				'description' => __( 'IMDB ID for the film or show.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'watch_show_title'        => [
+				'type'        => 'string',
+				'description' => __( 'TV show title (for episodes).', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'watch_season'            => [
+				'type'        => 'number',
+				'description' => __( 'Season number.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'absint',
+				'default'     => 0,
+			],
+			'watch_episode'           => [
+				'type'        => 'number',
+				'description' => __( 'Episode number.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'absint',
+				'default'     => 0,
+			],
+			'watch_episode_title'     => [
+				'type'        => 'string',
+				'description' => __( 'Episode title.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
 
@@ -318,6 +396,42 @@ class Meta_Fields {
 				'type'        => 'string',
 				'description' => __( 'URL to the book or article.', 'post-kinds-for-indieweb' ),
 				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			],
+			'read_publisher'          => [
+				'type'        => 'string',
+				'description' => __( 'Publisher name.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'read_publish_date'       => [
+				'type'        => 'string',
+				'description' => __( 'Publication date.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'read_rating'             => [
+				'type'        => 'integer',
+				'description' => __( 'Rating for the book (0-5).', 'post-kinds-for-indieweb' ),
+				'sanitize'    => [ $this, 'sanitize_rating' ],
+				'default'     => 0,
+			],
+			'read_started_at'         => [
+				'type'        => 'string',
+				'description' => __( 'Date started reading.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'read_finished_at'        => [
+				'type'        => 'string',
+				'description' => __( 'Date finished reading.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'read_review'             => [
+				'type'        => 'string',
+				'description' => __( 'Review or notes about the book.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'wp_kses_post',
 				'default'     => '',
 			],
 
@@ -597,6 +711,18 @@ class Meta_Fields {
 				'sanitize'    => [ $this, 'sanitize_coordinate' ],
 				'default'     => 0,
 			],
+			'drink_notes'             => [
+				'type'        => 'string',
+				'description' => __( 'Tasting notes for the drink.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'sanitize_textarea_field',
+				'default'     => '',
+			],
+			'drink_venue_url'         => [
+				'type'        => 'string',
+				'description' => __( 'URL for the venue website.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			],
 
 			// Eat Fields.
 			'eat_name'                => [
@@ -708,7 +834,7 @@ class Meta_Fields {
 				'description' => __( 'Play status: playing, completed, abandoned, backlog.', 'post-kinds-for-indieweb' ),
 				'sanitize'    => [ $this, 'sanitize_play_status' ],
 				'default'     => 'playing',
-				'enum'        => [ 'playing', 'completed', 'abandoned', 'backlog' ],
+				'enum'        => [ 'playing', 'completed', 'abandoned', 'backlog', 'wishlist' ],
 			],
 			'play_hours'              => [
 				'type'        => 'number',
@@ -761,6 +887,18 @@ class Meta_Fields {
 			'play_purchase_url'       => [
 				'type'        => 'string',
 				'description' => __( 'Purchase URL for the game.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			],
+			'play_review'             => [
+				'type'        => 'string',
+				'description' => __( 'Review or notes about the game.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'sanitize_textarea_field',
+				'default'     => '',
+			],
+			'play_game_url'           => [
+				'type'        => 'string',
+				'description' => __( 'URL to the game page.', 'post-kinds-for-indieweb' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
@@ -913,10 +1051,10 @@ class Meta_Fields {
 	 * @return string Sanitized value.
 	 */
 	public function sanitize_watch_status( mixed $value ): string {
-		$valid = [ 'watched', 'watching', 'abandoned' ];
+		$valid = [ 'to-watch', 'watching', 'watched', 'rewatching', 'abandoned' ];
 		$value = sanitize_text_field( (string) $value );
 
-		return in_array( $value, $valid, true ) ? $value : 'watched';
+		return in_array( $value, $valid, true ) ? $value : 'to-watch';
 	}
 
 	/**
@@ -1031,7 +1169,7 @@ class Meta_Fields {
 	 * @return string Sanitized value.
 	 */
 	public function sanitize_play_status( mixed $value ): string {
-		$valid = [ 'playing', 'completed', 'abandoned', 'backlog' ];
+		$valid = [ 'playing', 'completed', 'abandoned', 'backlog', 'wishlist' ];
 		$value = sanitize_text_field( (string) $value );
 
 		return in_array( $value, $valid, true ) ? $value : 'playing';

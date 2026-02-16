@@ -32,12 +32,12 @@ Please try these steps first:
 ### GitHub Issues (Preferred)
 **Best for**: Bug reports, feature requests, documentation issues
 
-[Create an Issue](https://github.com/courtneyr-dev/reactions-for-indieweb/issues/new/choose)
+[Create an Issue](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues/new/choose)
 
 ### GitHub Discussions
 **Best for**: Questions, ideas, general discussion
 
-[Start a Discussion](https://github.com/courtneyr-dev/reactions-for-indieweb/discussions)
+[Start a Discussion](https://github.com/courtneyr-dev/post-kinds-for-indieweb/discussions)
 
 ### IndieWeb Chat
 **Best for**: Real-time help, IndieWeb community

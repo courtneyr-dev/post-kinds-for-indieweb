@@ -730,6 +730,9 @@ function ListenFields() {
 		listenAlbum,
 		listenCover,
 		listenUrl,
+		listenRating,
+		listenReleaseDate,
+		listenListenedAt,
 		isLoading,
 		apiResults,
 	} = useSelect( ( select ) => {
@@ -741,6 +744,9 @@ function ListenFields() {
 			listenAlbum: getKindMeta( 'listen_album' ),
 			listenCover: getKindMeta( 'listen_cover' ),
 			listenUrl: getKindMeta( 'listen_url' ),
+			listenRating: getKindMeta( 'listen_rating' ) || 0,
+			listenReleaseDate: getKindMeta( 'listen_release_date' ),
+			listenListenedAt: getKindMeta( 'listen_listened_at' ),
 			isLoading: store.isApiLoading(),
 			apiResults:
 				store.getApiLookupType() === 'music'
@@ -1000,6 +1006,44 @@ function ListenFields() {
 				__nextHasNoMarginBottom
 				__next40pxDefaultSize
 			/>
+			<TextControl
+				label={ __( 'Release Date', 'post-kinds-for-indieweb' ) }
+				value={ listenReleaseDate }
+				onChange={ ( value ) =>
+					updateKindMeta( 'listen_release_date', value )
+				}
+				type="date"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
+			<RangeControl
+				label={ __( 'Rating', 'post-kinds-for-indieweb' ) }
+				value={ listenRating }
+				onChange={ ( value ) =>
+					updateKindMeta( 'listen_rating', value )
+				}
+				min={ 0 }
+				max={ 5 }
+				step={ 1 }
+				marks
+				withInputField={ false }
+				help={
+					listenRating === 0
+						? __( 'No rating', 'post-kinds-for-indieweb' )
+						: `${ listenRating } / 5`
+				}
+				__nextHasNoMarginBottom
+			/>
+			<TextControl
+				label={ __( 'Listened At', 'post-kinds-for-indieweb' ) }
+				value={ listenListenedAt }
+				onChange={ ( value ) =>
+					updateKindMeta( 'listen_listened_at', value )
+				}
+				type="datetime-local"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
 			<SyndicationControls kind="listen" />
 		</Flex>
 	);
@@ -1025,6 +1069,15 @@ function WatchFields() {
 		watchStatus,
 		watchSpoilers,
 		watchUrl,
+		watchRating,
+		watchReview,
+		watchIsRewatch,
+		watchMediaType,
+		watchDirector,
+		watchShowTitle,
+		watchSeason,
+		watchEpisode,
+		watchEpisodeTitle,
 		isLoading,
 		apiResults,
 	} = useSelect( ( select ) => {
@@ -1037,6 +1090,15 @@ function WatchFields() {
 			watchStatus: getKindMeta( 'watch_status' ),
 			watchSpoilers: getKindMeta( 'watch_spoilers' ),
 			watchUrl: getKindMeta( 'watch_url' ),
+			watchRating: getKindMeta( 'watch_rating' ),
+			watchReview: getKindMeta( 'watch_review' ),
+			watchIsRewatch: getKindMeta( 'watch_is_rewatch' ),
+			watchMediaType: getKindMeta( 'watch_media_type' ),
+			watchDirector: getKindMeta( 'watch_director' ),
+			watchShowTitle: getKindMeta( 'watch_show_title' ),
+			watchSeason: getKindMeta( 'watch_season' ),
+			watchEpisode: getKindMeta( 'watch_episode' ),
+			watchEpisodeTitle: getKindMeta( 'watch_episode_title' ),
 			isLoading: store.isApiLoading(),
 			apiResults:
 				store.getApiLookupType() === 'movie'
@@ -1263,6 +1325,26 @@ function WatchFields() {
 				</div>
 			) }
 
+			<SelectControl
+				label={ __( 'Media Type', 'post-kinds-for-indieweb' ) }
+				value={ watchMediaType || 'movie' }
+				onChange={ ( value ) =>
+					updateKindMeta( 'watch_media_type', value )
+				}
+				options={ [
+					{
+						label: __( '🎬 Movie', 'post-kinds-for-indieweb' ),
+						value: 'movie',
+					},
+					{
+						label: __( '📺 TV Show', 'post-kinds-for-indieweb' ),
+						value: 'tv',
+					},
+				] }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
+
 			<TextControl
 				label={ __( 'Title', 'post-kinds-for-indieweb' ) }
 				value={ watchTitle }
@@ -1270,30 +1352,111 @@ function WatchFields() {
 				__nextHasNoMarginBottom
 				__next40pxDefaultSize
 			/>
-			<TextControl
-				label={ __( 'Year', 'post-kinds-for-indieweb' ) }
-				value={ watchYear }
-				onChange={ ( value ) => updateKindMeta( 'watch_year', value ) }
-				__nextHasNoMarginBottom
-				__next40pxDefaultSize
-			/>
+
+			{ /* TV Episode fields - only show when media type is TV */ }
+			{ watchMediaType === 'tv' && (
+				<>
+					<TextControl
+						label={ __( 'Show Title', 'post-kinds-for-indieweb' ) }
+						value={ watchShowTitle }
+						onChange={ ( value ) =>
+							updateKindMeta( 'watch_show_title', value )
+						}
+						placeholder={ __(
+							'e.g. Breaking Bad',
+							'post-kinds-for-indieweb'
+						) }
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+					/>
+					<Flex>
+						<TextControl
+							label={ __( 'Season', 'post-kinds-for-indieweb' ) }
+							type="number"
+							min="1"
+							value={ watchSeason || '' }
+							onChange={ ( value ) =>
+								updateKindMeta(
+									'watch_season',
+									parseInt( value ) || 0
+								)
+							}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+						<TextControl
+							label={ __( 'Episode', 'post-kinds-for-indieweb' ) }
+							type="number"
+							min="1"
+							value={ watchEpisode || '' }
+							onChange={ ( value ) =>
+								updateKindMeta(
+									'watch_episode',
+									parseInt( value ) || 0
+								)
+							}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+					</Flex>
+					<TextControl
+						label={ __(
+							'Episode Title',
+							'post-kinds-for-indieweb'
+						) }
+						value={ watchEpisodeTitle }
+						onChange={ ( value ) =>
+							updateKindMeta( 'watch_episode_title', value )
+						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+					/>
+				</>
+			) }
+
+			<Flex>
+				<TextControl
+					label={ __( 'Year', 'post-kinds-for-indieweb' ) }
+					value={ watchYear }
+					onChange={ ( value ) =>
+						updateKindMeta( 'watch_year', value )
+					}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+				<TextControl
+					label={ __( 'Director', 'post-kinds-for-indieweb' ) }
+					value={ watchDirector }
+					onChange={ ( value ) =>
+						updateKindMeta( 'watch_director', value )
+					}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+			</Flex>
+
 			<SelectControl
 				label={ __( 'Status', 'post-kinds-for-indieweb' ) }
-				value={ watchStatus }
+				value={ watchStatus || 'to-watch' }
 				onChange={ ( value ) =>
 					updateKindMeta( 'watch_status', value )
 				}
 				options={ [
 					{
+						label: __( 'To Watch', 'post-kinds-for-indieweb' ),
+						value: 'to-watch',
+					},
+					{
+						label: __( 'Watching', 'post-kinds-for-indieweb' ),
+						value: 'watching',
+					},
+					{
 						label: __( 'Watched', 'post-kinds-for-indieweb' ),
 						value: 'watched',
 					},
 					{
-						label: __(
-							'Currently Watching',
-							'post-kinds-for-indieweb'
-						),
-						value: 'watching',
+						label: __( 'Rewatching', 'post-kinds-for-indieweb' ),
+						value: 'rewatching',
 					},
 					{
 						label: __( 'Abandoned', 'post-kinds-for-indieweb' ),
@@ -1303,14 +1466,54 @@ function WatchFields() {
 				__nextHasNoMarginBottom
 				__next40pxDefaultSize
 			/>
-			<ToggleControl
-				label={ __( 'Contains spoilers', 'post-kinds-for-indieweb' ) }
-				checked={ watchSpoilers }
+
+			<RangeControl
+				label={ __( 'Rating', 'post-kinds-for-indieweb' ) }
+				value={ watchRating || 0 }
 				onChange={ ( value ) =>
-					updateKindMeta( 'watch_spoilers', value )
+					updateKindMeta( 'watch_rating', value )
 				}
+				min={ 0 }
+				max={ 5 }
+				step={ 0.5 }
+				withInputField
+				renderTooltipContent={ ( value ) => `${ value } / 5` }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
+
+			<Flex>
+				<ToggleControl
+					label={ __( 'Rewatch', 'post-kinds-for-indieweb' ) }
+					checked={ watchIsRewatch }
+					onChange={ ( value ) =>
+						updateKindMeta( 'watch_is_rewatch', value )
+					}
+					__nextHasNoMarginBottom
+				/>
+				<ToggleControl
+					label={ __( 'Spoilers', 'post-kinds-for-indieweb' ) }
+					checked={ watchSpoilers }
+					onChange={ ( value ) =>
+						updateKindMeta( 'watch_spoilers', value )
+					}
+					__nextHasNoMarginBottom
+				/>
+			</Flex>
+
+			<TextareaControl
+				label={ __( 'Review / Notes', 'post-kinds-for-indieweb' ) }
+				value={ watchReview }
+				onChange={ ( value ) =>
+					updateKindMeta( 'watch_review', value )
+				}
+				placeholder={ __(
+					'Your thoughts on this film/show…',
+					'post-kinds-for-indieweb'
+				) }
 				__nextHasNoMarginBottom
 			/>
+
 			<TextControl
 				label={ __( 'Poster URL', 'post-kinds-for-indieweb' ) }
 				value={ watchPoster }
@@ -1321,6 +1524,7 @@ function WatchFields() {
 				__nextHasNoMarginBottom
 				__next40pxDefaultSize
 			/>
+
 			<SyndicationControls kind="watch" />
 		</Flex>
 	);
@@ -1343,6 +1547,13 @@ function ReadFields() {
 		readStatus,
 		readProgress,
 		readPages,
+		readUrl,
+		readPublisher,
+		readPublishDate,
+		readRating,
+		readStartedAt,
+		readFinishedAt,
+		readReview,
 		isLoading,
 		apiResults,
 	} = useSelect( ( select ) => {
@@ -1356,6 +1567,13 @@ function ReadFields() {
 			readStatus: getKindMeta( 'read_status' ),
 			readProgress: getKindMeta( 'read_progress' ),
 			readPages: getKindMeta( 'read_pages' ),
+			readUrl: getKindMeta( 'read_url' ),
+			readPublisher: getKindMeta( 'read_publisher' ),
+			readPublishDate: getKindMeta( 'read_publish_date' ),
+			readRating: getKindMeta( 'read_rating' ) || 0,
+			readStartedAt: getKindMeta( 'read_started_at' ),
+			readFinishedAt: getKindMeta( 'read_finished_at' ),
+			readReview: getKindMeta( 'read_review' ),
 			isLoading: store.isApiLoading(),
 			apiResults:
 				store.getApiLookupType() === 'book'
@@ -1533,6 +1751,81 @@ function ReadFields() {
 				type="url"
 				__nextHasNoMarginBottom
 				__next40pxDefaultSize
+			/>
+			<Flex>
+				<TextControl
+					label={ __( 'Publisher', 'post-kinds-for-indieweb' ) }
+					value={ readPublisher }
+					onChange={ ( value ) =>
+						updateKindMeta( 'read_publisher', value )
+					}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+				<TextControl
+					label={ __( 'Published', 'post-kinds-for-indieweb' ) }
+					value={ readPublishDate }
+					onChange={ ( value ) =>
+						updateKindMeta( 'read_publish_date', value )
+					}
+					type="date"
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+			</Flex>
+			<TextControl
+				label={ __( 'Book URL', 'post-kinds-for-indieweb' ) }
+				value={ readUrl }
+				onChange={ ( value ) => updateKindMeta( 'read_url', value ) }
+				type="url"
+				placeholder="https://openlibrary.org/..."
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
+			<RangeControl
+				label={ __( 'Rating', 'post-kinds-for-indieweb' ) }
+				value={ readRating }
+				onChange={ ( value ) => updateKindMeta( 'read_rating', value ) }
+				min={ 0 }
+				max={ 5 }
+				step={ 1 }
+				marks
+				withInputField={ false }
+				help={
+					readRating === 0
+						? __( 'No rating', 'post-kinds-for-indieweb' )
+						: `${ readRating } / 5`
+				}
+				__nextHasNoMarginBottom
+			/>
+			<Flex>
+				<TextControl
+					label={ __( 'Started', 'post-kinds-for-indieweb' ) }
+					value={ readStartedAt }
+					onChange={ ( value ) =>
+						updateKindMeta( 'read_started_at', value )
+					}
+					type="date"
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+				<TextControl
+					label={ __( 'Finished', 'post-kinds-for-indieweb' ) }
+					value={ readFinishedAt }
+					onChange={ ( value ) =>
+						updateKindMeta( 'read_finished_at', value )
+					}
+					type="date"
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+			</Flex>
+			<TextareaControl
+				label={ __( 'Review / Notes', 'post-kinds-for-indieweb' ) }
+				value={ readReview }
+				onChange={ ( value ) => updateKindMeta( 'read_review', value ) }
+				rows={ 3 }
+				__nextHasNoMarginBottom
 			/>
 		</Flex>
 	);
@@ -1770,6 +2063,8 @@ function PlayFields() {
 		playHours,
 		playCover,
 		playRating,
+		playReview,
+		playGameUrl,
 		playBggId,
 		playRawgId,
 		playSteamId,
@@ -1784,6 +2079,8 @@ function PlayFields() {
 			playHours: getKindMeta( 'play_hours' ),
 			playCover: getKindMeta( 'play_cover' ),
 			playRating: getKindMeta( 'play_rating' ),
+			playReview: getKindMeta( 'play_review' ),
+			playGameUrl: getKindMeta( 'play_game_url' ),
 			playBggId: getKindMeta( 'play_bgg_id' ),
 			playRawgId: getKindMeta( 'play_rawg_id' ),
 			playSteamId: getKindMeta( 'play_steam_id' ),
@@ -1977,6 +2274,10 @@ function PlayFields() {
 			value: 'abandoned',
 		},
 		{ label: __( 'Backlog', 'post-kinds-for-indieweb' ), value: 'backlog' },
+		{
+			label: __( 'Wishlist', 'post-kinds-for-indieweb' ),
+			value: 'wishlist',
+		},
 	];
 
 	const sourceOptions = [
@@ -2246,6 +2547,33 @@ function PlayFields() {
 				step={ 0.5 }
 				withInputField
 				renderTooltipContent={ ( value ) => `${ value } / 5` }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
+
+			<TextareaControl
+				label={ __( 'Review / Notes', 'post-kinds-for-indieweb' ) }
+				value={ playReview }
+				onChange={ ( value ) => updateKindMeta( 'play_review', value ) }
+				placeholder={ __(
+					'Your thoughts on the game…',
+					'post-kinds-for-indieweb'
+				) }
+				__nextHasNoMarginBottom
+			/>
+
+			<TextControl
+				label={ __( 'Game URL', 'post-kinds-for-indieweb' ) }
+				type="url"
+				value={ playGameUrl }
+				onChange={ ( value ) =>
+					updateKindMeta( 'play_game_url', value )
+				}
+				placeholder="https://..."
+				help={ __(
+					'Link to the game page (store, wiki, etc.).',
+					'post-kinds-for-indieweb'
+				) }
 				__nextHasNoMarginBottom
 				__next40pxDefaultSize
 			/>
@@ -2676,6 +3004,8 @@ function DrinkFields() {
 		drinkBrewery,
 		drinkPhoto,
 		drinkRating,
+		drinkNotes,
+		drinkVenueUrl,
 		drinkLocationName,
 		drinkLocationAddress,
 		drinkLocationLocality,
@@ -2691,6 +3021,8 @@ function DrinkFields() {
 			drinkBrewery: getKindMeta( 'drink_brewery' ),
 			drinkPhoto: getKindMeta( 'drink_photo' ),
 			drinkRating: getKindMeta( 'drink_rating' ),
+			drinkNotes: getKindMeta( 'drink_notes' ),
+			drinkVenueUrl: getKindMeta( 'drink_venue_url' ),
 			drinkLocationName: getKindMeta( 'drink_location_name' ),
 			drinkLocationAddress: getKindMeta( 'drink_location_address' ),
 			drinkLocationLocality: getKindMeta( 'drink_location_locality' ),
@@ -2705,19 +3037,29 @@ function DrinkFields() {
 
 	const typeOptions = [
 		{ label: __( 'Select type…', 'post-kinds-for-indieweb' ), value: '' },
-		{ label: __( 'Coffee', 'post-kinds-for-indieweb' ), value: 'coffee' },
-		{ label: __( 'Tea', 'post-kinds-for-indieweb' ), value: 'tea' },
-		{ label: __( 'Beer', 'post-kinds-for-indieweb' ), value: 'beer' },
-		{ label: __( 'Wine', 'post-kinds-for-indieweb' ), value: 'wine' },
 		{
-			label: __( 'Cocktail', 'post-kinds-for-indieweb' ),
+			label: __( '☕ Coffee', 'post-kinds-for-indieweb' ),
+			value: 'coffee',
+		},
+		{ label: __( '🍵 Tea', 'post-kinds-for-indieweb' ), value: 'tea' },
+		{ label: __( '🍺 Beer', 'post-kinds-for-indieweb' ), value: 'beer' },
+		{ label: __( '🍷 Wine', 'post-kinds-for-indieweb' ), value: 'wine' },
+		{
+			label: __( '🍸 Cocktail', 'post-kinds-for-indieweb' ),
 			value: 'cocktail',
 		},
-		{ label: __( 'Spirit', 'post-kinds-for-indieweb' ), value: 'spirit' },
-		{ label: __( 'Soda', 'post-kinds-for-indieweb' ), value: 'soda' },
-		{ label: __( 'Juice', 'post-kinds-for-indieweb' ), value: 'juice' },
-		{ label: __( 'Water', 'post-kinds-for-indieweb' ), value: 'water' },
-		{ label: __( 'Other', 'post-kinds-for-indieweb' ), value: 'other' },
+		{ label: __( '🧃 Juice', 'post-kinds-for-indieweb' ), value: 'juice' },
+		{ label: __( '🥤 Soda', 'post-kinds-for-indieweb' ), value: 'soda' },
+		{
+			label: __( '🥤 Smoothie', 'post-kinds-for-indieweb' ),
+			value: 'smoothie',
+		},
+		{ label: __( '💧 Water', 'post-kinds-for-indieweb' ), value: 'water' },
+		{
+			label: __( '🥃 Whiskey', 'post-kinds-for-indieweb' ),
+			value: 'whiskey',
+		},
+		{ label: __( '🥤 Other', 'post-kinds-for-indieweb' ), value: 'other' },
 	];
 
 	return (
@@ -2776,6 +3118,16 @@ function DrinkFields() {
 				__nextHasNoMarginBottom
 				__next40pxDefaultSize
 			/>
+			<TextareaControl
+				label={ __( 'Tasting Notes', 'post-kinds-for-indieweb' ) }
+				value={ drinkNotes }
+				onChange={ ( value ) => updateKindMeta( 'drink_notes', value ) }
+				placeholder={ __(
+					'Tasting notes or thoughts…',
+					'post-kinds-for-indieweb'
+				) }
+				__nextHasNoMarginBottom
+			/>
 
 			{ /* Location Section */ }
 			<BaseControl
@@ -2796,6 +3148,20 @@ function DrinkFields() {
 							'Where are you drinking?',
 							'post-kinds-for-indieweb'
 						) }
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+					/>
+					<TextControl
+						label={ __(
+							'Venue Website',
+							'post-kinds-for-indieweb'
+						) }
+						type="url"
+						value={ drinkVenueUrl }
+						onChange={ ( value ) =>
+							updateKindMeta( 'drink_venue_url', value )
+						}
+						placeholder="https://"
 						__nextHasNoMarginBottom
 						__next40pxDefaultSize
 					/>
