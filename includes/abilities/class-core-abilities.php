@@ -99,6 +99,15 @@ final class Core_Abilities {
 	}
 
 	/**
+	 * Reset singleton for testing.
+	 *
+	 * @internal Only for use in tests.
+	 */
+	public static function reset(): void {
+		self::$instance = null;
+	}
+
+	/**
 	 * Constructor.
 	 *
 	 * @since 1.1.0
@@ -499,14 +508,21 @@ final class Core_Abilities {
 		$content = $args['content'] ?? '';
 		$status  = $args['status'] ?? 'draft';
 
+		if ( ! isset( self::KIND_FIELD_MAP[ $kind ] ) ) {
+			return new \WP_Error(
+				'invalid_kind',
+				sprintf( 'Unknown kind: %s', $kind )
+			);
+		}
+
 		if ( ! in_array( $status, [ 'draft', 'publish', 'private' ], true ) ) {
 			$status = 'draft';
 		}
 
 		$post_id = wp_insert_post(
 			[
-				'post_title'   => $title,
-				'post_content' => $content,
+				'post_title'   => sanitize_text_field( $title ),
+				'post_content' => wp_kses_post( $content ),
 				'post_status'  => $status,
 				'post_type'    => 'post',
 			],
@@ -529,10 +545,13 @@ final class Core_Abilities {
 			update_post_meta( $post_id, Meta_Fields::PREFIX . $key, $value );
 		}
 
+		$edit_url = get_edit_post_link( $post_id, 'raw' );
+		$view_url = get_permalink( $post_id );
+
 		return [
 			'post_id'  => $post_id,
-			'edit_url' => get_edit_post_link( $post_id, 'raw' ) ? get_edit_post_link( $post_id, 'raw' ) : '',
-			'view_url' => get_permalink( $post_id ) ? get_permalink( $post_id ) : '',
+			'edit_url' => $edit_url ? $edit_url : '',
+			'view_url' => $view_url ? $view_url : '',
 		];
 	}
 
@@ -622,7 +641,7 @@ final class Core_Abilities {
 			);
 		}
 
-		$full_key = Meta_Fields::PREFIX . $meta_key;
+		$full_key = Meta_Fields::PREFIX . sanitize_key( $meta_key );
 		update_post_meta( $post_id, $full_key, $meta_value );
 
 		return [
