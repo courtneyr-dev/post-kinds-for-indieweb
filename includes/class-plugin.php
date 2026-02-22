@@ -421,6 +421,11 @@ final class Plugin {
 
 		// Initialize third-party integrations.
 		$this->init_integrations();
+
+		// Abilities API integration (WordPress 6.9+).
+		if ( Feature_Flags::has_abilities_api() ) {
+			Abilities_Manager::instance();
+		}
 	}
 
 	/**
