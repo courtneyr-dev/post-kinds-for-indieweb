@@ -57,7 +57,7 @@ final class Core_Abilities {
 	 *
 	 * @var array<string, array<string>>
 	 */
-	private array $kind_field_prefixes = [
+	private const KIND_FIELD_MAP = [
 		'note'        => [],
 		'article'     => [],
 		'photo'       => [],
@@ -151,6 +151,7 @@ final class Core_Abilities {
 								],
 							],
 						],
+						'total' => [ 'type' => 'integer' ],
 					],
 				],
 				'execute_callback'    => [ $this, 'execute_list_kinds' ],
@@ -286,9 +287,9 @@ final class Core_Abilities {
 				'output_schema'       => [
 					'type'       => 'object',
 					'properties' => [
-						'success'   => [ 'type' => 'boolean' ],
-						'post_id'   => [ 'type' => 'integer' ],
-						'kind_slug' => [ 'type' => 'string' ],
+						'success' => [ 'type' => 'boolean' ],
+						'post_id' => [ 'type' => 'integer' ],
+						'kind'    => [ 'type' => 'string' ],
 					],
 				],
 				'execute_callback'    => [ $this, 'execute_set_kind' ],
@@ -440,7 +441,10 @@ final class Core_Abilities {
 			];
 		}
 
-		return [ 'kinds' => $kinds ];
+		return [
+			'kinds' => $kinds,
+			'total' => count( $kinds ),
+		];
 	}
 
 	/**
@@ -452,7 +456,7 @@ final class Core_Abilities {
 	public function execute_list_kind_fields( array $args ): array|\WP_Error {
 		$kind = $args['kind'] ?? '';
 
-		if ( ! isset( $this->kind_field_prefixes[ $kind ] ) ) {
+		if ( ! isset( self::KIND_FIELD_MAP[ $kind ] ) ) {
 			return new \WP_Error(
 				'invalid_kind',
 				sprintf(
@@ -463,7 +467,7 @@ final class Core_Abilities {
 			);
 		}
 
-		$prefixes   = $this->kind_field_prefixes[ $kind ];
+		$prefixes   = self::KIND_FIELD_MAP[ $kind ];
 		$all_fields = $this->meta_fields->get_fields();
 		$fields     = [];
 
@@ -556,9 +560,9 @@ final class Core_Abilities {
 		}
 
 		return [
-			'success'   => true,
-			'post_id'   => $post_id,
-			'kind_slug' => $kind,
+			'success' => true,
+			'post_id' => $post_id,
+			'kind'    => $kind,
 		];
 	}
 

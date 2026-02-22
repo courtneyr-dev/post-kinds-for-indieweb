@@ -53,6 +53,7 @@ class CoreAbilitiesTest extends WP_UnitTestCase {
 		$this->assertIsArray( $result );
 		$this->assertArrayHasKey( 'kinds', $result );
 		$this->assertCount( 24, $result['kinds'] );
+		$this->assertSame( 24, $result['total'] );
 	}
 
 	/**
