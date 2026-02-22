@@ -95,6 +95,12 @@ final class Lookup_Abilities {
 					'description'         => $definition['description'],
 					'category'            => Abilities_Manager::CATEGORY_SLUG,
 					'input_schema'        => $definition['input_schema'],
+					'output_schema'       => [
+						'type'       => 'object',
+						'properties' => [
+							'results' => [ 'type' => 'array' ],
+						],
+					],
 					'execute_callback'    => function ( array $args ) use ( $definition ) {
 						return $this->execute_lookup( $definition['rest_route'], $args );
 					},
@@ -236,9 +242,23 @@ final class Lookup_Abilities {
 	 */
 	private function execute_lookup( string $route, array $args ): array|\WP_Error {
 		$request = new \WP_REST_Request( 'GET', $route );
+
+		// Translate ability params to REST API params.
 		foreach ( $args as $key => $value ) {
-			$request->set_param( $key, $value );
+			if ( 'query' === $key ) {
+				$request->set_param( 'q', $value );
+			} elseif ( 'll' === $key ) {
+				// Split lat,lng into separate params.
+				$parts = explode( ',', $value );
+				if ( 2 === count( $parts ) ) {
+					$request->set_param( 'lat', trim( $parts[0] ) );
+					$request->set_param( 'lng', trim( $parts[1] ) );
+				}
+			} else {
+				$request->set_param( $key, $value );
+			}
 		}
+
 		$response = rest_do_request( $request );
 
 		if ( $response->is_error() ) {
