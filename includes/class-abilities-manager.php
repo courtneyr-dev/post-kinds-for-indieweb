@@ -9,6 +9,8 @@
  * @since 1.1.0
  */
 
+declare(strict_types=1);
+
 namespace PostKindsForIndieWeb;
 
 // Exit if accessed directly.
@@ -35,8 +37,6 @@ final class Abilities_Manager {
 
 	/**
 	 * Plugin ability category slug.
-	 *
-	 * @var string
 	 */
 	const CATEGORY_SLUG = 'post-kinds';
 
@@ -68,6 +68,31 @@ final class Abilities_Manager {
 	 */
 	private function __construct() {
 		$this->init();
+	}
+
+	/**
+	 * Reset singleton for testing.
+	 *
+	 * @internal Only for use in tests.
+	 */
+	public static function reset(): void {
+		self::$instance = null;
+	}
+
+	/**
+	 * Prevent cloning.
+	 */
+	private function __clone(): void {
+		// Prevent cloning.
+	}
+
+	/**
+	 * Prevent unserialization.
+	 *
+	 * @throws \Exception If unserialization is attempted.
+	 */
+	public function __wakeup(): void {
+		throw new \Exception( 'Cannot unserialize singleton.' );
 	}
 
 	/**
