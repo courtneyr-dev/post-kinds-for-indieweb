@@ -110,7 +110,7 @@ final class Abilities_Manager {
 		add_action( 'wp_abilities_api_categories_init', [ $this, 'register_category' ] );
 		add_action( 'wp_abilities_api_init', [ $this, 'register_abilities' ] );
 
-		if ( class_exists( 'WP_Pinch\\Abilities' ) ) {
+		if ( Feature_Flags::is_enabled( 'mcp_integration' ) && class_exists( 'WP_Pinch\\Abilities' ) ) {
 			self::register_mcp_hooks();
 		}
 	}
@@ -253,7 +253,7 @@ final class Abilities_Manager {
 	 * @return array Modified arguments.
 	 */
 	public static function filter_ability_args( array $args, string $name ): array {
-		if ( 0 !== strpos( $name, 'post_kinds/' ) ) {
+		if ( ! str_starts_with( $name, 'post_kinds/' ) ) {
 			return $args;
 		}
 
