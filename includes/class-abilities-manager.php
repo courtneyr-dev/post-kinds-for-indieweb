@@ -109,6 +109,10 @@ final class Abilities_Manager {
 
 		add_action( 'wp_abilities_api_categories_init', [ $this, 'register_category' ] );
 		add_action( 'wp_abilities_api_init', [ $this, 'register_abilities' ] );
+
+		if ( class_exists( 'WP_Pinch\\Abilities' ) ) {
+			self::register_mcp_hooks();
+		}
 	}
 
 	/**
@@ -190,5 +194,77 @@ final class Abilities_Manager {
 	 */
 	public function get_providers(): array {
 		return $this->providers;
+	}
+
+	/**
+	 * Get all Post Kinds ability names.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return array<int, string> Ability name strings.
+	 */
+	public static function get_ability_names(): array {
+		return [
+			'post_kinds/list_kinds',
+			'post_kinds/list_kind_fields',
+			'post_kinds/create_post',
+			'post_kinds/set_kind',
+			'post_kinds/get_kind',
+			'post_kinds/update_post_meta',
+			'post_kinds/get_post_meta',
+			'post_kinds/lookup_music',
+			'post_kinds/lookup_video',
+			'post_kinds/lookup_book',
+			'post_kinds/lookup_podcast',
+			'post_kinds/lookup_venue',
+			'post_kinds/lookup_game',
+		];
+	}
+
+	/**
+	 * Register WP Pinch MCP server integration hooks.
+	 *
+	 * @since 1.1.0
+	 */
+	public static function register_mcp_hooks(): void {
+		add_filter( 'wp_pinch_mcp_server_abilities', [ self::class, 'filter_mcp_server_abilities' ] );
+		add_filter( 'wp_register_ability_args', [ self::class, 'filter_ability_args' ], 10, 2 );
+	}
+
+	/**
+	 * Append Post Kinds abilities to the MCP server abilities list.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param array $abilities Existing ability name strings.
+	 * @return array Modified ability name strings.
+	 */
+	public static function filter_mcp_server_abilities( array $abilities ): array {
+		return array_merge( $abilities, self::get_ability_names() );
+	}
+
+	/**
+	 * Add MCP public meta to Post Kinds abilities.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param array  $args Ability registration arguments.
+	 * @param string $name Ability name.
+	 * @return array Modified arguments.
+	 */
+	public static function filter_ability_args( array $args, string $name ): array {
+		if ( 0 !== strpos( $name, 'post_kinds/' ) ) {
+			return $args;
+		}
+
+		if ( ! isset( $args['meta'] ) ) {
+			$args['meta'] = [];
+		}
+		if ( ! isset( $args['meta']['mcp'] ) ) {
+			$args['meta']['mcp'] = [];
+		}
+		$args['meta']['mcp']['public'] = true;
+
+		return $args;
 	}
 }
