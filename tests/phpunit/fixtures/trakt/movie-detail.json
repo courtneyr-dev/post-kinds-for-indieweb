@@ -1,0 +1,22 @@
+{
+  "title": "Inception",
+  "year": 2010,
+  "ids": {
+    "trakt": 16662,
+    "slug": "inception-2010",
+    "imdb": "tt1375666",
+    "tmdb": 27205
+  },
+  "overview": "A thief who steals corporate secrets through dream-sharing technology.",
+  "runtime": 148,
+  "tagline": "Your mind is the scene of the crime.",
+  "released": "2010-07-16",
+  "certification": "PG-13",
+  "trailer": "https://youtube.com/watch?v=YoHD9XEInc0",
+  "homepage": "https://www.warnerbros.com/inception",
+  "rating": 8.8,
+  "votes": 45000,
+  "genres": ["action", "science-fiction"],
+  "language": "en",
+  "country": "us"
+}

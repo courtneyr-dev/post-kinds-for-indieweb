@@ -1,0 +1,25 @@
+{
+  "title": "Breaking Bad",
+  "year": 2008,
+  "ids": {
+    "trakt": 1388,
+    "slug": "breaking-bad",
+    "imdb": "tt0903747",
+    "tmdb": 1396,
+    "tvdb": 81189
+  },
+  "overview": "A chemistry teacher diagnosed with lung cancer turns to manufacturing meth.",
+  "runtime": 45,
+  "first_aired": "2008-01-20T00:00:00.000Z",
+  "certification": "TV-MA",
+  "network": "AMC",
+  "trailer": "https://youtube.com/watch?v=HhesaQXLuRY",
+  "homepage": "",
+  "status": "ended",
+  "rating": 9.3,
+  "votes": 60000,
+  "aired_episodes": 62,
+  "genres": ["drama", "thriller"],
+  "language": "en",
+  "country": "us"
+}
