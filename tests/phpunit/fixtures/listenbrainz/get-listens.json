@@ -1,0 +1,26 @@
+{
+  "payload": {
+    "count": 1,
+    "latest_listen_ts": 1700000000,
+    "listens": [
+      {
+        "listened_at": 1700000000,
+        "recording_msid": "abc12345-def6-7890-abcd-ef1234567890",
+        "track_metadata": {
+          "track_name": "Paranoid Android",
+          "artist_name": "Radiohead",
+          "release_name": "OK Computer",
+          "additional_info": {
+            "recording_mbid": "9db0f3f4-e1fc-4380-a352-bcc222f76809",
+            "artist_mbids": ["a74b1b7f-71a5-4011-9441-d0b5e4122711"],
+            "release_mbid": "50fbeab5-b455-30fe-a48a-dab6b0f3dfe5",
+            "duration_ms": 383000,
+            "spotify_id": "spotify:track:6LgJvl0Xdtc73RJ1mN1a7Z",
+            "origin_url": "https://open.spotify.com/track/6LgJvl0Xdtc73RJ1mN1a7Z"
+          }
+        }
+      }
+    ],
+    "user_id": "testuser"
+  }
+}
