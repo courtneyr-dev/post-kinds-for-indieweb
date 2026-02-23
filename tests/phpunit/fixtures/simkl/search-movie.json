@@ -1,0 +1,22 @@
+[
+  {
+    "type": "movie",
+    "title": "The Matrix",
+    "year": 1999,
+    "ids": {
+      "simkl": 38612,
+      "imdb": "tt0133093",
+      "tmdb": 603,
+      "slug": "the-matrix"
+    },
+    "poster": "0_1_38612",
+    "fanart": "",
+    "runtime": 136,
+    "overview": "A computer hacker learns about the true nature of reality.",
+    "genres": ["action", "science-fiction"],
+    "certification": "R",
+    "released": "1999-03-31",
+    "trailer": "",
+    "ratings": {"simkl": {"rating": 9.0}}
+  }
+]
