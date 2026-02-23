@@ -1,0 +1,26 @@
+{
+  "recenttracks": {
+    "@attr": {
+      "user": "testuser",
+      "totalPages": "5",
+      "page": "1",
+      "perPage": "50",
+      "total": "250"
+    },
+    "track": [
+      {
+        "name": "Everything In Its Right Place",
+        "artist": {"name": "Radiohead", "mbid": "a74b1b7f-71a5-4011-9441-d0b5e4122711", "#text": "Radiohead"},
+        "album": {"#text": "Kid A", "mbid": "aaa11111-2222-3333-4444-555566667777"},
+        "url": "https://www.last.fm/music/Radiohead/_/Everything+In+Its+Right+Place",
+        "mbid": "eeee1111-2222-3333-4444-555566667777",
+        "image": [
+          {"#text": "https://lastfm.freetls.fastly.net/i/u/34s/scrobble.png", "size": "small"},
+          {"#text": "https://lastfm.freetls.fastly.net/i/u/300x300/scrobble.png", "size": "extralarge"}
+        ],
+        "date": {"uts": "1700000000", "#text": "14 Nov 2023, 12:00"},
+        "loved": "1"
+      }
+    ]
+  }
+}

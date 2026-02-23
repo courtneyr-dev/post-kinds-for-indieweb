@@ -1,0 +1,25 @@
+{
+  "results": {
+    "opensearch:Query": {"#text": "", "role": "request", "searchTerms": "Creep", "startPage": "1"},
+    "opensearch:totalResults": "1",
+    "opensearch:startIndex": "0",
+    "opensearch:itemsPerPage": "25",
+    "trackmatches": {
+      "track": [
+        {
+          "name": "Creep",
+          "artist": "Radiohead",
+          "url": "https://www.last.fm/music/Radiohead/_/Creep",
+          "listeners": "3456789",
+          "mbid": "d11fcceb-dfc5-4d19-b45d-f4e8f6d9b1b7",
+          "image": [
+            {"#text": "https://lastfm.freetls.fastly.net/i/u/34s/example.png", "size": "small"},
+            {"#text": "https://lastfm.freetls.fastly.net/i/u/64s/example.png", "size": "medium"},
+            {"#text": "https://lastfm.freetls.fastly.net/i/u/174s/example.png", "size": "large"},
+            {"#text": "https://lastfm.freetls.fastly.net/i/u/300x300/example.png", "size": "extralarge"}
+          ]
+        }
+      ]
+    }
+  }
+}
