@@ -1,0 +1,29 @@
+{
+	"status": "true",
+	"items": [
+		{
+			"id": 123456789,
+			"title": "Episode 2100 - Guest Name",
+			"link": "https://www.joerogan.com/episode/2100",
+			"description": "Joe sits down with Guest Name to discuss various topics.",
+			"guid": "episode-2100-guid",
+			"datePublished": 1706140800,
+			"dateCrawled": 1706141000,
+			"enclosureUrl": "https://traffic.megaphone.fm/episode2100.mp3",
+			"enclosureType": "audio/mpeg",
+			"enclosureLength": 125000000,
+			"duration": 7200,
+			"explicit": 0,
+			"episode": 2100,
+			"season": 1,
+			"image": "https://images.podcastindex.org/ep/2100.jpg",
+			"feedId": 75075,
+			"feedTitle": "The Joe Rogan Experience",
+			"feedImage": "https://images.podcastindex.org/75075.jpg",
+			"feedLanguage": "en"
+		}
+	],
+	"count": 1,
+	"query": "75075",
+	"description": "Found matching items."
+}
