@@ -1,0 +1,14 @@
+{
+	"ISBN:9780441172719": {
+		"title": "Dune",
+		"subtitle": "",
+		"authors": [{"name": "Frank Herbert"}],
+		"publishers": [{"name": "Ace Books"}],
+		"publish_date": "1990",
+		"number_of_pages": 412,
+		"subjects": [{"name": "Science Fiction"}],
+		"cover": {"small": "https://covers.openlibrary.org/b/isbn/9780441172719-S.jpg", "medium": "https://covers.openlibrary.org/b/isbn/9780441172719-M.jpg"},
+		"url": "https://openlibrary.org/books/OL7353617M/Dune",
+		"key": "/books/OL7353617M"
+	}
+}

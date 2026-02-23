@@ -1,0 +1,22 @@
+{
+	"numFound": 1,
+	"docs": [
+		{
+			"key": "/works/OL45883W",
+			"title": "Dune",
+			"subtitle": "",
+			"author_name": ["Frank Herbert"],
+			"author_key": ["OL34184A"],
+			"first_publish_year": 1965,
+			"edition_count": 150,
+			"isbn": ["9780441172719", "0441172717"],
+			"publisher": ["Ace Books"],
+			"language": ["eng"],
+			"subject": ["Science Fiction", "Space Opera"],
+			"cover_i": 8232516,
+			"number_of_pages_median": 412,
+			"ratings_average": 4.2,
+			"ratings_count": 500
+		}
+	]
+}
