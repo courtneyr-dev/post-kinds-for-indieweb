@@ -1,0 +1,33 @@
+{
+	"data": {
+		"edition": {
+			"id": 5001,
+			"title": "Dune",
+			"isbn_10": "0441172717",
+			"isbn_13": "9780441172719",
+			"pages": 412,
+			"format": "Paperback",
+			"publisher": "Ace Books",
+			"release_date": "1990-09-01",
+			"image": {
+				"url": "https://assets.hardcover.app/editions/dune-ace.jpg"
+			},
+			"book": {
+				"id": 12345,
+				"title": "Dune",
+				"slug": "dune",
+				"description": "Set on the desert planet Arrakis.",
+				"contributions": [
+					{
+						"author": {
+							"id": 100,
+							"name": "Frank Herbert"
+						}
+					}
+				],
+				"ratings_count": 50000,
+				"ratings_average": 4.3
+			}
+		}
+	}
+}
