@@ -1,0 +1,24 @@
+[
+	{
+		"score": 0.9,
+		"show": {
+			"id": 169,
+			"url": "https://www.tvmaze.com/shows/169/breaking-bad",
+			"name": "Breaking Bad",
+			"language": "English",
+			"genres": ["Drama", "Crime", "Thriller"],
+			"status": "Ended",
+			"runtime": 60,
+			"premiered": "2008-01-20",
+			"ended": "2013-09-29",
+			"schedule": {"time": "21:00", "days": ["Sunday"]},
+			"rating": {"average": 9.2},
+			"weight": 99,
+			"network": {"id": 20, "name": "AMC"},
+			"webChannel": null,
+			"externals": {"tvrage": 18164, "thetvdb": 81189, "imdb": "tt0903747"},
+			"image": {"medium": "https://static.tvmaze.com/uploads/images/medium_portrait/0/2400.jpg", "original": "https://static.tvmaze.com/uploads/images/original_untouched/0/2400.jpg"},
+			"summary": "<p>Breaking Bad follows protagonist Walter White.</p>"
+		}
+	}
+]
