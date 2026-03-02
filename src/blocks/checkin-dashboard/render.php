@@ -2,7 +2,7 @@
 /**
  * Check-in Dashboard Block - Server-side Render
  *
- * @package Reactions_For_IndieWeb
+ * @package PostKindsForIndieWeb
  *
  * @var array    $attributes Block attributes.
  * @var string   $content    Block default content.
@@ -13,14 +13,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$layout       = $attributes['layout'] ?? 'grid';
-$show_map     = $attributes['showMap'] ?? true;
-$show_stats   = $attributes['showStats'] ?? true;
-$limit        = $attributes['limit'] ?? 12;
-$show_filters = $attributes['showFilters'] ?? false;
+$pkiw_layout       = $attributes['layout'] ?? 'grid';
+$pkiw_show_map     = $attributes['showMap'] ?? true;
+$pkiw_show_stats   = $attributes['showStats'] ?? true;
+$pkiw_limit        = $attributes['limit'] ?? 12;
+$pkiw_show_filters = $attributes['showFilters'] ?? false;
 
 // Enqueue Leaflet for map view
-if ( $show_map ) {
+if ( $pkiw_show_map ) {
 	wp_enqueue_style( 'leaflet', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet/leaflet.css', array(), '1.9.4' );
 	wp_enqueue_script( 'leaflet', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet/leaflet.js', array(), '1.9.4', true );
 	wp_enqueue_style( 'leaflet-markercluster', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.css', array( 'leaflet' ), '1.4.1' );
@@ -29,18 +29,18 @@ if ( $show_map ) {
 }
 
 // Get check-ins
-$args = array(
+$pkiw_args = array(
 	'post_type'      => 'post',
-	'posts_per_page' => $limit,
+	'posts_per_page' => $pkiw_limit,
 	'post_status'    => 'publish',
-	'tax_query'      => array(
+	'tax_query'      => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 		array(
 			'taxonomy' => 'indieblocks_kind',
 			'field'    => 'slug',
 			'terms'    => 'checkin',
 		),
 	),
-	'meta_query'     => array(
+	'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 		array(
 			'key'     => '_reactions_checkin_venue_name',
 			'compare' => 'EXISTS',
@@ -50,84 +50,84 @@ $args = array(
 	'order'          => 'DESC',
 );
 
-$checkins_query = new WP_Query( $args );
-$checkins       = array();
+$pkiw_checkins_query = new WP_Query( $pkiw_args );
+$pkiw_checkins       = array();
 
-if ( $checkins_query->have_posts() ) {
-	while ( $checkins_query->have_posts() ) {
-		$checkins_query->the_post();
-		$post_id = get_the_ID();
+if ( $pkiw_checkins_query->have_posts() ) {
+	while ( $pkiw_checkins_query->have_posts() ) {
+		$pkiw_checkins_query->the_post();
+		$pkiw_post_id = get_the_ID();
 
-		$checkin = array(
-			'id'          => $post_id,
-			'venue_name'  => get_post_meta( $post_id, '_reactions_checkin_venue_name', true ),
-			'address'     => get_post_meta( $post_id, '_reactions_checkin_address', true ),
-			'venue_type'  => get_post_meta( $post_id, '_reactions_checkin_venue_type', true ),
-			'latitude'    => get_post_meta( $post_id, '_reactions_checkin_latitude', true ),
-			'longitude'   => get_post_meta( $post_id, '_reactions_checkin_longitude', true ),
-			'photo'       => get_post_meta( $post_id, '_reactions_checkin_photo', true ),
+		$pkiw_checkin = array(
+			'id'          => $pkiw_post_id,
+			'venue_name'  => get_post_meta( $pkiw_post_id, '_reactions_checkin_venue_name', true ),
+			'address'     => get_post_meta( $pkiw_post_id, '_reactions_checkin_address', true ),
+			'venue_type'  => get_post_meta( $pkiw_post_id, '_reactions_checkin_venue_type', true ),
+			'latitude'    => get_post_meta( $pkiw_post_id, '_reactions_checkin_latitude', true ),
+			'longitude'   => get_post_meta( $pkiw_post_id, '_reactions_checkin_longitude', true ),
+			'photo'       => get_post_meta( $pkiw_post_id, '_reactions_checkin_photo', true ),
 			'note'        => get_the_excerpt(),
 			'date'        => get_the_date( 'c' ),
 			'permalink'   => get_permalink(),
 		);
 
 		// Check privacy settings
-		$privacy = get_post_meta( $post_id, '_reactions_checkin_geo_privacy', true );
-		if ( 'private' === $privacy ) {
-			$checkin['latitude']  = null;
-			$checkin['longitude'] = null;
+		$pkiw_privacy = get_post_meta( $pkiw_post_id, '_reactions_checkin_geo_privacy', true );
+		if ( 'private' === $pkiw_privacy ) {
+			$pkiw_checkin['latitude']  = null;
+			$pkiw_checkin['longitude'] = null;
 		}
 
-		$checkins[] = $checkin;
+		$pkiw_checkins[] = $pkiw_checkin;
 	}
 	wp_reset_postdata();
 }
 
 // Calculate stats
-$stats = array(
-	'total'         => $checkins_query->found_posts,
+$pkiw_stats = array(
+	'total'         => $pkiw_checkins_query->found_posts,
 	'unique_venues' => 0,
 	'countries'     => array(),
 	'cities'        => array(),
 );
 
-$unique_venues = array();
-foreach ( $checkins as $checkin ) {
-	if ( ! empty( $checkin['venue_name'] ) ) {
-		$unique_venues[ $checkin['venue_name'] ] = true;
+$pkiw_unique_venues = array();
+foreach ( $pkiw_checkins as $pkiw_checkin ) {
+	if ( ! empty( $pkiw_checkin['venue_name'] ) ) {
+		$pkiw_unique_venues[ $pkiw_checkin['venue_name'] ] = true;
 	}
 }
-$stats['unique_venues'] = count( $unique_venues );
+$pkiw_stats['unique_venues'] = count( $pkiw_unique_venues );
 
 // Get wrapper attributes
-$wrapper_attributes = get_block_wrapper_attributes( array(
-	'class' => 'checkin-dashboard-frontend layout-' . esc_attr( $layout ),
-	'data-layout' => esc_attr( $layout ),
-	'data-show-map' => $show_map ? 'true' : 'false',
-	'data-limit' => esc_attr( $limit ),
+$pkiw_wrapper_attributes = get_block_wrapper_attributes( array(
+	'class' => 'checkin-dashboard-frontend layout-' . esc_attr( $pkiw_layout ),
+	'data-layout' => esc_attr( $pkiw_layout ),
+	'data-show-map' => $pkiw_show_map ? 'true' : 'false',
+	'data-limit' => esc_attr( $pkiw_limit ),
 ) );
 ?>
 
-<div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<?php if ( $show_stats ) : ?>
+<div <?php echo $pkiw_wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+	<?php if ( $pkiw_show_stats ) : ?>
 	<div class="checkin-dashboard-stats">
 		<div class="stat-item">
-			<span class="stat-value"><?php echo esc_html( $stats['total'] ); ?></span>
+			<span class="stat-value"><?php echo esc_html( $pkiw_stats['total'] ); ?></span>
 			<span class="stat-label"><?php esc_html_e( 'Check-ins', 'post-kinds-for-indieweb' ); ?></span>
 		</div>
 		<div class="stat-item">
-			<span class="stat-value"><?php echo esc_html( $stats['unique_venues'] ); ?></span>
+			<span class="stat-value"><?php echo esc_html( $pkiw_stats['unique_venues'] ); ?></span>
 			<span class="stat-label"><?php esc_html_e( 'Venues', 'post-kinds-for-indieweb' ); ?></span>
 		</div>
 	</div>
 	<?php endif; ?>
 
-	<?php if ( $show_filters ) : ?>
+	<?php if ( $pkiw_show_filters ) : ?>
 	<div class="checkin-dashboard-filters">
 		<button type="button" class="view-btn active" data-view="grid">
 			<?php esc_html_e( 'Grid', 'post-kinds-for-indieweb' ); ?>
 		</button>
-		<?php if ( $show_map ) : ?>
+		<?php if ( $pkiw_show_map ) : ?>
 		<button type="button" class="view-btn" data-view="map">
 			<?php esc_html_e( 'Map', 'post-kinds-for-indieweb' ); ?>
 		</button>
@@ -140,31 +140,31 @@ $wrapper_attributes = get_block_wrapper_attributes( array(
 
 	<div class="checkin-dashboard-views">
 		<!-- Grid View -->
-		<div class="checkin-view-grid <?php echo 'grid' === $layout ? 'active' : ''; ?>">
-			<?php if ( empty( $checkins ) ) : ?>
+		<div class="checkin-view-grid <?php echo 'grid' === $pkiw_layout ? 'active' : ''; ?>">
+			<?php if ( empty( $pkiw_checkins ) ) : ?>
 			<div class="checkin-empty">
 				<p><?php esc_html_e( 'No check-ins yet.', 'post-kinds-for-indieweb' ); ?></p>
 			</div>
 			<?php else : ?>
 			<div class="checkin-grid">
-				<?php foreach ( $checkins as $checkin ) : ?>
+				<?php foreach ( $pkiw_checkins as $pkiw_checkin ) : ?>
 				<article class="checkin-card h-entry">
-					<?php if ( ! empty( $checkin['photo'] ) ) : ?>
+					<?php if ( ! empty( $pkiw_checkin['photo'] ) ) : ?>
 					<div class="checkin-card-photo">
-						<img src="<?php echo esc_url( $checkin['photo'] ); ?>" alt="<?php echo esc_attr( $checkin['venue_name'] ); ?>" class="u-photo" loading="lazy">
+						<img src="<?php echo esc_url( $pkiw_checkin['photo'] ); ?>" alt="<?php echo esc_attr( $pkiw_checkin['venue_name'] ); ?>" class="u-photo" loading="lazy">
 					</div>
 					<?php endif; ?>
 					<div class="checkin-card-content">
 						<h3 class="checkin-card-venue p-name">
-							<a href="<?php echo esc_url( $checkin['permalink'] ); ?>" class="u-url">
-								<?php echo esc_html( $checkin['venue_name'] ); ?>
+							<a href="<?php echo esc_url( $pkiw_checkin['permalink'] ); ?>" class="u-url">
+								<?php echo esc_html( $pkiw_checkin['venue_name'] ); ?>
 							</a>
 						</h3>
-						<?php if ( ! empty( $checkin['address'] ) ) : ?>
-						<p class="checkin-card-address p-location"><?php echo esc_html( $checkin['address'] ); ?></p>
+						<?php if ( ! empty( $pkiw_checkin['address'] ) ) : ?>
+						<p class="checkin-card-address p-location"><?php echo esc_html( $pkiw_checkin['address'] ); ?></p>
 						<?php endif; ?>
-						<time class="checkin-card-date dt-published" datetime="<?php echo esc_attr( $checkin['date'] ); ?>">
-							<?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $checkin['date'] ) ) ); ?>
+						<time class="checkin-card-date dt-published" datetime="<?php echo esc_attr( $pkiw_checkin['date'] ); ?>">
+							<?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $pkiw_checkin['date'] ) ) ); ?>
 						</time>
 					</div>
 				</article>
@@ -173,42 +173,42 @@ $wrapper_attributes = get_block_wrapper_attributes( array(
 			<?php endif; ?>
 		</div>
 
-		<?php if ( $show_map ) : ?>
+		<?php if ( $pkiw_show_map ) : ?>
 		<!-- Map View -->
-		<div class="checkin-view-map <?php echo 'map' === $layout ? 'active' : ''; ?>">
-			<div id="checkin-frontend-map" class="checkin-map" data-checkins="<?php echo esc_attr( wp_json_encode( array_filter( $checkins, function( $c ) { return ! empty( $c['latitude'] ); } ) ) ); ?>"></div>
+		<div class="checkin-view-map <?php echo 'map' === $pkiw_layout ? 'active' : ''; ?>">
+			<div id="checkin-frontend-map" class="checkin-map" data-checkins="<?php echo esc_attr( wp_json_encode( array_filter( $pkiw_checkins, function( $c ) { return ! empty( $c['latitude'] ); } ) ) ); ?>"></div>
 		</div>
 		<?php endif; ?>
 
 		<!-- Timeline View -->
-		<div class="checkin-view-timeline <?php echo 'timeline' === $layout ? 'active' : ''; ?>">
+		<div class="checkin-view-timeline <?php echo 'timeline' === $pkiw_layout ? 'active' : ''; ?>">
 			<?php
 			// Group by month
-			$grouped = array();
-			foreach ( $checkins as $checkin ) {
-				$month_key = date_i18n( 'F Y', strtotime( $checkin['date'] ) );
-				if ( ! isset( $grouped[ $month_key ] ) ) {
-					$grouped[ $month_key ] = array();
+			$pkiw_grouped = array();
+			foreach ( $pkiw_checkins as $pkiw_checkin ) {
+				$pkiw_month_key = date_i18n( 'F Y', strtotime( $pkiw_checkin['date'] ) );
+				if ( ! isset( $pkiw_grouped[ $pkiw_month_key ] ) ) {
+					$pkiw_grouped[ $pkiw_month_key ] = array();
 				}
-				$grouped[ $month_key ][] = $checkin;
+				$pkiw_grouped[ $pkiw_month_key ][] = $pkiw_checkin;
 			}
 			?>
-			<?php foreach ( $grouped as $month => $month_checkins ) : ?>
+			<?php foreach ( $pkiw_grouped as $pkiw_month => $pkiw_month_checkins ) : ?>
 			<div class="timeline-group">
-				<h3 class="timeline-month"><?php echo esc_html( $month ); ?></h3>
+				<h3 class="timeline-month"><?php echo esc_html( $pkiw_month ); ?></h3>
 				<div class="timeline-items">
-					<?php foreach ( $month_checkins as $checkin ) : ?>
+					<?php foreach ( $pkiw_month_checkins as $pkiw_checkin ) : ?>
 					<div class="timeline-item h-entry">
 						<div class="timeline-marker"></div>
 						<div class="timeline-content">
-							<a href="<?php echo esc_url( $checkin['permalink'] ); ?>" class="timeline-venue u-url p-name">
-								<?php echo esc_html( $checkin['venue_name'] ); ?>
+							<a href="<?php echo esc_url( $pkiw_checkin['permalink'] ); ?>" class="timeline-venue u-url p-name">
+								<?php echo esc_html( $pkiw_checkin['venue_name'] ); ?>
 							</a>
-							<?php if ( ! empty( $checkin['address'] ) ) : ?>
-							<span class="timeline-address p-location"><?php echo esc_html( $checkin['address'] ); ?></span>
+							<?php if ( ! empty( $pkiw_checkin['address'] ) ) : ?>
+							<span class="timeline-address p-location"><?php echo esc_html( $pkiw_checkin['address'] ); ?></span>
 							<?php endif; ?>
-							<time class="timeline-date dt-published" datetime="<?php echo esc_attr( $checkin['date'] ); ?>">
-								<?php echo esc_html( date_i18n( 'M j, g:i a', strtotime( $checkin['date'] ) ) ); ?>
+							<time class="timeline-date dt-published" datetime="<?php echo esc_attr( $pkiw_checkin['date'] ); ?>">
+								<?php echo esc_html( date_i18n( 'M j, g:i a', strtotime( $pkiw_checkin['date'] ) ) ); ?>
 							</time>
 						</div>
 					</div>
