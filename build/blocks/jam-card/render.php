@@ -15,26 +15,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$url = $attributes['url'] ?? '';
+$pkiw_url = $attributes['url'] ?? '';
 
-if ( empty( $url ) ) {
+if ( empty( $pkiw_url ) ) {
 	echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	return;
 }
 
-$embed = wp_oembed_get( $url );
+$pkiw_embed = wp_oembed_get( $pkiw_url );
 
-if ( ! $embed ) {
+if ( ! $pkiw_embed ) {
 	echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	return;
 }
 
 // Insert embed before the block wrapper's closing </div>.
-$embed_html = '<div class="post-kinds-card__embed">' . $embed . '</div>';
-$pos        = strrpos( $content, '</div>' );
+$pkiw_embed_html = '<div class="post-kinds-card__embed">' . $pkiw_embed . '</div>';
+$pkiw_pos        = strrpos( $content, '</div>' );
 
-if ( false !== $pos ) {
-	echo substr( $content, 0, $pos ) . $embed_html . substr( $content, $pos ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+if ( false !== $pkiw_pos ) {
+	echo substr( $content, 0, $pkiw_pos ) . $pkiw_embed_html . substr( $content, $pkiw_pos ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 } else {
-	echo $content . $embed_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	echo $content . $pkiw_embed_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 }
