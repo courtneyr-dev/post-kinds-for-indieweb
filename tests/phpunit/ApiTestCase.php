@@ -89,6 +89,27 @@ abstract class ApiTestCase extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Mock an HTTP response with a raw (non-JSON) body.
+	 *
+	 * @param string $url_pattern  Substring to match in request URL.
+	 * @param string $body         Raw response body.
+	 * @param int    $status       HTTP status code.
+	 * @param array  $headers      Response headers.
+	 */
+	protected function mock_http_raw_response(
+		string $url_pattern,
+		string $body,
+		int $status = 200,
+		array $headers = []
+	): void {
+		$this->mocked_responses[ $url_pattern ] = [
+			'response' => [ 'code' => $status, 'message' => 'OK' ],
+			'body'     => $body,
+			'headers'  => array_merge( [ 'content-type' => 'application/xml' ], $headers ),
+		];
+	}
+
+	/**
 	 * Mock an HTTP error (WP_Error) for URLs matching a pattern.
 	 *
 	 * @param string $url_pattern   Substring to match in request URL.

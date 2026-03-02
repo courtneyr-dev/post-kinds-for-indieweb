@@ -1,0 +1,21 @@
+{
+	"count": 1,
+	"nextPageCursor": null,
+	"results": [
+		{
+			"id": 12345,
+			"title": "Atomic Habits",
+			"author": "James Clear",
+			"category": "books",
+			"source": "kindle",
+			"source_url": "https://www.amazon.com/dp/B07D23CFGR",
+			"cover_image_url": "https://readwise-assets.s3.amazonaws.com/atomic-habits.jpg",
+			"num_highlights": 42,
+			"last_highlight_at": "2024-06-15T10:30:00Z",
+			"updated": "2024-06-15T12:00:00Z",
+			"asin": "B07D23CFGR",
+			"tags": [{"name": "productivity"}],
+			"document_note": "Great book on habits"
+		}
+	]
+}

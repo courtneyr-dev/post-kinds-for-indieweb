@@ -19,8 +19,12 @@ import {
 	Button,
 	DateTimePicker,
 	Popover,
+	SandBox,
+	Disabled,
 } from '@wordpress/components';
 import { useState } from '@wordpress/element';
+import { useSelect } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
 import { listenIcon } from '../shared/icons';
 import {
 	StarRating,
@@ -58,6 +62,16 @@ export default function Edit( { attributes, setAttributes } ) {
 	const blockProps = useBlockProps( {
 		className: `listen-card layout-${ layout }`,
 	} );
+
+	const embedPreview = useSelect(
+		( select ) => {
+			if ( ! listenUrl ) {
+				return null;
+			}
+			return select( coreStore ).getEmbedPreview( listenUrl );
+		},
+		[ listenUrl ]
+	);
 
 	/**
 	 * Handle media search result selection
@@ -338,7 +352,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 			<div { ...blockProps }>
 				<div className="post-kinds-card h-cite">
-					<div className="cover-image">
+					<div className="post-kinds-card__media">
 						<MediaUploadCheck>
 							<MediaUpload
 								onSelect={ handleImageSelect }
@@ -369,10 +383,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						</MediaUploadCheck>
 					</div>
 
-					<div className="listen-info">
+					<div className="post-kinds-card__content">
 						<RichText
 							tagName="h3"
-							className="track-title p-name"
+							className="post-kinds-card__title p-name"
 							value={ trackTitle }
 							onChange={ ( value ) =>
 								setAttributes( { trackTitle: value } )
@@ -385,7 +399,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 						<RichText
 							tagName="p"
-							className="artist-name p-author h-card"
+							className="post-kinds-card__subtitle p-author h-card"
 							value={ artistName }
 							onChange={ ( value ) =>
 								setAttributes( { artistName: value } )
@@ -399,7 +413,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						{ ( albumTitle || layout !== 'compact' ) && (
 							<RichText
 								tagName="p"
-								className="album-title"
+								className="post-kinds-card__meta"
 								value={ albumTitle }
 								onChange={ ( value ) =>
 									setAttributes( { albumTitle: value } )
@@ -412,7 +426,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						) }
 
 						{ rating > 0 && (
-							<div className="rating-display">
+							<div className="post-kinds-card__rating">
 								<StarRating
 									value={ rating }
 									readonly={ true }
@@ -422,6 +436,13 @@ export default function Edit( { attributes, setAttributes } ) {
 						) }
 					</div>
 				</div>
+				{ embedPreview?.html && (
+					<div className="post-kinds-card__embed" tabIndex={ -1 }>
+						<Disabled>
+							<SandBox html={ embedPreview.html } />
+						</Disabled>
+					</div>
+				) }
 			</div>
 		</>
 	);

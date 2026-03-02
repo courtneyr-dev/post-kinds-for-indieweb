@@ -21,11 +21,11 @@ $show_filters = $attributes['showFilters'] ?? false;
 
 // Enqueue Leaflet for map view
 if ( $show_map ) {
-	wp_enqueue_style( 'leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', array(), '1.9.4' );
-	wp_enqueue_script( 'leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', array(), '1.9.4', true );
-	wp_enqueue_style( 'leaflet-markercluster', 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css', array( 'leaflet' ), '1.4.1' );
-	wp_enqueue_style( 'leaflet-markercluster-default', 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css', array( 'leaflet-markercluster' ), '1.4.1' );
-	wp_enqueue_script( 'leaflet-markercluster', 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js', array( 'leaflet' ), '1.4.1', true );
+	wp_enqueue_style( 'leaflet', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet/leaflet.css', array(), '1.9.4' );
+	wp_enqueue_script( 'leaflet', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet/leaflet.js', array(), '1.9.4', true );
+	wp_enqueue_style( 'leaflet-markercluster', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.css', array( 'leaflet' ), '1.4.1' );
+	wp_enqueue_style( 'leaflet-markercluster-default', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.Default.css', array( 'leaflet-markercluster' ), '1.4.1' );
+	wp_enqueue_script( 'leaflet-markercluster', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/leaflet.markercluster.js', array( 'leaflet' ), '1.4.1', true );
 }
 
 // Get check-ins

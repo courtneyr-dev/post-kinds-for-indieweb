@@ -8,6 +8,10 @@
  * @var WP_Block $block      Block instance.
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use PostKindsForIndieWeb\Venue_Taxonomy;
 use function PostKindsForIndieWeb\get_checkins_at_venue;
 

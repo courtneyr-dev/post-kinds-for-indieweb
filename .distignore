@@ -2,6 +2,7 @@
 /.git
 /.github
 /.claude
+/.husky
 /node_modules
 /tests
 /bin
@@ -12,8 +13,10 @@
 .editorconfig
 .gitignore
 .gitattributes
+.lintstagedrc.json
 .phpcs.xml.dist
 .phpcs.cache
+.phpunit.result.cache
 .wp-env.json
 composer.json
 composer.lock

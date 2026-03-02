@@ -368,9 +368,9 @@ class Admin {
 		if ( ! $indieblocks_active ) {
 			echo '<div class="notice notice-warning"><p>';
 			printf(
-				/* translators: %s: Plugin name */
+				/* translators: %s: Plugin name wrapped in strong tags. */
 				esc_html__( '%s requires IndieBlocks to be installed and activated for full functionality.', 'post-kinds-for-indieweb' ),
-				'<strong>Post Kinds for IndieWeb</strong>'
+				'<strong>' . esc_html__( 'Post Kinds for IndieWeb', 'post-kinds-for-indieweb' ) . '</strong>'
 			);
 			echo '</p></div>';
 		}
@@ -387,18 +387,20 @@ class Admin {
 		if ( ! empty( $active_imports ) ) {
 			$count = count( $active_imports );
 			echo '<div class="notice notice-info"><p>';
+			$import_url = esc_url( admin_url( 'admin.php?page=post-kinds-indieweb-import' ) );
 			printf(
-				/* translators: %1$d: Number of imports, %2$s: Import page URL */
-				esc_html(
+				wp_kses(
+					/* translators: %1$d: number of imports, %2$s: URL to import page. */
 					_n(
 						'%1$d import is currently running. <a href="%2$s">View progress</a>',
 						'%1$d imports are currently running. <a href="%2$s">View progress</a>',
 						$count,
 						'post-kinds-for-indieweb'
-					)
+					),
+					[ 'a' => [ 'href' => [] ] ]
 				),
 				(int) $count,
-				esc_url( admin_url( 'admin.php?page=post-kinds-indieweb-import' ) )
+				esc_url( $import_url )
 			);
 			echo '</p></div>';
 		}

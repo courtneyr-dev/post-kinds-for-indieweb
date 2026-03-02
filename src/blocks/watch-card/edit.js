@@ -20,8 +20,12 @@ import {
 	Button,
 	DateTimePicker,
 	Popover,
+	SandBox,
+	Disabled,
 } from '@wordpress/components';
 import { useState } from '@wordpress/element';
+import { useSelect } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
 import { watchIcon } from '../shared/icons';
 import {
 	StarRating,
@@ -67,6 +71,16 @@ export default function Edit( { attributes, setAttributes } ) {
 	const blockProps = useBlockProps( {
 		className: `watch-card layout-${ layout } type-${ mediaType }`,
 	} );
+
+	const embedPreview = useSelect(
+		( select ) => {
+			if ( ! watchUrl ) {
+				return null;
+			}
+			return select( coreStore ).getEmbedPreview( watchUrl );
+		},
+		[ watchUrl ]
+	);
 
 	/**
 	 * Handle media search result selection
@@ -612,6 +626,13 @@ export default function Edit( { attributes, setAttributes } ) {
 						/>
 					</div>
 				</div>
+				{ embedPreview?.html && (
+					<div className="post-kinds-card__embed" tabIndex={ -1 }>
+						<Disabled>
+							<SandBox html={ embedPreview.html } />
+						</Disabled>
+					</div>
+				) }
 			</div>
 		</>
 	);

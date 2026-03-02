@@ -1,0 +1,34 @@
+{
+	"results": [
+		{
+			"fsq_id": "4b4e89e4f964a520e0a926e3",
+			"name": "Blue Bottle Coffee",
+			"location": {
+				"address": "160 Berry St",
+				"locality": "Brooklyn",
+				"region": "NY",
+				"postcode": "11249",
+				"country": "US",
+				"formatted_address": "160 Berry St, Brooklyn, NY 11249"
+			},
+			"geocodes": {
+				"main": {
+					"latitude": 40.7196,
+					"longitude": -73.9601
+				}
+			},
+			"categories": [
+				{
+					"id": 13035,
+					"name": "Coffee Shop",
+					"icon": {
+						"prefix": "https://ss3.4sqi.net/img/categories_v2/food/coffeeshop_",
+						"suffix": ".png"
+					}
+				}
+			],
+			"distance": 150,
+			"timezone": "America/New_York"
+		}
+	]
+}

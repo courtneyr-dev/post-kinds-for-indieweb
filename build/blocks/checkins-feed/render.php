@@ -8,6 +8,10 @@
  * @var WP_Block $block      Block instance.
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use function PostKindsForIndieWeb\get_checkins;
 use function PostKindsForIndieWeb\get_checkins_at_venue;
 use function PostKindsForIndieWeb\get_checkin_location;

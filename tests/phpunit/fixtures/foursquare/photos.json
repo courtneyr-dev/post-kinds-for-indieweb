@@ -1,0 +1,10 @@
+[
+	{
+		"id": "photo123",
+		"created_at": "2024-01-15T10:00:00Z",
+		"prefix": "https://fastly.4sqi.net/img/general/",
+		"suffix": "/photo123.jpg",
+		"width": 1024,
+		"height": 768
+	}
+]

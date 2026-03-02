@@ -14,9 +14,15 @@ import {
 	MediaUpload,
 	MediaUploadCheck,
 } from '@wordpress/block-editor';
-import { PanelBody, TextControl } from '@wordpress/components';
+import {
+	PanelBody,
+	TextControl,
+	SandBox,
+	Disabled,
+} from '@wordpress/components';
 import { useEffect, useState } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
 import { MediaSearch } from '../shared/components';
 
 export default function Edit( { attributes, setAttributes } ) {
@@ -36,6 +42,16 @@ export default function Edit( { attributes, setAttributes } ) {
 			);
 		return terms && terms.length > 0 ? terms[ 0 ] : null;
 	}, [] );
+
+	const embedPreview = useSelect(
+		( select ) => {
+			if ( ! url ) {
+				return null;
+			}
+			return select( coreStore ).getEmbedPreview( url );
+		},
+		[ url ]
+	);
 
 	// Set post kind to "jam" when block is inserted
 	useEffect( () => {
@@ -345,6 +361,13 @@ export default function Edit( { attributes, setAttributes } ) {
 						</div>
 					</div>
 				</div>
+				{ embedPreview?.html && (
+					<div className="post-kinds-card__embed" tabIndex={ -1 }>
+						<Disabled>
+							<SandBox html={ embedPreview.html } />
+						</Disabled>
+					</div>
+				) }
 			</div>
 		</>
 	);

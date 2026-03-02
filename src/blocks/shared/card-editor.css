@@ -735,3 +735,83 @@
 .post-kinds-card__badge--rewatch {
 	background: #475569;
 }
+
+/* ============================================
+   Layout variants
+   ============================================ */
+
+/* Horizontal is the default — no overrides needed */
+
+/* Vertical layout — image on top, content below */
+.layout-vertical .post-kinds-card {
+	flex-direction: column;
+}
+
+.layout-vertical .post-kinds-card__media,
+.layout-vertical .cover-image {
+	width: 100%;
+}
+
+.layout-vertical .post-kinds-card__media .post-kinds-card__image,
+.layout-vertical .cover-image img {
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	object-fit: cover;
+	border-radius: 8px;
+}
+
+.layout-vertical .post-kinds-card__media--portrait .post-kinds-card__image {
+	aspect-ratio: 2 / 3;
+	max-width: 200px;
+	margin: 0 auto;
+}
+
+/* Compact layout — smaller image, tighter spacing */
+.layout-compact .post-kinds-card {
+	padding: 12px;
+	gap: 12px;
+}
+
+.layout-compact .post-kinds-card__media,
+.layout-compact .cover-image {
+	width: 60px;
+}
+
+.layout-compact .post-kinds-card__media .post-kinds-card__image,
+.layout-compact .cover-image img {
+	width: 60px;
+	height: 60px;
+	border-radius: 6px;
+}
+
+.layout-compact .post-kinds-card__title {
+	font-size: 0.95rem;
+}
+
+.layout-compact .post-kinds-card__subtitle,
+.layout-compact .post-kinds-card__meta,
+.layout-compact .post-kinds-card__location {
+	font-size: 0.8rem;
+}
+
+.layout-compact .post-kinds-card__rating .star,
+.layout-compact .post-kinds-card__rating .post-kinds-star-rating .star {
+	font-size: 14px;
+}
+
+.layout-compact .post-kinds-card__timestamp {
+	display: none;
+}
+
+/* Embed player */
+.post-kinds-card__embed {
+	margin-top: 16px;
+	border-radius: 12px;
+	overflow: hidden;
+}
+
+.post-kinds-card__embed iframe {
+	width: 100%;
+	border: none;
+	display: block;
+}

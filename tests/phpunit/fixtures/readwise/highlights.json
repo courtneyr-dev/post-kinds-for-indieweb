@@ -1,0 +1,25 @@
+{
+	"count": 1,
+	"nextPageCursor": null,
+	"results": [
+		{
+			"id": 67890,
+			"text": "Every action you take is a vote for the type of person you wish to become.",
+			"note": "Key insight about identity-based habits",
+			"location": 1234,
+			"location_type": "location",
+			"url": "https://readwise.io/open/67890",
+			"color": "yellow",
+			"created_at": "2024-06-10T08:15:00Z",
+			"updated": "2024-06-10T08:15:00Z",
+			"book_id": 12345,
+			"book": {
+				"id": 12345,
+				"title": "Atomic Habits",
+				"author": "James Clear",
+				"category": "books"
+			},
+			"tags": [{"name": "identity"}]
+		}
+	]
+}

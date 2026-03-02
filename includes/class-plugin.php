@@ -631,8 +631,7 @@ final class Plugin {
 		add_filter( 'get_block_templates', [ $this, 'add_plugin_templates' ], 10, 3 );
 		add_filter( 'pre_get_block_file_template', [ $this, 'get_plugin_template' ], 10, 3 );
 
-		// Add plugin action links.
-		add_filter( 'plugin_action_links_' . \POST_KINDS_INDIEWEB_BASENAME, [ $this, 'add_action_links' ] );
+		// Plugin action links are registered in Admin class.
 
 		// Display admin notice if IndieBlocks is not active (check deferred to admin_notices time).
 		add_action( 'admin_notices', [ $this, 'indieblocks_notice' ] );
@@ -990,25 +989,6 @@ final class Plugin {
 		return $template;
 	}
 
-	/**
-	 * Add plugin action links.
-	 *
-	 * Adds settings and documentation links to the plugins page.
-	 *
-	 * @param array<string> $links Existing action links.
-	 * @return array<string> Modified action links.
-	 */
-	public function add_action_links( array $links ): array {
-		$plugin_links = [
-			sprintf(
-				'<a href="%s">%s</a>',
-				esc_url( admin_url( 'admin.php?page=post-kinds-indieweb' ) ),
-				esc_html__( 'Settings', 'post-kinds-for-indieweb' )
-			),
-		];
-
-		return array_merge( $plugin_links, $links );
-	}
 
 	/**
 	 * Display Post Kinds conflict error notice.

@@ -4,11 +4,11 @@
  * @package Reactions_For_IndieWeb
  */
 
-.wp-block-post-kinds-indieweb-read-card .cover-image {
+.wp-block-post-kinds-indieweb-read-card .post-kinds-card__media {
 	cursor: pointer;
 }
 
-.wp-block-post-kinds-indieweb-read-card .cover-image:hover {
+.wp-block-post-kinds-indieweb-read-card .post-kinds-card__media:hover {
 	opacity: 0.8;
 }
 

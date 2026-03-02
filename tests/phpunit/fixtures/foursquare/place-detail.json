@@ -1,0 +1,64 @@
+{
+	"fsq_id": "4b4e89e4f964a520e0a926e3",
+	"name": "Blue Bottle Coffee",
+	"description": "Specialty coffee roaster and retailer",
+	"location": {
+		"address": "160 Berry St",
+		"locality": "Brooklyn",
+		"region": "NY",
+		"postcode": "11249",
+		"country": "US",
+		"formatted_address": "160 Berry St, Brooklyn, NY 11249"
+	},
+	"geocodes": {
+		"main": {
+			"latitude": 40.7196,
+			"longitude": -73.9601
+		}
+	},
+	"categories": [
+		{
+			"id": 13035,
+			"name": "Coffee Shop",
+			"icon": {
+				"prefix": "https://ss3.4sqi.net/img/categories_v2/food/coffeeshop_",
+				"suffix": ".png"
+			}
+		}
+	],
+	"website": "https://bluebottlecoffee.com",
+	"tel": "+1-718-555-0123",
+	"email": "info@bluebottle.com",
+	"rating": 8.5,
+	"price": 2,
+	"popularity": 0.95,
+	"verified": true,
+	"closed_bucket": "VeryLikelyOpen",
+	"timezone": "America/New_York",
+	"hours": {
+		"display": "Mon-Sun 7:00 AM-7:00 PM"
+	},
+	"social_media": {
+		"instagram": "@bluebottle"
+	},
+	"photos": [
+		{
+			"id": "photo123",
+			"created_at": "2024-01-15T10:00:00Z",
+			"prefix": "https://fastly.4sqi.net/img/general/",
+			"suffix": "/photo123.jpg",
+			"width": 1024,
+			"height": 768
+		}
+	],
+	"stats": {
+		"total_photos": 500,
+		"total_tips": 80,
+		"total_ratings": 200
+	},
+	"tastes": ["coffee", "espresso", "latte"],
+	"features": {"payment": {"credit_cards": true}},
+	"chains": [
+		{"id": "chain123", "name": "Blue Bottle Coffee"}
+	]
+}

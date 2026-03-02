@@ -114,7 +114,7 @@ abstract class API_Base {
 	 * @return array<string, mixed> Response data.
 	 * @throws \Exception On request failure.
 	 */
-	protected function get( string $endpoint, array $params = [], array $headers = [] ): array {
+	protected function get( string $endpoint, array $params = [], array $headers = [] ) {
 		return $this->request( 'GET', $endpoint, $params, [], $headers );
 	}
 

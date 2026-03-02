@@ -96,5 +96,6 @@
 			"artist": "Queen",
 			"album": "A Night at the Opera"
 		}
-	}
+	},
+	"render": "file:./render.php"
 }

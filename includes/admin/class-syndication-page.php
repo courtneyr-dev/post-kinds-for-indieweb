@@ -123,14 +123,21 @@ class Syndication_Page {
 			return;
 		}
 
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- cast to int.
 		$post_id = isset( $_GET['post_id'] ) ? (int) $_GET['post_id'] : 0;
-		$service = isset( $_GET['service'] ) ? sanitize_key( $_GET['service'] ) : '';
 
-		if ( ! $post_id || ! $service ) {
+		if ( ! $post_id ) {
 			return;
 		}
 
+		// Verify nonce before processing any further input.
 		check_admin_referer( 'syndicate_now_' . $post_id );
+
+		$service = isset( $_GET['service'] ) ? sanitize_key( $_GET['service'] ) : '';
+
+		if ( ! $service ) {
+			return;
+		}
 
 		$result = $this->syndicate_post( $post_id, $service );
 
