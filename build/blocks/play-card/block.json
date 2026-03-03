@@ -16,24 +16,16 @@
   "textdomain": "post-kinds-indieweb",
   "attributes": {
     "title": {
-      "type": "string",
-      "source": "html",
-      "selector": ".game-title"
+      "type": "string"
     },
     "platform": {
       "type": "string"
     },
     "cover": {
-      "type": "string",
-      "source": "attribute",
-      "selector": ".game-cover img",
-      "attribute": "src"
+      "type": "string"
     },
     "coverAlt": {
-      "type": "string",
-      "source": "attribute",
-      "selector": ".game-cover img",
-      "attribute": "alt"
+      "type": "string"
     },
     "status": {
       "type": "string",
@@ -58,9 +50,7 @@
       "type": "string"
     },
     "review": {
-      "type": "string",
-      "source": "html",
-      "selector": ".game-review"
+      "type": "string"
     },
     "gameUrl": {
       "type": "string"

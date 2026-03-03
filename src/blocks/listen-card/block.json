@@ -10,34 +10,22 @@
     "textdomain": "post-kinds-indieweb",
     "attributes": {
         "trackTitle": {
-            "type": "string",
-            "source": "html",
-            "selector": ".track-title"
+            "type": "string"
         },
         "artistName": {
-            "type": "string",
-            "source": "html",
-            "selector": ".artist-name"
+            "type": "string"
         },
         "albumTitle": {
-            "type": "string",
-            "source": "html",
-            "selector": ".album-title"
+            "type": "string"
         },
         "releaseDate": {
             "type": "string"
         },
         "coverImage": {
-            "type": "string",
-            "source": "attribute",
-            "selector": ".cover-image img",
-            "attribute": "src"
+            "type": "string"
         },
         "coverImageAlt": {
-            "type": "string",
-            "source": "attribute",
-            "selector": ".cover-image img",
-            "attribute": "alt"
+            "type": "string"
         },
         "listenUrl": {
             "type": "string"

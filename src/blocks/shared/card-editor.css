@@ -229,6 +229,30 @@
 	color: inherit;
 	opacity: 0.4;
 	transition: color 0.15s, opacity 0.15s;
+	appearance: none;
+	-webkit-appearance: none;
+	line-height: 1;
+}
+
+.post-kinds-card__rating .post-kinds-star-rating .star svg {
+	width: 1em;
+	height: 1em;
+	fill: currentColor;
+	display: block;
+}
+
+/* Save output uses text character stars directly in .post-kinds-card__rating */
+.post-kinds-card__rating > .star {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Symbol", system-ui, sans-serif;
+	font-size: 18px;
+	line-height: 1;
+	color: inherit;
+	opacity: 0.4;
+}
+
+.post-kinds-card__rating > .star.filled {
+	color: #ffc107;
+	opacity: 1;
 }
 
 .post-kinds-card__rating .post-kinds-star-rating .star.filled {

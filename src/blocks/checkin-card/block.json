@@ -10,9 +10,7 @@
     "textdomain": "post-kinds-indieweb",
     "attributes": {
         "venueName": {
-            "type": "string",
-            "source": "html",
-            "selector": ".venue-name"
+            "type": "string"
         },
         "venueType": {
             "type": "string",
@@ -57,21 +55,13 @@
             "type": "string"
         },
         "note": {
-            "type": "string",
-            "source": "html",
-            "selector": ".checkin-note"
+            "type": "string"
         },
         "photo": {
-            "type": "string",
-            "source": "attribute",
-            "selector": ".checkin-photo img",
-            "attribute": "src"
+            "type": "string"
         },
         "photoAlt": {
-            "type": "string",
-            "source": "attribute",
-            "selector": ".checkin-photo img",
-            "attribute": "alt"
+            "type": "string"
         },
         "showMap": {
             "type": "boolean",

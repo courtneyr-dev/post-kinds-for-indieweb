@@ -10,14 +10,10 @@
     "textdomain": "post-kinds-indieweb",
     "attributes": {
         "bookTitle": {
-            "type": "string",
-            "source": "html",
-            "selector": ".book-title"
+            "type": "string"
         },
         "authorName": {
-            "type": "string",
-            "source": "html",
-            "selector": ".author-name"
+            "type": "string"
         },
         "isbn": {
             "type": "string"
@@ -35,16 +31,10 @@
             "type": "number"
         },
         "coverImage": {
-            "type": "string",
-            "source": "attribute",
-            "selector": ".cover-image img",
-            "attribute": "src"
+            "type": "string"
         },
         "coverImageAlt": {
-            "type": "string",
-            "source": "attribute",
-            "selector": ".cover-image img",
-            "attribute": "alt"
+            "type": "string"
         },
         "bookUrl": {
             "type": "string"
@@ -67,9 +57,7 @@
             "type": "string"
         },
         "review": {
-            "type": "string",
-            "source": "html",
-            "selector": ".book-review"
+            "type": "string"
         },
         "layout": {
             "type": "string",

@@ -16,23 +16,16 @@
   "textdomain": "post-kinds-indieweb",
   "attributes": {
     "title": {
-      "type": "string",
-      "source": "html",
-      "selector": ".like-title"
+      "type": "string"
     },
     "url": {
       "type": "string"
     },
     "description": {
-      "type": "string",
-      "source": "html",
-      "selector": ".like-description"
+      "type": "string"
     },
     "image": {
-      "type": "string",
-      "source": "attribute",
-      "selector": ".like-image img",
-      "attribute": "src"
+      "type": "string"
     },
     "imageAlt": {
       "type": "string"

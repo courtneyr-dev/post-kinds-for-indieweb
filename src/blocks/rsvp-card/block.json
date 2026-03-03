@@ -10,9 +10,7 @@
     "textdomain": "post-kinds-indieweb",
     "attributes": {
         "eventName": {
-            "type": "string",
-            "source": "html",
-            "selector": ".event-name"
+            "type": "string"
         },
         "eventUrl": {
             "type": "string"
@@ -34,24 +32,16 @@
             "default": "yes"
         },
         "rsvpNote": {
-            "type": "string",
-            "source": "html",
-            "selector": ".rsvp-note"
+            "type": "string"
         },
         "rsvpAt": {
             "type": "string"
         },
         "eventImage": {
-            "type": "string",
-            "source": "attribute",
-            "selector": ".event-image img",
-            "attribute": "src"
+            "type": "string"
         },
         "eventImageAlt": {
-            "type": "string",
-            "source": "attribute",
-            "selector": ".event-image img",
-            "attribute": "alt"
+            "type": "string"
         },
         "rel": {
             "type": "string",

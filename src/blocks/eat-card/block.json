@@ -10,9 +10,7 @@
 	"textdomain": "post-kinds-indieweb",
 	"attributes": {
 		"name": {
-			"type": "string",
-			"source": "html",
-			"selector": ".food-name"
+			"type": "string"
 		},
 		"restaurant": {
 			"type": "string"
@@ -21,16 +19,10 @@
 			"type": "string"
 		},
 		"photo": {
-			"type": "string",
-			"source": "attribute",
-			"selector": ".food-photo img",
-			"attribute": "src"
+			"type": "string"
 		},
 		"photoAlt": {
-			"type": "string",
-			"source": "attribute",
-			"selector": ".food-photo img",
-			"attribute": "alt"
+			"type": "string"
 		},
 		"rating": {
 			"type": "number",
@@ -40,9 +32,7 @@
 			"type": "string"
 		},
 		"notes": {
-			"type": "string",
-			"source": "html",
-			"selector": ".food-notes"
+			"type": "string"
 		},
 		"restaurantUrl": {
 			"type": "string"

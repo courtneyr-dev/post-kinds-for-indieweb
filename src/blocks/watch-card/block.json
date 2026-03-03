@@ -10,9 +10,7 @@
     "textdomain": "post-kinds-indieweb",
     "attributes": {
         "mediaTitle": {
-            "type": "string",
-            "source": "html",
-            "selector": ".media-title"
+            "type": "string"
         },
         "mediaType": {
             "type": "string",
@@ -37,16 +35,10 @@
             "type": "string"
         },
         "posterImage": {
-            "type": "string",
-            "source": "attribute",
-            "selector": ".poster-image img",
-            "attribute": "src"
+            "type": "string"
         },
         "posterImageAlt": {
-            "type": "string",
-            "source": "attribute",
-            "selector": ".poster-image img",
-            "attribute": "alt"
+            "type": "string"
         },
         "watchUrl": {
             "type": "string"
@@ -69,9 +61,7 @@
             "type": "string"
         },
         "review": {
-            "type": "string",
-            "source": "html",
-            "selector": ".watch-review"
+            "type": "string"
         },
         "layout": {
             "type": "string",

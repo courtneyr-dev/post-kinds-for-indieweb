@@ -14,6 +14,11 @@
 	padding: 0.125rem;
 	cursor: pointer;
 	transition: transform 0.1s ease;
+	appearance: none;
+	-webkit-appearance: none;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Symbol", system-ui, sans-serif;
+	font-size: 1.25rem;
+	line-height: 1;
 }
 
 .wp-block-post-kinds-indieweb-star-rating .rating-icon:hover {

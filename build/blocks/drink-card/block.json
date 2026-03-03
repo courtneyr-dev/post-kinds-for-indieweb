@@ -17,9 +17,7 @@
   "textdomain": "post-kinds-indieweb",
   "attributes": {
     "name": {
-      "type": "string",
-      "source": "html",
-      "selector": ".drink-name"
+      "type": "string"
     },
     "drinkType": {
       "type": "string",
@@ -29,16 +27,10 @@
       "type": "string"
     },
     "photo": {
-      "type": "string",
-      "source": "attribute",
-      "selector": ".drink-photo img",
-      "attribute": "src"
+      "type": "string"
     },
     "photoAlt": {
-      "type": "string",
-      "source": "attribute",
-      "selector": ".drink-photo img",
-      "attribute": "alt"
+      "type": "string"
     },
     "rating": {
       "type": "number",
@@ -48,9 +40,7 @@
       "type": "string"
     },
     "notes": {
-      "type": "string",
-      "source": "html",
-      "selector": ".drink-notes"
+      "type": "string"
     },
     "venueUrl": {
       "type": "string"

@@ -16,9 +16,7 @@
   "textdomain": "post-kinds-indieweb",
   "attributes": {
     "title": {
-      "type": "string",
-      "source": "html",
-      "selector": ".acquisition-title"
+      "type": "string"
     },
     "acquisitionType": {
       "type": "string",
@@ -34,18 +32,13 @@
       "type": "string"
     },
     "photo": {
-      "type": "string",
-      "source": "attribute",
-      "selector": ".acquisition-photo img",
-      "attribute": "src"
+      "type": "string"
     },
     "photoAlt": {
       "type": "string"
     },
     "notes": {
-      "type": "string",
-      "source": "html",
-      "selector": ".acquisition-notes"
+      "type": "string"
     },
     "acquiredAt": {
       "type": "string"

@@ -10,9 +10,7 @@
 	"textdomain": "post-kinds-indieweb",
 	"attributes": {
 		"title": {
-			"type": "string",
-			"source": "html",
-			"selector": ".jam-title"
+			"type": "string"
 		},
 		"artist": {
 			"type": "string"
@@ -21,10 +19,7 @@
 			"type": "string"
 		},
 		"cover": {
-			"type": "string",
-			"source": "attribute",
-			"selector": ".jam-cover img",
-			"attribute": "src"
+			"type": "string"
 		},
 		"coverAlt": {
 			"type": "string"
@@ -33,9 +28,7 @@
 			"type": "string"
 		},
 		"note": {
-			"type": "string",
-			"source": "html",
-			"selector": ".jam-note"
+			"type": "string"
 		},
 		"jammedAt": {
 			"type": "string"

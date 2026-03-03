@@ -10,18 +10,14 @@
 	"textdomain": "post-kinds-indieweb",
 	"attributes": {
 		"mood": {
-			"type": "string",
-			"source": "html",
-			"selector": ".mood-text"
+			"type": "string"
 		},
 		"emoji": {
 			"type": "string",
 			"default": ""
 		},
 		"note": {
-			"type": "string",
-			"source": "html",
-			"selector": ".mood-note"
+			"type": "string"
 		},
 		"intensity": {
 			"type": "number",
