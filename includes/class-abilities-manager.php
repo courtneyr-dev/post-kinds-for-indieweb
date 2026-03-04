@@ -170,7 +170,7 @@ final class Abilities_Manager {
 		 *
 		 * @param Abilities_Manager $manager The abilities manager instance.
 		 */
-		do_action( 'pkiw_abilities_registered', $this );
+		do_action( 'pkiw_abilities_registered', $this ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 	}
 
 	/**

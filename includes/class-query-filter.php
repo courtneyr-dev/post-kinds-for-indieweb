@@ -98,7 +98,7 @@ class Query_Filter {
 		}
 
 		// Exclude posts with the imported meta key.
-		$meta_query = $query->get( 'meta_query' );
+		$meta_query = $query->get( 'meta_query' ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 		if ( ! is_array( $meta_query ) ) {
 			$meta_query = [];
 		}
@@ -117,7 +117,7 @@ class Query_Filter {
 			],
 		];
 
-		$query->set( 'meta_query', $meta_query );
+		$query->set( 'meta_query', $meta_query ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 	}
 
 	/**

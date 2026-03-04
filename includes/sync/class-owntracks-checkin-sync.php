@@ -399,7 +399,7 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 					'before' => gmdate( 'Y-m-d H:i:s', $timestamp + 300 ),
 				],
 			],
-			'meta_query'     => [
+			'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				'relation' => 'AND',
 				[
 					'key'     => '_postkind_kind',

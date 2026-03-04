@@ -83,7 +83,7 @@ class Syndication_Page {
 				$this->services['lastfm'] = [
 					'name'     => 'Last.fm',
 					'kind'     => 'listen',
-					'meta_key' => Meta_Fields::PREFIX . 'syndicate_lastfm',
+					'meta_key' => Meta_Fields::PREFIX . 'syndicate_lastfm', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 				];
 			}
 		}
@@ -97,7 +97,7 @@ class Syndication_Page {
 				$this->services['trakt'] = [
 					'name'     => 'Trakt',
 					'kind'     => 'watch',
-					'meta_key' => Meta_Fields::PREFIX . 'syndicate_trakt',
+					'meta_key' => Meta_Fields::PREFIX . 'syndicate_trakt', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 				];
 			}
 		}

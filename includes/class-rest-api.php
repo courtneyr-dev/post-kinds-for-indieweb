@@ -2718,14 +2718,14 @@ class REST_API {
 			'post_status'    => 'publish',
 			'posts_per_page' => $per_page,
 			'paged'          => $page,
-			'tax_query'      => [
+			'tax_query'      => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 				[
 					'taxonomy' => 'kind',
 					'field'    => 'slug',
 					'terms'    => 'checkin',
 				],
 			],
-			'meta_query'     => [],
+			'meta_query'     => [], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 		];
 
 		// Filter by year.
@@ -2739,7 +2739,7 @@ class REST_API {
 
 		// Filter by venue type.
 		if ( $venue_type ) {
-			$args['meta_query'][] = [
+			$args['meta_query'][] = [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				'key'     => '_postkind_checkin_type',
 				'value'   => $venue_type,
 				'compare' => '=',
@@ -2748,7 +2748,7 @@ class REST_API {
 
 		// Search by venue name.
 		if ( $search ) {
-			$args['meta_query'][] = [
+			$args['meta_query'][] = [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				'key'     => '_postkind_checkin_name',
 				'value'   => $search,
 				'compare' => 'LIKE',
@@ -2786,7 +2786,7 @@ class REST_API {
 			'post_type'      => 'post',
 			'post_status'    => 'publish',
 			'posts_per_page' => -1,
-			'tax_query'      => [
+			'tax_query'      => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 				[
 					'taxonomy' => 'kind',
 					'field'    => 'slug',

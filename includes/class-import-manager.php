@@ -669,7 +669,7 @@ class Import_Manager {
 		$args = [
 			'post_type'      => $this->get_import_post_type(),
 			'posts_per_page' => 1,
-			'meta_query'     => [
+			'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				[
 					'key'   => $meta_key,
 					'value' => $meta_value,
@@ -753,7 +753,7 @@ class Import_Manager {
 		$args = [
 			'post_type'      => $this->get_import_post_type(),
 			'posts_per_page' => 1,
-			'meta_query'     => [
+			'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				[
 					'key'   => $meta_key,
 					'value' => $meta_value,
@@ -1521,14 +1521,14 @@ class Import_Manager {
 				'post_type'      => [ 'post', 'reaction' ],
 				'post_status'    => 'any',
 				'posts_per_page' => -1,
-				'meta_query'     => [
+				'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 					[
 						'key'     => '_postkind_imported_from',
 						'value'   => $source_config['name'],
 						'compare' => '=',
 					],
 				],
-				'tax_query'      => [
+				'tax_query'      => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 					[
 						'taxonomy' => 'kind',
 						'field'    => 'slug',

@@ -138,7 +138,7 @@ final class Block_Bindings_Source {
 		 *
 		 * @param string[] $bindable_keys List of key names available for binding.
 		 */
-		$bindable_keys = apply_filters( 'pkiw_block_bindings_keys', $bindable_keys );
+		$bindable_keys = apply_filters( 'pkiw_block_bindings_keys', $bindable_keys ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 
 		register_block_bindings_source(
 			self::SOURCE_NAME,
@@ -180,7 +180,7 @@ final class Block_Bindings_Source {
 		 *
 		 * @param string[] $post_types Post types for meta registration.
 		 */
-		$post_types = apply_filters( 'pkiw_block_bindings_post_types', $post_types );
+		$post_types = apply_filters( 'pkiw_block_bindings_post_types', $post_types ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 
 		foreach ( $post_types as $post_type ) {
 			foreach ( $meta_keys as $key => $type ) {

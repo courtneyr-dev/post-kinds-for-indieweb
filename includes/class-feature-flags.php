@@ -60,7 +60,7 @@ final class Feature_Flags {
 		}
 
 		// 2. Check filter (allows runtime override).
-		$filtered = apply_filters( "pkiw_feature_flag_{$flag}", null );
+		$filtered = apply_filters( "pkiw_feature_flag_{$flag}", null ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
 		if ( null !== $filtered ) {
 			return (bool) $filtered;
 		}
