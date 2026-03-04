@@ -177,8 +177,8 @@ class CoreAbilitiesTest extends WP_UnitTestCase {
 		$post_id = self::factory()->post->create();
 		$result  = $this->abilities->execute_update_post_meta( [
 			'post_id'    => $post_id,
-			'meta_key'   => 'listen_track',
-			'meta_value' => 'Updated Track Name',
+			'meta_key'   => 'listen_track', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+			'meta_value' => 'Updated Track Name', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 		] );
 
 		$this->assertIsArray( $result );
