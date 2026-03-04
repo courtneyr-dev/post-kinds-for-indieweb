@@ -1,14 +1,6 @@
 {
-	"*.php": [
-		"vendor/bin/phpcs --standard=.phpcs.xml.dist"
-	],
-	"*.{js,jsx,ts,tsx}": [
-		"wp-scripts lint-js"
-	],
-	"*.{css,scss}": [
-		"wp-scripts lint-style"
-	],
-	"package.json": [
-		"wp-scripts lint-pkg-json"
-	]
+  "*.php": ["vendor/bin/phpcs --standard=.phpcs.xml.dist"],
+  "*.{js,jsx,ts,tsx}": ["wp-scripts lint-js"],
+  "*.{css,scss}": ["wp-scripts lint-style --allow-empty-input"],
+  "package.json": ["wp-scripts lint-pkg-json"]
 }

@@ -12,6 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
+
 use function PostKindsForIndieWeb\get_checkins;
 use function PostKindsForIndieWeb\get_checkins_at_venue;
 use function PostKindsForIndieWeb\get_checkin_location;

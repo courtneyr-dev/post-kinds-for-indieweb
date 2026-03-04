@@ -135,6 +135,17 @@
 		</properties>
 	</rule>
 
+	<!-- Register allowed prefixes for globals, hooks, and options -->
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="pkiw"/>
+				<element value="post_kinds_for_indieweb"/>
+				<element value="PostKindsForIndieWeb"/>
+			</property>
+		</properties>
+	</rule>
+
 	<!-- ===== Documentation ===== -->
 
 	<!-- Require file doc comments -->

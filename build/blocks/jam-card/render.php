@@ -15,6 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
+
 $pkiw_title     = $attributes['title'] ?? '';
 $pkiw_artist    = $attributes['artist'] ?? '';
 $pkiw_album     = $attributes['album'] ?? '';

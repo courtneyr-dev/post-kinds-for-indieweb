@@ -13,65 +13,67 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
+
 $pkiw_layout       = $attributes['layout'] ?? 'grid';
 $pkiw_show_map     = $attributes['showMap'] ?? true;
 $pkiw_show_stats   = $attributes['showStats'] ?? true;
 $pkiw_limit        = $attributes['limit'] ?? 12;
 $pkiw_show_filters = $attributes['showFilters'] ?? false;
 
-// Enqueue Leaflet for map view
+// Enqueue Leaflet for map view.
 if ( $pkiw_show_map ) {
-	wp_enqueue_style( 'leaflet', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet/leaflet.css', array(), '1.9.4' );
-	wp_enqueue_script( 'leaflet', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet/leaflet.js', array(), '1.9.4', true );
-	wp_enqueue_style( 'leaflet-markercluster', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.css', array( 'leaflet' ), '1.4.1' );
-	wp_enqueue_style( 'leaflet-markercluster-default', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.Default.css', array( 'leaflet-markercluster' ), '1.4.1' );
-	wp_enqueue_script( 'leaflet-markercluster', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/leaflet.markercluster.js', array( 'leaflet' ), '1.4.1', true );
+	wp_enqueue_style( 'leaflet', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet/leaflet.css', [], '1.9.4' );
+	wp_enqueue_script( 'leaflet', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet/leaflet.js', [], '1.9.4', true );
+	wp_enqueue_style( 'leaflet-markercluster', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.css', [ 'leaflet' ], '1.4.1' );
+	wp_enqueue_style( 'leaflet-markercluster-default', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.Default.css', [ 'leaflet-markercluster' ], '1.4.1' );
+	wp_enqueue_script( 'leaflet-markercluster', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/leaflet.markercluster.js', [ 'leaflet' ], '1.4.1', true );
 }
 
-// Get check-ins
-$pkiw_args = array(
+// Get check-ins.
+$pkiw_args = [
 	'post_type'      => 'post',
 	'posts_per_page' => $pkiw_limit,
 	'post_status'    => 'publish',
-	'tax_query'      => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-		array(
+	'tax_query'      => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+		[
 			'taxonomy' => 'indieblocks_kind',
 			'field'    => 'slug',
 			'terms'    => 'checkin',
-		),
-	),
-	'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-		array(
+		],
+	],
+	'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+		[
 			'key'     => '_reactions_checkin_venue_name',
 			'compare' => 'EXISTS',
-		),
-	),
+		],
+	],
 	'orderby'        => 'date',
 	'order'          => 'DESC',
-);
+];
 
 $pkiw_checkins_query = new WP_Query( $pkiw_args );
-$pkiw_checkins       = array();
+$pkiw_checkins       = [];
 
 if ( $pkiw_checkins_query->have_posts() ) {
 	while ( $pkiw_checkins_query->have_posts() ) {
 		$pkiw_checkins_query->the_post();
 		$pkiw_post_id = get_the_ID();
 
-		$pkiw_checkin = array(
-			'id'          => $pkiw_post_id,
-			'venue_name'  => get_post_meta( $pkiw_post_id, '_reactions_checkin_venue_name', true ),
-			'address'     => get_post_meta( $pkiw_post_id, '_reactions_checkin_address', true ),
-			'venue_type'  => get_post_meta( $pkiw_post_id, '_reactions_checkin_venue_type', true ),
-			'latitude'    => get_post_meta( $pkiw_post_id, '_reactions_checkin_latitude', true ),
-			'longitude'   => get_post_meta( $pkiw_post_id, '_reactions_checkin_longitude', true ),
-			'photo'       => get_post_meta( $pkiw_post_id, '_reactions_checkin_photo', true ),
-			'note'        => get_the_excerpt(),
-			'date'        => get_the_date( 'c' ),
-			'permalink'   => get_permalink(),
-		);
+		$pkiw_checkin = [
+			'id'         => $pkiw_post_id,
+			'venue_name' => get_post_meta( $pkiw_post_id, '_reactions_checkin_venue_name', true ),
+			'address'    => get_post_meta( $pkiw_post_id, '_reactions_checkin_address', true ),
+			'venue_type' => get_post_meta( $pkiw_post_id, '_reactions_checkin_venue_type', true ),
+			'latitude'   => get_post_meta( $pkiw_post_id, '_reactions_checkin_latitude', true ),
+			'longitude'  => get_post_meta( $pkiw_post_id, '_reactions_checkin_longitude', true ),
+			'photo'      => get_post_meta( $pkiw_post_id, '_reactions_checkin_photo', true ),
+			'note'       => get_the_excerpt(),
+			'date'       => get_the_date( 'c' ),
+			'permalink'  => get_permalink(),
+		];
 
-		// Check privacy settings
+		// Check privacy settings.
 		$pkiw_privacy = get_post_meta( $pkiw_post_id, '_reactions_checkin_geo_privacy', true );
 		if ( 'private' === $pkiw_privacy ) {
 			$pkiw_checkin['latitude']  = null;
@@ -83,15 +85,15 @@ if ( $pkiw_checkins_query->have_posts() ) {
 	wp_reset_postdata();
 }
 
-// Calculate stats
-$pkiw_stats = array(
+// Calculate stats.
+$pkiw_stats = [
 	'total'         => $pkiw_checkins_query->found_posts,
 	'unique_venues' => 0,
-	'countries'     => array(),
-	'cities'        => array(),
-);
+	'countries'     => [],
+	'cities'        => [],
+];
 
-$pkiw_unique_venues = array();
+$pkiw_unique_venues = [];
 foreach ( $pkiw_checkins as $pkiw_checkin ) {
 	if ( ! empty( $pkiw_checkin['venue_name'] ) ) {
 		$pkiw_unique_venues[ $pkiw_checkin['venue_name'] ] = true;
@@ -99,13 +101,15 @@ foreach ( $pkiw_checkins as $pkiw_checkin ) {
 }
 $pkiw_stats['unique_venues'] = count( $pkiw_unique_venues );
 
-// Get wrapper attributes
-$pkiw_wrapper_attributes = get_block_wrapper_attributes( array(
-	'class' => 'checkin-dashboard-frontend layout-' . esc_attr( $pkiw_layout ),
-	'data-layout' => esc_attr( $pkiw_layout ),
-	'data-show-map' => $pkiw_show_map ? 'true' : 'false',
-	'data-limit' => esc_attr( $pkiw_limit ),
-) );
+// Get wrapper attributes.
+$pkiw_wrapper_attributes = get_block_wrapper_attributes(
+	[
+		'class'         => 'checkin-dashboard-frontend layout-' . esc_attr( $pkiw_layout ),
+		'data-layout'   => esc_attr( $pkiw_layout ),
+		'data-show-map' => $pkiw_show_map ? 'true' : 'false',
+		'data-limit'    => esc_attr( $pkiw_limit ),
+	]
+);
 ?>
 
 <div <?php echo $pkiw_wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
@@ -176,19 +180,32 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes( array(
 		<?php if ( $pkiw_show_map ) : ?>
 		<!-- Map View -->
 		<div class="checkin-view-map <?php echo 'map' === $pkiw_layout ? 'active' : ''; ?>">
-			<div id="checkin-frontend-map" class="checkin-map" data-checkins="<?php echo esc_attr( wp_json_encode( array_filter( $pkiw_checkins, function( $c ) { return ! empty( $c['latitude'] ); } ) ) ); ?>"></div>
+			<div id="checkin-frontend-map" class="checkin-map" data-checkins="
+			<?php
+			echo esc_attr(
+				wp_json_encode(
+					array_filter(
+						$pkiw_checkins,
+						function ( $c ) {
+							return ! empty( $c['latitude'] );
+						}
+					)
+				)
+			);
+			?>
+																				"></div>
 		</div>
 		<?php endif; ?>
 
 		<!-- Timeline View -->
 		<div class="checkin-view-timeline <?php echo 'timeline' === $pkiw_layout ? 'active' : ''; ?>">
 			<?php
-			// Group by month
-			$pkiw_grouped = array();
+			// Group by month.
+			$pkiw_grouped = [];
 			foreach ( $pkiw_checkins as $pkiw_checkin ) {
 				$pkiw_month_key = date_i18n( 'F Y', strtotime( $pkiw_checkin['date'] ) );
 				if ( ! isset( $pkiw_grouped[ $pkiw_month_key ] ) ) {
-					$pkiw_grouped[ $pkiw_month_key ] = array();
+					$pkiw_grouped[ $pkiw_month_key ] = [];
 				}
 				$pkiw_grouped[ $pkiw_month_key ][] = $pkiw_checkin;
 			}

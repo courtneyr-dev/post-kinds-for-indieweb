@@ -3,21 +3,26 @@
 /.github
 /.claude
 /.husky
+/.omc
 /node_modules
 /tests
 /bin
 /src
 
-# Files to exclude from distribution
+# Hidden/config files to exclude
 .distignore
+.DS_Store
 .editorconfig
 .gitignore
 .gitattributes
+.gitkeep
 .lintstagedrc.json
 .phpcs.xml.dist
 .phpcs.cache
 .phpunit.result.cache
 .wp-env.json
+
+# Build/dev tooling
 composer.json
 composer.lock
 package.json
@@ -26,6 +31,8 @@ phpunit.xml.dist
 webpack.config.js
 
 # Development documentation
+CLAUDE.md
+CODE_OF_CONDUCT.md
 CONTRIBUTING.md
 SECURITY.md
 SUPPORT.md
