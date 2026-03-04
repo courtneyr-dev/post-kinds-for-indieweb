@@ -1,47 +1,42 @@
 ## Description
 
-<!-- Describe your changes in detail -->
+<!-- What does this PR do? Keep it brief. -->
 
 ## Related Issue
 
-<!-- Link to the issue this PR addresses -->
+<!-- Link to the issue this addresses. -->
 
 Fixes #
 
 ## Type of Change
 
-<!-- Mark the relevant option with an x -->
-
-- [ ] Bug fix (non-breaking change that fixes an issue)
-- [ ] New feature (non-breaking change that adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Bug fix (non-breaking)
+- [ ] New feature (non-breaking)
+- [ ] Breaking change (existing functionality affected)
 - [ ] Documentation update
 - [ ] Code refactoring (no functional changes)
 - [ ] Performance improvement
 - [ ] Test addition or update
 
-## Motivation and Context
-
-<!-- Why is this change required? What problem does it solve? -->
-
 ## How Has This Been Tested?
 
-<!-- Describe how you tested your changes -->
+<!-- Describe your test environment and what you tested. -->
 
-**Test Environment:**
+**Environment:**
 
-- WordPress version:
-- PHP version:
-- Browser(s):
+- WordPress:
+- PHP:
+- Theme:
+- IndieBlocks: installed / not installed
 
-**Test Cases:**
+**Test cases:**
 
-- [ ] Test case 1
-- [ ] Test case 2
+- [ ]
+- [ ]
 
-## Screenshots (if applicable)
+## Screenshots
 
-<!-- Add screenshots to help explain your changes -->
+<!-- For UI changes, show before and after. Delete this section if not applicable. -->
 
 | Before | After |
 | ------ | ----- |
@@ -49,62 +44,50 @@ Fixes #
 
 ## Checklist
 
-<!-- Mark completed items with an x -->
-
 ### Code Quality
 
-- [ ] My code follows the WordPress Coding Standards
-- [ ] I have run `composer lint` and `npm run lint` with no errors
-- [ ] I have run `composer test` and all tests pass
-- [ ] I have added tests for new functionality
-- [ ] My changes generate no new warnings
+- [ ] Follows WordPress Coding Standards
+- [ ] `composer lint` and `npm run lint` pass
+- [ ] `composer test` passes
+- [ ] Tests added for new functionality
+- [ ] No new warnings in console or logs
 
 ### Security
 
-- [ ] All user input is sanitized
-- [ ] All output is properly escaped
-- [ ] Nonces are verified on form submissions
-- [ ] Capabilities are checked before privileged operations
-- [ ] No sensitive data is exposed
-
-### Documentation
-
-- [ ] I have updated inline documentation/comments
-- [ ] I have updated README if needed
-- [ ] I have updated CHANGELOG if needed
+- [ ] Input sanitized, output escaped
+- [ ] Nonces verified on form submissions
+- [ ] Capabilities checked before privileged operations
 
 ### Compatibility
 
 - [ ] Works with WordPress 6.9+
 - [ ] Works with PHP 8.2+
-- [ ] Works with and without IndieBlocks installed
-- [ ] Backward compatible (or breaking changes documented)
+- [ ] Works with and without IndieBlocks
+- [ ] Breaking changes documented (if any)
 
 ### Accessibility
 
-- [ ] Interactive elements are keyboard accessible
-- [ ] Screen reader text is provided where needed
-- [ ] Color contrast meets WCAG AA standards
-- [ ] Focus indicators are visible
+- [ ] Keyboard accessible
+- [ ] Screen reader text provided where needed
+- [ ] Color contrast meets WCAG AA
 
-### Internationalization
+### i18n
 
-- [ ] All strings are translatable
-- [ ] Text domain is correct (`post-kinds-for-indieweb`)
+- [ ] All strings translatable
+- [ ] Text domain is `post-kinds-for-indieweb`
 - [ ] No concatenated translation strings
+
+### Documentation
+
+- [ ] Inline docs updated
+- [ ] README / CHANGELOG updated if needed
 
 ## Breaking Changes
 
-<!-- List any breaking changes and migration steps -->
-
-N/A
-
-## Dependencies
-
-<!-- List any new dependencies added -->
+<!-- List breaking changes and migration steps. Delete if N/A. -->
 
 N/A
 
 ## Additional Notes
 
-<!-- Any additional information for reviewers -->
+<!-- Anything else reviewers should know. -->

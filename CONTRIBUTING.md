@@ -1,220 +1,130 @@
 # Contributing to Post Kinds for IndieWeb
 
-Thank you for your interest in contributing to Post Kinds for IndieWeb! This document provides guidelines and instructions for contributing.
+Thanks for your interest in contributing! This guide covers everything you need to get started.
 
-## Table of Contents
+This project follows the [WordPress Community Code of Conduct](https://make.wordpress.org/handbook/community-code-of-conduct/).
 
-- [Code of Conduct](#code-of-conduct)
-- [How to Contribute](#how-to-contribute)
-- [Getting Started](#getting-started)
-- [Development Workflow](#development-workflow)
-- [Coding Standards](#coding-standards)
-- [Testing](#testing)
-- [Commit Guidelines](#commit-guidelines)
-- [Pull Request Process](#pull-request-process)
-- [Release Process](#release-process)
+## Ways to Contribute
 
-## Code of Conduct
+**Report bugs** — Check [existing issues](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues) first, then open a new one with your WordPress version, PHP version, steps to reproduce, and any error messages.
 
-This project adheres to the [WordPress Community Code of Conduct](https://make.wordpress.org/handbook/community-code-of-conduct/). By participating, you are expected to uphold this code.
+**Suggest features** — Describe the problem you're solving, how IndieWeb users benefit, and whether it fits the plugin's scope.
 
-## How to Contribute
+**Submit code** — Fork, branch, make changes, and open a pull request.
 
-### Reporting Bugs
+**Improve docs** — Fix typos, add examples, clarify instructions, or help with translations.
 
-Before creating a bug report:
+## Prerequisites
 
-1. Check the [existing issues](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues) to avoid duplicates
-2. Ensure you're using the latest version
-3. Verify the issue isn't caused by a plugin conflict
-
-When creating a bug report, include:
-
-- WordPress version
-- PHP version
-- IndieBlocks version (if installed)
-- Steps to reproduce
-- Expected vs actual behavior
-- Error messages or screenshots
-
-### Suggesting Features
-
-Feature requests are welcome! Please:
-
-1. Check existing issues for similar suggestions
-2. Describe the problem you're trying to solve
-3. Explain how IndieWeb users would benefit
-4. Consider if it fits the plugin's scope
-
-### Contributing Code
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
-### Contributing Documentation
-
-Documentation improvements are highly valued:
-
-- Fix typos or unclear explanations
-- Add examples or use cases
-- Translate to other languages
-- Improve inline code comments
-
-## Getting Started
-
-### Prerequisites
-
-- PHP 8.2 or higher
-- Node.js 18 or higher
+- PHP 8.2+
+- Node.js 18+
 - Composer 2.x
-- WordPress 6.9 or higher (local development environment)
+- WordPress 6.9+ (local dev environment)
 - Git
 
-### Setup
+## Setup
 
-1. **Fork and clone the repository**
+```bash
+# Fork and clone
+git clone https://github.com/YOUR-USERNAME/post-kinds-for-indieweb.git
+cd post-kinds-for-indieweb
 
-   ```bash
-   git clone https://github.com/YOUR-USERNAME/post-kinds-for-indieweb.git
-   cd post-kinds-for-indieweb
-   ```
+# Install dependencies
+composer install
+npm install
 
-2. **Install PHP dependencies**
+# Build assets
+npm run build
 
-   ```bash
-   composer install
-   ```
+# Start development (watch mode)
+npm run start
+```
 
-3. **Install JavaScript dependencies**
+### Local Environment
 
-   ```bash
-   npm install
-   ```
-
-4. **Build assets**
-
-   ```bash
-   npm run build
-   ```
-
-5. **Start development build**
-   ```bash
-   npm run start
-   ```
-
-### Local Development Environment
-
-We recommend using one of these local development tools:
-
-- [wp-env](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-env/) (recommended)
-- [Local](https://localwp.com/)
-- [DDEV](https://ddev.com/)
-- [Lando](https://lando.dev/)
-
-With wp-env:
+We recommend [wp-env](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-env/) for local development:
 
 ```bash
 npm run env:start
-# Access at http://localhost:8888
-# Admin: admin / password
+# http://localhost:8888 — admin / password
 ```
+
+Other options: [Local](https://localwp.com/), [DDEV](https://ddev.com/), [Lando](https://lando.dev/).
 
 ## Development Workflow
 
 ### Branch Naming
 
-- `feature/description` - New features
-- `fix/description` - Bug fixes
-- `docs/description` - Documentation updates
-- `refactor/description` - Code refactoring
-- `test/description` - Test additions/changes
+| Prefix      | Use              |
+| ----------- | ---------------- |
+| `feature/`  | New features     |
+| `fix/`      | Bug fixes        |
+| `docs/`     | Documentation    |
+| `refactor/` | Code refactoring |
+| `test/`     | Tests            |
 
 ### Making Changes
 
-1. Create a branch from `main`
+```bash
+# Create a branch from main
+git checkout -b feature/my-new-feature
 
-   ```bash
-   git checkout -b feature/my-new-feature
-   ```
+# Make your changes, then lint and test
+composer lint
+npm run lint
+composer test
 
-2. Make your changes
-
-3. Run linting and tests
-
-   ```bash
-   composer lint
-   npm run lint
-   composer test
-   ```
-
-4. Commit your changes (see [Commit Guidelines](#commit-guidelines))
-
-5. Push and create a pull request
+# Commit and push
+git push origin feature/my-new-feature
+```
 
 ## Coding Standards
 
 ### PHP
 
-We follow [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/php/):
+Follow [WordPress PHP Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/php/):
 
 ```bash
-# Check coding standards
-composer lint
-
-# Auto-fix where possible
-composer lint:fix
-
-# Run static analysis
-composer analyze
+composer lint        # Check
+composer lint:fix    # Auto-fix
+composer analyze     # PHPStan level 6
 ```
 
-Key requirements:
+Key rules:
 
-- Use strict types: `declare(strict_types=1);`
-- Add comprehensive PHPDoc blocks
-- Follow WordPress naming conventions
-- Escape all output, sanitize all input
-- Verify nonces and capabilities
+- `declare(strict_types=1)` in every file
+- Escape all output (`esc_html()`, `esc_attr()`, `esc_url()`, `wp_kses_post()`)
+- Sanitize all input, verify nonces, check capabilities
+- Comprehensive PHPDoc blocks
 
 ### JavaScript
 
-We use [@wordpress/eslint-plugin](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-eslint-plugin/):
+Follow [WordPress JavaScript Standards](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-eslint-plugin/):
 
 ```bash
-# Check JavaScript
-npm run lint:js
-
-# Auto-fix
-npm run lint:js:fix
+npm run lint:js        # Check
+npm run lint:js:fix    # Auto-fix
 ```
 
-Key requirements:
+Key rules:
 
-- Use ES6+ features
-- Follow WordPress JavaScript Standards
-- Use `__()` for translatable strings
-- Prefer @wordpress packages
+- ES6+ features, prefer `@wordpress` packages
+- `__()` for translatable strings with text domain `post-kinds-for-indieweb`
 
 ### CSS
 
-We use [@wordpress/stylelint-config](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-stylelint-config/):
+Follow [WordPress CSS Standards](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-stylelint-config/):
 
 ```bash
-# Check styles
-npm run lint:css
-
-# Auto-fix
-npm run lint:css:fix
+npm run lint:css        # Check
+npm run lint:css:fix    # Auto-fix
 ```
 
-Key requirements:
+Key rules:
 
-- Use CSS custom properties for theming
-- Follow WordPress CSS standards
-- Support dark mode where applicable
+- CSS custom properties for theming
 - Mobile-first responsive design
+- Support dark mode where applicable
 
 ### Internationalization
 
@@ -223,7 +133,6 @@ All user-facing strings must be translatable:
 ```php
 // PHP
 __( 'Text', 'post-kinds-for-indieweb' )
-_e( 'Text', 'post-kinds-for-indieweb' )
 esc_html__( 'Text', 'post-kinds-for-indieweb' )
 ```
 
@@ -235,42 +144,31 @@ __("Text", "post-kinds-for-indieweb");
 
 ## Testing
 
-### PHP Tests
-
 ```bash
-# Run all tests
-composer test
+# PHP
+composer test                          # All tests
+composer test -- --testsuite=unit      # Unit only
+composer test -- --testsuite=integration  # Integration only
+composer test:coverage                 # Coverage report
 
-# Run specific test suite
-composer test -- --testsuite=unit
-composer test -- --testsuite=integration
+# JavaScript
+npm run test:unit          # Jest
+npm run test:unit:watch    # Watch mode
 
-# Generate coverage report
-composer test:coverage
-```
-
-### JavaScript Tests
-
-```bash
-# Run Jest tests
-npm run test:unit
-
-# Watch mode
-npm run test:unit:watch
+# End-to-end
+npm run test:e2e           # Playwright
 ```
 
 ### Manual Testing Checklist
 
-Before submitting a PR, test:
+Before submitting a PR:
 
-- [ ] Block renders correctly in editor
-- [ ] Block renders correctly on frontend
+- [ ] Block renders correctly in editor and frontend
 - [ ] Settings save and persist
-- [ ] Microformats markup is correct
-- [ ] Works without IndieBlocks installed
-- [ ] Works with IndieBlocks installed
+- [ ] Microformats markup is correct (check with [pin13.net/mf2](https://pin13.net/mf2/))
+- [ ] Works with and without IndieBlocks installed
 - [ ] No console errors or warnings
-- [ ] Accessibility (keyboard navigation, screen readers)
+- [ ] Keyboard accessible, screen reader friendly
 
 ## Commit Guidelines
 
@@ -278,93 +176,70 @@ We use [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```
 type(scope): description
-
-[optional body]
-
-[optional footer]
 ```
 
-### Types
+| Type       | Use                                |
+| ---------- | ---------------------------------- |
+| `feat`     | New feature                        |
+| `fix`      | Bug fix                            |
+| `docs`     | Documentation only                 |
+| `style`    | Formatting (no functional changes) |
+| `refactor` | Code refactoring                   |
+| `test`     | Adding or updating tests           |
+| `chore`    | Build process, dependencies        |
 
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation only
-- `style`: Code style (formatting, semicolons, etc.)
-- `refactor`: Code refactoring
-- `test`: Adding or updating tests
-- `chore`: Build process, dependencies, etc.
-
-### Examples
+Examples:
 
 ```
 feat(blocks): add Watch Card block for movie logging
-
 fix(api): handle rate limiting from TMDB API
-
 docs: update installation instructions
-
 refactor(listen-card): simplify state management
 ```
 
-### Commit Best Practices
+Keep commits atomic — one logical change per commit. Reference issues when applicable: `Fixes #123`.
 
-- Keep commits atomic (one logical change per commit)
-- Write clear, descriptive messages
-- Reference issues when applicable: `Fixes #123`
-
-## Pull Request Process
+## Pull Requests
 
 ### Before Submitting
 
-1. Ensure all tests pass
-2. Ensure linting passes
-3. Update documentation if needed
-4. Add tests for new functionality
-5. Rebase on latest `main`
+1. All tests pass (`composer test`, `npm run test:unit`)
+2. Linting passes (`composer lint`, `npm run lint`)
+3. Documentation updated if needed
+4. Tests added for new functionality
+5. Rebased on latest `main`
 
 ### PR Description
 
-Use the pull request template, including:
-
-- Summary of changes
-- Related issue(s)
-- Testing performed
-- Screenshots (for UI changes)
-- Checklist completion
+Use the [pull request template](.github/PULL_REQUEST_TEMPLATE.md). Include a summary, related issue, test environment, and screenshots for UI changes.
 
 ### Review Process
 
-1. Maintainer reviews code
-2. Automated checks must pass
-3. Changes requested will be discussed
-4. Once approved, PR is merged
-
-### After Merge
-
-- Delete your feature branch
-- Check the deployed changes work correctly
+1. Maintainer reviews code and automated checks run
+2. Changes may be requested and discussed
+3. Once approved, the PR is merged
+4. Delete your feature branch after merge
 
 ## Release Process
 
-Releases are managed by maintainers following semantic versioning:
+Maintainers follow [Semantic Versioning](https://semver.org/):
 
-- **Major** (1.0.0): Breaking changes
-- **Minor** (0.1.0): New features, backward compatible
-- **Patch** (0.0.1): Bug fixes, backward compatible
+- **Major** (X.0.0) — Breaking changes
+- **Minor** (0.X.0) — New features, backward compatible
+- **Patch** (0.0.X) — Bug fixes
 
-### Release Checklist
+Release checklist:
 
-1. Update version numbers
+1. Update version numbers in plugin header, `readme.txt`, and `package.json`
 2. Update CHANGELOG.md
-3. Update readme.txt
-4. Create release tag
-5. Deploy to WordPress.org
+3. Create release tag
+4. Deploy to WordPress.org
 
 ## Questions?
 
-- Open a [GitHub Discussion](https://github.com/courtneyr-dev/post-kinds-for-indieweb/discussions)
-- Check the [IndieWeb Wiki](https://indieweb.org/)
-- Join the [IndieWeb Chat](https://chat.indieweb.org/)
+- [GitHub Discussions](https://github.com/courtneyr-dev/post-kinds-for-indieweb/discussions)
+- [IndieWeb Chat](https://chat.indieweb.org/)
+- [IndieWeb Wiki](https://indieweb.org/)
 
 ---
 

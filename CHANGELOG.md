@@ -9,9 +9,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Jam Card, Eat Card, Drink Card, Favorite Card, Wish Card, Mood Card, Acquisition Card blocks
+- Play Card block with RAWG integration
+- Checkin Dashboard block for location overview
+- Block Bindings source for post kind meta fields
+- Block Bindings format helpers for dynamic content display
+- Format Badge block for displaying post kind labels
+- Media Stats block for collection summaries
+- Now Playing block for current listening activity
+- Recent Kinds block for latest post kind entries
+- AI Enhancements class for optional WP AI Client integration
+- oEmbed support for Jam Card block
+- Code of Conduct (CODE_OF_CONDUCT.md)
 - Project documentation (CONTRIBUTING.md, SECURITY.md, SUPPORT.md)
 - GitHub issue templates (bug report, feature request, question)
-- Pull request template
+- Pull request template with comprehensive checklists
+- QA checklist for pre-release testing
+
+### Changed
+
+- Converted Jam Card, Listen Card, and Watch Card to dynamic server-side rendering
+- Rewrote README.md with improved structure, badges, and feature documentation
+- Rewrote readme.txt (WordPress.org) with expanded description and FAQ
+- Rewrote CONTRIBUTING.md with streamlined development workflow
+- Rewrote SUPPORT.md with clearer troubleshooting guidance
+- Upgraded pull request template with security, accessibility, and i18n checklists
+- Prefixed render.php variables with `pkiw_` for wp.org plugin checker compliance
+- Converted CSS indentation from spaces to tabs for WordPress coding standards
+- Updated copyright year to 2026
+- Synchronized platform requirements (WP 6.9+, PHP 8.2+) across all documentation
+
+### Fixed
+
+- CSS specificity ordering issues in checkin-dashboard.css
+- ESLint exhaustive-deps warnings in Jam Card useEffect hooks
+- CSS selector formatting in shared card-editor.css
 
 ## [1.0.0] - 2024-12-23
 

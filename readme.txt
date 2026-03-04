@@ -1,6 +1,6 @@
 === Post Kinds for IndieWeb ===
 Contributors: courane01
-Tags: indieweb, post-kinds, webmentions, microformats, block-editor
+Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.2
@@ -8,110 +8,103 @@ Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Modern block editor support for IndieWeb post kinds and microformats. A successor to the classic IndieWeb Post Kinds plugin.
+Track what you listen to, watch, read, play, and experience — all from your WordPress site, with full block editor support and IndieWeb microformats.
 
 == Description ==
 
-Post Kinds for IndieWeb is a **modern, block-editor compatible successor** to David Shanske's [IndieWeb Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin. It brings the same post kinds functionality to the modern WordPress block editor, with enhanced media import and syndication capabilities.
+Post Kinds for IndieWeb is a modern, block-editor successor to David Shanske's [IndieWeb Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin.
 
-Track what you're listening to, watching, reading, and where you've been—all on your own website with full Gutenberg support.
+The original Post Kinds plugin brought IndieWeb interaction types to WordPress, but it was built for the Classic Editor. WordPress has moved on — block themes, the Block Bindings API, and the Interactivity API open new possibilities. This plugin bridges that gap.
 
-= Features =
+= What You Get =
 
-**Post Kinds**
-* Listen - Share music, podcasts, and audio you're enjoying
-* Watch - Log movies, TV shows, and videos
-* Read - Track books with reading progress
-* Checkin - Share locations you've visited
-* Play - Track games you're playing
-* Eat/Drink - Log food and beverages
-* RSVP - Respond to events
-* And more: Jam, Favorite, Wish, Mood, Acquisition
+* **16 custom Gutenberg blocks** — not shortcodes or meta boxes
+* **API-powered search** — find music, movies, books, and games directly from the editor
+* **Bulk import** — pull in your history from Last.fm, Trakt, Hardcover, and more
+* **Real-time scrobbling** — webhooks for Plex, Jellyfin, Trakt, and ListenBrainz
+* **IndieWeb-first** — proper microformats2 markup on every post
 
-**Custom Blocks**
-* Listen Card - Beautiful music display with album art
-* Watch Card - Movie posters with episode tracking
-* Read Card - Book covers with progress bar
-* Checkin Card - Location with venue details
-* RSVP Card - Event response display
-* Play Card - Game cards with platform info
-* Eat/Drink Cards - Food and beverage logging
-* Star Rating - Standalone rating component
-* Media Lookup - Search and embed media info
+= Post Kinds =
 
-**External Integrations**
-* Music: MusicBrainz, Last.fm, ListenBrainz
-* Movies/TV: TMDB, Trakt, TVMaze, Simkl
-* Books: Open Library, Google Books, Hardcover
-* Games: RAWG, BoardGameGeek, VideoGameGeek
-* Podcasts: Podcast Index, Readwise Snipd imports
-* Locations: Foursquare, OpenStreetMap
-* Other: Readwise
+* **Listen** — Music, podcasts, and audio (MusicBrainz, ListenBrainz, Last.fm)
+* **Watch** — Movies, TV shows, and videos (TMDB, Trakt, Simkl, TVMaze)
+* **Read** — Books and articles (Open Library, Google Books, Hardcover)
+* **Checkin** — Places and venues (Foursquare, OpenStreetMap)
+* **Play** — Video games and board games (RAWG, BoardGameGeek)
+* **Eat / Drink** — Food and beverages
+* **Jam** — Music you love, with oEmbed previews
+* **RSVP** — Event responses (yes, no, maybe, interested, remote)
+* **Like, Reply, Repost, Bookmark** — IndieWeb interactions (works with IndieBlocks)
+* **Favorite, Wish, Mood, Acquisition** — Personal tracking
 
+= Custom Blocks =
 
-**IndieWeb Features**
-* Full microformats2 markup (h-entry, h-cite, h-card, etc.)
-* Compatible with Webmention plugins
-* Supports POSSE workflows
-* Works with IndieBlocks blocks
+* **Listen Card** — Album art, artist, track, rating, MusicBrainz lookup
+* **Watch Card** — Poster, episode tracking, rewatch indicator, TMDB search
+* **Read Card** — Cover image, reading progress bar, Open Library search
+* **Checkin Card** — Venue details, OpenStreetMap embed, geo coordinates
+* **RSVP Card** — Event response with yes/no/maybe/interested/remote states
+* **Play Card** — Game cover art, platform info, RAWG integration
+* **Eat Card** — Restaurant and cuisine details
+* **Drink Card** — Venue and beverage type
+* **Jam Card** — Music you're into, with oEmbed previews
+* **Favorite Card** — Favorited content
+* **Wish Card** — Wishlist items
+* **Mood Card** — Current mood or feeling
+* **Acquisition Card** — Items acquired
+* **Star Rating** — Stars, hearts, circles, half-star support
+* **Media Lookup** — Universal search across all integrated APIs
+* **Checkin Dashboard** — Overview of recent check-ins
 
-= About This Plugin =
+= Import and Sync =
 
-This plugin is a modern, block-editor-compatible successor to David Shanske's IndieWeb Post Kinds plugin. It maintains compatibility with the same post kind concepts and IndieWeb microformats while adding full Gutenberg support.
+Pull in your existing data from external services:
 
-**Why a new plugin?**
-* The original Post Kinds plugin is incompatible with the Block Editor
-* WordPress has evolved—block themes and the Block Bindings API offer new possibilities
-* Modern APIs and import capabilities enhance the experience
+* **Bulk import** from ListenBrainz, Last.fm, Trakt, Simkl, Hardcover
+* **Webhooks** for Plex, Jellyfin, Trakt, ListenBrainz (real-time scrobbling)
+* **Background processing** via WP-Cron for large imports
+* **Duplicate prevention** on re-imports
+
+= Microformats =
+
+Every block outputs proper [microformats2](http://microformats.org/wiki/microformats2) markup:
+
+* `h-entry` for posts
+* `h-cite` for cited media (listen-of, watch-of, read-of)
+* `h-card` for people and artists
+* `h-adr` / `h-geo` for locations
+* `h-event` for RSVP responses
+* `p-rating` for star ratings
+
+Validate your output at [pin13.net/mf2](https://pin13.net/mf2/).
 
 = Related Plugins =
 
-**Recommended:**
+**Recommended (works great together):**
 
-* [IndieWeb](https://wordpress.org/plugins/indieweb/) - people-focused alternative to the ‘corporate web’ that allows you to be the hub of your own web presence.
-* [IndieBlocks](https://wordpress.org/plugins/indieblocks/) - Core IndieWeb blocks register several “theme” blocks (Facepile, Location, Syndication, and Link Preview), to be used in “block theme” templates.
-* [Syndication Links](https://wordpress.org/plugins/syndication-links/) - Stores and displays syndication URLs for POSSE workflows
-* [Webmention](https://wordpress.org/plugins/webmention/) - Cross-site conversations and notifications
-* [Link Extension for XFN](https://wordpress.org/plugins/link-extension-for-xfn/) - Integrates XFN (XHTML Friends Network) relationship options into WordPress’s native link interface.
-* [Post Formats for Block Themes](https://wordpress.org/plugins/post-formats-for-block-themes/) - Brings the beloved post format functionality from classic WordPress themes to modern block themes, with intelligent pattern insertion, automatic format detection, and a streamlined editing experience that makes creating formatted content effortless.
-
-
+* [IndieBlocks](https://wordpress.org/plugins/indieblocks/) — Core IndieWeb theme blocks (Facepile, Location, Syndication, Link Preview)
+* [IndieWeb](https://wordpress.org/plugins/indieweb/) — The IndieWeb plugin suite foundation
+* [Webmention](https://wordpress.org/plugins/webmention/) — Cross-site conversations
+* [Syndication Links](https://wordpress.org/plugins/syndication-links/) — POSSE workflow support
+* [Post Formats for Block Themes](https://wordpress.org/plugins/post-formats-for-block-themes/) — Post format support in block themes
+* [Link Extension for XFN](https://wordpress.org/plugins/link-extension-for-xfn/) — XFN relationship options
 
 **Optional:**
 
-* [ActivityPub](https://wordpress.org/plugins/activitypub/) - Federation with Mastodon and the Fediverse
-* [Bookmark Card](https://wordpress.org/plugins/bookmark-card/) - Enhanced bookmark previews
+* [ActivityPub](https://wordpress.org/plugins/activitypub/) — Federate with Mastodon and the Fediverse
+* [Bookmark Card](https://wordpress.org/plugins/bookmark-card/) — Enhanced bookmark previews
 
 **Conflicts:**
 
-* [Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) - This plugin is the block editor successor to Post Kinds. Use one or the other, not both.
-
-= Requirements =
-
-* WordPress 6.9 or higher
-* PHP 8.2 or higher
-* IndieBlocks plugin (recommended but not required)
-
-= Getting Started =
-
-1. Install and activate the plugin
-2. Optionally install IndieBlocks for additional blocks
-3. Configure API keys in Settings → Post Kinds for IndieWeb
-4. Start creating posts with post kind blocks!
-
-= Documentation =
-
-* [GitHub Repository](https://github.com/courtneyr-dev/post-kinds-for-indieweb)
-* [IndieWeb Wiki](https://indieweb.org/)
-* [IndieBlocks](https://wordpress.org/plugins/indieblocks/)
+* [Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) — This plugin replaces it. Use one or the other, not both.
 
 == Installation ==
 
 = Automatic Installation =
 
-1. Go to Plugins → Add New in your WordPress admin
-2. Search for "Post Kinds for IndieWeb"
-3. Click Install Now, then Activate
+1. Go to **Plugins > Add New** in your WordPress admin
+2. Search for **Post Kinds for IndieWeb**
+3. Click **Install Now**, then **Activate**
 
 = Manual Installation =
 
@@ -121,40 +114,55 @@ This plugin is a modern, block-editor-compatible successor to David Shanske's In
 
 = From GitHub =
 
-1. Download the latest release from GitHub
+1. Clone or download from [GitHub](https://github.com/courtneyr-dev/post-kinds-for-indieweb)
 2. Upload to your plugins directory
 3. Run `composer install` and `npm run build`
 4. Activate the plugin
+
+= After Activation =
+
+1. Go to **Settings > Post Kinds for IndieWeb** to configure
+2. Enter API keys for the services you want (TMDB, Last.fm, etc.)
+3. MusicBrainz and Open Library work without API keys
+4. Start creating posts with post kind blocks
 
 == Frequently Asked Questions ==
 
 = Do I need IndieBlocks installed? =
 
-No, but it's recommended. IndieBlocks provides core blocks for bookmarks, likes, replies, and reposts. Post Kinds for IndieWeb adds complementary post kinds (listen, watch, read, etc.).
+No, but it's recommended. IndieBlocks provides the core blocks for bookmarks, likes, replies, and reposts. Post Kinds for IndieWeb adds complementary post kinds (listen, watch, read, checkin, play, etc.) and enhanced media features.
 
 = How do I get API keys? =
 
-Go to Settings → Post Kinds for IndieWeb → API Settings. Each service has a link to get your API key. Some services (MusicBrainz, Open Library) don't require keys.
+Go to **Settings > Post Kinds for IndieWeb > API Settings**. Each service has a link to register for an API key. Some services (MusicBrainz, Open Library) don't require keys.
 
 = Can I import my existing data? =
 
-Yes! Go to Tools → Post Kinds Import to import from Last.fm, Trakt, Goodreads exports, and more.
+Yes. Go to **Tools > Post Kinds Import** to import from Last.fm, Trakt, Hardcover exports, and more. Large imports run in the background via WP-Cron.
 
 = Does this work with the Classic Editor? =
 
-The custom blocks require the block editor. Basic post kind functionality works with Classic Editor but with limited UI.
-
-= How do I customize the block appearance? =
-
-Use the block sidebar settings in the editor, Global Styles in the Site Editor, or add custom CSS to your theme.
-
-= Is my data private? =
-
-All data is stored on your WordPress site. External API calls only retrieve public metadata; your posts are not shared with external services unless you explicitly syndicate them.
+The custom blocks require the block editor (Gutenberg). Basic post kind taxonomy functionality works with the Classic Editor, but with limited UI.
 
 = Can I use this alongside the original Post Kinds plugin? =
 
-No. This plugin is designed as a replacement for the original Post Kinds plugin. Using both will cause conflicts. Deactivate the original Post Kinds plugin before activating this one.
+No. This plugin replaces the original Post Kinds plugin. Using both will cause conflicts. Deactivate the original before activating this one.
+
+= Is my data private? =
+
+All data is stored on your WordPress site. External API calls only retrieve public metadata (album info, movie details, etc.). Your posts are not shared with external services unless you explicitly syndicate them.
+
+= How do I customize the block appearance? =
+
+Use the block sidebar settings in the editor, Global Styles in the Site Editor, or add custom CSS to your theme. All blocks respect your theme's design tokens.
+
+= Why isn't the media search finding anything? =
+
+Check that your API keys are entered correctly in Settings. Verify your server can make outbound HTTPS requests. Try different search terms. Check **Settings > Post Kinds for IndieWeb > Debug** for API errors.
+
+= How do I validate my microformats? =
+
+Visit [pin13.net/mf2](https://pin13.net/mf2/) and enter your post URL. The tool parses your page and shows all detected microformats markup.
 
 == Screenshots ==
 
@@ -163,18 +171,19 @@ No. This plugin is designed as a replacement for the original Post Kinds plugin.
 3. Read Card block with book cover and reading progress
 4. Checkin Card with location and venue details
 5. Settings page with API configuration
-6. Block inserter showing post kind blocks
+6. Block inserter showing all post kind blocks
 
 == Changelog ==
 
 = 1.0.0 =
 * Initial release
-* Modern block editor successor to IndieWeb Post Kinds
-* Added 16 custom Gutenberg blocks
+* 16 custom Gutenberg blocks for post kinds
 * Full support for 20+ post kinds
-* Integrated with MusicBrainz, TMDB, Open Library, RAWG, and more
-* Full microformats2 support
-* Admin settings and import tools
+* API integrations: MusicBrainz, TMDB, Open Library, RAWG, and more
+* Bulk import from Last.fm, Trakt, Hardcover, ListenBrainz, Simkl
+* Webhook support for Plex, Jellyfin, Trakt, ListenBrainz
+* Full microformats2 markup on every block
+* Admin settings, import tools, and Quick Post interface
 
 == Upgrade Notice ==
 
@@ -184,27 +193,29 @@ Initial release. Welcome to Post Kinds for IndieWeb!
 == Privacy Policy ==
 
 This plugin:
+
 * Stores all post data locally in your WordPress database
-* Makes API calls to external services only when you search for media
+* Makes API calls to external services only when you search for media or run imports
 * Does not track users or send analytics
-* API keys are stored securely in WordPress options
+* API keys are stored in WordPress options (encrypted where possible)
 
 External services used (when configured):
-* MusicBrainz/ListenBrainz - Music metadata
-* Last.fm - Music metadata and scrobbling
-* TMDB - Movie and TV metadata
-* Trakt/Simkl/TVMaze - Movie and TV tracking
-* Open Library/Google Books - Book metadata
-* RAWG/BoardGameGeek - Game metadata
-* Podcast Index - Podcast metadata
-* Foursquare - Venue information
-* OpenStreetMap - Geocoding and map data
+
+* MusicBrainz / ListenBrainz — Music metadata (no API key required)
+* Last.fm — Music metadata and scrobbling history
+* TMDB — Movie and TV show metadata
+* Trakt / Simkl / TVMaze — Movie and TV tracking
+* Open Library / Google Books / Hardcover — Book metadata
+* RAWG / BoardGameGeek — Game metadata
+* Podcast Index — Podcast metadata
+* Foursquare — Venue information
+* OpenStreetMap / Nominatim — Geocoding and map data
 
 Each external service has its own privacy policy. API calls only retrieve public metadata.
 
 == Credits ==
 
-* **Author**: Courtney Robertson (https://courtneyr.dev)
-* **Original Plugin**: IndieWeb Post Kinds by David Shanske
-* Built to extend IndieBlocks
-* Made with love for the IndieWeb community
+* **Author:** [Courtney Robertson](https://courtneyr.dev)
+* **Original Plugin:** [IndieWeb Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) by David Shanske
+* Built for the [IndieWeb](https://indieweb.org/) community
+* Uses open data from MusicBrainz, TMDB, Open Library, RAWG, OpenStreetMap, and other services
