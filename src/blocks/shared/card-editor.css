@@ -1,21 +1,22 @@
 /**
- * Shared Card Block Editor Styles
- *
- * Uses WordPress theme color palette variables for consistent styling.
- * These styles apply to all Post Kinds card blocks in the editor and frontend.
- *
- * Color strategy:
- * - Background: uses theme's secondary background with dark slate fallback
- * - Text: uses inherit/currentColor to respect block support overrides
- * - When no override is set, falls back to light text for dark backgrounds
- *
- * @package PostKindsForIndieWeb
- */
+* Shared Card Block Editor Styles
+*
+* Uses WordPress theme color palette variables for consistent styling.
+* These styles apply to all Post Kinds card blocks in the editor and frontend.
+*
+* Color strategy:
+* - Background: uses theme's secondary background with dark slate fallback
+* - Text: uses inherit/currentColor to respect block support overrides
+* - When no override is set, falls back to light text for dark backgrounds
+*
+* @package PostKindsForIndieWeb
+*/
 
 /* stylelint-disable no-descending-specificity */
 
 /* Base card container - theme-aware styling */
 .post-kinds-card {
+	position: relative;
 	display: flex;
 	gap: 16px;
 	padding: 16px;
@@ -32,15 +33,18 @@
 .wp-block-post-kinds-indieweb-watch-card:not(.has-background) .post-kinds-card,
 .wp-block-post-kinds-indieweb-read-card:not(.has-background) .post-kinds-card,
 .wp-block-post-kinds-indieweb-play-card:not(.has-background) .post-kinds-card,
-.wp-block-post-kinds-indieweb-checkin-card:not(.has-background) .post-kinds-card,
+.wp-block-post-kinds-indieweb-checkin-card:not(.has-background)
+.post-kinds-card,
 .wp-block-post-kinds-indieweb-rsvp-card:not(.has-background) .post-kinds-card,
 .wp-block-post-kinds-indieweb-eat-card:not(.has-background) .post-kinds-card,
 .wp-block-post-kinds-indieweb-drink-card:not(.has-background) .post-kinds-card,
-.wp-block-post-kinds-indieweb-favorite-card:not(.has-background) .post-kinds-card,
+.wp-block-post-kinds-indieweb-favorite-card:not(.has-background)
+.post-kinds-card,
 .wp-block-post-kinds-indieweb-like-card:not(.has-background) .post-kinds-card,
 .wp-block-post-kinds-indieweb-jam-card:not(.has-background) .post-kinds-card,
 .wp-block-post-kinds-indieweb-wish-card:not(.has-background) .post-kinds-card,
-.wp-block-post-kinds-indieweb-acquisition-card:not(.has-background) .post-kinds-card {
+.wp-block-post-kinds-indieweb-acquisition-card:not(.has-background)
+.post-kinds-card {
 	background: var(--wp--preset--color--base-2, var(--wp--preset--color--tertiary, #1e293b));
 }
 
@@ -49,15 +53,18 @@
 .wp-block-post-kinds-indieweb-watch-card:not(.has-text-color) .post-kinds-card,
 .wp-block-post-kinds-indieweb-read-card:not(.has-text-color) .post-kinds-card,
 .wp-block-post-kinds-indieweb-play-card:not(.has-text-color) .post-kinds-card,
-.wp-block-post-kinds-indieweb-checkin-card:not(.has-text-color) .post-kinds-card,
+.wp-block-post-kinds-indieweb-checkin-card:not(.has-text-color)
+.post-kinds-card,
 .wp-block-post-kinds-indieweb-rsvp-card:not(.has-text-color) .post-kinds-card,
 .wp-block-post-kinds-indieweb-eat-card:not(.has-text-color) .post-kinds-card,
 .wp-block-post-kinds-indieweb-drink-card:not(.has-text-color) .post-kinds-card,
-.wp-block-post-kinds-indieweb-favorite-card:not(.has-text-color) .post-kinds-card,
+.wp-block-post-kinds-indieweb-favorite-card:not(.has-text-color)
+.post-kinds-card,
 .wp-block-post-kinds-indieweb-like-card:not(.has-text-color) .post-kinds-card,
 .wp-block-post-kinds-indieweb-jam-card:not(.has-text-color) .post-kinds-card,
 .wp-block-post-kinds-indieweb-wish-card:not(.has-text-color) .post-kinds-card,
-.wp-block-post-kinds-indieweb-acquisition-card:not(.has-text-color) .post-kinds-card {
+.wp-block-post-kinds-indieweb-acquisition-card:not(.has-text-color)
+.post-kinds-card {
 	color: #f1f5f9;
 }
 
@@ -78,7 +85,9 @@
 	cursor: pointer;
 	background: rgba(0, 0, 0, 0.2);
 	overflow: hidden;
-	transition: border-color 0.2s, opacity 0.2s;
+	transition:
+		border-color 0.2s,
+		opacity 0.2s;
 }
 
 .post-kinds-card__media-button:hover {
@@ -228,7 +237,9 @@
 	font-size: 18px;
 	color: inherit;
 	opacity: 0.4;
-	transition: color 0.15s, opacity 0.15s;
+	transition:
+		color 0.15s,
+		opacity 0.15s;
 	appearance: none;
 	-webkit-appearance: none;
 	line-height: 1;
@@ -237,13 +248,18 @@
 .post-kinds-card__rating .post-kinds-star-rating .star svg {
 	width: 1em;
 	height: 1em;
-	fill: currentColor;
+	fill: currentcolor;
 	display: block;
 }
 
 /* Save output uses text character stars directly in .post-kinds-card__rating */
 .post-kinds-card__rating > .star {
-	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Symbol", system-ui, sans-serif;
+	font-family:
+		-apple-system,
+		BlinkMacSystemFont,
+		"Segoe UI Symbol",
+		system-ui,
+		sans-serif;
 	font-size: 18px;
 	line-height: 1;
 	color: inherit;
@@ -478,11 +494,13 @@
 }
 
 /* Default styling for wrapper when no block support colors are set */
-[class*="wp-block-post-kinds-indieweb"]:not(.has-background) .post-kinds-card-wrapper {
+[class*="wp-block-post-kinds-indieweb"]:not(.has-background)
+.post-kinds-card-wrapper {
 	background: var(--wp--preset--color--base-2, var(--wp--preset--color--tertiary, #1e293b));
 }
 
-[class*="wp-block-post-kinds-indieweb"]:not(.has-text-color) .post-kinds-card-wrapper {
+[class*="wp-block-post-kinds-indieweb"]:not(.has-text-color)
+.post-kinds-card-wrapper {
 	color: #f1f5f9;
 }
 
@@ -493,8 +511,8 @@
 }
 
 /* ============================================
-   Frontend-specific styles
-   ============================================ */
+	Frontend-specific styles
+	============================================ */
 
 /* Portrait aspect ratio for book covers and movie posters */
 .post-kinds-card__media--portrait {
@@ -761,8 +779,8 @@
 }
 
 /* ============================================
-   Layout variants
-   ============================================ */
+	Layout variants
+	============================================ */
 
 /* Horizontal is the default — no overrides needed */
 
@@ -838,4 +856,78 @@
 	width: 100%;
 	border: none;
 	display: block;
+}
+
+/* URL prompt - used in placeholder and inline contexts */
+.post-kinds-card__url-prompt {
+	padding: 0 16px 12px;
+}
+
+.post-kinds-card__url-prompt .components-text-control__input,
+.post-kinds-card__url-prompt .components-base-control__field input[type="url"] {
+	background: rgba(0, 0, 0, 0.15);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: 8px;
+	color: inherit;
+	padding: 10px 12px;
+}
+
+.post-kinds-card__url-prompt .components-base-control__label {
+	color: inherit;
+	opacity: 0.85;
+	font-size: var(--wp--preset--font-size--small, 0.875rem);
+	margin-bottom: 6px;
+}
+
+/* Inline variant shown below the card content */
+.post-kinds-card__url-prompt--inline {
+	margin-top: 12px;
+	padding: 12px 16px;
+	background: rgba(0, 0, 0, 0.1);
+	border-top: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 0 0 12px 12px;
+}
+
+/* Server-side embed section (outside h-cite in render.php) */
+.post-kinds-card__embed-section {
+	margin-top: 16px;
+	border-radius: 12px;
+	overflow: hidden;
+}
+
+.post-kinds-card__embed-section iframe {
+	width: 100%;
+	border: none;
+	display: block;
+}
+
+/* Type icon badge — positioned top-right of card */
+.post-kinds-card__type-icon {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	font-size: 20px;
+	line-height: 1;
+	opacity: 0.7;
+	pointer-events: none;
+	z-index: 1;
+}
+
+/* Per-card-type colored top borders — theme-first with hardcoded fallbacks */
+.wp-block-post-kinds-indieweb-listen-card .post-kinds-card {
+	border-top:
+		3px solid
+		var(--post-kinds-listen-accent, var(--wp--preset--color--primary, #8b5cf6));
+}
+
+.wp-block-post-kinds-indieweb-watch-card .post-kinds-card {
+	border-top:
+		3px solid
+		var(--post-kinds-watch-accent, var(--wp--preset--color--secondary, #ef4444));
+}
+
+.wp-block-post-kinds-indieweb-jam-card .post-kinds-card {
+	border-top:
+		3px solid
+		var(--post-kinds-jam-accent, var(--wp--preset--color--primary, #22c55e));
 }

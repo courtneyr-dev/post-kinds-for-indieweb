@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Project documentation (CONTRIBUTING.md, SECURITY.md, SUPPORT.md)
 - GitHub issue templates (bug report, feature request, question)
 - Pull request template
@@ -17,12 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Core Features
+
 - Reaction Kind taxonomy for categorizing posts (listen, watch, read, checkin, rsvp)
 - Custom meta fields for reaction metadata
 - Block bindings for dynamic content display
 - Microformats2 markup enhancement for IndieWeb compatibility
 
 #### Custom Blocks
+
 - **Listen Card**: Music/podcast scrobbling with album art, artist, rating, MusicBrainz integration
 - **Watch Card**: Movies/TV shows with poster, episode tracking, TMDB/IMDb links, rewatch indicator
 - **Read Card**: Books with cover, author, reading progress bar, Open Library integration
@@ -32,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Media Lookup**: Universal media search across all integrated APIs
 
 #### Block Patterns
+
 - Listen Log pattern for music posts
 - Watch Log pattern for movie/TV posts
 - Read Progress pattern for book posts
@@ -39,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RSVP Response pattern for event responses
 
 #### External API Integrations
+
 - **Music**: MusicBrainz, ListenBrainz, Last.fm
 - **Movies/TV**: TMDB, Trakt, Simkl, TVMaze
 - **Books**: Open Library, Google Books, Hardcover
@@ -46,11 +51,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Locations**: Foursquare, OpenStreetMap Nominatim
 
 #### REST API
+
 - Custom endpoints for media search
 - Import endpoints for external services
 - Webhook handlers for real-time sync
 
 #### Admin Features
+
 - Settings page with tabbed interface
 - API key management with secure storage
 - Import tools for bulk data migration
@@ -59,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Quick Post interface for rapid posting
 
 #### Shared Components
+
 - StarRating component with interactive editing
 - CoverImage component with fallback handling
 - MediaSearch component with API integration
@@ -70,15 +78,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical
 
 - WordPress Block API v3 compatibility
-- PHP 8.0+ with strict types
+- PHP 8.2+ with strict types
 - Full internationalization support
 - WordPress Coding Standards compliance
 - Comprehensive PHPDoc documentation
 
 ### Dependencies
 
-- Requires WordPress 6.5+
-- Requires PHP 8.0+
+- Requires WordPress 6.9+
+- Requires PHP 8.2+
 - Recommends IndieBlocks plugin
 
 ---
@@ -88,6 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Versioning
 
 This project uses Semantic Versioning:
+
 - **Major** (X.0.0): Breaking changes
 - **Minor** (0.X.0): New features, backward compatible
 - **Patch** (0.0.X): Bug fixes, backward compatible

@@ -1,22 +1,23 @@
 <?php
 /**
- * Post Kinds for IndieWeb and Block Themes
+ * Post Kinds for IndieWeb
  *
  * Modern block editor support for IndieWeb post kinds and microformats.
  * A successor to the classic IndieWeb Post Kinds plugin by David Shanske.
  *
  * @package     PostKindsForIndieWeb
  * @author      Courtney Robertson
- * @copyright   2024 Courtney Robertson
+ * @copyright   2026 Courtney Robertson
  * @license     GPL-2.0-or-later
  *
  * @wordpress-plugin
- * Plugin Name:       Post Kinds for IndieWeb and Block Themes
+ * Plugin Name:       Post Kinds for IndieWeb
  * Plugin URI:        https://github.com/courtneyr-dev/post-kinds-for-indieweb
  * Description:       Modern block editor support for IndieWeb post kinds and microformats. A successor to the classic IndieWeb Post Kinds plugin.
  * Version:           1.0.0
- * Requires at least: 6.5
- * Requires PHP:      8.0
+ * Requires at least: 6.9
+ * Tested up to:      6.9
+ * Requires PHP:      8.2
  * Author:            Courtney Robertson
  * Author URI:        https://courtneyr.dev
  * Text Domain:       post-kinds-for-indieweb
@@ -81,14 +82,14 @@ define( 'POST_KINDS_INDIEWEB_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
  *
  * @var string
  */
-define( 'POST_KINDS_INDIEWEB_MIN_PHP', '8.0' );
+define( 'POST_KINDS_INDIEWEB_MIN_PHP', '8.2' );
 
 /**
  * Minimum required WordPress version.
  *
  * @var string
  */
-define( 'POST_KINDS_INDIEWEB_MIN_WP', '6.5' );
+define( 'POST_KINDS_INDIEWEB_MIN_WP', '6.9' );
 
 /**
  * Check PHP version requirement.
@@ -211,7 +212,7 @@ function activate(): void {
 				esc_html( POST_KINDS_INDIEWEB_MIN_PHP )
 			),
 			esc_html__( 'Plugin Activation Error', 'post-kinds-for-indieweb' ),
-			array( 'back_link' => true )
+			[ 'back_link' => true ]
 		);
 	}
 
@@ -225,7 +226,7 @@ function activate(): void {
 				esc_html( POST_KINDS_INDIEWEB_MIN_WP )
 			),
 			esc_html__( 'Plugin Activation Error', 'post-kinds-for-indieweb' ),
-			array( 'back_link' => true )
+			[ 'back_link' => true ]
 		);
 	}
 

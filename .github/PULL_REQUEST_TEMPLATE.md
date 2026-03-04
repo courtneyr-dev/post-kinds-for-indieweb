@@ -5,6 +5,7 @@
 ## Related Issue
 
 <!-- Link to the issue this PR addresses -->
+
 Fixes #
 
 ## Type of Change
@@ -28,11 +29,13 @@ Fixes #
 <!-- Describe how you tested your changes -->
 
 **Test Environment:**
+
 - WordPress version:
 - PHP version:
 - Browser(s):
 
 **Test Cases:**
+
 - [ ] Test case 1
 - [ ] Test case 2
 
@@ -41,7 +44,7 @@ Fixes #
 <!-- Add screenshots to help explain your changes -->
 
 | Before | After |
-|--------|-------|
+| ------ | ----- |
 |        |       |
 
 ## Checklist
@@ -49,6 +52,7 @@ Fixes #
 <!-- Mark completed items with an x -->
 
 ### Code Quality
+
 - [ ] My code follows the WordPress Coding Standards
 - [ ] I have run `composer lint` and `npm run lint` with no errors
 - [ ] I have run `composer test` and all tests pass
@@ -56,6 +60,7 @@ Fixes #
 - [ ] My changes generate no new warnings
 
 ### Security
+
 - [ ] All user input is sanitized
 - [ ] All output is properly escaped
 - [ ] Nonces are verified on form submissions
@@ -63,25 +68,29 @@ Fixes #
 - [ ] No sensitive data is exposed
 
 ### Documentation
+
 - [ ] I have updated inline documentation/comments
 - [ ] I have updated README if needed
 - [ ] I have updated CHANGELOG if needed
 
 ### Compatibility
-- [ ] Works with WordPress 6.5+
-- [ ] Works with PHP 8.0+
+
+- [ ] Works with WordPress 6.9+
+- [ ] Works with PHP 8.2+
 - [ ] Works with and without IndieBlocks installed
 - [ ] Backward compatible (or breaking changes documented)
 
 ### Accessibility
+
 - [ ] Interactive elements are keyboard accessible
 - [ ] Screen reader text is provided where needed
 - [ ] Color contrast meets WCAG AA standards
 - [ ] Focus indicators are visible
 
 ### Internationalization
+
 - [ ] All strings are translatable
-- [ ] Text domain is correct (`post-kinds-indieweb`)
+- [ ] Text domain is correct (`post-kinds-for-indieweb`)
 - [ ] No concatenated translation strings
 
 ## Breaking Changes

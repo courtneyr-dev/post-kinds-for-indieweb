@@ -117,6 +117,24 @@ export default function Edit( { attributes, setAttributes } ) {
 						'post-kinds-for-indieweb'
 					) }
 				>
+					<div className="post-kinds-card__url-prompt">
+						<TextControl
+							value={ listenUrl || '' }
+							onChange={ ( value ) =>
+								setAttributes( { listenUrl: value } )
+							}
+							type="url"
+							placeholder={ __(
+								'Paste a Spotify, Apple Music, or other URL…',
+								'post-kinds-for-indieweb'
+							) }
+							label={ __(
+								'What are you listening to?',
+								'post-kinds-for-indieweb'
+							) }
+							hideLabelFromVision={ false }
+						/>
+					</div>
 					{ isSearching ? (
 						<div className="search-mode">
 							<MediaSearch
@@ -352,6 +370,12 @@ export default function Edit( { attributes, setAttributes } ) {
 
 			<div { ...blockProps }>
 				<div className="post-kinds-card h-cite">
+					<span
+						className="post-kinds-card__type-icon"
+						aria-hidden="true"
+					>
+						&#127925;
+					</span>
 					<div className="post-kinds-card__media">
 						<MediaUploadCheck>
 							<MediaUpload
@@ -435,6 +459,21 @@ export default function Edit( { attributes, setAttributes } ) {
 							</div>
 						) }
 					</div>
+				</div>
+				<div className="post-kinds-card__url-prompt post-kinds-card__url-prompt--inline">
+					<TextControl
+						value={ listenUrl || '' }
+						onChange={ ( value ) =>
+							setAttributes( { listenUrl: value } )
+						}
+						type="url"
+						placeholder={ __(
+							'Paste a Spotify, Apple Music, or other URL…',
+							'post-kinds-for-indieweb'
+						) }
+						label={ __( 'Source URL', 'post-kinds-for-indieweb' ) }
+						hideLabelFromVision={ false }
+					/>
 				</div>
 				{ embedPreview?.html && (
 					<div className="post-kinds-card__embed" tabIndex={ -1 }>

@@ -7,22 +7,26 @@ Thank you for using Post Kinds for IndieWeb! This document explains how to get h
 Please try these steps first:
 
 ### 1. Check the Basics
-- [ ] WordPress 6.5 or higher installed
-- [ ] PHP 8.0 or higher
+
+- [ ] WordPress 6.9 or higher installed
+- [ ] PHP 8.2 or higher
 - [ ] Plugin is activated
 - [ ] IndieBlocks installed (recommended but not required)
 
 ### 2. Clear Caches
+
 - [ ] Clear your browser cache
 - [ ] Clear any caching plugin caches
 - [ ] Clear server-side caches if applicable
 
 ### 3. Test for Conflicts
+
 - [ ] Switch to a default theme (Twenty Twenty-Five)
 - [ ] Deactivate other plugins temporarily
 - [ ] Check if the issue persists
 
 ### 4. Check Error Logs
+
 - [ ] Enable `WP_DEBUG` in wp-config.php
 - [ ] Check `debug.log` for errors
 - [ ] Check browser console for JavaScript errors
@@ -30,16 +34,19 @@ Please try these steps first:
 ## Support Channels
 
 ### GitHub Issues (Preferred)
+
 **Best for**: Bug reports, feature requests, documentation issues
 
 [Create an Issue](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues/new/choose)
 
 ### GitHub Discussions
+
 **Best for**: Questions, ideas, general discussion
 
 [Start a Discussion](https://github.com/courtneyr-dev/post-kinds-for-indieweb/discussions)
 
 ### IndieWeb Chat
+
 **Best for**: Real-time help, IndieWeb community
 
 [Join IndieWeb Chat](https://chat.indieweb.org/)
@@ -99,6 +106,7 @@ Help us help you by including:
 No, but it's recommended. IndieBlocks provides the core blocks for bookmarks, likes, replies, and reposts. Post Kinds for IndieWeb extends these with additional post kinds (listen, watch, read, etc.) and enhanced features.
 
 Without IndieBlocks, you can still use the reaction post kinds and custom blocks.
+
 </details>
 
 <details>
@@ -111,6 +119,7 @@ Without IndieBlocks, you can still use the reaction post kinds and custom blocks
 3. Save settings
 
 Some APIs (MusicBrainz, Open Library) don't require keys.
+
 </details>
 
 <details>
@@ -134,6 +143,7 @@ Check these common causes:
 5. Click Import
 
 Note: Initial imports may take time for large libraries.
+
 </details>
 
 <details>
@@ -169,6 +179,7 @@ Options in order of complexity:
 <summary><strong>Can I use this without the block editor?</strong></summary>
 
 The custom blocks require the block editor (Gutenberg). However:
+
 - Post kinds work with Classic Editor (limited UI)
 - Meta fields can be set programmatically
 - Shortcodes may be added in future versions
@@ -177,7 +188,7 @@ The custom blocks require the block editor (Gutenberg). However:
 <details>
 <summary><strong>How do I contribute translations?</strong></summary>
 
-1. Generate .pot file: `wp i18n make-pot . languages/post-kinds-indieweb.pot`
+1. Generate .pot file: `wp i18n make-pot . languages/post-kinds-for-indieweb.pot`
 2. Create translation using [Poedit](https://poedit.net/) or similar
 3. Submit via pull request or [translate.wordpress.org](https://translate.wordpress.org/)
 </details>
@@ -186,6 +197,7 @@ The custom blocks require the block editor (Gutenberg). However:
 <summary><strong>Is this compatible with [other plugin]?</strong></summary>
 
 Known compatible:
+
 - IndieBlocks (recommended)
 - IndieAuth
 - Webmention
@@ -194,20 +206,24 @@ Known compatible:
 - Most caching plugins
 
 Known issues:
+
 - None reported yet
 
 If you find an incompatibility, please report it!
+
 </details>
 
 ## Common Issues & Solutions
 
 ### Block not appearing in inserter
+
 ```
 Solution: Clear browser cache and reload editor
 Also try: Deactivate/reactivate the plugin
 ```
 
 ### "Failed to fetch" API errors
+
 ```
 Solution: Check API keys are correct
 Also try: Verify server can make outbound HTTPS requests
@@ -215,6 +231,7 @@ Check: Settings → Post Kinds for IndieWeb → Debug
 ```
 
 ### Styles not loading
+
 ```
 Solution: npm run build (if developing)
 Also try: Clear all caches
@@ -222,6 +239,7 @@ Check: Browser network tab for 404s
 ```
 
 ### Import stuck or timing out
+
 ```
 Solution: Increase PHP max_execution_time
 Also try: Import in smaller batches
@@ -229,6 +247,7 @@ Check: PHP error logs for memory issues
 ```
 
 ### Microformats not parsed correctly
+
 ```
 Solution: Verify theme isn't stripping classes
 Also try: Test with default theme
@@ -244,6 +263,7 @@ When reporting issues, you can gather debug info:
 3. Include in your support request
 
 Or manually collect:
+
 - WordPress: Tools → Site Health → Info
 - Browser: F12 → Console tab
 - PHP: Check error_log or debug.log
@@ -251,6 +271,7 @@ Or manually collect:
 ## Response Times
 
 This is a community project maintained by volunteers:
+
 - **Issues**: Reviewed within a few days typically
 - **Discussions**: Community may respond faster
 - **PRs**: Reviewed when maintainers are available
@@ -260,6 +281,7 @@ For urgent issues, consider the [IndieWeb Chat](https://chat.indieweb.org/) for 
 ## Contributing
 
 If you've solved a problem, consider contributing:
+
 - Add to FAQ via pull request
 - Answer questions in Discussions
 - Improve documentation

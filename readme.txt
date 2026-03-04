@@ -1,9 +1,9 @@
-=== Post Kinds for IndieWeb and Block Themes ===
+=== Post Kinds for IndieWeb ===
 Contributors: courane01
-Tags: indieweb, post-kinds, scrobbling, microformats, block-editor
-Requires at least: 6.5
+Tags: indieweb, post-kinds, webmentions, microformats, block-editor
+Requires at least: 6.9
 Tested up to: 6.9
-Requires PHP: 8.0
+Requires PHP: 8.2
 Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -12,7 +12,7 @@ Modern block editor support for IndieWeb post kinds and microformats. A successo
 
 == Description ==
 
-Post Kinds for IndieWeb and Block Themes is a **modern, block-editor compatible successor** to David Shanske's [IndieWeb Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin. It brings the same post kinds functionality to the modern WordPress block editor, with enhanced media import and syndication capabilities.
+Post Kinds for IndieWeb is a **modern, block-editor compatible successor** to David Shanske's [IndieWeb Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin. It brings the same post kinds functionality to the modern WordPress block editor, with enhanced media import and syndication capabilities.
 
 Track what you're listening to, watching, reading, and where you've been—all on your own website with full Gutenberg support.
 
@@ -88,8 +88,8 @@ This plugin is a modern, block-editor-compatible successor to David Shanske's In
 
 = Requirements =
 
-* WordPress 6.5 or higher
-* PHP 8.0 or higher
+* WordPress 6.9 or higher
+* PHP 8.2 or higher
 * IndieBlocks plugin (recommended but not required)
 
 = Getting Started =
@@ -179,7 +179,7 @@ No. This plugin is designed as a replacement for the original Post Kinds plugin.
 == Upgrade Notice ==
 
 = 1.0.0 =
-Initial release. Welcome to Post Kinds for IndieWeb and Block Themes!
+Initial release. Welcome to Post Kinds for IndieWeb!
 
 == Privacy Policy ==
 

@@ -1,9 +1,10 @@
-# Post Kinds for IndieWeb and Block Themes
+# Post Kinds for IndieWeb
 
-[![WordPress](https://img.shields.io/badge/WordPress-6.5%2B-blue.svg)](https://wordpress.org/)
-[![PHP](https://img.shields.io/badge/PHP-8.0%2B-purple.svg)](https://php.net/)
+[![WordPress](https://img.shields.io/badge/WordPress-6.9%2B-blue.svg)](https://wordpress.org/)
+[![PHP](https://img.shields.io/badge/PHP-8.2%2B-purple.svg)](https://php.net/)
 [![License](https://img.shields.io/badge/License-GPL--2.0--or--later-green.svg)](LICENSE)
 [![IndieWeb](https://img.shields.io/badge/IndieWeb-compatible-orange.svg)](https://indieweb.org/)
+[![Status](https://img.shields.io/badge/Status-In%20Development-yellow.svg)](https://github.com/courtneyr-dev/post-kinds-for-indieweb)
 
 **Modern block editor support for IndieWeb post kinds and microformats.** A successor to the classic [IndieWeb Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin by David Shanske.
 
@@ -14,6 +15,7 @@ Share what you're listening to, watching, reading, and experiencing—all on you
 This plugin is a modern, block-editor compatible successor to David Shanske's [IndieWeb Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin. It maintains compatibility with the same post kind concepts and IndieWeb microformats while adding full Gutenberg support.
 
 **Why a new plugin?**
+
 - The original Post Kinds plugin is incompatible with the Block Editor
 - WordPress has evolved—block themes and the Block Bindings API offer new possibilities
 - Modern APIs and import capabilities enhance the experience
@@ -21,6 +23,7 @@ This plugin is a modern, block-editor compatible successor to David Shanske's [I
 ## Features
 
 ### Post Kinds Support
+
 - **Listen** - Track music you've listened to with MusicBrainz/ListenBrainz/Last.fm integration
 - **Watch** - Log movies and TV shows with TMDB/Trakt/Simkl support
 - **Read** - Track books with Open Library/Hardcover/Google Books integration
@@ -30,6 +33,7 @@ This plugin is a modern, block-editor compatible successor to David Shanske's [I
 - **Like, Reply, Repost, Bookmark, RSVP** - Full IndieWeb interaction support
 
 ### External API Integrations
+
 - **Music**: MusicBrainz, ListenBrainz, Last.fm
 - **Movies/TV**: TMDB, Trakt, Simkl, TVmaze
 - **Books**: Open Library, Hardcover, Google Books
@@ -38,11 +42,13 @@ This plugin is a modern, block-editor compatible successor to David Shanske's [I
 - **Location**: Foursquare, Nominatim (OpenStreetMap)
 
 ### Import & Sync
+
 - Bulk import from ListenBrainz, Last.fm, Trakt, Simkl, Hardcover
 - Webhook support for Plex, Jellyfin, Trakt, ListenBrainz
 - Background processing with WP-Cron
 
 ### Block Editor Integration
+
 - Custom card blocks for each post kind
 - Media search/lookup in editor
 - Star rating component
@@ -51,12 +57,13 @@ This plugin is a modern, block-editor compatible successor to David Shanske's [I
 
 ## Requirements
 
-- WordPress 6.5+
-- PHP 8.0+
+- WordPress 6.9+
+- PHP 8.2+
 
 ## Related Plugins
 
 **Recommended:**
+
 - [IndieWeb](https://wordpress.org/plugins/indieweb/) - people-focused alternative to the ‘corporate web’ that allows you to be the hub of your own web presence.
 - [IndieBlocks](https://wordpress.org/plugins/indieblocks/) - Core IndieWeb blocks register several “theme” blocks (Facepile, Location, Syndication, and Link Preview), to be used in “block theme” templates.
 - [Syndication Links](https://wordpress.org/plugins/syndication-links/) - Stores and displays syndication URLs for POSSE workflows
@@ -65,10 +72,12 @@ This plugin is a modern, block-editor compatible successor to David Shanske's [I
 - [Post Formats for Block Themes](https://wordpress.org/plugins/post-formats-for-block-themes/) - Brings the beloved post format functionality from classic WordPress themes to modern block themes, with intelligent pattern insertion, automatic format detection, and a streamlined editing experience that makes creating formatted content effortless.
 
 **Optional:**
+
 - [ActivityPub](https://wordpress.org/plugins/activitypub/) - Fediverse federation
 - [Bookmark Card](https://wordpress.org/plugins/developer/mamaduka/bookmark-card/) - Enhanced bookmark previews
 
 **Conflicts:**
+
 - [Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) - Use one or the other (this plugin is the block editor successor)
 
 ## Installation
@@ -100,12 +109,13 @@ npm run build
 
 # Lint code
 npm run lint
-composer run phpcs
+composer lint
 ```
 
 ## Block Patterns
 
 The plugin includes several block patterns:
+
 - Listen Log
 - Watch Log
 - Read Progress
@@ -161,24 +171,24 @@ All output includes proper microformats2 markup for IndieWeb compatibility:
 
 The plugin includes 16 custom Gutenberg blocks:
 
-| Block | Description |
-|-------|-------------|
-| **Listen Card** | Music/podcast with album art, artist, rating |
-| **Watch Card** | Movie/TV with poster, episode info, rewatch tracking |
-| **Read Card** | Book with cover, author, reading progress |
-| **Checkin Card** | Location with venue details and map embed |
-| **RSVP Card** | Event response (yes/no/maybe/interested/remote) |
-| **Play Card** | Games with cover art and platform info |
-| **Eat Card** | Food with restaurant and cuisine details |
-| **Drink Card** | Beverages with venue and type info |
-| **Jam Card** | Personally meaningful music |
-| **Favorite Card** | Favorited content |
-| **Wish Card** | Wishlist items |
-| **Mood Card** | Current mood/feeling |
-| **Acquisition Card** | Items acquired |
-| **Star Rating** | Standalone rating component |
-| **Media Lookup** | Universal media search and embed |
-| **Checkin Dashboard** | Overview of recent checkins |
+| Block                 | Description                                          |
+| --------------------- | ---------------------------------------------------- |
+| **Listen Card**       | Music/podcast with album art, artist, rating         |
+| **Watch Card**        | Movie/TV with poster, episode info, rewatch tracking |
+| **Read Card**         | Book with cover, author, reading progress            |
+| **Checkin Card**      | Location with venue details and map embed            |
+| **RSVP Card**         | Event response (yes/no/maybe/interested/remote)      |
+| **Play Card**         | Games with cover art and platform info               |
+| **Eat Card**          | Food with restaurant and cuisine details             |
+| **Drink Card**        | Beverages with venue and type info                   |
+| **Jam Card**          | Personally meaningful music                          |
+| **Favorite Card**     | Favorited content                                    |
+| **Wish Card**         | Wishlist items                                       |
+| **Mood Card**         | Current mood/feeling                                 |
+| **Acquisition Card**  | Items acquired                                       |
+| **Star Rating**       | Standalone rating component                          |
+| **Media Lookup**      | Universal media search and embed                     |
+| **Checkin Dashboard** | Overview of recent checkins                          |
 
 ## Contributing
 

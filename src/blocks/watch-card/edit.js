@@ -125,6 +125,24 @@ export default function Edit( { attributes, setAttributes } ) {
 						'post-kinds-for-indieweb'
 					) }
 				>
+					<div className="post-kinds-card__url-prompt">
+						<TextControl
+							value={ watchUrl || '' }
+							onChange={ ( value ) =>
+								setAttributes( { watchUrl: value } )
+							}
+							type="url"
+							placeholder={ __(
+								'Paste a YouTube, Letterboxd, or other URL…',
+								'post-kinds-for-indieweb'
+							) }
+							label={ __(
+								'What are you watching?',
+								'post-kinds-for-indieweb'
+							) }
+							hideLabelFromVision={ false }
+						/>
+					</div>
 					{ isSearching ? (
 						<div className="search-mode">
 							<div className="search-type-toggle">
@@ -516,6 +534,12 @@ export default function Edit( { attributes, setAttributes } ) {
 
 			<div { ...blockProps }>
 				<div className="post-kinds-card h-cite">
+					<span
+						className="post-kinds-card__type-icon"
+						aria-hidden="true"
+					>
+						&#127916;
+					</span>
 					<div className="poster-image">
 						<MediaUploadCheck>
 							<MediaUpload
@@ -625,6 +649,21 @@ export default function Edit( { attributes, setAttributes } ) {
 							) }
 						/>
 					</div>
+				</div>
+				<div className="post-kinds-card__url-prompt post-kinds-card__url-prompt--inline">
+					<TextControl
+						value={ watchUrl || '' }
+						onChange={ ( value ) =>
+							setAttributes( { watchUrl: value } )
+						}
+						type="url"
+						placeholder={ __(
+							'Paste a YouTube, Letterboxd, or other URL…',
+							'post-kinds-for-indieweb'
+						) }
+						label={ __( 'Source URL', 'post-kinds-for-indieweb' ) }
+						hideLabelFromVision={ false }
+					/>
 				</div>
 				{ embedPreview?.html && (
 					<div className="post-kinds-card__embed" tabIndex={ -1 }>
