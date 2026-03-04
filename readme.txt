@@ -170,8 +170,9 @@ Visit [pin13.net/mf2](https://pin13.net/mf2/) and enter your post URL. The tool 
 2. Watch Card block showing a movie with poster and review
 3. Read Card block with book cover and reading progress
 4. Checkin Card with location and venue details
-5. Settings page with API configuration
-6. Block inserter showing all post kind blocks
+5. API configuration settings for external services
+6. General settings page with plugin options
+7. Block inserter showing all post kind blocks
 
 == Changelog ==
 
