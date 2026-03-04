@@ -5,6 +5,7 @@
 /.husky
 /.omc
 /node_modules
+/vendor
 /tests
 /bin
 /src
@@ -28,6 +29,7 @@ composer.lock
 package.json
 package-lock.json
 phpunit.xml.dist
+phpstan.neon
 webpack.config.js
 
 # Development documentation
