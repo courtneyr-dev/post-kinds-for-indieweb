@@ -563,3 +563,106 @@ Ready to migrate inventoried CSS/PHP/JS values to token references. C1's
 single highest-leverage target (`src/blocks/shared/card-editor.css`,
 126 violations) is the recommended C3a starting point — fixing that one
 file propagates the migration across 14 card blocks at once.
+
+---
+
+## 2026-05-01 — Session C3a — card-editor.css migration
+
+**File migrated:** `src/blocks/shared/card-editor.css` (933 lines, was 126
+violations — the highest-leverage target identified in C1).
+
+**Migration approach:** Two-pass context-aware Python script. First pass
+captured the bulk of patterns (rgba backgrounds, hex text colors, common
+state colors); second pass caught border-top/border-bottom + state
+backgrounds + linear-gradient.
+
+### Substitution stats
+
+| Pass | Substitutions |
+|---|---|
+| Pass 1 (broad rules) | 84 |
+| Pass 2 (edge cases) | 22 |
+| **Total** | **106** |
+
+### Result
+
+Strict contract violations in card-editor.css: **126 → 0.**
+
+Remaining literal values inside `var(--pkiw-token, FALLBACK)` are documented
+defaults, not violations.
+
+### Token usage
+
+The migration leverages this small set of tokens (most reused multiple times):
+
+- `--pkiw-card-bg, transparent` — 19 backgrounds
+- `--pkiw-card-fg, inherit` — 7 text colors
+- `--pkiw-card-border, transparent` — 6 border declarations (incl. dashed media-button)
+- `--pkiw-card-border-radius, Npx` — 14 border-radius values
+- `--pkiw-card-shadow, none` — 2 box-shadows
+- `--pkiw-state-success, transparent` — 11 success-state backgrounds
+- `--pkiw-state-warning, transparent` — 1 warning bg
+- `--pkiw-state-error, transparent` — 3 error/red bgs
+- `--pkiw-state-info, transparent` — 5 info/blue/purple bgs
+- `--pkiw-state-hover-opacity` / `-active-opacity` / `-muted-opacity` / `-very-muted-opacity` — 22 opacity literals
+- `--pkiw-card-meta-font-size`, `--pkiw-card-body-font-size`, `--pkiw-card-icon-font-size` — 11 font-size px values
+- `--pkiw-card-media-button-bg` — specific to media-remove overlay
+
+### Pre-commit lint hook caught two issues
+
+The PKIW repo has a husky `pre-commit` hook running `wp-scripts lint-style`.
+First commit attempt failed:
+
+1. **`currentColor` should be `currentcolor`** (CSS spec is case-insensitive
+   but stylelint enforces lowercase) — 16 occurrences across
+   `kind-tokens.css` and `card-editor.css`. Auto-fixed via sed.
+
+2. **Whitespace** — `rule-empty-line-before` and `comment-empty-line-before`
+   in `kind-tokens.css` after the `@layer pkiw-kind-tokens {` opening.
+   Auto-fixed via `wp-scripts lint-style --fix`.
+
+After both fixes, lint passes and commit goes through. Documented for
+future C3 sessions: always run `wp-scripts lint-style --fix` before
+committing token-migration work.
+
+### Verification gauntlet (per Section 3.6 + 3.8)
+
+| Check | Result |
+|---|---|
+| 1. Frontend HTTP 200 | OK |
+| 2. All 3 plugins still active | OK (xfn 1.0.3, pfbt 2.3.0, pkiw 1.0.0) |
+| 3. 18 PKIW blocks still register | OK (unchanged from pre-migration) |
+| 4. Seeded post still renders (sample: bookmark single 37387) | HTTP 301 (redirect to canonical URL — expected) |
+| 5. `debug.log` new fatals | NONE (file absent) |
+
+### Branch + PR
+
+- Branch: `audit/styling-tokens-card-editor` from main
+- Commit SHA: `b65ed45`
+- Files: 8 changed (+2530 / -107)
+- PR: https://github.com/courtneyr-dev/post-kinds-for-indieweb/pull/25
+- Tracking issue: #24 (composer-lock-refresh)
+
+### C3a acceptance
+
+- [x] Highest-leverage file identified in C1 (`card-editor.css`, 126 violations) migrated.
+- [x] Strict contract violations: 126 → 0.
+- [x] All replacements use `var(--pkiw-*, fallback)` references with neutral fallbacks for paint tokens, real-value fallbacks for structural tokens.
+- [x] Pre-commit lint passes after `--fix`.
+- [x] Verification gauntlet on staging passes.
+- [x] Branch pushed and PR opened.
+- [x] Token catalog extended with 14 sub-component tokens to cover migration needs (badge, media-button, type-select, notice, state-success/warning/error/info, opacity variants).
+
+### Phase C3 remaining work
+
+| Sub-session | Files | Estimated violations | Notes |
+|---|---|---|---|
+| C3b | `src/blocks/checkin-dashboard/style.css` (21) + `checkin-card/editor.css` (20) + `checkins-feed/style.css` (16) + `checkins-feed/editor.css` (10) | 67 | Largest remaining cluster |
+| C3c | `src/blocks/venue-detail/style.css` (12) + `venue-detail/editor.css` (8) | 20 | Venue surface |
+| C3d | `src/blocks/star-rating/{style,editor}.css` (9) | 9 | Section 5.4 special case (this is C4) |
+| C3e | `src/blocks/{watch,listen,rsvp}-card/editor.css` (5 each) | 15 | Per-kind card editors |
+| C3f | `src/blocks/media-lookup/style.css` (6) | 6 | Lookup surface |
+| C3g | `src/editor/kind-selector/components/{KindFields.js,KindGrid.js}` (29) | 29 | React component CSS-in-JS |
+| C3h | `patterns/*.php` (15) + `includes/blocks/*.php` (5) | 20 | Pattern + render-callback inline styles |
+
+Total remaining migration work: ~166 violations across the surfaces above.
