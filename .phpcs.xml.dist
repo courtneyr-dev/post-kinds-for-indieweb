@@ -135,12 +135,19 @@
 		</properties>
 	</rule>
 
-	<!-- Register allowed prefixes for globals, hooks, and options -->
+	<!-- Register allowed prefixes for globals, hooks, and options.
+		 The plugin uses two parallel snake_case conventions:
+		 - "post_kinds_for_indieweb" matches the slug + text domain.
+		 - "post_kinds_indieweb"     is the established convention for hooks
+		   and runtime constants (POST_KINDS_INDIEWEB_*, post_kinds_indieweb_*).
+		 Both are recognized to avoid forcing a breaking rename of hooks that
+		 may already have third-party listeners. -->
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
 			<property name="prefixes" type="array">
 				<element value="pkiw"/>
 				<element value="post_kinds_for_indieweb"/>
+				<element value="post_kinds_indieweb"/>
 				<element value="PostKindsForIndieWeb"/>
 			</property>
 		</properties>
