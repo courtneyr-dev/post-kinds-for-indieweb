@@ -309,6 +309,15 @@ class BlockBindingsSourceTest extends WP_UnitTestCase {
 			}
 		);
 
+		// Re-registering the same source on WP 6.5+ emits a
+		// `_doing_it_wrong` notice ("Block bindings source already
+		// registered"). The test re-registers deliberately to confirm the
+		// filter fires; declare the notice as expected so WP_UnitTestCase
+		// doesn't fail us on it.
+		if ( method_exists( $this, 'setExpectedIncorrectUsage' ) ) {
+			$this->setExpectedIncorrectUsage( 'WP_Block_Bindings_Registry::register' );
+		}
+
 		// Re-register to trigger the filter.
 		$source = new Block_Bindings_Source();
 		$source->register_source();
