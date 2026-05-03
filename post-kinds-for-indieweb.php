@@ -277,8 +277,18 @@ function init(): void {
 // Load helper functions.
 require_once POST_KINDS_INDIEWEB_PATH . 'includes/functions-checkin.php';
 
-// Hook into WordPress init.
-add_action( 'plugins_loaded', __NAMESPACE__ . '\\init' );
+// Hook into WordPress init (priority 0 so component registrations land
+// before the priority-10 callbacks they depend on).
+//
+// `init` rather than `plugins_loaded`: WordPress 6.7 added a
+// `_load_textdomain_just_in_time` notice when any `__()` / `_e()` call
+// fires before `init`. Several of this plugin's components touch
+// translated labels (taxonomy registration, block category, etc.), so
+// kicking the bootstrap from `plugins_loaded` triggered the notice — and
+// because notices flush output, login redirects (which need to set
+// cookies) broke. Running at `init` keeps translations on the right side
+// of the JIT loader.
+add_action( 'init', __NAMESPACE__ . '\\init', 0 );
 
 // Load WP-CLI commands.
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
