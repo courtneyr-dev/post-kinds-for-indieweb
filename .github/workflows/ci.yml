@@ -102,6 +102,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # `bin/install-wp-tests.sh` checks out the WP test fixtures via
+      # subversion, which isn't on the default ubuntu-latest image.
+      - name: Install Subversion
+        run: sudo apt-get update && sudo apt-get install -y subversion
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
