@@ -989,9 +989,23 @@ final class Plugin {
 			return $query_result;
 		}
 
+		// Respect the slug filter when WordPress is resolving the block-template
+		// hierarchy (e.g. resolve_block_template('singular') queries with
+		// slug__in => ['singular']). Without this guard, the plugin's templates
+		// get appended to every hierarchy lookup and can win a match they were
+		// never meant to answer — which is exactly how taxonomy-venue ended up
+		// rendered for single posts.
+		$slug_filter = isset( $query['slug__in'] ) && is_array( $query['slug__in'] )
+			? $query['slug__in']
+			: null;
+
 		$template_definitions = $this->get_plugin_template_definitions();
 
 		foreach ( $template_definitions as $slug => $definition ) {
+			if ( null !== $slug_filter && ! in_array( $slug, $slug_filter, true ) ) {
+				continue;
+			}
+
 			// Check if template already exists in results.
 			$exists = false;
 			foreach ( $query_result as $template ) {
