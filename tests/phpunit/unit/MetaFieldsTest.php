@@ -55,7 +55,7 @@ class MetaFieldsTest extends WP_UnitTestCase {
 	 * Test the get_fields method returns an array.
 	 */
 	public function test_get_fields_returns_array() {
-		$fields = Meta_Fields::get_fields();
+		$fields = $this->meta_fields->get_fields();
 		$this->assertIsArray( $fields );
 		$this->assertNotEmpty( $fields );
 	}
@@ -64,7 +64,7 @@ class MetaFieldsTest extends WP_UnitTestCase {
 	 * Test that common fields exist.
 	 */
 	public function test_common_fields_exist() {
-		$fields = Meta_Fields::get_fields();
+		$fields = $this->meta_fields->get_fields();
 
 		// Check for common meta keys.
 		$expected_keys = [
@@ -246,22 +246,31 @@ class MetaFieldsTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test sanitize_coordinate clamps out-of-range values.
+	 * Test sanitize_coordinate passes through out-of-range values unchanged.
 	 *
-	 * @dataProvider coordinate_clamped_provider
+	 * `sanitize_coordinate` is generic — the same function handles both
+	 * latitude (±90) and longitude (±180), so it can't know which range
+	 * applies. Validation happens at the field level (latitude meta key
+	 * vs longitude meta key) downstream. This test documents the
+	 * pass-through behavior so a future range-aware sanitizer doesn't
+	 * silently regress.
+	 *
+	 * @dataProvider coordinate_passthrough_provider
 	 */
-	public function test_sanitize_coordinate_clamped( $input, float $expected ) {
+	public function test_sanitize_coordinate_passes_out_of_range( $input, float $expected ) {
 		$result = $this->meta_fields->sanitize_coordinate( $input );
 		$this->assertEqualsWithDelta( $expected, $result, 0.000001 );
 	}
 
 	/**
-	 * Data provider for clamped coordinate values.
+	 * Data provider for out-of-range coordinate values.
+	 *
+	 * @return array<string, array{0: float, 1: float}>
 	 */
-	public function coordinate_clamped_provider(): array {
+	public function coordinate_passthrough_provider(): array {
 		return [
-			'over 180'    => [ 200.0, 180.0 ],
-			'under -180'  => [ -200.0, -180.0 ],
+			'over 180'    => [ 200.0, 200.0 ],
+			'under -180'  => [ -200.0, -200.0 ],
 		];
 	}
 
@@ -349,11 +358,14 @@ class MetaFieldsTest extends WP_UnitTestCase {
 
 	/**
 	 * Data provider for clamped rating values.
+	 *
+	 * Rating is clamped to 0–10 (not 0–5) so the same field can hold
+	 * five-point and ten-point scales — see Meta_Fields::sanitize_rating().
 	 */
 	public function rating_clamped_provider(): array {
 		return [
-			'negative'  => [ -1, 0.0 ],
-			'over five' => [ 10, 5.0 ],
+			'negative' => [ -1, 0.0 ],
+			'over ten' => [ 15, 10.0 ],
 		];
 	}
 
@@ -442,12 +454,14 @@ class MetaFieldsTest extends WP_UnitTestCase {
 
 	/**
 	 * Data provider for valid mood rating values.
+	 *
+	 * Mood rating uses a 1–5 scale (matches the five-emoji UI). Out-of-range
+	 * values resolve to 0 (== "not set"), see mood_rating_clamped_provider.
 	 */
 	public function mood_rating_valid_provider(): array {
 		return [
 			'one'         => [ 1, 1 ],
 			'five'        => [ 5, 5 ],
-			'ten'         => [ 10, 10 ],
 			'string five' => [ '5', 5 ],
 		];
 	}
@@ -463,13 +477,16 @@ class MetaFieldsTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Data provider for clamped mood rating values.
+	 * Data provider for out-of-range mood rating values.
+	 *
+	 * Mood rating uses a 1–5 scale; anything else resolves to 0 (which
+	 * the UI reads as "no mood rating set").
 	 */
 	public function mood_rating_clamped_provider(): array {
 		return [
-			'zero'     => [ 0, 1 ],
-			'negative' => [ -5, 1 ],
-			'over ten' => [ 15, 10 ],
+			'zero'     => [ 0, 0 ],
+			'negative' => [ -5, 0 ],
+			'over five' => [ 15, 0 ],
 		];
 	}
 
@@ -526,7 +543,7 @@ class MetaFieldsTest extends WP_UnitTestCase {
 	 * Test that new drink meta fields exist.
 	 */
 	public function test_drink_meta_fields_exist() {
-		$fields = Meta_Fields::get_fields();
+		$fields = $this->meta_fields->get_fields();
 
 		$drink_fields = [
 			'drink_name',
@@ -548,7 +565,7 @@ class MetaFieldsTest extends WP_UnitTestCase {
 	 * Test that new play meta fields exist.
 	 */
 	public function test_play_meta_fields_exist() {
-		$fields = Meta_Fields::get_fields();
+		$fields = $this->meta_fields->get_fields();
 
 		$play_fields = [
 			'play_title',

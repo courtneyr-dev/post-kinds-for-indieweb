@@ -344,6 +344,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 		$max_id   = null;
 
 		// Untappd returns max 50 per request.
+		// phpcs:ignore Squiz.PHP.DisallowSizeFunctionsInLoops.Found -- $checkins grows inside the loop; count must be re-evaluated each iteration.
 		while ( count( $checkins ) < $limit ) {
 			$params = [
 				'limit' => min( 50, $limit - count( $checkins ) ),

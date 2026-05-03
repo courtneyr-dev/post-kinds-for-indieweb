@@ -82,8 +82,8 @@ class OpenLibrary extends API_Base {
 	/**
 	 * Search for books.
 	 *
-	 * @param string      $query  Search query.
-	 * @param string|null $author Optional author filter.
+	 * @param string $query   Search query.
+	 * @param mixed  ...$args Additional arguments; `$args[0]` is an optional author filter.
 	 * @return array<int, array<string, mixed>> Search results.
 	 */
 	public function search( string $query, ...$args ): array {

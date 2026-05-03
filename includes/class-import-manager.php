@@ -505,10 +505,10 @@ class Import_Manager {
 				$limit      = (int) ( $options['limit'] ?? $source_config['batch_size'] );
 				$fetch_args = $source_config['fetch_args'] ?? [];
 
-				// Different Readwise methods have different signatures.
-				// get_podcast_episodes: (limit, include_highlights, updated_after)
-				// get_articles, get_tweets, get_book_highlights: (limit, updated_after)
-				// get_books_with_highlights: (limit, include_highlights, updated_after)
+				// Different Readwise methods have different signatures:
+				// - get_podcast_episodes: (limit, include_highlights, updated_after).
+				// - get_articles, get_tweets, get_book_highlights: (limit, updated_after).
+				// - get_books_with_highlights: (limit, include_highlights, updated_after).
 				if ( 'get_podcast_episodes' === $method || 'get_books_with_highlights' === $method ) {
 					$result = $api->$method( $limit, true, $date_from );
 				} elseif ( ! empty( $fetch_args ) ) {

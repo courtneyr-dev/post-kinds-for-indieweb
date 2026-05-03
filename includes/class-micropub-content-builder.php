@@ -52,7 +52,7 @@ final class Micropub_Content_Builder {
 	 * Hook the bridge into Micropub's post-creation flow.
 	 */
 	public static function register(): void {
-		add_action( 'after_micropub', array( self::class, 'apply' ), 30, 2 );
+		add_action( 'after_micropub', [ self::class, 'apply' ], 30, 2 );
 	}
 
 	/**
@@ -97,10 +97,10 @@ final class Micropub_Content_Builder {
 		// check above.
 		update_post_meta( $post_id, self::GENERATED_META_KEY, '1' );
 		wp_update_post(
-			array(
+			[
 				'ID'           => $post_id,
 				'post_content' => $block_content,
-			)
+			]
 		);
 	}
 
@@ -110,8 +110,8 @@ final class Micropub_Content_Builder {
 	 * Form-encoded Micropub puts properties at the top level of $input.
 	 * JSON Micropub nests them under `properties`. Try both.
 	 *
-	 * @param array<string, mixed> $input
-	 * @return array<string, mixed>
+	 * @param array<string, mixed> $input Raw Micropub request body parsed to an array.
+	 * @return array<string, mixed> The h-entry properties bag.
 	 */
 	private static function extract_properties( array $input ): array {
 		if ( isset( $input['properties'] ) && is_array( $input['properties'] ) ) {
@@ -128,7 +128,7 @@ final class Micropub_Content_Builder {
 	 * Map the h-entry properties to a card block + content paragraph.
 	 * Returns null when no recognized post kind is detected.
 	 *
-	 * @param array<string, mixed> $properties
+	 * @param array<string, mixed> $properties h-entry properties bag.
 	 * @return string|null Block markup ready for post_content, or null to skip.
 	 */
 	private static function build_block_content( array $properties ): ?string {
@@ -153,6 +153,9 @@ final class Micropub_Content_Builder {
 	 * Detection order matters — eat-of/drink-of takes precedence over
 	 * `location` because Eat/Drink posts may include both. The first match
 	 * wins.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return string|null Kind slug ('eat'|'drink'|'listen'|...) or null when no kind matches.
 	 */
 	private static function detect_kind( array $properties ): ?string {
 		if ( self::has_property( $properties, 'eat-of' ) ) {
@@ -189,6 +192,10 @@ final class Micropub_Content_Builder {
 	/**
 	 * Build the card block for a given post kind. Returns null if the
 	 * kind doesn't have a corresponding card block.
+	 *
+	 * @param string               $kind       Post-kind slug as returned by detect_kind().
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return string|null Block-comment markup for the card, or null when the kind has no card.
 	 */
 	private static function card_for_kind( string $kind, array $properties ): ?string {
 		switch ( $kind ) {
@@ -216,14 +223,24 @@ final class Micropub_Content_Builder {
 
 	// --- Per-kind block builders -------------------------------------------
 
+	/**
+	 * Build a Checkin Card block from the h-entry property bag.
+	 *
+	 * Recognizes Outpost's `mp-place-name` extension as the venue name and
+	 * parses `geo:lat,lon` URIs from `location` into latitude/longitude
+	 * attributes.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return string Block-comment markup for the checkin-card block.
+	 */
 	private static function checkin_card( array $properties ): string {
 		$attrs = self::filter_empty(
-			array(
+			[
 				'venueName' => self::flatten_scalar( $properties, 'mp-place-name' ),
 				'note'      => self::flatten_scalar( $properties, 'content' ),
-			)
+			]
 		);
-		$geo = self::parse_geo_from_location( $properties );
+		$geo   = self::parse_geo_from_location( $properties );
 		if ( null !== $geo ) {
 			$attrs['latitude']  = $geo['lat'];
 			$attrs['longitude'] = $geo['lon'];
@@ -231,16 +248,22 @@ final class Micropub_Content_Builder {
 		return self::self_closing_block( 'post-kinds-indieweb/checkin-card', $attrs );
 	}
 
+	/**
+	 * Build an Eat Card block from the h-entry property bag.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `eat-of`, `mp-place-name`, `rating`, `content`, `location`).
+	 * @return string Block-comment markup for the eat-card block.
+	 */
 	private static function eat_card( array $properties ): string {
 		$attrs = self::filter_empty(
-			array(
+			[
 				'name'         => self::flatten_scalar( $properties, 'eat-of' ),
 				'locationName' => self::flatten_scalar( $properties, 'mp-place-name' ),
 				'rating'       => self::flatten_numeric( $properties, 'rating' ),
 				'notes'        => self::flatten_scalar( $properties, 'content' ),
-			)
+			]
 		);
-		$geo = self::parse_geo_from_location( $properties );
+		$geo   = self::parse_geo_from_location( $properties );
 		if ( null !== $geo ) {
 			$attrs['geoLatitude']  = $geo['lat'];
 			$attrs['geoLongitude'] = $geo['lon'];
@@ -248,16 +271,22 @@ final class Micropub_Content_Builder {
 		return self::self_closing_block( 'post-kinds-indieweb/eat-card', $attrs );
 	}
 
+	/**
+	 * Build a Drink Card block from the h-entry property bag.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `drink-of`, `mp-place-name`, `rating`, `content`, `location`).
+	 * @return string Block-comment markup for the drink-card block.
+	 */
 	private static function drink_card( array $properties ): string {
 		$attrs = self::filter_empty(
-			array(
+			[
 				'name'         => self::flatten_scalar( $properties, 'drink-of' ),
 				'locationName' => self::flatten_scalar( $properties, 'mp-place-name' ),
 				'rating'       => self::flatten_numeric( $properties, 'rating' ),
 				'notes'        => self::flatten_scalar( $properties, 'content' ),
-			)
+			]
 		);
-		$geo = self::parse_geo_from_location( $properties );
+		$geo   = self::parse_geo_from_location( $properties );
 		if ( null !== $geo ) {
 			$attrs['geoLatitude']  = $geo['lat'];
 			$attrs['geoLongitude'] = $geo['lon'];
@@ -265,74 +294,110 @@ final class Micropub_Content_Builder {
 		return self::self_closing_block( 'post-kinds-indieweb/drink-card', $attrs );
 	}
 
+	/**
+	 * Build a Listen Card block from the h-entry property bag.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `listen-of`, `name`, `author`, `rating`).
+	 * @return string Block-comment markup for the listen-card block.
+	 */
 	private static function listen_card( array $properties ): string {
 		$attrs = self::filter_empty(
-			array(
+			[
 				'listenUrl'  => self::flatten_scalar( $properties, 'listen-of' ),
 				'trackTitle' => self::flatten_scalar( $properties, 'name' ),
 				'artistName' => self::flatten_scalar( $properties, 'author' ),
 				'rating'     => self::flatten_numeric( $properties, 'rating' ),
-			)
+			]
 		);
 		return self::self_closing_block( 'post-kinds-indieweb/listen-card', $attrs );
 	}
 
+	/**
+	 * Build a Watch Card block from the h-entry property bag.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `watch-of`, `name`, `author`, `rating`, `content`).
+	 * @return string Block-comment markup for the watch-card block.
+	 */
 	private static function watch_card( array $properties ): string {
 		$attrs = self::filter_empty(
-			array(
+			[
 				'watchUrl'   => self::flatten_scalar( $properties, 'watch-of' ),
 				'mediaTitle' => self::flatten_scalar( $properties, 'name' ),
 				'director'   => self::flatten_scalar( $properties, 'author' ),
 				'rating'     => self::flatten_numeric( $properties, 'rating' ),
 				'review'     => self::flatten_scalar( $properties, 'content' ),
-			)
+			]
 		);
 		return self::self_closing_block( 'post-kinds-indieweb/watch-card', $attrs );
 	}
 
+	/**
+	 * Build a Read Card block from the h-entry property bag.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `read-of`, `name`, `author`, `read-status`, `rating`, `content`).
+	 * @return string Block-comment markup for the read-card block.
+	 */
 	private static function read_card( array $properties ): string {
 		$attrs = self::filter_empty(
-			array(
+			[
 				'bookUrl'    => self::flatten_scalar( $properties, 'read-of' ),
 				'bookTitle'  => self::flatten_scalar( $properties, 'name' ),
 				'authorName' => self::flatten_scalar( $properties, 'author' ),
 				'readStatus' => self::flatten_scalar( $properties, 'read-status' ),
 				'rating'     => self::flatten_numeric( $properties, 'rating' ),
 				'review'     => self::flatten_scalar( $properties, 'content' ),
-			)
+			]
 		);
 		return self::self_closing_block( 'post-kinds-indieweb/read-card', $attrs );
 	}
 
+	/**
+	 * Build a Play Card block from the h-entry property bag.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `play-of`, `name`, `rating`).
+	 * @return string Block-comment markup for the play-card block.
+	 */
 	private static function play_card( array $properties ): string {
 		// Play-card attributes mirror Listen/Watch's URL+name pattern.
 		$attrs = self::filter_empty(
-			array(
+			[
 				'playUrl'   => self::flatten_scalar( $properties, 'play-of' ),
 				'gameTitle' => self::flatten_scalar( $properties, 'name' ),
 				'rating'    => self::flatten_numeric( $properties, 'rating' ),
-			)
+			]
 		);
 		return self::self_closing_block( 'post-kinds-indieweb/play-card', $attrs );
 	}
 
+	/**
+	 * Build an RSVP Card block from the h-entry property bag.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `in-reply-to`, `rsvp`, `content`).
+	 * @return string Block-comment markup for the rsvp-card block.
+	 */
 	private static function rsvp_card( array $properties ): string {
 		$attrs = self::filter_empty(
-			array(
+			[
 				'eventUrl' => self::flatten_scalar( $properties, 'in-reply-to' ),
 				'response' => self::flatten_scalar( $properties, 'rsvp' ),
 				'note'     => self::flatten_scalar( $properties, 'content' ),
-			)
+			]
 		);
 		return self::self_closing_block( 'post-kinds-indieweb/rsvp-card', $attrs );
 	}
 
+	/**
+	 * Build a Mood Card block from the h-entry property bag.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `mood`, `content`).
+	 * @return string Block-comment markup for the mood-card block.
+	 */
 	private static function mood_card( array $properties ): string {
 		$attrs = self::filter_empty(
-			array(
+			[
 				'mood' => self::flatten_scalar( $properties, 'mood' ),
 				'note' => self::flatten_scalar( $properties, 'content' ),
-			)
+			]
 		);
 		return self::self_closing_block( 'post-kinds-indieweb/mood-card', $attrs );
 	}
@@ -344,6 +409,10 @@ final class Micropub_Content_Builder {
 	 *
 	 * Output: `<!-- wp:namespace/name {"attr":"value"} /-->` or
 	 * `<!-- wp:namespace/name /-->` when attrs is empty.
+	 *
+	 * @param string               $name  Block name including namespace, e.g. `post-kinds-indieweb/checkin-card`.
+	 * @param array<string, mixed> $attrs Block attributes encoded as JSON in the comment.
+	 * @return string Block-comment markup.
 	 */
 	private static function self_closing_block( string $name, array $attrs ): string {
 		if ( empty( $attrs ) ) {
@@ -360,6 +429,10 @@ final class Micropub_Content_Builder {
 	 * Wrap a card block + optional body content in an h-entry group so
 	 * microformats2 readers see one h-entry root per post and the typed
 	 * body lands inside `e-content`.
+	 *
+	 * @param string $card_markup Block-comment markup produced by one of the *_card builders.
+	 * @param string $body        User's typed body content; rendered inside an `e-content` paragraph when non-empty.
+	 * @return string Composed block markup ready for post_content.
 	 */
 	private static function wrap_h_entry( string $card_markup, string $body ): string {
 		$paragraph = '';
@@ -389,6 +462,10 @@ final class Micropub_Content_Builder {
 	 * arrays-of-one (`['content' => ['hello']]`); JSON Micropub uses arrays
 	 * for everything (`'content' => ['hello']`). Flatten to the first
 	 * scalar value, regardless of shape.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @param string               $key        Property name to read.
+	 * @return string The first scalar value found, or '' when missing/non-scalar.
 	 */
 	private static function flatten_scalar( array $properties, string $key ): string {
 		if ( ! isset( $properties[ $key ] ) ) {
@@ -407,6 +484,10 @@ final class Micropub_Content_Builder {
 	/**
 	 * Like `flatten_scalar` but returns an int/float when the value parses
 	 * as numeric, or null. Used for `rating`, `latitude`, `longitude`.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @param string               $key        Property name to read.
+	 * @return int|float|null Integer for whole numbers, float when a decimal point is present, null when missing/non-numeric.
 	 */
 	private static function flatten_numeric( array $properties, string $key ) {
 		$raw = self::flatten_scalar( $properties, $key );
@@ -421,6 +502,10 @@ final class Micropub_Content_Builder {
 
 	/**
 	 * Whether the property bag has a non-empty value at $key.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @param string               $key        Property name to test.
+	 * @return bool True when the property exists and the first value is non-empty.
 	 */
 	private static function has_property( array $properties, string $key ): bool {
 		if ( ! isset( $properties[ $key ] ) ) {
@@ -436,6 +521,9 @@ final class Micropub_Content_Builder {
 	/**
 	 * Parse `geo:lat,lon[,alt]` per RFC 5870 from the `location` property.
 	 * Returns ['lat' => float, 'lon' => float] or null when not parseable.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return array{lat: float, lon: float}|null Parsed coordinates or null when location is missing or not a geo URI.
 	 */
 	private static function parse_geo_from_location( array $properties ): ?array {
 		$location = self::flatten_scalar( $properties, 'location' );
@@ -447,15 +535,18 @@ final class Micropub_Content_Builder {
 		if ( 1 !== preg_match( '/^geo:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/', $location, $matches ) ) {
 			return null;
 		}
-		return array(
+		return [
 			'lat' => (float) $matches[1],
 			'lon' => (float) $matches[2],
-		);
+		];
 	}
 
 	/**
 	 * Drop empty / null entries from an attributes array. block.json render
 	 * works better when only meaningful attributes are present.
+	 *
+	 * @param array<string, mixed> $attrs Attribute candidates.
+	 * @return array<string, mixed> Subset of $attrs whose values are not null, empty string, or false.
 	 */
 	private static function filter_empty( array $attrs ): array {
 		return array_filter(

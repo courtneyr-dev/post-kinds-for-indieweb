@@ -40,7 +40,11 @@ Thumbs.db
 
 # Development cache files
 .phpcs.cache
+.phpunit.result.cache
 coverage/
+
+# Plugin distribution zip (built on demand by `wp-scripts plugin-zip`)
+post-kinds-for-indieweb.zip
 
 # Local config overrides (*.dist files are tracked)
 phpcs.xml

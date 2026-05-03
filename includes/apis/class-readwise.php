@@ -170,6 +170,7 @@ class Readwise extends API_Base {
 
 				$next_cursor = $response['nextPageCursor'] ?? null;
 
+				// phpcs:ignore Squiz.PHP.DisallowSizeFunctionsInLoops.Found -- $all_books grows inside the loop; count must be re-evaluated each iteration.
 			} while ( $next_cursor && count( $all_books ) < $limit );
 
 		} catch ( \Exception $e ) {
@@ -231,6 +232,7 @@ class Readwise extends API_Base {
 
 				$next_cursor = $response['nextPageCursor'] ?? null;
 
+				// phpcs:ignore Squiz.PHP.DisallowSizeFunctionsInLoops.Found -- $all_highlights grows inside the loop; count must be re-evaluated each iteration.
 			} while ( $next_cursor && count( $all_highlights ) < $limit );
 
 		} catch ( \Exception $e ) {

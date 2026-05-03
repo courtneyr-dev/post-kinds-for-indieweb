@@ -148,8 +148,8 @@ class GoogleBooks extends API_Base {
 	/**
 	 * Search for books.
 	 *
-	 * @param string      $query  Search query.
-	 * @param string|null $filter Optional filter: partial, full, free-ebooks, paid-ebooks, ebooks.
+	 * @param string $query   Search query.
+	 * @param mixed  ...$args Additional arguments; `$args[0]` is an optional filter (partial, full, free-ebooks, paid-ebooks, ebooks).
 	 * @return array<int, array<string, mixed>> Search results.
 	 */
 	public function search( string $query, ...$args ): array {
