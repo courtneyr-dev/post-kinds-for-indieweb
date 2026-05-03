@@ -301,34 +301,33 @@ class BlockBindingsSourceTest extends WP_UnitTestCase {
 	 * Test the pkiw_block_bindings_keys filter.
 	 */
 	public function test_block_bindings_keys_filter(): void {
-		add_filter(
-			'pkiw_block_bindings_keys',
-			function ( $keys ) {
-				$keys[] = 'custom_key';
-				return $keys;
-			}
+		$callback = function ( $keys ) {
+			$keys[] = 'custom_key';
+			return $keys;
+		};
+		add_filter( 'pkiw_block_bindings_keys', $callback );
+
+		// The filter contract: anything hooking `pkiw_block_bindings_keys`
+		// gets called when the source is registered. We verify the hook
+		// is attached AND that running it through apply_filters produces
+		// the expected mutation. This avoids re-registering the source —
+		// WP_Block_Bindings_Registry treats double-registration of the
+		// same name differently across versions (silent in 6.5–6.9,
+		// `_doing_it_wrong` notice on trunk), and we don't need a
+		// re-register to verify the filter contract.
+		$this->assertNotFalse(
+			has_filter( 'pkiw_block_bindings_keys', $callback ),
+			'pkiw_block_bindings_keys filter callback should be registered.'
 		);
 
-		// Re-registering the same source on WP 6.5+ emits a
-		// `_doing_it_wrong` notice ("Block bindings source already
-		// registered"). The test re-registers deliberately to confirm the
-		// filter fires; declare the notice as expected so WP_UnitTestCase
-		// doesn't fail us on it.
-		if ( method_exists( $this, 'setExpectedIncorrectUsage' ) ) {
-			$this->setExpectedIncorrectUsage( 'WP_Block_Bindings_Registry::register' );
-		}
-
-		// Re-register to trigger the filter.
-		$source = new Block_Bindings_Source();
-		$source->register_source();
-
-		// The filter is applied during registration, verify it fires.
-		$this->assertTrue(
-			has_filter( 'pkiw_block_bindings_keys' ) !== false,
-			'pkiw_block_bindings_keys filter should be registered'
+		$result = apply_filters( 'pkiw_block_bindings_keys', [ 'kind' ] );
+		$this->assertContains(
+			'custom_key',
+			$result,
+			'Filter callback should be applied when the hook fires.'
 		);
 
-		remove_all_filters( 'pkiw_block_bindings_keys' );
+		remove_filter( 'pkiw_block_bindings_keys', $callback );
 	}
 
 	/**
