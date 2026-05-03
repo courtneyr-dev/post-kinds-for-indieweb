@@ -718,6 +718,13 @@ final class Plugin {
 		// Register block patterns.
 		add_action( 'init', [ $this, 'register_block_patterns' ] );
 
+		// Bridge: rewrite Micropub-created post_content to use card blocks.
+		// Hooks `after_micropub` priority 30 so any client (Outpost,
+		// Quill, etc.) can post a checkin/eat/listen/etc. h-entry and the
+		// front-end will render the corresponding card block instead of
+		// plain text. Idempotent — only writes the first time per post.
+		Micropub_Content_Builder::register();
+
 		// Register block templates for CPT and taxonomy archives.
 		add_filter( 'get_block_templates', [ $this, 'add_plugin_templates' ], 10, 3 );
 		add_filter( 'pre_get_block_file_template', [ $this, 'get_plugin_template' ], 10, 3 );
