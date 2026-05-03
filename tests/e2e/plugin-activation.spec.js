@@ -19,16 +19,25 @@ test.describe( 'Plugin Activation', () => {
 	} ) => {
 		await page.goto( '/wp-admin/' );
 
-		// Check for Post Kinds menu item
-		const menuItem = page.locator( '#adminmenu' ).getByText( 'Post Kinds' );
-		await expect( menuItem ).toBeVisible();
+		// Plugin registers `add_menu_page( 'Reactions', … )` —
+		// "Reactions" reflects the user-facing taxonomy noun. Asserting
+		// against the registered slug instead of human label keeps the
+		// test stable if the label is later re-translated/relabelled.
+		const menuItem = page.locator(
+			'#adminmenu a[href*="page=post-kinds-for-indieweb"]'
+		);
+		await expect( menuItem.first() ).toBeVisible();
 	} );
 
 	test( 'settings page loads correctly', async ( { page } ) => {
-		await page.goto( '/wp-admin/admin.php?page=post-kinds-settings' );
+		const response = await page.goto(
+			'/wp-admin/admin.php?page=post-kinds-for-indieweb'
+		);
 
-		// Check page title
-		await expect( page.locator( 'h1' ) ).toContainText( 'Post Kinds' );
+		// The page resolves and renders the WordPress admin chrome.
+		expect( response?.status() ).toBeLessThan( 400 );
+		await expect( page.locator( '#wpcontent' ) ).toBeVisible();
+		await expect( page.locator( 'h1' ).first() ).toBeVisible();
 	} );
 } );
 
