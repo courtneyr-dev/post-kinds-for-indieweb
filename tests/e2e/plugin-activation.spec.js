@@ -51,62 +51,43 @@ test.describe( 'Block Editor Integration', () => {
 		await page.waitForURL( '**/wp-admin/**' );
 	} );
 
-	// TODO: rewrite for iframed block editor (WP 6.5+).
-	// `.block-editor-writing-flow` and the inserted-block selectors live
-	// inside `iframe[name="editor-canvas"]` and aren't visible to outer-
-	// frame locators. Wrap in `page.frameLocator('iframe[name="editor-canvas"]')`
-	// when picking this up.
-	test.skip( 'post kind blocks are available in inserter', async ( {
-		page,
-	} ) => {
-		// Create a new post
+	test( 'post kind blocks are available in inserter', async ( { page } ) => {
 		await page.goto( '/wp-admin/post-new.php' );
 
-		// Wait for editor to load
-		await page.waitForSelector( '.block-editor-writing-flow' );
+		// Editor canvas lives inside `iframe[name="editor-canvas"]` since
+		// WP 6.5; the inserter sidebar stays on the outer frame.
+		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
+		await editor
+			.locator( '.block-editor-writing-flow' )
+			.waitFor( { timeout: 30000 } );
 
-		// Open block inserter
-		const inserterButton = page.getByRole( 'button', {
-			name: 'Toggle block inserter',
-		} );
-		await inserterButton.click();
+		await page
+			.getByRole( 'button', { name: 'Toggle block inserter' } )
+			.click();
+		await page.getByPlaceholder( 'Search' ).fill( 'Listen Card' );
 
-		// Search for our blocks
-		const searchInput = page.getByPlaceholder( 'Search' );
-		await searchInput.fill( 'Listen Card' );
-
-		// Verify block appears
-		const listenCardBlock = page.getByRole( 'option', {
-			name: /Listen Card/,
-		} );
-		await expect( listenCardBlock ).toBeVisible();
+		await expect(
+			page.getByRole( 'option', { name: /Listen Card/ } )
+		).toBeVisible();
 	} );
 
-	// TODO: rewrite for iframed block editor — see the matching skip on
-	// `post kind blocks are available in inserter` above.
-	test.skip( 'can insert Listen Card block', async ( { page } ) => {
+	test( 'can insert Listen Card block', async ( { page } ) => {
 		await page.goto( '/wp-admin/post-new.php' );
-		await page.waitForSelector( '.block-editor-writing-flow' );
 
-		// Open inserter
-		const inserterButton = page.getByRole( 'button', {
-			name: 'Toggle block inserter',
-		} );
-		await inserterButton.click();
+		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
+		await editor
+			.locator( '.block-editor-writing-flow' )
+			.waitFor( { timeout: 30000 } );
 
-		// Search and insert
-		const searchInput = page.getByPlaceholder( 'Search' );
-		await searchInput.fill( 'Listen Card' );
+		await page
+			.getByRole( 'button', { name: 'Toggle block inserter' } )
+			.click();
+		await page.getByPlaceholder( 'Search' ).fill( 'Listen Card' );
+		await page.getByRole( 'option', { name: /Listen Card/ } ).click();
 
-		const listenCardBlock = page.getByRole( 'option', {
-			name: /Listen Card/,
-		} );
-		await listenCardBlock.click();
-
-		// Verify block is inserted
-		const block = page.locator(
-			'[data-type="post-kinds-indieweb/listen-card"]'
-		);
-		await expect( block ).toBeVisible();
+		// Inserted block lives inside the canvas.
+		await expect(
+			editor.locator( '[data-type="post-kinds-indieweb/listen-card"]' )
+		).toBeVisible();
 	} );
 } );

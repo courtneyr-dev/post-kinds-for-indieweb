@@ -1,23 +1,26 @@
 /**
- * Visual regression tests for block appearance
+ * Visual regression tests for block appearance.
  *
- * These tests capture screenshots of blocks and compare against baselines.
- * Run `npm run test:visual` to update snapshots.
+ * These tests capture screenshots of blocks and compare against committed
+ * baselines. Run `npm run test:visual` to update snapshots.
  *
- * Skipped in CI for now — two reasons:
+ * **Skipped in CI by default** — visual regression suites need three things
+ * before they're useful as a PR gate, and we don't have all three yet:
  *
- * 1. The block-editor tests use `.block-editor-writing-flow` selectors
- *    that live inside `iframe[name="editor-canvas"]` (WP 6.5+ iframed
- *    the editor). These need a `page.frameLocator()` rewrite to work
- *    against a current WordPress.
- * 2. The settings-page snapshot test has no committed baseline; without
- *    one, the first CI run can't compare anything. Visual regression
- *    suites typically need baselines generated via
- *    `npm run test:visual` and committed before they can gate PRs.
+ * 1. Committed baseline images. Without them, the first CI run can't
+ *    compare anything. Generate via `npm run test:visual` (which uses
+ *    `--update-snapshots`), then commit the `*-snapshots/` directories.
+ * 2. Cross-environment font rendering parity. CI's headless Chromium and a
+ *    local Mac headed Chromium produce slightly different antialiased
+ *    glyphs even at the same resolution. The `maxDiffPixelRatio: 0.05`
+ *    setting absorbs typical drift but won't survive font-stack changes.
+ * 3. A stable theme. The default `wp-env` theme can shift between WP
+ *    versions; visual baselines need to be regenerated whenever the
+ *    underlying theme paint changes.
  *
- * To re-enable: rewrite the selectors with frameLocator, generate
- * baselines with `npm run test:visual`, and commit the
- * `*-snapshots/` directories.
+ * The tests themselves are correctly written for the iframed editor
+ * (WP 6.5+'s `iframe[name="editor-canvas"]`). Drop the `.skip` on the
+ * describe blocks once baselines are committed.
  */
 
 const { test, expect } = require( '@playwright/test' );
@@ -34,29 +37,23 @@ test.describe.skip( 'Visual Regression', () => {
 
 	test( 'Listen Card block appearance', async ( { page } ) => {
 		await page.goto( '/wp-admin/post-new.php' );
-		await page.waitForSelector( '.block-editor-writing-flow' );
 
-		// Insert Listen Card
-		const inserterButton = page.getByRole( 'button', {
-			name: 'Toggle block inserter',
-		} );
-		await inserterButton.click();
+		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
+		await editor
+			.locator( '.block-editor-writing-flow' )
+			.waitFor( { timeout: 30000 } );
 
-		const searchInput = page.getByPlaceholder( 'Search' );
-		await searchInput.fill( 'Listen Card' );
+		await page
+			.getByRole( 'button', { name: 'Toggle block inserter' } )
+			.click();
+		await page.getByPlaceholder( 'Search' ).fill( 'Listen Card' );
+		await page.getByRole( 'option', { name: /Listen Card/ } ).click();
 
-		const listenCardBlock = page.getByRole( 'option', {
-			name: /Listen Card/,
-		} );
-		await listenCardBlock.click();
-
-		// Wait for block to render
-		const block = page.locator(
+		const block = editor.locator(
 			'[data-type="post-kinds-indieweb/listen-card"]'
 		);
 		await expect( block ).toBeVisible();
 
-		// Take screenshot of the block
 		await expect( block ).toHaveScreenshot( 'listen-card-default.png', {
 			maxDiffPixelRatio: 0.05,
 		} );
@@ -64,22 +61,19 @@ test.describe.skip( 'Visual Regression', () => {
 
 	test( 'Watch Card block appearance', async ( { page } ) => {
 		await page.goto( '/wp-admin/post-new.php' );
-		await page.waitForSelector( '.block-editor-writing-flow' );
 
-		const inserterButton = page.getByRole( 'button', {
-			name: 'Toggle block inserter',
-		} );
-		await inserterButton.click();
+		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
+		await editor
+			.locator( '.block-editor-writing-flow' )
+			.waitFor( { timeout: 30000 } );
 
-		const searchInput = page.getByPlaceholder( 'Search' );
-		await searchInput.fill( 'Watch Card' );
+		await page
+			.getByRole( 'button', { name: 'Toggle block inserter' } )
+			.click();
+		await page.getByPlaceholder( 'Search' ).fill( 'Watch Card' );
+		await page.getByRole( 'option', { name: /Watch Card/ } ).click();
 
-		const watchCardBlock = page.getByRole( 'option', {
-			name: /Watch Card/,
-		} );
-		await watchCardBlock.click();
-
-		const block = page.locator(
+		const block = editor.locator(
 			'[data-type="post-kinds-indieweb/watch-card"]'
 		);
 		await expect( block ).toBeVisible();
@@ -91,22 +85,19 @@ test.describe.skip( 'Visual Regression', () => {
 
 	test( 'Read Card block appearance', async ( { page } ) => {
 		await page.goto( '/wp-admin/post-new.php' );
-		await page.waitForSelector( '.block-editor-writing-flow' );
 
-		const inserterButton = page.getByRole( 'button', {
-			name: 'Toggle block inserter',
-		} );
-		await inserterButton.click();
+		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
+		await editor
+			.locator( '.block-editor-writing-flow' )
+			.waitFor( { timeout: 30000 } );
 
-		const searchInput = page.getByPlaceholder( 'Search' );
-		await searchInput.fill( 'Read Card' );
+		await page
+			.getByRole( 'button', { name: 'Toggle block inserter' } )
+			.click();
+		await page.getByPlaceholder( 'Search' ).fill( 'Read Card' );
+		await page.getByRole( 'option', { name: /Read Card/ } ).click();
 
-		const readCardBlock = page.getByRole( 'option', {
-			name: /Read Card/,
-		} );
-		await readCardBlock.click();
-
-		const block = page.locator(
+		const block = editor.locator(
 			'[data-type="post-kinds-indieweb/read-card"]'
 		);
 		await expect( block ).toBeVisible();
@@ -118,22 +109,19 @@ test.describe.skip( 'Visual Regression', () => {
 
 	test( 'Star Rating block appearance', async ( { page } ) => {
 		await page.goto( '/wp-admin/post-new.php' );
-		await page.waitForSelector( '.block-editor-writing-flow' );
 
-		const inserterButton = page.getByRole( 'button', {
-			name: 'Toggle block inserter',
-		} );
-		await inserterButton.click();
+		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
+		await editor
+			.locator( '.block-editor-writing-flow' )
+			.waitFor( { timeout: 30000 } );
 
-		const searchInput = page.getByPlaceholder( 'Search' );
-		await searchInput.fill( 'Star Rating' );
+		await page
+			.getByRole( 'button', { name: 'Toggle block inserter' } )
+			.click();
+		await page.getByPlaceholder( 'Search' ).fill( 'Star Rating' );
+		await page.getByRole( 'option', { name: /Star Rating/ } ).click();
 
-		const starRatingBlock = page.getByRole( 'option', {
-			name: /Star Rating/,
-		} );
-		await starRatingBlock.click();
-
-		const block = page.locator(
+		const block = editor.locator(
 			'[data-type="post-kinds-indieweb/star-rating"]'
 		);
 		await expect( block ).toBeVisible();
@@ -144,12 +132,11 @@ test.describe.skip( 'Visual Regression', () => {
 	} );
 
 	test( 'Settings page appearance', async ( { page } ) => {
-		await page.goto( '/wp-admin/admin.php?page=post-kinds-settings' );
-
-		// Wait for page to fully load
+		// Plugin's main admin slug is `post-kinds-for-indieweb` (the menu
+		// label is "Reactions"). Settings page chrome is what we snapshot.
+		await page.goto( '/wp-admin/admin.php?page=post-kinds-for-indieweb' );
 		await page.waitForLoadState( 'networkidle' );
 
-		// Take screenshot of main content area (excluding admin bar)
 		const content = page.locator( '#wpcontent' );
 		await expect( content ).toHaveScreenshot( 'settings-page.png', {
 			maxDiffPixelRatio: 0.05,
@@ -171,22 +158,19 @@ test.describe.skip( 'Dark Mode Visual Regression', () => {
 
 	test( 'Listen Card in dark mode', async ( { page } ) => {
 		await page.goto( '/wp-admin/post-new.php' );
-		await page.waitForSelector( '.block-editor-writing-flow' );
 
-		const inserterButton = page.getByRole( 'button', {
-			name: 'Toggle block inserter',
-		} );
-		await inserterButton.click();
+		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
+		await editor
+			.locator( '.block-editor-writing-flow' )
+			.waitFor( { timeout: 30000 } );
 
-		const searchInput = page.getByPlaceholder( 'Search' );
-		await searchInput.fill( 'Listen Card' );
+		await page
+			.getByRole( 'button', { name: 'Toggle block inserter' } )
+			.click();
+		await page.getByPlaceholder( 'Search' ).fill( 'Listen Card' );
+		await page.getByRole( 'option', { name: /Listen Card/ } ).click();
 
-		const listenCardBlock = page.getByRole( 'option', {
-			name: /Listen Card/,
-		} );
-		await listenCardBlock.click();
-
-		const block = page.locator(
+		const block = editor.locator(
 			'[data-type="post-kinds-indieweb/listen-card"]'
 		);
 		await expect( block ).toBeVisible();
