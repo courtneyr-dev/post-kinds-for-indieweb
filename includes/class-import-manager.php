@@ -924,359 +924,16 @@ class Import_Manager {
 			'post_author' => get_current_user_id(),
 		];
 
-		$meta        = [];
-		$post_format = ''; // Post format to set after insert (audio, video, etc.).
-
-		switch ( $kind ) {
-			case 'listen':
-				// Handle both music tracks and podcast episodes.
-				// Use array_key_exists because isset() returns false for null values.
-				if ( array_key_exists( 'episode_title', $item ) || array_key_exists( 'show_name', $item ) ) {
-					// Podcast episode from Readwise/Snipd.
-					$episode    = $item['episode_title'] ?? $item['title'] ?? '';
-					$show       = $item['show_name'] ?? $item['author'] ?? '';
-					$source_url = $item['source_url'] ?? '';
-					$highlights = $item['highlights'] ?? [];
-
-					$post_data['post_title'] = sprintf( 'Listened to %s', $episode );
-
-					// Build content with highlights.
-					$content_parts   = [];
-					$content_parts[] = sprintf(
-						'<!-- wp:paragraph --><p>Listened to "%s" from %s.</p><!-- /wp:paragraph -->',
-						esc_html( $episode ),
-						esc_html( $show )
-					);
-
-					// Add highlights if available.
-					if ( ! empty( $highlights ) ) {
-						$content_parts[] = '<!-- wp:heading {"level":3} --><h3 class="wp-block-heading">Highlights from this episode</h3><!-- /wp:heading -->';
-
-						foreach ( $highlights as $highlight ) {
-							$text = $highlight['text'] ?? '';
-							$note = $highlight['note'] ?? '';
-
-							if ( ! empty( $text ) ) {
-								// Add the highlight as a quote block.
-								$content_parts[] = sprintf(
-									'<!-- wp:quote --><blockquote class="wp-block-quote"><p>%s</p></blockquote><!-- /wp:quote -->',
-									esc_html( $text )
-								);
-
-								// Add note as a paragraph if present.
-								if ( ! empty( $note ) ) {
-									$content_parts[] = sprintf(
-										'<!-- wp:paragraph {"className":"highlight-note"} --><p class="highlight-note"><em>%s</em></p><!-- /wp:paragraph -->',
-										esc_html( $note )
-									);
-								}
-							}
-						}
-
-						// Add link to Snipd for more context.
-						if ( ! empty( $source_url ) ) {
-							$content_parts[] = sprintf(
-								'<!-- wp:paragraph --><p><a href="%s">View highlights on Snipd</a></p><!-- /wp:paragraph -->',
-								esc_url( $source_url )
-							);
-						}
-					}
-
-					$post_data['post_content'] = implode( "\n\n", $content_parts );
-
-					if ( isset( $item['last_highlight'] ) && ! empty( $item['last_highlight'] ) ) {
-						$post_data['post_date']     = gmdate( 'Y-m-d H:i:s', strtotime( $item['last_highlight'] ) );
-						$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', strtotime( $item['last_highlight'] ) );
-					}
-
-					// Set audio post format for podcasts.
-					$post_format = 'audio';
-
-					// Citation fields for Post Kind editor.
-					$meta['_postkind_cite_name']   = $episode;
-					$meta['_postkind_cite_author'] = $show;
-					$meta['_postkind_cite_photo']  = $item['cover_image'] ?? '';
-					$meta['_postkind_cite_url']    = $source_url;
-
-					// Listen-specific fields.
-					$meta['_postkind_listen_track']  = $episode;
-					$meta['_postkind_listen_artist'] = $show;
-					$meta['_postkind_listen_album']  = $show; // Show name as album for podcasts.
-					$meta['_postkind_listen_cover']  = $item['cover_image'] ?? '';
-					$meta['_postkind_listen_url']    = $source_url;
-
-					// Import tracking.
-					$meta['_postkind_source']          = $item['source'] ?? 'Snipd';
-					$meta['_postkind_highlight_count'] = $item['highlight_count'] ?? 0;
-				} else {
-					// Music track from Last.fm/ListenBrainz.
-					$track  = $item['track'] ?? '';
-					$artist = $item['artist'] ?? '';
-					$album  = $item['album'] ?? '';
-
-					$post_data['post_title'] = sprintf( 'Listened to %s', $track );
-
-					// Build post content with optional embed.
-					$content_parts   = [];
-					$content_parts[] = sprintf( '<!-- wp:paragraph --><p>Listened to "%s" by %s.</p><!-- /wp:paragraph -->', esc_html( $track ), esc_html( $artist ) );
-
-					// Get embed preference and generate embed if configured.
-					$settings     = get_option( 'post_kinds_indieweb_settings', [] );
-					$embed_source = $settings['listen_embed_source'] ?? 'none';
-					$embed_url    = '';
-
-					if ( 'none' !== $embed_source ) {
-						$embed_block = $this->get_music_embed_block( $embed_source, $track, $artist, $album );
-
-						if ( $embed_block ) {
-							$content_parts[] = $embed_block;
-							// Store the embed URL in meta for reference.
-							$embed_url = $this->get_music_service_url( $embed_source, $track, $artist, $album );
-						}
-					}
-
-					$post_data['post_content'] = implode( "\n\n", $content_parts );
-
-					if ( isset( $item['listened_at'] ) ) {
-						$post_data['post_date']     = gmdate( 'Y-m-d H:i:s', $item['listened_at'] );
-						$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', $item['listened_at'] );
-					}
-
-					// Set audio post format for music tracks.
-					$post_format = 'audio';
-
-					// Citation fields for Post Kind editor.
-					$meta['_postkind_cite_name']   = $track;
-					$meta['_postkind_cite_author'] = $artist;
-
-					// Listen-specific fields.
-					$meta['_postkind_listen_track']  = $track;
-					$meta['_postkind_listen_artist'] = $artist;
-					$meta['_postkind_listen_album']  = $album;
-					$meta['_postkind_listen_cover']  = $item['cover'] ?? '';
-					$meta['_postkind_listen_mbid']   = $item['mbid'] ?? '';
-					$meta['_postkind_listen_url']    = $embed_url;
-				}
-				break;
-
-			case 'watch':
-				$title = $item['title'] ?? '';
-				$year  = $item['year'] ?? '';
-				$type  = $item['type'] ?? 'movie';
-
-				$post_data['post_title']   = sprintf( 'Watched %s', $title );
-				$post_data['post_content'] = sprintf( '<!-- wp:paragraph --><p>Watched "%s".</p><!-- /wp:paragraph -->', esc_html( $title ) );
-
-				if ( isset( $item['watched_at'] ) ) {
-					$timestamp                  = is_numeric( $item['watched_at'] ) ? $item['watched_at'] : strtotime( $item['watched_at'] );
-					$post_data['post_date']     = gmdate( 'Y-m-d H:i:s', $timestamp );
-					$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', $timestamp );
-				}
-
-				// Set video post format for movies/TV.
-				$post_format = 'video';
-
-				// Citation fields for Post Kind editor.
-				$meta['_postkind_cite_name']  = $title;
-				$meta['_postkind_cite_photo'] = $item['poster'] ?? '';
-
-				// Watch-specific fields.
-				$meta['_postkind_watch_title']   = $title;
-				$meta['_postkind_watch_year']    = $year;
-				$meta['_postkind_watch_poster']  = $item['poster'] ?? '';
-				$meta['_postkind_watch_tmdb_id'] = $item['tmdb_id'] ?? '';
-				$meta['_postkind_watch_status']  = 'watched';
-
-				// Legacy field names for compatibility.
-				$meta['_postkind_watch_type']  = $type;
-				$meta['_postkind_watch_tmdb']  = $item['tmdb_id'] ?? '';
-				$meta['_postkind_watch_imdb']  = $item['imdb_id'] ?? '';
-				$meta['_postkind_watch_trakt'] = $item['trakt_id'] ?? '';
-
-				if ( 'episode' === $type || 'tv' === $type ) {
-					$meta['_postkind_watch_show']    = $item['show']['title'] ?? '';
-					$meta['_postkind_watch_season']  = $item['season'] ?? '';
-					$meta['_postkind_watch_episode'] = $item['number'] ?? '';
-				}
-				break;
-
-			case 'read':
-				$title  = $item['title'] ?? '';
-				$author = $item['author'] ?? '';
-
-				// Handle array authors format.
-				if ( empty( $author ) && isset( $item['authors'] ) && is_array( $item['authors'] ) ) {
-					if ( isset( $item['authors'][0]['name'] ) ) {
-						$author = $item['authors'][0]['name'];
-					} elseif ( is_string( $item['authors'][0] ) ) {
-						$author = $item['authors'][0];
-					}
-				}
-
-				$post_data['post_title'] = sprintf( 'Read %s', $title );
-
-				// Build content with optional Kindle embed and highlights.
-				$content_parts = [];
-
-				// Add intro paragraph.
-				$content_parts[] = sprintf(
-					'<!-- wp:paragraph --><p>Finished reading "%s" by %s.</p><!-- /wp:paragraph -->',
-					esc_html( $title ),
-					esc_html( $author )
-				);
-
-				// Add Amazon Kindle embed if ASIN is available.
-				$asin = $item['asin'] ?? '';
-				if ( ! empty( $asin ) ) {
-					// WordPress Amazon Kindle embed block.
-					$content_parts[] = sprintf(
-						'<!-- wp:embed {"url":"https://read.amazon.com/kp/card?asin=%s","type":"rich","providerNameSlug":"amazon-kindle","responsive":true} -->' .
-						'<figure class="wp-block-embed is-type-rich is-provider-amazon-kindle wp-block-embed-amazon-kindle">' .
-						'<div class="wp-block-embed__wrapper">https://read.amazon.com/kp/card?asin=%s</div>' .
-						'</figure><!-- /wp:embed -->',
-						esc_attr( $asin ),
-						esc_attr( $asin )
-					);
-				}
-
-				// Add highlights in a details block if available.
-				$highlights = $item['highlights'] ?? [];
-				if ( ! empty( $highlights ) ) {
-					// Build the inner content for the details block.
-					$highlights_content = '';
-
-					foreach ( $highlights as $highlight ) {
-						$text = $highlight['text'] ?? '';
-						$note = $highlight['note'] ?? '';
-
-						if ( ! empty( $text ) ) {
-							// Add the highlight as a quote block.
-							$highlights_content .= sprintf(
-								'<!-- wp:quote --><blockquote class="wp-block-quote"><p>%s</p></blockquote><!-- /wp:quote -->',
-								esc_html( $text )
-							);
-
-							// Add note as a paragraph if present.
-							if ( ! empty( $note ) ) {
-								$highlights_content .= sprintf(
-									'<!-- wp:paragraph {"className":"highlight-note"} --><p class="highlight-note"><em>%s</em></p><!-- /wp:paragraph -->',
-									esc_html( $note )
-								);
-							}
-						}
-					}
-
-					// Wrap highlights in a details block.
-					$content_parts[] = sprintf(
-						'<!-- wp:details --><details class="wp-block-details"><summary>Highlights (%d)</summary>%s</details><!-- /wp:details -->',
-						count( $highlights ),
-						$highlights_content
-					);
-				}
-
-				$post_data['post_content'] = implode( "\n\n", $content_parts );
-
-				if ( isset( $item['finished_at'] ) ) {
-					$post_data['post_date']     = gmdate( 'Y-m-d H:i:s', strtotime( $item['finished_at'] ) );
-					$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', strtotime( $item['finished_at'] ) );
-				} elseif ( isset( $item['last_highlight_at'] ) && ! empty( $item['last_highlight_at'] ) ) {
-					$post_data['post_date']     = gmdate( 'Y-m-d H:i:s', strtotime( $item['last_highlight_at'] ) );
-					$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', strtotime( $item['last_highlight_at'] ) );
-				}
-
-				// Citation fields for Post Kind editor.
-				$meta['_postkind_cite_name']   = $title;
-				$meta['_postkind_cite_author'] = $author;
-				$meta['_postkind_cite_photo']  = $item['cover_image'] ?? $item['cover'] ?? '';
-				$meta['_postkind_cite_url']    = $item['source_url'] ?? '';
-
-				// Read-specific fields.
-				$meta['_postkind_read_title']  = $title;
-				$meta['_postkind_read_author'] = $author;
-				$meta['_postkind_read_cover']  = $item['cover_image'] ?? $item['cover'] ?? '';
-				$meta['_postkind_read_isbn']   = $item['isbn'] ?? $item['asin'] ?? '';
-				$meta['_postkind_read_asin']   = $asin;
-				$meta['_postkind_read_status'] = 'finished';
-
-				// Import tracking.
-				$meta['_postkind_source']          = $item['source'] ?? '';
-				$meta['_postkind_source_url']      = $item['source_url'] ?? '';
-				$meta['_postkind_highlight_count'] = $item['highlight_count'] ?? 0;
-				break;
-
-			case 'checkin':
-				$venue   = $item['venue_name'] ?? 'Unknown Venue';
-				$address = $item['address'] ?? '';
-
-				$post_data['post_title']   = sprintf( 'Checked in at %s', $venue );
-				$post_data['post_content'] = sprintf( '<!-- wp:paragraph --><p>Checked in at %s.</p><!-- /wp:paragraph -->', esc_html( $venue ) );
-
-				if ( isset( $item['timestamp'] ) ) {
-					$post_data['post_date']     = gmdate( 'Y-m-d H:i:s', $item['timestamp'] );
-					$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', $item['timestamp'] );
-				}
-
-				// Checkin-specific fields for Post Kind editor.
-				$meta['_postkind_checkin_name']    = $venue;
-				$meta['_postkind_checkin_address'] = $address;
-				$meta['_postkind_geo_latitude']    = $item['latitude'] ?? '';
-				$meta['_postkind_geo_longitude']   = $item['longitude'] ?? '';
-
-				// Legacy/internal fields.
-				$meta['_postkind_checkin_venue']     = $venue;
-				$meta['_postkind_checkin_latitude']  = $item['latitude'] ?? '';
-				$meta['_postkind_checkin_longitude'] = $item['longitude'] ?? '';
-				$meta['_postkind_checkin_venue_id']  = $item['venue_id'] ?? '';
-				$meta['_postkind_checkin_shout']     = $item['shout'] ?? '';
-				break;
-
-			case 'bookmark':
-				$title  = $item['title'] ?? 'Untitled';
-				$author = $item['author'] ?? '';
-				$url    = $item['source_url'] ?? '';
-
-				$post_data['post_title']   = sprintf( 'Bookmarked: %s', $title );
-				$post_data['post_content'] = sprintf( '<!-- wp:paragraph --><p>Bookmarked "%s".</p><!-- /wp:paragraph -->', esc_html( $title ) );
-
-				if ( isset( $item['last_highlight_at'] ) && ! empty( $item['last_highlight_at'] ) ) {
-					$post_data['post_date']     = gmdate( 'Y-m-d H:i:s', strtotime( $item['last_highlight_at'] ) );
-					$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', strtotime( $item['last_highlight_at'] ) );
-				}
-
-				// Citation fields for Post Kind editor.
-				$meta['_postkind_cite_name']   = $title;
-				$meta['_postkind_cite_author'] = $author;
-				$meta['_postkind_cite_url']    = $url;
-				$meta['_postkind_cite_photo']  = $item['cover_image'] ?? '';
-
-				// Import tracking.
-				$meta['_postkind_source']          = $item['source'] ?? '';
-				$meta['_postkind_highlight_count'] = $item['highlight_count'] ?? 0;
-				break;
-
-			case 'note':
-				$title = $item['title'] ?? 'Untitled';
-
-				$post_data['post_title']   = $title;
-				$post_data['post_content'] = sprintf( '<!-- wp:paragraph --><p>%s</p><!-- /wp:paragraph -->', esc_html( $item['document_note'] ?? '' ) );
-
-				if ( isset( $item['last_highlight_at'] ) && ! empty( $item['last_highlight_at'] ) ) {
-					$post_data['post_date']     = gmdate( 'Y-m-d H:i:s', strtotime( $item['last_highlight_at'] ) );
-					$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', strtotime( $item['last_highlight_at'] ) );
-				}
-
-				// Citation fields for Post Kind editor.
-				$meta['_postkind_cite_name'] = $title;
-				$meta['_postkind_cite_url']  = $item['source_url'] ?? '';
-
-				// Import tracking.
-				$meta['_postkind_source']          = $item['source'] ?? '';
-				$meta['_postkind_highlight_count'] = $item['highlight_count'] ?? 0;
-				break;
-
-			default:
-				return new \WP_Error( 'invalid_kind', 'Unknown import kind: ' . $kind );
+		// Dispatch to per-kind builder. Each builder returns a triple of
+		// [post_data_extras, meta, post_format] that this method merges
+		// into the base post payload before inserting.
+		$built = $this->build_post_payload_for_kind( $kind, $item );
+		if ( is_wp_error( $built ) ) {
+			return $built;
 		}
+
+		[ $post_data_extras, $meta, $post_format ] = $built;
+		$post_data                                 = array_merge( $post_data, $post_data_extras );
 
 		// Insert post.
 		$post_id = wp_insert_post( $post_data, true );
@@ -1305,6 +962,516 @@ class Import_Manager {
 		update_post_meta( $post_id, '_postkind_imported_at', time() );
 
 		return $post_id;
+	}
+
+	/**
+	 * Dispatch to the per-kind post-payload builder.
+	 *
+	 * Each builder returns `[post_data_extras, meta, post_format]`:
+	 *   - post_data_extras: kind-specific fields merged into the base
+	 *     wp_insert_post payload (post_title, post_content, post_date,
+	 *     post_date_gmt).
+	 *   - meta: post meta keyed by `_postkind_*` keys, written after the
+	 *     post is inserted.
+	 *   - post_format: '' / 'audio' / 'video' — applied via
+	 *     `set_post_format()` after insert.
+	 *
+	 * @param string               $kind Kind slug from source_config.
+	 * @param array<string, mixed> $item Imported item data.
+	 * @return array{0: array<string, mixed>, 1: array<string, mixed>, 2: string}|\WP_Error Triple or error for unknown kind.
+	 */
+	private function build_post_payload_for_kind( string $kind, array $item ) {
+		switch ( $kind ) {
+			case 'listen':
+				return $this->build_listen_payload( $item );
+			case 'watch':
+				return $this->build_watch_payload( $item );
+			case 'read':
+				return $this->build_read_payload( $item );
+			case 'checkin':
+				return $this->build_checkin_payload( $item );
+			case 'bookmark':
+				return $this->build_bookmark_payload( $item );
+			case 'note':
+				return $this->build_note_payload( $item );
+			default:
+				return new \WP_Error( 'invalid_kind', 'Unknown import kind: ' . $kind );
+		}
+	}
+
+	/**
+	 * Build payload for `listen` kind. Routes to podcast vs music sub-builder
+	 * based on whether the item carries podcast-shaped fields.
+	 *
+	 * @param array<string, mixed> $item Imported item data.
+	 * @return array{0: array<string, mixed>, 1: array<string, mixed>, 2: string}
+	 */
+	private function build_listen_payload( array $item ): array {
+		// Use array_key_exists because isset() returns false for null values.
+		$is_podcast = array_key_exists( 'episode_title', $item ) || array_key_exists( 'show_name', $item );
+		return $is_podcast
+			? $this->build_podcast_listen_payload( $item )
+			: $this->build_music_listen_payload( $item );
+	}
+
+	/**
+	 * Build payload for a podcast episode listen (Readwise/Snipd source).
+	 *
+	 * @param array<string, mixed> $item Imported item data.
+	 * @return array{0: array<string, mixed>, 1: array<string, mixed>, 2: string}
+	 */
+	private function build_podcast_listen_payload( array $item ): array {
+		$episode    = $item['episode_title'] ?? $item['title'] ?? '';
+		$show       = $item['show_name'] ?? $item['author'] ?? '';
+		$source_url = $item['source_url'] ?? '';
+		$highlights = $item['highlights'] ?? [];
+
+		$content_parts   = [];
+		$content_parts[] = sprintf(
+			'<!-- wp:paragraph --><p>Listened to "%s" from %s.</p><!-- /wp:paragraph -->',
+			esc_html( $episode ),
+			esc_html( $show )
+		);
+
+		if ( ! empty( $highlights ) ) {
+			$content_parts[] = '<!-- wp:heading {"level":3} --><h3 class="wp-block-heading">Highlights from this episode</h3><!-- /wp:heading -->';
+			$content_parts   = array_merge( $content_parts, $this->build_highlight_blocks( $highlights ) );
+
+			if ( ! empty( $source_url ) ) {
+				$content_parts[] = sprintf(
+					'<!-- wp:paragraph --><p><a href="%s">View highlights on Snipd</a></p><!-- /wp:paragraph -->',
+					esc_url( $source_url )
+				);
+			}
+		}
+
+		$post_data = [
+			'post_title'   => sprintf( 'Listened to %s', $episode ),
+			'post_content' => implode( "\n\n", $content_parts ),
+		];
+
+		$post_data = array_merge(
+			$post_data,
+			$this->extract_post_dates( $item, [ 'last_highlight' ], false )
+		);
+
+		$meta = [
+			// Citation fields for Post Kind editor.
+			'_postkind_cite_name'   => $episode,
+			'_postkind_cite_author' => $show,
+			'_postkind_cite_photo'  => $item['cover_image'] ?? '',
+			'_postkind_cite_url'    => $source_url,
+			// Listen-specific fields.
+			'_postkind_listen_track'  => $episode,
+			'_postkind_listen_artist' => $show,
+			'_postkind_listen_album'  => $show, // Show name as album for podcasts.
+			'_postkind_listen_cover'  => $item['cover_image'] ?? '',
+			'_postkind_listen_url'    => $source_url,
+			// Import tracking.
+			'_postkind_source'          => $item['source'] ?? 'Snipd',
+			'_postkind_highlight_count' => $item['highlight_count'] ?? 0,
+		];
+
+		return [ $post_data, $meta, 'audio' ];
+	}
+
+	/**
+	 * Build payload for a music-track listen (Last.fm/ListenBrainz source).
+	 *
+	 * @param array<string, mixed> $item Imported item data.
+	 * @return array{0: array<string, mixed>, 1: array<string, mixed>, 2: string}
+	 */
+	private function build_music_listen_payload( array $item ): array {
+		$track  = $item['track'] ?? '';
+		$artist = $item['artist'] ?? '';
+		$album  = $item['album'] ?? '';
+
+		$content_parts   = [];
+		$content_parts[] = sprintf(
+			'<!-- wp:paragraph --><p>Listened to "%s" by %s.</p><!-- /wp:paragraph -->',
+			esc_html( $track ),
+			esc_html( $artist )
+		);
+
+		// Optional embed when the user has configured a music service.
+		$settings     = get_option( 'post_kinds_indieweb_settings', [] );
+		$embed_source = $settings['listen_embed_source'] ?? 'none';
+		$embed_url    = '';
+
+		if ( 'none' !== $embed_source ) {
+			$embed_block = $this->get_music_embed_block( $embed_source, $track, $artist, $album );
+			if ( $embed_block ) {
+				$content_parts[] = $embed_block;
+				$embed_url       = $this->get_music_service_url( $embed_source, $track, $artist, $album );
+			}
+		}
+
+		$post_data = [
+			'post_title'   => sprintf( 'Listened to %s', $track ),
+			'post_content' => implode( "\n\n", $content_parts ),
+		];
+
+		// `listened_at` from the upstream service is already a unix
+		// timestamp (Last.fm/ListenBrainz convention) — pass through
+		// without strtotime.
+		if ( isset( $item['listened_at'] ) ) {
+			$post_data['post_date']     = gmdate( 'Y-m-d H:i:s', $item['listened_at'] );
+			$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', $item['listened_at'] );
+		}
+
+		$meta = [
+			// Citation fields for Post Kind editor.
+			'_postkind_cite_name'   => $track,
+			'_postkind_cite_author' => $artist,
+			// Listen-specific fields.
+			'_postkind_listen_track'  => $track,
+			'_postkind_listen_artist' => $artist,
+			'_postkind_listen_album'  => $album,
+			'_postkind_listen_cover'  => $item['cover'] ?? '',
+			'_postkind_listen_mbid'   => $item['mbid'] ?? '',
+			'_postkind_listen_url'    => $embed_url,
+		];
+
+		return [ $post_data, $meta, 'audio' ];
+	}
+
+	/**
+	 * Build payload for `watch` kind.
+	 *
+	 * @param array<string, mixed> $item Imported item data.
+	 * @return array{0: array<string, mixed>, 1: array<string, mixed>, 2: string}
+	 */
+	private function build_watch_payload( array $item ): array {
+		$title = $item['title'] ?? '';
+		$year  = $item['year'] ?? '';
+		$type  = $item['type'] ?? 'movie';
+
+		$post_data = [
+			'post_title'   => sprintf( 'Watched %s', $title ),
+			'post_content' => sprintf(
+				'<!-- wp:paragraph --><p>Watched "%s".</p><!-- /wp:paragraph -->',
+				esc_html( $title )
+			),
+		];
+
+		// `watched_at` may be unix timestamp OR ISO string depending on source.
+		if ( isset( $item['watched_at'] ) ) {
+			$timestamp                  = is_numeric( $item['watched_at'] ) ? $item['watched_at'] : strtotime( $item['watched_at'] );
+			$post_data['post_date']     = gmdate( 'Y-m-d H:i:s', $timestamp );
+			$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', $timestamp );
+		}
+
+		$meta = [
+			// Citation fields for Post Kind editor.
+			'_postkind_cite_name'  => $title,
+			'_postkind_cite_photo' => $item['poster'] ?? '',
+			// Watch-specific fields.
+			'_postkind_watch_title'   => $title,
+			'_postkind_watch_year'    => $year,
+			'_postkind_watch_poster'  => $item['poster'] ?? '',
+			'_postkind_watch_tmdb_id' => $item['tmdb_id'] ?? '',
+			'_postkind_watch_status'  => 'watched',
+			// Legacy field names for compatibility.
+			'_postkind_watch_type'  => $type,
+			'_postkind_watch_tmdb'  => $item['tmdb_id'] ?? '',
+			'_postkind_watch_imdb'  => $item['imdb_id'] ?? '',
+			'_postkind_watch_trakt' => $item['trakt_id'] ?? '',
+		];
+
+		// Episode/TV-specific fields when the type warrants them.
+		if ( 'episode' === $type || 'tv' === $type ) {
+			$meta['_postkind_watch_show']    = $item['show']['title'] ?? '';
+			$meta['_postkind_watch_season']  = $item['season'] ?? '';
+			$meta['_postkind_watch_episode'] = $item['number'] ?? '';
+		}
+
+		return [ $post_data, $meta, 'video' ];
+	}
+
+	/**
+	 * Build payload for `read` kind.
+	 *
+	 * @param array<string, mixed> $item Imported item data.
+	 * @return array{0: array<string, mixed>, 1: array<string, mixed>, 2: string}
+	 */
+	private function build_read_payload( array $item ): array {
+		$title  = $item['title'] ?? '';
+		$author = $this->normalize_author_field( $item );
+		$asin   = $item['asin'] ?? '';
+
+		$content_parts = [
+			sprintf(
+				'<!-- wp:paragraph --><p>Finished reading "%s" by %s.</p><!-- /wp:paragraph -->',
+				esc_html( $title ),
+				esc_html( $author )
+			),
+		];
+
+		if ( ! empty( $asin ) ) {
+			$content_parts[] = $this->build_kindle_embed_block( $asin );
+		}
+
+		$highlights = $item['highlights'] ?? [];
+		if ( ! empty( $highlights ) ) {
+			$content_parts[] = $this->build_highlights_details_block( $highlights );
+		}
+
+		$post_data = [
+			'post_title'   => sprintf( 'Read %s', $title ),
+			'post_content' => implode( "\n\n", $content_parts ),
+		];
+
+		$post_data = array_merge(
+			$post_data,
+			$this->extract_post_dates( $item, [ 'finished_at', 'last_highlight_at' ], true )
+		);
+
+		$meta = [
+			// Citation fields for Post Kind editor.
+			'_postkind_cite_name'   => $title,
+			'_postkind_cite_author' => $author,
+			'_postkind_cite_photo'  => $item['cover_image'] ?? $item['cover'] ?? '',
+			'_postkind_cite_url'    => $item['source_url'] ?? '',
+			// Read-specific fields.
+			'_postkind_read_title'  => $title,
+			'_postkind_read_author' => $author,
+			'_postkind_read_cover'  => $item['cover_image'] ?? $item['cover'] ?? '',
+			'_postkind_read_isbn'   => $item['isbn'] ?? $item['asin'] ?? '',
+			'_postkind_read_asin'   => $asin,
+			'_postkind_read_status' => 'finished',
+			// Import tracking.
+			'_postkind_source'          => $item['source'] ?? '',
+			'_postkind_source_url'      => $item['source_url'] ?? '',
+			'_postkind_highlight_count' => $item['highlight_count'] ?? 0,
+		];
+
+		return [ $post_data, $meta, '' ];
+	}
+
+	/**
+	 * Build payload for `checkin` kind.
+	 *
+	 * @param array<string, mixed> $item Imported item data.
+	 * @return array{0: array<string, mixed>, 1: array<string, mixed>, 2: string}
+	 */
+	private function build_checkin_payload( array $item ): array {
+		$venue   = $item['venue_name'] ?? 'Unknown Venue';
+		$address = $item['address'] ?? '';
+
+		$post_data = [
+			'post_title'   => sprintf( 'Checked in at %s', $venue ),
+			'post_content' => sprintf(
+				'<!-- wp:paragraph --><p>Checked in at %s.</p><!-- /wp:paragraph -->',
+				esc_html( $venue )
+			),
+		];
+
+		// `timestamp` from Foursquare/OwnTracks is a unix timestamp.
+		if ( isset( $item['timestamp'] ) ) {
+			$post_data['post_date']     = gmdate( 'Y-m-d H:i:s', $item['timestamp'] );
+			$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', $item['timestamp'] );
+		}
+
+		$meta = [
+			// Checkin-specific fields for Post Kind editor.
+			'_postkind_checkin_name'    => $venue,
+			'_postkind_checkin_address' => $address,
+			'_postkind_geo_latitude'    => $item['latitude'] ?? '',
+			'_postkind_geo_longitude'   => $item['longitude'] ?? '',
+			// Legacy/internal fields.
+			'_postkind_checkin_venue'     => $venue,
+			'_postkind_checkin_latitude'  => $item['latitude'] ?? '',
+			'_postkind_checkin_longitude' => $item['longitude'] ?? '',
+			'_postkind_checkin_venue_id'  => $item['venue_id'] ?? '',
+			'_postkind_checkin_shout'     => $item['shout'] ?? '',
+		];
+
+		return [ $post_data, $meta, '' ];
+	}
+
+	/**
+	 * Build payload for `bookmark` kind.
+	 *
+	 * @param array<string, mixed> $item Imported item data.
+	 * @return array{0: array<string, mixed>, 1: array<string, mixed>, 2: string}
+	 */
+	private function build_bookmark_payload( array $item ): array {
+		$title  = $item['title'] ?? 'Untitled';
+		$author = $item['author'] ?? '';
+		$url    = $item['source_url'] ?? '';
+
+		$post_data = [
+			'post_title'   => sprintf( 'Bookmarked: %s', $title ),
+			'post_content' => sprintf(
+				'<!-- wp:paragraph --><p>Bookmarked "%s".</p><!-- /wp:paragraph -->',
+				esc_html( $title )
+			),
+		];
+
+		$post_data = array_merge(
+			$post_data,
+			$this->extract_post_dates( $item, [ 'last_highlight_at' ], true )
+		);
+
+		$meta = [
+			// Citation fields for Post Kind editor.
+			'_postkind_cite_name'   => $title,
+			'_postkind_cite_author' => $author,
+			'_postkind_cite_url'    => $url,
+			'_postkind_cite_photo'  => $item['cover_image'] ?? '',
+			// Import tracking.
+			'_postkind_source'          => $item['source'] ?? '',
+			'_postkind_highlight_count' => $item['highlight_count'] ?? 0,
+		];
+
+		return [ $post_data, $meta, '' ];
+	}
+
+	/**
+	 * Build payload for `note` kind.
+	 *
+	 * @param array<string, mixed> $item Imported item data.
+	 * @return array{0: array<string, mixed>, 1: array<string, mixed>, 2: string}
+	 */
+	private function build_note_payload( array $item ): array {
+		$title = $item['title'] ?? 'Untitled';
+
+		$post_data = [
+			'post_title'   => $title,
+			'post_content' => sprintf(
+				'<!-- wp:paragraph --><p>%s</p><!-- /wp:paragraph -->',
+				esc_html( $item['document_note'] ?? '' )
+			),
+		];
+
+		$post_data = array_merge(
+			$post_data,
+			$this->extract_post_dates( $item, [ 'last_highlight_at' ], true )
+		);
+
+		$meta = [
+			// Citation fields for Post Kind editor.
+			'_postkind_cite_name' => $title,
+			'_postkind_cite_url'  => $item['source_url'] ?? '',
+			// Import tracking.
+			'_postkind_source'          => $item['source'] ?? '',
+			'_postkind_highlight_count' => $item['highlight_count'] ?? 0,
+		];
+
+		return [ $post_data, $meta, '' ];
+	}
+
+	/**
+	 * Pull a post date out of the item using the first key from $candidates
+	 * that's present and non-empty. Returns a partial post_data array with
+	 * post_date / post_date_gmt set, or empty array when no candidate matched.
+	 *
+	 * @param array<string, mixed> $item       Imported item data.
+	 * @param array<int, string>   $candidates Item keys to try in order.
+	 * @param bool                 $use_strtotime Pass true to run strtotime() on the value (ISO strings); false treats it as a unix timestamp.
+	 * @return array<string, string>
+	 */
+	private function extract_post_dates( array $item, array $candidates, bool $use_strtotime ): array {
+		foreach ( $candidates as $key ) {
+			if ( ! isset( $item[ $key ] ) || empty( $item[ $key ] ) ) {
+				continue;
+			}
+			$timestamp = $use_strtotime ? strtotime( $item[ $key ] ) : (int) $item[ $key ];
+			if ( $timestamp ) {
+				return [
+					'post_date'     => gmdate( 'Y-m-d H:i:s', $timestamp ),
+					'post_date_gmt' => gmdate( 'Y-m-d H:i:s', $timestamp ),
+				];
+			}
+		}
+		return [];
+	}
+
+	/**
+	 * Authors arrive in `$item['author']` as a string, or in `$item['authors']`
+	 * as an array of strings or `[ ['name' => …], … ]`. Normalize to a single
+	 * string, preferring `author` and falling back to `authors[0]`.
+	 *
+	 * @param array<string, mixed> $item Imported item data.
+	 * @return string
+	 */
+	private function normalize_author_field( array $item ): string {
+		$author = $item['author'] ?? '';
+		if ( ! empty( $author ) ) {
+			return (string) $author;
+		}
+		if ( ! isset( $item['authors'] ) || ! is_array( $item['authors'] ) || empty( $item['authors'] ) ) {
+			return '';
+		}
+		$first = $item['authors'][0];
+		if ( is_array( $first ) && isset( $first['name'] ) ) {
+			return (string) $first['name'];
+		}
+		return is_string( $first ) ? $first : '';
+	}
+
+	/**
+	 * Build a Kindle embed block markup for an ASIN.
+	 *
+	 * @param string $asin Amazon ASIN.
+	 * @return string Block markup.
+	 */
+	private function build_kindle_embed_block( string $asin ): string {
+		return sprintf(
+			'<!-- wp:embed {"url":"https://read.amazon.com/kp/card?asin=%s","type":"rich","providerNameSlug":"amazon-kindle","responsive":true} -->' .
+			'<figure class="wp-block-embed is-type-rich is-provider-amazon-kindle wp-block-embed-amazon-kindle">' .
+			'<div class="wp-block-embed__wrapper">https://read.amazon.com/kp/card?asin=%s</div>' .
+			'</figure><!-- /wp:embed -->',
+			esc_attr( $asin ),
+			esc_attr( $asin )
+		);
+	}
+
+	/**
+	 * Build the inner highlight blocks (quote + optional note paragraph).
+	 *
+	 * Used by the podcast listen builder, which spreads these into its
+	 * content_parts. The read builder uses {@see build_highlights_details_block()}
+	 * which wraps the same blocks in a collapsible details element.
+	 *
+	 * @param array<int, array<string, mixed>> $highlights Highlight items.
+	 * @return array<int, string> Block markup parts.
+	 */
+	private function build_highlight_blocks( array $highlights ): array {
+		$parts = [];
+		foreach ( $highlights as $highlight ) {
+			$text = $highlight['text'] ?? '';
+			$note = $highlight['note'] ?? '';
+			if ( empty( $text ) ) {
+				continue;
+			}
+			$parts[] = sprintf(
+				'<!-- wp:quote --><blockquote class="wp-block-quote"><p>%s</p></blockquote><!-- /wp:quote -->',
+				esc_html( $text )
+			);
+			if ( ! empty( $note ) ) {
+				$parts[] = sprintf(
+					'<!-- wp:paragraph {"className":"highlight-note"} --><p class="highlight-note"><em>%s</em></p><!-- /wp:paragraph -->',
+					esc_html( $note )
+				);
+			}
+		}
+		return $parts;
+	}
+
+	/**
+	 * Wrap highlight blocks in a collapsible details block with a count summary.
+	 *
+	 * @param array<int, array<string, mixed>> $highlights Highlight items.
+	 * @return string Block markup.
+	 */
+	private function build_highlights_details_block( array $highlights ): string {
+		$inner = implode( '', $this->build_highlight_blocks( $highlights ) );
+		return sprintf(
+			'<!-- wp:details --><details class="wp-block-details"><summary>Highlights (%d)</summary>%s</details><!-- /wp:details -->',
+			count( $highlights ),
+			$inner
+		);
 	}
 
 	/**
