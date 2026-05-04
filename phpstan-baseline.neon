@@ -259,12 +259,6 @@ parameters:
 			path: includes/class-ai-enhancements.php
 
 		-
-			message: '#^Access to property \$context on an unknown class PostKindsForIndieWeb\\WP_Block\.$#'
-			identifier: class.notFound
-			count: 1
-			path: includes/class-block-bindings-source.php
-
-		-
 			message: '#^Negated boolean expression is always false\.$#'
 			identifier: booleanNot.alwaysFalse
 			count: 1
@@ -273,12 +267,6 @@ parameters:
 		-
 			message: '#^Offset ''_default'' on array\{_default\: ''cite_summary''\}\|array\{_default\: ''listen_album''\}\|array\{listen\: ''listen_artist'', jam\: ''listen_artist'', _default\: ''cite_author''\}\|array\{listen\: ''listen_cover'', jam\: ''listen_cover'', watch\: ''watch_poster'', read\: ''read_cover'', _default\: ''cite_photo''\}\|array\{listen\: ''listen_rating'', watch\: ''watch_rating'', read\: ''read_rating'', _default\: ''review_rating''\}\|array\{listen\: ''listen_track'', jam\: ''listen_track'', watch\: ''watch_title'', read\: ''read_title'', _default\: ''cite_name''\}\|array\{listen\: ''listen_url'', jam\: ''listen_url'', watch\: ''watch_url'', read\: ''read_url'', _default\: ''cite_url''\}\|array\{read\: ''read_author'', _default\: ''cite_author''\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
-			count: 1
-			path: includes/class-block-bindings-source.php
-
-		-
-			message: '#^Parameter \$block_instance of method PostKindsForIndieWeb\\Block_Bindings_Source\:\:get_value\(\) has invalid type PostKindsForIndieWeb\\WP_Block\.$#'
-			identifier: class.notFound
 			count: 1
 			path: includes/class-block-bindings-source.php
 
@@ -313,20 +301,8 @@ parameters:
 			path: includes/class-cli-commands.php
 
 		-
-			message: '#^Method PostKindsForIndieWeb\\Plugin\:\:get_admin\(\) has invalid return type PostKindsForIndieWeb\\Admin\.$#'
-			identifier: class.notFound
-			count: 1
-			path: includes/class-plugin.php
-
-		-
 			message: '#^Method PostKindsForIndieWeb\\Plugin\:\:get_plugin_template_definitions\(\) should return array\<string, array\<string, string\>\> but returns array\<string, array\<string, array\|string\>\>\.$#'
 			identifier: return.type
-			count: 1
-			path: includes/class-plugin.php
-
-		-
-			message: '#^PHPDoc tag @return with type PostKindsForIndieWeb\\Admin\|null is not subtype of native type PostKindsForIndieWeb\\Admin\\Admin\|null\.$#'
-			identifier: return.phpDocType
 			count: 1
 			path: includes/class-plugin.php
 
@@ -367,8 +343,8 @@ parameters:
 			path: includes/integrations/class-wp-recipe-maker.php
 
 		-
-			message: '#^Call to static method get_recipe_ids_from_post\(\) on an unknown class WPRM_Recipe_Manager\.$#'
-			identifier: class.notFound
+			message: '#^Call to function method_exists\(\) with ''WPRM_Recipe_Manager'' and ''get_recipe_ids_from…'' will always evaluate to false\.$#'
+			identifier: function.impossibleType
 			count: 1
 			path: includes/integrations/class-wp-recipe-maker.php
 

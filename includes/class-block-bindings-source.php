@@ -209,9 +209,9 @@ final class Block_Bindings_Source {
 	 *
 	 * @since 1.2.0
 	 *
-	 * @param array    $source_args  Binding source arguments. Expected key: 'key'.
-	 * @param WP_Block $block_instance The block instance being rendered.
-	 * @param string   $attribute_name The block attribute being bound.
+	 * @param array     $source_args    Binding source arguments. Expected key: 'key'.
+	 * @param \WP_Block $block_instance The block instance being rendered.
+	 * @param string    $attribute_name The block attribute being bound.
 	 * @return string|null The resolved value, or null if not found.
 	 */
 	public function get_value( array $source_args, $block_instance, string $attribute_name ): ?string { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
