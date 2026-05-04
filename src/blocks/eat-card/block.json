@@ -113,5 +113,6 @@
 			"cuisine": "Italian",
 			"rating": 5
 		}
-	}
+	},
+	"render": "file:./render.php"
 }
