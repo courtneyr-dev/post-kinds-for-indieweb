@@ -244,7 +244,12 @@ class WP_Recipe_Maker {
 		}
 
 		// Method 3: Check WPRM's own tracking (if available).
-		if ( function_exists( 'WPRM_Recipe_Manager::get_recipe_ids_from_post' ) ) {
+		// `function_exists()` doesn't detect class methods — always returns
+		// false for `Class::method` strings. Use class_exists + method_exists.
+		if (
+			class_exists( 'WPRM_Recipe_Manager' )
+			&& method_exists( 'WPRM_Recipe_Manager', 'get_recipe_ids_from_post' )
+		) {
 			$wprm_ids = \WPRM_Recipe_Manager::get_recipe_ids_from_post( $post_id );
 			if ( is_array( $wprm_ids ) ) {
 				$recipe_ids = array_merge( $recipe_ids, $wprm_ids );

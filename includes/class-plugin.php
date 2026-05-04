@@ -1315,7 +1315,7 @@ final class Plugin {
 	/**
 	 * Get the Admin component.
 	 *
-	 * @return Admin|null The Admin instance or null if not loaded.
+	 * @return Admin\Admin|null The Admin instance or null if not loaded.
 	 */
 	public function get_admin(): ?Admin\Admin {
 		return $this->admin;
