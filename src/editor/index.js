@@ -42,7 +42,8 @@ registerPlugin( 'post-kinds-indieweb-kind-selector', {
  *
  * Valid kind slugs: note, article, reply, like, repost, bookmark, rsvp,
  *                   checkin, listen, watch, read, event, photo, video, review
- * @param event
+ *
+ * @param {CustomEvent<{kind: string}>} event Custom event whose `detail.kind` carries the slug to set.
  */
 const handleExternalKindChange = ( event ) => {
 	const { kind } = event.detail || {};

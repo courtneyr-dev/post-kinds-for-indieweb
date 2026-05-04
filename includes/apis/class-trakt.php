@@ -281,8 +281,8 @@ class Trakt extends API_Base {
 	/**
 	 * Search for movies and shows.
 	 *
-	 * @param string      $query Search query.
-	 * @param string|null $type  Type filter: movie, show, episode.
+	 * @param string $query   Search query.
+	 * @param mixed  ...$args Additional arguments; `$args[0]` is an optional type filter ('movie', 'show', or 'episode').
 	 * @return array<int, array<string, mixed>> Search results.
 	 */
 	public function search( string $query, ...$args ): array {
@@ -630,6 +630,7 @@ class Trakt extends API_Base {
 			// Rate limit.
 			usleep( 300000 ); // 300ms.
 
+			// phpcs:ignore Squiz.PHP.DisallowSizeFunctionsInLoops.Found -- $items is reassigned each iteration from a fresh API page; count must be re-evaluated.
 		} while ( count( $items ) >= $limit );
 	}
 

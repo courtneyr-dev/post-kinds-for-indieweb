@@ -149,8 +149,8 @@ class LastFM extends API_Base {
 	/**
 	 * Search for tracks.
 	 *
-	 * @param string      $query  Search query.
-	 * @param string|null $artist Artist name to filter by.
+	 * @param string $query   Search query.
+	 * @param mixed  ...$args Additional arguments; `$args[0]` is an optional artist name to filter by.
 	 * @return array<int, array<string, mixed>> Search results.
 	 */
 	public function search( string $query, ...$args ): array {

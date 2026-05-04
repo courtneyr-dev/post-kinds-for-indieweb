@@ -1070,7 +1070,7 @@ class Admin {
 			case 'music':
 				if ( ! empty( $credentials['musicbrainz']['enabled'] ) ) {
 					$api = new \PostKindsForIndieWeb\APIs\MusicBrainz( $credentials['musicbrainz'] );
-					return $api->search_recordings( $query, 10 );
+					return $api->search( $query );
 				}
 				break;
 
@@ -1094,7 +1094,7 @@ class Admin {
 			case 'podcast':
 				if ( ! empty( $credentials['podcastindex']['enabled'] ) ) {
 					$api = new \PostKindsForIndieWeb\APIs\PodcastIndex( $credentials['podcastindex'] );
-					return $api->search_podcasts( $query );
+					return $api->search( $query );
 				}
 				break;
 

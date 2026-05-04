@@ -1067,7 +1067,10 @@ class Meta_Fields {
 		$valid = [ 'to-read', 'reading', 'finished', 'abandoned' ];
 		$value = sanitize_text_field( (string) $value );
 
-		return in_array( $value, $valid, true ) ? $value : 'reading';
+		// `to-read` is the safe default for invalid/unrecognised input —
+		// "haven't started" is more honest than implying a book is being
+		// read just because the status field had garbage in it.
+		return in_array( $value, $valid, true ) ? $value : 'to-read';
 	}
 
 	/**
@@ -1153,7 +1156,10 @@ class Meta_Fields {
 	 * @return int Sanitized rating (1-5, or 0 for not set).
 	 */
 	public function sanitize_mood_rating( mixed $value ): int {
-		$value = absint( $value );
+		// Use intval, NOT absint — absint silently flips negatives to
+		// positives, which would treat a -5 typo as a valid 5-star rating.
+		// Negative input should be rejected, not corrected.
+		$value = is_numeric( $value ) ? (int) $value : 0;
 
 		if ( $value < 1 || $value > 5 ) {
 			return 0;

@@ -136,7 +136,8 @@ class ListenBrainz extends API_Base {
 	 * Search is not supported by ListenBrainz.
 	 * Use MusicBrainz for searching.
 	 *
-	 * @param string $query Search query.
+	 * @param string $query   Search query (ignored).
+	 * @param mixed  ...$args Additional arguments (ignored — base-class signature compatibility).
 	 * @return array<int, array<string, mixed>> Empty array.
 	 */
 	public function search( string $query, ...$args ): array {

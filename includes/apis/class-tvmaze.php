@@ -116,7 +116,8 @@ class TVmaze extends API_Base {
 	/**
 	 * Search for TV shows.
 	 *
-	 * @param string $query Search query.
+	 * @param string $query   Search query.
+	 * @param mixed  ...$args Additional arguments (unused — base-class signature compatibility).
 	 * @return array<int, array<string, mixed>> Search results.
 	 */
 	public function search( string $query, ...$args ): array {

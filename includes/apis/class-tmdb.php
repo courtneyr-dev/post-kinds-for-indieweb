@@ -213,8 +213,8 @@ class TMDB extends API_Base {
 	/**
 	 * Multi-search (movies, TV, people).
 	 *
-	 * @param string      $query Search query.
-	 * @param string|null $type  Optional type filter: movie, tv, person.
+	 * @param string $query   Search query.
+	 * @param mixed  ...$args Additional arguments; `$args[0]` is an optional type filter ('movie', 'tv', or 'person').
 	 * @return array<int, array<string, mixed>> Search results.
 	 */
 	public function search( string $query, ...$args ): array {

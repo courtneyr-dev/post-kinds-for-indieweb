@@ -83,16 +83,8 @@ function getWishTypeInfo( type ) {
 }
 
 export default function Edit( { attributes, setAttributes } ) {
-	const {
-		title,
-		wishType,
-		url,
-		image,
-		imageAlt,
-		price,
-		reason,
-		priority,
-	} = attributes;
+	const { title, wishType, url, image, imageAlt, price, reason, priority } =
+		attributes;
 
 	const blockProps = useBlockProps( {
 		className: 'wish-card-block',

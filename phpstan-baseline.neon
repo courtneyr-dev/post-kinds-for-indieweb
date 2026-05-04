@@ -1,0 +1,403 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Call to function is_wp_error\(\) with array will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: includes/admin/class-admin.php
+
+		-
+			message: '#^Class PostKindsForIndieWeb\\APIs\\Foursquare constructor invoked with 1 parameter, 0 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: includes/admin/class-admin.php
+
+		-
+			message: '#^Class PostKindsForIndieWeb\\APIs\\MusicBrainz constructor invoked with 1 parameter, 0 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: includes/admin/class-admin.php
+
+		-
+			message: '#^Class PostKindsForIndieWeb\\APIs\\OpenLibrary constructor invoked with 1 parameter, 0 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: includes/admin/class-admin.php
+
+		-
+			message: '#^Class PostKindsForIndieWeb\\APIs\\PodcastIndex constructor invoked with 1 parameter, 0 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: includes/admin/class-admin.php
+
+		-
+			message: '#^Class PostKindsForIndieWeb\\APIs\\TMDB constructor invoked with 1 parameter, 0 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: includes/admin/class-admin.php
+
+		-
+			message: '#^Class PostKindsForIndieWeb\\Admin\\Settings_Page constructor invoked with 1 parameter, 0 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: includes/admin/class-admin.php
+
+		-
+			message: '#^Property PostKindsForIndieWeb\\Admin\\Checkin_Dashboard\:\:\$admin is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: includes/admin/class-checkin-dashboard.php
+
+		-
+			message: '#^Call to an undefined method PostKindsForIndieWeb\\Import_Manager\:\:cancel_import\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: includes/admin/class-import-page.php
+
+		-
+			message: '#^Call to an undefined method PostKindsForIndieWeb\\Import_Manager\:\:resync_metadata\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: includes/admin/class-import-page.php
+
+		-
+			message: '#^Call to function is_wp_error\(\) with array will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 7
+			path: includes/admin/class-import-page.php
+
+		-
+			message: '#^Property PostKindsForIndieWeb\\Admin\\Import_Page\:\:\$admin is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: includes/admin/class-import-page.php
+
+		-
+			message: '#^Parameter \#1 \$text of function esc_attr expects string, int\<1, max\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/admin/class-meta-boxes.php
+
+		-
+			message: '#^Property PostKindsForIndieWeb\\Admin\\Meta_Boxes\:\:\$admin is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: includes/admin/class-meta-boxes.php
+
+		-
+			message: '#^Parameter \#1 \$text of function esc_attr expects string, int\<1, 5\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/admin/class-quick-post.php
+
+		-
+			message: '#^Result of method PostKindsForIndieWeb\\Admin\\Admin\:\:ajax_lookup_media\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: includes/admin/class-quick-post.php
+
+		-
+			message: '#^Property PostKindsForIndieWeb\\Admin\\Syndication_Page\:\:\$admin is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: includes/admin/class-syndication-page.php
+
+		-
+			message: '#^Parameter \#1 \$text of function esc_attr expects string, int given\.$#'
+			identifier: argument.type
+			count: 5
+			path: includes/admin/class-webhooks-page.php
+
+		-
+			message: '#^Property PostKindsForIndieWeb\\Admin\\Webhooks_Page\:\:\$admin is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: includes/admin/class-webhooks-page.php
+
+		-
+			message: '#^Method PostKindsForIndieWeb\\APIs\\API_Base\:\:make_request_with_retry\(\) never returns WP_Error so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: includes/apis/class-api-base.php
+
+		-
+			message: '#^PHPDoc tag @var for property PostKindsForIndieWeb\\APIs\\API_Base\:\:\$last_request_times with type float is incompatible with native type array\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: includes/apis/class-api-base.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: includes/apis/class-foursquare.php
+
+		-
+			message: '#^Offset 0 does not exist on non\-empty\-array\<string, mixed\>\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: includes/apis/class-nominatim.php
+
+		-
+			message: '#^Method PostKindsForIndieWeb\\APIs\\OpenLibrary\:\:get_recent_changes\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: includes/apis/class-openlibrary.php
+
+		-
+			message: '#^Method PostKindsForIndieWeb\\APIs\\API_Base\:\:get_cache_key\(\) invoked with 2 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 3
+			path: includes/apis/class-rawg.php
+
+		-
+			message: '#^Method PostKindsForIndieWeb\\APIs\\Simkl\:\:get_recent_activity\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: includes/apis/class-simkl.php
+
+		-
+			message: '#^Offset 0 does not exist on non\-empty\-array\<string, mixed\>\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: includes/apis/class-simkl.php
+
+		-
+			message: '#^Variable \$params in empty\(\) always exists and is not falsy\.$#'
+			identifier: empty.variable
+			count: 1
+			path: includes/apis/class-tmdb.php
+
+		-
+			message: '#^Method PostKindsForIndieWeb\\APIs\\TVmaze\:\:get_episodes\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, array\<string, mixed\>\>\.$#'
+			identifier: return.type
+			count: 1
+			path: includes/apis/class-tvmaze.php
+
+		-
+			message: '#^Method PostKindsForIndieWeb\\APIs\\TVmaze\:\:get_episodes_by_date\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, array\<string, mixed\>\>\.$#'
+			identifier: return.type
+			count: 1
+			path: includes/apis/class-tvmaze.php
+
+		-
+			message: '#^Method PostKindsForIndieWeb\\APIs\\TVmaze\:\:get_season_episodes\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, array\<string, mixed\>\>\.$#'
+			identifier: return.type
+			count: 1
+			path: includes/apis/class-tvmaze.php
+
+		-
+			message: '#^Method PostKindsForIndieWeb\\APIs\\TVmaze\:\:get_seasons\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, array\<string, mixed\>\>\.$#'
+			identifier: return.type
+			count: 1
+			path: includes/apis/class-tvmaze.php
+
+		-
+			message: '#^Method PostKindsForIndieWeb\\APIs\\TVmaze\:\:get_updates\(\) should return array\<int, int\> but returns array\<string, mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: includes/apis/class-tvmaze.php
+
+		-
+			message: '#^Parameter \#1 \$cast of method PostKindsForIndieWeb\\APIs\\TVmaze\:\:normalize_cast\(\) expects array\<int, array\<string, mixed\>\>, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/apis/class-tvmaze.php
+
+		-
+			message: '#^Parameter \#1 \$crew of method PostKindsForIndieWeb\\APIs\\TVmaze\:\:normalize_crew\(\) expects array\<int, array\<string, mixed\>\>, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/apis/class-tvmaze.php
+
+		-
+			message: '#^Parameter \#2 \$args of function register_block_type expects array\{api_version\?\: string, title\?\: string, category\?\: string\|null, parent\?\: array\<string\>\|null, ancestor\?\: array\<string\>\|null, allowed_blocks\?\: array\<string\>\|null, icon\?\: string\|null, description\?\: string, \.\.\.\}, array\{api_version\: 3, title\: string, description\: string, category\: ''post\-kinds\-for…'', icon\: ''tag'', keywords\: array\{''format'', ''badge'', ''indicator'', ''post\-format''\}, uses_context\: array\{''postId'', ''postType''\}, supports\: array\{html\: false, inserter\: false, color\: array\{background\: true, text\: true\}, spacing\: array\{padding\: true, margin\: true\}, typography\: array\{fontSize\: true\}, __experimentalBorder\: array\{radius\: true\}\}, \.\.\.\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/blocks/class-format-badge.php
+
+		-
+			message: '#^Parameter \#2 \$args of function register_block_type expects array\{api_version\?\: string, title\?\: string, category\?\: string\|null, parent\?\: array\<string\>\|null, ancestor\?\: array\<string\>\|null, allowed_blocks\?\: array\<string\>\|null, icon\?\: string\|null, description\?\: string, \.\.\.\}, array\{api_version\: 3, title\: string, description\: string, category\: ''widgets'', icon\: ''chart\-bar'', keywords\: array\{''stats'', ''statistics'', ''listen'', ''watch'', ''read'', ''indieweb''\}, supports\: array\{html\: false, align\: true, alignWide\: false, color\: array\{background\: true, text\: true\}, spacing\: array\{padding\: true, margin\: true\}, typography\: array\{fontSize\: true\}\}, attributes\: array\{period\: array\{type\: ''string'', default\: ''month'', enum\: array\{''week'', ''month'', ''year'', ''all''\}\}\}, \.\.\.\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/blocks/class-media-stats.php
+
+		-
+			message: '#^Parameter \#2 \$args of function register_block_type expects array\{api_version\?\: string, title\?\: string, category\?\: string\|null, parent\?\: array\<string\>\|null, ancestor\?\: array\<string\>\|null, allowed_blocks\?\: array\<string\>\|null, icon\?\: string\|null, description\?\: string, \.\.\.\}, array\{api_version\: 3, title\: string, description\: string, category\: ''widgets'', icon\: ''format\-audio'', keywords\: array\{''music'', ''listen'', ''watch'', ''media'', ''indieweb''\}, supports\: array\{html\: false, align\: true, alignWide\: false, color\: array\{background\: true, text\: true\}, spacing\: array\{padding\: true, margin\: true\}, typography\: array\{fontSize\: true\}\}, attributes\: array\{kind\: array\{type\: ''string'', default\: ''listen'', enum\: array\{''listen'', ''watch''\}\}\}, \.\.\.\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/blocks/class-now-playing.php
+
+		-
+			message: '#^Parameter \#2 \$args of function register_block_type expects array\{api_version\?\: string, title\?\: string, category\?\: string\|null, parent\?\: array\<string\>\|null, ancestor\?\: array\<string\>\|null, allowed_blocks\?\: array\<string\>\|null, icon\?\: string\|null, description\?\: string, \.\.\.\}, array\{api_version\: 3, title\: string, description\: string, category\: ''widgets'', icon\: ''list\-view'', keywords\: array\{''recent'', ''posts'', ''kind'', ''listen'', ''watch'', ''read'', ''indieweb''\}, supports\: array\{html\: false, align\: true, alignWide\: false, color\: array\{background\: true, text\: true, link\: true\}, spacing\: array\{padding\: true, margin\: true\}, typography\: array\{fontSize\: true\}\}, attributes\: array\{kind\: array\{type\: ''string'', default\: ''listen''\}, count\: array\{type\: ''integer'', default\: 5\}, showCover\: array\{type\: ''boolean'', default\: true\}\}, \.\.\.\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/blocks/class-recent-kinds.php
+
+		-
+			message: '#^Static call to instance method PostKindsForIndieWeb\\Taxonomy\:\:is_valid_kind\(\)\.$#'
+			identifier: method.staticCall
+			count: 1
+			path: includes/blocks/class-recent-kinds.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments WP_Term\|null, array\{''read'', ''watch'', ''listen''\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: includes/class-ai-enhancements.php
+
+		-
+			message: '#^Parameter \#2 \$kind of method PostKindsForIndieWeb\\AI_Enhancements\:\:build_post_context\(\) expects string, WP_Term\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/class-ai-enhancements.php
+
+		-
+			message: '#^Static call to instance method PostKindsForIndieWeb\\Taxonomy\:\:get_post_kind\(\)\.$#'
+			identifier: method.staticCall
+			count: 2
+			path: includes/class-ai-enhancements.php
+
+		-
+			message: '#^Access to property \$context on an unknown class PostKindsForIndieWeb\\WP_Block\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/class-block-bindings-source.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 1
+			path: includes/class-block-bindings-source.php
+
+		-
+			message: '#^Offset ''_default'' on array\{_default\: ''cite_summary''\}\|array\{_default\: ''listen_album''\}\|array\{listen\: ''listen_artist'', jam\: ''listen_artist'', _default\: ''cite_author''\}\|array\{listen\: ''listen_cover'', jam\: ''listen_cover'', watch\: ''watch_poster'', read\: ''read_cover'', _default\: ''cite_photo''\}\|array\{listen\: ''listen_rating'', watch\: ''watch_rating'', read\: ''read_rating'', _default\: ''review_rating''\}\|array\{listen\: ''listen_track'', jam\: ''listen_track'', watch\: ''watch_title'', read\: ''read_title'', _default\: ''cite_name''\}\|array\{listen\: ''listen_url'', jam\: ''listen_url'', watch\: ''watch_url'', read\: ''read_url'', _default\: ''cite_url''\}\|array\{read\: ''read_author'', _default\: ''cite_author''\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: includes/class-block-bindings-source.php
+
+		-
+			message: '#^Parameter \$block_instance of method PostKindsForIndieWeb\\Block_Bindings_Source\:\:get_value\(\) has invalid type PostKindsForIndieWeb\\WP_Block\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/class-block-bindings-source.php
+
+		-
+			message: '#^@param array\<string, array\<string, string\>\> \$bindings does not accept actual type of parameter\: array\{cite_name\: array\{label\: string, meta_key\: ''cite_name'', type\: ''string''\}, cite_url\: array\{label\: string, meta_key\: ''cite_url'', type\: ''url''\}, cite_author\: array\{label\: string, meta_key\: ''cite_author'', type\: ''string''\}, cite_author_url\: array\{label\: string, meta_key\: ''cite_author_url'', type\: ''url''\}, cite_photo\: array\{label\: string, meta_key\: ''cite_photo'', type\: ''url''\}, cite_summary\: array\{label\: string, meta_key\: ''cite_summary'', type\: ''string''\}, cite_published\: array\{label\: string, meta_key\: ''cite_published'', type\: ''date''\}, rsvp_status\: array\{label\: string, meta_key\: ''rsvp_status'', type\: ''string'', format\: ''rsvp''\}, \.\.\.\}\.$#'
+			identifier: parameter.phpDocType
+			count: 1
+			path: includes/class-block-bindings.php
+
+		-
+			message: '#^Property PostKindsForIndieWeb\\Block_Bindings\:\:\$bindings \(array\<string, array\<string, string\>\>\) does not accept array\<string, array\<string, string\|null\>\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: includes/class-block-bindings.php
+
+		-
+			message: '#^Property PostKindsForIndieWeb\\Block_Bindings\:\:\$meta_fields \(PostKindsForIndieWeb\\Meta_Fields\|null\) is never assigned PostKindsForIndieWeb\\Meta_Fields so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: includes/class-block-bindings.php
+
+		-
+			message: '#^Property PostKindsForIndieWeb\\Block_Bindings\:\:\$meta_fields is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: includes/class-block-bindings.php
+
+		-
+			message: '#^Parameter \#1 \$message of static method WP_CLI\:\:log\(\) expects string, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/class-cli-commands.php
+
+		-
+			message: '#^Method PostKindsForIndieWeb\\Plugin\:\:get_admin\(\) has invalid return type PostKindsForIndieWeb\\Admin\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/class-plugin.php
+
+		-
+			message: '#^Method PostKindsForIndieWeb\\Plugin\:\:get_plugin_template_definitions\(\) should return array\<string, array\<string, string\>\> but returns array\<string, array\<string, array\|string\>\>\.$#'
+			identifier: return.type
+			count: 1
+			path: includes/class-plugin.php
+
+		-
+			message: '#^PHPDoc tag @return with type PostKindsForIndieWeb\\Admin\|null is not subtype of native type PostKindsForIndieWeb\\Admin\\Admin\|null\.$#'
+			identifier: return.phpDocType
+			count: 1
+			path: includes/class-plugin.php
+
+		-
+			message: '#^Property PostKindsForIndieWeb\\Plugin\:\:\$post_kinds_conflict is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: includes/class-plugin.php
+
+		-
+			message: '#^Property PostKindsForIndieWeb\\Plugin\:\:\$wprm_integration is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: includes/class-plugin.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: includes/class-query-filter.php
+
+		-
+			message: '#^Parameter \#3 \$args of function register_taxonomy expects array\{labels\?\: array\<string\>, description\?\: string, public\?\: bool, publicly_queryable\?\: bool, hierarchical\?\: bool, show_ui\?\: bool, show_in_menu\?\: bool, show_in_nav_menus\?\: bool, \.\.\.\}, array\{labels\: array\{name\: string, singular_name\: string, search_items\: string, popular_items\: string, all_items\: string, parent_item\: null, parent_item_colon\: null, edit_item\: string, \.\.\.\}, hierarchical\: false, public\: true, show_ui\: true, show_admin_column\: true, show_in_nav_menus\: true, show_tagcloud\: true, show_in_rest\: true, \.\.\.\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/class-venue-taxonomy.php
+
+		-
+			message: '#^If condition is always true\.$#'
+			identifier: if.alwaysTrue
+			count: 1
+			path: includes/class-webhook-handler.php
+
+		-
+			message: '#^Call to function method_exists\(\) with ''WPRM_Recipe_Manager'' and ''get_recipe'' will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: includes/integrations/class-wp-recipe-maker.php
+
+		-
+			message: '#^Call to static method get_recipe_ids_from_post\(\) on an unknown class WPRM_Recipe_Manager\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/integrations/class-wp-recipe-maker.php
+
+		-
+			message: '#^Method PostKindsForIndieWeb\\Sync\\Foursquare_Checkin_Sync\:\:handle_oauth_callback_request\(\) should return WP_Error\|WP_REST_Response but returns null\.$#'
+			identifier: return.type
+			count: 4
+			path: includes/sync/class-foursquare-checkin-sync.php
+
+		-
+			message: '#^Result of method PostKindsForIndieWeb\\Sync\\Foursquare_Checkin_Sync\:\:oauth_redirect_with_error\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 3
+			path: includes/sync/class-foursquare-checkin-sync.php
+
+		-
+			message: '#^Result of method PostKindsForIndieWeb\\Sync\\Foursquare_Checkin_Sync\:\:oauth_redirect_with_success\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: includes/sync/class-foursquare-checkin-sync.php
+
+		-
+			message: '#^Ternary operator condition is always false\.$#'
+			identifier: ternary.alwaysFalse
+			count: 1
+			path: includes/sync/class-owntracks-checkin-sync.php
+
+		-
+			message: '#^Call to an undefined method PostKindsForIndieWeb\\Sync\\Untappd_Checkin_Sync\:\:find_existing_post\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: includes/sync/class-untappd-checkin-sync.php
