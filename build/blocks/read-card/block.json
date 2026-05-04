@@ -123,5 +123,6 @@
       "rating": 5
     }
   },
-  "editorStyle": "file:./editor.css"
+  "editorStyle": "file:./editor.css",
+  "render": "file:./render.php"
 }

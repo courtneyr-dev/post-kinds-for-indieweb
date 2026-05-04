@@ -127,5 +127,6 @@
       "rating": 5,
       "hoursPlayed": 120
     }
-  }
+  },
+  "render": "file:./render.php"
 }
