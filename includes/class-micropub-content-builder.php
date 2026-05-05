@@ -427,20 +427,41 @@ final class Micropub_Content_Builder {
 			return '';
 		}
 
-		$image_blocks = [];
+		// Deduplicate photo URLs while preserving alt-text alignment.
+		// The upstream Micropub plugin (David Shanske's `wordpress-micropub`)
+		// enriches `$input['photo']` post-sideload — when an Outpost
+		// gallery uploads 3 images and posts them as `photo[]=url1&...`,
+		// the plugin's processing produces a 6-entry array (the original
+		// URLs alongside the attached / canonical URLs, which on a
+		// single-server install resolve to the SAME local URL). Without
+		// dedupe, a 3-photo gallery rendered 6 image blocks: the first
+		// 3 with matching alts, the last 3 with empty alts because the
+		// `mp-photo-alt[]` array still had only 3 entries.
+		//
+		// Dedupe by URL — first occurrence wins (the occurrence that
+		// also has its aligned alt-text entry).
+		$seen         = [];
+		$unique_urls  = [];
+		$aligned_alts = [];
 		foreach ( $photo_urls as $i => $url ) {
-			if ( '' === $url ) {
+			if ( '' === $url || isset( $seen[ $url ] ) ) {
 				continue;
 			}
+			$seen[ $url ]   = true;
+			$unique_urls[]  = $url;
+			$aligned_alts[] = isset( $alt_texts[ $i ] ) ? $alt_texts[ $i ] : '';
+		}
+		if ( empty( $unique_urls ) ) {
+			return '';
+		}
+
+		$image_blocks = [];
+		foreach ( $unique_urls as $i => $url ) {
 			$attachment_id  = function_exists( 'attachment_url_to_postid' )
 				? (int) attachment_url_to_postid( $url )
 				: 0;
-			$alt            = isset( $alt_texts[ $i ] ) ? $alt_texts[ $i ] : '';
+			$alt            = $aligned_alts[ $i ];
 			$image_blocks[] = self::image_block( $attachment_id, $url, $alt );
-		}
-
-		if ( empty( $image_blocks ) ) {
-			return '';
 		}
 
 		// Single-photo posts skip the gallery wrapper for a cleaner shape.

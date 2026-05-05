@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Photo gallery posts no longer render the same images twice.** The Micropub-to-block bridge's `photo_card()` now deduplicates the `$input['photo']` array before emitting `core/image` blocks. The upstream Micropub plugin (David Shanske's `wordpress-micropub`) enriches `$input['photo']` post-sideload with a 2× version of the original array — when an Outpost gallery uploads 3 images and posts them as `photo[]=url1&...`, the array arriving at `after_micropub` priority 30 has 6 entries (originals + canonical URLs, both resolving to the same local URL on a single-server install) while `mp-photo-alt[]` still has only 3. Without dedupe, a 3-photo gallery rendered 6 image blocks: the first 3 with matching alts, the last 3 with empty alts. Dedupe is by URL, first occurrence wins (which is also the occurrence with its aligned alt text). 3 new PHPUnit tests in `MicropubContentBuilderTest.php` cover the staging-reproduced symptom (6→3 dedupe), the alt-alignment ("first occurrence keeps alt"), and the single-image collapse (3 identical URLs collapse to 1 image, gallery wrapper drops away).
+
 ### Added
 
 - **Photo / gallery handling in the Micropub-to-block content bridge.** Photo posts (Micropub `photo` property without one of the specific of-kinds like `eat-of`, `watch-of`) now emit a `core/image` block (single photo) or a `core/gallery` wrapper (multi-photo) inside the same `h-entry` envelope as the other card kinds. Each `core/image` block resolves the photo URL back to its attached media ID via `attachment_url_to_postid()` so the block carries the canonical reference + `class="wp-image-{id}"` for srcset rendering. Alt text comes from the parallel `mp-photo-alt[]` array. Single-photo posts skip the gallery wrapper for a cleaner shape; multi-photo posts get `core/gallery` with `linkTo: none`. The user's typed body text still appears as `e-content` alongside the gallery.
