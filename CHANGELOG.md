@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Photo / gallery handling in the Micropub-to-block content bridge.** Photo posts (Micropub `photo` property without one of the specific of-kinds like `eat-of`, `watch-of`) now emit a `core/image` block (single photo) or a `core/gallery` wrapper (multi-photo) inside the same `h-entry` envelope as the other card kinds. Each `core/image` block resolves the photo URL back to its attached media ID via `attachment_url_to_postid()` so the block carries the canonical reference + `class="wp-image-{id}"` for srcset rendering. Alt text comes from the parallel `mp-photo-alt[]` array. Single-photo posts skip the gallery wrapper for a cleaner shape; multi-photo posts get `core/gallery` with `linkTo: none`. The user's typed body text still appears as `e-content` alongside the gallery.
+  - 13 new PHPUnit tests covering: photo kind detection (alone + precedence vs other of-kinds), single vs multi-photo card output, attachment ID resolution, missing alt array, missing photo property, `flatten_string_array` helper across scalar/array/missing/non-string entries, and end-to-end `apply()` for both single and multi-photo posts.
+  - Bridges any Micropub client (Outpost, Quill, Indigenous, etc.) to native Gutenberg gallery blocks without requiring the client to know about block markup.
+
 ### Fixed
 
 - **Single posts no longer render the venue archive template.** `add_plugin_templates` was injecting `taxonomy-venue` into every `get_block_templates()` query result, including the hierarchy lookups that WordPress runs while resolving the single-post template (`slug__in => ['single-post', 'single', 'singular', 'index']`). When `singular` reached the resolver with no theme template registered for that slug, the plugin's `taxonomy-venue` template won the match and rendered for ordinary single posts — producing an empty `<main>` plus an unrelated query pagination block instead of the post body. The filter now respects `slug__in` and only injects when the requested slugs actually include `taxonomy-venue`. Adds four regression tests in `PluginTest.php`.

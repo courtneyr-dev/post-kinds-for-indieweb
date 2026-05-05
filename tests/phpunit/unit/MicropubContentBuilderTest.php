@@ -294,4 +294,245 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertSame( 'just a note, no card kind', $content );
 		$this->assertSame( '', (string) get_post_meta( $post_id, '_pkiw_block_content_generated', true ) );
 	}
+
+	// --- photo / gallery ----------------------------------------------------
+
+	public function test_detect_kind_photo_when_only_photo_present(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array(
+				array(
+					'photo'   => array( 'https://example.test/uploads/cat.jpg' ),
+					'content' => 'a cat',
+				),
+			)
+		);
+		$this->assertSame( 'photo', $kind );
+	}
+
+	public function test_detect_kind_specific_of_kinds_take_precedence_over_photo(): void {
+		// A photo posted with watch-of should still route to 'watch' so
+		// the watch-card carries the right structured data; the photo
+		// becomes part of the watch card's media slot in a future
+		// enhancement, not a separate gallery wrapper.
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array(
+				array(
+					'watch-of' => 'https://example.test/movie',
+					'photo'    => array( 'https://example.test/uploads/poster.jpg' ),
+				),
+			)
+		);
+		$this->assertSame( 'watch', $kind );
+	}
+
+	public function test_detect_kind_checkin_takes_precedence_over_photo(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array(
+				array(
+					'location' => 'geo:42.0,-71.0',
+					'photo'    => array( 'https://example.test/uploads/place.jpg' ),
+				),
+			)
+		);
+		$this->assertSame( 'checkin', $kind );
+	}
+
+	public function test_photo_card_single_url_produces_image_block(): void {
+		$markup = $this->invoke_private(
+			'photo_card',
+			array(
+				array(
+					'photo'         => array( 'https://example.test/uploads/cat.jpg' ),
+					'mp-photo-alt'  => array( 'a cat' ),
+				),
+			)
+		);
+		$this->assertStringContainsString( '<!-- wp:image', $markup );
+		$this->assertStringNotContainsString( '<!-- wp:gallery', $markup );
+		$this->assertStringContainsString( 'src="https://example.test/uploads/cat.jpg"', $markup );
+		$this->assertStringContainsString( 'alt="a cat"', $markup );
+	}
+
+	public function test_photo_card_multiple_urls_produce_gallery_block(): void {
+		$markup = $this->invoke_private(
+			'photo_card',
+			array(
+				array(
+					'photo'        => array(
+						'https://example.test/uploads/cat-1.jpg',
+						'https://example.test/uploads/cat-2.jpg',
+						'https://example.test/uploads/cat-3.jpg',
+					),
+					'mp-photo-alt' => array( 'first cat', 'second cat', 'third cat' ),
+				),
+			)
+		);
+		$this->assertStringContainsString( '<!-- wp:gallery', $markup );
+		$this->assertStringContainsString( '"linkTo":"none"', $markup );
+		// One core/image block per photo.
+		$this->assertSame( 3, substr_count( $markup, '<!-- wp:image' ) );
+		// Alt text preserved per-image.
+		$this->assertStringContainsString( 'alt="first cat"', $markup );
+		$this->assertStringContainsString( 'alt="second cat"', $markup );
+		$this->assertStringContainsString( 'alt="third cat"', $markup );
+	}
+
+	public function test_photo_card_omits_image_id_when_url_does_not_resolve(): void {
+		// URL with no matching attachment in the test DB — block still
+		// renders (without `id` attr) so the front-end shows the photo.
+		$markup = $this->invoke_private(
+			'photo_card',
+			array(
+				array(
+					'photo'        => array( 'https://other-site.test/orphan.jpg' ),
+					'mp-photo-alt' => array( 'orphan' ),
+				),
+			)
+		);
+		$this->assertStringContainsString( 'src="https://other-site.test/orphan.jpg"', $markup );
+		$this->assertStringNotContainsString( 'wp-image-', $markup );
+		$this->assertStringNotContainsString( '"id":', $markup );
+	}
+
+	public function test_photo_card_handles_missing_alt_array(): void {
+		// Some Micropub clients send `photo` without a parallel
+		// `mp-photo-alt`. Image blocks should still render, with empty
+		// alt attributes (browser defaults applied).
+		$markup = $this->invoke_private(
+			'photo_card',
+			array(
+				array(
+					'photo' => array( 'https://example.test/uploads/no-alt.jpg' ),
+				),
+			)
+		);
+		$this->assertStringContainsString( 'alt=""', $markup );
+	}
+
+	public function test_photo_card_returns_empty_when_photo_property_missing(): void {
+		$markup = $this->invoke_private(
+			'photo_card',
+			array( array() )
+		);
+		$this->assertSame( '', $markup );
+	}
+
+	public function test_apply_writes_gallery_block_for_multi_photo_post(): void {
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_content' => 'Hard at work',
+			)
+		);
+
+		Micropub_Content_Builder::apply(
+			array(
+				'h'             => 'entry',
+				'content'       => array( 'Hard at work' ),
+				'photo'         => array(
+					'https://example.test/uploads/cat-1.jpg',
+					'https://example.test/uploads/cat-2.jpg',
+					'https://example.test/uploads/cat-3.jpg',
+				),
+				'mp-photo-alt'  => array( 'cat-1', 'cat-2', 'cat-3' ),
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$content = (string) get_post_field( 'post_content', $post_id );
+		$this->assertStringContainsString( 'h-entry', $content );
+		$this->assertStringContainsString( '<!-- wp:gallery', $content );
+		$this->assertStringContainsString( 'cat-1.jpg', $content );
+		$this->assertStringContainsString( 'cat-3.jpg', $content );
+		// User's typed body still appears as e-content.
+		$this->assertStringContainsString( 'e-content', $content );
+		$this->assertStringContainsString( 'Hard at work', $content );
+		// Idempotency marker is set so subsequent edits aren't clobbered.
+		$this->assertSame( '1', (string) get_post_meta( $post_id, '_pkiw_block_content_generated', true ) );
+	}
+
+	public function test_apply_writes_single_image_block_for_single_photo(): void {
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_content' => 'one cat',
+			)
+		);
+
+		Micropub_Content_Builder::apply(
+			array(
+				'h'            => 'entry',
+				'content'      => array( 'one cat' ),
+				'photo'        => array( 'https://example.test/uploads/single-cat.jpg' ),
+				'mp-photo-alt' => array( 'just one cat' ),
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$content = (string) get_post_field( 'post_content', $post_id );
+		$this->assertStringContainsString( '<!-- wp:image', $content );
+		$this->assertStringNotContainsString( '<!-- wp:gallery', $content );
+		$this->assertStringContainsString( 'alt="just one cat"', $content );
+	}
+
+	public function test_apply_handles_string_photo_property(): void {
+		// Form-encoded clients may send `photo` as a single string
+		// rather than a one-element array. Bridge tolerates both shapes.
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'   => 'post',
+				'post_status' => 'publish',
+			)
+		);
+
+		Micropub_Content_Builder::apply(
+			array(
+				'h'     => 'entry',
+				'photo' => 'https://example.test/uploads/string-cat.jpg',
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$content = (string) get_post_field( 'post_content', $post_id );
+		$this->assertStringContainsString( 'string-cat.jpg', $content );
+		$this->assertStringContainsString( '<!-- wp:image', $content );
+	}
+
+	public function test_flatten_string_array_handles_scalar_string(): void {
+		$out = $this->invoke_private(
+			'flatten_string_array',
+			array(
+				array( 'photo' => 'https://example.test/just-one.jpg' ),
+				'photo',
+			)
+		);
+		$this->assertSame( array( 'https://example.test/just-one.jpg' ), $out );
+	}
+
+	public function test_flatten_string_array_handles_missing_key(): void {
+		$out = $this->invoke_private(
+			'flatten_string_array',
+			array( array(), 'photo' )
+		);
+		$this->assertSame( array(), $out );
+	}
+
+	public function test_flatten_string_array_replaces_non_strings_with_empty(): void {
+		// Index alignment between photo and mp-photo-alt matters; non-
+		// scalar entries become empty strings so positional pairing
+		// stays stable.
+		$out = $this->invoke_private(
+			'flatten_string_array',
+			array(
+				array( 'mp-photo-alt' => array( 'first', null, 'third' ) ),
+				'mp-photo-alt',
+			)
+		);
+		$this->assertSame( array( 'first', '', 'third' ), $out );
+	}
 }
