@@ -535,4 +535,75 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		);
 		$this->assertSame( array( 'first', '', 'third' ), $out );
 	}
+
+	// --- photo_card dedupe (issue: Shanske Micropub plugin enriches `$input['photo']` post-sideload) ---
+
+	public function test_photo_card_dedupes_repeated_urls(): void {
+		// Reproduces the staging symptom: 3 unique photos arriving as a
+		// 6-entry photo array (originals + canonical URLs collapsed to
+		// the same local URL) with mp-photo-alt only carrying the first
+		// 3 alts. Bridge must produce 3 image blocks total, NOT 6.
+		$markup = $this->invoke_private(
+			'photo_card',
+			array(
+				array(
+					'photo'        => array(
+						'https://example.test/uploads/cat-1.jpg',
+						'https://example.test/uploads/cat-2.jpg',
+						'https://example.test/uploads/cat-3.jpg',
+						'https://example.test/uploads/cat-1.jpg',
+						'https://example.test/uploads/cat-2.jpg',
+						'https://example.test/uploads/cat-3.jpg',
+					),
+					'mp-photo-alt' => array( 'Fire', 'Tux', 'Rain' ),
+				),
+			)
+		);
+		$this->assertSame( 3, substr_count( $markup, '<!-- wp:image' ) );
+		$this->assertStringContainsString( 'alt="Fire"', $markup );
+		$this->assertStringContainsString( 'alt="Tux"', $markup );
+		$this->assertStringContainsString( 'alt="Rain"', $markup );
+		$this->assertStringNotContainsString( 'alt=""', $markup );
+	}
+
+	public function test_photo_card_first_occurrence_keeps_alt(): void {
+		// When a URL appears twice and only the first occurrence has a
+		// matching alt, the kept-image carries that alt — confirms the
+		// "first occurrence wins" rule applies to the alt alignment too.
+		$markup = $this->invoke_private(
+			'photo_card',
+			array(
+				array(
+					'photo'        => array(
+						'https://example.test/uploads/cat.jpg',
+						'https://example.test/uploads/cat.jpg',
+					),
+					'mp-photo-alt' => array( 'a cat', '' ),
+				),
+			)
+		);
+		$this->assertSame( 1, substr_count( $markup, '<!-- wp:image' ) );
+		$this->assertStringContainsString( 'alt="a cat"', $markup );
+	}
+
+	public function test_photo_card_dedupe_collapses_to_single_image(): void {
+		// Three identical URLs collapse to one image block — and since
+		// the deduped count is 1, the gallery wrapper drops away too.
+		$markup = $this->invoke_private(
+			'photo_card',
+			array(
+				array(
+					'photo'        => array(
+						'https://example.test/uploads/single.jpg',
+						'https://example.test/uploads/single.jpg',
+						'https://example.test/uploads/single.jpg',
+					),
+					'mp-photo-alt' => array( 'one', 'two', 'three' ),
+				),
+			)
+		);
+		$this->assertSame( 1, substr_count( $markup, '<!-- wp:image' ) );
+		$this->assertStringNotContainsString( '<!-- wp:gallery', $markup );
+		$this->assertStringContainsString( 'alt="one"', $markup );
+	}
 }
