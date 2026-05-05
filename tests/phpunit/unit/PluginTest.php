@@ -32,7 +32,7 @@ class PluginTest extends WP_UnitTestCase {
 	 * Test that the plugin version is set.
 	 */
 	public function test_plugin_version() {
-		$this->assertEquals( '1.0.1', POST_KINDS_INDIEWEB_VERSION );
+		$this->assertEquals( '1.0.2', POST_KINDS_INDIEWEB_VERSION );
 	}
 
 	/**
