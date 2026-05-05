@@ -9,10 +9,14 @@
  * This bridge listens on the `after_micropub` action and rewrites
  * `post_content` to use this plugin's registered card blocks (Checkin Card,
  * Eat Card, Drink Card, Listen Card, Watch Card, Read Card, Mood Card,
- * etc.) when the incoming h-entry shape matches a known post kind. The
- * user's typed body content is preserved as an `e-content` paragraph
- * inside the same h-entry group so microformats2 + block rendering both
- * work.
+ * etc.) when the incoming h-entry shape matches a known post kind.
+ *
+ * Photo / gallery posts (Micropub `photo` property without one of the
+ * specific of-kinds) emit a `core/image` (single) or `core/gallery`
+ * (multi) wrapper with the photos resolved back to their attached media
+ * IDs. The user's typed body content is preserved as an `e-content`
+ * paragraph inside the same h-entry group so microformats2 + block
+ * rendering both work.
  *
  * Idempotent — once a post has been auto-generated, the
  * `_pkiw_block_content_generated` post meta marker is set and subsequent
@@ -186,6 +190,12 @@ final class Micropub_Content_Builder {
 		if ( self::has_property( $properties, 'location' ) ) {
 			return 'checkin';
 		}
+		// Photo / gallery = `photo` property without any of the of-kinds above.
+		// Single-photo and multi-photo posts both route here; photo_card()
+		// emits a single core/image or a core/gallery accordingly.
+		if ( self::has_property( $properties, 'photo' ) ) {
+			return 'photo';
+		}
 		return null;
 	}
 
@@ -217,6 +227,8 @@ final class Micropub_Content_Builder {
 				return self::rsvp_card( $properties );
 			case 'mood':
 				return self::mood_card( $properties );
+			case 'photo':
+				return self::photo_card( $properties );
 		}
 		return null;
 	}
@@ -387,6 +399,108 @@ final class Micropub_Content_Builder {
 	}
 
 	/**
+	 * Build a Gallery block (or single Image block) from the photo + alt
+	 * arrays in the Micropub property bag.
+	 *
+	 * Single-photo posts emit one `core/image` block. Multi-photo posts
+	 * emit a `core/gallery` containing per-photo `core/image` children.
+	 * The Micropub plugin has already sideloaded each photo URL and
+	 * attached the resulting media to the post; `attachment_url_to_postid()`
+	 * resolves each URL back to the attachment ID so the block carries
+	 * the canonical reference (and `class="wp-image-{id}"` lets the
+	 * front-end pick the right responsive srcset).
+	 *
+	 * Alt text comes from the parallel `mp-photo-alt[]` array sent by
+	 * Outpost (and any other Micropub client that opts into the
+	 * convention). Outpost's F3 bridge has already written the same
+	 * values to `_wp_attachment_image_alt` post meta on each attachment;
+	 * we use the request-side array directly so the bridge works even
+	 * when F3 isn't installed.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `photo`, `mp-photo-alt`).
+	 * @return string Block-comment markup for one image or a gallery wrapper.
+	 */
+	private static function photo_card( array $properties ): string {
+		$photo_urls = self::flatten_string_array( $properties, 'photo' );
+		$alt_texts  = self::flatten_string_array( $properties, 'mp-photo-alt' );
+		if ( empty( $photo_urls ) ) {
+			return '';
+		}
+
+		$image_blocks = [];
+		foreach ( $photo_urls as $i => $url ) {
+			if ( '' === $url ) {
+				continue;
+			}
+			$attachment_id  = function_exists( 'attachment_url_to_postid' )
+				? (int) attachment_url_to_postid( $url )
+				: 0;
+			$alt            = isset( $alt_texts[ $i ] ) ? $alt_texts[ $i ] : '';
+			$image_blocks[] = self::image_block( $attachment_id, $url, $alt );
+		}
+
+		if ( empty( $image_blocks ) ) {
+			return '';
+		}
+
+		// Single-photo posts skip the gallery wrapper for a cleaner shape.
+		if ( 1 === count( $image_blocks ) ) {
+			return $image_blocks[0];
+		}
+
+		return self::gallery_block_wrapper( $image_blocks );
+	}
+
+	/**
+	 * Render a single `core/image` block with the canonical Gutenberg shape.
+	 *
+	 * @param int    $attachment_id Resolved attachment ID, or 0 when the URL didn't resolve.
+	 * @param string $url           Image src URL.
+	 * @param string $alt           Alt text; rendered as `alt="..."` on the img tag.
+	 * @return string Block-comment markup for the image.
+	 */
+	private static function image_block( int $attachment_id, string $url, string $alt ): string {
+		$attrs = [
+			'sizeSlug'        => 'full',
+			'linkDestination' => 'none',
+		];
+		if ( $attachment_id > 0 ) {
+			$attrs['id'] = $attachment_id;
+		}
+		$attrs_json = wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES );
+		if ( false === $attrs_json ) {
+			$attrs_json = '{}';
+		}
+		$img_class = $attachment_id > 0
+			? ' class="wp-image-' . (int) $attachment_id . '"'
+			: '';
+		return '<!-- wp:image ' . $attrs_json . ' -->' . "\n"
+			. '<figure class="wp-block-image size-full">'
+			. '<img src="' . esc_url( $url ) . '" alt="' . esc_attr( $alt ) . '"' . $img_class . '/>'
+			. '</figure>' . "\n"
+			. '<!-- /wp:image -->';
+	}
+
+	/**
+	 * Wrap multiple `core/image` blocks in a `core/gallery`.
+	 *
+	 * Uses `linkTo: none` so clicking a gallery image doesn't open a
+	 * file URL — for blog posts the post body is the destination, not
+	 * the bare media file.
+	 *
+	 * @param string[] $image_blocks Pre-rendered `core/image` block markup strings.
+	 * @return string Block-comment markup for the gallery wrapper.
+	 */
+	private static function gallery_block_wrapper( array $image_blocks ): string {
+		$children = implode( "\n\n", $image_blocks );
+		return '<!-- wp:gallery {"linkTo":"none"} -->' . "\n"
+			. '<figure class="wp-block-gallery has-nested-images columns-default is-cropped">' . "\n"
+			. $children . "\n"
+			. '</figure>' . "\n"
+			. '<!-- /wp:gallery -->';
+	}
+
+	/**
 	 * Build a Mood Card block from the h-entry property bag.
 	 *
 	 * @param array<string, mixed> $properties h-entry properties bag (uses `mood`, `content`).
@@ -479,6 +593,37 @@ final class Micropub_Content_Builder {
 			return '';
 		}
 		return (string) $value;
+	}
+
+	/**
+	 * Flatten a property to a list of strings. Used for properties that
+	 * naturally repeat (`photo[]`, `mp-photo-alt[]`).
+	 *
+	 * Form-encoded Micropub repeats values as `['photo' => ['url1','url2']]`;
+	 * JSON Micropub uses the same shape. A scalar string is treated as a
+	 * single-element list. Non-scalar entries become empty strings so
+	 * the index alignment between `photo` and `mp-photo-alt` is preserved.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @param string               $key        Property name to read.
+	 * @return string[] List of strings (possibly with empty entries for non-scalars).
+	 */
+	private static function flatten_string_array( array $properties, string $key ): array {
+		if ( ! isset( $properties[ $key ] ) ) {
+			return [];
+		}
+		$value = $properties[ $key ];
+		if ( is_string( $value ) ) {
+			return [ $value ];
+		}
+		if ( ! is_array( $value ) ) {
+			return [];
+		}
+		$out = [];
+		foreach ( $value as $entry ) {
+			$out[] = is_string( $entry ) ? $entry : '';
+		}
+		return $out;
 	}
 
 	/**
