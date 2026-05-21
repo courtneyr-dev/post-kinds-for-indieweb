@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.2
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -175,6 +175,9 @@ Visit [pin13.net/mf2](https://pin13.net/mf2/) and enter your post URL. The tool 
 7. Block inserter showing all post kind blocks
 
 == Changelog ==
+
+= 1.0.4 =
+* Fix site-wide PHP fatal when active alongside block themes that resolve hooked blocks during init (e.g. Ollie). `Format_Badge::filter_hooked_blocks()` now accepts a nullable `$position` parameter, matching WordPress core's `hooked_block_types` filter signature.
 
 = 1.0.0 =
 * Initial release
