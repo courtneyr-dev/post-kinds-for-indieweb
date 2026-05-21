@@ -101,12 +101,14 @@ class RAWG extends API_Base {
 	/**
 	 * Search for games.
 	 *
-	 * @param string $query    Search query.
-	 * @param int    $page     Page number.
-	 * @param int    $per_page Results per page.
+	 * @param string $query   Search query.
+	 * @param mixed  ...$args Optional. First arg is page number, second is per_page.
 	 * @return array<int, array<string, mixed>> Search results.
 	 */
-	public function search( string $query, int $page = 1, int $per_page = 20 ): array {
+	public function search( string $query, ...$args ): array {
+		$page     = (int) ( $args[0] ?? 1 );
+		$per_page = (int) ( $args[1] ?? 20 );
+
 		if ( empty( $query ) || ! $this->is_configured() ) {
 			return [];
 		}
@@ -114,7 +116,7 @@ class RAWG extends API_Base {
 		$cache_key = $this->get_cache_key( 'search', [ $query, $page, $per_page ] );
 		$cached    = $this->get_cache( $cache_key );
 
-		if ( false !== $cached ) {
+		if ( null !== $cached ) {
 			return $cached;
 		}
 
@@ -158,7 +160,7 @@ class RAWG extends API_Base {
 		$cache_key = $this->get_cache_key( 'game', [ $id ] );
 		$cached    = $this->get_cache( $cache_key );
 
-		if ( false !== $cached ) {
+		if ( null !== $cached ) {
 			return $cached;
 		}
 
@@ -298,16 +300,17 @@ class RAWG extends API_Base {
 	 *
 	 * @param string               $endpoint API endpoint.
 	 * @param array<string, mixed> $params   Query parameters.
+	 * @param array<string, mixed> $headers  Additional headers (unused, for parent compatibility).
 	 * @return array<string, mixed>|\WP_Error Response data or error.
 	 */
-	public function get( string $endpoint, array $params = [] ) {
+	public function get( string $endpoint, array $params = [], array $headers = [] ) {
 		$url = $this->base_url . $endpoint;
 
 		if ( ! empty( $params ) ) {
 			$url = add_query_arg( $params, $url );
 		}
 
-		$this->rate_limit();
+		$this->respect_rate_limit();
 
 		$response = wp_remote_get(
 			$url,
@@ -395,7 +398,7 @@ class RAWG extends API_Base {
 		$cache_key = $this->get_cache_key( 'platforms', [] );
 		$cached    = $this->get_cache( $cache_key );
 
-		if ( false !== $cached ) {
+		if ( null !== $cached ) {
 			return $cached;
 		}
 

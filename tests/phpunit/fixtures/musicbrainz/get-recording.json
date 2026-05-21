@@ -1,0 +1,11 @@
+{
+  "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+  "title": "Bohemian Rhapsody",
+  "length": 354000,
+  "artist-credit": [
+    { "artist": { "id": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3", "name": "Queen" } }
+  ],
+  "releases": [
+    { "id": "bb2d72e5-83de-4e0b-8c3c-5e41e6b3e011", "title": "A Night at the Opera" }
+  ]
+}

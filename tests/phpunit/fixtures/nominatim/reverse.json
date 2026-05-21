@@ -1,0 +1,26 @@
+{
+	"place_id": 297715042,
+	"licence": "Data © OpenStreetMap contributors, ODbL 1.0.",
+	"osm_type": "relation",
+	"osm_id": 175905,
+	"lat": "40.7127281",
+	"lon": "-74.0060152",
+	"class": "boundary",
+	"type": "administrative",
+	"place_rank": 16,
+	"importance": 0.9736913917538474,
+	"addresstype": "city",
+	"name": "New York",
+	"display_name": "New York, United States",
+	"address": {
+		"city": "New York",
+		"state": "New York",
+		"country": "United States",
+		"country_code": "us"
+	},
+	"extratags": {
+		"wikipedia": "en:New York City",
+		"wikidata": "Q60"
+	},
+	"boundingbox": ["40.4773991", "40.9175771", "-74.2590899", "-73.7002721"]
+}

@@ -66,6 +66,7 @@ class Block_Bindings {
 	 * @return void
 	 */
 	private function define_bindings(): void {
+		// phpcs:disable WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Array keys named 'meta_key' for config, not query args.
 		$this->bindings = [
 			// Citation bindings.
 			'cite_name'              => [
@@ -284,6 +285,7 @@ class Block_Bindings {
 				'type'     => 'url',
 			],
 		];
+		// phpcs:enable WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 
 		/**
 		 * Filters the block binding definitions.

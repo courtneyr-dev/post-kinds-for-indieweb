@@ -40,9 +40,9 @@ function get_checkins( array $args = [] ): \WP_Query {
 	$checkin_term = get_term_by( 'slug', 'checkin', 'indieblocks_kind' );
 
 	if ( $checkin_term ) {
-		$existing_tax_query = $args['tax_query'] ?? [];
+		$existing_tax_query = $args['tax_query'] ?? []; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 
-		$args['tax_query'] = array_merge(
+		$args['tax_query'] = array_merge( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 			$existing_tax_query,
 			[
 				[
@@ -65,9 +65,9 @@ function get_checkins( array $args = [] ): \WP_Query {
  * @return \WP_Query Query object.
  */
 function get_checkins_at_venue( int $venue_id, array $args = [] ): \WP_Query {
-	$existing_tax_query = $args['tax_query'] ?? [];
+	$existing_tax_query = $args['tax_query'] ?? []; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 
-	$args['tax_query'] = array_merge(
+	$args['tax_query'] = array_merge( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 		$existing_tax_query,
 		[
 			[

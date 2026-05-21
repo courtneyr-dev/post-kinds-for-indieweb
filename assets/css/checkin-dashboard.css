@@ -77,6 +77,7 @@
 }
 
 @media (max-width: 1200px) {
+
 	.checkin-dashboard-content {
 		grid-template-columns: 1fr;
 	}
@@ -115,7 +116,9 @@
 	border: 1px solid #dcdcde;
 	border-radius: 8px;
 	overflow: hidden;
-	transition: box-shadow 0.2s ease, transform 0.2s ease;
+	transition:
+		box-shadow 0.2s ease,
+		transform 0.2s ease;
 }
 
 .checkin-card:hover {
@@ -262,7 +265,7 @@
 }
 
 .timeline-items::before {
-	content: '';
+	content: "";
 	position: absolute;
 	left: 10px;
 	top: 0;
@@ -281,7 +284,7 @@
 }
 
 .timeline-item::before {
-	content: '';
+	content: "";
 	position: absolute;
 	left: -24px;
 	top: 20px;
@@ -346,6 +349,7 @@
 	gap: 8px;
 }
 
+/* stylelint-disable-next-line no-descending-specificity */
 .stats-card h3 .dashicons {
 	color: #2271b1;
 }
@@ -456,6 +460,7 @@
 	padding: 40px;
 }
 
+/* stylelint-disable-next-line no-descending-specificity */
 .checkin-empty .dashicons {
 	font-size: 48px;
 	width: 48px;
@@ -499,6 +504,7 @@
 
 /* Responsive */
 @media (max-width: 782px) {
+
 	.checkin-dashboard-header {
 		flex-direction: column;
 		align-items: flex-start;
@@ -560,8 +566,12 @@
 	margin-top: 5px;
 	text-align: center;
 	border-radius: 15px;
-	font: 12px "Helvetica Neue", Arial, Helvetica, sans-serif;
-	font-weight: bold;
+	font:
+		12px "Helvetica Neue",
+		Arial,
+		Helvetica,
+		sans-serif;
+	font-weight: 700;
 	line-height: 30px;
 }
 

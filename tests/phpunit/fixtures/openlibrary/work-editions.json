@@ -1,0 +1,21 @@
+{
+	"entries": [
+		{
+			"key": "/books/OL7353617M",
+			"title": "Dune",
+			"subtitle": "",
+			"full_title": "Dune",
+			"authors": [{"key": "/authors/OL34184A"}],
+			"publishers": ["Ace Books"],
+			"publish_date": "1990",
+			"publish_places": ["New York"],
+			"number_of_pages": 412,
+			"isbn_10": ["0441172717"],
+			"isbn_13": ["9780441172719"],
+			"languages": [{"key": "/languages/eng"}],
+			"physical_format": "Paperback",
+			"covers": [8232516],
+			"works": [{"key": "/works/OL45883W"}]
+		}
+	]
+}

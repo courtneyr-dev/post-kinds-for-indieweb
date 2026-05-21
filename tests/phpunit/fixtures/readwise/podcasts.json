@@ -1,0 +1,21 @@
+{
+	"count": 1,
+	"nextPageCursor": null,
+	"results": [
+		{
+			"id": 99999,
+			"title": "The Tim Ferriss Show - Episode 500",
+			"author": "Tim Ferriss",
+			"category": "podcasts",
+			"source": "snipd",
+			"source_url": "https://snipd.com/episode/xyz",
+			"cover_image_url": "https://readwise-assets.s3.amazonaws.com/ferriss.jpg",
+			"num_highlights": 3,
+			"last_highlight_at": "2024-07-01T14:00:00Z",
+			"updated": "2024-07-01T14:00:00Z",
+			"asin": "",
+			"tags": [],
+			"document_note": ""
+		}
+	]
+}

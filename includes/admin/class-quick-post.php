@@ -1159,7 +1159,7 @@ class Quick_Post {
 			[
 				'numberposts' => 10,
 				'post_type'   => 'post',
-				'tax_query'   => [
+				'tax_query'   => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 					[
 						'taxonomy' => 'kind',
 						'operator' => 'EXISTS',

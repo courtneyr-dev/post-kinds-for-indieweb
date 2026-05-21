@@ -1,0 +1,235 @@
+/**
+ * Post Kinds for IndieWeb — design token catalog.
+ *
+ * Per audit Session C2, 2026-05-01. The hard contract from Section 2 of the
+ * audit prompt:
+ *
+ *   - Plugin owns layout. Every paint token defaults to neutral.
+ *     (`transparent`, `inherit`, `currentcolor`)
+ *   - Theme owns paint. Themes set `--pkiw-*` variables to apply colors,
+ *     fonts, shadows, radii. If they don't, kinds inherit theme typography
+ *     and have no painted background.
+ *   - Plugin structural CSS may only reference colors/fonts through
+ *     `var(--pkiw-*, neutral-fallback)`.
+ *
+ * Sizing tokens carry real values because layout-without-sizing breaks
+ * structurally. Paint tokens carry neutral defaults so cards render but
+ * inherit theme styling until the theme opts in.
+ *
+ * The `@layer pkiw-kind-tokens` wrapper keeps these defaults at low
+ * specificity so themes can override with normal `:root { --pkiw-...: ... }`
+ * rules.
+ *
+ * Reference docs:
+ *   - /docs/audit/DESIGN-TOKENS.md      — per-token reference
+ *   - /docs/audit/styling-inventory.md  — what was replaced and why
+ *
+ * @package PostKindsForIndieWeb
+ * @since 2.0.0
+ */
+
+@layer pkiw-kind-tokens {
+
+	:root {
+
+		/* ============================================================
+		 * STRUCTURAL TOKENS
+		 *   Carry real values. Layout breaks without these.
+		 * ============================================================ */
+
+		/* Card layout. */
+		--pkiw-card-gap: 1em;
+		--pkiw-card-padding: 0;
+
+		/* Artwork aspect ratios. Per-kind tokens reference these. */
+		--pkiw-artwork-ratio-square: 1 / 1;
+		--pkiw-artwork-ratio-poster: 2 / 3;
+		--pkiw-artwork-ratio-wide: 16 / 9;
+		--pkiw-artwork-ratio-book: 2 / 3;
+
+		/* Star sizing. */
+		--pkiw-star-size: 1em;
+		--pkiw-star-count: 5;
+
+		/* ============================================================
+		 * SHARED CARD PAINT TOKENS
+		 *   Used by every card-format block. Neutral defaults.
+		 * ============================================================ */
+
+		--pkiw-card-bg: transparent;
+		--pkiw-card-fg: inherit;
+		--pkiw-card-accent: currentcolor;
+		--pkiw-card-border: transparent;
+		--pkiw-card-border-radius: 0;
+		--pkiw-card-shadow: none;
+		--pkiw-card-text-secondary: inherit;
+
+		/* ============================================================
+		 * PER-KIND PAINT TOKENS
+		 *   Each kind that has a card block gets its own paint set.
+		 *   All default to the shared --pkiw-card-* tokens above so a
+		 *   theme can paint cards uniformly OR per-kind. Per-kind tokens
+		 *   inherit shared tokens when not explicitly set.
+		 * ============================================================ */
+
+		/* Listen — music + podcasts. */
+		--pkiw-listen-card-bg: var(--pkiw-card-bg);
+		--pkiw-listen-card-fg: var(--pkiw-card-fg);
+		--pkiw-listen-card-accent: var(--pkiw-card-accent);
+		--pkiw-listen-artwork-ratio: var(--pkiw-artwork-ratio-square);
+
+		/* Watch — film + TV. */
+		--pkiw-watch-card-bg: var(--pkiw-card-bg);
+		--pkiw-watch-card-fg: var(--pkiw-card-fg);
+		--pkiw-watch-card-accent: var(--pkiw-card-accent);
+		--pkiw-watch-artwork-ratio: var(--pkiw-artwork-ratio-poster);
+
+		/* Read — books + articles. */
+		--pkiw-read-card-bg: var(--pkiw-card-bg);
+		--pkiw-read-card-fg: var(--pkiw-card-fg);
+		--pkiw-read-card-accent: var(--pkiw-card-accent);
+		--pkiw-read-artwork-ratio: var(--pkiw-artwork-ratio-book);
+		--pkiw-read-progress-bar: currentcolor;
+
+		/* Checkin — venue location. */
+		--pkiw-checkin-card-bg: var(--pkiw-card-bg);
+		--pkiw-checkin-card-fg: var(--pkiw-card-fg);
+		--pkiw-checkin-card-accent: var(--pkiw-card-accent);
+		--pkiw-checkin-map-bg: transparent;
+
+		/* RSVP — event response with status modifiers. */
+		--pkiw-rsvp-card-bg: var(--pkiw-card-bg);
+		--pkiw-rsvp-card-fg: var(--pkiw-card-fg);
+		--pkiw-rsvp-yes-fg: inherit;
+		--pkiw-rsvp-no-fg: inherit;
+		--pkiw-rsvp-maybe-fg: inherit;
+		--pkiw-rsvp-interested-fg: inherit;
+		--pkiw-rsvp-remote-fg: inherit;
+
+		/* Play — game session. */
+		--pkiw-play-card-bg: var(--pkiw-card-bg);
+		--pkiw-play-card-fg: var(--pkiw-card-fg);
+
+		/* Eat / Drink — food + beverage logs. */
+		--pkiw-eat-card-bg: var(--pkiw-card-bg);
+		--pkiw-eat-card-fg: var(--pkiw-card-fg);
+		--pkiw-drink-card-bg: var(--pkiw-card-bg);
+		--pkiw-drink-card-fg: var(--pkiw-card-fg);
+
+		/* Jam / Favorite / Wish / Mood / Acquisition — small-card kinds. */
+		--pkiw-jam-card-bg: var(--pkiw-card-bg);
+		--pkiw-favorite-card-bg: var(--pkiw-card-bg);
+		--pkiw-wish-card-bg: var(--pkiw-card-bg);
+		--pkiw-mood-card-bg: var(--pkiw-card-bg);
+		--pkiw-acquisition-card-bg: var(--pkiw-card-bg);
+
+		/* Like / Reply / Repost / Bookmark — response kinds.
+		 * These typically render as h-cite inline rather than full cards,
+		 * but provide tokens for sites that wrap them in a card surface. */
+		--pkiw-like-card-bg: var(--pkiw-card-bg);
+		--pkiw-reply-card-bg: var(--pkiw-card-bg);
+		--pkiw-repost-card-bg: var(--pkiw-card-bg);
+		--pkiw-bookmark-card-bg: var(--pkiw-card-bg);
+
+		/* ============================================================
+		 * STAR RATING
+		 *   Per Section 5.4 special case.
+		 *   Empty star defaults to transparent so it doesn't paint a
+		 *   background; only the filled portion paints. `currentcolor`
+		 *   on fill means the rating inherits theme accent or whatever
+		 *   the surrounding text color is, unless theme overrides.
+		 * ============================================================ */
+
+		--pkiw-star-rating-fill: currentcolor;
+		--pkiw-star-rating-empty: transparent;
+		--pkiw-star-rating-caption: inherit;
+		--pkiw-star-rating-border-radius: 0;
+
+		/* Color modifiers — themes can paint different rating types
+		 * (e.g., "love" pink, "calm" blue) by setting these. */
+		--pkiw-star-rating-variant-1: currentcolor;
+		--pkiw-star-rating-variant-2: currentcolor;
+
+		/* ============================================================
+		 * MEDIA LOOKUP RESULT
+		 *   The "search results" surface in the editor lookup block.
+		 * ============================================================ */
+
+		--pkiw-media-lookup-result-bg: transparent;
+		--pkiw-media-lookup-result-fg: inherit;
+		--pkiw-media-lookup-result-border: transparent;
+
+		/* ============================================================
+		 * STATS BLOCKS
+		 *   Used by class-media-stats and class-now-playing. Three
+		 *   tokens because the plugin currently uses three close greens
+		 *   (#127925, #127916, #128214). Phase D triage may consolidate
+		 *   these to one if the three states are not semantically
+		 *   distinct. Documented in DESIGN-TOKENS.md.
+		 * ============================================================ */
+
+		--pkiw-stat-positive: currentcolor;
+		--pkiw-stat-neutral: currentcolor;
+		--pkiw-stat-active: currentcolor;
+
+		/* ============================================================
+		 * EDITOR CHROME
+		 *   Editor-only paint for focus indicators, rule lines, etc.
+		 *   These are NOT exempt from the contract — themes that brand
+		 *   the editor (custom editor stylesheets) should be able to
+		 *   override. WP admin scheme integration via fallback to
+		 *   `Highlight` system color when not set.
+		 * ============================================================ */
+
+		--pkiw-focus-indicator: currentcolor;
+		--pkiw-editor-rule: currentcolor;
+
+		/* ============================================================
+		 * INTERACTIVITY FALLBACKS
+		 *   Hover / active / disabled states. Default to currentcolor +
+		 *   opacity so the token always inherits the surrounding text
+		 *   color and only changes intensity.
+		 * ============================================================ */
+
+		--pkiw-state-hover-opacity: 0.8;
+		--pkiw-state-active-opacity: 1;
+		--pkiw-state-disabled-opacity: 0.5;
+		--pkiw-state-muted-opacity: 0.7;
+		--pkiw-state-very-muted-opacity: 0.4;
+
+		/* ============================================================
+		 * SUB-COMPONENT TOKENS
+		 *   Used by card sub-elements that need distinct paint from
+		 *   the parent card surface. Default to shared/inherit so
+		 *   themes paint only what they want.
+		 * ============================================================ */
+
+		/* Badge — kind/format chip rendered inside cards. */
+		--pkiw-card-badge-bg: transparent;
+		--pkiw-card-badge-fg: inherit;
+		--pkiw-card-badge-border-radius: var(--pkiw-card-border-radius);
+
+		/* Media button — placeholder + uploaded-image control. */
+		--pkiw-card-media-button-bg: transparent;
+		--pkiw-card-media-button-border: var(--pkiw-card-border);
+		--pkiw-card-media-button-border-radius: var(--pkiw-card-border-radius);
+
+		/* Type/format selector dropdown inside cards. */
+		--pkiw-card-type-select-bg: transparent;
+		--pkiw-card-type-select-fg: inherit;
+		--pkiw-card-type-select-border: var(--pkiw-card-border);
+		--pkiw-card-type-select-border-radius: var(--pkiw-card-border-radius);
+
+		/* Notice / warning state inside cards (e.g., "rating exceeds star count"). */
+		--pkiw-card-notice-bg: transparent;
+		--pkiw-card-notice-fg: inherit;
+		--pkiw-card-notice-border: var(--pkiw-card-border);
+
+		/* Generic in-card state colors — themes paint to indicate
+		 * success / warning / error / info without per-block tokens. */
+		--pkiw-state-success: currentcolor;
+		--pkiw-state-warning: currentcolor;
+		--pkiw-state-error: currentcolor;
+		--pkiw-state-info: currentcolor;
+	}
+}

@@ -31,6 +31,8 @@
 .star-rating-block .rating-icon {
 	color: var(--star-rating-empty);
 	transition: color 0.15s ease;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Symbol", system-ui, sans-serif;
+	line-height: 1;
 }
 
 .star-rating-block .rating-icon.filled {

@@ -348,8 +348,8 @@ abstract class Checkin_Sync_Base {
 		$existing = get_posts(
 			[
 				'post_type'   => 'post',
-				'meta_key'    => $this->external_id_meta_key,
-				'meta_value'  => $external_id,
+				'meta_key'    => $this->external_id_meta_key, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value'  => $external_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 				'numberposts' => 1,
 				'fields'      => 'ids',
 			]
@@ -378,7 +378,7 @@ abstract class Checkin_Sync_Base {
 							'inclusive' => true,
 						],
 					],
-					'meta_query'  => [
+					'meta_query'  => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 						[
 							'key'     => Meta_Fields::PREFIX . 'checkin_name',
 							'value'   => $venue,

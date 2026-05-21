@@ -7,22 +7,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Photo gallery posts no longer render the same images twice.** The Micropub-to-block bridge's `photo_card()` now deduplicates the `$input['photo']` array before emitting `core/image` blocks. The upstream Micropub plugin (David Shanske's `wordpress-micropub`) enriches `$input['photo']` post-sideload with a 2× version of the original array — when an Outpost gallery uploads 3 images and posts them as `photo[]=url1&...`, the array arriving at `after_micropub` priority 30 has 6 entries (originals + canonical URLs, both resolving to the same local URL on a single-server install) while `mp-photo-alt[]` still has only 3. Without dedupe, a 3-photo gallery rendered 6 image blocks: the first 3 with matching alts, the last 3 with empty alts. Dedupe is by URL, first occurrence wins (which is also the occurrence with its aligned alt text). 3 new PHPUnit tests in `MicropubContentBuilderTest.php` cover the staging-reproduced symptom (6→3 dedupe), the alt-alignment ("first occurrence keeps alt"), and the single-image collapse (3 identical URLs collapse to 1 image, gallery wrapper drops away).
+
 ### Added
+
+- **Photo / gallery handling in the Micropub-to-block content bridge.** Photo posts (Micropub `photo` property without one of the specific of-kinds like `eat-of`, `watch-of`) now emit a `core/image` block (single photo) or a `core/gallery` wrapper (multi-photo) inside the same `h-entry` envelope as the other card kinds. Each `core/image` block resolves the photo URL back to its attached media ID via `attachment_url_to_postid()` so the block carries the canonical reference + `class="wp-image-{id}"` for srcset rendering. Alt text comes from the parallel `mp-photo-alt[]` array. Single-photo posts skip the gallery wrapper for a cleaner shape; multi-photo posts get `core/gallery` with `linkTo: none`. The user's typed body text still appears as `e-content` alongside the gallery.
+  - 13 new PHPUnit tests covering: photo kind detection (alone + precedence vs other of-kinds), single vs multi-photo card output, attachment ID resolution, missing alt array, missing photo property, `flatten_string_array` helper across scalar/array/missing/non-string entries, and end-to-end `apply()` for both single and multi-photo posts.
+  - Bridges any Micropub client (Outpost, Quill, Indigenous, etc.) to native Gutenberg gallery blocks without requiring the client to know about block markup.
+
+### Fixed
+
+- **Single posts no longer render the venue archive template.** `add_plugin_templates` was injecting `taxonomy-venue` into every `get_block_templates()` query result, including the hierarchy lookups that WordPress runs while resolving the single-post template (`slug__in => ['single-post', 'single', 'singular', 'index']`). When `singular` reached the resolver with no theme template registered for that slug, the plugin's `taxonomy-venue` template won the match and rendered for ordinary single posts — producing an empty `<main>` plus an unrelated query pagination block instead of the post body. The filter now respects `slug__in` and only injects when the requested slugs actually include `taxonomy-venue`. Adds four regression tests in `PluginTest.php`.
+
+### Added
+
+- **Micropub-to-block content bridge** (`includes/class-micropub-content-builder.php`). Hooks `after_micropub` priority 30 and rewrites Micropub-created `post_content` from plain text to the registered card blocks (Checkin Card, Eat Card, Drink Card, Listen Card, Watch Card, Read Card, Play Card, RSVP Card, Mood Card) when the incoming h-entry shape matches a recognized post kind. Bridges any Micropub client (Outpost, Quill, Indigenous, etc.) to this plugin's block-editor cards without requiring the client to know about Gutenberg block markup.
+  - **Idempotent.** Sets a `_pkiw_block_content_generated` post meta marker on first generation; subsequent Micropub updates leave (potentially user-edited) content alone.
+  - **h-entry envelope.** Wraps each card in a `wp:group` with `class="h-entry"` and an inner `e-content` group for the user's typed body text, so microformats2 readers see one h-entry root and the body in `e-content`.
+  - **Geo extraction.** Parses `location: geo:lat,lon` (RFC 5870) into `latitude`/`longitude` (or `geoLatitude`/`geoLongitude` for Eat/Drink) attributes on the card block.
+  - **Outpost-friendly.** Recognizes Outpost's `mp-place-name` extension property as the venue name attribute. Outpost-made checkin/eat/drink/listen posts now render with proper card UI on the front-end.
+  - 17 PHPUnit unit tests covering kind detection, geo parsing, per-kind builders, idempotency, and the plain-note skip path.
+- Jam Card, Eat Card, Drink Card, Favorite Card, Wish Card, Mood Card, Acquisition Card blocks
+- Play Card block with RAWG integration
+- Checkin Dashboard block for location overview
+- Block Bindings source for post kind meta fields
+- Block Bindings format helpers for dynamic content display
+- Format Badge block for displaying post kind labels
+- Media Stats block for collection summaries
+- Now Playing block for current listening activity
+- Recent Kinds block for latest post kind entries
+- AI Enhancements class for optional WP AI Client integration
+- oEmbed support for Jam Card block
+- Code of Conduct (CODE_OF_CONDUCT.md)
 - Project documentation (CONTRIBUTING.md, SECURITY.md, SUPPORT.md)
 - GitHub issue templates (bug report, feature request, question)
-- Pull request template
+- Pull request template with comprehensive checklists
+- QA checklist for pre-release testing
+
+### Changed
+
+- Converted Jam Card, Listen Card, and Watch Card to dynamic server-side rendering
+- Rewrote README.md with improved structure, badges, and feature documentation
+- Rewrote readme.txt (WordPress.org) with expanded description and FAQ
+- Rewrote CONTRIBUTING.md with streamlined development workflow
+- Rewrote SUPPORT.md with clearer troubleshooting guidance
+- Upgraded pull request template with security, accessibility, and i18n checklists
+- Prefixed render.php variables with `pkiw_` for wp.org plugin checker compliance
+- Converted CSS indentation from spaces to tabs for WordPress coding standards
+- Updated copyright year to 2026
+- Synchronized platform requirements (WP 6.9+, PHP 8.2+) across all documentation
+
+### Fixed
+
+- CSS specificity ordering issues in checkin-dashboard.css
+- ESLint exhaustive-deps warnings in Jam Card useEffect hooks
+- CSS selector formatting in shared card-editor.css
 
 ## [1.0.0] - 2024-12-23
 
 ### Added
 
 #### Core Features
+
 - Reaction Kind taxonomy for categorizing posts (listen, watch, read, checkin, rsvp)
 - Custom meta fields for reaction metadata
 - Block bindings for dynamic content display
 - Microformats2 markup enhancement for IndieWeb compatibility
 
 #### Custom Blocks
+
 - **Listen Card**: Music/podcast scrobbling with album art, artist, rating, MusicBrainz integration
 - **Watch Card**: Movies/TV shows with poster, episode tracking, TMDB/IMDb links, rewatch indicator
 - **Read Card**: Books with cover, author, reading progress bar, Open Library integration
@@ -32,6 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Media Lookup**: Universal media search across all integrated APIs
 
 #### Block Patterns
+
 - Listen Log pattern for music posts
 - Watch Log pattern for movie/TV posts
 - Read Progress pattern for book posts
@@ -39,6 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RSVP Response pattern for event responses
 
 #### External API Integrations
+
 - **Music**: MusicBrainz, ListenBrainz, Last.fm
 - **Movies/TV**: TMDB, Trakt, Simkl, TVMaze
 - **Books**: Open Library, Google Books, Hardcover
@@ -46,11 +103,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Locations**: Foursquare, OpenStreetMap Nominatim
 
 #### REST API
+
 - Custom endpoints for media search
 - Import endpoints for external services
 - Webhook handlers for real-time sync
 
 #### Admin Features
+
 - Settings page with tabbed interface
 - API key management with secure storage
 - Import tools for bulk data migration
@@ -59,6 +118,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Quick Post interface for rapid posting
 
 #### Shared Components
+
 - StarRating component with interactive editing
 - CoverImage component with fallback handling
 - MediaSearch component with API integration
@@ -70,15 +130,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical
 
 - WordPress Block API v3 compatibility
-- PHP 8.0+ with strict types
+- PHP 8.2+ with strict types
 - Full internationalization support
 - WordPress Coding Standards compliance
 - Comprehensive PHPDoc documentation
 
 ### Dependencies
 
-- Requires WordPress 6.5+
-- Requires PHP 8.0+
+- Requires WordPress 6.9+
+- Requires PHP 8.2+
 - Recommends IndieBlocks plugin
 
 ---
@@ -88,15 +148,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Versioning
 
 This project uses Semantic Versioning:
+
 - **Major** (X.0.0): Breaking changes
 - **Minor** (0.X.0): New features, backward compatible
 - **Patch** (0.0.X): Bug fixes, backward compatible
 
 ### Links
 
-- [Repository](https://github.com/courtneyr-dev/reactions-for-indieweb)
-- [Issues](https://github.com/courtneyr-dev/reactions-for-indieweb/issues)
+- [Repository](https://github.com/courtneyr-dev/post-kinds-for-indieweb)
+- [Issues](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues)
 - [IndieWeb Wiki](https://indieweb.org/)
 
-[Unreleased]: https://github.com/courtneyr-dev/reactions-for-indieweb/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/courtneyr-dev/reactions-for-indieweb/releases/tag/v1.0.0
+[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/releases/tag/v1.0.0

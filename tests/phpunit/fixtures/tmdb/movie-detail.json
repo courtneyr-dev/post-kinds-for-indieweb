@@ -1,0 +1,38 @@
+{
+  "id": 550,
+  "title": "Fight Club",
+  "original_title": "Fight Club",
+  "overview": "An insomniac office worker and a soap salesman build an underground fight club.",
+  "poster_path": "/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg",
+  "backdrop_path": "/hZkgoQYus5dXo3H8T7Uef6DNknx.jpg",
+  "release_date": "1999-10-15",
+  "vote_average": 8.4,
+  "vote_count": 25000,
+  "popularity": 50.5,
+  "runtime": 139,
+  "tagline": "Mischief. Mayhem. Soap.",
+  "status": "Released",
+  "budget": 63000000,
+  "revenue": 100853753,
+  "homepage": "",
+  "genres": [{"id": 18, "name": "Drama"}, {"id": 53, "name": "Thriller"}],
+  "production_companies": [{"id": 508, "name": "Regency Enterprises", "logo_path": "/7PzJdsLGlR7oW4J0J5Xcd0pCnRN.png"}],
+  "spoken_languages": [{"english_name": "English", "name": "English"}],
+  "credits": {
+    "cast": [
+      {"id": 819, "name": "Edward Norton", "character": "The Narrator", "profile_path": "/5XBzD5WuTyVQZeS4VI25z2moMeY.jpg", "order": 0}
+    ],
+    "crew": [
+      {"id": 7467, "name": "David Fincher", "job": "Director", "department": "Directing", "profile_path": "/dcBHejOsKvzVZVozWJAPzYthb8X.jpg"}
+    ]
+  },
+  "external_ids": {
+    "imdb_id": "tt0137523",
+    "wikidata_id": "Q190050"
+  },
+  "videos": {
+    "results": [
+      {"key": "SUXWAEX2jlg", "name": "Official Trailer", "site": "YouTube", "type": "Trailer", "official": true}
+    ]
+  }
+}

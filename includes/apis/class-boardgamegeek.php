@@ -117,11 +117,13 @@ class BoardGameGeek extends API_Base {
 	/**
 	 * Search for games.
 	 *
-	 * @param string $query Search query.
-	 * @param string $type  Game type (boardgame, videogame, etc.).
+	 * @param string $query   Search query.
+	 * @param mixed  ...$args Optional. First arg is game type (boardgame, videogame, etc.).
 	 * @return array<int, array<string, mixed>> Search results.
 	 */
-	public function search( string $query, string $type = 'boardgame' ): array {
+	public function search( string $query, ...$args ): array {
+		$type = $args[0] ?? 'boardgame';
+
 		if ( empty( $query ) ) {
 			return [];
 		}
@@ -243,9 +245,10 @@ class BoardGameGeek extends API_Base {
 	 *
 	 * @param string               $endpoint API endpoint.
 	 * @param array<string, mixed> $params   Query parameters.
+	 * @param array<string, mixed> $headers  Additional headers (unused, for parent compatibility).
 	 * @return string|array|\WP_Error Response data or error.
 	 */
-	public function get( string $endpoint, array $params = [] ) {
+	public function get( string $endpoint, array $params = [], array $headers = [] ) {
 		if ( ! $this->is_configured() ) {
 			return new \WP_Error(
 				'bgg_not_configured',

@@ -1,0 +1,56 @@
+{
+	"data": {
+		"book": {
+			"id": 12345,
+			"title": "Dune",
+			"slug": "dune",
+			"description": "Set on the desert planet Arrakis.",
+			"release_date": "1965-08-01",
+			"pages": 412,
+			"image": {
+				"url": "https://assets.hardcover.app/covers/dune.jpg"
+			},
+			"contributions": [
+				{
+					"author": {
+						"id": 100,
+						"name": "Frank Herbert",
+						"slug": "frank-herbert"
+					},
+					"role": "author"
+				}
+			],
+			"editions": [
+				{
+					"id": 5001,
+					"title": "Dune",
+					"isbn_10": "0441172717",
+					"isbn_13": "9780441172719",
+					"pages": 412,
+					"format": "Paperback",
+					"publisher": "Ace Books",
+					"release_date": "1990-09-01",
+					"image": {
+						"url": "https://assets.hardcover.app/editions/dune-ace.jpg"
+					}
+				}
+			],
+			"series": {
+				"id": 200,
+				"name": "Dune Saga",
+				"slug": "dune-saga"
+			},
+			"genres": [
+				{
+					"genre": {
+						"id": 10,
+						"name": "Science Fiction"
+					}
+				}
+			],
+			"ratings_count": 50000,
+			"ratings_average": 4.3,
+			"reviews_count": 8500
+		}
+	}
+}

@@ -1,0 +1,30 @@
+{
+	"status": "true",
+	"feeds": [
+		{
+			"id": 75075,
+			"title": "The Joe Rogan Experience",
+			"url": "https://feeds.megaphone.fm/GLT1412515089",
+			"originalUrl": "https://feeds.megaphone.fm/GLT1412515089",
+			"link": "https://www.joerogan.com",
+			"description": "The official podcast of comedian Joe Rogan.",
+			"author": "Joe Rogan",
+			"ownerName": "Joe Rogan",
+			"image": "https://images.podcastindex.org/75075.jpg",
+			"artwork": "https://images.podcastindex.org/75075-artwork.jpg",
+			"language": "en",
+			"categories": {
+				"1": "Comedy",
+				"2": "Society & Culture"
+			},
+			"itunesId": 360084272,
+			"generator": "Megaphone",
+			"explicit": false,
+			"episodeCount": 2000,
+			"newestItemPublishTime": 1706140800
+		}
+	],
+	"count": 1,
+	"query": "Joe Rogan",
+	"description": "Found matching feeds."
+}

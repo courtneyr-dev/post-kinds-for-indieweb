@@ -15,9 +15,7 @@
   "textdomain": "post-kinds-indieweb",
   "attributes": {
     "title": {
-      "type": "string",
-      "source": "html",
-      "selector": ".wish-title"
+      "type": "string"
     },
     "wishType": {
       "type": "string",
@@ -27,10 +25,7 @@
       "type": "string"
     },
     "image": {
-      "type": "string",
-      "source": "attribute",
-      "selector": ".wish-image img",
-      "attribute": "src"
+      "type": "string"
     },
     "imageAlt": {
       "type": "string"
@@ -39,9 +34,7 @@
       "type": "string"
     },
     "reason": {
-      "type": "string",
-      "source": "html",
-      "selector": ".wish-reason"
+      "type": "string"
     },
     "priority": {
       "type": "string",

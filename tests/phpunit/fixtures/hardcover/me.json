@@ -1,0 +1,15 @@
+{
+	"data": {
+		"me": {
+			"id": 999,
+			"username": "booklover",
+			"name": "Book Lover",
+			"bio": "Avid reader and reviewer.",
+			"image": "https://assets.hardcover.app/avatars/booklover.jpg",
+			"books_count": 250,
+			"followers_count": 42,
+			"following_count": 15,
+			"created_at": "2023-01-15T10:30:00Z"
+		}
+	}
+}

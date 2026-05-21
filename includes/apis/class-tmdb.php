@@ -188,7 +188,7 @@ class TMDB extends API_Base {
 			throw new \Exception(
 				sprintf(
 					/* translators: 1: enabled status, 2: has token status, 3: has key status */
-					__( 'No API credentials loaded. Debug: enabled=%1$s, has_token=%2$s, has_key=%3$s', 'post-kinds-for-indieweb' ),
+					esc_html__( 'No API credentials loaded. Debug: enabled=%1$s, has_token=%2$s, has_key=%3$s', 'post-kinds-for-indieweb' ),
 					$is_enabled ? 'yes' : 'no',
 					$has_token ? 'yes' : 'no',
 					$has_key ? 'yes' : 'no'
@@ -203,8 +203,8 @@ class TMDB extends API_Base {
 			throw new \Exception(
 				sprintf(
 					/* translators: %s: Error message */
-					__( 'API request failed: %s', 'post-kinds-for-indieweb' ),
-					$e->getMessage()
+					esc_html__( 'API request failed: %s', 'post-kinds-for-indieweb' ),
+					esc_html( $e->getMessage() )
 				)
 			);
 		}
@@ -213,8 +213,8 @@ class TMDB extends API_Base {
 	/**
 	 * Multi-search (movies, TV, people).
 	 *
-	 * @param string      $query Search query.
-	 * @param string|null $type  Optional type filter: movie, tv, person.
+	 * @param string $query   Search query.
+	 * @param mixed  ...$args Additional arguments; `$args[0]` is an optional type filter ('movie', 'tv', or 'person').
 	 * @return array<int, array<string, mixed>> Search results.
 	 */
 	public function search( string $query, ...$args ): array {

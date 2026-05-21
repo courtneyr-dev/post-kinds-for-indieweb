@@ -19,8 +19,12 @@ import {
 	Button,
 	DateTimePicker,
 	Popover,
+	SandBox,
+	Disabled,
 } from '@wordpress/components';
 import { useState } from '@wordpress/element';
+import { useSelect } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
 import { listenIcon } from '../shared/icons';
 import {
 	StarRating,
@@ -58,6 +62,16 @@ export default function Edit( { attributes, setAttributes } ) {
 	const blockProps = useBlockProps( {
 		className: `listen-card layout-${ layout }`,
 	} );
+
+	const embedPreview = useSelect(
+		( select ) => {
+			if ( ! listenUrl ) {
+				return null;
+			}
+			return select( coreStore ).getEmbedPreview( listenUrl );
+		},
+		[ listenUrl ]
+	);
 
 	/**
 	 * Handle media search result selection
@@ -103,6 +117,24 @@ export default function Edit( { attributes, setAttributes } ) {
 						'post-kinds-for-indieweb'
 					) }
 				>
+					<div className="post-kinds-card__url-prompt">
+						<TextControl
+							value={ listenUrl || '' }
+							onChange={ ( value ) =>
+								setAttributes( { listenUrl: value } )
+							}
+							type="url"
+							placeholder={ __(
+								'Paste a Spotify, Apple Music, or other URL…',
+								'post-kinds-for-indieweb'
+							) }
+							label={ __(
+								'What are you listening to?',
+								'post-kinds-for-indieweb'
+							) }
+							hideLabelFromVision={ false }
+						/>
+					</div>
 					{ isSearching ? (
 						<div className="search-mode">
 							<MediaSearch
@@ -338,7 +370,13 @@ export default function Edit( { attributes, setAttributes } ) {
 
 			<div { ...blockProps }>
 				<div className="post-kinds-card h-cite">
-					<div className="cover-image">
+					<span
+						className="post-kinds-card__type-icon"
+						aria-hidden="true"
+					>
+						&#127925;
+					</span>
+					<div className="post-kinds-card__media">
 						<MediaUploadCheck>
 							<MediaUpload
 								onSelect={ handleImageSelect }
@@ -369,10 +407,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						</MediaUploadCheck>
 					</div>
 
-					<div className="listen-info">
+					<div className="post-kinds-card__content">
 						<RichText
 							tagName="h3"
-							className="track-title p-name"
+							className="post-kinds-card__title p-name"
 							value={ trackTitle }
 							onChange={ ( value ) =>
 								setAttributes( { trackTitle: value } )
@@ -385,7 +423,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 						<RichText
 							tagName="p"
-							className="artist-name p-author h-card"
+							className="post-kinds-card__subtitle p-author h-card"
 							value={ artistName }
 							onChange={ ( value ) =>
 								setAttributes( { artistName: value } )
@@ -399,7 +437,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						{ ( albumTitle || layout !== 'compact' ) && (
 							<RichText
 								tagName="p"
-								className="album-title"
+								className="post-kinds-card__meta"
 								value={ albumTitle }
 								onChange={ ( value ) =>
 									setAttributes( { albumTitle: value } )
@@ -412,7 +450,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						) }
 
 						{ rating > 0 && (
-							<div className="rating-display">
+							<div className="post-kinds-card__rating">
 								<StarRating
 									value={ rating }
 									readonly={ true }
@@ -422,6 +460,28 @@ export default function Edit( { attributes, setAttributes } ) {
 						) }
 					</div>
 				</div>
+				<div className="post-kinds-card__url-prompt post-kinds-card__url-prompt--inline">
+					<TextControl
+						value={ listenUrl || '' }
+						onChange={ ( value ) =>
+							setAttributes( { listenUrl: value } )
+						}
+						type="url"
+						placeholder={ __(
+							'Paste a Spotify, Apple Music, or other URL…',
+							'post-kinds-for-indieweb'
+						) }
+						label={ __( 'Source URL', 'post-kinds-for-indieweb' ) }
+						hideLabelFromVision={ false }
+					/>
+				</div>
+				{ embedPreview?.html && (
+					<div className="post-kinds-card__embed" tabIndex={ -1 }>
+						<Disabled>
+							<SandBox html={ embedPreview.html } />
+						</Disabled>
+					</div>
+				) }
 			</div>
 		</>
 	);

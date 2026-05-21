@@ -14,9 +14,15 @@ import {
 	MediaUpload,
 	MediaUploadCheck,
 } from '@wordpress/block-editor';
-import { PanelBody, TextControl } from '@wordpress/components';
+import {
+	PanelBody,
+	TextControl,
+	SandBox,
+	Disabled,
+} from '@wordpress/components';
 import { useEffect, useState } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
 import { MediaSearch } from '../shared/components';
 
 export default function Edit( { attributes, setAttributes } ) {
@@ -37,7 +43,18 @@ export default function Edit( { attributes, setAttributes } ) {
 		return terms && terms.length > 0 ? terms[ 0 ] : null;
 	}, [] );
 
-	// Set post kind to "jam" when block is inserted
+	const embedPreview = useSelect(
+		( select ) => {
+			if ( ! url ) {
+				return null;
+			}
+			return select( coreStore ).getEmbedPreview( url );
+		},
+		[ url ]
+	);
+
+	// Set post kind to "jam" when block is inserted (intentionally runs once on mount).
+	// eslint-disable-next-line react-hooks/exhaustive-deps
 	useEffect( () => {
 		if ( ! currentKind ) {
 			wp.apiFetch( { path: '/wp/v2/kind?slug=jam' } )
@@ -72,7 +89,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		if ( Object.keys( metaUpdates ).length > 0 ) {
 			editPost( { meta: metaUpdates } );
 		}
-	}, [ title, artist, album, cover, url ] );
+	}, [ title, artist, album, cover, url, editPost ] );
 
 	const handleSearchSelect = ( item ) => {
 		// MusicBrainz returns 'track', other APIs may return 'title' or 'name'
@@ -216,6 +233,12 @@ export default function Edit( { attributes, setAttributes } ) {
 					) }
 
 					<div className="post-kinds-card">
+						<span
+							className="post-kinds-card__type-icon"
+							aria-hidden="true"
+						>
+							&#127908;
+						</span>
 						<div className="post-kinds-card__media">
 							<MediaUploadCheck>
 								<MediaUpload
@@ -345,6 +368,28 @@ export default function Edit( { attributes, setAttributes } ) {
 						</div>
 					</div>
 				</div>
+				<div className="post-kinds-card__url-prompt post-kinds-card__url-prompt--inline">
+					<TextControl
+						value={ url || '' }
+						onChange={ ( value ) =>
+							setAttributes( { url: value } )
+						}
+						type="url"
+						placeholder={ __(
+							'Paste a Spotify, Apple Music, or other URL…',
+							'post-kinds-for-indieweb'
+						) }
+						label={ __( 'Source URL', 'post-kinds-for-indieweb' ) }
+						hideLabelFromVision={ false }
+					/>
+				</div>
+				{ embedPreview?.html && (
+					<div className="post-kinds-card__embed" tabIndex={ -1 }>
+						<Disabled>
+							<SandBox html={ embedPreview.html } />
+						</Disabled>
+					</div>
+				) }
 			</div>
 		</>
 	);

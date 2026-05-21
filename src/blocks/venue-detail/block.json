@@ -1,10 +1,10 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "post-kinds-for-indieweb/venue-detail",
+	"name": "post-kinds-indieweb/venue-detail",
 	"version": "1.2.0",
 	"title": "Venue Detail",
-	"category": "widgets",
+	"category": "post-kinds-indieweb",
 	"icon": "store",
 	"description": "Display venue information with map and recent check-ins.",
 	"textdomain": "post-kinds-for-indieweb",
@@ -46,8 +46,5 @@
 			"fontSize": true
 		}
 	},
-	"render": "file:./render.php",
-	"editorScript": "file:./index.js",
-	"editorStyle": "file:./editor.css",
-	"style": "file:./style.css"
+	"render": "file:./render.php"
 }

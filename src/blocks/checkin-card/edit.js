@@ -2,6 +2,7 @@
  * Checkin Card Block - Edit Component
  *
  * Enhanced with location search, geolocation, and privacy controls.
+ * Syncs with the post-kinds store for bidirectional data flow.
  *
  * @package
  */
@@ -28,10 +29,12 @@ import {
 	Notice,
 	Spinner,
 } from '@wordpress/components';
-import { useState, useRef, useCallback } from '@wordpress/element';
+import { useState, useRef, useCallback, useEffect } from '@wordpress/element';
+import { useSelect, useDispatch } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 import { checkinIcon } from '../shared/icons';
 import { BlockPlaceholder, LocationDisplay } from '../shared/components';
+import { STORE_NAME } from '../../editor/stores/post-kinds';
 
 /**
  * Debounce utility function
@@ -90,12 +93,139 @@ export default function Edit( { attributes, setAttributes } ) {
 	const [ isLocating, setIsLocating ] = useState( false );
 	const [ error, setError ] = useState( null );
 	const [ showSearch, setShowSearch ] = useState( false );
+	const [ userLocation, setUserLocation ] = useState( null );
+	const [ nearbyVenues, setNearbyVenues ] = useState( [] );
+	const [ isLoadingNearby, setIsLoadingNearby ] = useState( false );
+	const [ sidebarSearchQuery, setSidebarSearchQuery ] = useState( '' );
+	const [ sidebarSearchResults, setSidebarSearchResults ] = useState( [] );
+	const [ isSidebarSearching, setIsSidebarSearching ] = useState( false );
+	const [ hasInitialized, setHasInitialized ] = useState( false );
 
 	const searchInputRef = useRef( null );
 
 	const blockProps = useBlockProps( {
 		className: `checkin-card layout-${ layout }`,
 	} );
+
+	// Get post meta from the post-kinds store
+	const {
+		metaVenueName,
+		metaAddress,
+		metaLocality,
+		metaRegion,
+		metaCountry,
+		metaLatitude,
+		metaLongitude,
+		selectedKind,
+	} = useSelect( ( select ) => {
+		const getKindMeta = select( STORE_NAME ).getKindMeta;
+		return {
+			metaVenueName: getKindMeta( 'checkin_name' ),
+			metaAddress: getKindMeta( 'checkin_address' ),
+			metaLocality: getKindMeta( 'checkin_locality' ),
+			metaRegion: getKindMeta( 'checkin_region' ),
+			metaCountry: getKindMeta( 'checkin_country' ),
+			metaLatitude: getKindMeta( 'geo_latitude' ),
+			metaLongitude: getKindMeta( 'geo_longitude' ),
+			selectedKind: select( STORE_NAME ).getSelectedKind(),
+		};
+	}, [] );
+
+	const { updateKindMeta, updatePostKind } = useDispatch( STORE_NAME );
+
+	// On mount, set the post kind to 'checkin' if not already set
+	useEffect( () => {
+		if ( ! hasInitialized ) {
+			if ( ! selectedKind || selectedKind !== 'checkin' ) {
+				updatePostKind( 'checkin' );
+			}
+			setHasInitialized( true );
+		}
+	}, [ hasInitialized, selectedKind, updatePostKind ] );
+
+	// Sync block attributes TO post meta when block attributes change
+	useEffect( () => {
+		if ( ! hasInitialized ) {
+			return;
+		}
+
+		// Only sync if block has values and they differ from meta
+		if ( venueName && venueName !== metaVenueName ) {
+			updateKindMeta( 'checkin_name', venueName );
+		}
+		if ( address && address !== metaAddress ) {
+			updateKindMeta( 'checkin_address', address );
+		}
+		if ( locality && locality !== metaLocality ) {
+			updateKindMeta( 'checkin_locality', locality );
+		}
+		if ( region && region !== metaRegion ) {
+			updateKindMeta( 'checkin_region', region );
+		}
+		if ( country && country !== metaCountry ) {
+			updateKindMeta( 'checkin_country', country );
+		}
+		if ( latitude && latitude !== metaLatitude ) {
+			updateKindMeta( 'geo_latitude', latitude );
+		}
+		if ( longitude && longitude !== metaLongitude ) {
+			updateKindMeta( 'geo_longitude', longitude );
+		}
+	}, [
+		hasInitialized,
+		venueName,
+		address,
+		locality,
+		region,
+		country,
+		latitude,
+		longitude,
+	] );
+
+	// Sync post meta TO block attributes when meta changes (from sidebar)
+	useEffect( () => {
+		if ( ! hasInitialized ) {
+			return;
+		}
+
+		// If meta has values and block doesn't, or meta changed, sync to block
+		const updates = {};
+
+		if ( metaVenueName && metaVenueName !== venueName ) {
+			updates.venueName = metaVenueName;
+		}
+		if ( metaAddress && metaAddress !== address ) {
+			updates.address = metaAddress;
+		}
+		if ( metaLocality && metaLocality !== locality ) {
+			updates.locality = metaLocality;
+		}
+		if ( metaRegion && metaRegion !== region ) {
+			updates.region = metaRegion;
+		}
+		if ( metaCountry && metaCountry !== country ) {
+			updates.country = metaCountry;
+		}
+		if ( metaLatitude && metaLatitude !== latitude ) {
+			updates.latitude = metaLatitude;
+		}
+		if ( metaLongitude && metaLongitude !== longitude ) {
+			updates.longitude = metaLongitude;
+		}
+
+		if ( Object.keys( updates ).length > 0 ) {
+			setAttributes( updates );
+		}
+	}, [
+		hasInitialized,
+		metaVenueName,
+		metaAddress,
+		metaLocality,
+		metaRegion,
+		metaCountry,
+		metaLatitude,
+		metaLongitude,
+	] );
 
 	// Venue type options
 	const venueTypes = [
@@ -134,41 +264,94 @@ export default function Edit( { attributes, setAttributes } ) {
 	];
 
 	/**
-	 * Search for venues using the REST API proxy
+	 * Search for venues using Foursquare Places API with Nominatim fallback
+	 *
+	 * @param {string} query Search query.
 	 */
-	const searchVenues = useCallback(
-		debounce( async ( query ) => {
-			if ( ! query || query.trim().length < 3 ) {
-				setSearchResults( [] );
-				return;
+	const doVenueSearch = async ( query ) => {
+		if ( ! query || query.trim().length < 2 ) {
+			setSearchResults( [] );
+			setIsSearching( false );
+			return;
+		}
+
+		setIsSearching( true );
+		setError( null );
+
+		try {
+			// Build query params - include user location if available for better results
+			let path = `/post-kinds-indieweb/v1/location/venues?query=${ encodeURIComponent(
+				query
+			) }`;
+
+			if ( userLocation ) {
+				path += `&lat=${ userLocation.lat }&lon=${ userLocation.lng }`;
 			}
 
-			setIsSearching( true );
-			setError( null );
-
+			const results = await apiFetch( { path } );
+			setSearchResults( results || [] );
+			setIsSearching( false );
+		} catch ( err ) {
+			// If Foursquare fails (not configured, rate limited, etc.), fall back to Nominatim
+			// eslint-disable-next-line no-console
+			console.log( 'Foursquare search failed, trying Nominatim:', err );
 			try {
-				const results = await apiFetch( {
+				const fallbackResults = await apiFetch( {
 					path: `/post-kinds-indieweb/v1/location/search?query=${ encodeURIComponent(
 						query
 					) }`,
 				} );
-
-				setSearchResults( results || [] );
-			} catch ( err ) {
+				setSearchResults( fallbackResults || [] );
+				setIsSearching( false );
+			} catch ( fallbackErr ) {
+				// eslint-disable-next-line no-console
+				console.error( 'Nominatim fallback also failed:', fallbackErr );
 				setError(
-					err.message ||
+					fallbackErr?.message ||
 						__(
 							'Search failed. Please try again.',
 							'post-kinds-for-indieweb'
 						)
 				);
 				setSearchResults( [] );
-			} finally {
 				setIsSearching( false );
 			}
-		}, 500 ),
-		[]
+		}
+	};
+
+	/**
+	 * Debounced venue search for typing in search box
+	 */
+	const searchVenues = useCallback(
+		debounce( ( query ) => {
+			doVenueSearch( query );
+		}, 400 ),
+		[ userLocation ]
 	);
+
+	/**
+	 * Fetch nearby venues from Foursquare
+	 *
+	 * @param {number} lat Latitude.
+	 * @param {number} lng Longitude.
+	 */
+	const fetchNearbyVenues = async ( lat, lng ) => {
+		setIsLoadingNearby( true );
+		setError( null );
+
+		try {
+			const results = await apiFetch( {
+				path: `/post-kinds-indieweb/v1/location/venues?lat=${ lat }&lon=${ lng }`,
+			} );
+
+			setNearbyVenues( results || [] );
+		} catch ( err ) {
+			// Foursquare not configured - that's okay, just don't show nearby venues
+			setNearbyVenues( [] );
+		} finally {
+			setIsLoadingNearby( false );
+		}
+	};
 
 	/**
 	 * Handle search input change
@@ -181,7 +364,53 @@ export default function Edit( { attributes, setAttributes } ) {
 	};
 
 	/**
-	 * Use browser geolocation to get current location
+	 * Sidebar venue search - triggered by button click
+	 */
+	const doSidebarSearch = async () => {
+		if ( ! sidebarSearchQuery || sidebarSearchQuery.trim().length < 2 ) {
+			return;
+		}
+
+		setIsSidebarSearching( true );
+
+		try {
+			// Try Foursquare first
+			const results = await apiFetch( {
+				path: `/post-kinds-indieweb/v1/location/venues?query=${ encodeURIComponent(
+					sidebarSearchQuery
+				) }`,
+			} );
+			setSidebarSearchResults( results || [] );
+		} catch ( err ) {
+			// Fall back to Nominatim
+			try {
+				const fallbackResults = await apiFetch( {
+					path: `/post-kinds-indieweb/v1/location/search?query=${ encodeURIComponent(
+						sidebarSearchQuery
+					) }`,
+				} );
+				setSidebarSearchResults( fallbackResults || [] );
+			} catch ( fallbackErr ) {
+				setSidebarSearchResults( [] );
+			}
+		} finally {
+			setIsSidebarSearching( false );
+		}
+	};
+
+	/**
+	 * Handle sidebar venue selection
+	 *
+	 * @param {Object} result Selected venue.
+	 */
+	const selectSidebarVenue = ( result ) => {
+		selectVenue( result );
+		setSidebarSearchQuery( '' );
+		setSidebarSearchResults( [] );
+	};
+
+	/**
+	 * Use browser geolocation to get current location and show nearby venues
 	 */
 	const useCurrentLocation = async () => {
 		if ( ! navigator.geolocation ) {
@@ -202,39 +431,15 @@ export default function Edit( { attributes, setAttributes } ) {
 				const lat = position.coords.latitude;
 				const lng = position.coords.longitude;
 
-				try {
-					// Reverse geocode via REST API proxy
-					const result = await apiFetch( {
-						path: `/post-kinds-indieweb/v1/location/reverse?lat=${ lat }&lon=${ lng }`,
-					} );
+				// Store user location for search biasing
+				setUserLocation( { lat, lng } );
 
-					if ( result ) {
-						selectVenue( result );
-					} else {
-						// Just set coords if reverse geocode failed
-						setAttributes( {
-							latitude: lat,
-							longitude: lng,
-							venueName: __(
-								'Current Location',
-								'post-kinds-for-indieweb'
-							),
-						} );
-					}
-				} catch ( err ) {
-					// Still set coordinates even if reverse geocode fails
-					setAttributes( {
-						latitude: lat,
-						longitude: lng,
-						venueName: __(
-							'Current Location',
-							'post-kinds-for-indieweb'
-						),
-					} );
-				} finally {
-					setIsLocating( false );
-					setShowSearch( false );
-				}
+				// Fetch nearby venues from Foursquare
+				fetchNearbyVenues( lat, lng );
+
+				// Show the search interface with nearby venues
+				setShowSearch( true );
+				setIsLocating( false );
 			},
 			( err ) => {
 				setIsLocating( false );
@@ -278,36 +483,115 @@ export default function Edit( { attributes, setAttributes } ) {
 
 	/**
 	 * Handle venue selection from search results
+	 * Supports both Foursquare and Nominatim result formats
 	 *
 	 * @param {Object} result Venue search result object.
 	 */
 	const selectVenue = ( result ) => {
-		const addr = result.address || {};
+		// Check if this is a Foursquare result (has fsq_id) or Nominatim result
+		const isFoursquare = !! result.fsq_id;
 
-		setAttributes( {
-			venueName:
-				result.name || result.display_name?.split( ',' )[ 0 ] || '',
-			address:
-				[ addr.house_number, addr.road ]
-					.filter( Boolean )
-					.join( ' ' ) ||
-				addr.road ||
-				'',
-			locality:
-				addr.locality || addr.city || addr.town || addr.village || '',
-			region: addr.region || addr.state || '',
-			country: addr.country || '',
-			postalCode: addr.postcode || '',
-			latitude: result.latitude || parseFloat( result.lat ) || null,
-			longitude: result.longitude || parseFloat( result.lon ) || null,
-			osmId: result.osm_full_id || '',
-			venueUrl: result.extra?.website || '',
-		} );
+		if ( isFoursquare ) {
+			// Foursquare result format
+			setAttributes( {
+				venueName: result.name || '',
+				address: result.address || '',
+				locality: result.locality || '',
+				region: result.region || '',
+				country: result.country || '',
+				postalCode: result.postcode || '',
+				latitude: result.latitude || null,
+				longitude: result.longitude || null,
+				foursquareId: result.fsq_id || '',
+				venueUrl: result.website || '',
+				venueType: mapFoursquareCategoryToType( result.category ),
+			} );
+		} else {
+			// Nominatim result format
+			const addr = result.address || {};
+
+			setAttributes( {
+				venueName:
+					result.name || result.display_name?.split( ',' )[ 0 ] || '',
+				address:
+					[ addr.house_number, addr.road ]
+						.filter( Boolean )
+						.join( ' ' ) ||
+					addr.road ||
+					'',
+				locality:
+					addr.locality ||
+					addr.city ||
+					addr.town ||
+					addr.village ||
+					'',
+				region: addr.region || addr.state || '',
+				country: addr.country || '',
+				postalCode: addr.postcode || '',
+				latitude: result.latitude || parseFloat( result.lat ) || null,
+				longitude: result.longitude || parseFloat( result.lon ) || null,
+				osmId: result.osm_full_id || '',
+				venueUrl: result.extra?.website || '',
+			} );
+		}
 
 		// Clear search state
 		setSearchQuery( '' );
 		setSearchResults( [] );
+		setNearbyVenues( [] );
 		setShowSearch( false );
+	};
+
+	/**
+	 * Map Foursquare category to our venue type
+	 *
+	 * @param {string} category Foursquare category name.
+	 * @return {string} Our venue type.
+	 */
+	const mapFoursquareCategoryToType = ( category ) => {
+		if ( ! category ) {
+			return 'place';
+		}
+		const cat = category.toLowerCase();
+		if ( cat.includes( 'restaurant' ) || cat.includes( 'food' ) ) {
+			return 'restaurant';
+		}
+		if ( cat.includes( 'cafe' ) || cat.includes( 'coffee' ) ) {
+			return 'cafe';
+		}
+		if (
+			cat.includes( 'bar' ) ||
+			cat.includes( 'pub' ) ||
+			cat.includes( 'nightlife' )
+		) {
+			return 'bar';
+		}
+		if ( cat.includes( 'hotel' ) || cat.includes( 'lodging' ) ) {
+			return 'hotel';
+		}
+		if ( cat.includes( 'airport' ) ) {
+			return 'airport';
+		}
+		if ( cat.includes( 'park' ) || cat.includes( 'outdoor' ) ) {
+			return 'park';
+		}
+		if ( cat.includes( 'museum' ) || cat.includes( 'gallery' ) ) {
+			return 'museum';
+		}
+		if ( cat.includes( 'theater' ) || cat.includes( 'cinema' ) ) {
+			return 'theater';
+		}
+		if (
+			cat.includes( 'shop' ) ||
+			cat.includes( 'store' ) ||
+			cat.includes( 'retail' )
+		) {
+			return 'store';
+		}
+		if ( cat.includes( 'office' ) || cat.includes( 'business' ) ) {
+			return 'office';
+		}
+		return 'place';
 	};
 
 	/**
@@ -476,10 +760,15 @@ export default function Edit( { attributes, setAttributes } ) {
 			<div { ...blockProps }>
 				<div className="checkin-search-state">
 					<h3>
-						{ __(
-							'Search for a location',
-							'post-kinds-for-indieweb'
-						) }
+						{ userLocation
+							? __(
+									'Select a nearby venue or search',
+									'post-kinds-for-indieweb'
+							  )
+							: __(
+									'Search for a location',
+									'post-kinds-for-indieweb'
+							  ) }
 					</h3>
 
 					{ error && (
@@ -501,17 +790,26 @@ export default function Edit( { attributes, setAttributes } ) {
 								'Search for a venue or address…',
 								'post-kinds-for-indieweb'
 							) }
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
 						/>
 
 						{ isSearching && <Spinner /> }
 
+						{ /* Show search results if searching */ }
 						{ searchResults.length > 0 && (
 							<ul
 								className="checkin-search-results"
 								role="listbox"
 							>
 								{ searchResults.map( ( result, index ) => (
-									<li key={ result.place_id || index }>
+									<li
+										key={
+											result.fsq_id ||
+											result.place_id ||
+											index
+										}
+									>
 										<button
 											type="button"
 											className="checkin-result-item"
@@ -529,15 +827,106 @@ export default function Edit( { attributes, setAttributes } ) {
 												{ result.formatted_address ||
 													result.display_name }
 											</span>
-											{ result.type && (
+											{ ( result.category ||
+												result.type ) && (
 												<span className="result-type">
-													{ result.type }
+													{ result.category ||
+														result.type }
+												</span>
+											) }
+											{ result.distance && (
+												<span className="result-distance">
+													{ result.distance < 1000
+														? `${ result.distance }m`
+														: `${ (
+																result.distance /
+																1000
+														  ).toFixed( 1 ) }km` }
 												</span>
 											) }
 										</button>
 									</li>
 								) ) }
 							</ul>
+						) }
+
+						{ /* Show nearby venues when we have location but no search query */ }
+						{ ! searchQuery &&
+							nearbyVenues.length > 0 &&
+							! isSearching && (
+								<>
+									<p className="nearby-venues-label">
+										{ __(
+											'Nearby venues:',
+											'post-kinds-for-indieweb'
+										) }
+									</p>
+									<ul
+										className="checkin-search-results checkin-nearby-results"
+										role="listbox"
+									>
+										{ nearbyVenues.map(
+											( result, index ) => (
+												<li
+													key={
+														result.fsq_id || index
+													}
+												>
+													<button
+														type="button"
+														className="checkin-result-item"
+														onClick={ () =>
+															selectVenue(
+																result
+															)
+														}
+													>
+														<strong className="result-name">
+															{ result.name }
+														</strong>
+														<span className="result-address">
+															{
+																result.formatted_address
+															}
+														</span>
+														{ result.category && (
+															<span className="result-type">
+																{
+																	result.category
+																}
+															</span>
+														) }
+														{ result.distance && (
+															<span className="result-distance">
+																{ result.distance <
+																1000
+																	? `${ result.distance }m`
+																	: `${ (
+																			result.distance /
+																			1000
+																	  ).toFixed(
+																			1
+																	  ) }km` }
+															</span>
+														) }
+													</button>
+												</li>
+											)
+										) }
+									</ul>
+								</>
+							) }
+
+						{ isLoadingNearby && (
+							<div className="loading-nearby">
+								<Spinner />
+								<span>
+									{ __(
+										'Finding nearby venues…',
+										'post-kinds-for-indieweb'
+									) }
+								</span>
+							</div>
 						) }
 					</div>
 
@@ -632,7 +1021,96 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 
 				<PanelBody
+					title={ __( 'Venue Lookup', 'post-kinds-for-indieweb' ) }
+					initialOpen={ true }
+				>
+					<div className="venue-lookup-sidebar">
+						<TextControl
+							label={ __(
+								'Search for venue',
+								'post-kinds-for-indieweb'
+							) }
+							value={ sidebarSearchQuery }
+							onChange={ setSidebarSearchQuery }
+							placeholder={ __(
+								'e.g. Denim Coffee, Chambersburg PA',
+								'post-kinds-for-indieweb'
+							) }
+							onKeyDown={ ( e ) => {
+								if ( e.key === 'Enter' ) {
+									e.preventDefault();
+									doSidebarSearch();
+								}
+							} }
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+						<Button
+							variant="primary"
+							onClick={ doSidebarSearch }
+							disabled={ isSidebarSearching }
+							style={ { marginBottom: '12px' } }
+						>
+							{ isSidebarSearching ? (
+								<>
+									<Spinner />
+									{ __(
+										'Searching…',
+										'post-kinds-for-indieweb'
+									) }
+								</>
+							) : (
+								__( 'Look Up Venue', 'post-kinds-for-indieweb' )
+							) }
+						</Button>
+
+						{ sidebarSearchResults.length > 0 && (
+							<div className="sidebar-search-results">
+								{ sidebarSearchResults
+									.slice( 0, 5 )
+									.map( ( result, index ) => (
+										<Button
+											key={
+												result.fsq_id ||
+												result.place_id ||
+												index
+											}
+											variant="secondary"
+											onClick={ () =>
+												selectSidebarVenue( result )
+											}
+											className="sidebar-result-button"
+											style={ {
+												display: 'block',
+												width: '100%',
+												textAlign: 'left',
+												marginBottom: '4px',
+												whiteSpace: 'normal',
+												height: 'auto',
+												padding: '8px',
+											} }
+										>
+											<strong>
+												{ result.name ||
+													result.display_name?.split(
+														','
+													)[ 0 ] }
+											</strong>
+											<br />
+											<small style={ { opacity: 0.7 } }>
+												{ result.formatted_address ||
+													result.display_name }
+											</small>
+										</Button>
+									) ) }
+							</div>
+						) }
+					</div>
+				</PanelBody>
+
+				<PanelBody
 					title={ __( 'Venue Details', 'post-kinds-for-indieweb' ) }
+					initialOpen={ !! venueName }
 				>
 					<TextControl
 						label={ __( 'Venue Name', 'post-kinds-for-indieweb' ) }
@@ -640,6 +1118,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						onChange={ ( value ) =>
 							setAttributes( { venueName: value } )
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<SelectControl
 						label={ __( 'Venue Type', 'post-kinds-for-indieweb' ) }
@@ -648,6 +1128,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						onChange={ ( value ) =>
 							setAttributes( { venueType: value } )
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<TextControl
 						label={ __(
@@ -658,6 +1140,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						onChange={ ( value ) =>
 							setAttributes( { address: value } )
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<TextControl
 						label={ __(
@@ -668,6 +1152,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						onChange={ ( value ) =>
 							setAttributes( { locality: value } )
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<TextControl
 						label={ __(
@@ -678,6 +1164,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						onChange={ ( value ) =>
 							setAttributes( { region: value } )
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<TextControl
 						label={ __( 'Country', 'post-kinds-for-indieweb' ) }
@@ -685,6 +1173,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						onChange={ ( value ) =>
 							setAttributes( { country: value } )
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<TextControl
 						label={ __( 'Postal Code', 'post-kinds-for-indieweb' ) }
@@ -692,6 +1182,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						onChange={ ( value ) =>
 							setAttributes( { postalCode: value } )
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 
 					<Button
@@ -720,6 +1212,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 						type="number"
 						step="any"
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<TextControl
 						label={ __( 'Longitude', 'post-kinds-for-indieweb' ) }
@@ -731,6 +1225,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 						type="number"
 						step="any"
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<ToggleControl
 						label={ __( 'Show Map', 'post-kinds-for-indieweb' ) }
@@ -750,6 +1246,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								  )
 						}
 						disabled={ locationPrivacy === 'private' }
+						__nextHasNoMarginBottom
 					/>
 				</PanelBody>
 
@@ -828,6 +1325,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						onChange={ ( value ) =>
 							setAttributes( { layout: value } )
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 				</PanelBody>
 
@@ -842,6 +1341,8 @@ export default function Edit( { attributes, setAttributes } ) {
 							setAttributes( { venueUrl: value } )
 						}
 						type="url"
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					<TextControl
 						label={ __(
@@ -852,6 +1353,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						onChange={ ( value ) =>
 							setAttributes( { foursquareId: value } )
 						}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 					{ osmId && (
 						<p className="description">
@@ -925,7 +1428,6 @@ export default function Edit( { attributes, setAttributes } ) {
 
 							{ locationPrivacy === 'private' && (
 								<span className="privacy-badge private">
-									🔒{ ' ' }
 									{ __(
 										'Private',
 										'post-kinds-for-indieweb'
@@ -934,7 +1436,6 @@ export default function Edit( { attributes, setAttributes } ) {
 							) }
 							{ locationPrivacy === 'approximate' && (
 								<span className="privacy-badge approximate">
-									📍{ ' ' }
 									{ __(
 										'Approximate',
 										'post-kinds-for-indieweb'

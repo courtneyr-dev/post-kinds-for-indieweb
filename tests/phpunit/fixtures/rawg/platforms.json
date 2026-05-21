@@ -1,0 +1,9 @@
+{
+	"count": 50,
+	"results": [
+		{"id": 4, "name": "PC", "slug": "pc"},
+		{"id": 187, "name": "PlayStation 5", "slug": "playstation5"},
+		{"id": 7, "name": "Nintendo Switch", "slug": "nintendo-switch"},
+		{"id": 1, "name": "Xbox One", "slug": "xbox-one"}
+	]
+}

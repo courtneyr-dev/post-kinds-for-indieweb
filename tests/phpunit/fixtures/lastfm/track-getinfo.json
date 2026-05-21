@@ -1,0 +1,30 @@
+{
+  "track": {
+    "name": "Creep",
+    "mbid": "d11fcceb-dfc5-4d19-b45d-f4e8f6d9b1b7",
+    "url": "https://www.last.fm/music/Radiohead/_/Creep",
+    "duration": "238000",
+    "listeners": "3456789",
+    "playcount": "12345678",
+    "artist": {
+      "name": "Radiohead",
+      "mbid": "a74b1b7f-71a5-4011-9441-d0b5e4122711",
+      "url": "https://www.last.fm/music/Radiohead"
+    },
+    "album": {
+      "title": "Pablo Honey",
+      "mbid": "4321abcd-1234-5678-9abc-def012345678",
+      "url": "https://www.last.fm/music/Radiohead/Pablo+Honey",
+      "image": [
+        {"#text": "https://lastfm.freetls.fastly.net/i/u/34s/album.png", "size": "small"},
+        {"#text": "https://lastfm.freetls.fastly.net/i/u/300x300/album.png", "size": "extralarge"}
+      ]
+    },
+    "toptags": {
+      "tag": [
+        {"name": "alternative"},
+        {"name": "rock"}
+      ]
+    }
+  }
+}

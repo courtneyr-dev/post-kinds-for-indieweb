@@ -55,40 +55,40 @@ class Checkin_Dashboard {
 			return;
 		}
 
-		// Enqueue Leaflet for maps.
+		// Enqueue Leaflet for maps (bundled locally).
 		wp_enqueue_style(
 			'leaflet',
-			'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+			POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet/leaflet.css',
 			[],
 			'1.9.4'
 		);
 
 		wp_enqueue_script(
 			'leaflet',
-			'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+			POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet/leaflet.js',
 			[],
 			'1.9.4',
 			true
 		);
 
-		// Enqueue Leaflet MarkerCluster.
+		// Enqueue Leaflet MarkerCluster (bundled locally).
 		wp_enqueue_style(
 			'leaflet-markercluster',
-			'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css',
+			POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.css',
 			[ 'leaflet' ],
 			'1.4.1'
 		);
 
 		wp_enqueue_style(
 			'leaflet-markercluster-default',
-			'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css',
+			POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.Default.css',
 			[ 'leaflet-markercluster' ],
 			'1.4.1'
 		);
 
 		wp_enqueue_script(
 			'leaflet-markercluster',
-			'https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js',
+			POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/leaflet.markercluster.js',
 			[ 'leaflet' ],
 			'1.4.1',
 			true
@@ -164,8 +164,8 @@ class Checkin_Dashboard {
 					<option value=""><?php esc_html_e( 'All Years', 'post-kinds-for-indieweb' ); ?></option>
 					<?php
 					$current_year = (int) gmdate( 'Y' );
-					for ( $year = $current_year; $year >= $current_year - 10; $year-- ) {
-						printf( '<option value="%d">%d</option>', $year, $year );
+					for ( $post_kinds_year = $current_year; $post_kinds_year >= $current_year - 10; $post_kinds_year-- ) {
+						printf( '<option value="%d">%d</option>', absint( $post_kinds_year ), absint( $post_kinds_year ) );
 					}
 					?>
 				</select>

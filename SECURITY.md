@@ -19,7 +19,7 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 Instead, please report vulnerabilities by:
 
 1. **Email**: Send details to the plugin maintainer (available via WordPress.org profile)
-2. **GitHub Security Advisories**: Use [GitHub's private vulnerability reporting](https://github.com/courtneyr-dev/reactions-for-indieweb/security/advisories/new)
+2. **GitHub Security Advisories**: Use [GitHub's private vulnerability reporting](https://github.com/courtneyr-dev/post-kinds-for-indieweb/security/advisories/new)
 
 ### What to Include
 
@@ -167,7 +167,7 @@ We thank the following researchers for responsibly reporting security issues:
 ## Questions?
 
 For security-related questions that aren't vulnerabilities, you can:
-- Open a [GitHub Discussion](https://github.com/courtneyr-dev/reactions-for-indieweb/discussions)
+- Open a [GitHub Discussion](https://github.com/courtneyr-dev/post-kinds-for-indieweb/discussions)
 - Review the [WordPress Security Best Practices](https://developer.wordpress.org/plugins/security/)
 
 ---

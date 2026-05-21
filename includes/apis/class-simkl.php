@@ -211,8 +211,8 @@ class Simkl extends API_Base {
 	/**
 	 * Search for movies, shows, or anime.
 	 *
-	 * @param string      $query Search query.
-	 * @param string|null $type  Type: movie, tv, anime.
+	 * @param string $query   Search query.
+	 * @param mixed  ...$args Additional arguments; `$args[0]` is an optional type ('movie', 'tv', or 'anime').
 	 * @return array<int, array<string, mixed>> Search results.
 	 */
 	public function search( string $query, ...$args ): array {

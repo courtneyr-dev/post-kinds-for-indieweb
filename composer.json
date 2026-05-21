@@ -1,67 +1,67 @@
 {
-	"name": "courtneyr-dev/post-kinds-for-indieweb",
-	"description": "Modern block editor support for IndieWeb post kinds and microformats. A successor to the classic IndieWeb Post Kinds plugin.",
-	"type": "wordpress-plugin",
-	"license": "GPL-2.0-or-later",
-	"authors": [
-		{
-			"name": "Courtney Robertson",
-			"homepage": "https://courtneyr.dev"
-		}
-	],
-	"require": {
-		"php": ">=8.0"
-	},
-	"require-dev": {
-		"dealerdirect/phpcodesniffer-composer-installer": "^1.0",
-		"phpcompatibility/phpcompatibility-wp": "^2.1",
-		"phpstan/phpstan": "^2.0",
-		"phpunit/phpunit": "^9.6",
-		"szepeviktor/phpstan-wordpress": "^2.0",
-		"wp-coding-standards/wpcs": "^3.0",
-		"yoast/phpunit-polyfills": "^4.0"
-	},
-	"autoload": {
-		"psr-4": {
-			"PostKindsForIndieWeb\\": "includes/"
-		}
-	},
-	"autoload-dev": {
-		"psr-4": {
-			"PostKindsForIndieWeb\\Tests\\": "tests/phpunit/"
-		}
-	},
-	"scripts": {
-		"lint": "phpcs",
-		"lint:fix": "phpcbf",
-		"analyze": "phpstan analyse --memory-limit=2G",
-		"analyze:baseline": "phpstan analyse --generate-baseline",
-		"test": "phpunit",
-		"test:unit": "phpunit --testsuite=unit",
-		"test:integration": "phpunit --testsuite=integration",
-		"test:coverage": "phpunit --coverage-html coverage/php",
-		"audit": "composer audit",
-		"security": "@audit",
-		"i18n:make-pot": "wp i18n make-pot . languages/post-kinds-for-indieweb.pot --domain=post-kinds-for-indieweb",
-		"check": [
-			"@lint",
-			"@analyze",
-			"@test"
-		],
-		"check:security": [
-			"@lint",
-			"@audit"
-		]
-	},
-	"config": {
-		"allow-plugins": {
-			"dealerdirect/phpcodesniffer-composer-installer": true
-		},
-		"sort-packages": true,
-		"platform": {
-			"php": "8.0"
-		}
-	},
-	"minimum-stability": "stable",
-	"prefer-stable": true
+  "name": "courtneyr-dev/post-kinds-for-indieweb",
+  "description": "Modern block editor support for IndieWeb post kinds and microformats. A successor to the classic IndieWeb Post Kinds plugin.",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "authors": [
+    {
+      "name": "Courtney Robertson",
+      "homepage": "https://courtneyr.dev"
+    }
+  ],
+  "require": {
+    "php": ">=8.2"
+  },
+  "require-dev": {
+    "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+    "phpcompatibility/phpcompatibility-wp": "^2.1",
+    "phpstan/phpstan": "^2.0",
+    "phpunit/phpunit": "^9.6",
+    "szepeviktor/phpstan-wordpress": "^2.0",
+    "wp-coding-standards/wpcs": "^3.0",
+    "yoast/phpunit-polyfills": "^4.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "PostKindsForIndieWeb\\": "includes/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "PostKindsForIndieWeb\\Tests\\": "tests/phpunit/"
+    }
+  },
+  "scripts": {
+    "lint": "phpcs",
+    "lint:fix": "phpcbf",
+    "analyze": "phpstan analyse --memory-limit=2G",
+    "analyze:baseline": "phpstan analyse --generate-baseline",
+    "test": "phpunit",
+    "test:unit": "phpunit --testsuite=unit",
+    "test:integration": "phpunit --testsuite=integration",
+    "test:coverage": "phpunit --coverage-html coverage/php",
+    "audit": "composer audit",
+    "security": "@audit",
+    "i18n:make-pot": "wp i18n make-pot . languages/post-kinds-for-indieweb.pot --domain=post-kinds-for-indieweb",
+    "check": [
+      "@lint",
+      "@analyze",
+      "@test"
+    ],
+    "check:security": [
+      "@lint",
+      "@audit"
+    ]
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    },
+    "sort-packages": true,
+    "platform": {
+      "php": "8.2"
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
 }

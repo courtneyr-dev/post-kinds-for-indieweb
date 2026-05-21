@@ -153,7 +153,9 @@ class Venue_Taxonomy {
 					'description'       => $args['description'],
 					'single'            => true,
 					'show_in_rest'      => true,
-					'sanitize_callback' => 'number' === $args['type'] ? 'floatval' : 'sanitize_text_field',
+					'sanitize_callback' => 'number' === $args['type']
+					? static fn( $value ) => floatval( $value )
+					: 'sanitize_text_field',
 				]
 			);
 		}

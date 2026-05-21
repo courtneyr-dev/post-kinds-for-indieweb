@@ -1,5 +1,9 @@
 includes:
 	- vendor/szepeviktor/phpstan-wordpress/extension.neon
+	# Baseline of pre-existing errors. New code is held to level 5 with no
+	# new violations; legacy errors are tracked here and worked off
+	# incrementally. Regenerate via `composer analyze:baseline`.
+	- phpstan-baseline.neon
 
 parameters:
 	level: 5
@@ -8,22 +12,42 @@ parameters:
 		- post-kinds-for-indieweb.php
 	excludePaths:
 		- vendor/
-		- node_modules/
-		- build/
+		- node_modules/ (?)
+		- build/ (?)
 		- tests/
-		- ~/
-		# Temporarily excluded - needs refactoring, causes memory exhaustion
+		# Temporarily excluded - needs refactoring, causes memory exhaustion.
 		- includes/admin/class-api-settings.php
 		- includes/class-rest-api.php
 		- includes/admin/class-settings-page.php
 		- includes/class-import-manager.php
 	bootstrapFiles:
 		- vendor/autoload.php
+	# scanFiles indexes plugin-defined constants/classes that the analyzer
+	# would otherwise miss. The main plugin file's `define()` calls populate
+	# the POST_KINDS_INDIEWEB_* constants; stubs/companion-classes.php
+	# declares signatures for excluded classes that the rest of the codebase
+	# references at runtime.
+	scanFiles:
+		- post-kinds-for-indieweb.php
+		- stubs/companion-classes.php
+	scanDirectories:
+		- includes/
 	parallel:
 		maximumNumberOfProcesses: 1
 		processTimeout: 600.0
+	# Don't fail on PHPDoc-only impossible-type narrowings — WordPress core
+	# return shapes are imprecise (mixed/scalar/array) and the analyzer
+	# can't distinguish "the type is wider than the docblock claims" from
+	# "this branch is dead." Real dead-code is still surfaced in
+	# `deadCode.unreachable`.
+	treatPhpDocTypesAsCertain: false
 	ignoreErrors:
-		# Allow dynamic method calls on WordPress objects
-		- '#Call to an undefined method [a-zA-Z0-9\\_]+::[a-zA-Z0-9\\_]+\(\)#'
-		# Ignore undefined WordPress functions that may not be stubbed
-		- '#Function [a-z_]+ not found\.#'
+		# WP-CLI util functions live behind WP_CLI's own bootstrap; they're
+		# not on the analysis classpath. Suppress only WP_CLI\Utils\* lookups.
+		-
+			message: '#Function WP_CLI\\Utils\\[a-z_]+ not found\.#'
+			path: includes/
+		# `varTag.noVariable` on top-level `define()` blocks is a stylistic
+		# choice (the file uses /** @var string */ to document each define);
+		# the constants are real, just the @var tag isn't a perfect fit.
+		- '#PHPDoc tag @var does not specify variable name\.#'

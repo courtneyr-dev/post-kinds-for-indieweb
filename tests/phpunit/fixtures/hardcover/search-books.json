@@ -1,0 +1,28 @@
+{
+	"data": {
+		"search_books": [
+			{
+				"id": 12345,
+				"title": "Dune",
+				"slug": "dune",
+				"description": "Set on the desert planet Arrakis.",
+				"release_date": "1965-08-01",
+				"pages": 412,
+				"image": {
+					"url": "https://assets.hardcover.app/covers/dune.jpg"
+				},
+				"contributions": [
+					{
+						"author": {
+							"id": 100,
+							"name": "Frank Herbert"
+						}
+					}
+				],
+				"editions_count": 150,
+				"ratings_count": 50000,
+				"ratings_average": 4.3
+			}
+		]
+	}
+}

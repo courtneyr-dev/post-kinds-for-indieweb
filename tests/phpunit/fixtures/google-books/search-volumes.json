@@ -1,0 +1,32 @@
+{
+	"kind": "books#volumes",
+	"totalItems": 1,
+	"items": [
+		{
+			"id": "fiWeKwMFr5YC",
+			"volumeInfo": {
+				"title": "The Great Gatsby",
+				"subtitle": "A Novel",
+				"authors": ["F. Scott Fitzgerald"],
+				"publisher": "Scribner",
+				"publishedDate": "2004-09-30",
+				"description": "The story of the mysteriously wealthy Jay Gatsby.",
+				"industryIdentifiers": [
+					{"type": "ISBN_10", "identifier": "0743273567"},
+					{"type": "ISBN_13", "identifier": "9780743273565"}
+				],
+				"pageCount": 180,
+				"categories": ["Fiction"],
+				"averageRating": 3.5,
+				"ratingsCount": 3500,
+				"language": "en",
+				"imageLinks": {
+					"smallThumbnail": "http://books.google.com/books/content?id=fiWeKwMFr5YC&printsec=frontcover&img=1&zoom=5",
+					"thumbnail": "http://books.google.com/books/content?id=fiWeKwMFr5YC&printsec=frontcover&img=1&zoom=1"
+				},
+				"previewLink": "https://books.google.com/books?id=fiWeKwMFr5YC",
+				"infoLink": "https://books.google.com/books?id=fiWeKwMFr5YC"
+			}
+		}
+	]
+}

@@ -451,7 +451,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 			<div { ...blockProps }>
 				<div className="post-kinds-card h-cite">
-					<div className="cover-image">
+					<div className="post-kinds-card__media">
 						<MediaUploadCheck>
 							<MediaUpload
 								onSelect={ handleImageSelect }
@@ -482,9 +482,9 @@ export default function Edit( { attributes, setAttributes } ) {
 						</MediaUploadCheck>
 					</div>
 
-					<div className="read-info">
+					<div className="post-kinds-card__content">
 						<span
-							className={ `status-badge status-${ readStatus }` }
+							className={ `post-kinds-card__badge post-kinds-card__badge--${ readStatus }` }
 						>
 							{ readStatus === 'to-read' &&
 								__( 'To Read', 'post-kinds-for-indieweb' ) }
@@ -498,7 +498,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 						<RichText
 							tagName="h3"
-							className="book-title p-name"
+							className="post-kinds-card__title p-name"
 							value={ bookTitle }
 							onChange={ ( value ) =>
 								setAttributes( { bookTitle: value } )
@@ -511,7 +511,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 						<RichText
 							tagName="p"
-							className="author-name p-author h-card"
+							className="post-kinds-card__subtitle p-author h-card"
 							value={ authorName }
 							onChange={ ( value ) =>
 								setAttributes( { authorName: value } )
@@ -530,7 +530,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						) }
 
 						{ rating > 0 && (
-							<div className="rating-display">
+							<div className="post-kinds-card__rating">
 								<StarRating
 									value={ rating }
 									readonly={ true }
@@ -541,7 +541,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 						<RichText
 							tagName="p"
-							className="book-review"
+							className="post-kinds-card__notes"
 							value={ review }
 							onChange={ ( value ) =>
 								setAttributes( { review: value } )

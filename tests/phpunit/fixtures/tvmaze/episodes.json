@@ -1,0 +1,32 @@
+[
+	{
+		"id": 1,
+		"url": "https://www.tvmaze.com/episodes/1/breaking-bad-1x01-pilot",
+		"name": "Pilot",
+		"season": 1,
+		"number": 1,
+		"type": "regular",
+		"airdate": "2008-01-20",
+		"airtime": "21:00",
+		"airstamp": "2008-01-21T02:00:00+00:00",
+		"runtime": 58,
+		"rating": {"average": 8.8},
+		"image": {"medium": "https://static.tvmaze.com/uploads/images/medium_landscape/1/4.jpg", "original": "https://static.tvmaze.com/uploads/images/original_untouched/1/4.jpg"},
+		"summary": "<p>Walter White turns to a life of crime.</p>"
+	},
+	{
+		"id": 2,
+		"url": "https://www.tvmaze.com/episodes/2/breaking-bad-1x02-cats-in-the-bag",
+		"name": "Cat's in the Bag...",
+		"season": 1,
+		"number": 2,
+		"type": "regular",
+		"airdate": "2008-01-27",
+		"airtime": "21:00",
+		"airstamp": "2008-01-28T02:00:00+00:00",
+		"runtime": 48,
+		"rating": {"average": 8.2},
+		"image": {"medium": "https://static.tvmaze.com/uploads/images/medium_landscape/1/5.jpg", "original": "https://static.tvmaze.com/uploads/images/original_untouched/1/5.jpg"},
+		"summary": "<p>Walt and Jesse try to dispose of evidence.</p>"
+	}
+]

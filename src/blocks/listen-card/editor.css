@@ -9,11 +9,11 @@
 	/* Editor-specific overrides */
 }
 
-.wp-block-post-kinds-indieweb-listen-card .cover-image {
+.wp-block-post-kinds-indieweb-listen-card .post-kinds-card__media {
 	cursor: pointer;
 }
 
-.wp-block-post-kinds-indieweb-listen-card .cover-image:hover {
+.wp-block-post-kinds-indieweb-listen-card .post-kinds-card__media:hover {
 	opacity: 0.8;
 }
 

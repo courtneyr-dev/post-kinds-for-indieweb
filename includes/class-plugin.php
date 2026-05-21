@@ -77,6 +77,55 @@ final class Plugin {
 	private ?Block_Bindings $block_bindings = null;
 
 	/**
+	 * Block Bindings Source component instance (WP 7.0+).
+	 *
+	 * @var Block_Bindings_Source|null
+	 */
+	private ?Block_Bindings_Source $block_bindings_source = null;
+
+	/**
+	 * Now Playing block instance (WP 7.0+).
+	 *
+	 * @var Blocks\Now_Playing|null
+	 */
+	private ?Blocks\Now_Playing $now_playing_block = null;
+
+	/**
+	 * Media Stats block instance (WP 7.0+).
+	 *
+	 * @var Blocks\Media_Stats|null
+	 */
+	private ?Blocks\Media_Stats $media_stats_block = null;
+
+	/**
+	 * Recent Kinds block instance (WP 7.0+).
+	 *
+	 * @var Blocks\Recent_Kinds|null
+	 */
+	private ?Blocks\Recent_Kinds $recent_kinds_block = null;
+
+	/**
+	 * Block Bindings Formats component instance (WP 7.0+).
+	 *
+	 * @var Block_Bindings_Formats|null
+	 */
+	private ?Block_Bindings_Formats $block_bindings_formats = null;
+
+	/**
+	 * Format Badge block instance (WP 7.0+).
+	 *
+	 * @var Blocks\Format_Badge|null
+	 */
+	private ?Blocks\Format_Badge $format_badge_block = null;
+
+	/**
+	 * AI Enhancements instance (WP 7.0+).
+	 *
+	 * @var AI_Enhancements|null
+	 */
+	private ?AI_Enhancements $ai_enhancements = null;
+
+	/**
 	 * Microformats component instance.
 	 *
 	 * @var Microformats|null
@@ -369,6 +418,9 @@ final class Plugin {
 			$this->block_bindings = new Block_Bindings();
 		}
 
+		// WordPress 7.0+ components.
+		$this->init_wp70_components();
+
 		if ( class_exists( __NAMESPACE__ . '\\Microformats' ) ) {
 			$this->microformats = new Microformats();
 		}
@@ -421,6 +473,50 @@ final class Plugin {
 
 		// Initialize third-party integrations.
 		$this->init_integrations();
+
+		// Abilities API integration (WordPress 6.9+).
+		if ( Feature_Flags::has_abilities_api() ) {
+			Abilities_Manager::instance();
+		}
+	}
+
+	/**
+	 * Initialize WordPress 7.0+ components.
+	 *
+	 * @return void
+	 */
+	private function init_wp70_components(): void {
+		// Kind-aware block bindings source.
+		if ( class_exists( __NAMESPACE__ . '\\Block_Bindings_Source' ) ) {
+			$this->block_bindings_source = new Block_Bindings_Source();
+		}
+
+		// PHP-only blocks.
+		if ( class_exists( __NAMESPACE__ . '\\Blocks\\Now_Playing' ) ) {
+			$this->now_playing_block = new Blocks\Now_Playing();
+		}
+
+		if ( class_exists( __NAMESPACE__ . '\\Blocks\\Media_Stats' ) ) {
+			$this->media_stats_block = new Blocks\Media_Stats();
+		}
+
+		if ( class_exists( __NAMESPACE__ . '\\Blocks\\Recent_Kinds' ) ) {
+			$this->recent_kinds_block = new Blocks\Recent_Kinds();
+		}
+
+		// Post format block bindings source.
+		if ( class_exists( __NAMESPACE__ . '\\Block_Bindings_Formats' ) ) {
+			$this->block_bindings_formats = new Block_Bindings_Formats();
+		}
+
+		// Format badge block with Block Hooks.
+		if ( class_exists( __NAMESPACE__ . '\\Blocks\\Format_Badge' ) ) {
+			$this->format_badge_block = new Blocks\Format_Badge();
+		}
+
+		if ( class_exists( __NAMESPACE__ . '\\AI_Enhancements' ) ) {
+			$this->ai_enhancements = AI_Enhancements::get_instance();
+		}
 	}
 
 	/**
@@ -622,12 +718,18 @@ final class Plugin {
 		// Register block patterns.
 		add_action( 'init', [ $this, 'register_block_patterns' ] );
 
+		// Bridge: rewrite Micropub-created post_content to use card blocks.
+		// Hooks `after_micropub` priority 30 so any client (Outpost,
+		// Quill, etc.) can post a checkin/eat/listen/etc. h-entry and the
+		// front-end will render the corresponding card block instead of
+		// plain text. Idempotent — only writes the first time per post.
+		Micropub_Content_Builder::register();
+
 		// Register block templates for CPT and taxonomy archives.
 		add_filter( 'get_block_templates', [ $this, 'add_plugin_templates' ], 10, 3 );
 		add_filter( 'pre_get_block_file_template', [ $this, 'get_plugin_template' ], 10, 3 );
 
-		// Add plugin action links.
-		add_filter( 'plugin_action_links_' . \POST_KINDS_INDIEWEB_BASENAME, [ $this, 'add_action_links' ] );
+		// Plugin action links are registered in Admin class.
 
 		// Display admin notice if IndieBlocks is not active (check deferred to admin_notices time).
 		add_action( 'admin_notices', [ $this, 'indieblocks_notice' ] );
@@ -887,9 +989,23 @@ final class Plugin {
 			return $query_result;
 		}
 
+		// Respect the slug filter when WordPress is resolving the block-template
+		// hierarchy (e.g. resolve_block_template('singular') queries with
+		// slug__in => ['singular']). Without this guard, the plugin's templates
+		// get appended to every hierarchy lookup and can win a match they were
+		// never meant to answer — which is exactly how taxonomy-venue ended up
+		// rendered for single posts.
+		$slug_filter = isset( $query['slug__in'] ) && is_array( $query['slug__in'] )
+			? $query['slug__in']
+			: null;
+
 		$template_definitions = $this->get_plugin_template_definitions();
 
 		foreach ( $template_definitions as $slug => $definition ) {
+			if ( null !== $slug_filter && ! in_array( $slug, $slug_filter, true ) ) {
+				continue;
+			}
+
 			// Check if template already exists in results.
 			$exists = false;
 			foreach ( $query_result as $template ) {
@@ -961,7 +1077,7 @@ final class Plugin {
 	 * @return \WP_Block_Template|null Template object or null on failure.
 	 */
 	private function build_template_object( string $slug, array $definition, string $file_path ): ?\WP_Block_Template {
-		$content = file_get_contents( $file_path );
+		$content = file_get_contents( $file_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local file read.
 
 		if ( false === $content ) {
 			return null;
@@ -985,25 +1101,6 @@ final class Plugin {
 		return $template;
 	}
 
-	/**
-	 * Add plugin action links.
-	 *
-	 * Adds settings and documentation links to the plugins page.
-	 *
-	 * @param array<string> $links Existing action links.
-	 * @return array<string> Modified action links.
-	 */
-	public function add_action_links( array $links ): array {
-		$plugin_links = [
-			sprintf(
-				'<a href="%s">%s</a>',
-				esc_url( admin_url( 'admin.php?page=post-kinds-indieweb' ) ),
-				esc_html__( 'Settings', 'post-kinds-for-indieweb' )
-			),
-		];
-
-		return array_merge( $plugin_links, $links );
-	}
 
 	/**
 	 * Display Post Kinds conflict error notice.
@@ -1126,6 +1223,69 @@ final class Plugin {
 	}
 
 	/**
+	 * Get the Block_Bindings_Source component (WP 7.0+).
+	 *
+	 * @return Block_Bindings_Source|null The instance or null if not loaded.
+	 */
+	public function get_block_bindings_source(): ?Block_Bindings_Source {
+		return $this->block_bindings_source;
+	}
+
+	/**
+	 * Get the Now Playing block (WP 7.0+).
+	 *
+	 * @return Blocks\Now_Playing|null The instance or null if not loaded.
+	 */
+	public function get_now_playing_block(): ?Blocks\Now_Playing {
+		return $this->now_playing_block;
+	}
+
+	/**
+	 * Get the Media Stats block (WP 7.0+).
+	 *
+	 * @return Blocks\Media_Stats|null The instance or null if not loaded.
+	 */
+	public function get_media_stats_block(): ?Blocks\Media_Stats {
+		return $this->media_stats_block;
+	}
+
+	/**
+	 * Get the Recent Kinds block (WP 7.0+).
+	 *
+	 * @return Blocks\Recent_Kinds|null The instance or null if not loaded.
+	 */
+	public function get_recent_kinds_block(): ?Blocks\Recent_Kinds {
+		return $this->recent_kinds_block;
+	}
+
+	/**
+	 * Get the Block_Bindings_Formats component (WP 7.0+).
+	 *
+	 * @return Block_Bindings_Formats|null The instance or null if not loaded.
+	 */
+	public function get_block_bindings_formats(): ?Block_Bindings_Formats {
+		return $this->block_bindings_formats;
+	}
+
+	/**
+	 * Get the Format Badge block (WP 7.0+).
+	 *
+	 * @return Blocks\Format_Badge|null The instance or null if not loaded.
+	 */
+	public function get_format_badge_block(): ?Blocks\Format_Badge {
+		return $this->format_badge_block;
+	}
+
+	/**
+	 * Get the AI Enhancements instance (WP 7.0+).
+	 *
+	 * @return AI_Enhancements|null The instance or null if not loaded.
+	 */
+	public function get_ai_enhancements(): ?AI_Enhancements {
+		return $this->ai_enhancements;
+	}
+
+	/**
 	 * Get the Microformats component.
 	 *
 	 * @return Microformats|null The Microformats instance or null if not loaded.
@@ -1155,7 +1315,7 @@ final class Plugin {
 	/**
 	 * Get the Admin component.
 	 *
-	 * @return Admin|null The Admin instance or null if not loaded.
+	 * @return Admin\Admin|null The Admin instance or null if not loaded.
 	 */
 	public function get_admin(): ?Admin\Admin {
 		return $this->admin;
