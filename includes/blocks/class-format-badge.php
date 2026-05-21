@@ -128,11 +128,11 @@ final class Format_Badge {
 	 *
 	 * @param string[]                      $hooked_blocks List of hooked block types.
 	 * @param string                        $relative_to   Block type being hooked relative to.
-	 * @param string                        $position      Hook position (before/after/first_child/last_child).
+	 * @param string|null                   $position      Hook position (before/after/first_child/last_child). Null when no anchor block context is present (e.g. theme.json + pattern resolution paths) — WordPress core passes null here, so a non-nullable typehint causes a site-wide PHP fatal on every request that registers blocks.
 	 * @param array|\WP_Block_Template|null $context Block template, pattern, or null.
 	 * @return string[] Modified list of hooked block types.
 	 */
-	public function filter_hooked_blocks( array $hooked_blocks, string $relative_to, string $position, $context ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+	public function filter_hooked_blocks( array $hooked_blocks, string $relative_to, ?string $position, $context ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 		if ( 'core/post-title' !== $relative_to || 'before' !== $position ) {
 			return $hooked_blocks;
 		}
