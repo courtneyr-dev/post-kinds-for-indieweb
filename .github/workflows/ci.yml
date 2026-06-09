@@ -141,7 +141,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: matrix.php == '8.4' && matrix.wp == '6.9'
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: ./coverage/clover.xml
           flags: php
@@ -208,7 +208,7 @@ jobs:
         run: npm run test:unit:coverage
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: ./coverage/js/lcov.info
           flags: javascript
