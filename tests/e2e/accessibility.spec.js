@@ -4,6 +4,7 @@
 
 const { test, expect } = require( '@playwright/test' );
 const AxeBuilder = require( '@axe-core/playwright' ).default;
+const { openBlockInserter } = require( './utils' );
 
 test.describe( 'Accessibility', () => {
 	test.beforeEach( async ( { page } ) => {
@@ -43,17 +44,18 @@ test.describe( 'Accessibility', () => {
 		await page.goto( '/wp-admin/post-new.php' );
 
 		// WP 6.5+ runs the editor inside `iframe[name="editor-canvas"]`.
-		// The inserter sidebar is on the OUTER frame; the writing flow
-		// and inserted blocks live INSIDE the iframe.
+		// The inserter sidebar is on the OUTER frame; the editable root
+		// and inserted blocks live INSIDE the iframe. We wait on
+		// `.is-root-container` (the root block-list container) because the
+		// old `.block-editor-writing-flow` wrapper class was removed in the
+		// Gutenberg shipped with WP 6.9.
 		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
 		await editor
-			.locator( '.block-editor-writing-flow' )
+			.locator( '.is-root-container' )
 			.waitFor( { timeout: 30000 } );
 
 		// Inserter UI lives outside the iframe.
-		await page
-			.getByRole( 'button', { name: 'Toggle block inserter' } )
-			.click();
+		await openBlockInserter( page );
 		await page.getByPlaceholder( 'Search' ).fill( 'Listen Card' );
 		await page.getByRole( 'option', { name: /Listen Card/ } ).click();
 
@@ -92,12 +94,10 @@ test.describe( 'Keyboard Navigation', () => {
 
 		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
 		await editor
-			.locator( '.block-editor-writing-flow' )
+			.locator( '.is-root-container' )
 			.waitFor( { timeout: 30000 } );
 
-		await page
-			.getByRole( 'button', { name: 'Toggle block inserter' } )
-			.click();
+		await openBlockInserter( page );
 		await page.getByPlaceholder( 'Search' ).fill( 'Star Rating' );
 		await page.getByRole( 'option', { name: /Star Rating/ } ).click();
 

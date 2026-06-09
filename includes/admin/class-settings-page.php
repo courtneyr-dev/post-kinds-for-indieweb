@@ -151,14 +151,15 @@ class Settings_Page {
 			'post_kinds_indieweb_general',
 			'post_kinds_indieweb_general_section',
 			[
-				'id'      => 'default_post_status',
-				'options' => [
+				'id'        => 'default_post_status',
+				'label_for' => 'default_post_status',
+				'options'   => [
 					'publish' => __( 'Published', 'post-kinds-for-indieweb' ),
 					'draft'   => __( 'Draft', 'post-kinds-for-indieweb' ),
 					'pending' => __( 'Pending Review', 'post-kinds-for-indieweb' ),
 					'private' => __( 'Private', 'post-kinds-for-indieweb' ),
 				],
-				'desc'    => __( 'Default status for new reaction posts.', 'post-kinds-for-indieweb' ),
+				'desc'      => __( 'Default status for new reaction posts.', 'post-kinds-for-indieweb' ),
 			]
 		);
 
@@ -169,8 +170,9 @@ class Settings_Page {
 			'post_kinds_indieweb_general',
 			'post_kinds_indieweb_general_section',
 			[
-				'id'   => 'enable_microformats',
-				'desc' => __( 'Add microformats2 markup to reaction posts for IndieWeb compatibility.', 'post-kinds-for-indieweb' ),
+				'id'        => 'enable_microformats',
+				'label_for' => 'enable_microformats',
+				'desc'      => __( 'Add microformats2 markup to reaction posts for IndieWeb compatibility.', 'post-kinds-for-indieweb' ),
 			]
 		);
 
@@ -181,8 +183,9 @@ class Settings_Page {
 			'post_kinds_indieweb_general',
 			'post_kinds_indieweb_general_section',
 			[
-				'id'   => 'enable_syndication',
-				'desc' => __( 'Allow sending reactions to syndication targets (requires Syndication Links plugin).', 'post-kinds-for-indieweb' ),
+				'id'        => 'enable_syndication',
+				'label_for' => 'enable_syndication',
+				'desc'      => __( 'Allow sending reactions to syndication targets (requires Syndication Links plugin).', 'post-kinds-for-indieweb' ),
 			]
 		);
 
@@ -194,8 +197,9 @@ class Settings_Page {
 			'post_kinds_indieweb_general',
 			'post_kinds_indieweb_general_section',
 			[
-				'id'   => 'sync_formats_to_kinds',
-				'desc' => __( 'Automatically set Post Kind when Post Format changes (and vice versa).', 'post-kinds-for-indieweb' ),
+				'id'        => 'sync_formats_to_kinds',
+				'label_for' => 'sync_formats_to_kinds',
+				'desc'      => __( 'Automatically set Post Kind when Post Format changes (and vice versa).', 'post-kinds-for-indieweb' ),
 			]
 		);
 
@@ -1648,10 +1652,14 @@ class Settings_Page {
 			);
 			printf( '<span class="description" style="display: block; font-size: 12px; color: #646970; margin-bottom: 6px;">%s</span>', esc_html( $kind_data['desc'] ) );
 
-			// Post format dropdown.
+			// Post format dropdown. The visible kind label is a separate
+			// <label> bound to the checkbox, so this <select> needs its own
+			// accessible name — without it axe flags `select-name`.
 			printf(
-				'<select name="post_kinds_indieweb_settings[kind_format_mappings][%s]" style="width: 100%%; max-width: 150px; font-size: 12px;">',
-				esc_attr( $kind_slug )
+				'<select name="post_kinds_indieweb_settings[kind_format_mappings][%s]" aria-label="%s" style="width: 100%%; max-width: 150px; font-size: 12px;">',
+				esc_attr( $kind_slug ),
+				/* translators: %s: reaction type label, e.g. "Note". */
+				esc_attr( sprintf( __( 'Post format for %s', 'post-kinds-for-indieweb' ), $kind_data['label'] ) )
 			);
 			foreach ( $post_formats as $format_slug => $format_label ) {
 				printf(
