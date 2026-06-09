@@ -24,6 +24,7 @@
  */
 
 const { test, expect } = require( '@playwright/test' );
+const { openBlockInserter } = require( './utils' );
 
 test.describe.skip( 'Visual Regression', () => {
 	test.beforeEach( async ( { page } ) => {
@@ -40,12 +41,10 @@ test.describe.skip( 'Visual Regression', () => {
 
 		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
 		await editor
-			.locator( '.block-editor-writing-flow' )
+			.locator( '.is-root-container' )
 			.waitFor( { timeout: 30000 } );
 
-		await page
-			.getByRole( 'button', { name: 'Toggle block inserter' } )
-			.click();
+		await openBlockInserter( page );
 		await page.getByPlaceholder( 'Search' ).fill( 'Listen Card' );
 		await page.getByRole( 'option', { name: /Listen Card/ } ).click();
 
@@ -64,12 +63,10 @@ test.describe.skip( 'Visual Regression', () => {
 
 		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
 		await editor
-			.locator( '.block-editor-writing-flow' )
+			.locator( '.is-root-container' )
 			.waitFor( { timeout: 30000 } );
 
-		await page
-			.getByRole( 'button', { name: 'Toggle block inserter' } )
-			.click();
+		await openBlockInserter( page );
 		await page.getByPlaceholder( 'Search' ).fill( 'Watch Card' );
 		await page.getByRole( 'option', { name: /Watch Card/ } ).click();
 
@@ -88,12 +85,10 @@ test.describe.skip( 'Visual Regression', () => {
 
 		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
 		await editor
-			.locator( '.block-editor-writing-flow' )
+			.locator( '.is-root-container' )
 			.waitFor( { timeout: 30000 } );
 
-		await page
-			.getByRole( 'button', { name: 'Toggle block inserter' } )
-			.click();
+		await openBlockInserter( page );
 		await page.getByPlaceholder( 'Search' ).fill( 'Read Card' );
 		await page.getByRole( 'option', { name: /Read Card/ } ).click();
 
@@ -112,12 +107,10 @@ test.describe.skip( 'Visual Regression', () => {
 
 		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
 		await editor
-			.locator( '.block-editor-writing-flow' )
+			.locator( '.is-root-container' )
 			.waitFor( { timeout: 30000 } );
 
-		await page
-			.getByRole( 'button', { name: 'Toggle block inserter' } )
-			.click();
+		await openBlockInserter( page );
 		await page.getByPlaceholder( 'Search' ).fill( 'Star Rating' );
 		await page.getByRole( 'option', { name: /Star Rating/ } ).click();
 
@@ -161,12 +154,10 @@ test.describe.skip( 'Dark Mode Visual Regression', () => {
 
 		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
 		await editor
-			.locator( '.block-editor-writing-flow' )
+			.locator( '.is-root-container' )
 			.waitFor( { timeout: 30000 } );
 
-		await page
-			.getByRole( 'button', { name: 'Toggle block inserter' } )
-			.click();
+		await openBlockInserter( page );
 		await page.getByPlaceholder( 'Search' ).fill( 'Listen Card' );
 		await page.getByRole( 'option', { name: /Listen Card/ } ).click();
 

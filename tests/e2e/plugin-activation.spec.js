@@ -3,6 +3,7 @@
  */
 
 const { test, expect } = require( '@playwright/test' );
+const { openBlockInserter } = require( './utils' );
 
 test.describe( 'Plugin Activation', () => {
 	test.beforeEach( async ( { page } ) => {
@@ -55,15 +56,15 @@ test.describe( 'Block Editor Integration', () => {
 		await page.goto( '/wp-admin/post-new.php' );
 
 		// Editor canvas lives inside `iframe[name="editor-canvas"]` since
-		// WP 6.5; the inserter sidebar stays on the outer frame.
+		// WP 6.5; the inserter sidebar stays on the outer frame. Wait on
+		// `.is-root-container` — the `.block-editor-writing-flow` wrapper
+		// class was removed in the Gutenberg shipped with WP 6.9.
 		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
 		await editor
-			.locator( '.block-editor-writing-flow' )
+			.locator( '.is-root-container' )
 			.waitFor( { timeout: 30000 } );
 
-		await page
-			.getByRole( 'button', { name: 'Toggle block inserter' } )
-			.click();
+		await openBlockInserter( page );
 		await page.getByPlaceholder( 'Search' ).fill( 'Listen Card' );
 
 		await expect(
@@ -76,12 +77,10 @@ test.describe( 'Block Editor Integration', () => {
 
 		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
 		await editor
-			.locator( '.block-editor-writing-flow' )
+			.locator( '.is-root-container' )
 			.waitFor( { timeout: 30000 } );
 
-		await page
-			.getByRole( 'button', { name: 'Toggle block inserter' } )
-			.click();
+		await openBlockInserter( page );
 		await page.getByPlaceholder( 'Search' ).fill( 'Listen Card' );
 		await page.getByRole( 'option', { name: /Listen Card/ } ).click();
 
