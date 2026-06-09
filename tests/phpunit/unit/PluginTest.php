@@ -29,10 +29,20 @@ class PluginTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test that the plugin version is set.
+	 * Test that the plugin version constant matches the plugin header.
+	 *
+	 * Reads the Version from the main plugin file rather than hard-coding it,
+	 * so a version bump can never silently drift the constant out of sync.
 	 */
 	public function test_plugin_version() {
-		$this->assertEquals( '1.0.3', POST_KINDS_INDIEWEB_VERSION );
+		$plugin_file = dirname( __DIR__, 3 ) . '/post-kinds-for-indieweb.php';
+		$data        = get_file_data( $plugin_file, array( 'Version' => 'Version' ) );
+		$this->assertNotEmpty( $data['Version'], 'Plugin header is missing a Version.' );
+		$this->assertSame(
+			$data['Version'],
+			POST_KINDS_INDIEWEB_VERSION,
+			'POST_KINDS_INDIEWEB_VERSION must match the Version in the plugin header.'
+		);
 	}
 
 	/**
