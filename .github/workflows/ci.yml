@@ -338,6 +338,27 @@ jobs:
           unzip -q post-kinds-for-indieweb.zip -d dist-check
           ls -la dist-check/post-kinds-for-indieweb
 
+      # plugin-check-action generates a .wp-env.json that installs plugin-check
+      # from a URL zip. @wordpress/env <= 11.8.0 extracts URL-downloaded zips
+      # with extract-zip, which silently exits 0 without booting Docker on
+      # Node 24.16+ (runner images since ubuntu24/20260525.161), so the action
+      # later dies with "Environment not initialized. Run 'wp-env start' first."
+      # Pre-download plugin-check with curl/unzip (unaffected by the bug) and
+      # point wp-env at the local copy via .wp-env.override.json, which the
+      # action leaves untouched and wp-env merges over the generated config
+      # (the override's `plugins` array replaces the URL entry).
+      # See https://github.com/WordPress/plugin-check-action/issues/579 and
+      # https://github.com/WordPress/gutenberg/issues/78762 (fix ships in
+      # @wordpress/env 11.9 / Gutenberg 23.4). Remove this step once
+      # plugin-check-action works on current runner images again.
+      - name: Work around wp-env zip-extraction hang (plugin-check-action#579)
+        run: |
+          curl -fsSL https://downloads.wordpress.org/plugin/plugin-check.zip -o "$RUNNER_TEMP/plugin-check.zip"
+          unzip -q "$RUNNER_TEMP/plugin-check.zip" -d "$RUNNER_TEMP/plugin-check-src"
+          test -f "$RUNNER_TEMP/plugin-check-src/plugin-check/cli.php"
+          printf '{ "plugins": [ "%s" ] }\n' "$RUNNER_TEMP/plugin-check-src/plugin-check" > .wp-env.override.json
+          cat .wp-env.override.json
+
       - name: Run Plugin Check against distribution
         uses: wordpress/plugin-check-action@v1
         with:
