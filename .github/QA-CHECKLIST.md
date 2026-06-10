@@ -65,7 +65,7 @@ Use this checklist before each release of Post Kinds for IndieWeb.
 
 ### WordPress Versions
 
-- [ ] WordPress 6.9 (minimum supported)
+- [ ] WordPress 7.0 (minimum supported)
 
 ### PHP Versions
 

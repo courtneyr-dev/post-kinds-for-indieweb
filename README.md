@@ -1,6 +1,6 @@
 # Post Kinds for IndieWeb
 
-[![WordPress 6.9+](https://img.shields.io/badge/WordPress-6.9%2B-21759b.svg?logo=wordpress&logoColor=white)](https://wordpress.org/)
+[![WordPress 7.0+](https://img.shields.io/badge/WordPress-7.0%2B-21759b.svg?logo=wordpress&logoColor=white)](https://wordpress.org/)
 [![PHP 8.2+](https://img.shields.io/badge/PHP-8.2%2B-777BB4.svg?logo=php&logoColor=white)](https://php.net/)
 [![License: GPL v2+](https://img.shields.io/badge/License-GPL%20v2%2B-blue.svg)](LICENSE)
 [![IndieWeb](https://img.shields.io/badge/IndieWeb-compatible-FF5C00.svg)](https://indieweb.org/)
@@ -83,7 +83,7 @@ Validate your output at [pin13.net/mf2](https://pin13.net/mf2/).
 
 ## Requirements
 
-- WordPress 6.9 or higher
+- WordPress 7.0 or higher
 - PHP 8.2 or higher
 
 ## Quick Start

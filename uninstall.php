@@ -29,15 +29,15 @@ delete_option( 'post_kinds_indieweb_pending_scrobbles' );
 delete_option( 'post_kinds_indieweb_owntracks_last_location' );
 
 // OAuth tokens for each service.
-$pkiw_oauth_services = [ 'trakt', 'simkl', 'foursquare', 'untappd' ];
-foreach ( $pkiw_oauth_services as $pkiw_service ) {
-	delete_option( 'post_kinds_indieweb_' . $pkiw_service . '_access_token' );
-	delete_option( 'post_kinds_indieweb_' . $pkiw_service . '_refresh_token' );
-	delete_option( 'post_kinds_indieweb_' . $pkiw_service . '_token_expires' );
+$post_kinds_for_indieweb_oauth_services = [ 'trakt', 'simkl', 'foursquare', 'untappd' ];
+foreach ( $post_kinds_for_indieweb_oauth_services as $post_kinds_for_indieweb_service ) {
+	delete_option( 'post_kinds_indieweb_' . $post_kinds_for_indieweb_service . '_access_token' );
+	delete_option( 'post_kinds_indieweb_' . $post_kinds_for_indieweb_service . '_refresh_token' );
+	delete_option( 'post_kinds_indieweb_' . $post_kinds_for_indieweb_service . '_token_expires' );
 }
 
 // Legacy individual API key options.
-$pkiw_legacy_keys = [
+$post_kinds_for_indieweb_legacy_keys = [
 	'tmdb_api_key',
 	'trakt_client_id',
 	'trakt_client_secret',
@@ -52,8 +52,8 @@ $pkiw_legacy_keys = [
 	'podcastindex_api_secret',
 	'google_books_api_key',
 ];
-foreach ( $pkiw_legacy_keys as $pkiw_key ) {
-	delete_option( 'post_kinds_indieweb_' . $pkiw_key );
+foreach ( $post_kinds_for_indieweb_legacy_keys as $post_kinds_for_indieweb_key ) {
+	delete_option( 'post_kinds_indieweb_' . $post_kinds_for_indieweb_key );
 }
 
 // Clean up transients.

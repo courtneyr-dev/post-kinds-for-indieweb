@@ -5,7 +5,7 @@
 - **Slug:** post-kinds-for-indieweb
 - **Text Domain:** post-kinds-for-indieweb
 - **Prefix:** pk\_
-- **Min WP:** 6.9 | **Min PHP:** 8.2
+- **Min WP:** 7.0 | **Min PHP:** 8.2
 - **Repo:** https://github.com/courtneyr-dev/post-kinds-for-indieweb
 
 ## What It Does
