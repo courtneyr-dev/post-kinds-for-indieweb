@@ -6,7 +6,7 @@ Thanks for using Post Kinds for IndieWeb! Here's how to get help.
 
 Try these steps first — they resolve most issues:
 
-1. **Check requirements** — WordPress 6.9+, PHP 8.2+, plugin activated
+1. **Check requirements** — WordPress 7.0+, PHP 8.2+, plugin activated
 2. **Clear caches** — browser cache, caching plugins, server-side caches
 3. **Test for conflicts** — switch to Twenty Twenty-Five, deactivate other plugins, check if the issue persists
 4. **Check error logs** — enable `WP_DEBUG` in wp-config.php, check `debug.log` and browser console

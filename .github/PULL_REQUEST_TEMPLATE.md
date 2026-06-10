@@ -60,7 +60,7 @@ Fixes #
 
 ### Compatibility
 
-- [ ] Works with WordPress 6.9+
+- [ ] Works with WordPress 7.0+
 - [ ] Works with PHP 8.2+
 - [ ] Works with and without IndieBlocks
 - [ ] Breaking changes documented (if any)

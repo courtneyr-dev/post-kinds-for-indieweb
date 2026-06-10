@@ -1,7 +1,7 @@
 === Post Kinds for IndieWeb ===
 Contributors: courane01
 Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
-Requires at least: 6.9
+Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.2
 Stable tag: 1.0.4

@@ -28,7 +28,7 @@ This document provides comprehensive testing directions for the Post Kinds for I
 
 | Component | Minimum | Recommended |
 | --------- | ------- | ----------- |
-| WordPress | 6.9     | 6.9+        |
+| WordPress | 7.0     | 7.0+        |
 | PHP       | 8.2     | 8.4+        |
 | MySQL     | 5.7     | 8.0+        |
 | Node.js   | 18      | 20+         |

@@ -19,7 +19,7 @@ This project follows the [WordPress Community Code of Conduct](https://make.word
 - PHP 8.2+
 - Node.js 18+
 - Composer 2.x
-- WordPress 6.9+ (local dev environment)
+- WordPress 7.0+ (local dev environment)
 - Git
 
 ## Setup

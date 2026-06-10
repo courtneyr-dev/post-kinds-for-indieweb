@@ -92,7 +92,7 @@ namespace {
 		define( 'POST_KINDS_INDIEWEB_MIN_PHP', '8.2' );
 	}
 	if ( ! defined( 'POST_KINDS_INDIEWEB_MIN_WP' ) ) {
-		define( 'POST_KINDS_INDIEWEB_MIN_WP', '6.9' );
+		define( 'POST_KINDS_INDIEWEB_MIN_WP', '7.0' );
 	}
 
 	// 3. WP_CLI static API. Only the methods this plugin actually calls.

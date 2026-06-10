@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **WordPress 7.0 is now the minimum supported version** (previously 6.9). The AI enhancement layer calls `wp_ai_client_prompt()`, which only ships in WP 7.0+, and declaring 6.9 support alongside that call tripped Plugin Check's `wp_function_not_compatible_with_requires_wp` error. Rather than suppress the check, the support floor moves to 7.0: `Requires at least` (readme.txt + plugin header), the `POST_KINDS_INDIEWEB_MIN_WP` activation guard, the wp-env core pin, the CI test matrix, and the docs now all say 7.0. The plugin header's `Tested up to` also catches up with readme.txt at 7.0 (bumped there in #43).
+
 ### Fixed
 
+- **Plugin Check compliance.** `includes/class-cli-commands.php` now uses a standalone `ABSPATH` guard (the combined ABSPATH + WP_CLI guard was behavior-identical, but the `missing_direct_file_access_protection` sniff only recognizes a standalone check), and the `uninstall.php` variables use the full `post_kinds_for_indieweb_` prefix so `WordPress.NamingConventions.PrefixAllGlobals` stops warning.
 - **Photo gallery posts no longer render the same images twice.** The Micropub-to-block bridge's `photo_card()` now deduplicates the `$input['photo']` array before emitting `core/image` blocks. The upstream Micropub plugin (David Shanske's `wordpress-micropub`) enriches `$input['photo']` post-sideload with a 2× version of the original array — when an Outpost gallery uploads 3 images and posts them as `photo[]=url1&...`, the array arriving at `after_micropub` priority 30 has 6 entries (originals + canonical URLs, both resolving to the same local URL on a single-server install) while `mp-photo-alt[]` still has only 3. Without dedupe, a 3-photo gallery rendered 6 image blocks: the first 3 with matching alts, the last 3 with empty alts. Dedupe is by URL, first occurrence wins (which is also the occurrence with its aligned alt text). 3 new PHPUnit tests in `MicropubContentBuilderTest.php` cover the staging-reproduced symptom (6→3 dedupe), the alt-alignment ("first occurrence keeps alt"), and the single-image collapse (3 identical URLs collapse to 1 image, gallery wrapper drops away).
 
 ### Added
