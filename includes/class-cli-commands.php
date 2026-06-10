@@ -12,8 +12,13 @@ declare(strict_types=1);
 
 namespace PostKindsForIndieWeb;
 
-// Prevent direct access and only load if WP-CLI is active.
-if ( ! defined( 'ABSPATH' ) || ! defined( 'WP_CLI' ) || ! WP_CLI ) {
+// Prevent direct access.
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+// Only load if WP-CLI is active.
+if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
 	return;
 }
 
