@@ -287,6 +287,9 @@ jobs:
           severity: "CRITICAL,HIGH"
           format: "sarif"
           output: "trivy-results.sarif"
+          # SARIF output ignores the severity filter unless this is set,
+          # which let MEDIUM findings fail the code-scanning gate.
+          limit-severities-for-sarif: true
 
       - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@v3
