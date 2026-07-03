@@ -308,6 +308,8 @@ get cards with no painted background.
 
 1. **The three greens** (`#127925`, `#127916`, `#128214`) in `class-media-stats.php` and `class-now-playing.php` — what do they semantically represent? The values are too close visually to be different states; either rename to a single `--pkiw-stat-color` OR confirm three distinct semantic roles for three distinct tokens.
 
+   **RESOLVED 2026-07-03 (C3):** they are not colors. They are decimal HTML character references for kind icons — `&#127925;` 🎵, `&#127916;` 🎬, `&#128214;` 📖. The `--pkiw-stat-*` tokens were removed; see DESIGN-TOKENS.md.
+
 2. **`#007cba`** appears in `patterns/read-progress.php:96-97` (3 times) and `src/blocks/star-rating/editor.css:29`. WP admin blue. In `read-progress.php` it's user-facing (rendered HTML) — should be tokenized. In `star-rating/editor.css` it's the focus indicator on the editor surface — could stay as admin chrome OR tokenize as `--pkiw-focus-indicator`.
 
 3. **System font stack** for star-rating glyphs (`-apple-system, BlinkMacSystemFont, "Segoe UI Symbol"`). Functional choice (Unicode coverage), not design choice. Recommend exempting from the contract; document the exemption in C2's `DESIGN-TOKENS.md`.
