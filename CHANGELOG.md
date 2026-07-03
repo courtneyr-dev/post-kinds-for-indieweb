@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-03
+
+### Fixed
+
+- **"Phantom posts": contentless Micropub kind posts now actually create posts.** Kind posts without a `content` property — exactly what Outpost sends for eat, drink, follow, and weather — died inside `wp_insert_post()` (`empty_content`: content, title, and excerpt all empty) while the Micropub endpoint still answered 200 with no Location header. The bridge now supplies the card-block markup on the `micropub_post_content` filter, before insert, so the post is never empty. Endpoint-level integration suite (`tests/e2e/micropub-kinds.spec.js`) runs against a real wp-env with micropub + indieauth active. (#56)
+- **Checkins (and every other kind) with an attached photo now include the image.** The bridge appended photo/gallery blocks only for pure photo posts; a checkin carrying a `photo` property dropped it entirely. Photo markup now appends to any kind's card. (#38, #56)
+
+### Added
+
+- **Follow and weather kinds recognized by the Micropub bridge.** `follow-of` renders a paragraph whose link carries `u-follow-of`; `weather` renders its reading in a `p-weather` span. Previously both were unrecognized and (being contentless) created nothing at all. (#56)
+
+### Changed
+
+- **Design-token migration: all block colors now flow through the `--pkiw-*` token API** (`styles/kind-tokens.css`, enqueued as a dependency of every block style). **Breaking visual change by design:** cards, star ratings, and the checkin dashboard are palette-neutral until a theme sets `--pkiw-*` tokens — "the colors disappeared" after updating means your theme hasn't opted in yet (examples in `docs/audit/DESIGN-TOKENS.md`). `NoColorLeakageTest` enforces the contract (94 hardcoded-color violations at baseline, now 0). (#55)
+- **Dependency refresh:** all seven pending Dependabot updates merged — five GitHub Actions bumps, the js-dev group (Playwright 1.61, axe-core 4.12), and the 15-package `@wordpress` group. The `@wordpress/scripts` 32 bump switches ESLint to flat config (`eslint.config.js` replaces `.eslintrc.js`); ~1,500 lint findings from the migration were fixed across the JS source. (#23, #48–#51, #53, #54)
+
+### Security
+
+- Transitive dev-dependency bumps for fast-uri (CVE-2026-6321, CVE-2026-6322) and js-yaml (CVE-2026-53550). (#23)
+
 ### Changed
 
 - **WordPress 7.0 is now the minimum supported version** (previously 6.9). The AI enhancement layer calls `wp_ai_client_prompt()`, which only ships in WP 7.0+, and declaring 6.9 support alongside that call tripped Plugin Check's `wp_function_not_compatible_with_requires_wp` error. Rather than suppress the check, the support floor moves to 7.0: `Requires at least` (readme.txt + plugin header), the `POST_KINDS_INDIEWEB_MIN_WP` activation guard, the wp-env core pin, the CI test matrix, and the docs now all say 7.0. The plugin header's `Tested up to` also catches up with readme.txt at 7.0 (bumped there in #43).
