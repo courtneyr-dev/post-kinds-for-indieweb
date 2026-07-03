@@ -69,16 +69,40 @@ test.describe( 'Micropub kind creation', () => {
 			'created post must have a Location'
 		).toBeTruthy();
 
-		// Parse the post id straight out of the Location URL — tests run in
-		// parallel workers, so "query the newest post" races between tests.
+		// Resolve the created post id WITHOUT querying "the newest post"
+		// (tests run in parallel workers, so that races between tests):
+		// 1. Micropub's response body carries the insert args incl. ID;
+		// 2. plain-permalink Locations carry ?p=<id>;
+		// 3. pretty-permalink Locations (CI) resolve via a REST slug lookup
+		//    — title-less posts get numeric-ish slugs like /9-2/, so the
+		//    URL path alone cannot be trusted for an id.
 		const location = res.headers().location;
-		const match =
-			location.match( /[?&]p=(\d+)/ ) || location.match( /\/(\d+)\/?$/ );
-		expect(
-			match,
-			`Location must carry a post id: ${ location }`
-		).toBeTruthy();
-		const id = parseInt( match[ 1 ], 10 );
+		let id = null;
+		try {
+			const created = await res.json();
+			if ( created && Number.isInteger( created.ID ) && created.ID > 0 ) {
+				id = created.ID;
+			}
+		} catch {
+			// Non-JSON body; fall through to URL-based resolution.
+		}
+		if ( ! id ) {
+			const match = location.match( /[?&]p=(\d+)/ );
+			if ( match ) {
+				id = parseInt( match[ 1 ], 10 );
+			}
+		}
+		if ( ! id ) {
+			const slug = new URL( location ).pathname.replace( /\//g, '' );
+			const bySlug = await api.get(
+				`${ BASE }/?rest_route=/wp/v2/posts&slug=${ slug }&context=edit`
+			);
+			const matches = await bySlug.json();
+			if ( Array.isArray( matches ) && matches[ 0 ] ) {
+				id = matches[ 0 ].id;
+			}
+		}
+		expect( id, `resolvable post id from ${ location }` ).toBeTruthy();
 		createdPostIds.push( id );
 
 		const post = await api.get(
