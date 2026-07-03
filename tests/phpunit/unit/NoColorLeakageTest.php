@@ -57,6 +57,14 @@ class NoColorLeakageTest extends WP_UnitTestCase {
 		$violations = [];
 
 		foreach ( $this->files( [ 'src/blocks', 'styles' ], 'css' ) as $file ) {
+			// The token catalog is the documented home of default paint
+			// values (2026-07-03 bridge: palette presets with pre-2.0 hex
+			// fallbacks), so raw literals are expected there. Consumers
+			// stay literal-free and fully scanned.
+			if ( 'styles/kind-tokens.css' === $this->relative( $file ) ) {
+				continue;
+			}
+
 			$content = (string) file_get_contents( $file );
 			// Strip comments so prose mentioning colors is not flagged.
 			$content = (string) preg_replace( '#/\*.*?\*/#s', '', $content );
