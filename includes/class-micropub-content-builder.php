@@ -289,6 +289,20 @@ final class Micropub_Content_Builder {
 		if ( self::has_property( $properties, 'rsvp' ) ) {
 			return 'rsvp';
 		}
+		if ( self::has_property( $properties, 'like-of' ) ) {
+			return 'like';
+		}
+		if ( self::has_property( $properties, 'repost-of' ) ) {
+			return 'repost';
+		}
+		if ( self::has_property( $properties, 'bookmark-of' ) ) {
+			return 'bookmark';
+		}
+		// Reply must be checked AFTER rsvp — RSVP posts carry `in-reply-to`
+		// as the event URL, so a reply match here means no rsvp was present.
+		if ( self::has_property( $properties, 'in-reply-to' ) ) {
+			return 'reply';
+		}
 		if ( self::has_property( $properties, 'follow-of' ) ) {
 			return 'follow';
 		}
@@ -337,6 +351,14 @@ final class Micropub_Content_Builder {
 				return self::play_card( $properties );
 			case 'rsvp':
 				return self::rsvp_card( $properties );
+			case 'like':
+				return self::like_card( $properties );
+			case 'repost':
+				return self::repost_paragraph( $properties );
+			case 'bookmark':
+				return self::bookmark_paragraph( $properties );
+			case 'reply':
+				return self::reply_paragraph( $properties );
 			case 'mood':
 				return self::mood_card( $properties );
 			case 'follow':
@@ -512,6 +534,97 @@ final class Micropub_Content_Builder {
 			]
 		);
 		return self::self_closing_block( 'post-kinds-indieweb/rsvp-card', $attrs );
+	}
+
+	/**
+	 * Build a Like Card block from the h-entry property bag.
+	 *
+	 * Contentless likes (Outpost sends just `like-of`) fall back to the
+	 * liked URL as the card title — the like-card render only links the
+	 * title, so without the fallback a URL-only like would render a bare
+	 * "Liked" badge with no `u-like-of` link for microformats2 parsers.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `like-of`, `name`, `author`, `content`).
+	 * @return string Block-comment markup for the like-card block.
+	 */
+	private static function like_card( array $properties ): string {
+		$url   = self::flatten_scalar( $properties, 'like-of' );
+		$title = self::flatten_scalar( $properties, 'name' );
+		$attrs = self::filter_empty(
+			[
+				'title'       => '' !== $title ? $title : $url,
+				'url'         => $url,
+				'author'      => self::flatten_scalar( $properties, 'author' ),
+				'description' => self::flatten_scalar( $properties, 'content' ),
+			]
+		);
+		return self::self_closing_block( 'post-kinds-indieweb/like-card', $attrs );
+	}
+
+	/**
+	 * Build a repost paragraph from the h-entry property bag.
+	 *
+	 * No dedicated card block exists for reposts yet; emit a paragraph
+	 * whose link carries the `u-repost-of` microformats2 class so parsers
+	 * see the repost target.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `repost-of`).
+	 * @return string Block-comment markup for the repost paragraph.
+	 */
+	private static function repost_paragraph( array $properties ): string {
+		$url = self::flatten_scalar( $properties, 'repost-of' );
+		if ( '' === $url ) {
+			return '';
+		}
+		return '<!-- wp:paragraph -->' . "\n"
+			. '<p>' . esc_html__( 'Reposted', 'post-kinds-for-indieweb' )
+			. ' <a class="u-repost-of" href="' . esc_url( $url ) . '">' . esc_html( $url ) . '</a></p>' . "\n"
+			. '<!-- /wp:paragraph -->';
+	}
+
+	/**
+	 * Build a bookmark paragraph from the h-entry property bag.
+	 *
+	 * No dedicated card block exists for bookmarks yet; emit a paragraph
+	 * whose link carries the `u-bookmark-of` microformats2 class. The
+	 * `name` property, when present, becomes the link text.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `bookmark-of`, `name`).
+	 * @return string Block-comment markup for the bookmark paragraph.
+	 */
+	private static function bookmark_paragraph( array $properties ): string {
+		$url = self::flatten_scalar( $properties, 'bookmark-of' );
+		if ( '' === $url ) {
+			return '';
+		}
+		$name = self::flatten_scalar( $properties, 'name' );
+		$text = '' !== $name ? $name : $url;
+		return '<!-- wp:paragraph -->' . "\n"
+			. '<p>' . esc_html__( 'Bookmarked', 'post-kinds-for-indieweb' )
+			. ' <a class="u-bookmark-of" href="' . esc_url( $url ) . '">' . esc_html( $text ) . '</a></p>' . "\n"
+			. '<!-- /wp:paragraph -->';
+	}
+
+	/**
+	 * Build a reply-context paragraph from the h-entry property bag.
+	 *
+	 * No dedicated card block exists for replies yet; emit a paragraph
+	 * whose link carries the `u-in-reply-to` microformats2 class. The
+	 * reply body itself lands in the e-content paragraph appended by
+	 * wrap_h_entry().
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `in-reply-to`).
+	 * @return string Block-comment markup for the reply-context paragraph.
+	 */
+	private static function reply_paragraph( array $properties ): string {
+		$url = self::flatten_scalar( $properties, 'in-reply-to' );
+		if ( '' === $url ) {
+			return '';
+		}
+		return '<!-- wp:paragraph -->' . "\n"
+			. '<p>' . esc_html__( 'In reply to', 'post-kinds-for-indieweb' )
+			. ' <a class="u-in-reply-to" href="' . esc_url( $url ) . '">' . esc_html( $url ) . '</a></p>' . "\n"
+			. '<!-- /wp:paragraph -->';
 	}
 
 	/**

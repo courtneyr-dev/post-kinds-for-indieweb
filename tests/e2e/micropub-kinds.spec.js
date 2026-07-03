@@ -63,7 +63,7 @@ test.describe( 'Micropub kind creation', () => {
 	 * POST a form-encoded h-entry and assert a real post was created.
 	 *
 	 * @param {Record<string, string>} form Form fields (h=entry added).
-	 * @return {Promise<{id: number, content: string, kinds: string[]}>} Created post id, raw content, and kind term slugs.
+	 * @return {Promise<{id: number, content: string, rendered: string, kinds: string[]}>} Created post id, raw and rendered content, and kind term slugs.
 	 */
 	async function createAndFetch( form ) {
 		const res = await api.post( ENDPOINT, {
@@ -123,7 +123,12 @@ test.describe( 'Micropub kind creation', () => {
 		expect( terms.ok(), 'kind terms must be queryable' ).toBeTruthy();
 		const kinds = ( await terms.json() ).map( ( term ) => term.slug );
 
-		return { id, content: body.content.raw, kinds };
+		return {
+			id,
+			content: body.content.raw,
+			rendered: body.content.rendered,
+			kinds,
+		};
 	}
 
 	test( 'contentless eat-of creates a post with an eat card', async () => {
@@ -160,6 +165,56 @@ test.describe( 'Micropub kind creation', () => {
 		expect( content ).toContain( 'Sunny, 28C, light breeze' );
 		// No `weather` term exists — builder-only kinds keep the note default.
 		expect( kinds ).toEqual( [ 'note' ] );
+	} );
+
+	test( 'contentless like-of creates a post with a like card', async () => {
+		const { content, rendered, kinds } = await createAndFetch( {
+			'like-of': 'https://example.com/liked-post',
+		} );
+		expect( content ).toContain( '<!-- wp:post-kinds-indieweb/like-card' );
+		// like-card is dynamic (render.php) — the rendered output proves the
+		// block is registered server-side, not just saved as a comment.
+		expect( rendered ).toContain( 'u-like-of' );
+		expect( rendered ).toContain( 'https://example.com/liked-post' );
+		expect( kinds ).toEqual( [ 'like' ] );
+	} );
+
+	test( 'contentless repost-of creates a post with a u-repost-of cite', async () => {
+		const { content, kinds } = await createAndFetch( {
+			'repost-of': 'https://example.com/reposted-post',
+		} );
+		expect( content ).toContain( 'u-repost-of' );
+		expect( content ).toContain( 'https://example.com/reposted-post' );
+		expect( kinds ).toEqual( [ 'repost' ] );
+	} );
+
+	test( 'contentless bookmark-of creates a post with a u-bookmark-of cite', async () => {
+		const { content, kinds } = await createAndFetch( {
+			'bookmark-of': 'https://example.com/bookmarked-post',
+		} );
+		expect( content ).toContain( 'u-bookmark-of' );
+		expect( content ).toContain( 'https://example.com/bookmarked-post' );
+		expect( kinds ).toEqual( [ 'bookmark' ] );
+	} );
+
+	test( 'in-reply-to reply keeps the body and links the reply context', async () => {
+		const { content, kinds } = await createAndFetch( {
+			'in-reply-to': 'https://example.com/original-post',
+			content: 'Strongly agree with this.',
+		} );
+		expect( content ).toContain( 'u-in-reply-to' );
+		expect( content ).toContain( 'https://example.com/original-post' );
+		expect( content ).toContain( 'Strongly agree with this.' );
+		expect( kinds ).toEqual( [ 'reply' ] );
+	} );
+
+	test( 'rsvp with in-reply-to stays an rsvp card, not a reply', async () => {
+		const { content } = await createAndFetch( {
+			'in-reply-to': 'https://example.com/event',
+			rsvp: 'yes',
+		} );
+		expect( content ).toContain( '<!-- wp:post-kinds-indieweb/rsvp-card' );
+		expect( content ).not.toContain( 'u-in-reply-to' );
 	} );
 
 	test( 'eat-of with content still creates and keeps the body', async () => {

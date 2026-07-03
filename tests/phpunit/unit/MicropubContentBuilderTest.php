@@ -685,9 +685,9 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertSame( array( 'checkin' ), $this->kind_slugs( $post_id ) );
 	}
 
-	public function test_apply_assigns_term_for_cardless_like_post(): void {
-		// like/reply/repost/bookmark have kind terms but no card builder —
-		// content must stay untouched while the term is still assigned.
+	public function test_apply_assigns_term_and_card_for_like_post(): void {
+		// Likes now have a card builder: apply() writes the like-card
+		// markup (typed body preserved in e-content) AND assigns the term.
 		$post_id = self::factory()->post->create(
 			array(
 				'post_type'    => 'post',
@@ -706,8 +706,10 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		);
 
 		$this->assertSame( array( 'like' ), $this->kind_slugs( $post_id ) );
-		$this->assertSame( 'Liked this a lot', (string) get_post_field( 'post_content', $post_id ) );
-		$this->assertSame( '', (string) get_post_meta( $post_id, '_pkiw_block_content_generated', true ) );
+		$content = (string) get_post_field( 'post_content', $post_id );
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/like-card', $content );
+		$this->assertStringContainsString( 'Liked this a lot', $content );
+		$this->assertSame( '1', (string) get_post_meta( $post_id, '_pkiw_block_content_generated', true ) );
 	}
 
 	public function test_apply_rsvp_takes_precedence_over_reply(): void {
@@ -788,5 +790,146 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		);
 
 		$this->assertSame( array( 'drink' ), $this->kind_slugs( $post_id ) );
+	}
+
+	// --- Response kinds: like / repost / bookmark / reply --------------------
+
+	public function test_detect_kind_like_recognized(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'like-of' => 'https://example.test/liked-post' ) )
+		);
+		$this->assertSame( 'like', $kind );
+	}
+
+	public function test_detect_kind_repost_recognized(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'repost-of' => 'https://example.test/reposted' ) )
+		);
+		$this->assertSame( 'repost', $kind );
+	}
+
+	public function test_detect_kind_bookmark_recognized(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'bookmark-of' => 'https://example.test/saved' ) )
+		);
+		$this->assertSame( 'bookmark', $kind );
+	}
+
+	public function test_detect_kind_reply_recognized(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array(
+				array(
+					'in-reply-to' => 'https://example.test/original',
+					'content'     => 'great point!',
+				),
+			)
+		);
+		$this->assertSame( 'reply', $kind );
+	}
+
+	public function test_detect_kind_rsvp_takes_precedence_over_reply(): void {
+		// RSVP posts carry in-reply-to as the event URL — they must stay rsvp.
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array(
+				array(
+					'in-reply-to' => 'https://example.test/event',
+					'rsvp'        => 'yes',
+				),
+			)
+		);
+		$this->assertSame( 'rsvp', $kind );
+	}
+
+	public function test_like_card_falls_back_to_url_as_title(): void {
+		// Contentless URL-only like (what Outpost sends) — the liked URL
+		// must surface as the linked title or the card renders bare.
+		$markup = $this->invoke_private(
+			'like_card',
+			array( array( 'like-of' => 'https://example.test/liked-post' ) )
+		);
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/like-card', $markup );
+		$this->assertStringContainsString( '"title":"https://example.test/liked-post"', $markup );
+		$this->assertStringContainsString( '"url":"https://example.test/liked-post"', $markup );
+	}
+
+	public function test_like_card_maps_name_author_and_content(): void {
+		$markup = $this->invoke_private(
+			'like_card',
+			array(
+				array(
+					'like-of' => 'https://example.test/liked-post',
+					'name'    => 'A Great Post',
+					'author'  => 'Jane Doe',
+					'content' => 'loved this',
+				),
+			)
+		);
+		$this->assertStringContainsString( '"title":"A Great Post"', $markup );
+		$this->assertStringContainsString( '"author":"Jane Doe"', $markup );
+		$this->assertStringContainsString( '"description":"loved this"', $markup );
+	}
+
+	public function test_repost_paragraph_includes_u_repost_of(): void {
+		$markup = $this->invoke_private(
+			'repost_paragraph',
+			array( array( 'repost-of' => 'https://example.test/reposted' ) )
+		);
+		$this->assertStringContainsString( 'u-repost-of', $markup );
+		$this->assertStringContainsString( 'https://example.test/reposted', $markup );
+	}
+
+	public function test_bookmark_paragraph_uses_name_as_link_text(): void {
+		$markup = $this->invoke_private(
+			'bookmark_paragraph',
+			array(
+				array(
+					'bookmark-of' => 'https://example.test/saved',
+					'name'        => 'Worth Reading Later',
+				),
+			)
+		);
+		$this->assertStringContainsString( 'u-bookmark-of', $markup );
+		$this->assertStringContainsString( 'href="https://example.test/saved"', $markup );
+		$this->assertStringContainsString( 'Worth Reading Later', $markup );
+	}
+
+	public function test_reply_paragraph_includes_u_in_reply_to(): void {
+		$markup = $this->invoke_private(
+			'reply_paragraph',
+			array( array( 'in-reply-to' => 'https://example.test/original' ) )
+		);
+		$this->assertStringContainsString( 'u-in-reply-to', $markup );
+		$this->assertStringContainsString( 'https://example.test/original', $markup );
+	}
+
+	public function test_fill_empty_content_supplies_like_card(): void {
+		// Phantom-post regression (same class as eat/drink/follow/weather in
+		// v1.1.0): a contentless like must be non-empty at insert time.
+		$content = Micropub_Content_Builder::fill_empty_content(
+			'',
+			array(
+				'properties' => array(
+					'like-of' => array( 'https://example.test/liked-post' ),
+				),
+			)
+		);
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/like-card', $content );
+	}
+
+	public function test_fill_empty_content_supplies_reply_paragraph(): void {
+		$content = Micropub_Content_Builder::fill_empty_content(
+			'',
+			array(
+				'properties' => array(
+					'in-reply-to' => array( 'https://example.test/original' ),
+				),
+			)
+		);
+		$this->assertStringContainsString( 'u-in-reply-to', $content );
 	}
 }
