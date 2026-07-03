@@ -1,16 +1,19 @@
 /**
  * Post Kinds for IndieWeb — design token catalog.
  *
- * Per audit Session C2, 2026-05-01. The hard contract from Section 2 of the
- * audit prompt:
+ * Per audit Session C2, 2026-05-01, amended by the 2026-07-03 bridge
+ * decision (see the addendum in docs/audit/DESIGN-TOKENS.md):
  *
- *   - Plugin owns layout. Every paint token defaults to neutral.
- *     (`transparent`, `inherit`, `currentcolor`)
- *   - Theme owns paint. Themes set `--pkiw-*` variables to apply colors,
- *     fonts, shadows, radii. If they don't, kinds inherit theme typography
- *     and have no painted background.
  *   - Plugin structural CSS may only reference colors/fonts through
- *     `var(--pkiw-*, neutral-fallback)`.
+ *     `var(--pkiw-*, neutral-fallback)` — enforced by NoColorLeakageTest.
+ *   - Themes override any `--pkiw-*` token to take control of paint.
+ *   - Defaults live HERE, in this catalog only. Card kinds that shipped
+ *     unpainted keep neutral defaults (`transparent`, `inherit`,
+ *     `currentcolor`). Blocks that shipped with concrete paint (checkin
+ *     dashboard, venue detail, checkins feed, media lookup, star rating)
+ *     default to the active theme palette with their pre-2.0 colors as
+ *     fallbacks — `var(--wp--preset--color--*, previous-hex)` — so
+ *     nothing regresses on themes that haven't adopted the tokens.
  *
  * Sizing tokens carry real values because layout-without-sizing breaks
  * structurally. Paint tokens carry neutral defaults so cards render but
@@ -103,15 +106,41 @@
 		--pkiw-checkin-card-bg: var(--pkiw-card-bg);
 		--pkiw-checkin-card-fg: var(--pkiw-card-fg);
 		--pkiw-checkin-card-accent: var(--pkiw-card-accent);
-		--pkiw-checkin-map-bg: transparent;
+		--pkiw-checkin-map-bg: var(--wp--preset--color--tertiary, #f0f0f0);
 
-		/* Checkin dashboard — stats, filters, timeline, venue cards. */
-		--pkiw-checkin-dashboard-accent: currentcolor;
-		--pkiw-checkin-dashboard-border: transparent;
-		--pkiw-checkin-dashboard-bg: transparent;
-		--pkiw-checkin-dashboard-surface: transparent;
-		--pkiw-checkin-dashboard-fg: inherit;
-		--pkiw-checkin-dashboard-fg-muted: inherit;
+		/* Checkin dashboard — stats, filters, timeline, venue cards.
+		 * Bridge defaults: theme palette, falling back to the WP-admin
+		 * colors this block shipped with. */
+		--pkiw-checkin-dashboard-accent: var(--wp--preset--color--primary, #2271b1);
+		--pkiw-checkin-dashboard-border: var(--wp--preset--color--contrast, #dcdcde);
+		--pkiw-checkin-dashboard-bg: var(--wp--preset--color--tertiary, #f6f7f7);
+		--pkiw-checkin-dashboard-surface: var(--wp--preset--color--base, #fff);
+		--pkiw-checkin-dashboard-fg: var(--wp--preset--color--contrast, #1d2327);
+		--pkiw-checkin-dashboard-fg-muted: var(--wp--preset--color--contrast, #646970);
+		--pkiw-checkin-dashboard-hover-shadow: 0 4px 12px rgb(0 0 0 / 10%);
+
+		/* Venue detail — painted card surface (bridge defaults keep the
+		 * pre-2.0 look; the block shipped with the `background` preset
+		 * slug, kept for compatibility). */
+		--pkiw-venue-detail-bg: var(--wp--preset--color--background, #fff);
+		--pkiw-venue-detail-border: var(--wp--preset--color--contrast, #ddd);
+		--pkiw-venue-detail-muted: var(--wp--preset--color--contrast, #666);
+		--pkiw-venue-detail-accent: var(--wp--preset--color--primary, #0073aa);
+		--pkiw-venue-detail-item-bg: var(--wp--preset--color--background, #f9f9f9);
+		--pkiw-venue-detail-item-hover-bg: var(--wp--preset--color--background, #f0f0f0);
+
+		/* Checkins feed — painted list items (bridge defaults). */
+		--pkiw-checkins-feed-item-bg: var(--wp--preset--color--background, #fff);
+		--pkiw-checkins-feed-border: var(--wp--preset--color--contrast, #ddd);
+		--pkiw-checkins-feed-muted: var(--wp--preset--color--contrast, #666);
+		--pkiw-checkins-feed-fg: var(--wp--preset--color--contrast, #444);
+		--pkiw-checkins-feed-empty-bg: var(--wp--preset--color--tertiary, #f9f9f9);
+		--pkiw-checkins-feed-hover-shadow: 0 2px 8px rgb(0 0 0 / 10%);
+
+		/* Media lookup — painted card surface (bridge defaults). */
+		--pkiw-media-lookup-bg: var(--wp--preset--color--base, #fff);
+		--pkiw-media-lookup-border: var(--wp--preset--color--contrast, #e0e0e0);
+		--pkiw-media-lookup-muted: var(--wp--preset--color--contrast, #888);
 
 		/* RSVP — event response with status modifiers. */
 		--pkiw-rsvp-card-bg: var(--pkiw-card-bg);
@@ -163,20 +192,24 @@
 		 *   the surrounding text color is, unless theme overrides.
 		 * ============================================================ */
 
-		--pkiw-star-rating-fill: currentcolor;
+		/* Bridge defaults: rating colors are semantic and intentionally
+		 * palette-independent — stars stay gold, hearts stay pink,
+		 * circles stay blue on any theme. Only the caption follows the
+		 * theme palette. Themes override any of these per token. */
+		--pkiw-star-rating-fill: #ffc107;
 
 		/* Deviation from the C2 spec (`transparent`): star icons are font
 		 * glyphs, not SVG outlines, so transparent empty stars would be
 		 * invisible and misreport the rating. A muted mix of the current
 		 * text color stays palette-neutral while keeping them legible. */
-		--pkiw-star-rating-empty: color-mix(in srgb, currentcolor 35%, transparent);
-		--pkiw-star-rating-caption: inherit;
+		--pkiw-star-rating-empty: #ddd;
+		--pkiw-star-rating-caption: var(--wp--preset--color--contrast, #666);
 		--pkiw-star-rating-border-radius: 0;
 
 		/* Color modifiers — themes can paint different rating types
 		 * (e.g., "love" pink, "calm" blue) by setting these. */
-		--pkiw-star-rating-variant-1: currentcolor;
-		--pkiw-star-rating-variant-2: currentcolor;
+		--pkiw-star-rating-variant-1: #e91e63;
+		--pkiw-star-rating-variant-2: #2196f3;
 
 		/* ============================================================
 		 * MEDIA LOOKUP RESULT

@@ -24,9 +24,12 @@ The hard contract from Section 2 of the audit prompt:
 > theme didn't ask for.**
 
 If you remove all `--pkiw-*` variable definitions from your theme, the
-plugin still renders correctly — every card surface inherits theme
-typography, has no painted background, and uses the theme's accent color
-where contrast is needed. That's the intended baseline.
+plugin still renders correctly: the 14 h-cite card kinds inherit theme
+typography with no painted background, while the surfaces that have
+always shipped painted (checkin dashboard, venue detail, checkins feed,
+media lookup, star rating) default to the theme palette with their
+pre-2.0 colors as fallbacks — see "Bridge decision (2026-07-03, final)"
+below. That's the intended baseline.
 
 ---
 
@@ -150,7 +153,7 @@ themes can paint generically OR per-kind.
 | `--pkiw-checkin-card-bg` | `var(--pkiw-card-bg)` | Card background. |
 | `--pkiw-checkin-card-fg` | `var(--pkiw-card-fg)` | Card text. |
 | `--pkiw-checkin-card-accent` | `var(--pkiw-card-accent)` | Venue name, location accent. |
-| `--pkiw-checkin-map-bg` | `transparent` | If a static map is rendered, this paints behind. Default transparent so map overlay doesn't have a frame box. |
+| `--pkiw-checkin-map-bg` | `var(--wp--preset--color--tertiary, #f0f0f0)` | Paints behind maps while Leaflet loads and behind the no-map fallback (bridge default; was `transparent` in the C2 spec). |
 
 ### Checkin dashboard — `checkin-dashboard-frontend`
 
@@ -160,12 +163,13 @@ set the `--pkiw-*` names.
 
 | Token | Default | Paints |
 |---|---|---|
-| `--pkiw-checkin-dashboard-accent` | `currentcolor` | Dashboard accents, active filter, timeline dots. |
-| `--pkiw-checkin-dashboard-border` | `transparent` | Dashboard borders. |
-| `--pkiw-checkin-dashboard-bg` | `transparent` | Muted surfaces (stat chips, empty states). |
-| `--pkiw-checkin-dashboard-surface` | `transparent` | Cards, buttons, map marker ring. |
-| `--pkiw-checkin-dashboard-fg` | `inherit` | Dashboard body text. |
-| `--pkiw-checkin-dashboard-fg-muted` | `inherit` | Secondary text. |
+| `--pkiw-checkin-dashboard-accent` | `var(--wp--preset--color--primary, #2271b1)` | Dashboard accents, active filter, timeline dots. |
+| `--pkiw-checkin-dashboard-border` | `var(--wp--preset--color--contrast, #dcdcde)` | Dashboard borders. |
+| `--pkiw-checkin-dashboard-bg` | `var(--wp--preset--color--tertiary, #f6f7f7)` | Muted surfaces (stat chips, empty states). |
+| `--pkiw-checkin-dashboard-surface` | `var(--wp--preset--color--base, #fff)` | Cards, buttons, map marker ring. |
+| `--pkiw-checkin-dashboard-fg` | `var(--wp--preset--color--contrast, #1d2327)` | Dashboard body text. |
+| `--pkiw-checkin-dashboard-fg-muted` | `var(--wp--preset--color--contrast, #646970)` | Secondary text. |
+| `--pkiw-checkin-dashboard-hover-shadow` | `0 4px 12px rgb(0 0 0 / 10%)` | Venue-card hover shadow. |
 
 ### RSVP — `pkiw-rsvp-card`
 
@@ -207,12 +211,12 @@ underlay (theme-provided or default outline) shows through.
 
 | Token | Default | Paints |
 |---|---|---|
-| `--pkiw-star-rating-fill` | `currentcolor` | Filled portion of stars (e.g., the yellow part). Inherits surrounding text color by default. Themes set to `var(--wp--preset--color--accent)` or a literal value (`gold`, `#ffc107`) when a specific rating color is desired. |
-| `--pkiw-star-rating-empty` | `color-mix(in srgb, currentcolor 35%, transparent)` | Empty portion of stars. **Deviation from the original C2 spec (`transparent`)**: the icons are font glyphs, not SVG outlines, so fully transparent empty stars would be invisible and misreport the rating. A muted mix of the surrounding text color stays palette-neutral while keeping them legible. |
+| `--pkiw-star-rating-fill` | `#ffc107` | Filled portion of stars. Semantic gold — intentionally palette-independent (bridge decision). Themes override for a different rating color. |
+| `--pkiw-star-rating-empty` | `#ddd` | Empty portion of stars. Icons are font glyphs, so a concrete light grey keeps them legible on any surface (the C2 `transparent` spec would make them invisible). |
 | `--pkiw-star-rating-caption` | `inherit` | "4 of 5 stars" text below the rating. Default same color as surrounding body text. |
 | `--pkiw-star-rating-border-radius` | `0` | Star corner radius. Was `2px` for a slight roundedness; default `0` keeps SVG paths' native shape. |
-| `--pkiw-star-rating-variant-1` | `currentcolor` | Color modifier 1. Plugin currently uses `#e91e63` (pink) for one variant; tokenize for theme override. |
-| `--pkiw-star-rating-variant-2` | `currentcolor` | Color modifier 2. Plugin currently uses `#2196f3` (blue) for one variant; tokenize for theme override. |
+| `--pkiw-star-rating-variant-1` | `#e91e63` | Hearts style fill. Semantic pink, palette-independent; theme-overridable. |
+| `--pkiw-star-rating-variant-2` | `#2196f3` | Circles style fill. Semantic blue, palette-independent; theme-overridable. |
 
 ### Star rating exemption
 
@@ -336,6 +340,37 @@ value — the plugins themselves never co-reference.
 
 ---
 
+## Bridge decision (2026-07-03, final)
+
+The strict-neutral defaults shipped by the C3 migration were reversed the
+same day by Courtney's decision: **the `--pkiw-*` token layer stays, but
+catalog defaults for surfaces that shipped with concrete paint follow the
+active theme palette with the pre-2.0 hex values as fallbacks**
+(`var(--wp--preset--color--*, previous-hex)`). Nothing regresses visually
+on themes that haven't adopted the tokens.
+
+What this means in practice:
+
+- The 14 h-cite card kinds shipped unpainted — their shared and per-kind
+  tokens keep **neutral** defaults. No change for them.
+- Checkin dashboard, venue detail, checkins feed, media lookup, and star
+  rating shipped with concrete colors — their tokens now default to
+  palette presets (`primary`/`contrast`/`tertiary`/`base`, plus the
+  legacy `background` slug where the block historically used it) with
+  the original hexes as fallbacks. Venue detail, checkins feed, and
+  media lookup got their own per-block token sets
+  (`--pkiw-venue-detail-*`, `--pkiw-checkins-feed-*`,
+  `--pkiw-media-lookup-*`) so their concrete defaults don't leak onto
+  the neutral shared `--pkiw-card-*` set.
+- Star rating colors are semantic and palette-independent by design:
+  fill `#ffc107`, empty `#ddd`, variant-1 `#e91e63`, variant-2
+  `#2196f3`; only the caption follows the palette.
+- `NoColorLeakageTest` no longer scans `styles/kind-tokens.css` — the
+  catalog is the documented home of default paint values. All consumers
+  remain literal-free and fully scanned.
+
+Themes override exactly as before: set any `--pkiw-*` token at `:root`.
+
 ## C3 / C5 completion notes (2026-07-03)
 
 - **C3 migration:** done. `card-editor.css` consumes per-kind tokens with
@@ -360,27 +395,26 @@ value — the plugins themselves never co-reference.
 
 ---
 
-## Addendum — 2026-07-03 theme-palette preset pass (SUPERSEDED same day)
+## Addendum — 2026-07-03 theme-palette preset pass (reinstated by the bridge)
 
 **Superseded:** later on 2026-07-03 the C3 migration was completed and
 this pass's block-scoped tokens were folded into the `--pkiw-*` catalog:
 
-| Preset-pass token | Folded into | Notes |
+| Preset-pass token | Folded into | Default after the bridge |
 |---|---|---|
-| `--star-rating-color` | `--pkiw-star-rating-fill` | default now neutral (`currentcolor`) |
-| `--star-rating-empty` | `--pkiw-star-rating-empty` | default now muted `color-mix` of `currentcolor` |
-| `--star-rating-heart` | `--pkiw-star-rating-variant-1` | neutral |
-| `--star-rating-circle` | `--pkiw-star-rating-variant-2` | neutral |
-| `--checkin-*` (6 tokens) | `--pkiw-checkin-dashboard-*` | `--checkin-*` kept as internal aliases only |
-| `--post-kinds-listen-accent` | `--pkiw-listen-card-accent` | neutral |
+| `--star-rating-color` | `--pkiw-star-rating-fill` | `#ffc107` (semantic gold) |
+| `--star-rating-empty` | `--pkiw-star-rating-empty` | `#ddd` |
+| `--star-rating-heart` | `--pkiw-star-rating-variant-1` | `#e91e63` |
+| `--star-rating-circle` | `--pkiw-star-rating-variant-2` | `#2196f3` |
+| `--checkin-*` (6 tokens) | `--pkiw-checkin-dashboard-*` | palette presets + WP-admin hex fallbacks |
+| `--post-kinds-listen-accent` | `--pkiw-listen-card-accent` | neutral (h-cite cards shipped unpainted) |
 | `--post-kinds-watch-accent` | `--pkiw-watch-card-accent` | neutral |
-| `--post-kinds-jam-accent` | `--pkiw-jam-card-accent` | added to catalog |
+| `--post-kinds-jam-accent` | `--pkiw-jam-card-accent` | neutral |
 
-This is a **breaking visual change relative to both the original
-hard-coded colors and this pass's preset defaults**: cards, stars, and
-the dashboard now render palette-neutral until a theme (or site CSS)
-sets `--pkiw-*` tokens. The pass's decision framework below is kept for
-history.
+The C3 migration briefly shipped these with strict-neutral defaults;
+the same-day bridge decision (see "Bridge decision" above) restored
+concrete, palette-following defaults for every surface that had shipped
+with paint. The pass's decision framework below is kept for history.
 
 Independently of that decision, the remaining hard-coded hex colors in the
 block stylesheets (91 literals across 15 files) were audited on 2026-07-03

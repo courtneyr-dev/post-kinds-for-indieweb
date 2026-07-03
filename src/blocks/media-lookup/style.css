@@ -12,8 +12,8 @@
 .media-lookup-inner {
 	display: flex;
 	gap: var(--media-lookup-gap);
-	background: var(--pkiw-card-bg, transparent);
-	border: 1px solid var(--pkiw-card-border, transparent);
+	background: var(--pkiw-media-lookup-bg, transparent);
+	border: 1px solid var(--pkiw-media-lookup-border, transparent);
 	border-radius: var(--media-lookup-radius);
 	padding: 1rem;
 }
@@ -101,7 +101,7 @@
 .media-lookup-block .media-subtitle {
 	margin: 0 0 0.25rem;
 	font-size: 0.9rem;
-	color: var(--pkiw-card-text-secondary, inherit);
+	color: var(--pkiw-media-lookup-muted, inherit);
 }
 
 .media-lookup-block.style-inline .media-subtitle {
@@ -117,13 +117,13 @@
 /* Year */
 .media-lookup-block .media-year {
 	font-size: 0.85rem;
-	color: var(--pkiw-card-text-secondary, inherit);
+	color: var(--pkiw-media-lookup-muted, inherit);
 }
 
 /* Description */
 .media-lookup-block .media-description {
 	font-size: 0.85rem;
-	color: var(--pkiw-card-text-secondary, inherit);
+	color: var(--pkiw-media-lookup-muted, inherit);
 	line-height: 1.5;
 	margin: 0.5rem 0;
 }
@@ -131,7 +131,7 @@
 /* Additional meta */
 .media-lookup-block .media-meta {
 	font-size: 0.8rem;
-	color: var(--pkiw-card-text-secondary, inherit);
+	color: var(--pkiw-media-lookup-muted, inherit);
 	margin-top: 0.5rem;
 }
 

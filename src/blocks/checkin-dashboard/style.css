@@ -101,7 +101,7 @@
 }
 
 .checkin-card:hover {
-	box-shadow: var(--pkiw-card-hover-shadow, none);
+	box-shadow: var(--pkiw-checkin-dashboard-hover-shadow, none);
 	transform: translateY(-2px);
 }
 
