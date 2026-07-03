@@ -34,6 +34,41 @@ class Taxonomy {
 	public const TAXONOMY = 'kind';
 
 	/**
+	 * Map of kind card block names to their kind term slugs.
+	 *
+	 * Shared contract for every path that infers a kind from block
+	 * content (editor saves here, Micropub bridge output upstream).
+	 *
+	 * @var array<string, string>
+	 */
+	public const KIND_CARD_BLOCKS = [
+		'post-kinds-indieweb/eat-card'         => 'eat',
+		'post-kinds-indieweb/drink-card'       => 'drink',
+		'post-kinds-indieweb/listen-card'      => 'listen',
+		'post-kinds-indieweb/watch-card'       => 'watch',
+		'post-kinds-indieweb/read-card'        => 'read',
+		'post-kinds-indieweb/play-card'        => 'play',
+		'post-kinds-indieweb/checkin-card'     => 'checkin',
+		'post-kinds-indieweb/rsvp-card'        => 'rsvp',
+		'post-kinds-indieweb/like-card'        => 'like',
+		'post-kinds-indieweb/favorite-card'    => 'favorite',
+		'post-kinds-indieweb/jam-card'         => 'jam',
+		'post-kinds-indieweb/wish-card'        => 'wish',
+		'post-kinds-indieweb/mood-card'        => 'mood',
+		'post-kinds-indieweb/acquisition-card' => 'acquisition',
+	];
+
+	/**
+	 * Meta key recording a kind slug this class assigned automatically.
+	 *
+	 * Lets a later save re-sync when the first card block changes, while
+	 * never overriding a kind a person picked themselves.
+	 *
+	 * @var string
+	 */
+	public const AUTO_KIND_META_KEY = '_pkiw_kind_auto_assigned';
+
+	/**
 	 * Default post types to register taxonomy for.
 	 *
 	 * @var array<string>
@@ -163,6 +198,10 @@ class Taxonomy {
 		add_action( 'init', [ $this, 'maybe_create_default_terms' ], 10 );
 		add_action( 'init', [ $this, 'ensure_all_terms_exist' ], 11 );
 		add_filter( 'term_link', [ $this, 'filter_term_link' ], 10, 3 );
+		// wp_after_insert_post (not save_post): the REST posts controller
+		// assigns taxonomy terms after wp_insert_post(), so save_post would
+		// read the pre-save terms during block editor saves.
+		add_action( 'wp_after_insert_post', [ $this, 'sync_kind_from_first_block' ], 10, 2 );
 	}
 
 	/**
@@ -412,6 +451,80 @@ class Taxonomy {
 		$result = wp_set_post_terms( $post_id, [ $kind ], self::TAXONOMY );
 
 		return ! is_wp_error( $result );
+	}
+
+	/**
+	 * Detect the kind implied by the first block of some post content.
+	 *
+	 * Skips the null-blockName freeform blocks parse_blocks() emits for
+	 * whitespace between block comments, so "first block" means the first
+	 * real block a person sees in the editor.
+	 *
+	 * @param string $content Raw post content.
+	 * @return string|null Kind slug, or null when the first block is not a kind card.
+	 */
+	public static function get_first_block_kind( string $content ): ?string {
+		if ( '' === trim( $content ) || ! has_blocks( $content ) ) {
+			return null;
+		}
+
+		foreach ( parse_blocks( $content ) as $block ) {
+			if ( null === $block['blockName'] ) {
+				continue;
+			}
+
+			return self::KIND_CARD_BLOCKS[ $block['blockName'] ] ?? null;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Assign the kind term matching the post's first kind card block.
+	 *
+	 * A post whose first block is a kind card (eat-card, listen-card, …)
+	 * should carry the matching kind term without the author also having
+	 * to pick it in the taxonomy panel. Manual choices always win: the
+	 * `note` default_term core stamps on unselected posts is the only
+	 * term treated as "not chosen", plus whatever this method itself set
+	 * earlier (recorded in AUTO_KIND_META_KEY) so a changed first block
+	 * re-syncs. The block editor sends explicit panel picks with the
+	 * REST request, and those are applied before this hook fires.
+	 *
+	 * @param int      $post_id Post ID.
+	 * @param \WP_Post $post    Post object.
+	 * @return void
+	 */
+	public function sync_kind_from_first_block( int $post_id, \WP_Post $post ): void {
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+
+		if ( wp_is_post_revision( $post_id ) || ! is_object_in_taxonomy( $post->post_type, self::TAXONOMY ) ) {
+			return;
+		}
+
+		$kind = self::get_first_block_kind( $post->post_content );
+		if ( null === $kind || ! $this->is_valid_kind( $kind ) ) {
+			return;
+		}
+
+		$current = $this->get_post_kind( $post_id );
+		if ( $current instanceof \WP_Term ) {
+			if ( $current->slug === $kind ) {
+				return;
+			}
+
+			$auto_assigned = get_post_meta( $post_id, self::AUTO_KIND_META_KEY, true );
+			if ( 'note' !== $current->slug && $current->slug !== $auto_assigned ) {
+				// A person picked this kind — never override it.
+				return;
+			}
+		}
+
+		if ( $this->set_post_kind( $post_id, $kind ) ) {
+			update_post_meta( $post_id, self::AUTO_KIND_META_KEY, $kind );
+		}
 	}
 
 	/**
