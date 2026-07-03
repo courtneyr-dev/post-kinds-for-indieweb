@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Editor saves now set the kind term from the post's first block.** When a post's first block is one of the kind card blocks (eat, drink, listen, watch, read, play, checkin, RSVP, like, favorite, jam, wish, mood, acquisition), saving assigns the matching `kind` taxonomy term automatically — no separate pick in the taxonomy panel needed. Manual choices always win: only the `note` default (never chosen by a person) or a kind this sync itself assigned earlier (tracked in `_pkiw_kind_auto_assigned` post meta, so a swapped first block re-syncs) is ever replaced. Companion to the Micropub-side kind assignment, which covers posts arriving via the Micropub bridge.
+
 ## [1.1.0] - 2026-07-03
 
 ### Fixed
