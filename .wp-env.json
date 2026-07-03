@@ -3,9 +3,7 @@
 	"core": "WordPress/WordPress#7.0",
 	"phpVersion": "8.2",
 	"plugins": [
-		".",
-		"https://downloads.wordpress.org/plugin/indieauth.latest-stable.zip",
-		"https://downloads.wordpress.org/plugin/micropub.latest-stable.zip"
+		"."
 	],
 	"themes": [],
 	"config": {
@@ -19,6 +17,6 @@
 		"wp-content/mu-plugins": "./tests/env"
 	},
 	"lifecycleScripts": {
-		"afterStart": "wp-env run cli wp rewrite structure '/%postname%/' --hard"
+		"afterStart": "wp-env run cli wp rewrite structure '/%postname%/' --hard && (wp-env run cli wp plugin install indieauth micropub || true) && wp-env run cli wp plugin activate indieauth micropub"
 	}
 }
