@@ -1,1250 +1,1672 @@
 /**
  * Post Kinds for IndieWeb - Admin JavaScript
  *
- * @package PostKindsForIndieWeb
+ * @param {jQuery} $ jQuery instance.
+ * @package
  * @since 1.0.0
  */
 
-(function($) {
-    'use strict';
+/* eslint-disable no-alert -- Native dialogs are the intended UX on these admin screens. */
 
-    /**
-     * Main admin module
-     */
-    const PostKindsAdmin = {
-        /**
-         * Initialize
-         */
-        init: function() {
-            this.bindEvents();
-            this.initApiSettings();
-            this.initImportPage();
-            this.initWebhooksPage();
-            this.initMetaBoxes();
-            this.initQuickPost();
-        },
+( function ( $ ) {
+	'use strict';
 
-        /**
-         * Bind global events
-         */
-        bindEvents: function() {
-            // Toggle password visibility
-            $(document).on('click', '.toggle-password, .toggle-secret-visibility', this.togglePasswordVisibility);
+	/**
+	 * Main admin module
+	 */
+	const PostKindsAdmin = {
+		/**
+		 * Initialize
+		 */
+		init() {
+			this.bindEvents();
+			this.initApiSettings();
+			this.initImportPage();
+			this.initWebhooksPage();
+			this.initMetaBoxes();
+			this.initQuickPost();
+		},
 
-            // Copy to clipboard
-            $(document).on('click', '.copy-webhook-url', this.copyToClipboard);
+		/**
+		 * Bind global events
+		 */
+		bindEvents() {
+			// Toggle password visibility
+			$( document ).on(
+				'click',
+				'.toggle-password, .toggle-secret-visibility',
+				this.togglePasswordVisibility
+			);
 
-            // Clear cache buttons
-            $(document).on('click', '.post-kinds-clear-cache', this.clearCache);
+			// Copy to clipboard
+			$( document ).on(
+				'click',
+				'.copy-webhook-url',
+				this.copyToClipboard
+			);
 
-            // Export/Import settings
-            $(document).on('click', '.post-kinds-export-settings', this.exportSettings);
-            $(document).on('change', '#post-kinds-import-file', this.enableImportButton);
-            $(document).on('click', '.post-kinds-import-settings', this.importSettings);
-        },
+			// Clear cache buttons
+			$( document ).on(
+				'click',
+				'.post-kinds-clear-cache',
+				this.clearCache
+			);
 
-        /**
-         * Toggle password visibility
-         */
-        togglePasswordVisibility: function(e) {
-            e.preventDefault();
-            const $button = $(this);
-            const $input = $button.siblings('input');
-            const $icon = $button.find('.dashicons');
+			// Export/Import settings
+			$( document ).on(
+				'click',
+				'.post-kinds-export-settings',
+				this.exportSettings
+			);
+			$( document ).on(
+				'change',
+				'#post-kinds-import-file',
+				this.enableImportButton
+			);
+			$( document ).on(
+				'click',
+				'.post-kinds-import-settings',
+				this.importSettings
+			);
+		},
 
-            if ($input.attr('type') === 'password') {
-                $input.attr('type', 'text');
-                $icon.removeClass('dashicons-visibility').addClass('dashicons-hidden');
-            } else {
-                $input.attr('type', 'password');
-                $icon.removeClass('dashicons-hidden').addClass('dashicons-visibility');
-            }
-        },
+		/**
+		 * Toggle password visibility
+		 * @param {Event} e Click event.
+		 */
+		togglePasswordVisibility( e ) {
+			e.preventDefault();
+			const $button = $( this );
+			const $input = $button.siblings( 'input' );
+			const $icon = $button.find( '.dashicons' );
 
-        /**
-         * Copy to clipboard
-         */
-        copyToClipboard: function(e) {
-            e.preventDefault();
-            const text = $(this).data('url') || $(this).siblings('input').val();
+			if ( $input.attr( 'type' ) === 'password' ) {
+				$input.attr( 'type', 'text' );
+				$icon
+					.removeClass( 'dashicons-visibility' )
+					.addClass( 'dashicons-hidden' );
+			} else {
+				$input.attr( 'type', 'password' );
+				$icon
+					.removeClass( 'dashicons-hidden' )
+					.addClass( 'dashicons-visibility' );
+			}
+		},
 
-            navigator.clipboard.writeText(text).then(() => {
-                const $button = $(this);
-                const originalText = $button.text();
-                $button.text(postKindsIndieWeb.strings.copied);
-                setTimeout(() => $button.text(originalText), 2000);
-            });
-        },
+		/**
+		 * Copy to clipboard
+		 * @param {Event} e Click event.
+		 */
+		copyToClipboard( e ) {
+			e.preventDefault();
+			const text =
+				$( this ).data( 'url' ) || $( this ).siblings( 'input' ).val();
 
-        /**
-         * Clear cache
-         */
-        clearCache: function(e) {
-            e.preventDefault();
-            const $button = $(this);
-            const type = $button.data('type');
+			navigator.clipboard.writeText( text ).then( () => {
+				const $button = $( this );
+				const originalText = $button.text();
+				$button.text( postKindsIndieWeb.strings.copied );
+				setTimeout( () => $button.text( originalText ), 2000 );
+			} );
+		},
 
-            if (!confirm(postKindsIndieWeb.strings.confirmClear)) {
-                return;
-            }
+		/**
+		 * Clear cache
+		 * @param {Event} e Click event.
+		 */
+		clearCache( e ) {
+			e.preventDefault();
 
-            $button.prop('disabled', true);
+			if ( ! confirm( postKindsIndieWeb.strings.confirmClear ) ) {
+				return;
+			}
 
-            $.ajax({
-                url: postKindsIndieWeb.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'post_kinds_indieweb_clear_cache',
-                    nonce: postKindsIndieWeb.nonce,
-                    type: type
-                },
-                success: function(response) {
-                    if (response.success) {
-                        alert(response.data.message);
-                    } else {
-                        alert(response.data.message || postKindsIndieWeb.strings.error);
-                    }
-                },
-                error: function() {
-                    alert(postKindsIndieWeb.strings.error);
-                },
-                complete: function() {
-                    $button.prop('disabled', false);
-                }
-            });
-        },
+			const $button = $( this );
+			const type = $button.data( 'type' );
 
-        /**
-         * Export settings
-         */
-        exportSettings: function(e) {
-            e.preventDefault();
+			$button.prop( 'disabled', true );
 
-            // Get settings (would need an AJAX endpoint in production)
-            const settings = {
-                exported_at: new Date().toISOString(),
-                version: '1.0.0',
-                settings: {} // Would be populated from server
-            };
+			$.ajax( {
+				url: postKindsIndieWeb.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'post_kinds_indieweb_clear_cache',
+					nonce: postKindsIndieWeb.nonce,
+					type,
+				},
+				success( response ) {
+					if ( response.success ) {
+						alert( response.data.message );
+					} else {
+						alert(
+							response.data.message ||
+								postKindsIndieWeb.strings.error
+						);
+					}
+				},
+				error() {
+					alert( postKindsIndieWeb.strings.error );
+				},
+				complete() {
+					$button.prop( 'disabled', false );
+				},
+			} );
+		},
 
-            const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'post-kinds-indieweb-settings.json';
-            a.click();
-            URL.revokeObjectURL(url);
-        },
+		/**
+		 * Export settings
+		 * @param {Event} e Click event.
+		 */
+		exportSettings( e ) {
+			e.preventDefault();
 
-        /**
-         * Enable import button
-         */
-        enableImportButton: function() {
-            $('.post-kinds-import-settings').prop('disabled', !$(this).val());
-        },
+			// Get settings (would need an AJAX endpoint in production)
+			const settings = {
+				exported_at: new Date().toISOString(),
+				version: '1.0.0',
+				settings: {}, // Would be populated from server
+			};
 
-        /**
-         * Import settings
-         */
-        importSettings: function(e) {
-            e.preventDefault();
-            // Would need implementation to read and send file to server
-            alert('Import functionality would process the file here.');
-        },
+			const blob = new Blob( [ JSON.stringify( settings, null, 2 ) ], {
+				type: 'application/json',
+			} );
+			const url = URL.createObjectURL( blob );
+			const a = document.createElement( 'a' );
+			a.href = url;
+			a.download = 'post-kinds-indieweb-settings.json';
+			a.click();
+			URL.revokeObjectURL( url );
+		},
 
-        /* =====================================================================
+		/**
+		 * Enable import button
+		 */
+		enableImportButton() {
+			$( '.post-kinds-import-settings' ).prop(
+				'disabled',
+				! $( this ).val()
+			);
+		},
+
+		/**
+		 * Import settings
+		 * @param {Event} e Click event.
+		 */
+		importSettings( e ) {
+			e.preventDefault();
+			// Would need implementation to read and send file to server
+			alert( 'Import functionality would process the file here.' );
+		},
+
+		/* =====================================================================
            API Settings
            ===================================================================== */
 
-        /**
-         * Initialize API settings page
-         */
-        initApiSettings: function() {
-            if (!$('.post-kinds-indieweb-api-settings').length) {
-                return;
-            }
+		/**
+		 * Initialize API settings page
+		 */
+		initApiSettings() {
+			if ( ! $( '.post-kinds-indieweb-api-settings' ).length ) {
+				return;
+			}
 
-            // Toggle API card body
-            $(document).on('change', '.api-enable-toggle', function() {
-                const $card = $(this).closest('.post-kinds-api-card');
-                const $body = $card.find('.api-card-body');
+			// Toggle API card body
+			$( document ).on( 'change', '.api-enable-toggle', function () {
+				const $card = $( this ).closest( '.post-kinds-api-card' );
+				const $body = $card.find( '.api-card-body' );
 
-                if ($(this).is(':checked')) {
-                    $body.slideDown(200);
-                } else {
-                    $body.slideUp(200);
-                }
-            });
+				if ( $( this ).is( ':checked' ) ) {
+					$body.slideDown( 200 );
+				} else {
+					$body.slideUp( 200 );
+				}
+			} );
 
-            // Test API connection
-            $(document).on('click', '.api-test-button', this.testApiConnection);
+			// Test API connection
+			$( document ).on(
+				'click',
+				'.api-test-button',
+				this.testApiConnection
+			);
 
-            // OAuth connect
-            $(document).on('click', '.oauth-connect', this.initiateOAuth);
+			// OAuth connect
+			$( document ).on( 'click', '.oauth-connect', this.initiateOAuth );
 
-            // OAuth disconnect
-            $(document).on('click', '.oauth-disconnect', this.disconnectOAuth);
+			// OAuth disconnect
+			$( document ).on(
+				'click',
+				'.oauth-disconnect',
+				this.disconnectOAuth
+			);
 
-            // Last.fm disconnect
-            $(document).on('click', '.lastfm-disconnect', this.disconnectLastfm);
-        },
+			// Last.fm disconnect
+			$( document ).on(
+				'click',
+				'.lastfm-disconnect',
+				this.disconnectLastfm
+			);
+		},
 
-        /**
-         * Test API connection
-         */
-        testApiConnection: function(e) {
-            e.preventDefault();
-            const $button = $(this);
-            const api = $button.data('api');
-            const $card = $button.closest('.post-kinds-api-card');
+		/**
+		 * Test API connection
+		 * @param {Event} e Click event.
+		 */
+		testApiConnection( e ) {
+			e.preventDefault();
+			const $button = $( this );
+			const api = $button.data( 'api' );
+			const $card = $button.closest( '.post-kinds-api-card' );
 
-            $button.prop('disabled', true).text(postKindsIndieWeb.strings.testingApi);
+			$button
+				.prop( 'disabled', true )
+				.text( postKindsIndieWeb.strings.testingApi );
 
-            $.ajax({
-                url: postKindsIndieWeb.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'post_kinds_indieweb_test_api',
-                    nonce: postKindsIndieWeb.nonce,
-                    api: api
-                },
-                success: function(response) {
-                    if (response.success) {
-                        $card.removeClass('error').addClass('connected');
-                        $card.find('.api-status-badge')
-                            .removeClass('error disabled')
-                            .addClass('connected')
-                            .text('Connected');
-                        alert(postKindsIndieWeb.strings.testSuccess);
-                    } else {
-                        $card.removeClass('connected').addClass('error');
-                        $card.find('.api-status-badge')
-                            .removeClass('connected disabled')
-                            .addClass('error')
-                            .text('Not Connected');
-                        alert(postKindsIndieWeb.strings.testFailed + (response.data?.message || 'Unknown error'));
-                    }
-                },
-                error: function(xhr, status, error) {
-                    let errorMsg = postKindsIndieWeb.strings.error;
-                    if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
-                        errorMsg = postKindsIndieWeb.strings.testFailed + xhr.responseJSON.data.message;
-                    } else if (xhr.responseText) {
-                        // Try to show a snippet of the response for debugging.
-                        errorMsg = 'Server error: ' + xhr.responseText.substring(0, 200);
-                    }
-                    alert(errorMsg);
-                },
-                complete: function() {
-                    $button.prop('disabled', false).html('<span class="dashicons dashicons-update"></span> Test Connection');
-                }
-            });
-        },
+			$.ajax( {
+				url: postKindsIndieWeb.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'post_kinds_indieweb_test_api',
+					nonce: postKindsIndieWeb.nonce,
+					api,
+				},
+				success( response ) {
+					if ( response.success ) {
+						$card.removeClass( 'error' ).addClass( 'connected' );
+						$card
+							.find( '.api-status-badge' )
+							.removeClass( 'error disabled' )
+							.addClass( 'connected' )
+							.text( 'Connected' );
+						alert( postKindsIndieWeb.strings.testSuccess );
+					} else {
+						$card.removeClass( 'connected' ).addClass( 'error' );
+						$card
+							.find( '.api-status-badge' )
+							.removeClass( 'connected disabled' )
+							.addClass( 'error' )
+							.text( 'Not Connected' );
+						alert(
+							postKindsIndieWeb.strings.testFailed +
+								( response.data?.message || 'Unknown error' )
+						);
+					}
+				},
+				error( xhr ) {
+					let errorMsg = postKindsIndieWeb.strings.error;
+					if (
+						xhr.responseJSON &&
+						xhr.responseJSON.data &&
+						xhr.responseJSON.data.message
+					) {
+						errorMsg =
+							postKindsIndieWeb.strings.testFailed +
+							xhr.responseJSON.data.message;
+					} else if ( xhr.responseText ) {
+						// Try to show a snippet of the response for debugging.
+						errorMsg =
+							'Server error: ' +
+							xhr.responseText.substring( 0, 200 );
+					}
+					alert( errorMsg );
+				},
+				complete() {
+					$button
+						.prop( 'disabled', false )
+						.html(
+							'<span class="dashicons dashicons-update"></span> Test Connection'
+						);
+				},
+			} );
+		},
 
-        /**
-         * Initiate OAuth flow
-         */
-        initiateOAuth: function(e) {
-            e.preventDefault();
-            const api = $(this).data('api');
-            const $card = $(this).closest('.post-kinds-api-card');
-            const $button = $(this);
+		/**
+		 * Initiate OAuth flow
+		 * @param {Event} e Click event.
+		 */
+		initiateOAuth( e ) {
+			e.preventDefault();
+			const api = $( this ).data( 'api' );
+			const $card = $( this ).closest( '.post-kinds-api-card' );
 
-            // Get credentials from the card (more specific selector)
-            const clientId = $card.find(`input[name="post_kinds_indieweb_api_credentials[${api}][client_id]"]`).val();
-            const clientSecret = $card.find(`input[name="post_kinds_indieweb_api_credentials[${api}][client_secret]"]`).val();
+			// Get credentials from the card (more specific selector)
+			const clientId = $card
+				.find(
+					`input[name="post_kinds_indieweb_api_credentials[${ api }][client_id]"]`
+				)
+				.val();
 
-            if (!clientId) {
-                alert('Please enter your Client ID first.');
-                return;
-            }
+			if ( ! clientId ) {
+				alert( 'Please enter your Client ID first.' );
+				return;
+			}
 
-            if (!clientSecret && api === 'trakt') {
-                alert('Please enter your Client Secret first.');
-                return;
-            }
+			const clientSecret = $card
+				.find(
+					`input[name="post_kinds_indieweb_api_credentials[${ api }][client_secret]"]`
+				)
+				.val();
 
-            // Save credentials first, then get OAuth URL
-            $button.prop('disabled', true).text('Connecting...');
+			if ( ! clientSecret && api === 'trakt' ) {
+				alert( 'Please enter your Client Secret first.' );
+				return;
+			}
 
-            $.ajax({
-                url: postKindsIndieWeb.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'post_kinds_indieweb_get_oauth_url',
-                    nonce: postKindsIndieWeb.nonce,
-                    api: api,
-                    client_id: clientId,
-                    client_secret: clientSecret
-                },
-                success: function(response) {
-                    if (response.success && response.data.url) {
-                        // Redirect to OAuth authorization page
-                        window.location.href = response.data.url;
-                    } else {
-                        alert(response.data.message || 'Failed to get OAuth URL.');
-                        $button.prop('disabled', false).text('Connect to ' + api.charAt(0).toUpperCase() + api.slice(1));
-                    }
-                },
-                error: function() {
-                    alert('Failed to initiate OAuth. Please try again.');
-                    $button.prop('disabled', false).text('Connect to ' + api.charAt(0).toUpperCase() + api.slice(1));
-                }
-            });
-        },
+			// Save credentials first, then get OAuth URL
+			const $button = $( this );
+			$button.prop( 'disabled', true ).text( 'Connecting...' );
 
-        /**
-         * Disconnect OAuth
-         */
-        disconnectOAuth: function(e) {
-            e.preventDefault();
-            const api = $(this).data('api');
-            const $section = $(this).closest('.oauth-section');
+			$.ajax( {
+				url: postKindsIndieWeb.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'post_kinds_indieweb_get_oauth_url',
+					nonce: postKindsIndieWeb.nonce,
+					api,
+					client_id: clientId,
+					client_secret: clientSecret,
+				},
+				success( response ) {
+					if ( response.success && response.data.url ) {
+						// Redirect to OAuth authorization page
+						window.location.href = response.data.url;
+					} else {
+						alert(
+							response.data.message || 'Failed to get OAuth URL.'
+						);
+						$button
+							.prop( 'disabled', false )
+							.text(
+								'Connect to ' +
+									api.charAt( 0 ).toUpperCase() +
+									api.slice( 1 )
+							);
+					}
+				},
+				error() {
+					alert( 'Failed to initiate OAuth. Please try again.' );
+					$button
+						.prop( 'disabled', false )
+						.text(
+							'Connect to ' +
+								api.charAt( 0 ).toUpperCase() +
+								api.slice( 1 )
+						);
+				},
+			} );
+		},
 
-            if (!confirm('Are you sure you want to disconnect?')) {
-                return;
-            }
+		/**
+		 * Disconnect OAuth
+		 * @param {Event} e Click event.
+		 */
+		disconnectOAuth( e ) {
+			e.preventDefault();
 
-            $section.find('.oauth-access-token').val('');
-            $section.find('.oauth-refresh-token').val('');
-            $section.closest('form').submit();
-        },
+			if ( ! confirm( 'Are you sure you want to disconnect?' ) ) {
+				return;
+			}
 
-        /**
-         * Disconnect Last.fm
-         */
-        disconnectLastfm: function(e) {
-            e.preventDefault();
-            const $section = $(this).closest('.lastfm-auth-section');
+			const $section = $( this ).closest( '.oauth-section' );
 
-            if (!confirm('Are you sure you want to disconnect from Last.fm?')) {
-                return;
-            }
+			$section.find( '.oauth-access-token' ).val( '' );
+			$section.find( '.oauth-refresh-token' ).val( '' );
+			$section.closest( 'form' ).submit();
+		},
 
-            $section.find('.lastfm-session-key').val('');
-            $section.closest('form').submit();
-        },
+		/**
+		 * Disconnect Last.fm
+		 * @param {Event} e Click event.
+		 */
+		disconnectLastfm( e ) {
+			e.preventDefault();
 
-        /* =====================================================================
+			if (
+				! confirm( 'Are you sure you want to disconnect from Last.fm?' )
+			) {
+				return;
+			}
+
+			const $section = $( this ).closest( '.lastfm-auth-section' );
+
+			$section.find( '.lastfm-session-key' ).val( '' );
+			$section.closest( 'form' ).submit();
+		},
+
+		/* =====================================================================
            Import Page
            ===================================================================== */
 
-        /**
-         * Initialize import page
-         */
-        initImportPage: function() {
-            if (!$('.post-kinds-indieweb-import').length) {
-                return;
-            }
+		/**
+		 * Initialize import page
+		 */
+		initImportPage() {
+			if ( ! $( '.post-kinds-indieweb-import' ).length ) {
+				return;
+			}
 
-            // Preview import
-            $(document).on('click', '.import-preview-button', this.showImportPreview);
+			// Preview import
+			$( document ).on(
+				'click',
+				'.import-preview-button',
+				this.showImportPreview
+			);
 
-            // Start import
-            $(document).on('click', '.import-start-button', this.startImport);
+			// Start import
+			$( document ).on(
+				'click',
+				'.import-start-button',
+				this.startImport
+			);
 
-            // Re-sync metadata
-            $(document).on('click', '.import-resync-button', this.resyncMetadata);
+			// Re-sync metadata
+			$( document ).on(
+				'click',
+				'.import-resync-button',
+				this.resyncMetadata
+			);
 
-            // Cancel import
-            $(document).on('click', '.import-cancel-button', this.cancelImport);
+			// Cancel import
+			$( document ).on(
+				'click',
+				'.import-cancel-button',
+				this.cancelImport
+			);
 
-            // Modal close
-            $(document).on('click', '.modal-close, .modal-cancel', this.closeModal);
+			// Modal close
+			$( document ).on(
+				'click',
+				'.modal-close, .modal-cancel',
+				this.closeModal
+			);
 
-            // Confirm import from modal
-            $(document).on('click', '.modal-confirm-import', this.confirmImport);
+			// Confirm import from modal
+			$( document ).on(
+				'click',
+				'.modal-confirm-import',
+				this.confirmImport
+			);
 
-            // Poll active imports
-            this.pollActiveImports();
-        },
+			// Poll active imports
+			this.pollActiveImports();
+		},
 
-        /**
-         * Show import preview
-         */
-        showImportPreview: function(e) {
-            e.preventDefault();
-            const source = $(this).data('source');
-            const options = PostKindsAdmin.getImportOptions(source);
+		/**
+		 * Show import preview
+		 * @param {Event} e Click event.
+		 */
+		showImportPreview( e ) {
+			e.preventDefault();
+			const source = $( this ).data( 'source' );
+			const options = PostKindsAdmin.getImportOptions( source );
 
-            $('#import-preview-modal').show();
-            $('.preview-loading').show();
-            $('.preview-content').hide();
-            $('#import-preview-modal').data('source', source);
+			$( '#import-preview-modal' ).show();
+			$( '.preview-loading' ).show();
+			$( '.preview-content' ).hide();
+			$( '#import-preview-modal' ).data( 'source', source );
 
-            $.ajax({
-                url: postKindsIndieWeb.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'post_kinds_indieweb_get_import_preview',
-                    nonce: postKindsIndieWeb.nonce,
-                    source: source,
-                    options: options
-                },
-                success: function(response) {
-                    $('.preview-loading').hide();
-                    $('.preview-content').show();
+			$.ajax( {
+				url: postKindsIndieWeb.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'post_kinds_indieweb_get_import_preview',
+					nonce: postKindsIndieWeb.nonce,
+					source,
+					options,
+				},
+				success( response ) {
+					$( '.preview-loading' ).hide();
+					$( '.preview-content' ).show();
 
-                    if (response.success) {
-                        PostKindsAdmin.renderPreview(response.data);
-                    } else {
-                        $('.preview-content').html('<p class="error">' + response.data.message + '</p>');
-                    }
-                },
-                error: function() {
-                    $('.preview-loading').hide();
-                    $('.preview-content').html('<p class="error">' + postKindsIndieWeb.strings.error + '</p>').show();
-                }
-            });
-        },
+					if ( response.success ) {
+						PostKindsAdmin.renderPreview( response.data );
+					} else {
+						$( '.preview-content' ).html(
+							'<p class="error">' + response.data.message + '</p>'
+						);
+					}
+				},
+				error() {
+					$( '.preview-loading' ).hide();
+					$( '.preview-content' )
+						.html(
+							'<p class="error">' +
+								postKindsIndieWeb.strings.error +
+								'</p>'
+						)
+						.show();
+				},
+			} );
+		},
 
-        /**
-         * Render preview content
-         */
-        renderPreview: function(data) {
-            let html = '<p><strong>Source:</strong> ' + data.source_name + '</p>';
-            html += '<p><strong>Total items:</strong> ~' + data.total_count + '</p>';
-            html += '<p><strong>Post kind:</strong> ' + data.post_kind + '</p>';
+		/**
+		 * Render preview content
+		 * @param {Object} data Preview data returned by the server.
+		 */
+		renderPreview( data ) {
+			let html =
+				'<p><strong>Source:</strong> ' + data.source_name + '</p>';
+			html +=
+				'<p><strong>Total items:</strong> ~' +
+				data.total_count +
+				'</p>';
+			html += '<p><strong>Post kind:</strong> ' + data.post_kind + '</p>';
 
-            if (data.sample && data.sample.length) {
-                html += '<h4>Sample items:</h4><ul>';
-                data.sample.forEach(function(item) {
-                    html += '<li>';
-                    if (item.title) html += '<strong>' + item.title + '</strong>';
-                    if (item.artist) html += ' by ' + item.artist;
-                    if (item.year) html += ' (' + item.year + ')';
-                    if (item.date) html += ' - ' + item.date;
-                    html += '</li>';
-                });
-                html += '</ul>';
-            }
+			if ( data.sample && data.sample.length ) {
+				html += '<h4>Sample items:</h4><ul>';
+				data.sample.forEach( function ( item ) {
+					html += '<li>';
+					if ( item.title ) {
+						html += '<strong>' + item.title + '</strong>';
+					}
+					if ( item.artist ) {
+						html += ' by ' + item.artist;
+					}
+					if ( item.year ) {
+						html += ' (' + item.year + ')';
+					}
+					if ( item.date ) {
+						html += ' - ' + item.date;
+					}
+					html += '</li>';
+				} );
+				html += '</ul>';
+			}
 
-            $('.preview-content').html(html);
-        },
+			$( '.preview-content' ).html( html );
+		},
 
-        /**
-         * Get import options
-         */
-        getImportOptions: function(source) {
-            const options = {};
-            $(`.import-option[data-source="${source}"]`).each(function() {
-                const $input = $(this);
-                const optionName = $input.data('option');
+		/**
+		 * Get import options
+		 * @param {string} source Import source slug.
+		 */
+		getImportOptions( source ) {
+			const options = {};
+			$( `.import-option[data-source="${ source }"]` ).each( function () {
+				const $input = $( this );
+				const optionName = $input.data( 'option' );
 
-                if ($input.is(':checkbox')) {
-                    options[optionName] = $input.is(':checked');
-                } else if ($input.is(':radio')) {
-                    // Only include radio value if it's checked.
-                    if ($input.is(':checked')) {
-                        options[optionName] = $input.val();
-                    }
-                } else {
-                    options[optionName] = $input.val();
-                }
-            });
-            return options;
-        },
+				if ( $input.is( ':checkbox' ) ) {
+					options[ optionName ] = $input.is( ':checked' );
+				} else if ( $input.is( ':radio' ) ) {
+					// Only include radio value if it's checked.
+					if ( $input.is( ':checked' ) ) {
+						options[ optionName ] = $input.val();
+					}
+				} else {
+					options[ optionName ] = $input.val();
+				}
+			} );
+			return options;
+		},
 
-        /**
-         * Start import
-         */
-        startImport: function(e) {
-            e.preventDefault();
-            const $button = $(this);
-            const source = $button.data('source');
-            const options = PostKindsAdmin.getImportOptions(source);
+		/**
+		 * Start import
+		 * @param {Event} e Click event.
+		 */
+		startImport( e ) {
+			e.preventDefault();
+			const $button = $( this );
+			const source = $button.data( 'source' );
+			const options = PostKindsAdmin.getImportOptions( source );
 
-            $button.prop('disabled', true).text(postKindsIndieWeb.strings.importing);
+			$button
+				.prop( 'disabled', true )
+				.text( postKindsIndieWeb.strings.importing );
 
-            $.ajax({
-                url: postKindsIndieWeb.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'post_kinds_indieweb_start_import',
-                    nonce: postKindsIndieWeb.nonce,
-                    source: source,
-                    options: options
-                },
-                success: function(response) {
-                    if (response.success) {
-                        alert(response.data.message || 'Import completed!');
-                        location.reload();
-                    } else {
-                        alert(response.data.message || postKindsIndieWeb.strings.error);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    let errorMsg = postKindsIndieWeb.strings.error;
-                    if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
-                        errorMsg = xhr.responseJSON.data.message;
-                    } else if (xhr.responseText) {
-                        errorMsg = 'Server error: ' + xhr.responseText.substring(0, 200);
-                    }
-                    alert(errorMsg);
-                },
-                complete: function() {
-                    $button.prop('disabled', false).html('<span class="dashicons dashicons-download"></span> Start Import');
-                }
-            });
-        },
+			$.ajax( {
+				url: postKindsIndieWeb.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'post_kinds_indieweb_start_import',
+					nonce: postKindsIndieWeb.nonce,
+					source,
+					options,
+				},
+				success( response ) {
+					if ( response.success ) {
+						alert( response.data.message || 'Import completed!' );
+						location.reload();
+					} else {
+						alert(
+							response.data.message ||
+								postKindsIndieWeb.strings.error
+						);
+					}
+				},
+				error( xhr ) {
+					let errorMsg = postKindsIndieWeb.strings.error;
+					if (
+						xhr.responseJSON &&
+						xhr.responseJSON.data &&
+						xhr.responseJSON.data.message
+					) {
+						errorMsg = xhr.responseJSON.data.message;
+					} else if ( xhr.responseText ) {
+						errorMsg =
+							'Server error: ' +
+							xhr.responseText.substring( 0, 200 );
+					}
+					alert( errorMsg );
+				},
+				complete() {
+					$button
+						.prop( 'disabled', false )
+						.html(
+							'<span class="dashicons dashicons-download"></span> Start Import'
+						);
+				},
+			} );
+		},
 
-        /**
-         * Re-sync metadata for previously imported posts
-         */
-        resyncMetadata: function(e) {
-            e.preventDefault();
-            const $button = $(this);
-            const source = $button.data('source');
+		/**
+		 * Re-sync metadata for previously imported posts
+		 * @param {Event} e Click event.
+		 */
+		resyncMetadata( e ) {
+			e.preventDefault();
 
-            if (!confirm('This will update metadata for all previously imported posts from this source. Continue?')) {
-                return;
-            }
+			if (
+				! confirm(
+					'This will update metadata for all previously imported posts from this source. Continue?'
+				)
+			) {
+				return;
+			}
 
-            $button.prop('disabled', true).html('<span class="dashicons dashicons-update spin"></span> Syncing...');
+			const $button = $( this );
+			const source = $button.data( 'source' );
 
-            $.ajax({
-                url: postKindsIndieWeb.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'post_kinds_indieweb_resync_metadata',
-                    nonce: postKindsIndieWeb.nonce,
-                    source: source
-                },
-                success: function(response) {
-                    if (response.success) {
-                        alert(response.data.message || 'Metadata re-synced successfully!');
-                    } else {
-                        alert(response.data.message || postKindsIndieWeb.strings.error);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    let errorMsg = postKindsIndieWeb.strings.error;
-                    if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
-                        errorMsg = xhr.responseJSON.data.message;
-                    }
-                    alert(errorMsg);
-                },
-                complete: function() {
-                    $button.prop('disabled', false).html('<span class="dashicons dashicons-update"></span> Re-sync');
-                }
-            });
-        },
+			$button
+				.prop( 'disabled', true )
+				.html(
+					'<span class="dashicons dashicons-update spin"></span> Syncing...'
+				);
 
-        /**
-         * Confirm import from modal
-         */
-        confirmImport: function(e) {
-            e.preventDefault();
-            const source = $('#import-preview-modal').data('source');
-            $(`.import-start-button[data-source="${source}"]`).click();
-            PostKindsAdmin.closeModal();
-        },
+			$.ajax( {
+				url: postKindsIndieWeb.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'post_kinds_indieweb_resync_metadata',
+					nonce: postKindsIndieWeb.nonce,
+					source,
+				},
+				success( response ) {
+					if ( response.success ) {
+						alert(
+							response.data.message ||
+								'Metadata re-synced successfully!'
+						);
+					} else {
+						alert(
+							response.data.message ||
+								postKindsIndieWeb.strings.error
+						);
+					}
+				},
+				error( xhr ) {
+					let errorMsg = postKindsIndieWeb.strings.error;
+					if (
+						xhr.responseJSON &&
+						xhr.responseJSON.data &&
+						xhr.responseJSON.data.message
+					) {
+						errorMsg = xhr.responseJSON.data.message;
+					}
+					alert( errorMsg );
+				},
+				complete() {
+					$button
+						.prop( 'disabled', false )
+						.html(
+							'<span class="dashicons dashicons-update"></span> Re-sync'
+						);
+				},
+			} );
+		},
 
-        /**
-         * Cancel import
-         */
-        cancelImport: function(e) {
-            e.preventDefault();
-            const importId = $(this).data('import-id');
+		/**
+		 * Confirm import from modal
+		 * @param {Event} e Click event.
+		 */
+		confirmImport( e ) {
+			e.preventDefault();
+			const source = $( '#import-preview-modal' ).data( 'source' );
+			$( `.import-start-button[data-source="${ source }"]` ).click();
+			PostKindsAdmin.closeModal();
+		},
 
-            if (!confirm('Are you sure you want to cancel this import?')) {
-                return;
-            }
+		/**
+		 * Cancel import
+		 * @param {Event} e Click event.
+		 */
+		cancelImport( e ) {
+			e.preventDefault();
 
-            $.ajax({
-                url: postKindsIndieWeb.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'post_kinds_indieweb_cancel_import',
-                    nonce: postKindsIndieWeb.nonce,
-                    import_id: importId
-                },
-                success: function(response) {
-                    if (response.success) {
-                        location.reload();
-                    } else {
-                        alert(response.data.message || postKindsIndieWeb.strings.error);
-                    }
-                }
-            });
-        },
+			if ( ! confirm( 'Are you sure you want to cancel this import?' ) ) {
+				return;
+			}
 
-        /**
-         * Close modal
-         */
-        closeModal: function() {
-            $('.post-kinds-modal').hide();
-        },
+			const importId = $( this ).data( 'import-id' );
 
-        /**
-         * Poll active imports for status updates
-         */
-        pollActiveImports: function() {
-            const $activeImports = $('.active-import');
-            if (!$activeImports.length) {
-                return;
-            }
+			$.ajax( {
+				url: postKindsIndieWeb.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'post_kinds_indieweb_cancel_import',
+					nonce: postKindsIndieWeb.nonce,
+					import_id: importId,
+				},
+				success( response ) {
+					if ( response.success ) {
+						location.reload();
+					} else {
+						alert(
+							response.data.message ||
+								postKindsIndieWeb.strings.error
+						);
+					}
+				},
+			} );
+		},
 
-            setInterval(function() {
-                $activeImports.each(function() {
-                    const $import = $(this);
-                    const importId = $import.data('import-id');
+		/**
+		 * Close modal
+		 */
+		closeModal() {
+			$( '.post-kinds-modal' ).hide();
+		},
 
-                    $.ajax({
-                        url: postKindsIndieWeb.ajaxUrl,
-                        type: 'POST',
-                        data: {
-                            action: 'post_kinds_indieweb_get_import_status',
-                            nonce: postKindsIndieWeb.nonce,
-                            import_id: importId
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                const data = response.data;
-                                $import.find('.progress-fill').css('width', data.progress + '%');
-                                $import.find('.progress-text').text(data.processed + ' of ' + data.total + ' items');
+		/**
+		 * Poll active imports for status updates
+		 */
+		pollActiveImports() {
+			const $activeImports = $( '.active-import' );
+			if ( ! $activeImports.length ) {
+				return;
+			}
 
-                                if (data.status === 'completed' || data.status === 'failed') {
-                                    location.reload();
-                                }
-                            }
-                        }
-                    });
-                });
-            }, 5000);
-        },
+			setInterval( function () {
+				$activeImports.each( function () {
+					const $import = $( this );
+					const importId = $import.data( 'import-id' );
 
-        /* =====================================================================
+					$.ajax( {
+						url: postKindsIndieWeb.ajaxUrl,
+						type: 'POST',
+						data: {
+							action: 'post_kinds_indieweb_get_import_status',
+							nonce: postKindsIndieWeb.nonce,
+							import_id: importId,
+						},
+						success( response ) {
+							if ( response.success ) {
+								const data = response.data;
+								$import
+									.find( '.progress-fill' )
+									.css( 'width', data.progress + '%' );
+								$import
+									.find( '.progress-text' )
+									.text(
+										data.processed +
+											' of ' +
+											data.total +
+											' items'
+									);
+
+								if (
+									data.status === 'completed' ||
+									data.status === 'failed'
+								) {
+									location.reload();
+								}
+							}
+						},
+					} );
+				} );
+			}, 5000 );
+		},
+
+		/* =====================================================================
            Webhooks Page
            ===================================================================== */
 
-        /**
-         * Initialize webhooks page
-         */
-        initWebhooksPage: function() {
-            if (!$('.post-kinds-indieweb-webhooks').length) {
-                return;
-            }
+		/**
+		 * Initialize webhooks page
+		 */
+		initWebhooksPage() {
+			if ( ! $( '.post-kinds-indieweb-webhooks' ).length ) {
+				return;
+			}
 
-            // Toggle webhook body
-            $(document).on('change', '.webhook-enable-toggle', function() {
-                const $card = $(this).closest('.webhook-card');
-                const $body = $card.find('.webhook-body');
+			// Toggle webhook body
+			$( document ).on( 'change', '.webhook-enable-toggle', function () {
+				const $card = $( this ).closest( '.webhook-card' );
+				const $body = $card.find( '.webhook-body' );
 
-                if ($(this).is(':checked')) {
-                    $body.slideDown(200);
-                } else {
-                    $body.slideUp(200);
-                }
-            });
+				if ( $( this ).is( ':checked' ) ) {
+					$body.slideDown( 200 );
+				} else {
+					$body.slideUp( 200 );
+				}
+			} );
 
-            // Regenerate secret
-            $(document).on('click', '.regenerate-secret', this.regenerateSecret);
+			// Regenerate secret
+			$( document ).on(
+				'click',
+				'.regenerate-secret',
+				this.regenerateSecret
+			);
 
-            // Scrobble actions
-            $(document).on('click', '.approve-scrobble', this.approveScrobble);
-            $(document).on('click', '.reject-scrobble', this.rejectScrobble);
-            $(document).on('click', '.clear-webhook-log', this.clearWebhookLog);
-        },
+			// Scrobble actions
+			$( document ).on(
+				'click',
+				'.approve-scrobble',
+				this.approveScrobble
+			);
+			$( document ).on(
+				'click',
+				'.reject-scrobble',
+				this.rejectScrobble
+			);
+			$( document ).on(
+				'click',
+				'.clear-webhook-log',
+				this.clearWebhookLog
+			);
+		},
 
-        /**
-         * Regenerate webhook secret
-         */
-        regenerateSecret: function(e) {
-            e.preventDefault();
-            const $button = $(this);
-            const webhook = $button.data('webhook');
-            const $input = $button.siblings('.webhook-secret-input');
+		/**
+		 * Regenerate webhook secret
+		 * @param {Event} e Click event.
+		 */
+		regenerateSecret( e ) {
+			e.preventDefault();
+			const $button = $( this );
+			const webhook = $button.data( 'webhook' );
+			const $input = $button.siblings( '.webhook-secret-input' );
 
-            $.ajax({
-                url: postKindsIndieWeb.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'post_kinds_indieweb_regenerate_webhook_secret',
-                    nonce: postKindsIndieWeb.nonce,
-                    webhook: webhook
-                },
-                success: function(response) {
-                    if (response.success) {
-                        $input.val(response.data.secret);
-                    } else {
-                        alert(response.data.message || postKindsIndieWeb.strings.error);
-                    }
-                }
-            });
-        },
+			$.ajax( {
+				url: postKindsIndieWeb.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'post_kinds_indieweb_regenerate_webhook_secret',
+					nonce: postKindsIndieWeb.nonce,
+					webhook,
+				},
+				success( response ) {
+					if ( response.success ) {
+						$input.val( response.data.secret );
+					} else {
+						alert(
+							response.data.message ||
+								postKindsIndieWeb.strings.error
+						);
+					}
+				},
+			} );
+		},
 
-        /**
-         * Approve scrobble
-         */
-        approveScrobble: function(e) {
-            e.preventDefault();
-            const index = $(this).data('index');
-            const $row = $(this).closest('tr');
+		/**
+		 * Approve scrobble
+		 * @param {Event} e Click event.
+		 */
+		approveScrobble( e ) {
+			e.preventDefault();
+			const index = $( this ).data( 'index' );
+			const $row = $( this ).closest( 'tr' );
 
-            $.ajax({
-                url: postKindsIndieWeb.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'post_kinds_indieweb_approve_scrobble',
-                    nonce: postKindsIndieWeb.nonce,
-                    index: index
-                },
-                success: function(response) {
-                    if (response.success) {
-                        $row.fadeOut(function() {
-                            $(this).remove();
-                        });
-                    } else {
-                        alert(response.data.message || postKindsIndieWeb.strings.error);
-                    }
-                }
-            });
-        },
+			$.ajax( {
+				url: postKindsIndieWeb.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'post_kinds_indieweb_approve_scrobble',
+					nonce: postKindsIndieWeb.nonce,
+					index,
+				},
+				success( response ) {
+					if ( response.success ) {
+						$row.fadeOut( function () {
+							$( this ).remove();
+						} );
+					} else {
+						alert(
+							response.data.message ||
+								postKindsIndieWeb.strings.error
+						);
+					}
+				},
+			} );
+		},
 
-        /**
-         * Reject scrobble
-         */
-        rejectScrobble: function(e) {
-            e.preventDefault();
-            const index = $(this).data('index');
-            const $row = $(this).closest('tr');
+		/**
+		 * Reject scrobble
+		 * @param {Event} e Click event.
+		 */
+		rejectScrobble( e ) {
+			e.preventDefault();
+			const index = $( this ).data( 'index' );
+			const $row = $( this ).closest( 'tr' );
 
-            $.ajax({
-                url: postKindsIndieWeb.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'post_kinds_indieweb_reject_scrobble',
-                    nonce: postKindsIndieWeb.nonce,
-                    index: index
-                },
-                success: function(response) {
-                    if (response.success) {
-                        $row.fadeOut(function() {
-                            $(this).remove();
-                        });
-                    }
-                }
-            });
-        },
+			$.ajax( {
+				url: postKindsIndieWeb.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'post_kinds_indieweb_reject_scrobble',
+					nonce: postKindsIndieWeb.nonce,
+					index,
+				},
+				success( response ) {
+					if ( response.success ) {
+						$row.fadeOut( function () {
+							$( this ).remove();
+						} );
+					}
+				},
+			} );
+		},
 
-        /**
-         * Clear webhook log
-         */
-        clearWebhookLog: function(e) {
-            e.preventDefault();
-            if (!confirm('Are you sure you want to clear the webhook log?')) {
-                return;
-            }
-            // Would need AJAX endpoint to clear log
-            alert('Log cleared.');
-        },
+		/**
+		 * Clear webhook log
+		 * @param {Event} e Click event.
+		 */
+		clearWebhookLog( e ) {
+			e.preventDefault();
+			if (
+				! confirm( 'Are you sure you want to clear the webhook log?' )
+			) {
+				return;
+			}
+			// Would need AJAX endpoint to clear log
+			alert( 'Log cleared.' );
+		},
 
-        /* =====================================================================
+		/* =====================================================================
            Meta Boxes
            ===================================================================== */
 
-        /**
-         * Initialize meta boxes
-         */
-        initMetaBoxes: function() {
-            if (!$('.post-kinds-meta-box').length) {
-                return;
-            }
+		/**
+		 * Initialize meta boxes
+		 */
+		initMetaBoxes() {
+			if ( ! $( '.post-kinds-meta-box' ).length ) {
+				return;
+			}
 
-            // Post kind change
-            $(document).on('change', '#post_kinds_post_kind', this.onPostKindChange);
+			// Post kind change
+			$( document ).on(
+				'change',
+				'#post_kinds_post_kind',
+				this.onPostKindChange
+			);
 
-            // Conditional fields
-            $(document).on('change', '[data-controls-visibility]', this.handleConditionalFields);
+			// Conditional fields
+			$( document ).on(
+				'change',
+				'[data-controls-visibility]',
+				this.handleConditionalFields
+			);
 
-            // Star rating
-            this.initStarRating();
+			// Star rating
+			this.initStarRating();
 
-            // Image selection
-            $(document).on('click', '.select-image', this.selectImage);
-            $(document).on('click', '.remove-image', this.removeImage);
+			// Image selection
+			$( document ).on( 'click', '.select-image', this.selectImage );
+			$( document ).on( 'click', '.remove-image', this.removeImage );
 
-            // Media lookup
-            $(document).on('click', '#lookup-search', this.doMediaLookup);
-            $(document).on('click', '.lookup-result', this.selectLookupResult);
-        },
+			// Media lookup
+			$( document ).on( 'click', '#lookup-search', this.doMediaLookup );
+			$( document ).on(
+				'click',
+				'.lookup-result',
+				this.selectLookupResult
+			);
+		},
 
-        /**
-         * Handle post kind change
-         */
-        onPostKindChange: function() {
-            const kind = $(this).val();
+		/**
+		 * Handle post kind change
+		 */
+		onPostKindChange() {
+			const kind = $( this ).val();
 
-            // Hide all kind fields
-            $('.kind-fields').hide();
-            $('.no-kind-selected').hide();
+			// Hide all kind fields
+			$( '.kind-fields' ).hide();
+			$( '.no-kind-selected' ).hide();
 
-            if (kind) {
-                // Show selected kind fields
-                $(`.kind-fields[data-kind="${kind}"]`).show();
-            } else {
-                $('.no-kind-selected').show();
-            }
-        },
+			if ( kind ) {
+				// Show selected kind fields
+				$( `.kind-fields[data-kind="${ kind }"]` ).show();
+			} else {
+				$( '.no-kind-selected' ).show();
+			}
+		},
 
-        /**
-         * Handle conditional fields
-         */
-        handleConditionalFields: function() {
-            const $control = $(this);
-            const value = $control.val();
+		/**
+		 * Handle conditional fields
+		 */
+		handleConditionalFields() {
+			const $control = $( this );
+			const value = $control.val();
 
-            $('[data-depends-on]').each(function() {
-                const $field = $(this);
-                const dependency = $field.data('depends-on');
-                const [depField, depValue] = dependency.split(':');
+			$( '[data-depends-on]' ).each( function () {
+				const $field = $( this );
+				const dependency = $field.data( 'depends-on' );
+				const [ depField, depValue ] = dependency.split( ':' );
 
-                if ($control.attr('name').includes(depField)) {
-                    if (value === depValue) {
-                        $field.slideDown(200);
-                    } else {
-                        $field.slideUp(200);
-                    }
-                }
-            });
-        },
+				if ( $control.attr( 'name' ).includes( depField ) ) {
+					if ( value === depValue ) {
+						$field.slideDown( 200 );
+					} else {
+						$field.slideUp( 200 );
+					}
+				}
+			} );
+		},
 
-        /**
-         * Initialize star rating
-         */
-        initStarRating: function() {
-            $(document).on('click', '.star-rating .star, .star-rating-input .star', function() {
-                const $star = $(this);
-                const value = $star.data('value');
-                const $wrapper = $star.parent();
-                const $input = $wrapper.find('input');
+		/**
+		 * Initialize star rating
+		 */
+		initStarRating() {
+			$( document ).on(
+				'click',
+				'.star-rating .star, .star-rating-input .star',
+				function () {
+					const $star = $( this );
+					const value = $star.data( 'value' );
+					const $wrapper = $star.parent();
+					const $input = $wrapper.find( 'input' );
 
-                $input.val(value);
-                $wrapper.find('.star').each(function(i) {
-                    $(this).toggleClass('filled', i < value);
-                });
-            });
+					$input.val( value );
+					$wrapper.find( '.star' ).each( function ( i ) {
+						$( this ).toggleClass( 'filled', i < value );
+					} );
+				}
+			);
 
-            $(document).on('mouseenter', '.star-rating .star, .star-rating-input .star', function() {
-                const value = $(this).data('value');
-                const $wrapper = $(this).parent();
+			$( document ).on(
+				'mouseenter',
+				'.star-rating .star, .star-rating-input .star',
+				function () {
+					const value = $( this ).data( 'value' );
+					const $wrapper = $( this ).parent();
 
-                $wrapper.find('.star').each(function(i) {
-                    $(this).toggleClass('hover', i < value);
-                });
-            });
+					$wrapper.find( '.star' ).each( function ( i ) {
+						$( this ).toggleClass( 'hover', i < value );
+					} );
+				}
+			);
 
-            $(document).on('mouseleave', '.star-rating, .star-rating-input', function() {
-                $(this).find('.star').removeClass('hover');
-            });
+			$( document ).on(
+				'mouseleave',
+				'.star-rating, .star-rating-input',
+				function () {
+					$( this ).find( '.star' ).removeClass( 'hover' );
+				}
+			);
 
-            $(document).on('click', '.clear-rating', function(e) {
-                e.preventDefault();
-                const $wrapper = $(this).parent();
-                $wrapper.find('input').val('');
-                $wrapper.find('.star').removeClass('filled');
-            });
-        },
+			$( document ).on( 'click', '.clear-rating', function ( e ) {
+				e.preventDefault();
+				const $wrapper = $( this ).parent();
+				$wrapper.find( 'input' ).val( '' );
+				$wrapper.find( '.star' ).removeClass( 'filled' );
+			} );
+		},
 
-        /**
-         * Select image
-         */
-        selectImage: function(e) {
-            e.preventDefault();
-            const $button = $(this);
-            const $field = $button.closest('.image-field');
-            const $input = $field.find('.image-value');
-            const $preview = $field.find('.image-preview');
+		/**
+		 * Select image
+		 * @param {Event} e Click event.
+		 */
+		selectImage( e ) {
+			e.preventDefault();
+			const $button = $( this );
+			const $field = $button.closest( '.image-field' );
+			const $input = $field.find( '.image-value' );
+			const $preview = $field.find( '.image-preview' );
 
-            const frame = wp.media({
-                title: 'Select Image',
-                button: { text: 'Use Image' },
-                multiple: false
-            });
+			const frame = wp.media( {
+				title: 'Select Image',
+				button: { text: 'Use Image' },
+				multiple: false,
+			} );
 
-            frame.on('select', function() {
-                const attachment = frame.state().get('selection').first().toJSON();
-                $input.val(attachment.id);
-                $preview.find('img').attr('src', attachment.sizes.thumbnail ? attachment.sizes.thumbnail.url : attachment.url);
-                $preview.show();
-                $field.find('.remove-image').show();
-            });
+			frame.on( 'select', function () {
+				const attachment = frame
+					.state()
+					.get( 'selection' )
+					.first()
+					.toJSON();
+				$input.val( attachment.id );
+				$preview
+					.find( 'img' )
+					.attr(
+						'src',
+						attachment.sizes.thumbnail
+							? attachment.sizes.thumbnail.url
+							: attachment.url
+					);
+				$preview.show();
+				$field.find( '.remove-image' ).show();
+			} );
 
-            frame.open();
-        },
+			frame.open();
+		},
 
-        /**
-         * Remove image
-         */
-        removeImage: function(e) {
-            e.preventDefault();
-            const $field = $(this).closest('.image-field');
-            $field.find('.image-value').val('');
-            $field.find('.image-preview').hide();
-            $(this).hide();
-        },
+		/**
+		 * Remove image
+		 * @param {Event} e Click event.
+		 */
+		removeImage( e ) {
+			e.preventDefault();
+			const $field = $( this ).closest( '.image-field' );
+			$field.find( '.image-value' ).val( '' );
+			$field.find( '.image-preview' ).hide();
+			$( this ).hide();
+		},
 
-        /**
-         * Do media lookup
-         */
-        doMediaLookup: function(e) {
-            e.preventDefault();
-            const type = $('#lookup-type').val();
-            const query = $('#lookup-query').val();
-            const $results = $('#lookup-results');
+		/**
+		 * Do media lookup
+		 * @param {Event} e Click event.
+		 */
+		doMediaLookup( e ) {
+			e.preventDefault();
+			const query = $( '#lookup-query' ).val();
 
-            if (!query) {
-                return;
-            }
+			if ( ! query ) {
+				return;
+			}
 
-            $results.html('<p>' + postKindsIndieWeb.strings.lookingUp + '</p>');
+			const type = $( '#lookup-type' ).val();
+			const $results = $( '#lookup-results' );
 
-            $.ajax({
-                url: postKindsIndieWeb.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'post_kinds_indieweb_lookup_media',
-                    nonce: postKindsIndieWeb.nonce,
-                    type: type,
-                    query: query
-                },
-                success: function(response) {
-                    if (response.success && response.data.results.length) {
-                        let html = '';
-                        response.data.results.forEach(function(item) {
-                            html += '<div class="lookup-result" data-item=\'' + JSON.stringify(item) + '\'>';
-                            html += '<strong>' + (item.title || item.name) + '</strong>';
-                            if (item.artist) html += '<br>' + item.artist;
-                            if (item.year) html += ' (' + item.year + ')';
-                            html += '</div>';
-                        });
-                        $results.html(html);
-                    } else {
-                        $results.html('<p>' + postKindsIndieWeb.strings.noResults + '</p>');
-                    }
-                },
-                error: function() {
-                    $results.html('<p class="error">' + postKindsIndieWeb.strings.error + '</p>');
-                }
-            });
-        },
+			$results.html(
+				'<p>' + postKindsIndieWeb.strings.lookingUp + '</p>'
+			);
 
-        /**
-         * Select lookup result
-         */
-        selectLookupResult: function() {
-            const item = $(this).data('item');
-            // Populate form fields based on item data
-            // This would map the lookup result to the appropriate meta fields
-            console.log('Selected:', item);
-        },
+			$.ajax( {
+				url: postKindsIndieWeb.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'post_kinds_indieweb_lookup_media',
+					nonce: postKindsIndieWeb.nonce,
+					type,
+					query,
+				},
+				success( response ) {
+					if ( response.success && response.data.results.length ) {
+						let html = '';
+						response.data.results.forEach( function ( item ) {
+							html +=
+								'<div class="lookup-result" data-item=\'' +
+								JSON.stringify( item ) +
+								"'>";
+							html +=
+								'<strong>' +
+								( item.title || item.name ) +
+								'</strong>';
+							if ( item.artist ) {
+								html += '<br>' + item.artist;
+							}
+							if ( item.year ) {
+								html += ' (' + item.year + ')';
+							}
+							html += '</div>';
+						} );
+						$results.html( html );
+					} else {
+						$results.html(
+							'<p>' + postKindsIndieWeb.strings.noResults + '</p>'
+						);
+					}
+				},
+				error() {
+					$results.html(
+						'<p class="error">' +
+							postKindsIndieWeb.strings.error +
+							'</p>'
+					);
+				},
+			} );
+		},
 
-        /* =====================================================================
+		/**
+		 * Select lookup result
+		 */
+		selectLookupResult() {
+			const item = $( this ).data( 'item' );
+			// Populate form fields based on item data
+			// This would map the lookup result to the appropriate meta fields
+			// eslint-disable-next-line no-console -- Placeholder until field mapping is implemented.
+			console.log( 'Selected:', item );
+		},
+
+		/* =====================================================================
            Quick Post
            ===================================================================== */
 
-        /**
-         * Initialize quick post page
-         */
-        initQuickPost: function() {
-            if (!$('.post-kinds-indieweb-quick-post').length) {
-                return;
-            }
+		/**
+		 * Initialize quick post page
+		 */
+		initQuickPost() {
+			if ( ! $( '.post-kinds-indieweb-quick-post' ).length ) {
+				return;
+			}
 
-            // Kind tab selection
-            $(document).on('click', '.kind-tab', this.selectKindTab);
+			// Kind tab selection
+			$( document ).on( 'click', '.kind-tab', this.selectKindTab );
 
-            // Media type toggle (watch)
-            $(document).on('click', '.media-type-toggle .toggle-button', this.toggleMediaType);
+			// Media type toggle (watch)
+			$( document ).on(
+				'click',
+				'.media-type-toggle .toggle-button',
+				this.toggleMediaType
+			);
 
-            // Search buttons
-            $(document).on('click', '.search-section .search-button', this.doQuickSearch);
-            $(document).on('keypress', '.search-section input', function(e) {
-                if (e.which === 13) {
-                    e.preventDefault();
-                    $(this).siblings('.search-button').click();
-                }
-            });
+			// Search buttons
+			$( document ).on(
+				'click',
+				'.search-section .search-button',
+				this.doQuickSearch
+			);
+			$( document ).on(
+				'keypress',
+				'.search-section input',
+				function ( e ) {
+					if ( e.which === 13 ) {
+						e.preventDefault();
+						$( this ).siblings( '.search-button' ).click();
+					}
+				}
+			);
 
-            // Select search result
-            $(document).on('click', '.search-result-item', this.selectSearchResult);
+			// Select search result
+			$( document ).on(
+				'click',
+				'.search-result-item',
+				this.selectSearchResult
+			);
 
-            // Fetch metadata
-            $(document).on('click', '.fetch-metadata-button', this.fetchUrlMetadata);
+			// Fetch metadata
+			$( document ).on(
+				'click',
+				'.fetch-metadata-button',
+				this.fetchUrlMetadata
+			);
 
-            // Use location
-            $(document).on('click', '.use-location-button', this.useCurrentLocation);
+			// Use location
+			$( document ).on(
+				'click',
+				'.use-location-button',
+				this.useCurrentLocation
+			);
 
-            // Form submission
-            $(document).on('submit', '.quick-post-form', this.submitQuickPost);
+			// Form submission
+			$( document ).on(
+				'submit',
+				'.quick-post-form',
+				this.submitQuickPost
+			);
 
-            // Clear form
-            $(document).on('click', '.clear-form-button', this.clearForm);
+			// Clear form
+			$( document ).on( 'click', '.clear-form-button', this.clearForm );
 
-            // Init star ratings
-            this.initStarRating();
-        },
+			// Init star ratings
+			this.initStarRating();
+		},
 
-        /**
-         * Select kind tab
-         */
-        selectKindTab: function() {
-            const kind = $(this).data('kind');
+		/**
+		 * Select kind tab
+		 */
+		selectKindTab() {
+			const kind = $( this ).data( 'kind' );
 
-            // Update tabs
-            $('.kind-tab').removeClass('active');
-            $(this).addClass('active');
+			// Update tabs
+			$( '.kind-tab' ).removeClass( 'active' );
+			$( this ).addClass( 'active' );
 
-            // Show/hide forms
-            $('.quick-form').hide();
-            $(`.quick-form[data-kind="${kind}"]`).show();
-        },
+			// Show/hide forms
+			$( '.quick-form' ).hide();
+			$( `.quick-form[data-kind="${ kind }"]` ).show();
+		},
 
-        /**
-         * Toggle media type (movie/tv)
-         */
-        toggleMediaType: function() {
-            const subtype = $(this).data('subtype');
-            const $form = $(this).closest('.quick-form');
+		/**
+		 * Toggle media type (movie/tv)
+		 */
+		toggleMediaType() {
+			const subtype = $( this ).data( 'subtype' );
+			const $form = $( this ).closest( '.quick-form' );
 
-            // Update buttons
-            $form.find('.toggle-button').removeClass('active');
-            $(this).addClass('active');
+			// Update buttons
+			$form.find( '.toggle-button' ).removeClass( 'active' );
+			$( this ).addClass( 'active' );
 
-            // Update hidden field
-            $form.find('[name="media_type"]').val(subtype);
+			// Update hidden field
+			$form.find( '[name="media_type"]' ).val( subtype );
 
-            // Toggle TV-specific fields
-            if (subtype === 'tv') {
-                $form.find('.tv-fields').slideDown(200);
-            } else {
-                $form.find('.tv-fields').slideUp(200);
-            }
+			// Toggle TV-specific fields
+			if ( subtype === 'tv' ) {
+				$form.find( '.tv-fields' ).slideDown( 200 );
+			} else {
+				$form.find( '.tv-fields' ).slideUp( 200 );
+			}
 
-            // Update search type
-            $form.find('.search-button').data('type', subtype);
-        },
+			// Update search type
+			$form.find( '.search-button' ).data( 'type', subtype );
+		},
 
-        /**
-         * Do quick search
-         */
-        doQuickSearch: function(e) {
-            e.preventDefault();
-            const $button = $(this);
-            const type = $button.data('type');
-            const $section = $button.closest('.search-section');
-            const query = $section.find('input').val();
-            const $results = $section.find('.search-results');
+		/**
+		 * Do quick search
+		 * @param {Event} e Click event.
+		 */
+		doQuickSearch( e ) {
+			e.preventDefault();
+			const $button = $( this );
+			const $section = $button.closest( '.search-section' );
+			const query = $section.find( 'input' ).val();
 
-            if (!query) {
-                return;
-            }
+			if ( ! query ) {
+				return;
+			}
 
-            $results.html('<p class="searching">' + postKindsIndieWeb.strings.lookingUp + '</p>');
+			const type = $button.data( 'type' );
+			const $results = $section.find( '.search-results' );
 
-            $.ajax({
-                url: postKindsIndieWeb.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'post_kinds_indieweb_lookup_media',
-                    nonce: postKindsIndieWeb.nonce,
-                    type: type,
-                    query: query
-                },
-                success: function(response) {
-                    if (response.success && response.data.results && response.data.results.length) {
-                        let html = '';
-                        response.data.results.forEach(function(item) {
-                            html += '<div class="search-result-item" data-item=\'' + JSON.stringify(item).replace(/'/g, '&#39;') + '\'>';
-                            if (item.image || item.cover) {
-                                html += '<img src="' + (item.image || item.cover) + '" alt="">';
-                            }
-                            html += '<div class="search-result-info">';
-                            html += '<div class="search-result-title">' + (item.title || item.name) + '</div>';
-                            html += '<div class="search-result-subtitle">';
-                            if (item.artist) html += item.artist;
-                            if (item.year) html += (item.artist ? ' - ' : '') + item.year;
-                            if (item.author) html += item.author;
-                            html += '</div></div></div>';
-                        });
-                        $results.html(html);
-                    } else {
-                        $results.html('<p>' + postKindsIndieWeb.strings.noResults + '</p>');
-                    }
-                },
-                error: function() {
-                    $results.html('<p class="error">' + postKindsIndieWeb.strings.error + '</p>');
-                }
-            });
-        },
+			$results.html(
+				'<p class="searching">' +
+					postKindsIndieWeb.strings.lookingUp +
+					'</p>'
+			);
 
-        /**
-         * Select search result
-         */
-        selectSearchResult: function() {
-            const item = $(this).data('item');
-            const $form = $(this).closest('.quick-form').find('.quick-post-form');
-            const kind = $form.data('kind');
+			$.ajax( {
+				url: postKindsIndieWeb.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'post_kinds_indieweb_lookup_media',
+					nonce: postKindsIndieWeb.nonce,
+					type,
+					query,
+				},
+				success( response ) {
+					if (
+						response.success &&
+						response.data.results &&
+						response.data.results.length
+					) {
+						let html = '';
+						response.data.results.forEach( function ( item ) {
+							html +=
+								'<div class="search-result-item" data-item=\'' +
+								JSON.stringify( item ).replace(
+									/'/g,
+									'&#39;'
+								) +
+								"'>";
+							if ( item.image || item.cover ) {
+								html +=
+									'<img src="' +
+									( item.image || item.cover ) +
+									'" alt="">';
+							}
+							html += '<div class="search-result-info">';
+							html +=
+								'<div class="search-result-title">' +
+								( item.title || item.name ) +
+								'</div>';
+							html += '<div class="search-result-subtitle">';
+							if ( item.artist ) {
+								html += item.artist;
+							}
+							if ( item.year ) {
+								html +=
+									( item.artist ? ' - ' : '' ) + item.year;
+							}
+							if ( item.author ) {
+								html += item.author;
+							}
+							html += '</div></div></div>';
+						} );
+						$results.html( html );
+					} else {
+						$results.html(
+							'<p>' + postKindsIndieWeb.strings.noResults + '</p>'
+						);
+					}
+				},
+				error() {
+					$results.html(
+						'<p class="error">' +
+							postKindsIndieWeb.strings.error +
+							'</p>'
+					);
+				},
+			} );
+		},
 
-            // Populate form based on kind
-            switch (kind) {
-                case 'listen':
-                    $form.find('[name="track_title"]').val(item.title || item.name || '');
-                    $form.find('[name="artist_name"]').val(item.artist || '');
-                    $form.find('[name="album_title"]').val(item.album || '');
-                    $form.find('[name="musicbrainz_id"]').val(item.id || item.mbid || '');
-                    $form.find('[name="cover_image"]').val(item.cover || item.image || '');
-                    break;
+		/**
+		 * Select search result
+		 */
+		selectSearchResult() {
+			const item = $( this ).data( 'item' );
+			const $form = $( this )
+				.closest( '.quick-form' )
+				.find( '.quick-post-form' );
+			const kind = $form.data( 'kind' );
 
-                case 'watch':
-                    $form.find('[name="media_title"]').val(item.title || item.name || '');
-                    $form.find('[name="release_year"]').val(item.year || '');
-                    $form.find('[name="tmdb_id"]').val(item.tmdb_id || item.id || '');
-                    $form.find('[name="imdb_id"]').val(item.imdb_id || '');
-                    $form.find('[name="poster_image"]').val(item.poster || item.image || '');
-                    break;
+			// Populate form based on kind
+			switch ( kind ) {
+				case 'listen':
+					$form
+						.find( '[name="track_title"]' )
+						.val( item.title || item.name || '' );
+					$form
+						.find( '[name="artist_name"]' )
+						.val( item.artist || '' );
+					$form
+						.find( '[name="album_title"]' )
+						.val( item.album || '' );
+					$form
+						.find( '[name="musicbrainz_id"]' )
+						.val( item.id || item.mbid || '' );
+					$form
+						.find( '[name="cover_image"]' )
+						.val( item.cover || item.image || '' );
+					break;
 
-                case 'read':
-                    $form.find('[name="book_title"]').val(item.title || '');
-                    $form.find('[name="author_name"]').val(item.author || '');
-                    $form.find('[name="isbn"]').val(item.isbn || '');
-                    $form.find('[name="openlibrary_id"]').val(item.key || item.id || '');
-                    $form.find('[name="cover_image"]').val(item.cover || '');
-                    break;
-            }
+				case 'watch':
+					$form
+						.find( '[name="media_title"]' )
+						.val( item.title || item.name || '' );
+					$form
+						.find( '[name="release_year"]' )
+						.val( item.year || '' );
+					$form
+						.find( '[name="tmdb_id"]' )
+						.val( item.tmdb_id || item.id || '' );
+					$form.find( '[name="imdb_id"]' ).val( item.imdb_id || '' );
+					$form
+						.find( '[name="poster_image"]' )
+						.val( item.poster || item.image || '' );
+					break;
 
-            // Clear search results
-            $(this).closest('.search-results').empty();
-        },
+				case 'read':
+					$form.find( '[name="book_title"]' ).val( item.title || '' );
+					$form
+						.find( '[name="author_name"]' )
+						.val( item.author || '' );
+					$form.find( '[name="isbn"]' ).val( item.isbn || '' );
+					$form
+						.find( '[name="openlibrary_id"]' )
+						.val( item.key || item.id || '' );
+					$form
+						.find( '[name="cover_image"]' )
+						.val( item.cover || '' );
+					break;
+			}
 
-        /**
-         * Fetch URL metadata
-         */
-        fetchUrlMetadata: function(e) {
-            e.preventDefault();
-            const $button = $(this);
-            const $form = $button.closest('.quick-post-form');
-            const url = $form.find('[type="url"]').first().val();
+			// Clear search results
+			$( this ).closest( '.search-results' ).empty();
+		},
 
-            if (!url) {
-                return;
-            }
+		/**
+		 * Fetch URL metadata
+		 * @param {Event} e Click event.
+		 */
+		fetchUrlMetadata( e ) {
+			e.preventDefault();
+			const $button = $( this );
+			const $form = $button.closest( '.quick-post-form' );
+			const url = $form.find( '[type="url"]' ).first().val();
 
-            $button.prop('disabled', true).text('Fetching...');
+			if ( ! url ) {
+				return;
+			}
 
-            // In production, this would call an AJAX endpoint to fetch page metadata
-            setTimeout(function() {
-                $button.prop('disabled', false).html('<span class="dashicons dashicons-download"></span> Fetch Metadata');
-                // Would populate cite_name, cite_author from fetched data
-            }, 1000);
-        },
+			$button.prop( 'disabled', true ).text( 'Fetching...' );
 
-        /**
-         * Use current location
-         */
-        useCurrentLocation: function(e) {
-            e.preventDefault();
-            const $button = $(this);
-            const $form = $button.closest('.quick-form').find('.quick-post-form');
+			// In production, this would call an AJAX endpoint to fetch page metadata
+			setTimeout( function () {
+				$button
+					.prop( 'disabled', false )
+					.html(
+						'<span class="dashicons dashicons-download"></span> Fetch Metadata'
+					);
+				// Would populate cite_name, cite_author from fetched data
+			}, 1000 );
+		},
 
-            if (!navigator.geolocation) {
-                alert('Geolocation is not supported by your browser.');
-                return;
-            }
+		/**
+		 * Use current location
+		 * @param {Event} e Click event.
+		 */
+		useCurrentLocation( e ) {
+			e.preventDefault();
 
-            $button.prop('disabled', true).text('Getting location...');
+			if ( ! navigator.geolocation ) {
+				alert( 'Geolocation is not supported by your browser.' );
+				return;
+			}
 
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    $form.find('[name="latitude"]').val(position.coords.latitude);
-                    $form.find('[name="longitude"]').val(position.coords.longitude);
-                    $button.prop('disabled', false).html('<span class="dashicons dashicons-location-alt"></span> Use My Location');
+			const $button = $( this );
+			const $form = $button
+				.closest( '.quick-form' )
+				.find( '.quick-post-form' );
 
-                    // Could also trigger a reverse geocode lookup here
-                },
-                function(error) {
-                    alert('Unable to get location: ' + error.message);
-                    $button.prop('disabled', false).html('<span class="dashicons dashicons-location-alt"></span> Use My Location');
-                }
-            );
-        },
+			$button.prop( 'disabled', true ).text( 'Getting location...' );
 
-        /**
-         * Submit quick post form
-         */
-        submitQuickPost: function(e) {
-            e.preventDefault();
-            const $form = $(this);
-            const kind = $form.data('kind');
-            const $feedback = $form.find('.form-feedback');
-            const $submit = $form.find('.submit-quick-post');
+			navigator.geolocation.getCurrentPosition(
+				function ( position ) {
+					$form
+						.find( '[name="latitude"]' )
+						.val( position.coords.latitude );
+					$form
+						.find( '[name="longitude"]' )
+						.val( position.coords.longitude );
+					$button
+						.prop( 'disabled', false )
+						.html(
+							'<span class="dashicons dashicons-location-alt"></span> Use My Location'
+						);
 
-            // Gather form data
-            const data = {};
-            $form.find('input, select, textarea').each(function() {
-                const $input = $(this);
-                const name = $input.attr('name');
-                if (name) {
-                    if ($input.is(':checkbox')) {
-                        data[name] = $input.is(':checked') ? '1' : '';
-                    } else {
-                        data[name] = $input.val();
-                    }
-                }
-            });
+					// Could also trigger a reverse geocode lookup here
+				},
+				function ( error ) {
+					alert( 'Unable to get location: ' + error.message );
+					$button
+						.prop( 'disabled', false )
+						.html(
+							'<span class="dashicons dashicons-location-alt"></span> Use My Location'
+						);
+				}
+			);
+		},
 
-            $submit.prop('disabled', true);
-            $feedback.removeClass('success error').hide();
+		/**
+		 * Submit quick post form
+		 * @param {Event} e Submit event.
+		 */
+		submitQuickPost( e ) {
+			e.preventDefault();
+			const $form = $( this );
+			const kind = $form.data( 'kind' );
+			const $feedback = $form.find( '.form-feedback' );
+			const $submit = $form.find( '.submit-quick-post' );
 
-            $.ajax({
-                url: postKindsIndieWeb.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'post_kinds_indieweb_quick_post',
-                    nonce: postKindsIndieWeb.nonce,
-                    kind: kind,
-                    data: data
-                },
-                success: function(response) {
-                    if (response.success) {
-                        $feedback
-                            .addClass('success')
-                            .html(response.data.message + ' <a href="' + response.data.edit_url + '">Edit</a> | <a href="' + response.data.view_url + '" target="_blank">View</a>')
-                            .show();
+			// Gather form data
+			const data = {};
+			$form.find( 'input, select, textarea' ).each( function () {
+				const $input = $( this );
+				const name = $input.attr( 'name' );
+				if ( name ) {
+					if ( $input.is( ':checkbox' ) ) {
+						data[ name ] = $input.is( ':checked' ) ? '1' : '';
+					} else {
+						data[ name ] = $input.val();
+					}
+				}
+			} );
 
-                        // Clear form
-                        $form[0].reset();
-                        $form.find('.star').removeClass('filled');
-                    } else {
-                        $feedback.addClass('error').text(response.data.message).show();
-                    }
-                },
-                error: function() {
-                    $feedback.addClass('error').text(postKindsIndieWeb.strings.error).show();
-                },
-                complete: function() {
-                    $submit.prop('disabled', false);
-                }
-            });
-        },
+			$submit.prop( 'disabled', true );
+			$feedback.removeClass( 'success error' ).hide();
 
-        /**
-         * Clear form
-         */
-        clearForm: function(e) {
-            e.preventDefault();
-            const $form = $(this).closest('.quick-post-form');
-            $form[0].reset();
-            $form.find('.star').removeClass('filled');
-            $form.find('.form-feedback').hide();
-            $form.closest('.quick-form').find('.search-results').empty();
-        }
-    };
+			$.ajax( {
+				url: postKindsIndieWeb.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'post_kinds_indieweb_quick_post',
+					nonce: postKindsIndieWeb.nonce,
+					kind,
+					data,
+				},
+				success( response ) {
+					if ( response.success ) {
+						$feedback
+							.addClass( 'success' )
+							.html(
+								response.data.message +
+									' <a href="' +
+									response.data.edit_url +
+									'">Edit</a> | <a href="' +
+									response.data.view_url +
+									'" target="_blank">View</a>'
+							)
+							.show();
 
-    // Initialize on document ready
-    $(document).ready(function() {
-        PostKindsAdmin.init();
-    });
+						// Clear form
+						$form[ 0 ].reset();
+						$form.find( '.star' ).removeClass( 'filled' );
+					} else {
+						$feedback
+							.addClass( 'error' )
+							.text( response.data.message )
+							.show();
+					}
+				},
+				error() {
+					$feedback
+						.addClass( 'error' )
+						.text( postKindsIndieWeb.strings.error )
+						.show();
+				},
+				complete() {
+					$submit.prop( 'disabled', false );
+				},
+			} );
+		},
 
-})(jQuery);
+		/**
+		 * Clear form
+		 * @param {Event} e Click event.
+		 */
+		clearForm( e ) {
+			e.preventDefault();
+			const $form = $( this ).closest( '.quick-post-form' );
+			$form[ 0 ].reset();
+			$form.find( '.star' ).removeClass( 'filled' );
+			$form.find( '.form-feedback' ).hide();
+			$form.closest( '.quick-form' ).find( '.search-results' ).empty();
+		},
+	};
+
+	// Initialize on document ready
+	$( document ).ready( function () {
+		PostKindsAdmin.init();
+	} );
+} )( jQuery );

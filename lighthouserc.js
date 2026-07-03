@@ -22,8 +22,14 @@ module.exports = {
 				// Performance
 				'categories:performance': [ 'warn', { minScore: 0.6 } ],
 				'first-contentful-paint': [ 'warn', { maxNumericValue: 3000 } ],
-				'largest-contentful-paint': [ 'warn', { maxNumericValue: 4000 } ],
-				'cumulative-layout-shift': [ 'error', { maxNumericValue: 0.1 } ],
+				'largest-contentful-paint': [
+					'warn',
+					{ maxNumericValue: 4000 },
+				],
+				'cumulative-layout-shift': [
+					'error',
+					{ maxNumericValue: 0.1 },
+				],
 				'total-blocking-time': [ 'warn', { maxNumericValue: 500 } ],
 
 				// Accessibility (strict)

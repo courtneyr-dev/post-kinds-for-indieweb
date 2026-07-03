@@ -26,7 +26,9 @@ describe( 'StarRating', () => {
 	it( 'renders with default props', () => {
 		render( <StarRating /> );
 
-		const ratingGroup = screen.getByRole( 'group', { name: 'Star Rating' } );
+		const ratingGroup = screen.getByRole( 'group', {
+			name: 'Star Rating',
+		} );
 		expect( ratingGroup ).toBeInTheDocument();
 
 		const buttons = screen.getAllByRole( 'button' );

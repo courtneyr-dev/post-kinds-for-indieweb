@@ -7,8 +7,6 @@
  * @package
  */
 
-/* global navigator */
-
 import { __ } from '@wordpress/i18n';
 import {
 	useBlockProps,
@@ -345,7 +343,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			} );
 
 			setNearbyVenues( results || [] );
-		} catch ( err ) {
+		} catch {
 			// Foursquare not configured - that's okay, just don't show nearby venues
 			setNearbyVenues( [] );
 		} finally {
@@ -381,7 +379,7 @@ export default function Edit( { attributes, setAttributes } ) {
 				) }`,
 			} );
 			setSidebarSearchResults( results || [] );
-		} catch ( err ) {
+		} catch {
 			// Fall back to Nominatim
 			try {
 				const fallbackResults = await apiFetch( {
@@ -390,7 +388,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					) }`,
 				} );
 				setSidebarSearchResults( fallbackResults || [] );
-			} catch ( fallbackErr ) {
+			} catch {
 				setSidebarSearchResults( [] );
 			}
 		} finally {
