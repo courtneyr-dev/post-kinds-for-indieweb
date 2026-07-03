@@ -22,6 +22,26 @@ use PostKindsForIndieWeb\Micropub_Content_Builder;
 class MicropubContentBuilderTest extends WP_UnitTestCase {
 
 	/**
+	 * Recreate the kind terms these tests rely on.
+	 *
+	 * Earlier suite classes can leak committed term deletions (DDL inside
+	 * a test implicitly commits MySQL's rollback transaction), so the
+	 * bootstrap-created default terms aren't guaranteed to still exist.
+	 */
+	public function set_up(): void {
+		parent::set_up();
+		foreach ( array( 'note', 'checkin', 'eat', 'drink', 'like', 'rsvp' ) as $slug ) {
+			if ( ! term_exists( $slug, 'kind' ) ) {
+				wp_insert_term( ucfirst( $slug ), 'kind', array( 'slug' => $slug ) );
+			}
+		}
+		$note = get_term_by( 'slug', 'note', 'kind' );
+		if ( $note instanceof \WP_Term ) {
+			update_option( 'default_term_kind', $note->term_id );
+		}
+	}
+
+	/**
 	 * Invoke a private static method on the builder by name.
 	 *
 	 * @param string                $method
@@ -605,5 +625,168 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertSame( 1, substr_count( $markup, '<!-- wp:image' ) );
 		$this->assertStringNotContainsString( '<!-- wp:gallery', $markup );
 		$this->assertStringContainsString( 'alt="one"', $markup );
+	}
+
+	// --- kind term assignment ------------------------------------------------
+
+	/**
+	 * Read the post's kind term slugs.
+	 *
+	 * @param int $post_id
+	 * @return string[]
+	 */
+	private function kind_slugs( int $post_id ): array {
+		$slugs = wp_get_post_terms( $post_id, 'kind', array( 'fields' => 'slugs' ) );
+		return is_array( $slugs ) ? $slugs : array();
+	}
+
+	public function test_detect_term_only_kind_maps_mf2_properties(): void {
+		$cases = array(
+			'like'     => array( 'like-of' => 'https://example.test/post' ),
+			'repost'   => array( 'repost-of' => 'https://example.test/post' ),
+			'bookmark' => array( 'bookmark-of' => 'https://example.test/post' ),
+			'reply'    => array( 'in-reply-to' => 'https://example.test/post' ),
+		);
+		foreach ( $cases as $expected => $properties ) {
+			$this->assertSame(
+				$expected,
+				$this->invoke_private( 'detect_term_only_kind', array( $properties ) )
+			);
+		}
+		$this->assertNull(
+			$this->invoke_private( 'detect_term_only_kind', array( array( 'content' => 'plain note' ) ) )
+		);
+	}
+
+	public function test_apply_assigns_detected_kind_term(): void {
+		// Micropub inserts the post with no kind terms, so WP core's
+		// default_term gives it `note` — apply() must overwrite that.
+		// Core only assigns the default when the acting user can assign
+		// terms, so run as an author like a real Micropub request.
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'author' ) ) );
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_content' => 'coffee stop',
+			)
+		);
+		$this->assertSame( array( 'note' ), $this->kind_slugs( $post_id ) );
+
+		Micropub_Content_Builder::apply(
+			array(
+				'h'             => 'entry',
+				'mp-place-name' => 'Cafe Test',
+				'location'      => 'geo:39.93,-77.66',
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$this->assertSame( array( 'checkin' ), $this->kind_slugs( $post_id ) );
+	}
+
+	public function test_apply_assigns_term_for_cardless_like_post(): void {
+		// like/reply/repost/bookmark have kind terms but no card builder —
+		// content must stay untouched while the term is still assigned.
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_content' => 'Liked this a lot',
+			)
+		);
+
+		Micropub_Content_Builder::apply(
+			array(
+				'h'       => 'entry',
+				'like-of' => 'https://example.test/great-post',
+				'content' => 'Liked this a lot',
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$this->assertSame( array( 'like' ), $this->kind_slugs( $post_id ) );
+		$this->assertSame( 'Liked this a lot', (string) get_post_field( 'post_content', $post_id ) );
+		$this->assertSame( '', (string) get_post_meta( $post_id, '_pkiw_block_content_generated', true ) );
+	}
+
+	public function test_apply_rsvp_takes_precedence_over_reply(): void {
+		// RSVP posts always carry in-reply-to; the rsvp property wins.
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_content' => 'See you there',
+			)
+		);
+
+		Micropub_Content_Builder::apply(
+			array(
+				'h'           => 'entry',
+				'rsvp'        => 'yes',
+				'in-reply-to' => 'https://example.test/event',
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$this->assertSame( array( 'rsvp' ), $this->kind_slugs( $post_id ) );
+	}
+
+	public function test_apply_leaves_default_note_for_termless_follow_kind(): void {
+		// follow/weather are builder-only kinds with no taxonomy term —
+		// they keep core's `note` default (but still get their content).
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'author' ) ) );
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_content' => 'placeholder',
+			)
+		);
+
+		Micropub_Content_Builder::apply(
+			array(
+				'h'         => 'entry',
+				'follow-of' => 'https://example.test/author',
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$this->assertSame( array( 'note' ), $this->kind_slugs( $post_id ) );
+		$this->assertStringContainsString( 'u-follow-of', (string) get_post_field( 'post_content', $post_id ) );
+	}
+
+	public function test_apply_does_not_reassign_kind_after_generation(): void {
+		// Once the marker is set, a later Micropub update must not clobber
+		// a manually-corrected kind (same contract as content idempotency).
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_content' => 'lunch',
+			)
+		);
+
+		Micropub_Content_Builder::apply(
+			array(
+				'h'      => 'entry',
+				'eat-of' => 'Tacos',
+			),
+			array( 'ID' => $post_id )
+		);
+		$this->assertSame( array( 'eat' ), $this->kind_slugs( $post_id ) );
+
+		// User corrects the kind by hand.
+		wp_set_post_terms( $post_id, array( 'drink' ), 'kind' );
+
+		Micropub_Content_Builder::apply(
+			array(
+				'h'      => 'entry',
+				'eat-of' => 'More tacos',
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$this->assertSame( array( 'drink' ), $this->kind_slugs( $post_id ) );
 	}
 }

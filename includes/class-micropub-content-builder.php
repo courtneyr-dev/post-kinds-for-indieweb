@@ -118,6 +118,11 @@ final class Micropub_Content_Builder {
 			return;
 		}
 
+		// Assign the kind taxonomy term before touching content — some kinds
+		// (like/reply/repost/bookmark) have terms but no card builder, so the
+		// content path below returns early for them.
+		self::assign_kind_term( $post_id, $properties );
+
 		$block_content = self::build_block_content( $properties );
 		if ( null === $block_content ) {
 			// Post kind didn't match any of the recognized shapes — leave the
@@ -137,6 +142,66 @@ final class Micropub_Content_Builder {
 				'post_content' => $block_content,
 			]
 		);
+	}
+
+	/**
+	 * Assign the detected kind's taxonomy term to the post.
+	 *
+	 * The `kind` taxonomy registers `note` as its default_term, so WP core
+	 * gives every Micropub-created post kind=note — the bridge knows the
+	 * real kind but never wrote it, leaving posts with the wrong badge and
+	 * in the wrong kind archives. `wp_set_post_terms` (via set_post_kind)
+	 * replaces the default cleanly.
+	 *
+	 * Kinds without a registered term (follow, weather) are skipped and
+	 * keep the core default; if a site later creates those terms the
+	 * assignment picks them up automatically.
+	 *
+	 * @param int                  $post_id    Post ID created by Micropub.
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return void
+	 */
+	private static function assign_kind_term( int $post_id, array $properties ): void {
+		$kind = self::detect_kind( $properties ) ?? self::detect_term_only_kind( $properties );
+		if ( null === $kind ) {
+			return;
+		}
+
+		$taxonomy = Plugin::get_instance()->get_taxonomy();
+		if ( null === $taxonomy || ! $taxonomy->is_valid_kind( $kind ) ) {
+			return;
+		}
+
+		$taxonomy->set_post_kind( $post_id, $kind );
+	}
+
+	/**
+	 * Detect kinds that have taxonomy terms but no card builder.
+	 *
+	 * The detect_kind() pass only recognizes shapes the content builder can
+	 * render into card blocks. Like/reply/repost/bookmark posts arrive with
+	 * standard mf2 properties and have real kind terms, but no card —
+	 * without this fallback they'd stay on the `note` default. Inferring
+	 * `reply` from `in-reply-to` is safe here because detect_kind() has
+	 * already returned null, so no `rsvp` property is present.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return string|null Kind slug or null when nothing matches.
+	 */
+	private static function detect_term_only_kind( array $properties ): ?string {
+		if ( self::has_property( $properties, 'like-of' ) ) {
+			return 'like';
+		}
+		if ( self::has_property( $properties, 'repost-of' ) ) {
+			return 'repost';
+		}
+		if ( self::has_property( $properties, 'bookmark-of' ) ) {
+			return 'bookmark';
+		}
+		if ( self::has_property( $properties, 'in-reply-to' ) ) {
+			return 'reply';
+		}
+		return null;
 	}
 
 	/**
