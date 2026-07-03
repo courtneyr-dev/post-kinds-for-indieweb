@@ -16,7 +16,7 @@
 .venue-detail__map {
 	width: 100%;
 	height: 250px;
-	background: #f0f0f0;
+	background: var(--wp--preset--color--tertiary, #f0f0f0);
 }
 
 .venue-detail__map-fallback {
@@ -24,7 +24,7 @@
 	align-items: center;
 	justify-content: center;
 	height: 100%;
-	color: #666;
+	color: var(--wp--preset--color--contrast, #666);
 	margin: 0;
 }
 

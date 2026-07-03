@@ -7,14 +7,14 @@
 }
 
 .venue-detail__preview {
-	border: 1px solid #ddd;
+	border: 1px solid var(--wp--preset--color--contrast, #ddd);
 	border-radius: 8px;
 	overflow: hidden;
 }
 
 .venue-detail__map-placeholder {
-	background: #f0f0f0;
-	border-bottom: 1px solid #ddd;
+	background: var(--wp--preset--color--tertiary, #f0f0f0);
+	border-bottom: 1px solid var(--wp--preset--color--contrast, #ddd);
 	padding: 2rem;
 }
 
@@ -24,7 +24,7 @@
 	align-items: center;
 	justify-content: center;
 	gap: 0.5rem;
-	color: #666;
+	color: var(--wp--preset--color--contrast, #666);
 }
 
 .venue-detail__map-preview .dashicons {
@@ -44,7 +44,7 @@
 }
 
 .venue-detail__address {
-	color: #666;
+	color: var(--wp--preset--color--contrast, #666);
 	font-size: 0.875rem;
 	margin-bottom: 0.5rem;
 }
@@ -52,7 +52,7 @@
 .venue-detail__checkins-preview {
 	margin-top: 1rem;
 	padding-top: 1rem;
-	border-top: 1px solid #eee;
+	border-top: 1px solid var(--wp--preset--color--contrast, #eee);
 }
 
 .venue-detail__checkins-preview h3 {
@@ -61,7 +61,7 @@
 }
 
 .venue-detail__checkins-preview .description {
-	color: #666;
+	color: var(--wp--preset--color--contrast, #666);
 	font-size: 0.875rem;
 	font-style: italic;
 }

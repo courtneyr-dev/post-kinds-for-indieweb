@@ -55,8 +55,8 @@
 }
 
 .checkins-feed__item {
-	background: #fff;
-	border: 1px solid #ddd;
+	background: var(--wp--preset--color--background, #fff);
+	border: 1px solid var(--wp--preset--color--contrast, #ddd);
 	border-radius: 4px;
 	padding: 1rem;
 }
@@ -72,17 +72,17 @@
 	align-items: center;
 	gap: 0.25rem;
 	font-size: 0.875rem;
-	color: #666;
+	color: var(--wp--preset--color--contrast, #666);
 	margin-bottom: 0.25rem;
 }
 
 .checkins-feed__date {
 	font-size: 0.75rem;
-	color: #999;
+	color: var(--wp--preset--color--contrast, #999);
 }
 
 .checkins-feed__excerpt {
 	margin-top: 0.5rem;
 	font-size: 0.875rem;
-	color: #444;
+	color: var(--wp--preset--color--contrast, #444);
 }

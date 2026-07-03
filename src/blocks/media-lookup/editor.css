@@ -36,7 +36,7 @@
 
 .wp-block-post-kinds-indieweb-media-lookup .source-label {
 	font-size: 0.75rem;
-	color: #888;
+	color: var(--wp--preset--color--contrast, #888);
 	font-style: italic;
 }
 

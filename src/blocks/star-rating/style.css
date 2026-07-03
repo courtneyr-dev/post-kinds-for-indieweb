@@ -4,9 +4,16 @@
  * @package Reactions_For_IndieWeb
  */
 
+/*
+ * Rating colors are intentionally palette-independent: stars stay gold,
+ * hearts stay pink, circles stay blue on any theme. Themes can override
+ * each token from theme.json styles.css or a stylesheet.
+ */
 .wp-block-post-kinds-indieweb-star-rating {
 	--star-rating-color: #ffc107;
 	--star-rating-empty: #ddd;
+	--star-rating-heart: #e91e63;
+	--star-rating-circle: #2196f3;
 }
 
 .star-rating-inner {
@@ -71,11 +78,11 @@
 
 /* Style variations */
 .star-rating-block.style-hearts .rating-icon.filled {
-	color: #e91e63;
+	color: var(--star-rating-heart);
 }
 
 .star-rating-block.style-circles .rating-icon.filled {
-	color: #2196f3;
+	color: var(--star-rating-circle);
 }
 
 /* Rating value */

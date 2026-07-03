@@ -315,6 +315,64 @@ value — the plugins themselves never co-reference.
 
 ---
 
+## Addendum — 2026-07-03 theme-palette preset pass
+
+The C3 migration above never shipped: `styles/kind-tokens.css` exists but
+is not enqueued anywhere, so every `--pkiw-*` reference in
+`src/blocks/shared/card-editor.css` resolves to its inline fallback. A
+follow-up task tracks whether to complete or retire that contract.
+
+Independently of that decision, the remaining hard-coded hex colors in the
+block stylesheets (91 literals across 15 files) were audited on 2026-07-03
+using the decision framework from the PFBT variation audit. The approach
+is softer than the C2 neutral contract: colors default to the active
+theme's palette presets and keep the previous hex values as fallbacks, so
+nothing changes visually on themes without those preset slugs.
+
+### Decision rules applied
+
+1. **Front-end color that sits on themed output** → `var(--wp--preset--color--*, previous-hex)`.
+   Slugs used: `contrast` (text and borders), `base` (card/dropdown
+   surfaces), `tertiary` (muted surfaces like map placeholders and empty
+   states), `primary` (links/accents), `background` (kept where the file
+   already used it).
+2. **Editor UI that mirrors front-end content or sits directly on the
+   iframed canvas** (WP 7.0 themes the canvas) → same presets, so text
+   stays readable on dark-palette themes.
+3. **Self-contained editor chrome** — media placeholders (grey box +
+   dashed `#ccc` border + `#666` label) and text/background chip pairs
+   (`#757575` on `#f0f0f0`, admin blue on `#e7f3ff`) — stays hard-coded:
+   the pair travels together and mirrors core's palette-independent
+   `.components-placeholder`.
+4. **Semantic rating colors** — star gold `#ffc107`, empty `#ddd`, heart
+   pink, circle blue — stay palette-independent by design, but are all
+   exposed as overridable custom properties.
+5. **Leaflet popup text** stays hard-coded (popups are always white).
+
+### Block-scoped override tokens now live
+
+| Token | Default | Paints |
+|---|---|---|
+| `--star-rating-color` | `#ffc107` | Filled stars |
+| `--star-rating-empty` | `#ddd` | Empty stars |
+| `--star-rating-heart` | `#e91e63` | Filled icons, hearts style |
+| `--star-rating-circle` | `#2196f3` | Filled icons, circles style |
+| `--checkin-primary` | `var(--wp--preset--color--primary, #2271b1)` | Dashboard accents, active filter, timeline |
+| `--checkin-border` | `var(--wp--preset--color--contrast, #dcdcde)` | Dashboard borders |
+| `--checkin-bg` | `var(--wp--preset--color--tertiary, #f6f7f7)` | Dashboard muted surfaces |
+| `--checkin-surface` | `var(--wp--preset--color--base, #fff)` | Dashboard cards, buttons, marker ring |
+| `--checkin-text` | `var(--wp--preset--color--contrast, #1d2327)` | Dashboard body text |
+| `--checkin-text-light` | `var(--wp--preset--color--contrast, #646970)` | Dashboard secondary text |
+| `--post-kinds-listen-accent` | `var(--wp--preset--color--primary, #8b5cf6)` | Listen card top border (pre-existing) |
+| `--post-kinds-watch-accent` | `var(--wp--preset--color--secondary, #ef4444)` | Watch card top border (pre-existing) |
+| `--post-kinds-jam-accent` | `var(--wp--preset--color--primary, #22c55e)` | Jam card top border (pre-existing) |
+
+These names differ from the unshipped C2 catalog (`--pkiw-star-rating-variant-1`
+etc.) because they follow the namespaces already shipped in the block CSS.
+If the C2/C3 contract is ever completed, fold these into it.
+
+---
+
 ## Acceptance — Session C2
 
 - [x] `/styles/kind-tokens.css` written with `@layer pkiw-kind-tokens` wrapper, all paint defaults neutral, all structural defaults real values.
