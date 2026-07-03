@@ -78,7 +78,7 @@
 		let checkins;
 		try {
 			checkins = JSON.parse( checkinsData );
-		} catch ( e ) {
+		} catch {
 			return;
 		}
 

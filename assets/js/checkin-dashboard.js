@@ -1,10 +1,11 @@
 /**
  * Check-in Dashboard JavaScript
  *
- * @package Reactions_For_IndieWeb
+ * @param {jQuery} $ jQuery instance.
+ * @package
  */
 
-( function( $ ) {
+( function ( $ ) {
 	'use strict';
 
 	const Dashboard = {
@@ -18,13 +19,13 @@
 		filters: {
 			year: '',
 			venue_type: '',
-			search: ''
+			search: '',
 		},
 
 		/**
 		 * Initialize the dashboard
 		 */
-		init: function() {
+		init() {
 			this.bindEvents();
 			this.loadData();
 		},
@@ -32,7 +33,7 @@
 		/**
 		 * Bind event handlers
 		 */
-		bindEvents: function() {
+		bindEvents() {
 			// View toggles
 			$( '.checkin-view-toggles .button' ).on( 'click', ( e ) => {
 				e.preventDefault();
@@ -67,50 +68,79 @@
 		/**
 		 * Load check-ins and stats
 		 */
-		loadData: function() {
+		loadData() {
 			this.showLoading();
 
 			const params = new URLSearchParams( {
 				page: this.currentPage,
-				per_page: this.perPage
+				per_page: this.perPage,
 			} );
 
-			if ( this.filters.year ) params.append( 'year', this.filters.year );
-			if ( this.filters.venue_type ) params.append( 'venue_type', this.filters.venue_type );
-			if ( this.filters.search ) params.append( 'search', this.filters.search );
+			if ( this.filters.year ) {
+				params.append( 'year', this.filters.year );
+			}
+			if ( this.filters.venue_type ) {
+				params.append( 'venue_type', this.filters.venue_type );
+			}
+			if ( this.filters.search ) {
+				params.append( 'search', this.filters.search );
+			}
 
 			// Load both check-ins and stats
 			Promise.all( [
-				fetch( `${ reactionsCheckinDashboard.restUrl }checkins?${ params.toString() }`, {
-					headers: { 'X-WP-Nonce': reactionsCheckinDashboard.nonce }
-				} ).then( r => r.json() ),
-				fetch( `${ reactionsCheckinDashboard.restUrl }checkins/stats${ this.filters.year ? '?year=' + this.filters.year : '' }`, {
-					headers: { 'X-WP-Nonce': reactionsCheckinDashboard.nonce }
-				} ).then( r => r.json() )
-			] ).then( ( [ checkinsData, statsData ] ) => {
-				this.checkins = checkinsData;
-				this.stats = statsData;
-				this.render();
-			} ).catch( ( error ) => {
-				console.error( 'Error loading data:', error );
-				this.showError();
-			} );
+				fetch(
+					`${
+						reactionsCheckinDashboard.restUrl
+					}checkins?${ params.toString() }`,
+					{
+						headers: {
+							'X-WP-Nonce': reactionsCheckinDashboard.nonce,
+						},
+					}
+				).then( ( r ) => r.json() ),
+				fetch(
+					`${ reactionsCheckinDashboard.restUrl }checkins/stats${
+						this.filters.year ? '?year=' + this.filters.year : ''
+					}`,
+					{
+						headers: {
+							'X-WP-Nonce': reactionsCheckinDashboard.nonce,
+						},
+					}
+				).then( ( r ) => r.json() ),
+			] )
+				.then( ( [ checkinsData, statsData ] ) => {
+					this.checkins = checkinsData;
+					this.stats = statsData;
+					this.render();
+				} )
+				.catch( ( error ) => {
+					// eslint-disable-next-line no-console -- Surface load failures for debugging.
+					console.error( 'Error loading data:', error );
+					this.showError();
+				} );
 		},
 
 		/**
 		 * Show loading state
 		 */
-		showLoading: function() {
-			$( '.checkin-grid-view, .checkin-map-view, .checkin-timeline-view' ).html(
-				'<div class="checkin-loading"><span class="spinner is-active"></span> ' + reactionsCheckinDashboard.i18n.loading + '</div>'
+		showLoading() {
+			$(
+				'.checkin-grid-view, .checkin-map-view, .checkin-timeline-view'
+			).html(
+				'<div class="checkin-loading"><span class="spinner is-active"></span> ' +
+					reactionsCheckinDashboard.i18n.loading +
+					'</div>'
 			);
 		},
 
 		/**
 		 * Show error state
 		 */
-		showError: function() {
-			$( '.checkin-grid-view, .checkin-map-view, .checkin-timeline-view' ).html(
+		showError() {
+			$(
+				'.checkin-grid-view, .checkin-map-view, .checkin-timeline-view'
+			).html(
 				'<div class="checkin-empty"><span class="dashicons dashicons-warning"></span><p>Error loading check-ins</p></div>'
 			);
 		},
@@ -118,7 +148,7 @@
 		/**
 		 * Render all views and stats
 		 */
-		render: function() {
+		render() {
 			this.renderGridView();
 			this.renderMapView();
 			this.renderTimelineView();
@@ -127,16 +157,21 @@
 
 		/**
 		 * Switch between views
+		 * @param {string} view View name: grid, map, or timeline.
 		 */
-		switchView: function( view ) {
+		switchView( view ) {
 			this.currentView = view;
 
 			// Update toggle buttons
 			$( '.checkin-view-toggles .button' ).removeClass( 'active' );
-			$( `.checkin-view-toggles .button[data-view="${ view }"]` ).addClass( 'active' );
+			$(
+				`.checkin-view-toggles .button[data-view="${ view }"]`
+			).addClass( 'active' );
 
 			// Show/hide views
-			$( '.checkin-grid-view, .checkin-map-view, .checkin-timeline-view' ).removeClass( 'active' );
+			$(
+				'.checkin-grid-view, .checkin-map-view, .checkin-timeline-view'
+			).removeClass( 'active' );
 			$( `.checkin-${ view }-view` ).addClass( 'active' );
 
 			// Initialize map if switching to map view
@@ -150,15 +185,17 @@
 		/**
 		 * Render grid view
 		 */
-		renderGridView: function() {
+		renderGridView() {
 			const $container = $( '.checkin-grid-view' );
 
 			if ( ! this.checkins.length ) {
 				$container.html(
 					'<div class="checkin-empty">' +
-					'<span class="dashicons dashicons-location"></span>' +
-					'<p>' + reactionsCheckinDashboard.i18n.noCheckins + '</p>' +
-					'</div>'
+						'<span class="dashicons dashicons-location"></span>' +
+						'<p>' +
+						reactionsCheckinDashboard.i18n.noCheckins +
+						'</p>' +
+						'</div>'
 				);
 				return;
 			}
@@ -187,25 +224,31 @@
 
 		/**
 		 * Render a single check-in card
+		 * @param {Object} checkin Check-in data from the REST API.
 		 */
-		renderCheckinCard: function( checkin ) {
+		renderCheckinCard( checkin ) {
 			const date = new Date( checkin.checkin_time );
 			const formattedDate = date.toLocaleDateString( undefined, {
 				year: 'numeric',
 				month: 'short',
-				day: 'numeric'
+				day: 'numeric',
 			} );
 
 			let photoHtml = '';
 			if ( checkin.photo ) {
-				photoHtml = `<img src="${ this.escapeHtml( checkin.photo ) }" alt="${ this.escapeHtml( checkin.venue_name ) }">`;
+				photoHtml = `<img src="${ this.escapeHtml(
+					checkin.photo
+				) }" alt="${ this.escapeHtml( checkin.venue_name ) }">`;
 			} else {
-				photoHtml = '<div class="no-photo"><span class="dashicons dashicons-location"></span></div>';
+				photoHtml =
+					'<div class="no-photo"><span class="dashicons dashicons-location"></span></div>';
 			}
 
 			let noteHtml = '';
 			if ( checkin.note ) {
-				noteHtml = `<p class="checkin-card-note">"${ this.escapeHtml( checkin.note ) }"</p>`;
+				noteHtml = `<p class="checkin-card-note">"${ this.escapeHtml(
+					checkin.note
+				) }"</p>`;
 			}
 
 			return `
@@ -213,9 +256,13 @@
 					<div class="checkin-card-photo">${ photoHtml }</div>
 					<div class="checkin-card-content">
 						<h4 class="checkin-card-venue">${ this.escapeHtml( checkin.venue_name ) }</h4>
-						<p class="checkin-card-address">${ this.escapeHtml( checkin.address || '' ) }</p>
+						<p class="checkin-card-address">${ this.escapeHtml(
+							checkin.address || ''
+						) }</p>
 						<div class="checkin-card-meta">
-							<span class="checkin-card-type">${ this.escapeHtml( checkin.venue_type || 'venue' ) }</span>
+							<span class="checkin-card-type">${ this.escapeHtml(
+								checkin.venue_type || 'venue'
+							) }</span>
 							<span class="checkin-card-date">${ formattedDate }</span>
 						</div>
 						${ noteHtml }
@@ -227,7 +274,7 @@
 		/**
 		 * Initialize Leaflet map
 		 */
-		initMap: function() {
+		initMap() {
 			// Check if Leaflet is available
 			if ( typeof L === 'undefined' ) {
 				$( '.checkin-map-view' ).html(
@@ -241,7 +288,8 @@
 
 			// Add tile layer (OpenStreetMap)
 			L.tileLayer( 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+				attribution:
+					'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 			} ).addTo( this.map );
 
 			// Create marker cluster group
@@ -258,8 +306,10 @@
 		/**
 		 * Update map markers
 		 */
-		updateMapMarkers: function() {
-			if ( ! this.map || ! this.markers ) return;
+		updateMapMarkers() {
+			if ( ! this.map || ! this.markers ) {
+				return;
+			}
 
 			this.markers.clearLayers();
 
@@ -267,19 +317,26 @@
 
 			this.checkins.forEach( ( checkin ) => {
 				if ( checkin.latitude && checkin.longitude ) {
-					const marker = L.marker( [ checkin.latitude, checkin.longitude ] );
+					const marker = L.marker( [
+						checkin.latitude,
+						checkin.longitude,
+					] );
 
 					const date = new Date( checkin.checkin_time );
 					const formattedDate = date.toLocaleDateString( undefined, {
 						year: 'numeric',
 						month: 'short',
-						day: 'numeric'
+						day: 'numeric',
 					} );
 
 					marker.bindPopup( `
 						<div class="checkin-popup">
-							<div class="checkin-popup-venue">${ this.escapeHtml( checkin.venue_name ) }</div>
-							<div class="checkin-popup-address">${ this.escapeHtml( checkin.address || '' ) }</div>
+							<div class="checkin-popup-venue">${ this.escapeHtml(
+								checkin.venue_name
+							) }</div>
+							<div class="checkin-popup-address">${ this.escapeHtml(
+								checkin.address || ''
+							) }</div>
 							<div class="checkin-popup-date">${ formattedDate }</div>
 						</div>
 					` );
@@ -298,7 +355,7 @@
 		/**
 		 * Render map view
 		 */
-		renderMapView: function() {
+		renderMapView() {
 			if ( this.map ) {
 				this.updateMapMarkers();
 			}
@@ -307,15 +364,17 @@
 		/**
 		 * Render timeline view
 		 */
-		renderTimelineView: function() {
+		renderTimelineView() {
 			const $container = $( '.checkin-timeline-view' );
 
 			if ( ! this.checkins.length ) {
 				$container.html(
 					'<div class="checkin-empty">' +
-					'<span class="dashicons dashicons-location"></span>' +
-					'<p>' + reactionsCheckinDashboard.i18n.noCheckins + '</p>' +
-					'</div>'
+						'<span class="dashicons dashicons-location"></span>' +
+						'<p>' +
+						reactionsCheckinDashboard.i18n.noCheckins +
+						'</p>' +
+						'</div>'
 				);
 				return;
 			}
@@ -324,7 +383,10 @@
 			const grouped = {};
 			this.checkins.forEach( ( checkin ) => {
 				const date = new Date( checkin.checkin_time );
-				const key = date.toLocaleDateString( undefined, { year: 'numeric', month: 'long' } );
+				const key = date.toLocaleDateString( undefined, {
+					year: 'numeric',
+					month: 'long',
+				} );
 				if ( ! grouped[ key ] ) {
 					grouped[ key ] = [];
 				}
@@ -343,25 +405,31 @@
 					const formattedDate = date.toLocaleDateString( undefined, {
 						weekday: 'short',
 						month: 'short',
-						day: 'numeric'
+						day: 'numeric',
 					} );
 					const formattedTime = date.toLocaleTimeString( undefined, {
 						hour: 'numeric',
-						minute: '2-digit'
+						minute: '2-digit',
 					} );
 
 					let noteHtml = '';
 					if ( checkin.note ) {
-						noteHtml = `<p class="timeline-item-note">"${ this.escapeHtml( checkin.note ) }"</p>`;
+						noteHtml = `<p class="timeline-item-note">"${ this.escapeHtml(
+							checkin.note
+						) }"</p>`;
 					}
 
 					html += `
 						<div class="timeline-item">
 							<div class="timeline-item-header">
-								<span class="timeline-item-venue">${ this.escapeHtml( checkin.venue_name ) }</span>
+								<span class="timeline-item-venue">${ this.escapeHtml(
+									checkin.venue_name
+								) }</span>
 								<span class="timeline-item-date">${ formattedDate } at ${ formattedTime }</span>
 							</div>
-							<p class="timeline-item-address">${ this.escapeHtml( checkin.address || '' ) }</p>
+							<p class="timeline-item-address">${ this.escapeHtml(
+								checkin.address || ''
+							) }</p>
 							${ noteHtml }
 						</div>
 					`;
@@ -376,7 +444,7 @@
 		/**
 		 * Render statistics sidebar
 		 */
-		renderStats: function() {
+		renderStats() {
 			const stats = this.stats;
 
 			// Overview stats
@@ -392,7 +460,11 @@
 			if ( stats.most_visited?.length ) {
 				stats.most_visited.forEach( ( venue ) => {
 					$venuesList.append(
-						`<li><span class="venue-name">${ this.escapeHtml( venue.name ) }</span><span class="venue-count">${ venue.count }</span></li>`
+						`<li><span class="venue-name">${ this.escapeHtml(
+							venue.name
+						) }</span><span class="venue-count">${
+							venue.count
+						}</span></li>`
 					);
 				} );
 			} else {
@@ -405,10 +477,16 @@
 
 			if ( stats.countries?.length ) {
 				stats.countries.slice( 0, 10 ).forEach( ( country ) => {
-					$countriesList.append( `<span class="place-tag">${ this.escapeHtml( country ) }</span>` );
+					$countriesList.append(
+						`<span class="place-tag">${ this.escapeHtml(
+							country
+						) }</span>`
+					);
 				} );
 			} else {
-				$countriesList.append( '<span class="place-tag">None yet</span>' );
+				$countriesList.append(
+					'<span class="place-tag">None yet</span>'
+				);
 			}
 
 			// Cities
@@ -417,7 +495,11 @@
 
 			if ( stats.cities?.length ) {
 				stats.cities.slice( 0, 10 ).forEach( ( city ) => {
-					$citiesList.append( `<span class="place-tag">${ this.escapeHtml( city ) }</span>` );
+					$citiesList.append(
+						`<span class="place-tag">${ this.escapeHtml(
+							city
+						) }</span>`
+					);
 				} );
 			} else {
 				$citiesList.append( '<span class="place-tag">None yet</span>' );
@@ -427,23 +509,31 @@
 		/**
 		 * Render pagination controls
 		 */
-		renderPagination: function() {
+		renderPagination() {
 			const totalPages = Math.ceil( this.stats.total / this.perPage );
 
-			if ( totalPages <= 1 ) return '';
+			if ( totalPages <= 1 ) {
+				return '';
+			}
 
 			let html = '<div class="checkin-pagination">';
 
 			// Previous
 			if ( this.currentPage > 1 ) {
-				html += `<a href="#" class="page-numbers" data-page="${ this.currentPage - 1 }">&laquo; Prev</a>`;
+				html += `<a href="#" class="page-numbers" data-page="${
+					this.currentPage - 1
+				}">&laquo; Prev</a>`;
 			}
 
 			// Page numbers
 			for ( let i = 1; i <= totalPages; i++ ) {
 				if ( i === this.currentPage ) {
 					html += `<span class="page-numbers current">${ i }</span>`;
-				} else if ( i === 1 || i === totalPages || Math.abs( i - this.currentPage ) <= 2 ) {
+				} else if (
+					i === 1 ||
+					i === totalPages ||
+					Math.abs( i - this.currentPage ) <= 2
+				) {
 					html += `<a href="#" class="page-numbers" data-page="${ i }">${ i }</a>`;
 				} else if ( Math.abs( i - this.currentPage ) === 3 ) {
 					html += '<span class="page-numbers">...</span>';
@@ -452,7 +542,9 @@
 
 			// Next
 			if ( this.currentPage < totalPages ) {
-				html += `<a href="#" class="page-numbers" data-page="${ this.currentPage + 1 }">Next &raquo;</a>`;
+				html += `<a href="#" class="page-numbers" data-page="${
+					this.currentPage + 1
+				}">Next &raquo;</a>`;
 			}
 
 			html += '</div>';
@@ -462,20 +554,22 @@
 
 		/**
 		 * Escape HTML entities
+		 * @param {string} str Raw string to escape.
 		 */
-		escapeHtml: function( str ) {
-			if ( ! str ) return '';
+		escapeHtml( str ) {
+			if ( ! str ) {
+				return '';
+			}
 			const div = document.createElement( 'div' );
 			div.textContent = str;
 			return div.innerHTML;
-		}
+		},
 	};
 
 	// Initialize on document ready
-	$( document ).ready( function() {
+	$( document ).ready( function () {
 		if ( $( '.checkin-dashboard-wrap' ).length ) {
 			Dashboard.init();
 		}
 	} );
-
 } )( jQuery );

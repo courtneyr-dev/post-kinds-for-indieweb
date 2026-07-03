@@ -4,6 +4,8 @@
  * Runs before each test file. Sets up global mocks and configurations.
  */
 
+/* eslint-disable no-console -- This file's job is mocking console methods. */
+
 import '@testing-library/jest-dom';
 
 // Mock WordPress packages that cause issues

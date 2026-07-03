@@ -15,7 +15,7 @@ module.exports = defineConfig( {
 	reporter: [
 		[ 'html', { outputFolder: 'playwright-report' } ],
 		[ 'list' ],
-		...(process.env.CI ? [ [ 'github' ] ] : []),
+		...( process.env.CI ? [ [ 'github' ] ] : [] ),
 	],
 	use: {
 		baseURL: process.env.WP_BASE_URL || 'http://localhost:8888',

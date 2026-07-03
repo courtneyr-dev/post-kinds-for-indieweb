@@ -54,7 +54,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	);
 
 	// Set post kind to "jam" when block is inserted (intentionally runs once on mount).
-	// eslint-disable-next-line react-hooks/exhaustive-deps
+
 	useEffect( () => {
 		if ( ! currentKind ) {
 			wp.apiFetch( { path: '/wp/v2/kind?slug=jam' } )
