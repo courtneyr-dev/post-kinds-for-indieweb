@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Design-token migration: all block colors now flow through the `--pkiw-*` token API** (`styles/kind-tokens.css`, enqueued as a dependency of every block style). **Breaking visual change by design:** cards, star ratings, and the checkin dashboard are palette-neutral until a theme sets `--pkiw-*` tokens — "the colors disappeared" after updating means your theme hasn't opted in yet (examples in `docs/audit/DESIGN-TOKENS.md`). `NoColorLeakageTest` enforces the contract (94 hardcoded-color violations at baseline, now 0). (#55)
+- **Design-token migration: all block colors now flow through the `--pkiw-*` token API** (`styles/kind-tokens.css`, enqueued as a dependency of every block style). **Not a breaking change:** blocks that ship with colors (checkin dashboard, venue detail, checkins feed, media lookup, star rating) now default to the active theme's palette (`var(--wp--preset--color--*, previous-color)`), so they follow the theme automatically and look exactly as before on themes without those presets. Themes can override any `--pkiw-*` token for full control (examples in `docs/audit/DESIGN-TOKENS.md`, "Bridge decision" section). `NoColorLeakageTest` enforces the contract (94 hardcoded-color violations at baseline, now 0). (#56, #59)
 - **Dependency refresh:** all seven pending Dependabot updates merged — five GitHub Actions bumps, the js-dev group (Playwright 1.61, axe-core 4.12), and the 15-package `@wordpress` group. The `@wordpress/scripts` 32 bump switches ESLint to flat config (`eslint.config.js` replaces `.eslintrc.js`); ~1,500 lint findings from the migration were fixed across the JS source. (#23, #48–#51, #53, #54)
 
 ### Security
