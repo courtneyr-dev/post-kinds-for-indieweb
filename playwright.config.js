@@ -15,7 +15,7 @@ module.exports = defineConfig( {
 	reporter: [
 		[ 'html', { outputFolder: 'playwright-report' } ],
 		[ 'list' ],
-		...(process.env.CI ? [ [ 'github' ] ] : []),
+		...( process.env.CI ? [ [ 'github' ] ] : [] ),
 	],
 	use: {
 		baseURL: process.env.WP_BASE_URL || 'http://localhost:8888',
@@ -45,7 +45,12 @@ module.exports = defineConfig( {
 		? undefined
 		: {
 				command: 'npm run env:start',
-				url: 'http://localhost:8888',
+				// Honor WP_BASE_URL like the tests do — the 8888 default
+				// belongs to Stream Deck on this machine (.wp-env.override
+				// moves the env to 8890), and readiness-polling a port that
+				// something else answers intermittently makes every run a
+				// coin flip.
+				url: process.env.WP_BASE_URL || 'http://localhost:8888',
 				reuseExistingServer: true,
 				timeout: 120000,
 		  },

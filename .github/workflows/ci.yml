@@ -395,6 +395,17 @@ jobs:
       - name: Start wp-env
         run: npm run env:start
 
+      - name: Prepare Micropub test auth
+        # micropub-kinds.spec.js posts to the Micropub endpoint: activate
+        # the companion plugins (.wp-env.json installs them) and mint an
+        # application password — core only accepts app passwords over
+        # Basic auth. PKIW_TEST_PHOTO_HOST is the host as seen from
+        # INSIDE the wp-env container (the runner's docker bridge).
+        run: |
+          npx wp-env run cli wp plugin activate indieauth micropub
+          echo "WP_APP_PASSWORD=$(npx wp-env run cli wp user application-password create admin e2e --porcelain)" >> "$GITHUB_ENV"
+          echo "PKIW_TEST_PHOTO_HOST=http://172.17.0.1:8888" >> "$GITHUB_ENV"
+
       - name: Run E2E tests
         run: npm run test:e2e -- --project=chromium
 
