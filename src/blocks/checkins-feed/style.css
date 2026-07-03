@@ -9,7 +9,7 @@
 .checkins-feed__map {
 	width: 100%;
 	height: 300px;
-	background: var(--wp--preset--color--tertiary, #f0f0f0);
+	background: var(--pkiw-checkin-map-bg, transparent);
 	border-radius: 8px;
 	margin-bottom: var(--checkins-gap);
 	overflow: hidden;
@@ -20,7 +20,7 @@
 	align-items: center;
 	justify-content: center;
 	height: 100%;
-	color: var(--wp--preset--color--contrast, #666);
+	color: var(--pkiw-card-text-secondary, inherit);
 	margin: 0;
 }
 
@@ -60,14 +60,14 @@
 	display: flex;
 	gap: 1rem;
 	padding: 1rem;
-	background: var(--wp--preset--color--background, #fff);
-	border: 1px solid var(--wp--preset--color--contrast, #ddd);
+	background: var(--pkiw-card-bg, transparent);
+	border: 1px solid var(--pkiw-card-border, transparent);
 	border-radius: 8px;
 	transition: box-shadow 0.2s ease;
 }
 
 .checkins-feed__item:hover {
-	box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
+	box-shadow: var(--pkiw-card-hover-shadow, none);
 }
 
 /* Compact layout */
@@ -125,7 +125,7 @@
 	align-items: center;
 	gap: 0.25rem;
 	font-size: var(--wp--preset--font-size--small, 0.875rem);
-	color: var(--wp--preset--color--contrast, #666);
+	color: var(--pkiw-card-text-secondary, inherit);
 	margin-bottom: 0.25rem;
 }
 
@@ -136,14 +136,14 @@
 .checkins-feed__date {
 	display: block;
 	font-size: var(--wp--preset--font-size--small, 0.75rem);
-	color: var(--wp--preset--color--contrast, #999);
+	color: var(--pkiw-card-text-secondary, inherit);
 	opacity: 0.8;
 }
 
 .checkins-feed__excerpt {
 	margin-top: 0.5rem;
 	font-size: var(--wp--preset--font-size--small, 0.875rem);
-	color: var(--wp--preset--color--contrast, #444);
+	color: var(--pkiw-card-fg, inherit);
 }
 
 .checkins-feed__excerpt p {
@@ -154,8 +154,8 @@
 .checkins-feed__empty {
 	text-align: center;
 	padding: 2rem;
-	color: var(--wp--preset--color--contrast, #666);
-	background: var(--wp--preset--color--tertiary, #f9f9f9);
+	color: var(--pkiw-card-text-secondary, inherit);
+	background: var(--pkiw-card-bg, transparent);
 	border-radius: 8px;
 }
 

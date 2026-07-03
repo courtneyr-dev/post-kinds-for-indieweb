@@ -5,16 +5,11 @@
  */
 
 /*
- * Rating colors are intentionally palette-independent: stars stay gold,
- * hearts stay pink, circles stay blue on any theme. Themes can override
- * each token from theme.json styles.css or a stylesheet.
+ * Rating colors come from the --pkiw-star-rating-* token catalog
+ * (styles/kind-tokens.css). Defaults are neutral: filled icons inherit
+ * the surrounding text color; empty icons render as a muted mix of it.
+ * Themes opt into gold stars, pink hearts, etc. by setting the tokens.
  */
-.wp-block-post-kinds-indieweb-star-rating {
-	--star-rating-color: #ffc107;
-	--star-rating-empty: #ddd;
-	--star-rating-heart: #e91e63;
-	--star-rating-circle: #2196f3;
-}
 
 .star-rating-inner {
 	display: inline-flex;
@@ -36,14 +31,14 @@
 }
 
 .star-rating-block .rating-icon {
-	color: var(--star-rating-empty);
+	color: var(--pkiw-star-rating-empty, color-mix(in srgb, currentcolor 35%, transparent));
 	transition: color 0.15s ease;
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Symbol", system-ui, sans-serif;
 	line-height: 1;
 }
 
 .star-rating-block .rating-icon.filled {
-	color: var(--star-rating-color);
+	color: var(--pkiw-star-rating-fill, currentcolor);
 }
 
 /* Size variations */
@@ -69,26 +64,26 @@
 	position: absolute;
 	width: 50%;
 	overflow: hidden;
-	color: var(--star-rating-color);
+	color: var(--pkiw-star-rating-fill, currentcolor);
 }
 
 .star-rating-block .half-empty-part {
-	color: var(--star-rating-empty);
+	color: var(--pkiw-star-rating-empty, color-mix(in srgb, currentcolor 35%, transparent));
 }
 
 /* Style variations */
 .star-rating-block.style-hearts .rating-icon.filled {
-	color: var(--star-rating-heart);
+	color: var(--pkiw-star-rating-variant-1, currentcolor);
 }
 
 .star-rating-block.style-circles .rating-icon.filled {
-	color: var(--star-rating-circle);
+	color: var(--pkiw-star-rating-variant-2, currentcolor);
 }
 
 /* Rating value */
 .star-rating-block .rating-value {
 	font-size: 0.85em;
-	color: var(--wp--preset--color--contrast, #666);
+	color: var(--pkiw-star-rating-caption, inherit);
 	margin-left: 0.25rem;
 }
 

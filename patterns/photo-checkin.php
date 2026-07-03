@@ -37,8 +37,8 @@ register_block_pattern(
 
 	<!-- wp:group {"className":"post-kinds-photo-checkin__photo","layout":{"type":"constrained"}} -->
 	<div class="wp-block-group post-kinds-photo-checkin__photo">
-		<!-- wp:paragraph {"align":"center","className":"post-kinds-optional-hint","style":{"typography":{"fontSize":"13px"},"color":{"text":"#666666"}}} -->
-		<p class="has-text-align-center post-kinds-optional-hint has-text-color" style="color:#666666;font-size:13px"><em>' . esc_html__( 'Optional: Add a photo below, or delete this section', 'post-kinds-for-indieweb' ) . '</em></p>
+		<!-- wp:paragraph {"align":"center","className":"post-kinds-optional-hint","style":{"typography":{"fontSize":"13px"}}} -->
+		<p class="has-text-align-center post-kinds-optional-hint" style="font-size:13px"><em>' . esc_html__( 'Optional: Add a photo below, or delete this section', 'post-kinds-for-indieweb' ) . '</em></p>
 		<!-- /wp:paragraph -->
 
 		<!-- wp:image {"align":"center","className":"u-photo","sizeSlug":"large"} -->
@@ -49,8 +49,8 @@ register_block_pattern(
 
 	<!-- wp:group {"className":"post-kinds-photo-checkin__consumption","layout":{"type":"constrained"}} -->
 	<div class="wp-block-group post-kinds-photo-checkin__consumption">
-		<!-- wp:paragraph {"align":"center","className":"post-kinds-optional-hint","style":{"typography":{"fontSize":"13px"},"color":{"text":"#666666"}}} -->
-		<p class="has-text-align-center post-kinds-optional-hint has-text-color" style="color:#666666;font-size:13px"><em>' . esc_html__( 'Optional: Add food/drink details below, or delete this section', 'post-kinds-for-indieweb' ) . '</em></p>
+		<!-- wp:paragraph {"align":"center","className":"post-kinds-optional-hint","style":{"typography":{"fontSize":"13px"}}} -->
+		<p class="has-text-align-center post-kinds-optional-hint" style="font-size:13px"><em>' . esc_html__( 'Optional: Add food/drink details below, or delete this section', 'post-kinds-for-indieweb' ) . '</em></p>
 		<!-- /wp:paragraph -->
 
 		<!-- wp:columns {"style":{"spacing":{"blockGap":{"left":"var:preset|spacing|20"}}}} -->

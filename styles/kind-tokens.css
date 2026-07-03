@@ -63,6 +63,14 @@
 		--pkiw-card-border-radius: 0;
 		--pkiw-card-shadow: none;
 		--pkiw-card-text-secondary: inherit;
+		--pkiw-card-hover-bg: transparent;
+		--pkiw-card-hover-shadow: none;
+
+		/* Sizing knobs (--pkiw-card-body-font-size, --pkiw-card-meta-font-size,
+		 * --pkiw-card-icon-font-size) are intentionally NOT defined here:
+		 * each consumer carries its own context-appropriate fallback, and
+		 * defining a single default would flatten those scales. Themes may
+		 * set them to override all consumers at once. */
 
 		/* ============================================================
 		 * PER-KIND PAINT TOKENS
@@ -97,6 +105,14 @@
 		--pkiw-checkin-card-accent: var(--pkiw-card-accent);
 		--pkiw-checkin-map-bg: transparent;
 
+		/* Checkin dashboard — stats, filters, timeline, venue cards. */
+		--pkiw-checkin-dashboard-accent: currentcolor;
+		--pkiw-checkin-dashboard-border: transparent;
+		--pkiw-checkin-dashboard-bg: transparent;
+		--pkiw-checkin-dashboard-surface: transparent;
+		--pkiw-checkin-dashboard-fg: inherit;
+		--pkiw-checkin-dashboard-fg-muted: inherit;
+
 		/* RSVP — event response with status modifiers. */
 		--pkiw-rsvp-card-bg: var(--pkiw-card-bg);
 		--pkiw-rsvp-card-fg: var(--pkiw-card-fg);
@@ -118,15 +134,22 @@
 
 		/* Jam / Favorite / Wish / Mood / Acquisition — small-card kinds. */
 		--pkiw-jam-card-bg: var(--pkiw-card-bg);
+		--pkiw-jam-card-fg: var(--pkiw-card-fg);
+		--pkiw-jam-card-accent: var(--pkiw-card-accent);
 		--pkiw-favorite-card-bg: var(--pkiw-card-bg);
+		--pkiw-favorite-card-fg: var(--pkiw-card-fg);
 		--pkiw-wish-card-bg: var(--pkiw-card-bg);
+		--pkiw-wish-card-fg: var(--pkiw-card-fg);
 		--pkiw-mood-card-bg: var(--pkiw-card-bg);
+		--pkiw-mood-card-fg: var(--pkiw-card-fg);
 		--pkiw-acquisition-card-bg: var(--pkiw-card-bg);
+		--pkiw-acquisition-card-fg: var(--pkiw-card-fg);
 
 		/* Like / Reply / Repost / Bookmark — response kinds.
 		 * These typically render as h-cite inline rather than full cards,
 		 * but provide tokens for sites that wrap them in a card surface. */
 		--pkiw-like-card-bg: var(--pkiw-card-bg);
+		--pkiw-like-card-fg: var(--pkiw-card-fg);
 		--pkiw-reply-card-bg: var(--pkiw-card-bg);
 		--pkiw-repost-card-bg: var(--pkiw-card-bg);
 		--pkiw-bookmark-card-bg: var(--pkiw-card-bg);
@@ -141,7 +164,12 @@
 		 * ============================================================ */
 
 		--pkiw-star-rating-fill: currentcolor;
-		--pkiw-star-rating-empty: transparent;
+
+		/* Deviation from the C2 spec (`transparent`): star icons are font
+		 * glyphs, not SVG outlines, so transparent empty stars would be
+		 * invisible and misreport the rating. A muted mix of the current
+		 * text color stays palette-neutral while keeping them legible. */
+		--pkiw-star-rating-empty: color-mix(in srgb, currentcolor 35%, transparent);
 		--pkiw-star-rating-caption: inherit;
 		--pkiw-star-rating-border-radius: 0;
 
@@ -158,19 +186,6 @@
 		--pkiw-media-lookup-result-bg: transparent;
 		--pkiw-media-lookup-result-fg: inherit;
 		--pkiw-media-lookup-result-border: transparent;
-
-		/* ============================================================
-		 * STATS BLOCKS
-		 *   Used by class-media-stats and class-now-playing. Three
-		 *   tokens because the plugin currently uses three close greens
-		 *   (#127925, #127916, #128214). Phase D triage may consolidate
-		 *   these to one if the three states are not semantically
-		 *   distinct. Documented in DESIGN-TOKENS.md.
-		 * ============================================================ */
-
-		--pkiw-stat-positive: currentcolor;
-		--pkiw-stat-neutral: currentcolor;
-		--pkiw-stat-active: currentcolor;
 
 		/* ============================================================
 		 * EDITOR CHROME

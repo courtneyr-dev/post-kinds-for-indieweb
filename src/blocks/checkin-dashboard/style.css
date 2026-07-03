@@ -5,17 +5,17 @@
  */
 
 /*
- * Dashboard tokens default to the active theme palette and fall back to
- * WP-admin colors on themes without these preset slugs. Themes can also
- * override any token directly.
+ * Internal aliases for the public --pkiw-checkin-dashboard-* tokens
+ * (styles/kind-tokens.css). Defaults are neutral; themes paint the
+ * dashboard by setting the --pkiw-* tokens.
  */
 .checkin-dashboard-frontend {
-	--checkin-primary: var(--wp--preset--color--primary, #2271b1);
-	--checkin-border: var(--wp--preset--color--contrast, #dcdcde);
-	--checkin-bg: var(--wp--preset--color--tertiary, #f6f7f7);
-	--checkin-surface: var(--wp--preset--color--base, #fff);
-	--checkin-text: var(--wp--preset--color--contrast, #1d2327);
-	--checkin-text-light: var(--wp--preset--color--contrast, #646970);
+	--checkin-primary: var(--pkiw-checkin-dashboard-accent, currentcolor);
+	--checkin-border: var(--pkiw-checkin-dashboard-border, transparent);
+	--checkin-bg: var(--pkiw-checkin-dashboard-bg, transparent);
+	--checkin-surface: var(--pkiw-checkin-dashboard-surface, transparent);
+	--checkin-text: var(--pkiw-checkin-dashboard-fg, inherit);
+	--checkin-text-light: var(--pkiw-checkin-dashboard-fg-muted, inherit);
 }
 
 /* Stats */
@@ -101,7 +101,7 @@
 }
 
 .checkin-card:hover {
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	box-shadow: var(--pkiw-card-hover-shadow, none);
 	transform: translateY(-2px);
 }
 

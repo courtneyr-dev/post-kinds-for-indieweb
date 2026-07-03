@@ -93,8 +93,8 @@ register_block_pattern(
 		</div>
 		<!-- /wp:group -->
 
-		<!-- wp:separator {"className":"post-kinds-progress-bar","style":{"color":{"background":"#007cba"}},"opacity":"css"} -->
-		<hr class="wp-block-separator has-text-color has-alpha-channel-opacity has-background post-kinds-progress-bar" style="background-color:#007cba;color:#007cba"/>
+		<!-- wp:separator {"className":"post-kinds-progress-bar","opacity":"css"} -->
+		<hr class="wp-block-separator has-alpha-channel-opacity post-kinds-progress-bar"/>
 		<!-- /wp:separator -->
 
 	</div>
