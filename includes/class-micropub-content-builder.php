@@ -57,6 +57,37 @@ final class Micropub_Content_Builder {
 	 */
 	public static function register(): void {
 		add_action( 'after_micropub', [ self::class, 'apply' ], 30, 2 );
+		add_filter( 'micropub_post_content', [ self::class, 'fill_empty_content' ], 20, 2 );
+	}
+
+	/**
+	 * Supply card-block content BEFORE insert when the request has none.
+	 *
+	 * Kind posts without a `content` property (Outpost's eat/drink/follow/
+	 * weather flows) previously died inside wp_insert_post() with
+	 * empty_content — while the Micropub endpoint still answered 2xx with
+	 * no Location ("phantom posts"). Building the card markup on the
+	 * `micropub_post_content` filter makes the post non-empty at insert
+	 * time; the after_micropub pass then finds content already generated.
+	 *
+	 * @param string               $post_content Content Micropub derived from the request.
+	 * @param array<string, mixed> $input        Original parsed Micropub request body.
+	 * @return string Original content, or card-block markup when it was empty.
+	 */
+	public static function fill_empty_content( $post_content, $input ): string {
+		$post_content = (string) $post_content;
+		if ( '' !== trim( $post_content ) || ! is_array( $input ) ) {
+			return $post_content;
+		}
+
+		$properties = self::extract_properties( $input );
+		if ( empty( $properties ) ) {
+			return $post_content;
+		}
+
+		$block_content = self::build_block_content( $properties );
+
+		return null === $block_content ? $post_content : $block_content;
 	}
 
 	/**
@@ -142,8 +173,18 @@ final class Micropub_Content_Builder {
 		}
 
 		$card_markup = self::card_for_kind( $kind, $properties );
-		if ( null === $card_markup ) {
+		if ( null === $card_markup || '' === $card_markup ) {
 			return null;
+		}
+
+		// Kinds other than pure photo posts can still carry attached photos
+		// (issue #38: a Checkin with a photo dropped the image entirely).
+		// Append the image/gallery markup after the kind's card.
+		if ( 'photo' !== $kind && self::has_property( $properties, 'photo' ) ) {
+			$photo_markup = self::photo_card( $properties );
+			if ( '' !== $photo_markup ) {
+				$card_markup .= "\n\n\t" . $photo_markup;
+			}
 		}
 
 		$body = self::flatten_scalar( $properties, 'content' );
@@ -183,8 +224,14 @@ final class Micropub_Content_Builder {
 		if ( self::has_property( $properties, 'rsvp' ) ) {
 			return 'rsvp';
 		}
+		if ( self::has_property( $properties, 'follow-of' ) ) {
+			return 'follow';
+		}
 		if ( self::has_property( $properties, 'mood' ) ) {
 			return 'mood';
+		}
+		if ( self::has_property( $properties, 'weather' ) ) {
+			return 'weather';
 		}
 		// Checkin = location property without one of the food/drink/media of-kinds.
 		if ( self::has_property( $properties, 'location' ) ) {
@@ -227,6 +274,10 @@ final class Micropub_Content_Builder {
 				return self::rsvp_card( $properties );
 			case 'mood':
 				return self::mood_card( $properties );
+			case 'follow':
+				return self::follow_paragraph( $properties );
+			case 'weather':
+				return self::weather_paragraph( $properties );
 			case 'photo':
 				return self::photo_card( $properties );
 		}
@@ -535,6 +586,46 @@ final class Micropub_Content_Builder {
 			]
 		);
 		return self::self_closing_block( 'post-kinds-indieweb/mood-card', $attrs );
+	}
+
+	/**
+	 * Build a follow paragraph from the h-entry property bag.
+	 *
+	 * No dedicated card block exists for follows; emit a paragraph whose
+	 * link carries the `u-follow-of` microformats2 class so parsers see
+	 * the follow target.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `follow-of`).
+	 * @return string Block-comment markup for the follow paragraph.
+	 */
+	private static function follow_paragraph( array $properties ): string {
+		$url = self::flatten_scalar( $properties, 'follow-of' );
+		if ( '' === $url ) {
+			return '';
+		}
+		return '<!-- wp:paragraph -->' . "\n"
+			. '<p>' . esc_html__( 'Followed', 'post-kinds-for-indieweb' )
+			. ' <a class="u-follow-of" href="' . esc_url( $url ) . '">' . esc_html( $url ) . '</a></p>' . "\n"
+			. '<!-- /wp:paragraph -->';
+	}
+
+	/**
+	 * Build a weather paragraph from the h-entry property bag.
+	 *
+	 * No dedicated card block exists for weather; emit a paragraph whose
+	 * reading carries the `p-weather` microformats2 class.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `weather`).
+	 * @return string Block-comment markup for the weather paragraph.
+	 */
+	private static function weather_paragraph( array $properties ): string {
+		$reading = self::flatten_scalar( $properties, 'weather' );
+		if ( '' === $reading ) {
+			return '';
+		}
+		return '<!-- wp:paragraph -->' . "\n"
+			. '<p><span class="p-weather">' . esc_html( $reading ) . '</span></p>' . "\n"
+			. '<!-- /wp:paragraph -->';
 	}
 
 	// --- Block markup primitives -------------------------------------------

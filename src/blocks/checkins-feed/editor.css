@@ -7,8 +7,8 @@
 }
 
 .checkins-feed__map-placeholder {
-	background: #f0f0f0;
-	border: 2px dashed #ccc;
+	background: var(--pkiw-card-media-button-bg, transparent);
+	border: 2px dashed var(--pkiw-card-media-button-border, transparent);
 	border-radius: 4px;
 	padding: 2rem;
 	margin-bottom: 1rem;
@@ -20,7 +20,7 @@
 	align-items: center;
 	justify-content: center;
 	gap: 0.5rem;
-	color: #666;
+	color: var(--pkiw-card-text-secondary, inherit);
 }
 
 .checkins-feed__map-preview .dashicons {
@@ -55,8 +55,8 @@
 }
 
 .checkins-feed__item {
-	background: #fff;
-	border: 1px solid #ddd;
+	background: var(--pkiw-card-bg, transparent);
+	border: 1px solid var(--pkiw-card-border, transparent);
 	border-radius: 4px;
 	padding: 1rem;
 }
@@ -72,17 +72,17 @@
 	align-items: center;
 	gap: 0.25rem;
 	font-size: 0.875rem;
-	color: #666;
+	color: var(--pkiw-card-text-secondary, inherit);
 	margin-bottom: 0.25rem;
 }
 
 .checkins-feed__date {
 	font-size: 0.75rem;
-	color: #999;
+	color: var(--pkiw-card-text-secondary, inherit);
 }
 
 .checkins-feed__excerpt {
 	margin-top: 0.5rem;
 	font-size: 0.875rem;
-	color: #444;
+	color: var(--pkiw-card-fg, inherit);
 }

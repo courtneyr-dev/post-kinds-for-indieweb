@@ -36,7 +36,7 @@
 
 .wp-block-post-kinds-indieweb-media-lookup .source-label {
 	font-size: 0.75rem;
-	color: #888;
+	color: var(--pkiw-card-text-secondary, inherit);
 	font-style: italic;
 }
 

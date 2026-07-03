@@ -3,7 +3,9 @@
 	"core": "WordPress/WordPress#7.0",
 	"phpVersion": "8.2",
 	"plugins": [
-		"."
+		".",
+		"https://downloads.wordpress.org/plugin/indieauth.latest-stable.zip",
+		"https://downloads.wordpress.org/plugin/micropub.latest-stable.zip"
 	],
 	"themes": [],
 	"config": {
@@ -13,7 +15,8 @@
 		"WP_ENVIRONMENT_TYPE": "local"
 	},
 	"mappings": {
-		"wp-content/uploads": "./tests/uploads"
+		"wp-content/uploads": "./tests/uploads",
+		"wp-content/mu-plugins": "./tests/env"
 	},
 	"lifecycleScripts": {
 		"afterStart": "wp-env run cli wp rewrite structure '/%postname%/' --hard"

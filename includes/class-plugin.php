@@ -803,6 +803,21 @@ final class Plugin {
 			);
 		}
 
+		// Register the design token catalog. Every block stylesheet depends
+		// on it so token defaults always load before their consumers.
+		$tokens_file = \POST_KINDS_INDIEWEB_PATH . 'styles/kind-tokens.css';
+		$style_deps  = [];
+
+		if ( file_exists( $tokens_file ) ) {
+			wp_register_style(
+				'pkiw-kind-tokens',
+				\POST_KINDS_INDIEWEB_URL . 'styles/kind-tokens.css',
+				[],
+				filemtime( $tokens_file )
+			);
+			$style_deps[] = 'pkiw-kind-tokens';
+		}
+
 		// Register shared block styles for editor and frontend.
 		$blocks_style_file = \POST_KINDS_INDIEWEB_PATH . 'build/blocks.css';
 
@@ -810,7 +825,7 @@ final class Plugin {
 			wp_register_style(
 				'post-kinds-indieweb-blocks',
 				\POST_KINDS_INDIEWEB_URL . 'build/blocks.css',
-				[],
+				$style_deps,
 				filemtime( $blocks_style_file )
 			);
 		}
@@ -819,16 +834,47 @@ final class Plugin {
 		foreach ( $blocks as $block ) {
 			$block_dir = \POST_KINDS_INDIEWEB_PATH . 'src/blocks/' . $block;
 
-			if ( file_exists( $block_dir . '/block.json' ) ) {
-				register_block_type(
-					$block_dir,
-					[
-						'editor_script' => 'post-kinds-indieweb-blocks',
-						'editor_style'  => 'post-kinds-indieweb-blocks',
-						'style'         => 'post-kinds-indieweb-blocks',
-					]
-				);
+			if ( ! file_exists( $block_dir . '/block.json' ) ) {
+				continue;
 			}
+
+			// Style handles passed here override the block.json file:./ style
+			// references, so per-block stylesheets must be registered and
+			// appended explicitly or they never load.
+			$args = [
+				'editor_script' => 'post-kinds-indieweb-blocks',
+				'editor_style'  => [ 'post-kinds-indieweb-blocks' ],
+				'style'         => [ 'post-kinds-indieweb-blocks' ],
+			];
+
+			$style_file = $block_dir . '/style.css';
+
+			if ( file_exists( $style_file ) ) {
+				wp_register_style(
+					'pkiw-block-' . $block,
+					\POST_KINDS_INDIEWEB_URL . 'src/blocks/' . $block . '/style.css',
+					$style_deps,
+					filemtime( $style_file )
+				);
+				$args['style'][] = 'pkiw-block-' . $block;
+
+				// Frontend block styles also apply inside the editor canvas.
+				$args['editor_style'][] = 'pkiw-block-' . $block;
+			}
+
+			$editor_style_file = $block_dir . '/editor.css';
+
+			if ( file_exists( $editor_style_file ) ) {
+				wp_register_style(
+					'pkiw-block-' . $block . '-editor',
+					\POST_KINDS_INDIEWEB_URL . 'src/blocks/' . $block . '/editor.css',
+					$style_deps,
+					filemtime( $editor_style_file )
+				);
+				$args['editor_style'][] = 'pkiw-block-' . $block . '-editor';
+			}
+
+			register_block_type( $block_dir, $args );
 		}
 	}
 

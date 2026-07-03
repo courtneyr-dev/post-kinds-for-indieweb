@@ -7,8 +7,8 @@
 }
 
 .venue-detail__card {
-	background: var(--wp--preset--color--background, #fff);
-	border: 1px solid var(--wp--preset--color--contrast, #ddd);
+	background: var(--pkiw-card-bg, transparent);
+	border: 1px solid var(--pkiw-card-border, transparent);
 	border-radius: 8px;
 	overflow: hidden;
 }
@@ -16,7 +16,7 @@
 .venue-detail__map {
 	width: 100%;
 	height: 250px;
-	background: #f0f0f0;
+	background: var(--pkiw-checkin-map-bg, transparent);
 }
 
 .venue-detail__map-fallback {
@@ -24,7 +24,7 @@
 	align-items: center;
 	justify-content: center;
 	height: 100%;
-	color: #666;
+	color: var(--pkiw-card-text-secondary, inherit);
 	margin: 0;
 }
 
@@ -45,7 +45,7 @@
 	gap: 0.5rem;
 	margin-bottom: 0.5rem;
 	font-size: var(--wp--preset--font-size--small, 0.9375rem);
-	color: var(--wp--preset--color--contrast, #555);
+	color: var(--pkiw-card-text-secondary, inherit);
 }
 
 .venue-detail__address-icon {
@@ -73,7 +73,7 @@
 .venue-detail__website a,
 .venue-detail__phone a,
 .venue-detail__checkins-more a {
-	color: var(--wp--preset--color--primary, #0073aa);
+	color: var(--pkiw-card-accent, currentcolor);
 	text-decoration: none;
 }
 
@@ -101,13 +101,13 @@
 }
 
 .venue-detail__checkin-item {
-	background: var(--wp--preset--color--background, #f9f9f9);
+	background: var(--pkiw-card-bg, transparent);
 	border-radius: 4px;
 	transition: background-color 0.2s ease;
 }
 
 .venue-detail__checkin-item:hover {
-	background: var(--wp--preset--color--background, #f0f0f0);
+	background: var(--pkiw-card-hover-bg, transparent);
 }
 
 .venue-detail__checkin-link {
@@ -125,7 +125,7 @@
 
 .venue-detail__checkin-date {
 	font-size: var(--wp--preset--font-size--small, 0.75rem);
-	color: var(--wp--preset--color--contrast, #888);
+	color: var(--pkiw-card-text-secondary, inherit);
 	opacity: 0.8;
 }
 

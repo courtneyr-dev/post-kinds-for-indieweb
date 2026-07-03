@@ -4,12 +4,18 @@
  * @package Reactions_For_IndieWeb
  */
 
+/*
+ * Internal aliases for the public --pkiw-checkin-dashboard-* tokens
+ * (styles/kind-tokens.css). Defaults are neutral; themes paint the
+ * dashboard by setting the --pkiw-* tokens.
+ */
 .checkin-dashboard-frontend {
-	--checkin-primary: #2271b1;
-	--checkin-border: #dcdcde;
-	--checkin-bg: #f6f7f7;
-	--checkin-text: #1d2327;
-	--checkin-text-light: #646970;
+	--checkin-primary: var(--pkiw-checkin-dashboard-accent, currentcolor);
+	--checkin-border: var(--pkiw-checkin-dashboard-border, transparent);
+	--checkin-bg: var(--pkiw-checkin-dashboard-bg, transparent);
+	--checkin-surface: var(--pkiw-checkin-dashboard-surface, transparent);
+	--checkin-text: var(--pkiw-checkin-dashboard-fg, inherit);
+	--checkin-text-light: var(--pkiw-checkin-dashboard-fg-muted, inherit);
 }
 
 /* Stats */
@@ -53,7 +59,7 @@
 .checkin-dashboard-filters .view-btn {
 	padding: 0.5rem 1rem;
 	border: 1px solid var(--checkin-border);
-	background: #fff;
+	background: var(--checkin-surface);
 	border-radius: 4px;
 	cursor: pointer;
 	font-size: 0.875rem;
@@ -67,7 +73,7 @@
 .checkin-dashboard-filters .view-btn.active {
 	background: var(--checkin-primary);
 	border-color: var(--checkin-primary);
-	color: #fff;
+	color: var(--checkin-surface);
 }
 
 /* Views */
@@ -87,7 +93,7 @@
 }
 
 .checkin-card {
-	background: #fff;
+	background: var(--checkin-surface);
 	border: 1px solid var(--checkin-border);
 	border-radius: 8px;
 	overflow: hidden;
@@ -95,7 +101,7 @@
 }
 
 .checkin-card:hover {
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	box-shadow: var(--pkiw-card-hover-shadow, none);
 	transform: translateY(-2px);
 }
 
@@ -156,6 +162,8 @@
 
 .checkin-popup span {
 	display: block;
+
+	/* Fixed: Leaflet popups are always white, independent of the theme */
 	color: #666;
 	font-size: 0.875rem;
 	margin-bottom: 0.5rem;
@@ -202,7 +210,7 @@
 	height: 10px;
 	background: var(--checkin-primary);
 	border-radius: 50%;
-	border: 2px solid #fff;
+	border: 2px solid var(--checkin-surface);
 	box-shadow: 0 0 0 2px var(--checkin-primary);
 }
 
@@ -253,7 +261,7 @@
 }
 
 .checkin-stats-preview .stat-item {
-	background: #fff;
+	background: var(--checkin-surface);
 	padding: 0.75rem 1rem;
 	border-radius: 4px;
 	text-align: center;
@@ -279,7 +287,7 @@
 }
 
 .checkin-card-preview {
-	background: #fff;
+	background: var(--checkin-surface);
 	border-radius: 4px;
 	overflow: hidden;
 	border: 1px solid var(--checkin-border);

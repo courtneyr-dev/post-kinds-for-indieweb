@@ -27,45 +27,120 @@
 	box-shadow: var(--pkiw-card-shadow, none);
 }
 
-/* Default styling when no block support colors are set */
-.wp-block-post-kinds-indieweb-mood-card:not(.has-background) .post-kinds-card,
-.wp-block-post-kinds-indieweb-listen-card:not(.has-background) .post-kinds-card,
-.wp-block-post-kinds-indieweb-watch-card:not(.has-background) .post-kinds-card,
-.wp-block-post-kinds-indieweb-read-card:not(.has-background) .post-kinds-card,
-.wp-block-post-kinds-indieweb-play-card:not(.has-background) .post-kinds-card,
-.wp-block-post-kinds-indieweb-checkin-card:not(.has-background)
-.post-kinds-card,
-.wp-block-post-kinds-indieweb-rsvp-card:not(.has-background) .post-kinds-card,
-.wp-block-post-kinds-indieweb-eat-card:not(.has-background) .post-kinds-card,
-.wp-block-post-kinds-indieweb-drink-card:not(.has-background) .post-kinds-card,
-.wp-block-post-kinds-indieweb-favorite-card:not(.has-background)
-.post-kinds-card,
-.wp-block-post-kinds-indieweb-like-card:not(.has-background) .post-kinds-card,
-.wp-block-post-kinds-indieweb-jam-card:not(.has-background) .post-kinds-card,
-.wp-block-post-kinds-indieweb-wish-card:not(.has-background) .post-kinds-card,
-.wp-block-post-kinds-indieweb-acquisition-card:not(.has-background)
-.post-kinds-card {
-	background: var(--pkiw-card-bg, transparent);
+/* Default styling when no block support colors are set.
+ * Per-kind tokens win over the shared --pkiw-card-* tokens so themes
+ * can paint cards uniformly or per kind (see styles/kind-tokens.css). */
+
+.wp-block-post-kinds-indieweb-mood-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-mood-card-bg, var(--pkiw-card-bg, transparent));
 }
 
-.wp-block-post-kinds-indieweb-mood-card:not(.has-text-color) .post-kinds-card,
-.wp-block-post-kinds-indieweb-listen-card:not(.has-text-color) .post-kinds-card,
-.wp-block-post-kinds-indieweb-watch-card:not(.has-text-color) .post-kinds-card,
-.wp-block-post-kinds-indieweb-read-card:not(.has-text-color) .post-kinds-card,
-.wp-block-post-kinds-indieweb-play-card:not(.has-text-color) .post-kinds-card,
-.wp-block-post-kinds-indieweb-checkin-card:not(.has-text-color)
-.post-kinds-card,
-.wp-block-post-kinds-indieweb-rsvp-card:not(.has-text-color) .post-kinds-card,
-.wp-block-post-kinds-indieweb-eat-card:not(.has-text-color) .post-kinds-card,
-.wp-block-post-kinds-indieweb-drink-card:not(.has-text-color) .post-kinds-card,
-.wp-block-post-kinds-indieweb-favorite-card:not(.has-text-color)
-.post-kinds-card,
-.wp-block-post-kinds-indieweb-like-card:not(.has-text-color) .post-kinds-card,
-.wp-block-post-kinds-indieweb-jam-card:not(.has-text-color) .post-kinds-card,
-.wp-block-post-kinds-indieweb-wish-card:not(.has-text-color) .post-kinds-card,
-.wp-block-post-kinds-indieweb-acquisition-card:not(.has-text-color)
-.post-kinds-card {
-	color: var(--pkiw-card-fg, inherit);
+.wp-block-post-kinds-indieweb-mood-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-mood-card-fg, var(--pkiw-card-fg, inherit));
+}
+
+.wp-block-post-kinds-indieweb-listen-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-listen-card-bg, var(--pkiw-card-bg, transparent));
+}
+
+.wp-block-post-kinds-indieweb-listen-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-listen-card-fg, var(--pkiw-card-fg, inherit));
+}
+
+.wp-block-post-kinds-indieweb-watch-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-watch-card-bg, var(--pkiw-card-bg, transparent));
+}
+
+.wp-block-post-kinds-indieweb-watch-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-watch-card-fg, var(--pkiw-card-fg, inherit));
+}
+
+.wp-block-post-kinds-indieweb-read-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-read-card-bg, var(--pkiw-card-bg, transparent));
+}
+
+.wp-block-post-kinds-indieweb-read-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-read-card-fg, var(--pkiw-card-fg, inherit));
+}
+
+.wp-block-post-kinds-indieweb-play-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-play-card-bg, var(--pkiw-card-bg, transparent));
+}
+
+.wp-block-post-kinds-indieweb-play-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-play-card-fg, var(--pkiw-card-fg, inherit));
+}
+
+.wp-block-post-kinds-indieweb-checkin-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-checkin-card-bg, var(--pkiw-card-bg, transparent));
+}
+
+.wp-block-post-kinds-indieweb-checkin-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-checkin-card-fg, var(--pkiw-card-fg, inherit));
+}
+
+.wp-block-post-kinds-indieweb-rsvp-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-rsvp-card-bg, var(--pkiw-card-bg, transparent));
+}
+
+.wp-block-post-kinds-indieweb-rsvp-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-rsvp-card-fg, var(--pkiw-card-fg, inherit));
+}
+
+.wp-block-post-kinds-indieweb-eat-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-eat-card-bg, var(--pkiw-card-bg, transparent));
+}
+
+.wp-block-post-kinds-indieweb-eat-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-eat-card-fg, var(--pkiw-card-fg, inherit));
+}
+
+.wp-block-post-kinds-indieweb-drink-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-drink-card-bg, var(--pkiw-card-bg, transparent));
+}
+
+.wp-block-post-kinds-indieweb-drink-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-drink-card-fg, var(--pkiw-card-fg, inherit));
+}
+
+.wp-block-post-kinds-indieweb-favorite-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-favorite-card-bg, var(--pkiw-card-bg, transparent));
+}
+
+.wp-block-post-kinds-indieweb-favorite-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-favorite-card-fg, var(--pkiw-card-fg, inherit));
+}
+
+.wp-block-post-kinds-indieweb-like-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-like-card-bg, var(--pkiw-card-bg, transparent));
+}
+
+.wp-block-post-kinds-indieweb-like-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-like-card-fg, var(--pkiw-card-fg, inherit));
+}
+
+.wp-block-post-kinds-indieweb-jam-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-jam-card-bg, var(--pkiw-card-bg, transparent));
+}
+
+.wp-block-post-kinds-indieweb-jam-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-jam-card-fg, var(--pkiw-card-fg, inherit));
+}
+
+.wp-block-post-kinds-indieweb-wish-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-wish-card-bg, var(--pkiw-card-bg, transparent));
+}
+
+.wp-block-post-kinds-indieweb-wish-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-wish-card-fg, var(--pkiw-card-fg, inherit));
+}
+
+.wp-block-post-kinds-indieweb-acquisition-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-acquisition-card-bg, var(--pkiw-card-bg, transparent));
+}
+
+.wp-block-post-kinds-indieweb-acquisition-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-acquisition-card-fg, var(--pkiw-card-fg, inherit));
 }
 
 /* Media/Image Section */
@@ -91,7 +166,7 @@
 }
 
 .post-kinds-card__media-button:hover {
-	border-color: var(--wp--preset--color--primary, #007cba);
+	border-color: var(--pkiw-card-accent, currentcolor);
 	opacity: var(--pkiw-state-active-opacity, 1);
 }
 
@@ -173,7 +248,7 @@
 }
 
 .post-kinds-card__type-select:focus {
-	outline: 2px solid var(--wp--preset--color--primary, #007cba);
+	outline: 2px solid var(--pkiw-focus-indicator, currentcolor);
 	outline-offset: 2px;
 }
 
@@ -304,7 +379,7 @@
 }
 
 .post-kinds-card__input:focus {
-	outline: 2px solid var(--wp--preset--color--primary, #007cba);
+	outline: 2px solid var(--pkiw-focus-indicator, currentcolor);
 	outline-offset: 2px;
 }
 
@@ -608,7 +683,7 @@
 
 .post-kinds-card__link {
 	font-size: var(--wp--preset--font-size--small, 0.75rem);
-	color: var(--wp--preset--color--primary, #60a5fa);
+	color: var(--pkiw-card-accent, currentcolor);
 	text-decoration: none;
 }
 
@@ -634,7 +709,7 @@
 
 .post-kinds-card__links a {
 	font-size: var(--wp--preset--font-size--small, 0.75rem);
-	color: var(--wp--preset--color--primary, #60a5fa);
+	color: var(--pkiw-card-accent, currentcolor);
 	text-decoration: none;
 }
 
@@ -704,7 +779,7 @@
 }
 
 .post-kinds-card__title a:hover {
-	color: var(--wp--preset--color--primary, #60a5fa);
+	color: var(--pkiw-card-accent, currentcolor);
 }
 
 /* Frontend star rating (non-interactive) */
@@ -913,21 +988,33 @@
 	z-index: 1;
 }
 
-/* Per-card-type colored top borders — theme-first with hardcoded fallbacks */
+/* Per-card-type accent top borders — painted only when a theme
+ * sets the accent token. */
 .wp-block-post-kinds-indieweb-listen-card .post-kinds-card {
 	border-top:
 		3px solid
-		var(--post-kinds-listen-accent, var(--wp--preset--color--primary, #8b5cf6));
+		var(--pkiw-listen-card-accent, currentcolor);
 }
 
 .wp-block-post-kinds-indieweb-watch-card .post-kinds-card {
 	border-top:
 		3px solid
-		var(--post-kinds-watch-accent, var(--wp--preset--color--secondary, #ef4444));
+		var(--pkiw-watch-card-accent, currentcolor);
 }
 
 .wp-block-post-kinds-indieweb-jam-card .post-kinds-card {
 	border-top:
 		3px solid
-		var(--post-kinds-jam-accent, var(--wp--preset--color--primary, #22c55e));
+		var(--pkiw-jam-card-accent, currentcolor);
+}
+
+/* Pattern helpers — patterns reference tokens via these classes instead
+ * of inline color attributes in block markup. */
+.post-kinds-optional-hint {
+	color: var(--pkiw-card-text-secondary, inherit);
+}
+
+.post-kinds-progress-bar {
+	background-color: var(--pkiw-read-progress-bar, currentcolor);
+	color: var(--pkiw-read-progress-bar, currentcolor);
 }
