@@ -11,6 +11,12 @@
  * Also covers issue #38: a checkin carrying a `photo` property must
  * include a core/image block, not just the checkin card.
  *
+ * Also asserts the `kind` taxonomy term on every created post: the
+ * taxonomy registers `note` as its default_term, so before the bridge
+ * assigned terms every Micropub post landed as kind=note regardless of
+ * its actual kind (wrong badge, wrong kind archive). Builder-only kinds
+ * without terms (follow/weather) intentionally keep the note default.
+ *
  * Requires: wp-env with micropub + indieauth active (see .wp-env.json),
  * the tests/env/pkiw-test-auth.php fixture (grants Micropub scope to
  * application-password requests), and WP_APP_PASSWORD in the env.
@@ -57,7 +63,7 @@ test.describe( 'Micropub kind creation', () => {
 	 * POST a form-encoded h-entry and assert a real post was created.
 	 *
 	 * @param {Record<string, string>} form Form fields (h=entry added).
-	 * @return {Promise<{id: number, content: string}>} Created post id + raw content.
+	 * @return {Promise<{id: number, content: string, kinds: string[]}>} Created post id, raw content, and kind term slugs.
 	 */
 	async function createAndFetch( form ) {
 		const res = await api.post( ENDPOINT, {
@@ -110,42 +116,60 @@ test.describe( 'Micropub kind creation', () => {
 		);
 		expect( post.ok(), 'created post must be queryable' ).toBeTruthy();
 		const body = await post.json();
-		return { id, content: body.content.raw };
+
+		const terms = await api.get(
+			`${ BASE }/?rest_route=/wp/v2/kind&post=${ id }`
+		);
+		expect( terms.ok(), 'kind terms must be queryable' ).toBeTruthy();
+		const kinds = ( await terms.json() ).map( ( term ) => term.slug );
+
+		return { id, content: body.content.raw, kinds };
 	}
 
 	test( 'contentless eat-of creates a post with an eat card', async () => {
-		const { content } = await createAndFetch( { 'eat-of': 'Flat white' } );
+		const { content, kinds } = await createAndFetch( {
+			'eat-of': 'Flat white',
+		} );
 		expect( content ).toContain( '<!-- wp:post-kinds-indieweb/eat-card' );
+		expect( kinds ).toEqual( [ 'eat' ] );
 	} );
 
 	test( 'contentless drink-of creates a post with a drink card', async () => {
-		const { content } = await createAndFetch( { 'drink-of': 'Oat latte' } );
+		const { content, kinds } = await createAndFetch( {
+			'drink-of': 'Oat latte',
+		} );
 		expect( content ).toContain( '<!-- wp:post-kinds-indieweb/drink-card' );
+		expect( kinds ).toEqual( [ 'drink' ] );
 	} );
 
 	test( 'contentless follow-of creates a post with a u-follow-of link', async () => {
-		const { content } = await createAndFetch( {
+		const { content, kinds } = await createAndFetch( {
 			'follow-of': 'https://example.com/author',
 		} );
 		expect( content ).toContain( 'u-follow-of' );
 		expect( content ).toContain( 'https://example.com/author' );
+		// No `follow` term exists — builder-only kinds keep the note default.
+		expect( kinds ).toEqual( [ 'note' ] );
 	} );
 
 	test( 'contentless weather creates a post with a p-weather reading', async () => {
-		const { content } = await createAndFetch( {
+		const { content, kinds } = await createAndFetch( {
 			weather: 'Sunny, 28C, light breeze',
 		} );
 		expect( content ).toContain( 'p-weather' );
 		expect( content ).toContain( 'Sunny, 28C, light breeze' );
+		// No `weather` term exists — builder-only kinds keep the note default.
+		expect( kinds ).toEqual( [ 'note' ] );
 	} );
 
 	test( 'eat-of with content still creates and keeps the body', async () => {
-		const { content } = await createAndFetch( {
+		const { content, kinds } = await createAndFetch( {
 			'eat-of': 'Croissant',
 			content: 'Buttery perfection',
 		} );
 		expect( content ).toContain( '<!-- wp:post-kinds-indieweb/eat-card' );
 		expect( content ).toContain( 'Buttery perfection' );
+		expect( kinds ).toEqual( [ 'eat' ] );
 	} );
 
 	test( 'checkin with a photo includes a core/image block (#38)', async () => {
@@ -157,7 +181,7 @@ test.describe( 'Micropub kind creation', () => {
 		const photoHost =
 			process.env.PKIW_TEST_PHOTO_HOST ||
 			'http://host.docker.internal:8890';
-		const { content } = await createAndFetch( {
+		const { content, kinds } = await createAndFetch( {
 			location: 'geo:52.37,4.89',
 			'mp-place-name': 'Cafe Test',
 			photo: `${ photoHost }/wp-content/uploads/pkiw-test-photo.jpg`,
@@ -166,5 +190,81 @@ test.describe( 'Micropub kind creation', () => {
 			'<!-- wp:post-kinds-indieweb/checkin-card'
 		);
 		expect( content ).toContain( '<!-- wp:image' );
+		expect( kinds ).toEqual( [ 'checkin' ] );
 	} );
+
+	// Kind term assignment across the remaining kinds. The first group has
+	// card builders; the second (like/reply/repost/bookmark) has kind terms
+	// but no card — the term must be assigned even though post_content is
+	// left as the Micropub plugin generated it.
+	const kindMatrix = [
+		{
+			kind: 'listen',
+			form: {
+				'listen-of': 'https://example.test/track/123',
+				name: 'Test Track',
+			},
+		},
+		{
+			kind: 'watch',
+			form: {
+				'watch-of': 'https://example.test/film/456',
+				name: 'Test Film',
+			},
+		},
+		{
+			kind: 'read',
+			form: {
+				'read-of': 'https://example.test/book/789',
+				name: 'Test Book',
+			},
+		},
+		{
+			kind: 'play',
+			form: {
+				'play-of': 'https://example.test/game/101',
+				name: 'Test Game',
+			},
+		},
+		{
+			kind: 'rsvp',
+			form: { rsvp: 'yes', 'in-reply-to': 'https://example.test/event' },
+		},
+		{ kind: 'mood', form: { mood: 'joyful' } },
+		{
+			kind: 'like',
+			form: {
+				'like-of': 'https://example.test/great-post',
+				content: 'So good',
+			},
+		},
+		{
+			kind: 'reply',
+			form: {
+				'in-reply-to': 'https://example.test/a-post',
+				content: 'Agreed!',
+			},
+		},
+		{
+			kind: 'repost',
+			form: {
+				'repost-of': 'https://example.test/a-post',
+				content: 'Reposting this',
+			},
+		},
+		{
+			kind: 'bookmark',
+			form: {
+				'bookmark-of': 'https://example.test/a-post',
+				content: 'Saving for later',
+			},
+		},
+	];
+
+	for ( const { kind, form } of kindMatrix ) {
+		test( `${ kind } post gets the kind=${ kind } term`, async () => {
+			const { kinds } = await createAndFetch( form );
+			expect( kinds ).toEqual( [ kind ] );
+		} );
+	}
 } );
