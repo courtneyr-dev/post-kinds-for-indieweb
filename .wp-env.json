@@ -4,8 +4,8 @@
 	"phpVersion": "8.2",
 	"plugins": [
 		".",
-		"https://downloads.wordpress.org/plugin/micropub.latest-stable.zip",
-		"https://downloads.wordpress.org/plugin/indieauth.latest-stable.zip"
+		"https://downloads.wordpress.org/plugin/indieauth.latest-stable.zip",
+		"https://downloads.wordpress.org/plugin/micropub.latest-stable.zip"
 	],
 	"themes": [],
 	"config": {
