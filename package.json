@@ -1,6 +1,6 @@
 {
 	"name": "post-kinds-for-indieweb",
-	"version": "1.0.0",
+	"version": "1.2.0",
 	"description": "Modern block editor support for IndieWeb post kinds and microformats. A successor to the classic IndieWeb Post Kinds plugin.",
 	"author": "Courtney Robertson",
 	"license": "GPL-2.0-or-later",
