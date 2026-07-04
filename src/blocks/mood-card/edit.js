@@ -142,21 +142,28 @@ export default function Edit( { attributes, setAttributes } ) {
 		}
 	}, [] );
 
-	// Sync FROM post meta TO block attributes when meta changes from sidebar
+	// Sync FROM post meta TO block attributes when meta changes from sidebar.
+	// _postkind_mood_* isn't a registered post meta key (no REST schema
+	// entry, so WordPress core silently drops writes to it and the key is
+	// never actually persisted server-side) — only ever apply a non-empty
+	// meta value here. Without this guard, a fresh/just-inserted block's
+	// attribute gets raced back to blank: the "sync attrs -> meta" effect
+	// below writes meta asynchronously via editPost(), and depending on
+	// render timing this effect can still observe the pre-write ''/undefined
+	// meta value and stomp a real attribute with it.
 	useEffect( () => {
 		const updates = {};
 
-		const metaMood = postMeta._postkind_mood_label ?? '';
-		const metaEmoji = postMeta._postkind_mood_emoji ?? '';
-		const metaIntensity = postMeta._postkind_mood_rating ?? 3;
-
-		if ( metaMood !== ( mood || '' ) ) {
+		const metaMood = postMeta._postkind_mood_label;
+		if ( metaMood && metaMood !== ( mood || '' ) ) {
 			updates.mood = metaMood;
 		}
-		if ( metaEmoji !== ( emoji || '' ) ) {
+		const metaEmoji = postMeta._postkind_mood_emoji;
+		if ( metaEmoji && metaEmoji !== ( emoji || '' ) ) {
 			updates.emoji = metaEmoji;
 		}
-		if ( metaIntensity !== ( intensity || 3 ) ) {
+		const metaIntensity = postMeta._postkind_mood_rating;
+		if ( metaIntensity && metaIntensity !== ( intensity || 3 ) ) {
 			updates.intensity = metaIntensity;
 		}
 

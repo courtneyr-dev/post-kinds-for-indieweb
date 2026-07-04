@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -175,6 +175,27 @@ Visit [pin13.net/mf2](https://pin13.net/mf2/) and enter your post URL. The tool 
 7. Block inserter showing all post kind blocks
 
 == Changelog ==
+
+= 1.2.0 =
+* Book fields (ISBN, publisher, pages, publish date, ASIN) are now bindable kind-meta keys backed by post meta
+* Book completion: fill missing book fields from Open Library, Google Books, or Hardcover — on save, via the Read Card's editor button, or for Micropub read posts
+* Kindle preview: opt-in reader embed on read posts, built from the book's ASIN or ISBN, with a Read + Kindle block pattern and inspector toggle
+* Card attributes now mirror into post meta on save, so Block Bindings always have a server-side source of truth
+* Micropub coverage for likes, reposts, bookmarks, and replies — contentless response posts no longer vanish
+* Editor saves set the kind term automatically from the post's first card block
+* Fixed: Eat Card restaurant and Play Card Steam ID never displayed on the front end
+* Fixed: Mood Card and Play Card could wipe freshly-entered values when the editor loaded
+* Fixed: Micropub play and RSVP posts silently dropped fields
+* Fixed: card blocks no longer make live oEmbed requests during render
+* Security: hardened Amazon hostname detection and the book-complete REST route
+* Test coverage: every attribute of all 22 blocks is now exercised across render, save, editor round-trip, visual, and Micropub wire layers
+
+= 1.1.0 =
+* Fixed: contentless Micropub kind posts (eat, drink, follow, weather) now actually create posts instead of silently failing
+* Fixed: checkins (and every other kind) with an attached photo now include the image
+* Follow and weather kinds now recognized by the Micropub bridge
+* All block colors now flow through the `--pkiw-*` design-token API, following the active theme's palette by default
+* WordPress 7.0 is now the minimum supported version (previously 6.9)
 
 = 1.0.4 =
 * Fix site-wide PHP fatal when active alongside block themes that resolve hooked blocks during init (e.g. Ollie). `Format_Badge::filter_hooked_blocks()` now accepts a nullable `$position` parameter, matching WordPress core's `hooked_block_types` filter signature.

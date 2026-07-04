@@ -7,19 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-07-04
+
+### Added
+
+- **Book fields are now bindable kind-meta keys.** `isbn`, `publisher`, `pages`, `publish_date`, and `asin` join the Block Bindings source (with `pk_*` aliases), backed by matching `_postkind_read_*` post meta. Any block attribute can bind to book metadata the same way it already could to title, author, and cover.
+- **Book completion cascade** (`includes/class-book-completion.php`). Given a partial book (say, just an ISBN), fills the missing fields by querying Open Library, then Google Books, then Hardcover — first source with an answer wins, existing values are never overwritten. Runs on editor save, on Micropub-created read posts (opt-out via the `pkiw_micropub_book_completion` filter), and on demand from the Read Card's editor button via the `/pkiw/v1/book-complete` REST route.
+- **Kindle embed bridge.** A computed `kindle_embed_url` binding key builds a Kindle reader embed URL from the post's book meta — from the ASIN when present, otherwise derived from the ISBN (ISBN-13 → ISBN-10). Read posts with the opt-in marker render the embed as a lazy-loaded iframe on the front end at render time; nothing is stored in post content.
+- **Read + Kindle preview block pattern and inspector toggle.** A registered pattern pairs the Read Card with the Kindle preview, and the Read Card's inspector gets a toggle that adds or removes the embed marker.
+- **Card meta sync** (`includes/class-card-meta-sync.php`). On save, mirrors the post's first card block attributes into `_postkind_` meta (map-driven; read-card first), so Block Bindings always have a server-side source of truth that matches what the card shows.
+- **Field-matrix test coverage across all 22 blocks (~290 attributes).** A generated fixture (`tests/phpunit/fixtures/field-matrix.json`) with a drift guard is the single source of truth for block attributes; matrix-driven suites cover server render (every attribute must reach the markup), static serialize, editor save/reload round-trips, visual-regression baselines for every card block, and the Micropub wire format per kind (mapped attributes asserted, declared gaps enforced).
+- **Editor saves now set the kind term from the post's first block.** When a post's first block is one of the kind card blocks (eat, drink, listen, watch, read, play, checkin, RSVP, like, favorite, jam, wish, mood, acquisition), saving assigns the matching `kind` taxonomy term automatically — no separate pick in the taxonomy panel needed. Manual choices always win: only the `note` default (never chosen by a person) or a kind this sync itself assigned earlier (tracked in `_pkiw_kind_auto_assigned` post meta, so a swapped first block re-syncs) is ever replaced. Companion to the Micropub-side kind assignment, which covers posts arriving via the Micropub bridge.
+- **Micropub bridge coverage for the four response kinds.** Likes render the Like Card (falling back to the liked URL as the linked title); reposts, bookmarks, and replies emit paragraphs carrying `u-repost-of` / `u-bookmark-of` / `u-in-reply-to` microformats2 classes until dedicated card blocks exist. Endpoint-level e2e tests cover all four shapes plus the rsvp/reply precedence rule.
+- `docs/micropub-field-gaps.md` documents, kind by kind, which block fields Micropub clients cannot set yet — the concrete list for sender-side (Outpost) follow-on work.
+
 ### Fixed
 
+- **Eat Card's restaurant and Play Card's steamId never rendered.** Both attributes existed in the editor and saved fine, but `render.php` never read them, so the values silently vanished on the front end. Caught by the new render matrix.
+- **Mood Card and Play Card wiped freshly-entered values on editor mount.** Their "sync post meta → block attributes" effects read `_postkind_mood_*` / `_postkind_play_*` meta keys that were never registered, so every mount saw an empty meta value and stomped the attribute back to blank. Both effects now only apply non-empty meta values. Caught by the new round-trip matrix.
+- **Micropub play and RSVP posts dropped fields to attribute-name mismatches.** The bridge's `play_card()` wrote `playUrl`/`gameTitle` and `rsvp_card()` wrote `response`/`note`, but the block schemas define `gameUrl`/`title` and `rsvpStatus`/`rsvpNote` — the values were silently discarded on render. Caught by the wire-matrix completeness assertion.
 - **"Phantom posts" for contentless likes, reposts, bookmarks, and replies.** Same failure class fixed for eat/drink/follow/weather in 1.1.0: `like-of`, `repost-of`, `bookmark-of`, and (content-free) `in-reply-to` posts died inside `wp_insert_post()` with `empty_content` while the Micropub endpoint answered 2xx with no Location — on installs without IndieBlocks, the four response shapes Outpost sends created nothing at all. The bridge now recognizes all four in `detect_kind()` and supplies markup before insert.
 - **Like Card block registered server-side.** `like-card` existed in `src/blocks/` and registered in the editor, but was missing from the server registration list in `class-plugin.php`.
+- **Card block renders no longer make live oEmbed HTTP requests.** `wp_oembed_get()` performs an uncached discovery fetch on every call, so jam/listen/watch card renders outside the post-content cache path (REST, widgets, `do_blocks()`) blocked page render on a remote request. The three call sites now share a cached-embed helper backed by WordPress's oEmbed cache, with link-tag discovery disabled so only registered providers are ever fetched.
+- **ASIN detection no longer trusts spoofable hostnames.** The Kindle bridge's Amazon host guard matched Amazon-looking substrings anywhere in the hostname; it now anchors to real Amazon domains.
+- **The book-complete REST route no longer reflects unknown parameters.** `rest_complete()` built the book from all request params, so unrecognized keys bypassed the registered-args sanitization and echoed back verbatim in the response. Input is now intersected against the canonical book keys.
 
 ### Changed
 
 - **Like Card is now a dynamic block** (`render.php`, jam-card precedent), so attribute-only blocks written by the Micropub bridge render on the front end. Existing statically-saved like cards migrate via a block deprecation; no content changes needed.
-
-### Added
-
-- **Editor saves now set the kind term from the post's first block.** When a post's first block is one of the kind card blocks (eat, drink, listen, watch, read, play, checkin, RSVP, like, favorite, jam, wish, mood, acquisition), saving assigns the matching `kind` taxonomy term automatically — no separate pick in the taxonomy panel needed. Manual choices always win: only the `note` default (never chosen by a person) or a kind this sync itself assigned earlier (tracked in `_pkiw_kind_auto_assigned` post meta, so a swapped first block re-syncs) is ever replaced. Companion to the Micropub-side kind assignment, which covers posts arriving via the Micropub bridge.
-- **Micropub bridge coverage for the four response kinds.** Likes render the Like Card (falling back to the liked URL as the linked title); reposts, bookmarks, and replies emit paragraphs carrying `u-repost-of` / `u-bookmark-of` / `u-in-reply-to` microformats2 classes until dedicated card blocks exist. Endpoint-level e2e tests cover all four shapes plus the rsvp/reply precedence rule.
 
 ## [1.1.0] - 2026-07-03
 
@@ -198,5 +213,7 @@ This project uses Semantic Versioning:
 - [Issues](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues)
 - [IndieWeb Wiki](https://indieweb.org/)
 
-[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/releases/tag/v1.0.0

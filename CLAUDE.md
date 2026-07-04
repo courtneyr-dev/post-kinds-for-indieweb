@@ -30,7 +30,7 @@ npm run start           # Watch
 npm run build           # Production
 composer test           # PHPUnit
 composer lint           # PHPCS (WordPress-Extra)
-composer analyze        # PHPStan level 6
+composer analyze        # PHPStan level 5 (phpstan.neon)
 npm run lint:js         # ESLint
 npm run test:e2e        # Playwright
 ```

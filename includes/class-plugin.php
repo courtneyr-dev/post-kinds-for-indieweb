@@ -63,11 +63,25 @@ final class Plugin {
 	private ?Taxonomy $taxonomy = null;
 
 	/**
+	 * Card Meta Sync component instance.
+	 *
+	 * @var Card_Meta_Sync|null
+	 */
+	private ?Card_Meta_Sync $card_meta_sync = null;
+
+	/**
 	 * Meta Fields component instance.
 	 *
 	 * @var Meta_Fields|null
 	 */
 	private ?Meta_Fields $meta_fields = null;
+
+	/**
+	 * Book Completion Controller component instance.
+	 *
+	 * @var Book_Completion_Controller|null
+	 */
+	private ?Book_Completion_Controller $book_completion_controller = null;
 
 	/**
 	 * Block Bindings component instance.
@@ -82,6 +96,13 @@ final class Plugin {
 	 * @var Block_Bindings_Source|null
 	 */
 	private ?Block_Bindings_Source $block_bindings_source = null;
+
+	/**
+	 * Kindle Embed Bridge component instance (WP 7.0+).
+	 *
+	 * @var Kindle_Embed_Bridge|null
+	 */
+	private ?Kindle_Embed_Bridge $kindle_embed_bridge = null;
 
 	/**
 	 * Now Playing block instance (WP 7.0+).
@@ -414,6 +435,14 @@ final class Plugin {
 			$this->meta_fields = new Meta_Fields();
 		}
 
+		if ( class_exists( __NAMESPACE__ . '\\Card_Meta_Sync' ) ) {
+			$this->card_meta_sync = new Card_Meta_Sync();
+		}
+
+		if ( class_exists( __NAMESPACE__ . '\\Book_Completion_Controller' ) ) {
+			$this->book_completion_controller = new Book_Completion_Controller();
+		}
+
 		if ( class_exists( __NAMESPACE__ . '\\Block_Bindings' ) ) {
 			$this->block_bindings = new Block_Bindings();
 		}
@@ -489,6 +518,11 @@ final class Plugin {
 		// Kind-aware block bindings source.
 		if ( class_exists( __NAMESPACE__ . '\\Block_Bindings_Source' ) ) {
 			$this->block_bindings_source = new Block_Bindings_Source();
+		}
+
+		// core/embed opt-in + server render bridge for Kindle previews.
+		if ( class_exists( __NAMESPACE__ . '\\Kindle_Embed_Bridge' ) ) {
+			$this->kindle_embed_bridge = new Kindle_Embed_Bridge();
 		}
 
 		// PHP-only blocks.
@@ -1264,6 +1298,24 @@ final class Plugin {
 	}
 
 	/**
+	 * Get the Card_Meta_Sync component.
+	 *
+	 * @return Card_Meta_Sync|null The Card_Meta_Sync instance or null if not loaded.
+	 */
+	public function get_card_meta_sync(): ?Card_Meta_Sync {
+		return $this->card_meta_sync;
+	}
+
+	/**
+	 * Get the Book_Completion_Controller component.
+	 *
+	 * @return Book_Completion_Controller|null The instance or null if not loaded.
+	 */
+	public function get_book_completion_controller(): ?Book_Completion_Controller {
+		return $this->book_completion_controller;
+	}
+
+	/**
 	 * Get the Block_Bindings component.
 	 *
 	 * @return Block_Bindings|null The Block_Bindings instance or null if not loaded.
@@ -1279,6 +1331,15 @@ final class Plugin {
 	 */
 	public function get_block_bindings_source(): ?Block_Bindings_Source {
 		return $this->block_bindings_source;
+	}
+
+	/**
+	 * Get the Kindle_Embed_Bridge component (WP 7.0+).
+	 *
+	 * @return Kindle_Embed_Bridge|null The instance or null if not loaded.
+	 */
+	public function get_kindle_embed_bridge(): ?Kindle_Embed_Bridge {
+		return $this->kindle_embed_bridge;
 	}
 
 	/**
