@@ -979,4 +979,275 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		);
 		$this->assertStringContainsString( 'wp:post-kinds-indieweb/reply-card', $content );
 	}
+
+	// --- Wire matrix: every kind's Micropub properties -> card attrs --------
+
+	/**
+	 * Wire matrix: every Micropub property the builder maps, asserted onto
+	 * its card attribute — and every card attribute it can never fill,
+	 * declared as a known gap so silence is impossible.
+	 *
+	 * @return array<string, array{0: array<string,mixed>, 1: string, 2: array<string,mixed>, 3: string[]}>
+	 *         [ properties, expected block, attr => expected value, known-unfillable attrs ]
+	 */
+	public function wire_matrix(): array {
+		return array(
+			'checkin' => array(
+				array(
+					'mp-place-name' => array( 'Sample venue' ),
+					'location'      => array( 'geo:40.0379,-76.3055' ),
+					'content'       => array( 'Sample body' ),
+				),
+				'post-kinds-indieweb/checkin-card',
+				array(
+					'venueName' => 'Sample venue',
+					'note'      => 'Sample body',
+					'latitude'  => 40.0379,
+					'longitude' => -76.3055,
+				),
+				array( 'venueType', 'address', 'locality', 'region', 'country', 'postalCode', 'locationPrivacy', 'osmId', 'venueUrl', 'foursquareId', 'checkinAt', 'photo', 'photoAlt', 'showMap' ),
+			),
+			'eat'     => array(
+				array(
+					'eat-of'        => array( 'Sample dish' ),
+					'content'       => array( 'Sample body' ),
+					'rating'        => array( '4' ),
+					'mp-place-name' => array( 'Sample venue' ),
+					'location'      => array( 'geo:40.0379,-76.3055' ),
+				),
+				'post-kinds-indieweb/eat-card',
+				array(
+					'name'         => 'Sample dish',
+					'notes'        => 'Sample body',
+					'rating'       => 4,
+					'locationName' => 'Sample venue',
+					'geoLatitude'  => 40.0379,
+					'geoLongitude' => -76.3055,
+				),
+				array( 'restaurant', 'cuisine', 'photo', 'photoAlt', 'ateAt', 'restaurantUrl', 'locationAddress', 'locationLocality', 'locationRegion', 'locationCountry' ),
+			),
+			'drink'   => array(
+				array(
+					'drink-of'      => array( 'Sample drink' ),
+					'content'       => array( 'Sample body' ),
+					'rating'        => array( '4' ),
+					'mp-place-name' => array( 'Sample venue' ),
+					'location'      => array( 'geo:40.0379,-76.3055' ),
+				),
+				'post-kinds-indieweb/drink-card',
+				array(
+					'name'         => 'Sample drink',
+					'notes'        => 'Sample body',
+					'rating'       => 4,
+					'locationName' => 'Sample venue',
+					'geoLatitude'  => 40.0379,
+					'geoLongitude' => -76.3055,
+				),
+				array( 'drinkType', 'brand', 'photo', 'photoAlt', 'drankAt', 'venueUrl', 'locationAddress', 'locationLocality', 'locationRegion', 'locationCountry' ),
+			),
+			'listen'  => array(
+				array(
+					'listen-of' => array( 'https://example.test/track/123' ),
+					'name'      => array( 'Sample track' ),
+					'author'    => array( 'Sample artist' ),
+					'rating'    => array( '4' ),
+				),
+				'post-kinds-indieweb/listen-card',
+				array(
+					'listenUrl'  => 'https://example.test/track/123',
+					'trackTitle' => 'Sample track',
+					'artistName' => 'Sample artist',
+					'rating'     => 4,
+				),
+				array( 'albumTitle', 'releaseDate', 'coverImage', 'coverImageAlt', 'musicbrainzId', 'listenedAt' ),
+			),
+			'watch'   => array(
+				array(
+					'watch-of' => array( 'https://example.test/movie' ),
+					'name'     => array( 'Sample film' ),
+					'author'   => array( 'Sample director' ),
+					'rating'   => array( '4' ),
+					'content'  => array( 'Sample review' ),
+				),
+				'post-kinds-indieweb/watch-card',
+				array(
+					'watchUrl'   => 'https://example.test/movie',
+					'mediaTitle' => 'Sample film',
+					'director'   => 'Sample director',
+					'rating'     => 4,
+					'review'     => 'Sample review',
+				),
+				array( 'mediaType', 'showTitle', 'seasonNumber', 'episodeNumber', 'episodeTitle', 'releaseYear', 'posterImage', 'posterImageAlt', 'tmdbId', 'imdbId', 'isRewatch', 'watchedAt' ),
+			),
+			'read'    => array(
+				array(
+					'read-of'     => array( 'https://openlibrary.org/works/OL45883W' ),
+					'name'        => array( 'Sample book' ),
+					'author'      => array( 'Sample author' ),
+					'read-status' => array( 'reading' ),
+					'rating'      => array( '4' ),
+					'content'     => array( 'Sample review' ),
+				),
+				'post-kinds-indieweb/read-card',
+				array(
+					'bookUrl'    => 'https://openlibrary.org/works/OL45883W',
+					'bookTitle'  => 'Sample book',
+					'authorName' => 'Sample author',
+					'readStatus' => 'reading',
+					'rating'     => 4,
+					'review'     => 'Sample review',
+				),
+				array( 'isbn', 'publisher', 'publishDate', 'pageCount', 'currentPage', 'coverImage', 'coverImageAlt', 'openlibraryId', 'startedAt', 'finishedAt' ),
+			),
+			'play'    => array(
+				array(
+					'play-of' => array( 'https://example.test/game' ),
+					'name'    => array( 'Sample game' ),
+					'rating'  => array( '4' ),
+				),
+				'post-kinds-indieweb/play-card',
+				array(
+					'gameUrl' => 'https://example.test/game',
+					'title'   => 'Sample game',
+					'rating'  => 4,
+				),
+				array( 'platform', 'cover', 'coverAlt', 'status', 'hoursPlayed', 'playedAt', 'review', 'bggId', 'rawgId', 'steamId', 'officialUrl', 'purchaseUrl' ),
+			),
+			'rsvp'    => array(
+				array(
+					'in-reply-to' => array( 'https://example.test/event' ),
+					'rsvp'        => array( 'yes' ),
+					'content'     => array( 'Sample note' ),
+				),
+				'post-kinds-indieweb/rsvp-card',
+				array(
+					'eventUrl'   => 'https://example.test/event',
+					'rsvpStatus' => 'yes',
+					'rsvpNote'   => 'Sample note',
+				),
+				array( 'eventName', 'eventStart', 'eventEnd', 'eventLocation', 'eventDescription', 'rsvpAt', 'eventImage', 'eventImageAlt', 'rel' ),
+			),
+			'like'    => array(
+				array(
+					'like-of' => array( 'https://example.test/liked-post' ),
+					'name'    => array( 'Sample title' ),
+					'author'  => array( 'Sample author' ),
+					'content' => array( 'Sample body' ),
+				),
+				'post-kinds-indieweb/like-card',
+				array(
+					'title'       => 'Sample title',
+					'url'         => 'https://example.test/liked-post',
+					'author'      => 'Sample author',
+					'description' => 'Sample body',
+				),
+				array( 'image', 'imageAlt', 'likedAt', 'rel' ),
+			),
+			'repost'  => array(
+				array(
+					'repost-of' => array( 'https://example.test/reposted' ),
+					'name'      => array( 'Sample title' ),
+					'author'    => array( 'Sample author' ),
+					'content'   => array( 'Sample body' ),
+				),
+				'post-kinds-indieweb/repost-card',
+				array(
+					'title'       => 'Sample title',
+					'url'         => 'https://example.test/reposted',
+					'author'      => 'Sample author',
+					'description' => 'Sample body',
+				),
+				array( 'image', 'imageAlt', 'repostedAt', 'rel' ),
+			),
+			'bookmark' => array(
+				array(
+					'bookmark-of' => array( 'https://example.test/saved' ),
+					'name'        => array( 'Sample title' ),
+					'author'      => array( 'Sample author' ),
+					'content'     => array( 'Sample body' ),
+				),
+				'post-kinds-indieweb/bookmark-card',
+				array(
+					'title'       => 'Sample title',
+					'url'         => 'https://example.test/saved',
+					'author'      => 'Sample author',
+					'description' => 'Sample body',
+				),
+				array( 'image', 'imageAlt', 'bookmarkedAt', 'rel' ),
+			),
+			'reply'   => array(
+				array(
+					'in-reply-to' => array( 'https://example.test/original' ),
+					'name'        => array( 'Sample title' ),
+					'author'      => array( 'Sample author' ),
+					'content'     => array( 'Sample reply body' ),
+				),
+				'post-kinds-indieweb/reply-card',
+				array(
+					'title'  => 'Sample title',
+					'url'    => 'https://example.test/original',
+					'author' => 'Sample author',
+				),
+				array( 'description', 'image', 'imageAlt', 'repliedAt', 'rel' ),
+			),
+			'mood'    => array(
+				array(
+					'mood'    => array( 'focused' ),
+					'content' => array( 'Sample note' ),
+				),
+				'post-kinds-indieweb/mood-card',
+				array(
+					'mood' => 'focused',
+					'note' => 'Sample note',
+				),
+				array( 'emoji', 'intensity', 'moodAt' ),
+			),
+		);
+	}
+
+	/**
+	 * @dataProvider wire_matrix
+	 *
+	 * @param array<string,mixed>  $properties  h-entry properties bag.
+	 * @param string               $block       Expected card block name.
+	 * @param array<string,mixed>  $expected_attrs Attr => expected value.
+	 * @param string[]             $known_gaps  Attributes the builder can never fill today.
+	 */
+	public function test_wire_matrix( array $properties, string $block, array $expected_attrs, array $known_gaps ): void {
+		$content = $this->invoke_private( 'build_block_content', array( $properties ) );
+		$this->assertIsString( $content, "$block: builder returned null for a recognized kind" );
+
+		$blocks = parse_blocks( $content );
+		$card   = null;
+		foreach ( $blocks as $b ) {
+			if ( $b['blockName'] === $block ) {
+				$card = $b;
+				break;
+			}
+			// Card blocks land inside the h-entry group wrapper.
+			foreach ( $b['innerBlocks'] ?? array() as $inner ) {
+				if ( $inner['blockName'] === $block ) {
+					$card = $inner;
+					break 2;
+				}
+			}
+		}
+		$this->assertNotNull( $card, "$block not emitted" );
+
+		foreach ( $expected_attrs as $attr => $value ) {
+			$this->assertSame( $value, $card['attrs'][ $attr ] ?? null, "wire -> $attr" );
+		}
+
+		// The ledger must be TRUE: a gap attr that suddenly gets a value means
+		// a mapping was added — update the ledger and the docs, don't ignore it.
+		foreach ( $known_gaps as $gap ) {
+			$this->assertArrayNotHasKey( $gap, $card['attrs'], "$gap is mapped now — remove it from the gap ledger and docs/micropub-field-gaps.md" );
+		}
+
+		// Completeness: mapped + gaps + universal (layout) = the block's full attr set.
+		$matrix  = json_decode( (string) file_get_contents( dirname( __DIR__ ) . '/fixtures/field-matrix.json' ), true );
+		$all     = array_keys( $matrix[ $block ]['attributes'] );
+		$covered = array_merge( array_keys( $expected_attrs ), $known_gaps, array( 'layout' ) );
+		$this->assertSame( array(), array_diff( $all, $covered ), "$block has attrs neither asserted nor declared as gaps" );
+	}
 }

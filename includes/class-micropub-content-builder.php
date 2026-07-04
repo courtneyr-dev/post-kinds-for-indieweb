@@ -511,9 +511,9 @@ final class Micropub_Content_Builder {
 		// Play-card attributes mirror Listen/Watch's URL+name pattern.
 		$attrs = self::filter_empty(
 			[
-				'playUrl'   => self::flatten_scalar( $properties, 'play-of' ),
-				'gameTitle' => self::flatten_scalar( $properties, 'name' ),
-				'rating'    => self::flatten_numeric( $properties, 'rating' ),
+				'gameUrl' => self::flatten_scalar( $properties, 'play-of' ),
+				'title'   => self::flatten_scalar( $properties, 'name' ),
+				'rating'  => self::flatten_numeric( $properties, 'rating' ),
 			]
 		);
 		return self::self_closing_block( 'post-kinds-indieweb/play-card', $attrs );
@@ -528,9 +528,9 @@ final class Micropub_Content_Builder {
 	private static function rsvp_card( array $properties ): string {
 		$attrs = self::filter_empty(
 			[
-				'eventUrl' => self::flatten_scalar( $properties, 'in-reply-to' ),
-				'response' => self::flatten_scalar( $properties, 'rsvp' ),
-				'note'     => self::flatten_scalar( $properties, 'content' ),
+				'eventUrl'   => self::flatten_scalar( $properties, 'in-reply-to' ),
+				'rsvpStatus' => self::flatten_scalar( $properties, 'rsvp' ),
+				'rsvpNote'   => self::flatten_scalar( $properties, 'content' ),
 			]
 		);
 		return self::self_closing_block( 'post-kinds-indieweb/rsvp-card', $attrs );
