@@ -19,6 +19,33 @@ declare(strict_types=1);
 final class BlockFieldRenderTest extends WP_UnitTestCase {
 
 	/**
+	 * URLs of live HTTP requests attempted during the test.
+	 *
+	 * @var string[]
+	 */
+	private array $http_requests = [];
+
+	/**
+	 * Block all live HTTP and record every attempt.
+	 *
+	 * Rendering a block must never depend on the network: an uncached
+	 * oEmbed lookup blocks page render on a remote fetch.
+	 */
+	public function set_up(): void {
+		parent::set_up();
+		$this->http_requests = [];
+		add_filter(
+			'pre_http_request',
+			function ( $preempt, $parsed_args, $url ) {
+				$this->http_requests[] = $url;
+				return new WP_Error( 'http_blocked', 'Live HTTP is blocked in render tests: ' . $url );
+			},
+			10,
+			3
+		);
+	}
+
+	/**
 	 * Attrs whose sample never appears verbatim in output, with the reason.
 	 *
 	 * Format: 'blockName' => [ 'attr' => 'reason' ]. The '*' key applies to
@@ -139,6 +166,12 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 				"$block_name: layout wrapper class missing from rendered output"
 			);
 		}
+
+		$this->assertSame(
+			[],
+			$this->http_requests,
+			"$block_name: rendering attempted live HTTP request(s)"
+		);
 	}
 
 	/**
@@ -153,5 +186,10 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'Sample', $html );
 		$this->assertStringNotContainsString( 'undefined', $html );
 		$this->assertStringNotContainsString( 'Array', $html );
+		$this->assertSame(
+			[],
+			$this->http_requests,
+			"$block_name: rendering attempted live HTTP request(s)"
+		);
 	}
 }

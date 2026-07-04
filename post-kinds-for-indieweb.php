@@ -276,6 +276,7 @@ function init(): void {
 
 // Load helper functions.
 require_once POST_KINDS_INDIEWEB_PATH . 'includes/functions-checkin.php';
+require_once POST_KINDS_INDIEWEB_PATH . 'includes/functions-embeds.php';
 
 // Hook into WordPress init (priority 0 so component registrations land
 // before the priority-10 callbacks they depend on).
