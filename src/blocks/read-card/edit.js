@@ -21,6 +21,7 @@ import {
 	Popover,
 	RangeControl,
 } from '@wordpress/components';
+import apiFetch from '@wordpress/api-fetch';
 import { useState } from '@wordpress/element';
 import { readIcon } from '../shared/icons';
 import {
@@ -62,6 +63,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const [ showStartPicker, setShowStartPicker ] = useState( false );
 	const [ showFinishPicker, setShowFinishPicker ] = useState( false );
 	const [ isSearching, setIsSearching ] = useState( false );
+	const [ completing, setCompleting ] = useState( false );
 
 	const blockProps = useBlockProps( {
 		className: `read-card layout-${ layout } status-${ readStatus }`,
@@ -234,6 +236,52 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 						min={ 1 }
 					/>
+					<Button
+						variant="secondary"
+						isBusy={ completing }
+						disabled={
+							completing || ( ! isbn && ! bookTitle && ! bookUrl )
+						}
+						onClick={ async () => {
+							setCompleting( true );
+							try {
+								const book = await apiFetch( {
+									path: '/pkiw/v1/book-complete',
+									method: 'POST',
+									data: {
+										isbn,
+										title: bookTitle,
+										author: authorName,
+										url: bookUrl,
+									},
+								} );
+								setAttributes( {
+									bookTitle: bookTitle || book.title || '',
+									authorName: authorName || book.author || '',
+									isbn: isbn || book.isbn || '',
+									publisher:
+										publisher || book.publisher || '',
+									publishDate:
+										attributes.publishDate ||
+										book.publish_date ||
+										'',
+									pageCount:
+										pageCount ||
+										( book.pages
+											? Number( book.pages )
+											: undefined ),
+									coverImage: coverImage || book.cover || '',
+								} );
+							} finally {
+								setCompleting( false );
+							}
+						} }
+					>
+						{ __(
+							'Complete book details',
+							'post-kinds-for-indieweb'
+						) }
+					</Button>
 				</PanelBody>
 
 				<PanelBody

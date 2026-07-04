@@ -77,6 +77,13 @@ final class Plugin {
 	private ?Meta_Fields $meta_fields = null;
 
 	/**
+	 * Book Completion Controller component instance.
+	 *
+	 * @var Book_Completion_Controller|null
+	 */
+	private ?Book_Completion_Controller $book_completion_controller = null;
+
+	/**
 	 * Block Bindings component instance.
 	 *
 	 * @var Block_Bindings|null
@@ -423,6 +430,10 @@ final class Plugin {
 
 		if ( class_exists( __NAMESPACE__ . '\\Card_Meta_Sync' ) ) {
 			$this->card_meta_sync = new Card_Meta_Sync();
+		}
+
+		if ( class_exists( __NAMESPACE__ . '\\Book_Completion_Controller' ) ) {
+			$this->book_completion_controller = new Book_Completion_Controller();
 		}
 
 		if ( class_exists( __NAMESPACE__ . '\\Block_Bindings' ) ) {
@@ -1281,6 +1292,15 @@ final class Plugin {
 	 */
 	public function get_card_meta_sync(): ?Card_Meta_Sync {
 		return $this->card_meta_sync;
+	}
+
+	/**
+	 * Get the Book_Completion_Controller component.
+	 *
+	 * @return Book_Completion_Controller|null The instance or null if not loaded.
+	 */
+	public function get_book_completion_controller(): ?Book_Completion_Controller {
+		return $this->book_completion_controller;
 	}
 
 	/**
