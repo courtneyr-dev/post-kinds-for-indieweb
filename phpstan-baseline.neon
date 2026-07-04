@@ -259,18 +259,6 @@ parameters:
 			path: includes/class-ai-enhancements.php
 
 		-
-			message: '#^Negated boolean expression is always false\.$#'
-			identifier: booleanNot.alwaysFalse
-			count: 1
-			path: includes/class-block-bindings-source.php
-
-		-
-			message: '#^Offset ''_default'' on array\{_default\: ''cite_summary''\}\|array\{_default\: ''listen_album''\}\|array\{listen\: ''listen_artist'', jam\: ''listen_artist'', _default\: ''cite_author''\}\|array\{listen\: ''listen_cover'', jam\: ''listen_cover'', watch\: ''watch_poster'', read\: ''read_cover'', _default\: ''cite_photo''\}\|array\{listen\: ''listen_rating'', watch\: ''watch_rating'', read\: ''read_rating'', _default\: ''review_rating''\}\|array\{listen\: ''listen_track'', jam\: ''listen_track'', watch\: ''watch_title'', read\: ''read_title'', _default\: ''cite_name''\}\|array\{listen\: ''listen_url'', jam\: ''listen_url'', watch\: ''watch_url'', read\: ''read_url'', _default\: ''cite_url''\}\|array\{read\: ''read_author'', _default\: ''cite_author''\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: includes/class-block-bindings-source.php
-
-		-
 			message: '#^@param array\<string, array\<string, string\>\> \$bindings does not accept actual type of parameter\: array\{cite_name\: array\{label\: string, meta_key\: ''cite_name'', type\: ''string''\}, cite_url\: array\{label\: string, meta_key\: ''cite_url'', type\: ''url''\}, cite_author\: array\{label\: string, meta_key\: ''cite_author'', type\: ''string''\}, cite_author_url\: array\{label\: string, meta_key\: ''cite_author_url'', type\: ''url''\}, cite_photo\: array\{label\: string, meta_key\: ''cite_photo'', type\: ''url''\}, cite_summary\: array\{label\: string, meta_key\: ''cite_summary'', type\: ''string''\}, cite_published\: array\{label\: string, meta_key\: ''cite_published'', type\: ''date''\}, rsvp_status\: array\{label\: string, meta_key\: ''rsvp_status'', type\: ''string'', format\: ''rsvp''\}, \.\.\.\}\.$#'
 			identifier: parameter.phpDocType
 			count: 1

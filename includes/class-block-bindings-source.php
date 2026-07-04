@@ -257,11 +257,7 @@ final class Block_Bindings_Source {
 
 		$kind        = $this->get_kind( (int) $post_id );
 		$key_map     = self::KEY_MAP[ $key ];
-		$meta_suffix = $key_map[ $kind ] ?? $key_map['_default'] ?? null;
-
-		if ( ! $meta_suffix ) {
-			return null;
-		}
+		$meta_suffix = $key_map[ $kind ] ?? $key_map['_default'];
 
 		$meta_key = Meta_Fields::PREFIX . $meta_suffix;
 		$value    = get_post_meta( (int) $post_id, $meta_key, true );
