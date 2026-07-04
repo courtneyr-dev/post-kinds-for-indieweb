@@ -1,0 +1,16 @@
+/**
+ * Bookmark Card Block - Save Component
+ *
+ * Returns null because this is a dynamic block rendered by render.php.
+ *
+ * @package
+ */
+
+/**
+ * Save component for the Bookmark Card block.
+ *
+ * @return {null} Null because this block uses server-side rendering.
+ */
+export default function Save() {
+	return null;
+}
