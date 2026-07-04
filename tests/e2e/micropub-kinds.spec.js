@@ -331,4 +331,91 @@ test.describe( 'Micropub kind creation', () => {
 			expect( kinds ).toEqual( [ kind ] );
 		} );
 	}
+
+	// Field-level assertion tests: verify that card block attributes are
+	// correctly wired from Micropub properties through the builder.
+	// The regex extracts attrs JSON from the card block comment; rely on
+	// existing createAndFetch to handle post creation, then dig into attrs.
+
+	test( 'eat-of with place and rating lands name, location, and rating in attrs', async () => {
+		const { content } = await createAndFetch( {
+			'eat-of': 'Sample dish',
+			content: 'Sample body',
+			rating: '4',
+			'mp-place-name': 'Sample venue',
+		} );
+		const match = content.match(
+			/<!-- wp:post-kinds-indieweb\/eat-card ({.*?}) \/?-->/
+		);
+		expect( match, 'eat-card block must exist' ).toBeTruthy();
+		const attrs = JSON.parse( match[ 1 ] );
+		expect( attrs.name ).toBe( 'Sample dish' );
+		expect( attrs.rating ).toBe( 4 );
+		expect( attrs.locationName ).toBe( 'Sample venue' );
+	} );
+
+	test( 'checkin with place and photo lands venue and includes image block', async () => {
+		const photoHost =
+			process.env.PKIW_TEST_PHOTO_HOST ||
+			'http://host.docker.internal:8890';
+		const { content } = await createAndFetch( {
+			location: 'geo:52.37,4.89',
+			'mp-place-name': 'Test Cafe',
+			photo: `${ photoHost }/wp-content/uploads/pkiw-test-photo.jpg`,
+		} );
+		const match = content.match(
+			/<!-- wp:post-kinds-indieweb\/checkin-card ({.*?}) \/?-->/
+		);
+		expect( match, 'checkin-card block must exist' ).toBeTruthy();
+		const attrs = JSON.parse( match[ 1 ] );
+		expect( attrs.venueName ).toBe( 'Test Cafe' );
+		// Verify image block was added per issue #38
+		expect( content ).toContain( '<!-- wp:image' );
+	} );
+
+	test( 'read-of with rating and book metadata lands all fields', async () => {
+		const { content } = await createAndFetch( {
+			'read-of': 'https://example.test/book/123',
+			name: 'Test Book Title',
+			author: 'Test Author',
+			rating: '5',
+		} );
+		const match = content.match(
+			/<!-- wp:post-kinds-indieweb\/read-card ({.*?}) \/?-->/
+		);
+		expect( match, 'read-card block must exist' ).toBeTruthy();
+		const attrs = JSON.parse( match[ 1 ] );
+		expect( attrs.bookTitle ).toBe( 'Test Book Title' );
+		expect( attrs.authorName ).toBe( 'Test Author' );
+		expect( attrs.rating ).toBe( 5 );
+	} );
+
+	test( 'like-of with content lands url and description in attrs', async () => {
+		const { content } = await createAndFetch( {
+			'like-of': 'https://example.test/post/liked',
+			content: 'I really like this',
+		} );
+		const match = content.match(
+			/<!-- wp:post-kinds-indieweb\/like-card ({.*?}) \/?-->/
+		);
+		expect( match, 'like-card block must exist' ).toBeTruthy();
+		const attrs = JSON.parse( match[ 1 ] );
+		expect( attrs.url ).toBe( 'https://example.test/post/liked' );
+		expect( attrs.description ).toBe( 'I really like this' );
+	} );
+
+	test( 'reply with in-reply-to url lands url in attrs', async () => {
+		const { content } = await createAndFetch( {
+			'in-reply-to': 'https://example.test/post/original',
+			content: 'Great point about this',
+		} );
+		const match = content.match(
+			/<!-- wp:post-kinds-indieweb\/reply-card ({.*?}) \/?-->/
+		);
+		expect( match, 'reply-card block must exist' ).toBeTruthy();
+		const attrs = JSON.parse( match[ 1 ] );
+		expect( attrs.url ).toBe( 'https://example.test/post/original' );
+		// Reply body is stored in e-content, not in card attrs
+		expect( content ).toContain( 'Great point about this' );
+	} );
 } );
