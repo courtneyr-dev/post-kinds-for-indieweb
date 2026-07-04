@@ -301,14 +301,17 @@ git commit -m "test: matrix-driven render coverage for all dynamic card blocks +
 
 ```js
 // tests/js/sample-values.js
+// Rule order matches the PHP generator EXACTLY (type rules before name
+// patterns — Task 1 review finding): layout → boolean → number → url-ish
+// name → date-ish name → default string.
 export function sampleFor( attr, def ) {
 	const type = Array.isArray( def.type ) ? def.type[ 0 ] : def.type || 'string';
 	if ( attr === 'layout' ) return def.default ?? 'horizontal';
+	if ( type === 'boolean' ) return true;
+	if ( type === 'number' || type === 'integer' ) return 4;
 	if ( /(url|photo|cover|image)$/i.test( attr ) )
 		return 'https://example.com/sample-' + attr.toLowerCase();
 	if ( /(At|Date)$/.test( attr ) || attr === 'publishDate' ) return '2026-07-04';
-	if ( type === 'number' || type === 'integer' ) return 4;
-	if ( type === 'boolean' ) return true;
 	return `Sample ${ attr } value`;
 }
 ```
@@ -386,15 +389,15 @@ const matrix = require( '../fixtures/field-matrix.json' );
 const BASE = process.env.WP_BASE_URL || 'http://localhost:8888';
 
 // sampleFor duplicated here intentionally (specs run without bundling);
-// MUST match tests/js/sample-values.js rules.
+// MUST match tests/js/sample-values.js rules (type before name patterns).
 function sampleFor( attr, def ) {
 	const type = Array.isArray( def.type ) ? def.type[ 0 ] : def.type || 'string';
 	if ( attr === 'layout' ) return def.default ?? 'horizontal';
+	if ( type === 'boolean' ) return true;
+	if ( type === 'number' || type === 'integer' ) return 4;
 	if ( /(url|photo|cover|image)$/i.test( attr ) )
 		return 'https://example.com/sample-' + attr.toLowerCase();
 	if ( /(At|Date)$/.test( attr ) || attr === 'publishDate' ) return '2026-07-04';
-	if ( type === 'number' || type === 'integer' ) return 4;
-	if ( type === 'boolean' ) return true;
 	return `Sample ${ attr } value`;
 }
 
