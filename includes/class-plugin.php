@@ -772,6 +772,7 @@ final class Plugin {
 			'drink-card',
 			'favorite-card',
 			'jam-card',
+			'like-card',
 			'wish-card',
 			'mood-card',
 			'acquisition-card',

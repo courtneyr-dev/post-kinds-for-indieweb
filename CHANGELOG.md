@@ -7,9 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **"Phantom posts" for contentless likes, reposts, bookmarks, and replies.** Same failure class fixed for eat/drink/follow/weather in 1.1.0: `like-of`, `repost-of`, `bookmark-of`, and (content-free) `in-reply-to` posts died inside `wp_insert_post()` with `empty_content` while the Micropub endpoint answered 2xx with no Location — on installs without IndieBlocks, the four response shapes Outpost sends created nothing at all. The bridge now recognizes all four in `detect_kind()` and supplies markup before insert.
+- **Like Card block registered server-side.** `like-card` existed in `src/blocks/` and registered in the editor, but was missing from the server registration list in `class-plugin.php`.
+
+### Changed
+
+- **Like Card is now a dynamic block** (`render.php`, jam-card precedent), so attribute-only blocks written by the Micropub bridge render on the front end. Existing statically-saved like cards migrate via a block deprecation; no content changes needed.
+
 ### Added
 
 - **Editor saves now set the kind term from the post's first block.** When a post's first block is one of the kind card blocks (eat, drink, listen, watch, read, play, checkin, RSVP, like, favorite, jam, wish, mood, acquisition), saving assigns the matching `kind` taxonomy term automatically — no separate pick in the taxonomy panel needed. Manual choices always win: only the `note` default (never chosen by a person) or a kind this sync itself assigned earlier (tracked in `_pkiw_kind_auto_assigned` post meta, so a swapped first block re-syncs) is ever replaced. Companion to the Micropub-side kind assignment, which covers posts arriving via the Micropub bridge.
+- **Micropub bridge coverage for the four response kinds.** Likes render the Like Card (falling back to the liked URL as the linked title); reposts, bookmarks, and replies emit paragraphs carrying `u-repost-of` / `u-bookmark-of` / `u-in-reply-to` microformats2 classes until dedicated card blocks exist. Endpoint-level e2e tests cover all four shapes plus the rsvp/reply precedence rule.
 
 ## [1.1.0] - 2026-07-03
 

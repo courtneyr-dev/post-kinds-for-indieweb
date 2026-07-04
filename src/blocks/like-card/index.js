@@ -8,6 +8,7 @@ import { registerBlockType } from '@wordpress/blocks';
 import { likeIcon } from '../shared/icons';
 import Edit from './edit';
 import Save from './save';
+import DeprecatedSave from './save-deprecated';
 import metadata from './block.json';
 
 registerBlockType( metadata.name, {
@@ -15,4 +16,10 @@ registerBlockType( metadata.name, {
 	icon: likeIcon,
 	edit: Edit,
 	save: Save,
+	deprecated: [
+		{
+			attributes: metadata.attributes,
+			save: DeprecatedSave,
+		},
+	],
 } );
