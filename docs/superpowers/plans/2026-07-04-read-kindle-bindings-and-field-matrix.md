@@ -934,7 +934,7 @@ final class Isbn {
 
 	public static function asin_from_url( string $url ): ?string {
 		$host = wp_parse_url( $url, PHP_URL_HOST );
-		if ( ! is_string( $host ) || ! preg_match( '/(^|\.)amazon\.[a-z.]+$|^read\.amazon\./', $host ) ) {
+		if ( ! is_string( $host ) || ! preg_match( '/(^|\.)amazon\.(com|ca|de|fr|es|it|nl|se|pl|in|cn|sg|ae|sa|com\.au|com\.br|com\.mx|com\.tr|co\.uk|co\.jp)$/', strtolower( $host ) ) ) { // end-anchored allowlist — Task 9 review: the naive pattern accepted amazon.evil.com
 			return null;
 		}
 		if ( preg_match( '#/(?:dp|gp/product)/([A-Z0-9]{10})#', $url, $m ) ) {
