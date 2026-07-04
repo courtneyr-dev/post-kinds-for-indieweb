@@ -42,7 +42,7 @@ module.exports = {
 	coverageDirectory: 'coverage/js',
 	testPathIgnorePatterns: [ '/node_modules/', '/build/', '/vendor/' ],
 	transformIgnorePatterns: [
-		'/node_modules/(?!(@wordpress|parsel-js|is-plain-obj|dot-prop)/)',
+		'/node_modules/(?!(@wordpress|parsel-js|is-plain-obj|dot-prop|uuid|marked|remove-accents)/)',
 	],
 	globals: {
 		wp: {},
