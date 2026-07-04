@@ -58,6 +58,11 @@ const SELECTED_ITEM_SAMPLE = {
 test.slow();
 
 test.describe( 'Visual Regression', () => {
+	test.skip(
+		!! process.env.CI,
+		'Visual baselines are darwin-only; Linux baselines tracked in the follow-up issue — behavioral e2e still runs in CI.'
+	);
+
 	test.beforeEach( async ( { page } ) => {
 		// Login to WordPress admin
 		await page.goto( '/wp-login.php' );

@@ -9,8 +9,12 @@ const { defineConfig, devices } = require( '@playwright/test' );
 module.exports = defineConfig( {
 	testDir: './tests/e2e',
 	// Committed baselines live under tests/e2e/__screenshots__/ rather than
-	// Playwright's default {file}-snapshots/ sibling directories.
-	snapshotPathTemplate: '{testDir}/__screenshots__/{testFilePath}/{arg}{ext}',
+	// Playwright's default {file}-snapshots/ sibling directories. Baselines
+	// are platform-scoped ({platform} = darwin/linux) because font rendering
+	// differs enough between macOS and Linux to blow the pixel-diff budget
+	// (see visual-regression.spec.js CI skip).
+	snapshotPathTemplate:
+		'{testDir}/__screenshots__/{testFilePath}/{arg}-{platform}{ext}',
 	fullyParallel: true,
 	forbidOnly: !! process.env.CI,
 	retries: process.env.CI ? 2 : 0,
