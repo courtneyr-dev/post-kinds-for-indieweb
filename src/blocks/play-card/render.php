@@ -34,6 +34,7 @@ $pkiw_review       = $attributes['review'] ?? '';
 $pkiw_game_url     = $attributes['gameUrl'] ?? '';
 $pkiw_bgg_id       = $attributes['bggId'] ?? '';
 $pkiw_rawg_id      = $attributes['rawgId'] ?? '';
+$pkiw_steam_id     = $attributes['steamId'] ?? '';
 $pkiw_official_url = $attributes['officialUrl'] ?? '';
 $pkiw_purchase_url = $attributes['purchaseUrl'] ?? '';
 $pkiw_layout       = $attributes['layout'] ?? 'horizontal';
@@ -148,6 +149,9 @@ ob_start();
 		<?php endif; ?>
 		<?php if ( $pkiw_rawg_id ) : ?>
 			<data class="u-uid" value="<?php echo esc_attr( 'https://rawg.io/games/' . $pkiw_rawg_id ); ?>" hidden></data>
+		<?php endif; ?>
+		<?php if ( $pkiw_steam_id ) : ?>
+			<data class="u-uid" value="<?php echo esc_attr( 'https://store.steampowered.com/app/' . $pkiw_steam_id ); ?>" hidden></data>
 		<?php endif; ?>
 	</div>
 </div>
