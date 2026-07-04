@@ -22,13 +22,14 @@
  * tests/env/pkiw-test-auth.php) — never shipped outside the test env.
  *
  * EMBED INSERTION: the embed block is created with a non-empty placeholder
- * url (see comment at the insertBlocks() call below) rather than the blank
- * url used in patterns/read-with-kindle-preview.php. core/embed's save() is
- * a real save() call for a JS-created block, and empty-url embeds serialize
+ * url (see comment at the insertBlocks() call below), the same placeholder
+ * patterns/read-with-kindle-preview.php now uses. core/embed's save() is a
+ * real save() call for a JS-created block, and empty-url embeds serialize
  * as self-closing blocks with no innerHTML for Kindle_Embed_Bridge to
- * rewrite. The pattern file's blank-url wrapper markup is only safe because
- * it's a literal HTML string parsed once, never re-serialized through
- * save(). This mirrors exactly what the read-card's inspector toggle inserts.
+ * rewrite — that's why both the pattern's literal markup and this spec's
+ * JS-created block use the same non-empty placeholder url and matching
+ * save()-generated wrapper markup. This mirrors exactly what the read-card's
+ * inspector toggle inserts.
  */
 
 const { test, expect } = require( '@playwright/test' );
@@ -109,5 +110,109 @@ test( 'read post: isbn -> completed meta -> kindle iframe on the front end', asy
 	await expect( iframe ).toHaveAttribute(
 		'src',
 		'https://read.amazon.com/kp/embed?asin=1649374046&preview=inline'
+	);
+} );
+
+test( 'read-with-kindle-preview pattern inserts as valid blocks and survives reload', async ( {
+	page,
+} ) => {
+	await page.goto( `${ BASE }/wp-admin/post-new.php` );
+
+	// Dismiss welcome guide via preference (never click-race the modal).
+	await page.evaluate( () =>
+		window.wp.data
+			.dispatch( 'core/preferences' )
+			.set( 'core', 'welcomeGuide', false )
+	);
+	await page
+		.locator( 'iframe[name="editor-canvas"]' )
+		.contentFrame()
+		.locator( '.is-root-container' )
+		.waitFor( { timeout: 30000 } );
+
+	// Insert the registered pattern's own content string, exactly as the
+	// pattern inserter would, rather than hand-building the blocks — this
+	// is what catches the pattern's markup drifting from save()'s output.
+	// getBlockPatterns() resolves asynchronously (it's a REST-backed
+	// selector), so poll until the pattern shows up rather than reading it
+	// on the first tick.
+	await page.waitForFunction( () =>
+		window.wp.data
+			.select( 'core' )
+			.getBlockPatterns()
+			?.some(
+				( pattern ) =>
+					pattern.name ===
+					'post-kinds-indieweb/read-with-kindle-preview'
+			)
+	);
+	await page.evaluate( () => {
+		const registeredPattern = window.wp.data
+			.select( 'core' )
+			.getBlockPatterns()
+			.find(
+				( pattern ) =>
+					pattern.name ===
+					'post-kinds-indieweb/read-with-kindle-preview'
+			);
+		const blocks = window.wp.blocks.parse( registeredPattern.content );
+		window.wp.data.dispatch( 'core/block-editor' ).insertBlocks( blocks );
+	} );
+
+	const blockStates = await page.evaluate( () =>
+		window.wp.data
+			.select( 'core/block-editor' )
+			.getBlocks()
+			.map( ( block ) => ( {
+				name: block.name,
+				isValid: block.isValid,
+			} ) )
+	);
+	expect( blockStates ).toContainEqual( {
+		name: 'core/embed',
+		isValid: true,
+	} );
+	expect( blockStates.some( ( block ) => false === block.isValid ) ).toBe(
+		false
+	);
+
+	await page.evaluate( () =>
+		window.wp.data
+			.dispatch( 'core/editor' )
+			.editPost( { status: 'publish' } )
+	);
+	await page.evaluate( () =>
+		window.wp.data.dispatch( 'core/editor' ).savePost()
+	);
+	await page.waitForFunction(
+		() => ! window.wp.data.select( 'core/editor' ).isSavingPost()
+	);
+
+	await page.reload();
+	await page
+		.locator( 'iframe[name="editor-canvas"]' )
+		.contentFrame()
+		.locator( '.is-root-container' )
+		.waitFor( { timeout: 30000 } );
+
+	const reloadedStates = await page.evaluate( () =>
+		window.wp.data
+			.select( 'core/block-editor' )
+			.getBlocks()
+			.map( ( block ) => ( {
+				name: block.name,
+				isValid: block.isValid,
+				className: block.attributes.className,
+				url: block.attributes.url,
+			} ) )
+	);
+	const reloadedEmbed = reloadedStates.find(
+		( block ) => block.name === 'core/embed'
+	);
+	expect( reloadedEmbed.isValid ).toBe( true );
+	expect( reloadedEmbed.className ).toContain( 'pkiw-kindle-preview' );
+	expect( reloadedEmbed.url ).toBe( 'https://read.amazon.com/kp/embed' );
+	expect( reloadedStates.some( ( block ) => false === block.isValid ) ).toBe(
+		false
 	);
 } );
