@@ -410,6 +410,12 @@ class Meta_Fields {
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
+			'read_asin'               => [
+				'type'        => 'string',
+				'description' => __( 'Amazon Standard Identification Number.', 'post-kinds-for-indieweb' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
 			'read_rating'             => [
 				'type'        => 'integer',
 				'description' => __( 'Rating for the book (0-5).', 'post-kinds-for-indieweb' ),

@@ -49,49 +49,64 @@ final class Block_Bindings_Source {
 	 * @var array<string, array<string, string>>
 	 */
 	private const KEY_MAP = [
-		'title'       => [
+		'title'        => [
 			'listen'   => 'listen_track',
 			'jam'      => 'listen_track',
 			'watch'    => 'watch_title',
 			'read'     => 'read_title',
 			'_default' => 'cite_name',
 		],
-		'artist'      => [
+		'artist'       => [
 			'listen'   => 'listen_artist',
 			'jam'      => 'listen_artist',
 			'_default' => 'cite_author',
 		],
-		'album'       => [
+		'album'        => [
 			'_default' => 'listen_album',
 		],
-		'rating'      => [
+		'rating'       => [
 			'listen'   => 'listen_rating',
 			'watch'    => 'watch_rating',
 			'read'     => 'read_rating',
 			'_default' => 'review_rating',
 		],
-		'url'         => [
+		'url'          => [
 			'listen'   => 'listen_url',
 			'jam'      => 'listen_url',
 			'watch'    => 'watch_url',
 			'read'     => 'read_url',
 			'_default' => 'cite_url',
 		],
-		'cover_image' => [
+		'cover_image'  => [
 			'listen'   => 'listen_cover',
 			'jam'      => 'listen_cover',
 			'watch'    => 'watch_poster',
 			'read'     => 'read_cover',
 			'_default' => 'cite_photo',
 		],
-		'summary'     => [
+		'summary'      => [
 			'_default' => 'cite_summary',
 		],
-		'author'      => [
+		'author'       => [
 			'read'     => 'read_author',
 			'_default' => 'cite_author',
 		],
-		'kind'        => [],
+		'isbn'         => [
+			'_default' => 'read_isbn',
+		],
+		'publisher'    => [
+			'_default' => 'read_publisher',
+		],
+		'page_count'   => [
+			'_default' => 'read_pages',
+		],
+		'publish_date' => [
+			'_default' => 'read_publish_date',
+		],
+		'asin'         => [
+			'_default' => 'read_asin',
+		],
+		'kind'         => [],
 	];
 
 	/**
@@ -160,15 +175,20 @@ final class Block_Bindings_Source {
 	 */
 	public function register_meta(): void {
 		$meta_keys = [
-			'pk_title'       => 'string',
-			'pk_artist'      => 'string',
-			'pk_album'       => 'string',
-			'pk_rating'      => 'string',
-			'pk_url'         => 'string',
-			'pk_cover_image' => 'string',
-			'pk_summary'     => 'string',
-			'pk_author'      => 'string',
-			'pk_kind'        => 'string',
+			'pk_title'        => 'string',
+			'pk_artist'       => 'string',
+			'pk_album'        => 'string',
+			'pk_rating'       => 'string',
+			'pk_url'          => 'string',
+			'pk_cover_image'  => 'string',
+			'pk_summary'      => 'string',
+			'pk_author'       => 'string',
+			'pk_isbn'         => 'string',
+			'pk_publisher'    => 'string',
+			'pk_page_count'   => 'string',
+			'pk_publish_date' => 'string',
+			'pk_asin'         => 'string',
+			'pk_kind'         => 'string',
 		];
 
 		$post_types = [ 'post' ];
