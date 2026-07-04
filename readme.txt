@@ -190,6 +190,13 @@ Visit [pin13.net/mf2](https://pin13.net/mf2/) and enter your post URL. The tool 
 * Security: hardened Amazon hostname detection and the book-complete REST route
 * Test coverage: every attribute of all 22 blocks is now exercised across render, save, editor round-trip, visual, and Micropub wire layers
 
+= 1.1.0 =
+* Fixed: contentless Micropub kind posts (eat, drink, follow, weather) now actually create posts instead of silently failing
+* Fixed: checkins (and every other kind) with an attached photo now include the image
+* Follow and weather kinds now recognized by the Micropub bridge
+* All block colors now flow through the `--pkiw-*` design-token API, following the active theme's palette by default
+* WordPress 7.0 is now the minimum supported version (previously 6.9)
+
 = 1.0.4 =
 * Fix site-wide PHP fatal when active alongside block themes that resolve hooked blocks during init (e.g. Ollie). `Format_Badge::filter_hooked_blocks()` now accepts a nullable `$position` parameter, matching WordPress core's `hooked_block_types` filter signature.
 
