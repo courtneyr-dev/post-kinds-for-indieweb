@@ -41,6 +41,24 @@ final class KindleEmbedBridgeTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'read.amazon.com', $html );
 	}
 
+	public function test_marker_substring_class_does_not_trigger_rewrite(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' =>
+				'<!-- wp:embed {"url":"https://read.amazon.com/kp/embed?asin=PLACEHOLDER0","type":"video","providerNameSlug":"amazon-kindle","className":"not-pkiw-kindle-preview"} -->' .
+				'<figure class="wp-block-embed is-provider-amazon-kindle not-pkiw-kindle-preview"><div class="wp-block-embed__wrapper">' . "\n" .
+				'https://read.amazon.com/kp/embed?asin=PLACEHOLDER0' . "\n" .
+				'</div></figure><!-- /wp:embed -->',
+		] );
+		update_post_meta( $post_id, '_postkind_read_asin', '1649374046' );
+
+		$this->go_to( get_permalink( $post_id ) );
+		$html = apply_filters( 'the_content', get_post( $post_id )->post_content );
+
+		// The marker must match as a whole class token, not a substring.
+		$this->assertStringContainsString( 'PLACEHOLDER0', $html );
+		$this->assertStringNotContainsString( '<iframe', $html );
+	}
+
 	public function test_marked_embed_with_no_derivable_asin_is_untouched(): void {
 		$post_id = self::factory()->post->create( [
 			'post_content' =>

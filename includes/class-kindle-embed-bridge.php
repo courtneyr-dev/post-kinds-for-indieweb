@@ -62,7 +62,7 @@ class Kindle_Embed_Bridge {
 	 */
 	public function render( $content, $block, $instance ) {
 		$class = $block['attrs']['className'] ?? '';
-		if ( false === strpos( $class, self::MARKER ) ) {
+		if ( ! preg_match( '/(?:^|\s)' . preg_quote( self::MARKER, '/' ) . '(?:\s|$)/', $class ) ) {
 			return $content;
 		}
 
