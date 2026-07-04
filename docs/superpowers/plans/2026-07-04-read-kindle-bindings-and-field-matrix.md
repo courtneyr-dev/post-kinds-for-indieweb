@@ -36,7 +36,7 @@
 
 **Interfaces:**
 - Produces: `tests/fixtures/field-matrix.json` — shape `{ "<blockName>": { "render": "dynamic"|"static", "attributes": { "<attr>": { "type": "...", "sample": <value> } } } }`. Consumed by Tasks 2, 3, 4, 5.
-- Produces: sample-value rules (MUST be mirrored exactly in the JS sampler of Task 3): attr name matches `/(url|Url|photo|cover|image)$/i` → `https://example.com/sample-<attr>`; matches `/(At|Date)$/` or equals `publishDate` → `2026-07-04`; type `number` → `4`; type `boolean` → `true`; equals `layout` → keep block.json default; otherwise → `Sample <attr> value`.
+- Produces: sample-value rules (MUST be mirrored exactly in the JS sampler of Task 3), **evaluated in this order — type rules BEFORE name patterns**, so boolean attrs like `showDate`/`showImage` never receive string samples (Task 1 review finding, 2026-07-04): (1) equals `layout` → keep block.json default; (2) type `boolean` → `true`; (3) type `number`/`integer` → `4`; (4) attr name matches `/(url|photo|cover|image)$/i` → `https://example.com/sample-<attr>`; (5) matches `/(At|Date)$/` or equals `publishDate` → `2026-07-04`; (6) otherwise → `Sample <attr> value`. Update the fixture whenever the rules change (`php bin/generate-field-matrix.php`).
 
 - [ ] **Step 1: Write the failing test**
 
