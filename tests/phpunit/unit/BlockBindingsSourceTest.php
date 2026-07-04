@@ -58,7 +58,8 @@ class BlockBindingsSourceTest extends WP_UnitTestCase {
 		$this->assertContains( 'publish_date', $keys );
 		$this->assertContains( 'asin', $keys );
 		$this->assertContains( 'kind', $keys );
-		$this->assertCount( 14, $keys );
+		$this->assertContains( 'kindle_embed_url', $keys );
+		$this->assertCount( 15, $keys );
 	}
 
 	/**
@@ -392,6 +393,56 @@ class BlockBindingsSourceTest extends WP_UnitTestCase {
 		$result = $this->source->get_value( [ 'key' => $key ], $block, 'content' );
 
 		$this->assertSame( $value, $result );
+	}
+
+	/**
+	 * Test KEY_MAP invariant: every non-special-case key has a _default entry.
+	 */
+	public function test_key_map_has_default_for_all_non_special_keys(): void {
+		$reflection = new \ReflectionClass( Block_Bindings_Source::class );
+		$constants = $reflection->getConstants();
+		$key_map = $constants['KEY_MAP'] ?? [];
+
+		foreach ( $key_map as $key => $entries ) {
+			// 'kind' is special-cased; it should have no entries.
+			if ( 'kind' === $key ) {
+				$this->assertEmpty( $entries, "'kind' should have no KEY_MAP entries (special-cased)" );
+				continue;
+			}
+			// 'kindle_embed_url' is special-cased; it should have no entries.
+			if ( 'kindle_embed_url' === $key ) {
+				$this->assertEmpty( $entries, "'kindle_embed_url' should have no KEY_MAP entries (special-cased)" );
+				continue;
+			}
+			// Every other key must have a '_default' entry.
+			$this->assertArrayHasKey(
+				'_default',
+				$entries,
+				"KEY_MAP['{$key}'] must have a '_default' entry"
+			);
+		}
+	}
+
+	/**
+	 * Test kindle_embed_url prefers explicit ASIN over ISBN-10 derivation.
+	 */
+	public function test_kindle_embed_url_prefers_asin_then_isbn10(): void {
+		$post_id = self::factory()->post->create();
+		$this->assign_kind( $post_id, 'read' );
+
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'read_isbn', '9781649374042' );
+		$this->assertSame(
+			'https://read.amazon.com/kp/embed?asin=1649374046&preview=inline',
+			$this->source->get_value( [ 'key' => 'kindle_embed_url' ], $this->make_block_instance( $post_id ), 'url' ),
+			'ISBN-13 → derived ISBN-10 print ASIN'
+		);
+
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'read_asin', 'B0BGYV1G97' );
+		$this->assertSame(
+			'https://read.amazon.com/kp/embed?asin=B0BGYV1G97&preview=inline',
+			$this->source->get_value( [ 'key' => 'kindle_embed_url' ], $this->make_block_instance( $post_id ), 'url' ),
+			'explicit ASIN wins over derivation'
+		);
 	}
 
 	/**

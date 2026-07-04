@@ -106,7 +106,8 @@ final class Block_Bindings_Source {
 		'asin'         => [
 			'_default' => 'read_asin',
 		],
-		'kind'         => [],
+		'kind'              => [],
+		'kindle_embed_url'  => [],
 	];
 
 	/**
@@ -249,6 +250,16 @@ final class Block_Bindings_Source {
 		// Handle 'kind' key specially — it comes from taxonomy, not meta.
 		if ( 'kind' === $key ) {
 			return $this->get_kind( (int) $post_id );
+		}
+
+		// Handle 'kindle_embed_url' key specially — computed from ASIN or ISBN-10 derivation.
+		if ( 'kindle_embed_url' === $key ) {
+			$asin = get_post_meta( (int) $post_id, Meta_Fields::PREFIX . 'read_asin', true );
+			if ( ! is_string( $asin ) || '' === $asin ) {
+				$isbn = get_post_meta( (int) $post_id, Meta_Fields::PREFIX . 'read_isbn', true );
+				$asin = is_string( $isbn ) && '' !== $isbn ? (string) Isbn::to10( $isbn ) : '';
+			}
+			return '' !== $asin && '0' !== $asin ? Isbn::kindle_embed_url( $asin ) : null;
 		}
 
 		if ( ! isset( self::KEY_MAP[ $key ] ) ) {
