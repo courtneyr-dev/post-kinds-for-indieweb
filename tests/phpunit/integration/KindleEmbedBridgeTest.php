@@ -15,6 +15,26 @@ declare(strict_types=1);
  */
 final class KindleEmbedBridgeTest extends WP_UnitTestCase {
 
+	/**
+	 * Block all live HTTP requests.
+	 *
+	 * The render bridge must never depend on the network — it only reads
+	 * post meta and builds a URL string. Same guard as BlockFieldRenderTest,
+	 * so a future regression that reintroduces a live lookup fails loudly
+	 * here instead of making these tests flaky in CI.
+	 */
+	public function set_up(): void {
+		parent::set_up();
+		add_filter(
+			'pre_http_request',
+			static function ( $preempt, $parsed_args, $url ) {
+				return new WP_Error( 'http_blocked', 'Live HTTP is blocked in render tests: ' . $url );
+			},
+			10,
+			3
+		);
+	}
+
 	public function test_marked_embed_gets_iframe_src_from_meta(): void {
 		$post_id = self::factory()->post->create( [
 			'post_content' =>

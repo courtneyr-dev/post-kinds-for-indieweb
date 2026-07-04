@@ -27,13 +27,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  * discovery is disabled so only URLs matching a registered oEmbed provider
  * are ever fetched; anything else fails fast with no network request.
  *
- * @param string $url URL to embed.
+ * @param mixed $url URL to embed.
  * @return string|false Embed HTML, or false when no embed is available.
  */
-function get_cached_embed_html( string $url ) {
+function get_cached_embed_html( mixed $url ) {
 	global $wp_embed;
 
-	if ( '' === $url || ! $wp_embed instanceof \WP_Embed ) {
+	if ( ! is_string( $url ) || '' === $url || ! $wp_embed instanceof \WP_Embed ) {
 		return false;
 	}
 

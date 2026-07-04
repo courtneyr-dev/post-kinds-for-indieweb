@@ -35,6 +35,11 @@ import {
 	ProgressBar,
 } from '../shared/components';
 
+// Token-boundary match, equivalent to the PHP bridge's regex
+// (Kindle_Embed_Bridge::render()) — .includes() would also match a class
+// like "not-pkiw-kindle-preview" as a substring.
+const KINDLE_PREVIEW_CLASS_RE = /(?:^|\s)pkiw-kindle-preview(?:\s|$)/;
+
 /**
  * Edit component for the Read Card block.
  *
@@ -70,14 +75,13 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 	const [ completing, setCompleting ] = useState( false );
 
 	const { insertBlocks, removeBlock } = useDispatch( 'core/block-editor' );
+	const { createErrorNotice } = useDispatch( 'core/notices' );
 	const kindleEmbedClientId = useSelect( ( selectStore ) => {
 		const { getBlocks } = selectStore( 'core/block-editor' );
 		const sibling = getBlocks().find(
 			( b ) =>
 				b.name === 'core/embed' &&
-				( b.attributes.className || '' ).includes(
-					'pkiw-kindle-preview'
-				)
+				KINDLE_PREVIEW_CLASS_RE.test( b.attributes.className || '' )
 		);
 		return sibling ? sibling.clientId : null;
 	}, [] );
@@ -289,6 +293,15 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 											: undefined ),
 									coverImage: coverImage || book.cover || '',
 								} );
+							} catch ( error ) {
+								createErrorNotice(
+									error?.message ||
+										__(
+											'Could not complete book details. Please try again.',
+											'post-kinds-for-indieweb'
+										),
+									{ type: 'snackbar' }
+								);
 							} finally {
 								setCompleting( false );
 							}

@@ -74,7 +74,7 @@ ob_start();
 			<?php endif; ?>
 
 			<?php if ( $pkiw_restaurant ) : ?>
-				<p class="post-kinds-card__subtitle p-author h-card">
+				<p class="post-kinds-card__subtitle p-location h-card">
 					<span class="p-name"><?php echo esc_html( $pkiw_restaurant ); ?></span>
 				</p>
 			<?php endif; ?>
