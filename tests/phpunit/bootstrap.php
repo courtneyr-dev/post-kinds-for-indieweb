@@ -40,3 +40,28 @@ tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 
 // Start up the WP testing environment.
 require $_tests_dir . '/includes/bootstrap.php';
+
+// Default the book-completion service to a no-op stub for the whole suite.
+// Book_Completion_Controller::complete_on_save fires on every save_post that
+// carries a read-card block, so without this any test that creates such a
+// post (CardMetaSyncTest, MicropubContentBuilderTest, ...) would construct
+// the real API clients and make live HTTP requests — non-deterministic CI.
+// Priority 5 so individual tests that install their own stub at the default
+// priority 10 (BookCompletionControllerTest) still win.
+add_filter(
+	'pkiw_book_completion_service',
+	static function () {
+		return new class() {
+			/**
+			 * Return the book unchanged — no lookups, no HTTP.
+			 *
+			 * @param array<string, string> $book Partial book data.
+			 * @return array<string, string> The same data, untouched.
+			 */
+			public function complete( array $book ): array {
+				return $book;
+			}
+		};
+	},
+	5
+);
