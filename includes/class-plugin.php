@@ -98,6 +98,13 @@ final class Plugin {
 	private ?Block_Bindings_Source $block_bindings_source = null;
 
 	/**
+	 * Kindle Embed Bridge component instance (WP 7.0+).
+	 *
+	 * @var Kindle_Embed_Bridge|null
+	 */
+	private ?Kindle_Embed_Bridge $kindle_embed_bridge = null;
+
+	/**
 	 * Now Playing block instance (WP 7.0+).
 	 *
 	 * @var Blocks\Now_Playing|null
@@ -511,6 +518,11 @@ final class Plugin {
 		// Kind-aware block bindings source.
 		if ( class_exists( __NAMESPACE__ . '\\Block_Bindings_Source' ) ) {
 			$this->block_bindings_source = new Block_Bindings_Source();
+		}
+
+		// core/embed opt-in + server render bridge for Kindle previews.
+		if ( class_exists( __NAMESPACE__ . '\\Kindle_Embed_Bridge' ) ) {
+			$this->kindle_embed_bridge = new Kindle_Embed_Bridge();
 		}
 
 		// PHP-only blocks.
@@ -1319,6 +1331,15 @@ final class Plugin {
 	 */
 	public function get_block_bindings_source(): ?Block_Bindings_Source {
 		return $this->block_bindings_source;
+	}
+
+	/**
+	 * Get the Kindle_Embed_Bridge component (WP 7.0+).
+	 *
+	 * @return Kindle_Embed_Bridge|null The instance or null if not loaded.
+	 */
+	public function get_kindle_embed_bridge(): ?Kindle_Embed_Bridge {
+		return $this->kindle_embed_bridge;
 	}
 
 	/**
