@@ -27,7 +27,14 @@ final class IsbnTest extends TestCase {
 		$this->assertSame( 'B0BGYV1G97', Isbn::asin_from_url( 'https://www.amazon.com/Fourth-Wing-Empyrean-Rebecca-Yarros-ebook/dp/B0BGYV1G97/ref=x' ) );
 		$this->assertSame( '1649374046', Isbn::asin_from_url( 'https://www.amazon.com/gp/product/1649374046' ) );
 		$this->assertSame( 'B0BGYV1G97', Isbn::asin_from_url( 'https://read.amazon.com/kp/embed?asin=B0BGYV1G97' ) );
+		$this->assertSame( 'B0BGYV1G97', Isbn::asin_from_url( 'https://www.amazon.co.uk/dp/B0BGYV1G97' ) );
 		$this->assertNull( Isbn::asin_from_url( 'https://example.com/not-amazon' ) );
+	}
+
+	public function test_asin_from_url_rejects_spoofed_amazon_hosts(): void {
+		$this->assertNull( Isbn::asin_from_url( 'https://amazon.evil.com/dp/B0BGYV1G97' ) );
+		$this->assertNull( Isbn::asin_from_url( 'https://amazon.com.evil.com/dp/B0BGYV1G97' ) );
+		$this->assertNull( Isbn::asin_from_url( 'https://read.amazon.com.evil.com/kp/embed?asin=B0BGYV1G97' ) );
 	}
 
 	public function test_kindle_embed_url(): void {

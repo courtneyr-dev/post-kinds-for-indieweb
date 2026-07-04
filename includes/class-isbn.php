@@ -89,7 +89,11 @@ final class Isbn {
 	 */
 	public static function asin_from_url( string $url ): ?string {
 		$host = wp_parse_url( $url, PHP_URL_HOST );
-		if ( ! is_string( $host ) || ! preg_match( '/(^|\.)amazon\.[a-z.]+$|^read\.amazon\./', $host ) ) {
+		// Host must END at a real Amazon registrable domain: amazon.<suffix> or
+		// *.amazon.<suffix> (covers read.amazon.com). An open-ended pattern like
+		// amazon\.[a-z.]+$ would accept spoofed hosts such as amazon.evil.com.
+		$amazon_host = '/(^|\.)amazon\.(com|ca|de|fr|es|it|nl|se|pl|in|cn|sg|ae|sa|com\.au|com\.br|com\.mx|com\.tr|co\.uk|co\.jp)$/';
+		if ( ! is_string( $host ) || ! preg_match( $amazon_host, strtolower( $host ) ) ) {
 			return null;
 		}
 		if ( preg_match( '#/(?:dp|gp/product)/([A-Z0-9]{10})#', $url, $m ) ) {
