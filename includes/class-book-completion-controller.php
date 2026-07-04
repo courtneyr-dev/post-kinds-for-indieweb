@@ -61,16 +61,27 @@ class Book_Completion_Controller {
 	 * @return object Object with complete( array ): array.
 	 */
 	private function service(): object {
-		$default = new Book_Completion( new OpenLibrary(), new GoogleBooks(), new Hardcover() );
-
 		/**
 		 * Filters the completion service (test seam / replacement point).
 		 *
 		 * @since 1.2.0
 		 *
-		 * @param object $service Object with complete( array ): array.
+		 * @param object|null $service Object with complete( array ): array, or
+		 *                             null to use the default Book_Completion.
 		 */
-		return apply_filters( 'pkiw_book_completion_service', $default ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		$service = apply_filters( 'pkiw_book_completion_service', null ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		if ( is_object( $service ) && method_exists( $service, 'complete' ) ) {
+			return $service;
+		}
+
+		// GoogleBooks doesn't match the plugin autoloader's naming scheme
+		// (class-google-books.php vs the derived class-googlebooks.php), so
+		// load it explicitly — same as tests/phpunit/unit/GoogleBooksApiTest.php.
+		if ( ! class_exists( GoogleBooks::class ) ) {
+			require_once __DIR__ . '/apis/class-google-books.php';
+		}
+
+		return new Book_Completion( new OpenLibrary(), new GoogleBooks(), new Hardcover() );
 	}
 
 	/**
@@ -100,11 +111,18 @@ class Book_Completion_Controller {
 	/**
 	 * REST callback: complete a partial book payload.
 	 *
+	 * Input is restricted to the canonical keys — get_params() also returns
+	 * arbitrary caller-supplied params, which bypass the registered args'
+	 * sanitization and would otherwise be reflected verbatim in the response.
+	 *
 	 * @param \WP_REST_Request $request Incoming request.
 	 * @return \WP_REST_Response Completed book data (canonical keys).
 	 */
 	public function rest_complete( \WP_REST_Request $request ): \WP_REST_Response {
-		$book = array_filter( $request->get_params(), 'is_string' );
+		$book = array_filter(
+			array_intersect_key( $request->get_params(), self::META_BY_KEY ),
+			'is_string'
+		);
 		return rest_ensure_response( $this->service()->complete( $book ) );
 	}
 

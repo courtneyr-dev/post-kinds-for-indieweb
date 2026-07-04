@@ -44,6 +44,33 @@ final class BookCompletionControllerTest extends WP_UnitTestCase {
 		$this->assertSame( '1649374046', $response->get_data()['asin'] );
 	}
 
+	public function test_rest_route_drops_unknown_params(): void {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		// Passthrough stub: whatever reaches complete() comes straight back,
+		// so any non-canonical key surviving into the response proves a leak.
+		add_filter( 'pkiw_book_completion_service', static function () {
+			return new class {
+				public function complete( array $book ): array {
+					return $book;
+				}
+			};
+		} );
+
+		$request = new WP_REST_Request( 'POST', '/pkiw/v1/book-complete' );
+		$request->set_body_params(
+			[
+				'isbn' => '9781649374042',
+				'evil' => '<script>x</script>',
+			]
+		);
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertArrayNotHasKey( 'evil', $data, 'unknown params must not be reflected in the response' );
+		$this->assertSame( [ 'isbn' => '9781649374042' ], $data, 'response must contain only canonical keys' );
+	}
+
 	public function test_save_fills_blank_meta_only(): void {
 		add_filter( 'pkiw_book_completion_service', static function () {
 			return new class {
