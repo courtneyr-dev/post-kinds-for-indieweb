@@ -63,6 +63,13 @@ final class Plugin {
 	private ?Taxonomy $taxonomy = null;
 
 	/**
+	 * Card Meta Sync component instance.
+	 *
+	 * @var Card_Meta_Sync|null
+	 */
+	private ?Card_Meta_Sync $card_meta_sync = null;
+
+	/**
 	 * Meta Fields component instance.
 	 *
 	 * @var Meta_Fields|null
@@ -412,6 +419,10 @@ final class Plugin {
 
 		if ( class_exists( __NAMESPACE__ . '\\Meta_Fields' ) ) {
 			$this->meta_fields = new Meta_Fields();
+		}
+
+		if ( class_exists( __NAMESPACE__ . '\\Card_Meta_Sync' ) ) {
+			$this->card_meta_sync = new Card_Meta_Sync();
 		}
 
 		if ( class_exists( __NAMESPACE__ . '\\Block_Bindings' ) ) {
@@ -1261,6 +1272,15 @@ final class Plugin {
 	 */
 	public function get_meta_fields(): ?Meta_Fields {
 		return $this->meta_fields;
+	}
+
+	/**
+	 * Get the Card_Meta_Sync component.
+	 *
+	 * @return Card_Meta_Sync|null The Card_Meta_Sync instance or null if not loaded.
+	 */
+	public function get_card_meta_sync(): ?Card_Meta_Sync {
+		return $this->card_meta_sync;
 	}
 
 	/**
