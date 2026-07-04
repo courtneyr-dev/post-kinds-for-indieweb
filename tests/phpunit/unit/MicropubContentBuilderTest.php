@@ -874,18 +874,38 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '"description":"loved this"', $markup );
 	}
 
-	public function test_repost_paragraph_includes_u_repost_of(): void {
+	public function test_repost_card_falls_back_to_url_as_title(): void {
+		// Contentless URL-only repost — the reposted URL must surface as
+		// the linked title or the card renders bare (same contract as like).
 		$markup = $this->invoke_private(
-			'repost_paragraph',
+			'repost_card',
 			array( array( 'repost-of' => 'https://example.test/reposted' ) )
 		);
-		$this->assertStringContainsString( 'u-repost-of', $markup );
-		$this->assertStringContainsString( 'https://example.test/reposted', $markup );
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/repost-card', $markup );
+		$this->assertStringContainsString( '"title":"https://example.test/reposted"', $markup );
+		$this->assertStringContainsString( '"url":"https://example.test/reposted"', $markup );
 	}
 
-	public function test_bookmark_paragraph_uses_name_as_link_text(): void {
+	public function test_repost_card_maps_name_author_and_content(): void {
 		$markup = $this->invoke_private(
-			'bookmark_paragraph',
+			'repost_card',
+			array(
+				array(
+					'repost-of' => 'https://example.test/reposted',
+					'name'      => 'A Great Post',
+					'author'    => 'Jane Doe',
+					'content'   => 'sharing this',
+				),
+			)
+		);
+		$this->assertStringContainsString( '"title":"A Great Post"', $markup );
+		$this->assertStringContainsString( '"author":"Jane Doe"', $markup );
+		$this->assertStringContainsString( '"description":"sharing this"', $markup );
+	}
+
+	public function test_bookmark_card_uses_name_as_title(): void {
+		$markup = $this->invoke_private(
+			'bookmark_card',
 			array(
 				array(
 					'bookmark-of' => 'https://example.test/saved',
@@ -893,18 +913,45 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 				),
 			)
 		);
-		$this->assertStringContainsString( 'u-bookmark-of', $markup );
-		$this->assertStringContainsString( 'href="https://example.test/saved"', $markup );
-		$this->assertStringContainsString( 'Worth Reading Later', $markup );
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/bookmark-card', $markup );
+		$this->assertStringContainsString( '"title":"Worth Reading Later"', $markup );
+		$this->assertStringContainsString( '"url":"https://example.test/saved"', $markup );
 	}
 
-	public function test_reply_paragraph_includes_u_in_reply_to(): void {
+	public function test_bookmark_card_falls_back_to_url_as_title(): void {
 		$markup = $this->invoke_private(
-			'reply_paragraph',
+			'bookmark_card',
+			array( array( 'bookmark-of' => 'https://example.test/saved' ) )
+		);
+		$this->assertStringContainsString( '"title":"https://example.test/saved"', $markup );
+		$this->assertStringContainsString( '"url":"https://example.test/saved"', $markup );
+	}
+
+	public function test_reply_card_links_reply_context(): void {
+		$markup = $this->invoke_private(
+			'reply_card',
 			array( array( 'in-reply-to' => 'https://example.test/original' ) )
 		);
-		$this->assertStringContainsString( 'u-in-reply-to', $markup );
-		$this->assertStringContainsString( 'https://example.test/original', $markup );
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/reply-card', $markup );
+		$this->assertStringContainsString( '"title":"https://example.test/original"', $markup );
+		$this->assertStringContainsString( '"url":"https://example.test/original"', $markup );
+	}
+
+	public function test_reply_card_leaves_body_out_of_card(): void {
+		// The reply body is the author's own words, not the cited post's
+		// content — it belongs in e-content (via wrap_h_entry), never in
+		// the h-cite card's description.
+		$markup = $this->invoke_private(
+			'reply_card',
+			array(
+				array(
+					'in-reply-to' => 'https://example.test/original',
+					'content'     => 'Strongly agree with this.',
+				),
+			)
+		);
+		$this->assertStringNotContainsString( 'description', $markup );
+		$this->assertStringNotContainsString( 'Strongly agree', $markup );
 	}
 
 	public function test_fill_empty_content_supplies_like_card(): void {
@@ -921,7 +968,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'wp:post-kinds-indieweb/like-card', $content );
 	}
 
-	public function test_fill_empty_content_supplies_reply_paragraph(): void {
+	public function test_fill_empty_content_supplies_reply_card(): void {
 		$content = Micropub_Content_Builder::fill_empty_content(
 			'',
 			array(
@@ -930,6 +977,6 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 				),
 			)
 		);
-		$this->assertStringContainsString( 'u-in-reply-to', $content );
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/reply-card', $content );
 	}
 }

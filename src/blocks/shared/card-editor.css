@@ -119,6 +119,30 @@
 	color: var(--pkiw-like-card-fg, var(--pkiw-card-fg, inherit));
 }
 
+.wp-block-post-kinds-indieweb-repost-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-repost-card-bg, var(--pkiw-card-bg, transparent));
+}
+
+.wp-block-post-kinds-indieweb-repost-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-repost-card-fg, var(--pkiw-card-fg, inherit));
+}
+
+.wp-block-post-kinds-indieweb-bookmark-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-bookmark-card-bg, var(--pkiw-card-bg, transparent));
+}
+
+.wp-block-post-kinds-indieweb-bookmark-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-bookmark-card-fg, var(--pkiw-card-fg, inherit));
+}
+
+.wp-block-post-kinds-indieweb-reply-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-reply-card-bg, var(--pkiw-card-bg, transparent));
+}
+
+.wp-block-post-kinds-indieweb-reply-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-reply-card-fg, var(--pkiw-card-fg, inherit));
+}
+
 .wp-block-post-kinds-indieweb-jam-card:not(.has-background) .post-kinds-card {
 	background: var(--pkiw-jam-card-bg, var(--pkiw-card-bg, transparent));
 }

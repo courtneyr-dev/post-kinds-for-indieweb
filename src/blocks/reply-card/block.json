@@ -1,0 +1,91 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "post-kinds-indieweb/reply-card",
+	"version": "1.0.0",
+	"title": "Reply Card",
+	"category": "post-kinds-indieweb",
+	"description": "Show the post you are replying to, with title, URL, and optional context.",
+	"keywords": ["reply", "response", "comment", "conversation", "in reply to"],
+	"textdomain": "post-kinds-indieweb",
+	"attributes": {
+		"title": {
+			"type": "string"
+		},
+		"url": {
+			"type": "string"
+		},
+		"description": {
+			"type": "string"
+		},
+		"image": {
+			"type": "string"
+		},
+		"imageAlt": {
+			"type": "string"
+		},
+		"author": {
+			"type": "string"
+		},
+		"repliedAt": {
+			"type": "string"
+		},
+		"rel": {
+			"type": "string",
+			"default": ""
+		},
+		"layout": {
+			"type": "string",
+			"default": "horizontal"
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"color": {
+			"background": true,
+			"text": true,
+			"gradients": true,
+			"link": true
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true,
+			"blockGap": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"__experimentalFontFamily": true,
+			"__experimentalFontWeight": true,
+			"__experimentalFontStyle": true,
+			"__experimentalTextTransform": true,
+			"__experimentalTextDecoration": true,
+			"__experimentalLetterSpacing": true
+		},
+		"__experimentalBorder": {
+			"color": true,
+			"radius": true,
+			"width": true,
+			"style": true,
+			"__experimentalDefaultControls": {
+				"color": true,
+				"radius": true,
+				"width": true,
+				"style": true
+			}
+		},
+		"shadow": true,
+		"dimensions": {
+			"minHeight": true
+		}
+	},
+	"example": {
+		"attributes": {
+			"title": "Great Blog Post",
+			"url": "https://example.com/post",
+			"author": "Jane Doe"
+		}
+	},
+	"render": "file:./render.php"
+}

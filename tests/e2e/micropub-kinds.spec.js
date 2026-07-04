@@ -179,32 +179,42 @@ test.describe( 'Micropub kind creation', () => {
 		expect( kinds ).toEqual( [ 'like' ] );
 	} );
 
-	test( 'contentless repost-of creates a post with a u-repost-of cite', async () => {
-		const { content, kinds } = await createAndFetch( {
+	test( 'contentless repost-of creates a post with a repost card', async () => {
+		const { content, rendered, kinds } = await createAndFetch( {
 			'repost-of': 'https://example.com/reposted-post',
 		} );
-		expect( content ).toContain( 'u-repost-of' );
-		expect( content ).toContain( 'https://example.com/reposted-post' );
+		expect( content ).toContain(
+			'<!-- wp:post-kinds-indieweb/repost-card'
+		);
+		// repost-card is dynamic (render.php) — the rendered output proves
+		// the block is registered server-side, not just saved as a comment.
+		expect( rendered ).toContain( 'u-repost-of' );
+		expect( rendered ).toContain( 'https://example.com/reposted-post' );
 		expect( kinds ).toEqual( [ 'repost' ] );
 	} );
 
-	test( 'contentless bookmark-of creates a post with a u-bookmark-of cite', async () => {
-		const { content, kinds } = await createAndFetch( {
+	test( 'contentless bookmark-of creates a post with a bookmark card', async () => {
+		const { content, rendered, kinds } = await createAndFetch( {
 			'bookmark-of': 'https://example.com/bookmarked-post',
 		} );
-		expect( content ).toContain( 'u-bookmark-of' );
-		expect( content ).toContain( 'https://example.com/bookmarked-post' );
+		expect( content ).toContain(
+			'<!-- wp:post-kinds-indieweb/bookmark-card'
+		);
+		expect( rendered ).toContain( 'u-bookmark-of' );
+		expect( rendered ).toContain( 'https://example.com/bookmarked-post' );
 		expect( kinds ).toEqual( [ 'bookmark' ] );
 	} );
 
-	test( 'in-reply-to reply keeps the body and links the reply context', async () => {
-		const { content, kinds } = await createAndFetch( {
+	test( 'in-reply-to reply keeps the body and renders a reply card', async () => {
+		const { content, rendered, kinds } = await createAndFetch( {
 			'in-reply-to': 'https://example.com/original-post',
 			content: 'Strongly agree with this.',
 		} );
-		expect( content ).toContain( 'u-in-reply-to' );
-		expect( content ).toContain( 'https://example.com/original-post' );
+		expect( content ).toContain( '<!-- wp:post-kinds-indieweb/reply-card' );
+		// The body stays in e-content, outside the reply-context card.
 		expect( content ).toContain( 'Strongly agree with this.' );
+		expect( rendered ).toContain( 'u-in-reply-to' );
+		expect( rendered ).toContain( 'https://example.com/original-post' );
 		expect( kinds ).toEqual( [ 'reply' ] );
 	} );
 
@@ -248,10 +258,9 @@ test.describe( 'Micropub kind creation', () => {
 		expect( kinds ).toEqual( [ 'checkin' ] );
 	} );
 
-	// Kind term assignment across the remaining kinds. The first group has
-	// card builders; the second (like/reply/repost/bookmark) has kind terms
-	// but no card — the term must be assigned even though post_content is
-	// left as the Micropub plugin generated it.
+	// Kind term assignment across the remaining kinds — every kind here
+	// has a card builder; the term must be assigned alongside the card
+	// content regardless of which properties the client sends.
 	const kindMatrix = [
 		{
 			kind: 'listen',
