@@ -1,0 +1,1092 @@
+{
+    "post-kinds-indieweb/acquisition-card": {
+        "render": "static",
+        "attributes": {
+            "title": {
+                "type": "string",
+                "sample": "Sample title value"
+            },
+            "acquisitionType": {
+                "type": "string",
+                "sample": "Sample acquisitionType value"
+            },
+            "cost": {
+                "type": "string",
+                "sample": "Sample cost value"
+            },
+            "where": {
+                "type": "string",
+                "sample": "Sample where value"
+            },
+            "whereUrl": {
+                "type": "string",
+                "sample": "https://example.com/sample-whereurl"
+            },
+            "photo": {
+                "type": "string",
+                "sample": "https://example.com/sample-photo"
+            },
+            "photoAlt": {
+                "type": "string",
+                "sample": "Sample photoAlt value"
+            },
+            "notes": {
+                "type": "string",
+                "sample": "Sample notes value"
+            },
+            "acquiredAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    },
+    "post-kinds-indieweb/bookmark-card": {
+        "render": "dynamic",
+        "attributes": {
+            "title": {
+                "type": "string",
+                "sample": "Sample title value"
+            },
+            "url": {
+                "type": "string",
+                "sample": "https://example.com/sample-url"
+            },
+            "description": {
+                "type": "string",
+                "sample": "Sample description value"
+            },
+            "image": {
+                "type": "string",
+                "sample": "https://example.com/sample-image"
+            },
+            "imageAlt": {
+                "type": "string",
+                "sample": "Sample imageAlt value"
+            },
+            "author": {
+                "type": "string",
+                "sample": "Sample author value"
+            },
+            "bookmarkedAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "rel": {
+                "type": "string",
+                "sample": "Sample rel value"
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    },
+    "post-kinds-indieweb/checkin-card": {
+        "render": "dynamic",
+        "attributes": {
+            "venueName": {
+                "type": "string",
+                "sample": "Sample venueName value"
+            },
+            "venueType": {
+                "type": "string",
+                "sample": "Sample venueType value"
+            },
+            "address": {
+                "type": "string",
+                "sample": "Sample address value"
+            },
+            "locality": {
+                "type": "string",
+                "sample": "Sample locality value"
+            },
+            "region": {
+                "type": "string",
+                "sample": "Sample region value"
+            },
+            "country": {
+                "type": "string",
+                "sample": "Sample country value"
+            },
+            "postalCode": {
+                "type": "string",
+                "sample": "Sample postalCode value"
+            },
+            "latitude": {
+                "type": "number",
+                "sample": 4
+            },
+            "longitude": {
+                "type": "number",
+                "sample": 4
+            },
+            "locationPrivacy": {
+                "type": "string",
+                "sample": "Sample locationPrivacy value"
+            },
+            "osmId": {
+                "type": "string",
+                "sample": "Sample osmId value"
+            },
+            "venueUrl": {
+                "type": "string",
+                "sample": "https://example.com/sample-venueurl"
+            },
+            "foursquareId": {
+                "type": "string",
+                "sample": "Sample foursquareId value"
+            },
+            "checkinAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "note": {
+                "type": "string",
+                "sample": "Sample note value"
+            },
+            "photo": {
+                "type": "string",
+                "sample": "https://example.com/sample-photo"
+            },
+            "photoAlt": {
+                "type": "string",
+                "sample": "Sample photoAlt value"
+            },
+            "showMap": {
+                "type": "boolean",
+                "sample": true
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    },
+    "post-kinds-indieweb/checkin-dashboard": {
+        "render": "dynamic",
+        "attributes": {
+            "layout": {
+                "type": "string",
+                "sample": "grid"
+            },
+            "showMap": {
+                "type": "boolean",
+                "sample": true
+            },
+            "showStats": {
+                "type": "boolean",
+                "sample": true
+            },
+            "limit": {
+                "type": "number",
+                "sample": 4
+            },
+            "showFilters": {
+                "type": "boolean",
+                "sample": true
+            }
+        }
+    },
+    "post-kinds-indieweb/checkins-feed": {
+        "render": "dynamic",
+        "attributes": {
+            "count": {
+                "type": "number",
+                "sample": 4
+            },
+            "showMap": {
+                "type": "boolean",
+                "sample": true
+            },
+            "showVenue": {
+                "type": "boolean",
+                "sample": true
+            },
+            "showDate": {
+                "type": "boolean",
+                "sample": "2026-07-04"
+            },
+            "showExcerpt": {
+                "type": "boolean",
+                "sample": true
+            },
+            "venueId": {
+                "type": "number",
+                "sample": 4
+            },
+            "layout": {
+                "type": "string",
+                "sample": "list"
+            },
+            "columns": {
+                "type": "number",
+                "sample": 4
+            }
+        }
+    },
+    "post-kinds-indieweb/drink-card": {
+        "render": "dynamic",
+        "attributes": {
+            "name": {
+                "type": "string",
+                "sample": "Sample name value"
+            },
+            "drinkType": {
+                "type": "string",
+                "sample": "Sample drinkType value"
+            },
+            "brand": {
+                "type": "string",
+                "sample": "Sample brand value"
+            },
+            "photo": {
+                "type": "string",
+                "sample": "https://example.com/sample-photo"
+            },
+            "photoAlt": {
+                "type": "string",
+                "sample": "Sample photoAlt value"
+            },
+            "rating": {
+                "type": "number",
+                "sample": 4
+            },
+            "drankAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "notes": {
+                "type": "string",
+                "sample": "Sample notes value"
+            },
+            "venueUrl": {
+                "type": "string",
+                "sample": "https://example.com/sample-venueurl"
+            },
+            "locationName": {
+                "type": "string",
+                "sample": "Sample locationName value"
+            },
+            "locationAddress": {
+                "type": "string",
+                "sample": "Sample locationAddress value"
+            },
+            "locationLocality": {
+                "type": "string",
+                "sample": "Sample locationLocality value"
+            },
+            "locationRegion": {
+                "type": "string",
+                "sample": "Sample locationRegion value"
+            },
+            "locationCountry": {
+                "type": "string",
+                "sample": "Sample locationCountry value"
+            },
+            "geoLatitude": {
+                "type": "number",
+                "sample": 4
+            },
+            "geoLongitude": {
+                "type": "number",
+                "sample": 4
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    },
+    "post-kinds-indieweb/eat-card": {
+        "render": "dynamic",
+        "attributes": {
+            "name": {
+                "type": "string",
+                "sample": "Sample name value"
+            },
+            "restaurant": {
+                "type": "string",
+                "sample": "Sample restaurant value"
+            },
+            "cuisine": {
+                "type": "string",
+                "sample": "Sample cuisine value"
+            },
+            "photo": {
+                "type": "string",
+                "sample": "https://example.com/sample-photo"
+            },
+            "photoAlt": {
+                "type": "string",
+                "sample": "Sample photoAlt value"
+            },
+            "rating": {
+                "type": "number",
+                "sample": 4
+            },
+            "ateAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "notes": {
+                "type": "string",
+                "sample": "Sample notes value"
+            },
+            "restaurantUrl": {
+                "type": "string",
+                "sample": "https://example.com/sample-restauranturl"
+            },
+            "locationName": {
+                "type": "string",
+                "sample": "Sample locationName value"
+            },
+            "locationAddress": {
+                "type": "string",
+                "sample": "Sample locationAddress value"
+            },
+            "locationLocality": {
+                "type": "string",
+                "sample": "Sample locationLocality value"
+            },
+            "locationRegion": {
+                "type": "string",
+                "sample": "Sample locationRegion value"
+            },
+            "locationCountry": {
+                "type": "string",
+                "sample": "Sample locationCountry value"
+            },
+            "geoLatitude": {
+                "type": "number",
+                "sample": 4
+            },
+            "geoLongitude": {
+                "type": "number",
+                "sample": 4
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    },
+    "post-kinds-indieweb/favorite-card": {
+        "render": "static",
+        "attributes": {
+            "title": {
+                "type": "string",
+                "sample": "Sample title value"
+            },
+            "url": {
+                "type": "string",
+                "sample": "https://example.com/sample-url"
+            },
+            "description": {
+                "type": "string",
+                "sample": "Sample description value"
+            },
+            "image": {
+                "type": "string",
+                "sample": "https://example.com/sample-image"
+            },
+            "imageAlt": {
+                "type": "string",
+                "sample": "Sample imageAlt value"
+            },
+            "author": {
+                "type": "string",
+                "sample": "Sample author value"
+            },
+            "favoritedAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "rel": {
+                "type": "string",
+                "sample": "Sample rel value"
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    },
+    "post-kinds-indieweb/jam-card": {
+        "render": "dynamic",
+        "attributes": {
+            "title": {
+                "type": "string",
+                "sample": "Sample title value"
+            },
+            "artist": {
+                "type": "string",
+                "sample": "Sample artist value"
+            },
+            "album": {
+                "type": "string",
+                "sample": "Sample album value"
+            },
+            "cover": {
+                "type": "string",
+                "sample": "https://example.com/sample-cover"
+            },
+            "coverAlt": {
+                "type": "string",
+                "sample": "Sample coverAlt value"
+            },
+            "url": {
+                "type": "string",
+                "sample": "https://example.com/sample-url"
+            },
+            "note": {
+                "type": "string",
+                "sample": "Sample note value"
+            },
+            "jammedAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "rel": {
+                "type": "string",
+                "sample": "Sample rel value"
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    },
+    "post-kinds-indieweb/like-card": {
+        "render": "dynamic",
+        "attributes": {
+            "title": {
+                "type": "string",
+                "sample": "Sample title value"
+            },
+            "url": {
+                "type": "string",
+                "sample": "https://example.com/sample-url"
+            },
+            "description": {
+                "type": "string",
+                "sample": "Sample description value"
+            },
+            "image": {
+                "type": "string",
+                "sample": "https://example.com/sample-image"
+            },
+            "imageAlt": {
+                "type": "string",
+                "sample": "Sample imageAlt value"
+            },
+            "author": {
+                "type": "string",
+                "sample": "Sample author value"
+            },
+            "likedAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "rel": {
+                "type": "string",
+                "sample": "Sample rel value"
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    },
+    "post-kinds-indieweb/listen-card": {
+        "render": "dynamic",
+        "attributes": {
+            "trackTitle": {
+                "type": "string",
+                "sample": "Sample trackTitle value"
+            },
+            "artistName": {
+                "type": "string",
+                "sample": "Sample artistName value"
+            },
+            "albumTitle": {
+                "type": "string",
+                "sample": "Sample albumTitle value"
+            },
+            "releaseDate": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "coverImage": {
+                "type": "string",
+                "sample": "https://example.com/sample-coverimage"
+            },
+            "coverImageAlt": {
+                "type": "string",
+                "sample": "Sample coverImageAlt value"
+            },
+            "listenUrl": {
+                "type": "string",
+                "sample": "https://example.com/sample-listenurl"
+            },
+            "musicbrainzId": {
+                "type": "string",
+                "sample": "Sample musicbrainzId value"
+            },
+            "rating": {
+                "type": "number",
+                "sample": 4
+            },
+            "listenedAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    },
+    "post-kinds-indieweb/media-lookup": {
+        "render": "static",
+        "attributes": {
+            "mediaType": {
+                "type": "string",
+                "sample": "Sample mediaType value"
+            },
+            "searchQuery": {
+                "type": "string",
+                "sample": "Sample searchQuery value"
+            },
+            "selectedItem": {
+                "type": "object",
+                "sample": "Sample selectedItem value"
+            },
+            "displayStyle": {
+                "type": "string",
+                "sample": "Sample displayStyle value"
+            },
+            "showImage": {
+                "type": "boolean",
+                "sample": "https://example.com/sample-showimage"
+            },
+            "showDescription": {
+                "type": "boolean",
+                "sample": true
+            },
+            "linkToSource": {
+                "type": "boolean",
+                "sample": true
+            }
+        }
+    },
+    "post-kinds-indieweb/mood-card": {
+        "render": "dynamic",
+        "attributes": {
+            "mood": {
+                "type": "string",
+                "sample": "Sample mood value"
+            },
+            "emoji": {
+                "type": "string",
+                "sample": "Sample emoji value"
+            },
+            "note": {
+                "type": "string",
+                "sample": "Sample note value"
+            },
+            "intensity": {
+                "type": "number",
+                "sample": 4
+            },
+            "moodAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "layout": {
+                "type": "string",
+                "sample": "compact"
+            }
+        }
+    },
+    "post-kinds-indieweb/play-card": {
+        "render": "dynamic",
+        "attributes": {
+            "title": {
+                "type": "string",
+                "sample": "Sample title value"
+            },
+            "platform": {
+                "type": "string",
+                "sample": "Sample platform value"
+            },
+            "cover": {
+                "type": "string",
+                "sample": "https://example.com/sample-cover"
+            },
+            "coverAlt": {
+                "type": "string",
+                "sample": "Sample coverAlt value"
+            },
+            "status": {
+                "type": "string",
+                "sample": "Sample status value"
+            },
+            "hoursPlayed": {
+                "type": "number",
+                "sample": 4
+            },
+            "rating": {
+                "type": "number",
+                "sample": 4
+            },
+            "playedAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "review": {
+                "type": "string",
+                "sample": "Sample review value"
+            },
+            "gameUrl": {
+                "type": "string",
+                "sample": "https://example.com/sample-gameurl"
+            },
+            "bggId": {
+                "type": "string",
+                "sample": "Sample bggId value"
+            },
+            "rawgId": {
+                "type": "string",
+                "sample": "Sample rawgId value"
+            },
+            "steamId": {
+                "type": "string",
+                "sample": "Sample steamId value"
+            },
+            "officialUrl": {
+                "type": "string",
+                "sample": "https://example.com/sample-officialurl"
+            },
+            "purchaseUrl": {
+                "type": "string",
+                "sample": "https://example.com/sample-purchaseurl"
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    },
+    "post-kinds-indieweb/read-card": {
+        "render": "dynamic",
+        "attributes": {
+            "bookTitle": {
+                "type": "string",
+                "sample": "Sample bookTitle value"
+            },
+            "authorName": {
+                "type": "string",
+                "sample": "Sample authorName value"
+            },
+            "isbn": {
+                "type": "string",
+                "sample": "Sample isbn value"
+            },
+            "publisher": {
+                "type": "string",
+                "sample": "Sample publisher value"
+            },
+            "publishDate": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "pageCount": {
+                "type": "number",
+                "sample": 4
+            },
+            "currentPage": {
+                "type": "number",
+                "sample": 4
+            },
+            "coverImage": {
+                "type": "string",
+                "sample": "https://example.com/sample-coverimage"
+            },
+            "coverImageAlt": {
+                "type": "string",
+                "sample": "Sample coverImageAlt value"
+            },
+            "bookUrl": {
+                "type": "string",
+                "sample": "https://example.com/sample-bookurl"
+            },
+            "openlibraryId": {
+                "type": "string",
+                "sample": "Sample openlibraryId value"
+            },
+            "readStatus": {
+                "type": "string",
+                "sample": "Sample readStatus value"
+            },
+            "rating": {
+                "type": "number",
+                "sample": 4
+            },
+            "startedAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "finishedAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "review": {
+                "type": "string",
+                "sample": "Sample review value"
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    },
+    "post-kinds-indieweb/reply-card": {
+        "render": "dynamic",
+        "attributes": {
+            "title": {
+                "type": "string",
+                "sample": "Sample title value"
+            },
+            "url": {
+                "type": "string",
+                "sample": "https://example.com/sample-url"
+            },
+            "description": {
+                "type": "string",
+                "sample": "Sample description value"
+            },
+            "image": {
+                "type": "string",
+                "sample": "https://example.com/sample-image"
+            },
+            "imageAlt": {
+                "type": "string",
+                "sample": "Sample imageAlt value"
+            },
+            "author": {
+                "type": "string",
+                "sample": "Sample author value"
+            },
+            "repliedAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "rel": {
+                "type": "string",
+                "sample": "Sample rel value"
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    },
+    "post-kinds-indieweb/repost-card": {
+        "render": "dynamic",
+        "attributes": {
+            "title": {
+                "type": "string",
+                "sample": "Sample title value"
+            },
+            "url": {
+                "type": "string",
+                "sample": "https://example.com/sample-url"
+            },
+            "description": {
+                "type": "string",
+                "sample": "Sample description value"
+            },
+            "image": {
+                "type": "string",
+                "sample": "https://example.com/sample-image"
+            },
+            "imageAlt": {
+                "type": "string",
+                "sample": "Sample imageAlt value"
+            },
+            "author": {
+                "type": "string",
+                "sample": "Sample author value"
+            },
+            "repostedAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "rel": {
+                "type": "string",
+                "sample": "Sample rel value"
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    },
+    "post-kinds-indieweb/rsvp-card": {
+        "render": "dynamic",
+        "attributes": {
+            "eventName": {
+                "type": "string",
+                "sample": "Sample eventName value"
+            },
+            "eventUrl": {
+                "type": "string",
+                "sample": "https://example.com/sample-eventurl"
+            },
+            "eventStart": {
+                "type": "string",
+                "sample": "Sample eventStart value"
+            },
+            "eventEnd": {
+                "type": "string",
+                "sample": "Sample eventEnd value"
+            },
+            "eventLocation": {
+                "type": "string",
+                "sample": "Sample eventLocation value"
+            },
+            "eventDescription": {
+                "type": "string",
+                "sample": "Sample eventDescription value"
+            },
+            "rsvpStatus": {
+                "type": "string",
+                "sample": "Sample rsvpStatus value"
+            },
+            "rsvpNote": {
+                "type": "string",
+                "sample": "Sample rsvpNote value"
+            },
+            "rsvpAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "eventImage": {
+                "type": "string",
+                "sample": "https://example.com/sample-eventimage"
+            },
+            "eventImageAlt": {
+                "type": "string",
+                "sample": "Sample eventImageAlt value"
+            },
+            "rel": {
+                "type": "string",
+                "sample": "Sample rel value"
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    },
+    "post-kinds-indieweb/star-rating": {
+        "render": "static",
+        "attributes": {
+            "rating": {
+                "type": "number",
+                "sample": 4
+            },
+            "maxRating": {
+                "type": "number",
+                "sample": 4
+            },
+            "showLabel": {
+                "type": "boolean",
+                "sample": true
+            },
+            "label": {
+                "type": "string",
+                "sample": "Sample label value"
+            },
+            "showValue": {
+                "type": "boolean",
+                "sample": true
+            },
+            "size": {
+                "type": "string",
+                "sample": "Sample size value"
+            },
+            "style": {
+                "type": "string",
+                "sample": "Sample style value"
+            },
+            "allowHalf": {
+                "type": "boolean",
+                "sample": true
+            },
+            "itemUrl": {
+                "type": "string",
+                "sample": "https://example.com/sample-itemurl"
+            },
+            "itemName": {
+                "type": "string",
+                "sample": "Sample itemName value"
+            }
+        }
+    },
+    "post-kinds-indieweb/venue-detail": {
+        "render": "dynamic",
+        "attributes": {
+            "venueId": {
+                "type": "number",
+                "sample": 4
+            },
+            "showMap": {
+                "type": "boolean",
+                "sample": true
+            },
+            "showAddress": {
+                "type": "boolean",
+                "sample": true
+            },
+            "showCheckins": {
+                "type": "boolean",
+                "sample": true
+            },
+            "checkinCount": {
+                "type": "number",
+                "sample": 4
+            }
+        }
+    },
+    "post-kinds-indieweb/watch-card": {
+        "render": "dynamic",
+        "attributes": {
+            "mediaTitle": {
+                "type": "string",
+                "sample": "Sample mediaTitle value"
+            },
+            "mediaType": {
+                "type": "string",
+                "sample": "Sample mediaType value"
+            },
+            "showTitle": {
+                "type": "string",
+                "sample": "Sample showTitle value"
+            },
+            "seasonNumber": {
+                "type": "number",
+                "sample": 4
+            },
+            "episodeNumber": {
+                "type": "number",
+                "sample": 4
+            },
+            "episodeTitle": {
+                "type": "string",
+                "sample": "Sample episodeTitle value"
+            },
+            "releaseYear": {
+                "type": "number",
+                "sample": 4
+            },
+            "director": {
+                "type": "string",
+                "sample": "Sample director value"
+            },
+            "posterImage": {
+                "type": "string",
+                "sample": "https://example.com/sample-posterimage"
+            },
+            "posterImageAlt": {
+                "type": "string",
+                "sample": "Sample posterImageAlt value"
+            },
+            "watchUrl": {
+                "type": "string",
+                "sample": "https://example.com/sample-watchurl"
+            },
+            "tmdbId": {
+                "type": "string",
+                "sample": "Sample tmdbId value"
+            },
+            "imdbId": {
+                "type": "string",
+                "sample": "Sample imdbId value"
+            },
+            "rating": {
+                "type": "number",
+                "sample": 4
+            },
+            "isRewatch": {
+                "type": "boolean",
+                "sample": true
+            },
+            "watchedAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "review": {
+                "type": "string",
+                "sample": "Sample review value"
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    },
+    "post-kinds-indieweb/wish-card": {
+        "render": "static",
+        "attributes": {
+            "title": {
+                "type": "string",
+                "sample": "Sample title value"
+            },
+            "wishType": {
+                "type": "string",
+                "sample": "Sample wishType value"
+            },
+            "url": {
+                "type": "string",
+                "sample": "https://example.com/sample-url"
+            },
+            "image": {
+                "type": "string",
+                "sample": "https://example.com/sample-image"
+            },
+            "imageAlt": {
+                "type": "string",
+                "sample": "Sample imageAlt value"
+            },
+            "price": {
+                "type": "string",
+                "sample": "Sample price value"
+            },
+            "reason": {
+                "type": "string",
+                "sample": "Sample reason value"
+            },
+            "priority": {
+                "type": "string",
+                "sample": "Sample priority value"
+            },
+            "wishedAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "rel": {
+                "type": "string",
+                "sample": "Sample rel value"
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    }
+}
