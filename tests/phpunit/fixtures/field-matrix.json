@@ -208,7 +208,7 @@
             },
             "showDate": {
                 "type": "boolean",
-                "sample": "2026-07-04"
+                "sample": true
             },
             "showExcerpt": {
                 "type": "boolean",
@@ -571,7 +571,7 @@
             },
             "showImage": {
                 "type": "boolean",
-                "sample": "https://example.com/sample-showimage"
+                "sample": true
             },
             "showDescription": {
                 "type": "boolean",

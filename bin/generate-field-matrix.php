@@ -25,14 +25,14 @@ $pkiw_generate_field_matrix = static function ( string $blocks_dir ): array {
 
 			if ( 'layout' === $attr ) {
 				$sample = $def['default'] ?? 'horizontal';
+			} elseif ( 'boolean' === $type ) {
+				$sample = true;
+			} elseif ( 'number' === $type || 'integer' === $type ) {
+				$sample = 4;
 			} elseif ( preg_match( '/(url|photo|cover|image)$/i', $attr ) ) {
 				$sample = 'https://example.com/sample-' . strtolower( $attr );
 			} elseif ( preg_match( '/(At|Date)$/', $attr ) || 'publishDate' === $attr ) {
 				$sample = '2026-07-04';
-			} elseif ( 'number' === $type || 'integer' === $type ) {
-				$sample = 4;
-			} elseif ( 'boolean' === $type ) {
-				$sample = true;
 			} else {
 				$sample = 'Sample ' . $attr . ' value';
 			}
