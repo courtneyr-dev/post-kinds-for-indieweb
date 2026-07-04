@@ -20,9 +20,12 @@ import {
 	DateTimePicker,
 	Popover,
 	RangeControl,
+	ToggleControl,
 } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 import { useState } from '@wordpress/element';
+import { select, useDispatch, useSelect } from '@wordpress/data';
+import { createBlock } from '@wordpress/blocks';
 import { readIcon } from '../shared/icons';
 import {
 	StarRating,
@@ -38,9 +41,10 @@ import {
  * @param {Object}   props               Block props.
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update attributes.
+ * @param {string}   props.clientId      Block client ID.
  * @return {JSX.Element} Block edit component.
  */
-export default function Edit( { attributes, setAttributes } ) {
+export default function Edit( { attributes, setAttributes, clientId } ) {
 	const {
 		bookTitle,
 		authorName,
@@ -64,6 +68,19 @@ export default function Edit( { attributes, setAttributes } ) {
 	const [ showFinishPicker, setShowFinishPicker ] = useState( false );
 	const [ isSearching, setIsSearching ] = useState( false );
 	const [ completing, setCompleting ] = useState( false );
+
+	const { insertBlocks, removeBlock } = useDispatch( 'core/block-editor' );
+	const kindleEmbedClientId = useSelect( ( selectStore ) => {
+		const { getBlocks } = selectStore( 'core/block-editor' );
+		const sibling = getBlocks().find(
+			( b ) =>
+				b.name === 'core/embed' &&
+				( b.attributes.className || '' ).includes(
+					'pkiw-kindle-preview'
+				)
+		);
+		return sibling ? sibling.clientId : null;
+	}, [] );
 
 	const blockProps = useBlockProps( {
 		className: `read-card layout-${ layout } status-${ readStatus }`,
@@ -282,6 +299,47 @@ export default function Edit( { attributes, setAttributes } ) {
 							'post-kinds-for-indieweb'
 						) }
 					</Button>
+
+					<ToggleControl
+						label={ __(
+							'Show Kindle preview',
+							'post-kinds-for-indieweb'
+						) }
+						help={ __(
+							"Adds a Kindle instant-preview that follows this book's ISBN/ASIN.",
+							'post-kinds-for-indieweb'
+						) }
+						checked={ !! kindleEmbedClientId }
+						onChange={ ( on ) => {
+							if ( on ) {
+								const index =
+									select( 'core/block-editor' ).getBlockIndex(
+										clientId
+									);
+								insertBlocks(
+									createBlock( 'core/embed', {
+										providerNameSlug: 'amazon-kindle',
+										className: 'pkiw-kindle-preview',
+										// A non-empty url is required for
+										// core/embed's save() to emit the
+										// wrapper markup Kindle_Embed_Bridge
+										// rewrites server-side — a blank url
+										// serializes as a self-closing block
+										// with no innerHTML to rewrite. The
+										// placeholder itself is never shown:
+										// the render bridge replaces the
+										// wrapper's contents with an iframe
+										// derived from the post's ISBN/ASIN.
+										url: 'https://read.amazon.com/kp/embed',
+										type: 'video',
+									} ),
+									index + 1
+								);
+							} else if ( kindleEmbedClientId ) {
+								removeBlock( kindleEmbedClientId );
+							}
+						} }
+					/>
 				</PanelBody>
 
 				<PanelBody
