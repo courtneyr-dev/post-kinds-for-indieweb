@@ -17,6 +17,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
+use function PostKindsForIndieWeb\get_cached_embed_html;
+
 $pkiw_track_title    = $attributes['trackTitle'] ?? '';
 $pkiw_artist_name    = $attributes['artistName'] ?? '';
 $pkiw_album_title    = $attributes['albumTitle'] ?? '';
@@ -108,7 +110,7 @@ ob_start();
 
 	<?php
 	if ( $pkiw_listen_url ) {
-		$pkiw_embed = wp_oembed_get( $pkiw_listen_url );
+		$pkiw_embed = get_cached_embed_html( $pkiw_listen_url );
 		if ( $pkiw_embed ) {
 			echo '<div class="post-kinds-card__embed-section">' . $pkiw_embed . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}

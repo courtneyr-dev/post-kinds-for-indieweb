@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
 $pkiw_name              = $attributes['name'] ?? '';
+$pkiw_restaurant        = $attributes['restaurant'] ?? '';
 $pkiw_cuisine           = $attributes['cuisine'] ?? '';
 $pkiw_photo             = $attributes['photo'] ?? '';
 $pkiw_photo_alt         = $attributes['photoAlt'] ?? '';
@@ -70,6 +71,12 @@ ob_start();
 
 			<?php if ( $pkiw_name ) : ?>
 				<h3 class="post-kinds-card__title p-name"><?php echo esc_html( $pkiw_name ); ?></h3>
+			<?php endif; ?>
+
+			<?php if ( $pkiw_restaurant ) : ?>
+				<p class="post-kinds-card__subtitle p-author h-card">
+					<span class="p-name"><?php echo esc_html( $pkiw_restaurant ); ?></span>
+				</p>
 			<?php endif; ?>
 
 			<?php if ( $pkiw_location_name ) : ?>
