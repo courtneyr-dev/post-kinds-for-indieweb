@@ -8,6 +8,9 @@ const { defineConfig, devices } = require( '@playwright/test' );
 
 module.exports = defineConfig( {
 	testDir: './tests/e2e',
+	// Committed baselines live under tests/e2e/__screenshots__/ rather than
+	// Playwright's default {file}-snapshots/ sibling directories.
+	snapshotPathTemplate: '{testDir}/__screenshots__/{testFilePath}/{arg}{ext}',
 	fullyParallel: true,
 	forbidOnly: !! process.env.CI,
 	retries: process.env.CI ? 2 : 0,

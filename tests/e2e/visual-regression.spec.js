@@ -1,32 +1,63 @@
 /**
  * Visual regression tests for block appearance.
  *
- * These tests capture screenshots of blocks and compare against committed
- * baselines. Run `npm run test:visual` to update snapshots.
+ * Matrix-driven: for every block in field-matrix.json, insert it
+ * programmatically with fully-populated sample attributes (same insert
+ * pattern as tests/e2e/block-field-matrix.spec.js) and screenshot the block
+ * in the editor canvas. Baselines are committed under
+ * tests/e2e/__screenshots__/ (chromium only — see project note below).
  *
- * **Skipped in CI by default** — visual regression suites need three things
- * before they're useful as a PR gate, and we don't have all three yet:
- *
- * 1. Committed baseline images. Without them, the first CI run can't
- *    compare anything. Generate via `npm run test:visual` (which uses
- *    `--update-snapshots`), then commit the `*-snapshots/` directories.
- * 2. Cross-environment font rendering parity. CI's headless Chromium and a
- *    local Mac headed Chromium produce slightly different antialiased
- *    glyphs even at the same resolution. The `maxDiffPixelRatio: 0.05`
- *    setting absorbs typical drift but won't survive font-stack changes.
- * 3. A stable theme. The default `wp-env` theme can shift between WP
- *    versions; visual baselines need to be regenerated whenever the
- *    underlying theme paint changes.
- *
- * The tests themselves are correctly written for the iframed editor
- * (WP 6.5+'s `iframe[name="editor-canvas"]`). Drop the `.skip` on the
- * describe blocks once baselines are committed.
+ * Run `npm run test:visual` to (re)generate baselines after an intentional
+ * appearance change.
  */
 
 const { test, expect } = require( '@playwright/test' );
-const { openBlockInserter } = require( './utils' );
+const matrix = require( '../phpunit/fixtures/field-matrix.json' );
 
-test.describe.skip( 'Visual Regression', () => {
+const BASE = process.env.WP_BASE_URL || 'http://localhost:8888';
+
+// sampleFor duplicated here intentionally (specs run without bundling); MUST
+// match tests/js/sample-values.js rule order EXACTLY (type before name
+// patterns — Task 1 review finding). Do not reorder.
+function sampleFor( attr, def ) {
+	const type = Array.isArray( def.type )
+		? def.type[ 0 ]
+		: def.type || 'string';
+	if ( attr === 'layout' ) {
+		return def.default ?? 'horizontal';
+	}
+	if ( type === 'boolean' ) {
+		return true;
+	}
+	if ( type === 'number' || type === 'integer' ) {
+		return 4;
+	}
+	if ( /(url|photo|cover|image)$/i.test( attr ) ) {
+		return 'https://example.com/sample-' + attr.toLowerCase();
+	}
+	if ( /(At|Date)$/.test( attr ) || attr === 'publishDate' ) {
+		return '2026-07-04';
+	}
+	return `Sample ${ attr } value`;
+}
+
+// media-lookup's selectedItem is typed "object" — the sampler has no object
+// rule (locked rule order), so give it a real representative object instead
+// of the flat string every other attribute gets. Same shape used by
+// tests/js/field-matrix-static.test.js and block-field-matrix.spec.js.
+const SELECTED_ITEM_SAMPLE = {
+	title: 'Sample item title',
+	author: 'Sample item author',
+	cover: 'https://example.com/sample-item-cover',
+	description: 'Sample item description',
+	year: 1999,
+	url: 'https://example.com/sample-item-url',
+	id: 'sample-item-id',
+};
+
+test.slow();
+
+test.describe( 'Visual Regression', () => {
 	test.beforeEach( async ( { page } ) => {
 		// Login to WordPress admin
 		await page.goto( '/wp-login.php' );
@@ -36,93 +67,65 @@ test.describe.skip( 'Visual Regression', () => {
 		await page.waitForURL( '**/wp-admin/**' );
 	} );
 
-	test( 'Listen Card block appearance', async ( { page } ) => {
-		await page.goto( '/wp-admin/post-new.php' );
+	for ( const [ name, def ] of Object.entries( matrix ) ) {
+		const slug = name.replace( 'post-kinds-indieweb/', '' );
 
-		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
-		await editor
-			.locator( '.is-root-container' )
-			.waitFor( { timeout: 30000 } );
+		test( `${ slug } block appearance (populated)`, async ( { page } ) => {
+			await page.goto( `${ BASE }/wp-admin/post-new.php` );
+			// Dismiss welcome guide via preference (never click-race the modal).
+			await page.evaluate( () =>
+				window.wp.data
+					.dispatch( 'core/preferences' )
+					.set( 'core', 'welcomeGuide', false )
+			);
 
-		await openBlockInserter( page );
-		await page.getByPlaceholder( 'Search' ).fill( 'Listen Card' );
-		await page.getByRole( 'option', { name: /Listen Card/ } ).click();
+			const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
+			await editor
+				.locator( '.is-root-container' )
+				.waitFor( { timeout: 30000 } );
 
-		const block = editor.locator(
-			'[data-type="post-kinds-indieweb/listen-card"]'
-		);
-		await expect( block ).toBeVisible();
+			const attrs = Object.fromEntries(
+				Object.entries( def.attributes ).map( ( [ attr, attrDef ] ) => [
+					attr,
+					attr === 'selectedItem'
+						? SELECTED_ITEM_SAMPLE
+						: sampleFor( attr, attrDef ),
+				] )
+			);
 
-		await expect( block ).toHaveScreenshot( 'listen-card-default.png', {
-			maxDiffPixelRatio: 0.05,
+			await page.evaluate(
+				( { blockName, blockAttrs } ) => {
+					const block = window.wp.blocks.createBlock(
+						blockName,
+						blockAttrs
+					);
+					window.wp.data
+						.dispatch( 'core/block-editor' )
+						.insertBlocks( block );
+				},
+				{ blockName: name, blockAttrs: attrs }
+			);
+
+			const block = editor.locator( `[data-type="${ name }"]` );
+			await expect( block ).toBeVisible();
+
+			// Several blocks (checkin-dashboard, checkins-feed, venue-detail,
+			// checkin-card…) fetch live data on mount and show a spinner
+			// until it resolves; the rendered height differs between the
+			// loading and settled states, so snapshotting mid-fetch makes
+			// the baseline non-deterministic. Wait for both this project's
+			// custom loading class and core's <Spinner/> to clear. Harmless
+			// no-op for blocks with neither (locator never matches).
+			await block
+				.locator( '.checkin-loading, .components-spinner' )
+				.waitFor( { state: 'detached', timeout: 10000 } )
+				.catch( () => {} );
+
+			await expect( block ).toHaveScreenshot( `${ slug }-populated.png`, {
+				maxDiffPixelRatio: 0.02,
+			} );
 		} );
-	} );
-
-	test( 'Watch Card block appearance', async ( { page } ) => {
-		await page.goto( '/wp-admin/post-new.php' );
-
-		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
-		await editor
-			.locator( '.is-root-container' )
-			.waitFor( { timeout: 30000 } );
-
-		await openBlockInserter( page );
-		await page.getByPlaceholder( 'Search' ).fill( 'Watch Card' );
-		await page.getByRole( 'option', { name: /Watch Card/ } ).click();
-
-		const block = editor.locator(
-			'[data-type="post-kinds-indieweb/watch-card"]'
-		);
-		await expect( block ).toBeVisible();
-
-		await expect( block ).toHaveScreenshot( 'watch-card-default.png', {
-			maxDiffPixelRatio: 0.05,
-		} );
-	} );
-
-	test( 'Read Card block appearance', async ( { page } ) => {
-		await page.goto( '/wp-admin/post-new.php' );
-
-		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
-		await editor
-			.locator( '.is-root-container' )
-			.waitFor( { timeout: 30000 } );
-
-		await openBlockInserter( page );
-		await page.getByPlaceholder( 'Search' ).fill( 'Read Card' );
-		await page.getByRole( 'option', { name: /Read Card/ } ).click();
-
-		const block = editor.locator(
-			'[data-type="post-kinds-indieweb/read-card"]'
-		);
-		await expect( block ).toBeVisible();
-
-		await expect( block ).toHaveScreenshot( 'read-card-default.png', {
-			maxDiffPixelRatio: 0.05,
-		} );
-	} );
-
-	test( 'Star Rating block appearance', async ( { page } ) => {
-		await page.goto( '/wp-admin/post-new.php' );
-
-		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
-		await editor
-			.locator( '.is-root-container' )
-			.waitFor( { timeout: 30000 } );
-
-		await openBlockInserter( page );
-		await page.getByPlaceholder( 'Search' ).fill( 'Star Rating' );
-		await page.getByRole( 'option', { name: /Star Rating/ } ).click();
-
-		const block = editor.locator(
-			'[data-type="post-kinds-indieweb/star-rating"]'
-		);
-		await expect( block ).toBeVisible();
-
-		await expect( block ).toHaveScreenshot( 'star-rating-default.png', {
-			maxDiffPixelRatio: 0.05,
-		} );
-	} );
+	}
 
 	test( 'Settings page appearance', async ( { page } ) => {
 		// Plugin's main admin slug is `post-kinds-for-indieweb` (the menu
@@ -132,42 +135,7 @@ test.describe.skip( 'Visual Regression', () => {
 
 		const content = page.locator( '#wpcontent' );
 		await expect( content ).toHaveScreenshot( 'settings-page.png', {
-			maxDiffPixelRatio: 0.05,
-		} );
-	} );
-} );
-
-test.describe.skip( 'Dark Mode Visual Regression', () => {
-	test.beforeEach( async ( { page } ) => {
-		// Emulate dark mode
-		await page.emulateMedia( { colorScheme: 'dark' } );
-
-		await page.goto( '/wp-login.php' );
-		await page.fill( '#user_login', 'admin' );
-		await page.fill( '#user_pass', 'password' );
-		await page.click( '#wp-submit' );
-		await page.waitForURL( '**/wp-admin/**' );
-	} );
-
-	test( 'Listen Card in dark mode', async ( { page } ) => {
-		await page.goto( '/wp-admin/post-new.php' );
-
-		const editor = page.frameLocator( 'iframe[name="editor-canvas"]' );
-		await editor
-			.locator( '.is-root-container' )
-			.waitFor( { timeout: 30000 } );
-
-		await openBlockInserter( page );
-		await page.getByPlaceholder( 'Search' ).fill( 'Listen Card' );
-		await page.getByRole( 'option', { name: /Listen Card/ } ).click();
-
-		const block = editor.locator(
-			'[data-type="post-kinds-indieweb/listen-card"]'
-		);
-		await expect( block ).toBeVisible();
-
-		await expect( block ).toHaveScreenshot( 'listen-card-dark.png', {
-			maxDiffPixelRatio: 0.05,
+			maxDiffPixelRatio: 0.02,
 		} );
 	} );
 } );

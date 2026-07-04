@@ -160,55 +160,61 @@ export default function Edit( { attributes, setAttributes } ) {
 		}
 	}, [] );
 
-	// Sync FROM post meta TO block attributes when meta changes from sidebar
-	// This handles updates from KindFields.js
+	// Sync FROM post meta TO block attributes when meta changes from sidebar.
+	// This handles updates from KindFields.js.
+	// _postkind_play_* isn't a registered post meta key (no REST schema
+	// entry, so WordPress core silently drops writes to it and the key is
+	// never actually persisted server-side) — only ever apply a non-empty
+	// meta value here. Without this guard, a fresh/just-inserted block's
+	// attribute gets raced back to blank: the "sync attrs -> meta" effect
+	// below writes meta asynchronously via editPost(), and depending on
+	// render timing this effect can still observe the pre-write ''/undefined
+	// meta value and stomp a real attribute with it.
 	useEffect( () => {
 		const updates = {};
 
-		// Check each field - sync if meta differs from attribute
-		const metaTitle = postMeta._postkind_play_title ?? '';
-		const metaPlatform = postMeta._postkind_play_platform ?? '';
-		const metaCover = postMeta._postkind_play_cover ?? '';
-		const metaStatus = postMeta._postkind_play_status ?? '';
-		const metaHours = postMeta._postkind_play_hours ?? 0;
-		const metaRating = postMeta._postkind_play_rating ?? 0;
-		const metaBggId = postMeta._postkind_play_bgg_id ?? '';
-		const metaRawgId = postMeta._postkind_play_rawg_id ?? '';
-		const metaSteamId = postMeta._postkind_play_steam_id ?? '';
-		const metaOfficialUrl = postMeta._postkind_play_official_url ?? '';
-		const metaPurchaseUrl = postMeta._postkind_play_purchase_url ?? '';
-
-		if ( metaTitle !== ( title || '' ) ) {
+		const metaTitle = postMeta._postkind_play_title;
+		if ( metaTitle && metaTitle !== ( title || '' ) ) {
 			updates.title = metaTitle;
 		}
-		if ( metaPlatform !== ( platform || '' ) ) {
+		const metaPlatform = postMeta._postkind_play_platform;
+		if ( metaPlatform && metaPlatform !== ( platform || '' ) ) {
 			updates.platform = metaPlatform;
 		}
-		if ( metaCover !== ( cover || '' ) ) {
+		const metaCover = postMeta._postkind_play_cover;
+		if ( metaCover && metaCover !== ( cover || '' ) ) {
 			updates.cover = metaCover;
 		}
-		if ( metaStatus !== ( status || '' ) ) {
+		const metaStatus = postMeta._postkind_play_status;
+		if ( metaStatus && metaStatus !== ( status || '' ) ) {
 			updates.status = metaStatus;
 		}
-		if ( metaHours !== ( hoursPlayed || 0 ) ) {
+		const metaHours = postMeta._postkind_play_hours;
+		if ( metaHours && metaHours !== ( hoursPlayed || 0 ) ) {
 			updates.hoursPlayed = metaHours;
 		}
-		if ( metaRating !== ( rating || 0 ) ) {
+		const metaRating = postMeta._postkind_play_rating;
+		if ( metaRating && metaRating !== ( rating || 0 ) ) {
 			updates.rating = metaRating;
 		}
-		if ( metaBggId !== ( bggId || '' ) ) {
+		const metaBggId = postMeta._postkind_play_bgg_id;
+		if ( metaBggId && metaBggId !== ( bggId || '' ) ) {
 			updates.bggId = metaBggId;
 		}
-		if ( metaRawgId !== ( rawgId || '' ) ) {
+		const metaRawgId = postMeta._postkind_play_rawg_id;
+		if ( metaRawgId && metaRawgId !== ( rawgId || '' ) ) {
 			updates.rawgId = metaRawgId;
 		}
-		if ( metaSteamId !== ( steamId || '' ) ) {
+		const metaSteamId = postMeta._postkind_play_steam_id;
+		if ( metaSteamId && metaSteamId !== ( steamId || '' ) ) {
 			updates.steamId = metaSteamId;
 		}
-		if ( metaOfficialUrl !== ( officialUrl || '' ) ) {
+		const metaOfficialUrl = postMeta._postkind_play_official_url;
+		if ( metaOfficialUrl && metaOfficialUrl !== ( officialUrl || '' ) ) {
 			updates.officialUrl = metaOfficialUrl;
 		}
-		if ( metaPurchaseUrl !== ( purchaseUrl || '' ) ) {
+		const metaPurchaseUrl = postMeta._postkind_play_purchase_url;
+		if ( metaPurchaseUrl && metaPurchaseUrl !== ( purchaseUrl || '' ) ) {
 			updates.purchaseUrl = metaPurchaseUrl;
 		}
 
