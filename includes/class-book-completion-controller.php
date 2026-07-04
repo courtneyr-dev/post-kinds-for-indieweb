@@ -174,6 +174,17 @@ class Book_Completion_Controller {
 			return; // Nothing to complete from.
 		}
 
+		// Every completable field is already filled — calling out to the
+		// completion service (a live HTTP request in production) would
+		// only re-fetch data this post already has. Skips the request on
+		// every ordinary resave of an already-complete read-card; only
+		// posts with at least one blank completable field (including a
+		// freshly ISBN-changed post, whose read_asin Card_Meta_Sync@25
+		// just cleared) reach the service call below.
+		if ( ! array_diff_key( self::META_BY_KEY, $book ) ) {
+			return;
+		}
+
 		$completed = $this->service()->complete( $book );
 
 		foreach ( self::META_BY_KEY as $key => $suffix ) {

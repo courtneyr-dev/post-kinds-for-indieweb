@@ -89,7 +89,25 @@ class Card_Meta_Sync {
 					continue; // Never erase existing meta with an empty attr.
 				}
 
-				update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, sanitize_text_field( (string) $value ) );
+				$value = (string) $value;
+
+				// A changed ISBN invalidates any previously-derived ASIN —
+				// clear it before writing the new ISBN so
+				// Book_Completion_Controller::complete_on_save() (which
+				// runs after this, at save_post:30) sees a blank read_asin
+				// and re-derives it from the new ISBN instead of leaving
+				// the stale one (which would render the wrong book's Kindle
+				// preview). Scoped to isbn/asin only: cover and publisher
+				// are user-visible and directly editable, so there's no
+				// invisible-staleness risk to guard against there.
+				if ( 'read_isbn' === $suffix ) {
+					$current_isbn = get_post_meta( $post_id, Meta_Fields::PREFIX . 'read_isbn', true );
+					if ( $current_isbn !== $value ) {
+						delete_post_meta( $post_id, Meta_Fields::PREFIX . 'read_asin' );
+					}
+				}
+
+				update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, sanitize_text_field( $value ) );
 			}
 
 			break; // First card block wins, mirroring the kind-sync semantics.

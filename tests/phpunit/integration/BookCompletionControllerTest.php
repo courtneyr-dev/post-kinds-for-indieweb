@@ -87,4 +87,83 @@ final class BookCompletionControllerTest extends WP_UnitTestCase {
 		$this->assertSame( 'Entangled', get_post_meta( $post_id, '_postkind_read_publisher', true ) );
 		$this->assertSame( '1649374046', get_post_meta( $post_id, '_postkind_read_asin', true ) );
 	}
+
+	public function test_resave_with_fully_populated_meta_never_calls_complete(): void {
+		$calls = 0;
+		add_filter( 'pkiw_book_completion_service', static function () use ( &$calls ) {
+			return new class( $calls ) {
+				private $calls;
+				public function __construct( &$calls ) {
+					$this->calls = &$calls;
+				}
+				public function complete( array $book ): array {
+					++$this->calls;
+					return $book;
+				}
+			};
+		} );
+
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Fourth Wing","isbn":"9781649374042"} /-->',
+		] );
+
+		// Fully populate every completable field before the resave under test.
+		update_post_meta( $post_id, '_postkind_read_author', 'Rebecca Yarros' );
+		update_post_meta( $post_id, '_postkind_read_publisher', 'Entangled' );
+		update_post_meta( $post_id, '_postkind_read_publish_date', '2023-05-02' );
+		update_post_meta( $post_id, '_postkind_read_pages', '517' );
+		update_post_meta( $post_id, '_postkind_read_cover', 'https://example.com/cover.jpg' );
+		update_post_meta( $post_id, '_postkind_read_url', 'https://example.com/book' );
+		update_post_meta( $post_id, '_postkind_read_asin', '1649374046' );
+
+		$calls = 0; // Reset after create()'s own save_post fired completion.
+
+		wp_update_post( [ 'ID' => $post_id, 'post_title' => 'touch' ] );
+
+		$this->assertSame( 0, $calls, 'complete() must not be called when every completable field is already filled' );
+	}
+
+	public function test_isbn_change_clears_asin_and_completion_runs_again(): void {
+		// Verifies the F2/F3 interplay: Card_Meta_Sync@25 clears the stale
+		// asin when the isbn changes, which makes read_asin blank again,
+		// so Book_Completion_Controller@30 must run completion instead of
+		// short-circuiting.
+		$calls = 0;
+		add_filter( 'pkiw_book_completion_service', static function () use ( &$calls ) {
+			return new class( $calls ) {
+				private $calls;
+				public function __construct( &$calls ) {
+					$this->calls = &$calls;
+				}
+				public function complete( array $book ): array {
+					++$this->calls;
+					$book['asin'] = '0316219282';
+					return $book;
+				}
+			};
+		} );
+
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Fourth Wing","isbn":"9781649374042"} /-->',
+		] );
+		update_post_meta( $post_id, '_postkind_read_author', 'Rebecca Yarros' );
+		update_post_meta( $post_id, '_postkind_read_publisher', 'Entangled' );
+		update_post_meta( $post_id, '_postkind_read_publish_date', '2023-05-02' );
+		update_post_meta( $post_id, '_postkind_read_pages', '517' );
+		update_post_meta( $post_id, '_postkind_read_cover', 'https://example.com/cover.jpg' );
+		update_post_meta( $post_id, '_postkind_read_url', 'https://example.com/book' );
+		update_post_meta( $post_id, '_postkind_read_asin', '1649374046' );
+
+		$calls = 0; // Reset after create()'s own save_post fired completion.
+
+		wp_update_post(
+			[
+				'ID'           => $post_id,
+				'post_content' => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Fourth Wing","isbn":"9780316219280"} /-->',
+			]
+		);
+
+		$this->assertSame( 1, $calls, 'a changed isbn clears asin, so completion must run again' );
+		$this->assertSame( '0316219282', get_post_meta( $post_id, '_postkind_read_asin', true ) );
+	}
 }
