@@ -164,6 +164,12 @@ Check that your API keys are entered correctly in Settings. Verify your server c
 
 Visit [pin13.net/mf2](https://pin13.net/mf2/) and enter your post URL. The tool parses your page and shows all detected microformats markup.
 
+= How do I route certain kinds into a separate "stream" instead of the main archive? =
+
+Add the kind slugs to the `pkiw_stream_kinds` filter. Those kinds get a cached `_pkiw_surface` value of `stream` (everything else gets `main`); your theme decides what to do with it — the plugin never filters your queries. Promote an individual post back to `main` with the "Promote to main archive" editor toggle, the Micropub `pkiw-promote` property, or by setting the `pkiw_promote` meta. Run `wp postkind surfaces backfill` once after a bulk import. A recommended starting set:
+
+`add_filter( 'pkiw_stream_kinds', fn() => [ 'checkin', 'eat', 'drink', 'listen', 'jam' ] );`
+
 == Screenshots ==
 
 1. Listen Card block displaying a song with album art and rating
