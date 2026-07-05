@@ -60,19 +60,21 @@ function get_cached_embed_html( mixed $url ) {
  * filter) falls through to the cached oEmbed lookup, so the plugin has no hard
  * dependency on any particular player.
  *
- * @param mixed  $url  URL to embed.
- * @param string $kind Card kind slug (watch, listen, …) for filter context.
+ * @param mixed  $url     URL to embed.
+ * @param string $kind    Card kind slug (watch, listen, …) for filter context.
+ * @param array  $context Extra card data for the filter (e.g. 'captions' URL).
  * @return string|false Embed HTML, or false when no embed is available.
  */
-function get_card_embed_html( mixed $url, string $kind = '' ) {
+function get_card_embed_html( mixed $url, string $kind = '', array $context = [] ) {
 	/**
 	 * Filter a card's media embed before the default oEmbed lookup runs.
 	 *
-	 * @param string|null $embed Replacement embed HTML, or null to use oEmbed.
-	 * @param mixed       $url   The URL being embedded.
-	 * @param string      $kind  The card kind slug (watch, listen, checkin, …).
+	 * @param string|null $embed   Replacement embed HTML, or null to use oEmbed.
+	 * @param mixed       $url     The URL being embedded.
+	 * @param string      $kind    The card kind slug (watch, listen, checkin, …).
+	 * @param array       $context Extra card data (e.g. 'captions' => VTT URL).
 	 */
-	$pre = apply_filters( 'pkiw_card_embed_html', null, $url, $kind );
+	$pre = apply_filters( 'pkiw_card_embed_html', null, $url, $kind, $context );
 
 	if ( null !== $pre ) {
 		return is_string( $pre ) && '' !== $pre ? $pre : false;

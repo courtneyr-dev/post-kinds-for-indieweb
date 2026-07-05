@@ -33,6 +33,7 @@ $pkiw_director       = $attributes['director'] ?? '';
 $pkiw_poster_image   = $attributes['posterImage'] ?? '';
 $pkiw_poster_alt     = $attributes['posterImageAlt'] ?? '';
 $pkiw_watch_url      = $attributes['watchUrl'] ?? '';
+$pkiw_captions_url   = $attributes['captionsUrl'] ?? '';
 $pkiw_tmdb_id        = $attributes['tmdbId'] ?? '';
 $pkiw_imdb_id        = $attributes['imdbId'] ?? '';
 $pkiw_rating         = $attributes['rating'] ?? 0;
@@ -64,7 +65,7 @@ if ( $pkiw_imdb_id ) {
 	$pkiw_imdb_url = 'https://www.imdb.com/title/' . $pkiw_imdb_id;
 }
 
-$pkiw_embed = $pkiw_watch_url ? get_card_embed_html( $pkiw_watch_url, 'watch' ) : false;
+$pkiw_embed = $pkiw_watch_url ? get_card_embed_html( $pkiw_watch_url, 'watch', [ 'captions' => $pkiw_captions_url ] ) : false;
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
