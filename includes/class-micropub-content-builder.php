@@ -95,6 +95,27 @@ final class Micropub_Content_Builder {
 	}
 
 	/**
+	 * Map the Micropub `pkiw-promote` property to the pkiw_promote meta.
+	 *
+	 * Lets a Micropub client (Outpost) promote a post to the main surface at
+	 * creation, the same override the editor toggle writes.
+	 *
+	 * @param int   $post_id    Post ID.
+	 * @param array $properties Micropub properties, keyed by property name.
+	 * @return void
+	 */
+	public static function apply_promote( int $post_id, array $properties ): void {
+		if ( empty( $properties['pkiw-promote'] ) ) {
+			return;
+		}
+		$raw = $properties['pkiw-promote'];
+		$val = is_array( $raw ) ? reset( $raw ) : $raw;
+		if ( in_array( strtolower( (string) $val ), [ '1', 'true', 'yes', 'on' ], true ) ) {
+			update_post_meta( $post_id, 'pkiw_promote', 1 );
+		}
+	}
+
+	/**
 	 * Replace post_content with card-block markup when the incoming Micropub
 	 * request matches a known post kind. Skipped when:
 	 *   - the post ID is missing (request shape malformed)
@@ -121,6 +142,10 @@ final class Micropub_Content_Builder {
 		if ( empty( $properties ) ) {
 			return;
 		}
+
+		// Honor a surface-promote flag from the client (e.g. Outpost) before
+		// any content early-return, so it lands for every recognized post.
+		self::apply_promote( $post_id, $properties );
 
 		// Assign the kind taxonomy term before touching content — the term
 		// must land even when the content path below returns early (builder

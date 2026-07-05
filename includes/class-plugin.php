@@ -539,6 +539,11 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\AI_Enhancements' ) ) {
 			$this->ai_enhancements = AI_Enhancements::get_instance();
 		}
+
+		// Post-surface classification (stream vs main) + promote override.
+		if ( class_exists( __NAMESPACE__ . '\\Post_Surface' ) ) {
+			( new Post_Surface() )->register();
+		}
 	}
 
 	/**

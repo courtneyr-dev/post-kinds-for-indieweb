@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Post-surface classification: a `pkiw_stream_kinds` filter marks kinds as ephemeral (`stream`) vs `main`, cached in `_pkiw_surface`; a `pkiw_promote` override is settable via the editor toggle, the Micropub `pkiw-promote` property, or `wp postkind surfaces backfill`. The plugin emits the signal only — themes decide how to use it. Default `pkiw_stream_kinds` is empty, so existing sites are unaffected.
+
 ### Fixed
 
 - Block editor icons render with `currentColor` so they stay legible against the List View selection highlight.
