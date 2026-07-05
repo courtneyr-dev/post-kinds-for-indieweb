@@ -14,16 +14,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
-$pkiw_mood      = $attributes['mood'] ?? '';
-$pkiw_emoji     = $attributes['emoji'] ?? '😊';
-$pkiw_note      = $attributes['note'] ?? '';
-$pkiw_intensity = isset( $attributes['intensity'] ) ? (int) $attributes['intensity'] : 0;
-$pkiw_mood_at   = $attributes['moodAt'] ?? '';
-$pkiw_layout    = $attributes['layout'] ?? 'horizontal';
+use function PostKindsForIndieWeb\get_kind_icon_svg;
+
+$pkiw_mood    = $attributes['mood'] ?? '';
+$pkiw_emoji   = $attributes['emoji'] ?? '😊';
+$pkiw_note    = $attributes['note'] ?? '';
+$pkiw_mood_at = $attributes['moodAt'] ?? '';
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
-		'class' => 'mood-card layout-' . esc_attr( $pkiw_layout ),
+		'class' => 'pk-card k-mood h-entry',
 	]
 );
 
@@ -39,37 +39,30 @@ if ( $pkiw_mood_at ) {
 
 ob_start();
 ?>
-<div <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<div class="post-kinds-card post-kinds-card--mood h-entry">
-		<div class="post-kinds-card__emoji-section">
-			<div class="post-kinds-card__emoji-display">
-				<span class="post-kinds-card__emoji-large" role="img" aria-label="<?php echo esc_attr( $pkiw_mood ? $pkiw_mood : __( 'mood', 'post-kinds-for-indieweb' ) ); ?>">
-					<?php echo esc_html( $pkiw_emoji ); ?>
-				</span>
-			</div>
-			<div class="post-kinds-card__intensity-dots" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: intensity */ __( 'Intensity: %d out of 5', 'post-kinds-for-indieweb' ), $pkiw_intensity ) ); ?>">
-				<?php
-				for ( $pkiw_i = 0; $pkiw_i < 5; $pkiw_i++ ) :
-					$pkiw_filled = $pkiw_i < $pkiw_intensity ? ' filled' : '';
-					?>
-					<span class="post-kinds-card__intensity-dot<?php echo esc_attr( $pkiw_filled ); ?>"></span>
-				<?php endfor; ?>
-			</div>
-		</div>
-		<div class="post-kinds-card__content">
-			<?php if ( $pkiw_mood ) : ?>
-				<h3 class="post-kinds-card__title p-name"><?php echo esc_html( $pkiw_mood ); ?></h3>
+<article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+	<div class="pk-badge"><?php echo get_kind_icon_svg( 'mood' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
+	<div class="pk-body">
+		<p class="pk-kindlabel"><?php esc_html_e( 'Mood', 'post-kinds-for-indieweb' ); ?></p>
+
+		<div class="pk-mood">
+			<?php if ( $pkiw_emoji ) : ?>
+				<span class="pk-mood__emoji" aria-hidden="true"><?php echo esc_html( $pkiw_emoji ); ?></span>
 			<?php endif; ?>
 			<?php if ( $pkiw_note ) : ?>
-				<p class="post-kinds-card__notes p-content"><?php echo wp_kses_post( $pkiw_note ); ?></p>
-			<?php endif; ?>
-			<?php if ( $pkiw_mood_iso ) : ?>
-				<time class="post-kinds-card__timestamp dt-published" datetime="<?php echo esc_attr( $pkiw_mood_iso ); ?>">
-					<?php echo esc_html( $pkiw_mood_display ); ?>
-				</time>
+				<p class="pk-mood__note p-content"><?php echo wp_kses_post( $pkiw_note ); ?></p>
 			<?php endif; ?>
 		</div>
+
+		<?php if ( $pkiw_mood_iso ) : ?>
+			<div class="pk-meta">
+				<time class="dt-published" datetime="<?php echo esc_attr( $pkiw_mood_iso ); ?>"><?php echo esc_html( $pkiw_mood_display ); ?></time>
+			</div>
+		<?php endif; ?>
 	</div>
-</div>
+
+	<?php if ( $pkiw_mood ) : ?>
+		<data class="p-name" value="<?php echo esc_attr( $pkiw_mood ); ?>" hidden></data>
+	<?php endif; ?>
+</article>
 <?php
 echo ob_get_clean(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

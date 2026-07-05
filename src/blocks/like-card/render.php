@@ -2,8 +2,10 @@
 /**
  * Like Card Block - Server-side Render
  *
- * Generates the like card HTML from block attributes. Mirrors the
- * deprecated static save output so existing content migrates 1:1.
+ * Renders the like card in the two-layer pk-card system: plugin owns
+ * structure (badge → label → title → sub → note → meta), theme owns paint
+ * via --pk-* custom properties. The linked title carries the `u-like-of`
+ * microformats2 class so parsers see the liked URL.
  *
  * @package PostKindsForIndieWeb
  * @var array    $attributes Block attributes.
@@ -17,6 +19,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
+use function PostKindsForIndieWeb\get_kind_icon_svg;
+
 $pkiw_title       = $attributes['title'] ?? '';
 $pkiw_url         = $attributes['url'] ?? '';
 $pkiw_description = $attributes['description'] ?? '';
@@ -25,7 +29,6 @@ $pkiw_image_alt   = $attributes['imageAlt'] ?? '';
 $pkiw_author      = $attributes['author'] ?? '';
 $pkiw_liked_at    = $attributes['likedAt'] ?? '';
 $pkiw_rel         = $attributes['rel'] ?? '';
-$pkiw_layout      = $attributes['layout'] ?? 'horizontal';
 
 $pkiw_link_rel = $pkiw_rel
 	? 'noopener noreferrer ' . esc_attr( $pkiw_rel )
@@ -33,61 +36,47 @@ $pkiw_link_rel = $pkiw_rel
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
-		'class' => 'like-card layout-' . esc_attr( $pkiw_layout ),
+		'class' => 'pk-card k-like h-cite',
 	]
 );
 
 ob_start();
 ?>
-<div <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<div class="post-kinds-card h-cite">
-		<?php if ( $pkiw_image ) : ?>
-			<div class="post-kinds-card__media">
-				<img
-					src="<?php echo esc_url( $pkiw_image ); ?>"
-					alt="<?php echo esc_attr( $pkiw_image_alt ? $pkiw_image_alt : $pkiw_title ); ?>"
-					class="post-kinds-card__image u-photo"
-					loading="lazy"
-				/>
-			</div>
+<article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+	<div class="pk-badge"><?php echo get_kind_icon_svg( 'like' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
+	<div class="pk-body">
+		<p class="pk-kindlabel"><?php esc_html_e( 'Like', 'post-kinds-for-indieweb' ); ?></p>
+
+		<?php if ( $pkiw_title ) : ?>
+			<h3 class="pk-title p-name">
+				<?php if ( $pkiw_url ) : ?>
+					<a class="u-url u-like-of" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_title ); ?></a>
+				<?php else : ?>
+					<?php echo esc_html( $pkiw_title ); ?>
+				<?php endif; ?>
+			</h3>
 		<?php endif; ?>
 
-		<div class="post-kinds-card__content">
-			<span class="post-kinds-card__badge">
-				&hearts; <?php esc_html_e( 'Liked', 'post-kinds-for-indieweb' ); ?>
-			</span>
+		<?php if ( $pkiw_author ) : ?>
+			<p class="pk-sub">
+				<span class="p-author h-card"><span class="p-name"><?php echo esc_html( $pkiw_author ); ?></span></span>
+			</p>
+		<?php endif; ?>
 
-			<?php if ( $pkiw_title ) : ?>
-				<h3 class="post-kinds-card__title p-name">
-					<?php if ( $pkiw_url ) : ?>
-						<a href="<?php echo esc_url( $pkiw_url ); ?>" class="u-url u-like-of" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>">
-							<?php echo esc_html( $pkiw_title ); ?>
-						</a>
-					<?php else : ?>
-						<?php echo esc_html( $pkiw_title ); ?>
-					<?php endif; ?>
-				</h3>
-			<?php endif; ?>
+		<?php if ( $pkiw_description ) : ?>
+			<p class="pk-note p-content"><?php echo esc_html( $pkiw_description ); ?></p>
+		<?php endif; ?>
 
-			<?php if ( $pkiw_author ) : ?>
-				<p class="post-kinds-card__subtitle p-author h-card">
-					<span class="p-name"><?php echo esc_html( $pkiw_author ); ?></span>
-				</p>
-			<?php endif; ?>
+		<?php if ( $pkiw_image ) : ?>
+			<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_image ); ?>" alt="<?php echo esc_attr( $pkiw_image_alt ? $pkiw_image_alt : $pkiw_title ); ?>" loading="lazy" /></div>
+		<?php endif; ?>
 
-			<?php if ( $pkiw_description ) : ?>
-				<p class="post-kinds-card__notes p-content">
-					<?php echo esc_html( $pkiw_description ); ?>
-				</p>
-			<?php endif; ?>
-
-			<?php if ( $pkiw_liked_at ) : ?>
-				<time class="post-kinds-card__timestamp dt-published" datetime="<?php echo esc_attr( gmdate( 'c', strtotime( $pkiw_liked_at ) ) ); ?>">
-					<?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $pkiw_liked_at ) ) ); ?>
-				</time>
-			<?php endif; ?>
-		</div>
+		<?php if ( $pkiw_liked_at ) : ?>
+			<div class="pk-meta">
+				<time class="dt-published" datetime="<?php echo esc_attr( gmdate( 'c', strtotime( $pkiw_liked_at ) ) ); ?>"><?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $pkiw_liked_at ) ) ); ?></time>
+			</div>
+		<?php endif; ?>
 	</div>
-</div>
+</article>
 <?php
 echo ob_get_clean(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

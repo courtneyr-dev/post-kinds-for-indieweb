@@ -23,30 +23,50 @@
 	--pk-thumb: 56px;
 	--pk-badge: 34px;
 	--pk-maxw: 38rem;
-}
 
-/* ---- PAINT TOKENS · NEUTRAL DEFAULT (what any site gets, no theme) ----
-   Restrained: near-monochrome + one cool accent. Each default reads an old
-   --pkiw-* override first, then the neutral literal. */
-:where(.pk-card) {
-	--pk-bg: var(--pkiw-card-page-bg, #ffffff);
-	--pk-surface: var(--pkiw-card-bg, #ffffff);
+	/* ---- PAINT TOKENS · NEUTRAL DEFAULT (what any site gets, no theme) ----
+	   Restrained: near-monochrome + one cool accent. Each default reads an old
+	   --pkiw-* override first, then the neutral literal. */
+	--pk-bg: var(--pkiw-card-page-bg, #fff);
+	--pk-surface: var(--pkiw-card-bg, #fff);
 	--pk-ink: var(--pkiw-card-fg, #1c1c1e);
 	--pk-muted: var(--pkiw-card-text-secondary, #6b6b70);
 	--pk-border: var(--pkiw-card-border, #e4e4e7);
 	--pk-accent: var(--pkiw-card-accent, #3a6ea5);
-	--pk-accent-ink: #ffffff;
+	--pk-accent-ink: #fff;
 	--pk-kind: #52525b;
 	--pk-tint: transparent;
 	--pk-paper: #f4f4f5;
 	--pk-paper-pad: 0;
-	--pk-font-body: var( --pkiw-card-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif );
+	--pk-font-body: var(--pkiw-card-font, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
 	--pk-font-title: var(--pk-font-body);
-	--pk-font-meta: ui-monospace, SFMono-Regular, Menlo, monospace;
+	--pk-font-meta: ui-monospace, sfmono-regular, menlo, monospace;
 	--pk-label-bg: transparent;
 	--pk-label-rot: 0deg;
 	--pk-title-weight: 600;
 	--pk-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* ---- PAINT TOKENS · NEUTRAL DARK DEFAULT ----
+   Any site whose visitor prefers dark gets a sensible dark card with no theme
+   work. Still paint-only (var overrides) — structure is untouched. A theme's
+   own dark rules override these because they carry class specificity while
+   these live in :where() (zero specificity). Honors --pkiw-*-dark overrides
+   first, then the dark literal. */
+@media (prefers-color-scheme: dark) {
+
+	:where(.pk-card) {
+		--pk-bg: var(--pkiw-card-page-bg-dark, #101012);
+		--pk-surface: var(--pkiw-card-bg-dark, #1b1b1f);
+		--pk-ink: var(--pkiw-card-fg-dark, #ececee);
+		--pk-muted: var(--pkiw-card-text-secondary-dark, #a1a1aa);
+		--pk-border: var(--pkiw-card-border-dark, #34343b);
+		--pk-accent: var(--pkiw-card-accent-dark, #7db3e8);
+		--pk-accent-ink: #0d0d0f;
+		--pk-kind: #a1a1aa;
+		--pk-paper: #26262c;
+		--pk-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+	}
 }
 
 /* ---- THE CARD — structure only ---- */
@@ -66,8 +86,9 @@
 	max-width: var(--pk-maxw);
 	position: relative;
 }
+
 .pk-card::before {
-	content: '';
+	content: "";
 	position: absolute;
 	inset: 0;
 	border-radius: inherit;
@@ -75,6 +96,7 @@
 	opacity: 0.5;
 	pointer-events: none;
 }
+
 .pk-card > * {
 	position: relative;
 }
@@ -90,6 +112,7 @@
 	background: var(--pk-kind);
 	color: var(--pk-badge-ink, #fff);
 }
+
 .pk-badge svg {
 	width: 18px;
 	height: 18px;
@@ -99,6 +122,7 @@
 .pk-body {
 	min-width: 0;
 }
+
 .pk-kindlabel {
 	display: inline-block;
 	font-family: var(--pk-font-meta);
@@ -114,6 +138,7 @@
 	box-shadow: var(--pk-label-shadow, none);
 	border-radius: 1px;
 }
+
 .pk-title {
 	font-family: var(--pk-font-title);
 	font-weight: var(--pk-title-weight);
@@ -122,20 +147,24 @@
 	margin: 0;
 	color: var(--pk-ink);
 }
+
 .pk-title a {
 	color: inherit;
 	text-decoration: none;
 }
+
 .pk-title a:hover {
 	text-decoration: underline;
 	text-decoration-color: var(--pk-kind);
 }
+
 .pk-sub {
 	color: var(--pk-muted);
 	font-size: 0.925rem;
 	line-height: 1.45;
 	margin: var(--pk-space-1) 0 0;
 }
+
 .pk-note {
 	margin: var(--pk-space-3) 0 0;
 	line-height: 1.55;
@@ -149,10 +178,12 @@
 	align-items: flex-start;
 	margin-top: var(--pk-space-3);
 }
+
 .pk-media__body {
 	min-width: 0;
 	flex: 1;
 }
+
 .pk-thumb {
 	width: var(--pk-thumb);
 	height: var(--pk-thumb);
@@ -162,6 +193,7 @@
 	background: var(--pk-border);
 	border: 1px solid var(--pk-border);
 }
+
 .pk-thumb--poster {
 	width: 48px;
 	height: 70px;
@@ -177,6 +209,7 @@
 	background: var(--pk-paper);
 	padding: var(--pk-paper-pad);
 }
+
 .pk-embed > iframe,
 .pk-embed > img {
 	display: block;
@@ -184,15 +217,18 @@
 	border: 0;
 	border-radius: calc(var(--pk-radius-sm) - 3px);
 }
+
 .pk-embed--audio > iframe {
 	height: 152px;
 }
+
 .pk-embed--video > iframe,
 .pk-embed--map > iframe {
 	width: 100%;
 	aspect-ratio: 16 / 9;
 	height: auto;
 }
+
 .pk-embed--photo > img {
 	aspect-ratio: 16 / 10;
 	object-fit: cover;
@@ -209,18 +245,22 @@
 	font-size: 0.75rem;
 	color: var(--pk-muted);
 }
+
+/* stylelint-disable-next-line no-descending-specificity */
 .pk-meta a {
 	color: var(--pk-muted);
 	text-decoration: none;
 }
+
 .pk-meta a:hover {
 	color: var(--pk-kind);
 }
+
 .pk-dot {
 	width: 3px;
 	height: 3px;
 	border-radius: 50%;
-	background: currentColor;
+	background: currentcolor;
 	opacity: 0.5;
 }
 
@@ -246,10 +286,12 @@
 	color: var(--pk-kind);
 	margin-top: var(--pk-space-2);
 }
+
 .pk-stars svg {
 	width: 14px;
 	height: 14px;
 }
+
 .pk-stars .off {
 	opacity: 0.28;
 }
@@ -265,9 +307,11 @@
 	color: var(--pk-accent);
 	text-decoration: none;
 }
+
 .pk-link:hover {
 	text-decoration: underline;
 }
+
 .pk-link svg {
 	width: 13px;
 	height: 13px;
@@ -279,11 +323,13 @@
 	align-items: center;
 	gap: var(--pk-space-4);
 }
+
 .pk-mood__emoji {
 	font-size: 2rem;
 	line-height: 1;
 	flex: none;
 }
+
 .pk-mood__note {
 	font-size: 1.15rem;
 	line-height: 1.35;
@@ -304,35 +350,44 @@
 	box-shadow: none;
 	border-radius: var(--pk-radius-sm);
 }
+
 .pk-card--compact .pk-badge {
 	width: 28px;
 	height: 28px;
 }
+
 .pk-card--compact .pk-badge svg {
 	width: 15px;
 	height: 15px;
 }
+
 .pk-card--compact .pk-title {
 	font-size: 0.975rem;
 }
+
 .pk-card--compact .pk-thumb {
 	width: 44px;
 	height: 44px;
 }
+
 .pk-card--compact .pk-thumb--poster {
 	width: 38px;
 	height: 56px;
 }
+
 .pk-card--compact .pk-note {
 	margin-top: var(--pk-space-2);
 	font-size: 0.925rem;
 }
+
 .pk-card--compact .pk-meta {
 	margin-top: var(--pk-space-2);
 }
+
 .pk-card--compact::before {
 	opacity: 0.32;
 }
+
 .pk-card--compact .pk-embed {
 	display: none;
 }

@@ -63,9 +63,16 @@ ob_start();
 				<?php if ( $pkiw_artist_name ) : ?>
 					<span class="p-author h-card"><span class="p-name"><?php echo esc_html( $pkiw_artist_name ); ?></span></span>
 				<?php endif; ?>
-				<?php if ( $pkiw_artist_name && $pkiw_album_title ) : ?> &mdash; <?php endif; ?>
+				<?php
+				if ( $pkiw_artist_name && $pkiw_album_title ) :
+					?>
+					&mdash; <?php endif; ?>
 				<?php if ( $pkiw_album_title ) : ?>
-					<em><?php echo esc_html( $pkiw_album_title ); ?></em><?php if ( $pkiw_release_date ) : ?> (<?php echo esc_html( gmdate( 'Y', (int) strtotime( $pkiw_release_date ) ) ); ?>)<?php endif; ?>
+					<em><?php echo esc_html( $pkiw_album_title ); ?></em>
+					<?php
+					if ( $pkiw_release_date ) :
+						?>
+						(<?php echo esc_html( gmdate( 'Y', (int) strtotime( $pkiw_release_date ) ) ); ?>)<?php endif; ?>
 				<?php endif; ?>
 			</p>
 		<?php endif; ?>
@@ -88,7 +95,10 @@ ob_start();
 			<?php if ( $pkiw_listen_url ) : ?>
 				<a class="pk-link" href="<?php echo esc_url( $pkiw_listen_url ); ?>" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 9-14 9z"/></svg><?php esc_html_e( 'Listen', 'post-kinds-for-indieweb' ); ?></a>
 			<?php endif; ?>
-			<?php if ( $pkiw_listen_url && $pkiw_listened_at ) : ?><span class="pk-dot"></span><?php endif; ?>
+			<?php
+			if ( $pkiw_listen_url && $pkiw_listened_at ) :
+				?>
+				<span class="pk-dot"></span><?php endif; ?>
 			<?php if ( $pkiw_listened_at ) : ?>
 				<time class="dt-published" datetime="<?php echo esc_attr( gmdate( 'c', (int) strtotime( $pkiw_listened_at ) ) ); ?>"><?php echo esc_html( wp_date( get_option( 'date_format' ), (int) strtotime( $pkiw_listened_at ) ) ); ?></time>
 			<?php endif; ?>

@@ -2,8 +2,10 @@
 /**
  * Jam Card Block - Server-side Render
  *
- * Generates the full jam card HTML from block attributes and appends
- * an oEmbed player when the URL matches a whitelisted provider.
+ * Renders the jam card in the two-layer pk-card system: plugin owns
+ * structure (badge → label → title → sub → embed/media → meta), theme owns
+ * paint via --pk-* custom properties. Appends a cached oEmbed player when the
+ * jam URL matches a registered provider.
  *
  * @package PostKindsForIndieWeb
  * @var array    $attributes Block attributes.
@@ -18,6 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
 use function PostKindsForIndieWeb\get_cached_embed_html;
+use function PostKindsForIndieWeb\get_kind_icon_svg;
 
 $pkiw_title     = $attributes['title'] ?? '';
 $pkiw_artist    = $attributes['artist'] ?? '';
@@ -28,84 +31,74 @@ $pkiw_url       = $attributes['url'] ?? '';
 $pkiw_note      = $attributes['note'] ?? '';
 $pkiw_jammed_at = $attributes['jammedAt'] ?? '';
 $pkiw_rel       = $attributes['rel'] ?? '';
-$pkiw_layout    = $attributes['layout'] ?? 'horizontal';
 
 $pkiw_link_rel = $pkiw_rel
 	? 'noopener noreferrer ' . esc_attr( $pkiw_rel )
 	: 'noopener noreferrer';
 
+$pkiw_embed = $pkiw_url ? get_cached_embed_html( $pkiw_url ) : false;
+
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
-		'class' => 'jam-card layout-' . esc_attr( $pkiw_layout ),
+		'class' => 'pk-card k-jam h-cite',
 	]
 );
 
 ob_start();
 ?>
-<div <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<div class="post-kinds-card h-cite">
-		<span class="post-kinds-card__type-icon" aria-hidden="true">&#127908;</span>
-		<?php if ( $pkiw_cover ) : ?>
-			<div class="post-kinds-card__media">
-				<img
-					src="<?php echo esc_url( $pkiw_cover ); ?>"
-					alt="<?php echo esc_attr( $pkiw_cover_alt ? $pkiw_cover_alt : $pkiw_title . ' by ' . $pkiw_artist ); ?>"
-					class="post-kinds-card__image u-photo"
-					loading="lazy"
-				/>
-			</div>
+<article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+	<div class="pk-badge"><?php echo get_kind_icon_svg( 'jam' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
+	<div class="pk-body">
+		<p class="pk-kindlabel"><?php esc_html_e( 'Jam', 'post-kinds-for-indieweb' ); ?></p>
+
+		<?php if ( $pkiw_title ) : ?>
+			<h3 class="pk-title p-name">
+				<?php if ( $pkiw_url ) : ?>
+					<a class="u-url u-jam-of" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_title ); ?></a>
+				<?php else : ?>
+					<?php echo esc_html( $pkiw_title ); ?>
+				<?php endif; ?>
+			</h3>
 		<?php endif; ?>
 
-		<div class="post-kinds-card__content">
-			<span class="post-kinds-card__badge">
-				&#127925; Now Playing
-			</span>
+		<?php if ( $pkiw_artist || $pkiw_album ) : ?>
+			<p class="pk-sub">
+				<?php if ( $pkiw_artist ) : ?>
+					<span class="p-author h-card"><span class="p-name"><?php echo esc_html( $pkiw_artist ); ?></span></span>
+				<?php endif; ?>
+				<?php
+				if ( $pkiw_artist && $pkiw_album ) :
+					?>
+					&mdash; <?php endif; ?>
+				<?php if ( $pkiw_album ) : ?>
+					<em><?php echo esc_html( $pkiw_album ); ?></em>
+				<?php endif; ?>
+			</p>
+		<?php endif; ?>
 
-			<?php if ( $pkiw_title ) : ?>
-				<h3 class="post-kinds-card__title p-name">
-					<?php if ( $pkiw_url ) : ?>
-						<a href="<?php echo esc_url( $pkiw_url ); ?>" class="u-url u-jam-of" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>">
-							<?php echo esc_html( $pkiw_title ); ?>
-						</a>
-					<?php else : ?>
-						<?php echo esc_html( $pkiw_title ); ?>
-					<?php endif; ?>
-				</h3>
+		<?php if ( $pkiw_note ) : ?>
+			<p class="pk-note p-content"><?php echo esc_html( $pkiw_note ); ?></p>
+		<?php endif; ?>
+
+		<?php if ( $pkiw_embed ) : ?>
+			<div class="pk-embed pk-embed--audio"><?php echo $pkiw_embed; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
+		<?php elseif ( $pkiw_cover ) : ?>
+			<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_cover ); ?>" alt="<?php echo esc_attr( $pkiw_cover_alt ? $pkiw_cover_alt : $pkiw_title . ' by ' . $pkiw_artist ); ?>" loading="lazy" /></div>
+		<?php endif; ?>
+
+		<div class="pk-meta">
+			<?php if ( $pkiw_url ) : ?>
+				<a class="pk-link" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 9-14 9z"/></svg><?php esc_html_e( 'Jam', 'post-kinds-for-indieweb' ); ?></a>
 			<?php endif; ?>
-
-			<?php if ( $pkiw_artist ) : ?>
-				<p class="post-kinds-card__subtitle p-author h-card">
-					<span class="p-name"><?php echo esc_html( $pkiw_artist ); ?></span>
-				</p>
-			<?php endif; ?>
-
-			<?php if ( $pkiw_album ) : ?>
-				<p class="post-kinds-card__meta"><?php echo esc_html( $pkiw_album ); ?></p>
-			<?php endif; ?>
-
-			<?php if ( $pkiw_note ) : ?>
-				<p class="post-kinds-card__notes p-content">
-					<?php echo esc_html( $pkiw_note ); ?>
-				</p>
-			<?php endif; ?>
-
+			<?php
+			if ( $pkiw_url && $pkiw_jammed_at ) :
+				?>
+				<span class="pk-dot"></span><?php endif; ?>
 			<?php if ( $pkiw_jammed_at ) : ?>
-				<time class="post-kinds-card__timestamp dt-published" datetime="<?php echo esc_attr( gmdate( 'c', strtotime( $pkiw_jammed_at ) ) ); ?>">
-					<?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $pkiw_jammed_at ) ) ); ?>
-				</time>
+				<time class="dt-published" datetime="<?php echo esc_attr( gmdate( 'c', (int) strtotime( $pkiw_jammed_at ) ) ); ?>"><?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) strtotime( $pkiw_jammed_at ) ) ); ?></time>
 			<?php endif; ?>
 		</div>
-
 	</div>
-
-	<?php
-	if ( $pkiw_url ) {
-		$pkiw_embed = get_cached_embed_html( $pkiw_url );
-		if ( $pkiw_embed ) {
-			echo '<div class="post-kinds-card__embed-section">' . $pkiw_embed . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		}
-	}
-	?>
-</div>
+</article>
 <?php
 echo ob_get_clean(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

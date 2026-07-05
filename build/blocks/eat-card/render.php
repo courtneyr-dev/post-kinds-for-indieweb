@@ -2,6 +2,10 @@
 /**
  * Eat Card Block - Server-side Render
  *
+ * Renders the eat card in the two-layer pk-card system: plugin owns
+ * structure (badge → label → title → sub → embed → note → meta), theme owns
+ * paint via --pk-* custom properties.
+ *
  * @package PostKindsForIndieWeb
  * @var array    $attributes Block attributes.
  * @var string   $content    Block content (empty for dynamic blocks).
@@ -13,6 +17,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
+
+use function PostKindsForIndieWeb\get_kind_icon_svg;
 
 $pkiw_name              = $attributes['name'] ?? '';
 $pkiw_restaurant        = $attributes['restaurant'] ?? '';
@@ -30,11 +36,10 @@ $pkiw_location_region   = $attributes['locationRegion'] ?? '';
 $pkiw_location_country  = $attributes['locationCountry'] ?? '';
 $pkiw_geo_lat           = isset( $attributes['geoLatitude'] ) ? (float) $attributes['geoLatitude'] : 0.0;
 $pkiw_geo_lon           = isset( $attributes['geoLongitude'] ) ? (float) $attributes['geoLongitude'] : 0.0;
-$pkiw_layout            = $attributes['layout'] ?? 'horizontal';
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
-		'class' => 'eat-card layout-' . esc_attr( $pkiw_layout ),
+		'class' => 'pk-card k-eat h-food',
 	]
 );
 
@@ -51,103 +56,82 @@ if ( $pkiw_ate_at ) {
 
 ob_start();
 ?>
-<div <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<div class="post-kinds-card h-food">
-		<?php if ( $pkiw_photo ) : ?>
-			<div class="post-kinds-card__media">
-				<img
-					src="<?php echo esc_url( $pkiw_photo ); ?>"
-					alt="<?php echo esc_attr( $pkiw_photo_alt ? $pkiw_photo_alt : $pkiw_name ); ?>"
-					class="post-kinds-card__image u-photo"
-					loading="lazy"
-				/>
+<article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+	<div class="pk-badge"><?php echo get_kind_icon_svg( 'eat' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
+	<div class="pk-body">
+		<p class="pk-kindlabel"><?php esc_html_e( 'Ate', 'post-kinds-for-indieweb' ); ?></p>
+
+		<?php if ( $pkiw_name ) : ?>
+			<h3 class="pk-title p-name"><?php echo esc_html( $pkiw_name ); ?></h3>
+		<?php endif; ?>
+
+		<?php if ( $pkiw_restaurant || $pkiw_cuisine ) : ?>
+			<p class="pk-sub">
+				<?php if ( $pkiw_restaurant ) : ?>
+					<span class="p-location h-card"><span class="p-name"><?php echo esc_html( $pkiw_restaurant ); ?></span></span>
+				<?php endif; ?>
+				<?php
+				if ( $pkiw_restaurant && $pkiw_cuisine ) :
+					?>
+					&mdash; <?php endif; ?>
+				<?php if ( $pkiw_cuisine ) : ?>
+					<em><?php echo esc_html( $pkiw_cuisine ); ?></em>
+				<?php endif; ?>
+			</p>
+		<?php endif; ?>
+
+		<?php if ( $pkiw_location_name ) : ?>
+			<p class="pk-sub p-location h-card">
+				<?php if ( $pkiw_restaurant_url ) : ?>
+					<a class="pk-chip p-name u-url" href="<?php echo esc_url( $pkiw_restaurant_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_location_name ); ?></a>
+				<?php else : ?>
+					<span class="pk-chip p-name"><?php echo esc_html( $pkiw_location_name ); ?></span>
+				<?php endif; ?>
+				<?php if ( $pkiw_location_address ) : ?>
+					<span class="p-street-address"><?php echo esc_html( $pkiw_location_address ); ?></span>
+				<?php endif; ?>
+				<?php if ( $pkiw_location_locality ) : ?>
+					<span class="p-locality"><?php echo esc_html( $pkiw_location_locality ); ?></span>
+				<?php endif; ?>
+				<?php if ( $pkiw_location_region ) : ?>
+					<span class="p-region"><?php echo esc_html( $pkiw_location_region ); ?></span>
+				<?php endif; ?>
+				<?php if ( $pkiw_location_country ) : ?>
+					<span class="p-country-name"><?php echo esc_html( $pkiw_location_country ); ?></span>
+				<?php endif; ?>
+				<?php if ( 0.0 !== $pkiw_geo_lat || 0.0 !== $pkiw_geo_lon ) : ?>
+					<data class="p-geo h-geo" value="<?php echo esc_attr( $pkiw_geo_lat . ',' . $pkiw_geo_lon ); ?>" hidden>
+						<span class="p-latitude"><?php echo esc_html( (string) $pkiw_geo_lat ); ?></span>
+						<span class="p-longitude"><?php echo esc_html( (string) $pkiw_geo_lon ); ?></span>
+					</data>
+				<?php endif; ?>
+			</p>
+		<?php endif; ?>
+
+		<?php if ( $pkiw_rating > 0 ) : ?>
+			<div class="pk-stars p-rating" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb' ), $pkiw_rating ) ); ?>">
+				<?php for ( $pkiw_i = 1; $pkiw_i <= 5; $pkiw_i++ ) : ?>
+					<svg class="<?php echo $pkiw_i <= $pkiw_rating ? '' : 'off'; ?>" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17l-6.9 3.5 1.6-6.8L1.4 9.1l7-.6z"/></svg>
+				<?php endfor; ?>
 			</div>
 		<?php endif; ?>
 
-		<div class="post-kinds-card__content">
-			<?php if ( $pkiw_cuisine ) : ?>
-				<span class="post-kinds-card__badge"><?php echo esc_html( $pkiw_cuisine ); ?></span>
-			<?php endif; ?>
+		<?php if ( $pkiw_photo ) : ?>
+			<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_photo ); ?>" alt="<?php echo esc_attr( $pkiw_photo_alt ? $pkiw_photo_alt : $pkiw_name ); ?>" loading="lazy" /></div>
+		<?php endif; ?>
 
-			<?php if ( $pkiw_name ) : ?>
-				<h3 class="post-kinds-card__title p-name"><?php echo esc_html( $pkiw_name ); ?></h3>
-			<?php endif; ?>
+		<?php if ( $pkiw_notes ) : ?>
+			<p class="pk-note p-content"><?php echo wp_kses_post( $pkiw_notes ); ?></p>
+		<?php endif; ?>
 
-			<?php if ( $pkiw_restaurant ) : ?>
-				<p class="post-kinds-card__subtitle p-location h-card">
-					<span class="p-name"><?php echo esc_html( $pkiw_restaurant ); ?></span>
-				</p>
-			<?php endif; ?>
-
-			<?php if ( $pkiw_location_name ) : ?>
-				<div class="post-kinds-card__location p-location h-card">
-					<p class="post-kinds-card__venue">
-						<?php if ( $pkiw_restaurant_url ) : ?>
-							<a href="<?php echo esc_url( $pkiw_restaurant_url ); ?>" class="p-name u-url" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_location_name ); ?></a>
-						<?php else : ?>
-							<span class="p-name"><?php echo esc_html( $pkiw_location_name ); ?></span>
-						<?php endif; ?>
-					</p>
-					<?php if ( $pkiw_location_address ) : ?>
-						<p class="post-kinds-card__address p-street-address"><?php echo esc_html( $pkiw_location_address ); ?></p>
-					<?php endif; ?>
-					<?php if ( $pkiw_location_locality || $pkiw_location_region || $pkiw_location_country ) : ?>
-						<p class="post-kinds-card__city">
-							<?php if ( $pkiw_location_locality ) : ?>
-								<span class="p-locality"><?php echo esc_html( $pkiw_location_locality ); ?></span>
-							<?php endif; ?>
-							<?php
-							if ( $pkiw_location_locality && $pkiw_location_region ) {
-								echo ', ';
-							}
-							?>
-							<?php if ( $pkiw_location_region ) : ?>
-								<span class="p-region"><?php echo esc_html( $pkiw_location_region ); ?></span>
-							<?php endif; ?>
-							<?php
-							if ( ( $pkiw_location_locality || $pkiw_location_region ) && $pkiw_location_country ) {
-								echo ', ';
-							}
-							?>
-							<?php if ( $pkiw_location_country ) : ?>
-								<span class="p-country-name"><?php echo esc_html( $pkiw_location_country ); ?></span>
-							<?php endif; ?>
-						</p>
-					<?php endif; ?>
-					<?php if ( 0.0 !== $pkiw_geo_lat || 0.0 !== $pkiw_geo_lon ) : ?>
-						<data class="p-geo h-geo" value="<?php echo esc_attr( $pkiw_geo_lat . ',' . $pkiw_geo_lon ); ?>" hidden>
-							<span class="p-latitude"><?php echo esc_html( (string) $pkiw_geo_lat ); ?></span>
-							<span class="p-longitude"><?php echo esc_html( (string) $pkiw_geo_lon ); ?></span>
-						</data>
-					<?php endif; ?>
-				</div>
-			<?php endif; ?>
-
-			<?php if ( $pkiw_rating > 0 ) : ?>
-				<div class="post-kinds-card__rating p-rating" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating value */ __( 'Rating: %d out of 5', 'post-kinds-for-indieweb' ), $pkiw_rating ) ); ?>">
-					<?php
-					for ( $pkiw_i = 0; $pkiw_i < 5; $pkiw_i++ ) :
-						$pkiw_filled = $pkiw_i < $pkiw_rating ? ' filled' : '';
-						?>
-						<span class="star<?php echo esc_attr( $pkiw_filled ); ?>" aria-hidden="true">★</span>
-					<?php endfor; ?>
-					<span class="post-kinds-card__rating-value"><?php echo esc_html( $pkiw_rating . '/5' ); ?></span>
-				</div>
-			<?php endif; ?>
-
-			<?php if ( $pkiw_notes ) : ?>
-				<p class="post-kinds-card__notes p-content"><?php echo wp_kses_post( $pkiw_notes ); ?></p>
-			<?php endif; ?>
-
+		<div class="pk-meta">
 			<?php if ( $pkiw_ate_iso ) : ?>
-				<time class="post-kinds-card__timestamp dt-published" datetime="<?php echo esc_attr( $pkiw_ate_iso ); ?>">
-					<?php echo esc_html( $pkiw_ate_display ); ?>
-				</time>
+				<time class="dt-published" datetime="<?php echo esc_attr( $pkiw_ate_iso ); ?>"><?php echo esc_html( $pkiw_ate_display ); ?></time>
 			<?php endif; ?>
 		</div>
-
-		<data class="u-ate" value="<?php echo esc_attr( $pkiw_name ); ?>" hidden></data>
 	</div>
-</div>
+
+	<data class="u-ate" value="<?php echo esc_attr( $pkiw_name ); ?>" hidden></data>
+</article>
 <?php
 echo ob_get_clean(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
