@@ -133,13 +133,6 @@ final class Plugin {
 	private ?Block_Bindings_Formats $block_bindings_formats = null;
 
 	/**
-	 * Format Badge block instance (WP 7.0+).
-	 *
-	 * @var Blocks\Format_Badge|null
-	 */
-	private ?Blocks\Format_Badge $format_badge_block = null;
-
-	/**
 	 * AI Enhancements instance (WP 7.0+).
 	 *
 	 * @var AI_Enhancements|null
@@ -541,11 +534,6 @@ final class Plugin {
 		// Post format block bindings source.
 		if ( class_exists( __NAMESPACE__ . '\\Block_Bindings_Formats' ) ) {
 			$this->block_bindings_formats = new Block_Bindings_Formats();
-		}
-
-		// Format badge block with Block Hooks.
-		if ( class_exists( __NAMESPACE__ . '\\Blocks\\Format_Badge' ) ) {
-			$this->format_badge_block = new Blocks\Format_Badge();
 		}
 
 		if ( class_exists( __NAMESPACE__ . '\\AI_Enhancements' ) ) {
@@ -1376,15 +1364,6 @@ final class Plugin {
 	 */
 	public function get_block_bindings_formats(): ?Block_Bindings_Formats {
 		return $this->block_bindings_formats;
-	}
-
-	/**
-	 * Get the Format Badge block (WP 7.0+).
-	 *
-	 * @return Blocks\Format_Badge|null The instance or null if not loaded.
-	 */
-	public function get_format_badge_block(): ?Blocks\Format_Badge {
-		return $this->format_badge_block;
 	}
 
 	/**
