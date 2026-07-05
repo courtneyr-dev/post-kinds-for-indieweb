@@ -28,6 +28,68 @@ final class Post_Surface {
 	public const MAIN   = 'main';
 
 	/**
+	 * Wire meta registration and the save-time cache.
+	 *
+	 * @return void
+	 */
+	public function register(): void {
+		// Components are wired during the plugin's own init pass, so init may
+		// already be running/done — register meta directly in that case,
+		// otherwise defer to init for callers that wire up earlier.
+		if ( did_action( 'init' ) ) {
+			$this->register_meta();
+		} else {
+			add_action( 'init', [ $this, 'register_meta' ] );
+		}
+		add_action( 'save_post', [ $this, 'on_save' ], 20, 1 );
+	}
+
+	/**
+	 * Register the promote override meta and the derived surface meta.
+	 *
+	 * @return void
+	 */
+	public function register_meta(): void {
+		register_post_meta(
+			'post',
+			'pkiw_promote',
+			[
+				'type'          => 'boolean',
+				'single'        => true,
+				'default'       => false,
+				'show_in_rest'  => true,
+				'auth_callback' => static fn() => current_user_can( 'edit_posts' ),
+			]
+		);
+		register_post_meta(
+			'post',
+			'_pkiw_surface',
+			[
+				'type'          => 'string',
+				'single'        => true,
+				'show_in_rest'  => false,
+				'auth_callback' => '__return_false',
+			]
+		);
+	}
+
+	/**
+	 * Recompute and cache the surface when a post is saved.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return void
+	 */
+	public function on_save( int $post_id ): void {
+		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+			return;
+		}
+		if ( 'post' !== get_post_type( $post_id ) ) {
+			return;
+		}
+		update_post_meta( $post_id, '_pkiw_surface', self::get( $post_id ) );
+	}
+
+	/**
 	 * Compute the surface for a post.
 	 *
 	 * @param int|\WP_Post $post Post ID or object.
@@ -46,7 +108,7 @@ final class Post_Surface {
 		 *
 		 * @param string[] $stream_kinds Kind slugs. Default empty (opt-in).
 		 */
-		$stream_kinds = (array) apply_filters( 'pk_stream_kinds', [] );
+		$stream_kinds = (array) apply_filters( 'pkiw_stream_kinds', [] );
 
 		$surface = self::MAIN;
 
@@ -65,7 +127,7 @@ final class Post_Surface {
 		 * @param string   $surface 'stream' or 'main'.
 		 * @param \WP_Post $post    The post being classified.
 		 */
-		return (string) apply_filters( 'pk_post_surface', $surface, $post );
+		return (string) apply_filters( 'pkiw_post_surface', $surface, $post );
 	}
 
 	/**
@@ -75,6 +137,6 @@ final class Post_Surface {
 	 * @return bool
 	 */
 	private static function is_promoted( int $post_id ): bool {
-		return (bool) get_post_meta( $post_id, 'pk_promote', true );
+		return (bool) get_post_meta( $post_id, 'pkiw_promote', true );
 	}
 }
