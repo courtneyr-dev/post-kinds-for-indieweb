@@ -67,7 +67,17 @@ test.describe( 'Visual Regression', () => {
 		await page.waitForURL( '**/wp-admin/**' );
 	} );
 
+	// Blocks whose editor preview renders live query results can't be
+	// pixel-snapshotted: checkins-feed lists whatever posts exist in the
+	// DB (count varies with which specs ran first) and shows each post's
+	// creation date, which is always the run date on a fresh CI database.
+	// Behavioral coverage lives in block-field-matrix.spec.js.
+	const QUERY_DRIVEN_EXCLUSIONS = [ 'post-kinds-indieweb/checkins-feed' ];
+
 	for ( const [ name, def ] of Object.entries( matrix ) ) {
+		if ( QUERY_DRIVEN_EXCLUSIONS.includes( name ) ) {
+			continue;
+		}
 		const slug = name.replace( 'post-kinds-indieweb/', '' );
 
 		test( `${ slug } block appearance (populated)`, async ( { page } ) => {
