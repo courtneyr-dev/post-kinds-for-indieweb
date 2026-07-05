@@ -4,7 +4,7 @@
 
 **Goal:** Add a reusable, filterable "post surface" classification to Post Kinds for IndieWeb so any install can mark certain kinds as ephemeral (stream) vs main, with a per-post promote override settable from the editor, Micropub, and WP-CLI.
 
-**Architecture:** A pure classifier (`get_post_surface()`) reads a `pk_stream_kinds` filter plus a `pk_promote` meta and returns `stream|main`; a `save_post` hook caches the result in a protected `_pk_surface` meta so sites can query it cheaply. PKIW never filters a site's queries — it only produces the signal. A Micropub property and a WP-CLI backfill are additional writers of the same `pk_promote`/`_pk_surface` pair.
+**Architecture:** A pure classifier (`get_post_surface()`) reads a `pkiw_stream_kinds` filter plus a `pkiw_promote` meta and returns `stream|main`; a `save_post` hook caches the result in a protected `_pkiw_surface` meta so sites can query it cheaply. PKIW never filters a site's queries — it only produces the signal. A Micropub property and a WP-CLI backfill are additional writers of the same `pkiw_promote`/`_pkiw_surface` pair.
 
 **Tech Stack:** PHP 8.2, WordPress 7.0, PHPUnit ^9.6 (WP_UnitTestCase integration + unit), `@wordpress/scripts` block editor JS, WP-CLI.
 
@@ -13,8 +13,8 @@
 - Min WP 7.0, Min PHP 8.2 (verbatim from CLAUDE.md).
 - Text domain `post-kinds-for-indieweb`; all user strings wrapped in `__()`.
 - Security Trinity: sanitize input → validate data → escape output; `current_user_can()` on writes.
-- Naming (verbatim from spec): filter `pk_stream_kinds`; public override meta `pk_promote`; derived protected meta `_pk_surface`; override filter `pk_post_surface`; Micropub property `pk-promote`.
-- `pk_stream_kinds` default is the empty array — zero behavior change for existing installs.
+- Naming (verbatim from spec): filter `pkiw_stream_kinds`; public override meta `pkiw_promote`; derived protected meta `_pkiw_surface`; override filter `pkiw_post_surface`; Micropub property `pkiw-promote`.
+- `pkiw_stream_kinds` default is the empty array — zero behavior change for existing installs.
 - Surface values are exactly the strings `'stream'` and `'main'`.
 - Kind taxonomy slug is `kind`.
 - Emoji-Log commits; every commit ends with the `Co-Authored-By: Claude <noreply@anthropic.com>` trailer.
@@ -25,21 +25,21 @@
 - Create `includes/class-post-surface.php` — the `Post_Surface` class: classifier, meta registration, save hook. One responsibility: compute and cache a post's surface.
 - Modify `includes/class-plugin.php` — instantiate `Post_Surface` in the same block that wires other components.
 - Modify `includes/class-cli-commands.php` — add the `surfaces backfill` subcommand.
-- Modify `includes/class-micropub-content-builder.php` — map the `pk-promote` property to `pk_promote` meta. (Exact hook confirmed in Task 5.)
+- Modify `includes/class-micropub-content-builder.php` — map the `pkiw-promote` property to `pkiw_promote` meta. (Exact hook confirmed in Task 5.)
 - Create `src/editor/promote-panel/index.js` — the editor sidebar toggle.
 - Modify `src/editor/index.js` — import the promote panel.
 - Test: `tests/phpunit/unit/PostSurfaceTest.php`, `tests/phpunit/integration/PostSurfaceMetaTest.php`, `tests/phpunit/integration/MicropubPromoteTest.php`.
 
 ---
 
-### Task 1: Surface classifier + `pk_stream_kinds` filter
+### Task 1: Surface classifier + `pkiw_stream_kinds` filter
 
 **Files:**
 - Create: `includes/class-post-surface.php`
 - Test: `tests/phpunit/integration/PostSurfaceMetaTest.php` (uses real terms/meta; classifier needs WP term functions)
 
 **Interfaces:**
-- Produces: `\PostKindsForIndieWeb\Post_Surface::get( int|\WP_Post $post ): string` returning `'stream'` or `'main'`. Reads `apply_filters( 'pk_stream_kinds', [] )` (array of kind slugs), the post's `kind` terms, the `pk_promote` meta (truthy → forced `'main'`), then `apply_filters( 'pk_post_surface', string $surface, \WP_Post $post )`.
+- Produces: `\PostKindsForIndieWeb\Post_Surface::get( int|\WP_Post $post ): string` returning `'stream'` or `'main'`. Reads `apply_filters( 'pkiw_stream_kinds', [] )` (array of kind slugs), the post's `kind` terms, the `pkiw_promote` meta (truthy → forced `'main'`), then `apply_filters( 'pkiw_post_surface', string $surface, \WP_Post $post )`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -52,28 +52,28 @@ final class PostSurfaceMetaTest extends WP_UnitTestCase {
 		return $id;
 	}
 	public function test_non_stream_kind_is_main(): void {
-		add_filter( 'pk_stream_kinds', fn() => [ 'checkin' ] );
+		add_filter( 'pkiw_stream_kinds', fn() => [ 'checkin' ] );
 		$id = $this->post_with_kind( 'article' );
 		$this->assertSame( 'main', \PostKindsForIndieWeb\Post_Surface::get( $id ) );
 	}
 	public function test_stream_kind_is_stream(): void {
-		add_filter( 'pk_stream_kinds', fn() => [ 'checkin' ] );
+		add_filter( 'pkiw_stream_kinds', fn() => [ 'checkin' ] );
 		$id = $this->post_with_kind( 'checkin' );
 		$this->assertSame( 'stream', \PostKindsForIndieWeb\Post_Surface::get( $id ) );
 	}
 	public function test_promote_forces_main(): void {
-		add_filter( 'pk_stream_kinds', fn() => [ 'checkin' ] );
+		add_filter( 'pkiw_stream_kinds', fn() => [ 'checkin' ] );
 		$id = $this->post_with_kind( 'checkin' );
-		update_post_meta( $id, 'pk_promote', 1 );
+		update_post_meta( $id, 'pkiw_promote', 1 );
 		$this->assertSame( 'main', \PostKindsForIndieWeb\Post_Surface::get( $id ) );
 	}
 	public function test_empty_default_filter_is_main(): void {
 		$id = $this->post_with_kind( 'checkin' );
 		$this->assertSame( 'main', \PostKindsForIndieWeb\Post_Surface::get( $id ) );
 	}
-	public function test_pk_post_surface_filter_overrides(): void {
-		add_filter( 'pk_stream_kinds', fn() => [ 'checkin' ] );
-		add_filter( 'pk_post_surface', fn() => 'main' );
+	public function test_pkiw_post_surface_filter_overrides(): void {
+		add_filter( 'pkiw_stream_kinds', fn() => [ 'checkin' ] );
+		add_filter( 'pkiw_post_surface', fn() => 'main' );
 		$id = $this->post_with_kind( 'checkin' );
 		$this->assertSame( 'main', \PostKindsForIndieWeb\Post_Surface::get( $id ) );
 	}
@@ -107,7 +107,7 @@ final class Post_Surface {
 			return self::MAIN;
 		}
 
-		$stream_kinds = (array) apply_filters( 'pk_stream_kinds', [] );
+		$stream_kinds = (array) apply_filters( 'pkiw_stream_kinds', [] );
 		$surface      = self::MAIN;
 
 		if ( ! empty( $stream_kinds ) && ! self::is_promoted( $post->ID ) ) {
@@ -123,11 +123,11 @@ final class Post_Surface {
 		 * @param string   $surface 'stream' or 'main'.
 		 * @param \WP_Post $post    The post.
 		 */
-		return (string) apply_filters( 'pk_post_surface', $surface, $post );
+		return (string) apply_filters( 'pkiw_post_surface', $surface, $post );
 	}
 
 	private static function is_promoted( int $post_id ): bool {
-		return (bool) get_post_meta( $post_id, 'pk_promote', true );
+		return (bool) get_post_meta( $post_id, 'pkiw_promote', true );
 	}
 }
 ```
@@ -142,14 +142,14 @@ Expected: PASS (5 tests).
 
 ```bash
 git add includes/class-post-surface.php tests/phpunit/integration/PostSurfaceMetaTest.php
-git commit -m "📦 NEW: post-surface classifier with pk_stream_kinds + pk_post_surface filters
+git commit -m "📦 NEW: post-surface classifier with pkiw_stream_kinds + pkiw_post_surface filters
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 2: Register `pk_promote` + cache `_pk_surface` on save
+### Task 2: Register `pkiw_promote` + cache `_pkiw_surface` on save
 
 **Files:**
 - Modify: `includes/class-post-surface.php` (add `register()`, meta registration, `on_save()`)
@@ -158,22 +158,22 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `Post_Surface::get()` from Task 1.
-- Produces: post meta `pk_promote` (bool, REST-exposed) and `_pk_surface` (string, protected) kept in sync on `save_post`. `Post_Surface::register(): void` wires `init` (meta) and `save_post` (cache).
+- Produces: post meta `pkiw_promote` (bool, REST-exposed) and `_pkiw_surface` (string, protected) kept in sync on `save_post`. `Post_Surface::register(): void` wires `init` (meta) and `save_post` (cache).
 
 - [ ] **Step 1: Write the failing test**
 
 ```php
 // append to PostSurfaceMetaTest.php
 	public function test_save_caches_surface_meta(): void {
-		add_filter( 'pk_stream_kinds', fn() => [ 'checkin' ] );
+		add_filter( 'pkiw_stream_kinds', fn() => [ 'checkin' ] );
 		$id = self::factory()->post->create();
 		wp_set_object_terms( $id, 'checkin', 'kind' );
 		wp_update_post( [ 'ID' => $id ] ); // fire save_post
-		$this->assertSame( 'stream', get_post_meta( $id, '_pk_surface', true ) );
+		$this->assertSame( 'stream', get_post_meta( $id, '_pkiw_surface', true ) );
 	}
 	public function test_promote_meta_is_rest_registered(): void {
-		$this->assertTrue( registered_meta_key_exists( 'post', 'pk_promote' ) );
-		$obj = get_registered_meta_keys( 'post' )['pk_promote'];
+		$this->assertTrue( registered_meta_key_exists( 'post', 'pkiw_promote' ) );
+		$obj = get_registered_meta_keys( 'post' )['pkiw_promote'];
 		$this->assertTrue( $obj['show_in_rest'] );
 	}
 ```
@@ -181,7 +181,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - [ ] **Step 2: Run to verify it fails**
 
 Run: `composer test -- --filter PostSurfaceMetaTest`
-Expected: FAIL — `_pk_surface` empty / `pk_promote` not registered.
+Expected: FAIL — `_pkiw_surface` empty / `pkiw_promote` not registered.
 
 - [ ] **Step 3: Add registration + save hook**
 
@@ -193,14 +193,14 @@ Expected: FAIL — `_pk_surface` empty / `pk_promote` not registered.
 	}
 
 	public function register_meta(): void {
-		register_post_meta( 'post', 'pk_promote', [
+		register_post_meta( 'post', 'pkiw_promote', [
 			'type'          => 'boolean',
 			'single'        => true,
 			'default'       => false,
 			'show_in_rest'  => true,
 			'auth_callback' => fn() => current_user_can( 'edit_posts' ),
 		] );
-		register_post_meta( 'post', '_pk_surface', [
+		register_post_meta( 'post', '_pkiw_surface', [
 			'type'          => 'string',
 			'single'        => true,
 			'show_in_rest'  => false,
@@ -215,7 +215,7 @@ Expected: FAIL — `_pk_surface` empty / `pk_promote` not registered.
 		if ( 'post' !== get_post_type( $post_id ) ) {
 			return;
 		}
-		update_post_meta( $post_id, '_pk_surface', self::get( $post_id ) );
+		update_post_meta( $post_id, '_pkiw_surface', self::get( $post_id ) );
 	}
 ```
 
@@ -240,14 +240,14 @@ Expected: PASS (7 tests).
 
 ```bash
 git add includes/class-post-surface.php includes/class-plugin.php tests/phpunit/integration/PostSurfaceMetaTest.php
-git commit -m "📦 NEW: register pk_promote meta and cache _pk_surface on save
+git commit -m "📦 NEW: register pkiw_promote meta and cache _pkiw_surface on save
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 3: WP-CLI `wp pk surfaces backfill`
+### Task 3: WP-CLI `wp postkind surfaces backfill`
 
 **Files:**
 - Modify: `includes/class-cli-commands.php`
@@ -255,20 +255,20 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `Post_Surface::get()`.
-- Produces: a CLI method `surfaces( $args, $assoc_args )` under the existing `pk` command that recomputes `_pk_surface` for all posts and reports a count.
+- Produces: a CLI method `surfaces( $args, $assoc_args )` under the existing `pk` command that recomputes `_pkiw_surface` for all posts and reports a count.
 
 - [ ] **Step 1: Write the failing test** (drive the shared backfill helper, not the CLI I/O)
 
 ```php
 	public function test_backfill_recomputes_all(): void {
-		add_filter( 'pk_stream_kinds', fn() => [ 'checkin' ] );
+		add_filter( 'pkiw_stream_kinds', fn() => [ 'checkin' ] );
 		$a = self::factory()->post->create(); wp_set_object_terms( $a, 'checkin', 'kind' );
 		$b = self::factory()->post->create(); wp_set_object_terms( $b, 'article', 'kind' );
-		delete_post_meta( $a, '_pk_surface' ); delete_post_meta( $b, '_pk_surface' );
+		delete_post_meta( $a, '_pkiw_surface' ); delete_post_meta( $b, '_pkiw_surface' );
 		$count = \PostKindsForIndieWeb\Post_Surface::backfill();
 		$this->assertSame( 2, $count );
-		$this->assertSame( 'stream', get_post_meta( $a, '_pk_surface', true ) );
-		$this->assertSame( 'main', get_post_meta( $b, '_pk_surface', true ) );
+		$this->assertSame( 'stream', get_post_meta( $a, '_pkiw_surface', true ) );
+		$this->assertSame( 'main', get_post_meta( $b, '_pkiw_surface', true ) );
 	}
 ```
 
@@ -284,7 +284,7 @@ Expected: FAIL — `Post_Surface::backfill()` undefined.
 	public static function backfill(): int {
 		$ids = get_posts( [ 'post_type' => 'post', 'post_status' => 'any', 'numberposts' => -1, 'fields' => 'ids' ] );
 		foreach ( $ids as $id ) {
-			update_post_meta( $id, '_pk_surface', self::get( $id ) );
+			update_post_meta( $id, '_pkiw_surface', self::get( $id ) );
 		}
 		return count( $ids );
 	}
@@ -293,20 +293,20 @@ Expected: FAIL — `Post_Surface::backfill()` undefined.
 ```php
 // in class-cli-commands.php, add a method to the registered `pk` command class:
 	/**
-	 * Recompute the cached _pk_surface for every post.
+	 * Recompute the cached _pkiw_surface for every post.
 	 *
 	 * ## EXAMPLES
-	 *     wp pk surfaces backfill
+	 *     wp postkind surfaces backfill
 	 *
 	 * @subcommand surfaces
 	 */
 	public function surfaces( $args, $assoc_args ) {
 		$sub = $args[0] ?? '';
 		if ( 'backfill' !== $sub ) {
-			\WP_CLI::error( 'Usage: wp pk surfaces backfill' );
+			\WP_CLI::error( 'Usage: wp postkind surfaces backfill' );
 		}
 		$n = \PostKindsForIndieWeb\Post_Surface::backfill();
-		\WP_CLI::success( sprintf( 'Recomputed _pk_surface for %d posts.', $n ) );
+		\WP_CLI::success( sprintf( 'Recomputed _pkiw_surface for %d posts.', $n ) );
 	}
 ```
 
@@ -319,7 +319,7 @@ Expected: PASS.
 
 ```bash
 git add includes/class-post-surface.php includes/class-cli-commands.php tests/phpunit/integration/PostSurfaceMetaTest.php
-git commit -m "📦 NEW: wp pk surfaces backfill recomputes cached surfaces
+git commit -m "📦 NEW: wp postkind surfaces backfill recomputes cached surfaces
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
@@ -334,15 +334,15 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - Test: `tests/e2e/promote-toggle.spec.js`
 
 **Interfaces:**
-- Consumes: the `pk_promote` REST meta from Task 2.
-- Produces: a `PluginDocumentSettingPanel` with a `ToggleControl` bound to `meta.pk_promote`, registered only for the `post` type.
+- Consumes: the `pkiw_promote` REST meta from Task 2.
+- Produces: a `PluginDocumentSettingPanel` with a `ToggleControl` bound to `meta.pkiw_promote`, registered only for the `post` type.
 
 - [ ] **Step 1: Write the failing e2e test**
 
 ```js
 // tests/e2e/promote-toggle.spec.js
 const { test, expect } = require( '@playwright/test' );
-test( 'promote toggle persists pk_promote meta', async ( { page } ) => {
+test( 'promote toggle persists pkiw_promote meta', async ( { page } ) => {
 	await page.goto( '/wp-login.php' );
 	await page.fill( '#user_login', 'admin' ); await page.fill( '#user_pass', 'password' );
 	await page.click( '#wp-submit' ); await page.waitForURL( '**/wp-admin/**' );
@@ -352,7 +352,7 @@ test( 'promote toggle persists pk_promote meta', async ( { page } ) => {
 	await page.getByRole( 'button', { name: /Post Kinds/i } ).click();
 	await page.getByLabel( /Promote to main archive/i ).check();
 	await expect.poll( () =>
-		page.evaluate( () => window.wp.data.select( 'core/editor' ).getEditedPostAttribute( 'meta' ).pk_promote )
+		page.evaluate( () => window.wp.data.select( 'core/editor' ).getEditedPostAttribute( 'meta' ).pkiw_promote )
 	).toBe( true );
 } );
 ```
@@ -375,22 +375,22 @@ import { __ } from '@wordpress/i18n';
 const PromotePanel = () => {
 	const { postType, promote } = useSelect( ( select ) => ( {
 		postType: select( 'core/editor' ).getCurrentPostType(),
-		promote: select( 'core/editor' ).getEditedPostAttribute( 'meta' )?.pk_promote,
+		promote: select( 'core/editor' ).getEditedPostAttribute( 'meta' )?.pkiw_promote,
 	} ), [] );
 	const { editPost } = useDispatch( 'core/editor' );
 	if ( postType !== 'post' ) return null;
 	return (
-		<PluginDocumentSettingPanel name="pk-promote" title={ __( 'Post surface', 'post-kinds-for-indieweb' ) }>
+		<PluginDocumentSettingPanel name="pkiw-promote" title={ __( 'Post surface', 'post-kinds-for-indieweb' ) }>
 			<ToggleControl
 				label={ __( 'Promote to main archive', 'post-kinds-for-indieweb' ) }
 				help={ __( 'Show this post on the main archive even if its kind is normally stream-only.', 'post-kinds-for-indieweb' ) }
 				checked={ !! promote }
-				onChange={ ( value ) => editPost( { meta: { pk_promote: value } } ) }
+				onChange={ ( value ) => editPost( { meta: { pkiw_promote: value } } ) }
 			/>
 		</PluginDocumentSettingPanel>
 	);
 };
-registerPlugin( 'pk-promote-panel', { render: PromotePanel } );
+registerPlugin( 'pkiw-promote-panel', { render: PromotePanel } );
 ```
 
 ```js
@@ -414,15 +414,15 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 ---
 
-### Task 5: Micropub `pk-promote` → `pk_promote`
+### Task 5: Micropub `pkiw-promote` → `pkiw_promote`
 
 **Files:**
 - Modify: `includes/class-micropub-content-builder.php` (or the confirmed handler)
 - Test: `tests/phpunit/integration/MicropubPromoteTest.php`
 
 **Interfaces:**
-- Consumes: the `pk_promote` meta from Task 2.
-- Produces: on Micropub create, a truthy `pk-promote` property sets `pk_promote` meta on the new post.
+- Consumes: the `pkiw_promote` meta from Task 2.
+- Produces: on Micropub create, a truthy `pkiw-promote` property sets `pkiw_promote` meta on the new post.
 
 - [ ] **Step 0 (discovery): confirm the handler.** Run:
 
@@ -438,15 +438,15 @@ Identify the hook that fires with the incoming Micropub properties and the new p
 ```php
 // tests/phpunit/integration/MicropubPromoteTest.php
 final class MicropubPromoteTest extends WP_UnitTestCase {
-	public function test_pk_promote_property_sets_meta(): void {
+	public function test_pkiw_promote_property_sets_meta(): void {
 		$id = self::factory()->post->create();
-		\PostKindsForIndieWeb\Micropub_Content_Builder::apply_promote( $id, [ 'pk-promote' => [ '1' ] ] );
-		$this->assertSame( '1', get_post_meta( $id, 'pk_promote', true ) );
+		\PostKindsForIndieWeb\Micropub_Content_Builder::apply_promote( $id, [ 'pkiw-promote' => [ '1' ] ] );
+		$this->assertSame( '1', get_post_meta( $id, 'pkiw_promote', true ) );
 	}
 	public function test_absent_property_leaves_meta_unset(): void {
 		$id = self::factory()->post->create();
 		\PostKindsForIndieWeb\Micropub_Content_Builder::apply_promote( $id, [] );
-		$this->assertSame( '', get_post_meta( $id, 'pk_promote', true ) );
+		$this->assertSame( '', get_post_meta( $id, 'pkiw_promote', true ) );
 	}
 }
 ```
@@ -461,10 +461,10 @@ Expected: FAIL — `apply_promote` undefined.
 ```php
 // in class-micropub-content-builder.php:
 	public static function apply_promote( int $post_id, array $properties ): void {
-		if ( empty( $properties['pk-promote'] ) ) { return; }
-		$val = is_array( $properties['pk-promote'] ) ? reset( $properties['pk-promote'] ) : $properties['pk-promote'];
+		if ( empty( $properties['pkiw-promote'] ) ) { return; }
+		$val = is_array( $properties['pkiw-promote'] ) ? reset( $properties['pkiw-promote'] ) : $properties['pkiw-promote'];
 		if ( in_array( (string) $val, [ '1', 'true', 'yes', 'on' ], true ) ) {
-			update_post_meta( $post_id, 'pk_promote', 1 );
+			update_post_meta( $post_id, 'pkiw_promote', 1 );
 		}
 	}
 ```
@@ -483,7 +483,7 @@ Expected: PASS.
 
 ```bash
 git add includes/class-micropub-content-builder.php tests/phpunit/integration/MicropubPromoteTest.php
-git commit -m "📦 NEW: map Micropub pk-promote property to pk_promote meta
+git commit -m "📦 NEW: map Micropub pkiw-promote property to pkiw_promote meta
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
@@ -503,13 +503,13 @@ Add under the FAQ (above `== Changelog ==`):
 ```
 = How do I route certain kinds into a separate "stream" instead of the main archive? =
 
-Add the kind slugs to the `pk_stream_kinds` filter. Those kinds get a cached
-`_pk_surface` value of `stream` (others get `main`); your theme decides what to
+Add the kind slugs to the `pkiw_stream_kinds` filter. Those kinds get a cached
+`_pkiw_surface` value of `stream` (others get `main`); your theme decides what to
 do with it. Promote an individual post back to `main` with the "Promote to main
-archive" toggle, the Micropub `pk-promote` property, or by setting the
-`pk_promote` meta. Recommended starting set: checkin, eat, drink, listen, jam.
+archive" toggle, the Micropub `pkiw-promote` property, or by setting the
+`pkiw_promote` meta. Recommended starting set: checkin, eat, drink, listen, jam.
 
-    add_filter( 'pk_stream_kinds', fn() => [ 'checkin', 'eat', 'drink', 'listen', 'jam' ] );
+    add_filter( 'pkiw_stream_kinds', fn() => [ 'checkin', 'eat', 'drink', 'listen', 'jam' ] );
 ```
 
 - [ ] **Step 2: Add CHANGELOG entry**
@@ -517,14 +517,14 @@ archive" toggle, the Micropub `pk-promote` property, or by setting the
 Under `## [Unreleased]` → `### Added`:
 
 ```
-- Post-surface classification: a `pk_stream_kinds` filter marks kinds as ephemeral (`stream`) vs `main`, cached in `_pk_surface`; a `pk_promote` override is settable via the editor toggle, the Micropub `pk-promote` property, or `wp pk surfaces backfill`. PKIW emits the signal only; themes decide how to use it.
+- Post-surface classification: a `pkiw_stream_kinds` filter marks kinds as ephemeral (`stream`) vs `main`, cached in `_pkiw_surface`; a `pkiw_promote` override is settable via the editor toggle, the Micropub `pkiw-promote` property, or `wp postkind surfaces backfill`. PKIW emits the signal only; themes decide how to use it.
 ```
 
 - [ ] **Step 3: Commit**
 
 ```bash
 git add readme.txt CHANGELOG.md
-git commit -m "📖 DOC: document pk_stream_kinds surface primitive and pk_promote override
+git commit -m "📖 DOC: document pkiw_stream_kinds surface primitive and pkiw_promote override
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
@@ -537,16 +537,16 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - [ ] **Step 2:** `composer analyze` → `[OK] No errors`.
 - [ ] **Step 3:** `composer test` → full suite OK.
 - [ ] **Step 4:** `npm run lint:js && npm run build` → clean, `build/` staged if changed.
-- [ ] **Step 5:** Push branch `feature/post-surfaces`; open PR titled `📦 NEW: post-surface routing primitive (pk_stream_kinds / pk_promote)`; plain-prose body; `gh pr merge --squash --auto`. Do not tag or release — installing on staging happens via the plan's verification step, and any wp.org/release is a separate, explicitly-gated action.
+- [ ] **Step 5:** Push branch `feature/post-surfaces`; open PR titled `📦 NEW: post-surface routing primitive (pkiw_stream_kinds / pkiw_promote)`; plain-prose body; `gh pr merge --squash --auto`. Do not tag or release — installing on staging happens via the plan's verification step, and any wp.org/release is a separate, explicitly-gated action.
 
 ## Staging verification (after merge, before any release)
 
 - Build the plugin zip from the merged commit; `wp @staging plugin install <zip> --force` (same method used for the 1.2.0 push).
-- `wp @staging eval` a check: create a `checkin` post with `add_filter('pk_stream_kinds', …)` active via a throwaway mu-snippet → assert `_pk_surface = stream`; set `pk_promote` → `main`.
+- `wp @staging eval` a check: create a `checkin` post with `add_filter('pkiw_stream_kinds', …)` active via a throwaway mu-snippet → assert `_pkiw_surface = stream`; set `pkiw_promote` → `main`.
 - Confirm no query behavior changed anywhere (this layer filters nothing): `/feed/` and the Blog page identical to before.
 
 ## Self-Review Notes
 
-- Spec coverage: `pk_stream_kinds` (T1), `pk_promote`+`_pk_surface`+save (T2), CLI backfill (T3), editor toggle (T4), Micropub mapping (T5), docs/default set (T6). Site wiring and Outpost composer are the two follow-on plans, out of scope here by design.
+- Spec coverage: `pkiw_stream_kinds` (T1), `pkiw_promote`+`_pkiw_surface`+save (T2), CLI backfill (T3), editor toggle (T4), Micropub mapping (T5), docs/default set (T6). Site wiring and Outpost composer are the two follow-on plans, out of scope here by design.
 - Naming matches the spec's Global Constraints verbatim.
 - `Post_Surface::get()` static and used consistently across T1–T3, T5.
