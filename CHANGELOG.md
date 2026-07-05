@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Block editor icons render with `currentColor` so they stay legible against the List View selection highlight.
+
+### Removed
+
+- Duplicate registration of the `post-formats/format-badge` block (owned by the Post Formats for Block Themes plugin); the badge is now provided solely by that plugin.
+
 ## [1.2.0] - 2026-07-04
 
 ### Added

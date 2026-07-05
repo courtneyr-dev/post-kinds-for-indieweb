@@ -211,12 +211,6 @@ parameters:
 			path: includes/apis/class-tvmaze.php
 
 		-
-			message: '#^Parameter \#2 \$args of function register_block_type expects array\{api_version\?\: string, title\?\: string, category\?\: string\|null, parent\?\: array\<string\>\|null, ancestor\?\: array\<string\>\|null, allowed_blocks\?\: array\<string\>\|null, icon\?\: string\|null, description\?\: string, \.\.\.\}, array\{api_version\: 3, title\: string, description\: string, category\: ''post\-kinds\-for…'', icon\: ''tag'', keywords\: array\{''format'', ''badge'', ''indicator'', ''post\-format''\}, uses_context\: array\{''postId'', ''postType''\}, supports\: array\{html\: false, inserter\: false, color\: array\{background\: true, text\: true\}, spacing\: array\{padding\: true, margin\: true\}, typography\: array\{fontSize\: true\}, __experimentalBorder\: array\{radius\: true\}\}, \.\.\.\} given\.$#'
-			identifier: argument.type
-			count: 1
-			path: includes/blocks/class-format-badge.php
-
-		-
 			message: '#^Parameter \#2 \$args of function register_block_type expects array\{api_version\?\: string, title\?\: string, category\?\: string\|null, parent\?\: array\<string\>\|null, ancestor\?\: array\<string\>\|null, allowed_blocks\?\: array\<string\>\|null, icon\?\: string\|null, description\?\: string, \.\.\.\}, array\{api_version\: 3, title\: string, description\: string, category\: ''widgets'', icon\: ''chart\-bar'', keywords\: array\{''stats'', ''statistics'', ''listen'', ''watch'', ''read'', ''indieweb''\}, supports\: array\{html\: false, align\: true, alignWide\: false, color\: array\{background\: true, text\: true\}, spacing\: array\{padding\: true, margin\: true\}, typography\: array\{fontSize\: true\}\}, attributes\: array\{period\: array\{type\: ''string'', default\: ''month'', enum\: array\{''week'', ''month'', ''year'', ''all''\}\}\}, \.\.\.\} given\.$#'
 			identifier: argument.type
 			count: 1
