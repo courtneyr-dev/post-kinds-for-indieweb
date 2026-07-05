@@ -7,6 +7,11 @@ name: Visual Baselines
 
 on:
   workflow_dispatch:
+  # Temporary bootstrap trigger: workflow_dispatch only works once this
+  # file is on the default branch, so run on pushes to the branch that
+  # introduces it. Removed before merge.
+  push:
+    branches: [fix/66-linux-visual-baselines]
 
 permissions:
   contents: write
@@ -14,6 +19,10 @@ permissions:
 jobs:
   generate:
     name: Generate Linux baselines
+    # Skip when the triggering commit is this workflow's own baseline
+    # commit (GITHUB_TOKEN pushes normally can't retrigger workflows,
+    # but keep the loop impossible rather than unlikely).
+    if: ${{ !contains(github.event.head_commit.message, 'regenerate Linux visual baselines') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
