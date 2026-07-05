@@ -21,6 +21,38 @@ Block editor support for IndieWeb post kinds (listen, watch, read, checkin, play
 - Escape at render: `esc_html()`, `esc_attr()`, `esc_url()`, `wp_kses_post()`
 - DB queries via `$wpdb->prepare()` only
 - Nonces + `current_user_can()` on every action
+- Secrets (API keys, tokens, credentials) live in env/config only — never in code or commits
+- Public-facing features get a security review pass before shipping
+
+### Testing to capacity
+
+- Every feature and bugfix lands with tests; write the failing test first
+- Cover edge cases and failure paths, not just the happy path — unit + integration, plus e2e (Playwright) where there's a UI
+- No OR-assertions, no self-grading tests
+- CI green is the source of truth over local runs
+
+### Accessibility floor: WCAG 2.2 AA
+
+- Semantic HTML first; ARIA only where semantics can't cover it
+- Keyboard-only pass (everything reachable, no traps, visible focus) + a screen reader spot-check before shipping UI
+
+### Release gate: prepare ≠ ship
+
+Release machinery (version bump, changelog, tag) can be prepared at any time, but never cut a release, tag, or deploy without Courtney's explicit go.
+
+## Commit convention
+
+Commits use [Emoji-Log](https://github.com/ahmadawais/Emoji-Log) going forward — this repo previously used Conventional Commits (`fix:`, `test:`, `docs:`, etc.); the switch is deliberate, starting with this commit. Imperative mood, exactly one prefix:
+
+| Prefix | Use for |
+|---|---|
+| `📦 NEW:` | Something entirely new |
+| `👌 IMPROVE:` | Enhancement / refactor |
+| `🐛 FIX:` | Bug fix |
+| `📖 DOC:` | Documentation |
+| `🚀 RELEASE:` | New version |
+| `🤖 TEST:` | Testing |
+| `‼️ BREAKING:` | Breaks previous versions |
 
 ## Build Commands
 
@@ -41,11 +73,14 @@ npm run test:e2e        # Playwright
 includes/                      # PHP classes
 includes/abilities/            # Abilities API (existing)
 includes/class-abilities-manager.php  # Abilities registration (existing)
-src/blocks/                    # Block source (JS)
+src/blocks/                    # Block source (JS) — registered directly, not build/
 src/interactivity/             # Interactivity API view scripts (new)
-build/                         # Compiled (gitignored)
-tests/Unit/                    # WP_Mock unit tests
-tests/Integration/             # WP_UnitTestCase integration tests
+build/                         # Compiled (tracked, not gitignored — shipped for distribution)
+tests/phpunit/unit/            # PHPUnit unit tests
+tests/phpunit/integration/     # PHPUnit integration tests (WP_UnitTestCase)
+tests/phpunit/fixtures/        # Fixture data (per external API)
+tests/e2e/                     # Playwright e2e, a11y, visual-regression specs
+tests/js/                      # Jest unit tests
 ```
 
 ## WP 7.0 Upgrade (In Progress)
