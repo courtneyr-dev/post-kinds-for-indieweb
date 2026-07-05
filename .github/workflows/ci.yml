@@ -406,6 +406,13 @@ jobs:
           echo "WP_APP_PASSWORD=$(npx wp-env run cli wp user application-password create admin e2e --porcelain)" >> "$GITHUB_ENV"
           echo "PKIW_TEST_PHOTO_HOST=http://172.17.0.1:8888" >> "$GITHUB_ENV"
 
+      # Persist the dismissed welcome guide server-side so no editor spec
+      # depends on an earlier spec's in-page preferences dispatch having
+      # been debounce-saved (the dispatch races store hydration on a
+      # fresh database — see the visual-baselines workflow).
+      - name: Dismiss editor welcome guide
+        run: npx wp-env run cli wp user meta update admin wp_persisted_preferences --format=json '{"core":{"welcomeGuide":false},"core/edit-post":{"welcomeGuide":false},"_modified":"2026-01-01T00:00:00.000Z"}'
+
       - name: Run E2E tests
         run: npm run test:e2e -- --project=chromium
 

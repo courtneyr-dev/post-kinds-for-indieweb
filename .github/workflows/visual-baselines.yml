@@ -7,6 +7,11 @@ name: Visual Baselines
 
 on:
   workflow_dispatch:
+  # Temporary bootstrap trigger: workflow_dispatch only works once this
+  # file is on the default branch, so run on pushes to the branch that
+  # introduces it. Removed before merge.
+  push:
+    branches: [fix/66-linux-visual-baselines]
 
 permissions:
   contents: write
@@ -36,6 +41,13 @@ jobs:
 
       - name: Start wp-env
         run: npm run env:start
+
+      # Persist the dismissed welcome guide server-side before any editor
+      # page loads. The in-page preferences dispatch races store hydration
+      # on a fresh database — the first baseline run baked the welcome
+      # guide modal into every screenshot.
+      - name: Dismiss editor welcome guide
+        run: npx wp-env run cli wp user meta update admin wp_persisted_preferences --format=json '{"core":{"welcomeGuide":false},"core/edit-post":{"welcomeGuide":false},"_modified":"2026-01-01T00:00:00.000Z"}'
 
       - name: Regenerate baselines
         run: npx playwright test tests/e2e/visual-regression.spec.js --project=chromium --update-snapshots
