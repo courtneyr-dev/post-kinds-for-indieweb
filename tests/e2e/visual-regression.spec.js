@@ -58,11 +58,6 @@ const SELECTED_ITEM_SAMPLE = {
 test.slow();
 
 test.describe( 'Visual Regression', () => {
-	test.skip(
-		!! process.env.CI,
-		'Visual baselines are darwin-only; Linux baselines tracked in the follow-up issue — behavioral e2e still runs in CI.'
-	);
-
 	test.beforeEach( async ( { page } ) => {
 		// Login to WordPress admin
 		await page.goto( '/wp-login.php' );
@@ -72,7 +67,17 @@ test.describe( 'Visual Regression', () => {
 		await page.waitForURL( '**/wp-admin/**' );
 	} );
 
+	// Blocks whose editor preview renders live query results can't be
+	// pixel-snapshotted: checkins-feed lists whatever posts exist in the
+	// DB (count varies with which specs ran first) and shows each post's
+	// creation date, which is always the run date on a fresh CI database.
+	// Behavioral coverage lives in block-field-matrix.spec.js.
+	const QUERY_DRIVEN_EXCLUSIONS = [ 'post-kinds-indieweb/checkins-feed' ];
+
 	for ( const [ name, def ] of Object.entries( matrix ) ) {
+		if ( QUERY_DRIVEN_EXCLUSIONS.includes( name ) ) {
+			continue;
+		}
 		const slug = name.replace( 'post-kinds-indieweb/', '' );
 
 		test( `${ slug } block appearance (populated)`, async ( { page } ) => {
