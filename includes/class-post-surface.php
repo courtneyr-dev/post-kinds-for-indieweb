@@ -131,6 +131,26 @@ final class Post_Surface {
 	}
 
 	/**
+	 * Recompute and cache the surface for every post.
+	 *
+	 * @return int Number of posts processed.
+	 */
+	public static function backfill(): int {
+		$ids = get_posts(
+			[
+				'post_type'   => 'post',
+				'post_status' => 'any',
+				'numberposts' => -1,
+				'fields'      => 'ids',
+			]
+		);
+		foreach ( $ids as $id ) {
+			update_post_meta( (int) $id, '_pkiw_surface', self::get( (int) $id ) );
+		}
+		return count( $ids );
+	}
+
+	/**
 	 * Whether a post is explicitly promoted to the main surface.
 	 *
 	 * @param int $post_id Post ID.

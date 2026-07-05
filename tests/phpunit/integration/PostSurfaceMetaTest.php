@@ -57,6 +57,22 @@ final class PostSurfaceMetaTest extends WP_UnitTestCase {
 		$this->assertSame( 'stream', get_post_meta( $id, '_pkiw_surface', true ) );
 	}
 
+	public function test_backfill_recomputes_all(): void {
+		add_filter( 'pkiw_stream_kinds', static fn() => [ 'checkin' ] );
+		$a = self::factory()->post->create();
+		wp_set_object_terms( $a, 'checkin', 'kind' );
+		$b = self::factory()->post->create();
+		wp_set_object_terms( $b, 'article', 'kind' );
+		delete_post_meta( $a, '_pkiw_surface' );
+		delete_post_meta( $b, '_pkiw_surface' );
+
+		$count = \PostKindsForIndieWeb\Post_Surface::backfill();
+
+		$this->assertSame( 2, $count );
+		$this->assertSame( 'stream', get_post_meta( $a, '_pkiw_surface', true ) );
+		$this->assertSame( 'main', get_post_meta( $b, '_pkiw_surface', true ) );
+	}
+
 	public function test_register_meta_exposes_pk_promote_in_rest(): void {
 		// Invoke registration directly — the test framework resets the meta
 		// registry between tests, so we exercise register_meta()'s own output

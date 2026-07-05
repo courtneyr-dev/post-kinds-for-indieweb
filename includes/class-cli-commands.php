@@ -33,6 +33,28 @@ use WP_CLI\Utils;
 class CLI_Commands {
 
 	/**
+	 * Recompute the cached _pkiw_surface value for every post.
+	 *
+	 * Run once after a bulk import that bypasses the normal save hooks.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp postkind surfaces backfill
+	 *
+	 * @param array $args       Positional arguments; expects 'backfill'.
+	 * @param array $assoc_args Associative arguments (unused).
+	 * @return void
+	 */
+	public function surfaces( array $args, array $assoc_args ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		$sub = $args[0] ?? '';
+		if ( 'backfill' !== $sub ) {
+			WP_CLI::error( 'Usage: wp postkind surfaces backfill' );
+		}
+		$count = Post_Surface::backfill();
+		WP_CLI::success( sprintf( 'Recomputed _pkiw_surface for %d posts.', $count ) );
+	}
+
+	/**
 	 * Display check-in statistics.
 	 *
 	 * ## EXAMPLES
