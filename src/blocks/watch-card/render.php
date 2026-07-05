@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
-use function PostKindsForIndieWeb\get_cached_embed_html;
+use function PostKindsForIndieWeb\get_card_embed_html;
 use function PostKindsForIndieWeb\get_kind_icon_svg;
 
 $pkiw_media_title    = $attributes['mediaTitle'] ?? '';
@@ -64,7 +64,7 @@ if ( $pkiw_imdb_id ) {
 	$pkiw_imdb_url = 'https://www.imdb.com/title/' . $pkiw_imdb_id;
 }
 
-$pkiw_embed = $pkiw_watch_url ? get_cached_embed_html( $pkiw_watch_url ) : false;
+$pkiw_embed = $pkiw_watch_url ? get_card_embed_html( $pkiw_watch_url, 'watch' ) : false;
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
