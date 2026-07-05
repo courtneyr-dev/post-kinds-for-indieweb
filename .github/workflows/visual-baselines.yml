@@ -7,11 +7,6 @@ name: Visual Baselines
 
 on:
   workflow_dispatch:
-  # Temporary bootstrap trigger: workflow_dispatch only works once this
-  # file is on the default branch, so run on pushes to the branch that
-  # introduces it. Removed before merge.
-  push:
-    branches: [fix/66-linux-visual-baselines]
 
 permissions:
   contents: write
