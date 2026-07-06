@@ -325,6 +325,7 @@
 
 .post-kinds-star-rating {
 	display: flex;
+	align-items: center;
 	gap: 2px;
 }
 
@@ -381,10 +382,6 @@
 }
 
 /* Numeric "4/5" label sits just after the stars, not jammed against them. */
-.post-kinds-star-rating {
-	align-items: center;
-}
-
 .post-kinds-star-rating .rating-text {
 	margin-left: 8px;
 	font-size: var(--pkiw-card-caption-font-size, 13px);
