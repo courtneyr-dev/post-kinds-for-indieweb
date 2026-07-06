@@ -24,6 +24,7 @@ import {
 	Disabled,
 } from '@wordpress/components';
 import { useState } from '@wordpress/element';
+import apiFetch from '@wordpress/api-fetch';
 import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 import { watchIcon } from '../shared/icons';
@@ -68,6 +69,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const [ showDatePicker, setShowDatePicker ] = useState( false );
 	const [ isSearching, setIsSearching ] = useState( false );
 	const [ searchType, setSearchType ] = useState( 'movie' );
+	const [ isFetchingCover, setIsFetchingCover ] = useState( false );
 
 	const blockProps = useBlockProps( {
 		className: `watch-card layout-${ layout } type-${ mediaType }`,
@@ -112,6 +114,45 @@ export default function Edit( { attributes, setAttributes } ) {
 			posterImage: media.url,
 			posterImageAlt: media.alt || mediaTitle,
 		} );
+	};
+
+	/**
+	 * Fetch cover art for the current title from TMDB (first match).
+	 *
+	 * One-click version of the Media Search: looks the title up and applies
+	 * the top result's poster and metadata without leaving the canvas.
+	 */
+	const fetchCoverArt = async () => {
+		if ( ! mediaTitle ) {
+			return;
+		}
+		setIsFetchingCover( true );
+		try {
+			const lookupType = mediaType === 'movie' ? 'movie' : 'tv';
+			const params = new URLSearchParams( {
+				q: mediaTitle,
+				type: lookupType,
+			} );
+			const response = await apiFetch( {
+				path: `/post-kinds-indieweb/v1/lookup/video?${ params.toString() }`,
+			} );
+			const results = Array.isArray( response )
+				? response
+				: response.results || [];
+			const match = results[ 0 ];
+			if ( match ) {
+				setAttributes( {
+					posterImage: match.poster || match.image || posterImage,
+					posterImageAlt: match.title || match.name || mediaTitle,
+					tmdbId: match.tmdb_id || match.id || tmdbId,
+					releaseYear:
+						match.year || match.release_year || releaseYear,
+				} );
+			}
+		} catch {
+			// Leave the poster as-is; the user can search or upload manually.
+		}
+		setIsFetchingCover( false );
 	};
 
 	// Show placeholder if no media info
@@ -586,6 +627,25 @@ export default function Edit( { attributes, setAttributes } ) {
 								) }
 							/>
 						</MediaUploadCheck>
+						<Button
+							className="fetch-cover-art"
+							variant="secondary"
+							isSmall
+							onClick={ fetchCoverArt }
+							isBusy={ isFetchingCover }
+							disabled={ isFetchingCover }
+							__next40pxDefaultSize
+						>
+							{ posterImage
+								? __(
+										'Replace cover from TMDB',
+										'post-kinds-for-indieweb'
+								  )
+								: __(
+										'Fetch cover from TMDB',
+										'post-kinds-for-indieweb'
+								  ) }
+						</Button>
 					</div>
 
 					<div className="watch-info">
@@ -647,7 +707,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							<div className="rating-display">
 								<StarRating
 									value={ rating }
-									readonly={ true }
+									readOnly={ true }
 									max={ 5 }
 								/>
 							</div>

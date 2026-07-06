@@ -323,12 +323,13 @@
 	gap: 4px;
 }
 
-.post-kinds-card__rating .post-kinds-star-rating {
+.post-kinds-star-rating {
 	display: flex;
+	align-items: center;
 	gap: 2px;
 }
 
-.post-kinds-card__rating .post-kinds-star-rating .star {
+.post-kinds-star-rating .star {
 	padding: 2px;
 	background: none;
 	border: none;
@@ -344,7 +345,7 @@
 	line-height: 1;
 }
 
-.post-kinds-card__rating .post-kinds-star-rating .star svg {
+.post-kinds-star-rating .star svg {
 	width: 1em;
 	height: 1em;
 	fill: currentcolor;
@@ -370,14 +371,38 @@
 	opacity: 1;
 }
 
-.post-kinds-card__rating .post-kinds-star-rating .star.filled {
+.post-kinds-star-rating .star.filled {
 	color: var(--pkiw-state-warning, currentcolor);
 	opacity: 1;
 }
 
-.post-kinds-card__rating .post-kinds-star-rating .star:hover {
+.post-kinds-star-rating .star:hover {
 	color: var(--pkiw-state-warning, currentcolor);
 	opacity: 1;
+}
+
+/* Numeric "4/5" label sits just after the stars, not jammed against them. */
+.post-kinds-star-rating .rating-text {
+	margin-left: 8px;
+	font-size: var(--pkiw-card-caption-font-size, 13px);
+	opacity: var(--pkiw-state-muted-opacity, 0.7);
+}
+
+/* In-canvas rating: breathing room above and below so the stars don't
+   crowd the title or the review field. */
+.rating-display {
+	margin: 6px 0 12px;
+}
+
+.watch-review {
+	margin-top: 4px;
+}
+
+/* One-click cover-art fetch, tucked under the poster. */
+.poster-image .fetch-cover-art {
+	margin-top: 8px;
+	width: 100%;
+	justify-content: center;
 }
 
 /* Notes - user description text, uses site's body font size */
@@ -936,7 +961,7 @@
 }
 
 .layout-compact .post-kinds-card__rating .star,
-.layout-compact .post-kinds-card__rating .post-kinds-star-rating .star {
+.layout-compact .post-kinds-star-rating .star {
 	font-size: var(--pkiw-card-body-font-size, 14px);
 }
 
