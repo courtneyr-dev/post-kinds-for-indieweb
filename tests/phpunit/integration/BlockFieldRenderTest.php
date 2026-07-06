@@ -57,7 +57,10 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 	private function assertion_exceptions(): array {
 		return [
 			'*'                                     => [
-				'layout' => 'enum controls wrapper class, asserted separately',
+				'layout' => 'display-mode enum; the pk-card redesign renders a fixed structure, so cards no longer emit a layout-* wrapper class',
+			],
+			'post-kinds-indieweb/mood-card'         => [
+				'intensity' => 'dropped from the minimal mood card (emoji + note only) in the pk-card redesign',
 			],
 			'post-kinds-indieweb/checkin-card'      => [
 				'venueType'       => 'enum mapped to icon + translated label; unknown values fall back to the Place label, raw slug never echoed',
@@ -157,15 +160,6 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 			$missing,
 			"$block_name: attribute sample(s) missing from rendered output"
 		);
-
-		// layout is asserted as a wrapper class.
-		if ( isset( $attributes['layout'] ) ) {
-			$this->assertStringContainsString(
-				'layout-' . $attributes['layout']['sample'],
-				$html,
-				"$block_name: layout wrapper class missing from rendered output"
-			);
-		}
 
 		$this->assertSame(
 			[],
