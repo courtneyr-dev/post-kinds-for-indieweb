@@ -436,6 +436,7 @@ class Admin {
 			'default_post_format'        => 'aside',
 			'enable_microformats'        => true,
 			'enable_syndication'         => true,
+			'default_category'           => 0,
 
 			// Content settings.
 			'auto_fetch_metadata'        => true,
@@ -623,6 +624,17 @@ class Admin {
 		foreach ( $int_fields as $field => $constraints ) {
 			$value               = isset( $input[ $field ] ) ? absint( $input[ $field ] ) : $defaults[ $field ];
 			$sanitized[ $field ] = max( $constraints['min'], min( $constraints['max'], $value ) );
+		}
+
+		// Default category (a category term id, 0 = none). Handled apart from the
+		// int_fields loop above because it must survive saving a different tab:
+		// fall back to the stored value, not the default, so it isn't wiped.
+		if ( isset( $input['default_category'] ) ) {
+			$sanitized['default_category'] = absint( $input['default_category'] );
+		} elseif ( isset( $old_settings['default_category'] ) ) {
+			$sanitized['default_category'] = absint( $old_settings['default_category'] );
+		} else {
+			$sanitized['default_category'] = 0;
 		}
 
 		// Check if storage mode changed - need to flush rewrite rules.

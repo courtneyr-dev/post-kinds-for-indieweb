@@ -432,6 +432,11 @@ final class Plugin {
 			$this->card_meta_sync = new Card_Meta_Sync();
 		}
 
+		// Applies the site default category to kind-bearing posts (opt-in).
+		if ( class_exists( __NAMESPACE__ . '\\Default_Category' ) ) {
+			new Default_Category();
+		}
+
 		if ( class_exists( __NAMESPACE__ . '\\Book_Completion_Controller' ) ) {
 			$this->book_completion_controller = new Book_Completion_Controller();
 		}
