@@ -60,6 +60,46 @@ final class StreamCardTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A trailing empty paragraph doesn't stop a single-card post from
+	 * reading as a micro-post.
+	 */
+	public function test_card_with_trailing_empty_paragraph_is_micro_post(): void {
+		$content = '<!-- wp:group --><div class="wp-block-group">' .
+			'<!-- wp:post-kinds-indieweb/watch-card {"mediaTitle":"Enola"} /-->' .
+			"</div><!-- /wp:group -->\n\n<!-- wp:paragraph -->\n<p></p>\n<!-- /wp:paragraph -->";
+		$this->assertTrue( \PostKindsForIndieWeb\content_is_kind_card_only( $content ) );
+	}
+
+	/**
+	 * A non-empty trailing paragraph makes it long-form again.
+	 */
+	public function test_card_with_real_paragraph_is_not_micro_post(): void {
+		$content = '<!-- wp:post-kinds-indieweb/watch-card {"mediaTitle":"X"} /-->' .
+			"\n\n<!-- wp:paragraph -->\n<p>Real words.</p>\n<!-- /wp:paragraph -->";
+		$this->assertFalse( \PostKindsForIndieWeb\content_is_kind_card_only( $content ) );
+	}
+
+	/**
+	 * The post date is injected under the card title, before the media.
+	 */
+	public function test_inject_post_date_into_card(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_title' => 'Movie',
+				'post_date'  => '2026-07-05 09:00:00',
+			]
+		);
+		$post = get_post( $post_id );
+		$html = '<h3 class="pk-title p-name"><a href="#">Movie</a></h3><div class="pk-embed"></div>';
+
+		$out = \PostKindsForIndieWeb\inject_post_date_into_card( $html, $post );
+
+		$this->assertStringContainsString( 'pk-stream-date', $out );
+		$this->assertStringContainsString( '<time class="dt-published"', $out );
+		$this->assertLessThan( strpos( $out, 'pk-embed' ), strpos( $out, 'pk-stream-date' ) );
+	}
+
+	/**
 	 * A card wrapped in a group is still a micro-post.
 	 */
 	public function test_group_wrapped_card_is_micro_post(): void {
