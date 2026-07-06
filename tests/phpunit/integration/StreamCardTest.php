@@ -127,14 +127,32 @@ final class StreamCardTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * A long-form post with no kind renders nothing — the Post Template's
-	 * own title and date stand in, and the body never reaches the feed.
+	 * A long-form post with no kind renders a linked title (never the body).
 	 */
-	public function test_long_form_non_watch_renders_nothing(): void {
+	public function test_long_form_non_watch_renders_linked_title(): void {
 		$post_id = self::factory()->post->create(
 			[
 				'post_title'   => 'Just an essay',
 				'post_content' => "<!-- wp:paragraph -->\n<p>Body text.</p>\n<!-- /wp:paragraph -->",
+			]
+		);
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PostKindsForIndieWeb\render_stream_card();
+
+		$this->assertStringContainsString( 'pk-stream-fallback', $html );
+		$this->assertStringContainsString( 'Just an essay', $html );
+		$this->assertStringNotContainsString( 'Body text.', $html );
+	}
+
+	/**
+	 * A title-less long-form post renders nothing (no empty link).
+	 */
+	public function test_long_form_without_title_renders_nothing(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => '',
+				'post_content' => "<!-- wp:paragraph -->\n<p>Body.</p>\n<!-- /wp:paragraph -->",
 			]
 		);
 		$GLOBALS['post'] = get_post( $post_id );

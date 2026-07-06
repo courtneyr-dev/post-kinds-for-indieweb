@@ -79,11 +79,19 @@ function render_stream_card( array $attributes = [], string $content = '', ?\WP_
 		);
 	}
 
-	// Any other long-form post: render nothing. The Post Template's linked
-	// post-title and post-date already stand in for the item; adding a
-	// second title link would duplicate them, and the full body must never
-	// reach the feed.
-	return '';
+	// Any other long-form post: a linked post title stands in for the item.
+	// The Stream template no longer renders its own post-title block (the
+	// title now lives inside each card), so this keeps non-card posts from
+	// losing their heading. The full body never reaches the feed.
+	$title = get_the_title( $post );
+	if ( '' === trim( $title ) ) {
+		return '';
+	}
+	return sprintf(
+		'<p class="pk-stream-fallback"><a href="%s">%s</a></p>',
+		esc_url( (string) get_permalink( $post ) ),
+		esc_html( $title )
+	);
 }
 
 /**
