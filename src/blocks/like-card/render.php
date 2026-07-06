@@ -48,13 +48,13 @@ ob_start();
 		<p class="pk-kindlabel"><?php esc_html_e( 'Like', 'post-kinds-for-indieweb' ); ?></p>
 
 		<?php if ( $pkiw_title ) : ?>
-			<h3 class="pk-title p-name">
+			<h2 class="pk-title p-name">
 				<?php if ( $pkiw_url ) : ?>
 					<a class="u-url u-like-of" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_title ); ?></a>
 				<?php else : ?>
 					<?php echo esc_html( $pkiw_title ); ?>
 				<?php endif; ?>
-			</h3>
+			</h2>
 		<?php endif; ?>
 
 		<?php if ( $pkiw_author ) : ?>

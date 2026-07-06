@@ -113,13 +113,13 @@ ob_start();
 			</div>
 		<?php else : ?>
 			<?php if ( $pkiw_venue_name ) : ?>
-				<h3 class="pk-title p-name">
+				<h2 class="pk-title p-name">
 					<?php if ( $pkiw_venue_url ) : ?>
 						<a class="u-url" href="<?php echo esc_url( $pkiw_venue_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_venue_name ); ?></a>
 					<?php else : ?>
 						<?php echo esc_html( $pkiw_venue_name ); ?>
 					<?php endif; ?>
-				</h3>
+				</h2>
 			<?php endif; ?>
 
 			<p class="pk-sub p-location h-card">
