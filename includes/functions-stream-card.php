@@ -54,7 +54,7 @@ function render_stream_card( array $attributes = [], string $content = '', ?\WP_
 	// Micro-post: the body is nothing but Post Kinds card block(s). Render
 	// it exactly as it renders today — this is the Enola-Holmes shape.
 	if ( content_is_kind_card_only( (string) $post->post_content ) ) {
-		return link_title_to_post( do_blocks( $post->post_content ), $post );
+		return inject_post_date_into_card( link_title_to_post( do_blocks( $post->post_content ), $post ), $post );
 	}
 
 	// Long-form watch post: show a watch card with the video from the body,
@@ -68,15 +68,18 @@ function render_stream_card( array $attributes = [], string $content = '', ?\WP_
 			$attrs['watchUrl'] = $video_url;
 		}
 
-		return link_title_to_post(
-			render_block(
-				[
-					'blockName'    => 'post-kinds-indieweb/watch-card',
-					'attrs'        => $attrs,
-					'innerBlocks'  => [],
-					'innerHTML'    => '',
-					'innerContent' => [],
-				]
+		return inject_post_date_into_card(
+			link_title_to_post(
+				render_block(
+					[
+						'blockName'    => 'post-kinds-indieweb/watch-card',
+						'attrs'        => $attrs,
+						'innerBlocks'  => [],
+						'innerHTML'    => '',
+						'innerContent' => [],
+					]
+				),
+				$post
 			),
 			$post
 		);
@@ -138,6 +141,15 @@ function content_is_kind_card_only( string $content ): bool {
 
 		// Layout wrappers are fine; their children are flattened alongside.
 		if ( in_array( $name, STREAM_CARD_WRAPPERS, true ) ) {
+			continue;
+		}
+
+		// Empty paragraph / spacer blocks are editor cruft — a trailing empty
+		// paragraph shouldn't stop a single-card post from reading as one.
+		if (
+			in_array( $name, [ 'core/paragraph', 'core/spacer' ], true )
+			&& '' === trim( wp_strip_all_tags( (string) ( $block['innerHTML'] ?? '' ) ) )
+		) {
 			continue;
 		}
 
@@ -205,6 +217,38 @@ function link_title_to_post( string $html, \WP_Post $post ): string {
 		1
 	);
 	return null !== $wrapped ? $wrapped : $html;
+}
+
+/**
+ * Insert the post's published date inside the card, under the title.
+ *
+ * On the Stream the date reads inside each card rather than floating above
+ * it, so the Post Template no longer renders its own post-date block.
+ *
+ * @param string   $html Rendered card HTML.
+ * @param \WP_Post $post Post the card represents.
+ * @return string HTML with a dt-published date under the title.
+ */
+function inject_post_date_into_card( string $html, \WP_Post $post ): string {
+	$display = get_the_date( '', $post );
+	if ( '' === $display ) {
+		return $html;
+	}
+
+	$date_html = '<p class="pk-sub pk-stream-date"><time class="dt-published" datetime="'
+		. esc_attr( (string) get_post_time( 'c', true, $post ) ) . '">'
+		. esc_html( $display ) . '</time></p>';
+
+	$out = preg_replace_callback(
+		'#<h3 class="pk-title[^"]*">.*?</h3>#s',
+		static function ( $matches ) use ( $date_html ) {
+			return $matches[0] . $date_html;
+		},
+		$html,
+		1,
+		$count
+	);
+	return ( null !== $out && $count > 0 ) ? $out : $html;
 }
 
 /**
