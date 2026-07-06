@@ -1030,12 +1030,20 @@ class Settings_Page {
 				</div>
 			</div>
 
-			<?php // Webmention. ?>
+			<?php
+			// Webmention. The standalone plugin defines the WEBMENTION_VERSION
+			// constant and the namespaced Webmention\Webmention class; the old
+			// Webmention_Plugin / webmention_init identifiers never existed, so
+			// the card reported "Not Installed" even when active.
+			$pkiw_webmention_active = defined( 'WEBMENTION_VERSION' )
+				|| class_exists( 'Webmention\\Webmention' )
+				|| is_plugin_active( 'webmention/webmention.php' );
+			?>
 			<div class="integration-card">
 				<h3>
 					<span class="dashicons dashicons-admin-comments"></span>
 					Webmention
-					<?php if ( class_exists( 'Webmention_Plugin' ) || function_exists( 'webmention_init' ) ) : ?>
+					<?php if ( $pkiw_webmention_active ) : ?>
 						<span class="status-badge status-active"><?php esc_html_e( 'Active', 'post-kinds-for-indieweb' ); ?></span>
 					<?php else : ?>
 						<span class="status-badge status-inactive"><?php esc_html_e( 'Not Installed', 'post-kinds-for-indieweb' ); ?></span>
@@ -1048,7 +1056,7 @@ class Settings_Page {
 					<li><strong><?php esc_html_e( 'Comment Display:', 'post-kinds-for-indieweb' ); ?></strong> <?php esc_html_e( 'Show webmentions as comments on your posts.', 'post-kinds-for-indieweb' ); ?></li>
 				</ul>
 				<div class="integration-actions">
-					<?php if ( ! class_exists( 'Webmention_Plugin' ) && ! function_exists( 'webmention_init' ) ) : ?>
+					<?php if ( ! $pkiw_webmention_active ) : ?>
 						<a href="<?php echo esc_url( admin_url( 'plugin-install.php?s=webmention&tab=search&type=term' ) ); ?>" class="button">
 							<?php esc_html_e( 'Install Webmention', 'post-kinds-for-indieweb' ); ?>
 						</a>
