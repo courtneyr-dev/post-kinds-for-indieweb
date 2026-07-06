@@ -89,8 +89,10 @@ const RENDER_EXCEPTIONS = {
 			'dropped from the minimal mood card (emoji + note only) in the pk-card redesign',
 	},
 	'post-kinds-indieweb/wish-card': {
-		wishType: 'wishlist subtype metadata; not surfaced as visible text in the card',
-		priority: 'ordering hint metadata; not surfaced as visible text in the card',
+		wishType:
+			'wishlist subtype metadata; not surfaced as visible text in the card',
+		priority:
+			'ordering hint metadata; not surfaced as visible text in the card',
 	},
 	'post-kinds-indieweb/checkin-card': {
 		venueType:
