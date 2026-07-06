@@ -178,6 +178,41 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Card titles must render as <h2>, not <h3>. A card sits directly under the
+	 * page <h1> (single post) or the archive <h1> (stream), so an <h3> skips a
+	 * heading level — WCAG 1.3.1 (Info and Relationships). Regression guard for
+	 * the 2026-07 heading-order fix. Blocks that render no pk-title heading
+	 * (e.g. mood-card) simply assert no stray <h3> title is present.
+	 *
+	 * @dataProvider dynamic_blocks
+	 *
+	 * @param string $block_name Block name.
+	 * @param array  $attributes Attribute definitions from the fixture.
+	 */
+	public function test_card_title_uses_h2_not_h3( string $block_name, array $attributes ): void {
+		$post_id = self::factory()->post->create();
+		$this->go_to( get_permalink( $post_id ) );
+
+		$attrs   = array_map( static fn( $a ) => $a['sample'], $attributes );
+		$comment = sprintf( '<!-- wp:%s %s /-->', $block_name, wp_json_encode( $attrs ) );
+		$html    = do_blocks( $comment );
+
+		$this->assertStringNotContainsString(
+			'<h3 class="pk-title',
+			$html,
+			"$block_name: card title must not be <h3> — it skips a level under the page <h1> (WCAG 1.3.1)"
+		);
+
+		if ( false !== strpos( $html, 'class="pk-title' ) ) {
+			$this->assertStringContainsString(
+				'<h2 class="pk-title',
+				$html,
+				"$block_name: card title should render as <h2>"
+			);
+		}
+	}
+
+	/**
 	 * Rendering with no attributes must not leak placeholders or PHP noise.
 	 *
 	 * @dataProvider dynamic_blocks

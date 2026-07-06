@@ -195,7 +195,7 @@ function link_title_to_post( string $html, \WP_Post $post ): string {
 
 	// Title already linked → repoint the anchor at the post.
 	$relinked = preg_replace_callback(
-		'#(<h3 class="pk-title[^"]*">\s*)<a\b[^>]*>#s',
+		'#(<h[1-6] class="pk-title[^"]*">\s*)<a\b[^>]*>#s',
 		static function ( $matches ) use ( $permalink ) {
 			return $matches[1] . '<a href="' . $permalink . '">';
 		},
@@ -209,7 +209,7 @@ function link_title_to_post( string $html, \WP_Post $post ): string {
 
 	// Plain-text title → wrap it in a link to the post.
 	$wrapped = preg_replace_callback(
-		'#(<h3 class="pk-title[^"]*">)(\s*)([^<]+?)(\s*)(</h3>)#s',
+		'#(<h[1-6] class="pk-title[^"]*">)(\s*)([^<]+?)(\s*)(</h[1-6]>)#s',
 		static function ( $matches ) use ( $permalink ) {
 			return $matches[1] . $matches[2] . '<a href="' . $permalink . '">' . $matches[3] . '</a>' . $matches[4] . $matches[5];
 		},
@@ -240,7 +240,7 @@ function inject_post_date_into_card( string $html, \WP_Post $post ): string {
 		. esc_html( $display ) . '</time></p>';
 
 	$out = preg_replace_callback(
-		'#<h3 class="pk-title[^"]*">.*?</h3>#s',
+		'#<h[1-6] class="pk-title[^"]*">.*?</h[1-6]>#s',
 		static function ( $matches ) use ( $date_html ) {
 			return $matches[0] . $date_html;
 		},

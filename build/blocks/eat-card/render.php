@@ -62,7 +62,7 @@ ob_start();
 		<p class="pk-kindlabel"><?php esc_html_e( 'Ate', 'post-kinds-for-indieweb' ); ?></p>
 
 		<?php if ( $pkiw_name ) : ?>
-			<h3 class="pk-title p-name"><?php echo esc_html( $pkiw_name ); ?></h3>
+			<h2 class="pk-title p-name"><?php echo esc_html( $pkiw_name ); ?></h2>
 		<?php endif; ?>
 
 		<?php if ( $pkiw_restaurant || $pkiw_cuisine ) : ?>

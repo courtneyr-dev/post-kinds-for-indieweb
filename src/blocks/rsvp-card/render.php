@@ -101,13 +101,13 @@ ob_start();
 
 		<div class="pk-event p-in-reply-to h-event">
 			<?php if ( $pkiw_event_name ) : ?>
-				<h3 class="pk-title p-name">
+				<h2 class="pk-title p-name">
 					<?php if ( $pkiw_event_url ) : ?>
 						<a class="u-url" href="<?php echo esc_url( $pkiw_event_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_event_name ); ?></a>
 					<?php else : ?>
 						<?php echo esc_html( $pkiw_event_name ); ?>
 					<?php endif; ?>
-				</h3>
+				</h2>
 			<?php endif; ?>
 
 			<?php if ( $pkiw_event_start_iso || $pkiw_event_location ) : ?>

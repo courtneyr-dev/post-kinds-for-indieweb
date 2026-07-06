@@ -76,7 +76,7 @@ ob_start();
 		<p class="pk-kindlabel"><?php esc_html_e( 'Drank', 'post-kinds-for-indieweb' ); ?></p>
 
 		<?php if ( $pkiw_name ) : ?>
-			<h3 class="pk-title p-name"><?php echo esc_html( $pkiw_name ); ?></h3>
+			<h2 class="pk-title p-name"><?php echo esc_html( $pkiw_name ); ?></h2>
 		<?php endif; ?>
 
 		<?php if ( $pkiw_brand || $pkiw_badge_label ) : ?>

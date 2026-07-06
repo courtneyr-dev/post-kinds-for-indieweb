@@ -55,13 +55,13 @@ ob_start();
 		<p class="pk-kindlabel"><?php echo esc_html( $pkiw_type_label ); ?></p>
 
 		<?php if ( $pkiw_title ) : ?>
-			<h3 class="pk-title p-name">
+			<h2 class="pk-title p-name">
 				<?php if ( $pkiw_where_url ) : ?>
 					<a class="u-url" href="<?php echo esc_url( $pkiw_where_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_title ); ?></a>
 				<?php else : ?>
 					<?php echo esc_html( $pkiw_title ); ?>
 				<?php endif; ?>
-			</h3>
+			</h2>
 		<?php endif; ?>
 
 		<?php if ( $pkiw_cost || $pkiw_where ) : ?>
