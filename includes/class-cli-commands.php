@@ -55,6 +55,61 @@ class CLI_Commands {
 	}
 
 	/**
+	 * Apply the configured default category to existing kind-bearing posts.
+	 *
+	 * New kind posts get the default category automatically; this backfills the
+	 * posts that existed before the setting was configured. Posts you have
+	 * already curated (the per-post marker is set) are skipped, so a deliberate
+	 * removal is never undone.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--dry-run]
+	 * : Report what would change without writing anything.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp postkind default-category backfill
+	 *     wp postkind default-category backfill --dry-run
+	 *
+	 * @param array $args       Positional arguments; expects 'backfill'.
+	 * @param array $assoc_args Associative arguments (dry-run).
+	 * @return void
+	 */
+	public function default_category( array $args, array $assoc_args ): void {
+		$sub = $args[0] ?? '';
+		if ( 'backfill' !== $sub ) {
+			WP_CLI::error( 'Usage: wp postkind default-category backfill [--dry-run]' );
+		}
+		if ( Default_Category::configured_category_id() <= 0 ) {
+			WP_CLI::error( 'No default category is configured (Post Kinds → General → Default category).' );
+		}
+
+		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$stats   = ( new Default_Category() )->backfill( $dry_run );
+
+		if ( $dry_run ) {
+			WP_CLI::success(
+				sprintf(
+					'Dry run: %d kind post(s) scanned, %d would get the default category.',
+					$stats['scanned'],
+					$stats['would_update']
+				)
+			);
+			return;
+		}
+
+		WP_CLI::success(
+			sprintf(
+				'%d kind post(s) scanned, %d updated, %d skipped.',
+				$stats['scanned'],
+				$stats['updated'],
+				$stats['skipped']
+			)
+		);
+	}
+
+	/**
 	 * Display check-in statistics.
 	 *
 	 * ## EXAMPLES

@@ -145,6 +145,19 @@ class Settings_Page {
 	 */
 	private function add_general_fields(): void {
 		add_settings_field(
+			'default_category',
+			__( 'Default category', 'post-kinds-for-indieweb' ),
+			[ $this, 'render_category_field' ],
+			'post_kinds_indieweb_general',
+			'post_kinds_indieweb_general_section',
+			[
+				'id'        => 'default_category',
+				'label_for' => 'default_category',
+				'desc'      => __( 'Automatically add this category to any post that has a post kind (Watch, Listen, Read, and so on), including posts made through Micropub. Applied once when the post is first saved; you can still remove it from an individual post. Choose "— None —" to turn this off.', 'post-kinds-for-indieweb' ),
+			]
+		);
+
+		add_settings_field(
 			'default_post_status',
 			__( 'Default Post Status', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_select_field' ],
@@ -1415,6 +1428,34 @@ class Settings_Page {
 
 		if ( ! empty( $args['desc'] ) ) {
 			printf( '<p class="description">%s</p>', esc_html( $args['desc'] ) );
+		}
+	}
+
+	/**
+	 * Render a category dropdown bound to a settings key.
+	 *
+	 * @param array<string, mixed> $args Field arguments (id, desc).
+	 * @return void
+	 */
+	public function render_category_field( array $args ): void {
+		$id       = (string) ( $args['id'] ?? '' );
+		$settings = get_option( 'post_kinds_indieweb_settings', $this->admin->get_default_settings() );
+		$current  = isset( $settings[ $id ] ) ? (int) $settings[ $id ] : 0;
+
+		wp_dropdown_categories(
+			[
+				'show_option_none'  => __( '— None —', 'post-kinds-for-indieweb' ),
+				'option_none_value' => 0,
+				'hide_empty'        => false,
+				'name'              => 'post_kinds_indieweb_settings[' . $id . ']',
+				'id'                => $id,
+				'selected'          => $current,
+				'taxonomy'          => 'category',
+			]
+		);
+
+		if ( ! empty( $args['desc'] ) ) {
+			printf( '<p class="description">%s</p>', esc_html( (string) $args['desc'] ) );
 		}
 	}
 
