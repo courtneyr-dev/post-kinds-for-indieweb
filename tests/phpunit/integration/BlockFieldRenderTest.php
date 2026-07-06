@@ -62,6 +62,13 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 			'post-kinds-indieweb/mood-card'         => [
 				'intensity' => 'dropped from the minimal mood card (emoji + note only) in the pk-card redesign',
 			],
+			'post-kinds-indieweb/read-card'         => [
+				'readStatus' => 'free-string status mapped to a human label (Reading/Finished/…); an unknown value like the fixture sample maps to an empty label and is never echoed raw',
+			],
+			'post-kinds-indieweb/wish-card'         => [
+				'wishType' => 'wishlist subtype metadata; not surfaced as visible text in the card',
+				'priority' => 'ordering hint metadata; not surfaced as visible text in the card',
+			],
 			'post-kinds-indieweb/checkin-card'      => [
 				'venueType'       => 'enum mapped to icon + translated label; unknown values fall back to the Place label, raw slug never echoed',
 				'locationPrivacy' => 'block.json enum (public/approximate/private); core drops the invalid sample pre-render and the gate value itself is never echoed',
@@ -88,6 +95,8 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 				'checkinCount' => 'posts_per_page limit for the checkins query, never echoed',
 			],
 			'post-kinds-indieweb/watch-card'        => [
+				'mediaType'    => 'display-mode string driving the movie/tv/episode layout; the pk-card redesign shows a single Watch kind label and no longer echoes it as a badge modifier class',
+				'captionsUrl'  => 'WebVTT file passed to the card video-embed filter; with no accessible-player filter active in tests the oEmbed fallback runs and the caption file is not echoed',
 				'showTitle'    => 'renders only when mediaType=episode; fixture mediaType sample is not an episode',
 				'episodeTitle' => 'renders only when mediaType=episode as part of the SxE episode string, same gate as showTitle',
 				'tmdbId'       => 'embedded in a canonical themoviedb.org URL via esc_url(), which percent-encodes the space-containing sample',

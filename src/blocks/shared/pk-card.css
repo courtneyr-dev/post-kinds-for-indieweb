@@ -10,7 +10,7 @@
  * Semantic order matches h-entry: badge, then body (title/content), then meta.
  */
 
-/* ---- STRUCTURE TOKENS (never themed) ---- */
+/* ---- STRUCTURE TOKENS (never themed; sizing only) ---- */
 :where(.pk-card) {
 	--pk-space-1: 0.25rem;
 	--pk-space-2: 0.5rem;
@@ -23,51 +23,9 @@
 	--pk-thumb: 56px;
 	--pk-badge: 34px;
 	--pk-maxw: 38rem;
-
-	/* ---- PAINT TOKENS · NEUTRAL DEFAULT (what any site gets, no theme) ----
-	   Restrained: near-monochrome + one cool accent. Each default reads an old
-	   --pkiw-* override first, then the neutral literal. */
-	--pk-bg: var(--pkiw-card-page-bg, #fff);
-	--pk-surface: var(--pkiw-card-bg, #fff);
-	--pk-ink: var(--pkiw-card-fg, #1c1c1e);
-	--pk-muted: var(--pkiw-card-text-secondary, #6b6b70);
-	--pk-border: var(--pkiw-card-border, #e4e4e7);
-	--pk-accent: var(--pkiw-card-accent, #3a6ea5);
-	--pk-accent-ink: #fff;
-	--pk-kind: #52525b;
-	--pk-tint: transparent;
-	--pk-paper: #f4f4f5;
-	--pk-paper-pad: 0;
-	--pk-font-body: var(--pkiw-card-font, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
-	--pk-font-title: var(--pk-font-body);
-	--pk-font-meta: ui-monospace, sfmono-regular, menlo, monospace;
-	--pk-label-bg: transparent;
-	--pk-label-rot: 0deg;
-	--pk-title-weight: 600;
-	--pk-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-/* ---- PAINT TOKENS · NEUTRAL DARK DEFAULT ----
-   Any site whose visitor prefers dark gets a sensible dark card with no theme
-   work. Still paint-only (var overrides) — structure is untouched. A theme's
-   own dark rules override these because they carry class specificity while
-   these live in :where() (zero specificity). Honors --pkiw-*-dark overrides
-   first, then the dark literal. */
-@media (prefers-color-scheme: dark) {
-
-	:where(.pk-card) {
-		--pk-bg: var(--pkiw-card-page-bg-dark, #101012);
-		--pk-surface: var(--pkiw-card-bg-dark, #1b1b1f);
-		--pk-ink: var(--pkiw-card-fg-dark, #ececee);
-		--pk-muted: var(--pkiw-card-text-secondary-dark, #a1a1aa);
-		--pk-border: var(--pkiw-card-border-dark, #34343b);
-		--pk-accent: var(--pkiw-card-accent-dark, #7db3e8);
-		--pk-accent-ink: #0d0d0f;
-		--pk-kind: #a1a1aa;
-		--pk-paper: #26262c;
-		--pk-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-	}
-}
+/* Paint defaults (--pk-* color + font) live in styles/kind-tokens.css. */
 
 /* ---- THE CARD — structure only ---- */
 .pk-card {
@@ -110,7 +68,7 @@
 	place-items: center;
 	flex: none;
 	background: var(--pk-kind);
-	color: var(--pk-badge-ink, #fff);
+	color: var(--pk-badge-ink);
 }
 
 .pk-badge svg {
@@ -199,7 +157,7 @@
 	height: 70px;
 }
 
-/* rich embed — full content width, spans both columns, on the theme's paper */
+/* rich embed — full width, spans both columns, on the theme paper */
 .pk-embed {
 	grid-column: 1 / -1;
 	margin-top: var(--pk-space-4);

@@ -191,7 +191,9 @@ ob_start();
 						</p>
 					<?php endif; ?>
 				</div>
-			<?php elseif ( $pkiw_photo ) : ?>
+			<?php endif; ?>
+
+				<?php if ( $pkiw_photo ) : ?>
 				<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_photo ); ?>" alt="<?php echo esc_attr( $pkiw_photo_alt ? $pkiw_photo_alt : sprintf( /* translators: %s: venue name */ __( 'Photo at %s', 'post-kinds-for-indieweb' ), $pkiw_venue_name ) ); ?>" loading="lazy" /></div>
 			<?php endif; ?>
 
