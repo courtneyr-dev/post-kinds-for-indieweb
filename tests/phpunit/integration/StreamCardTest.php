@@ -25,6 +25,33 @@ final class StreamCardTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A linked card title is repointed at the post permalink.
+	 */
+	public function test_link_title_to_post_repoints_anchor(): void {
+		$post_id = self::factory()->post->create( [ 'post_title' => 'Movie' ] );
+		$post    = get_post( $post_id );
+		$html    = '<h3 class="pk-title p-name"><a class="u-url" href="https://youtu.be/x" target="_blank" rel="noopener">Movie</a></h3>';
+
+		$out = \PostKindsForIndieWeb\link_title_to_post( $html, $post );
+
+		$this->assertStringContainsString( '<a href="' . esc_url( (string) get_permalink( $post_id ) ) . '">Movie</a>', $out );
+		$this->assertStringNotContainsString( 'youtu.be', $out );
+	}
+
+	/**
+	 * A plain-text card title gets wrapped in a link to the post.
+	 */
+	public function test_link_title_to_post_wraps_plaintext(): void {
+		$post_id = self::factory()->post->create( [ 'post_title' => 'Enola' ] );
+		$post    = get_post( $post_id );
+		$html    = '<h3 class="pk-title p-name">Enola</h3>';
+
+		$out = \PostKindsForIndieWeb\link_title_to_post( $html, $post );
+
+		$this->assertStringContainsString( '<a href="' . esc_url( (string) get_permalink( $post_id ) ) . '">Enola</a>', $out );
+	}
+
+	/**
 	 * A body of only card blocks is a micro-post.
 	 */
 	public function test_card_only_body_is_micro_post(): void {

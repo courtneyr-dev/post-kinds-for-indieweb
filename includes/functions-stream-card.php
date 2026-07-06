@@ -54,7 +54,7 @@ function render_stream_card( array $attributes = [], string $content = '', ?\WP_
 	// Micro-post: the body is nothing but Post Kinds card block(s). Render
 	// it exactly as it renders today — this is the Enola-Holmes shape.
 	if ( content_is_kind_card_only( (string) $post->post_content ) ) {
-		return do_blocks( $post->post_content );
+		return link_title_to_post( do_blocks( $post->post_content ), $post );
 	}
 
 	// Long-form watch post: show a watch card with the video from the body,
@@ -68,14 +68,17 @@ function render_stream_card( array $attributes = [], string $content = '', ?\WP_
 			$attrs['watchUrl'] = $video_url;
 		}
 
-		return render_block(
-			[
-				'blockName'    => 'post-kinds-indieweb/watch-card',
-				'attrs'        => $attrs,
-				'innerBlocks'  => [],
-				'innerHTML'    => '',
-				'innerContent' => [],
-			]
+		return link_title_to_post(
+			render_block(
+				[
+					'blockName'    => 'post-kinds-indieweb/watch-card',
+					'attrs'        => $attrs,
+					'innerBlocks'  => [],
+					'innerHTML'    => '',
+					'innerContent' => [],
+				]
+			),
+			$post
 		);
 	}
 
@@ -158,6 +161,50 @@ function get_post_kind_slug( \WP_Post $post ): string {
 	}
 
 	return '';
+}
+
+/**
+ * Point a rendered card's title at the post permalink.
+ *
+ * On the Stream a card title should click through to the post, not to the
+ * watched/listened URL. Repoints the `.pk-title` anchor at the post (same
+ * tab), or wraps a plain-text title in one. The card's hidden `u-*-of` data
+ * still carries the external URL for microformats.
+ *
+ * @param string   $html Rendered card HTML.
+ * @param \WP_Post $post Post the card represents.
+ * @return string HTML with the title linked to the post.
+ */
+function link_title_to_post( string $html, \WP_Post $post ): string {
+	$permalink = esc_url( (string) get_permalink( $post ) );
+	if ( '' === $permalink ) {
+		return $html;
+	}
+
+	// Title already linked → repoint the anchor at the post.
+	$relinked = preg_replace_callback(
+		'#(<h3 class="pk-title[^"]*">\s*)<a\b[^>]*>#s',
+		static function ( $matches ) use ( $permalink ) {
+			return $matches[1] . '<a href="' . $permalink . '">';
+		},
+		$html,
+		1,
+		$count
+	);
+	if ( null !== $relinked && $count > 0 ) {
+		return $relinked;
+	}
+
+	// Plain-text title → wrap it in a link to the post.
+	$wrapped = preg_replace_callback(
+		'#(<h3 class="pk-title[^"]*">)(\s*)([^<]+?)(\s*)(</h3>)#s',
+		static function ( $matches ) use ( $permalink ) {
+			return $matches[1] . $matches[2] . '<a href="' . $permalink . '">' . $matches[3] . '</a>' . $matches[4] . $matches[5];
+		},
+		$html,
+		1
+	);
+	return null !== $wrapped ? $wrapped : $html;
 }
 
 /**
