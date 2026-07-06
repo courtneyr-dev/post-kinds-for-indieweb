@@ -1077,7 +1077,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 					'rating'     => 4,
 					'review'     => 'Sample review',
 				),
-				array( 'mediaType', 'showTitle', 'seasonNumber', 'episodeNumber', 'episodeTitle', 'releaseYear', 'posterImage', 'posterImageAlt', 'tmdbId', 'imdbId', 'isRewatch', 'watchedAt' ),
+				array( 'mediaType', 'showTitle', 'seasonNumber', 'episodeNumber', 'episodeTitle', 'releaseYear', 'posterImage', 'posterImageAlt', 'tmdbId', 'imdbId', 'isRewatch', 'watchedAt', 'captionsUrl' ),
 			),
 			'read'    => array(
 				array(

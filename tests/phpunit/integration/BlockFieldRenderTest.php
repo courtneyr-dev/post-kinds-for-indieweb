@@ -57,7 +57,17 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 	private function assertion_exceptions(): array {
 		return [
 			'*'                                     => [
-				'layout' => 'enum controls wrapper class, asserted separately',
+				'layout' => 'display-mode enum; the pk-card redesign renders a fixed structure, so cards no longer emit a layout-* wrapper class',
+			],
+			'post-kinds-indieweb/mood-card'         => [
+				'intensity' => 'dropped from the minimal mood card (emoji + note only) in the pk-card redesign',
+			],
+			'post-kinds-indieweb/read-card'         => [
+				'readStatus' => 'free-string status mapped to a human label (Reading/Finished/…); an unknown value like the fixture sample maps to an empty label and is never echoed raw',
+			],
+			'post-kinds-indieweb/wish-card'         => [
+				'wishType' => 'wishlist subtype metadata; not surfaced as visible text in the card',
+				'priority' => 'ordering hint metadata; not surfaced as visible text in the card',
 			],
 			'post-kinds-indieweb/checkin-card'      => [
 				'venueType'       => 'enum mapped to icon + translated label; unknown values fall back to the Place label, raw slug never echoed',
@@ -85,6 +95,8 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 				'checkinCount' => 'posts_per_page limit for the checkins query, never echoed',
 			],
 			'post-kinds-indieweb/watch-card'        => [
+				'mediaType'    => 'display-mode string driving the movie/tv/episode layout; the pk-card redesign shows a single Watch kind label and no longer echoes it as a badge modifier class',
+				'captionsUrl'  => 'WebVTT file passed to the card video-embed filter; with no accessible-player filter active in tests the oEmbed fallback runs and the caption file is not echoed',
 				'showTitle'    => 'renders only when mediaType=episode; fixture mediaType sample is not an episode',
 				'episodeTitle' => 'renders only when mediaType=episode as part of the SxE episode string, same gate as showTitle',
 				'tmdbId'       => 'embedded in a canonical themoviedb.org URL via esc_url(), which percent-encodes the space-containing sample',
@@ -157,15 +169,6 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 			$missing,
 			"$block_name: attribute sample(s) missing from rendered output"
 		);
-
-		// layout is asserted as a wrapper class.
-		if ( isset( $attributes['layout'] ) ) {
-			$this->assertStringContainsString(
-				'layout-' . $attributes['layout']['sample'],
-				$html,
-				"$block_name: layout wrapper class missing from rendered output"
-			);
-		}
 
 		$this->assertSame(
 			[],

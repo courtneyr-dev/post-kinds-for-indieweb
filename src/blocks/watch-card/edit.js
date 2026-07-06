@@ -55,6 +55,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		posterImage,
 		posterImageAlt,
 		watchUrl,
+		captionsUrl,
 		tmdbId,
 		imdbId,
 		rating,
@@ -463,6 +464,22 @@ export default function Edit( { attributes, setAttributes } ) {
 						type="url"
 						help={ __(
 							'Link to the content on a streaming service.',
+							'post-kinds-for-indieweb'
+						) }
+					/>
+
+					<TextControl
+						label={ __(
+							'Caption file URL (VTT)',
+							'post-kinds-for-indieweb'
+						) }
+						value={ captionsUrl || '' }
+						onChange={ ( value ) =>
+							setAttributes( { captionsUrl: value } )
+						}
+						type="url"
+						help={ __(
+							'WebVTT caption file. When the Watch URL is a YouTube video played through Able Player, this supplies accessible captions and the interactive transcript.',
 							'post-kinds-for-indieweb'
 						) }
 					/>

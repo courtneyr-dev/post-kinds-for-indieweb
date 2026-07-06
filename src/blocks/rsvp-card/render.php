@@ -2,6 +2,11 @@
 /**
  * RSVP Card Block - Server-side Render
  *
+ * Renders the RSVP card in the two-layer pk-card system: plugin owns
+ * structure (badge → label → title → sub → note → meta), theme owns paint
+ * via --pk-* custom properties. Cites the event via an h-cite/h-event and
+ * preserves the RSVP status microformat.
+ *
  * @package PostKindsForIndieWeb
  * @var array    $attributes Block attributes.
  * @var string   $content    Block content (empty for dynamic blocks).
@@ -13,6 +18,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
+
+use function PostKindsForIndieWeb\get_kind_icon_svg;
 
 $pkiw_event_name        = $attributes['eventName'] ?? '';
 $pkiw_event_url         = $attributes['eventUrl'] ?? '';
@@ -28,13 +35,6 @@ $pkiw_event_image_alt   = $attributes['eventImageAlt'] ?? '';
 $pkiw_rel               = $attributes['rel'] ?? '';
 $pkiw_layout            = $attributes['layout'] ?? 'horizontal';
 
-$pkiw_status_icons  = [
-	'yes'        => '✅',
-	'no'         => '❌',
-	'maybe'      => '🤔',
-	'interested' => '👀',
-	'remote'     => '💻',
-];
 $pkiw_status_labels = [
 	'yes'        => __( 'Going', 'post-kinds-for-indieweb' ),
 	'no'         => __( 'Not Going', 'post-kinds-for-indieweb' ),
@@ -42,7 +42,6 @@ $pkiw_status_labels = [
 	'interested' => __( 'Interested', 'post-kinds-for-indieweb' ),
 	'remote'     => __( 'Attending Remotely', 'post-kinds-for-indieweb' ),
 ];
-$pkiw_icon          = $pkiw_status_icons[ $pkiw_rsvp_status ] ?? $pkiw_status_icons['yes'];
 $pkiw_label         = $pkiw_status_labels[ $pkiw_rsvp_status ] ?? $pkiw_status_labels['yes'];
 
 // Always include noopener noreferrer for security.
@@ -50,7 +49,7 @@ $pkiw_link_rel = $pkiw_rel ? 'noopener noreferrer ' . $pkiw_rel : 'noopener nore
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
-		'class' => sprintf( 'rsvp-card layout-%s rsvp-%s', esc_attr( $pkiw_layout ), esc_attr( $pkiw_rsvp_status ) ),
+		'class' => 'pk-card k-rsvp h-entry',
 	]
 );
 
@@ -95,66 +94,63 @@ if ( $pkiw_rsvp_at ) {
 
 ob_start();
 ?>
-<div <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<div class="post-kinds-card h-entry">
-		<?php if ( $pkiw_event_image ) : ?>
-			<div class="post-kinds-card__media">
-				<img
-					src="<?php echo esc_url( $pkiw_event_image ); ?>"
-					alt="<?php echo esc_attr( $pkiw_event_image_alt ? $pkiw_event_image_alt : sprintf( /* translators: %s: event name */ __( '%s event', 'post-kinds-for-indieweb' ), $pkiw_event_name ) ); ?>"
-					class="post-kinds-card__image u-photo"
-					loading="lazy"
-				/>
-			</div>
-		<?php endif; ?>
+<article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+	<div class="pk-badge"><?php echo get_kind_icon_svg( 'rsvp' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
+	<div class="pk-body">
+		<p class="pk-kindlabel"><?php esc_html_e( 'RSVP', 'post-kinds-for-indieweb' ); ?></p>
 
-		<div class="post-kinds-card__content">
-			<span class="post-kinds-card__badge post-kinds-card__badge--<?php echo esc_attr( $pkiw_rsvp_status ); ?>">
-				<span class="post-kinds-card__badge-icon" aria-hidden="true"><?php echo esc_html( $pkiw_icon ); ?></span>
-				<data class="p-rsvp" value="<?php echo esc_attr( $pkiw_rsvp_status ); ?>"><?php echo esc_html( $pkiw_label ); ?></data>
-			</span>
+		<div class="pk-event p-in-reply-to h-event">
+			<?php if ( $pkiw_event_name ) : ?>
+				<h3 class="pk-title p-name">
+					<?php if ( $pkiw_event_url ) : ?>
+						<a class="u-url" href="<?php echo esc_url( $pkiw_event_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_event_name ); ?></a>
+					<?php else : ?>
+						<?php echo esc_html( $pkiw_event_name ); ?>
+					<?php endif; ?>
+				</h3>
+			<?php endif; ?>
 
-			<div class="post-kinds-card__event p-in-reply-to h-event">
-				<?php if ( $pkiw_event_name ) : ?>
-					<h3 class="post-kinds-card__title">
-						<?php if ( $pkiw_event_url ) : ?>
-							<a href="<?php echo esc_url( $pkiw_event_url ); ?>" class="p-name u-url" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_event_name ); ?></a>
-						<?php else : ?>
-							<span class="p-name"><?php echo esc_html( $pkiw_event_name ); ?></span>
-						<?php endif; ?>
-					</h3>
-				<?php endif; ?>
-
-				<?php if ( $pkiw_event_start_iso ) : ?>
-					<div class="post-kinds-card__meta-row">
-						<span class="post-kinds-card__meta-icon" aria-hidden="true">📅</span>
+			<?php if ( $pkiw_event_start_iso || $pkiw_event_location ) : ?>
+				<p class="pk-sub">
+					<data class="pk-chip p-rsvp" value="<?php echo esc_attr( $pkiw_rsvp_status ); ?>"><?php echo esc_html( $pkiw_label ); ?></data>
+					<?php if ( $pkiw_event_start_iso ) : ?>
 						<time class="dt-start" datetime="<?php echo esc_attr( $pkiw_event_start_iso ); ?>"><?php echo esc_html( $pkiw_event_range_disp ); ?></time>
 						<?php if ( $pkiw_event_end_iso ) : ?>
 							<data class="dt-end" value="<?php echo esc_attr( $pkiw_event_end_iso ); ?>" hidden></data>
 						<?php endif; ?>
-					</div>
-				<?php endif; ?>
-
-				<?php if ( $pkiw_event_location ) : ?>
-					<div class="post-kinds-card__meta-row">
-						<span class="post-kinds-card__meta-icon" aria-hidden="true">📍</span>
+					<?php endif; ?>
+					<?php
+					if ( $pkiw_event_start_iso && $pkiw_event_location ) :
+						?>
+						<span class="pk-dot"></span><?php endif; ?>
+					<?php if ( $pkiw_event_location ) : ?>
 						<span class="p-location"><?php echo esc_html( $pkiw_event_location ); ?></span>
-					</div>
-				<?php endif; ?>
-
-				<?php if ( $pkiw_event_description ) : ?>
-					<p class="post-kinds-card__meta p-summary"><?php echo esc_html( $pkiw_event_description ); ?></p>
-				<?php endif; ?>
-			</div>
-
-			<?php if ( $pkiw_rsvp_note ) : ?>
-				<div class="post-kinds-card__notes p-content">
-					<p><?php echo wp_kses_post( $pkiw_rsvp_note ); ?></p>
-				</div>
+					<?php endif; ?>
+				</p>
+			<?php else : ?>
+				<p class="pk-sub">
+					<data class="pk-chip p-rsvp" value="<?php echo esc_attr( $pkiw_rsvp_status ); ?>"><?php echo esc_html( $pkiw_label ); ?></data>
+				</p>
 			<?php endif; ?>
 
-			<?php if ( $pkiw_rsvp_iso ) : ?>
-				<time class="post-kinds-card__timestamp dt-published" datetime="<?php echo esc_attr( $pkiw_rsvp_iso ); ?>">
+			<?php if ( $pkiw_event_description ) : ?>
+				<p class="p-summary"><?php echo esc_html( $pkiw_event_description ); ?></p>
+			<?php endif; ?>
+
+			<?php if ( $pkiw_event_image ) : ?>
+				<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_event_image ); ?>" alt="<?php echo esc_attr( $pkiw_event_image_alt ? $pkiw_event_image_alt : sprintf( /* translators: %s: event name */ __( '%s event', 'post-kinds-for-indieweb' ), $pkiw_event_name ) ); ?>" loading="lazy" /></div>
+			<?php endif; ?>
+		</div>
+
+		<?php if ( $pkiw_rsvp_note ) : ?>
+			<div class="pk-note p-content">
+				<p><?php echo wp_kses_post( $pkiw_rsvp_note ); ?></p>
+			</div>
+		<?php endif; ?>
+
+		<?php if ( $pkiw_rsvp_iso ) : ?>
+			<div class="pk-meta">
+				<time class="dt-published" datetime="<?php echo esc_attr( $pkiw_rsvp_iso ); ?>">
 					<?php
 					printf(
 						/* translators: %s: date the RSVP was made */
@@ -163,13 +159,13 @@ ob_start();
 					);
 					?>
 				</time>
-			<?php endif; ?>
-		</div>
-
-		<?php if ( $pkiw_event_url ) : ?>
-			<data class="u-in-reply-to" value="<?php echo esc_attr( $pkiw_event_url ); ?>" hidden></data>
+			</div>
 		<?php endif; ?>
 	</div>
-</div>
+
+	<?php if ( $pkiw_event_url ) : ?>
+		<data class="u-in-reply-to" value="<?php echo esc_attr( $pkiw_event_url ); ?>" hidden></data>
+	<?php endif; ?>
+</article>
 <?php
 echo ob_get_clean(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

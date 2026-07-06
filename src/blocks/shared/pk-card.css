@@ -1,0 +1,351 @@
+/**
+ * Post Kinds — two-layer card system.
+ *
+ * LAYER 1 · STRUCTURE (plugin owns): layout, spacing, shape, rhythm.
+ * LAYER 2 · PAINT (theme owns): all color + font, via --pk-* custom
+ *          properties with neutral fallbacks. A theme overrides any var to
+ *          reskin. The old --pkiw-* names are honored as back-compat fallbacks
+ *          so existing theme overrides keep working.
+ *
+ * Semantic order matches h-entry: badge, then body (title/content), then meta.
+ */
+
+/* ---- STRUCTURE TOKENS (never themed; sizing only) ---- */
+:where(.pk-card) {
+	--pk-space-1: 0.25rem;
+	--pk-space-2: 0.5rem;
+	--pk-space-3: 0.75rem;
+	--pk-space-4: 1rem;
+	--pk-space-5: 1.5rem;
+	--pk-space-6: 2rem;
+	--pk-radius: 14px;
+	--pk-radius-sm: 9px;
+	--pk-thumb: 56px;
+	--pk-badge: 34px;
+	--pk-maxw: 38rem;
+}
+
+/* Paint defaults (--pk-* color + font) live in styles/kind-tokens.css. */
+
+/* ---- THE CARD — structure only ---- */
+.pk-card {
+	display: grid;
+	grid-template-columns: var(--pk-badge) 1fr;
+	gap: var(--pk-space-3) var(--pk-space-4);
+	align-items: start;
+	padding: var(--pk-space-5);
+	background: var(--pk-surface);
+	color: var(--pk-ink);
+	border: 1px solid var(--pk-border);
+	border-left: 3px solid var(--pk-kind);
+	border-radius: var(--pk-radius);
+	box-shadow: var(--pk-shadow);
+	font-family: var(--pk-font-body);
+	max-width: var(--pk-maxw);
+	position: relative;
+}
+
+.pk-card::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: var(--pk-tint);
+	opacity: 0.5;
+	pointer-events: none;
+}
+
+.pk-card > * {
+	position: relative;
+}
+
+/* badge: holds an icon only (graphical → 3:1 is enough in both states) */
+.pk-badge {
+	width: var(--pk-badge);
+	height: var(--pk-badge);
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	flex: none;
+	background: var(--pk-kind);
+	color: var(--pk-badge-ink);
+}
+
+.pk-badge svg {
+	width: 18px;
+	height: 18px;
+	display: block;
+}
+
+.pk-body {
+	min-width: 0;
+}
+
+.pk-kindlabel {
+	display: inline-block;
+	font-family: var(--pk-font-meta);
+	font-size: 0.7rem;
+	font-weight: 700;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--pk-kind);
+	margin: 0 0 var(--pk-space-2);
+	background: var(--pk-label-bg);
+	padding: var(--pk-label-pad, 0);
+	transform: rotate(var(--pk-label-rot));
+	box-shadow: var(--pk-label-shadow, none);
+	border-radius: 1px;
+}
+
+.pk-title {
+	font-family: var(--pk-font-title);
+	font-weight: var(--pk-title-weight);
+	font-size: 1.075rem;
+	line-height: 1.3;
+	margin: 0;
+	color: var(--pk-ink);
+}
+
+.pk-title a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.pk-title a:hover {
+	text-decoration: underline;
+	text-decoration-color: var(--pk-kind);
+}
+
+.pk-sub {
+	color: var(--pk-muted);
+	font-size: 0.925rem;
+	line-height: 1.45;
+	margin: var(--pk-space-1) 0 0;
+}
+
+.pk-note {
+	margin: var(--pk-space-3) 0 0;
+	line-height: 1.55;
+	color: var(--pk-ink);
+}
+
+/* media row (cover / poster small thumbs) */
+.pk-media {
+	display: flex;
+	gap: var(--pk-space-4);
+	align-items: flex-start;
+	margin-top: var(--pk-space-3);
+}
+
+.pk-media__body {
+	min-width: 0;
+	flex: 1;
+}
+
+.pk-thumb {
+	width: var(--pk-thumb);
+	height: var(--pk-thumb);
+	border-radius: var(--pk-radius-sm);
+	object-fit: cover;
+	flex: none;
+	background: var(--pk-border);
+	border: 1px solid var(--pk-border);
+}
+
+.pk-thumb--poster {
+	width: 48px;
+	height: 70px;
+}
+
+/* rich embed — full width, spans both columns, on the theme paper */
+.pk-embed {
+	grid-column: 1 / -1;
+	margin-top: var(--pk-space-4);
+	border-radius: var(--pk-radius-sm);
+	overflow: hidden;
+	border: 1px solid var(--pk-border);
+	background: var(--pk-paper);
+	padding: var(--pk-paper-pad);
+}
+
+.pk-embed > iframe,
+.pk-embed > img {
+	display: block;
+	width: 100%;
+	border: 0;
+	border-radius: calc(var(--pk-radius-sm) - 3px);
+}
+
+.pk-embed--audio > iframe {
+	height: 152px;
+}
+
+.pk-embed--video > iframe,
+.pk-embed--map > iframe {
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	height: auto;
+}
+
+.pk-embed--photo > img {
+	aspect-ratio: 16 / 10;
+	object-fit: cover;
+}
+
+/* meta line */
+.pk-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--pk-space-1) var(--pk-space-3);
+	align-items: center;
+	margin-top: var(--pk-space-4);
+	font-family: var(--pk-font-meta);
+	font-size: 0.75rem;
+	color: var(--pk-muted);
+}
+
+/* stylelint-disable-next-line no-descending-specificity */
+.pk-meta a {
+	color: var(--pk-muted);
+	text-decoration: none;
+}
+
+.pk-meta a:hover {
+	color: var(--pk-kind);
+}
+
+.pk-dot {
+	width: 3px;
+	height: 3px;
+	border-radius: 50%;
+	background: currentcolor;
+	opacity: 0.5;
+}
+
+/* source chip (venue / platform / store) */
+.pk-chip {
+	display: inline-flex;
+	align-items: center;
+	font-family: var(--pk-font-meta);
+	font-size: 0.68rem;
+	font-weight: 600;
+	color: var(--pk-chip-ink, var(--pk-muted));
+	background: var(--pk-chip-bg, transparent);
+	border: 1px solid var(--pk-chip-border, transparent);
+	border-radius: 99px;
+	padding: 0.12rem 0.5rem;
+	letter-spacing: 0.02em;
+}
+
+/* rating stars */
+.pk-stars {
+	display: inline-flex;
+	gap: 2px;
+	color: var(--pk-kind);
+	margin-top: var(--pk-space-2);
+}
+
+.pk-stars svg {
+	width: 14px;
+	height: 14px;
+}
+
+.pk-stars .off {
+	opacity: 0.28;
+}
+
+/* small inline pill link (Listen / Watch action) */
+.pk-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-family: var(--pk-font-meta);
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: var(--pk-accent);
+	text-decoration: none;
+}
+
+.pk-link:hover {
+	text-decoration: underline;
+}
+
+.pk-link svg {
+	width: 13px;
+	height: 13px;
+}
+
+/* mood — the minimal card */
+.pk-mood {
+	display: flex;
+	align-items: center;
+	gap: var(--pk-space-4);
+}
+
+.pk-mood__emoji {
+	font-size: 2rem;
+	line-height: 1;
+	flex: none;
+}
+
+.pk-mood__note {
+	font-size: 1.15rem;
+	line-height: 1.35;
+	color: var(--pk-ink);
+}
+
+.pk-card :focus-visible {
+	outline: 2px solid var(--pk-accent);
+	outline-offset: 3px;
+	border-radius: 4px;
+}
+
+/* ---- COMPACT STREAM VARIANT — same bones, trimmed ---- */
+.pk-card--compact {
+	padding: var(--pk-space-4);
+	gap: var(--pk-space-2) var(--pk-space-3);
+	--pk-badge: 28px;
+	box-shadow: none;
+	border-radius: var(--pk-radius-sm);
+}
+
+.pk-card--compact .pk-badge {
+	width: 28px;
+	height: 28px;
+}
+
+.pk-card--compact .pk-badge svg {
+	width: 15px;
+	height: 15px;
+}
+
+.pk-card--compact .pk-title {
+	font-size: 0.975rem;
+}
+
+.pk-card--compact .pk-thumb {
+	width: 44px;
+	height: 44px;
+}
+
+.pk-card--compact .pk-thumb--poster {
+	width: 38px;
+	height: 56px;
+}
+
+.pk-card--compact .pk-note {
+	margin-top: var(--pk-space-2);
+	font-size: 0.925rem;
+}
+
+.pk-card--compact .pk-meta {
+	margin-top: var(--pk-space-2);
+}
+
+.pk-card--compact::before {
+	opacity: 0.32;
+}
+
+.pk-card--compact .pk-embed {
+	display: none;
+}

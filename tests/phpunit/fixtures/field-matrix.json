@@ -1,6 +1,6 @@
 {
     "post-kinds-indieweb/acquisition-card": {
-        "render": "static",
+        "render": "dynamic",
         "attributes": {
             "title": {
                 "type": "string",
@@ -375,7 +375,7 @@
         }
     },
     "post-kinds-indieweb/favorite-card": {
-        "render": "static",
+        "render": "dynamic",
         "attributes": {
             "title": {
                 "type": "string",
@@ -1010,6 +1010,10 @@
                 "type": "string",
                 "sample": "https://example.com/sample-watchurl"
             },
+            "captionsUrl": {
+                "type": "string",
+                "sample": "https://example.com/sample-captionsurl"
+            },
             "tmdbId": {
                 "type": "string",
                 "sample": "Sample tmdbId value"
@@ -1041,7 +1045,7 @@
         }
     },
     "post-kinds-indieweb/wish-card": {
-        "render": "static",
+        "render": "dynamic",
         "attributes": {
             "title": {
                 "type": "string",

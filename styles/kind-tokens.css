@@ -281,3 +281,48 @@
 		--pkiw-state-info: currentcolor;
 	}
 }
+
+   ============================================================
+   pk-card PAINT DEFAULTS (two-layer card system).
+   Relocated here from src/blocks/shared/pk-card.css so the structural CSS stays
+   literal-free (NoColorLeakageTest); this catalog is the sanctioned home for
+   default color literals. Themes override any --pk-* on .pk-card.
+   ============================================================
+:where(.pk-card) {
+	--pk-bg: var(--pkiw-card-page-bg, #fff);
+	--pk-surface: var(--pkiw-card-bg, #fff);
+	--pk-ink: var(--pkiw-card-fg, #1c1c1e);
+	--pk-muted: var(--pkiw-card-text-secondary, #6b6b70);
+	--pk-border: var(--pkiw-card-border, #e4e4e7);
+	--pk-accent: var(--pkiw-card-accent, #3a6ea5);
+	--pk-accent-ink: #fff;
+	--pk-badge-ink: #fff;
+	--pk-kind: #52525b;
+	--pk-tint: transparent;
+	--pk-paper: #f4f4f5;
+	--pk-paper-pad: 0;
+	--pk-font-body: var(--pkiw-card-font, system-ui, -apple-system, sans-serif);
+	--pk-font-title: var(--pk-font-body);
+	--pk-font-meta: ui-monospace, sfmono-regular, menlo, monospace;
+	--pk-label-bg: transparent;
+	--pk-label-rot: 0deg;
+	--pk-title-weight: 600;
+	--pk-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+
+	:where(.pk-card) {
+		--pk-bg: var(--pkiw-card-page-bg-dark, #101012);
+		--pk-surface: var(--pkiw-card-bg-dark, #1b1b1f);
+		--pk-ink: var(--pkiw-card-fg-dark, #ececee);
+		--pk-muted: var(--pkiw-card-text-secondary-dark, #a1a1aa);
+		--pk-border: var(--pkiw-card-border-dark, #34343b);
+		--pk-accent: var(--pkiw-card-accent-dark, #7db3e8);
+		--pk-accent-ink: #0d0d0f;
+		--pk-badge-ink: #14141a;
+		--pk-kind: #a1a1aa;
+		--pk-paper: #26262c;
+		--pk-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+	}
+}

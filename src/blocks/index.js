@@ -45,6 +45,7 @@ registerBlockCollection( 'post-kinds-indieweb', {
 
 // Shared styles for all card blocks
 import './shared/card-editor.css';
+import './shared/pk-card.css';
 
 // Import block registrations
 import './listen-card';

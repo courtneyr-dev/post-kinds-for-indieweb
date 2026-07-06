@@ -43,6 +43,9 @@
         "watchUrl": {
             "type": "string"
         },
+        "captionsUrl": {
+            "type": "string"
+        },
         "tmdbId": {
             "type": "string"
         },
