@@ -9,14 +9,15 @@
  * `core/post-content` for both dumps the entire article for the second
  * shape.
  *
- * `[pk_stream_card]` replaces `core/post-content` in the Stream's Post
- * Template and renders a compact, glanceable card per post:
+ * The `post-kinds-indieweb/stream-card` block replaces `core/post-content`
+ * in the Stream's Post Template and renders a compact, glanceable card per
+ * post:
  *
  *   - Micro-post (body is only Post Kinds card blocks) → render as-is.
  *   - Long-form watch post → a watch card showing just badge, title, and
  *     the video pulled from the body — none of the article text.
- *   - Anything else → a plain title link, so a long article never dumps
- *     its full body into the feed.
+ *   - Anything else → nothing, so a long article never dumps its full body
+ *     into the feed (the Post Template's linked title and date stand alone).
  *
  * @package PostKindsForIndieWeb
  */
@@ -30,10 +31,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Render the Stream card for the current post in the loop.
  *
+ * Runs as a dynamic block render_callback so it executes inside the Query
+ * Loop with the correct post in scope. It reads the loop post from the
+ * block's `postId` context, falling back to the global post.
+ *
+ * @param array          $attributes Block attributes (unused).
+ * @param string         $content    Inner content (unused).
+ * @param \WP_Block|null $block     Block instance, carries loop context.
  * @return string Card HTML.
  */
-function render_stream_card(): string {
-	$post = get_post();
+function render_stream_card( array $attributes = [], string $content = '', ?\WP_Block $block = null ): string {
+	$post_id = ( $block instanceof \WP_Block && ! empty( $block->context['postId'] ) )
+		? (int) $block->context['postId']
+		: 0;
+
+	$post = $post_id ? get_post( $post_id ) : get_post();
 
 	if ( ! $post instanceof \WP_Post ) {
 		return '';
@@ -67,12 +79,11 @@ function render_stream_card(): string {
 		);
 	}
 
-	// Any other long-form post: a plain title link, never the full body.
-	return sprintf(
-		'<p class="pk-stream-fallback"><a href="%s">%s</a></p>',
-		esc_url( (string) get_permalink( $post ) ),
-		esc_html( get_the_title( $post ) )
-	);
+	// Any other long-form post: render nothing. The Post Template's linked
+	// post-title and post-date already stand in for the item; adding a
+	// second title link would duplicate them, and the full body must never
+	// reach the feed.
+	return '';
 }
 
 /**
@@ -181,4 +192,22 @@ function flatten_blocks( array $blocks ): array {
 	return $flat;
 }
 
-add_shortcode( 'pk_stream_card', __NAMESPACE__ . '\\render_stream_card' );
+/**
+ * Register the Stream card as a dynamic block.
+ *
+ * A block (not a shortcode) so the render_callback runs inside the Query
+ * Loop with the loop post in `postId` context. A shortcode would expand
+ * after the loop, against the page's global post, and every item would
+ * collapse to the same fallback.
+ */
+function register_stream_card_block(): void {
+	register_block_type(
+		'post-kinds-indieweb/stream-card',
+		[
+			'render_callback' => __NAMESPACE__ . '\\render_stream_card',
+			'uses_context'    => [ 'postId', 'postType' ],
+			'supports'        => [ 'inserter' => false ],
+		]
+	);
+}
+add_action( 'init', __NAMESPACE__ . '\\register_stream_card_block' );

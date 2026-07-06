@@ -117,9 +117,10 @@ final class StreamCardTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * A long-form post with no kind falls back to a plain title link.
+	 * A long-form post with no kind renders nothing — the Post Template's
+	 * own title and date stand in, and the body never reaches the feed.
 	 */
-	public function test_long_form_non_watch_renders_fallback_link(): void {
+	public function test_long_form_non_watch_renders_nothing(): void {
 		$post_id = self::factory()->post->create(
 			[
 				'post_title'   => 'Just an essay',
@@ -128,11 +129,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		);
 		$GLOBALS['post'] = get_post( $post_id );
 
-		$html = \PostKindsForIndieWeb\render_stream_card();
-
-		$this->assertStringContainsString( 'pk-stream-fallback', $html );
-		$this->assertStringContainsString( 'Just an essay', $html );
-		$this->assertStringNotContainsString( 'Body text.', $html );
+		$this->assertSame( '', \PostKindsForIndieWeb\render_stream_card() );
 	}
 
 	/**
