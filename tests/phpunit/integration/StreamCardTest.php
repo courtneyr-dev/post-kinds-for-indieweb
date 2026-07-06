@@ -33,6 +33,16 @@ final class StreamCardTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A card wrapped in a group is still a micro-post.
+	 */
+	public function test_group_wrapped_card_is_micro_post(): void {
+		$content = "<!-- wp:group -->\n<div class=\"wp-block-group\">" .
+			'<!-- wp:post-kinds-indieweb/watch-card {"mediaTitle":"Enola Holmes 3","rating":4} /-->' .
+			"</div>\n<!-- /wp:group -->";
+		$this->assertTrue( \PostKindsForIndieWeb\content_is_kind_card_only( $content ) );
+	}
+
+	/**
 	 * An article with paragraphs and headings is not a micro-post.
 	 */
 	public function test_article_body_is_not_micro_post(): void {

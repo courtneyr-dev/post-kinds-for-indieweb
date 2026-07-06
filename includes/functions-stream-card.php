@@ -87,10 +87,17 @@ function render_stream_card( array $attributes = [], string $content = '', ?\WP_
 }
 
 /**
+ * Layout wrapper blocks that may hold a card without making a post
+ * long-form. Micro-posts often wrap their card in a group.
+ */
+const STREAM_CARD_WRAPPERS = [ 'core/group', 'core/columns', 'core/column' ];
+
+/**
  * Whether a post body is made up solely of Post Kinds card blocks.
  *
- * Empty freeform gaps between blocks are ignored; any real paragraph,
- * heading, or non-card block makes it long-form.
+ * The card may sit inside layout wrappers (a group, columns) — the whole
+ * tree is flattened first. Empty freeform gaps are ignored; any real
+ * paragraph, heading, or other non-card block makes it long-form.
  *
  * @param string $content Post content.
  * @return bool True when the only substantive blocks are Post Kinds cards.
@@ -102,7 +109,7 @@ function content_is_kind_card_only( string $content ): bool {
 
 	$has_card = false;
 
-	foreach ( parse_blocks( $content ) as $block ) {
+	foreach ( flatten_blocks( parse_blocks( $content ) ) as $block ) {
 		$name = $block['blockName'] ?? null;
 
 		if ( null === $name ) {
@@ -115,6 +122,11 @@ function content_is_kind_card_only( string $content ): bool {
 
 		if ( str_starts_with( $name, 'post-kinds-indieweb/' ) ) {
 			$has_card = true;
+			continue;
+		}
+
+		// Layout wrappers are fine; their children are flattened alongside.
+		if ( in_array( $name, STREAM_CARD_WRAPPERS, true ) ) {
 			continue;
 		}
 
