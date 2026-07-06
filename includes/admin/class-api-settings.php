@@ -54,10 +54,14 @@ class API_Settings {
 		add_action( 'wp_ajax_postkind_indieweb_get_oauth_url', [ $this, 'ajax_get_oauth_url' ] );
 
 		// OAuth callbacks via admin-post.php (cleaner URLs for OAuth redirect URIs).
-		add_action( 'admin_post_postkind_trakt_oauth', [ $this, 'handle_trakt_oauth_callback' ] );
-		add_action( 'admin_post_postkind_simkl_oauth', [ $this, 'handle_simkl_oauth_callback' ] );
-		add_action( 'admin_post_postkind_foursquare_oauth', [ $this, 'handle_foursquare_oauth_callback' ] );
-		add_action( 'admin_post_postkind_lastfm_oauth', [ $this, 'handle_lastfm_oauth_callback' ] );
+		// The action names MUST match get_oauth_redirect_uri(), which builds
+		// `post_kinds_{api}_oauth` — the URI users copy into their provider apps.
+		// These were registered as `postkind_*`, so every callback landed on an
+		// unregistered action and no token was ever stored (always "Not connected").
+		add_action( 'admin_post_post_kinds_trakt_oauth', [ $this, 'handle_trakt_oauth_callback' ] );
+		add_action( 'admin_post_post_kinds_simkl_oauth', [ $this, 'handle_simkl_oauth_callback' ] );
+		add_action( 'admin_post_post_kinds_foursquare_oauth', [ $this, 'handle_foursquare_oauth_callback' ] );
+		add_action( 'admin_post_post_kinds_lastfm_oauth', [ $this, 'handle_lastfm_oauth_callback' ] );
 		// Note: Untappd OAuth removed - API requires commercial agreement.
 	}
 
