@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-07-07
+
+### Fixed
+
+- Editor card parity: the 1.4.0 pass imposed a two-column grid on the editor card, which scattered the card children (a tall empty badge column, a wrapping title, a stray element). Reverted to paint-only -- the existing flex layout stands and the theme tokens now recolor the badge, title, artist, and rating without restructuring.
+
 ## [1.4.0] - 2026-07-07
 
 ### Added
