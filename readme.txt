@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -181,6 +181,13 @@ Add the kind slugs to the `pkiw_stream_kinds` filter. Those kinds get a cached `
 7. Block inserter showing all post kind blocks
 
 == Changelog ==
+
+= 1.3.0 =
+* Stream card: every item now renders as a card. Articles, notes, and any long-form kind that isn't a self-contained card block now show a compact card (kind badge, linked title, date, featured image, excerpt) instead of a bare linked title
+* Post-surface classification: a `pkiw_stream_kinds` filter marks kinds as ephemeral (stream) vs main, with a `pkiw_promote` per-post override
+* Fixed: card embeds (Spotify player, Able Player video, maps) no longer sit inside a "paper" box — the padding, border, and background are gone, so the embed reads as its own object with clean rounded corners
+* Fixed: block editor icons render with currentColor so they stay legible against the List View selection highlight
+* Removed: duplicate registration of the format-badge block (owned by the Post Formats for Block Themes plugin)
 
 = 1.2.0 =
 * Book fields (ISBN, publisher, pages, publish date, ASIN) are now bindable kind-meta keys backed by post meta

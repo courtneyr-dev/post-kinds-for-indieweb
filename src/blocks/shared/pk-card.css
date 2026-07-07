@@ -176,15 +176,15 @@
 	border-radius: var(--pk-radius-sm);
 }
 
-/* rich embed — full width, spans both columns, on the theme paper */
+/* rich embed — full width, spans both columns. The embed (Spotify player,
+   Able Player video, map) is its own visual object, so it sits clean with no
+   paper backing, padding, or border — the rounded corners come from the
+   container clipping its child. */
 .pk-embed {
 	grid-column: 1 / -1;
 	margin-top: var(--pk-space-4);
 	border-radius: var(--pk-radius-sm);
 	overflow: hidden;
-	border: 1px solid var(--pk-border);
-	background: var(--pk-paper);
-	padding: var(--pk-paper-pad);
 }
 
 .pk-embed > iframe,
@@ -192,7 +192,7 @@
 	display: block;
 	width: 100%;
 	border: 0;
-	border-radius: calc(var(--pk-radius-sm) - 3px);
+	border-radius: 0;
 }
 
 .pk-embed--audio > iframe {
