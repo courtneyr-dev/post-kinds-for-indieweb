@@ -61,6 +61,59 @@ class DefaultCategoryTest extends WP_UnitTestCase {
 		$this->assertNotContains( $this->activity_id, $this->category_ids( $post_id ) );
 	}
 
+	public function test_does_not_apply_to_article_kind(): void {
+		$post_id = $this->make_kind_post( 'article' );
+		$this->assertNotContains(
+			$this->activity_id,
+			$this->category_ids( $post_id ),
+			'articles belong in the blog, not the stream'
+		);
+	}
+
+	public function test_does_not_apply_to_bare_note_kind(): void {
+		// A plain note (no Status/Aside format, not composer-created) reads as
+		// long-form and must not get the stream category.
+		$post_id = $this->make_kind_post( 'note' );
+		$this->assertNotContains( $this->activity_id, $this->category_ids( $post_id ) );
+	}
+
+	public function test_applies_to_status_format_post_without_a_kind(): void {
+		$post_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_object_terms( $post_id, 'post-format-status', 'post_format' );
+		do_action( 'wp_after_insert_post', $post_id, get_post( $post_id ), false, null );
+		$this->assertContains( $this->activity_id, $this->category_ids( $post_id ) );
+	}
+
+	public function test_applies_to_aside_format_post(): void {
+		$post_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_object_terms( $post_id, 'post-format-aside', 'post_format' );
+		do_action( 'wp_after_insert_post', $post_id, get_post( $post_id ), false, null );
+		$this->assertContains( $this->activity_id, $this->category_ids( $post_id ) );
+	}
+
+	public function test_applies_to_composer_created_post(): void {
+		// A Micropub-created post (the composer) is stream content even when its
+		// only kind is the bare `note`.
+		$post_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		update_post_meta( $post_id, 'micropub_auth_response', [ 'client_id' => 'https://example.com/post/' ] );
+		wp_set_object_terms( $post_id, 'note', 'kind' );
+		do_action( 'wp_after_insert_post', $post_id, get_post( $post_id ), false, null );
+		$this->assertContains( $this->activity_id, $this->category_ids( $post_id ) );
+	}
+
+	public function test_stream_kinds_filter_can_extend_the_set(): void {
+		add_filter(
+			'pkiw_default_category_stream_kinds',
+			static function ( array $kinds ): array {
+				$kinds[] = 'note';
+				return $kinds;
+			}
+		);
+		$post_id = $this->make_kind_post( 'note' );
+		remove_all_filters( 'pkiw_default_category_stream_kinds' );
+		$this->assertContains( $this->activity_id, $this->category_ids( $post_id ) );
+	}
+
 	public function test_does_nothing_when_no_default_configured(): void {
 		update_option( 'post_kinds_indieweb_settings', [ 'default_category' => 0 ] );
 		$post_id = $this->make_kind_post( 'listen' );
