@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-07-06
+
 ### Changed
 
 - Stream card: every item now renders as a card. Articles, notes, and any long-form kind that isn't a self-contained card block previously fell back to a bare linked title; they now show a compact card with the kind badge, linked title, date, featured image, and excerpt (never the full body). Media micro-posts and long-form watch posts keep their existing rich cards.
@@ -18,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Block editor icons render with `currentColor` so they stay legible against the List View selection highlight.
+- Card embeds (Spotify player, Able Player video, maps) no longer sit inside a "paper" box — the padding, border, and `--pk-paper` background are gone, so the embed reads as its own object with clean rounded corners.
 
 ### Removed
 
