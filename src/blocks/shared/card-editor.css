@@ -1086,12 +1086,11 @@
 	gap: var(--pk-space-3, 0.75rem) var(--pk-space-4, 1rem);
 	align-items: start;
 	padding: var(--pk-space-5, 1.5rem);
-	background: var(--pk-surface, #fbfaf7);
-	color: var(--pk-ink, #241c4a);
-	border: 1px solid var(--pk-border, rgba(36, 28, 74, 0.15));
-	border-left: 3px solid var(--pk-kind, #241c4a);
+	background: var(--pk-surface, var(--pkiw-card-bg, transparent));
+	color: var(--pk-ink, var(--pkiw-card-fg, inherit));
+	border: 1px solid var(--pk-border, var(--pkiw-card-border, transparent));
 	border-radius: var(--pk-radius, 14px);
-	box-shadow: var(--pk-shadow, 0 1px 2px rgba(0, 0, 0, 0.06));
+	box-shadow: var(--pk-shadow, var(--pkiw-card-shadow, none));
 	font-family: var(--pk-font-body, inherit);
 }
 
@@ -1105,8 +1104,8 @@
 	display: grid;
 	place-items: center;
 	margin: 0;
-	background: var(--pk-kind, #241c4a);
-	color: var(--pk-badge-ink, #fff);
+	background: var(--pk-kind, var(--pkiw-card-accent, currentcolor));
+	color: var(--pk-badge-ink, inherit);
 	font-size: 16px;
 	line-height: 1;
 }
@@ -1136,7 +1135,7 @@
 /* Artist / secondary lines — muted. */
 .pk-card .post-kinds-card__subtitle,
 .pk-card .post-kinds-card__meta {
-	color: var(--pk-muted, #6b6683);
+	color: var(--pk-muted, var(--pkiw-card-text-secondary, inherit));
 	font-size: 0.925rem;
 	line-height: 1.45;
 	margin: var(--pk-space-1, 0.25rem) 0 0;
@@ -1144,12 +1143,5 @@
 
 /* Rating stars adopt the kind accent. */
 .pk-card .post-kinds-star-rating {
-	color: var(--pk-kind, #b26a00);
-}
-
-/* The theme paints a left border on `.pk-card` for the front end; the editor
- * card already carries its own accent border, so drop the wrapper's. */
-.pk-card.post-kinds-card,
-[class*="wp-block-post-kinds-indieweb-"].pk-card {
-	border-left: 0;
+	color: var(--pk-kind, var(--pkiw-card-accent, currentcolor));
 }
