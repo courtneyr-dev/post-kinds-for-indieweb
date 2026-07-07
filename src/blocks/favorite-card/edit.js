@@ -22,7 +22,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const { title, url, description, image, imageAlt, author } = attributes;
 
 	const blockProps = useBlockProps( {
-		className: 'favorite-card-block',
+		className: 'favorite-card-block pk-card k-favorite',
 	} );
 
 	const { editPost } = useDispatch( 'core/editor' );

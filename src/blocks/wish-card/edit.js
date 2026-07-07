@@ -87,7 +87,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		attributes;
 
 	const blockProps = useBlockProps( {
-		className: 'wish-card-block',
+		className: 'wish-card-block pk-card k-wish',
 	} );
 
 	const { editPost } = useDispatch( 'core/editor' );

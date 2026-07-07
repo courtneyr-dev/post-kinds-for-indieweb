@@ -22,7 +22,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const { title, url, description, image, imageAlt, author } = attributes;
 
 	const blockProps = useBlockProps( {
-		className: 'like-card-block',
+		className: 'like-card-block pk-card k-like',
 	} );
 
 	const { editPost } = useDispatch( 'core/editor' );

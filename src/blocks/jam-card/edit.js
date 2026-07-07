@@ -31,7 +31,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const [ isSearching, setIsSearching ] = useState( false );
 
 	const blockProps = useBlockProps( {
-		className: 'jam-card-block',
+		className: 'jam-card-block pk-card k-jam',
 	} );
 
 	const { editPost } = useDispatch( 'core/editor' );

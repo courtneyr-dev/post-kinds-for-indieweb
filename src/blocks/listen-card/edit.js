@@ -60,7 +60,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const [ isSearching, setIsSearching ] = useState( false );
 
 	const blockProps = useBlockProps( {
-		className: `listen-card layout-${ layout }`,
+		className: `listen-card layout-${ layout } pk-card k-listen`,
 	} );
 
 	const embedPreview = useSelect(
