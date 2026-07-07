@@ -194,22 +194,91 @@ final class StreamCardTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * A long-form post with no kind renders a linked title (never the body).
+	 * A long-form post with no kind renders a compact card with its excerpt —
+	 * never the full body, and never the old bare-link fallback.
 	 */
-	public function test_long_form_non_watch_renders_linked_title(): void {
+	public function test_long_form_non_watch_renders_generic_card(): void {
 		$post_id = self::factory()->post->create(
 			[
 				'post_title'   => 'Just an essay',
-				'post_content' => "<!-- wp:paragraph -->\n<p>Body text.</p>\n<!-- /wp:paragraph -->",
+				'post_content' => "<!-- wp:paragraph -->\n<p>The full body of the essay.</p>\n<!-- /wp:paragraph -->",
+				'post_excerpt' => 'A short summary.',
 			]
 		);
 		$GLOBALS['post'] = get_post( $post_id );
 
 		$html = \PostKindsForIndieWeb\render_stream_card();
 
-		$this->assertStringContainsString( 'pk-stream-fallback', $html );
+		$this->assertStringContainsString( 'pk-card', $html );
+		$this->assertStringContainsString( 'pk-card--stream', $html );
+		$this->assertStringNotContainsString( 'pk-stream-fallback', $html );
 		$this->assertStringContainsString( 'Just an essay', $html );
-		$this->assertStringNotContainsString( 'Body text.', $html );
+		// The excerpt shows; the full body never reaches the feed.
+		$this->assertStringContainsString( 'A short summary.', $html );
+		$this->assertStringContainsString( 'p-summary', $html );
+		$this->assertStringNotContainsString( 'The full body of the essay.', $html );
+	}
+
+	/**
+	 * A kinded long-form post shows its kind label; an unkinded one falls back
+	 * to "Note".
+	 */
+	public function test_generic_card_shows_kind_label(): void {
+		$this->ensure_kind_term( 'article' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => 'A write-up',
+				'post_content' => "<!-- wp:paragraph -->\n<p>Words and words.</p>\n<!-- /wp:paragraph -->",
+			]
+		);
+		wp_set_object_terms( $post_id, 'article', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PostKindsForIndieWeb\render_stream_card();
+
+		$this->assertStringContainsString( 'pk-kindlabel', $html );
+		$this->assertStringContainsString( 'k-article', $html );
+	}
+
+	/**
+	 * A no-kind post's card labels as "Note" and carries the k-note class.
+	 */
+	public function test_generic_card_defaults_to_note_without_kind(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => 'Untagged thought',
+				'post_content' => "<!-- wp:paragraph -->\n<p>Just a thought.</p>\n<!-- /wp:paragraph -->",
+			]
+		);
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PostKindsForIndieWeb\render_stream_card();
+
+		$this->assertStringContainsString( 'k-note', $html );
+		$this->assertStringContainsString( 'Note', $html );
+	}
+
+	/**
+	 * A featured image rides into the card as a `u-photo`.
+	 */
+	public function test_generic_card_includes_featured_image(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => 'Illustrated post',
+				'post_content' => "<!-- wp:paragraph -->\n<p>Has a picture.</p>\n<!-- /wp:paragraph -->",
+			]
+		);
+		$attachment_id = self::factory()->attachment->create_upload_object(
+			DIR_TESTDATA . '/images/canola.jpg',
+			$post_id
+		);
+		set_post_thumbnail( $post_id, $attachment_id );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PostKindsForIndieWeb\render_stream_card();
+
+		$this->assertStringContainsString( 'pk-media--stream', $html );
+		$this->assertStringContainsString( 'u-photo', $html );
 	}
 
 	/**
