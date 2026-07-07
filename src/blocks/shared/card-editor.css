@@ -1069,76 +1069,69 @@
 }
 
 /* ============================================================
- * Editor ↔ front-of-site card parity
+ * Editor ↔ front-of-site card paint parity
  *
  * Each card block wrapper carries `pk-card k-<kind>`, so the active theme's
- * per-kind --pk-* paint tokens (loaded into the editor via add_editor_style)
- * cascade onto the editor markup below. The plugin owns this structure; the
- * theme owns the color/font tokens. Selectors are prefixed with `.pk-card`
- * so they win over the plain base rules above and stay scoped to these cards.
- * Every value falls back, so a theme that ships no --pk-* tokens still
- * renders a clean, readable card.
+ * per-kind --pk-* tokens (loaded into the editor via add_editor_style) cascade
+ * onto the editor markup. This section paints COLOR + FONT only; the existing
+ * flex layout above is left untouched (imposing a grid here scattered the
+ * card's children). The plugin owns structure, the theme owns paint; every
+ * value falls back to a neutral keyword so a token-less theme still reads
+ * cleanly.
  * ============================================================ */
 
+/* The wrapper carries `pk-card` ONLY to pull the theme's per-kind --pk-*
+ * tokens into scope. WordPress also loads the block's front-end style sheet
+ * (pk-card.css) in the editor, whose `.pk-card` rule imposes a grid +
+ * max-width that squeezes the editor markup into a sliver. Neutralize that
+ * layout on the block wrapper so it's a transparent token carrier; the inner
+ * `.post-kinds-card` keeps its own editor layout. The attribute + class
+ * selector outranks pk-card.css's single `.pk-card`. */
+[class*="wp-block-post-kinds-indieweb-"].pk-card {
+	display: block;
+	grid-template-columns: none;
+	gap: 0;
+	max-width: none;
+	padding: 0;
+	border: 0;
+	box-shadow: none;
+	background: none;
+	border-radius: 0;
+}
+
 .pk-card .post-kinds-card {
-	display: grid;
-	grid-template-columns: var(--pk-badge, 34px) 1fr;
-	gap: var(--pk-space-3, 0.75rem) var(--pk-space-4, 1rem);
-	align-items: start;
-	padding: var(--pk-space-5, 1.5rem);
-	background: var(--pk-surface, var(--pkiw-card-bg, transparent));
+	background: var(--pk-surface, var(--pkiw-card-bg, inherit));
 	color: var(--pk-ink, var(--pkiw-card-fg, inherit));
-	border: 1px solid var(--pk-border, var(--pkiw-card-border, transparent));
-	border-radius: var(--pk-radius, 14px);
+	border-color: var(--pk-border, var(--pkiw-card-border, transparent));
+	border-radius: var(--pk-radius, var(--pkiw-card-border-radius, 12px));
 	box-shadow: var(--pk-shadow, var(--pkiw-card-shadow, none));
 	font-family: var(--pk-font-body, inherit);
 }
 
-/* Kind badge — the emoji/icon in a filled circle spanning the left column. */
+/* The kind glyph becomes a small filled circle in its existing corner. */
 .pk-card .post-kinds-card__type-icon {
-	grid-row: 1 / span 3;
-	grid-column: 1;
-	width: var(--pk-badge, 34px);
-	height: var(--pk-badge, 34px);
-	border-radius: 50%;
 	display: grid;
 	place-items: center;
-	margin: 0;
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
 	background: var(--pk-kind, var(--pkiw-card-accent, currentcolor));
 	color: var(--pk-badge-ink, inherit);
-	font-size: 16px;
-	line-height: 1;
+	font-size: 15px;
+	opacity: 1;
 }
 
-/* Everything else sits in the content column. */
-.pk-card .post-kinds-card__content,
-.pk-card .post-kinds-card__media {
-	grid-column: 2;
-	min-width: 0;
-}
-
-.pk-card .post-kinds-card__media {
-	max-width: 128px;
-	margin-top: var(--pk-space-2, 0.5rem);
-}
-
-/* Title — display face + ink. */
+/* Title in the display face + ink. */
 .pk-card .post-kinds-card__title {
 	font-family: var(--pk-font-title, inherit);
 	font-weight: var(--pk-title-weight, 700);
-	font-size: 1.075rem;
-	line-height: 1.3;
-	margin: 0;
 	color: var(--pk-ink, inherit);
 }
 
-/* Artist / secondary lines — muted. */
+/* Secondary lines read muted. */
 .pk-card .post-kinds-card__subtitle,
 .pk-card .post-kinds-card__meta {
 	color: var(--pk-muted, var(--pkiw-card-text-secondary, inherit));
-	font-size: 0.925rem;
-	line-height: 1.45;
-	margin: var(--pk-space-1, 0.25rem) 0 0;
 }
 
 /* Rating stars adopt the kind accent. */
