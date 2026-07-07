@@ -1080,6 +1080,25 @@
  * cleanly.
  * ============================================================ */
 
+/* The wrapper carries `pk-card` ONLY to pull the theme's per-kind --pk-*
+ * tokens into scope. WordPress also loads the block's front-end style sheet
+ * (pk-card.css) in the editor, whose `.pk-card` rule imposes a grid +
+ * max-width that squeezes the editor markup into a sliver. Neutralize that
+ * layout on the block wrapper so it's a transparent token carrier; the inner
+ * `.post-kinds-card` keeps its own editor layout. The attribute + class
+ * selector outranks pk-card.css's single `.pk-card`. */
+[class*="wp-block-post-kinds-indieweb-"].pk-card {
+	display: block;
+	grid-template-columns: none;
+	gap: 0;
+	max-width: none;
+	padding: 0;
+	border: 0;
+	box-shadow: none;
+	background: none;
+	border-radius: 0;
+}
+
 .pk-card .post-kinds-card {
 	background: var(--pk-surface, var(--pkiw-card-bg, inherit));
 	color: var(--pk-ink, var(--pkiw-card-fg, inherit));
