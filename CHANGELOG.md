@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-07-07
+
+### Added
+
+- Editor card parity: every kind-card block now reads like its published card in the block editor instead of a plain form. Each block wrapper carries `pk-card k-<kind>`, so a theme's per-kind `--pk-*` paint tokens (loaded into the editor via `add_editor_style`) cascade onto the editor markup, and the shared `card-editor.css` paints the badge, title, artist, and rating from those tokens. Plugin owns the structure, theme owns the paint; fields stay inline-editable, and a theme that ships no `--pk-*` tokens still gets a clean, neutral card.
+
 ## [1.3.0] - 2026-07-06
 
 ### Changed

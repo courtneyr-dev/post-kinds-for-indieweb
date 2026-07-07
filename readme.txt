@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -181,6 +181,9 @@ Add the kind slugs to the `pkiw_stream_kinds` filter. Those kinds get a cached `
 7. Block inserter showing all post kind blocks
 
 == Changelog ==
+
+= 1.4.0 =
+* Editor card parity: every kind-card block now reads like its published card in the block editor instead of a plain form. The theme's per-kind colors and fonts (loaded into the editor via add_editor_style) paint the editor card's badge, title, artist, and rating; fields stay inline-editable. Plugin owns the structure, theme owns the paint, so a theme with no card tokens still gets a clean, neutral card.
 
 = 1.3.0 =
 * Stream card: every item now renders as a card. Articles, notes, and any long-form kind that isn't a self-contained card block now show a compact card (kind badge, linked title, date, featured image, excerpt) instead of a bare linked title
