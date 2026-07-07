@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-07-07
+
+### Changed
+
+- Default category (stream): the category is now applied only to "stream-shaped" posts -- those created through a Micropub client (the composer), or with a Status/Aside post format, or carrying a genuine activity kind (listen, watch, checkin, …). It is no longer applied to article/review/recipe kinds or plain admin-written posts, so long-form content stays out of the stream. The bare `note` kind alone no longer qualifies (it is auto-assigned to plain posts); a note needs a Status/Aside format or a Micropub origin to count. New `pkiw_default_category_stream_kinds` filter.
+
 ## [1.4.1] - 2026-07-07
 
 ### Fixed
