@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Stream card: every item now renders as a card. Articles, notes, and any long-form kind that isn't a self-contained card block previously fell back to a bare linked title; they now show a compact card with the kind badge, linked title, date, featured image, and excerpt (never the full body). Media micro-posts and long-form watch posts keep their existing rich cards.
+
 ### Added
 
 - Post-surface classification: a `pkiw_stream_kinds` filter marks kinds as ephemeral (`stream`) vs `main`, cached in `_pkiw_surface`; a `pkiw_promote` override is settable via the editor toggle, the Micropub `pkiw-promote` property, or `wp postkind surfaces backfill`. The plugin emits the signal only — themes decide how to use it. Default `pkiw_stream_kinds` is empty, so existing sites are unaffected.

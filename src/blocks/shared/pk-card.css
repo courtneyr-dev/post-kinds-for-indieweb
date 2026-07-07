@@ -157,6 +157,25 @@
 	height: 70px;
 }
 
+/* generic stream card — article/note excerpt + featured image */
+.pk-excerpt {
+	margin: var(--pk-space-3) 0 0;
+	color: var(--pk-muted);
+	font-size: 0.95rem;
+	line-height: 1.55;
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.pk-media--stream img {
+	max-width: 100%;
+	height: auto;
+	border-radius: var(--pk-radius-sm);
+}
+
 /* rich embed — full width, spans both columns, on the theme paper */
 .pk-embed {
 	grid-column: 1 / -1;

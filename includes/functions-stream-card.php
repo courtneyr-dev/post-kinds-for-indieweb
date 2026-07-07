@@ -16,8 +16,9 @@
  *   - Micro-post (body is only Post Kinds card blocks) → render as-is.
  *   - Long-form watch post → a watch card showing just badge, title, and
  *     the video pulled from the body — none of the article text.
- *   - Anything else → nothing, so a long article never dumps its full body
- *     into the feed (the Post Template's linked title and date stand alone).
+ *   - Anything else (article, note, any kind with a full body) → a compact
+ *     card with badge, title, date, featured image, and excerpt — never the
+ *     full body. Every Stream item reads as a card.
  *
  * @package PostKindsForIndieWeb
  */
@@ -85,19 +86,90 @@ function render_stream_card( array $attributes = [], string $content = '', ?\WP_
 		);
 	}
 
-	// Any other long-form post: a linked post title stands in for the item.
-	// The Stream template no longer renders its own post-title block (the
-	// title now lives inside each card), so this keeps non-card posts from
-	// losing their heading. The full body never reaches the feed.
+	// Any other long-form post (an article, a note, a kind with a full body):
+	// a compact card with the title, date, featured image, and excerpt —
+	// never the full body. Every Stream item reads as a card.
+	return render_generic_stream_card( $post );
+}
+
+/**
+ * Render a compact card for a post that isn't a self-contained kind card.
+ *
+ * Articles, notes, and any long-form kind get a glanceable card — badge,
+ * kind label, linked title, date, featured image, and the excerpt (never
+ * the full body). Returns '' for a title-less post so the feed shows no
+ * empty card.
+ *
+ * @param \WP_Post $post Post to render.
+ * @return string Card HTML, or '' when the post has no title.
+ */
+function render_generic_stream_card( \WP_Post $post ): string {
 	$title = get_the_title( $post );
 	if ( '' === trim( $title ) ) {
 		return '';
 	}
-	return sprintf(
-		'<p class="pk-stream-fallback"><a href="%s">%s</a></p>',
-		esc_url( (string) get_permalink( $post ) ),
-		esc_html( $title )
-	);
+
+	$permalink  = esc_url( (string) get_permalink( $post ) );
+	$kind_slug  = get_post_kind_slug( $post );
+	$badge_kind = '' !== $kind_slug ? $kind_slug : 'note';
+	$kind_label = stream_card_kind_label( $post );
+	$excerpt    = trim( wp_strip_all_tags( get_the_excerpt( $post ) ) );
+
+	$thumb_html = has_post_thumbnail( $post )
+		? get_the_post_thumbnail(
+			$post,
+			'medium',
+			[
+				'class'   => 'u-photo',
+				'loading' => 'lazy',
+			]
+		)
+		: '';
+
+	$out = '<article class="pk-card pk-card--stream k-' . esc_attr( $badge_kind ) . ' h-entry">';
+	// Badge SVG is a static, decorative glyph from get_kind_icon_svg().
+	$out .= '<div class="pk-badge">' . get_kind_icon_svg( $badge_kind ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	$out .= '<div class="pk-body">';
+	$out .= '<p class="pk-kindlabel">' . esc_html( $kind_label ) . '</p>';
+	$out .= '<h2 class="pk-title p-name"><a href="' . $permalink . '">' . esc_html( $title ) . '</a></h2>';
+
+	$date_display = get_the_date( '', $post );
+	if ( '' !== $date_display ) {
+		$out .= '<p class="pk-sub pk-stream-date"><time class="dt-published" datetime="'
+			. esc_attr( (string) get_post_time( 'c', true, $post ) ) . '">'
+			. esc_html( $date_display ) . '</time></p>';
+	}
+
+	if ( '' !== $thumb_html ) {
+		// get_the_post_thumbnail() returns core-generated, escaped <img> markup.
+		$out .= '<div class="pk-media pk-media--stream">' . $thumb_html . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
+
+	if ( '' !== $excerpt ) {
+		$out .= '<p class="pk-excerpt p-summary">' . esc_html( $excerpt ) . '</p>';
+	}
+
+	$out .= '<div class="pk-meta"><a class="pk-link" href="' . $permalink . '">'
+		. esc_html__( 'Read more', 'post-kinds-for-indieweb' ) . '</a></div>';
+	$out .= '</div></article>';
+
+	return $out;
+}
+
+/**
+ * The display label for a post's kind, or a neutral default when it has none.
+ *
+ * @param \WP_Post $post Post object.
+ * @return string Kind term name (e.g. "Article", "Note"), or "Note" when unkinded.
+ */
+function stream_card_kind_label( \WP_Post $post ): string {
+	$terms = get_the_terms( $post, 'kind' );
+
+	if ( is_array( $terms ) && isset( $terms[0] ) && $terms[0] instanceof \WP_Term ) {
+		return $terms[0]->name;
+	}
+
+	return __( 'Note', 'post-kinds-for-indieweb' );
 }
 
 /**
