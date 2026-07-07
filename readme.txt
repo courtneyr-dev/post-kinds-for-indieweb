@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 1.4.2
+Stable tag: 1.4.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -181,6 +181,9 @@ Add the kind slugs to the `pkiw_stream_kinds` filter. Those kinds get a cached `
 7. Block inserter showing all post kind blocks
 
 == Changelog ==
+
+= 1.4.3 =
+* Fixed: front-end card padding and shadow were stripped by an unscoped editor-parity rule (1.4.1) that also applied on the front end. Scoped it to the editor canvas so published cards keep their spacing and shadow.
 
 = 1.4.2 =
 * Default category (stream) now applies only to stream-shaped posts — those posted via the composer (Micropub), with a Status/Aside format, or carrying a real activity kind (listen/watch/checkin/…). Articles, reviews, recipes, and plain admin posts no longer get it, so long-form content stays out of the stream. New pkiw_default_category_stream_kinds filter.

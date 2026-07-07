@@ -1080,14 +1080,18 @@
  * cleanly.
  * ============================================================ */
 
-/* The wrapper carries `pk-card` ONLY to pull the theme's per-kind --pk-*
- * tokens into scope. WordPress also loads the block's front-end style sheet
- * (pk-card.css) in the editor, whose `.pk-card` rule imposes a grid +
+/* The editor wrapper carries `pk-card` ONLY to pull the theme's per-kind
+ * --pk-* tokens into scope. WordPress also loads the block's front-end style
+ * sheet (pk-card.css) in the editor, whose `.pk-card` rule imposes a grid +
  * max-width that squeezes the editor markup into a sliver. Neutralize that
  * layout on the block wrapper so it's a transparent token carrier; the inner
- * `.post-kinds-card` keeps its own editor layout. The attribute + class
- * selector outranks pk-card.css's single `.pk-card`. */
-[class*="wp-block-post-kinds-indieweb-"].pk-card {
+ * `.post-kinds-card` keeps its own editor layout.
+ *
+ * CRITICAL: this stylesheet loads on the FRONT END too, and the published
+ * card also carries `pk-card` + `wp-block-post-kinds-indieweb-*`. Scope this
+ * to `.editor-styles-wrapper` (the editor canvas, absent on the front end) so
+ * it never strips the real card's padding, shadow, and surface. */
+.editor-styles-wrapper [class*="wp-block-post-kinds-indieweb-"].pk-card {
 	display: block;
 	grid-template-columns: none;
 	gap: 0;

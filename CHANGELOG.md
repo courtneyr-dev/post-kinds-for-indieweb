@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-07-07
+
+### Fixed
+
+- Front-end card padding + shadow regression: the 1.4.1 editor-parity rule that neutralizes the front-end grid on the editor wrapper was unscoped, and since the shared card stylesheet loads on the front end too (where the published card also carries `pk-card` + `wp-block-post-kinds-indieweb-*`), it stripped the real cards' padding, box-shadow, surface, and radius. Scoped that rule to `.editor-styles-wrapper` (editor canvas only), so front-end cards keep their intended spacing and shadow.
+
 ## [1.4.2] - 2026-07-07
 
 ### Changed
