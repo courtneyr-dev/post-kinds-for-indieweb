@@ -72,7 +72,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const [ isFetchingCover, setIsFetchingCover ] = useState( false );
 
 	const blockProps = useBlockProps( {
-		className: `watch-card layout-${ layout } type-${ mediaType }`,
+		className: `watch-card layout-${ layout } type-${ mediaType } pk-card k-watch`,
 	} );
 
 	const embedPreview = useSelect(

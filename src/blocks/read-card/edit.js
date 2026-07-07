@@ -87,7 +87,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 	}, [] );
 
 	const blockProps = useBlockProps( {
-		className: `read-card layout-${ layout } status-${ readStatus }`,
+		className: `read-card layout-${ layout } status-${ readStatus } pk-card k-read`,
 	} );
 
 	// Calculate progress percentage

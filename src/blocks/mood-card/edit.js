@@ -110,7 +110,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const { mood, emoji, note, intensity } = attributes;
 
 	const blockProps = useBlockProps( {
-		className: 'mood-card-block',
+		className: 'mood-card-block pk-card k-mood',
 	} );
 
 	const { editPost } = useDispatch( 'core/editor' );

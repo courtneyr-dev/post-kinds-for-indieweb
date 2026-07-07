@@ -55,7 +55,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const [ showRsvpPicker, setShowRsvpPicker ] = useState( false );
 
 	const blockProps = useBlockProps( {
-		className: `rsvp-card layout-${ layout } rsvp-${ rsvpStatus }`,
+		className: `rsvp-card layout-${ layout } rsvp-${ rsvpStatus } pk-card k-rsvp`,
 	} );
 
 	// RSVP status options

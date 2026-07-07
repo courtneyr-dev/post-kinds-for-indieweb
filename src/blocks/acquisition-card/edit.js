@@ -84,7 +84,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	} = attributes;
 
 	const blockProps = useBlockProps( {
-		className: 'acquisition-card-block',
+		className: 'acquisition-card-block pk-card k-acquisition',
 	} );
 
 	const { editPost } = useDispatch( 'core/editor' );

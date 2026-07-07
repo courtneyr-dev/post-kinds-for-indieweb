@@ -136,7 +136,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	} = attributes;
 
 	const blockProps = useBlockProps( {
-		className: 'eat-card-block',
+		className: 'eat-card-block pk-card k-eat',
 	} );
 
 	const { editPost } = useDispatch( 'core/editor' );

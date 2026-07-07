@@ -120,7 +120,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	} = attributes;
 
 	const blockProps = useBlockProps( {
-		className: 'drink-card-block',
+		className: 'drink-card-block pk-card k-drink',
 	} );
 
 	// Get post meta and kind for syncing

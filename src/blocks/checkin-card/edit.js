@@ -102,7 +102,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const searchInputRef = useRef( null );
 
 	const blockProps = useBlockProps( {
-		className: `checkin-card layout-${ layout }`,
+		className: `checkin-card layout-${ layout } pk-card k-checkin`,
 	} );
 
 	// Get post meta from the post-kinds store

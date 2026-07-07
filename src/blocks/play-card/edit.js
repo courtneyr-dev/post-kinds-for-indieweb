@@ -128,7 +128,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	};
 
 	const blockProps = useBlockProps( {
-		className: 'play-card-block',
+		className: 'play-card-block pk-card k-play',
 	} );
 
 	const { editPost } = useDispatch( 'core/editor' );
