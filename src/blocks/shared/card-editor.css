@@ -1089,9 +1089,10 @@
  *
  * CRITICAL: this stylesheet loads on the FRONT END too, and the published
  * card also carries `pk-card` + `wp-block-post-kinds-indieweb-*`. Scope this
- * to `.editor-styles-wrapper` (the editor canvas, absent on the front end) so
- * it never strips the real card's padding, shadow, and surface. */
-.editor-styles-wrapper [class*="wp-block-post-kinds-indieweb-"].pk-card {
+ * with `.block-editor-block-list__block` — a class the editor puts on the
+ * block wrapper element itself but the front-end article never has — so it
+ * never strips the real card's padding, shadow, and surface. */
+.block-editor-block-list__block[class*="wp-block-post-kinds-indieweb-"].pk-card {
 	display: block;
 	grid-template-columns: none;
 	gap: 0;
