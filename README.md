@@ -8,9 +8,21 @@
 
 **Own your media life.** Track what you listen to, watch, read, play, and experience — all from your WordPress site, with full block editor support and IndieWeb microformats.
 
-A modern, block-editor successor to David Shanske's [IndieWeb Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin.
+A modern, block-editor successor to David Shanske's [IndieWeb Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin. Built for IndieWeb users who want to own their listening, watching, reading, and check-in history, and for bloggers migrating from the classic Post Kinds plugin to the block editor.
+
+Try it without installing anything: see the [Playground preview](docs/playground.md) for a one-command browser demo.
 
 ---
+
+## User documentation
+
+Full user documentation lives in [docs/index.md](docs/index.md). Key pages:
+
+- [Installation](docs/installation.md) — requirements (WordPress 7.0+, PHP 8.2+), install methods, and plugin conflicts
+- [Getting started](docs/getting-started.md) — your first post kind
+- [Settings](docs/settings.md) — every option under the Reactions menu
+- [Troubleshooting](docs/troubleshooting.md) — common problems and fixes
+- [Privacy and data](docs/privacy-and-data.md) — what's stored, what's sent externally, and check-in location privacy
 
 ## Why Post Kinds?
 
@@ -18,7 +30,7 @@ The original Post Kinds plugin brought IndieWeb interaction types to WordPress, 
 
 This plugin bridges that gap:
 
-- **Block-native** — 16 custom Gutenberg blocks, not shortcodes or meta boxes
+- **Block-native** — 22 custom blocks plus 3 server-rendered blocks, not shortcodes or meta boxes
 - **API-powered** — search MusicBrainz, TMDB, Open Library, and more directly from the editor
 - **Import everything** — bulk import from Last.fm, Trakt, Hardcover, and other services
 - **IndieWeb-first** — proper microformats2 markup on every post
@@ -93,7 +105,7 @@ Validate your output at [pin13.net/mf2](https://pin13.net/mf2/).
 1. Go to **Plugins > Add New** in your WordPress admin
 2. Search for **Post Kinds for IndieWeb**
 3. Click **Install Now**, then **Activate**
-4. Configure API keys at **Settings > Post Kinds for IndieWeb**
+4. Configure API keys at **Reactions > API Connections**
 
 ### Install from GitHub
 
@@ -108,10 +120,10 @@ Then activate the plugin in WordPress admin.
 
 ## Configuration
 
-1. **Settings > Post Kinds for IndieWeb** — general plugin settings
-2. **API Connections** — enter API keys for TMDB, Last.fm, etc. (MusicBrainz and Open Library don't need keys)
-3. **Webhooks** — set up endpoints for Plex, Jellyfin, or ListenBrainz scrobbling
-4. **Quick Post** — use the rapid posting interface for fast content creation
+1. **Reactions > Settings** — general plugin settings
+2. **Reactions > API Connections** — enter API keys for TMDB, Last.fm, etc. (MusicBrainz and Open Library don't need keys)
+3. **Reactions > Webhooks** — set up endpoints for Plex, Jellyfin, or ListenBrainz scrobbling
+4. **Reactions > Quick Post** — use the rapid posting interface for fast content creation
 
 ## Related Plugins
 
