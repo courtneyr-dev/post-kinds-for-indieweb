@@ -13,12 +13,23 @@ Try the plugin instantly in your browser:
 ### `blueprint.json` - Default Demo
 
 The main demo blueprint that:
-- Installs WordPress 6.7 with PHP 8.2
+- Installs the latest WordPress with PHP 8.2 (the plugin requires WordPress 7.0+)
 - Installs Post Kinds for IndieWeb from the main branch
 - Installs IndieBlocks for complementary functionality
 - Pre-configures permalink structure
-- Registers all kind taxonomy terms
+- Seeds the listen, watch, read, checkin, and rsvp kind terms (the plugin creates the rest on init)
 - Opens directly to the new post screen
+
+### `.wordpress-org/blueprints/blueprint.json` - WordPress.org variant
+
+Same demo, minus the plugin-install step: in a WordPress.org Live Preview the
+plugin directory installs and activates the plugin itself. Once the plugin is
+listed, copy this file to `assets/blueprints/blueprint.json` in SVN to enable
+Live Preview.
+
+This is also the blueprint to use for local runs with `--auto-mount`, since the
+mount already supplies the plugin — see [docs/playground.md](../docs/playground.md)
+for the one-line command and the reasoning.
 
 **Use this for:**
 - Quick demos
@@ -69,7 +80,7 @@ See the [WordPress Playground Blueprint documentation](https://wordpress.github.
   "landingPage": "/wp-admin/",
   "preferredVersions": {
     "php": "8.2",
-    "wp": "6.7"
+    "wp": "latest"
   },
   "steps": [
     // ... installation and configuration steps
