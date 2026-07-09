@@ -96,6 +96,7 @@
 		"packages-update": "wp-scripts packages-update",
 		"plugin-zip": "wp-scripts plugin-zip",
 		"prepare": "husky",
-		"check": "npm run lint && npm run test:unit && npm run audit"
+		"check": "npm run lint && npm run test:unit && npm run audit",
+		"screenshots:docs": "node scripts/capture-docs-screenshots.js"
 	}
 }
