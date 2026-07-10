@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://courtneyr-dev.github.io/post-kinds-for-indieweb/sitemap-index.xml

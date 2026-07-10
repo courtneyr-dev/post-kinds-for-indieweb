@@ -1,4 +1,7 @@
-# Installation
+---
+title: Installation
+description: "Install and activate Post Kinds for IndieWeb, check the WordPress 7.0 and PHP 8.2 requirements, and confirm the Reactions menu appears."
+---
 
 How to install and activate Post Kinds for IndieWeb, what the plugin requires, and how to confirm it's working.
 
@@ -37,7 +40,7 @@ The plugin's readme.txt also describes installing from the WordPress.org plugin 
 
 2. Activate **Post Kinds for IndieWeb** on the Plugins screen.
 
-The built block assets are committed in `build/`, and the plugin uses its own PHP autoloader, so a plain clone activates and runs without running Composer or npm. The readme's GitHub instructions mention `composer install` and `npm run build` — those are needed for development or if you change the source in `src/`, not for simply running the plugin.
+The built block assets are committed in `build/`, and the plugin uses its own PHP autoloader, so a plain clone activates and runs without running Composer or npm. The readme's GitHub instructions mention `composer install` and `npm run build` — those are needed for development or if you change the source in `src/`, not for running the plugin.
 
 ## Activate the plugin
 
@@ -63,12 +66,8 @@ None of these are required, but the plugin is built to work alongside them:
 Any one of these confirms a successful install:
 
 1. A **Reactions** menu (heart icon) appears in the wp-admin sidebar, with Settings, API Connections, Import, Webhooks, Quick Post, Syndication, and Check-ins submenus.
-2. Open a new post in the block editor and open the block inserter — a **Post Kinds for IndieWeb** category lists the card blocks. (Screenshot: [block inserter](assets/screenshots/editor-block-inserter.png).)
+2. Open a new post in the block editor and open the block inserter — a **Post Kinds for IndieWeb** category lists the card blocks. (See the block inserter in [Screenshots](/post-kinds-for-indieweb/screenshots/).)
 3. The post editor sidebar shows a **Post Kind** panel with a grid of kinds.
 4. **Posts → Kinds** lists the 24 kind terms (Note, Article, Listen, Watch, and so on).
 
 If instead you see an error notice about the Post Kinds plugin, deactivate the classic `indieweb-post-kinds` plugin. If you see a notice about PHP or WordPress versions, update your environment first.
-
----
-
-[Documentation home](index.md) · Previous: [Index](index.md) · Next: [Getting started](getting-started.md)

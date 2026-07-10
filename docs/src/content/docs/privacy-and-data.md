@@ -1,4 +1,7 @@
-# Privacy and data
+---
+title: Privacy and data
+description: "What Post Kinds stores, which external media and tracking services it contacts, and what appears in your public markup — verified against 1.4.3."
+---
 
 What the plugin stores, what it sends to other services, and what appears in your site's public markup. Everything here is verified against the plugin code as of version 1.4.3; open questions are listed at the end.
 
@@ -59,12 +62,8 @@ Yes, the plugin adds markup to your public pages: microformats2 classes on kind 
 
 Verified from code: options and meta storage, no custom tables, the uninstall cleanup list, privacy-level redaction in markup, the outbound hosts above, the POSSE and AI opt-in gates, and webhook signature verification.
 
-Needs maintainer review (also listed in the [documentation plan](documentation-plan.md)):
+Needs maintainer review (also listed in the [documentation plan](https://github.com/courtneyr-dev/post-kinds-for-indieweb/blob/main/docs/documentation-plan.md)):
 
 - **"API keys encrypted where possible" (readme claim).** The code stores credentials as sanitized plaintext values in the options table; no encryption path was found. The claim should be confirmed or softened by the maintainer — until then, assume keys are stored unencrypted and protect your database accordingly.
 - **AI data flows.** The precise payload and destination provider depend on the site's WP AI Client configuration and weren't traced in full.
 - **ActivityPub.** Listed in the readme as an optional companion; no code integration was found, so no data flows to it from this plugin as far as verified.
-
----
-
-[Documentation home](index.md) · Previous: [FAQ](faq.md) · Next: [Accessibility](accessibility.md)

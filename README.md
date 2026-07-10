@@ -10,19 +10,23 @@
 
 A modern, block-editor successor to David Shanske's [IndieWeb Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin. Built for IndieWeb users who want to own their listening, watching, reading, and check-in history, and for bloggers migrating from the classic Post Kinds plugin to the block editor.
 
-Try it without installing anything: see the [Playground preview](docs/playground.md) for a one-command browser demo.
+Try it without installing anything: see the [Playground preview](https://courtneyr-dev.github.io/post-kinds-for-indieweb/playground/) for a one-command browser demo.
 
 ---
 
 ## User documentation
 
-Full user documentation lives in [docs/index.md](docs/index.md). Key pages:
+**User documentation:** [Read the complete Post Kinds for IndieWeb documentation](https://courtneyr-dev.github.io/post-kinds-for-indieweb/)
 
-- [Installation](docs/installation.md) — requirements (WordPress 7.0+, PHP 8.2+), install methods, and plugin conflicts
-- [Getting started](docs/getting-started.md) — your first post kind
-- [Settings](docs/settings.md) — every option under the Reactions menu
-- [Troubleshooting](docs/troubleshooting.md) — common problems and fixes
-- [Privacy and data](docs/privacy-and-data.md) — what's stored, what's sent externally, and check-in location privacy
+Key pages:
+
+- [Installation](https://courtneyr-dev.github.io/post-kinds-for-indieweb/installation/) — requirements (WordPress 7.0+, PHP 8.2+), install methods, and plugin conflicts
+- [Getting started](https://courtneyr-dev.github.io/post-kinds-for-indieweb/getting-started/) — your first post kind
+- [Settings](https://courtneyr-dev.github.io/post-kinds-for-indieweb/settings/) — every option under the Reactions menu
+- [Troubleshooting](https://courtneyr-dev.github.io/post-kinds-for-indieweb/troubleshooting/) — common problems and fixes
+- [Privacy and data](https://courtneyr-dev.github.io/post-kinds-for-indieweb/privacy-and-data/) — what's stored, what's sent externally, and check-in location privacy
+
+The docs site builds from [`docs/`](docs/) with Astro Starlight — see [docs/MAINTAINING.md](docs/MAINTAINING.md) to update it.
 
 ## Why Post Kinds?
 

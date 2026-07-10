@@ -55,3 +55,7 @@ phpunit.xml
 playwright-report/
 test-results/
 .gstack/
+
+# Docs site build output (docs/ is an Astro Starlight project)
+docs/dist/
+docs/.astro/

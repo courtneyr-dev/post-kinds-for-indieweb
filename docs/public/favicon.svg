@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Post Kinds for IndieWeb">
+  <title>Post Kinds for IndieWeb — plugin icon (four trail planks)</title>
+  <rect width="256" height="256" fill="#1c2e25"></rect>
+  <rect x="14" y="14" width="228" height="228" rx="10" fill="none" stroke="#faf6ec" stroke-width="5" opacity="0.26"></rect>
+  <rect x="78" y="40" width="14" height="170" fill="#faf6ec"></rect>
+  <rect x="58" y="202" width="54" height="12" fill="#faf6ec"></rect>
+  <path d="M 92 52 L 160 52 L 178 63 L 160 74 L 92 74 Z" fill="#faf6ec"></path>
+  <path d="M 92 88 L 176 88 L 194 99 L 176 110 L 92 110 Z" fill="#faf6ec"></path>
+  <path d="M 92 124 L 150 124 L 168 135 L 150 146 L 92 146 Z" fill="#a87a3e"></path>
+  <path d="M 92 160 L 168 160 L 186 171 L 168 182 L 92 182 Z" fill="#faf6ec"></path>
+</svg>

@@ -1,4 +1,7 @@
-# FAQ
+---
+title: FAQ
+description: "Short answers about Post Kinds for IndieWeb: WordPress.org availability, requirements, API keys, microformats, and how kinds relate to formats."
+---
 
 Answers to the questions users actually ask, based on the plugin's behavior and its shipped FAQ.
 
@@ -40,11 +43,11 @@ Install the separate [Micropub plugin](https://wordpress.org/plugins/micropub/) 
 
 ## Does the plugin send my posts to other services?
 
-Only if you turn that on. Syndication (POSSE) to Last.fm, Trakt, or Foursquare each has its own opt-in toggle in Settings. Lookups do fetch public metadata from external APIs — see [Privacy and data](privacy-and-data.md).
+Only if you turn that on. Syndication (POSSE) to Last.fm, Trakt, or Foursquare each has its own opt-in toggle in Settings. Lookups do fetch public metadata from external APIs — see [Privacy and data](/post-kinds-for-indieweb/privacy-and-data/).
 
 ## Can I hide where I am on check-ins?
 
-Yes. Each check-in has a privacy level — public, approximate (city only), or private (stored but never displayed) — and a site-wide default. On top of that, coordinate handling can hide, round, or discard coordinates. See [Settings](settings.md#checkin-tab).
+Yes. Each check-in has a privacy level — public, approximate (city only), or private (stored but never displayed) — and a site-wide default. On top of that, coordinate handling can hide, round, or discard coordinates. See [Settings](/post-kinds-for-indieweb/settings/#checkin-tab).
 
 ## Can I import my existing history?
 
@@ -56,12 +59,8 @@ Enter a post URL at [pin13.net/mf2](https://pin13.net/mf2/); it shows every micr
 
 ## How do I customize how cards look?
 
-Use the block settings sidebar in the editor, Global Styles in the Site Editor, or theme CSS. The cards are built on `--pkiw-*` design tokens so block themes can restyle them; see the [design tokens reference](audit/DESIGN-TOKENS.md).
+Use the block settings sidebar in the editor, Global Styles in the Site Editor, or theme CSS. The cards are built on `--pkiw-*` design tokens so block themes can restyle them; see the [design tokens reference](https://github.com/courtneyr-dev/post-kinds-for-indieweb/blob/main/docs/audit/DESIGN-TOKENS.md).
 
 ## What happens to my data if I delete the plugin?
 
-Your posts and their meta stay (they're normal WordPress content). Deleting the plugin runs its uninstall routine, which removes the plugin's options — settings, API credentials, OAuth tokens, webhook secrets and logs — plus its transients and scheduled tasks. See [Privacy and data](privacy-and-data.md).
-
----
-
-[Documentation home](index.md) · Previous: [Troubleshooting](troubleshooting.md) · Next: [Privacy and data](privacy-and-data.md)
+Your posts and their meta stay (they're normal WordPress content). Deleting the plugin runs its uninstall routine, which removes the plugin's options — settings, API credentials, OAuth tokens, webhook secrets and logs — plus its transients and scheduled tasks. See [Privacy and data](/post-kinds-for-indieweb/privacy-and-data/).
