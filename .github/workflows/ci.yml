@@ -406,15 +406,6 @@ jobs:
           echo "WP_APP_PASSWORD=$(npx wp-env run cli wp user application-password create admin e2e --porcelain)" >> "$GITHUB_ENV"
           echo "PKIW_TEST_PHOTO_HOST=http://172.17.0.1:8888" >> "$GITHUB_ENV"
 
-      - name: Debug Micropub route (temporary diagnostic)
-        run: |
-          npx wp-env run cli wp plugin list --fields=name,status,version
-          npx wp-env run cli wp option get permalink_structure || true
-          curl -s -o /tmp/mp-anon.txt -w "anon endpoint status: %{http_code}\n" "http://localhost:8888/?rest_route=/micropub/1.0/endpoint"
-          head -c 400 /tmp/mp-anon.txt; echo
-          curl -s -o /tmp/mp-auth.txt -w "authed endpoint status: %{http_code}\n" -u "admin:${WP_APP_PASSWORD}" -d "h=entry&content=debugprobe" "http://localhost:8888/?rest_route=/micropub/1.0/endpoint"
-          head -c 400 /tmp/mp-auth.txt; echo
-
       # Persist the dismissed welcome guide server-side so no editor spec
       # depends on an earlier spec's in-page preferences dispatch having
       # been debounce-saved (the dispatch races store hydration on a
