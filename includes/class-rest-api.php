@@ -2341,10 +2341,20 @@ class REST_API {
 		$code    = $request->get_param( 'code' );
 		$state   = $request->get_param( 'state' );
 
+		// hash_equals() fatals on non-strings (PHP 8) — a callback hit
+		// without state or with a mangled param must 400, not 500.
+		if ( ! is_string( $state ) || '' === $state || ! is_string( $code ) || '' === $code ) {
+			return new \WP_Error(
+				'invalid_request',
+				__( 'Missing OAuth code or state. Please try connecting again.', 'post-kinds-for-indieweb' ),
+				[ 'status' => 400 ]
+			);
+		}
+
 		// Verify state.
 		$saved_state = get_transient( 'post_kinds_indieweb_oauth_state_' . $service );
 
-		if ( ! $saved_state || ! hash_equals( $saved_state, $state ) ) {
+		if ( ! is_string( $saved_state ) || '' === $saved_state || ! hash_equals( $saved_state, $state ) ) {
 			return new \WP_Error(
 				'invalid_state',
 				__( 'Invalid OAuth state. Please try again.', 'post-kinds-for-indieweb' ),
