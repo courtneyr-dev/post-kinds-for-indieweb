@@ -17,14 +17,6 @@
 		{
 			"step": "installPlugin",
 			"pluginData": {
-				"resource": "git:directory",
-				"url": "https://github.com/courtneyr-dev/post-kinds-for-indieweb",
-				"ref": "main"
-			}
-		},
-		{
-			"step": "installPlugin",
-			"pluginData": {
 				"resource": "wordpress.org/plugins",
 				"slug": "indieblocks"
 			}
