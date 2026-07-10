@@ -216,17 +216,13 @@ class Settings_Page {
 			]
 		);
 
-		add_settings_field(
-			'enabled_kinds',
-			__( 'Enabled Reaction Types', 'post-kinds-for-indieweb' ),
-			[ $this, 'render_enabled_kinds_field' ],
-			'post_kinds_indieweb_general',
-			'post_kinds_indieweb_general_section',
-			[
-				'id'   => 'enabled_kinds',
-				'desc' => __( 'Choose which reaction types are available in your site. Disabled types will not appear in the editor, taxonomy, or blocks.', 'post-kinds-for-indieweb' ),
-			]
-		);
+		// The "Enabled Reaction Types" field is intentionally not registered:
+		// nothing at runtime consumes the enabled_kinds option yet, so the
+		// control promised behavior ("disabled types will not appear in the
+		// editor, taxonomy, or blocks") that never happened. Re-add the field
+		// together with real enforcement across the kind grid, block
+		// registration, and taxonomy. render_enabled_kinds_field() and any
+		// saved enabled_kinds values are kept for that future wiring.
 	}
 
 	/**

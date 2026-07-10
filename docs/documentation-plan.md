@@ -57,7 +57,7 @@ GitHub Pages from `/docs` on the `main` branch, plain Markdown with the Primer J
 ## Needs maintainer review
 
 1. **"API keys encrypted where possible" (readme.txt).** Credentials are stored as sanitized plaintext options; no encryption found in code. Confirm or soften. The docs state plaintext options storage.
-2. **Enabled Reaction Types runtime effect.** The General tab control's description says disabled types won't appear "in the editor, taxonomy, or blocks", but where that is enforced wasn't traced. settings.md documents the control and flags this.
+2. **Enabled Reaction Types — resolved 2026-07-10: control removed.** Tracing confirmed `enabled_kinds` has no runtime consumers — the option saved but nothing enforced it. The settings field is unregistered (renderer and saved values kept) until enforcement across the kind grid, block registration, and taxonomy is actually built.
 3. **WordPress.org listing.** readme.txt (stable tag 1.4.3) describes directory installation, but a published listing wasn't verified. installation.md leads with ZIP/GitHub installs and mentions the directory conditionally.
 4. **Stale copy:** "16 custom blocks" in README.md/readme.txt vs 22+3 in code; `package.json` version 1.2.0 vs 1.4.3. Update the source copy.
 5. **ActivityPub** is listed as an optional companion in the readme but has no code integration — confirm it's a recommendation only.

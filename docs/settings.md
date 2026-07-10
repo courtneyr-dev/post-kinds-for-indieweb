@@ -19,9 +19,8 @@ The Settings page has nine tabs: **General, Content, Listen, Watch, Read, Checki
 | Enable Microformats | Adds microformats2 markup to reaction posts for IndieWeb compatibility. Turn off only if another plugin or your theme handles microformats. | On |
 | Enable Syndication | Allows sending reactions to syndication targets. The setting notes it requires the Syndication Links plugin. | On |
 | Sync Post Formats to Kinds | Automatically sets the Post Kind when the Post Format changes, and vice versa, using a mapping table shown on this tab (for example Audio → listen, Video → watch, Link → bookmark, Image → photo). You can adjust the mapping per format. | On |
-| Enabled Reaction Types | Checkbox grid of all 24 kinds with Enable All / Disable All buttons. The screen says disabled types "will not appear in the editor, taxonomy, or blocks." | All enabled |
 
-Note on **Enabled Reaction Types**: this documentation describes the control as it appears on screen. The exact runtime effect of disabling a kind (which surfaces it disappears from) hasn't been verified against the code and is flagged for maintainer review in the [documentation plan](documentation-plan.md).
+Note: earlier versions showed an **Enabled Reaction Types** checkbox grid here. It was removed on 2026-07-10 because nothing at runtime read it — disabling a kind never changed the editor, taxonomy, or blocks. The control returns if and when that enforcement is implemented.
 
 ### Content tab
 
