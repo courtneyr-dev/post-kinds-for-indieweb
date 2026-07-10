@@ -1,4 +1,7 @@
-# Common tasks
+---
+title: Common tasks
+description: "Step-by-step instructions for everyday Post Kinds work: logging what you listen to, watch, read, and play, importing history, and syndicating."
+---
 
 Step-by-step instructions for the things you'll do most often. All of these are supported by the plugin as shipped; pages assume the block editor.
 
@@ -34,7 +37,7 @@ MusicBrainz (music) and Open Library (books) work without keys.
 3. Set the card's location privacy — public, approximate, or private — or rely on the default from **Reactions → Settings → Checkin**.
 4. Publish. The front-end markup honors the privacy level: private hides venue, address, and coordinates; approximate shows only city/region/country.
 
-![Checkin Card with location and venue details](assets/screenshots/editor-checkin-card.png)
+![Checkin Card with location and venue details](../../assets/screenshots/editor-checkin-card.png)
 
 ## Display your check-ins on a page
 
@@ -105,7 +108,3 @@ For theme-savvy users: the plugin can classify kinds as "stream" (short activity
 
 2. To promote an individual post back to the main archive, use the **Promote to main archive** toggle in the editor's Post surface panel (or the `pkiw-promote` Micropub property).
 3. After a bulk import, run `wp postkind surfaces backfill` once (WP-CLI).
-
----
-
-[Documentation home](index.md) · Previous: [Settings](settings.md) · Next: [Screenshots](screenshots.md)

@@ -1,4 +1,7 @@
-# Troubleshooting
+---
+title: Troubleshooting
+description: "Fixes for common Post Kinds problems: missing kind cards, failed lookups, import stalls, webhook errors, and admin notices explained."
+---
 
 Symptoms, likely causes, and fixes for the most common problems, based on the plugin's FAQ, changelog, and admin notices.
 
@@ -9,6 +12,7 @@ Symptoms, likely causes, and fixes for the most common problems, based on the pl
 **Likely cause:** The classic [Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin (`indieweb-post-kinds`) is active — including network-activated on multisite. Both plugins use the same `kind` taxonomy, so this plugin deliberately refuses to initialize.
 
 **Fix:**
+
 1. Go to **Plugins** and deactivate **Post Kinds** (the classic one).
 2. Reload wp-admin; the Reactions menu and blocks should appear.
 
@@ -27,11 +31,13 @@ Symptoms, likely causes, and fixes for the most common problems, based on the pl
 **Symptom:** Card block or Media Lookup searches come back empty, or the Quick Post search finds nothing.
 
 **Likely causes** (from the plugin FAQ):
+
 - Missing or incorrect API keys for the service (TMDB, RAWG, Hardcover, and most others need keys; MusicBrainz and Open Library don't).
 - Your server can't make outbound HTTPS requests (firewall or host restriction).
-- The search term simply has no match.
+- The search term has no match in that service.
 
 **Fix:**
+
 1. Go to **Reactions → API Connections**, confirm the key for the relevant service, and run its connection test.
 2. Ask your host whether outbound HTTPS is blocked.
 3. Try broader search terms.
@@ -63,6 +69,7 @@ Symptoms, likely causes, and fixes for the most common problems, based on the pl
 **Likely cause:** Micropub is not something this plugin provides by itself — it requires the separate [Micropub plugin](https://wordpress.org/plugins/micropub/) (and IndieAuth for authentication). Post Kinds for IndieWeb only converts posts the Micropub plugin has already received.
 
 **Fix:**
+
 1. Install and activate the Micropub plugin and an IndieAuth setup.
 2. Sign in to your Micropub app again and retry.
 
@@ -89,9 +96,5 @@ Symptoms, likely causes, and fixes for the most common problems, based on the pl
 If none of the above fixes your problem:
 
 1. Check existing reports at the [GitHub issues page](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues).
-2. Read [SUPPORT.md](../SUPPORT.md) — it lists the support channels (GitHub Issues and Discussions, plus IndieWeb Chat) and the details to include: WordPress, PHP, plugin, and IndieBlocks versions, and steps to reproduce.
+2. Read [SUPPORT.md](https://github.com/courtneyr-dev/post-kinds-for-indieweb/blob/main/docs/../SUPPORT.md) — it lists the support channels (GitHub Issues and Discussions, plus IndieWeb Chat) and the details to include: WordPress, PHP, plugin, and IndieBlocks versions, and steps to reproduce.
 3. Open a new issue with those details.
-
----
-
-[Documentation home](index.md) · Previous: [Screenshots](screenshots.md) · Next: [FAQ](faq.md)

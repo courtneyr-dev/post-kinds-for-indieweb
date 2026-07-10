@@ -1,4 +1,7 @@
-# Accessibility
+---
+title: Accessibility
+description: "What Post Kinds for IndieWeb does for accessibility, what testing exists in the repository, and what still needs verification. Evidence, not claims."
+---
 
 What the plugin does for accessibility, what testing exists in the repository, and what still needs verification. This page describes evidence from the repository — it does not claim WCAG conformance.
 
@@ -35,7 +38,3 @@ Automated checks like axe and Lighthouse catch a useful subset of issues (contra
 ## No conformance claim
 
 This plugin has automated accessibility gates and documented fixes, but the repository contains no WCAG conformance audit, and this documentation makes no compliance claim. If you find an accessibility problem, report it on the [issues page](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues) — heading structure, contrast, and keyboard traps are exactly the kind of report the existing test suite can then guard against.
-
----
-
-[Documentation home](index.md) · Previous: [Privacy and data](privacy-and-data.md) · Next: [Documentation plan](documentation-plan.md)

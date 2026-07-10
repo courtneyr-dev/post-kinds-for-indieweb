@@ -1,4 +1,7 @@
-# Settings
+---
+title: Settings
+description: "Reference for every Reactions screen in wp-admin: Settings tabs, API Connections, Import, Webhooks, Quick Post, Syndication, and Check-ins."
+---
 
 Every user-facing option lives under the **Reactions** menu (heart icon) in wp-admin. This page covers the tabbed Settings screen and the other Reactions pages: API Connections, Import, Webhooks, Quick Post, Syndication, and Check-ins.
 
@@ -8,12 +11,12 @@ Defaults below are the values the plugin registers in code. Settings, API Connec
 
 The Settings page has nine tabs: **General, Content, Listen, Watch, Read, Checkin, Integrations, Performance, Tools**.
 
-![General settings tab showing plugin options](assets/screenshots/admin-general-settings.png)
+![General settings tab showing plugin options](../../assets/screenshots/admin-general-settings.png)
 
 ### General tab
 
 | Setting | What it does | Default |
-|---|---|---|
+| --- | --- | --- |
 | Default category | Automatically adds this category to any post that has a post kind (including posts made through Micropub). Applied once when the post is first saved; you can remove it from an individual post. Choose "— None —" to turn it off. Since 1.4.2 it applies only to stream-shaped posts (composer posts, Status/Aside formats, or activity kinds like listen/watch/checkin) — long-form articles and reviews don't get it. | None |
 | Default Post Status | Status for new reaction posts: Published, Draft, Pending Review, or Private. | Published |
 | Enable Microformats | Adds microformats2 markup to reaction posts for IndieWeb compatibility. Turn off only if another plugin or your theme handles microformats. | On |
@@ -25,7 +28,7 @@ Note: earlier versions showed an **Enabled Reaction Types** checkbox grid here. 
 ### Content tab
 
 | Setting | What it does | Default |
-|---|---|---|
+| --- | --- | --- |
 | Auto-fetch Metadata | Automatically fetches metadata from external APIs when creating posts. | On |
 | Cache Duration | How long to cache API responses: 1 hour, 6 hours, 12 hours, 24 hours, 3 days, or 1 week. | 24 hours |
 | Image Handling | What to do with cover art and artwork from external sources: Download to Media Library (sideload), Link to External URL (hotlink), or Do Not Include Images. | Download to Media Library |
@@ -33,7 +36,7 @@ Note: earlier versions showed an **Enabled Reaction Types** checkbox grid here. 
 ### Listen tab
 
 | Setting | What it does | Default |
-|---|---|---|
+| --- | --- | --- |
 | Auto-Sync Music | Automatically imports new music scrobbles from your connected music service. | Off |
 | Music Import Source | Primary source for importing scrobble history: ListenBrainz or Last.fm. | ListenBrainz |
 | Embed Player | Preferred music service for embedding players in listen posts: None, Spotify, Apple Music, YouTube Music, Bandcamp, or SoundCloud. The plugin searches for and embeds tracks from this service when importing. | None |
@@ -44,7 +47,7 @@ Note: earlier versions showed an **Enabled Reaction Types** checkbox grid here. 
 ### Watch tab
 
 | Setting | What it does | Default |
-|---|---|---|
+| --- | --- | --- |
 | Auto-Sync Movies & TV | Automatically imports movies and TV shows you watch. | Off |
 | Import Source | Primary source for watch history: Trakt or Simkl. | Trakt |
 | Default Rating | Default rating for watch posts (0 = no rating). | 0 |
@@ -54,7 +57,7 @@ Note: earlier versions showed an **Enabled Reaction Types** checkbox grid here. 
 ### Read tab
 
 | Setting | What it does | Default |
-|---|---|---|
+| --- | --- | --- |
 | Auto-Sync Books | Automatically imports books you're reading or have read. | Off |
 | Book Import Source | Primary source for book history: Hardcover or Readwise Books. Readwise imports include Kindle highlights. | Hardcover |
 | Auto-Sync Articles | Automatically imports articles with highlights from Readwise. | Off |
@@ -63,7 +66,7 @@ Note: earlier versions showed an **Enabled Reaction Types** checkbox grid here. 
 ### Checkin tab
 
 | Setting | What it does | Default |
-|---|---|---|
+| --- | --- | --- |
 | Auto-Sync Checkins | Automatically imports check-ins from Foursquare/Swarm. | Off |
 | Default Location Privacy | Default privacy level for new check-ins: **Public (exact location)** shows full address, venue name, and precise coordinates; **Approximate (city level)** shows city/region but hides street address and exact coordinates; **Private (hidden)** stores the location but never displays it publicly — for home, work, or other private places. | Public |
 | Coordinate Handling | What happens to latitude/longitude: **Store but hide coordinates** (saved but never shown publicly), **Round coordinates** (rounded to about 1 km precision before storing), **Discard coordinates entirely** (only venue name and address text are stored; coordinates can't be recovered later), or **Store and show coordinates** (saved and displayed publicly when privacy is Public; enables precise mapping and geo microformats). | Store but hide coordinates |
@@ -71,7 +74,7 @@ Note: earlier versions showed an **Enabled Reaction Types** checkbox grid here. 
 | Sync to Foursquare | Posts check-ins to Foursquare when publishing. Requires a Foursquare OAuth connection. The screen describes it as a POSSE approach — Publish on your Own Site, Syndicate Elsewhere. | Off |
 | Foursquare Connection | Connect/disconnect button for the Foursquare OAuth link used by import and sync. | Not connected |
 
-See [Privacy and data](privacy-and-data.md) for how privacy levels affect your site's public markup.
+See [Privacy and data](/post-kinds-for-indieweb/privacy-and-data/) for how privacy levels affect your site's public markup.
 
 ### Integrations tab
 
@@ -90,7 +93,7 @@ There are no settings to change here; it's a dashboard of what's installed.
 ### Performance tab
 
 | Setting | What it does | Default |
-|---|---|---|
+| --- | --- | --- |
 | Automatic Sync | Enables background sync (WP-Cron) for the auto-import toggles on the Listen/Watch/Read/Checkin tabs. | Off |
 | Rate Limit Delay | Milliseconds to wait between API requests, to avoid provider rate limits. | 1000 ms |
 | Import Batch Size | Number of items processed per batch during imports. | 50 |
@@ -109,11 +112,11 @@ Maintenance actions rather than saved settings:
 
 Where you enter credentials for the external services that power media search, imports, and syndication. Each service card shows a description, links to the provider's docs and sign-up page, the credential fields it needs, and a connection test.
 
-![API Connections page with service credential fields](assets/screenshots/admin-api-connections.png)
+![API Connections page with service credential fields](../../assets/screenshots/admin-api-connections.png)
 
 Services on this page: **Last.fm** (API key, shared secret, plus an authorize step for scrobbling), **TMDB** (movies/TV), **Trakt** (OAuth), **Simkl** (OAuth), **TVmaze**, **Open Library**, **Hardcover**, **Google Books**, **Foursquare** (OAuth), **Nominatim** (asks only for a contact email, required by the OpenStreetMap usage policy), **Readwise** (access token), **BoardGameGeek** (API token; the page notes BGG app approval can take a week or more, and that you can paste BGG URLs into the Play Card meanwhile), and **RAWG** (API key).
 
-MusicBrainz and Open Library searches work without keys. Saved keys display masked (`****`); re-saving the form doesn't overwrite a stored key with the mask. Keys are stored in the WordPress options table — see [Privacy and data](privacy-and-data.md).
+MusicBrainz and Open Library searches work without keys. Saved keys display masked (`****`); re-saving the form doesn't overwrite a stored key with the mask. Keys are stored in the WordPress options table — see [Privacy and data](/post-kinds-for-indieweb/privacy-and-data/).
 
 ## Import page (Reactions → Import)
 
@@ -138,7 +141,3 @@ Shows syndication status per post once syndication services are configured — w
 ## Check-ins page (Reactions → Check-ins)
 
 A dashboard of your check-in posts (the admin counterpart to the front-end Check-in Dashboard block).
-
----
-
-[Documentation home](index.md) · Previous: [Getting started](getting-started.md) · Next: [Common tasks](common-tasks.md)

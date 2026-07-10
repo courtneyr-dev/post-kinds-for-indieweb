@@ -1,4 +1,7 @@
-# Playground preview
+---
+title: Playground preview
+description: "Try Post Kinds for IndieWeb on a throwaway WordPress site in your browser with WordPress Playground — no server or installation needed."
+---
 
 How to try Post Kinds for IndieWeb in WordPress Playground — a throwaway WordPress site that runs in your browser or terminal, no server needed.
 
@@ -37,7 +40,3 @@ PREFLIGHT: the plugin isn't listed on WordPress.org yet, so these steps apply on
 1. Copy `.wordpress-org/blueprints/blueprint.json` to `assets/blueprints/blueprint.json` in the plugin's SVN repository and commit. The directory only reads blueprints from SVN `assets/blueprints/` — the repo's `blueprints/` directory isn't picked up.
 2. In the plugin's admin view on WordPress.org, enable the Live Preview button.
 3. Test the Live Preview link from the listing: the plugin must activate (it requires WordPress 7.0 and PHP 8.2, which the blueprint's preferred versions satisfy) and the new-post screen should show the Post Kind panel.
-
----
-
-[Documentation home](index.md)

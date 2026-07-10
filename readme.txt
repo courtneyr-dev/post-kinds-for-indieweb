@@ -122,7 +122,7 @@ The custom blocks require the block editor. With the Classic Editor you can stil
 
 = Where can I read the full documentation? =
 
-Long-form guides — installation, settings, common tasks, troubleshooting, privacy — live at [github.com/courtneyr-dev/post-kinds-for-indieweb/tree/main/docs](https://github.com/courtneyr-dev/post-kinds-for-indieweb/tree/main/docs).
+Long-form guides — installation, settings, common tasks, troubleshooting, privacy — live at [courtneyr-dev.github.io/post-kinds-for-indieweb](https://courtneyr-dev.github.io/post-kinds-for-indieweb/).
 
 == Screenshots ==
 
