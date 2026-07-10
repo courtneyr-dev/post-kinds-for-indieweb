@@ -17,6 +17,6 @@
 		"wp-content/mu-plugins": "./tests/env"
 	},
 	"lifecycleScripts": {
-		"afterStart": "wp-env run cli wp rewrite structure '/%postname%/' --hard && (wp-env run cli wp plugin install indieauth micropub || true) && wp-env run cli wp plugin activate indieauth micropub"
+		"afterStart": "wp-env run cli wp rewrite structure '/%postname%/' --hard && (wp-env run cli wp plugin install indieauth --version=4.6.0 || true) && (wp-env run cli wp plugin install micropub --version=2.4.0 || true) && wp-env run cli wp plugin activate indieauth micropub"
 	}
 }
