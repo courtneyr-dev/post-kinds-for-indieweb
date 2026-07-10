@@ -15,9 +15,9 @@ As of version 1.4.3, the plugin provides:
 - **25 custom blocks** — card blocks for most kinds, utility blocks like Star Rating and Media Lookup, and server-rendered blocks (Now Playing, Media Stats, Recent Kinds).
 - **Media lookup** from the editor: search music, movies, TV, books, podcasts, games, and venues through services like MusicBrainz, TMDB, Open Library, and Foursquare.
 - **Imports and scrobbling**: bulk-import your history from services like Last.fm, Trakt, and Readwise, and receive automatic posts via webhooks from Plex, Jellyfin, Trakt, and ListenBrainz.
-- **microformats2 markup** on the front end, so other IndieWeb sites and tools can read your posts as structured data.
-- **Syndication (POSSE) options** — post on your own site first, then optionally send a copy to services like Last.fm, Trakt, or Foursquare.
-- **Micropub support** through the separate [Micropub plugin](https://wordpress.org/plugins/micropub/), converting incoming app posts into the right card block and kind.
+- **[microformats2](https://microformats.org/wiki/microformats2) markup** on the front end, so other IndieWeb sites and tools can read your posts as structured data.
+- **Syndication ([POSSE](https://indieweb.org/POSSE)) options** — post on your own site first, then optionally send a copy to services like Last.fm, Trakt, or Foursquare.
+- **[Micropub](https://indieweb.org/Micropub) support** through the separate [Micropub plugin](https://wordpress.org/plugins/micropub/), converting incoming app posts into the right card block and kind.
 
 ## Who it's for
 

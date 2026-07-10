@@ -7,7 +7,7 @@ Answers to the questions users actually ask, based on the plugin's behavior and 
 
 ## What's a "post kind"?
 
-A label describing what a post *is* — a note, a listen, a check-in, a book you read — rather than its topic. Kinds are terms in a taxonomy, so each has its own archive (for example `/kind/watch/`), and each maps to standard microformats2 markup that other IndieWeb sites and tools can parse.
+A label describing what a post *is* — a note, a listen, a check-in, a book you read — rather than its topic. Kinds are terms in a taxonomy, so each has its own archive (for example `/kind/watch/`), and each maps to standard [microformats2](https://microformats.org/wiki/microformats2) markup that other [IndieWeb](https://indieweb.org/) sites and tools can parse.
 
 ## How many blocks does the plugin include?
 
@@ -43,7 +43,7 @@ Install the separate [Micropub plugin](https://wordpress.org/plugins/micropub/) 
 
 ## Does the plugin send my posts to other services?
 
-Only if you turn that on. Syndication (POSSE) to Last.fm, Trakt, or Foursquare each has its own opt-in toggle in Settings. Lookups do fetch public metadata from external APIs — see [Privacy and data](/post-kinds-for-indieweb/privacy-and-data/).
+Only if you turn that on. Syndication ([POSSE](https://indieweb.org/POSSE)) to Last.fm, Trakt, or Foursquare each has its own opt-in toggle in Settings. Lookups do fetch public metadata from external APIs — see [Privacy and data](/post-kinds-for-indieweb/privacy-and-data/).
 
 ## Can I hide where I am on check-ins?
 
