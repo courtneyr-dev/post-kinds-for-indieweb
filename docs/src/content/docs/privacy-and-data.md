@@ -1,9 +1,9 @@
 ---
 title: Privacy and data
-description: "What Post Kinds stores, which external media and tracking services it contacts, and what appears in your public markup — verified against 1.4.3."
+description: "What Post Kinds stores, which external media and tracking services it contacts, and what appears in your public markup — verified against 1.0.0."
 ---
 
-What the plugin stores, what it sends to other services, and what appears in your site's public markup. Everything here is verified against the plugin code as of version 1.4.3; open questions are listed at the end.
+What the plugin stores, what it sends to other services, and what appears in your site's public markup. Everything here is verified against the plugin code as of version 1.0.0; open questions are listed at the end.
 
 ## What the plugin stores on your site
 

@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+> **WordPress.org versioning note (2026-07-10):** the plugin's public WordPress.org line starts at **1.0.0**, which contains everything through GitHub build 1.4.3. The entries below record the pre-release GitHub-only builds.
+
 ## [Unreleased]
 
 ### Removed

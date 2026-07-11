@@ -10,7 +10,7 @@ export default {
 	github: 'https://github.com/courtneyr-dev/post-kinds-for-indieweb',
 	// Not published in the WordPress.org plugin directory. Set to the listing URL after publication.
 	wporg: null,
-	version: '1.4.3',
+	version: '1.0.0',
 	requiresWP: '7.0',
 	requiresPHP: '8.2',
 	author: 'Courtney Robertson',

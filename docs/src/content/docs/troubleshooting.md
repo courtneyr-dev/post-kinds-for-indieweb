@@ -56,9 +56,9 @@ Symptoms, likely causes, and fixes for the most common problems, based on the pl
 
 **Symptom:** Card contents scattered into a strange layout in the editor, or published cards missing padding and shadow.
 
-**Likely cause:** Known regressions in the 1.4.x series, both fixed: 1.4.1 fixed an editor grid layout that scattered card contents (introduced in 1.4.0), and 1.4.3 fixed front-end padding and shadow being stripped by an unscoped editor rule (introduced in 1.4.1). Earlier, 1.0.4 fixed a fatal error with hooked blocks in some block themes.
+**Likely cause:** Known regressions in pre-release builds, all fixed in 1.0.0: an editor grid layout that scattered card contents, front-end padding and shadow stripped by an unscoped editor rule, and a fatal error with hooked blocks in some block themes.
 
-**Fix:** Update to the latest version (1.4.3 or later). If cards still look off afterward, hard-refresh to clear cached CSS.
+**Fix:** Update to the latest version (1.0.0 or later). If cards still look off afterward, hard-refresh to clear cached CSS.
 
 **What to check next:** Your theme's design tokens — cards take color and typography from block-theme styles, so a theme without editor styles can look plainer than the screenshots.
 

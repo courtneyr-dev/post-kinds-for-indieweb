@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 1.4.3
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -136,42 +136,8 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 
 == Changelog ==
 
-= 1.4.3 =
-* Fixed: front-end card padding and shadow were stripped by an unscoped editor-parity rule (1.4.1) that also applied on the front end. Scoped it to the editor canvas so published cards keep their spacing and shadow.
-
-= 1.4.2 =
-* Default category (stream) now applies only to stream-shaped posts — those posted via Micropub, with a Status/Aside format, or carrying an activity kind. New `pkiw_default_category_stream_kinds` filter.
-
-= 1.4.1 =
-* Editor card parity fix: reverted the 1.4.0 grid layout to paint-only so the existing layout stands and theme tokens recolor the badge, title, artist, and rating.
-
-= 1.4.0 =
-* Editor card parity: every kind-card block now reads like its published card in the block editor. Plugin owns the structure, theme owns the paint.
-
-= 1.3.0 =
-* Stream card: every item now renders as a compact card (kind badge, linked title, date, featured image, excerpt)
-* Post-surface classification: a `pkiw_stream_kinds` filter marks kinds as stream vs main, with a `pkiw_promote` per-post override
-* Fixed: card embeds no longer sit inside a "paper" box; editor icons stay legible in List View
-* Removed: duplicate registration of the format-badge block (owned by Post Formats for Block Themes)
-
-= 1.2.0 =
-* Book fields are now bindable kind-meta keys; book completion from Open Library, Google Books, or Hardcover; opt-in Kindle preview embed
-* Micropub coverage for likes, reposts, bookmarks, and replies; editor saves set the kind term from the first card block
-* Fixed: Eat Card restaurant and Play Card Steam ID display; Mood/Play Card value wipes; dropped Micropub fields; live oEmbed requests during render
-* Security: hardened Amazon hostname detection and the book-complete REST route
-
-= 1.1.0 =
-* Fixed: contentless Micropub posts (eat, drink, follow, weather) now create posts; attached photos are included
-* All block colors flow through the `--pkiw-*` design-token API
-* WordPress 7.0 is now the minimum supported version (previously 6.9)
-
-= 1.0.4 =
-* Fix site-wide PHP fatal alongside block themes that resolve hooked blocks during init (e.g. Ollie)
-
 = 1.0.0 =
-* Initial release: post kind blocks, API integrations, bulk import, webhooks, microformats2 markup, admin settings
-
-Full version history: [CHANGELOG.md](https://github.com/courtneyr-dev/post-kinds-for-indieweb/blob/main/CHANGELOG.md)
+* Initial WordPress.org release: 24 post kinds with card blocks, media lookup, imports and webhook scrobbling, microformats2 markup, syndication, and Micropub support. Development history for the pre-release builds lives in CHANGELOG.md in the GitHub repository.
 
 == Privacy Policy ==
 

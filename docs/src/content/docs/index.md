@@ -9,7 +9,7 @@ Post Kinds for IndieWeb lets you track what you listen to, watch, read, play, an
 
 The plugin adds a "post kind" system to your posts. A post kind is a label that describes what a post *is* — a note, a check-in, a song you listened to, a movie you watched — rather than what it's about. The idea comes from the [IndieWeb](https://indieweb.org/) movement, where people publish this kind of activity on their own site instead of (or in addition to) social networks and tracking apps.
 
-As of version 1.4.3, the plugin provides:
+As of version 1.0.0, the plugin provides:
 
 - A **kind taxonomy** with 24 kinds you can assign to posts, each with its own archive page (for example `/kind/listen/`).
 - **25 custom blocks** — card blocks for most kinds, utility blocks like Star Rating and Media Lookup, and server-rendered blocks (Now Playing, Media Stats, Recent Kinds).
