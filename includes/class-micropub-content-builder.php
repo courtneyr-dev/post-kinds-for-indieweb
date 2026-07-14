@@ -824,7 +824,7 @@ final class Micropub_Content_Builder {
 			return '';
 		}
 		return '<!-- wp:paragraph -->' . "\n"
-			. '<p>' . esc_html__( 'Followed', 'post-kinds-for-indieweb' )
+			. '<p>' . esc_html__( 'Followed', 'post-kinds-for-indieweb-in-block-themes' )
 			. ' <a class="u-follow-of" href="' . esc_url( $url ) . '">' . esc_html( $url ) . '</a></p>' . "\n"
 			. '<!-- /wp:paragraph -->';
 	}

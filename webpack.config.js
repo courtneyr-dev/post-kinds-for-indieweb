@@ -1,5 +1,5 @@
 /**
- * Post Kinds for IndieWeb - Webpack Configuration
+ * Post Kinds for IndieWeb in Block Themes - Webpack Configuration
  *
  * Extends the default @wordpress/scripts webpack config.
  *

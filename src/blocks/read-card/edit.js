@@ -135,10 +135,13 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 			<div { ...blockProps }>
 				<BlockPlaceholder
 					icon={ readIcon }
-					label={ __( 'Read Card', 'post-kinds-for-indieweb' ) }
+					label={ __(
+						'Read Card',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					instructions={ __(
 						"Add a book you're reading or have read. Search or enter details manually.",
-						'post-kinds-for-indieweb'
+						'post-kinds-for-indieweb-in-block-themes'
 					) }
 				>
 					{ isSearching ? (
@@ -147,7 +150,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 								type="book"
 								placeholder={ __(
 									'Search by title, author, or ISBN…',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 								onSelect={ handleSearchSelect }
 							/>
@@ -157,7 +160,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 							>
 								{ __(
 									'Enter manually',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							</Button>
 						</div>
@@ -169,7 +172,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 							>
 								{ __(
 									'Search Books',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							</Button>
 							<Button
@@ -180,7 +183,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 							>
 								{ __(
 									'Enter Manually',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							</Button>
 						</div>
@@ -194,14 +197,17 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Search Books', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Search Books',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<MediaSearch
 						type="book"
 						placeholder={ __(
 							'Search by title, author, or ISBN…',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						onSelect={ handleSearchSelect }
 					/>
@@ -211,36 +217,51 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 					>
 						{ __(
 							'Search Open Library to auto-fill book details.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					</p>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Book Details', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Book Details',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 				>
 					<TextControl
-						label={ __( 'Title', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Title',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ bookTitle || '' }
 						onChange={ ( value ) =>
 							setAttributes( { bookTitle: value } )
 						}
 					/>
 					<TextControl
-						label={ __( 'Author', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Author',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ authorName || '' }
 						onChange={ ( value ) =>
 							setAttributes( { authorName: value } )
 						}
 					/>
 					<TextControl
-						label={ __( 'ISBN', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'ISBN',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ isbn || '' }
 						onChange={ ( value ) =>
 							setAttributes( { isbn: value } )
 						}
 					/>
 					<TextControl
-						label={ __( 'Publisher', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Publisher',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ publisher || '' }
 						onChange={ ( value ) =>
 							setAttributes( { publisher: value } )
@@ -248,7 +269,10 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 					/>
 					<TextControl
 						type="number"
-						label={ __( 'Total Pages', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Total Pages',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ pageCount }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -298,7 +322,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 									error?.message ||
 										__(
 											'Could not complete book details. Please try again.',
-											'post-kinds-for-indieweb'
+											'post-kinds-for-indieweb-in-block-themes'
 										),
 									{ type: 'snackbar' }
 								);
@@ -309,18 +333,18 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 					>
 						{ __(
 							'Complete book details',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					</Button>
 
 					<ToggleControl
 						label={ __(
 							'Show Kindle preview',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						help={ __(
 							"Adds a Kindle instant-preview that follows this book's ISBN/ASIN.",
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						checked={ !! kindleEmbedClientId }
 						onChange={ ( on ) => {
@@ -356,37 +380,43 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Reading Status', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Reading Status',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 				>
 					<SelectControl
-						label={ __( 'Status', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Status',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ readStatus }
 						options={ [
 							{
 								label: __(
 									'To Read',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'to-read',
 							},
 							{
 								label: __(
 									'Currently Reading',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'reading',
 							},
 							{
 								label: __(
 									'Finished',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'finished',
 							},
 							{
 								label: __(
 									'Abandoned',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'abandoned',
 							},
@@ -400,7 +430,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 						<RangeControl
 							label={ __(
 								'Current Page',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 							value={ currentPage || 0 }
 							onChange={ ( value ) =>
@@ -414,7 +444,10 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 
 					<div className="components-base-control">
 						<span className="components-base-control__label">
-							{ __( 'Rating', 'post-kinds-for-indieweb' ) }
+							{ __(
+								'Rating',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }
 						</span>
 						<StarRating
 							value={ rating }
@@ -427,19 +460,25 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 
 					<div className="components-base-control">
 						<span className="components-base-control__label">
-							{ __( 'Started', 'post-kinds-for-indieweb' ) }
+							{ __(
+								'Started',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }
 						</span>
 						<Button
 							variant="secondary"
 							onClick={ () => setShowStartPicker( true ) }
 							aria-label={ __(
 								'Set start date',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						>
 							{ startedAt
 								? new Date( startedAt ).toLocaleDateString()
-								: __( 'Set date', 'post-kinds-for-indieweb' ) }
+								: __(
+										'Set date',
+										'post-kinds-for-indieweb-in-block-themes'
+								  ) }
 						</Button>
 						{ showStartPicker && (
 							<Popover
@@ -460,14 +499,17 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 						readStatus === 'abandoned' ) && (
 						<div className="components-base-control">
 							<span className="components-base-control__label">
-								{ __( 'Finished', 'post-kinds-for-indieweb' ) }
+								{ __(
+									'Finished',
+									'post-kinds-for-indieweb-in-block-themes'
+								) }
 							</span>
 							<Button
 								variant="secondary"
 								onClick={ () => setShowFinishPicker( true ) }
 								aria-label={ __(
 									'Set finish date',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							>
 								{ finishedAt
@@ -476,7 +518,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 									  ).toLocaleDateString()
 									: __(
 											'Set date',
-											'post-kinds-for-indieweb'
+											'post-kinds-for-indieweb-in-block-themes'
 									  ) }
 							</Button>
 							{ showFinishPicker && (
@@ -500,39 +542,44 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 					) }
 				</PanelBody>
 
-				<PanelBody title={ __( 'Layout', 'post-kinds-for-indieweb' ) }>
+				<PanelBody
+					title={ __(
+						'Layout',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
+				>
 					<SelectControl
 						label={ __(
 							'Layout Style',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ layout }
 						options={ [
 							{
 								label: __(
 									'Horizontal',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'horizontal',
 							},
 							{
 								label: __(
 									'Vertical',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'vertical',
 							},
 							{
 								label: __(
 									'Cover Focus',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'cover',
 							},
 							{
 								label: __(
 									'Compact',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'compact',
 							},
@@ -544,11 +591,17 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Links', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Links',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<TextControl
-						label={ __( 'Book URL', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Book URL',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ bookUrl || '' }
 						onChange={ ( value ) =>
 							setAttributes( { bookUrl: value } )
@@ -558,7 +611,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 					<TextControl
 						label={ __(
 							'Open Library ID',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ openlibraryId || '' }
 						onChange={ ( value ) =>
@@ -606,13 +659,25 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 							className={ `post-kinds-card__badge post-kinds-card__badge--${ readStatus }` }
 						>
 							{ readStatus === 'to-read' &&
-								__( 'To Read', 'post-kinds-for-indieweb' ) }
+								__(
+									'To Read',
+									'post-kinds-for-indieweb-in-block-themes'
+								) }
 							{ readStatus === 'reading' &&
-								__( 'Reading', 'post-kinds-for-indieweb' ) }
+								__(
+									'Reading',
+									'post-kinds-for-indieweb-in-block-themes'
+								) }
 							{ readStatus === 'finished' &&
-								__( 'Finished', 'post-kinds-for-indieweb' ) }
+								__(
+									'Finished',
+									'post-kinds-for-indieweb-in-block-themes'
+								) }
 							{ readStatus === 'abandoned' &&
-								__( 'Abandoned', 'post-kinds-for-indieweb' ) }
+								__(
+									'Abandoned',
+									'post-kinds-for-indieweb-in-block-themes'
+								) }
 						</span>
 
 						<RichText
@@ -624,7 +689,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 							}
 							placeholder={ __(
 								'Book title',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -637,7 +702,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 							}
 							placeholder={ __(
 								'Author name',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -667,7 +732,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 							}
 							placeholder={ __(
 								'Write a review…',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 					</div>

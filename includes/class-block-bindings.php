@@ -70,44 +70,44 @@ class Block_Bindings {
 		$this->bindings = [
 			// Citation bindings.
 			'cite_name'              => [
-				'label'    => __( 'Citation Title', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Citation Title', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'cite_name',
 				'type'     => 'string',
 			],
 			'cite_url'               => [
-				'label'    => __( 'Citation URL', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Citation URL', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'cite_url',
 				'type'     => 'url',
 			],
 			'cite_author'            => [
-				'label'    => __( 'Citation Author', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Citation Author', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'cite_author',
 				'type'     => 'string',
 			],
 			'cite_author_url'        => [
-				'label'    => __( 'Citation Author URL', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Citation Author URL', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'cite_author_url',
 				'type'     => 'url',
 			],
 			'cite_photo'             => [
-				'label'    => __( 'Citation Image', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Citation Image', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'cite_photo',
 				'type'     => 'url',
 			],
 			'cite_summary'           => [
-				'label'    => __( 'Citation Summary', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Citation Summary', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'cite_summary',
 				'type'     => 'string',
 			],
 			'cite_published'         => [
-				'label'    => __( 'Citation Date', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Citation Date', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'cite_published',
 				'type'     => 'date',
 			],
 
 			// RSVP bindings.
 			'rsvp_status'            => [
-				'label'    => __( 'RSVP Status', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'RSVP Status', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'rsvp_status',
 				'type'     => 'string',
 				'format'   => 'rsvp',
@@ -115,28 +115,28 @@ class Block_Bindings {
 
 			// Check-in bindings.
 			'checkin_name'           => [
-				'label'    => __( 'Venue Name', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Venue Name', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'checkin_name',
 				'type'     => 'string',
 			],
 			'checkin_url'            => [
-				'label'    => __( 'Venue URL', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Venue URL', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'checkin_url',
 				'type'     => 'url',
 			],
 			'checkin_address'        => [
-				'label'    => __( 'Venue Address', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Venue Address', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'checkin_address',
 				'type'     => 'string',
 			],
 			'checkin_full_address'   => [
-				'label'    => __( 'Full Address', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Full Address', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => null, // Computed field.
 				'type'     => 'computed',
 				'compute'  => 'full_address',
 			],
 			'geo_coordinates'        => [
-				'label'    => __( 'Coordinates', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Coordinates', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => null, // Computed field.
 				'type'     => 'computed',
 				'compute'  => 'coordinates',
@@ -144,27 +144,27 @@ class Block_Bindings {
 
 			// Listen bindings.
 			'listen_track'           => [
-				'label'    => __( 'Track Name', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Track Name', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'listen_track',
 				'type'     => 'string',
 			],
 			'listen_artist'          => [
-				'label'    => __( 'Artist', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Artist', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'listen_artist',
 				'type'     => 'string',
 			],
 			'listen_album'           => [
-				'label'    => __( 'Album', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Album', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'listen_album',
 				'type'     => 'string',
 			],
 			'listen_cover'           => [
-				'label'    => __( 'Album Art', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Album Art', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'listen_cover',
 				'type'     => 'url',
 			],
 			'listen_display'         => [
-				'label'    => __( 'Track by Artist', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Track by Artist', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => null, // Computed field.
 				'type'     => 'computed',
 				'compute'  => 'listen_display',
@@ -172,28 +172,28 @@ class Block_Bindings {
 
 			// Watch bindings.
 			'watch_title'            => [
-				'label'    => __( 'Title', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Title', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'watch_title',
 				'type'     => 'string',
 			],
 			'watch_year'             => [
-				'label'    => __( 'Year', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Year', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'watch_year',
 				'type'     => 'string',
 			],
 			'watch_poster'           => [
-				'label'    => __( 'Poster', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Poster', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'watch_poster',
 				'type'     => 'url',
 			],
 			'watch_status'           => [
-				'label'    => __( 'Watch Status', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Watch Status', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'watch_status',
 				'type'     => 'string',
 				'format'   => 'watch_status',
 			],
 			'watch_display'          => [
-				'label'    => __( 'Title (Year)', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Title (Year)', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => null, // Computed field.
 				'type'     => 'computed',
 				'compute'  => 'watch_display',
@@ -201,33 +201,33 @@ class Block_Bindings {
 
 			// Read bindings.
 			'read_title'             => [
-				'label'    => __( 'Book Title', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Book Title', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'read_title',
 				'type'     => 'string',
 			],
 			'read_author'            => [
-				'label'    => __( 'Book Author', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Book Author', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'read_author',
 				'type'     => 'string',
 			],
 			'read_cover'             => [
-				'label'    => __( 'Book Cover', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Book Cover', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'read_cover',
 				'type'     => 'url',
 			],
 			'read_isbn'              => [
-				'label'    => __( 'ISBN', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'ISBN', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'read_isbn',
 				'type'     => 'string',
 			],
 			'read_status'            => [
-				'label'    => __( 'Reading Status', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Reading Status', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'read_status',
 				'type'     => 'string',
 				'format'   => 'read_status',
 			],
 			'read_progress_display'  => [
-				'label'    => __( 'Reading Progress', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Reading Progress', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => null, // Computed field.
 				'type'     => 'computed',
 				'compute'  => 'read_progress',
@@ -235,22 +235,22 @@ class Block_Bindings {
 
 			// Event bindings.
 			'event_start'            => [
-				'label'    => __( 'Start Date/Time', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Start Date/Time', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'event_start',
 				'type'     => 'date',
 			],
 			'event_end'              => [
-				'label'    => __( 'End Date/Time', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'End Date/Time', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'event_end',
 				'type'     => 'date',
 			],
 			'event_location'         => [
-				'label'    => __( 'Event Location', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Event Location', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'event_location',
 				'type'     => 'string',
 			],
 			'event_datetime_display' => [
-				'label'    => __( 'Event Date/Time', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Event Date/Time', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => null, // Computed field.
 				'type'     => 'computed',
 				'compute'  => 'event_datetime',
@@ -258,29 +258,29 @@ class Block_Bindings {
 
 			// Review bindings.
 			'review_rating'          => [
-				'label'    => __( 'Rating', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Rating', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'review_rating',
 				'type'     => 'number',
 			],
 			'review_rating_display'  => [
-				'label'    => __( 'Rating Display', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Rating Display', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => null, // Computed field.
 				'type'     => 'computed',
 				'compute'  => 'rating_display',
 			],
 			'review_stars'           => [
-				'label'    => __( 'Star Rating', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Star Rating', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => null, // Computed field.
 				'type'     => 'computed',
 				'compute'  => 'star_rating',
 			],
 			'review_item_name'       => [
-				'label'    => __( 'Reviewed Item', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Reviewed Item', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'review_item_name',
 				'type'     => 'string',
 			],
 			'review_item_url'        => [
-				'label'    => __( 'Reviewed Item URL', 'post-kinds-for-indieweb' ),
+				'label'    => __( 'Reviewed Item URL', 'post-kinds-for-indieweb-in-block-themes' ),
 				'meta_key' => 'review_item_url',
 				'type'     => 'url',
 			],
@@ -320,7 +320,7 @@ class Block_Bindings {
 		register_block_bindings_source(
 			self::SOURCE_NAME,
 			[
-				'label'              => __( 'Post Kinds for IndieWeb', 'post-kinds-for-indieweb' ),
+				'label'              => __( 'Post Kinds for IndieWeb in Block Themes', 'post-kinds-for-indieweb-in-block-themes' ),
 				'get_value_callback' => [ $this, 'get_binding_value' ],
 				'uses_context'       => [ 'postId', 'postType' ],
 			]
@@ -407,7 +407,7 @@ class Block_Bindings {
 				$artist = get_post_meta( $post_id, $prefix . 'listen_artist', true );
 				if ( $track && $artist ) {
 					/* translators: 1: Track name, 2: Artist name */
-					return sprintf( __( '%1$s by %2$s', 'post-kinds-for-indieweb' ), $track, $artist );
+					return sprintf( __( '%1$s by %2$s', 'post-kinds-for-indieweb-in-block-themes' ), $track, $artist );
 				}
 				return $track ?: null;
 
@@ -425,17 +425,17 @@ class Block_Bindings {
 				$status   = get_post_meta( $post_id, $prefix . 'read_status', true );
 
 				if ( 'finished' === $status ) {
-					return __( 'Completed', 'post-kinds-for-indieweb' );
+					return __( 'Completed', 'post-kinds-for-indieweb-in-block-themes' );
 				}
 
 				if ( $progress && $pages ) {
 					/* translators: 1: Current page, 2: Total pages */
-					return sprintf( __( 'Page %1$d of %2$d', 'post-kinds-for-indieweb' ), $progress, $pages );
+					return sprintf( __( 'Page %1$d of %2$d', 'post-kinds-for-indieweb-in-block-themes' ), $progress, $pages );
 				}
 
 				if ( $progress ) {
 					/* translators: %d: Progress percentage */
-					return sprintf( __( '%d%% complete', 'post-kinds-for-indieweb' ), $progress );
+					return sprintf( __( '%d%% complete', 'post-kinds-for-indieweb-in-block-themes' ), $progress );
 				}
 
 				return null;
@@ -453,7 +453,7 @@ class Block_Bindings {
 				if ( $end ) {
 					$end_date = wp_date( get_option( 'time_format' ), strtotime( $end ) );
 					/* translators: 1: Start date/time, 2: End time */
-					return sprintf( __( '%1$s – %2$s', 'post-kinds-for-indieweb' ), $start_date, $end_date );
+					return sprintf( __( '%1$s – %2$s', 'post-kinds-for-indieweb-in-block-themes' ), $start_date, $end_date );
 				}
 
 				return $start_date;
@@ -463,7 +463,7 @@ class Block_Bindings {
 				$best   = (int) get_post_meta( $post_id, $prefix . 'review_best', true ) ?: 5;
 				if ( $rating ) {
 					/* translators: 1: Rating value, 2: Maximum rating */
-					return sprintf( __( '%1$s out of %2$s', 'post-kinds-for-indieweb' ), $rating, $best );
+					return sprintf( __( '%1$s out of %2$s', 'post-kinds-for-indieweb-in-block-themes' ), $rating, $best );
 				}
 				return null;
 
@@ -488,27 +488,27 @@ class Block_Bindings {
 		switch ( $format ) {
 			case 'rsvp':
 				$labels = [
-					'yes'        => __( 'Yes, attending', 'post-kinds-for-indieweb' ),
-					'no'         => __( 'Not attending', 'post-kinds-for-indieweb' ),
-					'maybe'      => __( 'Maybe attending', 'post-kinds-for-indieweb' ),
-					'interested' => __( 'Interested', 'post-kinds-for-indieweb' ),
+					'yes'        => __( 'Yes, attending', 'post-kinds-for-indieweb-in-block-themes' ),
+					'no'         => __( 'Not attending', 'post-kinds-for-indieweb-in-block-themes' ),
+					'maybe'      => __( 'Maybe attending', 'post-kinds-for-indieweb-in-block-themes' ),
+					'interested' => __( 'Interested', 'post-kinds-for-indieweb-in-block-themes' ),
 				];
 				return $labels[ $value ] ?? (string) $value;
 
 			case 'watch_status':
 				$labels = [
-					'watched'   => __( 'Watched', 'post-kinds-for-indieweb' ),
-					'watching'  => __( 'Currently Watching', 'post-kinds-for-indieweb' ),
-					'abandoned' => __( 'Abandoned', 'post-kinds-for-indieweb' ),
+					'watched'   => __( 'Watched', 'post-kinds-for-indieweb-in-block-themes' ),
+					'watching'  => __( 'Currently Watching', 'post-kinds-for-indieweb-in-block-themes' ),
+					'abandoned' => __( 'Abandoned', 'post-kinds-for-indieweb-in-block-themes' ),
 				];
 				return $labels[ $value ] ?? (string) $value;
 
 			case 'read_status':
 				$labels = [
-					'to-read'   => __( 'To Read', 'post-kinds-for-indieweb' ),
-					'reading'   => __( 'Currently Reading', 'post-kinds-for-indieweb' ),
-					'finished'  => __( 'Finished', 'post-kinds-for-indieweb' ),
-					'abandoned' => __( 'Abandoned', 'post-kinds-for-indieweb' ),
+					'to-read'   => __( 'To Read', 'post-kinds-for-indieweb-in-block-themes' ),
+					'reading'   => __( 'Currently Reading', 'post-kinds-for-indieweb-in-block-themes' ),
+					'finished'  => __( 'Finished', 'post-kinds-for-indieweb-in-block-themes' ),
+					'abandoned' => __( 'Abandoned', 'post-kinds-for-indieweb-in-block-themes' ),
 				];
 				return $labels[ $value ] ?? (string) $value;
 

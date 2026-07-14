@@ -7,7 +7,7 @@
     "category": "post-kinds-indieweb",
     "description": "Display a location checkin with venue details, map, and optional notes.",
     "keywords": ["checkin", "location", "venue", "place", "map", "travel"],
-    "textdomain": "post-kinds-indieweb",
+    "textdomain": "post-kinds-for-indieweb-in-block-themes",
     "attributes": {
         "venueName": {
             "type": "string"

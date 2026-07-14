@@ -24,9 +24,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 register_block_pattern(
 	'post-kinds-indieweb/food-photo-checkin',
 	[
-		'title'       => __( 'Food Photo Check-in', 'post-kinds-for-indieweb' ),
-		'description' => __( 'Check in at a restaurant with food photo and details.', 'post-kinds-for-indieweb' ),
-		'categories'  => [ 'post-kinds-for-indieweb' ],
+		'title'       => __( 'Food Photo Check-in', 'post-kinds-for-indieweb-in-block-themes' ),
+		'description' => __( 'Check in at a restaurant with food photo and details.', 'post-kinds-for-indieweb-in-block-themes' ),
+		'categories'  => [ 'post-kinds-for-indieweb-in-block-themes' ],
 		'keywords'    => [ 'food', 'photo', 'checkin', 'restaurant', 'meal', 'eat', 'dining', 'indieweb' ],
 		'blockTypes'  => [ 'core/group' ],
 		'postTypes'   => [ 'post' ],
@@ -43,7 +43,7 @@ register_block_pattern(
 
 	<!-- wp:group {"className":"e-content","layout":{"type":"constrained"}} -->
 	<div class="wp-block-group e-content">
-		<!-- wp:paragraph {"placeholder":"' . esc_attr__( 'How was the meal? (optional)...', 'post-kinds-for-indieweb' ) . '"} -->
+		<!-- wp:paragraph {"placeholder":"' . esc_attr__( 'How was the meal? (optional)...', 'post-kinds-for-indieweb-in-block-themes' ) . '"} -->
 		<p></p>
 		<!-- /wp:paragraph -->
 	</div>

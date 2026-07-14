@@ -69,7 +69,10 @@ export default function Edit( { attributes, setAttributes } ) {
 	const venueOptions = [
 		{
 			value: 0,
-			label: __( '— Select a Venue —', 'post-kinds-for-indieweb' ),
+			label: __(
+				'— Select a Venue —',
+				'post-kinds-for-indieweb-in-block-themes'
+			),
 		},
 		...venues.map( ( venue ) => ( {
 			value: venue.id,
@@ -81,12 +84,15 @@ export default function Edit( { attributes, setAttributes } ) {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Venue Settings', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Venue Settings',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 				>
 					<SelectControl
 						label={ __(
 							'Select Venue',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ venueId }
 						options={ venueOptions }
@@ -95,17 +101,23 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 						help={ __(
 							'Choose the venue to display. On venue archive pages, this will automatically use the current venue.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Display Options', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Display Options',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<ToggleControl
-						label={ __( 'Show Map', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Show Map',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						checked={ showMap }
 						onChange={ ( value ) =>
 							setAttributes( { showMap: value } )
@@ -115,7 +127,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<ToggleControl
 						label={ __(
 							'Show Address',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						checked={ showAddress }
 						onChange={ ( value ) =>
@@ -126,7 +138,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<ToggleControl
 						label={ __(
 							'Show Recent Check-ins',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						checked={ showCheckins }
 						onChange={ ( value ) =>
@@ -138,7 +150,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						<RangeControl
 							label={ __(
 								'Number of Check-ins',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 							value={ checkinCount }
 							onChange={ ( value ) =>
@@ -157,7 +169,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						icon="store"
 						label={ __(
 							'Venue Detail',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					>
 						<Spinner />
@@ -168,11 +180,11 @@ export default function Edit( { attributes, setAttributes } ) {
 						icon="store"
 						label={ __(
 							'Venue Detail',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						instructions={ __(
 							'Select a venue from the block settings, or this block will automatically display the current venue on venue archive pages.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					>
 						<SelectControl
@@ -195,7 +207,7 @@ export default function Edit( { attributes, setAttributes } ) {
 									<span>
 										{ __(
 											'Map will display here on the frontend',
-											'post-kinds-for-indieweb'
+											'post-kinds-for-indieweb-in-block-themes'
 										) }
 									</span>
 								</div>
@@ -218,7 +230,7 @@ export default function Edit( { attributes, setAttributes } ) {
 										.join( ', ' ) ||
 										__(
 											'No address available',
-											'post-kinds-for-indieweb'
+											'post-kinds-for-indieweb-in-block-themes'
 										) }
 								</div>
 							) }
@@ -228,13 +240,13 @@ export default function Edit( { attributes, setAttributes } ) {
 									<h3>
 										{ __(
 											'Recent Check-ins',
-											'post-kinds-for-indieweb'
+											'post-kinds-for-indieweb-in-block-themes'
 										) }
 									</h3>
 									<p className="description">
 										{ __(
 											'Check-ins will be displayed here on the frontend.',
-											'post-kinds-for-indieweb'
+											'post-kinds-for-indieweb-in-block-themes'
 										) }
 									</p>
 								</div>
@@ -247,11 +259,11 @@ export default function Edit( { attributes, setAttributes } ) {
 						icon="store"
 						label={ __(
 							'Venue Detail',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						instructions={ __(
 							'Venue not found. Please select a different venue.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 				) }

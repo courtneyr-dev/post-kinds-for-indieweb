@@ -67,8 +67,8 @@ final class Media_Stats {
 			'post-kinds/media-stats',
 			[
 				'api_version'     => 3,
-				'title'           => __( 'Media Stats', 'post-kinds-for-indieweb' ),
-				'description'     => __( 'Shows total listens, watches, and reads for a period.', 'post-kinds-for-indieweb' ),
+				'title'           => __( 'Media Stats', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'     => __( 'Shows total listens, watches, and reads for a period.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'        => 'widgets',
 				'icon'            => 'chart-bar',
 				'keywords'        => [ 'stats', 'statistics', 'listen', 'watch', 'read', 'indieweb' ],
@@ -124,24 +124,24 @@ final class Media_Stats {
 		);
 
 		$period_labels = [
-			'week'  => __( 'This Week', 'post-kinds-for-indieweb' ),
-			'month' => __( 'This Month', 'post-kinds-for-indieweb' ),
-			'year'  => __( 'This Year', 'post-kinds-for-indieweb' ),
-			'all'   => __( 'All Time', 'post-kinds-for-indieweb' ),
+			'week'  => __( 'This Week', 'post-kinds-for-indieweb-in-block-themes' ),
+			'month' => __( 'This Month', 'post-kinds-for-indieweb-in-block-themes' ),
+			'year'  => __( 'This Year', 'post-kinds-for-indieweb-in-block-themes' ),
+			'all'   => __( 'All Time', 'post-kinds-for-indieweb-in-block-themes' ),
 		];
 
 		$kinds = [
 			'listen' => [
 				'icon'  => '&#127925;',
-				'label' => __( 'Listens', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Listens', 'post-kinds-for-indieweb-in-block-themes' ),
 			],
 			'watch'  => [
 				'icon'  => '&#127916;',
-				'label' => __( 'Watches', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Watches', 'post-kinds-for-indieweb-in-block-themes' ),
 			],
 			'read'   => [
 				'icon'  => '&#128214;',
-				'label' => __( 'Reads', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Reads', 'post-kinds-for-indieweb-in-block-themes' ),
 			],
 		];
 

@@ -61,8 +61,8 @@ final class Recent_Kinds {
 			'post-kinds/recent-kinds',
 			[
 				'api_version'     => 3,
-				'title'           => __( 'Recent Kinds', 'post-kinds-for-indieweb' ),
-				'description'     => __( 'Shows recent posts of a specific kind.', 'post-kinds-for-indieweb' ),
+				'title'           => __( 'Recent Kinds', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'     => __( 'Shows recent posts of a specific kind.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'        => 'widgets',
 				'icon'            => 'list-view',
 				'keywords'        => [ 'recent', 'posts', 'kind', 'listen', 'watch', 'read', 'indieweb' ],

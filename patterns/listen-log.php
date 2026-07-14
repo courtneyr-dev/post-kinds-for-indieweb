@@ -23,9 +23,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 register_block_pattern(
 	'post-kinds-indieweb/listen-log',
 	[
-		'title'       => __( 'Listen Log', 'post-kinds-for-indieweb' ),
-		'description' => __( 'Log a music track or podcast episode you listened to.', 'post-kinds-for-indieweb' ),
-		'categories'  => [ 'post-kinds-for-indieweb' ],
+		'title'       => __( 'Listen Log', 'post-kinds-for-indieweb-in-block-themes' ),
+		'description' => __( 'Log a music track or podcast episode you listened to.', 'post-kinds-for-indieweb-in-block-themes' ),
+		'categories'  => [ 'post-kinds-for-indieweb-in-block-themes' ],
 		'keywords'    => [ 'listen', 'music', 'scrobble', 'podcast', 'audio', 'indieweb', 'reaction' ],
 		'blockTypes'  => [ 'core/group' ],
 		'postTypes'   => [ 'post' ],

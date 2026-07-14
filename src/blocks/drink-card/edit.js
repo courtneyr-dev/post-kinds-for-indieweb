@@ -29,62 +29,62 @@ import { StarRating } from '../shared/components';
  */
 const DRINK_TYPES = [
 	{
-		label: __( 'Select type…', 'post-kinds-for-indieweb' ),
+		label: __( 'Select type…', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: '',
 		emoji: '🥤',
 	},
 	{
-		label: __( 'Coffee', 'post-kinds-for-indieweb' ),
+		label: __( 'Coffee', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'coffee',
 		emoji: '☕',
 	},
 	{
-		label: __( 'Tea', 'post-kinds-for-indieweb' ),
+		label: __( 'Tea', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'tea',
 		emoji: '🍵',
 	},
 	{
-		label: __( 'Beer', 'post-kinds-for-indieweb' ),
+		label: __( 'Beer', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'beer',
 		emoji: '🍺',
 	},
 	{
-		label: __( 'Wine', 'post-kinds-for-indieweb' ),
+		label: __( 'Wine', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'wine',
 		emoji: '🍷',
 	},
 	{
-		label: __( 'Cocktail', 'post-kinds-for-indieweb' ),
+		label: __( 'Cocktail', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'cocktail',
 		emoji: '🍸',
 	},
 	{
-		label: __( 'Juice', 'post-kinds-for-indieweb' ),
+		label: __( 'Juice', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'juice',
 		emoji: '🧃',
 	},
 	{
-		label: __( 'Soda', 'post-kinds-for-indieweb' ),
+		label: __( 'Soda', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'soda',
 		emoji: '🥤',
 	},
 	{
-		label: __( 'Smoothie', 'post-kinds-for-indieweb' ),
+		label: __( 'Smoothie', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'smoothie',
 		emoji: '🥤',
 	},
 	{
-		label: __( 'Water', 'post-kinds-for-indieweb' ),
+		label: __( 'Water', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'water',
 		emoji: '💧',
 	},
 	{
-		label: __( 'Whiskey', 'post-kinds-for-indieweb' ),
+		label: __( 'Whiskey', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'whiskey',
 		emoji: '🥃',
 	},
 	{
-		label: __( 'Other', 'post-kinds-for-indieweb' ),
+		label: __( 'Other', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'other',
 		emoji: '🥤',
 	},
@@ -211,7 +211,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			photoAlt:
 				media.alt ||
 				name ||
-				__( 'Drink photo', 'post-kinds-for-indieweb' ),
+				__( 'Drink photo', 'post-kinds-for-indieweb-in-block-themes' ),
 		} );
 	};
 
@@ -232,22 +232,31 @@ export default function Edit( { attributes, setAttributes } ) {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Drink Details', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Drink Details',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ true }
 				>
 					<TextControl
-						label={ __( 'Name', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Name',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ name || '' }
 						onChange={ ( value ) =>
 							setAttributes( { name: value } )
 						}
 						placeholder={ __(
 							'What are you drinking?',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 					<SelectControl
-						label={ __( 'Type', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Type',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ drinkType || '' }
 						options={ drinkTypeOptions }
 						onChange={ ( value ) =>
@@ -257,7 +266,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<TextControl
 						label={ __(
 							'Brand/Brewery',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ brand || '' }
 						onChange={ ( value ) =>
@@ -265,7 +274,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<RangeControl
-						label={ __( 'Rating', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Rating',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ rating || 0 }
 						onChange={ ( value ) =>
 							setAttributes( { rating: value } )
@@ -276,13 +288,16 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Location', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Location',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ true }
 				>
 					<TextControl
 						label={ __(
 							'Bar/Cafe/Venue Name',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ locationName || '' }
 						onChange={ ( value ) =>
@@ -290,18 +305,24 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 						placeholder={ __(
 							'Where are you drinking?',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 					<TextControl
-						label={ __( 'Address', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Address',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ locationAddress || '' }
 						onChange={ ( value ) =>
 							setAttributes( { locationAddress: value } )
 						}
 					/>
 					<TextControl
-						label={ __( 'City', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'City',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ locationLocality || '' }
 						onChange={ ( value ) =>
 							setAttributes( { locationLocality: value } )
@@ -310,7 +331,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<TextControl
 						label={ __(
 							'State/Region',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ locationRegion || '' }
 						onChange={ ( value ) =>
@@ -318,14 +339,20 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<TextControl
-						label={ __( 'Country', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Country',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ locationCountry || '' }
 						onChange={ ( value ) =>
 							setAttributes( { locationCountry: value } )
 						}
 					/>
 					<TextControl
-						label={ __( 'Website URL', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Website URL',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ venueUrl || '' }
 						onChange={ ( value ) =>
 							setAttributes( { venueUrl: value } )
@@ -333,7 +360,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						type="url"
 					/>
 					<TextControl
-						label={ __( 'Latitude', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Latitude',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ geoLatitude || '' }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -344,7 +374,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						step="0.0000001"
 					/>
 					<TextControl
-						label={ __( 'Longitude', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Longitude',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ geoLongitude || '' }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -356,13 +389,16 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Notes', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Notes',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<TextControl
 						label={ __(
 							'Tasting Notes',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ notes || '' }
 						onChange={ ( value ) =>
@@ -370,7 +406,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 						placeholder={ __(
 							'Your thoughts…',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 				</PanelBody>
@@ -404,7 +440,7 @@ export default function Edit( { attributes, setAttributes } ) {
 													}
 													aria-label={ __(
 														'Remove photo',
-														'post-kinds-for-indieweb'
+														'post-kinds-for-indieweb-in-block-themes'
 													) }
 												>
 													×
@@ -418,7 +454,7 @@ export default function Edit( { attributes, setAttributes } ) {
 												<span className="post-kinds-card__media-text">
 													{ __(
 														'Add Photo (Optional)',
-														'post-kinds-for-indieweb'
+														'post-kinds-for-indieweb-in-block-themes'
 													) }
 												</span>
 											</div>
@@ -460,7 +496,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'What are you drinking?',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -473,7 +509,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'Brand or brewery…',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -486,7 +522,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'Venue name…',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -523,7 +559,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'Tasting notes…',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 					</div>

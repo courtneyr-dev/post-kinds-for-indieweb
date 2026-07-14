@@ -7,7 +7,7 @@
 	"category": "post-kinds-indieweb",
 	"description": "Display your current mood with emoji and note.",
 	"keywords": ["mood", "feeling", "emotion", "status"],
-	"textdomain": "post-kinds-indieweb",
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
 	"attributes": {
 		"mood": {
 			"type": "string"

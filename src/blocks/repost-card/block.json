@@ -7,7 +7,7 @@
 	"category": "post-kinds-indieweb",
 	"description": "Share someone else's post on your own site, with title, URL, and optional note.",
 	"keywords": ["repost", "reshare", "retweet", "boost", "share"],
-	"textdomain": "post-kinds-indieweb",
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
 	"attributes": {
 		"title": {
 			"type": "string"

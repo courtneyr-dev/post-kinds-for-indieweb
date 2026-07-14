@@ -7,7 +7,7 @@
 	"category": "post-kinds-indieweb",
 	"description": "Display a like reaction to content you appreciated, with title, URL, and optional note.",
 	"keywords": ["like", "heart", "appreciate", "love", "reaction"],
-	"textdomain": "post-kinds-indieweb",
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
 	"attributes": {
 		"title": {
 			"type": "string"

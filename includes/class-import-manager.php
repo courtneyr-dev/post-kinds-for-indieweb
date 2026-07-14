@@ -1675,7 +1675,7 @@ class Import_Manager {
 		if ( ! isset( $this->sources[ $source ] ) ) {
 			return [
 				'success' => false,
-				'error'   => __( 'Invalid import source.', 'post-kinds-for-indieweb' ),
+				'error'   => __( 'Invalid import source.', 'post-kinds-for-indieweb-in-block-themes' ),
 			];
 		}
 
@@ -1710,7 +1710,7 @@ class Import_Manager {
 				'success' => true,
 				'updated' => 0,
 				'skipped' => 0,
-				'message' => __( 'No imported posts found to re-sync.', 'post-kinds-for-indieweb' ),
+				'message' => __( 'No imported posts found to re-sync.', 'post-kinds-for-indieweb-in-block-themes' ),
 			];
 		}
 
@@ -1733,7 +1733,7 @@ class Import_Manager {
 			'skipped' => $skipped,
 			'message' => sprintf(
 				/* translators: 1: Updated count, 2: Skipped count */
-				__( 'Re-synced %1$d posts, skipped %2$d.', 'post-kinds-for-indieweb' ),
+				__( 'Re-synced %1$d posts, skipped %2$d.', 'post-kinds-for-indieweb-in-block-themes' ),
 				$updated,
 				$skipped
 			),

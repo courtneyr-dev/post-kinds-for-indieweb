@@ -7,7 +7,7 @@
     "category": "post-kinds-indieweb",
     "description": "Search and embed media info from external APIs (books, movies, music).",
     "keywords": ["lookup", "search", "media", "book", "movie", "music", "api"],
-    "textdomain": "post-kinds-indieweb",
+    "textdomain": "post-kinds-for-indieweb-in-block-themes",
     "attributes": {
         "mediaType": {
             "type": "string",

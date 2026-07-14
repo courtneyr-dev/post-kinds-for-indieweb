@@ -147,7 +147,7 @@ class Syndication_Page {
 				'syndicated',
 				sprintf(
 					/* translators: %s: service name */
-					__( 'Post successfully syndicated to %s.', 'post-kinds-for-indieweb' ),
+					__( 'Post successfully syndicated to %s.', 'post-kinds-for-indieweb-in-block-themes' ),
 					esc_html( $this->get_services()[ $service ]['name'] ?? $service )
 				),
 				'success'
@@ -156,7 +156,7 @@ class Syndication_Page {
 			add_settings_error(
 				'pkiw_syndication',
 				'syndication_failed',
-				__( 'Syndication failed. Please check the post data and try again.', 'post-kinds-for-indieweb' ),
+				__( 'Syndication failed. Please check the post data and try again.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'error'
 			);
 		}
@@ -171,14 +171,14 @@ class Syndication_Page {
 		check_ajax_referer( 'pkiw_syndicate_now', 'nonce' );
 
 		if ( ! current_user_can( 'edit_posts' ) ) {
-			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$post_id = isset( $_POST['post_id'] ) ? (int) $_POST['post_id'] : 0;
 		$service = isset( $_POST['service'] ) ? sanitize_key( $_POST['service'] ) : '';
 
 		if ( ! $post_id || ! $service ) {
-			wp_send_json_error( [ 'message' => __( 'Invalid parameters.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Invalid parameters.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$result = $this->syndicate_post( $post_id, $service );
@@ -188,14 +188,14 @@ class Syndication_Page {
 				[
 					'message' => sprintf(
 						/* translators: %s: service name */
-						__( 'Syndicated to %s', 'post-kinds-for-indieweb' ),
+						__( 'Syndicated to %s', 'post-kinds-for-indieweb-in-block-themes' ),
 						$this->get_services()[ $service ]['name'] ?? $service
 					),
 					'url'     => $result['url'] ?? '',
 				]
 			);
 		} else {
-			wp_send_json_error( [ 'message' => __( 'Syndication failed.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Syndication failed.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 	}
 
@@ -410,7 +410,7 @@ class Syndication_Page {
 		}
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Syndication', 'post-kinds-for-indieweb' ); ?></h1>
+			<h1><?php esc_html_e( 'Syndication', 'post-kinds-for-indieweb-in-block-themes' ); ?></h1>
 
 			<?php settings_errors( 'pkiw_syndication' ); ?>
 
@@ -420,11 +420,11 @@ class Syndication_Page {
 						<?php
 						printf(
 							/* translators: %s: link to settings page */
-							esc_html__( 'No syndication services are configured. %s to enable syndication.', 'post-kinds-for-indieweb' ),
+							esc_html__( 'No syndication services are configured. %s to enable syndication.', 'post-kinds-for-indieweb-in-block-themes' ),
 							sprintf(
 								'<a href="%s">%s</a>',
 								esc_url( admin_url( 'admin.php?page=post-kinds-indieweb' ) ),
-								esc_html__( 'Configure settings', 'post-kinds-for-indieweb' )
+								esc_html__( 'Configure settings', 'post-kinds-for-indieweb-in-block-themes' )
 							)
 						);
 						?>
@@ -446,13 +446,13 @@ class Syndication_Page {
 							<li>
 								<a href="<?php echo esc_url( admin_url( 'admin.php?page=post-kinds-indieweb-syndication&service=' . $current_service . '&tab=skipped' ) ); ?>"
 									class="<?php echo 'skipped' === $current_tab ? 'current' : ''; ?>">
-									<?php esc_html_e( 'Skipped', 'post-kinds-for-indieweb' ); ?>
+									<?php esc_html_e( 'Skipped', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 								</a> |
 							</li>
 							<li>
 								<a href="<?php echo esc_url( admin_url( 'admin.php?page=post-kinds-indieweb-syndication&service=' . $current_service . '&tab=syndicated' ) ); ?>"
 									class="<?php echo 'syndicated' === $current_tab ? 'current' : ''; ?>">
-									<?php esc_html_e( 'Syndicated', 'post-kinds-for-indieweb' ); ?>
+									<?php esc_html_e( 'Syndicated', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 								</a>
 							</li>
 						</ul>
@@ -479,21 +479,21 @@ class Syndication_Page {
 	private function render_skipped_posts( string $service ): void {
 		$posts = $this->get_skipped_posts( $service );
 		?>
-		<h2><?php esc_html_e( 'Posts Skipped for Syndication', 'post-kinds-for-indieweb' ); ?></h2>
+		<h2><?php esc_html_e( 'Posts Skipped for Syndication', 'post-kinds-for-indieweb-in-block-themes' ); ?></h2>
 		<p class="description">
-			<?php esc_html_e( 'These posts have syndication disabled. Click "Syndicate Now" to send them to the service.', 'post-kinds-for-indieweb' ); ?>
+			<?php esc_html_e( 'These posts have syndication disabled. Click "Syndicate Now" to send them to the service.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 		</p>
 
 		<?php if ( empty( $posts ) ) : ?>
-			<p><?php esc_html_e( 'No skipped posts found.', 'post-kinds-for-indieweb' ); ?></p>
+			<p><?php esc_html_e( 'No skipped posts found.', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 		<?php else : ?>
 			<table class="wp-list-table widefat fixed striped">
 				<thead>
 					<tr>
-						<th scope="col"><?php esc_html_e( 'Title', 'post-kinds-for-indieweb' ); ?></th>
-						<th scope="col"><?php esc_html_e( 'Date', 'post-kinds-for-indieweb' ); ?></th>
-						<th scope="col"><?php esc_html_e( 'Content', 'post-kinds-for-indieweb' ); ?></th>
-						<th scope="col"><?php esc_html_e( 'Actions', 'post-kinds-for-indieweb' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Title', 'post-kinds-for-indieweb-in-block-themes' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Date', 'post-kinds-for-indieweb-in-block-themes' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Content', 'post-kinds-for-indieweb-in-block-themes' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Actions', 'post-kinds-for-indieweb-in-block-themes' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -515,21 +515,21 @@ class Syndication_Page {
 	private function render_syndicated_posts( string $service ): void {
 		$posts = $this->get_syndicated_posts( $service );
 		?>
-		<h2><?php esc_html_e( 'Syndicated Posts', 'post-kinds-for-indieweb' ); ?></h2>
+		<h2><?php esc_html_e( 'Syndicated Posts', 'post-kinds-for-indieweb-in-block-themes' ); ?></h2>
 		<p class="description">
-			<?php esc_html_e( 'These posts have been syndicated to the service.', 'post-kinds-for-indieweb' ); ?>
+			<?php esc_html_e( 'These posts have been syndicated to the service.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 		</p>
 
 		<?php if ( empty( $posts ) ) : ?>
-			<p><?php esc_html_e( 'No syndicated posts found.', 'post-kinds-for-indieweb' ); ?></p>
+			<p><?php esc_html_e( 'No syndicated posts found.', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 		<?php else : ?>
 			<table class="wp-list-table widefat fixed striped">
 				<thead>
 					<tr>
-						<th scope="col"><?php esc_html_e( 'Title', 'post-kinds-for-indieweb' ); ?></th>
-						<th scope="col"><?php esc_html_e( 'Date', 'post-kinds-for-indieweb' ); ?></th>
-						<th scope="col"><?php esc_html_e( 'Content', 'post-kinds-for-indieweb' ); ?></th>
-						<th scope="col"><?php esc_html_e( 'Syndication URL', 'post-kinds-for-indieweb' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Title', 'post-kinds-for-indieweb-in-block-themes' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Date', 'post-kinds-for-indieweb-in-block-themes' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Content', 'post-kinds-for-indieweb-in-block-themes' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Syndication URL', 'post-kinds-for-indieweb-in-block-themes' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -586,7 +586,7 @@ class Syndication_Page {
 			<td>
 				<?php if ( $syndicated && $syndication_url ) : ?>
 					<a href="<?php echo esc_url( $syndication_url ); ?>" target="_blank" rel="noopener noreferrer">
-						<?php esc_html_e( 'View', 'post-kinds-for-indieweb' ); ?>
+						<?php esc_html_e( 'View', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 					</a>
 				<?php elseif ( ! $syndicated ) : ?>
 					<?php
@@ -604,7 +604,7 @@ class Syndication_Page {
 					);
 					?>
 					<a href="<?php echo esc_url( $syndicate_url ); ?>" class="button button-small">
-						<?php esc_html_e( 'Syndicate Now', 'post-kinds-for-indieweb' ); ?>
+						<?php esc_html_e( 'Syndicate Now', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 					</a>
 				<?php endif; ?>
 			</td>

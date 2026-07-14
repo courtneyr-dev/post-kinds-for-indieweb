@@ -92,7 +92,7 @@ class REST_API {
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'esc_url_raw',
-						'description'       => __( 'Music service URL (Spotify, Apple Music, YouTube, etc.)', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'Music service URL (Spotify, Apple Music, YouTube, etc.)', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			]
@@ -111,20 +111,20 @@ class REST_API {
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-						'description'       => __( 'Search query (track name, artist, or both)', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'Search query (track name, artist, or both)', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'artist' => [
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-						'description'       => __( 'Artist name to narrow search', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'Artist name to narrow search', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'source' => [
 						'required'    => false,
 						'type'        => 'string',
 						'default'     => 'musicbrainz',
 						'enum'        => [ 'musicbrainz', 'lastfm', 'listenbrainz' ],
-						'description' => __( 'API source to use', 'post-kinds-for-indieweb' ),
+						'description' => __( 'API source to use', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			]
@@ -143,7 +143,7 @@ class REST_API {
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'esc_url_raw',
-						'description'       => __( 'Movie/TV service URL (IMDB, TMDB, Trakt, Letterboxd)', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'Movie/TV service URL (IMDB, TMDB, Trakt, Letterboxd)', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			]
@@ -162,27 +162,27 @@ class REST_API {
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-						'description'       => __( 'Search query (title)', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'Search query (title)', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'type'   => [
 						'required'    => false,
 						'type'        => 'string',
 						'default'     => 'multi',
 						'enum'        => [ 'movie', 'tv', 'multi' ],
-						'description' => __( 'Content type to search', 'post-kinds-for-indieweb' ),
+						'description' => __( 'Content type to search', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'year'   => [
 						'required'          => false,
 						'type'              => 'integer',
 						'sanitize_callback' => 'absint',
-						'description'       => __( 'Release year to narrow search', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'Release year to narrow search', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'source' => [
 						'required'    => false,
 						'type'        => 'string',
 						'default'     => 'tmdb',
 						'enum'        => [ 'tmdb', 'trakt', 'tvmaze', 'simkl' ],
-						'description' => __( 'API source to use', 'post-kinds-for-indieweb' ),
+						'description' => __( 'API source to use', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			]
@@ -201,26 +201,26 @@ class REST_API {
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-						'description'       => __( 'Search query (title, author, or ISBN)', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'Search query (title, author, or ISBN)', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'isbn'   => [
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-						'description'       => __( 'ISBN for direct lookup', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'ISBN for direct lookup', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'author' => [
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-						'description'       => __( 'Author name to narrow search', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'Author name to narrow search', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'source' => [
 						'required'    => false,
 						'type'        => 'string',
 						'default'     => 'openlibrary',
 						'enum'        => [ 'openlibrary', 'hardcover', 'googlebooks' ],
-						'description' => __( 'API source to use', 'post-kinds-for-indieweb' ),
+						'description' => __( 'API source to use', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			]
@@ -239,13 +239,13 @@ class REST_API {
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-						'description'       => __( 'Search query (podcast name)', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'Search query (podcast name)', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'feed' => [
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'esc_url_raw',
-						'description'       => __( 'RSS feed URL for direct lookup', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'RSS feed URL for direct lookup', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			]
@@ -264,24 +264,24 @@ class REST_API {
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-						'description'       => __( 'Search query (venue name or address)', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'Search query (venue name or address)', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'lat'    => [
 						'required'    => false,
 						'type'        => 'number',
-						'description' => __( 'Latitude for nearby search', 'post-kinds-for-indieweb' ),
+						'description' => __( 'Latitude for nearby search', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'lng'    => [
 						'required'    => false,
 						'type'        => 'number',
-						'description' => __( 'Longitude for nearby search', 'post-kinds-for-indieweb' ),
+						'description' => __( 'Longitude for nearby search', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'source' => [
 						'required'    => false,
 						'type'        => 'string',
 						'default'     => 'foursquare',
 						'enum'        => [ 'foursquare', 'nominatim' ],
-						'description' => __( 'API source to use', 'post-kinds-for-indieweb' ),
+						'description' => __( 'API source to use', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			]
@@ -300,27 +300,27 @@ class REST_API {
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-						'description'       => __( 'Search query (game name) - required unless id is provided', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'Search query (game name) - required unless id is provided', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'source' => [
 						'required'    => false,
 						'type'        => 'string',
 						'default'     => 'bgg',
 						'enum'        => [ 'bgg', 'rawg' ],
-						'description' => __( 'API source (bgg for BoardGameGeek, rawg for RAWG.io)', 'post-kinds-for-indieweb' ),
+						'description' => __( 'API source (bgg for BoardGameGeek, rawg for RAWG.io)', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'type'   => [
 						'required'    => false,
 						'type'        => 'string',
 						'default'     => 'boardgame',
 						'enum'        => [ 'boardgame', 'videogame' ],
-						'description' => __( 'Game type for BGG (boardgame or videogame)', 'post-kinds-for-indieweb' ),
+						'description' => __( 'Game type for BGG (boardgame or videogame)', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'id'     => [
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-						'description'       => __( 'Game ID for direct lookup', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'Game ID for direct lookup', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			]
@@ -339,17 +339,17 @@ class REST_API {
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-						'description'       => __( 'Address to geocode', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'Address to geocode', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'lat'     => [
 						'required'    => false,
 						'type'        => 'number',
-						'description' => __( 'Latitude for reverse geocoding', 'post-kinds-for-indieweb' ),
+						'description' => __( 'Latitude for reverse geocoding', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'lng'     => [
 						'required'    => false,
 						'type'        => 'number',
-						'description' => __( 'Longitude for reverse geocoding', 'post-kinds-for-indieweb' ),
+						'description' => __( 'Longitude for reverse geocoding', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			]
@@ -403,7 +403,7 @@ class REST_API {
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-						'description'       => __( 'Search query for location', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'Search query for location', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			]
@@ -421,12 +421,12 @@ class REST_API {
 					'lat' => [
 						'required'    => true,
 						'type'        => 'number',
-						'description' => __( 'Latitude', 'post-kinds-for-indieweb' ),
+						'description' => __( 'Latitude', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'lon' => [
 						'required'    => true,
 						'type'        => 'number',
-						'description' => __( 'Longitude', 'post-kinds-for-indieweb' ),
+						'description' => __( 'Longitude', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			]
@@ -445,17 +445,17 @@ class REST_API {
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-						'description'       => __( 'Search query', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'Search query', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'lat'   => [
 						'required'    => false,
 						'type'        => 'number',
-						'description' => __( 'Latitude for nearby search', 'post-kinds-for-indieweb' ),
+						'description' => __( 'Latitude for nearby search', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'lon'   => [
 						'required'    => false,
 						'type'        => 'number',
-						'description' => __( 'Longitude for nearby search', 'post-kinds-for-indieweb' ),
+						'description' => __( 'Longitude for nearby search', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			]
@@ -493,20 +493,20 @@ class REST_API {
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-						'description'       => __( 'Start date (ISO 8601)', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'Start date (ISO 8601)', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'date_to'     => [
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-						'description'       => __( 'End date (ISO 8601)', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'End date (ISO 8601)', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'limit'       => [
 						'required'          => false,
 						'type'              => 'integer',
 						'default'           => 50,
 						'sanitize_callback' => 'absint',
-						'description'       => __( 'Maximum items to import', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'Maximum items to import', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'dry_run'     => [
 						'required' => false,
@@ -852,7 +852,7 @@ class REST_API {
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'esc_url_raw',
-						'description'       => __( 'URL to check for oEmbed support', 'post-kinds-for-indieweb' ),
+						'description'       => __( 'URL to check for oEmbed support', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			]
@@ -936,7 +936,7 @@ class REST_API {
 		if ( empty( $url ) ) {
 			return new \WP_Error(
 				'missing_url',
-				__( 'URL is required.', 'post-kinds-for-indieweb' ),
+				__( 'URL is required.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 400 ]
 			);
 		}
@@ -947,7 +947,7 @@ class REST_API {
 			if ( ! $result ) {
 				return new \WP_Error(
 					'parse_failed',
-					__( 'Could not extract music info from this URL. Try a direct track or album URL.', 'post-kinds-for-indieweb' ),
+					__( 'Could not extract music info from this URL. Try a direct track or album URL.', 'post-kinds-for-indieweb-in-block-themes' ),
 					[ 'status' => 400 ]
 				);
 			}
@@ -1204,7 +1204,7 @@ class REST_API {
 					// We'd need Spotify API to get actual metadata.
 					'track'    => '',
 					'artist'   => '',
-					'note'     => __( 'Paste a Spotify track URL to auto-fill metadata.', 'post-kinds-for-indieweb' ),
+					'note'     => __( 'Paste a Spotify track URL to auto-fill metadata.', 'post-kinds-for-indieweb-in-block-themes' ),
 				];
 			}
 		}
@@ -1279,7 +1279,7 @@ class REST_API {
 		if ( empty( $url ) ) {
 			return new \WP_Error(
 				'missing_url',
-				__( 'URL is required.', 'post-kinds-for-indieweb' ),
+				__( 'URL is required.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 400 ]
 			);
 		}
@@ -1290,7 +1290,7 @@ class REST_API {
 			if ( ! $result ) {
 				return new \WP_Error(
 					'parse_failed',
-					__( 'Could not extract movie/TV info from this URL. Try IMDB, TMDB, or Trakt URLs.', 'post-kinds-for-indieweb' ),
+					__( 'Could not extract movie/TV info from this URL. Try IMDB, TMDB, or Trakt URLs.', 'post-kinds-for-indieweb-in-block-themes' ),
 					[ 'status' => 400 ]
 				);
 			}
@@ -1373,13 +1373,13 @@ class REST_API {
 		// Check if TMDB is enabled.
 		if ( ! $is_enabled ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are not output directly.
-			throw new \Exception( __( 'IMDB lookup requires TMDB to be enabled. Enable TMDB in Settings > API Connections.', 'post-kinds-for-indieweb' ) );
+			throw new \Exception( __( 'IMDB lookup requires TMDB to be enabled. Enable TMDB in Settings > API Connections.', 'post-kinds-for-indieweb-in-block-themes' ) );
 		}
 
 		// IMDB lookup requires TMDB credentials.
 		if ( ! $access_token && ! $api_key ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are not output directly.
-			throw new \Exception( __( 'IMDB lookup requires TMDB API credentials. Add your TMDB API Read Access Token in Settings > API Connections.', 'post-kinds-for-indieweb' ) );
+			throw new \Exception( __( 'IMDB lookup requires TMDB API credentials. Add your TMDB API Read Access Token in Settings > API Connections.', 'post-kinds-for-indieweb-in-block-themes' ) );
 		}
 
 		// Build URL - use API key as query param if no access token.
@@ -1408,7 +1408,7 @@ class REST_API {
 			throw new \Exception(
 				sprintf(
 					/* translators: %s: Error message */
-					__( 'TMDB API request failed: %s', 'post-kinds-for-indieweb' ),
+					__( 'TMDB API request failed: %s', 'post-kinds-for-indieweb-in-block-themes' ),
 					esc_html( $response->get_error_message() )
 				)
 			);
@@ -1421,12 +1421,12 @@ class REST_API {
 
 		// Check for HTTP errors.
 		if ( $status_code >= 400 ) {
-			$error_message = $data['status_message'] ?? __( 'Unknown API error', 'post-kinds-for-indieweb' );
+			$error_message = $data['status_message'] ?? __( 'Unknown API error', 'post-kinds-for-indieweb-in-block-themes' );
 			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are not output directly.
 			throw new \Exception(
 				sprintf(
 					/* translators: 1: HTTP status code, 2: Error message */
-					__( 'TMDB API error (%1$d): %2$s', 'post-kinds-for-indieweb' ),
+					__( 'TMDB API error (%1$d): %2$s', 'post-kinds-for-indieweb-in-block-themes' ),
 					$status_code,
 					esc_html( $error_message )
 				)
@@ -1436,12 +1436,12 @@ class REST_API {
 
 		// Check for API errors in response body.
 		if ( isset( $data['success'] ) && false === $data['success'] ) {
-			$error_message = $data['status_message'] ?? __( 'API returned an error', 'post-kinds-for-indieweb' );
+			$error_message = $data['status_message'] ?? __( 'API returned an error', 'post-kinds-for-indieweb-in-block-themes' );
 			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are not output directly.
 			throw new \Exception(
 				sprintf(
 					/* translators: %s: Error message */
-					__( 'TMDB error: %s', 'post-kinds-for-indieweb' ),
+					__( 'TMDB error: %s', 'post-kinds-for-indieweb-in-block-themes' ),
 					esc_html( $error_message )
 				)
 			);
@@ -1465,7 +1465,7 @@ class REST_API {
 		throw new \Exception(
 			sprintf(
 				/* translators: %s: IMDB ID */
-				__( 'No movie or TV show found for IMDB ID: %s', 'post-kinds-for-indieweb' ),
+				__( 'No movie or TV show found for IMDB ID: %s', 'post-kinds-for-indieweb-in-block-themes' ),
 				esc_html( $imdb_id )
 			)
 		);
@@ -1813,7 +1813,7 @@ class REST_API {
 		if ( empty( $query ) && empty( $id ) ) {
 			return new \WP_Error(
 				'missing_params',
-				__( 'Either search query (q) or game ID (id) is required.', 'post-kinds-for-indieweb' ),
+				__( 'Either search query (q) or game ID (id) is required.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 400 ]
 			);
 		}
@@ -1826,7 +1826,7 @@ class REST_API {
 					if ( ! $api->is_configured() ) {
 						return new \WP_Error(
 							'api_not_configured',
-							__( 'RAWG API is not configured. Add your API key in Settings > API Connections.', 'post-kinds-for-indieweb' ),
+							__( 'RAWG API is not configured. Add your API key in Settings > API Connections.', 'post-kinds-for-indieweb-in-block-themes' ),
 							[ 'status' => 400 ]
 						);
 					}
@@ -1836,7 +1836,7 @@ class REST_API {
 					if ( ! $api->is_configured() ) {
 						return new \WP_Error(
 							'api_not_configured',
-							__( 'BoardGameGeek API is not configured. Add your API token in Settings > Reactions > API Connections.', 'post-kinds-for-indieweb' ),
+							__( 'BoardGameGeek API is not configured. Add your API token in Settings > Reactions > API Connections.', 'post-kinds-for-indieweb-in-block-themes' ),
 							[ 'status' => 400 ]
 						);
 					}
@@ -1849,7 +1849,7 @@ class REST_API {
 				if ( ! $result ) {
 					return new \WP_Error(
 						'game_not_found',
-						__( 'Game not found.', 'post-kinds-for-indieweb' ),
+						__( 'Game not found.', 'post-kinds-for-indieweb-in-block-themes' ),
 						[ 'status' => 404 ]
 					);
 				}
@@ -1863,7 +1863,7 @@ class REST_API {
 				if ( ! $api->is_configured() ) {
 					return new \WP_Error(
 						'api_not_configured',
-						__( 'RAWG API is not configured. Add your API key in Settings > API Connections.', 'post-kinds-for-indieweb' ),
+						__( 'RAWG API is not configured. Add your API key in Settings > API Connections.', 'post-kinds-for-indieweb-in-block-themes' ),
 						[ 'status' => 400 ]
 					);
 				}
@@ -1873,7 +1873,7 @@ class REST_API {
 				if ( ! $api->is_configured() ) {
 					return new \WP_Error(
 						'api_not_configured',
-						__( 'BoardGameGeek API is not configured. Add your API token in Settings > Reactions > API Connections.', 'post-kinds-for-indieweb' ),
+						__( 'BoardGameGeek API is not configured. Add your API token in Settings > Reactions > API Connections.', 'post-kinds-for-indieweb-in-block-themes' ),
 						[ 'status' => 400 ]
 					);
 				}
@@ -1941,7 +1941,7 @@ class REST_API {
 			} else {
 				return new \WP_Error(
 					'missing_params',
-					__( 'Provide either address or lat/lng coordinates.', 'post-kinds-for-indieweb' ),
+					__( 'Provide either address or lat/lng coordinates.', 'post-kinds-for-indieweb-in-block-themes' ),
 					[ 'status' => 400 ]
 				);
 			}
@@ -1972,7 +1972,7 @@ class REST_API {
 		if ( $last_request && ( time() - $last_request ) < 1 ) {
 			return new \WP_Error(
 				'rate_limited',
-				__( 'Please wait a moment before searching again.', 'post-kinds-for-indieweb' ),
+				__( 'Please wait a moment before searching again.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 429 ]
 			);
 		}
@@ -2007,7 +2007,7 @@ class REST_API {
 		if ( $lat < -90 || $lat > 90 || $lon < -180 || $lon > 180 ) {
 			return new \WP_Error(
 				'invalid_coordinates',
-				__( 'Invalid coordinates provided.', 'post-kinds-for-indieweb' ),
+				__( 'Invalid coordinates provided.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 400 ]
 			);
 		}
@@ -2019,7 +2019,7 @@ class REST_API {
 		if ( $last_request && ( time() - $last_request ) < 1 ) {
 			return new \WP_Error(
 				'rate_limited',
-				__( 'Please wait a moment before searching again.', 'post-kinds-for-indieweb' ),
+				__( 'Please wait a moment before searching again.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 429 ]
 			);
 		}
@@ -2033,7 +2033,7 @@ class REST_API {
 			if ( ! $result ) {
 				return new \WP_Error(
 					'not_found',
-					__( 'No location found for these coordinates.', 'post-kinds-for-indieweb' ),
+					__( 'No location found for these coordinates.', 'post-kinds-for-indieweb-in-block-themes' ),
 					[ 'status' => 404 ]
 				);
 			}
@@ -2066,7 +2066,7 @@ class REST_API {
 		if ( $last_request && ( time() - $last_request ) < 1 ) {
 			return new \WP_Error(
 				'rate_limited',
-				__( 'Please wait a moment before searching again.', 'post-kinds-for-indieweb' ),
+				__( 'Please wait a moment before searching again.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 429 ]
 			);
 		}
@@ -2080,7 +2080,7 @@ class REST_API {
 			if ( ! $api->test_connection() ) {
 				return new \WP_Error(
 					'foursquare_not_configured',
-					__( 'Foursquare API is not configured. Please add your API key in Settings > APIs.', 'post-kinds-for-indieweb' ),
+					__( 'Foursquare API is not configured. Please add your API key in Settings > APIs.', 'post-kinds-for-indieweb-in-block-themes' ),
 					[ 'status' => 400 ]
 				);
 			}
@@ -2094,7 +2094,7 @@ class REST_API {
 			} else {
 				return new \WP_Error(
 					'missing_params',
-					__( 'Provide either a search query or lat/lon coordinates.', 'post-kinds-for-indieweb' ),
+					__( 'Provide either a search query or lat/lon coordinates.', 'post-kinds-for-indieweb-in-block-themes' ),
 					[ 'status' => 400 ]
 				);
 			}
@@ -2126,7 +2126,7 @@ class REST_API {
 			if ( ! $api ) {
 				return new \WP_Error(
 					'invalid_type',
-					__( 'Invalid content type.', 'post-kinds-for-indieweb' ),
+					__( 'Invalid content type.', 'post-kinds-for-indieweb-in-block-themes' ),
 					[ 'status' => 400 ]
 				);
 			}
@@ -2203,7 +2203,7 @@ class REST_API {
 			return rest_ensure_response(
 				[
 					'job_id'  => $job_id,
-					'message' => __( 'Import started.', 'post-kinds-for-indieweb' ),
+					'message' => __( 'Import started.', 'post-kinds-for-indieweb-in-block-themes' ),
 					'status'  => 'processing',
 				]
 			);
@@ -2231,7 +2231,7 @@ class REST_API {
 		if ( ! $status ) {
 			return new \WP_Error(
 				'job_not_found',
-				__( 'Import job not found.', 'post-kinds-for-indieweb' ),
+				__( 'Import job not found.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 404 ]
 			);
 		}
@@ -2254,14 +2254,14 @@ class REST_API {
 		if ( ! $result ) {
 			return new \WP_Error(
 				'cancel_failed',
-				__( 'Could not cancel import.', 'post-kinds-for-indieweb' ),
+				__( 'Could not cancel import.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 500 ]
 			);
 		}
 
 		return rest_ensure_response(
 			[
-				'message' => __( 'Import cancelled.', 'post-kinds-for-indieweb' ),
+				'message' => __( 'Import cancelled.', 'post-kinds-for-indieweb-in-block-themes' ),
 			]
 		);
 	}
@@ -2346,7 +2346,7 @@ class REST_API {
 		if ( ! is_string( $state ) || '' === $state || ! is_string( $code ) || '' === $code ) {
 			return new \WP_Error(
 				'invalid_request',
-				__( 'Missing OAuth code or state. Please try connecting again.', 'post-kinds-for-indieweb' ),
+				__( 'Missing OAuth code or state. Please try connecting again.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 400 ]
 			);
 		}
@@ -2357,7 +2357,7 @@ class REST_API {
 		if ( ! is_string( $saved_state ) || '' === $saved_state || ! hash_equals( $saved_state, $state ) ) {
 			return new \WP_Error(
 				'invalid_state',
-				__( 'Invalid OAuth state. Please try again.', 'post-kinds-for-indieweb' ),
+				__( 'Invalid OAuth state. Please try again.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 400 ]
 			);
 		}
@@ -2368,7 +2368,7 @@ class REST_API {
 			$api = $this->get_oauth_api( $service );
 
 			if ( ! $api ) {
-				throw new \Exception( __( 'Unknown service.', 'post-kinds-for-indieweb' ) );
+				throw new \Exception( __( 'Unknown service.', 'post-kinds-for-indieweb-in-block-themes' ) );
 			}
 
 			$tokens = $api->exchange_code( $code );
@@ -2414,7 +2414,7 @@ class REST_API {
 			$api = $this->get_oauth_api( $service );
 
 			if ( ! $api ) {
-				throw new \Exception( __( 'Unknown service.', 'post-kinds-for-indieweb' ) );
+				throw new \Exception( __( 'Unknown service.', 'post-kinds-for-indieweb-in-block-themes' ) );
 			}
 
 			// Generate state token.
@@ -2459,7 +2459,7 @@ class REST_API {
 
 			return rest_ensure_response(
 				[
-					'message' => __( 'Connection revoked.', 'post-kinds-for-indieweb' ),
+					'message' => __( 'Connection revoked.', 'post-kinds-for-indieweb-in-block-themes' ),
 				]
 			);
 		} catch ( \Exception $e ) {
@@ -2591,7 +2591,7 @@ class REST_API {
 
 		return rest_ensure_response(
 			[
-				'message' => __( 'Settings saved.', 'post-kinds-for-indieweb' ),
+				'message' => __( 'Settings saved.', 'post-kinds-for-indieweb-in-block-themes' ),
 			]
 		);
 	}
@@ -2610,7 +2610,7 @@ class REST_API {
 			$api = $this->get_api_for_service( $service );
 
 			if ( ! $api ) {
-				throw new \Exception( __( 'Unknown service.', 'post-kinds-for-indieweb' ) );
+				throw new \Exception( __( 'Unknown service.', 'post-kinds-for-indieweb-in-block-themes' ) );
 			}
 
 			$result = $api->test_connection();
@@ -2619,8 +2619,8 @@ class REST_API {
 				[
 					'success' => $result,
 					'message' => $result
-						? __( 'Connection successful!', 'post-kinds-for-indieweb' )
-						: __( 'Connection failed.', 'post-kinds-for-indieweb' ),
+						? __( 'Connection successful!', 'post-kinds-for-indieweb-in-block-themes' )
+						: __( 'Connection failed.', 'post-kinds-for-indieweb-in-block-themes' ),
 				]
 			);
 		} catch ( \Exception $e ) {
@@ -2701,7 +2701,7 @@ class REST_API {
 		return rest_ensure_response(
 			[
 				'secret'  => $secret,
-				'message' => __( 'Webhook secret regenerated.', 'post-kinds-for-indieweb' ),
+				'message' => __( 'Webhook secret regenerated.', 'post-kinds-for-indieweb-in-block-themes' ),
 			]
 		);
 	}
@@ -2882,7 +2882,7 @@ class REST_API {
 		if ( empty( $url ) ) {
 			return new \WP_Error(
 				'invalid_url',
-				__( 'URL is required.', 'post-kinds-for-indieweb' ),
+				__( 'URL is required.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 400 ]
 			);
 		}

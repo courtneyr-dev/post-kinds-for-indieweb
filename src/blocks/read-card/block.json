@@ -7,7 +7,7 @@
     "category": "post-kinds-indieweb",
     "description": "Display a book you're reading or have read with cover, author, and progress.",
     "keywords": ["read", "book", "reading", "author", "isbn", "library"],
-    "textdomain": "post-kinds-indieweb",
+    "textdomain": "post-kinds-for-indieweb-in-block-themes",
     "attributes": {
         "bookTitle": {
             "type": "string"

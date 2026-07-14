@@ -35,7 +35,7 @@ class PluginTest extends WP_UnitTestCase {
 	 * so a version bump can never silently drift the constant out of sync.
 	 */
 	public function test_plugin_version() {
-		$plugin_file = dirname( __DIR__, 3 ) . '/post-kinds-for-indieweb.php';
+		$plugin_file = dirname( __DIR__, 3 ) . '/post-kinds-for-indieweb-in-block-themes.php';
 		$data        = get_file_data( $plugin_file, array( 'Version' => 'Version' ) );
 		$this->assertNotEmpty( $data['Version'], 'Plugin header is missing a Version.' );
 		$this->assertSame(

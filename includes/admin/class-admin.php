@@ -150,10 +150,10 @@ class Admin {
 	public function register_menu(): void {
 		// Main menu page.
 		$this->page_hooks['main'] = add_menu_page(
-			__( 'Reactions', 'post-kinds-for-indieweb' ),
-			__( 'Reactions', 'post-kinds-for-indieweb' ),
+			__( 'Reactions', 'post-kinds-for-indieweb-in-block-themes' ),
+			__( 'Reactions', 'post-kinds-for-indieweb-in-block-themes' ),
 			'manage_options',
-			'post-kinds-for-indieweb',
+			'post-kinds-for-indieweb-in-block-themes',
 			[ $this->settings_page, 'render' ],
 			'dashicons-heart',
 			30
@@ -161,19 +161,19 @@ class Admin {
 
 		// Settings submenu (same as main).
 		$this->page_hooks['settings'] = add_submenu_page(
-			'post-kinds-for-indieweb',
-			__( 'Settings', 'post-kinds-for-indieweb' ),
-			__( 'Settings', 'post-kinds-for-indieweb' ),
+			'post-kinds-for-indieweb-in-block-themes',
+			__( 'Settings', 'post-kinds-for-indieweb-in-block-themes' ),
+			__( 'Settings', 'post-kinds-for-indieweb-in-block-themes' ),
 			'manage_options',
-			'post-kinds-for-indieweb',
+			'post-kinds-for-indieweb-in-block-themes',
 			[ $this->settings_page, 'render' ]
 		);
 
 		// API Connections submenu.
 		$this->page_hooks['apis'] = add_submenu_page(
-			'post-kinds-for-indieweb',
-			__( 'API Connections', 'post-kinds-for-indieweb' ),
-			__( 'API Connections', 'post-kinds-for-indieweb' ),
+			'post-kinds-for-indieweb-in-block-themes',
+			__( 'API Connections', 'post-kinds-for-indieweb-in-block-themes' ),
+			__( 'API Connections', 'post-kinds-for-indieweb-in-block-themes' ),
 			'manage_options',
 			'post-kinds-indieweb-apis',
 			[ $this->api_settings, 'render' ]
@@ -181,9 +181,9 @@ class Admin {
 
 		// Import submenu.
 		$this->page_hooks['import'] = add_submenu_page(
-			'post-kinds-for-indieweb',
-			__( 'Import', 'post-kinds-for-indieweb' ),
-			__( 'Import', 'post-kinds-for-indieweb' ),
+			'post-kinds-for-indieweb-in-block-themes',
+			__( 'Import', 'post-kinds-for-indieweb-in-block-themes' ),
+			__( 'Import', 'post-kinds-for-indieweb-in-block-themes' ),
 			'manage_options',
 			'post-kinds-indieweb-import',
 			[ $this->import_page, 'render' ]
@@ -191,9 +191,9 @@ class Admin {
 
 		// Webhooks submenu.
 		$this->page_hooks['webhooks'] = add_submenu_page(
-			'post-kinds-for-indieweb',
-			__( 'Webhooks', 'post-kinds-for-indieweb' ),
-			__( 'Webhooks', 'post-kinds-for-indieweb' ),
+			'post-kinds-for-indieweb-in-block-themes',
+			__( 'Webhooks', 'post-kinds-for-indieweb-in-block-themes' ),
+			__( 'Webhooks', 'post-kinds-for-indieweb-in-block-themes' ),
 			'manage_options',
 			'post-kinds-indieweb-webhooks',
 			[ $this->webhooks_page, 'render' ]
@@ -201,9 +201,9 @@ class Admin {
 
 		// Quick Post submenu.
 		$this->page_hooks['quick_post'] = add_submenu_page(
-			'post-kinds-for-indieweb',
-			__( 'Quick Post', 'post-kinds-for-indieweb' ),
-			__( 'Quick Post', 'post-kinds-for-indieweb' ),
+			'post-kinds-for-indieweb-in-block-themes',
+			__( 'Quick Post', 'post-kinds-for-indieweb-in-block-themes' ),
+			__( 'Quick Post', 'post-kinds-for-indieweb-in-block-themes' ),
 			'edit_posts',
 			'post-kinds-indieweb-quick-post',
 			[ $this->quick_post, 'render' ]
@@ -211,9 +211,9 @@ class Admin {
 
 		// Syndication submenu.
 		$this->page_hooks['syndication'] = add_submenu_page(
-			'post-kinds-for-indieweb',
-			__( 'Syndication', 'post-kinds-for-indieweb' ),
-			__( 'Syndication', 'post-kinds-for-indieweb' ),
+			'post-kinds-for-indieweb-in-block-themes',
+			__( 'Syndication', 'post-kinds-for-indieweb-in-block-themes' ),
+			__( 'Syndication', 'post-kinds-for-indieweb-in-block-themes' ),
 			'edit_posts',
 			'post-kinds-indieweb-syndication',
 			[ $this->syndication_page, 'render' ]
@@ -221,9 +221,9 @@ class Admin {
 
 		// Check-in Dashboard submenu.
 		$this->page_hooks['checkin_dashboard'] = add_submenu_page(
-			'post-kinds-for-indieweb',
-			__( 'Check-ins', 'post-kinds-for-indieweb' ),
-			__( 'Check-ins', 'post-kinds-for-indieweb' ),
+			'post-kinds-for-indieweb-in-block-themes',
+			__( 'Check-ins', 'post-kinds-for-indieweb-in-block-themes' ),
+			__( 'Check-ins', 'post-kinds-for-indieweb-in-block-themes' ),
 			'edit_posts',
 			'post-kinds-indieweb-checkins',
 			[ $this->checkin_dashboard, 'render' ]
@@ -315,18 +315,18 @@ class Admin {
 				'nonce'     => wp_create_nonce( 'pkiw_admin' ),
 				'restNonce' => wp_create_nonce( 'wp_rest' ),
 				'strings'   => [
-					'confirmDelete'  => __( 'Are you sure you want to delete this?', 'post-kinds-for-indieweb' ),
-					'confirmClear'   => __( 'Are you sure you want to clear all cached data?', 'post-kinds-for-indieweb' ),
-					'testingApi'     => __( 'Testing connection...', 'post-kinds-for-indieweb' ),
-					'testSuccess'    => __( 'Connection successful!', 'post-kinds-for-indieweb' ),
-					'testFailed'     => __( 'Connection failed: ', 'post-kinds-for-indieweb' ),
-					'importing'      => __( 'Importing...', 'post-kinds-for-indieweb' ),
-					'importComplete' => __( 'Import complete!', 'post-kinds-for-indieweb' ),
-					'lookingUp'      => __( 'Looking up...', 'post-kinds-for-indieweb' ),
-					'noResults'      => __( 'No results found.', 'post-kinds-for-indieweb' ),
-					'error'          => __( 'An error occurred.', 'post-kinds-for-indieweb' ),
-					'saved'          => __( 'Settings saved.', 'post-kinds-for-indieweb' ),
-					'copied'         => __( 'Copied to clipboard!', 'post-kinds-for-indieweb' ),
+					'confirmDelete'  => __( 'Are you sure you want to delete this?', 'post-kinds-for-indieweb-in-block-themes' ),
+					'confirmClear'   => __( 'Are you sure you want to clear all cached data?', 'post-kinds-for-indieweb-in-block-themes' ),
+					'testingApi'     => __( 'Testing connection...', 'post-kinds-for-indieweb-in-block-themes' ),
+					'testSuccess'    => __( 'Connection successful!', 'post-kinds-for-indieweb-in-block-themes' ),
+					'testFailed'     => __( 'Connection failed: ', 'post-kinds-for-indieweb-in-block-themes' ),
+					'importing'      => __( 'Importing...', 'post-kinds-for-indieweb-in-block-themes' ),
+					'importComplete' => __( 'Import complete!', 'post-kinds-for-indieweb-in-block-themes' ),
+					'lookingUp'      => __( 'Looking up...', 'post-kinds-for-indieweb-in-block-themes' ),
+					'noResults'      => __( 'No results found.', 'post-kinds-for-indieweb-in-block-themes' ),
+					'error'          => __( 'An error occurred.', 'post-kinds-for-indieweb-in-block-themes' ),
+					'saved'          => __( 'Settings saved.', 'post-kinds-for-indieweb-in-block-themes' ),
+					'copied'         => __( 'Copied to clipboard!', 'post-kinds-for-indieweb-in-block-themes' ),
 				],
 				'postKinds' => $this->get_post_kinds(),
 			]
@@ -369,8 +369,8 @@ class Admin {
 			echo '<div class="notice notice-warning"><p>';
 			printf(
 				/* translators: %s: Plugin name wrapped in strong tags. */
-				esc_html__( '%s requires IndieBlocks to be installed and activated for full functionality.', 'post-kinds-for-indieweb' ),
-				'<strong>' . esc_html__( 'Post Kinds for IndieWeb', 'post-kinds-for-indieweb' ) . '</strong>'
+				esc_html__( '%s requires IndieBlocks to be installed and activated for full functionality.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'<strong>' . esc_html__( 'Post Kinds for IndieWeb in Block Themes', 'post-kinds-for-indieweb-in-block-themes' ) . '</strong>'
 			);
 			echo '</p></div>';
 		}
@@ -378,7 +378,7 @@ class Admin {
 		// Show success message after settings save.
 		if ( isset( $_GET['settings-updated'] ) && 'true' === $_GET['settings-updated'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			echo '<div class="notice notice-success is-dismissible"><p>';
-			esc_html_e( 'Settings saved successfully.', 'post-kinds-for-indieweb' );
+			esc_html_e( 'Settings saved successfully.', 'post-kinds-for-indieweb-in-block-themes' );
 			echo '</p></div>';
 		}
 
@@ -395,7 +395,7 @@ class Admin {
 						'%1$d import is currently running. <a href="%2$s">View progress</a>',
 						'%1$d imports are currently running. <a href="%2$s">View progress</a>',
 						$count,
-						'post-kinds-for-indieweb'
+						'post-kinds-for-indieweb-in-block-themes'
 					),
 					[ 'a' => [ 'href' => [] ] ]
 				),
@@ -416,7 +416,7 @@ class Admin {
 		$settings_link = sprintf(
 			'<a href="%s">%s</a>',
 			admin_url( 'admin.php?page=post-kinds-for-indieweb' ),
-			__( 'Settings', 'post-kinds-for-indieweb' )
+			__( 'Settings', 'post-kinds-for-indieweb-in-block-themes' )
 		);
 
 		array_unshift( $links, $settings_link );
@@ -801,75 +801,75 @@ class Admin {
 	public function get_post_kinds(): array {
 		$kinds = [
 			'listen'      => [
-				'label' => __( 'Listen', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Listen', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-format-audio',
 			],
 			'watch'       => [
-				'label' => __( 'Watch', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Watch', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-video-alt2',
 			],
 			'read'        => [
-				'label' => __( 'Read', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Read', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-book',
 			],
 			'play'        => [
-				'label' => __( 'Play', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Play', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-games',
 			],
 			'checkin'     => [
-				'label' => __( 'Checkin', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Checkin', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-location',
 			],
 			'eat'         => [
-				'label' => __( 'Eat', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Eat', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-carrot',
 			],
 			'drink'       => [
-				'label' => __( 'Drink', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Drink', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-coffee',
 			],
 			'like'        => [
-				'label' => __( 'Like', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Like', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-heart',
 			],
 			'favorite'    => [
-				'label' => __( 'Favorite', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Favorite', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-star-filled',
 			],
 			'bookmark'    => [
-				'label' => __( 'Bookmark', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Bookmark', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-flag',
 			],
 			'reply'       => [
-				'label' => __( 'Reply', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Reply', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-format-chat',
 			],
 			'repost'      => [
-				'label' => __( 'Repost', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Repost', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-controls-repeat',
 			],
 			'rsvp'        => [
-				'label' => __( 'RSVP', 'post-kinds-for-indieweb' ),
+				'label' => __( 'RSVP', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-calendar-alt',
 			],
 			'jam'         => [
-				'label' => __( 'Jam', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Jam', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-playlist-audio',
 			],
 			'wish'        => [
-				'label' => __( 'Wish', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Wish', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-pressthis',
 			],
 			'mood'        => [
-				'label' => __( 'Mood', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Mood', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-smiley',
 			],
 			'acquisition' => [
-				'label' => __( 'Acquisition', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Acquisition', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-cart',
 			],
 			'recipe'      => [
-				'label' => __( 'Recipe', 'post-kinds-for-indieweb' ),
+				'label' => __( 'Recipe', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-clipboard',
 			],
 		];
@@ -892,13 +892,13 @@ class Admin {
 			check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 			if ( ! current_user_can( 'manage_options' ) ) {
-				wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
+				wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 			}
 
 			$api = isset( $_POST['api'] ) ? sanitize_text_field( wp_unslash( $_POST['api'] ) ) : '';
 
 			if ( empty( $api ) ) {
-				wp_send_json_error( [ 'message' => __( 'No API specified.', 'post-kinds-for-indieweb' ) ] );
+				wp_send_json_error( [ 'message' => __( 'No API specified.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 			}
 
 			// Get API instance and test connection.
@@ -910,14 +910,14 @@ class Admin {
 
 			wp_send_json_success(
 				[
-					'message' => __( 'Connection successful!', 'post-kinds-for-indieweb' ),
+					'message' => __( 'Connection successful!', 'post-kinds-for-indieweb-in-block-themes' ),
 					'data'    => $result,
 				]
 			);
 		} catch ( \Exception $e ) {
 			wp_send_json_error( [ 'message' => $e->getMessage() ] );
 		} catch ( \Error $e ) {
-			wp_send_json_error( [ 'message' => __( 'Server error: ', 'post-kinds-for-indieweb' ) . $e->getMessage() ] );
+			wp_send_json_error( [ 'message' => __( 'Server error: ', 'post-kinds-for-indieweb-in-block-themes' ) . $e->getMessage() ] );
 		}
 	}
 
@@ -932,7 +932,7 @@ class Admin {
 		$api_creds   = $credentials[ $api ] ?? [];
 
 		if ( empty( $api_creds['enabled'] ) ) {
-			return new \WP_Error( 'disabled', __( 'API is not enabled.', 'post-kinds-for-indieweb' ) );
+			return new \WP_Error( 'disabled', __( 'API is not enabled.', 'post-kinds-for-indieweb-in-block-themes' ) );
 		}
 
 		$class_map = [
@@ -950,12 +950,12 @@ class Admin {
 		];
 
 		if ( ! isset( $class_map[ $api ] ) ) {
-			return new \WP_Error( 'unknown', __( 'Unknown API.', 'post-kinds-for-indieweb' ) );
+			return new \WP_Error( 'unknown', __( 'Unknown API.', 'post-kinds-for-indieweb-in-block-themes' ) );
 		}
 
 		$class = $class_map[ $api ];
 		if ( ! class_exists( $class ) ) {
-			return new \WP_Error( 'missing', __( 'API class not found.', 'post-kinds-for-indieweb' ) );
+			return new \WP_Error( 'missing', __( 'API class not found.', 'post-kinds-for-indieweb-in-block-themes' ) );
 		}
 
 		try {
@@ -967,7 +967,7 @@ class Admin {
 			if ( false === $result ) {
 				return new \WP_Error(
 					'connection_failed',
-					__( 'Connection test failed. Please check your credentials.', 'post-kinds-for-indieweb' )
+					__( 'Connection test failed. Please check your credentials.', 'post-kinds-for-indieweb-in-block-themes' )
 				);
 			}
 
@@ -982,7 +982,7 @@ class Admin {
 				'exception',
 				sprintf(
 					/* translators: 1: Error class name, 2: Error message, 3: File, 4: Line number */
-					__( '%1$s: %2$s in %3$s:%4$d', 'post-kinds-for-indieweb' ),
+					__( '%1$s: %2$s in %3$s:%4$d', 'post-kinds-for-indieweb-in-block-themes' ),
 					get_class( $e ),
 					$e->getMessage(),
 					basename( $e->getFile() ),
@@ -1001,7 +1001,7 @@ class Admin {
 		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$type = isset( $_POST['type'] ) ? sanitize_text_field( wp_unslash( $_POST['type'] ) ) : 'all';
@@ -1038,7 +1038,7 @@ class Admin {
 			[
 				'message' => sprintf(
 					/* translators: %d: Number of cache entries cleared */
-					__( 'Cleared %d cached entries.', 'post-kinds-for-indieweb' ),
+					__( 'Cleared %d cached entries.', 'post-kinds-for-indieweb-in-block-themes' ),
 					$deleted
 				),
 			]
@@ -1054,14 +1054,14 @@ class Admin {
 		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'edit_posts' ) ) {
-			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$type  = isset( $_POST['type'] ) ? sanitize_text_field( wp_unslash( $_POST['type'] ) ) : '';
 		$query = isset( $_POST['query'] ) ? sanitize_text_field( wp_unslash( $_POST['query'] ) ) : '';
 
 		if ( empty( $type ) || empty( $query ) ) {
-			wp_send_json_error( [ 'message' => __( 'Type and query are required.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Type and query are required.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$results = $this->lookup_media( $type, $query );
@@ -1119,12 +1119,12 @@ class Admin {
 				if ( ! empty( $credentials['foursquare']['enabled'] ) ) {
 					$api = new \PKIW\APIs\Foursquare( $credentials['foursquare'] );
 					// Would need lat/lng for this.
-					return new \WP_Error( 'needs_location', __( 'Location required for venue search.', 'post-kinds-for-indieweb' ) );
+					return new \WP_Error( 'needs_location', __( 'Location required for venue search.', 'post-kinds-for-indieweb-in-block-themes' ) );
 				}
 				break;
 		}
 
-		return new \WP_Error( 'no_api', __( 'No API available for this media type.', 'post-kinds-for-indieweb' ) );
+		return new \WP_Error( 'no_api', __( 'No API available for this media type.', 'post-kinds-for-indieweb-in-block-themes' ) );
 	}
 
 	/**
@@ -1136,13 +1136,13 @@ class Admin {
 		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$import_id = isset( $_POST['import_id'] ) ? sanitize_text_field( wp_unslash( $_POST['import_id'] ) ) : '';
 
 		if ( empty( $import_id ) ) {
-			wp_send_json_error( [ 'message' => __( 'Import ID required.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Import ID required.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$import_manager = new \PKIW\Import_Manager();
@@ -1195,17 +1195,17 @@ class Admin {
 		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$foursquare_sync = $this->plugin->get_checkin_sync_service( 'foursquare' );
 
 		if ( ! $foursquare_sync ) {
-			wp_send_json_error( [ 'message' => __( 'Foursquare sync service not available.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Foursquare sync service not available.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		if ( ! $foursquare_sync->is_connected() ) {
-			wp_send_json_error( [ 'message' => __( 'Foursquare not connected. Please authorize first.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Foursquare not connected. Please authorize first.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		try {
@@ -1219,7 +1219,7 @@ class Admin {
 				[
 					'message'  => sprintf(
 						/* translators: %d: Number of checkins imported */
-						__( 'Imported %d new checkins.', 'post-kinds-for-indieweb' ),
+						__( 'Imported %d new checkins.', 'post-kinds-for-indieweb-in-block-themes' ),
 						$result['imported'] ?? 0
 					),
 					'imported' => $result['imported'] ?? 0,
@@ -1240,7 +1240,7 @@ class Admin {
 		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$credentials = get_option( 'pkiw_api_credentials', [] );
@@ -1252,6 +1252,6 @@ class Admin {
 			update_option( 'pkiw_api_credentials', $credentials );
 		}
 
-		wp_send_json_success( [ 'message' => __( 'Disconnected from Foursquare.', 'post-kinds-for-indieweb' ) ] );
+		wp_send_json_success( [ 'message' => __( 'Disconnected from Foursquare.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 	}
 }

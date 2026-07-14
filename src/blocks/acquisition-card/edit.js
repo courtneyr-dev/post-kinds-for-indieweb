@@ -23,42 +23,42 @@ import { useSelect, useDispatch } from '@wordpress/data';
  */
 const ACQUISITION_TYPES = [
 	{
-		label: __( 'Purchase', 'post-kinds-for-indieweb' ),
+		label: __( 'Purchase', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'purchase',
 		emoji: '🛒',
 	},
 	{
-		label: __( 'Gift', 'post-kinds-for-indieweb' ),
+		label: __( 'Gift', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'gift',
 		emoji: '🎁',
 	},
 	{
-		label: __( 'Found', 'post-kinds-for-indieweb' ),
+		label: __( 'Found', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'found',
 		emoji: '🔍',
 	},
 	{
-		label: __( 'Won', 'post-kinds-for-indieweb' ),
+		label: __( 'Won', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'won',
 		emoji: '🏆',
 	},
 	{
-		label: __( 'Trade', 'post-kinds-for-indieweb' ),
+		label: __( 'Trade', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'trade',
 		emoji: '🔄',
 	},
 	{
-		label: __( 'Free', 'post-kinds-for-indieweb' ),
+		label: __( 'Free', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'free',
 		emoji: '✨',
 	},
 	{
-		label: __( 'Inherited', 'post-kinds-for-indieweb' ),
+		label: __( 'Inherited', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'inherited',
 		emoji: '📜',
 	},
 	{
-		label: __( 'Other', 'post-kinds-for-indieweb' ),
+		label: __( 'Other', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'other',
 		emoji: '📦',
 	},
@@ -142,7 +142,10 @@ export default function Edit( { attributes, setAttributes } ) {
 			photoAlt:
 				media.alt ||
 				title ||
-				__( 'Acquisition photo', 'post-kinds-for-indieweb' ),
+				__(
+					'Acquisition photo',
+					'post-kinds-for-indieweb-in-block-themes'
+				),
 		} );
 	};
 
@@ -165,23 +168,29 @@ export default function Edit( { attributes, setAttributes } ) {
 				<PanelBody
 					title={ __(
 						'Acquisition Details',
-						'post-kinds-for-indieweb'
+						'post-kinds-for-indieweb-in-block-themes'
 					) }
 					initialOpen={ true }
 				>
 					<TextControl
-						label={ __( 'Title', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Title',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ title || '' }
 						onChange={ ( value ) =>
 							setAttributes( { title: value } )
 						}
 						placeholder={ __(
 							'What did you get?',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 					<SelectControl
-						label={ __( 'Type', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Type',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ acquisitionType || 'purchase' }
 						options={ acquisitionTypeOptions }
 						onChange={ ( value ) =>
@@ -189,28 +198,37 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<TextControl
-						label={ __( 'Cost', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Cost',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ cost || '' }
 						onChange={ ( value ) =>
 							setAttributes( { cost: value } )
 						}
-						placeholder={ __( '$0.00', 'post-kinds-for-indieweb' ) }
+						placeholder={ __(
+							'$0.00',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 					/>
 					<TextControl
-						label={ __( 'From Where', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'From Where',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ where || '' }
 						onChange={ ( value ) =>
 							setAttributes( { where: value } )
 						}
 						placeholder={ __(
 							'Store or source',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 					<TextControl
 						label={ __(
 							'Store/Source URL',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ whereUrl || '' }
 						onChange={ ( value ) =>
@@ -219,23 +237,29 @@ export default function Edit( { attributes, setAttributes } ) {
 						type="url"
 						help={ __(
 							'Link to where you got it',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Notes', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Notes',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<TextControl
-						label={ __( 'Notes', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Notes',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ notes || '' }
 						onChange={ ( value ) =>
 							setAttributes( { notes: value } )
 						}
 						placeholder={ __(
 							'Notes about this…',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 				</PanelBody>
@@ -272,7 +296,7 @@ export default function Edit( { attributes, setAttributes } ) {
 													}
 													aria-label={ __(
 														'Remove photo',
-														'post-kinds-for-indieweb'
+														'post-kinds-for-indieweb-in-block-themes'
 													) }
 												>
 													×
@@ -286,7 +310,7 @@ export default function Edit( { attributes, setAttributes } ) {
 												<span className="post-kinds-card__media-text">
 													{ __(
 														'Add Photo (Optional)',
-														'post-kinds-for-indieweb'
+														'post-kinds-for-indieweb-in-block-themes'
 													) }
 												</span>
 											</div>
@@ -328,7 +352,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'What did you get?',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -348,11 +372,11 @@ export default function Edit( { attributes, setAttributes } ) {
 									acquisitionType === 'free'
 										? __(
 												'Free!',
-												'post-kinds-for-indieweb'
+												'post-kinds-for-indieweb-in-block-themes'
 										  )
 										: __(
 												'$0.00',
-												'post-kinds-for-indieweb'
+												'post-kinds-for-indieweb-in-block-themes'
 										  )
 								}
 							/>
@@ -367,7 +391,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'From where?',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -380,7 +404,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'Notes about this…',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 					</div>

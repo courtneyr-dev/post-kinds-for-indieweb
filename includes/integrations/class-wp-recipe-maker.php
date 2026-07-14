@@ -433,13 +433,13 @@ class WP_Recipe_Maker {
 				if ( ! hasRecipeKind ) {
 					createNotice(
 						'info',
-						'" . esc_js( __( 'This post contains a recipe. Consider setting the post kind to \"Recipe\".', 'post-kinds-for-indieweb' ) ) . "',
+						'" . esc_js( __( 'This post contains a recipe. Consider setting the post kind to \"Recipe\".', 'post-kinds-for-indieweb-in-block-themes' ) ) . "',
 						{
 							id: 'post-kinds-recipe-suggestion',
 							isDismissible: true,
 							actions: [
 								{
-									label: '" . esc_js( __( 'Set Recipe Kind', 'post-kinds-for-indieweb' ) ) . "',
+									label: '" . esc_js( __( 'Set Recipe Kind', 'post-kinds-for-indieweb-in-block-themes' ) ) . "',
 									onClick: function() {
 										// Find recipe term ID and set it
 										wp.apiFetch({ path: '/wp/v2/kind?slug=recipe' }).then( function( terms ) {

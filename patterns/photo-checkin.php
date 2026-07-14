@@ -24,9 +24,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 register_block_pattern(
 	'post-kinds-indieweb/photo-checkin',
 	[
-		'title'       => __( 'Photo Check-in', 'post-kinds-for-indieweb' ),
-		'description' => __( 'Check in at a location with optional photo, food, and drink. Remove any sections you don\'t need.', 'post-kinds-for-indieweb' ),
-		'categories'  => [ 'post-kinds-for-indieweb' ],
+		'title'       => __( 'Photo Check-in', 'post-kinds-for-indieweb-in-block-themes' ),
+		'description' => __( 'Check in at a location with optional photo, food, and drink. Remove any sections you don\'t need.', 'post-kinds-for-indieweb-in-block-themes' ),
+		'categories'  => [ 'post-kinds-for-indieweb-in-block-themes' ],
 		'keywords'    => [ 'photo', 'checkin', 'check-in', 'location', 'food', 'drink', 'meal', 'restaurant', 'bar', 'cafe', 'indieweb' ],
 		'blockTypes'  => [ 'core/group' ],
 		'postTypes'   => [ 'post' ],
@@ -38,7 +38,7 @@ register_block_pattern(
 	<!-- wp:group {"className":"post-kinds-photo-checkin__photo","layout":{"type":"constrained"}} -->
 	<div class="wp-block-group post-kinds-photo-checkin__photo">
 		<!-- wp:paragraph {"align":"center","className":"post-kinds-optional-hint","style":{"typography":{"fontSize":"13px"}}} -->
-		<p class="has-text-align-center post-kinds-optional-hint" style="font-size:13px"><em>' . esc_html__( 'Optional: Add a photo below, or delete this section', 'post-kinds-for-indieweb' ) . '</em></p>
+		<p class="has-text-align-center post-kinds-optional-hint" style="font-size:13px"><em>' . esc_html__( 'Optional: Add a photo below, or delete this section', 'post-kinds-for-indieweb-in-block-themes' ) . '</em></p>
 		<!-- /wp:paragraph -->
 
 		<!-- wp:image {"align":"center","className":"u-photo","sizeSlug":"large"} -->
@@ -50,7 +50,7 @@ register_block_pattern(
 	<!-- wp:group {"className":"post-kinds-photo-checkin__consumption","layout":{"type":"constrained"}} -->
 	<div class="wp-block-group post-kinds-photo-checkin__consumption">
 		<!-- wp:paragraph {"align":"center","className":"post-kinds-optional-hint","style":{"typography":{"fontSize":"13px"}}} -->
-		<p class="has-text-align-center post-kinds-optional-hint" style="font-size:13px"><em>' . esc_html__( 'Optional: Add food/drink details below, or delete this section', 'post-kinds-for-indieweb' ) . '</em></p>
+		<p class="has-text-align-center post-kinds-optional-hint" style="font-size:13px"><em>' . esc_html__( 'Optional: Add food/drink details below, or delete this section', 'post-kinds-for-indieweb-in-block-themes' ) . '</em></p>
 		<!-- /wp:paragraph -->
 
 		<!-- wp:columns {"style":{"spacing":{"blockGap":{"left":"var:preset|spacing|20"}}}} -->
@@ -75,7 +75,7 @@ register_block_pattern(
 
 	<!-- wp:group {"className":"e-content","layout":{"type":"constrained"}} -->
 	<div class="wp-block-group e-content">
-		<!-- wp:paragraph {"placeholder":"' . esc_attr__( 'Add notes about your visit (optional)...', 'post-kinds-for-indieweb' ) . '"} -->
+		<!-- wp:paragraph {"placeholder":"' . esc_attr__( 'Add notes about your visit (optional)...', 'post-kinds-for-indieweb-in-block-themes' ) . '"} -->
 		<p></p>
 		<!-- /wp:paragraph -->
 	</div>

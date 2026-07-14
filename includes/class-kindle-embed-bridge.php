@@ -83,7 +83,7 @@ class Kindle_Embed_Bridge {
 		$iframe = sprintf(
 			'<iframe src="%s" title="%s" width="336" height="550" loading="lazy" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>',
 			esc_url( Isbn::kindle_embed_url( $asin ) ),
-			esc_attr__( 'Kindle book preview', 'post-kinds-for-indieweb' )
+			esc_attr__( 'Kindle book preview', 'post-kinds-for-indieweb-in-block-themes' )
 		);
 
 		$replaced = preg_replace(

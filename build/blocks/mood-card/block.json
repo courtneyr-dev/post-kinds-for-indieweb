@@ -12,7 +12,7 @@
     "emotion",
     "status"
   ],
-  "textdomain": "post-kinds-indieweb",
+  "textdomain": "post-kinds-for-indieweb-in-block-themes",
   "attributes": {
     "mood": {
       "type": "string"

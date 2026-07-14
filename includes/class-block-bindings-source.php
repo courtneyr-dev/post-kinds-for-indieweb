@@ -1,6 +1,6 @@
 <?php
 /**
- * Block Bindings Source for Post Kinds for IndieWeb
+ * Block Bindings Source for Post Kinds for IndieWeb in Block Themes
  *
  * Registers a kind-aware block bindings source that maps friendly key names
  * to the appropriate internal post meta based on the post's kind taxonomy term.
@@ -159,7 +159,7 @@ final class Block_Bindings_Source {
 		register_block_bindings_source(
 			self::SOURCE_NAME,
 			[
-				'label'              => __( 'Post Kind Meta', 'post-kinds-for-indieweb' ),
+				'label'              => __( 'Post Kind Meta', 'post-kinds-for-indieweb-in-block-themes' ),
 				'get_value_callback' => [ $this, 'get_value' ],
 				'uses_context'       => [ 'postId', 'postType' ],
 			]

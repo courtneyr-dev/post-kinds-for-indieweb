@@ -89,7 +89,13 @@ export default function Edit( { attributes, setAttributes } ) {
 
 	// Build venue options for dropdown.
 	const venueOptions = [
-		{ value: 0, label: __( 'All Venues', 'post-kinds-for-indieweb' ) },
+		{
+			value: 0,
+			label: __(
+				'All Venues',
+				'post-kinds-for-indieweb-in-block-themes'
+			),
+		},
 		...venues.map( ( venue ) => ( {
 			value: venue.id,
 			label: venue.name,
@@ -100,12 +106,15 @@ export default function Edit( { attributes, setAttributes } ) {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Feed Settings', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Feed Settings',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 				>
 					<RangeControl
 						label={ __(
 							'Number of Check-ins',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ count }
 						onChange={ ( value ) =>
@@ -118,7 +127,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<SelectControl
 						label={ __(
 							'Filter by Venue',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ venueId }
 						options={ venueOptions }
@@ -128,22 +137,31 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 
 					<SelectControl
-						label={ __( 'Layout', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Layout',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ layout }
 						options={ [
 							{
 								value: 'list',
-								label: __( 'List', 'post-kinds-for-indieweb' ),
+								label: __(
+									'List',
+									'post-kinds-for-indieweb-in-block-themes'
+								),
 							},
 							{
 								value: 'grid',
-								label: __( 'Grid', 'post-kinds-for-indieweb' ),
+								label: __(
+									'Grid',
+									'post-kinds-for-indieweb-in-block-themes'
+								),
 							},
 							{
 								value: 'compact',
 								label: __(
 									'Compact',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 							},
 						] }
@@ -154,7 +172,10 @@ export default function Edit( { attributes, setAttributes } ) {
 
 					{ layout === 'grid' && (
 						<RangeControl
-							label={ __( 'Columns', 'post-kinds-for-indieweb' ) }
+							label={ __(
+								'Columns',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }
 							value={ columns }
 							onChange={ ( value ) =>
 								setAttributes( { columns: value } )
@@ -166,25 +187,31 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Display Options', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Display Options',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<ToggleControl
-						label={ __( 'Show Map', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Show Map',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						checked={ showMap }
 						onChange={ ( value ) =>
 							setAttributes( { showMap: value } )
 						}
 						help={ __(
 							'Display a map with check-in locations.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 
 					<ToggleControl
 						label={ __(
 							'Show Venue Name',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						checked={ showVenue }
 						onChange={ ( value ) =>
@@ -193,7 +220,10 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 
 					<ToggleControl
-						label={ __( 'Show Date', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Show Date',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						checked={ showDate }
 						onChange={ ( value ) =>
 							setAttributes( { showDate: value } )
@@ -203,7 +233,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<ToggleControl
 						label={ __(
 							'Show Excerpt',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						checked={ showExcerpt }
 						onChange={ ( value ) =>
@@ -219,7 +249,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						icon="location-alt"
 						label={ __(
 							'Check-ins Feed',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					>
 						<Spinner />
@@ -230,11 +260,11 @@ export default function Edit( { attributes, setAttributes } ) {
 						icon="location-alt"
 						label={ __(
 							'Check-ins Feed',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						instructions={ __(
 							'No check-ins found. Create some check-ins to see them here.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 				) }
@@ -247,7 +277,7 @@ export default function Edit( { attributes, setAttributes } ) {
 									<span>
 										{ __(
 											'Map will display here on the frontend',
-											'post-kinds-for-indieweb'
+											'post-kinds-for-indieweb-in-block-themes'
 										) }
 									</span>
 								</div>
@@ -268,7 +298,7 @@ export default function Edit( { attributes, setAttributes } ) {
 										{ checkin.title?.rendered ||
 											__(
 												'(no title)',
-												'post-kinds-for-indieweb'
+												'post-kinds-for-indieweb-in-block-themes'
 											) }
 									</h3>
 
@@ -285,7 +315,7 @@ export default function Edit( { attributes, setAttributes } ) {
 													)?.name ||
 													__(
 														'Unknown venue',
-														'post-kinds-for-indieweb'
+														'post-kinds-for-indieweb-in-block-themes'
 													) }
 											</div>
 										) }

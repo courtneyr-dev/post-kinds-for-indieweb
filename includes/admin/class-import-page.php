@@ -70,21 +70,21 @@ class Import_Page {
 		return [
 			'listenbrainz'           => [
 				'name'        => 'ListenBrainz',
-				'description' => __( 'Import your listening history from ListenBrainz.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Import your listening history from ListenBrainz.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_kind'   => 'listen',
 				'icon'        => 'dashicons-format-audio',
 				'api_key'     => 'listenbrainz',
 				'options'     => [
 					'date_from' => [
-						'label' => __( 'From Date', 'post-kinds-for-indieweb' ),
+						'label' => __( 'From Date', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'  => 'date',
 					],
 					'date_to'   => [
-						'label' => __( 'To Date', 'post-kinds-for-indieweb' ),
+						'label' => __( 'To Date', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'  => 'date',
 					],
 					'limit'     => [
-						'label'   => __( 'Maximum Items', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Maximum Items', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'number',
 						'default' => 100,
 						'max'     => 1000,
@@ -93,27 +93,27 @@ class Import_Page {
 			],
 			'lastfm'                 => [
 				'name'        => 'Last.fm',
-				'description' => __( 'Import your scrobble history from Last.fm.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Import your scrobble history from Last.fm.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_kind'   => 'listen',
 				'icon'        => 'dashicons-format-audio',
 				'api_key'     => 'lastfm',
 				'options'     => [
 					'username'  => [
-						'label'    => __( 'Last.fm Username', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'Last.fm Username', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'text',
 						'required' => empty( $lastfm_username ),
 						'default'  => $lastfm_username,
 					],
 					'date_from' => [
-						'label' => __( 'From Date', 'post-kinds-for-indieweb' ),
+						'label' => __( 'From Date', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'  => 'date',
 					],
 					'date_to'   => [
-						'label' => __( 'To Date', 'post-kinds-for-indieweb' ),
+						'label' => __( 'To Date', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'  => 'date',
 					],
 					'limit'     => [
-						'label'   => __( 'Maximum Items', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Maximum Items', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'number',
 						'default' => 100,
 						'max'     => 1000,
@@ -122,21 +122,21 @@ class Import_Page {
 			],
 			'trakt_movies'           => [
 				'name'        => 'Trakt Movies',
-				'description' => __( 'Import your movie watch history from Trakt.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Import your movie watch history from Trakt.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_kind'   => 'watch',
 				'icon'        => 'dashicons-video-alt2',
 				'api_key'     => 'trakt',
 				'options'     => [
 					'date_from'       => [
-						'label' => __( 'From Date', 'post-kinds-for-indieweb' ),
+						'label' => __( 'From Date', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'  => 'date',
 					],
 					'date_to'         => [
-						'label' => __( 'To Date', 'post-kinds-for-indieweb' ),
+						'label' => __( 'To Date', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'  => 'date',
 					],
 					'include_ratings' => [
-						'label'   => __( 'Include Ratings', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Include Ratings', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'checkbox',
 						'default' => true,
 					],
@@ -144,26 +144,26 @@ class Import_Page {
 			],
 			'trakt_shows'            => [
 				'name'        => 'Trakt TV Shows',
-				'description' => __( 'Import your TV show watch history from Trakt.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Import your TV show watch history from Trakt.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_kind'   => 'watch',
 				'icon'        => 'dashicons-video-alt2',
 				'api_key'     => 'trakt',
 				'options'     => [
 					'date_from' => [
-						'label' => __( 'From Date', 'post-kinds-for-indieweb' ),
+						'label' => __( 'From Date', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'  => 'date',
 					],
 					'date_to'   => [
-						'label' => __( 'To Date', 'post-kinds-for-indieweb' ),
+						'label' => __( 'To Date', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'  => 'date',
 					],
 					'group_by'  => [
-						'label'   => __( 'Group Episodes', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Group Episodes', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'select',
 						'options' => [
-							'none'   => __( 'Individual episodes', 'post-kinds-for-indieweb' ),
-							'season' => __( 'By season', 'post-kinds-for-indieweb' ),
-							'show'   => __( 'By show', 'post-kinds-for-indieweb' ),
+							'none'   => __( 'Individual episodes', 'post-kinds-for-indieweb-in-block-themes' ),
+							'season' => __( 'By season', 'post-kinds-for-indieweb-in-block-themes' ),
+							'show'   => __( 'By show', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 						'default' => 'none',
 					],
@@ -171,29 +171,29 @@ class Import_Page {
 			],
 			'simkl'                  => [
 				'name'        => 'Simkl',
-				'description' => __( 'Import your watch history from Simkl.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Import your watch history from Simkl.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_kind'   => 'watch',
 				'icon'        => 'dashicons-video-alt2',
 				'api_key'     => 'simkl',
 				'options'     => [
 					'type'   => [
-						'label'   => __( 'Content Type', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Content Type', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'select',
 						'options' => [
-							'movies' => __( 'Movies', 'post-kinds-for-indieweb' ),
-							'shows'  => __( 'TV Shows', 'post-kinds-for-indieweb' ),
-							'anime'  => __( 'Anime', 'post-kinds-for-indieweb' ),
+							'movies' => __( 'Movies', 'post-kinds-for-indieweb-in-block-themes' ),
+							'shows'  => __( 'TV Shows', 'post-kinds-for-indieweb-in-block-themes' ),
+							'anime'  => __( 'Anime', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 						'default' => 'movies',
 					],
 					'status' => [
-						'label'   => __( 'Watch Status', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Watch Status', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'select',
 						'options' => [
-							'completed'   => __( 'Completed', 'post-kinds-for-indieweb' ),
-							'watching'    => __( 'Currently Watching', 'post-kinds-for-indieweb' ),
-							'plantowatch' => __( 'Plan to Watch', 'post-kinds-for-indieweb' ),
-							'all'         => __( 'All', 'post-kinds-for-indieweb' ),
+							'completed'   => __( 'Completed', 'post-kinds-for-indieweb-in-block-themes' ),
+							'watching'    => __( 'Currently Watching', 'post-kinds-for-indieweb-in-block-themes' ),
+							'plantowatch' => __( 'Plan to Watch', 'post-kinds-for-indieweb-in-block-themes' ),
+							'all'         => __( 'All', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 						'default' => 'completed',
 					],
@@ -201,30 +201,30 @@ class Import_Page {
 			],
 			'hardcover'              => [
 				'name'        => 'Hardcover',
-				'description' => __( 'Import your reading history from Hardcover.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Import your reading history from Hardcover.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_kind'   => 'read',
 				'icon'        => 'dashicons-book',
 				'api_key'     => 'hardcover',
 				'options'     => [
 					'status'          => [
-						'label'   => __( 'Reading Status', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Reading Status', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'select',
 						'options' => [
-							'finished' => __( 'Finished', 'post-kinds-for-indieweb' ),
-							'reading'  => __( 'Currently Reading', 'post-kinds-for-indieweb' ),
-							'want'     => __( 'Want to Read', 'post-kinds-for-indieweb' ),
-							'dnf'      => __( 'Did Not Finish', 'post-kinds-for-indieweb' ),
-							'all'      => __( 'All', 'post-kinds-for-indieweb' ),
+							'finished' => __( 'Finished', 'post-kinds-for-indieweb-in-block-themes' ),
+							'reading'  => __( 'Currently Reading', 'post-kinds-for-indieweb-in-block-themes' ),
+							'want'     => __( 'Want to Read', 'post-kinds-for-indieweb-in-block-themes' ),
+							'dnf'      => __( 'Did Not Finish', 'post-kinds-for-indieweb-in-block-themes' ),
+							'all'      => __( 'All', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 						'default' => 'finished',
 					],
 					'include_ratings' => [
-						'label'   => __( 'Include Ratings', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Include Ratings', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'checkbox',
 						'default' => true,
 					],
 					'include_reviews' => [
-						'label'   => __( 'Include Reviews', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Include Reviews', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'checkbox',
 						'default' => true,
 					],
@@ -232,13 +232,13 @@ class Import_Page {
 			],
 			'foursquare'             => [
 				'name'        => 'Foursquare / Swarm',
-				'description' => __( 'Import your checkin history from Foursquare/Swarm.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Import your checkin history from Foursquare/Swarm.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_kind'   => 'checkin',
 				'icon'        => 'dashicons-location-alt',
 				'api_key'     => 'foursquare',
 				'options'     => [
 					'limit' => [
-						'label'   => __( 'Maximum Checkins', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Maximum Checkins', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'number',
 						'default' => 100,
 						'max'     => 500,
@@ -251,24 +251,24 @@ class Import_Page {
 			// Readwise imports - multiple content types.
 			'readwise_books'         => [
 				'name'        => 'Readwise Books',
-				'description' => __( 'Import book highlights from Readwise (Kindle, Apple Books, etc.). Each book requires separate API calls for highlights.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Import book highlights from Readwise (Kindle, Apple Books, etc.). Each book requires separate API calls for highlights.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_kind'   => 'read',
 				'icon'        => 'dashicons-book',
 				'api_key'     => 'readwise',
 				'options'     => [
 					'limit'              => [
-						'label'   => __( 'Maximum Books', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Maximum Books', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'number',
 						'default' => 20,
 						'max'     => 100,
 					],
 					'include_highlights' => [
-						'label'   => __( 'Include Highlights', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Include Highlights', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'checkbox',
 						'default' => true,
 					],
 					'update_existing'    => [
-						'label'   => __( 'Update existing posts', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Update existing posts', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'checkbox',
 						'default' => false,
 					],
@@ -276,24 +276,24 @@ class Import_Page {
 			],
 			'readwise_articles'      => [
 				'name'        => 'Readwise Articles',
-				'description' => __( 'Import article highlights from Readwise (Reader, Instapaper, Pocket, etc.).', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Import article highlights from Readwise (Reader, Instapaper, Pocket, etc.).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_kind'   => 'bookmark',
 				'icon'        => 'dashicons-admin-links',
 				'api_key'     => 'readwise',
 				'options'     => [
 					'limit'              => [
-						'label'   => __( 'Maximum Articles', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Maximum Articles', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'number',
 						'default' => 100,
 						'max'     => 500,
 					],
 					'include_highlights' => [
-						'label'   => __( 'Include Highlights', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Include Highlights', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'checkbox',
 						'default' => true,
 					],
 					'update_existing'    => [
-						'label'   => __( 'Update existing posts', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Update existing posts', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'checkbox',
 						'default' => false,
 					],
@@ -301,39 +301,39 @@ class Import_Page {
 			],
 			'readwise_podcasts'      => [
 				'name'        => 'Readwise Podcasts',
-				'description' => __( 'Import podcast episode highlights from Readwise (Snipd, Airr, etc.). Each episode requires separate API calls, so import in small batches.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Import podcast episode highlights from Readwise (Snipd, Airr, etc.). Each episode requires separate API calls, so import in small batches.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_kind'   => 'listen',
 				'icon'        => 'dashicons-microphone',
 				'api_key'     => 'readwise',
 				'options'     => [
 					'limit'              => [
-						'label'   => __( 'Maximum Episodes', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Maximum Episodes', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'number',
 						'default' => 20,
 						'max'     => 100,
 					],
 					'include_highlights' => [
-						'label'   => __( 'Include Highlights/Snips', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Include Highlights/Snips', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'checkbox',
 						'default' => true,
 					],
 					'update_existing'    => [
-						'label'       => __( 'Update existing posts', 'post-kinds-for-indieweb' ),
+						'label'       => __( 'Update existing posts', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'        => 'checkbox',
 						'default'     => false,
-						'description' => __( 'Update metadata on previously imported posts instead of skipping them.', 'post-kinds-for-indieweb' ),
+						'description' => __( 'Update metadata on previously imported posts instead of skipping them.', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			],
 			'readwise_tweets'        => [
 				'name'        => 'Readwise Tweets',
-				'description' => __( 'Import saved tweet threads from Readwise.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Import saved tweet threads from Readwise.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_kind'   => 'bookmark',
 				'icon'        => 'dashicons-twitter',
 				'api_key'     => 'readwise',
 				'options'     => [
 					'limit' => [
-						'label'   => __( 'Maximum Threads', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Maximum Threads', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'number',
 						'default' => 100,
 						'max'     => 500,
@@ -342,13 +342,13 @@ class Import_Page {
 			],
 			'readwise_supplementals' => [
 				'name'        => 'Readwise Supplementals',
-				'description' => __( 'Import supplemental materials from Readwise (PDFs, notes, etc.).', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Import supplemental materials from Readwise (PDFs, notes, etc.).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_kind'   => 'note',
 				'icon'        => 'dashicons-media-document',
 				'api_key'     => 'readwise',
 				'options'     => [
 					'limit' => [
-						'label'   => __( 'Maximum Items', 'post-kinds-for-indieweb' ),
+						'label'   => __( 'Maximum Items', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'    => 'number',
 						'default' => 100,
 						'max'     => 500,
@@ -377,15 +377,15 @@ class Import_Page {
 
 			<?php if ( ! empty( $active_imports ) ) : ?>
 				<div class="active-imports-section">
-					<h2><?php esc_html_e( 'Active Imports', 'post-kinds-for-indieweb' ); ?></h2>
+					<h2><?php esc_html_e( 'Active Imports', 'post-kinds-for-indieweb-in-block-themes' ); ?></h2>
 					<?php $this->render_active_imports( $active_imports ); ?>
 				</div>
 				<hr>
 			<?php endif; ?>
 
-			<h2><?php esc_html_e( 'Start New Import', 'post-kinds-for-indieweb' ); ?></h2>
+			<h2><?php esc_html_e( 'Start New Import', 'post-kinds-for-indieweb-in-block-themes' ); ?></h2>
 			<p class="description">
-				<?php esc_html_e( 'Import your media history from connected services. Imports run in the background and may take a while for large collections.', 'post-kinds-for-indieweb' ); ?>
+				<?php esc_html_e( 'Import your media history from connected services. Imports run in the background and may take a while for large collections.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 			</p>
 
 			<div class="import-sources">
@@ -403,7 +403,7 @@ class Import_Page {
 							<h3><?php echo esc_html( $source['name'] ); ?></h3>
 							<?php if ( ! $is_connected ) : ?>
 								<span class="status-badge not-connected">
-									<?php esc_html_e( 'Not Connected', 'post-kinds-for-indieweb' ); ?>
+									<?php esc_html_e( 'Not Connected', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 								</span>
 							<?php endif; ?>
 						</div>
@@ -418,21 +418,21 @@ class Import_Page {
 							<div class="source-actions">
 								<button type="button" class="button import-preview-button" data-source="<?php echo esc_attr( $source_id ); ?>">
 									<span class="dashicons dashicons-visibility"></span>
-									<?php esc_html_e( 'Preview', 'post-kinds-for-indieweb' ); ?>
+									<?php esc_html_e( 'Preview', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 								</button>
 								<button type="button" class="button button-primary import-start-button" data-source="<?php echo esc_attr( $source_id ); ?>">
 									<span class="dashicons dashicons-download"></span>
-									<?php esc_html_e( 'Start Import', 'post-kinds-for-indieweb' ); ?>
+									<?php esc_html_e( 'Start Import', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 								</button>
-								<button type="button" class="button import-resync-button" data-source="<?php echo esc_attr( $source_id ); ?>" title="<?php esc_attr_e( 'Update metadata for previously imported posts', 'post-kinds-for-indieweb' ); ?>">
+								<button type="button" class="button import-resync-button" data-source="<?php echo esc_attr( $source_id ); ?>" title="<?php esc_attr_e( 'Update metadata for previously imported posts', 'post-kinds-for-indieweb-in-block-themes' ); ?>">
 									<span class="dashicons dashicons-update"></span>
-									<?php esc_html_e( 'Re-sync', 'post-kinds-for-indieweb' ); ?>
+									<?php esc_html_e( 'Re-sync', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 								</button>
 							</div>
 						<?php else : ?>
 							<div class="source-actions">
 								<a href="<?php echo esc_url( admin_url( 'admin.php?page=post-kinds-indieweb-apis' ) ); ?>" class="button">
-									<?php esc_html_e( 'Configure API', 'post-kinds-for-indieweb' ); ?>
+									<?php esc_html_e( 'Configure API', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 								</a>
 							</div>
 						<?php endif; ?>
@@ -444,22 +444,22 @@ class Import_Page {
 			<div id="import-preview-modal" class="post-kinds-modal" style="display: none;">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h2><?php esc_html_e( 'Import Preview', 'post-kinds-for-indieweb' ); ?></h2>
+						<h2><?php esc_html_e( 'Import Preview', 'post-kinds-for-indieweb-in-block-themes' ); ?></h2>
 						<button type="button" class="modal-close">&times;</button>
 					</div>
 					<div class="modal-body">
 						<div class="preview-loading">
 							<span class="spinner is-active"></span>
-							<?php esc_html_e( 'Loading preview...', 'post-kinds-for-indieweb' ); ?>
+							<?php esc_html_e( 'Loading preview...', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 						</div>
 						<div class="preview-content" style="display: none;"></div>
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="button modal-cancel">
-							<?php esc_html_e( 'Cancel', 'post-kinds-for-indieweb' ); ?>
+							<?php esc_html_e( 'Cancel', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 						</button>
 						<button type="button" class="button button-primary modal-confirm-import">
-							<?php esc_html_e( 'Start Import', 'post-kinds-for-indieweb' ); ?>
+							<?php esc_html_e( 'Start Import', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 						</button>
 					</div>
 				</div>
@@ -467,7 +467,7 @@ class Import_Page {
 
 			<hr>
 
-			<h2><?php esc_html_e( 'Import History', 'post-kinds-for-indieweb' ); ?></h2>
+			<h2><?php esc_html_e( 'Import History', 'post-kinds-for-indieweb-in-block-themes' ); ?></h2>
 			<?php $this->render_import_history(); ?>
 		</div>
 		<?php
@@ -485,28 +485,28 @@ class Import_Page {
 		?>
 		<div class="common-import-options">
 			<div class="import-amount-options">
-				<label class="option-label"><?php esc_html_e( 'Import:', 'post-kinds-for-indieweb' ); ?></label>
+				<label class="option-label"><?php esc_html_e( 'Import:', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
 				<div class="radio-group">
 					<label>
 						<input type="radio" name="import_<?php echo esc_attr( $source_id ); ?>_amount"
 								value="1" class="import-option"
 								data-source="<?php echo esc_attr( $source_id ); ?>"
 								data-option="import_amount">
-						<?php esc_html_e( 'Last 1 (Test)', 'post-kinds-for-indieweb' ); ?>
+						<?php esc_html_e( 'Last 1 (Test)', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 					</label>
 					<label>
 						<input type="radio" name="import_<?php echo esc_attr( $source_id ); ?>_amount"
 								value="all" class="import-option"
 								data-source="<?php echo esc_attr( $source_id ); ?>"
 								data-option="import_amount" checked>
-						<?php esc_html_e( 'All', 'post-kinds-for-indieweb' ); ?>
+						<?php esc_html_e( 'All', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 					</label>
 					<label class="custom-amount-label">
 						<input type="radio" name="import_<?php echo esc_attr( $source_id ); ?>_amount"
 								value="custom" class="import-option import-amount-custom-radio"
 								data-source="<?php echo esc_attr( $source_id ); ?>"
 								data-option="import_amount">
-						<?php esc_html_e( 'Last', 'post-kinds-for-indieweb' ); ?>
+						<?php esc_html_e( 'Last', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 						<input type="number"
 								name="import_<?php echo esc_attr( $source_id ); ?>_custom_limit"
 								class="small-text import-option import-custom-limit"
@@ -514,7 +514,7 @@ class Import_Page {
 								data-option="custom_limit"
 								min="1" max="1000" value="50"
 								style="width: 60px;">
-						<?php esc_html_e( 'items', 'post-kinds-for-indieweb' ); ?>
+						<?php esc_html_e( 'items', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 					</label>
 				</div>
 			</div>
@@ -526,11 +526,11 @@ class Import_Page {
 							value="1" class="import-option import-publish-checkbox"
 							data-source="<?php echo esc_attr( $source_id ); ?>"
 							data-option="publish_immediately">
-					<?php esc_html_e( 'Publish immediately', 'post-kinds-for-indieweb' ); ?>
+					<?php esc_html_e( 'Publish immediately', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 				</label>
 				<p class="publish-warning" style="display: none; color: #d63638; margin: 5px 0 0 24px;">
 					<span class="dashicons dashicons-warning"></span>
-					<?php esc_html_e( 'Warning: Posts will be published to your site immediately. Leave unchecked to create drafts for review.', 'post-kinds-for-indieweb' ); ?>
+					<?php esc_html_e( 'Warning: Posts will be published to your site immediately. Leave unchecked to create drafts for review.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 				</p>
 			</div>
 		</div>
@@ -659,7 +659,7 @@ class Import_Page {
 							<?php
 							printf(
 								/* translators: 1: Processed count, 2: Total count */
-								esc_html__( '%1$d of %2$d items', 'post-kinds-for-indieweb' ),
+								esc_html__( '%1$d of %2$d items', 'post-kinds-for-indieweb-in-block-themes' ),
 								(int) ( $import['processed'] ?? 0 ),
 								(int) ( $import['total'] ?? 0 )
 							);
@@ -669,7 +669,7 @@ class Import_Page {
 
 					<div class="import-actions">
 						<button type="button" class="button import-cancel-button" data-import-id="<?php echo esc_attr( $import_id ); ?>">
-							<?php esc_html_e( 'Cancel', 'post-kinds-for-indieweb' ); ?>
+							<?php esc_html_e( 'Cancel', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 						</button>
 					</div>
 				</div>
@@ -687,7 +687,7 @@ class Import_Page {
 		$history = get_option( 'pkiw_import_history', [] );
 
 		if ( empty( $history ) ) {
-			echo '<p class="description">' . esc_html__( 'No imports have been run yet.', 'post-kinds-for-indieweb' ) . '</p>';
+			echo '<p class="description">' . esc_html__( 'No imports have been run yet.', 'post-kinds-for-indieweb-in-block-themes' ) . '</p>';
 			return;
 		}
 
@@ -706,12 +706,12 @@ class Import_Page {
 		<table class="wp-list-table widefat fixed striped">
 			<thead>
 				<tr>
-					<th><?php esc_html_e( 'Source', 'post-kinds-for-indieweb' ); ?></th>
-					<th><?php esc_html_e( 'Date', 'post-kinds-for-indieweb' ); ?></th>
-					<th><?php esc_html_e( 'Status', 'post-kinds-for-indieweb' ); ?></th>
-					<th><?php esc_html_e( 'Items', 'post-kinds-for-indieweb' ); ?></th>
-					<th><?php esc_html_e( 'Posts Created', 'post-kinds-for-indieweb' ); ?></th>
-					<th><?php esc_html_e( 'Duplicates Skipped', 'post-kinds-for-indieweb' ); ?></th>
+					<th><?php esc_html_e( 'Source', 'post-kinds-for-indieweb-in-block-themes' ); ?></th>
+					<th><?php esc_html_e( 'Date', 'post-kinds-for-indieweb-in-block-themes' ); ?></th>
+					<th><?php esc_html_e( 'Status', 'post-kinds-for-indieweb-in-block-themes' ); ?></th>
+					<th><?php esc_html_e( 'Items', 'post-kinds-for-indieweb-in-block-themes' ); ?></th>
+					<th><?php esc_html_e( 'Posts Created', 'post-kinds-for-indieweb-in-block-themes' ); ?></th>
+					<th><?php esc_html_e( 'Duplicates Skipped', 'post-kinds-for-indieweb-in-block-themes' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -788,7 +788,7 @@ class Import_Page {
 		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$source = isset( $_POST['source'] ) ? sanitize_text_field( wp_unslash( $_POST['source'] ) ) : '';
@@ -796,7 +796,7 @@ class Import_Page {
 		$options = isset( $_POST['options'] ) ? $this->sanitize_import_options( wp_unslash( $_POST['options'] ) ) : [];
 
 		if ( empty( $source ) || ! isset( $this->import_sources[ $source ] ) ) {
-			wp_send_json_error( [ 'message' => __( 'Invalid import source.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Invalid import source.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		try {
@@ -810,7 +810,7 @@ class Import_Page {
 			// Handle array result from Import_Manager.
 			if ( is_array( $result ) ) {
 				if ( empty( $result['success'] ) ) {
-					wp_send_json_error( [ 'message' => $result['error'] ?? __( 'Import failed to start.', 'post-kinds-for-indieweb' ) ] );
+					wp_send_json_error( [ 'message' => $result['error'] ?? __( 'Import failed to start.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 				}
 
 				$job_id = $result['job_id'] ?? '';
@@ -830,7 +830,7 @@ class Import_Page {
 					if ( 'failed' === ( $job_status['status'] ?? '' ) ) {
 						$error_msg = ! empty( $job_status['errors'] )
 							? implode( '; ', $job_status['errors'] )
-							: __( 'Import failed.', 'post-kinds-for-indieweb' );
+							: __( 'Import failed.', 'post-kinds-for-indieweb-in-block-themes' );
 						wp_send_json_error( [ 'message' => $error_msg ] );
 					}
 
@@ -838,19 +838,19 @@ class Import_Page {
 					$message_parts = [];
 					if ( ( $job_status['imported'] ?? 0 ) > 0 ) {
 						/* translators: %d: Number of items imported */
-						$message_parts[] = sprintf( __( '%d imported', 'post-kinds-for-indieweb' ), $job_status['imported'] );
+						$message_parts[] = sprintf( __( '%d imported', 'post-kinds-for-indieweb-in-block-themes' ), $job_status['imported'] );
 					}
 					if ( $updated_count > 0 ) {
 						/* translators: %d: Number of items updated */
-						$message_parts[] = sprintf( __( '%d updated', 'post-kinds-for-indieweb' ), $updated_count );
+						$message_parts[] = sprintf( __( '%d updated', 'post-kinds-for-indieweb-in-block-themes' ), $updated_count );
 					}
 					if ( ( $job_status['skipped'] ?? 0 ) > 0 ) {
 						/* translators: %d: Number of items skipped */
-						$message_parts[] = sprintf( __( '%d skipped', 'post-kinds-for-indieweb' ), $job_status['skipped'] );
+						$message_parts[] = sprintf( __( '%d skipped', 'post-kinds-for-indieweb-in-block-themes' ), $job_status['skipped'] );
 					}
 					if ( ( $job_status['failed'] ?? 0 ) > 0 ) {
 						/* translators: %d: Number of items that failed */
-						$message_parts[] = sprintf( __( '%d failed', 'post-kinds-for-indieweb' ), $job_status['failed'] );
+						$message_parts[] = sprintf( __( '%d failed', 'post-kinds-for-indieweb-in-block-themes' ), $job_status['failed'] );
 					}
 
 					// If nothing was processed and there are errors, show the first error.
@@ -864,7 +864,7 @@ class Import_Page {
 						wp_send_json_success(
 							[
 								'import_id' => $job_id,
-								'message'   => __( 'Import completed but no new items were found.', 'post-kinds-for-indieweb' ),
+								'message'   => __( 'Import completed but no new items were found.', 'post-kinds-for-indieweb-in-block-themes' ),
 								'imported'  => 0,
 								'updated'   => 0,
 								'skipped'   => 0,
@@ -879,7 +879,7 @@ class Import_Page {
 							'import_id' => $job_id,
 							'message'   => sprintf(
 								/* translators: %s: Comma-separated list of import results */
-								__( 'Import completed: %s.', 'post-kinds-for-indieweb' ),
+								__( 'Import completed: %s.', 'post-kinds-for-indieweb-in-block-themes' ),
 								implode( ', ', $message_parts )
 							),
 							'imported'  => $job_status['imported'] ?? 0,
@@ -904,15 +904,15 @@ class Import_Page {
 					$message_parts = [];
 					if ( ( $job_status['imported'] ?? 0 ) > 0 ) {
 						/* translators: %d: Number of items imported */
-						$message_parts[] = sprintf( __( '%d imported', 'post-kinds-for-indieweb' ), $job_status['imported'] );
+						$message_parts[] = sprintf( __( '%d imported', 'post-kinds-for-indieweb-in-block-themes' ), $job_status['imported'] );
 					}
 					if ( ( $job_status['updated'] ?? 0 ) > 0 ) {
 						/* translators: %d: Number of items updated */
-						$message_parts[] = sprintf( __( '%d updated', 'post-kinds-for-indieweb' ), $job_status['updated'] );
+						$message_parts[] = sprintf( __( '%d updated', 'post-kinds-for-indieweb-in-block-themes' ), $job_status['updated'] );
 					}
 					if ( ( $job_status['skipped'] ?? 0 ) > 0 ) {
 						/* translators: %d: Number of items skipped */
-						$message_parts[] = sprintf( __( '%d skipped', 'post-kinds-for-indieweb' ), $job_status['skipped'] );
+						$message_parts[] = sprintf( __( '%d skipped', 'post-kinds-for-indieweb-in-block-themes' ), $job_status['skipped'] );
 					}
 
 					// Spawn cron for any remaining items.
@@ -920,8 +920,8 @@ class Import_Page {
 
 					$message = ! empty( $message_parts )
 						/* translators: %s: Comma-separated list of import progress */
-						? sprintf( __( 'Import progress: %s. More items processing in background.', 'post-kinds-for-indieweb' ), implode( ', ', $message_parts ) )
-						: __( 'Import started. Processing in background...', 'post-kinds-for-indieweb' );
+						? sprintf( __( 'Import progress: %s. More items processing in background.', 'post-kinds-for-indieweb-in-block-themes' ), implode( ', ', $message_parts ) )
+						: __( 'Import started. Processing in background...', 'post-kinds-for-indieweb-in-block-themes' );
 
 					wp_send_json_success(
 						[
@@ -938,7 +938,7 @@ class Import_Page {
 				wp_send_json_success(
 					[
 						'import_id' => $job_id,
-						'message'   => $result['message'] ?? __( 'Import started successfully.', 'post-kinds-for-indieweb' ),
+						'message'   => $result['message'] ?? __( 'Import started successfully.', 'post-kinds-for-indieweb-in-block-themes' ),
 					]
 				);
 			}
@@ -946,7 +946,7 @@ class Import_Page {
 			wp_send_json_success(
 				[
 					'import_id' => $result,
-					'message'   => __( 'Import started successfully.', 'post-kinds-for-indieweb' ),
+					'message'   => __( 'Import started successfully.', 'post-kinds-for-indieweb-in-block-themes' ),
 				]
 			);
 		} catch ( \Exception $e ) {
@@ -965,13 +965,13 @@ class Import_Page {
 		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$import_id = isset( $_POST['import_id'] ) ? sanitize_text_field( wp_unslash( $_POST['import_id'] ) ) : '';
 
 		if ( empty( $import_id ) ) {
-			wp_send_json_error( [ 'message' => __( 'Import ID required.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Import ID required.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$import_manager = new Import_Manager();
@@ -983,7 +983,7 @@ class Import_Page {
 
 		wp_send_json_success(
 			[
-				'message' => __( 'Import cancelled.', 'post-kinds-for-indieweb' ),
+				'message' => __( 'Import cancelled.', 'post-kinds-for-indieweb-in-block-themes' ),
 			]
 		);
 	}
@@ -997,7 +997,7 @@ class Import_Page {
 		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$source = isset( $_POST['source'] ) ? sanitize_text_field( wp_unslash( $_POST['source'] ) ) : '';
@@ -1005,7 +1005,7 @@ class Import_Page {
 		$options = isset( $_POST['options'] ) ? $this->sanitize_import_options( wp_unslash( $_POST['options'] ) ) : [];
 
 		if ( empty( $source ) || ! isset( $this->import_sources[ $source ] ) ) {
-			wp_send_json_error( [ 'message' => __( 'Invalid import source.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Invalid import source.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$preview = $this->get_import_preview( $source, $options );
@@ -1040,7 +1040,7 @@ class Import_Page {
 				$lb_creds = $credentials['listenbrainz'] ?? [];
 				$username = $lb_creds['username'] ?? '';
 				if ( empty( $username ) ) {
-					return new \WP_Error( 'missing_username', __( 'ListenBrainz username not configured. Please set it in API Connections.', 'post-kinds-for-indieweb' ) );
+					return new \WP_Error( 'missing_username', __( 'ListenBrainz username not configured. Please set it in API Connections.', 'post-kinds-for-indieweb-in-block-themes' ) );
 				}
 
 				$api     = new \PKIW\APIs\ListenBrainz();
@@ -1056,14 +1056,14 @@ class Import_Page {
 			case 'lastfm':
 				$username = $options['username'] ?? '';
 				if ( empty( $username ) ) {
-					return new \WP_Error( 'missing_username', __( 'Please enter your Last.fm username.', 'post-kinds-for-indieweb' ) );
+					return new \WP_Error( 'missing_username', __( 'Please enter your Last.fm username.', 'post-kinds-for-indieweb-in-block-themes' ) );
 				}
 
 				$api = new \PKIW\APIs\LastFM();
 
 				// Check if API is configured.
 				if ( ! $api->test_connection() ) {
-					return new \WP_Error( 'api_not_configured', __( 'Last.fm API is not configured. Please add your API key in API Connections.', 'post-kinds-for-indieweb' ) );
+					return new \WP_Error( 'api_not_configured', __( 'Last.fm API is not configured. Please add your API key in API Connections.', 'post-kinds-for-indieweb-in-block-themes' ) );
 				}
 
 				$tracks = $api->get_recent_tracks( $username, $preview_limit );
@@ -1075,7 +1075,7 @@ class Import_Page {
 				$items       = array_slice( $tracks['tracks'] ?? [], 0, $preview_limit );
 
 				if ( empty( $items ) && 0 === $total_count ) {
-					return new \WP_Error( 'no_tracks', __( 'No tracks found for this username. Check that the username is correct.', 'post-kinds-for-indieweb' ) );
+					return new \WP_Error( 'no_tracks', __( 'No tracks found for this username. Check that the username is correct.', 'post-kinds-for-indieweb-in-block-themes' ) );
 				}
 				break;
 
@@ -1083,7 +1083,7 @@ class Import_Page {
 			case 'trakt_shows':
 				$api = new \PKIW\APIs\Trakt();
 				if ( ! $api->is_configured() ) {
-					return new \WP_Error( 'api_not_configured', __( 'Trakt API is not configured. Please set up OAuth in API Connections.', 'post-kinds-for-indieweb' ) );
+					return new \WP_Error( 'api_not_configured', __( 'Trakt API is not configured. Please set up OAuth in API Connections.', 'post-kinds-for-indieweb-in-block-themes' ) );
 				}
 
 				$type    = 'trakt_movies' === $source ? 'movies' : 'shows';
@@ -1099,7 +1099,7 @@ class Import_Page {
 			case 'simkl':
 				$api = new \PKIW\APIs\Simkl();
 				if ( ! $api->is_configured() ) {
-					return new \WP_Error( 'api_not_configured', __( 'Simkl API is not configured. Please set up OAuth in API Connections.', 'post-kinds-for-indieweb' ) );
+					return new \WP_Error( 'api_not_configured', __( 'Simkl API is not configured. Please set up OAuth in API Connections.', 'post-kinds-for-indieweb-in-block-themes' ) );
 				}
 
 				$type    = $options['type'] ?? 'movies';
@@ -1115,7 +1115,7 @@ class Import_Page {
 			case 'hardcover':
 				$api = new \PKIW\APIs\Hardcover();
 				if ( ! $api->is_configured() ) {
-					return new \WP_Error( 'api_not_configured', __( 'Hardcover API is not configured. Please add your API token in API Connections.', 'post-kinds-for-indieweb' ) );
+					return new \WP_Error( 'api_not_configured', __( 'Hardcover API is not configured. Please add your API token in API Connections.', 'post-kinds-for-indieweb-in-block-themes' ) );
 				}
 
 				$status = $options['status'] ?? 'finished';
@@ -1131,7 +1131,7 @@ class Import_Page {
 			case 'foursquare':
 				$foursquare_sync = \PKIW\Plugin::get_instance()->get_checkin_sync_service( 'foursquare' );
 				if ( ! $foursquare_sync || ! $foursquare_sync->is_connected() ) {
-					return new \WP_Error( 'api_not_configured', __( 'Foursquare is not connected. Please authorize in API Connections.', 'post-kinds-for-indieweb' ) );
+					return new \WP_Error( 'api_not_configured', __( 'Foursquare is not connected. Please authorize in API Connections.', 'post-kinds-for-indieweb-in-block-themes' ) );
 				}
 
 				$checkins = $foursquare_sync->fetch_recent_checkins( $preview_limit );
@@ -1146,7 +1146,7 @@ class Import_Page {
 			case 'untappd':
 				$untappd_sync = \PKIW\Plugin::get_instance()->get_checkin_sync_service( 'untappd' );
 				if ( ! $untappd_sync || ! $untappd_sync->is_connected() ) {
-					return new \WP_Error( 'api_not_configured', __( 'Untappd is not connected. Please authorize in API Connections.', 'post-kinds-for-indieweb' ) );
+					return new \WP_Error( 'api_not_configured', __( 'Untappd is not connected. Please authorize in API Connections.', 'post-kinds-for-indieweb-in-block-themes' ) );
 				}
 
 				$checkins = $untappd_sync->fetch_recent_checkins( $preview_limit );
@@ -1161,7 +1161,7 @@ class Import_Page {
 			case 'readwise_books':
 				$api = new \PKIW\APIs\Readwise();
 				if ( ! $api->is_configured() ) {
-					return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'post-kinds-for-indieweb' ) );
+					return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'post-kinds-for-indieweb-in-block-themes' ) );
 				}
 
 				// For preview, don't fetch all highlights (slower), just book info.
@@ -1173,7 +1173,7 @@ class Import_Page {
 			case 'readwise_articles':
 				$api = new \PKIW\APIs\Readwise();
 				if ( ! $api->is_configured() ) {
-					return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'post-kinds-for-indieweb' ) );
+					return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'post-kinds-for-indieweb-in-block-themes' ) );
 				}
 
 				$articles    = $api->get_articles( $preview_limit );
@@ -1184,7 +1184,7 @@ class Import_Page {
 			case 'readwise_podcasts':
 				$api = new \PKIW\APIs\Readwise();
 				if ( ! $api->is_configured() ) {
-					return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'post-kinds-for-indieweb' ) );
+					return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'post-kinds-for-indieweb-in-block-themes' ) );
 				}
 
 				$podcasts    = $api->get_podcast_episodes( $preview_limit );
@@ -1195,7 +1195,7 @@ class Import_Page {
 			case 'readwise_tweets':
 				$api = new \PKIW\APIs\Readwise();
 				if ( ! $api->is_configured() ) {
-					return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'post-kinds-for-indieweb' ) );
+					return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'post-kinds-for-indieweb-in-block-themes' ) );
 				}
 
 				$tweets      = $api->get_tweets( $preview_limit );
@@ -1206,7 +1206,7 @@ class Import_Page {
 			case 'readwise_supplementals':
 				$api = new \PKIW\APIs\Readwise();
 				if ( ! $api->is_configured() ) {
-					return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'post-kinds-for-indieweb' ) );
+					return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'post-kinds-for-indieweb-in-block-themes' ) );
 				}
 
 				$supplementals = $api->get_books( 'supplementals', $preview_limit );
@@ -1215,7 +1215,7 @@ class Import_Page {
 				break;
 
 			default:
-				return new \WP_Error( 'unsupported', __( 'Import preview not supported for this source.', 'post-kinds-for-indieweb' ) );
+				return new \WP_Error( 'unsupported', __( 'Import preview not supported for this source.', 'post-kinds-for-indieweb-in-block-themes' ) );
 		}
 
 		return [
@@ -1410,13 +1410,13 @@ class Import_Page {
 		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$source = isset( $_POST['source'] ) ? sanitize_text_field( wp_unslash( $_POST['source'] ) ) : '';
 
 		if ( empty( $source ) ) {
-			wp_send_json_error( [ 'message' => __( 'No import source specified.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'No import source specified.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		try {
@@ -1424,7 +1424,7 @@ class Import_Page {
 			$result         = $import_manager->resync_metadata( $source );
 
 			if ( empty( $result['success'] ) ) {
-				wp_send_json_error( [ 'message' => $result['error'] ?? __( 'Re-sync failed.', 'post-kinds-for-indieweb' ) ] );
+				wp_send_json_error( [ 'message' => $result['error'] ?? __( 'Re-sync failed.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 			}
 
 			wp_send_json_success( $result );

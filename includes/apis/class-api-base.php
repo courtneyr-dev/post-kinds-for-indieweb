@@ -278,7 +278,7 @@ abstract class API_Base {
 			throw new \Exception(
 				sprintf(
 					/* translators: 1: API name, 2: Error message */
-					__( '%1$s API error: %2$s', 'post-kinds-for-indieweb' ),
+					__( '%1$s API error: %2$s', 'post-kinds-for-indieweb-in-block-themes' ),
 					esc_html( $this->api_name ),
 					esc_html( $last_error->get_error_message() )
 				)
@@ -290,7 +290,7 @@ abstract class API_Base {
 		throw new \Exception(
 			sprintf(
 				/* translators: %s: API name */
-				__( '%s API request failed after multiple attempts.', 'post-kinds-for-indieweb' ),
+				__( '%s API request failed after multiple attempts.', 'post-kinds-for-indieweb-in-block-themes' ),
 				esc_html( $this->api_name )
 			)
 		);
@@ -361,7 +361,7 @@ abstract class API_Base {
 		// Default error message.
 		return sprintf(
 			/* translators: 1: API name, 2: HTTP status code */
-			__( '%1$s API returned error code %2$d', 'post-kinds-for-indieweb' ),
+			__( '%1$s API returned error code %2$d', 'post-kinds-for-indieweb-in-block-themes' ),
 			$this->api_name,
 			$code
 		);

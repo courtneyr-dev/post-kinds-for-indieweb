@@ -335,8 +335,8 @@ jobs:
       - name: Extract distribution
         run: |
           mkdir -p dist-check
-          unzip -q post-kinds-for-indieweb.zip -d dist-check
-          ls -la dist-check/post-kinds-for-indieweb
+          unzip -q post-kinds-for-indieweb-in-block-themes.zip -d dist-check
+          ls -la dist-check/post-kinds-for-indieweb-in-block-themes
 
       # plugin-check-action generates a .wp-env.json that installs plugin-check
       # from a URL zip. @wordpress/env <= 11.8.0 extracts URL-downloaded zips
@@ -362,7 +362,7 @@ jobs:
       - name: Run Plugin Check against distribution
         uses: wordpress/plugin-check-action@v1
         with:
-          build-dir: dist-check/post-kinds-for-indieweb
+          build-dir: dist-check/post-kinds-for-indieweb-in-block-themes-in-block-themes
 
   # ===== E2E Tests =====
   e2e:
@@ -523,10 +523,10 @@ jobs:
       - name: Validate POT file generation
         run: |
           mkdir -p languages
-          wp i18n make-pot . languages/post-kinds-for-indieweb.pot --domain=post-kinds-for-indieweb --skip-js
-          if [ -f languages/post-kinds-for-indieweb.pot ]; then
+          wp i18n make-pot . languages/post-kinds-for-indieweb-in-block-themes.pot --domain=post-kinds-for-indieweb-in-block-themes --skip-js
+          if [ -f languages/post-kinds-for-indieweb-in-block-themes.pot ]; then
             echo "POT file generated successfully"
-            head -50 languages/post-kinds-for-indieweb.pot
+            head -50 languages/post-kinds-for-indieweb-in-block-themes.pot
           else
             echo "Failed to generate POT file"
             exit 1

@@ -252,7 +252,7 @@ class BoardGameGeek extends API_Base {
 		if ( ! $this->is_configured() ) {
 			return new \WP_Error(
 				'bgg_not_configured',
-				__( 'BoardGameGeek API token is not configured. Add your token in Settings > Reactions.', 'post-kinds-for-indieweb' )
+				__( 'BoardGameGeek API token is not configured. Add your token in Settings > Reactions.', 'post-kinds-for-indieweb-in-block-themes' )
 			);
 		}
 
@@ -292,7 +292,7 @@ class BoardGameGeek extends API_Base {
 		if ( 401 === $code ) {
 			return new \WP_Error(
 				'bgg_auth_error',
-				__( 'BoardGameGeek API authentication failed. Please check your API token.', 'post-kinds-for-indieweb' )
+				__( 'BoardGameGeek API authentication failed. Please check your API token.', 'post-kinds-for-indieweb-in-block-themes' )
 			);
 		}
 
@@ -509,11 +509,11 @@ class BoardGameGeek extends API_Base {
 	public function get_config_fields(): array {
 		return [
 			'bgg_api_token' => [
-				'label'       => __( 'BoardGameGeek API Token', 'post-kinds-for-indieweb' ),
+				'label'       => __( 'BoardGameGeek API Token', 'post-kinds-for-indieweb-in-block-themes' ),
 				'type'        => 'password',
 				'description' => sprintf(
 					/* translators: %s: Link to BGG applications page */
-					__( 'Get your token from %s', 'post-kinds-for-indieweb' ),
+					__( 'Get your token from %s', 'post-kinds-for-indieweb-in-block-themes' ),
 					'<a href="https://boardgamegeek.com/applications" target="_blank">boardgamegeek.com/applications</a>'
 				),
 			],

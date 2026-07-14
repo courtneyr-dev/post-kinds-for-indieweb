@@ -9,7 +9,7 @@
  *    them (`new REST_API()`, `REST_API::NAMESPACE`, etc.) so we declare
  *    no-body stubs; PHPStan picks them up via `scanFiles`.
  *
- * 2. Plugin-defined constants from `post-kinds-for-indieweb.php`. PHPStan
+ * 2. Plugin-defined constants from `post-kinds-for-indieweb-in-block-themes.php`. PHPStan
  *    sees the `define()` calls but doesn't always resolve their values
  *    through `plugin_dir_url(__FILE__)`-style dynamic expressions, so we
  *    re-declare them with literal placeholder values here.
@@ -68,7 +68,7 @@ namespace PKIW\Admin {
 	}
 }
 
-// 2. Plugin-defined constants (mirror of post-kinds-for-indieweb.php).
+// 2. Plugin-defined constants (mirror of post-kinds-for-indieweb-in-block-themes.php).
 namespace {
 	if ( ! defined( 'PKIW_VERSION' ) ) {
 		define( 'PKIW_VERSION', '1.0.1' );

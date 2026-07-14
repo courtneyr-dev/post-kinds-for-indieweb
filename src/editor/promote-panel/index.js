@@ -34,16 +34,19 @@ const PromotePanel = () => {
 	return (
 		<PluginDocumentSettingPanel
 			name="pkiw-promote"
-			title={ __( 'Post surface', 'post-kinds-for-indieweb' ) }
+			title={ __(
+				'Post surface',
+				'post-kinds-for-indieweb-in-block-themes'
+			) }
 		>
 			<ToggleControl
 				label={ __(
 					'Promote to main archive',
-					'post-kinds-for-indieweb'
+					'post-kinds-for-indieweb-in-block-themes'
 				) }
 				help={ __(
 					'Show this post on the main archive even if its kind is normally stream-only.',
-					'post-kinds-for-indieweb'
+					'post-kinds-for-indieweb-in-block-themes'
 				) }
 				checked={ !! promote }
 				onChange={ ( value ) =>

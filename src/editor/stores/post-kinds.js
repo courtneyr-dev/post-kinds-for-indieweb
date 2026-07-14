@@ -1,5 +1,5 @@
 /**
- * Post Kinds for IndieWeb - Post Kinds Data Store
+ * Post Kinds for IndieWeb in Block Themes - Post Kinds Data Store
  *
  * Manages post kind state, auto-detection, and metadata in the block editor.
  *

@@ -1,5 +1,5 @@
 /**
- * Post Kinds for IndieWeb - Syndication Controls Component
+ * Post Kinds for IndieWeb in Block Themes - Syndication Controls Component
  *
  * Displays per-post syndication opt-out toggles for connected services.
  *
@@ -92,7 +92,10 @@ export default function SyndicationControls( { kind } ) {
 		>
 			<PanelRow>
 				<span className="components-base-control__label">
-					{ __( 'Syndication', 'post-kinds-for-indieweb' ) }
+					{ __(
+						'Syndication',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 				</span>
 			</PanelRow>
 
@@ -109,11 +112,11 @@ export default function SyndicationControls( { kind } ) {
 							isEnabled
 								? __(
 										'Will sync on publish',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 								  )
 								: __(
 										'Will not sync',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 								  )
 						}
 						checked={ isEnabled }
@@ -140,7 +143,7 @@ export default function SyndicationControls( { kind } ) {
 					<strong>{ config.name }:</strong>{ ' ' }
 					{ __(
 						'Authorization required. Complete setup in API Connections.',
-						'post-kinds-for-indieweb'
+						'post-kinds-for-indieweb-in-block-themes'
 					) }
 				</div>
 			) ) }

@@ -83,7 +83,7 @@ $pkiw_map_id = 'checkins-map-' . wp_unique_id();
 		<div class="checkins-feed__map" id="<?php echo esc_attr( $pkiw_map_id ); ?>" data-markers="<?php echo esc_attr( wp_json_encode( $pkiw_map_markers ) ); ?>">
 			<noscript>
 				<p class="checkins-feed__map-fallback">
-					<?php esc_html_e( 'Map requires JavaScript to display.', 'post-kinds-for-indieweb' ); ?>
+					<?php esc_html_e( 'Map requires JavaScript to display.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 				</p>
 			</noscript>
 		</div>
@@ -157,7 +157,7 @@ $pkiw_map_id = 'checkins-map-' . wp_unique_id();
 		</div>
 	<?php else : ?>
 		<p class="checkins-feed__empty">
-			<?php esc_html_e( 'No check-ins found.', 'post-kinds-for-indieweb' ); ?>
+			<?php esc_html_e( 'No check-ins found.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 		</p>
 	<?php endif; ?>
 </div>

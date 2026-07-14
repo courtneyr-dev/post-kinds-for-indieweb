@@ -8,7 +8,7 @@
 	"category": "post-kinds-indieweb",
 	"description": "Display something you acquired or purchased with photo and details.",
 	"keywords": ["acquisition", "purchase", "bought", "got", "haul"],
-	"textdomain": "post-kinds-indieweb",
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
 	"attributes": {
 		"title": {
 			"type": "string"

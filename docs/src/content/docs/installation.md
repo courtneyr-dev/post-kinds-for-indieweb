@@ -1,9 +1,9 @@
 ---
 title: Installation
-description: "Install and activate Post Kinds for IndieWeb, check the WordPress 7.0 and PHP 8.2 requirements, and confirm the Reactions menu appears."
+description: "Install and activate Post Kinds for IndieWeb in Block Themes, check the WordPress 7.0 and PHP 8.2 requirements, and confirm the Reactions menu appears."
 ---
 
-How to install and activate Post Kinds for IndieWeb, what the plugin requires, and how to confirm it's working.
+How to install and activate Post Kinds for IndieWeb in Block Themes, what the plugin requires, and how to confirm it's working.
 
 ## Requirements
 
@@ -13,9 +13,9 @@ How to install and activate Post Kinds for IndieWeb, what the plugin requires, a
 
 ## Before you install: check for the classic Post Kinds plugin
 
-Post Kinds for IndieWeb is a successor to David Shanske's classic [Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin (`indieweb-post-kinds`). Both use the same `kind` taxonomy, so they conflict:
+Post Kinds for IndieWeb in Block Themes is a successor to David Shanske's classic [Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin (`indieweb-post-kinds`). Both use the same `kind` taxonomy, so they conflict:
 
-- If the classic Post Kinds plugin is active (including network-activated on multisite), Post Kinds for IndieWeb **refuses to initialize** and shows an error notice: it cannot run while Post Kinds is active.
+- If the classic Post Kinds plugin is active (including network-activated on multisite), Post Kinds for IndieWeb in Block Themes **refuses to initialize** and shows an error notice: it cannot run while Post Kinds is active.
 - Deactivate the classic Post Kinds plugin before (or after) activating this one. Use one or the other, never both.
 
 ## Install from a ZIP file
@@ -27,7 +27,7 @@ Post Kinds for IndieWeb is a successor to David Shanske's classic [Post Kinds](h
 
 The repository commits its built block assets in the `build/` directory, so a ZIP made from the repository works without a build step.
 
-The plugin's readme.txt also describes installing from the WordPress.org plugin directory (**Plugins → Add New**, search for "Post Kinds for IndieWeb"). If the plugin appears there for your site, that's the simplest route.
+The plugin's readme.txt also describes installing from the WordPress.org plugin directory (**Plugins → Add New**, search for "Post Kinds for IndieWeb in Block Themes"). If the plugin appears there for your site, that's the simplest route.
 
 ## Install from GitHub (clone)
 
@@ -38,13 +38,13 @@ The plugin's readme.txt also describes installing from the WordPress.org plugin 
    git clone https://github.com/courtneyr-dev/post-kinds-for-indieweb.git
    ```
 
-2. Activate **Post Kinds for IndieWeb** on the Plugins screen.
+2. Activate **Post Kinds for IndieWeb in Block Themes** on the Plugins screen.
 
 The built block assets are committed in `build/`, and the plugin uses its own PHP autoloader, so a plain clone activates and runs without running Composer or npm. The readme's GitHub instructions mention `composer install` and `npm run build` — those are needed for development or if you change the source in `src/`, not for running the plugin.
 
 ## Activate the plugin
 
-On the **Plugins** screen, click **Activate** under Post Kinds for IndieWeb. On activation the plugin:
+On the **Plugins** screen, click **Activate** under Post Kinds for IndieWeb in Block Themes. On activation the plugin:
 
 - Registers the `kind` taxonomy and creates its 24 default kind terms.
 - Adds a top-level **Reactions** menu (heart icon) to wp-admin.
@@ -54,7 +54,7 @@ On the **Plugins** screen, click **Activate** under Post Kinds for IndieWeb. On 
 
 None of these are required, but the plugin is built to work alongside them:
 
-- **[IndieBlocks](https://wordpress.org/plugins/indieblocks/)** — recommended. The plugin shows an admin notice until IndieBlocks is active, because IndieBlocks provides companion blocks for bookmarks, likes, replies, and reposts. Post Kinds for IndieWeb detects IndieBlocks; it doesn't replace it.
+- **[IndieBlocks](https://wordpress.org/plugins/indieblocks/)** — recommended. The plugin shows an admin notice until IndieBlocks is active, because IndieBlocks provides companion blocks for bookmarks, likes, replies, and reposts. Post Kinds for IndieWeb in Block Themes detects IndieBlocks; it doesn't replace it.
 - **[Micropub](https://wordpress.org/plugins/micropub/)** — required only if you want to publish from Micropub apps (mobile composers and similar). Without it, Micropub posting doesn't work at all; with it, this plugin converts incoming Micropub posts into card blocks and assigns the right kind. Micropub apps also need IndieAuth for sign-in (for example the [IndieAuth plugin](https://wordpress.org/plugins/indieauth/)).
 - **[Webmention](https://wordpress.org/plugins/webmention/)** — detected and shown on the Integrations settings tab for cross-site conversations. This plugin does not send or receive webmentions itself.
 - **[Syndication Links](https://wordpress.org/plugins/syndication-links/)** — the "Enable Syndication" setting notes it requires this plugin.
@@ -66,7 +66,7 @@ None of these are required, but the plugin is built to work alongside them:
 Any one of these confirms a successful install:
 
 1. A **Reactions** menu (heart icon) appears in the wp-admin sidebar, with Settings, API Connections, Import, Webhooks, Quick Post, Syndication, and Check-ins submenus.
-2. Open a new post in the block editor and open the block inserter — a **Post Kinds for IndieWeb** category lists the card blocks. (See the block inserter in [Screenshots](/post-kinds-for-indieweb/screenshots/).)
+2. Open a new post in the block editor and open the block inserter — a **Post Kinds for IndieWeb in Block Themes** category lists the card blocks. (See the block inserter in [Screenshots](/post-kinds-for-indieweb/screenshots/).)
 3. The post editor sidebar shows a **Post Kind** panel with a grid of kinds.
 4. **Posts → Kinds** lists the 24 kind terms (Note, Article, Listen, Watch, and so on).
 

@@ -1,5 +1,5 @@
 /**
- * Post Kinds for IndieWeb - Kind Selector Sidebar Panel
+ * Post Kinds for IndieWeb in Block Themes - Kind Selector Sidebar Panel
  *
  * Main sidebar panel component for selecting post kinds and managing
  * kind-specific metadata in the block editor.
@@ -658,7 +658,10 @@ export default function KindSelectorPanel() {
 	return (
 		<PluginDocumentSettingPanel
 			name="post-kinds-indieweb-kind-selector"
-			title={ __( 'Post Kind', 'post-kinds-for-indieweb' ) }
+			title={ __(
+				'Post Kind',
+				'post-kinds-for-indieweb-in-block-themes'
+			) }
 			className="post-kinds-indieweb-kind-panel"
 			icon={ <KindIcon /> }
 		>

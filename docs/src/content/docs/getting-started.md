@@ -19,7 +19,7 @@ Most kinds have a matching **card block** (Listen Card, Watch Card, Read Card, C
 ## Your first post: log something you listened to
 
 1. Go to **Posts → Add New Post**.
-2. Open the block inserter and find the **Post Kinds for IndieWeb** category, or type `/listen`. Insert a **Listen Card**. (See the block inserter in [Screenshots](/post-kinds-for-indieweb/screenshots/).)
+2. Open the block inserter and find the **Post Kinds for IndieWeb in Block Themes** category, or type `/listen`. Insert a **Listen Card**. (See the block inserter in [Screenshots](/post-kinds-for-indieweb/screenshots/).)
 3. Use the card's search field to look up a track (MusicBrainz works without any API key), or fill in track, artist, and album manually. Add a rating if you like.
 
    ![Listen Card block in the editor showing a song with album art and rating](../../assets/screenshots/editor-listen-card.png)

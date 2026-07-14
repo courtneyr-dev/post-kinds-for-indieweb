@@ -7,7 +7,7 @@
   "category": "post-kinds-indieweb",
   "icon": "store",
   "description": "Display venue information with map and recent check-ins.",
-  "textdomain": "post-kinds-for-indieweb",
+  "textdomain": "post-kinds-for-indieweb-in-block-themes",
   "keywords": [
     "venue",
     "location",

@@ -88,16 +88,16 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'checkin' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'Check-in', 'post-kinds-for-indieweb' ); ?></p>
+		<p class="pk-kindlabel"><?php esc_html_e( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 
 		<?php if ( $pkiw_is_private ) : ?>
 			<p class="pk-note">
 				<span class="dashicons dashicons-lock" aria-hidden="true"></span>
-				<?php esc_html_e( 'Location saved privately', 'post-kinds-for-indieweb' ); ?>
+				<?php esc_html_e( 'Location saved privately', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 			</p>
 
 			<?php if ( $pkiw_photo ) : ?>
-				<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_photo ); ?>" alt="<?php echo esc_attr( $pkiw_photo_alt ? $pkiw_photo_alt : __( 'Photo', 'post-kinds-for-indieweb' ) ); ?>" loading="lazy" /></div>
+				<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_photo ); ?>" alt="<?php echo esc_attr( $pkiw_photo_alt ? $pkiw_photo_alt : __( 'Photo', 'post-kinds-for-indieweb-in-block-themes' ) ); ?>" loading="lazy" /></div>
 			<?php endif; ?>
 
 			<?php if ( $pkiw_note ) : ?>
@@ -166,7 +166,7 @@ ob_start();
 			<?php if ( $pkiw_show_map_emb ) : ?>
 				<div class="pk-embed pk-embed--map">
 					<iframe
-						title="<?php echo esc_attr( sprintf( /* translators: %s: venue name */ __( 'Map of %s', 'post-kinds-for-indieweb' ), $pkiw_venue_name ? $pkiw_venue_name : __( 'location', 'post-kinds-for-indieweb' ) ) ); ?>"
+						title="<?php echo esc_attr( sprintf( /* translators: %s: venue name */ __( 'Map of %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_venue_name ? $pkiw_venue_name : __( 'location', 'post-kinds-for-indieweb-in-block-themes' ) ) ); ?>"
 						width="100%"
 						height="200"
 						frameborder="0"
@@ -183,18 +183,18 @@ ob_start();
 							target="_blank"
 							rel="noopener noreferrer"
 						>
-							<?php esc_html_e( 'View larger map', 'post-kinds-for-indieweb' ); ?>
+							<?php esc_html_e( 'View larger map', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 						</a>
 					<?php else : ?>
 						<p class="pk-map-note">
-							<?php esc_html_e( 'Showing approximate area', 'post-kinds-for-indieweb' ); ?>
+							<?php esc_html_e( 'Showing approximate area', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 						</p>
 					<?php endif; ?>
 				</div>
 			<?php endif; ?>
 
 				<?php if ( $pkiw_photo ) : ?>
-				<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_photo ); ?>" alt="<?php echo esc_attr( $pkiw_photo_alt ? $pkiw_photo_alt : sprintf( /* translators: %s: venue name */ __( 'Photo at %s', 'post-kinds-for-indieweb' ), $pkiw_venue_name ) ); ?>" loading="lazy" /></div>
+				<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_photo ); ?>" alt="<?php echo esc_attr( $pkiw_photo_alt ? $pkiw_photo_alt : sprintf( /* translators: %s: venue name */ __( 'Photo at %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_venue_name ) ); ?>" loading="lazy" /></div>
 			<?php endif; ?>
 
 			<?php if ( $pkiw_note ) : ?>

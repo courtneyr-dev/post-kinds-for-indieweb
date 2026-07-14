@@ -2,8 +2,8 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Post Kinds for IndieWeb and Block Themes 1.0.0\n"
-"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/Post Kinds for IndieWeb\n"
+"Project-Id-Version: Post Kinds for IndieWeb in Block Themes and Block Themes 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/Post Kinds for IndieWeb in Block Themes\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
@@ -12,11 +12,11 @@ msgstr ""
 "POT-Creation-Date: 2026-03-02T19:06:04+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
-"X-Domain: post-kinds-for-indieweb\n"
+"X-Domain: post-kinds-for-indieweb-in-block-themes\n"
 
 #. Plugin Name of the plugin
 #: post-kinds-for-indieweb.php
-msgid "Post Kinds for IndieWeb and Block Themes"
+msgid "Post Kinds for IndieWeb in Block Themes and Block Themes"
 msgstr ""
 
 #. Plugin URI of the plugin
@@ -414,7 +414,7 @@ msgstr ""
 #: includes/class-block-bindings.php:321
 #: includes/class-plugin.php:656
 #: includes/class-plugin.php:835
-msgid "Post Kinds for IndieWeb"
+msgid "Post Kinds for IndieWeb in Block Themes"
 msgstr ""
 
 #: includes/admin/class-admin.php:381
@@ -3445,7 +3445,7 @@ msgid "Kind Sync:"
 msgstr ""
 
 #: includes/admin/class-settings-page.php:1177
-msgid "Works with Post Kinds for IndieWeb's format-to-kind sync feature."
+msgid "Works with Post Kinds for IndieWeb in Block Themes's format-to-kind sync feature."
 msgstr ""
 
 #. translators: %s: link to settings
@@ -5043,12 +5043,12 @@ msgstr ""
 
 #. translators: %s: Post Kinds plugin name
 #: includes/class-plugin.php:1004
-msgid "Post Kinds for IndieWeb cannot run while %s is active. These plugins provide the same functionality - Post Kinds for IndieWeb is the block editor successor to Post Kinds. Please deactivate one of them."
+msgid "Post Kinds for IndieWeb in Block Themes cannot run while %s is active. These plugins provide the same functionality - Post Kinds for IndieWeb in Block Themes is the block editor successor to Post Kinds. Please deactivate one of them."
 msgstr ""
 
 #. translators: %s: IndieBlocks plugin link
 #: includes/class-plugin.php:1055
-msgid "Post Kinds for IndieWeb works best with %s installed. While not required, IndieBlocks provides essential blocks for bookmarks, likes, replies, and more."
+msgid "Post Kinds for IndieWeb in Block Themes works best with %s installed. While not required, IndieBlocks provides essential blocks for bookmarks, likes, replies, and more."
 msgstr ""
 
 #: includes/class-post-type.php:70
@@ -5779,17 +5779,17 @@ msgstr ""
 
 #. translators: 1: Required PHP version, 2: Current PHP version
 #: post-kinds-for-indieweb.php:120
-msgid "Post Kinds for IndieWeb requires PHP %1$s or higher. You are running PHP %2$s. Please upgrade PHP to activate this plugin."
+msgid "Post Kinds for IndieWeb in Block Themes requires PHP %1$s or higher. You are running PHP %2$s. Please upgrade PHP to activate this plugin."
 msgstr ""
 
 #. translators: 1: Required WordPress version, 2: Current WordPress version
 #: post-kinds-for-indieweb.php:144
-msgid "Post Kinds for IndieWeb requires WordPress %1$s or higher. You are running WordPress %2$s. Please upgrade WordPress to activate this plugin."
+msgid "Post Kinds for IndieWeb in Block Themes requires WordPress %1$s or higher. You are running WordPress %2$s. Please upgrade WordPress to activate this plugin."
 msgstr ""
 
 #. translators: %s: Required PHP version
 #: post-kinds-for-indieweb.php:210
-msgid "Post Kinds for IndieWeb requires PHP %s or higher."
+msgid "Post Kinds for IndieWeb in Block Themes requires PHP %s or higher."
 msgstr ""
 
 #: post-kinds-for-indieweb.php:213
@@ -5799,7 +5799,7 @@ msgstr ""
 
 #. translators: %s: Required WordPress version
 #: post-kinds-for-indieweb.php:224
-msgid "Post Kinds for IndieWeb requires WordPress %s or higher."
+msgid "Post Kinds for IndieWeb in Block Themes requires WordPress %s or higher."
 msgstr ""
 
 #: build/blocks.js:1

@@ -21,16 +21,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 use function PKIW\get_kind_icon_svg;
 
 $pkiw_drink_labels = [
-	'coffee'   => __( 'Coffee', 'post-kinds-for-indieweb' ),
-	'tea'      => __( 'Tea', 'post-kinds-for-indieweb' ),
-	'beer'     => __( 'Beer', 'post-kinds-for-indieweb' ),
-	'wine'     => __( 'Wine', 'post-kinds-for-indieweb' ),
-	'cocktail' => __( 'Cocktail', 'post-kinds-for-indieweb' ),
-	'juice'    => __( 'Juice', 'post-kinds-for-indieweb' ),
-	'soda'     => __( 'Soda', 'post-kinds-for-indieweb' ),
-	'smoothie' => __( 'Smoothie', 'post-kinds-for-indieweb' ),
-	'water'    => __( 'Water', 'post-kinds-for-indieweb' ),
-	'other'    => __( 'Drink', 'post-kinds-for-indieweb' ),
+	'coffee'   => __( 'Coffee', 'post-kinds-for-indieweb-in-block-themes' ),
+	'tea'      => __( 'Tea', 'post-kinds-for-indieweb-in-block-themes' ),
+	'beer'     => __( 'Beer', 'post-kinds-for-indieweb-in-block-themes' ),
+	'wine'     => __( 'Wine', 'post-kinds-for-indieweb-in-block-themes' ),
+	'cocktail' => __( 'Cocktail', 'post-kinds-for-indieweb-in-block-themes' ),
+	'juice'    => __( 'Juice', 'post-kinds-for-indieweb-in-block-themes' ),
+	'soda'     => __( 'Soda', 'post-kinds-for-indieweb-in-block-themes' ),
+	'smoothie' => __( 'Smoothie', 'post-kinds-for-indieweb-in-block-themes' ),
+	'water'    => __( 'Water', 'post-kinds-for-indieweb-in-block-themes' ),
+	'other'    => __( 'Drink', 'post-kinds-for-indieweb-in-block-themes' ),
 ];
 
 $pkiw_name              = $attributes['name'] ?? '';
@@ -73,7 +73,7 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'drink' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'Drank', 'post-kinds-for-indieweb' ); ?></p>
+		<p class="pk-kindlabel"><?php esc_html_e( 'Drank', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 
 		<?php if ( $pkiw_name ) : ?>
 			<h2 class="pk-title p-name"><?php echo esc_html( $pkiw_name ); ?></h2>
@@ -121,7 +121,7 @@ ob_start();
 		<?php endif; ?>
 
 		<?php if ( $pkiw_rating > 0 ) : ?>
-			<div class="pk-stars p-rating" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb' ), $pkiw_rating ) ); ?>">
+			<div class="pk-stars p-rating" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">
 				<?php for ( $pkiw_i = 1; $pkiw_i <= 5; $pkiw_i++ ) : ?>
 					<svg class="<?php echo $pkiw_i <= $pkiw_rating ? '' : 'off'; ?>" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17l-6.9 3.5 1.6-6.8L1.4 9.1l7-.6z"/></svg>
 				<?php endfor; ?>

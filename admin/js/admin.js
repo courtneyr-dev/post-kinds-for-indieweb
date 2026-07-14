@@ -1,5 +1,5 @@
 /**
- * Post Kinds for IndieWeb - Admin JavaScript
+ * Post Kinds for IndieWeb in Block Themes - Admin JavaScript
  *
  * @param {jQuery} $ jQuery instance.
  * @package

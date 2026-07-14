@@ -74,7 +74,10 @@ export default function Edit( { attributes, setAttributes } ) {
 			imageAlt:
 				media.alt ||
 				title ||
-				__( 'Reposted content image', 'post-kinds-for-indieweb' ),
+				__(
+					'Reposted content image',
+					'post-kinds-for-indieweb-in-block-themes'
+				),
 		} );
 	};
 
@@ -87,22 +90,31 @@ export default function Edit( { attributes, setAttributes } ) {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Repost Details', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Repost Details',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ true }
 				>
 					<TextControl
-						label={ __( 'Title', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Title',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ title || '' }
 						onChange={ ( value ) =>
 							setAttributes( { title: value } )
 						}
 						placeholder={ __(
 							'What did you repost?',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 					<TextControl
-						label={ __( 'URL', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'URL',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ url || '' }
 						onChange={ ( value ) =>
 							setAttributes( { url: value } )
@@ -110,34 +122,43 @@ export default function Edit( { attributes, setAttributes } ) {
 						type="url"
 						placeholder={ __(
 							'https://…',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 					<TextControl
-						label={ __( 'Author', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Author',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ author || '' }
 						onChange={ ( value ) =>
 							setAttributes( { author: value } )
 						}
 						placeholder={ __(
 							'Original author',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Description', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Description',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<TextControl
-						label={ __( 'Description', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Description',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ description || '' }
 						onChange={ ( value ) =>
 							setAttributes( { description: value } )
 						}
 						placeholder={ __(
 							'Why did you repost this?',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 				</PanelBody>
@@ -171,7 +192,7 @@ export default function Edit( { attributes, setAttributes } ) {
 													}
 													aria-label={ __(
 														'Remove image',
-														'post-kinds-for-indieweb'
+														'post-kinds-for-indieweb-in-block-themes'
 													) }
 												>
 													&times;
@@ -185,7 +206,7 @@ export default function Edit( { attributes, setAttributes } ) {
 												<span className="post-kinds-card__media-text">
 													{ __(
 														'Add Image',
-														'post-kinds-for-indieweb'
+														'post-kinds-for-indieweb-in-block-themes'
 													) }
 												</span>
 											</div>
@@ -199,7 +220,10 @@ export default function Edit( { attributes, setAttributes } ) {
 					<div className="post-kinds-card__content">
 						<span className="post-kinds-card__badge">
 							&#8635;{ ' ' }
-							{ __( 'Reposted', 'post-kinds-for-indieweb' ) }
+							{ __(
+								'Reposted',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }
 						</span>
 
 						<RichText
@@ -211,7 +235,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'What did you repost?',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -228,7 +252,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								}
 								placeholder={ __(
 									'https://example.com/…',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							/>
 						</div>
@@ -242,7 +266,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'By whom?',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -255,7 +279,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'Why did you repost this?',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 					</div>

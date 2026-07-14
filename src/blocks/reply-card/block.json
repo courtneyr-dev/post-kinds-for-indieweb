@@ -7,7 +7,7 @@
 	"category": "post-kinds-indieweb",
 	"description": "Show the post you are replying to, with title, URL, and optional context.",
 	"keywords": ["reply", "response", "comment", "conversation", "in reply to"],
-	"textdomain": "post-kinds-indieweb",
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
 	"attributes": {
 		"title": {
 			"type": "string"

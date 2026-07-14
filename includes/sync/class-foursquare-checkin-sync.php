@@ -295,7 +295,7 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 		if ( ! $this->is_connected() ) {
 			return new \WP_Error(
 				'not_connected',
-				__( 'Foursquare is not connected. Please authorize first.', 'post-kinds-for-indieweb' ),
+				__( 'Foursquare is not connected. Please authorize first.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 400 ]
 			);
 		}
@@ -326,7 +326,7 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 		return rest_ensure_response(
 			[
 				'success' => true,
-				'message' => __( 'Foursquare disconnected.', 'post-kinds-for-indieweb' ),
+				'message' => __( 'Foursquare disconnected.', 'post-kinds-for-indieweb-in-block-themes' ),
 			]
 		);
 	}
@@ -466,8 +466,8 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 			'post_content' => $external_checkin['shout'] ?? '',
 			'post_title'   => sprintf(
 				/* translators: %s: venue name */
-				__( 'Checked in at %s', 'post-kinds-for-indieweb' ),
-				$venue['name'] ?? __( 'Unknown venue', 'post-kinds-for-indieweb' )
+				__( 'Checked in at %s', 'post-kinds-for-indieweb-in-block-themes' ),
+				$venue['name'] ?? __( 'Unknown venue', 'post-kinds-for-indieweb-in-block-themes' )
 			),
 		];
 

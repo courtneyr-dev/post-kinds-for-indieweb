@@ -1,6 +1,6 @@
 ---
 title: FAQ
-description: "Short answers about Post Kinds for IndieWeb: WordPress.org availability, requirements, API keys, microformats, and how kinds relate to formats."
+description: "Short answers about Post Kinds for IndieWeb in Block Themes: WordPress.org availability, requirements, API keys, microformats, and how kinds relate to formats."
 ---
 
 Answers to the questions users actually ask, based on the plugin's behavior and its shipped FAQ.
@@ -19,7 +19,7 @@ No. Seventeen kinds have dedicated card blocks. Note, article, event, photo, vid
 
 ## Do I need IndieBlocks?
 
-No, but it's recommended, and the plugin shows a notice until it's active. IndieBlocks provides the core blocks for bookmarks, likes, replies, and reposts; Post Kinds for IndieWeb adds the media/activity kinds and lookup features alongside it.
+No, but it's recommended, and the plugin shows a notice until it's active. IndieBlocks provides the core blocks for bookmarks, likes, replies, and reposts; Post Kinds for IndieWeb in Block Themes adds the media/activity kinds and lookup features alongside it.
 
 ## Can I use this with the original Post Kinds plugin?
 
@@ -39,7 +39,7 @@ MusicBrainz (music) and Open Library (books). Everything else on the API Connect
 
 ## How do I post from my phone?
 
-Install the separate [Micropub plugin](https://wordpress.org/plugins/micropub/) plus IndieAuth, then use any Micropub app. Post Kinds for IndieWeb converts incoming posts into the right card block and kind automatically.
+Install the separate [Micropub plugin](https://wordpress.org/plugins/micropub/) plus IndieAuth, then use any Micropub app. Post Kinds for IndieWeb in Block Themes converts incoming posts into the right card block and kind automatically.
 
 ## Does the plugin send my posts to other services?
 

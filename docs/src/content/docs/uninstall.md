@@ -1,14 +1,14 @@
 ---
 title: Uninstall
-description: "How to deactivate and delete Post Kinds for IndieWeb, what its uninstaller removes, and what stays: your posts, kind terms, and post meta."
+description: "How to deactivate and delete Post Kinds for IndieWeb in Block Themes, what its uninstaller removes, and what stays: your posts, kind terms, and post meta."
 ---
 
-How to remove Post Kinds for IndieWeb, what the uninstaller cleans up, and what stays on your site. Your posts are never touched — everything you logged remains as standard WordPress posts.
+How to remove Post Kinds for IndieWeb in Block Themes, what the uninstaller cleans up, and what stays on your site. Your posts are never touched — everything you logged remains as standard WordPress posts.
 
 ## Deactivate the plugin
 
 1. In wp-admin, go to **Plugins → Installed Plugins**.
-2. Find **Post Kinds for IndieWeb** and select **Deactivate**.
+2. Find **Post Kinds for IndieWeb in Block Themes** and select **Deactivate**.
 
 Deactivation is reversible and deletes no data. The Reactions menu disappears, kind archives stop rendering their templates, and the card blocks show as unavailable in the editor until you reactivate.
 

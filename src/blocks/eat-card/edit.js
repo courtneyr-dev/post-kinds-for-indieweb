@@ -29,82 +29,85 @@ import { StarRating } from '../shared/components';
  */
 const CUISINE_TYPES = [
 	{
-		label: __( 'Select cuisine…', 'post-kinds-for-indieweb' ),
+		label: __(
+			'Select cuisine…',
+			'post-kinds-for-indieweb-in-block-themes'
+		),
 		value: '',
 		emoji: '🍽️',
 	},
 	{
-		label: __( 'American', 'post-kinds-for-indieweb' ),
+		label: __( 'American', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'american',
 		emoji: '🍔',
 	},
 	{
-		label: __( 'Chinese', 'post-kinds-for-indieweb' ),
+		label: __( 'Chinese', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'chinese',
 		emoji: '🥡',
 	},
 	{
-		label: __( 'French', 'post-kinds-for-indieweb' ),
+		label: __( 'French', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'french',
 		emoji: '🥐',
 	},
 	{
-		label: __( 'Indian', 'post-kinds-for-indieweb' ),
+		label: __( 'Indian', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'indian',
 		emoji: '🍛',
 	},
 	{
-		label: __( 'Italian', 'post-kinds-for-indieweb' ),
+		label: __( 'Italian', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'italian',
 		emoji: '🍝',
 	},
 	{
-		label: __( 'Japanese', 'post-kinds-for-indieweb' ),
+		label: __( 'Japanese', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'japanese',
 		emoji: '🍱',
 	},
 	{
-		label: __( 'Korean', 'post-kinds-for-indieweb' ),
+		label: __( 'Korean', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'korean',
 		emoji: '🍜',
 	},
 	{
-		label: __( 'Mexican', 'post-kinds-for-indieweb' ),
+		label: __( 'Mexican', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'mexican',
 		emoji: '🌮',
 	},
 	{
-		label: __( 'Thai', 'post-kinds-for-indieweb' ),
+		label: __( 'Thai', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'thai',
 		emoji: '🍲',
 	},
 	{
-		label: __( 'Vietnamese', 'post-kinds-for-indieweb' ),
+		label: __( 'Vietnamese', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'vietnamese',
 		emoji: '🍜',
 	},
 	{
-		label: __( 'Mediterranean', 'post-kinds-for-indieweb' ),
+		label: __( 'Mediterranean', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'mediterranean',
 		emoji: '🥙',
 	},
 	{
-		label: __( 'Seafood', 'post-kinds-for-indieweb' ),
+		label: __( 'Seafood', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'seafood',
 		emoji: '🦐',
 	},
 	{
-		label: __( 'Breakfast', 'post-kinds-for-indieweb' ),
+		label: __( 'Breakfast', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'breakfast',
 		emoji: '🥞',
 	},
 	{
-		label: __( 'Dessert', 'post-kinds-for-indieweb' ),
+		label: __( 'Dessert', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'dessert',
 		emoji: '🍰',
 	},
 	{
-		label: __( 'Other', 'post-kinds-for-indieweb' ),
+		label: __( 'Other', 'post-kinds-for-indieweb-in-block-themes' ),
 		value: 'other',
 		emoji: '🍽️',
 	},
@@ -230,7 +233,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			photoAlt:
 				media.alt ||
 				name ||
-				__( 'Food photo', 'post-kinds-for-indieweb' ),
+				__( 'Food photo', 'post-kinds-for-indieweb-in-block-themes' ),
 		} );
 	};
 
@@ -251,22 +254,31 @@ export default function Edit( { attributes, setAttributes } ) {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Meal Details', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Meal Details',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ true }
 				>
 					<TextControl
-						label={ __( 'Dish Name', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Dish Name',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ name || '' }
 						onChange={ ( value ) =>
 							setAttributes( { name: value } )
 						}
 						placeholder={ __(
 							'What did you eat?',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 					<SelectControl
-						label={ __( 'Cuisine', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Cuisine',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ cuisine || '' }
 						options={ cuisineOptions }
 						onChange={ ( value ) =>
@@ -274,7 +286,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<RangeControl
-						label={ __( 'Rating', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Rating',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ rating || 0 }
 						onChange={ ( value ) =>
 							setAttributes( { rating: value } )
@@ -285,13 +300,16 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Location', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Location',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ true }
 				>
 					<TextControl
 						label={ __(
 							'Restaurant/Venue Name',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ locationName || '' }
 						onChange={ ( value ) =>
@@ -299,18 +317,24 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 						placeholder={ __(
 							'Where did you eat?',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 					<TextControl
-						label={ __( 'Address', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Address',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ locationAddress || '' }
 						onChange={ ( value ) =>
 							setAttributes( { locationAddress: value } )
 						}
 					/>
 					<TextControl
-						label={ __( 'City', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'City',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ locationLocality || '' }
 						onChange={ ( value ) =>
 							setAttributes( { locationLocality: value } )
@@ -319,7 +343,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<TextControl
 						label={ __(
 							'State/Region',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ locationRegion || '' }
 						onChange={ ( value ) =>
@@ -327,14 +351,20 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<TextControl
-						label={ __( 'Country', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Country',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ locationCountry || '' }
 						onChange={ ( value ) =>
 							setAttributes( { locationCountry: value } )
 						}
 					/>
 					<TextControl
-						label={ __( 'Website URL', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Website URL',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ restaurantUrl || '' }
 						onChange={ ( value ) =>
 							setAttributes( { restaurantUrl: value } )
@@ -342,7 +372,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						type="url"
 					/>
 					<TextControl
-						label={ __( 'Latitude', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Latitude',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ geoLatitude || '' }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -353,7 +386,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						step="0.0000001"
 					/>
 					<TextControl
-						label={ __( 'Longitude', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Longitude',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ geoLongitude || '' }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -365,18 +401,24 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Notes', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Notes',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<TextControl
-						label={ __( 'Notes', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Notes',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ notes || '' }
 						onChange={ ( value ) =>
 							setAttributes( { notes: value } )
 						}
 						placeholder={ __(
 							'How was it?',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 				</PanelBody>
@@ -410,7 +452,7 @@ export default function Edit( { attributes, setAttributes } ) {
 													}
 													aria-label={ __(
 														'Remove photo',
-														'post-kinds-for-indieweb'
+														'post-kinds-for-indieweb-in-block-themes'
 													) }
 												>
 													×
@@ -424,7 +466,7 @@ export default function Edit( { attributes, setAttributes } ) {
 												<span className="post-kinds-card__media-text">
 													{ __(
 														'Add Photo (Optional)',
-														'post-kinds-for-indieweb'
+														'post-kinds-for-indieweb-in-block-themes'
 													) }
 												</span>
 											</div>
@@ -464,7 +506,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'What did you eat?',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -477,7 +519,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'Restaurant name…',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -508,7 +550,7 @@ export default function Edit( { attributes, setAttributes } ) {
 									}
 									placeholder={ __(
 										'City…',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 								/>
 							) }
@@ -532,7 +574,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'How was it?',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 					</div>

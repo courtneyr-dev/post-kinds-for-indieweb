@@ -1,6 +1,6 @@
 <?php
 /**
- * Post Kinds for IndieWeb
+ * Post Kinds for IndieWeb in Block Themes
  *
  * Modern block editor support for IndieWeb post kinds and microformats.
  * A successor to the classic IndieWeb Post Kinds plugin by David Shanske.
@@ -11,7 +11,7 @@
  * @license     GPL-2.0-or-later
  *
  * @wordpress-plugin
- * Plugin Name:       Post Kinds for IndieWeb
+ * Plugin Name:       Post Kinds for IndieWeb in Block Themes
  * Plugin URI:        https://github.com/courtneyr-dev/post-kinds-for-indieweb
  * Description:       Modern block editor support for IndieWeb post kinds and microformats. A successor to the classic IndieWeb Post Kinds plugin.
  * Version:           1.0.0
@@ -20,7 +20,7 @@
  * Requires PHP:      8.2
  * Author:            Courtney Robertson
  * Author URI:        https://courtneyr.dev
- * Text Domain:       post-kinds-for-indieweb
+ * Text Domain:       post-kinds-for-indieweb-in-block-themes
  * Domain Path:       /languages
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
@@ -119,8 +119,8 @@ function php_version_notice(): void {
 	$message = sprintf(
 		/* translators: 1: Required PHP version, 2: Current PHP version */
 		esc_html__(
-			'Post Kinds for IndieWeb requires PHP %1$s or higher. You are running PHP %2$s. Please upgrade PHP to activate this plugin.',
-			'post-kinds-for-indieweb'
+			'Post Kinds for IndieWeb in Block Themes requires PHP %1$s or higher. You are running PHP %2$s. Please upgrade PHP to activate this plugin.',
+			'post-kinds-for-indieweb-in-block-themes'
 		),
 		PKIW_MIN_PHP,
 		PHP_VERSION
@@ -143,8 +143,8 @@ function wp_version_notice(): void {
 	$message = sprintf(
 		/* translators: 1: Required WordPress version, 2: Current WordPress version */
 		esc_html__(
-			'Post Kinds for IndieWeb requires WordPress %1$s or higher. You are running WordPress %2$s. Please upgrade WordPress to activate this plugin.',
-			'post-kinds-for-indieweb'
+			'Post Kinds for IndieWeb in Block Themes requires WordPress %1$s or higher. You are running WordPress %2$s. Please upgrade WordPress to activate this plugin.',
+			'post-kinds-for-indieweb-in-block-themes'
 		),
 		PKIW_MIN_WP,
 		$wp_version
@@ -208,10 +208,10 @@ function activate(): void {
 		wp_die(
 			sprintf(
 				/* translators: %s: Required PHP version */
-				esc_html__( 'Post Kinds for IndieWeb requires PHP %s or higher.', 'post-kinds-for-indieweb' ),
+				esc_html__( 'Post Kinds for IndieWeb in Block Themes requires PHP %s or higher.', 'post-kinds-for-indieweb-in-block-themes' ),
 				esc_html( PKIW_MIN_PHP )
 			),
-			esc_html__( 'Plugin Activation Error', 'post-kinds-for-indieweb' ),
+			esc_html__( 'Plugin Activation Error', 'post-kinds-for-indieweb-in-block-themes' ),
 			[ 'back_link' => true ]
 		);
 	}
@@ -222,10 +222,10 @@ function activate(): void {
 		wp_die(
 			sprintf(
 				/* translators: %s: Required WordPress version */
-				esc_html__( 'Post Kinds for IndieWeb requires WordPress %s or higher.', 'post-kinds-for-indieweb' ),
+				esc_html__( 'Post Kinds for IndieWeb in Block Themes requires WordPress %s or higher.', 'post-kinds-for-indieweb-in-block-themes' ),
 				esc_html( PKIW_MIN_WP )
 			),
-			esc_html__( 'Plugin Activation Error', 'post-kinds-for-indieweb' ),
+			esc_html__( 'Plugin Activation Error', 'post-kinds-for-indieweb-in-block-themes' ),
 			[ 'back_link' => true ]
 		);
 	}

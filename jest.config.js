@@ -1,5 +1,5 @@
 /**
- * Jest configuration for Post Kinds for IndieWeb
+ * Jest configuration for Post Kinds for IndieWeb in Block Themes
  *
  * @see https://jestjs.io/docs/configuration
  */

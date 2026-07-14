@@ -126,7 +126,7 @@ class AdminTest extends WP_UnitTestCase {
 
 		$this->assertCount( 2, $links );
 		$this->assertStringContainsString( 'Settings', $links[0] );
-		$this->assertStringContainsString( 'post-kinds-for-indieweb', $links[0] );
+		$this->assertStringContainsString( 'post-kinds-for-indieweb-in-block-themes', $links[0] );
 	}
 
 	/**

@@ -86,7 +86,7 @@
 	<rule ref="WordPress.WP.I18n">
 		<properties>
 			<property name="text_domain" type="array">
-				<element value="post-kinds-for-indieweb"/>
+				<element value="post-kinds-for-indieweb-in-block-themes"/>
 			</property>
 		</properties>
 	</rule>
@@ -188,11 +188,7 @@
 			<property name="prefixes" type="array">
 				<element value="pkiw"/>
 				<element value="PKIW"/>
-				<element value="post_kinds_for_indieweb"/>
-				<element value="post_kinds_indieweb"/>
-				<element value="POST_KINDS_INDIEWEB"/>
-				<element value="POST_KINDS_FOR_INDIEWEB"/>
-				<element value="PostKindsForIndieWeb"/>
+				<element value="pkiw"/>
 			</property>
 		</properties>
 	</rule>

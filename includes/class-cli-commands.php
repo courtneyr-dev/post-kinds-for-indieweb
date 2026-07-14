@@ -26,7 +26,7 @@ use WP_CLI;
 use WP_CLI\Utils;
 
 /**
- * Manage Post Kinds for IndieWeb check-ins and venues.
+ * Manage Post Kinds for IndieWeb in Block Themes check-ins and venues.
  *
  * @since 1.2.0
  */

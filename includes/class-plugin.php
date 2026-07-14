@@ -292,7 +292,7 @@ final class Plugin {
 	/**
 	 * Detect if Post Kinds plugin is active (conflict).
 	 *
-	 * Post Kinds and Post Kinds for IndieWeb both use the 'kind' taxonomy
+	 * Post Kinds and Post Kinds for IndieWeb in Block Themes both use the 'kind' taxonomy
 	 * and provide similar functionality. Only one should be active.
 	 *
 	 * @return bool True if Post Kinds is active (conflict detected).
@@ -782,8 +782,8 @@ final class Plugin {
 				return array_merge(
 					[
 						[
-							'slug'  => 'post-kinds-for-indieweb',
-							'title' => __( 'Post Kinds for IndieWeb', 'post-kinds-for-indieweb' ),
+							'slug'  => 'post-kinds-for-indieweb-in-block-themes',
+							'title' => __( 'Post Kinds for IndieWeb in Block Themes', 'post-kinds-for-indieweb-in-block-themes' ),
 							'icon'  => 'heart',
 						],
 					],
@@ -834,7 +834,7 @@ final class Plugin {
 
 			wp_set_script_translations(
 				'post-kinds-indieweb-blocks',
-				'post-kinds-for-indieweb',
+				'post-kinds-for-indieweb-in-block-themes',
 				\PKIW_PATH . 'languages'
 			);
 		}
@@ -956,7 +956,7 @@ final class Plugin {
 
 		wp_set_script_translations(
 			'post-kinds-indieweb-editor',
-			'post-kinds-for-indieweb',
+			'post-kinds-for-indieweb-in-block-themes',
 			\PKIW_PATH . 'languages'
 		);
 
@@ -1010,10 +1010,10 @@ final class Plugin {
 	public function register_block_patterns(): void {
 		// Register pattern category.
 		register_block_pattern_category(
-			'post-kinds-for-indieweb',
+			'post-kinds-for-indieweb-in-block-themes',
 			[
-				'label'       => __( 'Post Kinds for IndieWeb', 'post-kinds-for-indieweb' ),
-				'description' => __( 'Patterns for IndieWeb post kinds and reactions.', 'post-kinds-for-indieweb' ),
+				'label'       => __( 'Post Kinds for IndieWeb in Block Themes', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Patterns for IndieWeb post kinds and reactions.', 'post-kinds-for-indieweb-in-block-themes' ),
 			]
 		);
 
@@ -1047,8 +1047,8 @@ final class Plugin {
 		return [
 			// Venue taxonomy template.
 			'taxonomy-venue' => [
-				'title'       => __( 'Venue Archive', 'post-kinds-for-indieweb' ),
-				'description' => __( 'Template for displaying venue taxonomy archives.', 'post-kinds-for-indieweb' ),
+				'title'       => __( 'Venue Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Template for displaying venue taxonomy archives.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 		];
@@ -1167,7 +1167,7 @@ final class Plugin {
 
 		$template                 = new \WP_Block_Template();
 		$template->id             = 'post-kinds-for-indieweb//' . $slug;
-		$template->theme          = 'post-kinds-for-indieweb';
+		$template->theme          = 'post-kinds-for-indieweb-in-block-themes';
 		$template->source         = 'plugin';
 		$template->slug           = $slug;
 		$template->type           = 'wp_template';
@@ -1196,8 +1196,8 @@ final class Plugin {
 		$message = sprintf(
 			/* translators: %s: Post Kinds plugin name */
 			esc_html__(
-				'Post Kinds for IndieWeb cannot run while %s is active. These plugins provide the same functionality - Post Kinds for IndieWeb is the block editor successor to Post Kinds. Please deactivate one of them.',
-				'post-kinds-for-indieweb'
+				'Post Kinds for IndieWeb in Block Themes cannot run while %s is active. These plugins provide the same functionality - Post Kinds for IndieWeb in Block Themes is the block editor successor to Post Kinds. Please deactivate one of them.',
+				'post-kinds-for-indieweb-in-block-themes'
 			),
 			'<strong>Post Kinds</strong>'
 		);
@@ -1247,8 +1247,8 @@ final class Plugin {
 		$message = sprintf(
 			/* translators: %s: IndieBlocks plugin link */
 			esc_html__(
-				'Post Kinds for IndieWeb works best with %s installed. While not required, IndieBlocks provides essential blocks for bookmarks, likes, replies, and more.',
-				'post-kinds-for-indieweb'
+				'Post Kinds for IndieWeb in Block Themes works best with %s installed. While not required, IndieBlocks provides essential blocks for bookmarks, likes, replies, and more.',
+				'post-kinds-for-indieweb-in-block-themes'
 			),
 			'<a href="https://wordpress.org/plugins/indieblocks/" target="_blank" rel="noopener noreferrer">IndieBlocks</a>'
 		);

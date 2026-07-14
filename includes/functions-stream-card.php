@@ -150,7 +150,7 @@ function render_generic_stream_card( \WP_Post $post ): string {
 	}
 
 	$out .= '<div class="pk-meta"><a class="pk-link" href="' . $permalink . '">'
-		. esc_html__( 'Read more', 'post-kinds-for-indieweb' ) . '</a></div>';
+		. esc_html__( 'Read more', 'post-kinds-for-indieweb-in-block-themes' ) . '</a></div>';
 	$out .= '</div></article>';
 
 	return $out;
@@ -169,7 +169,7 @@ function stream_card_kind_label( \WP_Post $post ): string {
 		return $terms[0]->name;
 	}
 
-	return __( 'Note', 'post-kinds-for-indieweb' );
+	return __( 'Note', 'post-kinds-for-indieweb-in-block-themes' );
 }
 
 /**

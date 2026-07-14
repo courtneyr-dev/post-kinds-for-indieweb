@@ -43,17 +43,38 @@ export default function Edit( { attributes, setAttributes } ) {
 
 	// Size options
 	const sizeOptions = [
-		{ label: __( 'Small', 'post-kinds-for-indieweb' ), value: 'small' },
-		{ label: __( 'Medium', 'post-kinds-for-indieweb' ), value: 'medium' },
-		{ label: __( 'Large', 'post-kinds-for-indieweb' ), value: 'large' },
+		{
+			label: __( 'Small', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'small',
+		},
+		{
+			label: __( 'Medium', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'medium',
+		},
+		{
+			label: __( 'Large', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'large',
+		},
 	];
 
 	// Style options
 	const styleOptions = [
-		{ label: __( 'Stars', 'post-kinds-for-indieweb' ), value: 'stars' },
-		{ label: __( 'Hearts', 'post-kinds-for-indieweb' ), value: 'hearts' },
-		{ label: __( 'Circles', 'post-kinds-for-indieweb' ), value: 'circles' },
-		{ label: __( 'Numeric', 'post-kinds-for-indieweb' ), value: 'numeric' },
+		{
+			label: __( 'Stars', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'stars',
+		},
+		{
+			label: __( 'Hearts', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'hearts',
+		},
+		{
+			label: __( 'Circles', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'circles',
+		},
+		{
+			label: __( 'Numeric', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'numeric',
+		},
 	];
 
 	/**
@@ -136,7 +157,10 @@ export default function Edit( { attributes, setAttributes } ) {
 		<div
 			className="rating-icons"
 			role="radiogroup"
-			aria-label={ label || __( 'Rating', 'post-kinds-for-indieweb' ) }
+			aria-label={
+				label ||
+				__( 'Rating', 'post-kinds-for-indieweb-in-block-themes' )
+			}
 		>
 			{ Array.from( { length: maxRating }, ( _, i ) => {
 				const value = i + 1;
@@ -156,8 +180,14 @@ export default function Edit( { attributes, setAttributes } ) {
 						aria-checked={ isFilled }
 						aria-label={ `${ value } ${
 							value === 1
-								? __( 'star', 'post-kinds-for-indieweb' )
-								: __( 'stars', 'post-kinds-for-indieweb' )
+								? __(
+										'star',
+										'post-kinds-for-indieweb-in-block-themes'
+								  )
+								: __(
+										'stars',
+										'post-kinds-for-indieweb-in-block-themes'
+								  )
 						}` }
 						tabIndex={ i === 0 ? 0 : -1 }
 					>
@@ -183,12 +213,15 @@ export default function Edit( { attributes, setAttributes } ) {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Rating Settings', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Rating Settings',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 				>
 					<RangeControl
 						label={ __(
 							'Current Rating',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ rating }
 						onChange={ ( value ) =>
@@ -201,7 +234,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<RangeControl
 						label={ __(
 							'Maximum Rating',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ maxRating }
 						onChange={ ( value ) =>
@@ -213,7 +246,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<ToggleControl
 						label={ __(
 							'Allow Half Stars',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						checked={ allowHalf }
 						onChange={ ( value ) =>
@@ -223,10 +256,16 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Display Options', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Display Options',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 				>
 					<SelectControl
-						label={ __( 'Style', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Style',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ style }
 						options={ styleOptions }
 						onChange={ ( value ) =>
@@ -234,7 +273,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<SelectControl
-						label={ __( 'Size', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Size',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ size }
 						options={ sizeOptions }
 						onChange={ ( value ) =>
@@ -242,7 +284,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<ToggleControl
-						label={ __( 'Show Label', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Show Label',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						checked={ showLabel }
 						onChange={ ( value ) =>
 							setAttributes( { showLabel: value } )
@@ -252,7 +297,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						<TextControl
 							label={ __(
 								'Label Text',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 							value={ label }
 							onChange={ ( value ) =>
@@ -261,7 +306,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						/>
 					) }
 					<ToggleControl
-						label={ __( 'Show Value', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Show Value',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						checked={ showValue }
 						onChange={ ( value ) =>
 							setAttributes( { showValue: value } )
@@ -270,22 +318,31 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Rated Item', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Rated Item',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<TextControl
-						label={ __( 'Item Name', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Item Name',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ itemName || '' }
 						onChange={ ( value ) =>
 							setAttributes( { itemName: value } )
 						}
 						help={ __(
 							'What are you rating?',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 					<TextControl
-						label={ __( 'Item URL', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Item URL',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ itemUrl || '' }
 						onChange={ ( value ) =>
 							setAttributes( { itemUrl: value } )

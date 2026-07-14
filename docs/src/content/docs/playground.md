@@ -1,9 +1,9 @@
 ---
 title: Playground preview
-description: "Try Post Kinds for IndieWeb on a throwaway WordPress site in your browser with WordPress Playground — no server or installation needed."
+description: "Try Post Kinds for IndieWeb in Block Themes on a throwaway WordPress site in your browser with WordPress Playground — no server or installation needed."
 ---
 
-How to try Post Kinds for IndieWeb in WordPress Playground — a throwaway WordPress site that runs in your browser or terminal, no server needed.
+How to try Post Kinds for IndieWeb in Block Themes in WordPress Playground — a throwaway WordPress site that runs in your browser or terminal, no server needed.
 
 ## What the preview shows
 

@@ -25,9 +25,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 register_block_pattern(
 	'post-kinds-indieweb/read-with-kindle-preview',
 	[
-		'title'       => __( 'Read post with Kindle preview', 'post-kinds-for-indieweb' ),
-		'description' => __( 'A Read card followed by a Kindle instant-preview embed that follows the book.', 'post-kinds-for-indieweb' ),
-		'categories'  => [ 'post-kinds-for-indieweb' ],
+		'title'       => __( 'Read post with Kindle preview', 'post-kinds-for-indieweb-in-block-themes' ),
+		'description' => __( 'A Read card followed by a Kindle instant-preview embed that follows the book.', 'post-kinds-for-indieweb-in-block-themes' ),
+		'categories'  => [ 'post-kinds-for-indieweb-in-block-themes' ],
 		'keywords'    => [ 'read', 'book', 'kindle', 'preview', 'indieweb' ],
 		'blockTypes'  => [ 'post-kinds-indieweb/read-card' ],
 		'postTypes'   => [ 'post' ],

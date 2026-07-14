@@ -1,4 +1,4 @@
-=== Post Kinds for IndieWeb ===
+=== Post Kinds for IndieWeb in Block Themes ===
 Contributors: courane01
 Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
@@ -12,7 +12,7 @@ Track what you listen to, watch, read, play, and experience — all from your Wo
 
 == Description ==
 
-Post Kinds for IndieWeb is a block-editor successor to David Shanske's [Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin.
+Post Kinds for IndieWeb in Block Themes is a block-editor successor to David Shanske's [Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin.
 
 A post kind is a label that describes what a post *is* — a note, a check-in, a song you listened to, a movie you watched — rather than what it's about. The idea comes from the [IndieWeb](https://indieweb.org/) movement: publish your activity on your own site instead of (or in addition to) social networks and tracking apps.
 
@@ -70,7 +70,7 @@ Each kind gets its own archive page (for example `/kind/listen/`), and the kind 
 = From your WordPress admin =
 
 1. Go to **Plugins > Add New**
-2. Search for **Post Kinds for IndieWeb**
+2. Search for **Post Kinds for IndieWeb in Block Themes**
 3. Click **Install Now**, then **Activate**
 
 = From GitHub =

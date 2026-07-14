@@ -89,7 +89,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 			<div class="venue-detail__map" id="<?php echo esc_attr( $pkiw_map_id ); ?>" data-markers="<?php echo esc_attr( wp_json_encode( $pkiw_map_data ) ); ?>">
 				<noscript>
 					<p class="venue-detail__map-fallback">
-						<?php esc_html_e( 'Map requires JavaScript to display.', 'post-kinds-for-indieweb' ); ?>
+						<?php esc_html_e( 'Map requires JavaScript to display.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 					</p>
 				</noscript>
 			</div>
@@ -151,7 +151,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 	<?php if ( $pkiw_show_checkins && $pkiw_checkins && $pkiw_checkins->have_posts() ) : ?>
 		<div class="venue-detail__checkins">
 			<h3 class="venue-detail__checkins-title">
-				<?php esc_html_e( 'Recent Check-ins', 'post-kinds-for-indieweb' ); ?>
+				<?php esc_html_e( 'Recent Check-ins', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 			</h3>
 
 			<div class="venue-detail__checkins-list h-feed">
@@ -175,7 +175,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 						<?php
 						printf(
 							/* translators: %d: total number of check-ins */
-							esc_html__( 'View all %d check-ins →', 'post-kinds-for-indieweb' ),
+							esc_html__( 'View all %d check-ins →', 'post-kinds-for-indieweb-in-block-themes' ),
 							absint( $pkiw_checkins->found_posts )
 						);
 						?>

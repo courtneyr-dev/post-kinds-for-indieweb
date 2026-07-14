@@ -75,49 +75,49 @@ class API_Settings {
 			// Note: MusicBrainz and ListenBrainz removed - complicated setup and credential saving issues.
 			'lastfm'       => [
 				'name'        => 'Last.fm',
-				'description' => __( 'Scrobble service and music database. Requires API account and user authorization for scrobbling.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Scrobble service and music database. Requires API account and user authorization for scrobbling.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'    => 'music',
 				'docs_url'    => 'https://www.last.fm/api',
 				'signup_url'  => 'https://www.last.fm/api/account/create',
 				'auth_type'   => 'lastfm_oauth',
 				'fields'      => [
 					'api_key'    => [
-						'label'    => __( 'API Key', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'API Key', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'text',
 						'required' => true,
 					],
 					'api_secret' => [
-						'label'    => __( 'Shared Secret', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'Shared Secret', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'password',
 						'required' => true,
 					],
 					'username'   => [
-						'label'    => __( 'Username', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'Username', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'text',
 						'required' => false,
-						'help'     => __( 'For importing scrobbles. Will be set automatically after authorization.', 'post-kinds-for-indieweb' ),
+						'help'     => __( 'For importing scrobbles. Will be set automatically after authorization.', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			],
 			'tmdb'         => [
 				'name'        => 'TMDB',
-				'description' => __( 'The Movie Database. Comprehensive movie and TV metadata.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'The Movie Database. Comprehensive movie and TV metadata.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'    => 'video',
 				'docs_url'    => 'https://developer.themoviedb.org/',
 				'signup_url'  => 'https://www.themoviedb.org/settings/api',
 				'auth_type'   => 'bearer',
 				'fields'      => [
 					'access_token' => [
-						'label'    => __( 'API Read Access Token', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'API Read Access Token', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'password',
 						'required' => true,
-						'help'     => __( 'Use the "API Read Access Token" (v4 auth), not the API Key.', 'post-kinds-for-indieweb' ),
+						'help'     => __( 'Use the "API Read Access Token" (v4 auth), not the API Key.', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			],
 			'trakt'        => [
 				'name'        => 'Trakt',
-				'description' => __( 'Watch history tracking. Requires OAuth authentication.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Watch history tracking. Requires OAuth authentication.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'    => 'video',
 				'docs_url'    => 'https://trakt.docs.apiary.io/',
 				'signup_url'  => 'https://trakt.tv/oauth/applications',
@@ -125,17 +125,17 @@ class API_Settings {
 				'oauth_url'   => 'https://trakt.tv/oauth/authorize',
 				'fields'      => [
 					'client_id'     => [
-						'label'    => __( 'Client ID', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'Client ID', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'text',
 						'required' => true,
 					],
 					'client_secret' => [
-						'label'    => __( 'Client Secret', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'Client Secret', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'password',
 						'required' => true,
 					],
 					'username'      => [
-						'label'    => __( 'Trakt Username', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'Trakt Username', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'text',
 						'required' => false,
 					],
@@ -143,14 +143,14 @@ class API_Settings {
 			],
 			'simkl'        => [
 				'name'        => 'Simkl',
-				'description' => __( 'Watch tracking for movies, TV, and anime.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Watch tracking for movies, TV, and anime.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'    => 'video',
 				'docs_url'    => 'https://simkl.docs.apiary.io/',
 				'signup_url'  => 'https://simkl.com/settings/developer/',
 				'auth_type'   => 'oauth',
 				'fields'      => [
 					'client_id' => [
-						'label'    => __( 'Client ID', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'Client ID', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'text',
 						'required' => true,
 					],
@@ -158,23 +158,23 @@ class API_Settings {
 			],
 			'tvmaze'       => [
 				'name'        => 'TVmaze',
-				'description' => __( 'TV show database. Works without API key, but premium key gives higher rate limits.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'TV show database. Works without API key, but premium key gives higher rate limits.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'    => 'video',
 				'docs_url'    => 'https://www.tvmaze.com/api',
 				'signup_url'  => 'https://www.tvmaze.com/api#premium',
 				'auth_type'   => 'api_key',
 				'fields'      => [
 					'api_key' => [
-						'label'    => __( 'API Key (Optional)', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'API Key (Optional)', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'password',
 						'required' => false,
-						'help'     => __( 'Premium API key for higher rate limits. Free tier works without a key.', 'post-kinds-for-indieweb' ),
+						'help'     => __( 'Premium API key for higher rate limits. Free tier works without a key.', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			],
 			'openlibrary'  => [
 				'name'        => 'Open Library',
-				'description' => __( 'Book metadata from Internet Archive. Free, no API key required.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Book metadata from Internet Archive. Free, no API key required.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'    => 'books',
 				'docs_url'    => 'https://openlibrary.org/developers/api',
 				'auth_type'   => 'none',
@@ -182,19 +182,19 @@ class API_Settings {
 			],
 			'hardcover'    => [
 				'name'        => 'Hardcover',
-				'description' => __( 'Book tracking service. Get your token from your settings.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Book tracking service. Get your token from your settings.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'    => 'books',
 				'docs_url'    => 'https://hardcover.app/docs',
 				'signup_url'  => 'https://hardcover.app/account/api',
 				'auth_type'   => 'bearer',
 				'fields'      => [
 					'api_token' => [
-						'label'    => __( 'API Token', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'API Token', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'password',
 						'required' => true,
 					],
 					'username'  => [
-						'label'    => __( 'Username', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'Username', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'text',
 						'required' => false,
 					],
@@ -202,24 +202,24 @@ class API_Settings {
 			],
 			'google_books' => [
 				'name'        => 'Google Books',
-				'description' => __( 'Book metadata fallback. Optional API key for higher rate limits.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Book metadata fallback. Optional API key for higher rate limits.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'    => 'books',
 				'docs_url'    => 'https://developers.google.com/books',
 				'signup_url'  => 'https://console.cloud.google.com/apis/library/books.googleapis.com',
 				'auth_type'   => 'api_key',
 				'fields'      => [
 					'api_key' => [
-						'label'    => __( 'API Key', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'API Key', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'text',
 						'required' => false,
-						'help'     => __( 'Optional. Works without API key but with lower rate limits.', 'post-kinds-for-indieweb' ),
+						'help'     => __( 'Optional. Works without API key but with lower rate limits.', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			],
 			// Note: Podcast Index removed - API signup requires app/business email, not personal accounts.
 			'foursquare'   => [
 				'name'        => 'Foursquare',
-				'description' => __( 'Venue search and bidirectional checkin sync. API key for venue lookup, OAuth for syncing checkins.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Venue search and bidirectional checkin sync. API key for venue lookup, OAuth for syncing checkins.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'    => 'location',
 				'docs_url'    => 'https://location.foursquare.com/developer/',
 				'signup_url'  => 'https://foursquare.com/developers/apps',
@@ -227,19 +227,19 @@ class API_Settings {
 				'oauth_url'   => 'https://foursquare.com/oauth2/authorize',
 				'fields'      => [
 					'api_key'       => [
-						'label'    => __( 'API Key (Places API)', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'API Key (Places API)', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'password',
 						'required' => false,
-						'help'     => __( 'For venue search in the block editor. Get from Foursquare Developer Console.', 'post-kinds-for-indieweb' ),
+						'help'     => __( 'For venue search in the block editor. Get from Foursquare Developer Console.', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'client_id'     => [
-						'label'    => __( 'Client ID (OAuth)', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'Client ID (OAuth)', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'text',
 						'required' => false,
-						'help'     => __( 'For syncing checkins. Create an app at foursquare.com/developers/apps.', 'post-kinds-for-indieweb' ),
+						'help'     => __( 'For syncing checkins. Create an app at foursquare.com/developers/apps.', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'client_secret' => [
-						'label'    => __( 'Client Secret (OAuth)', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'Client Secret (OAuth)', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'password',
 						'required' => false,
 					],
@@ -247,65 +247,65 @@ class API_Settings {
 			],
 			'nominatim'    => [
 				'name'        => 'Nominatim',
-				'description' => __( 'OpenStreetMap geocoding. Free with usage policy.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'OpenStreetMap geocoding. Free with usage policy.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'    => 'location',
 				'docs_url'    => 'https://nominatim.org/release-docs/develop/api/Overview/',
 				'auth_type'   => 'email',
 				'fields'      => [
 					'email' => [
-						'label'    => __( 'Contact Email', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'Contact Email', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'email',
 						'required' => true,
-						'help'     => __( 'Required by Nominatim usage policy.', 'post-kinds-for-indieweb' ),
+						'help'     => __( 'Required by Nominatim usage policy.', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			],
 			'readwise'     => [
 				'name'        => 'Readwise',
-				'description' => __( 'Import highlights from books, articles, podcasts (Snipd), tweets, and more.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Import highlights from books, articles, podcasts (Snipd), tweets, and more.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'    => 'aggregators',
 				'docs_url'    => 'https://readwise.io/api_deets',
 				'signup_url'  => 'https://readwise.io/access_token',
 				'auth_type'   => 'token',
 				'fields'      => [
 					'access_token' => [
-						'label'    => __( 'Access Token', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'Access Token', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'password',
 						'required' => true,
-						'help'     => __( 'Get your token from readwise.io/access_token', 'post-kinds-for-indieweb' ),
+						'help'     => __( 'Get your token from readwise.io/access_token', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			],
 			'bgg'          => [
 				'name'        => 'BoardGameGeek',
-				'description' => __( 'Board game and video game database. As of January 2026, BGG requires API token registration for all API access.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Board game and video game database. As of January 2026, BGG requires API token registration for all API access.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'    => 'games',
 				'docs_url'    => 'https://boardgamegeek.com/wiki/page/BGG_XML_API2',
 				'signup_url'  => 'https://boardgamegeek.com/applications',
 				'auth_type'   => 'bearer',
-				'notice'      => __( 'Note: BGG application approval may take a week or more. While waiting, you can still use the Play Card block by manually pasting BGG URLs - the game ID will be extracted automatically.', 'post-kinds-for-indieweb' ),
+				'notice'      => __( 'Note: BGG application approval may take a week or more. While waiting, you can still use the Play Card block by manually pasting BGG URLs - the game ID will be extracted automatically.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'fields'      => [
 					'api_token' => [
-						'label'    => __( 'API Token', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'API Token', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'password',
 						'required' => true,
-						'help'     => __( 'Register your app, wait for approval, then create a token from your Applications page.', 'post-kinds-for-indieweb' ),
+						'help'     => __( 'Register your app, wait for approval, then create a token from your Applications page.', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			],
 			'rawg'         => [
 				'name'        => 'RAWG',
-				'description' => __( 'Video game database with 500,000+ games. Free tier: 20,000 requests/month.', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Video game database with 500,000+ games. Free tier: 20,000 requests/month.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'    => 'games',
 				'docs_url'    => 'https://rawg.io/apidocs',
 				'signup_url'  => 'https://rawg.io/apidocs',
 				'auth_type'   => 'api_key',
 				'fields'      => [
 					'api_key' => [
-						'label'    => __( 'API Key', 'post-kinds-for-indieweb' ),
+						'label'    => __( 'API Key', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'text',
 						'required' => true,
-						'help'     => __( 'Get your free API key from rawg.io/apidocs', 'post-kinds-for-indieweb' ),
+						'help'     => __( 'Get your free API key from rawg.io/apidocs', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			],
@@ -349,12 +349,12 @@ class API_Settings {
 
 		$credentials = get_option( 'pkiw_api_credentials', [] );
 		$categories  = [
-			'music'       => __( 'Music', 'post-kinds-for-indieweb' ),
-			'video'       => __( 'Movies & TV', 'post-kinds-for-indieweb' ),
-			'books'       => __( 'Books', 'post-kinds-for-indieweb' ),
-			'games'       => __( 'Games', 'post-kinds-for-indieweb' ),
-			'location'    => __( 'Location', 'post-kinds-for-indieweb' ),
-			'aggregators' => __( 'Aggregators', 'post-kinds-for-indieweb' ),
+			'music'       => __( 'Music', 'post-kinds-for-indieweb-in-block-themes' ),
+			'video'       => __( 'Movies & TV', 'post-kinds-for-indieweb-in-block-themes' ),
+			'books'       => __( 'Books', 'post-kinds-for-indieweb-in-block-themes' ),
+			'games'       => __( 'Games', 'post-kinds-for-indieweb-in-block-themes' ),
+			'location'    => __( 'Location', 'post-kinds-for-indieweb-in-block-themes' ),
+			'aggregators' => __( 'Aggregators', 'post-kinds-for-indieweb-in-block-themes' ),
 		];
 
 		?>
@@ -367,7 +367,7 @@ class API_Settings {
 						<?php
 						printf(
 							/* translators: %s: Error message */
-							esc_html__( 'OAuth authentication failed: %s', 'post-kinds-for-indieweb' ),
+							esc_html__( 'OAuth authentication failed: %s', 'post-kinds-for-indieweb-in-block-themes' ),
 							esc_html( $oauth_error )
 						);
 						?>
@@ -377,12 +377,12 @@ class API_Settings {
 
 			<?php if ( $oauth_success ) : ?>
 				<div class="notice notice-success is-dismissible">
-					<p><?php esc_html_e( 'Successfully connected! You can now import your watch history.', 'post-kinds-for-indieweb' ); ?></p>
+					<p><?php esc_html_e( 'Successfully connected! You can now import your watch history.', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 				</div>
 			<?php endif; ?>
 
 			<p class="description">
-				<?php esc_html_e( 'Configure API connections for fetching media metadata and importing history.', 'post-kinds-for-indieweb' ); ?>
+				<?php esc_html_e( 'Configure API connections for fetching media metadata and importing history.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 			</p>
 
 			<form method="post" action="options.php">
@@ -427,11 +427,11 @@ class API_Settings {
 					<span class="api-status-badge <?php echo esc_attr( $status_class ); ?>">
 						<?php
 						if ( ! $is_enabled ) {
-							esc_html_e( 'Disabled', 'post-kinds-for-indieweb' );
+							esc_html_e( 'Disabled', 'post-kinds-for-indieweb-in-block-themes' );
 						} elseif ( $is_connected ) {
-							esc_html_e( 'Connected', 'post-kinds-for-indieweb' );
+							esc_html_e( 'Connected', 'post-kinds-for-indieweb-in-block-themes' );
 						} else {
-							esc_html_e( 'Not Connected', 'post-kinds-for-indieweb' );
+							esc_html_e( 'Not Connected', 'post-kinds-for-indieweb-in-block-themes' );
 						}
 						?>
 					</span>
@@ -464,7 +464,7 @@ class API_Settings {
 				<?php else : ?>
 					<p class="no-config-needed">
 						<span class="dashicons dashicons-yes"></span>
-						<?php esc_html_e( 'No configuration needed.', 'post-kinds-for-indieweb' ); ?>
+						<?php esc_html_e( 'No configuration needed.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 					</p>
 				<?php endif; ?>
 
@@ -482,20 +482,20 @@ class API_Settings {
 					<?php if ( $is_enabled && ! empty( $config['fields'] ) ) : ?>
 						<button type="button" class="button api-test-button" data-api="<?php echo esc_attr( $api_id ); ?>">
 							<span class="dashicons dashicons-update"></span>
-							<?php esc_html_e( 'Test Connection', 'post-kinds-for-indieweb' ); ?>
+							<?php esc_html_e( 'Test Connection', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 						</button>
 					<?php endif; ?>
 				</div>
 				<div class="api-links">
 					<?php if ( ! empty( $config['docs_url'] ) ) : ?>
 						<a href="<?php echo esc_url( $config['docs_url'] ); ?>" target="_blank" rel="noopener noreferrer">
-							<?php esc_html_e( 'Documentation', 'post-kinds-for-indieweb' ); ?>
+							<?php esc_html_e( 'Documentation', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 							<span class="dashicons dashicons-external"></span>
 						</a>
 					<?php endif; ?>
 					<?php if ( ! empty( $config['signup_url'] ) ) : ?>
 						<a href="<?php echo esc_url( $config['signup_url'] ); ?>" target="_blank" rel="noopener noreferrer">
-							<?php esc_html_e( 'Get API Key', 'post-kinds-for-indieweb' ); ?>
+							<?php esc_html_e( 'Get API Key', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 							<span class="dashicons dashicons-external"></span>
 						</a>
 					<?php endif; ?>
@@ -540,7 +540,7 @@ class API_Settings {
 								class="regular-text"
 								placeholder="<?php echo esc_attr( $field['placeholder'] ?? '' ); ?>"
 								autocomplete="new-password">
-						<button type="button" class="button toggle-password" aria-label="<?php esc_attr_e( 'Toggle password visibility', 'post-kinds-for-indieweb' ); ?>">
+						<button type="button" class="button toggle-password" aria-label="<?php esc_attr_e( 'Toggle password visibility', 'post-kinds-for-indieweb-in-block-themes' ); ?>">
 							<span class="dashicons dashicons-visibility"></span>
 						</button>
 					</div>
@@ -582,19 +582,19 @@ class API_Settings {
 
 		?>
 		<div class="oauth-section">
-			<h4><?php esc_html_e( 'OAuth Connection', 'post-kinds-for-indieweb' ); ?></h4>
+			<h4><?php esc_html_e( 'OAuth Connection', 'post-kinds-for-indieweb-in-block-themes' ); ?></h4>
 
 			<?php if ( $has_tokens ) : ?>
 				<div class="oauth-connected">
 					<span class="dashicons dashicons-yes-alt" style="color: #46b450;"></span>
-					<?php esc_html_e( 'Connected', 'post-kinds-for-indieweb' ); ?>
+					<?php esc_html_e( 'Connected', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 
 					<?php if ( ! empty( $token_info['username'] ) ) : ?>
 						<span class="oauth-username">
 							<?php
 							printf(
 								/* translators: %s: Username */
-								esc_html__( 'as %s', 'post-kinds-for-indieweb' ),
+								esc_html__( 'as %s', 'post-kinds-for-indieweb-in-block-themes' ),
 								esc_html( $token_info['username'] )
 							);
 							?>
@@ -606,7 +606,7 @@ class API_Settings {
 							<?php
 							printf(
 								/* translators: %s: Expiration date */
-								esc_html__( '(expires %s)', 'post-kinds-for-indieweb' ),
+								esc_html__( '(expires %s)', 'post-kinds-for-indieweb-in-block-themes' ),
 								esc_html( human_time_diff( time(), $token_info['expires'] ) )
 							);
 							?>
@@ -616,10 +616,10 @@ class API_Settings {
 
 				<p>
 					<button type="button" class="button oauth-disconnect" data-api="<?php echo esc_attr( $api_id ); ?>">
-						<?php esc_html_e( 'Disconnect', 'post-kinds-for-indieweb' ); ?>
+						<?php esc_html_e( 'Disconnect', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 					</button>
 					<button type="button" class="button oauth-refresh" data-api="<?php echo esc_attr( $api_id ); ?>">
-						<?php esc_html_e( 'Refresh Token', 'post-kinds-for-indieweb' ); ?>
+						<?php esc_html_e( 'Refresh Token', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 					</button>
 				</p>
 			<?php else : ?>
@@ -628,14 +628,14 @@ class API_Settings {
 					$redirect_uri = $this->get_oauth_redirect_uri( $api_id );
 					?>
 					<p style="margin-bottom: 8px;">
-						<strong><?php esc_html_e( 'Redirect URI:', 'post-kinds-for-indieweb' ); ?></strong><br>
+						<strong><?php esc_html_e( 'Redirect URI:', 'post-kinds-for-indieweb-in-block-themes' ); ?></strong><br>
 						<code style="user-select: all; cursor: text; padding: 4px 8px; display: inline-block; margin-top: 4px; word-break: break-all;"><?php echo esc_url( $redirect_uri ); ?></code>
 					</p>
 					<p class="description" style="margin-bottom: 12px;">
 						<?php
 						printf(
 							/* translators: %s: Service name */
-							esc_html__( 'Copy this URL to your %s app settings as the Redirect URI.', 'post-kinds-for-indieweb' ),
+							esc_html__( 'Copy this URL to your %s app settings as the Redirect URI.', 'post-kinds-for-indieweb-in-block-themes' ),
 							esc_html( $config['name'] )
 						);
 						?>
@@ -644,7 +644,7 @@ class API_Settings {
 						<?php
 						printf(
 							/* translators: %s: Service name */
-							esc_html__( 'Connect to %s', 'post-kinds-for-indieweb' ),
+							esc_html__( 'Connect to %s', 'post-kinds-for-indieweb-in-block-themes' ),
 							esc_html( $config['name'] )
 						);
 						?>
@@ -680,19 +680,19 @@ class API_Settings {
 
 		?>
 		<div class="oauth-section lastfm-auth-section">
-			<h4><?php esc_html_e( 'Scrobbling Authorization', 'post-kinds-for-indieweb' ); ?></h4>
+			<h4><?php esc_html_e( 'Scrobbling Authorization', 'post-kinds-for-indieweb-in-block-themes' ); ?></h4>
 
 			<?php if ( $has_session ) : ?>
 				<div class="oauth-connected">
 					<span class="dashicons dashicons-yes-alt" style="color: #46b450;"></span>
-					<?php esc_html_e( 'Authorized', 'post-kinds-for-indieweb' ); ?>
+					<?php esc_html_e( 'Authorized', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 
 					<?php if ( $username ) : ?>
 						<span class="oauth-username">
 							<?php
 							printf(
 								/* translators: %s: Username */
-								esc_html__( 'as %s', 'post-kinds-for-indieweb' ),
+								esc_html__( 'as %s', 'post-kinds-for-indieweb-in-block-themes' ),
 								esc_html( $username )
 							);
 							?>
@@ -701,18 +701,18 @@ class API_Settings {
 				</div>
 
 				<p class="description">
-					<?php esc_html_e( 'You can scrobble listen posts to Last.fm.', 'post-kinds-for-indieweb' ); ?>
+					<?php esc_html_e( 'You can scrobble listen posts to Last.fm.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 				</p>
 
 				<p>
 					<button type="button" class="button lastfm-disconnect" data-api="<?php echo esc_attr( $api_id ); ?>">
-						<?php esc_html_e( 'Disconnect', 'post-kinds-for-indieweb' ); ?>
+						<?php esc_html_e( 'Disconnect', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 					</button>
 				</p>
 			<?php else : ?>
 				<div class="oauth-disconnected">
 					<p class="description">
-						<?php esc_html_e( 'To scrobble listen posts to Last.fm, you need to authorize this application.', 'post-kinds-for-indieweb' ); ?>
+						<?php esc_html_e( 'To scrobble listen posts to Last.fm, you need to authorize this application.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 					</p>
 
 					<?php if ( $has_api_key ) : ?>
@@ -723,11 +723,11 @@ class API_Settings {
 						$auth_url = $api->get_auth_url( add_query_arg( 'pkiw_state', $lastfm_state, $callback_url ) );
 						?>
 						<a href="<?php echo esc_url( $auth_url ); ?>" class="button button-primary">
-							<?php esc_html_e( 'Connect to Last.fm', 'post-kinds-for-indieweb' ); ?>
+							<?php esc_html_e( 'Connect to Last.fm', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 						</a>
 					<?php else : ?>
 						<p class="notice notice-warning" style="padding: 8px;">
-							<?php esc_html_e( 'Please save your API Key and Shared Secret first, then you can connect.', 'post-kinds-for-indieweb' ); ?>
+							<?php esc_html_e( 'Please save your API Key and Shared Secret first, then you can connect.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 						</p>
 					<?php endif; ?>
 				</div>
@@ -816,14 +816,14 @@ class API_Settings {
 		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$api  = isset( $_POST['api'] ) ? sanitize_text_field( wp_unslash( $_POST['api'] ) ) : '';
 		$code = isset( $_POST['code'] ) ? sanitize_text_field( wp_unslash( $_POST['code'] ) ) : '';
 
 		if ( empty( $api ) || empty( $code ) ) {
-			wp_send_json_error( [ 'message' => __( 'Missing API or authorization code.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Missing API or authorization code.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$result = $this->exchange_oauth_code( $api, $code );
@@ -856,7 +856,7 @@ class API_Settings {
 			case 'untappd':
 				return $this->exchange_untappd_code( $code, $api_creds );
 			default:
-				return new \WP_Error( 'unsupported', __( 'OAuth not supported for this API.', 'post-kinds-for-indieweb' ) );
+				return new \WP_Error( 'unsupported', __( 'OAuth not supported for this API.', 'post-kinds-for-indieweb-in-block-themes' ) );
 		}
 	}
 
@@ -894,7 +894,7 @@ class API_Settings {
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( empty( $body['access_token'] ) ) {
-			return new \WP_Error( 'no_token', __( 'No access token received.', 'post-kinds-for-indieweb' ) );
+			return new \WP_Error( 'no_token', __( 'No access token received.', 'post-kinds-for-indieweb-in-block-themes' ) );
 		}
 
 		// Save tokens.
@@ -944,7 +944,7 @@ class API_Settings {
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( empty( $body['access_token'] ) ) {
-			return new \WP_Error( 'no_token', __( 'No access token received.', 'post-kinds-for-indieweb' ) );
+			return new \WP_Error( 'no_token', __( 'No access token received.', 'post-kinds-for-indieweb-in-block-themes' ) );
 		}
 
 		// Save token.
@@ -987,7 +987,7 @@ class API_Settings {
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( empty( $body['access_token'] ) ) {
-			$error_msg = $body['error'] ?? __( 'No access token received.', 'post-kinds-for-indieweb' );
+			$error_msg = $body['error'] ?? __( 'No access token received.', 'post-kinds-for-indieweb-in-block-themes' );
 			return new \WP_Error( 'no_token', $error_msg );
 		}
 
@@ -1062,7 +1062,7 @@ class API_Settings {
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( empty( $body['response']['access_token'] ) ) {
-			$error_msg = $body['meta']['error_detail'] ?? __( 'No access token received.', 'post-kinds-for-indieweb' );
+			$error_msg = $body['meta']['error_detail'] ?? __( 'No access token received.', 'post-kinds-for-indieweb-in-block-themes' );
 			return new \WP_Error( 'no_token', $error_msg );
 		}
 
@@ -1079,7 +1079,7 @@ class API_Settings {
 			[
 				'timeout' => 15,
 				'headers' => [
-					'User-Agent' => 'Post Kinds for IndieWeb WordPress Plugin',
+					'User-Agent' => 'Post Kinds for IndieWeb in Block Themes WordPress Plugin',
 				],
 			]
 		);
@@ -1231,13 +1231,13 @@ class API_Settings {
 	 */
 	public function handle_lastfm_oauth_callback(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Permission denied.', 'post-kinds-for-indieweb' ) );
+			wp_die( esc_html__( 'Permission denied.', 'post-kinds-for-indieweb-in-block-themes' ) );
 		}
 
 		// Last.fm returns 'token' not 'code'.
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( ! isset( $_GET['token'] ) ) {
-			set_transient( 'pkiw_oauth_error', __( 'No token received from Last.fm.', 'post-kinds-for-indieweb' ), 60 );
+			set_transient( 'pkiw_oauth_error', __( 'No token received from Last.fm.', 'post-kinds-for-indieweb-in-block-themes' ), 60 );
 			wp_safe_redirect( admin_url( 'admin.php?page=post-kinds-indieweb-apis&oauth_error=1' ) );
 			exit;
 		}
@@ -1251,7 +1251,7 @@ class API_Settings {
 		$expected_state = get_transient( 'pkiw_admin_oauth_state_lastfm' );
 		delete_transient( 'pkiw_admin_oauth_state_lastfm' );
 		if ( '' === $state || ! is_string( $expected_state ) || '' === $expected_state || ! hash_equals( $expected_state, $state ) ) {
-			set_transient( 'pkiw_oauth_error', __( 'OAuth state check failed. Please try connecting again.', 'post-kinds-for-indieweb' ), 60 );
+			set_transient( 'pkiw_oauth_error', __( 'OAuth state check failed. Please try connecting again.', 'post-kinds-for-indieweb-in-block-themes' ), 60 );
 			wp_safe_redirect( admin_url( 'admin.php?page=post-kinds-indieweb-apis&oauth_error=1' ) );
 			exit;
 		}
@@ -1261,7 +1261,7 @@ class API_Settings {
 		$lastfm      = $credentials['lastfm'] ?? [];
 
 		if ( empty( $lastfm['api_key'] ) || empty( $lastfm['api_secret'] ) ) {
-			set_transient( 'pkiw_oauth_error', __( 'Last.fm API credentials not configured.', 'post-kinds-for-indieweb' ), 60 );
+			set_transient( 'pkiw_oauth_error', __( 'Last.fm API credentials not configured.', 'post-kinds-for-indieweb-in-block-themes' ), 60 );
 			wp_safe_redirect( admin_url( 'admin.php?page=post-kinds-indieweb-apis&oauth_error=1' ) );
 			exit;
 		}
@@ -1271,7 +1271,7 @@ class API_Settings {
 		$session = $api->get_session( $token );
 
 		if ( ! $session || empty( $session['session_key'] ) ) {
-			set_transient( 'pkiw_oauth_error', __( 'Failed to get Last.fm session key.', 'post-kinds-for-indieweb' ), 60 );
+			set_transient( 'pkiw_oauth_error', __( 'Failed to get Last.fm session key.', 'post-kinds-for-indieweb-in-block-themes' ), 60 );
 			wp_safe_redirect( admin_url( 'admin.php?page=post-kinds-indieweb-apis&oauth_error=1' ) );
 			exit;
 		}
@@ -1305,7 +1305,7 @@ class API_Settings {
 	 */
 	private function process_oauth_callback( string $api ): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Permission denied.', 'post-kinds-for-indieweb' ) );
+			wp_die( esc_html__( 'Permission denied.', 'post-kinds-for-indieweb-in-block-themes' ) );
 		}
 
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -1330,7 +1330,7 @@ class API_Settings {
 		$expected_state = get_transient( 'pkiw_admin_oauth_state_' . $api );
 		delete_transient( 'pkiw_admin_oauth_state_' . $api );
 		if ( '' === $state || ! is_string( $expected_state ) || '' === $expected_state || ! hash_equals( $expected_state, $state ) ) {
-			set_transient( 'pkiw_oauth_error', __( 'OAuth state check failed. Please try connecting again.', 'post-kinds-for-indieweb' ), 60 );
+			set_transient( 'pkiw_oauth_error', __( 'OAuth state check failed. Please try connecting again.', 'post-kinds-for-indieweb-in-block-themes' ), 60 );
 			wp_safe_redirect( admin_url( 'admin.php?page=post-kinds-indieweb-apis&oauth_error=1' ) );
 			exit;
 		}
@@ -1358,7 +1358,7 @@ class API_Settings {
 		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$api           = isset( $_POST['api'] ) ? sanitize_text_field( wp_unslash( $_POST['api'] ) ) : '';
@@ -1366,7 +1366,7 @@ class API_Settings {
 		$client_secret = isset( $_POST['client_secret'] ) ? sanitize_text_field( wp_unslash( $_POST['client_secret'] ) ) : '';
 
 		if ( empty( $api ) || empty( $client_id ) ) {
-			wp_send_json_error( [ 'message' => __( 'Missing API or Client ID.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Missing API or Client ID.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		// Save credentials first so they're available for the callback.
@@ -1386,7 +1386,7 @@ class API_Settings {
 		$url = $this->get_oauth_url( $api );
 
 		if ( ! $url ) {
-			wp_send_json_error( [ 'message' => __( 'Could not generate OAuth URL.', 'post-kinds-for-indieweb' ) ] );
+			wp_send_json_error( [ 'message' => __( 'Could not generate OAuth URL.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		wp_send_json_success( [ 'url' => $url ] );

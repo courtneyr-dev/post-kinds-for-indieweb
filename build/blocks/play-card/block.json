@@ -13,7 +13,7 @@
     "video game",
     "board game"
   ],
-  "textdomain": "post-kinds-indieweb",
+  "textdomain": "post-kinds-for-indieweb-in-block-themes",
   "attributes": {
     "title": {
       "type": "string"

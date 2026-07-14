@@ -1,9 +1,9 @@
 ---
 title: Screenshots
-description: "Gallery of the Post Kinds for IndieWeb screens with capture specifications for the screenshots the documentation still needs."
+description: "Gallery of the Post Kinds for IndieWeb in Block Themes screens with capture specifications for the screenshots the documentation still needs."
 ---
 
-The screens Post Kinds for IndieWeb adds to WordPress. Every screenshot has a text equivalent in the page that documents the task, so you never need the image to follow the instructions.
+The screens Post Kinds for IndieWeb in Block Themes adds to WordPress. Every screenshot has a text equivalent in the page that documents the task, so you never need the image to follow the instructions.
 
 Screenshots come from two repeatable sources — the capture script (`npm run screenshots:docs`, which runs against a disposable WordPress Playground) and assets that ship with the plugin — plus manual captures listed with full specifications at the end of this page.
 

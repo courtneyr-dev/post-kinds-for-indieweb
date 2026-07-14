@@ -430,7 +430,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 		$token       = $access_token ?? ( $credentials['access_token'] ?? '' );
 
 		if ( empty( $token ) ) {
-			return new \WP_Error( 'no_token', __( 'No access token available.', 'post-kinds-for-indieweb' ) );
+			return new \WP_Error( 'no_token', __( 'No access token available.', 'post-kinds-for-indieweb-in-block-themes' ) );
 		}
 
 		$params['access_token'] = $token;
@@ -440,7 +440,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 		$args = [
 			'timeout' => 30,
 			'headers' => [
-				'User-Agent' => 'Post Kinds for IndieWeb WordPress Plugin',
+				'User-Agent' => 'Post Kinds for IndieWeb in Block Themes WordPress Plugin',
 			],
 		];
 
@@ -461,7 +461,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( $code >= 400 ) {
-			$error_message = $body['meta']['error_detail'] ?? __( 'API request failed.', 'post-kinds-for-indieweb' );
+			$error_message = $body['meta']['error_detail'] ?? __( 'API request failed.', 'post-kinds-for-indieweb-in-block-themes' );
 			return new \WP_Error( 'api_error', $error_message );
 		}
 
