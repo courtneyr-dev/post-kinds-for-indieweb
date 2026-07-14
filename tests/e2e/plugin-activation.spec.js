@@ -25,14 +25,14 @@ test.describe( 'Plugin Activation', () => {
 		// against the registered slug instead of human label keeps the
 		// test stable if the label is later re-translated/relabelled.
 		const menuItem = page.locator(
-			'#adminmenu a[href*="page=post-kinds-for-indieweb"]'
+			'#adminmenu a[href*="page=post-kinds-for-indieweb-in-block-themes"]'
 		);
 		await expect( menuItem.first() ).toBeVisible();
 	} );
 
 	test( 'settings page loads correctly', async ( { page } ) => {
 		const response = await page.goto(
-			'/wp-admin/admin.php?page=post-kinds-for-indieweb'
+			'/wp-admin/admin.php?page=post-kinds-for-indieweb-in-block-themes'
 		);
 
 		// The page resolves and renders the WordPress admin chrome.

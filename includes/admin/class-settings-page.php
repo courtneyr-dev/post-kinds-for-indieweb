@@ -763,7 +763,7 @@ class Settings_Page {
 			$active = $this->active_tab === $slug ? ' nav-tab-active' : '';
 			printf(
 				'<a href="%s" class="nav-tab%s">%s</a>',
-				esc_url( add_query_arg( 'tab', $slug, admin_url( 'admin.php?page=post-kinds-for-indieweb' ) ) ),
+				esc_url( add_query_arg( 'tab', $slug, admin_url( 'admin.php?page=post-kinds-for-indieweb-in-block-themes' ) ) ),
 				esc_attr( $active ),
 				esc_html( $label )
 			);
@@ -2115,7 +2115,7 @@ CSS;
 				<p style="margin-top: 8px; margin-left: 4px; color: #dba617; font-size: 13px;">
 					<span class="dashicons dashicons-info" style="font-size: 14px; vertical-align: text-bottom;"></span>
 					<?php esc_html_e( 'Note: Main background sync is off.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
-					<a href="<?php echo esc_url( admin_url( 'admin.php?page=post-kinds-for-indieweb&tab=performance' ) ); ?>"><?php esc_html_e( 'Enable in Performance tab', 'post-kinds-for-indieweb-in-block-themes' ); ?></a>
+					<a href="<?php echo esc_url( admin_url( 'admin.php?page=post-kinds-for-indieweb-in-block-themes&tab=performance' ) ); ?>"><?php esc_html_e( 'Enable in Performance tab', 'post-kinds-for-indieweb-in-block-themes' ); ?></a>
 				</p>
 			<?php endif; ?>
 

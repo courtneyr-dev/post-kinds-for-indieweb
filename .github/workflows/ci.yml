@@ -362,7 +362,7 @@ jobs:
       - name: Run Plugin Check against distribution
         uses: wordpress/plugin-check-action@v1
         with:
-          build-dir: dist-check/post-kinds-for-indieweb-in-block-themes-in-block-themes
+          build-dir: dist-check/post-kinds-for-indieweb-in-block-themes
 
   # ===== E2E Tests =====
   e2e:

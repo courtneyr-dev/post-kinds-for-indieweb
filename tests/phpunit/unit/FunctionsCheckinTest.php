@@ -47,8 +47,8 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 			register_taxonomy( 'indieblocks_kind', 'post' );
 		}
 
-		if ( ! taxonomy_exists( 'venue' ) ) {
-			register_taxonomy( 'venue', 'post' );
+		if ( ! taxonomy_exists( 'pkiw_venue' ) ) {
+			register_taxonomy( 'pkiw_venue', 'post' );
 		}
 	}
 
@@ -83,7 +83,7 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	 * @return int Term ID.
 	 */
 	private function create_venue( string $name, array $meta = [] ): int {
-		$result = wp_insert_term( $name, 'venue' );
+		$result = wp_insert_term( $name, 'pkiw_venue' );
 		$term_id = $result['term_id'];
 
 		foreach ( $meta as $key => $value ) {
@@ -163,12 +163,12 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 		$venue_id = $this->create_venue( 'Test Cafe' );
 
 		$post_id = $this->create_checkin_post();
-		wp_set_object_terms( $post_id, [ $venue_id ], 'venue' );
+		wp_set_object_terms( $post_id, [ $venue_id ], 'pkiw_venue' );
 
 		// Checkin at different venue.
 		$other_venue = $this->create_venue( 'Other Place' );
 		$other_post  = $this->create_checkin_post();
-		wp_set_object_terms( $other_post, [ $other_venue ], 'venue' );
+		wp_set_object_terms( $other_post, [ $other_venue ], 'pkiw_venue' );
 
 		$query = get_checkins_at_venue( $venue_id );
 
@@ -293,7 +293,7 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	public function test_get_checkin_venue(): void {
 		$venue_id = $this->create_venue( 'Test Cafe' );
 		$post_id  = $this->create_checkin_post();
-		wp_set_object_terms( $post_id, [ $venue_id ], 'venue' );
+		wp_set_object_terms( $post_id, [ $venue_id ], 'pkiw_venue' );
 
 		$venue = get_checkin_venue( $post_id );
 
@@ -333,7 +333,7 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 		] );
 
 		$post_id = $this->create_checkin_post();
-		wp_set_object_terms( $post_id, [ $venue_id ], 'venue' );
+		wp_set_object_terms( $post_id, [ $venue_id ], 'pkiw_venue' );
 
 		$location = get_checkin_location( $post_id );
 
@@ -436,7 +436,7 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 		$this->create_venue( 'Empty Venue' );
 
 		$post_id = $this->create_checkin_post();
-		wp_set_object_terms( $post_id, [ $venue_id ], 'venue' );
+		wp_set_object_terms( $post_id, [ $venue_id ], 'pkiw_venue' );
 
 		$count = get_venue_count( true );
 

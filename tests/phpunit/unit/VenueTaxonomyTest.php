@@ -16,7 +16,7 @@ class VenueTaxonomyTest extends WP_UnitTestCase {
 	}
 
 	public function test_taxonomy_constant() {
-		$this->assertSame( 'venue', Venue_Taxonomy::TAXONOMY );
+		$this->assertSame( 'pkiw_venue', Venue_Taxonomy::TAXONOMY );
 	}
 
 	public function test_taxonomy_is_registered() {
@@ -45,7 +45,7 @@ class VenueTaxonomyTest extends WP_UnitTestCase {
 
 	public function test_taxonomy_rewrite_slug() {
 		$tax = get_taxonomy( Venue_Taxonomy::TAXONOMY );
-		$this->assertSame( 'venue', $tax->rewrite['slug'] );
+		$this->assertSame( 'pkiw_venue', $tax->rewrite['slug'] );
 		$this->assertFalse( $tax->rewrite['with_front'] );
 	}
 

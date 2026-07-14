@@ -23,7 +23,9 @@ test.describe( 'Accessibility', () => {
 		// (the menu label is "Reactions"). The previous `post-kinds-settings`
 		// slug was a typo — would silently 404 and the a11y scan would run
 		// against a generic admin error page.
-		await page.goto( '/wp-admin/admin.php?page=post-kinds-for-indieweb' );
+		await page.goto(
+			'/wp-admin/admin.php?page=post-kinds-for-indieweb-in-block-themes'
+		);
 
 		const accessibilityScanResults = await new AxeBuilder( { page } )
 			.withTags( [ 'wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa' ] )

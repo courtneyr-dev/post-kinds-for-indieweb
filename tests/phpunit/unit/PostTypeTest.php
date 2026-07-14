@@ -18,7 +18,7 @@ class PostTypeTest extends WP_UnitTestCase {
 	}
 
 	public function test_post_type_constant() {
-		$this->assertSame( 'reaction', Post_Type::POST_TYPE );
+		$this->assertSame( 'pkiw_reaction', Post_Type::POST_TYPE );
 	}
 
 	public function test_is_cpt_mode_false_by_default() {
@@ -74,7 +74,7 @@ class PostTypeTest extends WP_UnitTestCase {
 
 	public function test_get_import_post_type_returns_reaction_in_cpt_mode() {
 		update_option( 'pkiw_settings', [ 'import_storage_mode' => 'cpt' ] );
-		$this->assertSame( 'reaction', Post_Type::get_import_post_type() );
+		$this->assertSame( 'pkiw_reaction', Post_Type::get_import_post_type() );
 	}
 
 	public function test_get_import_post_type_returns_post_in_hidden_mode() {
@@ -87,7 +87,7 @@ class PostTypeTest extends WP_UnitTestCase {
 		$pt = new Post_Type();
 		$pt->maybe_register_post_type();
 
-		$this->assertFalse( post_type_exists( 'reaction' ) );
+		$this->assertFalse( post_type_exists( 'pkiw_reaction' ) );
 	}
 
 	public function test_post_type_registered_in_cpt_mode() {
@@ -95,7 +95,7 @@ class PostTypeTest extends WP_UnitTestCase {
 		$pt = new Post_Type();
 		$pt->maybe_register_post_type();
 
-		$this->assertTrue( post_type_exists( 'reaction' ) );
+		$this->assertTrue( post_type_exists( 'pkiw_reaction' ) );
 	}
 
 	public function test_post_type_args_in_cpt_mode() {
@@ -103,7 +103,7 @@ class PostTypeTest extends WP_UnitTestCase {
 		$pt = new Post_Type();
 		$pt->maybe_register_post_type();
 
-		$post_type = get_post_type_object( 'reaction' );
+		$post_type = get_post_type_object( 'pkiw_reaction' );
 		$this->assertTrue( $post_type->public );
 		$this->assertTrue( $post_type->show_in_rest );
 		$this->assertSame( 'post-kinds', $post_type->rest_base );
@@ -117,13 +117,13 @@ class PostTypeTest extends WP_UnitTestCase {
 		$pt = new Post_Type();
 		$pt->maybe_register_post_type();
 
-		$this->assertTrue( post_type_supports( 'reaction', 'title' ) );
-		$this->assertTrue( post_type_supports( 'reaction', 'editor' ) );
-		$this->assertTrue( post_type_supports( 'reaction', 'author' ) );
-		$this->assertTrue( post_type_supports( 'reaction', 'thumbnail' ) );
-		$this->assertTrue( post_type_supports( 'reaction', 'excerpt' ) );
-		$this->assertTrue( post_type_supports( 'reaction', 'custom-fields' ) );
-		$this->assertTrue( post_type_supports( 'reaction', 'comments' ) );
+		$this->assertTrue( post_type_supports( 'pkiw_reaction', 'title' ) );
+		$this->assertTrue( post_type_supports( 'pkiw_reaction', 'editor' ) );
+		$this->assertTrue( post_type_supports( 'pkiw_reaction', 'author' ) );
+		$this->assertTrue( post_type_supports( 'pkiw_reaction', 'thumbnail' ) );
+		$this->assertTrue( post_type_supports( 'pkiw_reaction', 'excerpt' ) );
+		$this->assertTrue( post_type_supports( 'pkiw_reaction', 'custom-fields' ) );
+		$this->assertTrue( post_type_supports( 'pkiw_reaction', 'comments' ) );
 	}
 
 	public function test_post_type_rewrite_in_cpt_mode() {
@@ -131,7 +131,7 @@ class PostTypeTest extends WP_UnitTestCase {
 		$pt = new Post_Type();
 		$pt->maybe_register_post_type();
 
-		$post_type = get_post_type_object( 'reaction' );
+		$post_type = get_post_type_object( 'pkiw_reaction' );
 		$this->assertSame( 'post-kinds', $post_type->rewrite['slug'] );
 		$this->assertFalse( $post_type->rewrite['with_front'] );
 	}
@@ -141,7 +141,7 @@ class PostTypeTest extends WP_UnitTestCase {
 		$pt = new Post_Type();
 		$pt->maybe_register_post_type();
 
-		$post_type = get_post_type_object( 'reaction' );
+		$post_type = get_post_type_object( 'pkiw_reaction' );
 		$this->assertContains( 'kind', $post_type->taxonomies );
 	}
 }

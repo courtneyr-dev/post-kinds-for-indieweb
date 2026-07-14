@@ -415,7 +415,7 @@ class Admin {
 	public function plugin_action_links( array $links ): array {
 		$settings_link = sprintf(
 			'<a href="%s">%s</a>',
-			admin_url( 'admin.php?page=post-kinds-for-indieweb' ),
+			admin_url( 'admin.php?page=post-kinds-for-indieweb-in-block-themes' ),
 			__( 'Settings', 'post-kinds-for-indieweb-in-block-themes' )
 		);
 
