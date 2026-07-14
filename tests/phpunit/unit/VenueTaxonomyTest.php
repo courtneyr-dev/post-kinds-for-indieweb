@@ -45,7 +45,9 @@ class VenueTaxonomyTest extends WP_UnitTestCase {
 
 	public function test_taxonomy_rewrite_slug() {
 		$tax = get_taxonomy( Venue_Taxonomy::TAXONOMY );
-		$this->assertSame( 'pkiw_venue', $tax->rewrite['slug'] );
+		// The registered taxonomy is prefixed, but the public rewrite slug
+		// deliberately stays 'venue' so archive URLs don't change.
+		$this->assertSame( 'venue', $tax->rewrite['slug'] );
 		$this->assertFalse( $tax->rewrite['with_front'] );
 	}
 
