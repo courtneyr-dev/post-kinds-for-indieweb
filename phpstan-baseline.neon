@@ -289,7 +289,7 @@ parameters:
 			path: includes/class-plugin.php
 
 		-
-			message: '#^Property PKIW\\Plugin\:\:\$post_kinds_conflict is never read, only written\.$#'
+			message: '#^Property PKIW\\Plugin\:\:\$pkiw_conflict is never read, only written\.$#'
 			identifier: property.onlyWritten
 			count: 1
 			path: includes/class-plugin.php
@@ -333,13 +333,13 @@ parameters:
 		-
 			message: '#^Method PKIW\\Sync\\Foursquare_Checkin_Sync\:\:handle_oauth_callback_request\(\) should return WP_Error\|WP_REST_Response but returns null\.$#'
 			identifier: return.type
-			count: 4
+			count: 5
 			path: includes/sync/class-foursquare-checkin-sync.php
 
 		-
 			message: '#^Result of method PKIW\\Sync\\Foursquare_Checkin_Sync\:\:oauth_redirect_with_error\(\) \(void\) is used\.$#'
 			identifier: method.void
-			count: 3
+			count: 4
 			path: includes/sync/class-foursquare-checkin-sync.php
 
 		-
