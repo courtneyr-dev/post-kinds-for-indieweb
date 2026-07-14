@@ -2,13 +2,13 @@
 /**
  * ISBN-10/13 validation and conversion plus Amazon ASIN helpers.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.2.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

@@ -5,13 +5,13 @@
  * A simple check-in pattern with just location and optional photo.
  * Perfect for scenic spots, interesting places, or quick location shares.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.2.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Patterns;
+namespace PKIW\Patterns;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {

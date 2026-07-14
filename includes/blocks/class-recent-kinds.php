@@ -5,16 +5,16 @@
  * Query block showing recent posts of a specific kind.
  * Registered entirely in PHP — no JavaScript build step required.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.3.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Blocks;
+namespace PKIW\Blocks;
 
-use PostKindsForIndieWeb\Meta_Fields;
-use PostKindsForIndieWeb\Taxonomy;
+use PKIW\Meta_Fields;
+use PKIW\Taxonomy;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

@@ -165,45 +165,44 @@ export default function Edit( { attributes, setAttributes } ) {
 	useEffect( () => {
 		const metaUpdates = {};
 		if ( name !== undefined ) {
-			metaUpdates._postkind_eat_name = name || '';
+			metaUpdates._pkiw_eat_name = name || '';
 		}
 		if ( cuisine !== undefined ) {
-			metaUpdates._postkind_eat_cuisine = cuisine || '';
+			metaUpdates._pkiw_eat_cuisine = cuisine || '';
 		}
 		if ( restaurant !== undefined ) {
-			metaUpdates._postkind_eat_restaurant = restaurant || '';
+			metaUpdates._pkiw_eat_restaurant = restaurant || '';
 		}
 		if ( restaurantUrl !== undefined ) {
-			metaUpdates._postkind_eat_restaurant_url = restaurantUrl || '';
+			metaUpdates._pkiw_eat_restaurant_url = restaurantUrl || '';
 		}
 		if ( photo !== undefined ) {
-			metaUpdates._postkind_eat_photo = photo || '';
+			metaUpdates._pkiw_eat_photo = photo || '';
 		}
 		if ( rating !== undefined ) {
-			metaUpdates._postkind_eat_rating = rating || 0;
+			metaUpdates._pkiw_eat_rating = rating || 0;
 		}
 		// Location fields
 		if ( locationName !== undefined ) {
-			metaUpdates._postkind_eat_location_name = locationName || '';
+			metaUpdates._pkiw_eat_location_name = locationName || '';
 		}
 		if ( locationAddress !== undefined ) {
-			metaUpdates._postkind_eat_location_address = locationAddress || '';
+			metaUpdates._pkiw_eat_location_address = locationAddress || '';
 		}
 		if ( locationLocality !== undefined ) {
-			metaUpdates._postkind_eat_location_locality =
-				locationLocality || '';
+			metaUpdates._pkiw_eat_location_locality = locationLocality || '';
 		}
 		if ( locationRegion !== undefined ) {
-			metaUpdates._postkind_eat_location_region = locationRegion || '';
+			metaUpdates._pkiw_eat_location_region = locationRegion || '';
 		}
 		if ( locationCountry !== undefined ) {
-			metaUpdates._postkind_eat_location_country = locationCountry || '';
+			metaUpdates._pkiw_eat_location_country = locationCountry || '';
 		}
 		if ( geoLatitude !== undefined ) {
-			metaUpdates._postkind_eat_geo_latitude = geoLatitude || 0;
+			metaUpdates._pkiw_eat_geo_latitude = geoLatitude || 0;
 		}
 		if ( geoLongitude !== undefined ) {
-			metaUpdates._postkind_eat_geo_longitude = geoLongitude || 0;
+			metaUpdates._pkiw_eat_geo_longitude = geoLongitude || 0;
 		}
 
 		if ( Object.keys( metaUpdates ).length > 0 ) {

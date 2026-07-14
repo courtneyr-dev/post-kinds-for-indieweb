@@ -1,19 +1,19 @@
 <?php
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
 use WP_UnitTestCase;
-use PostKindsForIndieWeb\Post_Type;
+use PKIW\Post_Type;
 
 class PostTypeTest extends WP_UnitTestCase {
 
 	public function set_up(): void {
 		parent::set_up();
 		// Clean up any leftover settings between tests.
-		delete_option( 'post_kinds_indieweb_settings' );
+		delete_option( 'pkiw_settings' );
 	}
 
 	public function tear_down(): void {
-		delete_option( 'post_kinds_indieweb_settings' );
+		delete_option( 'pkiw_settings' );
 		parent::tear_down();
 	}
 
@@ -26,12 +26,12 @@ class PostTypeTest extends WP_UnitTestCase {
 	}
 
 	public function test_is_cpt_mode_true_when_set() {
-		update_option( 'post_kinds_indieweb_settings', [ 'import_storage_mode' => 'cpt' ] );
+		update_option( 'pkiw_settings', [ 'import_storage_mode' => 'cpt' ] );
 		$this->assertTrue( Post_Type::is_cpt_mode() );
 	}
 
 	public function test_is_cpt_mode_false_when_standard() {
-		update_option( 'post_kinds_indieweb_settings', [ 'import_storage_mode' => 'standard' ] );
+		update_option( 'pkiw_settings', [ 'import_storage_mode' => 'standard' ] );
 		$this->assertFalse( Post_Type::is_cpt_mode() );
 	}
 
@@ -40,12 +40,12 @@ class PostTypeTest extends WP_UnitTestCase {
 	}
 
 	public function test_is_hidden_mode_true_when_set() {
-		update_option( 'post_kinds_indieweb_settings', [ 'import_storage_mode' => 'hidden' ] );
+		update_option( 'pkiw_settings', [ 'import_storage_mode' => 'hidden' ] );
 		$this->assertTrue( Post_Type::is_hidden_mode() );
 	}
 
 	public function test_is_hidden_mode_false_when_cpt() {
-		update_option( 'post_kinds_indieweb_settings', [ 'import_storage_mode' => 'cpt' ] );
+		update_option( 'pkiw_settings', [ 'import_storage_mode' => 'cpt' ] );
 		$this->assertFalse( Post_Type::is_hidden_mode() );
 	}
 
@@ -54,17 +54,17 @@ class PostTypeTest extends WP_UnitTestCase {
 	}
 
 	public function test_get_storage_mode_returns_cpt() {
-		update_option( 'post_kinds_indieweb_settings', [ 'import_storage_mode' => 'cpt' ] );
+		update_option( 'pkiw_settings', [ 'import_storage_mode' => 'cpt' ] );
 		$this->assertSame( 'cpt', Post_Type::get_storage_mode() );
 	}
 
 	public function test_get_storage_mode_returns_hidden() {
-		update_option( 'post_kinds_indieweb_settings', [ 'import_storage_mode' => 'hidden' ] );
+		update_option( 'pkiw_settings', [ 'import_storage_mode' => 'hidden' ] );
 		$this->assertSame( 'hidden', Post_Type::get_storage_mode() );
 	}
 
 	public function test_get_storage_mode_returns_standard_for_invalid() {
-		update_option( 'post_kinds_indieweb_settings', [ 'import_storage_mode' => 'invalid_mode' ] );
+		update_option( 'pkiw_settings', [ 'import_storage_mode' => 'invalid_mode' ] );
 		$this->assertSame( 'standard', Post_Type::get_storage_mode() );
 	}
 
@@ -73,17 +73,17 @@ class PostTypeTest extends WP_UnitTestCase {
 	}
 
 	public function test_get_import_post_type_returns_reaction_in_cpt_mode() {
-		update_option( 'post_kinds_indieweb_settings', [ 'import_storage_mode' => 'cpt' ] );
+		update_option( 'pkiw_settings', [ 'import_storage_mode' => 'cpt' ] );
 		$this->assertSame( 'reaction', Post_Type::get_import_post_type() );
 	}
 
 	public function test_get_import_post_type_returns_post_in_hidden_mode() {
-		update_option( 'post_kinds_indieweb_settings', [ 'import_storage_mode' => 'hidden' ] );
+		update_option( 'pkiw_settings', [ 'import_storage_mode' => 'hidden' ] );
 		$this->assertSame( 'post', Post_Type::get_import_post_type() );
 	}
 
 	public function test_post_type_not_registered_in_standard_mode() {
-		update_option( 'post_kinds_indieweb_settings', [ 'import_storage_mode' => 'standard' ] );
+		update_option( 'pkiw_settings', [ 'import_storage_mode' => 'standard' ] );
 		$pt = new Post_Type();
 		$pt->maybe_register_post_type();
 
@@ -91,7 +91,7 @@ class PostTypeTest extends WP_UnitTestCase {
 	}
 
 	public function test_post_type_registered_in_cpt_mode() {
-		update_option( 'post_kinds_indieweb_settings', [ 'import_storage_mode' => 'cpt' ] );
+		update_option( 'pkiw_settings', [ 'import_storage_mode' => 'cpt' ] );
 		$pt = new Post_Type();
 		$pt->maybe_register_post_type();
 
@@ -99,7 +99,7 @@ class PostTypeTest extends WP_UnitTestCase {
 	}
 
 	public function test_post_type_args_in_cpt_mode() {
-		update_option( 'post_kinds_indieweb_settings', [ 'import_storage_mode' => 'cpt' ] );
+		update_option( 'pkiw_settings', [ 'import_storage_mode' => 'cpt' ] );
 		$pt = new Post_Type();
 		$pt->maybe_register_post_type();
 
@@ -113,7 +113,7 @@ class PostTypeTest extends WP_UnitTestCase {
 	}
 
 	public function test_post_type_supports_in_cpt_mode() {
-		update_option( 'post_kinds_indieweb_settings', [ 'import_storage_mode' => 'cpt' ] );
+		update_option( 'pkiw_settings', [ 'import_storage_mode' => 'cpt' ] );
 		$pt = new Post_Type();
 		$pt->maybe_register_post_type();
 
@@ -127,7 +127,7 @@ class PostTypeTest extends WP_UnitTestCase {
 	}
 
 	public function test_post_type_rewrite_in_cpt_mode() {
-		update_option( 'post_kinds_indieweb_settings', [ 'import_storage_mode' => 'cpt' ] );
+		update_option( 'pkiw_settings', [ 'import_storage_mode' => 'cpt' ] );
 		$pt = new Post_Type();
 		$pt->maybe_register_post_type();
 
@@ -137,7 +137,7 @@ class PostTypeTest extends WP_UnitTestCase {
 	}
 
 	public function test_post_type_has_kind_taxonomy() {
-		update_option( 'post_kinds_indieweb_settings', [ 'import_storage_mode' => 'cpt' ] );
+		update_option( 'pkiw_settings', [ 'import_storage_mode' => 'cpt' ] );
 		$pt = new Post_Type();
 		$pt->maybe_register_post_type();
 

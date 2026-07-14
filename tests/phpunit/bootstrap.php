@@ -2,7 +2,7 @@
 /**
  * PHPUnit bootstrap file for Post Kinds for IndieWeb.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
 // Composer autoloader.

@@ -2,18 +2,18 @@
 /**
  * Test the ListenBrainz API client.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\APIs\ListenBrainz;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\APIs\ListenBrainz;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Test the ListenBrainz API integration.
  *
- * @covers \PostKindsForIndieWeb\APIs\ListenBrainz
+ * @covers \PKIW\APIs\ListenBrainz
  */
 class ListenBrainzApiTest extends ApiTestCase {
 

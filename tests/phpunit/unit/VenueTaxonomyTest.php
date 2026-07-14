@@ -1,8 +1,8 @@
 <?php
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
 use WP_UnitTestCase;
-use PostKindsForIndieWeb\Venue_Taxonomy;
+use PKIW\Venue_Taxonomy;
 
 class VenueTaxonomyTest extends WP_UnitTestCase {
 

@@ -5,13 +5,13 @@
  * A check-in pattern focused on food photography at a venue.
  * Includes location, photo, and food details.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.2.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Patterns;
+namespace PKIW\Patterns;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {

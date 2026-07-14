@@ -2,18 +2,18 @@
 /**
  * Test the BoardGameGeek API client.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\APIs\BoardGameGeek;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\APIs\BoardGameGeek;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Test the BoardGameGeek API integration.
  *
- * @covers \PostKindsForIndieWeb\APIs\BoardGameGeek
+ * @covers \PKIW\APIs\BoardGameGeek
  */
 class BoardGameGeekApiTest extends ApiTestCase {
 
@@ -73,7 +73,7 @@ class BoardGameGeekApiTest extends ApiTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		update_option(
-			'post_kinds_indieweb_api_credentials',
+			'pkiw_api_credentials',
 			[ 'bgg' => [ 'api_token' => 'test-token-123' ] ]
 		);
 		$this->api = new BoardGameGeek();
@@ -211,7 +211,7 @@ class BoardGameGeekApiTest extends ApiTestCase {
 	 * Test is_configured returns false without token.
 	 */
 	public function test_is_configured_returns_false_without_token(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 		$api = new BoardGameGeek();
 
 		$this->assertFalse( $api->is_configured() );
@@ -237,7 +237,7 @@ class BoardGameGeekApiTest extends ApiTestCase {
 	 * Test test_connection fails without config.
 	 */
 	public function test_test_connection_fails_without_config(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 		$api = new BoardGameGeek();
 
 		$this->assertFalse( $api->test_connection() );
@@ -247,7 +247,7 @@ class BoardGameGeekApiTest extends ApiTestCase {
 	 * Test get returns error when not configured.
 	 */
 	public function test_get_returns_error_when_not_configured(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 		$api = new BoardGameGeek();
 
 		$result = $api->get( 'search', [ 'query' => 'test' ] );

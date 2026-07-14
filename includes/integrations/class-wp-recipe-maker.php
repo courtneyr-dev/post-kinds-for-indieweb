@@ -5,15 +5,15 @@
  * Integrates with WP Recipe Maker plugin to auto-detect and suggest
  * the 'recipe' post kind when a post contains a WPRM recipe.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Integrations;
+namespace PKIW\Integrations;
 
-use PostKindsForIndieWeb\Taxonomy;
+use PKIW\Taxonomy;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -119,7 +119,7 @@ class WP_Recipe_Maker {
 		}
 
 		// Check if auto-detection is enabled.
-		$settings = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings = get_option( 'pkiw_settings', [] );
 		if ( empty( $settings['wprm_auto_kind'] ) ) {
 			return;
 		}
@@ -172,7 +172,7 @@ class WP_Recipe_Maker {
 		}
 
 		// Sync basic recipe data to our meta fields.
-		$prefix = '_postkind_';
+		$prefix = '_pkiw_';
 
 		// Recipe yield/servings.
 		$servings = $this->get_recipe_servings( $recipe );

@@ -7,17 +7,17 @@
  * The private static methods are reached via Reflection — same pattern
  * the rest of the plugin's PHPUnit tests use.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
 use ReflectionMethod;
 use WP_UnitTestCase;
-use PostKindsForIndieWeb\Micropub_Content_Builder;
+use PKIW\Micropub_Content_Builder;
 
 /**
- * @covers \PostKindsForIndieWeb\Micropub_Content_Builder
+ * @covers \PKIW\Micropub_Content_Builder
  */
 class MicropubContentBuilderTest extends WP_UnitTestCase {
 

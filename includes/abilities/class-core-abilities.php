@@ -4,17 +4,17 @@
  *
  * Registers 7 abilities for managing post kinds via the Abilities API.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Abilities;
+namespace PKIW\Abilities;
 
-use PostKindsForIndieWeb\Abilities_Manager;
-use PostKindsForIndieWeb\Meta_Fields;
-use PostKindsForIndieWeb\Taxonomy;
+use PKIW\Abilities_Manager;
+use PKIW\Meta_Fields;
+use PKIW\Taxonomy;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -366,7 +366,7 @@ final class Core_Abilities {
 						],
 						'meta_key'   => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 							'type'        => 'string',
-							'description' => __( 'Meta field key without the _postkind_ prefix.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Meta field key without the _pkiw_ prefix.', 'post-kinds-for-indieweb' ),
 						],
 						'meta_value' => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 							'description' => __( 'Value to set.', 'post-kinds-for-indieweb' ),
@@ -411,7 +411,7 @@ final class Core_Abilities {
 						'meta_keys' => [
 							'type'        => 'array',
 							'items'       => [ 'type' => 'string' ],
-							'description' => __( 'Meta field keys without the _postkind_ prefix. If omitted, returns all postkind meta.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Meta field keys without the _pkiw_ prefix. If omitted, returns all postkind meta.', 'post-kinds-for-indieweb' ),
 						],
 					],
 					'required'   => [ 'post_id' ],
@@ -677,7 +677,7 @@ final class Core_Abilities {
 				$meta[ $key ] = get_post_meta( $post_id, Meta_Fields::PREFIX . $key, true );
 			}
 		} else {
-			// Return all _postkind_ prefixed meta.
+			// Return all _pkiw_ prefixed meta.
 			$all_meta = get_post_meta( $post_id );
 			foreach ( $all_meta as $full_key => $values ) {
 				if ( str_starts_with( $full_key, Meta_Fields::PREFIX ) ) {

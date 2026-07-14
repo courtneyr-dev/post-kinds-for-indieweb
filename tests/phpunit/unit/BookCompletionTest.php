@@ -3,16 +3,16 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
-use PostKindsForIndieWeb\Book_Completion;
+use PKIW\Book_Completion;
 
 final class BookCompletionTest extends TestCase {
 
 	private function completion_with_openlibrary( ?array $ol_book ): Book_Completion {
-		$open_library = $this->createStub( \PostKindsForIndieWeb\APIs\OpenLibrary::class );
+		$open_library = $this->createStub( \PKIW\APIs\OpenLibrary::class );
 		$open_library->method( 'get_by_isbn' )->willReturn( $ol_book );
-		$google = $this->createStub( \PostKindsForIndieWeb\APIs\GoogleBooks::class );
+		$google = $this->createStub( \PKIW\APIs\GoogleBooks::class );
 		$google->method( 'search_by_title' )->willReturn( [] );
-		$hardcover = $this->createStub( \PostKindsForIndieWeb\APIs\Hardcover::class );
+		$hardcover = $this->createStub( \PKIW\APIs\Hardcover::class );
 		$hardcover->method( 'is_configured' )->willReturn( false );
 		return new Book_Completion( $open_library, $google, $hardcover );
 	}

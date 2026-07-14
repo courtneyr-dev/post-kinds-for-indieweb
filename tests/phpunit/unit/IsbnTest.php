@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
-use PostKindsForIndieWeb\Isbn;
+use PKIW\Isbn;
 
 final class IsbnTest extends TestCase {
 

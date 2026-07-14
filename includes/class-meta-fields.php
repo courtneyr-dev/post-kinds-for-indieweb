@@ -4,13 +4,13 @@
  *
  * Registers all post meta fields for IndieWeb post kinds with REST API exposure.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -32,7 +32,7 @@ class Meta_Fields {
 	 *
 	 * @var string
 	 */
-	public const PREFIX = '_postkind_';
+	public const PREFIX = '_pkiw_';
 
 	/**
 	 * Post types to register meta for.
@@ -931,7 +931,7 @@ class Meta_Fields {
 		 *
 		 * @param array<string, array<string, mixed>> $fields Meta field definitions.
 		 */
-		$this->fields = apply_filters( 'post_kinds_indieweb_meta_fields', $this->fields );
+		$this->fields = apply_filters( 'pkiw_meta_fields', $this->fields );
 	}
 
 	/**
@@ -950,7 +950,7 @@ class Meta_Fields {
 	 */
 	public function register_meta_fields(): void {
 		// Check if CPT mode is enabled and add reaction post type.
-		$settings     = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings     = get_option( 'pkiw_settings', [] );
 		$storage_mode = $settings['import_storage_mode'] ?? 'standard';
 
 		if ( 'cpt' === $storage_mode ) {
@@ -964,7 +964,7 @@ class Meta_Fields {
 		 *
 		 * @param array<string> $post_types Array of post type slugs.
 		 */
-		$this->post_types = apply_filters( 'post_kinds_indieweb_meta_post_types', $this->post_types );
+		$this->post_types = apply_filters( 'pkiw_meta_post_types', $this->post_types );
 
 		foreach ( $this->post_types as $post_type ) {
 			foreach ( $this->fields as $key => $field ) {

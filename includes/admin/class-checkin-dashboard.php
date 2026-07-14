@@ -4,11 +4,11 @@
  *
  * Admin page for viewing all check-ins in a Foursquare-like interface.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.1.0
  */
 
-namespace PostKindsForIndieWeb\Admin;
+namespace PKIW\Admin;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -51,21 +51,21 @@ class Checkin_Dashboard {
 	 * @return void
 	 */
 	public function enqueue_assets( string $hook ): void {
-		if ( 'post_kinds_page_post-kinds-indieweb-checkins' !== $hook ) {
+		if ( 'pkiw_page_post-kinds-indieweb-checkins' !== $hook ) {
 			return;
 		}
 
 		// Enqueue Leaflet for maps (bundled locally).
 		wp_enqueue_style(
 			'leaflet',
-			POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet/leaflet.css',
+			PKIW_URL . 'assets/vendor/leaflet/leaflet.css',
 			[],
 			'1.9.4'
 		);
 
 		wp_enqueue_script(
 			'leaflet',
-			POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet/leaflet.js',
+			PKIW_URL . 'assets/vendor/leaflet/leaflet.js',
 			[],
 			'1.9.4',
 			true
@@ -74,21 +74,21 @@ class Checkin_Dashboard {
 		// Enqueue Leaflet MarkerCluster (bundled locally).
 		wp_enqueue_style(
 			'leaflet-markercluster',
-			POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.css',
+			PKIW_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.css',
 			[ 'leaflet' ],
 			'1.4.1'
 		);
 
 		wp_enqueue_style(
 			'leaflet-markercluster-default',
-			POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.Default.css',
+			PKIW_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.Default.css',
 			[ 'leaflet-markercluster' ],
 			'1.4.1'
 		);
 
 		wp_enqueue_script(
 			'leaflet-markercluster',
-			POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/leaflet.markercluster.js',
+			PKIW_URL . 'assets/vendor/leaflet-markercluster/leaflet.markercluster.js',
 			[ 'leaflet' ],
 			'1.4.1',
 			true
@@ -96,24 +96,24 @@ class Checkin_Dashboard {
 
 		// Enqueue dashboard styles.
 		wp_enqueue_style(
-			'post-kinds-checkin-dashboard',
-			POST_KINDS_INDIEWEB_URL . 'assets/css/checkin-dashboard.css',
+			'pkiw-checkin-dashboard',
+			PKIW_URL . 'assets/css/checkin-dashboard.css',
 			[ 'leaflet', 'leaflet-markercluster' ],
-			POST_KINDS_INDIEWEB_VERSION
+			PKIW_VERSION
 		);
 
 		// Enqueue dashboard script.
 		wp_enqueue_script(
-			'post-kinds-checkin-dashboard',
-			POST_KINDS_INDIEWEB_URL . 'assets/js/checkin-dashboard.js',
+			'pkiw-checkin-dashboard',
+			PKIW_URL . 'assets/js/checkin-dashboard.js',
 			[ 'jquery', 'leaflet', 'leaflet-markercluster', 'wp-api-fetch' ],
-			POST_KINDS_INDIEWEB_VERSION,
+			PKIW_VERSION,
 			true
 		);
 
 		wp_localize_script(
-			'post-kinds-checkin-dashboard',
-			'postKindsCheckinDashboard',
+			'pkiw-checkin-dashboard',
+			'pkiwCheckinDashboard',
 			[
 				'restUrl' => rest_url( 'post-kinds-indieweb/v1/' ),
 				'nonce'   => wp_create_nonce( 'wp_rest' ),
@@ -164,8 +164,8 @@ class Checkin_Dashboard {
 					<option value=""><?php esc_html_e( 'All Years', 'post-kinds-for-indieweb' ); ?></option>
 					<?php
 					$current_year = (int) gmdate( 'Y' );
-					for ( $post_kinds_year = $current_year; $post_kinds_year >= $current_year - 10; $post_kinds_year-- ) {
-						printf( '<option value="%d">%d</option>', absint( $post_kinds_year ), absint( $post_kinds_year ) );
+					for ( $pkiw_year = $current_year; $pkiw_year >= $current_year - 10; $pkiw_year-- ) {
+						printf( '<option value="%d">%d</option>', absint( $pkiw_year ), absint( $pkiw_year ) );
 					}
 					?>
 				</select>

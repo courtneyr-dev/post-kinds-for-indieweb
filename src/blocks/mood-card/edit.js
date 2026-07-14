@@ -143,7 +143,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	}, [] );
 
 	// Sync FROM post meta TO block attributes when meta changes from sidebar.
-	// _postkind_mood_* isn't a registered post meta key (no REST schema
+	// _pkiw_mood_* isn't a registered post meta key (no REST schema
 	// entry, so WordPress core silently drops writes to it and the key is
 	// never actually persisted server-side) — only ever apply a non-empty
 	// meta value here. Without this guard, a fresh/just-inserted block's
@@ -154,15 +154,15 @@ export default function Edit( { attributes, setAttributes } ) {
 	useEffect( () => {
 		const updates = {};
 
-		const metaMood = postMeta._postkind_mood_label;
+		const metaMood = postMeta._pkiw_mood_label;
 		if ( metaMood && metaMood !== ( mood || '' ) ) {
 			updates.mood = metaMood;
 		}
-		const metaEmoji = postMeta._postkind_mood_emoji;
+		const metaEmoji = postMeta._pkiw_mood_emoji;
 		if ( metaEmoji && metaEmoji !== ( emoji || '' ) ) {
 			updates.emoji = metaEmoji;
 		}
-		const metaIntensity = postMeta._postkind_mood_rating;
+		const metaIntensity = postMeta._pkiw_mood_rating;
 		if ( metaIntensity && metaIntensity !== ( intensity || 3 ) ) {
 			updates.intensity = metaIntensity;
 		}
@@ -171,23 +171,23 @@ export default function Edit( { attributes, setAttributes } ) {
 			setAttributes( updates );
 		}
 	}, [
-		postMeta._postkind_mood_label,
-		postMeta._postkind_mood_emoji,
-		postMeta._postkind_mood_rating,
+		postMeta._pkiw_mood_label,
+		postMeta._pkiw_mood_emoji,
+		postMeta._pkiw_mood_rating,
 	] );
 
 	// Sync FROM block attributes TO post meta when attributes change
 	useEffect( () => {
 		const metaUpdates = {};
 
-		if ( ( mood || '' ) !== ( postMeta._postkind_mood_label ?? '' ) ) {
-			metaUpdates._postkind_mood_label = mood || '';
+		if ( ( mood || '' ) !== ( postMeta._pkiw_mood_label ?? '' ) ) {
+			metaUpdates._pkiw_mood_label = mood || '';
 		}
-		if ( ( emoji || '' ) !== ( postMeta._postkind_mood_emoji ?? '' ) ) {
-			metaUpdates._postkind_mood_emoji = emoji || '';
+		if ( ( emoji || '' ) !== ( postMeta._pkiw_mood_emoji ?? '' ) ) {
+			metaUpdates._pkiw_mood_emoji = emoji || '';
 		}
-		if ( ( intensity || 3 ) !== ( postMeta._postkind_mood_rating ?? 3 ) ) {
-			metaUpdates._postkind_mood_rating = intensity || 3;
+		if ( ( intensity || 3 ) !== ( postMeta._pkiw_mood_rating ?? 3 ) ) {
+			metaUpdates._pkiw_mood_rating = intensity || 3;
 		}
 
 		if ( Object.keys( metaUpdates ).length > 0 ) {

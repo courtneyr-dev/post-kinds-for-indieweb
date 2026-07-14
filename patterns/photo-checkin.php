@@ -5,13 +5,13 @@
  * A flexible check-in pattern with optional photo, food, and drink sections.
  * All sections except the location are optional and can be removed.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.2.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Patterns;
+namespace PKIW\Patterns;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {

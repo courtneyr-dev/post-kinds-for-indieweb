@@ -4,13 +4,13 @@
  *
  * Functions for querying check-ins stored as standard posts with the checkin kind.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.2.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -227,13 +227,13 @@ function get_checkin_location( $post = null ): array {
 		$location['longitude'] = get_term_meta( $venue->term_id, 'longitude', true );
 	} else {
 		// Fall back to post meta.
-		$location['name']      = get_post_meta( $post->ID, '_postkind_checkin_venue', true );
-		$location['address']   = get_post_meta( $post->ID, '_postkind_checkin_address', true );
-		$location['city']      = get_post_meta( $post->ID, '_postkind_checkin_city', true );
-		$location['region']    = get_post_meta( $post->ID, '_postkind_checkin_region', true );
-		$location['country']   = get_post_meta( $post->ID, '_postkind_checkin_country', true );
-		$location['latitude']  = get_post_meta( $post->ID, '_postkind_checkin_latitude', true );
-		$location['longitude'] = get_post_meta( $post->ID, '_postkind_checkin_longitude', true );
+		$location['name']      = get_post_meta( $post->ID, '_pkiw_checkin_venue', true );
+		$location['address']   = get_post_meta( $post->ID, '_pkiw_checkin_address', true );
+		$location['city']      = get_post_meta( $post->ID, '_pkiw_checkin_city', true );
+		$location['region']    = get_post_meta( $post->ID, '_pkiw_checkin_region', true );
+		$location['country']   = get_post_meta( $post->ID, '_pkiw_checkin_country', true );
+		$location['latitude']  = get_post_meta( $post->ID, '_pkiw_checkin_latitude', true );
+		$location['longitude'] = get_post_meta( $post->ID, '_pkiw_checkin_longitude', true );
 	}
 
 	return array_filter( $location, fn( $val ) => '' !== $val );

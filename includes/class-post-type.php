@@ -4,13 +4,13 @@
  *
  * Registers the 'reaction' post type for imported content when CPT mode is enabled.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -127,7 +127,7 @@ class Post_Type {
 		 *
 		 * @param array $args Post type arguments.
 		 */
-		$args = apply_filters( 'post_kinds_indieweb_post_type_args', $args );
+		$args = apply_filters( 'pkiw_post_type_args', $args );
 
 		register_post_type( self::POST_TYPE, $args );
 	}
@@ -138,7 +138,7 @@ class Post_Type {
 	 * @return bool
 	 */
 	public static function is_cpt_mode(): bool {
-		$settings = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings = get_option( 'pkiw_settings', [] );
 		return ( $settings['import_storage_mode'] ?? 'standard' ) === 'cpt';
 	}
 
@@ -148,7 +148,7 @@ class Post_Type {
 	 * @return bool
 	 */
 	public static function is_hidden_mode(): bool {
-		$settings = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings = get_option( 'pkiw_settings', [] );
 		return ( $settings['import_storage_mode'] ?? 'standard' ) === 'hidden';
 	}
 
@@ -158,7 +158,7 @@ class Post_Type {
 	 * @return string One of 'standard', 'cpt', or 'hidden'.
 	 */
 	public static function get_storage_mode(): string {
-		$settings = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings = get_option( 'pkiw_settings', [] );
 		$mode     = $settings['import_storage_mode'] ?? 'standard';
 
 		// Validate mode.

@@ -26,7 +26,7 @@ export const STORE_NAME = 'post-kinds-indieweb/post-kinds';
  *
  * @type {string}
  */
-const META_PREFIX = '_postkind_';
+const META_PREFIX = '_pkiw_';
 
 /**
  * Default state shape.

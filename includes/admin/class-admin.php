@@ -4,13 +4,13 @@
  *
  * Handles admin initialization, menu registration, and asset loading.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.0.0
  */
 
-namespace PostKindsForIndieWeb\Admin;
+namespace PKIW\Admin;
 
-use PostKindsForIndieWeb\Plugin;
+use PKIW\Plugin;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -121,7 +121,7 @@ class Admin {
 		add_action( 'admin_init', [ $this, 'register_settings' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 		add_action( 'admin_notices', [ $this, 'admin_notices' ] );
-		add_filter( 'plugin_action_links_' . plugin_basename( \POST_KINDS_INDIEWEB_PLUGIN_FILE ), [ $this, 'plugin_action_links' ] );
+		add_filter( 'plugin_action_links_' . plugin_basename( \PKIW_PLUGIN_FILE ), [ $this, 'plugin_action_links' ] );
 
 		// Initialize sub-components.
 		$this->settings_page->init();
@@ -134,12 +134,12 @@ class Admin {
 		$this->checkin_dashboard->init();
 
 		// AJAX handlers.
-		add_action( 'wp_ajax_postkind_indieweb_test_api', [ $this, 'ajax_test_api' ] );
-		add_action( 'wp_ajax_postkind_indieweb_clear_cache', [ $this, 'ajax_clear_cache' ] );
-		add_action( 'wp_ajax_postkind_indieweb_lookup_media', [ $this, 'ajax_lookup_media' ] );
-		add_action( 'wp_ajax_postkind_indieweb_get_import_status', [ $this, 'ajax_get_import_status' ] );
-		add_action( 'wp_ajax_postkind_foursquare_import', [ $this, 'ajax_foursquare_import' ] );
-		add_action( 'wp_ajax_postkind_foursquare_disconnect', [ $this, 'ajax_foursquare_disconnect' ] );
+		add_action( 'wp_ajax_pkiw_test_api', [ $this, 'ajax_test_api' ] );
+		add_action( 'wp_ajax_pkiw_clear_cache', [ $this, 'ajax_clear_cache' ] );
+		add_action( 'wp_ajax_pkiw_lookup_media', [ $this, 'ajax_lookup_media' ] );
+		add_action( 'wp_ajax_pkiw_get_import_status', [ $this, 'ajax_get_import_status' ] );
+		add_action( 'wp_ajax_pkiw_foursquare_import', [ $this, 'ajax_foursquare_import' ] );
+		add_action( 'wp_ajax_pkiw_foursquare_disconnect', [ $this, 'ajax_foursquare_disconnect' ] );
 	}
 
 	/**
@@ -238,8 +238,8 @@ class Admin {
 	public function register_settings(): void {
 		// General settings.
 		register_setting(
-			'post_kinds_indieweb_general',
-			'post_kinds_indieweb_settings',
+			'pkiw_general',
+			'pkiw_settings',
 			[
 				'type'              => 'array',
 				'sanitize_callback' => [ $this, 'sanitize_general_settings' ],
@@ -249,8 +249,8 @@ class Admin {
 
 		// API credentials (stored separately for security).
 		register_setting(
-			'post_kinds_indieweb_apis',
-			'post_kinds_indieweb_api_credentials',
+			'pkiw_apis',
+			'pkiw_api_credentials',
 			[
 				'type'              => 'array',
 				'sanitize_callback' => [ $this, 'sanitize_api_credentials' ],
@@ -260,8 +260,8 @@ class Admin {
 
 		// Webhook settings.
 		register_setting(
-			'post_kinds_indieweb_webhooks',
-			'post_kinds_indieweb_webhook_settings',
+			'pkiw_webhooks',
+			'pkiw_webhook_settings',
 			[
 				'type'              => 'array',
 				'sanitize_callback' => [ $this, 'sanitize_webhook_settings' ],
@@ -290,29 +290,29 @@ class Admin {
 
 		// Core styles.
 		wp_enqueue_style(
-			'post-kinds-indieweb-admin',
-			\POST_KINDS_INDIEWEB_PLUGIN_URL . 'admin/css/admin.css',
+			'pkiw-admin',
+			\PKIW_PLUGIN_URL . 'admin/css/admin.css',
 			[],
-			\POST_KINDS_INDIEWEB_VERSION
+			\PKIW_VERSION
 		);
 
 		// Core scripts.
 		wp_enqueue_script(
-			'post-kinds-indieweb-admin',
-			\POST_KINDS_INDIEWEB_PLUGIN_URL . 'admin/js/admin.js',
+			'pkiw-admin',
+			\PKIW_PLUGIN_URL . 'admin/js/admin.js',
 			[ 'jquery', 'wp-util', 'wp-api-fetch' ],
-			\POST_KINDS_INDIEWEB_VERSION,
+			\PKIW_VERSION,
 			true
 		);
 
 		// Localize script.
 		wp_localize_script(
-			'post-kinds-indieweb-admin',
-			'postKindsIndieWeb',
+			'pkiw-admin',
+			'pkiwAdmin',
 			[
 				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
 				'restUrl'   => rest_url( 'post-kinds-indieweb/v1/' ),
-				'nonce'     => wp_create_nonce( 'post_kinds_indieweb_admin' ),
+				'nonce'     => wp_create_nonce( 'pkiw_admin' ),
 				'restNonce' => wp_create_nonce( 'wp_rest' ),
 				'strings'   => [
 					'confirmDelete'  => __( 'Are you sure you want to delete this?', 'post-kinds-for-indieweb' ),
@@ -341,13 +341,13 @@ class Admin {
 		if ( $is_our_page ) {
 			wp_enqueue_style(
 				'select2',
-				POST_KINDS_INDIEWEB_URL . 'assets/vendor/select2/select2.min.css',
+				PKIW_URL . 'assets/vendor/select2/select2.min.css',
 				[],
 				'4.1.0'
 			);
 			wp_enqueue_script(
 				'select2',
-				POST_KINDS_INDIEWEB_URL . 'assets/vendor/select2/select2.min.js',
+				PKIW_URL . 'assets/vendor/select2/select2.min.js',
 				[ 'jquery' ],
 				'4.1.0',
 				true
@@ -383,7 +383,7 @@ class Admin {
 		}
 
 		// Show active import notice.
-		$active_imports = get_option( 'post_kinds_indieweb_active_imports', [] );
+		$active_imports = get_option( 'pkiw_active_imports', [] );
 		if ( ! empty( $active_imports ) ) {
 			$count = count( $active_imports );
 			echo '<div class="notice notice-info"><p>';
@@ -505,7 +505,7 @@ class Admin {
 	 */
 	public function sanitize_general_settings( array $input ): array {
 		$defaults     = $this->get_default_settings();
-		$old_settings = get_option( 'post_kinds_indieweb_settings', [] );
+		$old_settings = get_option( 'pkiw_settings', [] );
 		$sanitized    = [];
 		$active_tab   = $input['_active_tab'] ?? '';
 
@@ -638,13 +638,13 @@ class Admin {
 		}
 
 		// Check if storage mode changed - need to flush rewrite rules.
-		$old_settings = get_option( 'post_kinds_indieweb_settings', [] );
+		$old_settings = get_option( 'pkiw_settings', [] );
 		$old_mode     = $old_settings['import_storage_mode'] ?? 'standard';
 		$new_mode     = $sanitized['import_storage_mode'] ?? 'standard';
 
 		if ( $old_mode !== $new_mode ) {
 			// Schedule rewrite flush for next page load.
-			update_option( 'post_kinds_indieweb_flush_rewrite', true );
+			update_option( 'pkiw_flush_rewrite', true );
 		}
 
 		// Sync start dates - per-source cutoff dates.
@@ -691,7 +691,7 @@ class Admin {
 		 * @param array $sanitized Sanitized settings.
 		 * @param array $input Raw input.
 		 */
-		return apply_filters( 'post_kinds_indieweb_sanitize_general_settings', $sanitized, $input );
+		return apply_filters( 'pkiw_sanitize_general_settings', $sanitized, $input );
 	}
 
 	/**
@@ -733,8 +733,11 @@ class Admin {
 					// Don't overwrite with placeholder asterisks.
 					if ( preg_match( '/^\*+$/', $input[ $api ][ $field ] ) ) {
 						// Keep existing value.
-						$existing                    = get_option( 'post_kinds_indieweb_api_credentials', [] );
+						$existing                    = get_option( 'pkiw_api_credentials', [] );
 						$sanitized[ $api ][ $field ] = $existing[ $api ][ $field ] ?? '';
+					} elseif ( 'email' === $field || 'contact' === $field ) {
+						// Email-type fields use the email sanitizer.
+						$sanitized[ $api ][ $field ] = sanitize_email( $input[ $api ][ $field ] );
 					} else {
 						$sanitized[ $api ][ $field ] = sanitize_text_field( $input[ $api ][ $field ] );
 					}
@@ -764,13 +767,15 @@ class Admin {
 			$sanitized[ $type ] = [
 				'enabled'     => ! empty( $input[ $type ]['enabled'] ),
 				'auto_post'   => ! empty( $input[ $type ]['auto_post'] ),
-				'post_status' => sanitize_text_field( $input[ $type ]['post_status'] ?? 'draft' ),
+				'post_status' => in_array( sanitize_key( $input[ $type ]['post_status'] ?? 'draft' ), [ 'draft', 'publish', 'pending', 'private' ], true )
+					? sanitize_key( $input[ $type ]['post_status'] ?? 'draft' )
+					: 'draft',
 			];
 
 			// Secret key handling.
 			if ( isset( $input[ $type ]['secret'] ) ) {
 				if ( preg_match( '/^\*+$/', $input[ $type ]['secret'] ) ) {
-					$existing                     = get_option( 'post_kinds_indieweb_webhook_settings', [] );
+					$existing                     = get_option( 'pkiw_webhook_settings', [] );
 					$sanitized[ $type ]['secret'] = $existing[ $type ]['secret'] ?? '';
 				} else {
 					$sanitized[ $type ]['secret'] = sanitize_text_field( $input[ $type ]['secret'] );
@@ -874,7 +879,7 @@ class Admin {
 		 *
 		 * @param array $kinds Post kinds configuration.
 		 */
-		return apply_filters( 'post_kinds_indieweb_post_kinds', $kinds );
+		return apply_filters( 'pkiw_post_kinds', $kinds );
 	}
 
 	/**
@@ -884,7 +889,7 @@ class Admin {
 	 */
 	public function ajax_test_api(): void {
 		try {
-			check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+			check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 			if ( ! current_user_can( 'manage_options' ) ) {
 				wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
@@ -923,7 +928,7 @@ class Admin {
 	 * @return array<string, mixed>|\WP_Error Test result or error.
 	 */
 	private function test_api_connection( string $api ) {
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials = get_option( 'pkiw_api_credentials', [] );
 		$api_creds   = $credentials[ $api ] ?? [];
 
 		if ( empty( $api_creds['enabled'] ) ) {
@@ -931,17 +936,17 @@ class Admin {
 		}
 
 		$class_map = [
-			'lastfm'       => 'PostKindsForIndieWeb\\APIs\\LastFM',
-			'tmdb'         => 'PostKindsForIndieWeb\\APIs\\TMDB',
-			'trakt'        => 'PostKindsForIndieWeb\\APIs\\Trakt',
-			'simkl'        => 'PostKindsForIndieWeb\\APIs\\Simkl',
-			'tvmaze'       => 'PostKindsForIndieWeb\\APIs\\TVmaze',
-			'openlibrary'  => 'PostKindsForIndieWeb\\APIs\\OpenLibrary',
-			'hardcover'    => 'PostKindsForIndieWeb\\APIs\\Hardcover',
-			'google_books' => 'PostKindsForIndieWeb\\APIs\\GoogleBooks',
-			'foursquare'   => 'PostKindsForIndieWeb\\APIs\\Foursquare',
-			'nominatim'    => 'PostKindsForIndieWeb\\APIs\\Nominatim',
-			'readwise'     => 'PostKindsForIndieWeb\\APIs\\Readwise',
+			'lastfm'       => 'PKIW\\APIs\\LastFM',
+			'tmdb'         => 'PKIW\\APIs\\TMDB',
+			'trakt'        => 'PKIW\\APIs\\Trakt',
+			'simkl'        => 'PKIW\\APIs\\Simkl',
+			'tvmaze'       => 'PKIW\\APIs\\TVmaze',
+			'openlibrary'  => 'PKIW\\APIs\\OpenLibrary',
+			'hardcover'    => 'PKIW\\APIs\\Hardcover',
+			'google_books' => 'PKIW\\APIs\\GoogleBooks',
+			'foursquare'   => 'PKIW\\APIs\\Foursquare',
+			'nominatim'    => 'PKIW\\APIs\\Nominatim',
+			'readwise'     => 'PKIW\\APIs\\Readwise',
 		];
 
 		if ( ! isset( $class_map[ $api ] ) ) {
@@ -993,7 +998,7 @@ class Admin {
 	 * @return void
 	 */
 	public function ajax_clear_cache(): void {
-		check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
@@ -1009,11 +1014,11 @@ class Admin {
 			// Clear API response transients.
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bulk transient cleanup.
 			$deleted += $wpdb->query(
-				"DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_postkind_indieweb_api_%'"
+				"DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_pkiw_api_%'"
 			);
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bulk transient cleanup.
 			$wpdb->query(
-				"DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_postkind_indieweb_api_%'"
+				"DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_pkiw_api_%'"
 			);
 		}
 
@@ -1021,11 +1026,11 @@ class Admin {
 			// Clear metadata cache transients.
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bulk transient cleanup.
 			$deleted += $wpdb->query(
-				"DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_postkind_indieweb_meta_%'"
+				"DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_pkiw_meta_%'"
 			);
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bulk transient cleanup.
 			$wpdb->query(
-				"DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_postkind_indieweb_meta_%'"
+				"DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_pkiw_meta_%'"
 			);
 		}
 
@@ -1046,7 +1051,7 @@ class Admin {
 	 * @return void
 	 */
 	public function ajax_lookup_media(): void {
-		check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
@@ -1076,12 +1081,12 @@ class Admin {
 	 * @return array<int, array<string, mixed>>|\WP_Error Search results or error.
 	 */
 	private function lookup_media( string $type, string $query ) {
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials = get_option( 'pkiw_api_credentials', [] );
 
 		switch ( $type ) {
 			case 'music':
 				if ( ! empty( $credentials['musicbrainz']['enabled'] ) ) {
-					$api = new \PostKindsForIndieWeb\APIs\MusicBrainz( $credentials['musicbrainz'] );
+					$api = new \PKIW\APIs\MusicBrainz( $credentials['musicbrainz'] );
 					return $api->search( $query );
 				}
 				break;
@@ -1089,7 +1094,7 @@ class Admin {
 			case 'movie':
 			case 'tv':
 				if ( ! empty( $credentials['tmdb']['enabled'] ) ) {
-					$api = new \PostKindsForIndieWeb\APIs\TMDB( $credentials['tmdb'] );
+					$api = new \PKIW\APIs\TMDB( $credentials['tmdb'] );
 					if ( 'movie' === $type ) {
 						return $api->search_movies( $query );
 					} else {
@@ -1100,19 +1105,19 @@ class Admin {
 
 			case 'book':
 				// Try Open Library first (no auth needed).
-				$api = new \PostKindsForIndieWeb\APIs\OpenLibrary( [] );
+				$api = new \PKIW\APIs\OpenLibrary( [] );
 				return $api->search( $query, 10 );
 
 			case 'podcast':
 				if ( ! empty( $credentials['podcastindex']['enabled'] ) ) {
-					$api = new \PostKindsForIndieWeb\APIs\PodcastIndex( $credentials['podcastindex'] );
+					$api = new \PKIW\APIs\PodcastIndex( $credentials['podcastindex'] );
 					return $api->search( $query );
 				}
 				break;
 
 			case 'venue':
 				if ( ! empty( $credentials['foursquare']['enabled'] ) ) {
-					$api = new \PostKindsForIndieWeb\APIs\Foursquare( $credentials['foursquare'] );
+					$api = new \PKIW\APIs\Foursquare( $credentials['foursquare'] );
 					// Would need lat/lng for this.
 					return new \WP_Error( 'needs_location', __( 'Location required for venue search.', 'post-kinds-for-indieweb' ) );
 				}
@@ -1128,7 +1133,7 @@ class Admin {
 	 * @return void
 	 */
 	public function ajax_get_import_status(): void {
-		check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
@@ -1140,7 +1145,7 @@ class Admin {
 			wp_send_json_error( [ 'message' => __( 'Import ID required.', 'post-kinds-for-indieweb' ) ] );
 		}
 
-		$import_manager = new \PostKindsForIndieWeb\Import_Manager();
+		$import_manager = new \PKIW\Import_Manager();
 		$status         = $import_manager->get_status( $import_id );
 
 		if ( is_wp_error( $status ) ) {
@@ -1167,7 +1172,7 @@ class Admin {
 	 * @return mixed Setting value.
 	 */
 	public function get_setting( string $key, $default = null ) {
-		$settings = get_option( 'post_kinds_indieweb_settings', $this->get_default_settings() );
+		$settings = get_option( 'pkiw_settings', $this->get_default_settings() );
 		return $settings[ $key ] ?? $default;
 	}
 
@@ -1187,7 +1192,7 @@ class Admin {
 	 * @return void
 	 */
 	public function ajax_foursquare_import(): void {
-		check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
@@ -1232,19 +1237,19 @@ class Admin {
 	 * @return void
 	 */
 	public function ajax_foursquare_disconnect(): void {
-		check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
 		}
 
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials = get_option( 'pkiw_api_credentials', [] );
 
 		if ( isset( $credentials['foursquare'] ) ) {
 			// Remove OAuth tokens but keep API key and client credentials.
 			unset( $credentials['foursquare']['access_token'] );
 			unset( $credentials['foursquare']['username'] );
-			update_option( 'post_kinds_indieweb_api_credentials', $credentials );
+			update_option( 'pkiw_api_credentials', $credentials );
 		}
 
 		wp_send_json_success( [ 'message' => __( 'Disconnected from Foursquare.', 'post-kinds-for-indieweb' ) ] );

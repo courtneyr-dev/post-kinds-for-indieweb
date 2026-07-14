@@ -4,13 +4,13 @@
  *
  * Initializes all plugin components and manages the plugin lifecycle.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -46,7 +46,7 @@ final class Plugin {
 	 *
 	 * @var bool
 	 */
-	private bool $post_kinds_conflict = false;
+	private bool $pkiw_conflict = false;
 
 	/**
 	 * Whether Bookmark Card plugin is active.
@@ -271,8 +271,8 @@ final class Plugin {
 	 */
 	public function init(): void {
 		// Check for Post Kinds plugin conflict.
-		if ( $this->detect_post_kinds_conflict() ) {
-			add_action( 'admin_notices', [ $this, 'post_kinds_conflict_notice' ] );
+		if ( $this->detect_pkiw_conflict() ) {
+			add_action( 'admin_notices', [ $this, 'pkiw_conflict_notice' ] );
 			return; // Don't initialize - Post Kinds is active.
 		}
 
@@ -297,11 +297,11 @@ final class Plugin {
 	 *
 	 * @return bool True if Post Kinds is active (conflict detected).
 	 */
-	private function detect_post_kinds_conflict(): bool {
+	private function detect_pkiw_conflict(): bool {
 		// Check for Post Kinds plugin file.
 		$active_plugins = (array) get_option( 'active_plugins', [] );
 		if ( in_array( 'indieweb-post-kinds/indieweb-post-kinds.php', $active_plugins, true ) ) {
-			$this->post_kinds_conflict = true;
+			$this->pkiw_conflict = true;
 			return true;
 		}
 
@@ -309,14 +309,14 @@ final class Plugin {
 		if ( is_multisite() ) {
 			$network_plugins = (array) get_site_option( 'active_sitewide_plugins', [] );
 			if ( isset( $network_plugins['indieweb-post-kinds/indieweb-post-kinds.php'] ) ) {
-				$this->post_kinds_conflict = true;
+				$this->pkiw_conflict = true;
 				return true;
 			}
 		}
 
 		// Check for Post Kinds main class.
 		if ( class_exists( 'Kind_Taxonomy' ) ) {
-			$this->post_kinds_conflict = true;
+			$this->pkiw_conflict = true;
 			return true;
 		}
 
@@ -569,7 +569,7 @@ final class Plugin {
 		 *
 		 * @param Plugin $plugin Plugin instance.
 		 */
-		do_action( 'post_kinds_indieweb_integrations_init', $this );
+		do_action( 'pkiw_integrations_init', $this );
 	}
 
 	/**
@@ -609,7 +609,7 @@ final class Plugin {
 		 * @param array<Sync\Checkin_Sync_Base> $services Checkin sync services.
 		 */
 		$this->checkin_sync_services = apply_filters(
-			'post_kinds_indieweb_checkin_sync_services',
+			'pkiw_checkin_sync_services',
 			$this->checkin_sync_services
 		);
 	}
@@ -656,7 +656,7 @@ final class Plugin {
 		 * @param array<Sync\Listen_Sync_Base> $services Listen sync services.
 		 */
 		$this->listen_sync_services = apply_filters(
-			'post_kinds_indieweb_listen_sync_services',
+			'pkiw_listen_sync_services',
 			$this->listen_sync_services
 		);
 	}
@@ -703,7 +703,7 @@ final class Plugin {
 		 * @param array<Sync\Watch_Sync_Base> $services Watch sync services.
 		 */
 		$this->watch_sync_services = apply_filters(
-			'post_kinds_indieweb_watch_sync_services',
+			'pkiw_watch_sync_services',
 			$this->watch_sync_services
 		);
 	}
@@ -819,14 +819,14 @@ final class Plugin {
 		];
 
 		// Enqueue blocks script first so it's available for registration.
-		$blocks_asset_file = \POST_KINDS_INDIEWEB_PATH . 'build/blocks.asset.php';
+		$blocks_asset_file = \PKIW_PATH . 'build/blocks.asset.php';
 
 		if ( file_exists( $blocks_asset_file ) ) {
 			$blocks_asset = require $blocks_asset_file;
 
 			wp_register_script(
 				'post-kinds-indieweb-blocks',
-				\POST_KINDS_INDIEWEB_URL . 'build/blocks.js',
+				\PKIW_URL . 'build/blocks.js',
 				$blocks_asset['dependencies'],
 				$blocks_asset['version'],
 				true
@@ -835,19 +835,19 @@ final class Plugin {
 			wp_set_script_translations(
 				'post-kinds-indieweb-blocks',
 				'post-kinds-for-indieweb',
-				\POST_KINDS_INDIEWEB_PATH . 'languages'
+				\PKIW_PATH . 'languages'
 			);
 		}
 
 		// Register the design token catalog. Every block stylesheet depends
 		// on it so token defaults always load before their consumers.
-		$tokens_file = \POST_KINDS_INDIEWEB_PATH . 'styles/kind-tokens.css';
+		$tokens_file = \PKIW_PATH . 'styles/kind-tokens.css';
 		$style_deps  = [];
 
 		if ( file_exists( $tokens_file ) ) {
 			wp_register_style(
 				'pkiw-kind-tokens',
-				\POST_KINDS_INDIEWEB_URL . 'styles/kind-tokens.css',
+				\PKIW_URL . 'styles/kind-tokens.css',
 				[],
 				filemtime( $tokens_file )
 			);
@@ -855,12 +855,12 @@ final class Plugin {
 		}
 
 		// Register shared block styles for editor and frontend.
-		$blocks_style_file = \POST_KINDS_INDIEWEB_PATH . 'build/blocks.css';
+		$blocks_style_file = \PKIW_PATH . 'build/blocks.css';
 
 		if ( file_exists( $blocks_style_file ) ) {
 			wp_register_style(
 				'post-kinds-indieweb-blocks',
-				\POST_KINDS_INDIEWEB_URL . 'build/blocks.css',
+				\PKIW_URL . 'build/blocks.css',
 				$style_deps,
 				filemtime( $blocks_style_file )
 			);
@@ -868,7 +868,7 @@ final class Plugin {
 
 		// Register each block with the shared editor script and styles.
 		foreach ( $blocks as $block ) {
-			$block_dir = \POST_KINDS_INDIEWEB_PATH . 'src/blocks/' . $block;
+			$block_dir = \PKIW_PATH . 'src/blocks/' . $block;
 
 			if ( ! file_exists( $block_dir . '/block.json' ) ) {
 				continue;
@@ -888,7 +888,7 @@ final class Plugin {
 			if ( file_exists( $style_file ) ) {
 				wp_register_style(
 					'pkiw-block-' . $block,
-					\POST_KINDS_INDIEWEB_URL . 'src/blocks/' . $block . '/style.css',
+					\PKIW_URL . 'src/blocks/' . $block . '/style.css',
 					$style_deps,
 					filemtime( $style_file )
 				);
@@ -903,7 +903,7 @@ final class Plugin {
 			if ( file_exists( $editor_style_file ) ) {
 				wp_register_style(
 					'pkiw-block-' . $block . '-editor',
-					\POST_KINDS_INDIEWEB_URL . 'src/blocks/' . $block . '/editor.css',
+					\PKIW_URL . 'src/blocks/' . $block . '/editor.css',
 					$style_deps,
 					filemtime( $editor_style_file )
 				);
@@ -938,7 +938,7 @@ final class Plugin {
 	 * @return void
 	 */
 	public function enqueue_editor_assets(): void {
-		$asset_file = \POST_KINDS_INDIEWEB_PATH . 'build/index.asset.php';
+		$asset_file = \PKIW_PATH . 'build/index.asset.php';
 
 		if ( ! file_exists( $asset_file ) ) {
 			return;
@@ -948,7 +948,7 @@ final class Plugin {
 
 		wp_enqueue_script(
 			'post-kinds-indieweb-editor',
-			\POST_KINDS_INDIEWEB_URL . 'build/index.js',
+			\PKIW_URL . 'build/index.js',
 			$asset['dependencies'],
 			$asset['version'],
 			true
@@ -957,7 +957,7 @@ final class Plugin {
 		wp_set_script_translations(
 			'post-kinds-indieweb-editor',
 			'post-kinds-for-indieweb',
-			\POST_KINDS_INDIEWEB_PATH . 'languages'
+			\PKIW_PATH . 'languages'
 		);
 
 		// Get syndication services data.
@@ -973,20 +973,20 @@ final class Plugin {
 		];
 
 		// Pass data to JavaScript using wp_add_inline_script for more reliable delivery.
-		// Use a unique name to avoid conflicts with admin.js which also uses postKindsIndieWeb.
+		// Use a unique name to avoid conflicts with admin.js which also uses pkiwAdmin.
 		wp_add_inline_script(
 			'post-kinds-indieweb-editor',
-			'window.postKindsIndieWebEditor = ' . wp_json_encode( $localize_data ) . ';',
+			'window.pkiwAdminEditor = ' . wp_json_encode( $localize_data ) . ';',
 			'before'
 		);
 
 		// Enqueue editor styles if they exist.
-		$style_file = \POST_KINDS_INDIEWEB_PATH . 'build/index.css';
+		$style_file = \PKIW_PATH . 'build/index.css';
 
 		if ( file_exists( $style_file ) ) {
 			wp_enqueue_style(
 				'post-kinds-indieweb-editor',
-				\POST_KINDS_INDIEWEB_URL . 'build/index.css',
+				\PKIW_URL . 'build/index.css',
 				[],
 				$asset['version']
 			);
@@ -1018,7 +1018,7 @@ final class Plugin {
 		);
 
 		// Load pattern files from patterns directory.
-		$patterns_dir = \POST_KINDS_INDIEWEB_PATH . 'patterns/';
+		$patterns_dir = \PKIW_PATH . 'patterns/';
 
 		if ( ! is_dir( $patterns_dir ) ) {
 			return;
@@ -1099,7 +1099,7 @@ final class Plugin {
 
 			// If template doesn't exist and we have a file for it, add it.
 			if ( ! $exists ) {
-				$template_file = \POST_KINDS_INDIEWEB_PATH . 'templates/' . $slug . '.html';
+				$template_file = \PKIW_PATH . 'templates/' . $slug . '.html';
 
 				if ( file_exists( $template_file ) ) {
 					$template = $this->build_template_object( $slug, $definition, $template_file );
@@ -1141,7 +1141,7 @@ final class Plugin {
 			return $template;
 		}
 
-		$template_file = \POST_KINDS_INDIEWEB_PATH . 'templates/' . $slug . '.html';
+		$template_file = \PKIW_PATH . 'templates/' . $slug . '.html';
 
 		if ( file_exists( $template_file ) ) {
 			return $this->build_template_object( $slug, $template_definitions[ $slug ], $template_file );
@@ -1192,7 +1192,7 @@ final class Plugin {
 	 *
 	 * @return void
 	 */
-	public function post_kinds_conflict_notice(): void {
+	public function pkiw_conflict_notice(): void {
 		$message = sprintf(
 			/* translators: %s: Post Kinds plugin name */
 			esc_html__(
@@ -1463,9 +1463,9 @@ final class Plugin {
 	 * @return void
 	 */
 	public function maybe_flush_rewrite_rules(): void {
-		if ( get_option( 'post_kinds_indieweb_flush_rewrite' ) ) {
+		if ( get_option( 'pkiw_flush_rewrite' ) ) {
 			flush_rewrite_rules();
-			delete_option( 'post_kinds_indieweb_flush_rewrite' );
+			delete_option( 'pkiw_flush_rewrite' );
 		}
 	}
 
@@ -1479,8 +1479,8 @@ final class Plugin {
 	 */
 	private function get_available_syndication_services(): array {
 		$services    = [];
-		$settings    = get_option( 'post_kinds_indieweb_settings', [] );
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$settings    = get_option( 'pkiw_settings', [] );
+		$credentials = get_option( 'pkiw_api_credentials', [] );
 
 		// Check Last.fm for listen posts.
 		if ( ! empty( $settings['listen_sync_to_lastfm'] ) ) {
@@ -1491,7 +1491,7 @@ final class Plugin {
 			$services['lastfm'] = [
 				'name'      => 'Last.fm',
 				'kind'      => 'listen',
-				'metaKey'   => '_postkind_syndicate_lastfm',
+				'metaKey'   => '_pkiw_syndicate_lastfm',
 				'connected' => ! empty( $lastfm['session_key'] ),
 				'needsAuth' => empty( $lastfm['session_key'] ),
 			];
@@ -1504,7 +1504,7 @@ final class Plugin {
 			$services['trakt'] = [
 				'name'      => 'Trakt',
 				'kind'      => 'watch',
-				'metaKey'   => '_postkind_syndicate_trakt',
+				'metaKey'   => '_pkiw_syndicate_trakt',
 				'connected' => ! empty( $trakt['access_token'] ),
 				'needsAuth' => empty( $trakt['access_token'] ),
 			];
@@ -1517,7 +1517,7 @@ final class Plugin {
 			$services['foursquare'] = [
 				'name'      => 'Foursquare',
 				'kind'      => 'checkin',
-				'metaKey'   => '_postkind_syndicate_foursquare',
+				'metaKey'   => '_pkiw_syndicate_foursquare',
 				'connected' => ! empty( $foursquare['access_token'] ),
 				'needsAuth' => empty( $foursquare['access_token'] ),
 			];
@@ -1532,6 +1532,6 @@ final class Plugin {
 		 *
 		 * @param array $services Array of service configurations.
 		 */
-		return apply_filters( 'post_kinds_indieweb_syndication_services', $services );
+		return apply_filters( 'pkiw_syndication_services', $services );
 	}
 }

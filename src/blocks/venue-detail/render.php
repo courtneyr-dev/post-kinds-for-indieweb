@@ -2,7 +2,7 @@
 /**
  * Venue Detail Block - Server-side Render
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @var array    $attributes Block attributes.
  * @var string   $content    Block content.
  * @var WP_Block $block      Block instance.
@@ -14,8 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
-use PostKindsForIndieWeb\Venue_Taxonomy;
-use function PostKindsForIndieWeb\get_checkins_at_venue;
+use PKIW\Venue_Taxonomy;
+use function PKIW\get_checkins_at_venue;
 
 // Extract attributes with defaults.
 $pkiw_venue_id      = absint( $attributes['venueId'] ?? 0 );

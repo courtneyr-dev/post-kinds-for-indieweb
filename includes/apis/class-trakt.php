@@ -4,13 +4,13 @@
  *
  * Provides watch history import and tracking from Trakt.tv.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\APIs;
+namespace PKIW\APIs;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -85,7 +85,7 @@ class Trakt extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials         = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials         = get_option( 'pkiw_api_credentials', [] );
 		$trakt_creds         = $credentials['trakt'] ?? [];
 		$this->client_id     = $trakt_creds['client_id'] ?? '';
 		$this->client_secret = $trakt_creds['client_secret'] ?? '';

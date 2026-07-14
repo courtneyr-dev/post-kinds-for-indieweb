@@ -2,18 +2,18 @@
 /**
  * Test the Trakt Watch Sync class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\Sync\Trakt_Watch_Sync;
+use PKIW\Sync\Trakt_Watch_Sync;
 use WP_UnitTestCase;
 
 /**
  * Test the Trakt Watch Sync integration.
  *
- * @covers \PostKindsForIndieWeb\Sync\Trakt_Watch_Sync
+ * @covers \PKIW\Sync\Trakt_Watch_Sync
  */
 class TraktWatchSyncTest extends WP_UnitTestCase {
 
@@ -30,7 +30,7 @@ class TraktWatchSyncTest extends WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 
-		update_option( 'post_kinds_indieweb_api_credentials', [
+		update_option( 'pkiw_api_credentials', [
 			'trakt' => [
 				'client_id'     => 'test-trakt-id',
 				'client_secret' => 'test-trakt-secret',
@@ -81,7 +81,7 @@ class TraktWatchSyncTest extends WP_UnitTestCase {
 	 * Test add_syndication_target without credentials.
 	 */
 	public function test_add_syndication_target_not_connected(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 
 		$sync    = new Trakt_Watch_Sync();
 		$targets = $sync->add_syndication_target( [] );

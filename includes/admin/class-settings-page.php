@@ -4,11 +4,11 @@
  *
  * Main settings page for plugin configuration.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.0.0
  */
 
-namespace PostKindsForIndieWeb\Admin;
+namespace PKIW\Admin;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -59,80 +59,80 @@ class Settings_Page {
 	public function register_sections_and_fields(): void {
 		// General section.
 		add_settings_section(
-			'post_kinds_indieweb_general_section',
+			'pkiw_general_section',
 			__( 'General Settings', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_general_section' ],
-			'post_kinds_indieweb_general'
+			'pkiw_general'
 		);
 
 		$this->add_general_fields();
 
 		// Content section.
 		add_settings_section(
-			'post_kinds_indieweb_content_section',
+			'pkiw_content_section',
 			__( 'Content Settings', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_content_section' ],
-			'post_kinds_indieweb_content'
+			'pkiw_content'
 		);
 
 		$this->add_content_fields();
 
 		// Listen section.
 		add_settings_section(
-			'post_kinds_indieweb_listen_section',
+			'pkiw_listen_section',
 			__( 'Listen Posts', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_listen_section' ],
-			'post_kinds_indieweb_listen'
+			'pkiw_listen'
 		);
 
 		$this->add_listen_fields();
 
 		// Watch section.
 		add_settings_section(
-			'post_kinds_indieweb_watch_section',
+			'pkiw_watch_section',
 			__( 'Watch Posts', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_watch_section' ],
-			'post_kinds_indieweb_watch'
+			'pkiw_watch'
 		);
 
 		$this->add_watch_fields();
 
 		// Read section.
 		add_settings_section(
-			'post_kinds_indieweb_read_section',
+			'pkiw_read_section',
 			__( 'Read Posts', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_read_section' ],
-			'post_kinds_indieweb_read'
+			'pkiw_read'
 		);
 
 		$this->add_read_fields();
 
 		// Checkin section.
 		add_settings_section(
-			'post_kinds_indieweb_checkin_section',
+			'pkiw_checkin_section',
 			__( 'Checkin Posts', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_checkin_section' ],
-			'post_kinds_indieweb_checkin'
+			'pkiw_checkin'
 		);
 
 		$this->add_checkin_fields();
 
 		// Performance section.
 		add_settings_section(
-			'post_kinds_indieweb_performance_section',
+			'pkiw_performance_section',
 			__( 'Performance', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_performance_section' ],
-			'post_kinds_indieweb_performance'
+			'pkiw_performance'
 		);
 
 		$this->add_performance_fields();
 
 		// Integrations section.
 		add_settings_section(
-			'post_kinds_indieweb_integrations_section',
+			'pkiw_integrations_section',
 			__( 'Third-Party Integrations', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_integrations_section' ],
-			'post_kinds_indieweb_integrations'
+			'pkiw_integrations'
 		);
 
 		$this->add_integrations_fields();
@@ -148,8 +148,8 @@ class Settings_Page {
 			'default_category',
 			__( 'Default category', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_category_field' ],
-			'post_kinds_indieweb_general',
-			'post_kinds_indieweb_general_section',
+			'pkiw_general',
+			'pkiw_general_section',
 			[
 				'id'        => 'default_category',
 				'label_for' => 'default_category',
@@ -161,8 +161,8 @@ class Settings_Page {
 			'default_post_status',
 			__( 'Default Post Status', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_select_field' ],
-			'post_kinds_indieweb_general',
-			'post_kinds_indieweb_general_section',
+			'pkiw_general',
+			'pkiw_general_section',
 			[
 				'id'        => 'default_post_status',
 				'label_for' => 'default_post_status',
@@ -180,8 +180,8 @@ class Settings_Page {
 			'enable_microformats',
 			__( 'Enable Microformats', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_checkbox_field' ],
-			'post_kinds_indieweb_general',
-			'post_kinds_indieweb_general_section',
+			'pkiw_general',
+			'pkiw_general_section',
 			[
 				'id'        => 'enable_microformats',
 				'label_for' => 'enable_microformats',
@@ -193,8 +193,8 @@ class Settings_Page {
 			'enable_syndication',
 			__( 'Enable Syndication', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_checkbox_field' ],
-			'post_kinds_indieweb_general',
-			'post_kinds_indieweb_general_section',
+			'pkiw_general',
+			'pkiw_general_section',
 			[
 				'id'        => 'enable_syndication',
 				'label_for' => 'enable_syndication',
@@ -207,8 +207,8 @@ class Settings_Page {
 			'sync_formats_to_kinds',
 			__( 'Sync Post Formats to Kinds', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_checkbox_field' ],
-			'post_kinds_indieweb_general',
-			'post_kinds_indieweb_general_section',
+			'pkiw_general',
+			'pkiw_general_section',
 			[
 				'id'        => 'sync_formats_to_kinds',
 				'label_for' => 'sync_formats_to_kinds',
@@ -235,8 +235,8 @@ class Settings_Page {
 			'auto_fetch_metadata',
 			__( 'Auto-fetch Metadata', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_checkbox_field' ],
-			'post_kinds_indieweb_content',
-			'post_kinds_indieweb_content_section',
+			'pkiw_content',
+			'pkiw_content_section',
 			[
 				'id'   => 'auto_fetch_metadata',
 				'desc' => __( 'Automatically fetch metadata from external APIs when creating posts.', 'post-kinds-for-indieweb' ),
@@ -247,8 +247,8 @@ class Settings_Page {
 			'cache_duration',
 			__( 'Cache Duration', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_select_field' ],
-			'post_kinds_indieweb_content',
-			'post_kinds_indieweb_content_section',
+			'pkiw_content',
+			'pkiw_content_section',
 			[
 				'id'      => 'cache_duration',
 				'options' => [
@@ -267,8 +267,8 @@ class Settings_Page {
 			'image_handling',
 			__( 'Image Handling', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_select_field' ],
-			'post_kinds_indieweb_content',
-			'post_kinds_indieweb_content_section',
+			'pkiw_content',
+			'pkiw_content_section',
 			[
 				'id'      => 'image_handling',
 				'options' => [
@@ -291,8 +291,8 @@ class Settings_Page {
 			'listen_auto_import',
 			__( 'Auto-Sync Music', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_source_auto_sync_field' ],
-			'post_kinds_indieweb_listen',
-			'post_kinds_indieweb_listen_section',
+			'pkiw_listen',
+			'pkiw_listen_section',
 			[
 				'id'          => 'listen_auto_import',
 				'source_type' => 'music',
@@ -305,8 +305,8 @@ class Settings_Page {
 			'listen_import_source',
 			__( 'Music Import Source', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_select_field' ],
-			'post_kinds_indieweb_listen',
-			'post_kinds_indieweb_listen_section',
+			'pkiw_listen',
+			'pkiw_listen_section',
 			[
 				'id'      => 'listen_import_source',
 				'options' => [
@@ -321,8 +321,8 @@ class Settings_Page {
 			'listen_embed_source',
 			__( 'Embed Player', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_select_field' ],
-			'post_kinds_indieweb_listen',
-			'post_kinds_indieweb_listen_section',
+			'pkiw_listen',
+			'pkiw_listen_section',
 			[
 				'id'      => 'listen_embed_source',
 				'options' => [
@@ -341,8 +341,8 @@ class Settings_Page {
 			'listen_podcast_auto_import',
 			__( 'Auto-Sync Podcasts', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_source_auto_sync_field' ],
-			'post_kinds_indieweb_listen',
-			'post_kinds_indieweb_listen_section',
+			'pkiw_listen',
+			'pkiw_listen_section',
 			[
 				'id'          => 'listen_podcast_auto_import',
 				'source_type' => 'podcasts',
@@ -356,8 +356,8 @@ class Settings_Page {
 			'listen_default_rating',
 			__( 'Default Rating', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_number_field' ],
-			'post_kinds_indieweb_listen',
-			'post_kinds_indieweb_listen_section',
+			'pkiw_listen',
+			'pkiw_listen_section',
 			[
 				'id'   => 'listen_default_rating',
 				'min'  => 0,
@@ -371,8 +371,8 @@ class Settings_Page {
 			'listen_sync_to_lastfm',
 			__( 'Scrobble to Last.fm', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_checkbox_field' ],
-			'post_kinds_indieweb_listen',
-			'post_kinds_indieweb_listen_section',
+			'pkiw_listen',
+			'pkiw_listen_section',
 			[
 				'id'   => 'listen_sync_to_lastfm',
 				'desc' => __( 'Automatically scrobble listen posts to Last.fm when published (requires Last.fm session key).', 'post-kinds-for-indieweb' ),
@@ -390,8 +390,8 @@ class Settings_Page {
 			'watch_auto_import',
 			__( 'Auto-Sync Movies & TV', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_source_auto_sync_field' ],
-			'post_kinds_indieweb_watch',
-			'post_kinds_indieweb_watch_section',
+			'pkiw_watch',
+			'pkiw_watch_section',
 			[
 				'id'          => 'watch_auto_import',
 				'source_type' => 'watch',
@@ -404,8 +404,8 @@ class Settings_Page {
 			'watch_import_source',
 			__( 'Import Source', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_select_field' ],
-			'post_kinds_indieweb_watch',
-			'post_kinds_indieweb_watch_section',
+			'pkiw_watch',
+			'pkiw_watch_section',
 			[
 				'id'      => 'watch_import_source',
 				'options' => [
@@ -420,8 +420,8 @@ class Settings_Page {
 			'watch_default_rating',
 			__( 'Default Rating', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_number_field' ],
-			'post_kinds_indieweb_watch',
-			'post_kinds_indieweb_watch_section',
+			'pkiw_watch',
+			'pkiw_watch_section',
 			[
 				'id'   => 'watch_default_rating',
 				'min'  => 0,
@@ -435,8 +435,8 @@ class Settings_Page {
 			'watch_include_rewatches',
 			__( 'Include Rewatches', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_checkbox_field' ],
-			'post_kinds_indieweb_watch',
-			'post_kinds_indieweb_watch_section',
+			'pkiw_watch',
+			'pkiw_watch_section',
 			[
 				'id'   => 'watch_include_rewatches',
 				'desc' => __( 'Create posts for rewatched content (may create duplicates).', 'post-kinds-for-indieweb' ),
@@ -447,8 +447,8 @@ class Settings_Page {
 			'watch_sync_to_trakt',
 			__( 'Sync to Trakt', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_checkbox_field' ],
-			'post_kinds_indieweb_watch',
-			'post_kinds_indieweb_watch_section',
+			'pkiw_watch',
+			'pkiw_watch_section',
 			[
 				'id'   => 'watch_sync_to_trakt',
 				'desc' => __( 'Automatically sync watch posts to Trakt history when published (requires Trakt OAuth).', 'post-kinds-for-indieweb' ),
@@ -466,8 +466,8 @@ class Settings_Page {
 			'read_auto_import',
 			__( 'Auto-Sync Books', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_source_auto_sync_field' ],
-			'post_kinds_indieweb_read',
-			'post_kinds_indieweb_read_section',
+			'pkiw_read',
+			'pkiw_read_section',
 			[
 				'id'          => 'read_auto_import',
 				'source_type' => 'books',
@@ -480,8 +480,8 @@ class Settings_Page {
 			'read_import_source',
 			__( 'Book Import Source', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_select_field' ],
-			'post_kinds_indieweb_read',
-			'post_kinds_indieweb_read_section',
+			'pkiw_read',
+			'pkiw_read_section',
 			[
 				'id'      => 'read_import_source',
 				'options' => [
@@ -496,8 +496,8 @@ class Settings_Page {
 			'read_articles_auto_import',
 			__( 'Auto-Sync Articles', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_source_auto_sync_field' ],
-			'post_kinds_indieweb_read',
-			'post_kinds_indieweb_read_section',
+			'pkiw_read',
+			'pkiw_read_section',
 			[
 				'id'          => 'read_articles_auto_import',
 				'source_type' => 'articles',
@@ -511,8 +511,8 @@ class Settings_Page {
 			'read_default_status',
 			__( 'Default Read Status', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_select_field' ],
-			'post_kinds_indieweb_read',
-			'post_kinds_indieweb_read_section',
+			'pkiw_read',
+			'pkiw_read_section',
 			[
 				'id'      => 'read_default_status',
 				'options' => [
@@ -536,8 +536,8 @@ class Settings_Page {
 			'checkin_auto_import',
 			__( 'Auto-Sync Checkins', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_source_auto_sync_field' ],
-			'post_kinds_indieweb_checkin',
-			'post_kinds_indieweb_checkin_section',
+			'pkiw_checkin',
+			'pkiw_checkin_section',
 			[
 				'id'          => 'checkin_auto_import',
 				'source_type' => 'checkins',
@@ -551,8 +551,8 @@ class Settings_Page {
 			'checkin_default_privacy',
 			__( 'Default Location Privacy', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_privacy_field' ],
-			'post_kinds_indieweb_checkin',
-			'post_kinds_indieweb_checkin_section',
+			'pkiw_checkin',
+			'pkiw_checkin_section',
 			[
 				'id' => 'checkin_default_privacy',
 			]
@@ -562,8 +562,8 @@ class Settings_Page {
 			'checkin_coordinate_handling',
 			__( 'Coordinate Handling', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_coordinate_handling_field' ],
-			'post_kinds_indieweb_checkin',
-			'post_kinds_indieweb_checkin_section',
+			'pkiw_checkin',
+			'pkiw_checkin_section',
 			[
 				'id' => 'checkin_coordinate_handling',
 			]
@@ -573,8 +573,8 @@ class Settings_Page {
 			'checkin_venue_source',
 			__( 'Venue Search Source', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_select_field' ],
-			'post_kinds_indieweb_checkin',
-			'post_kinds_indieweb_checkin_section',
+			'pkiw_checkin',
+			'pkiw_checkin_section',
 			[
 				'id'      => 'checkin_venue_source',
 				'options' => [
@@ -590,8 +590,8 @@ class Settings_Page {
 			'checkin_sync_to_foursquare',
 			__( 'Sync to Foursquare', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_checkbox_field' ],
-			'post_kinds_indieweb_checkin',
-			'post_kinds_indieweb_checkin_section',
+			'pkiw_checkin',
+			'pkiw_checkin_section',
 			[
 				'id'   => 'checkin_sync_to_foursquare',
 				'desc' => __( 'Post checkins to Foursquare when publishing (requires Foursquare OAuth connection). This is a POSSE approach - Publish on your Own Site, Syndicate Elsewhere.', 'post-kinds-for-indieweb' ),
@@ -602,8 +602,8 @@ class Settings_Page {
 			'foursquare_connection',
 			__( 'Foursquare Connection', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_foursquare_connection_field' ],
-			'post_kinds_indieweb_checkin',
-			'post_kinds_indieweb_checkin_section',
+			'pkiw_checkin',
+			'pkiw_checkin_section',
 			[
 				'id' => 'foursquare_connection',
 			]
@@ -620,8 +620,8 @@ class Settings_Page {
 			'enable_background_sync',
 			__( 'Automatic Sync', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_auto_sync_field' ],
-			'post_kinds_indieweb_performance',
-			'post_kinds_indieweb_performance_section',
+			'pkiw_performance',
+			'pkiw_performance_section',
 			[
 				'id' => 'enable_background_sync',
 			]
@@ -631,8 +631,8 @@ class Settings_Page {
 			'rate_limit_delay',
 			__( 'Rate Limit Delay', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_number_field' ],
-			'post_kinds_indieweb_performance',
-			'post_kinds_indieweb_performance_section',
+			'pkiw_performance',
+			'pkiw_performance_section',
 			[
 				'id'   => 'rate_limit_delay',
 				'min'  => 0,
@@ -646,8 +646,8 @@ class Settings_Page {
 			'batch_size',
 			__( 'Import Batch Size', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_number_field' ],
-			'post_kinds_indieweb_performance',
-			'post_kinds_indieweb_performance_section',
+			'pkiw_performance',
+			'pkiw_performance_section',
 			[
 				'id'   => 'batch_size',
 				'min'  => 1,
@@ -669,8 +669,8 @@ class Settings_Page {
 			'wprm_auto_kind',
 			__( 'WP Recipe Maker', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_wprm_integration_field' ],
-			'post_kinds_indieweb_integrations',
-			'post_kinds_indieweb_integrations_section',
+			'pkiw_integrations',
+			'pkiw_integrations_section',
 			[
 				'id' => 'wprm_auto_kind',
 			]
@@ -700,7 +700,7 @@ class Settings_Page {
 
 			<form method="post" action="options.php" class="post-kinds-indieweb-form">
 				<?php
-				settings_fields( 'post_kinds_indieweb_general' );
+				settings_fields( 'pkiw_general' );
 
 				switch ( $this->active_tab ) {
 					case 'general':
@@ -848,8 +848,8 @@ class Settings_Page {
 	 * @return void
 	 */
 	private function render_general_tab(): void {
-		echo '<input type="hidden" name="post_kinds_indieweb_settings[_active_tab]" value="general">';
-		do_settings_sections( 'post_kinds_indieweb_general' );
+		echo '<input type="hidden" name="pkiw_settings[_active_tab]" value="general">';
+		do_settings_sections( 'pkiw_general' );
 	}
 
 	/**
@@ -858,8 +858,8 @@ class Settings_Page {
 	 * @return void
 	 */
 	private function render_content_tab(): void {
-		echo '<input type="hidden" name="post_kinds_indieweb_settings[_active_tab]" value="content">';
-		do_settings_sections( 'post_kinds_indieweb_content' );
+		echo '<input type="hidden" name="pkiw_settings[_active_tab]" value="content">';
+		do_settings_sections( 'pkiw_content' );
 	}
 
 	/**
@@ -868,8 +868,8 @@ class Settings_Page {
 	 * @return void
 	 */
 	private function render_listen_tab(): void {
-		echo '<input type="hidden" name="post_kinds_indieweb_settings[_active_tab]" value="listen">';
-		do_settings_sections( 'post_kinds_indieweb_listen' );
+		echo '<input type="hidden" name="pkiw_settings[_active_tab]" value="listen">';
+		do_settings_sections( 'pkiw_listen' );
 	}
 
 	/**
@@ -878,8 +878,8 @@ class Settings_Page {
 	 * @return void
 	 */
 	private function render_watch_tab(): void {
-		echo '<input type="hidden" name="post_kinds_indieweb_settings[_active_tab]" value="watch">';
-		do_settings_sections( 'post_kinds_indieweb_watch' );
+		echo '<input type="hidden" name="pkiw_settings[_active_tab]" value="watch">';
+		do_settings_sections( 'pkiw_watch' );
 	}
 
 	/**
@@ -888,8 +888,8 @@ class Settings_Page {
 	 * @return void
 	 */
 	private function render_read_tab(): void {
-		echo '<input type="hidden" name="post_kinds_indieweb_settings[_active_tab]" value="read">';
-		do_settings_sections( 'post_kinds_indieweb_read' );
+		echo '<input type="hidden" name="pkiw_settings[_active_tab]" value="read">';
+		do_settings_sections( 'pkiw_read' );
 	}
 
 	/**
@@ -898,8 +898,8 @@ class Settings_Page {
 	 * @return void
 	 */
 	private function render_checkin_tab(): void {
-		echo '<input type="hidden" name="post_kinds_indieweb_settings[_active_tab]" value="checkin">';
-		do_settings_sections( 'post_kinds_indieweb_checkin' );
+		echo '<input type="hidden" name="pkiw_settings[_active_tab]" value="checkin">';
+		do_settings_sections( 'pkiw_checkin' );
 	}
 
 	/**
@@ -908,8 +908,8 @@ class Settings_Page {
 	 * @return void
 	 */
 	private function render_performance_tab(): void {
-		echo '<input type="hidden" name="post_kinds_indieweb_settings[_active_tab]" value="performance">';
-		do_settings_sections( 'post_kinds_indieweb_performance' );
+		echo '<input type="hidden" name="pkiw_settings[_active_tab]" value="performance">';
+		do_settings_sections( 'pkiw_performance' );
 	}
 
 	/**
@@ -918,13 +918,13 @@ class Settings_Page {
 	 * @return void
 	 */
 	private function render_integrations_tab(): void {
-		echo '<input type="hidden" name="post_kinds_indieweb_settings[_active_tab]" value="integrations">';
+		echo '<input type="hidden" name="pkiw_settings[_active_tab]" value="integrations">';
 
 		// Render the comprehensive integrations documentation.
 		$this->render_integrations_documentation();
 
 		// Then render the settings sections.
-		do_settings_sections( 'post_kinds_indieweb_integrations' );
+		do_settings_sections( 'pkiw_integrations' );
 	}
 
 	/**
@@ -933,10 +933,8 @@ class Settings_Page {
 	 * @return void
 	 */
 	private function render_integrations_documentation(): void {
-		$plugin = \PostKindsForIndieWeb\Plugin::get_instance();
-		?>
-		<div class="post-kinds-integrations-docs">
-			<style>
+		$plugin = \PKIW\Plugin::get_instance();
+		$integrations_css = <<<'CSS'
 				.post-kinds-integrations-docs {
 					margin-bottom: 30px;
 				}
@@ -1001,7 +999,13 @@ class Settings_Page {
 				.integration-category:first-child {
 					margin-top: 0;
 				}
-			</style>
+			
+CSS;
+		wp_register_style( 'pkiw-settings-inline', false, [], PKIW_VERSION );
+		wp_enqueue_style( 'pkiw-settings-inline' );
+		wp_add_inline_style( 'pkiw-settings-inline', $integrations_css );
+		?>
+		<div class="post-kinds-integrations-docs">
 
 			<h2 class="integration-category"><?php esc_html_e( 'Core IndieWeb Plugins', 'post-kinds-for-indieweb' ); ?></h2>
 
@@ -1351,7 +1355,7 @@ class Settings_Page {
 			<table class="form-table">
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Plugin Version', 'post-kinds-for-indieweb' ); ?></th>
-					<td><code><?php echo esc_html( \POST_KINDS_INDIEWEB_VERSION ); ?></code></td>
+					<td><code><?php echo esc_html( \PKIW_VERSION ); ?></code></td>
 				</tr>
 				<tr>
 					<th scope="row"><?php esc_html_e( 'WordPress Version', 'post-kinds-for-indieweb' ); ?></th>
@@ -1385,7 +1389,7 @@ class Settings_Page {
 					<th scope="row"><?php esc_html_e( 'Active Imports', 'post-kinds-for-indieweb' ); ?></th>
 					<td>
 						<?php
-						$active_imports = get_option( 'post_kinds_indieweb_active_imports', [] );
+						$active_imports = get_option( 'pkiw_active_imports', [] );
 						echo esc_html( count( $active_imports ) );
 						?>
 					</td>
@@ -1402,11 +1406,11 @@ class Settings_Page {
 	 * @return void
 	 */
 	public function render_select_field( array $args ): void {
-		$settings = get_option( 'post_kinds_indieweb_settings', $this->admin->get_default_settings() );
+		$settings = get_option( 'pkiw_settings', $this->admin->get_default_settings() );
 		$value    = $settings[ $args['id'] ] ?? '';
 
 		printf(
-			'<select name="post_kinds_indieweb_settings[%s]" id="%s">',
+			'<select name="pkiw_settings[%s]" id="%s">',
 			esc_attr( $args['id'] ),
 			esc_attr( $args['id'] )
 		);
@@ -1435,7 +1439,7 @@ class Settings_Page {
 	 */
 	public function render_category_field( array $args ): void {
 		$id       = (string) ( $args['id'] ?? '' );
-		$settings = get_option( 'post_kinds_indieweb_settings', $this->admin->get_default_settings() );
+		$settings = get_option( 'pkiw_settings', $this->admin->get_default_settings() );
 		$current  = isset( $settings[ $id ] ) ? (int) $settings[ $id ] : 0;
 
 		wp_dropdown_categories(
@@ -1443,7 +1447,7 @@ class Settings_Page {
 				'show_option_none'  => __( '— None —', 'post-kinds-for-indieweb' ),
 				'option_none_value' => 0,
 				'hide_empty'        => false,
-				'name'              => 'post_kinds_indieweb_settings[' . $id . ']',
+				'name'              => 'pkiw_settings[' . $id . ']',
 				'id'                => $id,
 				'selected'          => $current,
 				'taxonomy'          => 'category',
@@ -1462,11 +1466,11 @@ class Settings_Page {
 	 * @return void
 	 */
 	public function render_checkbox_field( array $args ): void {
-		$settings = get_option( 'post_kinds_indieweb_settings', $this->admin->get_default_settings() );
+		$settings = get_option( 'pkiw_settings', $this->admin->get_default_settings() );
 		$checked  = ! empty( $settings[ $args['id'] ] );
 
 		printf(
-			'<label><input type="checkbox" name="post_kinds_indieweb_settings[%s]" id="%s" value="1"%s> %s</label>',
+			'<label><input type="checkbox" name="pkiw_settings[%s]" id="%s" value="1"%s> %s</label>',
 			esc_attr( $args['id'] ),
 			esc_attr( $args['id'] ),
 			checked( $checked, true, false ),
@@ -1485,11 +1489,11 @@ class Settings_Page {
 	 * @return void
 	 */
 	public function render_number_field( array $args ): void {
-		$settings = get_option( 'post_kinds_indieweb_settings', $this->admin->get_default_settings() );
+		$settings = get_option( 'pkiw_settings', $this->admin->get_default_settings() );
 		$value    = $settings[ $args['id'] ] ?? 0;
 
 		printf(
-			'<input type="number" name="post_kinds_indieweb_settings[%s]" id="%s" value="%s" min="%s" max="%s" step="%s" class="small-text">',
+			'<input type="number" name="pkiw_settings[%s]" id="%s" value="%s" min="%s" max="%s" step="%s" class="small-text">',
 			esc_attr( $args['id'] ),
 			esc_attr( $args['id'] ),
 			esc_attr( $value ),
@@ -1510,11 +1514,11 @@ class Settings_Page {
 	 * @return void
 	 */
 	public function render_text_field( array $args ): void {
-		$settings = get_option( 'post_kinds_indieweb_settings', $this->admin->get_default_settings() );
+		$settings = get_option( 'pkiw_settings', $this->admin->get_default_settings() );
 		$value    = $settings[ $args['id'] ] ?? '';
 
 		printf(
-			'<input type="text" name="post_kinds_indieweb_settings[%s]" id="%s" value="%s" class="regular-text">',
+			'<input type="text" name="pkiw_settings[%s]" id="%s" value="%s" class="regular-text">',
 			esc_attr( $args['id'] ),
 			esc_attr( $args['id'] ),
 			esc_attr( $value )
@@ -1532,7 +1536,7 @@ class Settings_Page {
 	 * @return void
 	 */
 	public function render_enabled_kinds_field( array $args ): void {
-		$settings        = get_option( 'post_kinds_indieweb_settings', $this->admin->get_default_settings() );
+		$settings        = get_option( 'pkiw_settings', $this->admin->get_default_settings() );
 		$enabled_kinds   = $settings['enabled_kinds'] ?? $this->get_default_enabled_kinds();
 		$format_mappings = $settings['kind_format_mappings'] ?? $this->get_default_kind_format_mappings();
 
@@ -1679,7 +1683,7 @@ class Settings_Page {
 
 			// Checkbox.
 			printf(
-				'<input type="checkbox" name="post_kinds_indieweb_settings[enabled_kinds][]" value="%s"%s id="kind_%s" style="margin-top: 2px;">',
+				'<input type="checkbox" name="pkiw_settings[enabled_kinds][]" value="%s"%s id="kind_%s" style="margin-top: 2px;">',
 				esc_attr( $kind_slug ),
 				checked( $is_enabled, true, false ),
 				esc_attr( $kind_slug )
@@ -1701,7 +1705,7 @@ class Settings_Page {
 			// <label> bound to the checkbox, so this <select> needs its own
 			// accessible name — without it axe flags `select-name`.
 			printf(
-				'<select name="post_kinds_indieweb_settings[kind_format_mappings][%s]" aria-label="%s" style="width: 100%%; max-width: 150px; font-size: 12px;">',
+				'<select name="pkiw_settings[kind_format_mappings][%s]" aria-label="%s" style="width: 100%%; max-width: 150px; font-size: 12px;">',
 				esc_attr( $kind_slug ),
 				/* translators: %s: reaction type label, e.g. "Note". */
 				esc_attr( sprintf( __( 'Post format for %s', 'post-kinds-for-indieweb' ), $kind_data['label'] ) )
@@ -1727,17 +1731,13 @@ class Settings_Page {
 		echo '<button type="button" class="button" id="disable-all-kinds">' . esc_html__( 'Disable All', 'post-kinds-for-indieweb' ) . '</button>';
 		echo '</div>';
 
-		// JavaScript for enable/disable all buttons.
-		?>
-		<script>
-		document.getElementById('enable-all-kinds').addEventListener('click', function() {
-			document.querySelectorAll('.enabled-kind-item input[type="checkbox"]').forEach(cb => cb.checked = true);
-		});
-		document.getElementById('disable-all-kinds').addEventListener('click', function() {
-			document.querySelectorAll('.enabled-kind-item input[type="checkbox"]').forEach(cb => cb.checked = false);
-		});
-		</script>
-		<?php
+		// Enable/disable-all handlers ride the enqueued admin script
+		// (footer-loaded, so the buttons exist when it runs).
+		wp_add_inline_script(
+			'pkiw-admin',
+			"document.getElementById('enable-all-kinds')?.addEventListener('click', () => document.querySelectorAll('.enabled-kind-item input[type=\"checkbox\"]').forEach(cb => cb.checked = true));"
+			. "document.getElementById('disable-all-kinds')?.addEventListener('click', () => document.querySelectorAll('.enabled-kind-item input[type=\"checkbox\"]').forEach(cb => cb.checked = false));"
+		);
 	}
 
 	/**
@@ -1811,7 +1811,7 @@ class Settings_Page {
 	 * @return void
 	 */
 	public function render_privacy_field( array $args ): void {
-		$settings = get_option( 'post_kinds_indieweb_settings', $this->admin->get_default_settings() );
+		$settings = get_option( 'pkiw_settings', $this->admin->get_default_settings() );
 		$value    = $settings[ $args['id'] ] ?? 'approximate';
 
 		$options = [
@@ -1833,7 +1833,7 @@ class Settings_Page {
 		foreach ( $options as $option_value => $option_data ) {
 			printf(
 				'<label style="display: block; margin-bottom: 12px;">
-                    <input type="radio" name="post_kinds_indieweb_settings[%s]" value="%s"%s>
+                    <input type="radio" name="pkiw_settings[%s]" value="%s"%s>
                     <strong>%s</strong>
                     <p class="description" style="margin-left: 24px; margin-top: 4px;">%s</p>
                 </label>',
@@ -1857,7 +1857,7 @@ class Settings_Page {
 	 * @return void
 	 */
 	public function render_coordinate_handling_field( array $args ): void {
-		$settings = get_option( 'post_kinds_indieweb_settings', $this->admin->get_default_settings() );
+		$settings = get_option( 'pkiw_settings', $this->admin->get_default_settings() );
 		$value    = $settings[ $args['id'] ] ?? 'store_hide';
 
 		$options = [
@@ -1883,7 +1883,7 @@ class Settings_Page {
 		foreach ( $options as $option_value => $option_data ) {
 			printf(
 				'<label style="display: block; margin-bottom: 12px;">
-                    <input type="radio" name="post_kinds_indieweb_settings[%s]" value="%s"%s>
+                    <input type="radio" name="pkiw_settings[%s]" value="%s"%s>
                     <strong>%s</strong>
                     <p class="description" style="margin-left: 24px; margin-top: 4px;">%s</p>
                 </label>',
@@ -1911,11 +1911,11 @@ class Settings_Page {
 	 * @return void
 	 */
 	public function render_auto_sync_field( array $args ): void {
-		$settings = get_option( 'post_kinds_indieweb_settings', $this->admin->get_default_settings() );
+		$settings = get_option( 'pkiw_settings', $this->admin->get_default_settings() );
 		$enabled  = ! empty( $settings['enable_background_sync'] );
 
 		// Get next/last sync times from scheduled sync.
-		$plugin         = \PostKindsForIndieWeb\Plugin::get_instance();
+		$plugin         = \PKIW\Plugin::get_instance();
 		$scheduled_sync = $plugin->get_scheduled_sync();
 		$last_sync      = $scheduled_sync ? $scheduled_sync->get_last_sync_time() : null;
 		$next_sync      = $scheduled_sync ? $scheduled_sync->get_next_sync_time() : null;
@@ -1948,7 +1948,7 @@ class Settings_Page {
 				<label class="auto-sync-toggle" style="display: flex; align-items: center; gap: 12px; cursor: pointer; flex: 1;">
 					<input
 						type="checkbox"
-						name="post_kinds_indieweb_settings[enable_background_sync]"
+						name="pkiw_settings[enable_background_sync]"
 						id="enable_background_sync"
 						value="1"
 						<?php checked( $enabled ); ?>
@@ -2048,7 +2048,7 @@ class Settings_Page {
 	 * @return void
 	 */
 	public function render_source_auto_sync_field( array $args ): void {
-		$settings    = get_option( 'post_kinds_indieweb_settings', $this->admin->get_default_settings() );
+		$settings    = get_option( 'pkiw_settings', $this->admin->get_default_settings() );
 		$enabled     = ! empty( $settings[ $args['id'] ] );
 		$icon        = $args['icon'] ?? 'admin-generic';
 		$source_name = $args['source_name'] ?? '';
@@ -2061,7 +2061,7 @@ class Settings_Page {
 		$is_configured  = true;
 		$config_message = '';
 
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials = get_option( 'pkiw_api_credentials', [] );
 
 		if ( 'Readwise' === $source_name ) {
 			$is_configured  = ! empty( $credentials['readwise']['access_token'] );
@@ -2079,7 +2079,7 @@ class Settings_Page {
 				<label style="display: flex; align-items: center; gap: 10px; cursor: <?php echo $is_configured ? 'pointer' : 'not-allowed'; ?>; flex: 1;">
 					<input
 						type="checkbox"
-						name="post_kinds_indieweb_settings[<?php echo esc_attr( $args['id'] ); ?>]"
+						name="pkiw_settings[<?php echo esc_attr( $args['id'] ); ?>]"
 						id="<?php echo esc_attr( $args['id'] ); ?>"
 						value="1"
 						<?php checked( $enabled ); ?>
@@ -2136,7 +2136,7 @@ class Settings_Page {
 						<input
 							type="date"
 							id="sync_start_date_<?php echo esc_attr( $sync_source_key ); ?>"
-							name="post_kinds_indieweb_settings[sync_start_dates][<?php echo esc_attr( $sync_source_key ); ?>]"
+							name="pkiw_settings[sync_start_dates][<?php echo esc_attr( $sync_source_key ); ?>]"
 							value="<?php echo esc_attr( $date_value ); ?>"
 							class="regular-text"
 							style="width: auto;"
@@ -2152,22 +2152,13 @@ class Settings_Page {
 						<?php esc_html_e( 'Only auto-sync items from this date forward. Leave empty to import all history.', 'post-kinds-for-indieweb' ); ?>
 					</p>
 				</div>
-				<script>
-				document.addEventListener('DOMContentLoaded', function() {
-					document.querySelectorAll('.set-today-btn').forEach(function(btn) {
-						btn.addEventListener('click', function() {
-							var target = document.getElementById(this.dataset.target);
-							if (target) target.value = new Date().toISOString().split('T')[0];
-						});
-					});
-					document.querySelectorAll('.clear-date-btn').forEach(function(btn) {
-						btn.addEventListener('click', function() {
-							var target = document.getElementById(this.dataset.target);
-							if (target) target.value = '';
-						});
-					});
-				});
-				</script>
+				<?php
+				wp_add_inline_script(
+					'pkiw-admin',
+					"document.querySelectorAll('.set-today-btn').forEach(btn => btn.addEventListener('click', function() { const t = document.getElementById(this.dataset.target); if (t) t.value = new Date().toISOString().split('T')[0]; }));"
+					. "document.querySelectorAll('.clear-date-btn').forEach(btn => btn.addEventListener('click', function() { const t = document.getElementById(this.dataset.target); if (t) t.value = ''; }));"
+				);
+				?>
 			<?php endif; ?>
 		</div>
 		<?php
@@ -2201,7 +2192,7 @@ class Settings_Page {
 	 * @return void
 	 */
 	public function render_foursquare_connection_field( array $args ): void {
-		$credentials   = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials   = get_option( 'pkiw_api_credentials', [] );
 		$foursquare    = $credentials['foursquare'] ?? [];
 		$is_connected  = ! empty( $foursquare['access_token'] );
 		$username      = $foursquare['username'] ?? '';
@@ -2299,79 +2290,79 @@ class Settings_Page {
 
 		echo '</div>';
 
-		// JavaScript for import and disconnect actions.
+		// Import/disconnect handlers ride the enqueued admin script; the
+		// spinner keyframes attach to a late-registered inline style handle.
 		if ( $is_connected ) {
-			?>
-			<script>
-			document.getElementById('foursquare-import-checkins')?.addEventListener('click', function() {
-				const btn = this;
-				const originalText = btn.innerHTML;
-				btn.disabled = true;
-				btn.innerHTML = '<span class="dashicons dashicons-update" style="margin-top: 4px; animation: rotation 1s linear infinite;"></span> <?php echo esc_js( __( 'Importing...', 'post-kinds-for-indieweb' ) ); ?>';
+			$fsq_js = strtr(
+				<<<'JS'
+document.getElementById('foursquare-import-checkins')?.addEventListener('click', function() {
+	const btn = this;
+	const originalText = btn.innerHTML;
+	btn.disabled = true;
+	btn.innerHTML = '<span class="dashicons dashicons-update" style="margin-top: 4px; animation: pkiw-rotation 1s linear infinite;"></span> {{IMPORTING}}';
+	fetch(ajaxurl, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+		body: new URLSearchParams({ action: 'pkiw_foursquare_import', nonce: '{{NONCE}}' })
+	})
+	.then(response => response.json())
+	.then(data => {
+		btn.disabled = false;
+		btn.innerHTML = originalText;
+		if (data.success) {
+			alert('{{IMPORT_COMPLETE}} ' + data.data.message);
+		} else {
+			alert('{{IMPORT_FAILED}} ' + data.data.message);
+		}
+	})
+	.catch(error => {
+		btn.disabled = false;
+		btn.innerHTML = originalText;
+		alert('{{IMPORT_FAILED}} ' + error.message);
+	});
+});
+document.getElementById('foursquare-disconnect')?.addEventListener('click', function() {
+	if (!confirm('{{DISCONNECT_CONFIRM}}')) {
+		return;
+	}
+	const btn = this;
+	btn.disabled = true;
+	fetch(ajaxurl, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+		body: new URLSearchParams({ action: 'pkiw_foursquare_disconnect', nonce: '{{NONCE}}' })
+	})
+	.then(response => response.json())
+	.then(data => {
+		if (data.success) {
+			location.reload();
+		} else {
+			btn.disabled = false;
+			alert('{{DISCONNECT_FAILED}} ' + data.data.message);
+		}
+	})
+	.catch(error => {
+		btn.disabled = false;
+		alert('{{DISCONNECT_FAILED}} ' + error.message);
+	});
+});
+JS,
+				[
+					'{{NONCE}}'              => esc_js( wp_create_nonce( 'pkiw_admin' ) ),
+					'{{IMPORTING}}'          => esc_js( __( 'Importing...', 'post-kinds-for-indieweb' ) ),
+					'{{IMPORT_COMPLETE}}'    => esc_js( __( 'Import complete!', 'post-kinds-for-indieweb' ) ),
+					'{{IMPORT_FAILED}}'      => esc_js( __( 'Import failed:', 'post-kinds-for-indieweb' ) ),
+					'{{DISCONNECT_CONFIRM}}' => esc_js( __( 'Are you sure you want to disconnect from Foursquare? You can reconnect later.', 'post-kinds-for-indieweb' ) ),
+					'{{DISCONNECT_FAILED}}'  => esc_js( __( 'Disconnect failed:', 'post-kinds-for-indieweb' ) ),
+				]
+			);
+			wp_add_inline_script( 'pkiw-admin', $fsq_js );
 
-				fetch(ajaxurl, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-					body: new URLSearchParams({
-						action: 'post_kinds_foursquare_import',
-						nonce: '<?php echo esc_js( wp_create_nonce( 'post_kinds_indieweb_admin' ) ); ?>'
-					})
-				})
-				.then(response => response.json())
-				.then(data => {
-					btn.disabled = false;
-					btn.innerHTML = originalText;
-					if (data.success) {
-						alert('<?php echo esc_js( __( 'Import complete!', 'post-kinds-for-indieweb' ) ); ?> ' + data.data.message);
-					} else {
-						alert('<?php echo esc_js( __( 'Import failed:', 'post-kinds-for-indieweb' ) ); ?> ' + data.data.message);
-					}
-				})
-				.catch(error => {
-					btn.disabled = false;
-					btn.innerHTML = originalText;
-					alert('<?php echo esc_js( __( 'Import failed:', 'post-kinds-for-indieweb' ) ); ?> ' + error.message);
-				});
-			});
-
-			document.getElementById('foursquare-disconnect')?.addEventListener('click', function() {
-				if (!confirm('<?php echo esc_js( __( 'Are you sure you want to disconnect from Foursquare? You can reconnect later.', 'post-kinds-for-indieweb' ) ); ?>')) {
-					return;
-				}
-
-				const btn = this;
-				btn.disabled = true;
-
-				fetch(ajaxurl, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-					body: new URLSearchParams({
-						action: 'post_kinds_foursquare_disconnect',
-						nonce: '<?php echo esc_js( wp_create_nonce( 'post_kinds_indieweb_admin' ) ); ?>'
-					})
-				})
-				.then(response => response.json())
-				.then(data => {
-					if (data.success) {
-						location.reload();
-					} else {
-						btn.disabled = false;
-						alert('<?php echo esc_js( __( 'Disconnect failed:', 'post-kinds-for-indieweb' ) ); ?> ' + data.data.message);
-					}
-				})
-				.catch(error => {
-					btn.disabled = false;
-					alert('<?php echo esc_js( __( 'Disconnect failed:', 'post-kinds-for-indieweb' ) ); ?> ' + error.message);
-				});
-			});
-			</script>
-			<style>
-			@keyframes rotation {
-				from { transform: rotate(0deg); }
-				to { transform: rotate(360deg); }
+			if ( ! wp_style_is( 'pkiw-settings-inline', 'registered' ) ) {
+				wp_register_style( 'pkiw-settings-inline', false, [], PKIW_VERSION );
 			}
-			</style>
-			<?php
+			wp_enqueue_style( 'pkiw-settings-inline' );
+			wp_add_inline_style( 'pkiw-settings-inline', '@keyframes pkiw-rotation { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }' );
 		}
 	}
 
@@ -2382,7 +2373,7 @@ class Settings_Page {
 	 * @return void
 	 */
 	public function render_wprm_integration_field( array $args ): void {
-		$settings     = get_option( 'post_kinds_indieweb_settings', $this->admin->get_default_settings() );
+		$settings     = get_option( 'pkiw_settings', $this->admin->get_default_settings() );
 		$wprm_active  = class_exists( 'WPRM_Recipe_Manager' );
 		$auto_enabled = ! empty( $settings[ $args['id'] ] );
 
@@ -2406,7 +2397,7 @@ class Settings_Page {
 		<fieldset>
 			<label>
 				<input type="checkbox"
-						name="post_kinds_indieweb_settings[<?php echo esc_attr( $args['id'] ); ?>]"
+						name="pkiw_settings[<?php echo esc_attr( $args['id'] ); ?>]"
 						id="<?php echo esc_attr( $args['id'] ); ?>"
 						value="1"
 						<?php checked( $auto_enabled ); ?>>

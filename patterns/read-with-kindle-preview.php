@@ -6,13 +6,13 @@
  * embed, marked so Kindle_Embed_Bridge rewrites it server-side from the
  * post's read_asin/read_isbn meta.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.2.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Patterns;
+namespace PKIW\Patterns;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {

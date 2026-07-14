@@ -2,7 +2,7 @@
 /**
  * Coverage for the [pk_stream_card] Stream renderer.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$post    = get_post( $post_id );
 		$html    = '<h3 class="pk-title p-name"><a class="u-url" href="https://youtu.be/x" target="_blank" rel="noopener">Movie</a></h3>';
 
-		$out = \PostKindsForIndieWeb\link_title_to_post( $html, $post );
+		$out = \PKIW\link_title_to_post( $html, $post );
 
 		$this->assertStringContainsString( '<a href="' . esc_url( (string) get_permalink( $post_id ) ) . '">Movie</a>', $out );
 		$this->assertStringNotContainsString( 'youtu.be', $out );
@@ -46,7 +46,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$post    = get_post( $post_id );
 		$html    = '<h3 class="pk-title p-name">Enola</h3>';
 
-		$out = \PostKindsForIndieWeb\link_title_to_post( $html, $post );
+		$out = \PKIW\link_title_to_post( $html, $post );
 
 		$this->assertStringContainsString( '<a href="' . esc_url( (string) get_permalink( $post_id ) ) . '">Enola</a>', $out );
 	}
@@ -56,7 +56,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 	 */
 	public function test_card_only_body_is_micro_post(): void {
 		$content = '<!-- wp:post-kinds-indieweb/watch-card {"mediaTitle":"Enola Holmes 3"} /-->';
-		$this->assertTrue( \PostKindsForIndieWeb\content_is_kind_card_only( $content ) );
+		$this->assertTrue( \PKIW\content_is_kind_card_only( $content ) );
 	}
 
 	/**
@@ -67,7 +67,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$content = '<!-- wp:group --><div class="wp-block-group">' .
 			'<!-- wp:post-kinds-indieweb/watch-card {"mediaTitle":"Enola"} /-->' .
 			"</div><!-- /wp:group -->\n\n<!-- wp:paragraph -->\n<p></p>\n<!-- /wp:paragraph -->";
-		$this->assertTrue( \PostKindsForIndieWeb\content_is_kind_card_only( $content ) );
+		$this->assertTrue( \PKIW\content_is_kind_card_only( $content ) );
 	}
 
 	/**
@@ -76,7 +76,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 	public function test_card_with_real_paragraph_is_not_micro_post(): void {
 		$content = '<!-- wp:post-kinds-indieweb/watch-card {"mediaTitle":"X"} /-->' .
 			"\n\n<!-- wp:paragraph -->\n<p>Real words.</p>\n<!-- /wp:paragraph -->";
-		$this->assertFalse( \PostKindsForIndieWeb\content_is_kind_card_only( $content ) );
+		$this->assertFalse( \PKIW\content_is_kind_card_only( $content ) );
 	}
 
 	/**
@@ -92,7 +92,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$post = get_post( $post_id );
 		$html = '<h3 class="pk-title p-name"><a href="#">Movie</a></h3><div class="pk-embed"></div>';
 
-		$out = \PostKindsForIndieWeb\inject_post_date_into_card( $html, $post );
+		$out = \PKIW\inject_post_date_into_card( $html, $post );
 
 		$this->assertStringContainsString( 'pk-stream-date', $out );
 		$this->assertStringContainsString( '<time class="dt-published"', $out );
@@ -106,7 +106,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$content = "<!-- wp:group -->\n<div class=\"wp-block-group\">" .
 			'<!-- wp:post-kinds-indieweb/watch-card {"mediaTitle":"Enola Holmes 3","rating":4} /-->' .
 			"</div>\n<!-- /wp:group -->";
-		$this->assertTrue( \PostKindsForIndieWeb\content_is_kind_card_only( $content ) );
+		$this->assertTrue( \PKIW\content_is_kind_card_only( $content ) );
 	}
 
 	/**
@@ -114,14 +114,14 @@ final class StreamCardTest extends WP_UnitTestCase {
 	 */
 	public function test_article_body_is_not_micro_post(): void {
 		$content = "<!-- wp:heading -->\n<h2>Hi</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Words.</p>\n<!-- /wp:paragraph -->";
-		$this->assertFalse( \PostKindsForIndieWeb\content_is_kind_card_only( $content ) );
+		$this->assertFalse( \PKIW\content_is_kind_card_only( $content ) );
 	}
 
 	/**
 	 * Empty content is never a micro-post.
 	 */
 	public function test_empty_body_is_not_micro_post(): void {
-		$this->assertFalse( \PostKindsForIndieWeb\content_is_kind_card_only( '' ) );
+		$this->assertFalse( \PKIW\content_is_kind_card_only( '' ) );
 	}
 
 	/**
@@ -131,7 +131,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$content = '<!-- wp:shortcode -->[ableplayer youtube-id="dQw4w9WgXcQ" youtube-nocookie="true"]<!-- /wp:shortcode -->';
 		$this->assertSame(
 			'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-			\PostKindsForIndieWeb\extract_first_video_url( $content )
+			\PKIW\extract_first_video_url( $content )
 		);
 	}
 
@@ -142,7 +142,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$content = '<!-- wp:embed {"url":"https://youtu.be/dQw4w9WgXcQ","type":"video","providerNameSlug":"youtube"} -->' .
 			'<figure class="wp-block-embed"><div class="wp-block-embed__wrapper">https://youtu.be/dQw4w9WgXcQ</div></figure>' .
 			'<!-- /wp:embed -->';
-		$this->assertSame( 'https://youtu.be/dQw4w9WgXcQ', \PostKindsForIndieWeb\extract_first_video_url( $content ) );
+		$this->assertSame( 'https://youtu.be/dQw4w9WgXcQ', \PKIW\extract_first_video_url( $content ) );
 	}
 
 	/**
@@ -150,7 +150,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 	 */
 	public function test_no_video_returns_empty_string(): void {
 		$content = "<!-- wp:paragraph -->\n<p>No video here.</p>\n<!-- /wp:paragraph -->";
-		$this->assertSame( '', \PostKindsForIndieWeb\extract_first_video_url( $content ) );
+		$this->assertSame( '', \PKIW\extract_first_video_url( $content ) );
 	}
 
 	/**
@@ -162,7 +162,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		);
 		$GLOBALS['post'] = get_post( $post_id );
 
-		$html = \PostKindsForIndieWeb\render_stream_card();
+		$html = \PKIW\render_stream_card();
 
 		$this->assertStringContainsString( 'pk-card', $html );
 		$this->assertStringContainsString( 'Enola Holmes 3', $html );
@@ -185,7 +185,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		wp_set_object_terms( $post_id, 'watch', 'kind' );
 		$GLOBALS['post'] = get_post( $post_id );
 
-		$html = \PostKindsForIndieWeb\render_stream_card();
+		$html = \PKIW\render_stream_card();
 
 		$this->assertStringContainsString( 'k-watch', $html );
 		$this->assertStringContainsString( 'This Week in WordPress 374', $html );
@@ -207,7 +207,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		);
 		$GLOBALS['post'] = get_post( $post_id );
 
-		$html = \PostKindsForIndieWeb\render_stream_card();
+		$html = \PKIW\render_stream_card();
 
 		$this->assertStringContainsString( 'pk-card', $html );
 		$this->assertStringContainsString( 'pk-card--stream', $html );
@@ -234,7 +234,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		wp_set_object_terms( $post_id, 'article', 'kind' );
 		$GLOBALS['post'] = get_post( $post_id );
 
-		$html = \PostKindsForIndieWeb\render_stream_card();
+		$html = \PKIW\render_stream_card();
 
 		$this->assertStringContainsString( 'pk-kindlabel', $html );
 		$this->assertStringContainsString( 'k-article', $html );
@@ -252,7 +252,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		);
 		$GLOBALS['post'] = get_post( $post_id );
 
-		$html = \PostKindsForIndieWeb\render_stream_card();
+		$html = \PKIW\render_stream_card();
 
 		$this->assertStringContainsString( 'k-note', $html );
 		$this->assertStringContainsString( 'Note', $html );
@@ -275,7 +275,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		set_post_thumbnail( $post_id, $attachment_id );
 		$GLOBALS['post'] = get_post( $post_id );
 
-		$html = \PostKindsForIndieWeb\render_stream_card();
+		$html = \PKIW\render_stream_card();
 
 		$this->assertStringContainsString( 'pk-media--stream', $html );
 		$this->assertStringContainsString( 'u-photo', $html );
@@ -293,7 +293,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		);
 		$GLOBALS['post'] = get_post( $post_id );
 
-		$this->assertSame( '', \PostKindsForIndieWeb\render_stream_card() );
+		$this->assertSame( '', \PKIW\render_stream_card() );
 	}
 
 	/**

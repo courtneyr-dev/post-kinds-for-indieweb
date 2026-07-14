@@ -180,8 +180,7 @@ function BookmarkFields() {
 
 	const { updateKindMeta } = useDispatch( STORE_NAME );
 
-	const bookmarkCardActive =
-		window.postKindsIndieWebEditor?.bookmarkCardActive;
+	const bookmarkCardActive = window.pkiwAdminEditor?.bookmarkCardActive;
 
 	// Check if URL has oEmbed support.
 	const checkEmbedSupport = useCallback( async ( url ) => {

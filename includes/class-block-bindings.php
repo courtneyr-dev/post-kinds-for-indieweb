@@ -4,13 +4,13 @@
  *
  * Registers the custom Block Bindings source for connecting core blocks to post kind metadata.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -294,7 +294,7 @@ class Block_Bindings {
 		 *
 		 * @param array<string, array<string, string>> $bindings Binding definitions.
 		 */
-		$this->bindings = apply_filters( 'post_kinds_indieweb_block_bindings', $this->bindings );
+		$this->bindings = apply_filters( 'pkiw_block_bindings', $this->bindings );
 	}
 
 	/**

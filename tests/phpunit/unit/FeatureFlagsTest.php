@@ -2,18 +2,18 @@
 /**
  * Test the Feature Flags class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\Feature_Flags;
+use PKIW\Feature_Flags;
 use WP_UnitTestCase;
 
 /**
  * Test the Feature Flags functionality.
  *
- * @covers \PostKindsForIndieWeb\Feature_Flags
+ * @covers \PKIW\Feature_Flags
  */
 class FeatureFlagsTest extends WP_UnitTestCase {
 

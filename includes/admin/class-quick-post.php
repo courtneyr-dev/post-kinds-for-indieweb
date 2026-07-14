@@ -4,11 +4,11 @@
  *
  * Quick post creation interface for post kinds.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.0.0
  */
 
-namespace PostKindsForIndieWeb\Admin;
+namespace PKIW\Admin;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -41,8 +41,8 @@ class Quick_Post {
 	 * @return void
 	 */
 	public function init(): void {
-		add_action( 'wp_ajax_postkind_indieweb_quick_post', [ $this, 'ajax_create_post' ] );
-		add_action( 'wp_ajax_postkind_indieweb_quick_lookup', [ $this, 'ajax_quick_lookup' ] );
+		add_action( 'wp_ajax_pkiw_quick_post', [ $this, 'ajax_create_post' ] );
+		add_action( 'wp_ajax_pkiw_quick_lookup', [ $this, 'ajax_quick_lookup' ] );
 	}
 
 	/**
@@ -1201,7 +1201,7 @@ class Quick_Post {
 	 * @return void
 	 */
 	public function ajax_create_post(): void {
-		check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
@@ -1239,7 +1239,7 @@ class Quick_Post {
 	 * @return int|\WP_Error Post ID or error.
 	 */
 	private function create_reaction_post( string $kind, array $data ) {
-		$settings    = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings    = get_option( 'pkiw_settings', [] );
 		$post_status = $data['post_status'] ?? ( $settings['default_post_status'] ?? 'publish' );
 
 		// Build title based on kind.
@@ -1270,7 +1270,7 @@ class Quick_Post {
 		$meta_fields = $this->get_meta_fields_for_kind( $kind );
 		foreach ( $meta_fields as $field ) {
 			if ( isset( $data[ $field ] ) && '' !== $data[ $field ] ) {
-				update_post_meta( $post_id, "_postkind_indieweb_{$field}", $data[ $field ] );
+				update_post_meta( $post_id, "_pkiw_{$field}", $data[ $field ] );
 			}
 		}
 
@@ -1480,7 +1480,7 @@ class Quick_Post {
 	 * @return void
 	 */
 	public function ajax_quick_lookup(): void {
-		check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );

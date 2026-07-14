@@ -20,10 +20,10 @@
  *     card with badge, title, date, featured image, and excerpt — never the
  *     full body. Every Stream item reads as a card.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

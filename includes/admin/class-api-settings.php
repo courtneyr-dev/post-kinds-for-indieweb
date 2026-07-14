@@ -4,11 +4,11 @@
  *
  * Manages API credentials and connection settings.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.0.0
  */
 
-namespace PostKindsForIndieWeb\Admin;
+namespace PKIW\Admin;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -50,18 +50,18 @@ class API_Settings {
 	 */
 	public function init(): void {
 		add_action( 'admin_init', [ $this, 'register_settings' ] );
-		add_action( 'wp_ajax_postkind_indieweb_oauth_callback', [ $this, 'handle_oauth_callback' ] );
-		add_action( 'wp_ajax_postkind_indieweb_get_oauth_url', [ $this, 'ajax_get_oauth_url' ] );
+		add_action( 'wp_ajax_pkiw_oauth_callback', [ $this, 'handle_oauth_callback' ] );
+		add_action( 'wp_ajax_pkiw_get_oauth_url', [ $this, 'ajax_get_oauth_url' ] );
 
 		// OAuth callbacks via admin-post.php (cleaner URLs for OAuth redirect URIs).
 		// The action names MUST match get_oauth_redirect_uri(), which builds
-		// `post_kinds_{api}_oauth` — the URI users copy into their provider apps.
-		// These were registered as `postkind_*`, so every callback landed on an
+		// `pkiw_{api}_oauth` — the URI users copy into their provider apps.
+		// These were registered as `pkiw_*`, so every callback landed on an
 		// unregistered action and no token was ever stored (always "Not connected").
-		add_action( 'admin_post_post_kinds_trakt_oauth', [ $this, 'handle_trakt_oauth_callback' ] );
-		add_action( 'admin_post_post_kinds_simkl_oauth', [ $this, 'handle_simkl_oauth_callback' ] );
-		add_action( 'admin_post_post_kinds_foursquare_oauth', [ $this, 'handle_foursquare_oauth_callback' ] );
-		add_action( 'admin_post_post_kinds_lastfm_oauth', [ $this, 'handle_lastfm_oauth_callback' ] );
+		add_action( 'admin_post_pkiw_trakt_oauth', [ $this, 'handle_trakt_oauth_callback' ] );
+		add_action( 'admin_post_pkiw_simkl_oauth', [ $this, 'handle_simkl_oauth_callback' ] );
+		add_action( 'admin_post_pkiw_foursquare_oauth', [ $this, 'handle_foursquare_oauth_callback' ] );
+		add_action( 'admin_post_pkiw_lastfm_oauth', [ $this, 'handle_lastfm_oauth_callback' ] );
 		// Note: Untappd OAuth removed - API requires commercial agreement.
 	}
 
@@ -337,17 +337,17 @@ class API_Settings {
 		}
 
 		// Check for OAuth success/error transients.
-		$oauth_error   = get_transient( 'post_kinds_oauth_error' );
-		$oauth_success = get_transient( 'post_kinds_oauth_success' );
+		$oauth_error   = get_transient( 'pkiw_oauth_error' );
+		$oauth_success = get_transient( 'pkiw_oauth_success' );
 
 		if ( $oauth_error ) {
-			delete_transient( 'post_kinds_oauth_error' );
+			delete_transient( 'pkiw_oauth_error' );
 		}
 		if ( $oauth_success ) {
-			delete_transient( 'post_kinds_oauth_success' );
+			delete_transient( 'pkiw_oauth_success' );
 		}
 
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials = get_option( 'pkiw_api_credentials', [] );
 		$categories  = [
 			'music'       => __( 'Music', 'post-kinds-for-indieweb' ),
 			'video'       => __( 'Movies & TV', 'post-kinds-for-indieweb' ),
@@ -386,7 +386,7 @@ class API_Settings {
 			</p>
 
 			<form method="post" action="options.php">
-				<?php settings_fields( 'post_kinds_indieweb_apis' ); ?>
+				<?php settings_fields( 'pkiw_apis' ); ?>
 
 				<?php foreach ( $categories as $category_slug => $category_name ) : ?>
 					<h2><?php echo esc_html( $category_name ); ?></h2>
@@ -438,7 +438,7 @@ class API_Settings {
 				</div>
 				<label class="api-toggle">
 					<input type="checkbox"
-							name="post_kinds_indieweb_api_credentials[<?php echo esc_attr( $api_id ); ?>][enabled]"
+							name="pkiw_api_credentials[<?php echo esc_attr( $api_id ); ?>][enabled]"
 							value="1"
 							<?php checked( $is_enabled ); ?>
 							class="api-enable-toggle">
@@ -516,7 +516,7 @@ class API_Settings {
 	 */
 	private function render_field( string $api_id, string $field_id, array $field, array $credentials ): void {
 		$value    = $credentials[ $field_id ] ?? '';
-		$name     = "post_kinds_indieweb_api_credentials[{$api_id}][{$field_id}]";
+		$name     = "pkiw_api_credentials[{$api_id}][{$field_id}]";
 		$id       = "api_{$api_id}_{$field_id}";
 		$required = ! empty( $field['required'] ) ? 'required' : '';
 
@@ -654,11 +654,11 @@ class API_Settings {
 
 			<!-- Hidden fields for OAuth tokens -->
 			<input type="hidden"
-					name="post_kinds_indieweb_api_credentials[<?php echo esc_attr( $api_id ); ?>][access_token]"
+					name="pkiw_api_credentials[<?php echo esc_attr( $api_id ); ?>][access_token]"
 					value="<?php echo esc_attr( $credentials['access_token'] ?? '' ); ?>"
 					class="oauth-access-token">
 			<input type="hidden"
-					name="post_kinds_indieweb_api_credentials[<?php echo esc_attr( $api_id ); ?>][refresh_token]"
+					name="pkiw_api_credentials[<?php echo esc_attr( $api_id ); ?>][refresh_token]"
 					value="<?php echo esc_attr( $credentials['refresh_token'] ?? '' ); ?>"
 					class="oauth-refresh-token">
 		</div>
@@ -676,7 +676,7 @@ class API_Settings {
 		$has_session  = ! empty( $credentials['session_key'] );
 		$username     = $credentials['username'] ?? '';
 		$has_api_key  = ! empty( $credentials['api_key'] ) && ! empty( $credentials['api_secret'] );
-		$callback_url = admin_url( 'admin-post.php?action=post_kinds_lastfm_oauth' );
+		$callback_url = admin_url( 'admin-post.php?action=pkiw_lastfm_oauth' );
 
 		?>
 		<div class="oauth-section lastfm-auth-section">
@@ -717,8 +717,10 @@ class API_Settings {
 
 					<?php if ( $has_api_key ) : ?>
 						<?php
-						$api      = new \PostKindsForIndieWeb\APIs\Lastfm();
-						$auth_url = $api->get_auth_url( $callback_url );
+						$api          = new \PKIW\APIs\Lastfm();
+						$lastfm_state = wp_generate_password( 32, false );
+						set_transient( 'pkiw_admin_oauth_state_lastfm', $lastfm_state, HOUR_IN_SECONDS );
+						$auth_url = $api->get_auth_url( add_query_arg( 'pkiw_state', $lastfm_state, $callback_url ) );
 						?>
 						<a href="<?php echo esc_url( $auth_url ); ?>" class="button button-primary">
 							<?php esc_html_e( 'Connect to Last.fm', 'post-kinds-for-indieweb' ); ?>
@@ -733,7 +735,7 @@ class API_Settings {
 
 			<!-- Hidden field for session key -->
 			<input type="hidden"
-					name="post_kinds_indieweb_api_credentials[<?php echo esc_attr( $api_id ); ?>][session_key]"
+					name="pkiw_api_credentials[<?php echo esc_attr( $api_id ); ?>][session_key]"
 					value="<?php echo esc_attr( $credentials['session_key'] ?? '' ); ?>"
 					class="lastfm-session-key">
 		</div>
@@ -811,7 +813,7 @@ class API_Settings {
 	 * @return void
 	 */
 	public function handle_oauth_callback(): void {
-		check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
@@ -841,7 +843,7 @@ class API_Settings {
 	 * @return array<string, mixed>|\WP_Error Token data or error.
 	 */
 	private function exchange_oauth_code( string $api, string $code ) {
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials = get_option( 'pkiw_api_credentials', [] );
 		$api_creds   = $credentials[ $api ] ?? [];
 
 		switch ( $api ) {
@@ -896,11 +898,11 @@ class API_Settings {
 		}
 
 		// Save tokens.
-		$all_credentials                           = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$all_credentials                           = get_option( 'pkiw_api_credentials', [] );
 		$all_credentials['trakt']['access_token']  = $body['access_token'];
 		$all_credentials['trakt']['refresh_token'] = $body['refresh_token'] ?? '';
 		$all_credentials['trakt']['token_expires'] = time() + ( $body['expires_in'] ?? 7776000 );
-		update_option( 'post_kinds_indieweb_api_credentials', $all_credentials );
+		update_option( 'pkiw_api_credentials', $all_credentials );
 
 		return [
 			'success'      => true,
@@ -946,9 +948,9 @@ class API_Settings {
 		}
 
 		// Save token.
-		$all_credentials                          = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$all_credentials                          = get_option( 'pkiw_api_credentials', [] );
 		$all_credentials['simkl']['access_token'] = $body['access_token'];
-		update_option( 'post_kinds_indieweb_api_credentials', $all_credentials );
+		update_option( 'pkiw_api_credentials', $all_credentials );
 
 		return [
 			'success'      => true,
@@ -1016,10 +1018,10 @@ class API_Settings {
 		}
 
 		// Save token and username.
-		$all_credentials                               = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$all_credentials                               = get_option( 'pkiw_api_credentials', [] );
 		$all_credentials['foursquare']['access_token'] = $body['access_token'];
 		$all_credentials['foursquare']['username']     = $username;
-		update_option( 'post_kinds_indieweb_api_credentials', $all_credentials );
+		update_option( 'pkiw_api_credentials', $all_credentials );
 
 		return [
 			'success'      => true,
@@ -1091,10 +1093,10 @@ class API_Settings {
 		}
 
 		// Save token and username.
-		$all_credentials                            = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$all_credentials                            = get_option( 'pkiw_api_credentials', [] );
 		$all_credentials['untappd']['access_token'] = $access_token;
 		$all_credentials['untappd']['username']     = $username;
-		update_option( 'post_kinds_indieweb_api_credentials', $all_credentials );
+		update_option( 'pkiw_api_credentials', $all_credentials );
 
 		return [
 			'success'      => true,
@@ -1112,7 +1114,7 @@ class API_Settings {
 	 * @return string Redirect URI.
 	 */
 	public function get_oauth_redirect_uri( string $api ): string {
-		return admin_url( 'admin-post.php?action=post_kinds_' . $api . '_oauth' );
+		return admin_url( 'admin-post.php?action=pkiw_' . $api . '_oauth' );
 	}
 
 	/**
@@ -1122,10 +1124,14 @@ class API_Settings {
 	 * @return string|null Authorization URL or null.
 	 */
 	public function get_oauth_url( string $api ): ?string {
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials = get_option( 'pkiw_api_credentials', [] );
 		$api_creds   = $credentials[ $api ] ?? [];
 
 		$redirect_uri = $this->get_oauth_redirect_uri( $api );
+
+		// CSRF state, verified single-use in process_oauth_callback().
+		$state = wp_generate_password( 32, false );
+		set_transient( 'pkiw_admin_oauth_state_' . $api, $state, HOUR_IN_SECONDS );
 
 		switch ( $api ) {
 			case 'trakt':
@@ -1137,6 +1143,7 @@ class API_Settings {
 						'response_type' => 'code',
 						'client_id'     => $api_creds['client_id'],
 						'redirect_uri'  => $redirect_uri,
+						'state'         => $state,
 					],
 					'https://trakt.tv/oauth/authorize'
 				);
@@ -1150,6 +1157,7 @@ class API_Settings {
 						'response_type' => 'code',
 						'client_id'     => $api_creds['client_id'],
 						'redirect_uri'  => $redirect_uri,
+						'state'         => $state,
 					],
 					'https://simkl.com/oauth/authorize'
 				);
@@ -1163,6 +1171,7 @@ class API_Settings {
 						'response_type' => 'code',
 						'client_id'     => $api_creds['client_id'],
 						'redirect_uri'  => $redirect_uri,
+						'state'         => $state,
 					],
 					'https://foursquare.com/oauth2/authenticate'
 				);
@@ -1176,6 +1185,7 @@ class API_Settings {
 						'response_type' => 'code',
 						'client_id'     => $api_creds['client_id'],
 						'redirect_url'  => $redirect_uri, // Untappd uses redirect_url not redirect_uri.
+						'state'         => $state, // Untappd documents optional state support.
 					],
 					'https://untappd.com/oauth/authenticate'
 				);
@@ -1227,7 +1237,7 @@ class API_Settings {
 		// Last.fm returns 'token' not 'code'.
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( ! isset( $_GET['token'] ) ) {
-			set_transient( 'post_kinds_oauth_error', __( 'No token received from Last.fm.', 'post-kinds-for-indieweb' ), 60 );
+			set_transient( 'pkiw_oauth_error', __( 'No token received from Last.fm.', 'post-kinds-for-indieweb' ), 60 );
 			wp_safe_redirect( admin_url( 'admin.php?page=post-kinds-indieweb-apis&oauth_error=1' ) );
 			exit;
 		}
@@ -1235,22 +1245,33 @@ class API_Settings {
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$token = sanitize_text_field( wp_unslash( $_GET['token'] ) );
 
+		// Verify the CSRF state carried on the callback URL (single-use).
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$state          = isset( $_GET['pkiw_state'] ) ? sanitize_text_field( wp_unslash( $_GET['pkiw_state'] ) ) : '';
+		$expected_state = get_transient( 'pkiw_admin_oauth_state_lastfm' );
+		delete_transient( 'pkiw_admin_oauth_state_lastfm' );
+		if ( '' === $state || ! is_string( $expected_state ) || '' === $expected_state || ! hash_equals( $expected_state, $state ) ) {
+			set_transient( 'pkiw_oauth_error', __( 'OAuth state check failed. Please try connecting again.', 'post-kinds-for-indieweb' ), 60 );
+			wp_safe_redirect( admin_url( 'admin.php?page=post-kinds-indieweb-apis&oauth_error=1' ) );
+			exit;
+		}
+
 		// Get credentials.
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials = get_option( 'pkiw_api_credentials', [] );
 		$lastfm      = $credentials['lastfm'] ?? [];
 
 		if ( empty( $lastfm['api_key'] ) || empty( $lastfm['api_secret'] ) ) {
-			set_transient( 'post_kinds_oauth_error', __( 'Last.fm API credentials not configured.', 'post-kinds-for-indieweb' ), 60 );
+			set_transient( 'pkiw_oauth_error', __( 'Last.fm API credentials not configured.', 'post-kinds-for-indieweb' ), 60 );
 			wp_safe_redirect( admin_url( 'admin.php?page=post-kinds-indieweb-apis&oauth_error=1' ) );
 			exit;
 		}
 
 		// Exchange token for session key.
-		$api     = new \PostKindsForIndieWeb\APIs\Lastfm();
+		$api     = new \PKIW\APIs\Lastfm();
 		$session = $api->get_session( $token );
 
 		if ( ! $session || empty( $session['session_key'] ) ) {
-			set_transient( 'post_kinds_oauth_error', __( 'Failed to get Last.fm session key.', 'post-kinds-for-indieweb' ), 60 );
+			set_transient( 'pkiw_oauth_error', __( 'Failed to get Last.fm session key.', 'post-kinds-for-indieweb' ), 60 );
 			wp_safe_redirect( admin_url( 'admin.php?page=post-kinds-indieweb-apis&oauth_error=1' ) );
 			exit;
 		}
@@ -1260,9 +1281,9 @@ class API_Settings {
 		if ( ! empty( $session['username'] ) ) {
 			$credentials['lastfm']['username'] = $session['username'];
 		}
-		update_option( 'post_kinds_indieweb_api_credentials', $credentials );
+		update_option( 'pkiw_api_credentials', $credentials );
 
-		set_transient( 'post_kinds_oauth_success', 'lastfm', 60 );
+		set_transient( 'pkiw_oauth_success', 'lastfm', 60 );
 		wp_safe_redirect( admin_url( 'admin.php?page=post-kinds-indieweb-apis&oauth_success=1' ) );
 		exit;
 	}
@@ -1293,7 +1314,7 @@ class API_Settings {
             // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$error = isset( $_GET['error'] ) ? sanitize_text_field( wp_unslash( $_GET['error'] ) ) : '';
 			if ( $error ) {
-				set_transient( 'post_kinds_oauth_error', $error, 60 );
+				set_transient( 'pkiw_oauth_error', $error, 60 );
 			}
 			wp_safe_redirect( admin_url( 'admin.php?page=post-kinds-indieweb-apis&oauth_error=1' ) );
 			exit;
@@ -1302,13 +1323,25 @@ class API_Settings {
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$code = sanitize_text_field( wp_unslash( $_GET['code'] ) );
 
+		// Verify the CSRF state issued in get_oauth_url(). Single-use: the
+		// transient is deleted whether the comparison succeeds or fails.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$state          = isset( $_GET['state'] ) ? sanitize_text_field( wp_unslash( $_GET['state'] ) ) : '';
+		$expected_state = get_transient( 'pkiw_admin_oauth_state_' . $api );
+		delete_transient( 'pkiw_admin_oauth_state_' . $api );
+		if ( '' === $state || ! is_string( $expected_state ) || '' === $expected_state || ! hash_equals( $expected_state, $state ) ) {
+			set_transient( 'pkiw_oauth_error', __( 'OAuth state check failed. Please try connecting again.', 'post-kinds-for-indieweb' ), 60 );
+			wp_safe_redirect( admin_url( 'admin.php?page=post-kinds-indieweb-apis&oauth_error=1' ) );
+			exit;
+		}
+
 		$result = $this->exchange_oauth_code( $api, $code );
 
 		if ( is_wp_error( $result ) ) {
-			set_transient( 'post_kinds_oauth_error', $result->get_error_message(), 60 );
+			set_transient( 'pkiw_oauth_error', $result->get_error_message(), 60 );
 			wp_safe_redirect( admin_url( 'admin.php?page=post-kinds-indieweb-apis&oauth_error=1' ) );
 		} else {
-			set_transient( 'post_kinds_oauth_success', $api, 60 );
+			set_transient( 'pkiw_oauth_success', $api, 60 );
 			wp_safe_redirect( admin_url( 'admin.php?page=post-kinds-indieweb-apis&oauth_success=1' ) );
 		}
 		exit;
@@ -1322,7 +1355,7 @@ class API_Settings {
 	 * @return void
 	 */
 	public function ajax_get_oauth_url(): void {
-		check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
@@ -1337,7 +1370,7 @@ class API_Settings {
 		}
 
 		// Save credentials first so they're available for the callback.
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials = get_option( 'pkiw_api_credentials', [] );
 
 		if ( ! isset( $credentials[ $api ] ) ) {
 			$credentials[ $api ] = [];
@@ -1347,7 +1380,7 @@ class API_Settings {
 		$credentials[ $api ]['client_secret'] = $client_secret;
 		$credentials[ $api ]['enabled']       = true;
 
-		update_option( 'post_kinds_indieweb_api_credentials', $credentials );
+		update_option( 'pkiw_api_credentials', $credentials );
 
 		// Now get the OAuth URL.
 		$url = $this->get_oauth_url( $api );

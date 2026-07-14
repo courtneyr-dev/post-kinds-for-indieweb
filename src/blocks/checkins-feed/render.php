@@ -2,7 +2,7 @@
 /**
  * Check-ins Feed Block - Server-side Render
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @var array    $attributes Block attributes.
  * @var string   $content    Block content.
  * @var WP_Block $block      Block instance.
@@ -14,10 +14,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
-use function PostKindsForIndieWeb\get_checkins;
-use function PostKindsForIndieWeb\get_checkins_at_venue;
-use function PostKindsForIndieWeb\get_checkin_location;
-use function PostKindsForIndieWeb\format_location;
+use function PKIW\get_checkins;
+use function PKIW\get_checkins_at_venue;
+use function PKIW\get_checkin_location;
+use function PKIW\format_location;
 
 // Extract attributes with defaults.
 $pkiw_count        = absint( $attributes['count'] ?? 10 );

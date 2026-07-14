@@ -5,13 +5,13 @@
  * Registers post-formats/format-data so theme developers can bind
  * core blocks to post format information (name, label, icon, etc.).
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.3.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

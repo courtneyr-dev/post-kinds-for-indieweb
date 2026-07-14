@@ -2,7 +2,7 @@
 /**
  * Matrix-driven render coverage for every dynamic block.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
 declare(strict_types=1);

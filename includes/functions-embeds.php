@@ -4,13 +4,13 @@
  *
  * Cached oEmbed lookups for dynamic block rendering.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.2.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {

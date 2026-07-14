@@ -2,17 +2,17 @@
 /**
  * Book field completion service.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.2.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
-use PostKindsForIndieWeb\APIs\GoogleBooks;
-use PostKindsForIndieWeb\APIs\Hardcover;
-use PostKindsForIndieWeb\APIs\OpenLibrary;
+use PKIW\APIs\GoogleBooks;
+use PKIW\APIs\Hardcover;
+use PKIW\APIs\OpenLibrary;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

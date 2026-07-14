@@ -2,18 +2,18 @@
 /**
  * Test the TVmaze API client.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\APIs\TVmaze;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\APIs\TVmaze;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Test the TVmaze API integration.
  *
- * @covers \PostKindsForIndieWeb\APIs\TVmaze
+ * @covers \PKIW\APIs\TVmaze
  */
 class TVmazeApiTest extends ApiTestCase {
 
@@ -196,7 +196,7 @@ class TVmazeApiTest extends ApiTestCase {
 	 */
 	public function test_is_configured_true_with_key(): void {
 		update_option(
-			'post_kinds_indieweb_api_credentials',
+			'pkiw_api_credentials',
 			[ 'tvmaze' => [ 'api_key' => 'test-premium-key' ] ]
 		);
 

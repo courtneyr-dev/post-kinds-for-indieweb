@@ -2,18 +2,18 @@
 /**
  * Test the TMDB API client.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\APIs\TMDB;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\APIs\TMDB;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Test the TMDB API integration.
  *
- * @covers \PostKindsForIndieWeb\APIs\TMDB
+ * @covers \PKIW\APIs\TMDB
  */
 class TMDBApiTest extends ApiTestCase {
 

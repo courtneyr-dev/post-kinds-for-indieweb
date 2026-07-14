@@ -2,7 +2,7 @@
 /**
  * Kindle_Embed_Bridge integration coverage.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ final class KindleEmbedBridgeTest extends WP_UnitTestCase {
 				'https://read.amazon.com/kp/embed?asin=PLACEHOLDER0' . "\n" .
 				'</div></figure><!-- /wp:embed -->',
 		] );
-		update_post_meta( $post_id, '_postkind_read_asin', '1649374046' );
+		update_post_meta( $post_id, '_pkiw_read_asin', '1649374046' );
 
 		$this->go_to( get_permalink( $post_id ) );
 		$html = apply_filters( 'the_content', get_post( $post_id )->post_content );
@@ -69,7 +69,7 @@ final class KindleEmbedBridgeTest extends WP_UnitTestCase {
 				'https://read.amazon.com/kp/embed?asin=PLACEHOLDER0' . "\n" .
 				'</div></figure><!-- /wp:embed -->',
 		] );
-		update_post_meta( $post_id, '_postkind_read_asin', '1649374046' );
+		update_post_meta( $post_id, '_pkiw_read_asin', '1649374046' );
 
 		$this->go_to( get_permalink( $post_id ) );
 		$html = apply_filters( 'the_content', get_post( $post_id )->post_content );
@@ -87,7 +87,7 @@ final class KindleEmbedBridgeTest extends WP_UnitTestCase {
 				'https://read.amazon.com/kp/embed?asin=PLACEHOLDER0' . "\n" .
 				'</div></figure><!-- /wp:embed -->',
 		] );
-		// No _postkind_read_asin and no _postkind_read_isbn meta set — nothing derivable.
+		// No _pkiw_read_asin and no _pkiw_read_isbn meta set — nothing derivable.
 
 		$this->go_to( get_permalink( $post_id ) );
 		$html = apply_filters( 'the_content', get_post( $post_id )->post_content );

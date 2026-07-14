@@ -5,11 +5,11 @@
  * Receives location updates from OwnTracks via HTTP webhook.
  * OwnTracks is a self-hosted, privacy-respecting location tracking app.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.0.0
  */
 
-namespace PostKindsForIndieWeb\Sync;
+namespace PKIW\Sync;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -73,7 +73,7 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 	 * @return bool|\WP_Error True if authenticated, error otherwise.
 	 */
 	public function verify_webhook_auth( \WP_REST_Request $request ) {
-		$settings = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings = get_option( 'pkiw_settings', [] );
 
 		// Check if OwnTracks is enabled.
 		if ( empty( $settings['owntracks_enabled'] ) ) {
@@ -146,7 +146,7 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 	 * @return \WP_REST_Response|\WP_Error Response.
 	 */
 	private function handle_location_update( array $payload ) {
-		$settings = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings = get_option( 'pkiw_settings', [] );
 
 		// Check if auto-checkin is enabled.
 		if ( empty( $settings['owntracks_auto_checkin'] ) ) {
@@ -188,7 +188,7 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 	 * @return \WP_REST_Response Response.
 	 */
 	private function handle_transition( array $payload ) {
-		$settings = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings = get_option( 'pkiw_settings', [] );
 
 		// Only create checkin on enter, not exit.
 		$event = $payload['event'] ?? '';
@@ -231,7 +231,7 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 			'device'    => $payload['tid'] ?? '',
 		];
 
-		update_option( 'post_kinds_indieweb_owntracks_last_location', $location );
+		update_option( 'pkiw_owntracks_last_location', $location );
 	}
 
 	/**
@@ -267,7 +267,7 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 			$title = sprintf( '%.4f, %.4f', $lat, $lon );
 		}
 
-		$settings    = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings    = get_option( 'pkiw_settings', [] );
 		$post_status = $settings['owntracks_post_status'] ?? 'publish';
 
 		$post_data = [
@@ -288,38 +288,38 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 		wp_set_object_terms( $post_id, 'checkin', 'kind' );
 
 		// Save meta.
-		update_post_meta( $post_id, '_postkind_kind', 'checkin' );
-		update_post_meta( $post_id, '_postkind_imported_from', 'owntracks' );
-		update_post_meta( $post_id, '_postkind_checkin_name', $poi ?: ( $address['name'] ?? '' ) );
-		update_post_meta( $post_id, '_postkind_geo_latitude', $lat );
-		update_post_meta( $post_id, '_postkind_geo_longitude', $lon );
+		update_post_meta( $post_id, '_pkiw_kind', 'checkin' );
+		update_post_meta( $post_id, '_pkiw_imported_from', 'owntracks' );
+		update_post_meta( $post_id, '_pkiw_checkin_name', $poi ?: ( $address['name'] ?? '' ) );
+		update_post_meta( $post_id, '_pkiw_geo_latitude', $lat );
+		update_post_meta( $post_id, '_pkiw_geo_longitude', $lon );
 
 		// Privacy - OwnTracks data should respect user settings.
 		$privacy = $settings['checkin_default_privacy'] ?? 'approximate';
-		update_post_meta( $post_id, '_postkind_geo_privacy', $privacy );
+		update_post_meta( $post_id, '_pkiw_geo_privacy', $privacy );
 
 		// Address components.
 		if ( ! empty( $address ) ) {
 			if ( ! empty( $address['address']['road'] ) ) {
-				update_post_meta( $post_id, '_postkind_checkin_street', $address['address']['road'] );
+				update_post_meta( $post_id, '_pkiw_checkin_street', $address['address']['road'] );
 			}
 			if ( ! empty( $address['address']['city'] ?? $address['address']['town'] ?? $address['address']['village'] ) ) {
-				update_post_meta( $post_id, '_postkind_checkin_locality', $address['address']['city'] ?? $address['address']['town'] ?? $address['address']['village'] );
+				update_post_meta( $post_id, '_pkiw_checkin_locality', $address['address']['city'] ?? $address['address']['town'] ?? $address['address']['village'] );
 			}
 			if ( ! empty( $address['address']['state'] ) ) {
-				update_post_meta( $post_id, '_postkind_checkin_region', $address['address']['state'] );
+				update_post_meta( $post_id, '_pkiw_checkin_region', $address['address']['state'] );
 			}
 			if ( ! empty( $address['address']['country'] ) ) {
-				update_post_meta( $post_id, '_postkind_checkin_country', $address['address']['country'] );
+				update_post_meta( $post_id, '_pkiw_checkin_country', $address['address']['country'] );
 			}
 			if ( ! empty( $address['address']['postcode'] ) ) {
-				update_post_meta( $post_id, '_postkind_checkin_postal_code', $address['address']['postcode'] );
+				update_post_meta( $post_id, '_pkiw_checkin_postal_code', $address['address']['postcode'] );
 			}
 		}
 
 		// Device info.
 		if ( ! empty( $payload['tid'] ) ) {
-			update_post_meta( $post_id, '_postkind_owntracks_device', $payload['tid'] );
+			update_post_meta( $post_id, '_pkiw_owntracks_device', $payload['tid'] );
 		}
 
 		return $post_id;
@@ -346,7 +346,7 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 			return false;
 		}
 
-		$settings    = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings    = get_option( 'pkiw_settings', [] );
 		$post_status = $settings['owntracks_post_status'] ?? 'publish';
 
 		$post_data = [
@@ -367,14 +367,14 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 		wp_set_object_terms( $post_id, 'checkin', 'kind' );
 
 		// Save meta.
-		update_post_meta( $post_id, '_postkind_kind', 'checkin' );
-		update_post_meta( $post_id, '_postkind_imported_from', 'owntracks' );
-		update_post_meta( $post_id, '_postkind_checkin_name', $desc );
-		update_post_meta( $post_id, '_postkind_geo_latitude', $lat );
-		update_post_meta( $post_id, '_postkind_geo_longitude', $lon );
+		update_post_meta( $post_id, '_pkiw_kind', 'checkin' );
+		update_post_meta( $post_id, '_pkiw_imported_from', 'owntracks' );
+		update_post_meta( $post_id, '_pkiw_checkin_name', $desc );
+		update_post_meta( $post_id, '_pkiw_geo_latitude', $lat );
+		update_post_meta( $post_id, '_pkiw_geo_longitude', $lon );
 
 		$privacy = $settings['checkin_default_privacy'] ?? 'approximate';
-		update_post_meta( $post_id, '_postkind_geo_privacy', $privacy );
+		update_post_meta( $post_id, '_pkiw_geo_privacy', $privacy );
 
 		return $post_id;
 	}
@@ -402,18 +402,18 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 			'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				'relation' => 'AND',
 				[
-					'key'     => '_postkind_kind',
+					'key'     => '_pkiw_kind',
 					'value'   => 'checkin',
 					'compare' => '=',
 				],
 				[
-					'key'     => '_postkind_geo_latitude',
+					'key'     => '_pkiw_geo_latitude',
 					'value'   => [ $lat - 0.001, $lat + 0.001 ],
 					'type'    => 'DECIMAL(10,6)',
 					'compare' => 'BETWEEN',
 				],
 				[
-					'key'     => '_postkind_geo_longitude',
+					'key'     => '_pkiw_geo_longitude',
 					'value'   => [ $lon - 0.001, $lon + 0.001 ],
 					'type'    => 'DECIMAL(10,6)',
 					'compare' => 'BETWEEN',
@@ -434,8 +434,8 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 	 * @return array<string, mixed> Address data.
 	 */
 	private function reverse_geocode( float $lat, float $lon ): array {
-		$settings    = get_option( 'post_kinds_indieweb_settings', [] );
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$settings    = get_option( 'pkiw_settings', [] );
+		$credentials = get_option( 'pkiw_api_credentials', [] );
 
 		$email = $credentials['nominatim']['email'] ?? $settings['admin_email'] ?? get_option( 'admin_email' );
 
@@ -473,7 +473,7 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 	 * @return bool True if enabled.
 	 */
 	public function is_connected(): bool {
-		$settings = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings = get_option( 'pkiw_settings', [] );
 		return ! empty( $settings['owntracks_enabled'] );
 	}
 

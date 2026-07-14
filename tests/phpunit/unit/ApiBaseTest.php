@@ -2,13 +2,13 @@
 /**
  * Test the API_Base abstract class via a concrete stub.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\APIs\API_Base;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\APIs\API_Base;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Concrete stub exposing API_Base's protected methods for testing.
@@ -78,7 +78,7 @@ class Test_API_Stub extends API_Base {
 /**
  * Test API_Base through the concrete stub.
  *
- * @covers \PostKindsForIndieWeb\APIs\API_Base
+ * @covers \PKIW\APIs\API_Base
  */
 class ApiBaseTest extends ApiTestCase {
 
@@ -142,8 +142,8 @@ class ApiBaseTest extends ApiTestCase {
 	public function test_cache_key_format(): void {
 		$key = $this->api->exposed_get_cache_key( 'my_key' );
 
-		$this->assertStringStartsWith( 'post_kinds_test_api_', $key );
-		$this->assertSame( 'post_kinds_test_api_' . md5( 'my_key' ), $key );
+		$this->assertStringStartsWith( 'pkiw_test_api_', $key );
+		$this->assertSame( 'pkiw_test_api_' . md5( 'my_key' ), $key );
 	}
 
 	/**

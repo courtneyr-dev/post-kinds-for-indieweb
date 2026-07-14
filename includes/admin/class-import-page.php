@@ -4,13 +4,13 @@
  *
  * Admin page for importing data from external services.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.0.0
  */
 
-namespace PostKindsForIndieWeb\Admin;
+namespace PKIW\Admin;
 
-use PostKindsForIndieWeb\Import_Manager;
+use PKIW\Import_Manager;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -51,10 +51,10 @@ class Import_Page {
 	 * @return void
 	 */
 	public function init(): void {
-		add_action( 'wp_ajax_postkind_indieweb_start_import', [ $this, 'ajax_start_import' ] );
-		add_action( 'wp_ajax_postkind_indieweb_cancel_import', [ $this, 'ajax_cancel_import' ] );
-		add_action( 'wp_ajax_postkind_indieweb_get_import_preview', [ $this, 'ajax_get_import_preview' ] );
-		add_action( 'wp_ajax_postkind_indieweb_resync_metadata', [ $this, 'ajax_resync_metadata' ] );
+		add_action( 'wp_ajax_pkiw_start_import', [ $this, 'ajax_start_import' ] );
+		add_action( 'wp_ajax_pkiw_cancel_import', [ $this, 'ajax_cancel_import' ] );
+		add_action( 'wp_ajax_pkiw_get_import_preview', [ $this, 'ajax_get_import_preview' ] );
+		add_action( 'wp_ajax_pkiw_resync_metadata', [ $this, 'ajax_resync_metadata' ] );
 	}
 
 	/**
@@ -64,7 +64,7 @@ class Import_Page {
 	 */
 	private function get_import_sources(): array {
 		// Get stored credentials for auto-filling usernames.
-		$credentials     = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials     = get_option( 'pkiw_api_credentials', [] );
 		$lastfm_username = $credentials['lastfm']['username'] ?? '';
 
 		return [
@@ -368,8 +368,8 @@ class Import_Page {
 			return;
 		}
 
-		$credentials    = get_option( 'post_kinds_indieweb_api_credentials', [] );
-		$active_imports = get_option( 'post_kinds_indieweb_active_imports', [] );
+		$credentials    = get_option( 'pkiw_api_credentials', [] );
+		$active_imports = get_option( 'pkiw_active_imports', [] );
 
 		?>
 		<div class="wrap post-kinds-indieweb-import">
@@ -684,7 +684,7 @@ class Import_Page {
 	 * @return void
 	 */
 	private function render_import_history(): void {
-		$history = get_option( 'post_kinds_indieweb_import_history', [] );
+		$history = get_option( 'pkiw_import_history', [] );
 
 		if ( empty( $history ) ) {
 			echo '<p class="description">' . esc_html__( 'No imports have been run yet.', 'post-kinds-for-indieweb' ) . '</p>';
@@ -785,7 +785,7 @@ class Import_Page {
 	 * @return void
 	 */
 	public function ajax_start_import(): void {
-		check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
@@ -962,7 +962,7 @@ class Import_Page {
 	 * @return void
 	 */
 	public function ajax_cancel_import(): void {
-		check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
@@ -994,7 +994,7 @@ class Import_Page {
 	 * @return void
 	 */
 	public function ajax_get_import_preview(): void {
-		check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
@@ -1025,7 +1025,7 @@ class Import_Page {
 	 * @return array<string, mixed>|\WP_Error Preview data or error.
 	 */
 	private function get_import_preview( string $source, array $options ) {
-		$credentials   = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials   = get_option( 'pkiw_api_credentials', [] );
 		$source_config = $this->import_sources[ $source ];
 		$api_key       = $source_config['api_key'];
 		$api_creds     = $credentials[ $api_key ] ?? [];
@@ -1043,7 +1043,7 @@ class Import_Page {
 					return new \WP_Error( 'missing_username', __( 'ListenBrainz username not configured. Please set it in API Connections.', 'post-kinds-for-indieweb' ) );
 				}
 
-				$api     = new \PostKindsForIndieWeb\APIs\ListenBrainz();
+				$api     = new \PKIW\APIs\ListenBrainz();
 				$listens = $api->get_listens( $username, $preview_limit );
 				if ( is_wp_error( $listens ) ) {
 					return $listens;
@@ -1059,7 +1059,7 @@ class Import_Page {
 					return new \WP_Error( 'missing_username', __( 'Please enter your Last.fm username.', 'post-kinds-for-indieweb' ) );
 				}
 
-				$api = new \PostKindsForIndieWeb\APIs\LastFM();
+				$api = new \PKIW\APIs\LastFM();
 
 				// Check if API is configured.
 				if ( ! $api->test_connection() ) {
@@ -1081,7 +1081,7 @@ class Import_Page {
 
 			case 'trakt_movies':
 			case 'trakt_shows':
-				$api = new \PostKindsForIndieWeb\APIs\Trakt();
+				$api = new \PKIW\APIs\Trakt();
 				if ( ! $api->is_configured() ) {
 					return new \WP_Error( 'api_not_configured', __( 'Trakt API is not configured. Please set up OAuth in API Connections.', 'post-kinds-for-indieweb' ) );
 				}
@@ -1097,7 +1097,7 @@ class Import_Page {
 				break;
 
 			case 'simkl':
-				$api = new \PostKindsForIndieWeb\APIs\Simkl();
+				$api = new \PKIW\APIs\Simkl();
 				if ( ! $api->is_configured() ) {
 					return new \WP_Error( 'api_not_configured', __( 'Simkl API is not configured. Please set up OAuth in API Connections.', 'post-kinds-for-indieweb' ) );
 				}
@@ -1113,7 +1113,7 @@ class Import_Page {
 				break;
 
 			case 'hardcover':
-				$api = new \PostKindsForIndieWeb\APIs\Hardcover();
+				$api = new \PKIW\APIs\Hardcover();
 				if ( ! $api->is_configured() ) {
 					return new \WP_Error( 'api_not_configured', __( 'Hardcover API is not configured. Please add your API token in API Connections.', 'post-kinds-for-indieweb' ) );
 				}
@@ -1129,7 +1129,7 @@ class Import_Page {
 				break;
 
 			case 'foursquare':
-				$foursquare_sync = \PostKindsForIndieWeb\Plugin::get_instance()->get_checkin_sync_service( 'foursquare' );
+				$foursquare_sync = \PKIW\Plugin::get_instance()->get_checkin_sync_service( 'foursquare' );
 				if ( ! $foursquare_sync || ! $foursquare_sync->is_connected() ) {
 					return new \WP_Error( 'api_not_configured', __( 'Foursquare is not connected. Please authorize in API Connections.', 'post-kinds-for-indieweb' ) );
 				}
@@ -1144,7 +1144,7 @@ class Import_Page {
 				break;
 
 			case 'untappd':
-				$untappd_sync = \PostKindsForIndieWeb\Plugin::get_instance()->get_checkin_sync_service( 'untappd' );
+				$untappd_sync = \PKIW\Plugin::get_instance()->get_checkin_sync_service( 'untappd' );
 				if ( ! $untappd_sync || ! $untappd_sync->is_connected() ) {
 					return new \WP_Error( 'api_not_configured', __( 'Untappd is not connected. Please authorize in API Connections.', 'post-kinds-for-indieweb' ) );
 				}
@@ -1159,7 +1159,7 @@ class Import_Page {
 				break;
 
 			case 'readwise_books':
-				$api = new \PostKindsForIndieWeb\APIs\Readwise();
+				$api = new \PKIW\APIs\Readwise();
 				if ( ! $api->is_configured() ) {
 					return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'post-kinds-for-indieweb' ) );
 				}
@@ -1171,7 +1171,7 @@ class Import_Page {
 				break;
 
 			case 'readwise_articles':
-				$api = new \PostKindsForIndieWeb\APIs\Readwise();
+				$api = new \PKIW\APIs\Readwise();
 				if ( ! $api->is_configured() ) {
 					return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'post-kinds-for-indieweb' ) );
 				}
@@ -1182,7 +1182,7 @@ class Import_Page {
 				break;
 
 			case 'readwise_podcasts':
-				$api = new \PostKindsForIndieWeb\APIs\Readwise();
+				$api = new \PKIW\APIs\Readwise();
 				if ( ! $api->is_configured() ) {
 					return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'post-kinds-for-indieweb' ) );
 				}
@@ -1193,7 +1193,7 @@ class Import_Page {
 				break;
 
 			case 'readwise_tweets':
-				$api = new \PostKindsForIndieWeb\APIs\Readwise();
+				$api = new \PKIW\APIs\Readwise();
 				if ( ! $api->is_configured() ) {
 					return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'post-kinds-for-indieweb' ) );
 				}
@@ -1204,7 +1204,7 @@ class Import_Page {
 				break;
 
 			case 'readwise_supplementals':
-				$api = new \PostKindsForIndieWeb\APIs\Readwise();
+				$api = new \PKIW\APIs\Readwise();
 				if ( ! $api->is_configured() ) {
 					return new \WP_Error( 'api_not_configured', __( 'Readwise is not configured. Please add your access token in API Connections.', 'post-kinds-for-indieweb' ) );
 				}
@@ -1407,7 +1407,7 @@ class Import_Page {
 	 * @return void
 	 */
 	public function ajax_resync_metadata(): void {
-		check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );

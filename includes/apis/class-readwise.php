@@ -5,13 +5,13 @@
  * Provides integration with Readwise for importing highlights from various sources
  * including books, articles, podcasts, tweets, and more.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\APIs;
+namespace PKIW\APIs;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -73,7 +73,7 @@ class Readwise extends API_Base {
 	public function __construct() {
 		parent::__construct();
 
-		$credentials        = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials        = get_option( 'pkiw_api_credentials', [] );
 		$readwise_creds     = $credentials['readwise'] ?? [];
 		$this->access_token = $readwise_creds['access_token'] ?? '';
 	}

@@ -4,11 +4,11 @@
  *
  * Custom meta boxes for post editing screens.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.0.0
  */
 
-namespace PostKindsForIndieWeb\Admin;
+namespace PKIW\Admin;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -391,7 +391,7 @@ class Meta_Boxes {
 
 		// Main reaction details meta box.
 		add_meta_box(
-			'post_kinds_indieweb_details',
+			'pkiw_details',
 			__( 'Reaction Details', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_details_meta_box' ],
 			'post',
@@ -401,7 +401,7 @@ class Meta_Boxes {
 
 		// Media lookup sidebar.
 		add_meta_box(
-			'post_kinds_indieweb_lookup',
+			'pkiw_lookup',
 			__( 'Media Lookup', 'post-kinds-for-indieweb' ),
 			[ $this, 'render_lookup_meta_box' ],
 			'post',
@@ -417,7 +417,7 @@ class Meta_Boxes {
 	 * @return void
 	 */
 	public function render_details_meta_box( \WP_Post $post ): void {
-		wp_nonce_field( 'post_kinds_indieweb_meta', 'post_kinds_indieweb_meta_nonce' );
+		wp_nonce_field( 'pkiw_meta', 'pkiw_meta_nonce' );
 
 		// Get current post kind.
 		$kinds        = wp_get_object_terms( $post->ID, 'kind', [ 'fields' => 'slugs' ] );
@@ -427,8 +427,8 @@ class Meta_Boxes {
 		<div class="post-kinds-meta-box">
 			<!-- Post kind selector -->
 			<div class="meta-field kind-selector">
-				<label for="post_kinds_post_kind"><?php esc_html_e( 'Post Kind', 'post-kinds-for-indieweb' ); ?></label>
-				<select name="post_kinds_post_kind" id="post_kinds_post_kind" class="widefat">
+				<label for="pkiw_post_kind"><?php esc_html_e( 'Post Kind', 'post-kinds-for-indieweb' ); ?></label>
+				<select name="pkiw_post_kind" id="pkiw_post_kind" class="widefat">
 					<option value=""><?php esc_html_e( 'Select a post kind...', 'post-kinds-for-indieweb' ); ?></option>
 					<?php foreach ( $this->meta_configs as $kind => $fields ) : ?>
 						<option value="<?php echo esc_attr( $kind ); ?>" <?php selected( $current_kind, $kind ); ?>>
@@ -470,10 +470,10 @@ class Meta_Boxes {
 	 * @return void
 	 */
 	private function render_field( int $post_id, string $kind, string $field_id, array $field ): void {
-		$meta_key = "_postkind_indieweb_{$field_id}";
+		$meta_key = "_pkiw_{$field_id}";
 		$value    = get_post_meta( $post_id, $meta_key, true );
-		$name     = "post_kinds_meta[{$kind}][{$field_id}]";
-		$id       = "post_kinds_{$kind}_{$field_id}";
+		$name     = "pkiw_meta[{$kind}][{$field_id}]";
+		$id       = "pkiw_{$kind}_{$field_id}";
 		$class    = $field['class'] ?? 'widefat';
 		$required = ! empty( $field['required'] ) ? 'required' : '';
 
@@ -481,7 +481,7 @@ class Meta_Boxes {
 		$wrapper_style = '';
 		if ( ! empty( $field['depends_on'] ) ) {
 			list( $dep_field, $dep_value ) = explode( ':', $field['depends_on'] );
-			$dep_meta_key                  = "_postkind_indieweb_{$dep_field}";
+			$dep_meta_key                  = "_pkiw_{$dep_field}";
 			$dep_current                   = get_post_meta( $post_id, $dep_meta_key, true );
 			if ( $dep_current !== $dep_value ) {
 				$wrapper_style = 'display: none;';
@@ -679,8 +679,8 @@ class Meta_Boxes {
 	 */
 	public function save_meta_boxes( int $post_id, \WP_Post $post ): void {
 		// Verify nonce.
-		if ( ! isset( $_POST['post_kinds_indieweb_meta_nonce'] ) ||
-			! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['post_kinds_indieweb_meta_nonce'] ) ), 'post_kinds_indieweb_meta' ) ) {
+		if ( ! isset( $_POST['pkiw_meta_nonce'] ) ||
+			! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['pkiw_meta_nonce'] ) ), 'pkiw_meta' ) ) {
 			return;
 		}
 
@@ -700,8 +700,8 @@ class Meta_Boxes {
 		}
 
 		// Save post kind.
-		if ( isset( $_POST['post_kinds_post_kind'] ) ) {
-			$kind = sanitize_text_field( wp_unslash( $_POST['post_kinds_post_kind'] ) );
+		if ( isset( $_POST['pkiw_post_kind'] ) ) {
+			$kind = sanitize_text_field( wp_unslash( $_POST['pkiw_post_kind'] ) );
 			if ( ! empty( $kind ) && taxonomy_exists( 'kind' ) ) {
 				wp_set_object_terms( $post_id, $kind, 'kind' );
 			}
@@ -709,7 +709,7 @@ class Meta_Boxes {
 
 		// Save meta fields.
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$meta_data = isset( $_POST['post_kinds_meta'] ) ? wp_unslash( $_POST['post_kinds_meta'] ) : [];
+		$meta_data = isset( $_POST['pkiw_meta'] ) ? wp_unslash( $_POST['pkiw_meta'] ) : [];
 
 		if ( ! is_array( $meta_data ) ) {
 			return;
@@ -725,7 +725,7 @@ class Meta_Boxes {
 					continue;
 				}
 
-				$meta_key = "_postkind_indieweb_{$field_id}";
+				$meta_key = "_pkiw_{$field_id}";
 				$field    = $this->meta_configs[ $kind ][ $field_id ];
 
 				// Sanitize based on field type.

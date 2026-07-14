@@ -4,11 +4,11 @@
  *
  * Admin page for managing incoming webhooks.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.0.0
  */
 
-namespace PostKindsForIndieWeb\Admin;
+namespace PKIW\Admin;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -49,10 +49,10 @@ class Webhooks_Page {
 	 * @return void
 	 */
 	public function init(): void {
-		add_action( 'wp_ajax_postkind_indieweb_regenerate_webhook_secret', [ $this, 'ajax_regenerate_secret' ] );
-		add_action( 'wp_ajax_postkind_indieweb_clear_pending_scrobbles', [ $this, 'ajax_clear_pending' ] );
-		add_action( 'wp_ajax_postkind_indieweb_approve_scrobble', [ $this, 'ajax_approve_scrobble' ] );
-		add_action( 'wp_ajax_postkind_indieweb_reject_scrobble', [ $this, 'ajax_reject_scrobble' ] );
+		add_action( 'wp_ajax_pkiw_regenerate_webhook_secret', [ $this, 'ajax_regenerate_secret' ] );
+		add_action( 'wp_ajax_pkiw_clear_pending_scrobbles', [ $this, 'ajax_clear_pending' ] );
+		add_action( 'wp_ajax_pkiw_approve_scrobble', [ $this, 'ajax_approve_scrobble' ] );
+		add_action( 'wp_ajax_pkiw_reject_scrobble', [ $this, 'ajax_reject_scrobble' ] );
 	}
 
 	/**
@@ -153,8 +153,8 @@ class Webhooks_Page {
 			return;
 		}
 
-		$settings = get_option( 'post_kinds_indieweb_webhook_settings', [] );
-		$pending  = get_option( 'post_kinds_indieweb_pending_scrobbles', [] );
+		$settings = get_option( 'pkiw_webhook_settings', [] );
+		$pending  = get_option( 'pkiw_pending_scrobbles', [] );
 
 		?>
 		<div class="wrap post-kinds-indieweb-webhooks">
@@ -176,7 +176,7 @@ class Webhooks_Page {
 			<?php endif; ?>
 
 			<form method="post" action="options.php">
-				<?php settings_fields( 'post_kinds_indieweb_webhooks' ); ?>
+				<?php settings_fields( 'pkiw_webhooks' ); ?>
 
 				<div class="webhook-cards">
 					<?php foreach ( $this->webhook_configs as $webhook_id => $config ) : ?>
@@ -217,7 +217,7 @@ class Webhooks_Page {
 				</div>
 				<label class="webhook-toggle">
 					<input type="checkbox"
-							name="post_kinds_indieweb_webhook_settings[<?php echo esc_attr( $webhook_id ); ?>][enabled]"
+							name="pkiw_webhook_settings[<?php echo esc_attr( $webhook_id ); ?>][enabled]"
 							value="1"
 							<?php checked( $is_enabled ); ?>
 							class="webhook-enable-toggle">
@@ -248,7 +248,7 @@ class Webhooks_Page {
 					<label><?php esc_html_e( 'Secret Key', 'post-kinds-for-indieweb' ); ?></label>
 					<div class="webhook-secret-field">
 						<input type="password"
-								name="post_kinds_indieweb_webhook_settings[<?php echo esc_attr( $webhook_id ); ?>][secret]"
+								name="pkiw_webhook_settings[<?php echo esc_attr( $webhook_id ); ?>][secret]"
 								value="<?php echo esc_attr( $secret ); ?>"
 								class="regular-text webhook-secret-input"
 								autocomplete="off">
@@ -272,7 +272,7 @@ class Webhooks_Page {
 						<td>
 							<label>
 								<input type="checkbox"
-										name="post_kinds_indieweb_webhook_settings[<?php echo esc_attr( $webhook_id ); ?>][auto_post]"
+										name="pkiw_webhook_settings[<?php echo esc_attr( $webhook_id ); ?>][auto_post]"
 										value="1"
 										<?php checked( ! empty( $settings['auto_post'] ) ); ?>>
 								<?php esc_html_e( 'Automatically create posts from webhook data', 'post-kinds-for-indieweb' ); ?>
@@ -285,7 +285,7 @@ class Webhooks_Page {
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Post Status', 'post-kinds-for-indieweb' ); ?></th>
 						<td>
-							<select name="post_kinds_indieweb_webhook_settings[<?php echo esc_attr( $webhook_id ); ?>][post_status]">
+							<select name="pkiw_webhook_settings[<?php echo esc_attr( $webhook_id ); ?>][post_status]">
 								<?php
 								$statuses       = [
 									'publish' => __( 'Published', 'post-kinds-for-indieweb' ),
@@ -318,7 +318,7 @@ class Webhooks_Page {
 								</th>
 								<td>
 									<?php
-									$field_name  = "post_kinds_indieweb_webhook_settings[{$webhook_id}][{$field_id}]";
+									$field_name  = "pkiw_webhook_settings[{$webhook_id}][{$field_id}]";
 									$field_value = $settings[ $field_id ] ?? ( $field['default'] ?? '' );
 
 									switch ( $field['type'] ) {
@@ -467,7 +467,7 @@ class Webhooks_Page {
 	 * @return void
 	 */
 	private function render_webhook_log(): void {
-		$log = get_option( 'post_kinds_indieweb_webhook_log', [] );
+		$log = get_option( 'pkiw_webhook_log', [] );
 
 		if ( empty( $log ) ) {
 			echo '<p class="description">' . esc_html__( 'No webhook requests received yet.', 'post-kinds-for-indieweb' ) . '</p>';
@@ -537,7 +537,7 @@ class Webhooks_Page {
 	 * @return void
 	 */
 	public function ajax_regenerate_secret(): void {
-		check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
@@ -553,12 +553,12 @@ class Webhooks_Page {
 		$secret = wp_generate_password( 32, true, false );
 
 		// Save it.
-		$settings = get_option( 'post_kinds_indieweb_webhook_settings', [] );
+		$settings = get_option( 'pkiw_webhook_settings', [] );
 		if ( ! isset( $settings[ $webhook ] ) ) {
 			$settings[ $webhook ] = [];
 		}
 		$settings[ $webhook ]['secret'] = $secret;
-		update_option( 'post_kinds_indieweb_webhook_settings', $settings );
+		update_option( 'pkiw_webhook_settings', $settings );
 
 		wp_send_json_success( [ 'secret' => $secret ] );
 	}
@@ -569,13 +569,13 @@ class Webhooks_Page {
 	 * @return void
 	 */
 	public function ajax_clear_pending(): void {
-		check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
 		}
 
-		delete_option( 'post_kinds_indieweb_pending_scrobbles' );
+		delete_option( 'pkiw_pending_scrobbles' );
 
 		wp_send_json_success( [ 'message' => __( 'Pending scrobbles cleared.', 'post-kinds-for-indieweb' ) ] );
 	}
@@ -586,7 +586,7 @@ class Webhooks_Page {
 	 * @return void
 	 */
 	public function ajax_approve_scrobble(): void {
-		check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
@@ -594,7 +594,7 @@ class Webhooks_Page {
 
 		$index = isset( $_POST['index'] ) ? absint( $_POST['index'] ) : -1;
 
-		$pending = get_option( 'post_kinds_indieweb_pending_scrobbles', [] );
+		$pending = get_option( 'pkiw_pending_scrobbles', [] );
 
 		if ( ! isset( $pending[ $index ] ) ) {
 			wp_send_json_error( [ 'message' => __( 'Scrobble not found.', 'post-kinds-for-indieweb' ) ] );
@@ -612,7 +612,7 @@ class Webhooks_Page {
 		// Remove from pending.
 		unset( $pending[ $index ] );
 		$pending = array_values( $pending ); // Re-index.
-		update_option( 'post_kinds_indieweb_pending_scrobbles', $pending );
+		update_option( 'pkiw_pending_scrobbles', $pending );
 
 		wp_send_json_success(
 			[
@@ -629,7 +629,7 @@ class Webhooks_Page {
 	 * @return void
 	 */
 	public function ajax_reject_scrobble(): void {
-		check_ajax_referer( 'post_kinds_indieweb_admin', 'nonce' );
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
 
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb' ) ] );
@@ -637,7 +637,7 @@ class Webhooks_Page {
 
 		$index = isset( $_POST['index'] ) ? absint( $_POST['index'] ) : -1;
 
-		$pending = get_option( 'post_kinds_indieweb_pending_scrobbles', [] );
+		$pending = get_option( 'pkiw_pending_scrobbles', [] );
 
 		if ( ! isset( $pending[ $index ] ) ) {
 			wp_send_json_error( [ 'message' => __( 'Scrobble not found.', 'post-kinds-for-indieweb' ) ] );
@@ -646,7 +646,7 @@ class Webhooks_Page {
 		// Remove from pending.
 		unset( $pending[ $index ] );
 		$pending = array_values( $pending ); // Re-index.
-		update_option( 'post_kinds_indieweb_pending_scrobbles', $pending );
+		update_option( 'pkiw_pending_scrobbles', $pending );
 
 		wp_send_json_success( [ 'message' => __( 'Scrobble rejected.', 'post-kinds-for-indieweb' ) ] );
 	}
@@ -658,7 +658,7 @@ class Webhooks_Page {
 	 * @return int|\WP_Error Post ID or error.
 	 */
 	private function create_post_from_scrobble( array $scrobble ) {
-		$settings    = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings    = get_option( 'pkiw_settings', [] );
 		$post_status = $settings['default_post_status'] ?? 'publish';
 
 		// Determine post kind.
@@ -710,7 +710,7 @@ class Webhooks_Page {
 		// Save metadata.
 		if ( ! empty( $scrobble['metadata'] ) ) {
 			foreach ( $scrobble['metadata'] as $key => $value ) {
-				update_post_meta( $post_id, '_postkind_indieweb_' . $key, $value );
+				update_post_meta( $post_id, '_pkiw_' . $key, $value );
 			}
 		}
 

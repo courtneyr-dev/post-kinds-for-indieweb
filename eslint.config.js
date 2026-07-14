@@ -56,7 +56,7 @@ module.exports = [
 
 	// Non-bundled scripts enqueued on admin and front-end pages. These run
 	// in the browser alongside globals provided by wp_localize_script()
-	// (postKindsIndieWeb, reactionsCheckinDashboard) and enqueued libraries
+	// (pkiwAdmin, reactionsCheckinDashboard) and enqueued libraries
 	// (jQuery, Leaflet's L).
 	{
 		files: [ 'admin/js/**/*.js', 'assets/js/**/*.js' ],
@@ -67,7 +67,7 @@ module.exports = [
 				location: 'readonly',
 				jQuery: 'readonly',
 				L: 'readonly',
-				postKindsIndieWeb: 'readonly',
+				pkiwAdmin: 'readonly',
 				reactionsCheckinDashboard: 'readonly',
 			},
 		},

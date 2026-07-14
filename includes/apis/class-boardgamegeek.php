@@ -5,13 +5,13 @@
  * Provides integration with BoardGameGeek's XML API2 for board game
  * and video game lookups.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\APIs;
+namespace PKIW\APIs;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -82,7 +82,7 @@ class BoardGameGeek extends API_Base {
 		parent::__construct();
 
 		// Get token from API credentials storage.
-		$credentials     = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials     = get_option( 'pkiw_api_credentials', [] );
 		$this->api_token = $credentials['bgg']['api_token'] ?? '';
 	}
 

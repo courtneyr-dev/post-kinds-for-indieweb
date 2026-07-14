@@ -71,19 +71,19 @@ export default function Edit( { attributes, setAttributes } ) {
 	useEffect( () => {
 		const metaUpdates = {};
 		if ( title !== undefined ) {
-			metaUpdates._postkind_jam_title = title || '';
+			metaUpdates._pkiw_jam_title = title || '';
 		}
 		if ( artist !== undefined ) {
-			metaUpdates._postkind_jam_artist = artist || '';
+			metaUpdates._pkiw_jam_artist = artist || '';
 		}
 		if ( album !== undefined ) {
-			metaUpdates._postkind_jam_album = album || '';
+			metaUpdates._pkiw_jam_album = album || '';
 		}
 		if ( cover !== undefined ) {
-			metaUpdates._postkind_jam_cover = cover || '';
+			metaUpdates._pkiw_jam_cover = cover || '';
 		}
 		if ( url !== undefined ) {
-			metaUpdates._postkind_jam_url = url || '';
+			metaUpdates._pkiw_jam_url = url || '';
 		}
 
 		if ( Object.keys( metaUpdates ).length > 0 ) {

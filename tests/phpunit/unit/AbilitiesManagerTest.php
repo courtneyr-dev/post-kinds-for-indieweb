@@ -2,18 +2,18 @@
 /**
  * Test the Abilities Manager class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\Abilities_Manager;
+use PKIW\Abilities_Manager;
 use WP_UnitTestCase;
 
 /**
  * Test the Abilities Manager functionality.
  *
- * @covers \PostKindsForIndieWeb\Abilities_Manager
+ * @covers \PKIW\Abilities_Manager
  */
 class AbilitiesManagerTest extends WP_UnitTestCase {
 

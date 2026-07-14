@@ -2,10 +2,10 @@
 /**
  * Test the main plugin class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
 use WP_UnitTestCase;
 
@@ -25,7 +25,7 @@ class PluginTest extends WP_UnitTestCase {
 	 * Test that the plugin is loaded.
 	 */
 	public function test_plugin_is_loaded() {
-		$this->assertTrue( defined( 'POST_KINDS_INDIEWEB_VERSION' ) );
+		$this->assertTrue( defined( 'PKIW_VERSION' ) );
 	}
 
 	/**
@@ -40,8 +40,8 @@ class PluginTest extends WP_UnitTestCase {
 		$this->assertNotEmpty( $data['Version'], 'Plugin header is missing a Version.' );
 		$this->assertSame(
 			$data['Version'],
-			POST_KINDS_INDIEWEB_VERSION,
-			'POST_KINDS_INDIEWEB_VERSION must match the Version in the plugin header.'
+			PKIW_VERSION,
+			'PKIW_VERSION must match the Version in the plugin header.'
 		);
 	}
 
@@ -56,7 +56,7 @@ class PluginTest extends WP_UnitTestCase {
 	 * Test that the plugin namespace is correct.
 	 */
 	public function test_plugin_namespace() {
-		$this->assertTrue( class_exists( 'PostKindsForIndieWeb\Plugin' ) );
+		$this->assertTrue( class_exists( 'PKIW\Plugin' ) );
 	}
 
 	// --- add_plugin_templates: slug filter regression ---------------------
@@ -69,7 +69,7 @@ class PluginTest extends WP_UnitTestCase {
 	 * single posts and the post body never renders.
 	 */
 	public function test_add_plugin_templates_respects_slug_in_filter(): void {
-		$plugin = \PostKindsForIndieWeb\Plugin::get_instance();
+		$plugin = \PKIW\Plugin::get_instance();
 
 		$result = $plugin->add_plugin_templates(
 			array(),
@@ -94,7 +94,7 @@ class PluginTest extends WP_UnitTestCase {
 	 * injected as expected.
 	 */
 	public function test_add_plugin_templates_injects_when_slug_requested(): void {
-		$plugin = \PostKindsForIndieWeb\Plugin::get_instance();
+		$plugin = \PKIW\Plugin::get_instance();
 
 		$result = $plugin->add_plugin_templates(
 			array(),
@@ -115,7 +115,7 @@ class PluginTest extends WP_UnitTestCase {
 	 * the template is still injected.
 	 */
 	public function test_add_plugin_templates_injects_when_no_slug_filter(): void {
-		$plugin = \PostKindsForIndieWeb\Plugin::get_instance();
+		$plugin = \PKIW\Plugin::get_instance();
 
 		$result = $plugin->add_plugin_templates(
 			array(),
@@ -136,7 +136,7 @@ class PluginTest extends WP_UnitTestCase {
 	 * through untouched.
 	 */
 	public function test_add_plugin_templates_skips_non_wp_template_type(): void {
-		$plugin = \PostKindsForIndieWeb\Plugin::get_instance();
+		$plugin = \PKIW\Plugin::get_instance();
 
 		$result = $plugin->add_plugin_templates(
 			array(),

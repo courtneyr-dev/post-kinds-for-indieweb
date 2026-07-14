@@ -10,13 +10,13 @@
  * - Smart Tagging: Suggest tags based on content and metadata.
  * - Content Summary: Generate review prompts from media metadata.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.3.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -161,8 +161,10 @@ final class AI_Enhancements {
 			[
 				'methods'             => 'POST',
 				'callback'            => [ $this, 'handle_content_summary' ],
-				'permission_callback' => function () {
-					return current_user_can( 'edit_posts' );
+				'permission_callback' => function ( \WP_REST_Request $request ) {
+					// Capability check against the specific post, not just
+					// generic editing rights.
+					return current_user_can( 'edit_post', absint( $request->get_param( 'post_id' ) ) );
 				},
 				'args'                => [
 					'post_id' => [

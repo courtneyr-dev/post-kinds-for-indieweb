@@ -5,15 +5,15 @@
  * Shows total listens, watches, and reads for a given period.
  * Registered entirely in PHP — no JavaScript build step required.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.3.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Blocks;
+namespace PKIW\Blocks;
 
-use PostKindsForIndieWeb\Taxonomy;
+use PKIW\Taxonomy;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

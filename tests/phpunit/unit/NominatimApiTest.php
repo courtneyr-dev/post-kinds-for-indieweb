@@ -2,18 +2,18 @@
 /**
  * Test the Nominatim API client.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\APIs\Nominatim;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\APIs\Nominatim;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Test the Nominatim API integration.
  *
- * @covers \PostKindsForIndieWeb\APIs\Nominatim
+ * @covers \PKIW\APIs\Nominatim
  */
 class NominatimApiTest extends ApiTestCase {
 

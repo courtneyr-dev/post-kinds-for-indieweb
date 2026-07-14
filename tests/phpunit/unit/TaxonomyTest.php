@@ -1,8 +1,8 @@
 <?php
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
 use WP_UnitTestCase;
-use PostKindsForIndieWeb\Taxonomy;
+use PKIW\Taxonomy;
 
 class TaxonomyTest extends WP_UnitTestCase {
 

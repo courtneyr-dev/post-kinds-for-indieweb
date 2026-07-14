@@ -2,18 +2,18 @@
 /**
  * Test the Lookup Abilities provider class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\Abilities\Lookup_Abilities;
+use PKIW\Abilities\Lookup_Abilities;
 use WP_UnitTestCase;
 
 /**
  * Test the Lookup Abilities provider functionality.
  *
- * @covers \PostKindsForIndieWeb\Abilities\Lookup_Abilities
+ * @covers \PKIW\Abilities\Lookup_Abilities
  */
 class LookupAbilitiesTest extends WP_UnitTestCase {
 

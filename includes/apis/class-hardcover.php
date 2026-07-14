@@ -5,13 +5,13 @@
  * Provides book tracking and reading history from Hardcover.app.
  * Uses GraphQL API.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\APIs;
+namespace PKIW\APIs;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -65,7 +65,7 @@ class Hardcover extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials     = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials     = get_option( 'pkiw_api_credentials', [] );
 		$hc_creds        = $credentials['hardcover'] ?? [];
 		$this->api_token = $hc_creds['api_token'] ?? '';
 	}

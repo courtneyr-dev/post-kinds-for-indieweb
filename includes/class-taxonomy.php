@@ -4,13 +4,13 @@
  *
  * Registers the 'kind' taxonomy for categorizing posts by IndieWeb post types.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -214,7 +214,7 @@ class Taxonomy {
 	 */
 	public function register_taxonomy(): void {
 		// Check if CPT mode is enabled and add reaction post type.
-		$settings     = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings     = get_option( 'pkiw_settings', [] );
 		$storage_mode = $settings['import_storage_mode'] ?? 'standard';
 
 		if ( 'cpt' === $storage_mode ) {
@@ -228,7 +228,7 @@ class Taxonomy {
 		 *
 		 * @param array<string> $post_types Array of post type slugs.
 		 */
-		$this->post_types = apply_filters( 'post_kinds_indieweb_kind_post_types', $this->post_types );
+		$this->post_types = apply_filters( 'pkiw_kind_post_types', $this->post_types );
 
 		$labels = [
 			'name'                       => _x( 'Kinds', 'taxonomy general name', 'post-kinds-for-indieweb' ),
@@ -293,7 +293,7 @@ class Taxonomy {
 		 *
 		 * @param array<string, mixed> $args Taxonomy registration arguments.
 		 */
-		$args = apply_filters( 'post_kinds_indieweb_taxonomy_args', $args );
+		$args = apply_filters( 'pkiw_taxonomy_args', $args );
 
 		register_taxonomy( self::TAXONOMY, $this->post_types, $args );
 	}
@@ -305,9 +305,9 @@ class Taxonomy {
 	 */
 	public function maybe_create_default_terms(): void {
 		// Only run once after activation.
-		if ( ! get_option( 'post_kinds_indieweb_terms_created' ) ) {
+		if ( ! get_option( 'pkiw_terms_created' ) ) {
 			$this->create_default_terms();
-			update_option( 'post_kinds_indieweb_terms_created', true );
+			update_option( 'pkiw_terms_created', true );
 		}
 	}
 
@@ -324,7 +324,7 @@ class Taxonomy {
 		 *
 		 * @param array<string, array<string, string>> $default_kinds Array of kind slugs and their properties.
 		 */
-		$kinds = apply_filters( 'post_kinds_indieweb_default_kinds', $this->default_kinds );
+		$kinds = apply_filters( 'pkiw_default_kinds', $this->default_kinds );
 
 		foreach ( $kinds as $slug => $kind_data ) {
 			if ( ! term_exists( $slug, self::TAXONOMY ) ) {
@@ -357,10 +357,10 @@ class Taxonomy {
 		}
 
 		// Check version to only run once per plugin version.
-		$version_key     = 'post_kinds_indieweb_terms_version';
+		$version_key     = 'pkiw_terms_version';
 		$current_version = get_option( $version_key, '0' );
 
-		if ( version_compare( $current_version, POST_KINDS_INDIEWEB_VERSION, '>=' ) ) {
+		if ( version_compare( $current_version, PKIW_VERSION, '>=' ) ) {
 			return;
 		}
 
@@ -378,7 +378,7 @@ class Taxonomy {
 			}
 		}
 
-		update_option( $version_key, POST_KINDS_INDIEWEB_VERSION );
+		update_option( $version_key, PKIW_VERSION );
 	}
 
 	/**
@@ -404,7 +404,7 @@ class Taxonomy {
 		 * @param string   $termlink The term link URL.
 		 * @param \WP_Term $term     The term object.
 		 */
-		return apply_filters( 'post_kinds_indieweb_kind_link', $termlink, $term );
+		return apply_filters( 'pkiw_kind_link', $termlink, $term );
 	}
 
 	/**

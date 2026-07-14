@@ -139,6 +139,54 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 = 1.0.0 =
 * Initial WordPress.org release: 24 post kinds with card blocks, media lookup, imports and webhook scrobbling, microformats2 markup, syndication, and Micropub support. Development history for the pre-release builds lives in CHANGELOG.md in the GitHub repository.
 
+== External services ==
+
+This plugin integrates with external services for media metadata lookups, history imports, scrobbling, and syndication. Every connection is optional: nothing is contacted until you enable a service, save its credentials, use its lookup, or paste one of its links. What follows lists each service, what is sent and when, and its terms and privacy policy.
+
+= Media lookup services (used when you search from the editor, Quick Post, or the Media Lookup block) =
+
+Each lookup sends your search text (a title, artist, venue name, or similar) plus your stored API key or credentials for that service, only at the moment you run a search or refresh metadata.
+
+* **MusicBrainz** — music metadata (albums, artists, recordings). Also sends the app name/contact you configure, per their API etiquette. [Terms](https://metabrainz.org/social-contract), [Privacy](https://metabrainz.org/privacy).
+* **TMDB (The Movie Database)** — movie and TV metadata and artwork. [Terms](https://www.themoviedb.org/terms-of-use), [Privacy](https://www.themoviedb.org/privacy-policy). This product uses the TMDB API but is not endorsed or certified by TMDB.
+* **TVMaze** — TV show metadata. [Terms](https://www.tvmaze.com/site/tos), [Privacy](https://www.tvmaze.com/site/privacy).
+* **Google Books** — book metadata. [Terms](https://developers.google.com/terms), [Privacy](https://policies.google.com/privacy).
+* **Open Library (Internet Archive)** — book metadata and covers. [Terms and privacy](https://archive.org/about/terms).
+* **Hardcover** — book metadata and reading data. [Terms](https://hardcover.app/pages/terms-of-service), [Privacy](https://hardcover.app/pages/privacy-policy).
+* **Podcast Index** — podcast and episode metadata. [Terms](https://podcastindex.org/tos), [Privacy](https://podcastindex.org/privacy).
+* **RAWG** — video game metadata. [Terms](https://rawg.io/terms), [Privacy](https://rawg.io/privacy_policy).
+* **BoardGameGeek** — board game metadata. [Terms](https://boardgamegeek.com/terms), [Privacy](https://boardgamegeek.com/privacy).
+* **Foursquare** — venue search for check-ins (sends your search text and, when you allow it, coordinates to find nearby venues). [Terms](https://foursquare.com/legal/terms), [Privacy](https://foursquare.com/legal/privacy).
+
+= Connected accounts (used for history imports, scheduled sync, scrobbling, and syndication) =
+
+When you connect an account, the plugin stores your token and, on import, scheduled sync, or when you publish a post with that service's syndication toggle on, sends the data needed for that action (your listen/watch/check-in details, plus your token).
+
+* **Last.fm** — listening history import and scrobbling your listen posts. [Terms](https://www.last.fm/legal/terms), [Privacy](https://www.last.fm/legal/privacy).
+* **ListenBrainz** — listening history import and scrobble submission. [Terms](https://metabrainz.org/social-contract), [Privacy](https://metabrainz.org/privacy).
+* **Trakt** — watch history import, sync, and check-ins. [Terms](https://trakt.tv/terms), [Privacy](https://trakt.tv/privacy).
+* **Simkl** — watch history import and sync. [Terms](https://simkl.com/about/terms/), [Privacy](https://simkl.com/about/privacy/).
+* **Untappd** — drink check-in import. [Terms](https://untappd.com/terms), [Privacy](https://untappd.com/privacy).
+* **Foursquare/Swarm** — check-in import via OAuth. [Terms](https://foursquare.com/legal/terms), [Privacy](https://foursquare.com/legal/privacy).
+* **Readwise** — reading highlights import. [Terms](https://readwise.io/tos), [Privacy](https://readwise.io/privacy).
+
+= Geocoding and maps =
+
+* **Nominatim (OpenStreetMap Foundation)** — converts a check-in's coordinates or place text into an address (and back). Sends the location you're checking in to and the contact email you configure, only when you create or edit a check-in that needs geocoding. [Usage policy](https://operations.osmfoundation.org/policies/nominatim/), [Privacy](https://wiki.osmfoundation.org/wiki/Privacy_Policy).
+* **OpenStreetMap embeds** — when a published check-in shows a map, the visitor's browser loads an embedded map from openstreetmap.org containing that check-in's coordinates. Site visitors' browsers connect to OpenStreetMap when viewing those posts. [Terms](https://wiki.osmfoundation.org/wiki/Terms_of_Use), [Privacy](https://wiki.osmfoundation.org/wiki/Privacy_Policy).
+
+= Link identification =
+
+* **Letterboxd** — when you paste a Letterboxd link into a watch post, the plugin fetches that page once to identify the film. Only the URL you pasted is requested. [Terms](https://letterboxd.com/legal/terms-of-use/), [Privacy](https://letterboxd.com/legal/privacy-policy/).
+
+= Inbound webhooks (no data sent) =
+
+Plex, Jellyfin, Trakt, ListenBrainz, and OwnTracks scrobbling works through webhooks: those services send data *to* your site at the secret URL you configure. The plugin makes no outbound request to them for this feature.
+
+= AI features =
+
+The optional AI enhancements use the WordPress AI Client bundled with WordPress 7.0+, which routes requests to whatever AI provider the site administrator has configured in WordPress itself. This plugin does not contact any AI service directly and sends nothing unless you invoke an AI action.
+
 == Privacy Policy ==
 
 This plugin:

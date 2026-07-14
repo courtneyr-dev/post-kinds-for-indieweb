@@ -51,16 +51,16 @@ export default function Edit( { attributes, setAttributes } ) {
 	useEffect( () => {
 		const metaUpdates = {};
 		if ( title !== undefined ) {
-			metaUpdates._postkind_favorite_title = title || '';
+			metaUpdates._pkiw_favorite_title = title || '';
 		}
 		if ( url !== undefined ) {
-			metaUpdates._postkind_favorite_url = url || '';
+			metaUpdates._pkiw_favorite_url = url || '';
 		}
 		if ( author !== undefined ) {
-			metaUpdates._postkind_favorite_author = author || '';
+			metaUpdates._pkiw_favorite_author = author || '';
 		}
 		if ( image !== undefined ) {
-			metaUpdates._postkind_favorite_image = image || '';
+			metaUpdates._pkiw_favorite_image = image || '';
 		}
 
 		if ( Object.keys( metaUpdates ).length > 0 ) {

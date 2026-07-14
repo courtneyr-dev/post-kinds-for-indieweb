@@ -5,13 +5,13 @@
  * Orchestrates registration of WordPress Abilities API abilities
  * for IndieWeb post kinds.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.1.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {

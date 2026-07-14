@@ -22,13 +22,13 @@ import { STORE_NAME } from '../../stores/post-kinds';
 /**
  * Get available syndication services from global config.
  *
- * Uses postKindsIndieWebEditor (not postKindsIndieWeb) to avoid
+ * Uses pkiwAdminEditor (not pkiwAdmin) to avoid
  * conflicts with the admin.js script which uses the same global name.
  *
  * @return {Object} Services configuration.
  */
 function getSyndicationServices() {
-	return window.postKindsIndieWebEditor?.syndicationServices || {};
+	return window.pkiwAdminEditor?.syndicationServices || {};
 }
 
 /**

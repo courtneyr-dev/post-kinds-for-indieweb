@@ -7,7 +7,7 @@
  * via --pk-* custom properties. Cites the event via an h-cite/h-event and
  * preserves the RSVP status microformat.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @var array    $attributes Block attributes.
  * @var string   $content    Block content (empty for dynamic blocks).
  * @var WP_Block $block      Block instance.
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
-use function PostKindsForIndieWeb\get_kind_icon_svg;
+use function PKIW\get_kind_icon_svg;
 
 $pkiw_event_name        = $attributes['eventName'] ?? '';
 $pkiw_event_url         = $attributes['eventUrl'] ?? '';

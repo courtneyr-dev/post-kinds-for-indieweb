@@ -2,7 +2,7 @@
 /**
  * Check-in Dashboard Block - Server-side Render
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  *
  * @var array    $attributes Block attributes.
  * @var string   $content    Block default content.
@@ -23,11 +23,11 @@ $pkiw_show_filters = $attributes['showFilters'] ?? false;
 
 // Enqueue Leaflet for map view.
 if ( $pkiw_show_map ) {
-	wp_enqueue_style( 'leaflet', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet/leaflet.css', [], '1.9.4' );
-	wp_enqueue_script( 'leaflet', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet/leaflet.js', [], '1.9.4', true );
-	wp_enqueue_style( 'leaflet-markercluster', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.css', [ 'leaflet' ], '1.4.1' );
-	wp_enqueue_style( 'leaflet-markercluster-default', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.Default.css', [ 'leaflet-markercluster' ], '1.4.1' );
-	wp_enqueue_script( 'leaflet-markercluster', POST_KINDS_INDIEWEB_URL . 'assets/vendor/leaflet-markercluster/leaflet.markercluster.js', [ 'leaflet' ], '1.4.1', true );
+	wp_enqueue_style( 'leaflet', PKIW_URL . 'assets/vendor/leaflet/leaflet.css', [], '1.9.4' );
+	wp_enqueue_script( 'leaflet', PKIW_URL . 'assets/vendor/leaflet/leaflet.js', [], '1.9.4', true );
+	wp_enqueue_style( 'leaflet-markercluster', PKIW_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.css', [ 'leaflet' ], '1.4.1' );
+	wp_enqueue_style( 'leaflet-markercluster-default', PKIW_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.Default.css', [ 'leaflet-markercluster' ], '1.4.1' );
+	wp_enqueue_script( 'leaflet-markercluster', PKIW_URL . 'assets/vendor/leaflet-markercluster/leaflet.markercluster.js', [ 'leaflet' ], '1.4.1', true );
 }
 
 // Get check-ins.

@@ -17,7 +17,7 @@
  *
  * Never ship this outside the test environment.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

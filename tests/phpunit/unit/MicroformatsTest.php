@@ -1,10 +1,10 @@
 <?php
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
 use WP_UnitTestCase;
-use PostKindsForIndieWeb\Microformats;
-use PostKindsForIndieWeb\Taxonomy;
-use PostKindsForIndieWeb\Meta_Fields;
+use PKIW\Microformats;
+use PKIW\Taxonomy;
+use PKIW\Meta_Fields;
 
 class MicroformatsTest extends WP_UnitTestCase {
 

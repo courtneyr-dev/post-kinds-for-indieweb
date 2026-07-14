@@ -4,15 +4,15 @@
  *
  * Handles POSSE (scrobbling) of listen posts to Last.fm.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Sync;
+namespace PKIW\Sync;
 
-use PostKindsForIndieWeb\APIs\LastFM;
+use PKIW\APIs\LastFM;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -69,7 +69,7 @@ class Lastfm_Listen_Sync extends Listen_Sync_Base {
 	public function __construct() {
 		parent::__construct();
 
-		$credentials       = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials       = get_option( 'pkiw_api_credentials', [] );
 		$lastfm_creds      = $credentials['lastfm'] ?? [];
 		$this->session_key = $lastfm_creds['session_key'] ?? '';
 		$this->username    = $lastfm_creds['username'] ?? '';

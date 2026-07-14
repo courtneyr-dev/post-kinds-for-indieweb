@@ -22,13 +22,13 @@
  * `_pkiw_block_content_generated` post meta marker is set and subsequent
  * Micropub updates leave the (potentially user-edited) post_content alone.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

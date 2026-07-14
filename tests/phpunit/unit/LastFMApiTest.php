@@ -2,18 +2,18 @@
 /**
  * Test the Last.fm API client.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\APIs\LastFM;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\APIs\LastFM;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Test the Last.fm API integration.
  *
- * @covers \PostKindsForIndieWeb\APIs\LastFM
+ * @covers \PKIW\APIs\LastFM
  */
 class LastFMApiTest extends ApiTestCase {
 

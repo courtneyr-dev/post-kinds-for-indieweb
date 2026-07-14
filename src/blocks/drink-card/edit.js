@@ -150,44 +150,41 @@ export default function Edit( { attributes, setAttributes } ) {
 	useEffect( () => {
 		const metaUpdates = {};
 		if ( name !== undefined ) {
-			metaUpdates._postkind_drink_name = name || '';
+			metaUpdates._pkiw_drink_name = name || '';
 		}
 		if ( drinkType !== undefined ) {
-			metaUpdates._postkind_drink_type = drinkType || '';
+			metaUpdates._pkiw_drink_type = drinkType || '';
 		}
 		if ( brand !== undefined ) {
-			metaUpdates._postkind_drink_brewery = brand || '';
+			metaUpdates._pkiw_drink_brewery = brand || '';
 		}
 		if ( photo !== undefined ) {
-			metaUpdates._postkind_drink_photo = photo || '';
+			metaUpdates._pkiw_drink_photo = photo || '';
 		}
 		if ( rating !== undefined ) {
-			metaUpdates._postkind_drink_rating = rating || 0;
+			metaUpdates._pkiw_drink_rating = rating || 0;
 		}
 		// Location fields
 		if ( locationName !== undefined ) {
-			metaUpdates._postkind_drink_location_name = locationName || '';
+			metaUpdates._pkiw_drink_location_name = locationName || '';
 		}
 		if ( locationAddress !== undefined ) {
-			metaUpdates._postkind_drink_location_address =
-				locationAddress || '';
+			metaUpdates._pkiw_drink_location_address = locationAddress || '';
 		}
 		if ( locationLocality !== undefined ) {
-			metaUpdates._postkind_drink_location_locality =
-				locationLocality || '';
+			metaUpdates._pkiw_drink_location_locality = locationLocality || '';
 		}
 		if ( locationRegion !== undefined ) {
-			metaUpdates._postkind_drink_location_region = locationRegion || '';
+			metaUpdates._pkiw_drink_location_region = locationRegion || '';
 		}
 		if ( locationCountry !== undefined ) {
-			metaUpdates._postkind_drink_location_country =
-				locationCountry || '';
+			metaUpdates._pkiw_drink_location_country = locationCountry || '';
 		}
 		if ( geoLatitude !== undefined ) {
-			metaUpdates._postkind_drink_geo_latitude = geoLatitude || 0;
+			metaUpdates._pkiw_drink_geo_latitude = geoLatitude || 0;
 		}
 		if ( geoLongitude !== undefined ) {
-			metaUpdates._postkind_drink_geo_longitude = geoLongitude || 0;
+			metaUpdates._pkiw_drink_geo_longitude = geoLongitude || 0;
 		}
 
 		if ( Object.keys( metaUpdates ).length > 0 ) {

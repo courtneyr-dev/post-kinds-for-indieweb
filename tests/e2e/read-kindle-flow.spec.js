@@ -4,8 +4,8 @@
  * Exercises the whole Task 7-12 chain in one pass: insert a Read card with
  * only an ISBN plus a marked Kindle-preview embed, publish, and assert the
  * front end renders an iframe whose src is the derived print-ASIN Kindle
- * embed URL (Kindle_Embed_Bridge::render(), reading _postkind_read_asin /
- * _postkind_read_isbn meta filled by Book_Completion_Controller::complete_on_save()).
+ * embed URL (Kindle_Embed_Bridge::render(), reading _pkiw_read_asin /
+ * _pkiw_read_isbn meta filled by Book_Completion_Controller::complete_on_save()).
  *
  * DETERMINISM: the real completion cascade (Book_Completion) hits Open
  * Library live over HTTP on the ISBN lookup path. That's fine for manual

@@ -16,10 +16,10 @@
  * valid-looking hex color sequences; the hex pattern uses a negative
  * lookbehind for `&` so entities are never flagged as colors.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
 use WP_UnitTestCase;
 

@@ -4,16 +4,16 @@
  *
  * Registers 6 lookup abilities that proxy to existing REST API endpoints.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Abilities;
+namespace PKIW\Abilities;
 
-use PostKindsForIndieWeb\Abilities_Manager;
-use PostKindsForIndieWeb\REST_API;
+use PKIW\Abilities_Manager;
+use PKIW\REST_API;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {

@@ -116,22 +116,22 @@ export default function Edit( { attributes, setAttributes } ) {
 	useEffect( () => {
 		const metaUpdates = {};
 		if ( title !== undefined ) {
-			metaUpdates._postkind_wish_title = title || '';
+			metaUpdates._pkiw_wish_title = title || '';
 		}
 		if ( wishType !== undefined ) {
-			metaUpdates._postkind_wish_type = wishType || '';
+			metaUpdates._pkiw_wish_type = wishType || '';
 		}
 		if ( url !== undefined ) {
-			metaUpdates._postkind_wish_url = url || '';
+			metaUpdates._pkiw_wish_url = url || '';
 		}
 		if ( price !== undefined ) {
-			metaUpdates._postkind_wish_price = price || '';
+			metaUpdates._pkiw_wish_price = price || '';
 		}
 		if ( priority !== undefined ) {
-			metaUpdates._postkind_wish_priority = priority || '';
+			metaUpdates._pkiw_wish_priority = priority || '';
 		}
 		if ( image !== undefined ) {
-			metaUpdates._postkind_wish_image = image || '';
+			metaUpdates._pkiw_wish_image = image || '';
 		}
 
 		if ( Object.keys( metaUpdates ).length > 0 ) {

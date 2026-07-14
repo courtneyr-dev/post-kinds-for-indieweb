@@ -2,18 +2,18 @@
 /**
  * Test the Hardcover API client.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\APIs\Hardcover;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\APIs\Hardcover;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Test the Hardcover API integration.
  *
- * @covers \PostKindsForIndieWeb\APIs\Hardcover
+ * @covers \PKIW\APIs\Hardcover
  */
 class HardcoverApiTest extends ApiTestCase {
 

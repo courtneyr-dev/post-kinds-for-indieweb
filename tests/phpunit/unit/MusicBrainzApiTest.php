@@ -2,18 +2,18 @@
 /**
  * Test the MusicBrainz API client.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\APIs\MusicBrainz;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\APIs\MusicBrainz;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Test the MusicBrainz API integration.
  *
- * @covers \PostKindsForIndieWeb\APIs\MusicBrainz
+ * @covers \PKIW\APIs\MusicBrainz
  */
 class MusicBrainzApiTest extends ApiTestCase {
 
