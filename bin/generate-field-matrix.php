@@ -5,7 +5,7 @@
  * Returns a callable so tests can invoke it in-memory; running the file
  * directly (php bin/generate-field-matrix.php) writes the fixture.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
 declare(strict_types=1);

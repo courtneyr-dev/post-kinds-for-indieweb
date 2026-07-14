@@ -5,13 +5,13 @@
  * A simple check-in pattern with just location and optional photo.
  * Perfect for scenic spots, interesting places, or quick location shares.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.2.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Patterns;
+namespace PKIW\Patterns;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -24,9 +24,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 register_block_pattern(
 	'post-kinds-indieweb/quick-photo-checkin',
 	[
-		'title'       => __( 'Quick Photo Check-in', 'post-kinds-for-indieweb' ),
-		'description' => __( 'Simple check-in with location and optional photo. Great for scenic spots and quick shares.', 'post-kinds-for-indieweb' ),
-		'categories'  => [ 'post-kinds-for-indieweb' ],
+		'title'       => __( 'Quick Photo Check-in', 'post-kinds-for-indieweb-in-block-themes' ),
+		'description' => __( 'Simple check-in with location and optional photo. Great for scenic spots and quick shares.', 'post-kinds-for-indieweb-in-block-themes' ),
+		'categories'  => [ 'post-kinds-for-indieweb-in-block-themes' ],
 		'keywords'    => [ 'photo', 'checkin', 'check-in', 'location', 'scenic', 'quick', 'simple', 'indieweb' ],
 		'blockTypes'  => [ 'core/group' ],
 		'postTypes'   => [ 'post' ],
@@ -41,7 +41,7 @@ register_block_pattern(
 
 	<!-- wp:group {"className":"e-content","layout":{"type":"constrained"}} -->
 	<div class="wp-block-group e-content">
-		<!-- wp:paragraph {"placeholder":"' . esc_attr__( 'Add a caption or notes (optional)...', 'post-kinds-for-indieweb' ) . '"} -->
+		<!-- wp:paragraph {"placeholder":"' . esc_attr__( 'Add a caption or notes (optional)...', 'post-kinds-for-indieweb-in-block-themes' ) . '"} -->
 		<p></p>
 		<!-- /wp:paragraph -->
 	</div>

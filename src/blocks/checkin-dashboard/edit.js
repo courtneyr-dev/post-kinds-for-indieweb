@@ -35,7 +35,10 @@ export default function Edit( { attributes, setAttributes } ) {
 			return (
 				<div className="checkin-loading">
 					<span className="spinner is-active"></span>
-					{ __( 'Loading check-ins…', 'post-kinds-for-indieweb' ) }
+					{ __(
+						'Loading check-ins…',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 				</div>
 			);
 		}
@@ -47,7 +50,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<p>
 						{ __(
 							'No check-ins found. Create check-in posts to see them here.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					</p>
 				</div>
@@ -103,28 +106,34 @@ export default function Edit( { attributes, setAttributes } ) {
 				<PanelBody
 					title={ __(
 						'Display Settings',
-						'post-kinds-for-indieweb'
+						'post-kinds-for-indieweb-in-block-themes'
 					) }
 				>
 					<SelectControl
 						label={ __(
 							'Default Layout',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ layout }
 						options={ [
 							{
-								label: __( 'Grid', 'post-kinds-for-indieweb' ),
+								label: __(
+									'Grid',
+									'post-kinds-for-indieweb-in-block-themes'
+								),
 								value: 'grid',
 							},
 							{
-								label: __( 'Map', 'post-kinds-for-indieweb' ),
+								label: __(
+									'Map',
+									'post-kinds-for-indieweb-in-block-themes'
+								),
 								value: 'map',
 							},
 							{
 								label: __(
 									'Timeline',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'timeline',
 							},
@@ -134,7 +143,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<RangeControl
 						label={ __(
 							'Number of Check-ins',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ limit }
 						onChange={ ( v ) => setAttributes( { limit: v } ) }
@@ -144,7 +153,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<ToggleControl
 						label={ __(
 							'Show Map View',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						checked={ showMap }
 						onChange={ ( v ) => setAttributes( { showMap: v } ) }
@@ -152,7 +161,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<ToggleControl
 						label={ __(
 							'Show Statistics',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						checked={ showStats }
 						onChange={ ( v ) => setAttributes( { showStats: v } ) }
@@ -160,7 +169,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<ToggleControl
 						label={ __(
 							'Show Filters',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						checked={ showFilters }
 						onChange={ ( v ) =>
@@ -180,7 +189,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								<span className="stat-label">
 									{ __(
 										'Check-ins',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 								</span>
 							</div>
@@ -191,7 +200,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								<span className="stat-label">
 									{ __(
 										'Venues',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 								</span>
 							</div>
@@ -202,7 +211,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								<span className="stat-label">
 									{ __(
 										'Countries',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 								</span>
 							</div>
@@ -215,7 +224,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						<p className="checkin-more">
 							{ __(
 								'+ more check-ins will be shown on the frontend',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						</p>
 					) }

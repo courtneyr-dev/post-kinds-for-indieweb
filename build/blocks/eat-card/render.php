@@ -6,7 +6,7 @@
  * structure (badge → label → title → sub → embed → note → meta), theme owns
  * paint via --pk-* custom properties.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @var array    $attributes Block attributes.
  * @var string   $content    Block content (empty for dynamic blocks).
  * @var WP_Block $block      Block instance.
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
-use function PostKindsForIndieWeb\get_kind_icon_svg;
+use function PKIW\get_kind_icon_svg;
 
 $pkiw_name              = $attributes['name'] ?? '';
 $pkiw_restaurant        = $attributes['restaurant'] ?? '';
@@ -59,7 +59,7 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'eat' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'Ate', 'post-kinds-for-indieweb' ); ?></p>
+		<p class="pk-kindlabel"><?php esc_html_e( 'Ate', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 
 		<?php if ( $pkiw_name ) : ?>
 			<h2 class="pk-title p-name"><?php echo esc_html( $pkiw_name ); ?></h2>
@@ -109,7 +109,7 @@ ob_start();
 		<?php endif; ?>
 
 		<?php if ( $pkiw_rating > 0 ) : ?>
-			<div class="pk-stars p-rating" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb' ), $pkiw_rating ) ); ?>">
+			<div class="pk-stars p-rating" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">
 				<?php for ( $pkiw_i = 1; $pkiw_i <= 5; $pkiw_i++ ) : ?>
 					<svg class="<?php echo $pkiw_i <= $pkiw_rating ? '' : 'off'; ?>" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17l-6.9 3.5 1.6-6.8L1.4 9.1l7-.6z"/></svg>
 				<?php endfor; ?>

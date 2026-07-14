@@ -1,5 +1,5 @@
 /**
- * Post Kinds for IndieWeb - Admin JavaScript
+ * Post Kinds for IndieWeb in Block Themes - Admin JavaScript
  *
  * @param {jQuery} $ jQuery instance.
  * @package
@@ -105,7 +105,7 @@
 			navigator.clipboard.writeText( text ).then( () => {
 				const $button = $( this );
 				const originalText = $button.text();
-				$button.text( postKindsIndieWeb.strings.copied );
+				$button.text( pkiwAdmin.strings.copied );
 				setTimeout( () => $button.text( originalText ), 2000 );
 			} );
 		},
@@ -117,7 +117,7 @@
 		clearCache( e ) {
 			e.preventDefault();
 
-			if ( ! confirm( postKindsIndieWeb.strings.confirmClear ) ) {
+			if ( ! confirm( pkiwAdmin.strings.confirmClear ) ) {
 				return;
 			}
 
@@ -127,11 +127,11 @@
 			$button.prop( 'disabled', true );
 
 			$.ajax( {
-				url: postKindsIndieWeb.ajaxUrl,
+				url: pkiwAdmin.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'post_kinds_indieweb_clear_cache',
-					nonce: postKindsIndieWeb.nonce,
+					action: 'pkiw_clear_cache',
+					nonce: pkiwAdmin.nonce,
 					type,
 				},
 				success( response ) {
@@ -139,13 +139,12 @@
 						alert( response.data.message );
 					} else {
 						alert(
-							response.data.message ||
-								postKindsIndieWeb.strings.error
+							response.data.message || pkiwAdmin.strings.error
 						);
 					}
 				},
 				error() {
-					alert( postKindsIndieWeb.strings.error );
+					alert( pkiwAdmin.strings.error );
 				},
 				complete() {
 					$button.prop( 'disabled', false );
@@ -259,14 +258,14 @@
 
 			$button
 				.prop( 'disabled', true )
-				.text( postKindsIndieWeb.strings.testingApi );
+				.text( pkiwAdmin.strings.testingApi );
 
 			$.ajax( {
-				url: postKindsIndieWeb.ajaxUrl,
+				url: pkiwAdmin.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'post_kinds_indieweb_test_api',
-					nonce: postKindsIndieWeb.nonce,
+					action: 'pkiw_test_api',
+					nonce: pkiwAdmin.nonce,
 					api,
 				},
 				success( response ) {
@@ -277,7 +276,7 @@
 							.removeClass( 'error disabled' )
 							.addClass( 'connected' )
 							.text( 'Connected' );
-						alert( postKindsIndieWeb.strings.testSuccess );
+						alert( pkiwAdmin.strings.testSuccess );
 					} else {
 						$card.removeClass( 'connected' ).addClass( 'error' );
 						$card
@@ -286,20 +285,20 @@
 							.addClass( 'error' )
 							.text( 'Not Connected' );
 						alert(
-							postKindsIndieWeb.strings.testFailed +
+							pkiwAdmin.strings.testFailed +
 								( response.data?.message || 'Unknown error' )
 						);
 					}
 				},
 				error( xhr ) {
-					let errorMsg = postKindsIndieWeb.strings.error;
+					let errorMsg = pkiwAdmin.strings.error;
 					if (
 						xhr.responseJSON &&
 						xhr.responseJSON.data &&
 						xhr.responseJSON.data.message
 					) {
 						errorMsg =
-							postKindsIndieWeb.strings.testFailed +
+							pkiwAdmin.strings.testFailed +
 							xhr.responseJSON.data.message;
 					} else if ( xhr.responseText ) {
 						// Try to show a snippet of the response for debugging.
@@ -331,7 +330,7 @@
 			// Get credentials from the card (more specific selector)
 			const clientId = $card
 				.find(
-					`input[name="post_kinds_indieweb_api_credentials[${ api }][client_id]"]`
+					`input[name="pkiw_api_credentials[${ api }][client_id]"]`
 				)
 				.val();
 
@@ -342,7 +341,7 @@
 
 			const clientSecret = $card
 				.find(
-					`input[name="post_kinds_indieweb_api_credentials[${ api }][client_secret]"]`
+					`input[name="pkiw_api_credentials[${ api }][client_secret]"]`
 				)
 				.val();
 
@@ -356,11 +355,11 @@
 			$button.prop( 'disabled', true ).text( 'Connecting...' );
 
 			$.ajax( {
-				url: postKindsIndieWeb.ajaxUrl,
+				url: pkiwAdmin.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'post_kinds_indieweb_get_oauth_url',
-					nonce: postKindsIndieWeb.nonce,
+					action: 'pkiw_get_oauth_url',
+					nonce: pkiwAdmin.nonce,
 					api,
 					client_id: clientId,
 					client_secret: clientSecret,
@@ -505,11 +504,11 @@
 			$( '#import-preview-modal' ).data( 'source', source );
 
 			$.ajax( {
-				url: postKindsIndieWeb.ajaxUrl,
+				url: pkiwAdmin.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'post_kinds_indieweb_get_import_preview',
-					nonce: postKindsIndieWeb.nonce,
+					action: 'pkiw_get_import_preview',
+					nonce: pkiwAdmin.nonce,
 					source,
 					options,
 				},
@@ -530,7 +529,7 @@
 					$( '.preview-content' )
 						.html(
 							'<p class="error">' +
-								postKindsIndieWeb.strings.error +
+								pkiwAdmin.strings.error +
 								'</p>'
 						)
 						.show();
@@ -611,14 +610,14 @@
 
 			$button
 				.prop( 'disabled', true )
-				.text( postKindsIndieWeb.strings.importing );
+				.text( pkiwAdmin.strings.importing );
 
 			$.ajax( {
-				url: postKindsIndieWeb.ajaxUrl,
+				url: pkiwAdmin.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'post_kinds_indieweb_start_import',
-					nonce: postKindsIndieWeb.nonce,
+					action: 'pkiw_start_import',
+					nonce: pkiwAdmin.nonce,
 					source,
 					options,
 				},
@@ -628,13 +627,12 @@
 						location.reload();
 					} else {
 						alert(
-							response.data.message ||
-								postKindsIndieWeb.strings.error
+							response.data.message || pkiwAdmin.strings.error
 						);
 					}
 				},
 				error( xhr ) {
-					let errorMsg = postKindsIndieWeb.strings.error;
+					let errorMsg = pkiwAdmin.strings.error;
 					if (
 						xhr.responseJSON &&
 						xhr.responseJSON.data &&
@@ -683,11 +681,11 @@
 				);
 
 			$.ajax( {
-				url: postKindsIndieWeb.ajaxUrl,
+				url: pkiwAdmin.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'post_kinds_indieweb_resync_metadata',
-					nonce: postKindsIndieWeb.nonce,
+					action: 'pkiw_resync_metadata',
+					nonce: pkiwAdmin.nonce,
 					source,
 				},
 				success( response ) {
@@ -698,13 +696,12 @@
 						);
 					} else {
 						alert(
-							response.data.message ||
-								postKindsIndieWeb.strings.error
+							response.data.message || pkiwAdmin.strings.error
 						);
 					}
 				},
 				error( xhr ) {
-					let errorMsg = postKindsIndieWeb.strings.error;
+					let errorMsg = pkiwAdmin.strings.error;
 					if (
 						xhr.responseJSON &&
 						xhr.responseJSON.data &&
@@ -749,11 +746,11 @@
 			const importId = $( this ).data( 'import-id' );
 
 			$.ajax( {
-				url: postKindsIndieWeb.ajaxUrl,
+				url: pkiwAdmin.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'post_kinds_indieweb_cancel_import',
-					nonce: postKindsIndieWeb.nonce,
+					action: 'pkiw_cancel_import',
+					nonce: pkiwAdmin.nonce,
 					import_id: importId,
 				},
 				success( response ) {
@@ -761,8 +758,7 @@
 						location.reload();
 					} else {
 						alert(
-							response.data.message ||
-								postKindsIndieWeb.strings.error
+							response.data.message || pkiwAdmin.strings.error
 						);
 					}
 				},
@@ -791,11 +787,11 @@
 					const importId = $import.data( 'import-id' );
 
 					$.ajax( {
-						url: postKindsIndieWeb.ajaxUrl,
+						url: pkiwAdmin.ajaxUrl,
 						type: 'POST',
 						data: {
-							action: 'post_kinds_indieweb_get_import_status',
-							nonce: postKindsIndieWeb.nonce,
+							action: 'pkiw_get_import_status',
+							nonce: pkiwAdmin.nonce,
 							import_id: importId,
 						},
 						success( response ) {
@@ -886,11 +882,11 @@
 			const $input = $button.siblings( '.webhook-secret-input' );
 
 			$.ajax( {
-				url: postKindsIndieWeb.ajaxUrl,
+				url: pkiwAdmin.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'post_kinds_indieweb_regenerate_webhook_secret',
-					nonce: postKindsIndieWeb.nonce,
+					action: 'pkiw_regenerate_webhook_secret',
+					nonce: pkiwAdmin.nonce,
 					webhook,
 				},
 				success( response ) {
@@ -898,8 +894,7 @@
 						$input.val( response.data.secret );
 					} else {
 						alert(
-							response.data.message ||
-								postKindsIndieWeb.strings.error
+							response.data.message || pkiwAdmin.strings.error
 						);
 					}
 				},
@@ -916,11 +911,11 @@
 			const $row = $( this ).closest( 'tr' );
 
 			$.ajax( {
-				url: postKindsIndieWeb.ajaxUrl,
+				url: pkiwAdmin.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'post_kinds_indieweb_approve_scrobble',
-					nonce: postKindsIndieWeb.nonce,
+					action: 'pkiw_approve_scrobble',
+					nonce: pkiwAdmin.nonce,
 					index,
 				},
 				success( response ) {
@@ -930,8 +925,7 @@
 						} );
 					} else {
 						alert(
-							response.data.message ||
-								postKindsIndieWeb.strings.error
+							response.data.message || pkiwAdmin.strings.error
 						);
 					}
 				},
@@ -948,11 +942,11 @@
 			const $row = $( this ).closest( 'tr' );
 
 			$.ajax( {
-				url: postKindsIndieWeb.ajaxUrl,
+				url: pkiwAdmin.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'post_kinds_indieweb_reject_scrobble',
-					nonce: postKindsIndieWeb.nonce,
+					action: 'pkiw_reject_scrobble',
+					nonce: pkiwAdmin.nonce,
 					index,
 				},
 				success( response ) {
@@ -995,7 +989,7 @@
 			// Post kind change
 			$( document ).on(
 				'change',
-				'#post_kinds_post_kind',
+				'#pkiw_post_kind',
 				this.onPostKindChange
 			);
 
@@ -1177,16 +1171,14 @@
 			const type = $( '#lookup-type' ).val();
 			const $results = $( '#lookup-results' );
 
-			$results.html(
-				'<p>' + postKindsIndieWeb.strings.lookingUp + '</p>'
-			);
+			$results.html( '<p>' + pkiwAdmin.strings.lookingUp + '</p>' );
 
 			$.ajax( {
-				url: postKindsIndieWeb.ajaxUrl,
+				url: pkiwAdmin.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'post_kinds_indieweb_lookup_media',
-					nonce: postKindsIndieWeb.nonce,
+					action: 'pkiw_lookup_media',
+					nonce: pkiwAdmin.nonce,
 					type,
 					query,
 				},
@@ -1213,15 +1205,13 @@
 						$results.html( html );
 					} else {
 						$results.html(
-							'<p>' + postKindsIndieWeb.strings.noResults + '</p>'
+							'<p>' + pkiwAdmin.strings.noResults + '</p>'
 						);
 					}
 				},
 				error() {
 					$results.html(
-						'<p class="error">' +
-							postKindsIndieWeb.strings.error +
-							'</p>'
+						'<p class="error">' + pkiwAdmin.strings.error + '</p>'
 					);
 				},
 			} );
@@ -1370,17 +1360,15 @@
 			const $results = $section.find( '.search-results' );
 
 			$results.html(
-				'<p class="searching">' +
-					postKindsIndieWeb.strings.lookingUp +
-					'</p>'
+				'<p class="searching">' + pkiwAdmin.strings.lookingUp + '</p>'
 			);
 
 			$.ajax( {
-				url: postKindsIndieWeb.ajaxUrl,
+				url: pkiwAdmin.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'post_kinds_indieweb_lookup_media',
-					nonce: postKindsIndieWeb.nonce,
+					action: 'pkiw_lookup_media',
+					nonce: pkiwAdmin.nonce,
 					type,
 					query,
 				},
@@ -1426,15 +1414,13 @@
 						$results.html( html );
 					} else {
 						$results.html(
-							'<p>' + postKindsIndieWeb.strings.noResults + '</p>'
+							'<p>' + pkiwAdmin.strings.noResults + '</p>'
 						);
 					}
 				},
 				error() {
 					$results.html(
-						'<p class="error">' +
-							postKindsIndieWeb.strings.error +
-							'</p>'
+						'<p class="error">' + pkiwAdmin.strings.error + '</p>'
 					);
 				},
 			} );
@@ -1607,11 +1593,11 @@
 			$feedback.removeClass( 'success error' ).hide();
 
 			$.ajax( {
-				url: postKindsIndieWeb.ajaxUrl,
+				url: pkiwAdmin.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'post_kinds_indieweb_quick_post',
-					nonce: postKindsIndieWeb.nonce,
+					action: 'pkiw_quick_post',
+					nonce: pkiwAdmin.nonce,
 					kind,
 					data,
 				},
@@ -1642,7 +1628,7 @@
 				error() {
 					$feedback
 						.addClass( 'error' )
-						.text( postKindsIndieWeb.strings.error )
+						.text( pkiwAdmin.strings.error )
 						.show();
 				},
 				complete() {

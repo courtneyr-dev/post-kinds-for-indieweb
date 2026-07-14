@@ -7,7 +7,7 @@
     "category": "post-kinds-indieweb",
     "description": "Display an RSVP response to an event with status, event details, and optional note.",
     "keywords": ["rsvp", "event", "attend", "interested", "maybe", "response"],
-    "textdomain": "post-kinds-indieweb",
+    "textdomain": "post-kinds-for-indieweb-in-block-themes",
     "attributes": {
         "eventName": {
             "type": "string"

@@ -7,13 +7,13 @@
  * promote override. This class only produces the signal; it never filters a
  * site's queries.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.3.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

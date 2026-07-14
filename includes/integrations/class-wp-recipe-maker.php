@@ -5,15 +5,15 @@
  * Integrates with WP Recipe Maker plugin to auto-detect and suggest
  * the 'recipe' post kind when a post contains a WPRM recipe.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Integrations;
+namespace PKIW\Integrations;
 
-use PostKindsForIndieWeb\Taxonomy;
+use PKIW\Taxonomy;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -119,7 +119,7 @@ class WP_Recipe_Maker {
 		}
 
 		// Check if auto-detection is enabled.
-		$settings = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings = get_option( 'pkiw_settings', [] );
 		if ( empty( $settings['wprm_auto_kind'] ) ) {
 			return;
 		}
@@ -172,7 +172,7 @@ class WP_Recipe_Maker {
 		}
 
 		// Sync basic recipe data to our meta fields.
-		$prefix = '_postkind_';
+		$prefix = '_pkiw_';
 
 		// Recipe yield/servings.
 		$servings = $this->get_recipe_servings( $recipe );
@@ -433,13 +433,13 @@ class WP_Recipe_Maker {
 				if ( ! hasRecipeKind ) {
 					createNotice(
 						'info',
-						'" . esc_js( __( 'This post contains a recipe. Consider setting the post kind to \"Recipe\".', 'post-kinds-for-indieweb' ) ) . "',
+						'" . esc_js( __( 'This post contains a recipe. Consider setting the post kind to \"Recipe\".', 'post-kinds-for-indieweb-in-block-themes' ) ) . "',
 						{
 							id: 'post-kinds-recipe-suggestion',
 							isDismissible: true,
 							actions: [
 								{
-									label: '" . esc_js( __( 'Set Recipe Kind', 'post-kinds-for-indieweb' ) ) . "',
+									label: '" . esc_js( __( 'Set Recipe Kind', 'post-kinds-for-indieweb-in-block-themes' ) ) . "',
 									onClick: function() {
 										// Find recipe term ID and set it
 										wp.apiFetch({ path: '/wp/v2/kind?slug=recipe' }).then( function( terms ) {

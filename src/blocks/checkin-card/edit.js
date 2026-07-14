@@ -227,36 +227,84 @@ export default function Edit( { attributes, setAttributes } ) {
 
 	// Venue type options
 	const venueTypes = [
-		{ label: __( 'Place', 'post-kinds-for-indieweb' ), value: 'place' },
 		{
-			label: __( 'Restaurant', 'post-kinds-for-indieweb' ),
+			label: __( 'Place', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'place',
+		},
+		{
+			label: __(
+				'Restaurant',
+				'post-kinds-for-indieweb-in-block-themes'
+			),
 			value: 'restaurant',
 		},
-		{ label: __( 'Cafe', 'post-kinds-for-indieweb' ), value: 'cafe' },
-		{ label: __( 'Bar', 'post-kinds-for-indieweb' ), value: 'bar' },
-		{ label: __( 'Hotel', 'post-kinds-for-indieweb' ), value: 'hotel' },
-		{ label: __( 'Airport', 'post-kinds-for-indieweb' ), value: 'airport' },
-		{ label: __( 'Park', 'post-kinds-for-indieweb' ), value: 'park' },
-		{ label: __( 'Museum', 'post-kinds-for-indieweb' ), value: 'museum' },
-		{ label: __( 'Theater', 'post-kinds-for-indieweb' ), value: 'theater' },
-		{ label: __( 'Store', 'post-kinds-for-indieweb' ), value: 'store' },
-		{ label: __( 'Office', 'post-kinds-for-indieweb' ), value: 'office' },
-		{ label: __( 'Home', 'post-kinds-for-indieweb' ), value: 'home' },
-		{ label: __( 'Other', 'post-kinds-for-indieweb' ), value: 'other' },
+		{
+			label: __( 'Cafe', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'cafe',
+		},
+		{
+			label: __( 'Bar', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'bar',
+		},
+		{
+			label: __( 'Hotel', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'hotel',
+		},
+		{
+			label: __( 'Airport', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'airport',
+		},
+		{
+			label: __( 'Park', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'park',
+		},
+		{
+			label: __( 'Museum', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'museum',
+		},
+		{
+			label: __( 'Theater', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'theater',
+		},
+		{
+			label: __( 'Store', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'store',
+		},
+		{
+			label: __( 'Office', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'office',
+		},
+		{
+			label: __( 'Home', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'home',
+		},
+		{
+			label: __( 'Other', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'other',
+		},
 	];
 
 	// Privacy options
 	const privacyOptions = [
 		{
-			label: __( 'Public (exact location)', 'post-kinds-for-indieweb' ),
+			label: __(
+				'Public (exact location)',
+				'post-kinds-for-indieweb-in-block-themes'
+			),
 			value: 'public',
 		},
 		{
-			label: __( 'Approximate (city level)', 'post-kinds-for-indieweb' ),
+			label: __(
+				'Approximate (city level)',
+				'post-kinds-for-indieweb-in-block-themes'
+			),
 			value: 'approximate',
 		},
 		{
-			label: __( 'Private (hidden)', 'post-kinds-for-indieweb' ),
+			label: __(
+				'Private (hidden)',
+				'post-kinds-for-indieweb-in-block-themes'
+			),
 			value: 'private',
 		},
 	];
@@ -308,7 +356,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					fallbackErr?.message ||
 						__(
 							'Search failed. Please try again.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						)
 				);
 				setSearchResults( [] );
@@ -415,7 +463,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			setError(
 				__(
 					'Geolocation is not supported by your browser.',
-					'post-kinds-for-indieweb'
+					'post-kinds-for-indieweb-in-block-themes'
 				)
 			);
 			return;
@@ -446,7 +494,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						setError(
 							__(
 								'Location access was denied.',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							)
 						);
 						break;
@@ -454,7 +502,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						setError(
 							__(
 								'Location information is unavailable.',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							)
 						);
 						break;
@@ -462,7 +510,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						setError(
 							__(
 								'Location request timed out.',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							)
 						);
 						break;
@@ -470,7 +518,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						setError(
 							__(
 								'Could not detect your location.',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							)
 						);
 				}
@@ -603,7 +651,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			const confirmed = window.confirm(
 				__(
 					'You are about to make your precise location public. Are you sure?',
-					'post-kinds-for-indieweb'
+					'post-kinds-for-indieweb-in-block-themes'
 				)
 			);
 			if ( ! confirmed ) {
@@ -687,10 +735,13 @@ export default function Edit( { attributes, setAttributes } ) {
 			<div { ...blockProps }>
 				<BlockPlaceholder
 					icon={ checkinIcon }
-					label={ __( 'Checkin Card', 'post-kinds-for-indieweb' ) }
+					label={ __(
+						'Checkin Card',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					instructions={ __(
 						'Check in to a location. Use your current location or search for a venue.',
-						'post-kinds-for-indieweb'
+						'post-kinds-for-indieweb-in-block-themes'
 					) }
 				>
 					{ error && (
@@ -715,13 +766,13 @@ export default function Edit( { attributes, setAttributes } ) {
 									<Spinner />
 									{ __(
 										'Detecting…',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 								</>
 							) : (
 								__(
 									'Use Current Location',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								)
 							) }
 						</Button>
@@ -733,7 +784,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						>
 							{ __(
 								'Search for Venue',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						</Button>
 
@@ -743,7 +794,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						>
 							{ __(
 								'Enter Manually',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						</Button>
 					</div>
@@ -761,11 +812,11 @@ export default function Edit( { attributes, setAttributes } ) {
 						{ userLocation
 							? __(
 									'Select a nearby venue or search',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 							  )
 							: __(
 									'Search for a location',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 							  ) }
 					</h3>
 
@@ -786,7 +837,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							onChange={ handleSearchChange }
 							placeholder={ __(
 								'Search for a venue or address…',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 							__nextHasNoMarginBottom
 							__next40pxDefaultSize
@@ -856,7 +907,7 @@ export default function Edit( { attributes, setAttributes } ) {
 									<p className="nearby-venues-label">
 										{ __(
 											'Nearby venues:',
-											'post-kinds-for-indieweb'
+											'post-kinds-for-indieweb-in-block-themes'
 										) }
 									</p>
 									<ul
@@ -921,7 +972,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								<span>
 									{ __(
 										'Finding nearby venues…',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 								</span>
 							</div>
@@ -935,10 +986,13 @@ export default function Edit( { attributes, setAttributes } ) {
 							disabled={ isLocating }
 						>
 							{ isLocating
-								? __( 'Detecting…', 'post-kinds-for-indieweb' )
+								? __(
+										'Detecting…',
+										'post-kinds-for-indieweb-in-block-themes'
+								  )
 								: __(
 										'Use Current Location',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 								  ) }
 						</Button>
 
@@ -951,7 +1005,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						>
 							{ __(
 								'Enter Manually',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						</Button>
 
@@ -959,7 +1013,10 @@ export default function Edit( { attributes, setAttributes } ) {
 							variant="link"
 							onClick={ () => setShowSearch( false ) }
 						>
-							{ __( 'Cancel', 'post-kinds-for-indieweb' ) }
+							{ __(
+								'Cancel',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }
 						</Button>
 					</div>
 				</div>
@@ -973,17 +1030,17 @@ export default function Edit( { attributes, setAttributes } ) {
 				<PanelBody
 					title={ __(
 						'Privacy Settings',
-						'post-kinds-for-indieweb'
+						'post-kinds-for-indieweb-in-block-themes'
 					) }
 				>
 					<RadioControl
 						label={ __(
 							'Location Privacy',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						help={ __(
 							'Control how much location detail is shown publicly.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						selected={ locationPrivacy || 'approximate' }
 						options={ privacyOptions }
@@ -995,7 +1052,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							<Notice status="warning" isDismissible={ false }>
 								{ __(
 									'Your exact coordinates will be visible to everyone.',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							</Notice>
 						) }
@@ -1003,7 +1060,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							<p className="description">
 								{ __(
 									'Only city/region will be shown. Coordinates are stored but not displayed.',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							</p>
 						) }
@@ -1011,7 +1068,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							<p className="description">
 								{ __(
 									'Location is saved for your records but not shown publicly.',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							</p>
 						) }
@@ -1019,20 +1076,23 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Venue Lookup', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Venue Lookup',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ true }
 				>
 					<div className="venue-lookup-sidebar">
 						<TextControl
 							label={ __(
 								'Search for venue',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 							value={ sidebarSearchQuery }
 							onChange={ setSidebarSearchQuery }
 							placeholder={ __(
 								'e.g. Denim Coffee, Chambersburg PA',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 							onKeyDown={ ( e ) => {
 								if ( e.key === 'Enter' ) {
@@ -1054,11 +1114,14 @@ export default function Edit( { attributes, setAttributes } ) {
 									<Spinner />
 									{ __(
 										'Searching…',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 								</>
 							) : (
-								__( 'Look Up Venue', 'post-kinds-for-indieweb' )
+								__(
+									'Look Up Venue',
+									'post-kinds-for-indieweb-in-block-themes'
+								)
 							) }
 						</Button>
 
@@ -1107,11 +1170,17 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Venue Details', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Venue Details',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ !! venueName }
 				>
 					<TextControl
-						label={ __( 'Venue Name', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Venue Name',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ venueName || '' }
 						onChange={ ( value ) =>
 							setAttributes( { venueName: value } )
@@ -1120,7 +1189,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						__next40pxDefaultSize
 					/>
 					<SelectControl
-						label={ __( 'Venue Type', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Venue Type',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ venueType }
 						options={ venueTypes }
 						onChange={ ( value ) =>
@@ -1132,7 +1204,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<TextControl
 						label={ __(
 							'Street Address',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ address || '' }
 						onChange={ ( value ) =>
@@ -1144,7 +1216,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<TextControl
 						label={ __(
 							'City/Locality',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ locality || '' }
 						onChange={ ( value ) =>
@@ -1156,7 +1228,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<TextControl
 						label={ __(
 							'State/Region',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ region || '' }
 						onChange={ ( value ) =>
@@ -1166,7 +1238,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						__next40pxDefaultSize
 					/>
 					<TextControl
-						label={ __( 'Country', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Country',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ country || '' }
 						onChange={ ( value ) =>
 							setAttributes( { country: value } )
@@ -1175,7 +1250,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						__next40pxDefaultSize
 					/>
 					<TextControl
-						label={ __( 'Postal Code', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Postal Code',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ postalCode || '' }
 						onChange={ ( value ) =>
 							setAttributes( { postalCode: value } )
@@ -1191,17 +1269,23 @@ export default function Edit( { attributes, setAttributes } ) {
 					>
 						{ __(
 							'Search Different Location',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					</Button>
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Coordinates', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Coordinates',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<TextControl
-						label={ __( 'Latitude', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Latitude',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ latitude || '' }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -1214,7 +1298,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						__next40pxDefaultSize
 					/>
 					<TextControl
-						label={ __( 'Longitude', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Longitude',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ longitude || '' }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -1227,7 +1314,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						__next40pxDefaultSize
 					/>
 					<ToggleControl
-						label={ __( 'Show Map', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Show Map',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						checked={ showMap }
 						onChange={ ( value ) =>
 							setAttributes( { showMap: value } )
@@ -1236,11 +1326,11 @@ export default function Edit( { attributes, setAttributes } ) {
 							locationPrivacy === 'private'
 								? __(
 										'Map is hidden when privacy is set to private.',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 								  )
 								: __(
 										'Display an embedded OpenStreetMap.',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 								  )
 						}
 						disabled={ locationPrivacy === 'private' }
@@ -1249,23 +1339,32 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Checkin Details', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Checkin Details',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 				>
 					<div className="components-base-control">
 						<span className="components-base-control__label">
-							{ __( 'Checkin Time', 'post-kinds-for-indieweb' ) }
+							{ __(
+								'Checkin Time',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }
 						</span>
 						<Button
 							variant="secondary"
 							onClick={ () => setShowDatePicker( true ) }
 							aria-label={ __(
 								'Set checkin time',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						>
 							{ checkinAt
 								? new Date( checkinAt ).toLocaleString()
-								: __( 'Set time', 'post-kinds-for-indieweb' ) }
+								: __(
+										'Set time',
+										'post-kinds-for-indieweb-in-block-themes'
+								  ) }
 						</Button>
 						{ showDatePicker && (
 							<Popover
@@ -1283,39 +1382,44 @@ export default function Edit( { attributes, setAttributes } ) {
 					</div>
 				</PanelBody>
 
-				<PanelBody title={ __( 'Layout', 'post-kinds-for-indieweb' ) }>
+				<PanelBody
+					title={ __(
+						'Layout',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
+				>
 					<SelectControl
 						label={ __(
 							'Layout Style',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ layout }
 						options={ [
 							{
 								label: __(
 									'Horizontal',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'horizontal',
 							},
 							{
 								label: __(
 									'Vertical',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'vertical',
 							},
 							{
 								label: __(
 									'Map Focus',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'map',
 							},
 							{
 								label: __(
 									'Compact',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'compact',
 							},
@@ -1329,11 +1433,17 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Links', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Links',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<TextControl
-						label={ __( 'Venue URL', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Venue URL',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ venueUrl || '' }
 						onChange={ ( value ) =>
 							setAttributes( { venueUrl: value } )
@@ -1345,7 +1455,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<TextControl
 						label={ __(
 							'Foursquare ID',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ foursquareId || '' }
 						onChange={ ( value ) =>
@@ -1356,7 +1466,10 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 					{ osmId && (
 						<p className="description">
-							{ __( 'OSM ID:', 'post-kinds-for-indieweb' ) }{ ' ' }
+							{ __(
+								'OSM ID:',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }{ ' ' }
 							{ osmId }
 						</p>
 					) }
@@ -1400,7 +1513,7 @@ export default function Edit( { attributes, setAttributes } ) {
 												<span>
 													{ __(
 														'Add photo',
-														'post-kinds-for-indieweb'
+														'post-kinds-for-indieweb-in-block-themes'
 													) }
 												</span>
 											</div>
@@ -1428,7 +1541,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								<span className="privacy-badge private">
 									{ __(
 										'Private',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 								</span>
 							) }
@@ -1436,7 +1549,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								<span className="privacy-badge approximate">
 									{ __(
 										'Approximate',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 								</span>
 							) }
@@ -1451,7 +1564,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'Venue name',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -1484,7 +1597,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'Add a note about this checkin…',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -1494,7 +1607,10 @@ export default function Edit( { attributes, setAttributes } ) {
 							onClick={ clearVenue }
 							className="change-venue-button"
 						>
-							{ __( 'Change venue', 'post-kinds-for-indieweb' ) }
+							{ __(
+								'Change venue',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }
 						</Button>
 					</div>
 
@@ -1507,7 +1623,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								<iframe
 									title={ __(
 										'Location map',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 									width="100%"
 									height="200"
@@ -1521,7 +1637,7 @@ export default function Edit( { attributes, setAttributes } ) {
 									<p className="map-note">
 										{ __(
 											'Showing approximate area. Exact location hidden.',
-											'post-kinds-for-indieweb'
+											'post-kinds-for-indieweb-in-block-themes'
 										) }
 									</p>
 								) }
@@ -1535,7 +1651,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								<span className="dashicons dashicons-lock"></span>
 								{ __(
 									'Location saved privately',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							</div>
 						) }

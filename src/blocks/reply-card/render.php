@@ -8,7 +8,7 @@
  * `u-in-reply-to` microformats2 class so parsers see the post being replied
  * to. The reply body itself lives outside the card, in the post's e-content.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @var array    $attributes Block attributes.
  * @var string   $content    Block content (empty for dynamic blocks).
  * @var WP_Block $block      Block instance.
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
-use function PostKindsForIndieWeb\get_kind_icon_svg;
+use function PKIW\get_kind_icon_svg;
 
 $pkiw_title       = $attributes['title'] ?? '';
 $pkiw_url         = $attributes['url'] ?? '';
@@ -46,7 +46,7 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'reply' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'Reply', 'post-kinds-for-indieweb' ); ?></p>
+		<p class="pk-kindlabel"><?php esc_html_e( 'Reply', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 
 		<?php if ( $pkiw_title ) : ?>
 			<h2 class="pk-title p-name">

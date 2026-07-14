@@ -4,13 +4,13 @@
  *
  * Registers the venue taxonomy for check-ins with custom term meta fields.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.2.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -29,7 +29,7 @@ class Venue_Taxonomy {
 	 *
 	 * @var string
 	 */
-	public const TAXONOMY = 'venue';
+	public const TAXONOMY = 'pkiw_venue';
 
 	/**
 	 * Constructor.
@@ -54,23 +54,23 @@ class Venue_Taxonomy {
 		$post_types = [ 'post' ];
 
 		$labels = [
-			'name'                       => _x( 'Venues', 'Taxonomy general name', 'post-kinds-for-indieweb' ),
-			'singular_name'              => _x( 'Venue', 'Taxonomy singular name', 'post-kinds-for-indieweb' ),
-			'search_items'               => __( 'Search Venues', 'post-kinds-for-indieweb' ),
-			'popular_items'              => __( 'Popular Venues', 'post-kinds-for-indieweb' ),
-			'all_items'                  => __( 'All Venues', 'post-kinds-for-indieweb' ),
+			'name'                       => _x( 'Venues', 'Taxonomy general name', 'post-kinds-for-indieweb-in-block-themes' ),
+			'singular_name'              => _x( 'Venue', 'Taxonomy singular name', 'post-kinds-for-indieweb-in-block-themes' ),
+			'search_items'               => __( 'Search Venues', 'post-kinds-for-indieweb-in-block-themes' ),
+			'popular_items'              => __( 'Popular Venues', 'post-kinds-for-indieweb-in-block-themes' ),
+			'all_items'                  => __( 'All Venues', 'post-kinds-for-indieweb-in-block-themes' ),
 			'parent_item'                => null,
 			'parent_item_colon'          => null,
-			'edit_item'                  => __( 'Edit Venue', 'post-kinds-for-indieweb' ),
-			'update_item'                => __( 'Update Venue', 'post-kinds-for-indieweb' ),
-			'add_new_item'               => __( 'Add New Venue', 'post-kinds-for-indieweb' ),
-			'new_item_name'              => __( 'New Venue Name', 'post-kinds-for-indieweb' ),
-			'separate_items_with_commas' => __( 'Separate venues with commas', 'post-kinds-for-indieweb' ),
-			'add_or_remove_items'        => __( 'Add or remove venues', 'post-kinds-for-indieweb' ),
-			'choose_from_most_used'      => __( 'Choose from the most used venues', 'post-kinds-for-indieweb' ),
-			'not_found'                  => __( 'No venues found.', 'post-kinds-for-indieweb' ),
-			'menu_name'                  => __( 'Venues', 'post-kinds-for-indieweb' ),
-			'back_to_items'              => __( '&larr; Back to Venues', 'post-kinds-for-indieweb' ),
+			'edit_item'                  => __( 'Edit Venue', 'post-kinds-for-indieweb-in-block-themes' ),
+			'update_item'                => __( 'Update Venue', 'post-kinds-for-indieweb-in-block-themes' ),
+			'add_new_item'               => __( 'Add New Venue', 'post-kinds-for-indieweb-in-block-themes' ),
+			'new_item_name'              => __( 'New Venue Name', 'post-kinds-for-indieweb-in-block-themes' ),
+			'separate_items_with_commas' => __( 'Separate venues with commas', 'post-kinds-for-indieweb-in-block-themes' ),
+			'add_or_remove_items'        => __( 'Add or remove venues', 'post-kinds-for-indieweb-in-block-themes' ),
+			'choose_from_most_used'      => __( 'Choose from the most used venues', 'post-kinds-for-indieweb-in-block-themes' ),
+			'not_found'                  => __( 'No venues found.', 'post-kinds-for-indieweb-in-block-themes' ),
+			'menu_name'                  => __( 'Venues', 'post-kinds-for-indieweb-in-block-themes' ),
+			'back_to_items'              => __( '&larr; Back to Venues', 'post-kinds-for-indieweb-in-block-themes' ),
 		];
 
 		$args = [
@@ -100,47 +100,47 @@ class Venue_Taxonomy {
 		$meta_fields = [
 			'latitude'      => [
 				'type'        => 'number',
-				'description' => __( 'Venue latitude coordinate', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Venue latitude coordinate', 'post-kinds-for-indieweb-in-block-themes' ),
 			],
 			'longitude'     => [
 				'type'        => 'number',
-				'description' => __( 'Venue longitude coordinate', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Venue longitude coordinate', 'post-kinds-for-indieweb-in-block-themes' ),
 			],
 			'address'       => [
 				'type'        => 'string',
-				'description' => __( 'Street address', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Street address', 'post-kinds-for-indieweb-in-block-themes' ),
 			],
 			'city'          => [
 				'type'        => 'string',
-				'description' => __( 'City', 'post-kinds-for-indieweb' ),
+				'description' => __( 'City', 'post-kinds-for-indieweb-in-block-themes' ),
 			],
 			'region'        => [
 				'type'        => 'string',
-				'description' => __( 'State/Region', 'post-kinds-for-indieweb' ),
+				'description' => __( 'State/Region', 'post-kinds-for-indieweb-in-block-themes' ),
 			],
 			'postal_code'   => [
 				'type'        => 'string',
-				'description' => __( 'Postal code', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Postal code', 'post-kinds-for-indieweb-in-block-themes' ),
 			],
 			'country'       => [
 				'type'        => 'string',
-				'description' => __( 'Country', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Country', 'post-kinds-for-indieweb-in-block-themes' ),
 			],
 			'foursquare_id' => [
 				'type'        => 'string',
-				'description' => __( 'Foursquare venue ID', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Foursquare venue ID', 'post-kinds-for-indieweb-in-block-themes' ),
 			],
 			'osm_id'        => [
 				'type'        => 'string',
-				'description' => __( 'OpenStreetMap ID', 'post-kinds-for-indieweb' ),
+				'description' => __( 'OpenStreetMap ID', 'post-kinds-for-indieweb-in-block-themes' ),
 			],
 			'url'           => [
 				'type'        => 'string',
-				'description' => __( 'Venue website URL', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Venue website URL', 'post-kinds-for-indieweb-in-block-themes' ),
 			],
 			'phone'         => [
 				'type'        => 'string',
-				'description' => __( 'Venue phone number', 'post-kinds-for-indieweb' ),
+				'description' => __( 'Venue phone number', 'post-kinds-for-indieweb-in-block-themes' ),
 			],
 		];
 
@@ -169,51 +169,51 @@ class Venue_Taxonomy {
 	public function add_venue_fields(): void {
 		?>
 		<div class="form-field">
-			<label for="venue_address"><?php esc_html_e( 'Address', 'post-kinds-for-indieweb' ); ?></label>
+			<label for="venue_address"><?php esc_html_e( 'Address', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
 			<input type="text" name="venue_address" id="venue_address" />
-			<p class="description"><?php esc_html_e( 'Street address of the venue.', 'post-kinds-for-indieweb' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Street address of the venue.', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 		</div>
 
 		<div class="form-field">
-			<label for="venue_city"><?php esc_html_e( 'City', 'post-kinds-for-indieweb' ); ?></label>
+			<label for="venue_city"><?php esc_html_e( 'City', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
 			<input type="text" name="venue_city" id="venue_city" />
 		</div>
 
 		<div class="form-field">
-			<label for="venue_region"><?php esc_html_e( 'State/Region', 'post-kinds-for-indieweb' ); ?></label>
+			<label for="venue_region"><?php esc_html_e( 'State/Region', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
 			<input type="text" name="venue_region" id="venue_region" />
 		</div>
 
 		<div class="form-field">
-			<label for="venue_postal_code"><?php esc_html_e( 'Postal Code', 'post-kinds-for-indieweb' ); ?></label>
+			<label for="venue_postal_code"><?php esc_html_e( 'Postal Code', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
 			<input type="text" name="venue_postal_code" id="venue_postal_code" />
 		</div>
 
 		<div class="form-field">
-			<label for="venue_country"><?php esc_html_e( 'Country', 'post-kinds-for-indieweb' ); ?></label>
+			<label for="venue_country"><?php esc_html_e( 'Country', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
 			<input type="text" name="venue_country" id="venue_country" />
 		</div>
 
 		<div class="form-field">
-			<label for="venue_latitude"><?php esc_html_e( 'Latitude', 'post-kinds-for-indieweb' ); ?></label>
+			<label for="venue_latitude"><?php esc_html_e( 'Latitude', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
 			<input type="number" step="any" name="venue_latitude" id="venue_latitude" />
-			<p class="description"><?php esc_html_e( 'GPS latitude coordinate (e.g., 40.7128).', 'post-kinds-for-indieweb' ); ?></p>
+			<p class="description"><?php esc_html_e( 'GPS latitude coordinate (e.g., 40.7128).', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 		</div>
 
 		<div class="form-field">
-			<label for="venue_longitude"><?php esc_html_e( 'Longitude', 'post-kinds-for-indieweb' ); ?></label>
+			<label for="venue_longitude"><?php esc_html_e( 'Longitude', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
 			<input type="number" step="any" name="venue_longitude" id="venue_longitude" />
-			<p class="description"><?php esc_html_e( 'GPS longitude coordinate (e.g., -74.0060).', 'post-kinds-for-indieweb' ); ?></p>
+			<p class="description"><?php esc_html_e( 'GPS longitude coordinate (e.g., -74.0060).', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 		</div>
 
 		<div class="form-field">
-			<label for="venue_url"><?php esc_html_e( 'Website', 'post-kinds-for-indieweb' ); ?></label>
+			<label for="venue_url"><?php esc_html_e( 'Website', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
 			<input type="url" name="venue_url" id="venue_url" />
-			<p class="description"><?php esc_html_e( 'Venue website URL.', 'post-kinds-for-indieweb' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Venue website URL.', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 		</div>
 
 		<div class="form-field">
-			<label for="venue_phone"><?php esc_html_e( 'Phone', 'post-kinds-for-indieweb' ); ?></label>
+			<label for="venue_phone"><?php esc_html_e( 'Phone', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
 			<input type="tel" name="venue_phone" id="venue_phone" />
 		</div>
 		<?php
@@ -237,59 +237,59 @@ class Venue_Taxonomy {
 		$phone       = get_term_meta( $term->term_id, 'phone', true );
 		?>
 		<tr class="form-field">
-			<th scope="row"><label for="venue_address"><?php esc_html_e( 'Address', 'post-kinds-for-indieweb' ); ?></label></th>
+			<th scope="row"><label for="venue_address"><?php esc_html_e( 'Address', 'post-kinds-for-indieweb-in-block-themes' ); ?></label></th>
 			<td>
 				<input type="text" name="venue_address" id="venue_address" value="<?php echo esc_attr( $address ); ?>" />
-				<p class="description"><?php esc_html_e( 'Street address of the venue.', 'post-kinds-for-indieweb' ); ?></p>
+				<p class="description"><?php esc_html_e( 'Street address of the venue.', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 			</td>
 		</tr>
 
 		<tr class="form-field">
-			<th scope="row"><label for="venue_city"><?php esc_html_e( 'City', 'post-kinds-for-indieweb' ); ?></label></th>
+			<th scope="row"><label for="venue_city"><?php esc_html_e( 'City', 'post-kinds-for-indieweb-in-block-themes' ); ?></label></th>
 			<td><input type="text" name="venue_city" id="venue_city" value="<?php echo esc_attr( $city ); ?>" /></td>
 		</tr>
 
 		<tr class="form-field">
-			<th scope="row"><label for="venue_region"><?php esc_html_e( 'State/Region', 'post-kinds-for-indieweb' ); ?></label></th>
+			<th scope="row"><label for="venue_region"><?php esc_html_e( 'State/Region', 'post-kinds-for-indieweb-in-block-themes' ); ?></label></th>
 			<td><input type="text" name="venue_region" id="venue_region" value="<?php echo esc_attr( $region ); ?>" /></td>
 		</tr>
 
 		<tr class="form-field">
-			<th scope="row"><label for="venue_postal_code"><?php esc_html_e( 'Postal Code', 'post-kinds-for-indieweb' ); ?></label></th>
+			<th scope="row"><label for="venue_postal_code"><?php esc_html_e( 'Postal Code', 'post-kinds-for-indieweb-in-block-themes' ); ?></label></th>
 			<td><input type="text" name="venue_postal_code" id="venue_postal_code" value="<?php echo esc_attr( $postal_code ); ?>" /></td>
 		</tr>
 
 		<tr class="form-field">
-			<th scope="row"><label for="venue_country"><?php esc_html_e( 'Country', 'post-kinds-for-indieweb' ); ?></label></th>
+			<th scope="row"><label for="venue_country"><?php esc_html_e( 'Country', 'post-kinds-for-indieweb-in-block-themes' ); ?></label></th>
 			<td><input type="text" name="venue_country" id="venue_country" value="<?php echo esc_attr( $country ); ?>" /></td>
 		</tr>
 
 		<tr class="form-field">
-			<th scope="row"><label for="venue_latitude"><?php esc_html_e( 'Latitude', 'post-kinds-for-indieweb' ); ?></label></th>
+			<th scope="row"><label for="venue_latitude"><?php esc_html_e( 'Latitude', 'post-kinds-for-indieweb-in-block-themes' ); ?></label></th>
 			<td>
 				<input type="number" step="any" name="venue_latitude" id="venue_latitude" value="<?php echo esc_attr( $latitude ); ?>" />
-				<p class="description"><?php esc_html_e( 'GPS latitude coordinate.', 'post-kinds-for-indieweb' ); ?></p>
+				<p class="description"><?php esc_html_e( 'GPS latitude coordinate.', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 			</td>
 		</tr>
 
 		<tr class="form-field">
-			<th scope="row"><label for="venue_longitude"><?php esc_html_e( 'Longitude', 'post-kinds-for-indieweb' ); ?></label></th>
+			<th scope="row"><label for="venue_longitude"><?php esc_html_e( 'Longitude', 'post-kinds-for-indieweb-in-block-themes' ); ?></label></th>
 			<td>
 				<input type="number" step="any" name="venue_longitude" id="venue_longitude" value="<?php echo esc_attr( $longitude ); ?>" />
-				<p class="description"><?php esc_html_e( 'GPS longitude coordinate.', 'post-kinds-for-indieweb' ); ?></p>
+				<p class="description"><?php esc_html_e( 'GPS longitude coordinate.', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 			</td>
 		</tr>
 
 		<tr class="form-field">
-			<th scope="row"><label for="venue_url"><?php esc_html_e( 'Website', 'post-kinds-for-indieweb' ); ?></label></th>
+			<th scope="row"><label for="venue_url"><?php esc_html_e( 'Website', 'post-kinds-for-indieweb-in-block-themes' ); ?></label></th>
 			<td>
 				<input type="url" name="venue_url" id="venue_url" value="<?php echo esc_url( $url ); ?>" />
-				<p class="description"><?php esc_html_e( 'Venue website URL.', 'post-kinds-for-indieweb' ); ?></p>
+				<p class="description"><?php esc_html_e( 'Venue website URL.', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 			</td>
 		</tr>
 
 		<tr class="form-field">
-			<th scope="row"><label for="venue_phone"><?php esc_html_e( 'Phone', 'post-kinds-for-indieweb' ); ?></label></th>
+			<th scope="row"><label for="venue_phone"><?php esc_html_e( 'Phone', 'post-kinds-for-indieweb-in-block-themes' ); ?></label></th>
 			<td><input type="tel" name="venue_phone" id="venue_phone" value="<?php echo esc_attr( $phone ); ?>" /></td>
 		</tr>
 		<?php
@@ -353,7 +353,7 @@ class Venue_Taxonomy {
 
 			// Add location column after name.
 			if ( 'name' === $key ) {
-				$new_columns['location'] = __( 'Location', 'post-kinds-for-indieweb' );
+				$new_columns['location'] = __( 'Location', 'post-kinds-for-indieweb-in-block-themes' );
 			}
 		}
 
@@ -418,7 +418,7 @@ class Venue_Taxonomy {
 		$name = $location_data['name'] ?? '';
 
 		if ( empty( $name ) ) {
-			return new \WP_Error( 'missing_name', __( 'Venue name is required.', 'post-kinds-for-indieweb' ) );
+			return new \WP_Error( 'missing_name', __( 'Venue name is required.', 'post-kinds-for-indieweb-in-block-themes' ) );
 		}
 
 		// Check for existing venue by Foursquare ID.

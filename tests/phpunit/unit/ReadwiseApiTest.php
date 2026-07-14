@@ -2,18 +2,18 @@
 /**
  * Test the Readwise API client.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\APIs\Readwise;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\APIs\Readwise;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Test the Readwise API integration.
  *
- * @covers \PostKindsForIndieWeb\APIs\Readwise
+ * @covers \PKIW\APIs\Readwise
  */
 class ReadwiseApiTest extends ApiTestCase {
 
@@ -30,7 +30,7 @@ class ReadwiseApiTest extends ApiTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		update_option(
-			'post_kinds_indieweb_api_credentials',
+			'pkiw_api_credentials',
 			[ 'readwise' => [ 'access_token' => 'test-readwise-token' ] ]
 		);
 		$this->api = new Readwise();
@@ -60,7 +60,7 @@ class ReadwiseApiTest extends ApiTestCase {
 	 * Test get_books returns empty when not configured.
 	 */
 	public function test_get_books_returns_empty_when_not_configured(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 		$api = new Readwise();
 
 		$books = $api->get_books();
@@ -123,7 +123,7 @@ class ReadwiseApiTest extends ApiTestCase {
 	 * Test get_highlights returns empty when not configured.
 	 */
 	public function test_get_highlights_returns_empty_when_not_configured(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 		$api = new Readwise();
 
 		$this->assertSame( [], $api->get_highlights() );
@@ -209,7 +209,7 @@ class ReadwiseApiTest extends ApiTestCase {
 	 * Test get_by_id returns null when not configured.
 	 */
 	public function test_get_by_id_returns_null_when_not_configured(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 		$api = new Readwise();
 
 		$this->assertNull( $api->get_by_id( '12345' ) );
@@ -257,7 +257,7 @@ class ReadwiseApiTest extends ApiTestCase {
 	 * Test is_configured returns false without token.
 	 */
 	public function test_is_configured_returns_false_without_token(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 		$api = new Readwise();
 
 		$this->assertFalse( $api->is_configured() );
@@ -276,7 +276,7 @@ class ReadwiseApiTest extends ApiTestCase {
 	 * Test test_connection fails without config.
 	 */
 	public function test_test_connection_fails_without_config(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 		$api = new Readwise();
 
 		$this->assertFalse( $api->test_connection() );

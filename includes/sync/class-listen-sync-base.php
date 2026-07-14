@@ -5,15 +5,15 @@
  * Abstract base class for bidirectional listen/scrobble synchronization.
  * Handles POSSE (Publish Own Site, Syndicate Elsewhere) for listen posts.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Sync;
+namespace PKIW\Sync;
 
-use PostKindsForIndieWeb\Meta_Fields;
+use PKIW\Meta_Fields;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -62,8 +62,8 @@ abstract class Listen_Sync_Base {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->external_id_meta_key     = '_postkind_listen_' . $this->service_id . '_id';
-		$this->syndication_url_meta_key = '_postkind_syndication_' . $this->service_id;
+		$this->external_id_meta_key     = '_pkiw_listen_' . $this->service_id . '_id';
+		$this->syndication_url_meta_key = '_pkiw_syndication_' . $this->service_id;
 	}
 
 	/**
@@ -166,7 +166,7 @@ abstract class Listen_Sync_Base {
 			 * @param array  $result      Syndication result.
 			 * @param array  $listen_data Listen data.
 			 */
-			do_action( 'post_kinds_indieweb_listen_syndicated', $post->ID, $this->service_id, $result, $listen_data );
+			do_action( 'pkiw_listen_syndicated', $post->ID, $this->service_id, $result, $listen_data );
 		}
 	}
 
@@ -194,7 +194,7 @@ abstract class Listen_Sync_Base {
 	 */
 	protected function is_syndication_enabled( int $post_id ): bool {
 		// Check global setting.
-		$settings    = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings    = get_option( 'pkiw_settings', [] );
 		$setting_key = 'listen_sync_to_' . $this->service_id;
 
 		if ( empty( $settings[ $setting_key ] ) ) {
@@ -232,7 +232,7 @@ abstract class Listen_Sync_Base {
 	 * @return bool
 	 */
 	protected function was_imported_from_service( int $post_id ): bool {
-		$imported_from = get_post_meta( $post_id, '_postkind_imported_from', true );
+		$imported_from = get_post_meta( $post_id, '_pkiw_imported_from', true );
 		return $this->service_id === $imported_from;
 	}
 

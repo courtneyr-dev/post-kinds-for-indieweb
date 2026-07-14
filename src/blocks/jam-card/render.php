@@ -7,7 +7,7 @@
  * paint via --pk-* custom properties. Appends a cached oEmbed player when the
  * jam URL matches a registered provider.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @var array    $attributes Block attributes.
  * @var string   $content    Block content (empty for dynamic blocks).
  * @var WP_Block $block      Block instance.
@@ -19,8 +19,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
-use function PostKindsForIndieWeb\get_cached_embed_html;
-use function PostKindsForIndieWeb\get_kind_icon_svg;
+use function PKIW\get_cached_embed_html;
+use function PKIW\get_kind_icon_svg;
 
 $pkiw_title     = $attributes['title'] ?? '';
 $pkiw_artist    = $attributes['artist'] ?? '';
@@ -49,7 +49,7 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'jam' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'Jam', 'post-kinds-for-indieweb' ); ?></p>
+		<p class="pk-kindlabel"><?php esc_html_e( 'Jam', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 
 		<?php if ( $pkiw_title ) : ?>
 			<h2 class="pk-title p-name">
@@ -88,7 +88,7 @@ ob_start();
 
 		<div class="pk-meta">
 			<?php if ( $pkiw_url ) : ?>
-				<a class="pk-link" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 9-14 9z"/></svg><?php esc_html_e( 'Jam', 'post-kinds-for-indieweb' ); ?></a>
+				<a class="pk-link" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 9-14 9z"/></svg><?php esc_html_e( 'Jam', 'post-kinds-for-indieweb-in-block-themes' ); ?></a>
 			<?php endif; ?>
 			<?php
 			if ( $pkiw_url && $pkiw_jammed_at ) :

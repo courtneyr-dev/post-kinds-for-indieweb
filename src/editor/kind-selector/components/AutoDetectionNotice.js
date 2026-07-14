@@ -1,5 +1,5 @@
 /**
- * Post Kinds for IndieWeb - Auto Detection Notice Component
+ * Post Kinds for IndieWeb in Block Themes - Auto Detection Notice Component
  *
  * Displays a notice when a post kind has been auto-detected from content.
  *
@@ -37,7 +37,10 @@ export default function AutoDetectionNotice( {
 			className="post-kinds-indieweb-auto-detect-notice"
 		>
 			<p>
-				{ __( 'Auto-detected as:', 'post-kinds-for-indieweb' ) }{ ' ' }
+				{ __(
+					'Auto-detected as:',
+					'post-kinds-for-indieweb-in-block-themes'
+				) }{ ' ' }
 				<strong>{ kindLabel }</strong>
 			</p>
 			<div className="post-kinds-indieweb-auto-detect-actions">
@@ -47,7 +50,10 @@ export default function AutoDetectionNotice( {
 					icon={ check }
 					onClick={ onAccept }
 				>
-					{ __( 'Use this', 'post-kinds-for-indieweb' ) }
+					{ __(
+						'Use this',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 				</Button>
 				<Button
 					variant="secondary"
@@ -55,7 +61,10 @@ export default function AutoDetectionNotice( {
 					icon={ closeSmall }
 					onClick={ onDismiss }
 				>
-					{ __( 'Choose different', 'post-kinds-for-indieweb' ) }
+					{ __(
+						'Choose different',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 				</Button>
 			</div>
 

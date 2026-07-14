@@ -2,12 +2,12 @@
 /**
  * Test the Checkin Sync Base class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\Sync\Checkin_Sync_Base;
+use PKIW\Sync\Checkin_Sync_Base;
 use WP_UnitTestCase;
 
 /**
@@ -127,7 +127,7 @@ class Test_Checkin_Sync extends Checkin_Sync_Base {
 /**
  * Test the Checkin Sync Base class.
  *
- * @covers \PostKindsForIndieWeb\Sync\Checkin_Sync_Base
+ * @covers \PKIW\Sync\Checkin_Sync_Base
  */
 class CheckinSyncBaseTest extends WP_UnitTestCase {
 
@@ -210,7 +210,7 @@ class CheckinSyncBaseTest extends WP_UnitTestCase {
 	public function test_is_syndication_enabled_true_with_config(): void {
 		$post_id = self::factory()->post->create();
 
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'checkin_sync_to_testservice' => true,
 		] );
 
@@ -223,11 +223,11 @@ class CheckinSyncBaseTest extends WP_UnitTestCase {
 	public function test_is_syndication_enabled_false_on_post_opt_out(): void {
 		$post_id = self::factory()->post->create();
 
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'checkin_sync_to_testservice' => true,
 		] );
 
-		update_post_meta( $post_id, '_postkind_syndicate_testservice', '0' );
+		update_post_meta( $post_id, '_pkiw_syndicate_testservice', '0' );
 
 		$this->assertFalse( $this->sync->test_is_syndication_enabled( $post_id ) );
 	}
@@ -238,7 +238,7 @@ class CheckinSyncBaseTest extends WP_UnitTestCase {
 	public function test_is_syndication_enabled_false_when_disconnected(): void {
 		$post_id = self::factory()->post->create();
 
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'checkin_sync_to_testservice' => true,
 		] );
 
@@ -261,7 +261,7 @@ class CheckinSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_is_already_syndicated_true_with_id(): void {
 		$post_id = self::factory()->post->create();
-		update_post_meta( $post_id, '_postkind_checkin_testservice_id', 'ext-123' );
+		update_post_meta( $post_id, '_pkiw_checkin_testservice_id', 'ext-123' );
 
 		$this->assertTrue( $this->sync->test_is_already_syndicated( $post_id ) );
 	}
@@ -271,7 +271,7 @@ class CheckinSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_was_imported_from_service_true(): void {
 		$post_id = self::factory()->post->create();
-		update_post_meta( $post_id, '_postkind_imported_from', 'testservice' );
+		update_post_meta( $post_id, '_pkiw_imported_from', 'testservice' );
 
 		$this->assertTrue( $this->sync->test_was_imported_from_service( $post_id ) );
 	}
@@ -281,7 +281,7 @@ class CheckinSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_was_imported_from_service_false_different(): void {
 		$post_id = self::factory()->post->create();
-		update_post_meta( $post_id, '_postkind_imported_from', 'otherservice' );
+		update_post_meta( $post_id, '_pkiw_imported_from', 'otherservice' );
 
 		$this->assertFalse( $this->sync->test_was_imported_from_service( $post_id ) );
 	}
@@ -307,7 +307,7 @@ class CheckinSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_checkin_exists_by_external_id(): void {
 		$post_id = self::factory()->post->create();
-		update_post_meta( $post_id, '_postkind_checkin_testservice_id', 'ext-456' );
+		update_post_meta( $post_id, '_pkiw_checkin_testservice_id', 'ext-456' );
 
 		$this->assertTrue( $this->sync->test_checkin_exists( [ 'id' => 'ext-456' ] ) );
 	}
@@ -325,11 +325,11 @@ class CheckinSyncBaseTest extends WP_UnitTestCase {
 	public function test_get_checkin_data_from_post(): void {
 		$post_id = self::factory()->post->create();
 
-		update_post_meta( $post_id, '_postkind_checkin_name', 'Coffee Shop' );
-		update_post_meta( $post_id, '_postkind_checkin_locality', 'Portland' );
-		update_post_meta( $post_id, '_postkind_checkin_region', 'OR' );
-		update_post_meta( $post_id, '_postkind_geo_latitude', '45.5' );
-		update_post_meta( $post_id, '_postkind_geo_longitude', '-122.6' );
+		update_post_meta( $post_id, '_pkiw_checkin_name', 'Coffee Shop' );
+		update_post_meta( $post_id, '_pkiw_checkin_locality', 'Portland' );
+		update_post_meta( $post_id, '_pkiw_checkin_region', 'OR' );
+		update_post_meta( $post_id, '_pkiw_geo_latitude', '45.5' );
+		update_post_meta( $post_id, '_pkiw_geo_longitude', '-122.6' );
 
 		$data = $this->sync->test_get_checkin_data_from_post( $post_id );
 
@@ -345,7 +345,7 @@ class CheckinSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_get_checkin_data_includes_foursquare_id(): void {
 		$post_id = self::factory()->post->create();
-		update_post_meta( $post_id, '_postkind_checkin_foursquare_id', 'fsq-789' );
+		update_post_meta( $post_id, '_pkiw_checkin_foursquare_id', 'fsq-789' );
 
 		$data = $this->sync->test_get_checkin_data_from_post( $post_id );
 
@@ -362,7 +362,7 @@ class CheckinSyncBaseTest extends WP_UnitTestCase {
 
 		$this->assertSame(
 			'https://testservice.com/checkin/123',
-			get_post_meta( $post_id, '_postkind_syndication_testservice', true )
+			get_post_meta( $post_id, '_pkiw_syndication_testservice', true )
 		);
 	}
 
@@ -397,10 +397,10 @@ class CheckinSyncBaseTest extends WP_UnitTestCase {
 		$post_id = $this->create_checkin_post();
 		$post    = get_post( $post_id );
 
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'checkin_sync_to_testservice' => true,
 		] );
-		update_post_meta( $post_id, '_postkind_checkin_testservice_id', 'already-done' );
+		update_post_meta( $post_id, '_pkiw_checkin_testservice_id', 'already-done' );
 
 		$this->sync->syndication_result = [ 'id' => 'ext-1' ];
 		$this->sync->maybe_syndicate_checkin( 'publish', 'draft', $post );
@@ -415,10 +415,10 @@ class CheckinSyncBaseTest extends WP_UnitTestCase {
 		$post_id = $this->create_checkin_post();
 		$post    = get_post( $post_id );
 
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'checkin_sync_to_testservice' => true,
 		] );
-		update_post_meta( $post_id, '_postkind_imported_from', 'testservice' );
+		update_post_meta( $post_id, '_pkiw_imported_from', 'testservice' );
 
 		$this->sync->syndication_result = [ 'id' => 'ext-1' ];
 		$this->sync->maybe_syndicate_checkin( 'publish', 'draft', $post );
@@ -433,10 +433,10 @@ class CheckinSyncBaseTest extends WP_UnitTestCase {
 		$post_id = $this->create_checkin_post();
 		$post    = get_post( $post_id );
 
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'checkin_sync_to_testservice' => true,
 		] );
-		update_post_meta( $post_id, '_postkind_checkin_name', 'Test Venue' );
+		update_post_meta( $post_id, '_pkiw_checkin_name', 'Test Venue' );
 
 		$this->sync->syndication_result = [ 'id' => 'ext-99', 'url' => 'https://test.com/99' ];
 		$this->sync->maybe_syndicate_checkin( 'publish', 'draft', $post );
@@ -444,11 +444,11 @@ class CheckinSyncBaseTest extends WP_UnitTestCase {
 		$this->assertCount( 1, $this->sync->syndicate_calls );
 		$this->assertSame(
 			'ext-99',
-			get_post_meta( $post_id, '_postkind_checkin_testservice_id', true )
+			get_post_meta( $post_id, '_pkiw_checkin_testservice_id', true )
 		);
 		$this->assertSame(
 			'https://test.com/99',
-			get_post_meta( $post_id, '_postkind_syndication_testservice', true )
+			get_post_meta( $post_id, '_pkiw_syndication_testservice', true )
 		);
 	}
 
@@ -480,7 +480,7 @@ class CheckinSyncBaseTest extends WP_UnitTestCase {
 	public function test_import_checkins_skips_duplicates(): void {
 		// Create a post with existing external ID.
 		$post_id = self::factory()->post->create();
-		update_post_meta( $post_id, '_postkind_checkin_testservice_id', 'dup-1' );
+		update_post_meta( $post_id, '_pkiw_checkin_testservice_id', 'dup-1' );
 
 		$this->sync->recent_checkins = [
 			[ 'id' => 'dup-1' ],

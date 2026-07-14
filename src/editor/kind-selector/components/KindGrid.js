@@ -1,5 +1,5 @@
 /**
- * Post Kinds for IndieWeb - Kind Grid Component
+ * Post Kinds for IndieWeb in Block Themes - Kind Grid Component
  *
  * A visual grid for selecting post kinds with icons and keyboard navigation.
  *
@@ -122,7 +122,10 @@ export default function KindGrid( { kinds, selectedKind, onSelect } ) {
 			ref={ gridRef }
 			className="post-kinds-indieweb-kind-grid"
 			role="radiogroup"
-			aria-label={ __( 'Select post kind', 'post-kinds-for-indieweb' ) }
+			aria-label={ __(
+				'Select post kind',
+				'post-kinds-for-indieweb-in-block-themes'
+			) }
 		>
 			{ sortedKinds.map( ( kind, index ) => {
 				const Icon = kindIcons[ kind.slug ] || kindIcons.note;
@@ -151,7 +154,7 @@ export default function KindGrid( { kinds, selectedKind, onSelect } ) {
 								<VisuallyHidden>
 									{ __(
 										'(selected)',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 								</VisuallyHidden>
 							) }

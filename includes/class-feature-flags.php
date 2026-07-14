@@ -1,15 +1,15 @@
 <?php
 /**
- * Feature Flags for Post Kinds for IndieWeb
+ * Feature Flags for Post Kinds for IndieWeb in Block Themes
  *
  * Manages optional feature toggles for Abilities API and MCP integrations.
  * Features can be enabled/disabled via constants, filters, or options.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.1.0
  */
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {

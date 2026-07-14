@@ -7,7 +7,7 @@
     "category": "post-kinds-indieweb",
     "description": "Display a movie or TV show you watched with poster, rating, and details.",
     "keywords": ["watch", "movie", "tv", "film", "show", "episode", "video"],
-    "textdomain": "post-kinds-indieweb",
+    "textdomain": "post-kinds-for-indieweb-in-block-themes",
     "attributes": {
         "mediaTitle": {
             "type": "string"

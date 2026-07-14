@@ -2,18 +2,18 @@
 /**
  * Test the Last.fm Listen Sync class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\Sync\Lastfm_Listen_Sync;
+use PKIW\Sync\Lastfm_Listen_Sync;
 use WP_UnitTestCase;
 
 /**
  * Test the Last.fm Listen Sync integration.
  *
- * @covers \PostKindsForIndieWeb\Sync\Lastfm_Listen_Sync
+ * @covers \PKIW\Sync\Lastfm_Listen_Sync
  */
 class LastfmListenSyncTest extends WP_UnitTestCase {
 
@@ -30,7 +30,7 @@ class LastfmListenSyncTest extends WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 
-		update_option( 'post_kinds_indieweb_api_credentials', [
+		update_option( 'pkiw_api_credentials', [
 			'lastfm' => [
 				'api_key'     => 'test-api-key',
 				'api_secret'  => 'test-api-secret',
@@ -61,7 +61,7 @@ class LastfmListenSyncTest extends WP_UnitTestCase {
 	 * Test is_connected returns false without session key.
 	 */
 	public function test_is_connected_false(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [
+		update_option( 'pkiw_api_credentials', [
 			'lastfm' => [
 				'api_key' => 'test-key',
 			],
@@ -82,7 +82,7 @@ class LastfmListenSyncTest extends WP_UnitTestCase {
 	 * Test get_username returns empty when not set.
 	 */
 	public function test_get_username_empty(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [
+		update_option( 'pkiw_api_credentials', [
 			'lastfm' => [ 'session_key' => 'key' ],
 		] );
 
@@ -104,7 +104,7 @@ class LastfmListenSyncTest extends WP_UnitTestCase {
 	 * Test add_syndication_target when disconnected.
 	 */
 	public function test_add_syndication_target_disconnected(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 
 		$sync    = new Lastfm_Listen_Sync();
 		$targets = $sync->add_syndication_target( [] );

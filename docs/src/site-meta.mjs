@@ -1,12 +1,12 @@
 // Single source of per-plugin parameters for the docs site.
 // Everything else (astro.config.mjs, Head.astro, structured data) reads from here.
 export default {
-	name: 'Post Kinds for IndieWeb',
+	name: 'Post Kinds for IndieWeb in Block Themes',
 	slug: 'post-kinds-for-indieweb',
 	site: 'https://courtneyr-dev.github.io',
 	base: '/post-kinds-for-indieweb',
 	description:
-		'User documentation for Post Kinds for IndieWeb: log what you listen to, watch, read, play, and visit on your own WordPress site.',
+		'User documentation for Post Kinds for IndieWeb in Block Themes: log what you listen to, watch, read, play, and visit on your own WordPress site.',
 	github: 'https://github.com/courtneyr-dev/post-kinds-for-indieweb',
 	// Not published in the WordPress.org plugin directory. Set to the listing URL after publication.
 	wporg: null,

@@ -4,13 +4,13 @@
  *
  * Handles incoming webhooks from external services (Plex, Jellyfin, Trakt, etc).
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -87,7 +87,7 @@ class Webhook_Handler {
 		 *
 		 * @param array<string, array<string, mixed>> $endpoints Webhook endpoints.
 		 */
-		$this->endpoints = apply_filters( 'post_kinds_indieweb_webhook_endpoints', $this->endpoints );
+		$this->endpoints = apply_filters( 'pkiw_webhook_endpoints', $this->endpoints );
 	}
 
 	/**
@@ -196,12 +196,12 @@ class Webhook_Handler {
 	 * @return true|\WP_Error
 	 */
 	private function validate_token( \WP_REST_Request $request, string $service ) {
-		$expected_token = get_option( "post_kinds_webhook_token_{$service}" );
+		$expected_token = get_option( "pkiw_webhook_token_{$service}" );
 
 		if ( ! $expected_token ) {
 			// No token configured, generate one.
 			$expected_token = wp_generate_password( 32, false );
-			update_option( "post_kinds_webhook_token_{$service}", $expected_token );
+			update_option( "pkiw_webhook_token_{$service}", $expected_token );
 		}
 
 		// Check various token locations.
@@ -245,7 +245,7 @@ class Webhook_Handler {
 	 * @return true|\WP_Error
 	 */
 	private function validate_hmac( \WP_REST_Request $request, string $service ) {
-		$secret = get_option( "post_kinds_webhook_secret_{$service}" );
+		$secret = get_option( "pkiw_webhook_secret_{$service}" );
 
 		if ( ! $secret ) {
 			return new \WP_Error(
@@ -301,11 +301,27 @@ class Webhook_Handler {
 			);
 		}
 
-		$credentials                 = base64_decode( substr( $auth_header, 6 ) );
+		$credentials = base64_decode( substr( $auth_header, 6 ), true );
+		if ( ! is_string( $credentials ) || ! str_contains( $credentials, ':' ) ) {
+			return new \WP_Error(
+				'invalid_credentials',
+				'Invalid credentials',
+				[ 'status' => 403 ]
+			);
+		}
 		list( $username, $password ) = explode( ':', $credentials, 2 );
 
-		$expected_user = get_option( "post_kinds_webhook_user_{$service}" );
-		$expected_pass = get_option( "post_kinds_webhook_pass_{$service}" );
+		// get_option() returns false when unset — hash_equals() would raise a
+		// TypeError on PHP 8, so require configured, non-empty string values.
+		$expected_user = get_option( "pkiw_webhook_user_{$service}" );
+		$expected_pass = get_option( "pkiw_webhook_pass_{$service}" );
+		if ( ! is_string( $expected_user ) || '' === $expected_user || ! is_string( $expected_pass ) || '' === $expected_pass ) {
+			return new \WP_Error(
+				'not_configured',
+				'Webhook authentication is not configured',
+				[ 'status' => 403 ]
+			);
+		}
 
 		if ( ! hash_equals( $expected_user, $username ) || ! hash_equals( $expected_pass, $password ) ) {
 			return new \WP_Error(
@@ -641,7 +657,7 @@ class Webhook_Handler {
 		 * @param array<string, mixed> $payload Payload data.
 		 * @param \WP_REST_Request     $request Request.
 		 */
-		$processed = apply_filters( 'post_kinds_indieweb_generic_webhook', $payload, $request );
+		$processed = apply_filters( 'pkiw_generic_webhook', $payload, $request );
 
 		if ( is_array( $processed ) && isset( $processed['handled'] ) && $processed['handled'] ) {
 			return $processed;
@@ -663,7 +679,7 @@ class Webhook_Handler {
 	 * @return array<string, mixed> Result.
 	 */
 	private function process_scrobble( array $item ): array {
-		$auto_post = get_option( 'post_kinds_webhook_auto_post', false );
+		$auto_post = get_option( 'pkiw_webhook_auto_post', false );
 
 		if ( ! $auto_post ) {
 			// Store for later.
@@ -707,7 +723,7 @@ class Webhook_Handler {
 		$post_data = [
 			'post_type'   => 'post',
 			'post_status' => 'publish',
-			'post_author' => get_option( 'post_kinds_default_author', 1 ),
+			'post_author' => get_option( 'pkiw_default_author', 1 ),
 		];
 
 		$meta = [];
@@ -719,12 +735,12 @@ class Webhook_Handler {
 				$post_data['post_title']   = sprintf( 'Watched %s', $item['title'] );
 				$post_data['post_content'] = sprintf( '<!-- wp:paragraph --><p>Watched "%s" (%s).</p><!-- /wp:paragraph -->', esc_html( $item['title'] ), esc_html( $item['year'] ?? '' ) );
 
-				$meta['_postkind_watch_title']  = $item['title'];
-				$meta['_postkind_watch_type']   = 'movie';
-				$meta['_postkind_watch_year']   = $item['year'] ?? '';
-				$meta['_postkind_watch_poster'] = $item['poster'] ?? '';
-				$meta['_postkind_watch_tmdb']   = $item['tmdb_id'] ?? '';
-				$meta['_postkind_watch_imdb']   = $item['imdb_id'] ?? '';
+				$meta['_pkiw_watch_title']  = $item['title'];
+				$meta['_pkiw_watch_type']   = 'movie';
+				$meta['_pkiw_watch_year']   = $item['year'] ?? '';
+				$meta['_pkiw_watch_poster'] = $item['poster'] ?? '';
+				$meta['_pkiw_watch_tmdb']   = $item['tmdb_id'] ?? '';
+				$meta['_pkiw_watch_imdb']   = $item['imdb_id'] ?? '';
 				break;
 
 			case 'episode':
@@ -733,13 +749,13 @@ class Webhook_Handler {
 				$post_data['post_title']   = sprintf( 'Watched %s %s', $item['show'], $episode_title );
 				$post_data['post_content'] = sprintf( '<!-- wp:paragraph --><p>Watched %s "%s".</p><!-- /wp:paragraph -->', esc_html( $item['show'] ), esc_html( $item['title'] ) );
 
-				$meta['_postkind_watch_title']   = $item['title'];
-				$meta['_postkind_watch_type']    = 'episode';
-				$meta['_postkind_watch_show']    = $item['show'];
-				$meta['_postkind_watch_season']  = $item['season'] ?? '';
-				$meta['_postkind_watch_episode'] = $item['episode'] ?? '';
-				$meta['_postkind_watch_poster']  = $item['poster'] ?? '';
-				$meta['_postkind_watch_tvdb']    = $item['tvdb_id'] ?? '';
+				$meta['_pkiw_watch_title']   = $item['title'];
+				$meta['_pkiw_watch_type']    = 'episode';
+				$meta['_pkiw_watch_show']    = $item['show'];
+				$meta['_pkiw_watch_season']  = $item['season'] ?? '';
+				$meta['_pkiw_watch_episode'] = $item['episode'] ?? '';
+				$meta['_pkiw_watch_poster']  = $item['poster'] ?? '';
+				$meta['_pkiw_watch_tvdb']    = $item['tvdb_id'] ?? '';
 				break;
 
 			case 'track':
@@ -747,11 +763,11 @@ class Webhook_Handler {
 				$post_data['post_title']   = sprintf( 'Listened to %s', $item['track'] );
 				$post_data['post_content'] = sprintf( '<!-- wp:paragraph --><p>Listened to "%s" by %s.</p><!-- /wp:paragraph -->', esc_html( $item['track'] ), esc_html( $item['artist'] ) );
 
-				$meta['_postkind_listen_track']  = $item['track'];
-				$meta['_postkind_listen_artist'] = $item['artist'];
-				$meta['_postkind_listen_album']  = $item['album'] ?? '';
-				$meta['_postkind_listen_cover']  = $item['cover'] ?? '';
-				$meta['_postkind_listen_mbid']   = $item['mbid'] ?? '';
+				$meta['_pkiw_listen_track']  = $item['track'];
+				$meta['_pkiw_listen_artist'] = $item['artist'];
+				$meta['_pkiw_listen_album']  = $item['album'] ?? '';
+				$meta['_pkiw_listen_cover']  = $item['cover'] ?? '';
+				$meta['_pkiw_listen_mbid']   = $item['mbid'] ?? '';
 				break;
 
 			default:
@@ -786,8 +802,8 @@ class Webhook_Handler {
 		}
 
 		// Mark source.
-		update_post_meta( $post_id, '_postkind_webhook_source', $item['source'] ?? 'unknown' );
-		update_post_meta( $post_id, '_postkind_created_at', time() );
+		update_post_meta( $post_id, '_pkiw_webhook_source', $item['source'] ?? 'unknown' );
+		update_post_meta( $post_id, '_pkiw_created_at', time() );
 
 		return $post_id;
 	}
@@ -799,14 +815,14 @@ class Webhook_Handler {
 	 * @return void
 	 */
 	private function store_pending_scrobble( array $item ): void {
-		$pending             = get_option( 'post_kinds_pending_scrobbles', [] );
+		$pending             = get_option( 'pkiw_pending_scrobbles', [] );
 		$item['received_at'] = time();
 		$pending[]           = $item;
 
 		// Keep only last 100.
 		$pending = array_slice( $pending, -100 );
 
-		update_option( 'post_kinds_pending_scrobbles', $pending, false );
+		update_option( 'pkiw_pending_scrobbles', $pending, false );
 	}
 
 	/**
@@ -817,7 +833,7 @@ class Webhook_Handler {
 	 * @return void
 	 */
 	private function store_raw_webhook( string $service, array $payload ): void {
-		$stored = get_option( 'post_kinds_raw_webhooks', [] );
+		$stored = get_option( 'pkiw_raw_webhooks', [] );
 
 		$stored[] = [
 			'service'     => $service,
@@ -828,7 +844,7 @@ class Webhook_Handler {
 		// Keep only last 50.
 		$stored = array_slice( $stored, -50 );
 
-		update_option( 'post_kinds_raw_webhooks', $stored, false );
+		update_option( 'pkiw_raw_webhooks', $stored, false );
 	}
 
 	/**
@@ -842,8 +858,8 @@ class Webhook_Handler {
 			return null;
 		}
 
-		$plex_url   = get_option( 'post_kinds_plex_url' );
-		$plex_token = get_option( 'post_kinds_plex_token' );
+		$plex_url   = get_option( 'pkiw_plex_url' );
+		$plex_token = get_option( 'pkiw_plex_token' );
 
 		if ( ! $plex_url || ! $plex_token ) {
 			return null;
@@ -865,7 +881,7 @@ class Webhook_Handler {
 			return;
 		}
 
-		$log = get_option( 'post_kinds_webhook_log', [] );
+		$log = get_option( 'pkiw_webhook_log', [] );
 
 		$log[] = [
 			'service'   => $service,
@@ -877,7 +893,7 @@ class Webhook_Handler {
 		// Keep only last 100 entries.
 		$log = array_slice( $log, -100 );
 
-		update_option( 'post_kinds_webhook_log', $log, false );
+		update_option( 'pkiw_webhook_log', $log, false );
 	}
 
 	/**
@@ -887,7 +903,7 @@ class Webhook_Handler {
 	 * @return array<int, array<string, mixed>> Log entries.
 	 */
 	public function get_log( int $limit = 50 ): array {
-		$log = get_option( 'post_kinds_webhook_log', [] );
+		$log = get_option( 'pkiw_webhook_log', [] );
 		return array_slice( array_reverse( $log ), 0, $limit );
 	}
 
@@ -897,7 +913,7 @@ class Webhook_Handler {
 	 * @return array<int, array<string, mixed>> Pending scrobbles.
 	 */
 	public function get_pending_scrobbles(): array {
-		return get_option( 'post_kinds_pending_scrobbles', [] );
+		return get_option( 'pkiw_pending_scrobbles', [] );
 	}
 
 	/**
@@ -922,7 +938,7 @@ class Webhook_Handler {
 			// Remove from pending.
 			unset( $pending[ $index ] );
 			$pending = array_values( $pending );
-			update_option( 'post_kinds_pending_scrobbles', $pending, false );
+			update_option( 'pkiw_pending_scrobbles', $pending, false );
 		}
 
 		return $post_id;
@@ -943,7 +959,7 @@ class Webhook_Handler {
 
 		unset( $pending[ $index ] );
 		$pending = array_values( $pending );
-		update_option( 'post_kinds_pending_scrobbles', $pending, false );
+		update_option( 'pkiw_pending_scrobbles', $pending, false );
 
 		return true;
 	}
@@ -956,7 +972,7 @@ class Webhook_Handler {
 	 */
 	public function generate_token( string $service ): string {
 		$token = wp_generate_password( 32, false );
-		update_option( "post_kinds_webhook_token_{$service}", $token );
+		update_option( "pkiw_webhook_token_{$service}", $token );
 		return $token;
 	}
 

@@ -7,55 +7,55 @@ parameters:
 			path: includes/admin/class-admin.php
 
 		-
-			message: '#^Class PostKindsForIndieWeb\\APIs\\Foursquare constructor invoked with 1 parameter, 0 required\.$#'
+			message: '#^Class PKIW\\APIs\\Foursquare constructor invoked with 1 parameter, 0 required\.$#'
 			identifier: arguments.count
 			count: 1
 			path: includes/admin/class-admin.php
 
 		-
-			message: '#^Class PostKindsForIndieWeb\\APIs\\MusicBrainz constructor invoked with 1 parameter, 0 required\.$#'
+			message: '#^Class PKIW\\APIs\\MusicBrainz constructor invoked with 1 parameter, 0 required\.$#'
 			identifier: arguments.count
 			count: 1
 			path: includes/admin/class-admin.php
 
 		-
-			message: '#^Class PostKindsForIndieWeb\\APIs\\OpenLibrary constructor invoked with 1 parameter, 0 required\.$#'
+			message: '#^Class PKIW\\APIs\\OpenLibrary constructor invoked with 1 parameter, 0 required\.$#'
 			identifier: arguments.count
 			count: 1
 			path: includes/admin/class-admin.php
 
 		-
-			message: '#^Class PostKindsForIndieWeb\\APIs\\PodcastIndex constructor invoked with 1 parameter, 0 required\.$#'
+			message: '#^Class PKIW\\APIs\\PodcastIndex constructor invoked with 1 parameter, 0 required\.$#'
 			identifier: arguments.count
 			count: 1
 			path: includes/admin/class-admin.php
 
 		-
-			message: '#^Class PostKindsForIndieWeb\\APIs\\TMDB constructor invoked with 1 parameter, 0 required\.$#'
+			message: '#^Class PKIW\\APIs\\TMDB constructor invoked with 1 parameter, 0 required\.$#'
 			identifier: arguments.count
 			count: 1
 			path: includes/admin/class-admin.php
 
 		-
-			message: '#^Class PostKindsForIndieWeb\\Admin\\Settings_Page constructor invoked with 1 parameter, 0 required\.$#'
+			message: '#^Class PKIW\\Admin\\Settings_Page constructor invoked with 1 parameter, 0 required\.$#'
 			identifier: arguments.count
 			count: 1
 			path: includes/admin/class-admin.php
 
 		-
-			message: '#^Property PostKindsForIndieWeb\\Admin\\Checkin_Dashboard\:\:\$admin is never read, only written\.$#'
+			message: '#^Property PKIW\\Admin\\Checkin_Dashboard\:\:\$admin is never read, only written\.$#'
 			identifier: property.onlyWritten
 			count: 1
 			path: includes/admin/class-checkin-dashboard.php
 
 		-
-			message: '#^Call to an undefined method PostKindsForIndieWeb\\Import_Manager\:\:cancel_import\(\)\.$#'
+			message: '#^Call to an undefined method PKIW\\Import_Manager\:\:cancel_import\(\)\.$#'
 			identifier: method.notFound
 			count: 1
 			path: includes/admin/class-import-page.php
 
 		-
-			message: '#^Call to an undefined method PostKindsForIndieWeb\\Import_Manager\:\:resync_metadata\(\)\.$#'
+			message: '#^Call to an undefined method PKIW\\Import_Manager\:\:resync_metadata\(\)\.$#'
 			identifier: method.notFound
 			count: 1
 			path: includes/admin/class-import-page.php
@@ -67,7 +67,7 @@ parameters:
 			path: includes/admin/class-import-page.php
 
 		-
-			message: '#^Property PostKindsForIndieWeb\\Admin\\Import_Page\:\:\$admin is never read, only written\.$#'
+			message: '#^Property PKIW\\Admin\\Import_Page\:\:\$admin is never read, only written\.$#'
 			identifier: property.onlyWritten
 			count: 1
 			path: includes/admin/class-import-page.php
@@ -79,7 +79,7 @@ parameters:
 			path: includes/admin/class-meta-boxes.php
 
 		-
-			message: '#^Property PostKindsForIndieWeb\\Admin\\Meta_Boxes\:\:\$admin is never read, only written\.$#'
+			message: '#^Property PKIW\\Admin\\Meta_Boxes\:\:\$admin is never read, only written\.$#'
 			identifier: property.onlyWritten
 			count: 1
 			path: includes/admin/class-meta-boxes.php
@@ -91,13 +91,13 @@ parameters:
 			path: includes/admin/class-quick-post.php
 
 		-
-			message: '#^Result of method PostKindsForIndieWeb\\Admin\\Admin\:\:ajax_lookup_media\(\) \(void\) is used\.$#'
+			message: '#^Result of method PKIW\\Admin\\Admin\:\:ajax_lookup_media\(\) \(void\) is used\.$#'
 			identifier: method.void
 			count: 1
 			path: includes/admin/class-quick-post.php
 
 		-
-			message: '#^Property PostKindsForIndieWeb\\Admin\\Syndication_Page\:\:\$admin is never read, only written\.$#'
+			message: '#^Property PKIW\\Admin\\Syndication_Page\:\:\$admin is never read, only written\.$#'
 			identifier: property.onlyWritten
 			count: 1
 			path: includes/admin/class-syndication-page.php
@@ -109,19 +109,19 @@ parameters:
 			path: includes/admin/class-webhooks-page.php
 
 		-
-			message: '#^Property PostKindsForIndieWeb\\Admin\\Webhooks_Page\:\:\$admin is never read, only written\.$#'
+			message: '#^Property PKIW\\Admin\\Webhooks_Page\:\:\$admin is never read, only written\.$#'
 			identifier: property.onlyWritten
 			count: 1
 			path: includes/admin/class-webhooks-page.php
 
 		-
-			message: '#^Method PostKindsForIndieWeb\\APIs\\API_Base\:\:make_request_with_retry\(\) never returns WP_Error so it can be removed from the return type\.$#'
+			message: '#^Method PKIW\\APIs\\API_Base\:\:make_request_with_retry\(\) never returns WP_Error so it can be removed from the return type\.$#'
 			identifier: return.unusedType
 			count: 1
 			path: includes/apis/class-api-base.php
 
 		-
-			message: '#^PHPDoc tag @var for property PostKindsForIndieWeb\\APIs\\API_Base\:\:\$last_request_times with type float is incompatible with native type array\.$#'
+			message: '#^PHPDoc tag @var for property PKIW\\APIs\\API_Base\:\:\$last_request_times with type float is incompatible with native type array\.$#'
 			identifier: property.phpDocType
 			count: 1
 			path: includes/apis/class-api-base.php
@@ -139,19 +139,19 @@ parameters:
 			path: includes/apis/class-nominatim.php
 
 		-
-			message: '#^Method PostKindsForIndieWeb\\APIs\\OpenLibrary\:\:get_recent_changes\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, mixed\>\.$#'
+			message: '#^Method PKIW\\APIs\\OpenLibrary\:\:get_recent_changes\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, mixed\>\.$#'
 			identifier: return.type
 			count: 1
 			path: includes/apis/class-openlibrary.php
 
 		-
-			message: '#^Method PostKindsForIndieWeb\\APIs\\API_Base\:\:get_cache_key\(\) invoked with 2 parameters, 1 required\.$#'
+			message: '#^Method PKIW\\APIs\\API_Base\:\:get_cache_key\(\) invoked with 2 parameters, 1 required\.$#'
 			identifier: arguments.count
 			count: 3
 			path: includes/apis/class-rawg.php
 
 		-
-			message: '#^Method PostKindsForIndieWeb\\APIs\\Simkl\:\:get_recent_activity\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, mixed\>\.$#'
+			message: '#^Method PKIW\\APIs\\Simkl\:\:get_recent_activity\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, mixed\>\.$#'
 			identifier: return.type
 			count: 1
 			path: includes/apis/class-simkl.php
@@ -169,43 +169,43 @@ parameters:
 			path: includes/apis/class-tmdb.php
 
 		-
-			message: '#^Method PostKindsForIndieWeb\\APIs\\TVmaze\:\:get_episodes\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, array\<string, mixed\>\>\.$#'
+			message: '#^Method PKIW\\APIs\\TVmaze\:\:get_episodes\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, array\<string, mixed\>\>\.$#'
 			identifier: return.type
 			count: 1
 			path: includes/apis/class-tvmaze.php
 
 		-
-			message: '#^Method PostKindsForIndieWeb\\APIs\\TVmaze\:\:get_episodes_by_date\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, array\<string, mixed\>\>\.$#'
+			message: '#^Method PKIW\\APIs\\TVmaze\:\:get_episodes_by_date\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, array\<string, mixed\>\>\.$#'
 			identifier: return.type
 			count: 1
 			path: includes/apis/class-tvmaze.php
 
 		-
-			message: '#^Method PostKindsForIndieWeb\\APIs\\TVmaze\:\:get_season_episodes\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, array\<string, mixed\>\>\.$#'
+			message: '#^Method PKIW\\APIs\\TVmaze\:\:get_season_episodes\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, array\<string, mixed\>\>\.$#'
 			identifier: return.type
 			count: 1
 			path: includes/apis/class-tvmaze.php
 
 		-
-			message: '#^Method PostKindsForIndieWeb\\APIs\\TVmaze\:\:get_seasons\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, array\<string, mixed\>\>\.$#'
+			message: '#^Method PKIW\\APIs\\TVmaze\:\:get_seasons\(\) should return array\<int, array\<string, mixed\>\> but returns array\<string, array\<string, mixed\>\>\.$#'
 			identifier: return.type
 			count: 1
 			path: includes/apis/class-tvmaze.php
 
 		-
-			message: '#^Method PostKindsForIndieWeb\\APIs\\TVmaze\:\:get_updates\(\) should return array\<int, int\> but returns array\<string, mixed\>\.$#'
+			message: '#^Method PKIW\\APIs\\TVmaze\:\:get_updates\(\) should return array\<int, int\> but returns array\<string, mixed\>\.$#'
 			identifier: return.type
 			count: 1
 			path: includes/apis/class-tvmaze.php
 
 		-
-			message: '#^Parameter \#1 \$cast of method PostKindsForIndieWeb\\APIs\\TVmaze\:\:normalize_cast\(\) expects array\<int, array\<string, mixed\>\>, array\<string, mixed\> given\.$#'
+			message: '#^Parameter \#1 \$cast of method PKIW\\APIs\\TVmaze\:\:normalize_cast\(\) expects array\<int, array\<string, mixed\>\>, array\<string, mixed\> given\.$#'
 			identifier: argument.type
 			count: 1
 			path: includes/apis/class-tvmaze.php
 
 		-
-			message: '#^Parameter \#1 \$crew of method PostKindsForIndieWeb\\APIs\\TVmaze\:\:normalize_crew\(\) expects array\<int, array\<string, mixed\>\>, array\<string, mixed\> given\.$#'
+			message: '#^Parameter \#1 \$crew of method PKIW\\APIs\\TVmaze\:\:normalize_crew\(\) expects array\<int, array\<string, mixed\>\>, array\<string, mixed\> given\.$#'
 			identifier: argument.type
 			count: 1
 			path: includes/apis/class-tvmaze.php
@@ -229,7 +229,7 @@ parameters:
 			path: includes/blocks/class-recent-kinds.php
 
 		-
-			message: '#^Static call to instance method PostKindsForIndieWeb\\Taxonomy\:\:is_valid_kind\(\)\.$#'
+			message: '#^Static call to instance method PKIW\\Taxonomy\:\:is_valid_kind\(\)\.$#'
 			identifier: method.staticCall
 			count: 1
 			path: includes/blocks/class-recent-kinds.php
@@ -241,13 +241,13 @@ parameters:
 			path: includes/class-ai-enhancements.php
 
 		-
-			message: '#^Parameter \#2 \$kind of method PostKindsForIndieWeb\\AI_Enhancements\:\:build_post_context\(\) expects string, WP_Term\|null given\.$#'
+			message: '#^Parameter \#2 \$kind of method PKIW\\AI_Enhancements\:\:build_post_context\(\) expects string, WP_Term\|null given\.$#'
 			identifier: argument.type
 			count: 1
 			path: includes/class-ai-enhancements.php
 
 		-
-			message: '#^Static call to instance method PostKindsForIndieWeb\\Taxonomy\:\:get_post_kind\(\)\.$#'
+			message: '#^Static call to instance method PKIW\\Taxonomy\:\:get_post_kind\(\)\.$#'
 			identifier: method.staticCall
 			count: 2
 			path: includes/class-ai-enhancements.php
@@ -259,19 +259,19 @@ parameters:
 			path: includes/class-block-bindings.php
 
 		-
-			message: '#^Property PostKindsForIndieWeb\\Block_Bindings\:\:\$bindings \(array\<string, array\<string, string\>\>\) does not accept array\<string, array\<string, string\|null\>\>\.$#'
+			message: '#^Property PKIW\\Block_Bindings\:\:\$bindings \(array\<string, array\<string, string\>\>\) does not accept array\<string, array\<string, string\|null\>\>\.$#'
 			identifier: assign.propertyType
 			count: 1
 			path: includes/class-block-bindings.php
 
 		-
-			message: '#^Property PostKindsForIndieWeb\\Block_Bindings\:\:\$meta_fields \(PostKindsForIndieWeb\\Meta_Fields\|null\) is never assigned PostKindsForIndieWeb\\Meta_Fields so it can be removed from the property type\.$#'
+			message: '#^Property PKIW\\Block_Bindings\:\:\$meta_fields \(PKIW\\Meta_Fields\|null\) is never assigned PKIW\\Meta_Fields so it can be removed from the property type\.$#'
 			identifier: property.unusedType
 			count: 1
 			path: includes/class-block-bindings.php
 
 		-
-			message: '#^Property PostKindsForIndieWeb\\Block_Bindings\:\:\$meta_fields is never read, only written\.$#'
+			message: '#^Property PKIW\\Block_Bindings\:\:\$meta_fields is never read, only written\.$#'
 			identifier: property.onlyWritten
 			count: 1
 			path: includes/class-block-bindings.php
@@ -283,19 +283,19 @@ parameters:
 			path: includes/class-cli-commands.php
 
 		-
-			message: '#^Method PostKindsForIndieWeb\\Plugin\:\:get_plugin_template_definitions\(\) should return array\<string, array\<string, string\>\> but returns array\<string, array\<string, array\|string\>\>\.$#'
+			message: '#^Method PKIW\\Plugin\:\:get_plugin_template_definitions\(\) should return array\<string, array\<string, string\>\> but returns array\<string, array\<string, array\|string\>\>\.$#'
 			identifier: return.type
 			count: 1
 			path: includes/class-plugin.php
 
 		-
-			message: '#^Property PostKindsForIndieWeb\\Plugin\:\:\$post_kinds_conflict is never read, only written\.$#'
+			message: '#^Property PKIW\\Plugin\:\:\$pkiw_conflict is never read, only written\.$#'
 			identifier: property.onlyWritten
 			count: 1
 			path: includes/class-plugin.php
 
 		-
-			message: '#^Property PostKindsForIndieWeb\\Plugin\:\:\$wprm_integration is never read, only written\.$#'
+			message: '#^Property PKIW\\Plugin\:\:\$wprm_integration is never read, only written\.$#'
 			identifier: property.onlyWritten
 			count: 1
 			path: includes/class-plugin.php
@@ -331,19 +331,19 @@ parameters:
 			path: includes/integrations/class-wp-recipe-maker.php
 
 		-
-			message: '#^Method PostKindsForIndieWeb\\Sync\\Foursquare_Checkin_Sync\:\:handle_oauth_callback_request\(\) should return WP_Error\|WP_REST_Response but returns null\.$#'
+			message: '#^Method PKIW\\Sync\\Foursquare_Checkin_Sync\:\:handle_oauth_callback_request\(\) should return WP_Error\|WP_REST_Response but returns null\.$#'
 			identifier: return.type
+			count: 5
+			path: includes/sync/class-foursquare-checkin-sync.php
+
+		-
+			message: '#^Result of method PKIW\\Sync\\Foursquare_Checkin_Sync\:\:oauth_redirect_with_error\(\) \(void\) is used\.$#'
+			identifier: method.void
 			count: 4
 			path: includes/sync/class-foursquare-checkin-sync.php
 
 		-
-			message: '#^Result of method PostKindsForIndieWeb\\Sync\\Foursquare_Checkin_Sync\:\:oauth_redirect_with_error\(\) \(void\) is used\.$#'
-			identifier: method.void
-			count: 3
-			path: includes/sync/class-foursquare-checkin-sync.php
-
-		-
-			message: '#^Result of method PostKindsForIndieWeb\\Sync\\Foursquare_Checkin_Sync\:\:oauth_redirect_with_success\(\) \(void\) is used\.$#'
+			message: '#^Result of method PKIW\\Sync\\Foursquare_Checkin_Sync\:\:oauth_redirect_with_success\(\) \(void\) is used\.$#'
 			identifier: method.void
 			count: 1
 			path: includes/sync/class-foursquare-checkin-sync.php
@@ -355,7 +355,7 @@ parameters:
 			path: includes/sync/class-owntracks-checkin-sync.php
 
 		-
-			message: '#^Call to an undefined method PostKindsForIndieWeb\\Sync\\Untappd_Checkin_Sync\:\:find_existing_post\(\)\.$#'
+			message: '#^Call to an undefined method PKIW\\Sync\\Untappd_Checkin_Sync\:\:find_existing_post\(\)\.$#'
 			identifier: method.notFound
 			count: 1
 			path: includes/sync/class-untappd-checkin-sync.php

@@ -9,7 +9,7 @@
  *    them (`new REST_API()`, `REST_API::NAMESPACE`, etc.) so we declare
  *    no-body stubs; PHPStan picks them up via `scanFiles`.
  *
- * 2. Plugin-defined constants from `post-kinds-for-indieweb.php`. PHPStan
+ * 2. Plugin-defined constants from `post-kinds-for-indieweb-in-block-themes.php`. PHPStan
  *    sees the `define()` calls but doesn't always resolve their values
  *    through `plugin_dir_url(__FILE__)`-style dynamic expressions, so we
  *    re-declare them with literal placeholder values here.
@@ -26,7 +26,7 @@
  */
 
 // 1. Excluded plugin classes — only the methods/constants other code calls.
-namespace PostKindsForIndieWeb {
+namespace PKIW {
 	class REST_API {
 		public const NAMESPACE = 'post-kinds-indieweb/v1';
 		public function __construct() {}
@@ -53,7 +53,7 @@ namespace PostKindsForIndieWeb {
 	}
 }
 
-namespace PostKindsForIndieWeb\Admin {
+namespace PKIW\Admin {
 	class Settings_Page {
 		public function __construct() {}
 		public function init(): void {}
@@ -68,31 +68,31 @@ namespace PostKindsForIndieWeb\Admin {
 	}
 }
 
-// 2. Plugin-defined constants (mirror of post-kinds-for-indieweb.php).
+// 2. Plugin-defined constants (mirror of post-kinds-for-indieweb-in-block-themes.php).
 namespace {
-	if ( ! defined( 'POST_KINDS_INDIEWEB_VERSION' ) ) {
-		define( 'POST_KINDS_INDIEWEB_VERSION', '1.0.1' );
+	if ( ! defined( 'PKIW_VERSION' ) ) {
+		define( 'PKIW_VERSION', '1.0.1' );
 	}
-	if ( ! defined( 'POST_KINDS_INDIEWEB_PATH' ) ) {
-		define( 'POST_KINDS_INDIEWEB_PATH', '' );
+	if ( ! defined( 'PKIW_PATH' ) ) {
+		define( 'PKIW_PATH', '' );
 	}
-	if ( ! defined( 'POST_KINDS_INDIEWEB_URL' ) ) {
-		define( 'POST_KINDS_INDIEWEB_URL', '' );
+	if ( ! defined( 'PKIW_URL' ) ) {
+		define( 'PKIW_URL', '' );
 	}
-	if ( ! defined( 'POST_KINDS_INDIEWEB_BASENAME' ) ) {
-		define( 'POST_KINDS_INDIEWEB_BASENAME', '' );
+	if ( ! defined( 'PKIW_BASENAME' ) ) {
+		define( 'PKIW_BASENAME', '' );
 	}
-	if ( ! defined( 'POST_KINDS_INDIEWEB_PLUGIN_FILE' ) ) {
-		define( 'POST_KINDS_INDIEWEB_PLUGIN_FILE', '' );
+	if ( ! defined( 'PKIW_PLUGIN_FILE' ) ) {
+		define( 'PKIW_PLUGIN_FILE', '' );
 	}
-	if ( ! defined( 'POST_KINDS_INDIEWEB_PLUGIN_URL' ) ) {
-		define( 'POST_KINDS_INDIEWEB_PLUGIN_URL', '' );
+	if ( ! defined( 'PKIW_PLUGIN_URL' ) ) {
+		define( 'PKIW_PLUGIN_URL', '' );
 	}
-	if ( ! defined( 'POST_KINDS_INDIEWEB_MIN_PHP' ) ) {
-		define( 'POST_KINDS_INDIEWEB_MIN_PHP', '8.2' );
+	if ( ! defined( 'PKIW_MIN_PHP' ) ) {
+		define( 'PKIW_MIN_PHP', '8.2' );
 	}
-	if ( ! defined( 'POST_KINDS_INDIEWEB_MIN_WP' ) ) {
-		define( 'POST_KINDS_INDIEWEB_MIN_WP', '7.0' );
+	if ( ! defined( 'PKIW_MIN_WP' ) ) {
+		define( 'PKIW_MIN_WP', '7.0' );
 	}
 
 	// 3. WP_CLI static API. Only the methods this plugin actually calls.

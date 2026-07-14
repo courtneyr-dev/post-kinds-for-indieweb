@@ -4,13 +4,13 @@
  *
  * Filters rendered block output to inject microformats2 classes based on post kind.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -242,7 +242,7 @@ class Microformats {
 		 *
 		 * @param array<string, array<string, mixed>> $kind_formats Microformat definitions.
 		 */
-		$this->kind_formats = apply_filters( 'post_kinds_indieweb_kind_formats', $this->kind_formats );
+		$this->kind_formats = apply_filters( 'pkiw_kind_formats', $this->kind_formats );
 	}
 
 	/**

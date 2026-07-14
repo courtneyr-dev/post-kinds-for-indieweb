@@ -4,13 +4,13 @@
  *
  * Provides geocoding and reverse geocoding using OpenStreetMap's Nominatim.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\APIs;
+namespace PKIW\APIs;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -64,7 +64,7 @@ class Nominatim extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials         = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials         = get_option( 'pkiw_api_credentials', [] );
 		$nom_creds           = $credentials['nominatim'] ?? [];
 		$this->custom_server = $nom_creds['server'] ?? '';
 

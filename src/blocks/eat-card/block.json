@@ -7,7 +7,7 @@
 	"category": "post-kinds-indieweb",
 	"description": "Display a meal or food you ate with photo, restaurant, cuisine, and rating.",
 	"keywords": ["eat", "food", "meal", "restaurant", "dining"],
-	"textdomain": "post-kinds-indieweb",
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
 	"attributes": {
 		"name": {
 			"type": "string"

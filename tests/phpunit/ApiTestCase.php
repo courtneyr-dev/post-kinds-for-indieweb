@@ -2,10 +2,10 @@
 /**
  * Abstract API test case with HTTP mocking infrastructure.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests;
+namespace PKIW\Tests;
 
 use WP_UnitTestCase;
 

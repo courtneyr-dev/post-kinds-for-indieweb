@@ -7,7 +7,7 @@
   "category": "post-kinds-indieweb",
   "icon": "location-alt",
   "description": "Display a feed of recent check-ins with optional map.",
-  "textdomain": "post-kinds-for-indieweb",
+  "textdomain": "post-kinds-for-indieweb-in-block-themes",
   "keywords": [
     "checkin",
     "feed",

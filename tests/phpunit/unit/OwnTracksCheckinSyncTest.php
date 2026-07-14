@@ -2,18 +2,18 @@
 /**
  * Test the OwnTracks Checkin Sync class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\Sync\OwnTracks_Checkin_Sync;
+use PKIW\Sync\OwnTracks_Checkin_Sync;
 use WP_UnitTestCase;
 
 /**
  * Test the OwnTracks Checkin Sync integration.
  *
- * @covers \PostKindsForIndieWeb\Sync\OwnTracks_Checkin_Sync
+ * @covers \PKIW\Sync\OwnTracks_Checkin_Sync
  */
 class OwnTracksCheckinSyncTest extends WP_UnitTestCase {
 
@@ -30,7 +30,7 @@ class OwnTracksCheckinSyncTest extends WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'owntracks_enabled'  => true,
 			'owntracks_username' => 'testuser',
 			'owntracks_password' => 'testpass',
@@ -58,7 +58,7 @@ class OwnTracksCheckinSyncTest extends WP_UnitTestCase {
 	 * Test is_connected returns false when disabled.
 	 */
 	public function test_is_connected_false(): void {
-		update_option( 'post_kinds_indieweb_settings', [] );
+		update_option( 'pkiw_settings', [] );
 
 		$sync = new OwnTracks_Checkin_Sync();
 		$this->assertFalse( $sync->is_connected() );
@@ -97,7 +97,7 @@ class OwnTracksCheckinSyncTest extends WP_UnitTestCase {
 	 * Test verify_webhook_auth rejects when disabled.
 	 */
 	public function test_verify_webhook_auth_disabled(): void {
-		update_option( 'post_kinds_indieweb_settings', [] );
+		update_option( 'pkiw_settings', [] );
 
 		$sync    = new OwnTracks_Checkin_Sync();
 		$request = new \WP_REST_Request( 'POST', '/post-kinds-indieweb/v1/owntracks' );
@@ -111,7 +111,7 @@ class OwnTracksCheckinSyncTest extends WP_UnitTestCase {
 	 * Test verify_webhook_auth allows when no credentials set.
 	 */
 	public function test_verify_webhook_auth_no_credentials(): void {
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'owntracks_enabled' => true,
 		] );
 
@@ -208,7 +208,7 @@ class OwnTracksCheckinSyncTest extends WP_UnitTestCase {
 	 * Test add_syndication_target when disconnected.
 	 */
 	public function test_add_syndication_target_disconnected(): void {
-		update_option( 'post_kinds_indieweb_settings', [] );
+		update_option( 'pkiw_settings', [] );
 		$sync = new OwnTracks_Checkin_Sync();
 
 		$targets = $sync->add_syndication_target( [] );

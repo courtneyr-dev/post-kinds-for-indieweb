@@ -1,9 +1,9 @@
 <?php
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
 use WP_UnitTestCase;
-use PostKindsForIndieWeb\Scheduled_Sync;
-use PostKindsForIndieWeb\Import_Manager;
+use PKIW\Scheduled_Sync;
+use PKIW\Import_Manager;
 
 class ScheduledSyncTest extends WP_UnitTestCase {
 
@@ -16,22 +16,22 @@ class ScheduledSyncTest extends WP_UnitTestCase {
 		$this->sync           = new Scheduled_Sync( $this->import_manager );
 		$this->sync->init();
 
-		delete_option( 'post_kinds_indieweb_settings' );
-		delete_option( 'post_kinds_indieweb_last_sync' );
+		delete_option( 'pkiw_settings' );
+		delete_option( 'pkiw_last_sync' );
 	}
 
 	public function tear_down(): void {
 		// Clean up any scheduled events.
 		$this->sync->unschedule_cron();
-		delete_option( 'post_kinds_indieweb_settings' );
-		delete_option( 'post_kinds_indieweb_last_sync' );
+		delete_option( 'pkiw_settings' );
+		delete_option( 'pkiw_last_sync' );
 		parent::tear_down();
 	}
 
 	public function test_schedule_cron_registers_event() {
 		$this->sync->schedule_cron();
 
-		$next = wp_next_scheduled( 'post_kinds_indieweb_scheduled_sync' );
+		$next = wp_next_scheduled( 'pkiw_scheduled_sync' );
 		$this->assertNotFalse( $next );
 	}
 
@@ -42,8 +42,8 @@ class ScheduledSyncTest extends WP_UnitTestCase {
 		$found = false;
 
 		foreach ( $crons as $timestamp => $hooks ) {
-			if ( isset( $hooks['post_kinds_indieweb_scheduled_sync'] ) ) {
-				foreach ( $hooks['post_kinds_indieweb_scheduled_sync'] as $event ) {
+			if ( isset( $hooks['pkiw_scheduled_sync'] ) ) {
+				foreach ( $hooks['pkiw_scheduled_sync'] as $event ) {
 					$this->assertSame( 'hourly', $event['schedule'] );
 					$found = true;
 					break 2;
@@ -56,58 +56,58 @@ class ScheduledSyncTest extends WP_UnitTestCase {
 
 	public function test_schedule_cron_does_not_duplicate() {
 		$this->sync->schedule_cron();
-		$first = wp_next_scheduled( 'post_kinds_indieweb_scheduled_sync' );
+		$first = wp_next_scheduled( 'pkiw_scheduled_sync' );
 
 		$this->sync->schedule_cron();
-		$second = wp_next_scheduled( 'post_kinds_indieweb_scheduled_sync' );
+		$second = wp_next_scheduled( 'pkiw_scheduled_sync' );
 
 		$this->assertSame( $first, $second );
 	}
 
 	public function test_unschedule_cron_removes_event() {
 		$this->sync->schedule_cron();
-		$this->assertNotFalse( wp_next_scheduled( 'post_kinds_indieweb_scheduled_sync' ) );
+		$this->assertNotFalse( wp_next_scheduled( 'pkiw_scheduled_sync' ) );
 
 		$this->sync->unschedule_cron();
-		$this->assertFalse( wp_next_scheduled( 'post_kinds_indieweb_scheduled_sync' ) );
+		$this->assertFalse( wp_next_scheduled( 'pkiw_scheduled_sync' ) );
 	}
 
 	public function test_unschedule_cron_when_not_scheduled() {
 		// Should not error when nothing is scheduled.
 		$this->sync->unschedule_cron();
-		$this->assertFalse( wp_next_scheduled( 'post_kinds_indieweb_scheduled_sync' ) );
+		$this->assertFalse( wp_next_scheduled( 'pkiw_scheduled_sync' ) );
 	}
 
 	public function test_ensure_scheduled_creates_cron_when_auto_sync_enabled() {
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'enable_background_sync' => true,
 			'listen_auto_import'     => true,
 		] );
 
 		$this->sync->ensure_scheduled();
 
-		$this->assertNotFalse( wp_next_scheduled( 'post_kinds_indieweb_scheduled_sync' ) );
+		$this->assertNotFalse( wp_next_scheduled( 'pkiw_scheduled_sync' ) );
 	}
 
 	public function test_ensure_scheduled_does_not_create_when_disabled() {
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'enable_background_sync' => false,
 		] );
 
 		$this->sync->ensure_scheduled();
 
-		$this->assertFalse( wp_next_scheduled( 'post_kinds_indieweb_scheduled_sync' ) );
+		$this->assertFalse( wp_next_scheduled( 'pkiw_scheduled_sync' ) );
 	}
 
 	public function test_ensure_scheduled_requires_individual_auto_import() {
 		// background_sync enabled but no individual auto-import keys set.
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'enable_background_sync' => true,
 		] );
 
 		$this->sync->ensure_scheduled();
 
-		$this->assertFalse( wp_next_scheduled( 'post_kinds_indieweb_scheduled_sync' ) );
+		$this->assertFalse( wp_next_scheduled( 'pkiw_scheduled_sync' ) );
 	}
 
 	public function test_get_last_sync_time_returns_null_when_never_synced() {
@@ -116,7 +116,7 @@ class ScheduledSyncTest extends WP_UnitTestCase {
 
 	public function test_get_last_sync_time_returns_timestamp() {
 		$now = time();
-		update_option( 'post_kinds_indieweb_last_sync', $now );
+		update_option( 'pkiw_last_sync', $now );
 
 		$this->assertSame( $now, $this->sync->get_last_sync_time() );
 	}
@@ -134,7 +134,7 @@ class ScheduledSyncTest extends WP_UnitTestCase {
 	}
 
 	public function test_run_scheduled_sync_skips_when_background_sync_disabled() {
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'enable_background_sync' => false,
 			'listen_auto_import'     => true,
 		] );
@@ -142,11 +142,11 @@ class ScheduledSyncTest extends WP_UnitTestCase {
 		$this->sync->run_scheduled_sync();
 
 		// last_sync should not be updated.
-		$this->assertFalse( get_option( 'post_kinds_indieweb_last_sync' ) );
+		$this->assertFalse( get_option( 'pkiw_last_sync' ) );
 	}
 
 	public function test_run_scheduled_sync_updates_last_sync_time() {
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'enable_background_sync' => true,
 			'listen_auto_import'     => true,
 			'listen_import_source'   => 'lastfm',
@@ -156,13 +156,13 @@ class ScheduledSyncTest extends WP_UnitTestCase {
 		$this->sync->run_scheduled_sync();
 		$after = time();
 
-		$last_sync = get_option( 'post_kinds_indieweb_last_sync' );
+		$last_sync = get_option( 'pkiw_last_sync' );
 		$this->assertGreaterThanOrEqual( $before, (int) $last_sync );
 		$this->assertLessThanOrEqual( $after, (int) $last_sync );
 	}
 
 	public function test_trigger_sync_calls_run_scheduled_sync() {
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'enable_background_sync' => true,
 			'watch_auto_import'      => true,
 			'watch_import_source'    => 'trakt',
@@ -170,32 +170,32 @@ class ScheduledSyncTest extends WP_UnitTestCase {
 
 		$this->sync->trigger_sync();
 
-		$this->assertNotFalse( get_option( 'post_kinds_indieweb_last_sync' ) );
+		$this->assertNotFalse( get_option( 'pkiw_last_sync' ) );
 	}
 
 	public function test_maybe_schedule_cron_schedules_when_enabled() {
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'enable_background_sync' => true,
 			'read_auto_import'       => true,
 		] );
 
-		$this->sync->maybe_schedule_cron( [], get_option( 'post_kinds_indieweb_settings' ) );
+		$this->sync->maybe_schedule_cron( [], get_option( 'pkiw_settings' ) );
 
-		$this->assertNotFalse( wp_next_scheduled( 'post_kinds_indieweb_scheduled_sync' ) );
+		$this->assertNotFalse( wp_next_scheduled( 'pkiw_scheduled_sync' ) );
 	}
 
 	public function test_maybe_schedule_cron_unschedules_when_disabled() {
 		// First schedule it.
 		$this->sync->schedule_cron();
-		$this->assertNotFalse( wp_next_scheduled( 'post_kinds_indieweb_scheduled_sync' ) );
+		$this->assertNotFalse( wp_next_scheduled( 'pkiw_scheduled_sync' ) );
 
 		// Then disable auto-sync.
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'enable_background_sync' => false,
 		] );
 
-		$this->sync->maybe_schedule_cron( [], get_option( 'post_kinds_indieweb_settings' ) );
+		$this->sync->maybe_schedule_cron( [], get_option( 'pkiw_settings' ) );
 
-		$this->assertFalse( wp_next_scheduled( 'post_kinds_indieweb_scheduled_sync' ) );
+		$this->assertFalse( wp_next_scheduled( 'pkiw_scheduled_sync' ) );
 	}
 }

@@ -45,16 +45,34 @@ export default function Edit( { attributes, setAttributes } ) {
 
 	// Media type options
 	const mediaTypes = [
-		{ label: __( 'Book', 'post-kinds-for-indieweb' ), value: 'book' },
-		{ label: __( 'Movie/TV', 'post-kinds-for-indieweb' ), value: 'movie' },
-		{ label: __( 'Music', 'post-kinds-for-indieweb' ), value: 'music' },
+		{
+			label: __( 'Book', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'book',
+		},
+		{
+			label: __( 'Movie/TV', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'movie',
+		},
+		{
+			label: __( 'Music', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'music',
+		},
 	];
 
 	// Display style options
 	const displayStyles = [
-		{ label: __( 'Card', 'post-kinds-for-indieweb' ), value: 'card' },
-		{ label: __( 'Inline', 'post-kinds-for-indieweb' ), value: 'inline' },
-		{ label: __( 'Compact', 'post-kinds-for-indieweb' ), value: 'compact' },
+		{
+			label: __( 'Card', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'card',
+		},
+		{
+			label: __( 'Inline', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'inline',
+		},
+		{
+			label: __( 'Compact', 'post-kinds-for-indieweb-in-block-themes' ),
+			value: 'compact',
+		},
 	];
 
 	/**
@@ -76,20 +94,20 @@ export default function Edit( { attributes, setAttributes } ) {
 		const placeholders = {
 			book: __(
 				'Search by title, author, or ISBN…',
-				'post-kinds-for-indieweb'
+				'post-kinds-for-indieweb-in-block-themes'
 			),
 			movie: __(
 				'Search by title, year, or actor…',
-				'post-kinds-for-indieweb'
+				'post-kinds-for-indieweb-in-block-themes'
 			),
 			music: __(
 				'Search by song, artist, or album…',
-				'post-kinds-for-indieweb'
+				'post-kinds-for-indieweb-in-block-themes'
 			),
 		};
 		return (
 			placeholders[ mediaType ] ||
-			__( 'Search…', 'post-kinds-for-indieweb' )
+			__( 'Search…', 'post-kinds-for-indieweb-in-block-themes' )
 		);
 	};
 
@@ -203,7 +221,10 @@ export default function Edit( { attributes, setAttributes } ) {
 
 					<div className="media-source">
 						<span className="source-label">
-							{ __( 'via', 'post-kinds-for-indieweb' ) }{ ' ' }
+							{ __(
+								'via',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }{ ' ' }
 							{ getSourceLabel() }
 						</span>
 					</div>
@@ -215,7 +236,10 @@ export default function Edit( { attributes, setAttributes } ) {
 					className="clear-selection"
 					isSmall
 				>
-					{ __( 'Change', 'post-kinds-for-indieweb' ) }
+					{ __(
+						'Change',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 				</Button>
 			</div>
 		);
@@ -227,10 +251,16 @@ export default function Edit( { attributes, setAttributes } ) {
 			<div { ...blockProps }>
 				<InspectorControls>
 					<PanelBody
-						title={ __( 'Media Type', 'post-kinds-for-indieweb' ) }
+						title={ __(
+							'Media Type',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 					>
 						<SelectControl
-							label={ __( 'Type', 'post-kinds-for-indieweb' ) }
+							label={ __(
+								'Type',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }
 							value={ mediaType }
 							options={ mediaTypes }
 							onChange={ ( value ) =>
@@ -246,10 +276,13 @@ export default function Edit( { attributes, setAttributes } ) {
 							{ getMediaIcon() }
 						</span>
 					}
-					label={ __( 'Media Lookup', 'post-kinds-for-indieweb' ) }
+					label={ __(
+						'Media Lookup',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					instructions={ __(
 						'Search for media to embed information about a book, movie, or music.',
-						'post-kinds-for-indieweb'
+						'post-kinds-for-indieweb-in-block-themes'
 					) }
 				>
 					<div className="media-lookup-search">
@@ -291,13 +324,13 @@ export default function Edit( { attributes, setAttributes } ) {
 				<PanelBody
 					title={ __(
 						'Display Settings',
-						'post-kinds-for-indieweb'
+						'post-kinds-for-indieweb-in-block-themes'
 					) }
 				>
 					<SelectControl
 						label={ __(
 							'Display Style',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ displayStyle }
 						options={ displayStyles }
@@ -306,7 +339,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<ToggleControl
-						label={ __( 'Show Image', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Show Image',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						checked={ showImage }
 						onChange={ ( value ) =>
 							setAttributes( { showImage: value } )
@@ -315,7 +351,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<ToggleControl
 						label={ __(
 							'Show Description',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						checked={ showDescription }
 						onChange={ ( value ) =>
@@ -325,7 +361,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<ToggleControl
 						label={ __(
 							'Link to Source',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						checked={ linkToSource }
 						onChange={ ( value ) =>
@@ -335,11 +371,17 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Media Info', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Media Info',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<p className="components-base-control__help">
-						{ __( 'Data fetched from', 'post-kinds-for-indieweb' ) }{ ' ' }
+						{ __(
+							'Data fetched from',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }{ ' ' }
 						{ getSourceLabel() }
 					</p>
 					{ selectedItem && (
@@ -348,7 +390,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								<strong>
 									{ __(
 										'Title:',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 								</strong>{ ' ' }
 								{ selectedItem.title || selectedItem.name }
@@ -358,7 +400,7 @@ export default function Edit( { attributes, setAttributes } ) {
 									<strong>
 										{ __(
 											'ID:',
-											'post-kinds-for-indieweb'
+											'post-kinds-for-indieweb-in-block-themes'
 										) }
 									</strong>{ ' ' }
 									{ selectedItem.id }
@@ -373,7 +415,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					>
 						{ __(
 							'Remove & Search Again',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					</Button>
 				</PanelBody>

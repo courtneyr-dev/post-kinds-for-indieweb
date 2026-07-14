@@ -4,13 +4,13 @@
  *
  * A block pattern for responding to events with RSVP status.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Patterns;
+namespace PKIW\Patterns;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -23,9 +23,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 register_block_pattern(
 	'post-kinds-indieweb/rsvp-response',
 	[
-		'title'       => __( 'RSVP Response', 'post-kinds-for-indieweb' ),
-		'description' => __( 'Respond to an event with yes, no, maybe, or interested.', 'post-kinds-for-indieweb' ),
-		'categories'  => [ 'post-kinds-for-indieweb' ],
+		'title'       => __( 'RSVP Response', 'post-kinds-for-indieweb-in-block-themes' ),
+		'description' => __( 'Respond to an event with yes, no, maybe, or interested.', 'post-kinds-for-indieweb-in-block-themes' ),
+		'categories'  => [ 'post-kinds-for-indieweb-in-block-themes' ],
 		'keywords'    => [ 'rsvp', 'event', 'response', 'indieweb', 'reaction' ],
 		'blockTypes'  => [ 'core/group' ],
 		'postTypes'   => [ 'post' ],

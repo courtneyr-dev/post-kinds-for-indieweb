@@ -2,18 +2,18 @@
 /**
  * Test the OpenLibrary API client.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\APIs\OpenLibrary;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\APIs\OpenLibrary;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Test the OpenLibrary API integration.
  *
- * @covers \PostKindsForIndieWeb\APIs\OpenLibrary
+ * @covers \PKIW\APIs\OpenLibrary
  */
 class OpenLibraryApiTest extends ApiTestCase {
 

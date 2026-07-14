@@ -4,13 +4,13 @@
  *
  * Registers the 'reaction' post type for imported content when CPT mode is enabled.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -29,7 +29,7 @@ class Post_Type {
 	 *
 	 * @var string
 	 */
-	public const POST_TYPE = 'reaction';
+	public const POST_TYPE = 'pkiw_reaction';
 
 	/**
 	 * Constructor.
@@ -67,29 +67,29 @@ class Post_Type {
 	 */
 	private function register_post_type(): void {
 		$labels = [
-			'name'                  => _x( 'Reactions', 'post type general name', 'post-kinds-for-indieweb' ),
-			'singular_name'         => _x( 'Reaction', 'post type singular name', 'post-kinds-for-indieweb' ),
-			'menu_name'             => _x( 'Reactions', 'admin menu', 'post-kinds-for-indieweb' ),
-			'name_admin_bar'        => _x( 'Reaction', 'add new on admin bar', 'post-kinds-for-indieweb' ),
-			'add_new'               => __( 'Add New', 'post-kinds-for-indieweb' ),
-			'add_new_item'          => __( 'Add New Reaction', 'post-kinds-for-indieweb' ),
-			'new_item'              => __( 'New Reaction', 'post-kinds-for-indieweb' ),
-			'edit_item'             => __( 'Edit Reaction', 'post-kinds-for-indieweb' ),
-			'view_item'             => __( 'View Reaction', 'post-kinds-for-indieweb' ),
-			'all_items'             => __( 'All Reactions', 'post-kinds-for-indieweb' ),
-			'search_items'          => __( 'Search Reactions', 'post-kinds-for-indieweb' ),
-			'parent_item_colon'     => __( 'Parent Reaction:', 'post-kinds-for-indieweb' ),
-			'not_found'             => __( 'No reactions found.', 'post-kinds-for-indieweb' ),
-			'not_found_in_trash'    => __( 'No reactions found in Trash.', 'post-kinds-for-indieweb' ),
-			'archives'              => __( 'Reaction Archives', 'post-kinds-for-indieweb' ),
-			'filter_items_list'     => __( 'Filter reactions list', 'post-kinds-for-indieweb' ),
-			'items_list_navigation' => __( 'Reactions list navigation', 'post-kinds-for-indieweb' ),
-			'items_list'            => __( 'Reactions list', 'post-kinds-for-indieweb' ),
+			'name'                  => _x( 'Reactions', 'post type general name', 'post-kinds-for-indieweb-in-block-themes' ),
+			'singular_name'         => _x( 'Reaction', 'post type singular name', 'post-kinds-for-indieweb-in-block-themes' ),
+			'menu_name'             => _x( 'Reactions', 'admin menu', 'post-kinds-for-indieweb-in-block-themes' ),
+			'name_admin_bar'        => _x( 'Reaction', 'add new on admin bar', 'post-kinds-for-indieweb-in-block-themes' ),
+			'add_new'               => __( 'Add New', 'post-kinds-for-indieweb-in-block-themes' ),
+			'add_new_item'          => __( 'Add New Reaction', 'post-kinds-for-indieweb-in-block-themes' ),
+			'new_item'              => __( 'New Reaction', 'post-kinds-for-indieweb-in-block-themes' ),
+			'edit_item'             => __( 'Edit Reaction', 'post-kinds-for-indieweb-in-block-themes' ),
+			'view_item'             => __( 'View Reaction', 'post-kinds-for-indieweb-in-block-themes' ),
+			'all_items'             => __( 'All Reactions', 'post-kinds-for-indieweb-in-block-themes' ),
+			'search_items'          => __( 'Search Reactions', 'post-kinds-for-indieweb-in-block-themes' ),
+			'parent_item_colon'     => __( 'Parent Reaction:', 'post-kinds-for-indieweb-in-block-themes' ),
+			'not_found'             => __( 'No reactions found.', 'post-kinds-for-indieweb-in-block-themes' ),
+			'not_found_in_trash'    => __( 'No reactions found in Trash.', 'post-kinds-for-indieweb-in-block-themes' ),
+			'archives'              => __( 'Reaction Archives', 'post-kinds-for-indieweb-in-block-themes' ),
+			'filter_items_list'     => __( 'Filter reactions list', 'post-kinds-for-indieweb-in-block-themes' ),
+			'items_list_navigation' => __( 'Reactions list navigation', 'post-kinds-for-indieweb-in-block-themes' ),
+			'items_list'            => __( 'Reactions list', 'post-kinds-for-indieweb-in-block-themes' ),
 		];
 
 		$args = [
 			'labels'             => $labels,
-			'description'        => __( 'Imported reactions from external services.', 'post-kinds-for-indieweb' ),
+			'description'        => __( 'Imported reactions from external services.', 'post-kinds-for-indieweb-in-block-themes' ),
 			'public'             => true,
 			'publicly_queryable' => true,
 			'show_ui'            => true,
@@ -127,7 +127,7 @@ class Post_Type {
 		 *
 		 * @param array $args Post type arguments.
 		 */
-		$args = apply_filters( 'post_kinds_indieweb_post_type_args', $args );
+		$args = apply_filters( 'pkiw_post_type_args', $args );
 
 		register_post_type( self::POST_TYPE, $args );
 	}
@@ -138,7 +138,7 @@ class Post_Type {
 	 * @return bool
 	 */
 	public static function is_cpt_mode(): bool {
-		$settings = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings = get_option( 'pkiw_settings', [] );
 		return ( $settings['import_storage_mode'] ?? 'standard' ) === 'cpt';
 	}
 
@@ -148,7 +148,7 @@ class Post_Type {
 	 * @return bool
 	 */
 	public static function is_hidden_mode(): bool {
-		$settings = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings = get_option( 'pkiw_settings', [] );
 		return ( $settings['import_storage_mode'] ?? 'standard' ) === 'hidden';
 	}
 
@@ -158,7 +158,7 @@ class Post_Type {
 	 * @return string One of 'standard', 'cpt', or 'hidden'.
 	 */
 	public static function get_storage_mode(): string {
-		$settings = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings = get_option( 'pkiw_settings', [] );
 		$mode     = $settings['import_storage_mode'] ?? 'standard';
 
 		// Validate mode.

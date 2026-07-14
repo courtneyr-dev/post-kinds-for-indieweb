@@ -2,13 +2,13 @@
 /**
  * Test the Meta Fields class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
 use WP_UnitTestCase;
-use PostKindsForIndieWeb\Meta_Fields;
+use PKIW\Meta_Fields;
 
 /**
  * Test the Meta_Fields class functionality.
@@ -34,7 +34,7 @@ class MetaFieldsTest extends WP_UnitTestCase {
 	 * Test that the meta prefix is correct.
 	 */
 	public function test_meta_prefix() {
-		$this->assertEquals( '_postkind_', Meta_Fields::PREFIX );
+		$this->assertEquals( '_pkiw_', Meta_Fields::PREFIX );
 	}
 
 	/**

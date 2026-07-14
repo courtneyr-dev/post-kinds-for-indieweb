@@ -1,8 +1,8 @@
 <?php
 /**
- * PHPUnit bootstrap file for Post Kinds for IndieWeb.
+ * PHPUnit bootstrap file for Post Kinds for IndieWeb in Block Themes.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
 // Composer autoloader.
@@ -33,7 +33,7 @@ require_once $_tests_dir . '/includes/functions.php';
  * Manually load the plugin being tested.
  */
 function _manually_load_plugin() {
-	require dirname( __DIR__, 2 ) . '/post-kinds-for-indieweb.php';
+	require dirname( __DIR__, 2 ) . '/post-kinds-for-indieweb-in-block-themes.php';
 }
 
 tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );

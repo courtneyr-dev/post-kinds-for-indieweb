@@ -4,13 +4,13 @@
  *
  * Handles bulk imports from external services (scrobbles, watch history, reading lists).
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -29,7 +29,7 @@ class Import_Manager {
 	 *
 	 * @var string
 	 */
-	private const JOB_PREFIX = 'post_kinds_import_job_';
+	private const JOB_PREFIX = 'pkiw_import_job_';
 
 	/**
 	 * Supported import sources.
@@ -52,7 +52,7 @@ class Import_Manager {
 	 * @return void
 	 */
 	private function init_hooks(): void {
-		add_action( 'post_kinds_indieweb_process_import', [ $this, 'process_import_batch' ], 10, 2 );
+		add_action( 'pkiw_process_import', [ $this, 'process_import_batch' ], 10, 2 );
 		add_action( 'admin_init', [ $this, 'cleanup_old_jobs' ] );
 	}
 
@@ -182,7 +182,7 @@ class Import_Manager {
 		 *
 		 * @param array<string, array<string, mixed>> $sources Import sources.
 		 */
-		$this->sources = apply_filters( 'post_kinds_indieweb_import_sources', $this->sources );
+		$this->sources = apply_filters( 'pkiw_import_sources', $this->sources );
 	}
 
 	/**
@@ -254,7 +254,7 @@ class Import_Manager {
 		$this->save_job( $job_id, $job );
 
 		// Schedule first batch.
-		wp_schedule_single_event( time(), 'post_kinds_indieweb_process_import', [ $job_id, $source ] );
+		wp_schedule_single_event( time(), 'pkiw_process_import', [ $job_id, $source ] );
 
 		return [
 			'success' => true,
@@ -357,7 +357,7 @@ class Import_Manager {
 
 			// Schedule next batch if more items.
 			if ( $batch['has_more'] ?? false ) {
-				wp_schedule_single_event( time() + 2, 'post_kinds_indieweb_process_import', [ $job_id, $source ] );
+				wp_schedule_single_event( time() + 2, 'pkiw_process_import', [ $job_id, $source ] );
 			} else {
 				$this->update_job(
 					$job_id,
@@ -382,7 +382,7 @@ class Import_Manager {
 	 * @return string|null ISO 8601 date string or null if no cutoff.
 	 */
 	private function get_sync_start_date( string $source ): ?string {
-		$settings         = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings         = get_option( 'pkiw_settings', [] );
 		$sync_start_dates = $settings['sync_start_dates'] ?? [];
 		$date             = $sync_start_dates[ $source ] ?? '';
 		return ! empty( $date ) ? $date : null;
@@ -404,7 +404,7 @@ class Import_Manager {
 		$source  = $job['source'] ?? '';
 
 		// Calculate batch size respecting import limit and global settings.
-		$settings          = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings          = get_option( 'pkiw_settings', [] );
 		$global_batch_size = (int) ( $settings['batch_size'] ?? 0 );
 		$source_batch_size = $source_config['batch_size'];
 
@@ -615,7 +615,7 @@ class Import_Manager {
 		// Use cite_name as primary key since it's populated for all kinds.
 		switch ( $kind ) {
 			case 'listen':
-				$meta_key = '_postkind_cite_name';
+				$meta_key = '_pkiw_cite_name';
 				// Handle both music tracks and podcast episodes.
 				// Use array_key_exists because isset() returns false for null values.
 				if ( array_key_exists( 'episode_title', $item ) ) {
@@ -629,31 +629,31 @@ class Import_Manager {
 				break;
 
 			case 'watch':
-				$meta_key   = '_postkind_cite_name';
+				$meta_key   = '_pkiw_cite_name';
 				$meta_value = $item['title'] ?? '';
 				$date       = isset( $item['watched_at'] ) ? gmdate( 'Y-m-d', strtotime( $item['watched_at'] ) ) : '';
 				break;
 
 			case 'read':
-				$meta_key   = '_postkind_cite_name';
+				$meta_key   = '_pkiw_cite_name';
 				$meta_value = $item['title'] ?? '';
 				$date       = '';
 				break;
 
 			case 'checkin':
-				$meta_key   = '_postkind_checkin_name';
+				$meta_key   = '_pkiw_checkin_name';
 				$meta_value = $item['venue_name'] ?? '';
 				$date       = isset( $item['timestamp'] ) ? gmdate( 'Y-m-d', $item['timestamp'] ) : '';
 				break;
 
 			case 'bookmark':
-				$meta_key   = '_postkind_cite_url';
+				$meta_key   = '_pkiw_cite_url';
 				$meta_value = $item['source_url'] ?? '';
 				$date       = '';
 				break;
 
 			case 'note':
-				$meta_key   = '_postkind_cite_name';
+				$meta_key   = '_pkiw_cite_name';
 				$meta_value = $item['title'] ?? '';
 				$date       = '';
 				break;
@@ -707,7 +707,7 @@ class Import_Manager {
 		$post_title = '';
 		switch ( $kind ) {
 			case 'listen':
-				$meta_key = '_postkind_cite_name';
+				$meta_key = '_pkiw_cite_name';
 				if ( array_key_exists( 'episode_title', $item ) ) {
 					$meta_value = $item['episode_title'] ?? $item['title'] ?? '';
 					$post_title = sprintf( 'Listened to %s', $meta_value );
@@ -728,14 +728,14 @@ class Import_Manager {
 				break;
 
 			case 'watch':
-				$meta_key   = '_postkind_cite_name';
+				$meta_key   = '_pkiw_cite_name';
 				$meta_value = $item['title'] ?? '';
 				$post_title = sprintf( 'Watched %s', $meta_value );
 				$date       = isset( $item['watched_at'] ) ? gmdate( 'Y-m-d', strtotime( $item['watched_at'] ) ) : '';
 				break;
 
 			case 'read':
-				$meta_key   = '_postkind_cite_name';
+				$meta_key   = '_pkiw_cite_name';
 				$meta_value = $item['title'] ?? '';
 				$post_title = sprintf( 'Read %s', $meta_value );
 				$date       = '';
@@ -821,30 +821,30 @@ class Import_Manager {
 					$show       = $item['show_name'] ?? $item['author'] ?? '';
 					$source_url = $item['source_url'] ?? '';
 
-					$meta['_postkind_cite_name']       = $episode;
-					$meta['_postkind_cite_author']     = $show;
-					$meta['_postkind_cite_photo']      = $item['cover_image'] ?? '';
-					$meta['_postkind_cite_url']        = $source_url;
-					$meta['_postkind_listen_track']    = $episode;
-					$meta['_postkind_listen_artist']   = $show;
-					$meta['_postkind_listen_album']    = $show;
-					$meta['_postkind_listen_cover']    = $item['cover_image'] ?? '';
-					$meta['_postkind_listen_url']      = $source_url;
-					$meta['_postkind_source']          = $item['source'] ?? 'Snipd';
-					$meta['_postkind_highlight_count'] = $item['highlight_count'] ?? 0;
+					$meta['_pkiw_cite_name']       = $episode;
+					$meta['_pkiw_cite_author']     = $show;
+					$meta['_pkiw_cite_photo']      = $item['cover_image'] ?? '';
+					$meta['_pkiw_cite_url']        = $source_url;
+					$meta['_pkiw_listen_track']    = $episode;
+					$meta['_pkiw_listen_artist']   = $show;
+					$meta['_pkiw_listen_album']    = $show;
+					$meta['_pkiw_listen_cover']    = $item['cover_image'] ?? '';
+					$meta['_pkiw_listen_url']      = $source_url;
+					$meta['_pkiw_source']          = $item['source'] ?? 'Snipd';
+					$meta['_pkiw_highlight_count'] = $item['highlight_count'] ?? 0;
 				} else {
 					// Music track.
 					$track  = $item['track'] ?? '';
 					$artist = $item['artist'] ?? '';
 					$album  = $item['album'] ?? '';
 
-					$meta['_postkind_cite_name']     = $track;
-					$meta['_postkind_cite_author']   = $artist;
-					$meta['_postkind_listen_track']  = $track;
-					$meta['_postkind_listen_artist'] = $artist;
-					$meta['_postkind_listen_album']  = $album;
-					$meta['_postkind_listen_cover']  = $item['cover'] ?? '';
-					$meta['_postkind_listen_mbid']   = $item['mbid'] ?? '';
+					$meta['_pkiw_cite_name']     = $track;
+					$meta['_pkiw_cite_author']   = $artist;
+					$meta['_pkiw_listen_track']  = $track;
+					$meta['_pkiw_listen_artist'] = $artist;
+					$meta['_pkiw_listen_album']  = $album;
+					$meta['_pkiw_listen_cover']  = $item['cover'] ?? '';
+					$meta['_pkiw_listen_mbid']   = $item['mbid'] ?? '';
 				}
 				break;
 
@@ -852,13 +852,13 @@ class Import_Manager {
 				$title = $item['title'] ?? '';
 				$year  = $item['year'] ?? '';
 
-				$meta['_postkind_cite_name']     = $title;
-				$meta['_postkind_cite_photo']    = $item['poster'] ?? '';
-				$meta['_postkind_watch_title']   = $title;
-				$meta['_postkind_watch_year']    = $year;
-				$meta['_postkind_watch_poster']  = $item['poster'] ?? '';
-				$meta['_postkind_watch_tmdb_id'] = $item['tmdb_id'] ?? '';
-				$meta['_postkind_watch_status']  = 'watched';
+				$meta['_pkiw_cite_name']     = $title;
+				$meta['_pkiw_cite_photo']    = $item['poster'] ?? '';
+				$meta['_pkiw_watch_title']   = $title;
+				$meta['_pkiw_watch_year']    = $year;
+				$meta['_pkiw_watch_poster']  = $item['poster'] ?? '';
+				$meta['_pkiw_watch_tmdb_id'] = $item['tmdb_id'] ?? '';
+				$meta['_pkiw_watch_status']  = 'watched';
 				break;
 
 			case 'read':
@@ -866,18 +866,18 @@ class Import_Manager {
 				$author = $item['author'] ?? '';
 				$asin   = $item['asin'] ?? '';
 
-				$meta['_postkind_cite_name']       = $title;
-				$meta['_postkind_cite_author']     = $author;
-				$meta['_postkind_cite_photo']      = $item['cover_image'] ?? $item['cover'] ?? '';
-				$meta['_postkind_cite_url']        = $item['source_url'] ?? '';
-				$meta['_postkind_read_title']      = $title;
-				$meta['_postkind_read_author']     = $author;
-				$meta['_postkind_read_cover']      = $item['cover_image'] ?? $item['cover'] ?? '';
-				$meta['_postkind_read_isbn']       = $item['isbn'] ?? $asin;
-				$meta['_postkind_read_asin']       = $asin;
-				$meta['_postkind_read_status']     = 'finished';
-				$meta['_postkind_source']          = $item['source'] ?? '';
-				$meta['_postkind_highlight_count'] = $item['highlight_count'] ?? 0;
+				$meta['_pkiw_cite_name']       = $title;
+				$meta['_pkiw_cite_author']     = $author;
+				$meta['_pkiw_cite_photo']      = $item['cover_image'] ?? $item['cover'] ?? '';
+				$meta['_pkiw_cite_url']        = $item['source_url'] ?? '';
+				$meta['_pkiw_read_title']      = $title;
+				$meta['_pkiw_read_author']     = $author;
+				$meta['_pkiw_read_cover']      = $item['cover_image'] ?? $item['cover'] ?? '';
+				$meta['_pkiw_read_isbn']       = $item['isbn'] ?? $asin;
+				$meta['_pkiw_read_asin']       = $asin;
+				$meta['_pkiw_read_status']     = 'finished';
+				$meta['_pkiw_source']          = $item['source'] ?? '';
+				$meta['_pkiw_highlight_count'] = $item['highlight_count'] ?? 0;
 				break;
 
 			default:
@@ -900,7 +900,7 @@ class Import_Manager {
 
 		// Mark as updated if any fields changed.
 		if ( $updated_count > 0 ) {
-			update_post_meta( $post_id, '_postkind_metadata_updated', time() );
+			update_post_meta( $post_id, '_pkiw_metadata_updated', time() );
 		}
 
 		return $updated_count > 0;
@@ -958,8 +958,8 @@ class Import_Manager {
 		}
 
 		// Mark as imported.
-		update_post_meta( $post_id, '_postkind_imported_from', $source_config['name'] );
-		update_post_meta( $post_id, '_postkind_imported_at', time() );
+		update_post_meta( $post_id, '_pkiw_imported_from', $source_config['name'] );
+		update_post_meta( $post_id, '_pkiw_imported_at', time() );
 
 		return $post_id;
 	}
@@ -971,7 +971,7 @@ class Import_Manager {
 	 *   - post_data_extras: kind-specific fields merged into the base
 	 *     wp_insert_post payload (post_title, post_content, post_date,
 	 *     post_date_gmt).
-	 *   - meta: post meta keyed by `_postkind_*` keys, written after the
+	 *   - meta: post meta keyed by `_pkiw_*` keys, written after the
 	 *     post is inserted.
 	 *   - post_format: '' / 'audio' / 'video' — applied via
 	 *     `set_post_format()` after insert.
@@ -1057,19 +1057,19 @@ class Import_Manager {
 
 		$meta = [
 			// Citation fields for Post Kind editor.
-			'_postkind_cite_name'   => $episode,
-			'_postkind_cite_author' => $show,
-			'_postkind_cite_photo'  => $item['cover_image'] ?? '',
-			'_postkind_cite_url'    => $source_url,
+			'_pkiw_cite_name'   => $episode,
+			'_pkiw_cite_author' => $show,
+			'_pkiw_cite_photo'  => $item['cover_image'] ?? '',
+			'_pkiw_cite_url'    => $source_url,
 			// Listen-specific fields.
-			'_postkind_listen_track'  => $episode,
-			'_postkind_listen_artist' => $show,
-			'_postkind_listen_album'  => $show, // Show name as album for podcasts.
-			'_postkind_listen_cover'  => $item['cover_image'] ?? '',
-			'_postkind_listen_url'    => $source_url,
+			'_pkiw_listen_track'  => $episode,
+			'_pkiw_listen_artist' => $show,
+			'_pkiw_listen_album'  => $show, // Show name as album for podcasts.
+			'_pkiw_listen_cover'  => $item['cover_image'] ?? '',
+			'_pkiw_listen_url'    => $source_url,
 			// Import tracking.
-			'_postkind_source'          => $item['source'] ?? 'Snipd',
-			'_postkind_highlight_count' => $item['highlight_count'] ?? 0,
+			'_pkiw_source'          => $item['source'] ?? 'Snipd',
+			'_pkiw_highlight_count' => $item['highlight_count'] ?? 0,
 		];
 
 		return [ $post_data, $meta, 'audio' ];
@@ -1094,7 +1094,7 @@ class Import_Manager {
 		);
 
 		// Optional embed when the user has configured a music service.
-		$settings     = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings     = get_option( 'pkiw_settings', [] );
 		$embed_source = $settings['listen_embed_source'] ?? 'none';
 		$embed_url    = '';
 
@@ -1121,15 +1121,15 @@ class Import_Manager {
 
 		$meta = [
 			// Citation fields for Post Kind editor.
-			'_postkind_cite_name'   => $track,
-			'_postkind_cite_author' => $artist,
+			'_pkiw_cite_name'   => $track,
+			'_pkiw_cite_author' => $artist,
 			// Listen-specific fields.
-			'_postkind_listen_track'  => $track,
-			'_postkind_listen_artist' => $artist,
-			'_postkind_listen_album'  => $album,
-			'_postkind_listen_cover'  => $item['cover'] ?? '',
-			'_postkind_listen_mbid'   => $item['mbid'] ?? '',
-			'_postkind_listen_url'    => $embed_url,
+			'_pkiw_listen_track'  => $track,
+			'_pkiw_listen_artist' => $artist,
+			'_pkiw_listen_album'  => $album,
+			'_pkiw_listen_cover'  => $item['cover'] ?? '',
+			'_pkiw_listen_mbid'   => $item['mbid'] ?? '',
+			'_pkiw_listen_url'    => $embed_url,
 		];
 
 		return [ $post_data, $meta, 'audio' ];
@@ -1163,26 +1163,26 @@ class Import_Manager {
 
 		$meta = [
 			// Citation fields for Post Kind editor.
-			'_postkind_cite_name'  => $title,
-			'_postkind_cite_photo' => $item['poster'] ?? '',
+			'_pkiw_cite_name'  => $title,
+			'_pkiw_cite_photo' => $item['poster'] ?? '',
 			// Watch-specific fields.
-			'_postkind_watch_title'   => $title,
-			'_postkind_watch_year'    => $year,
-			'_postkind_watch_poster'  => $item['poster'] ?? '',
-			'_postkind_watch_tmdb_id' => $item['tmdb_id'] ?? '',
-			'_postkind_watch_status'  => 'watched',
+			'_pkiw_watch_title'   => $title,
+			'_pkiw_watch_year'    => $year,
+			'_pkiw_watch_poster'  => $item['poster'] ?? '',
+			'_pkiw_watch_tmdb_id' => $item['tmdb_id'] ?? '',
+			'_pkiw_watch_status'  => 'watched',
 			// Legacy field names for compatibility.
-			'_postkind_watch_type'  => $type,
-			'_postkind_watch_tmdb'  => $item['tmdb_id'] ?? '',
-			'_postkind_watch_imdb'  => $item['imdb_id'] ?? '',
-			'_postkind_watch_trakt' => $item['trakt_id'] ?? '',
+			'_pkiw_watch_type'  => $type,
+			'_pkiw_watch_tmdb'  => $item['tmdb_id'] ?? '',
+			'_pkiw_watch_imdb'  => $item['imdb_id'] ?? '',
+			'_pkiw_watch_trakt' => $item['trakt_id'] ?? '',
 		];
 
 		// Episode/TV-specific fields when the type warrants them.
 		if ( 'episode' === $type || 'tv' === $type ) {
-			$meta['_postkind_watch_show']    = $item['show']['title'] ?? '';
-			$meta['_postkind_watch_season']  = $item['season'] ?? '';
-			$meta['_postkind_watch_episode'] = $item['number'] ?? '';
+			$meta['_pkiw_watch_show']    = $item['show']['title'] ?? '';
+			$meta['_pkiw_watch_season']  = $item['season'] ?? '';
+			$meta['_pkiw_watch_episode'] = $item['number'] ?? '';
 		}
 
 		return [ $post_data, $meta, 'video' ];
@@ -1228,21 +1228,21 @@ class Import_Manager {
 
 		$meta = [
 			// Citation fields for Post Kind editor.
-			'_postkind_cite_name'   => $title,
-			'_postkind_cite_author' => $author,
-			'_postkind_cite_photo'  => $item['cover_image'] ?? $item['cover'] ?? '',
-			'_postkind_cite_url'    => $item['source_url'] ?? '',
+			'_pkiw_cite_name'   => $title,
+			'_pkiw_cite_author' => $author,
+			'_pkiw_cite_photo'  => $item['cover_image'] ?? $item['cover'] ?? '',
+			'_pkiw_cite_url'    => $item['source_url'] ?? '',
 			// Read-specific fields.
-			'_postkind_read_title'  => $title,
-			'_postkind_read_author' => $author,
-			'_postkind_read_cover'  => $item['cover_image'] ?? $item['cover'] ?? '',
-			'_postkind_read_isbn'   => $item['isbn'] ?? $item['asin'] ?? '',
-			'_postkind_read_asin'   => $asin,
-			'_postkind_read_status' => 'finished',
+			'_pkiw_read_title'  => $title,
+			'_pkiw_read_author' => $author,
+			'_pkiw_read_cover'  => $item['cover_image'] ?? $item['cover'] ?? '',
+			'_pkiw_read_isbn'   => $item['isbn'] ?? $item['asin'] ?? '',
+			'_pkiw_read_asin'   => $asin,
+			'_pkiw_read_status' => 'finished',
 			// Import tracking.
-			'_postkind_source'          => $item['source'] ?? '',
-			'_postkind_source_url'      => $item['source_url'] ?? '',
-			'_postkind_highlight_count' => $item['highlight_count'] ?? 0,
+			'_pkiw_source'          => $item['source'] ?? '',
+			'_pkiw_source_url'      => $item['source_url'] ?? '',
+			'_pkiw_highlight_count' => $item['highlight_count'] ?? 0,
 		];
 
 		return [ $post_data, $meta, '' ];
@@ -1274,16 +1274,16 @@ class Import_Manager {
 
 		$meta = [
 			// Checkin-specific fields for Post Kind editor.
-			'_postkind_checkin_name'    => $venue,
-			'_postkind_checkin_address' => $address,
-			'_postkind_geo_latitude'    => $item['latitude'] ?? '',
-			'_postkind_geo_longitude'   => $item['longitude'] ?? '',
+			'_pkiw_checkin_name'    => $venue,
+			'_pkiw_checkin_address' => $address,
+			'_pkiw_geo_latitude'    => $item['latitude'] ?? '',
+			'_pkiw_geo_longitude'   => $item['longitude'] ?? '',
 			// Legacy/internal fields.
-			'_postkind_checkin_venue'     => $venue,
-			'_postkind_checkin_latitude'  => $item['latitude'] ?? '',
-			'_postkind_checkin_longitude' => $item['longitude'] ?? '',
-			'_postkind_checkin_venue_id'  => $item['venue_id'] ?? '',
-			'_postkind_checkin_shout'     => $item['shout'] ?? '',
+			'_pkiw_checkin_venue'     => $venue,
+			'_pkiw_checkin_latitude'  => $item['latitude'] ?? '',
+			'_pkiw_checkin_longitude' => $item['longitude'] ?? '',
+			'_pkiw_checkin_venue_id'  => $item['venue_id'] ?? '',
+			'_pkiw_checkin_shout'     => $item['shout'] ?? '',
 		];
 
 		return [ $post_data, $meta, '' ];
@@ -1315,13 +1315,13 @@ class Import_Manager {
 
 		$meta = [
 			// Citation fields for Post Kind editor.
-			'_postkind_cite_name'   => $title,
-			'_postkind_cite_author' => $author,
-			'_postkind_cite_url'    => $url,
-			'_postkind_cite_photo'  => $item['cover_image'] ?? '',
+			'_pkiw_cite_name'   => $title,
+			'_pkiw_cite_author' => $author,
+			'_pkiw_cite_url'    => $url,
+			'_pkiw_cite_photo'  => $item['cover_image'] ?? '',
 			// Import tracking.
-			'_postkind_source'          => $item['source'] ?? '',
-			'_postkind_highlight_count' => $item['highlight_count'] ?? 0,
+			'_pkiw_source'          => $item['source'] ?? '',
+			'_pkiw_highlight_count' => $item['highlight_count'] ?? 0,
 		];
 
 		return [ $post_data, $meta, '' ];
@@ -1351,11 +1351,11 @@ class Import_Manager {
 
 		$meta = [
 			// Citation fields for Post Kind editor.
-			'_postkind_cite_name' => $title,
-			'_postkind_cite_url'  => $item['source_url'] ?? '',
+			'_pkiw_cite_name' => $title,
+			'_pkiw_cite_url'  => $item['source_url'] ?? '',
 			// Import tracking.
-			'_postkind_source'          => $item['source'] ?? '',
-			'_postkind_highlight_count' => $item['highlight_count'] ?? 0,
+			'_pkiw_source'          => $item['source'] ?? '',
+			'_pkiw_highlight_count' => $item['highlight_count'] ?? 0,
 		];
 
 		return [ $post_data, $meta, '' ];
@@ -1488,7 +1488,7 @@ class Import_Manager {
 		 * @param array<string, mixed> $item          Imported item data.
 		 * @param array<string, mixed> $source_config Source configuration.
 		 */
-		do_action( 'post_kinds_indieweb_item_imported', $item, $source_config );
+		do_action( 'pkiw_item_imported', $item, $source_config );
 	}
 
 	/**
@@ -1497,10 +1497,10 @@ class Import_Manager {
 	 * @return string Post type slug.
 	 */
 	private function get_import_post_type(): string {
-		$settings     = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings     = get_option( 'pkiw_settings', [] );
 		$storage_mode = $settings['import_storage_mode'] ?? 'standard';
 
-		return 'cpt' === $storage_mode ? 'reaction' : 'post';
+		return 'cpt' === $storage_mode ? \PKIW\Post_Type::POST_TYPE : 'post';
 	}
 
 	/**
@@ -1675,7 +1675,7 @@ class Import_Manager {
 		if ( ! isset( $this->sources[ $source ] ) ) {
 			return [
 				'success' => false,
-				'error'   => __( 'Invalid import source.', 'post-kinds-for-indieweb' ),
+				'error'   => __( 'Invalid import source.', 'post-kinds-for-indieweb-in-block-themes' ),
 			];
 		}
 
@@ -1685,12 +1685,12 @@ class Import_Manager {
 		// Find posts imported from this source.
 		$posts = get_posts(
 			[
-				'post_type'      => [ 'post', 'reaction' ],
+				'post_type'      => [ 'post', \PKIW\Post_Type::POST_TYPE ],
 				'post_status'    => 'any',
 				'posts_per_page' => -1,
 				'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 					[
-						'key'     => '_postkind_imported_from',
+						'key'     => '_pkiw_imported_from',
 						'value'   => $source_config['name'],
 						'compare' => '=',
 					],
@@ -1710,7 +1710,7 @@ class Import_Manager {
 				'success' => true,
 				'updated' => 0,
 				'skipped' => 0,
-				'message' => __( 'No imported posts found to re-sync.', 'post-kinds-for-indieweb' ),
+				'message' => __( 'No imported posts found to re-sync.', 'post-kinds-for-indieweb-in-block-themes' ),
 			];
 		}
 
@@ -1733,7 +1733,7 @@ class Import_Manager {
 			'skipped' => $skipped,
 			'message' => sprintf(
 				/* translators: 1: Updated count, 2: Skipped count */
-				__( 'Re-synced %1$d posts, skipped %2$d.', 'post-kinds-for-indieweb' ),
+				__( 'Re-synced %1$d posts, skipped %2$d.', 'post-kinds-for-indieweb-in-block-themes' ),
 				$updated,
 				$skipped
 			),
@@ -1772,10 +1772,10 @@ class Import_Manager {
 	 * @return bool True if updated.
 	 */
 	private function resync_watch_metadata( \WP_Post $post, string $source ): bool {
-		$title    = get_post_meta( $post->ID, '_postkind_watch_title', true );
-		$trakt_id = get_post_meta( $post->ID, '_postkind_watch_trakt', true );
-		$tmdb_id  = get_post_meta( $post->ID, '_postkind_watch_tmdb', true );
-		$imdb_id  = get_post_meta( $post->ID, '_postkind_watch_imdb', true );
+		$title    = get_post_meta( $post->ID, '_pkiw_watch_title', true );
+		$trakt_id = get_post_meta( $post->ID, '_pkiw_watch_trakt', true );
+		$tmdb_id  = get_post_meta( $post->ID, '_pkiw_watch_tmdb', true );
+		$imdb_id  = get_post_meta( $post->ID, '_pkiw_watch_imdb', true );
 
 		// If we don't have identifiers, try to look up by title.
 		if ( empty( $trakt_id ) && empty( $tmdb_id ) && empty( $imdb_id ) && empty( $title ) ) {
@@ -1810,14 +1810,14 @@ class Import_Manager {
 
 				if ( ! is_wp_error( $details ) && ! empty( $details ) ) {
 					// Update metadata.
-					update_post_meta( $post->ID, '_postkind_watch_title', $details['title'] ?? $title );
-					update_post_meta( $post->ID, '_postkind_watch_year', $details['year'] ?? '' );
-					update_post_meta( $post->ID, '_postkind_watch_type', $details['type'] ?? $type );
-					update_post_meta( $post->ID, '_postkind_watch_trakt', $details['trakt_id'] ?? $trakt_id );
-					update_post_meta( $post->ID, '_postkind_watch_tmdb', $details['tmdb_id'] ?? '' );
-					update_post_meta( $post->ID, '_postkind_watch_imdb', $details['imdb_id'] ?? '' );
-					update_post_meta( $post->ID, '_postkind_watch_status', 'watched' );
-					update_post_meta( $post->ID, '_postkind_resynced_at', time() );
+					update_post_meta( $post->ID, '_pkiw_watch_title', $details['title'] ?? $title );
+					update_post_meta( $post->ID, '_pkiw_watch_year', $details['year'] ?? '' );
+					update_post_meta( $post->ID, '_pkiw_watch_type', $details['type'] ?? $type );
+					update_post_meta( $post->ID, '_pkiw_watch_trakt', $details['trakt_id'] ?? $trakt_id );
+					update_post_meta( $post->ID, '_pkiw_watch_tmdb', $details['tmdb_id'] ?? '' );
+					update_post_meta( $post->ID, '_pkiw_watch_imdb', $details['imdb_id'] ?? '' );
+					update_post_meta( $post->ID, '_pkiw_watch_status', 'watched' );
+					update_post_meta( $post->ID, '_pkiw_resynced_at', time() );
 
 					return true;
 				}
@@ -1837,7 +1837,7 @@ class Import_Manager {
 	private function resync_listen_metadata( \WP_Post $post, string $source ): bool {
 		// Listen posts typically have all metadata from the initial import.
 		// Mark as re-synced but no API lookup needed.
-		update_post_meta( $post->ID, '_postkind_resynced_at', time() );
+		update_post_meta( $post->ID, '_pkiw_resynced_at', time() );
 		return true;
 	}
 
@@ -1851,7 +1851,7 @@ class Import_Manager {
 	private function resync_read_metadata( \WP_Post $post, string $source ): bool {
 		// Read posts typically have all metadata from the initial import.
 		// Mark as re-synced but no API lookup needed.
-		update_post_meta( $post->ID, '_postkind_resynced_at', time() );
+		update_post_meta( $post->ID, '_pkiw_resynced_at', time() );
 		return true;
 	}
 

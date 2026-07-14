@@ -2,15 +2,15 @@
 /**
  * Test the REST API class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
 use WP_UnitTestCase;
 use WP_REST_Request;
 use WP_REST_Server;
-use PostKindsForIndieWeb\REST_API;
+use PKIW\REST_API;
 
 /**
  * Test the REST_API class functionality.

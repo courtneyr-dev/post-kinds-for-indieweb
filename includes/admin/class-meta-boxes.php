@@ -4,11 +4,11 @@
  *
  * Custom meta boxes for post editing screens.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.0.0
  */
 
-namespace PostKindsForIndieWeb\Admin;
+namespace PKIW\Admin;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -63,310 +63,310 @@ class Meta_Boxes {
 		return [
 			'listen'   => [
 				'track_title'    => [
-					'label'    => __( 'Track Title', 'post-kinds-for-indieweb' ),
+					'label'    => __( 'Track Title', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'     => 'text',
 					'required' => true,
 				],
 				'artist_name'    => [
-					'label'    => __( 'Artist', 'post-kinds-for-indieweb' ),
+					'label'    => __( 'Artist', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'     => 'text',
 					'required' => true,
 				],
 				'album_title'    => [
-					'label' => __( 'Album', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Album', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 				],
 				'release_date'   => [
-					'label' => __( 'Release Date', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Release Date', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'date',
 				],
 				'musicbrainz_id' => [
-					'label' => __( 'MusicBrainz ID', 'post-kinds-for-indieweb' ),
+					'label' => __( 'MusicBrainz ID', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 					'class' => 'code',
 				],
 				'listen_url'     => [
-					'label'       => __( 'Listen URL', 'post-kinds-for-indieweb' ),
+					'label'       => __( 'Listen URL', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'        => 'url',
 					'placeholder' => 'https://...',
 				],
 				'rating'         => [
-					'label' => __( 'Rating', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Rating', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'rating',
 					'max'   => 5,
 				],
 				'cover_image'    => [
-					'label' => __( 'Cover Image', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Cover Image', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'image',
 				],
 			],
 			'watch'    => [
 				'media_title'    => [
-					'label'    => __( 'Title', 'post-kinds-for-indieweb' ),
+					'label'    => __( 'Title', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'     => 'text',
 					'required' => true,
 				],
 				'media_type'     => [
-					'label'   => __( 'Type', 'post-kinds-for-indieweb' ),
+					'label'   => __( 'Type', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'    => 'select',
 					'options' => [
-						'movie'   => __( 'Movie', 'post-kinds-for-indieweb' ),
-						'tv'      => __( 'TV Show', 'post-kinds-for-indieweb' ),
-						'episode' => __( 'TV Episode', 'post-kinds-for-indieweb' ),
+						'movie'   => __( 'Movie', 'post-kinds-for-indieweb-in-block-themes' ),
+						'tv'      => __( 'TV Show', 'post-kinds-for-indieweb-in-block-themes' ),
+						'episode' => __( 'TV Episode', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 				'show_title'     => [
-					'label'      => __( 'Show Title', 'post-kinds-for-indieweb' ),
+					'label'      => __( 'Show Title', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'       => 'text',
 					'depends_on' => 'media_type:episode',
 				],
 				'season_number'  => [
-					'label'      => __( 'Season', 'post-kinds-for-indieweb' ),
+					'label'      => __( 'Season', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'       => 'number',
 					'min'        => 1,
 					'depends_on' => 'media_type:episode',
 				],
 				'episode_number' => [
-					'label'      => __( 'Episode', 'post-kinds-for-indieweb' ),
+					'label'      => __( 'Episode', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'       => 'number',
 					'min'        => 1,
 					'depends_on' => 'media_type:episode',
 				],
 				'release_year'   => [
-					'label' => __( 'Year', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Year', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'number',
 					'min'   => 1900,
 					'max'   => 2100,
 				],
 				'director'       => [
-					'label' => __( 'Director', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Director', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 				],
 				'tmdb_id'        => [
-					'label' => __( 'TMDB ID', 'post-kinds-for-indieweb' ),
+					'label' => __( 'TMDB ID', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 					'class' => 'code',
 				],
 				'imdb_id'        => [
-					'label' => __( 'IMDb ID', 'post-kinds-for-indieweb' ),
+					'label' => __( 'IMDb ID', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 					'class' => 'code',
 				],
 				'watch_url'      => [
-					'label'       => __( 'Watch URL', 'post-kinds-for-indieweb' ),
+					'label'       => __( 'Watch URL', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'        => 'url',
 					'placeholder' => 'https://...',
 				],
 				'rating'         => [
-					'label' => __( 'Rating', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Rating', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'rating',
 					'max'   => 5,
 				],
 				'rewatch'        => [
-					'label' => __( 'Rewatch', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Rewatch', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'checkbox',
 				],
 				'poster_image'   => [
-					'label' => __( 'Poster Image', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Poster Image', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'image',
 				],
 			],
 			'read'     => [
 				'book_title'       => [
-					'label'    => __( 'Book Title', 'post-kinds-for-indieweb' ),
+					'label'    => __( 'Book Title', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'     => 'text',
 					'required' => true,
 				],
 				'author_name'      => [
-					'label'    => __( 'Author', 'post-kinds-for-indieweb' ),
+					'label'    => __( 'Author', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'     => 'text',
 					'required' => true,
 				],
 				'isbn'             => [
-					'label' => __( 'ISBN', 'post-kinds-for-indieweb' ),
+					'label' => __( 'ISBN', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 					'class' => 'code',
 				],
 				'publisher'        => [
-					'label' => __( 'Publisher', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Publisher', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 				],
 				'publish_date'     => [
-					'label' => __( 'Publication Date', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Publication Date', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'date',
 				],
 				'page_count'       => [
-					'label' => __( 'Pages', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Pages', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'number',
 					'min'   => 1,
 				],
 				'read_status'      => [
-					'label'   => __( 'Status', 'post-kinds-for-indieweb' ),
+					'label'   => __( 'Status', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'    => 'select',
 					'options' => [
-						'to-read'   => __( 'To Read', 'post-kinds-for-indieweb' ),
-						'reading'   => __( 'Currently Reading', 'post-kinds-for-indieweb' ),
-						'finished'  => __( 'Finished', 'post-kinds-for-indieweb' ),
-						'abandoned' => __( 'Abandoned', 'post-kinds-for-indieweb' ),
+						'to-read'   => __( 'To Read', 'post-kinds-for-indieweb-in-block-themes' ),
+						'reading'   => __( 'Currently Reading', 'post-kinds-for-indieweb-in-block-themes' ),
+						'finished'  => __( 'Finished', 'post-kinds-for-indieweb-in-block-themes' ),
+						'abandoned' => __( 'Abandoned', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 				'progress_percent' => [
-					'label' => __( 'Progress (%)', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Progress (%)', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'number',
 					'min'   => 0,
 					'max'   => 100,
 				],
 				'openlibrary_id'   => [
-					'label' => __( 'Open Library ID', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Open Library ID', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 					'class' => 'code',
 				],
 				'rating'           => [
-					'label' => __( 'Rating', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Rating', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'rating',
 					'max'   => 5,
 				],
 				'cover_image'      => [
-					'label' => __( 'Cover Image', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Cover Image', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'image',
 				],
 			],
 			'checkin'  => [
 				'venue_name'    => [
-					'label'    => __( 'Venue Name', 'post-kinds-for-indieweb' ),
+					'label'    => __( 'Venue Name', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'     => 'text',
 					'required' => true,
 				],
 				'venue_address' => [
-					'label' => __( 'Address', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Address', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'textarea',
 					'rows'  => 2,
 				],
 				'venue_city'    => [
-					'label' => __( 'City', 'post-kinds-for-indieweb' ),
+					'label' => __( 'City', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 				],
 				'venue_country' => [
-					'label' => __( 'Country', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Country', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 				],
 				'latitude'      => [
-					'label' => __( 'Latitude', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Latitude', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 					'class' => 'code small-text',
 				],
 				'longitude'     => [
-					'label' => __( 'Longitude', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Longitude', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 					'class' => 'code small-text',
 				],
 				'foursquare_id' => [
-					'label' => __( 'Foursquare ID', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Foursquare ID', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 					'class' => 'code',
 				],
 				'venue_url'     => [
-					'label'       => __( 'Venue URL', 'post-kinds-for-indieweb' ),
+					'label'       => __( 'Venue URL', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'        => 'url',
 					'placeholder' => 'https://...',
 				],
 			],
 			'rsvp'     => [
 				'event_name'     => [
-					'label'    => __( 'Event Name', 'post-kinds-for-indieweb' ),
+					'label'    => __( 'Event Name', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'     => 'text',
 					'required' => true,
 				],
 				'event_url'      => [
-					'label'    => __( 'Event URL', 'post-kinds-for-indieweb' ),
+					'label'    => __( 'Event URL', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'     => 'url',
 					'required' => true,
 				],
 				'rsvp_value'     => [
-					'label'   => __( 'RSVP', 'post-kinds-for-indieweb' ),
+					'label'   => __( 'RSVP', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'    => 'select',
 					'options' => [
-						'yes'        => __( 'Yes', 'post-kinds-for-indieweb' ),
-						'no'         => __( 'No', 'post-kinds-for-indieweb' ),
-						'maybe'      => __( 'Maybe', 'post-kinds-for-indieweb' ),
-						'interested' => __( 'Interested', 'post-kinds-for-indieweb' ),
+						'yes'        => __( 'Yes', 'post-kinds-for-indieweb-in-block-themes' ),
+						'no'         => __( 'No', 'post-kinds-for-indieweb-in-block-themes' ),
+						'maybe'      => __( 'Maybe', 'post-kinds-for-indieweb-in-block-themes' ),
+						'interested' => __( 'Interested', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 				'event_start'    => [
-					'label' => __( 'Start Date/Time', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Start Date/Time', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'datetime-local',
 				],
 				'event_end'      => [
-					'label' => __( 'End Date/Time', 'post-kinds-for-indieweb' ),
+					'label' => __( 'End Date/Time', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'datetime-local',
 				],
 				'event_location' => [
-					'label' => __( 'Location', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Location', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 				],
 			],
 			'like'     => [
 				'like_of'     => [
-					'label'    => __( 'URL of Liked Content', 'post-kinds-for-indieweb' ),
+					'label'    => __( 'URL of Liked Content', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'     => 'url',
 					'required' => true,
 				],
 				'cite_name'   => [
-					'label' => __( 'Content Title', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Content Title', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 				],
 				'cite_author' => [
-					'label' => __( 'Author', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Author', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 				],
 			],
 			'repost'   => [
 				'repost_of'   => [
-					'label'    => __( 'URL of Original Content', 'post-kinds-for-indieweb' ),
+					'label'    => __( 'URL of Original Content', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'     => 'url',
 					'required' => true,
 				],
 				'cite_name'   => [
-					'label' => __( 'Content Title', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Content Title', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 				],
 				'cite_author' => [
-					'label' => __( 'Author', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Author', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 				],
 			],
 			'bookmark' => [
 				'bookmark_of'  => [
-					'label'    => __( 'Bookmarked URL', 'post-kinds-for-indieweb' ),
+					'label'    => __( 'Bookmarked URL', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'     => 'url',
 					'required' => true,
 				],
 				'cite_name'    => [
-					'label' => __( 'Page Title', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Page Title', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 				],
 				'cite_author'  => [
-					'label' => __( 'Author', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Author', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 				],
 				'cite_summary' => [
-					'label' => __( 'Summary', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Summary', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'textarea',
 					'rows'  => 3,
 				],
 			],
 			'reply'    => [
 				'in_reply_to' => [
-					'label'    => __( 'URL Replying To', 'post-kinds-for-indieweb' ),
+					'label'    => __( 'URL Replying To', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'     => 'url',
 					'required' => true,
 				],
 				'cite_name'   => [
-					'label' => __( 'Original Title', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Original Title', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 				],
 				'cite_author' => [
-					'label' => __( 'Author', 'post-kinds-for-indieweb' ),
+					'label' => __( 'Author', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'  => 'text',
 				],
 			],
@@ -391,8 +391,8 @@ class Meta_Boxes {
 
 		// Main reaction details meta box.
 		add_meta_box(
-			'post_kinds_indieweb_details',
-			__( 'Reaction Details', 'post-kinds-for-indieweb' ),
+			'pkiw_details',
+			__( 'Reaction Details', 'post-kinds-for-indieweb-in-block-themes' ),
 			[ $this, 'render_details_meta_box' ],
 			'post',
 			'normal',
@@ -401,8 +401,8 @@ class Meta_Boxes {
 
 		// Media lookup sidebar.
 		add_meta_box(
-			'post_kinds_indieweb_lookup',
-			__( 'Media Lookup', 'post-kinds-for-indieweb' ),
+			'pkiw_lookup',
+			__( 'Media Lookup', 'post-kinds-for-indieweb-in-block-themes' ),
 			[ $this, 'render_lookup_meta_box' ],
 			'post',
 			'side',
@@ -417,7 +417,7 @@ class Meta_Boxes {
 	 * @return void
 	 */
 	public function render_details_meta_box( \WP_Post $post ): void {
-		wp_nonce_field( 'post_kinds_indieweb_meta', 'post_kinds_indieweb_meta_nonce' );
+		wp_nonce_field( 'pkiw_meta', 'pkiw_meta_nonce' );
 
 		// Get current post kind.
 		$kinds        = wp_get_object_terms( $post->ID, 'kind', [ 'fields' => 'slugs' ] );
@@ -427,9 +427,9 @@ class Meta_Boxes {
 		<div class="post-kinds-meta-box">
 			<!-- Post kind selector -->
 			<div class="meta-field kind-selector">
-				<label for="post_kinds_post_kind"><?php esc_html_e( 'Post Kind', 'post-kinds-for-indieweb' ); ?></label>
-				<select name="post_kinds_post_kind" id="post_kinds_post_kind" class="widefat">
-					<option value=""><?php esc_html_e( 'Select a post kind...', 'post-kinds-for-indieweb' ); ?></option>
+				<label for="pkiw_post_kind"><?php esc_html_e( 'Post Kind', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
+				<select name="pkiw_post_kind" id="pkiw_post_kind" class="widefat">
+					<option value=""><?php esc_html_e( 'Select a post kind...', 'post-kinds-for-indieweb-in-block-themes' ); ?></option>
 					<?php foreach ( $this->meta_configs as $kind => $fields ) : ?>
 						<option value="<?php echo esc_attr( $kind ); ?>" <?php selected( $current_kind, $kind ); ?>>
 							<?php echo esc_html( ucfirst( $kind ) ); ?>
@@ -453,7 +453,7 @@ class Meta_Boxes {
 
 			<div class="no-kind-selected" <?php echo ! empty( $current_kind ) ? 'style="display: none;"' : ''; ?>>
 				<p class="description">
-					<?php esc_html_e( 'Select a post kind above to see the relevant fields.', 'post-kinds-for-indieweb' ); ?>
+					<?php esc_html_e( 'Select a post kind above to see the relevant fields.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 				</p>
 			</div>
 		</div>
@@ -470,10 +470,10 @@ class Meta_Boxes {
 	 * @return void
 	 */
 	private function render_field( int $post_id, string $kind, string $field_id, array $field ): void {
-		$meta_key = "_postkind_indieweb_{$field_id}";
+		$meta_key = "_pkiw_{$field_id}";
 		$value    = get_post_meta( $post_id, $meta_key, true );
-		$name     = "post_kinds_meta[{$kind}][{$field_id}]";
-		$id       = "post_kinds_{$kind}_{$field_id}";
+		$name     = "pkiw_meta[{$kind}][{$field_id}]";
+		$id       = "pkiw_{$kind}_{$field_id}";
 		$class    = $field['class'] ?? 'widefat';
 		$required = ! empty( $field['required'] ) ? 'required' : '';
 
@@ -481,7 +481,7 @@ class Meta_Boxes {
 		$wrapper_style = '';
 		if ( ! empty( $field['depends_on'] ) ) {
 			list( $dep_field, $dep_value ) = explode( ':', $field['depends_on'] );
-			$dep_meta_key                  = "_postkind_indieweb_{$dep_field}";
+			$dep_meta_key                  = "_pkiw_{$dep_field}";
 			$dep_current                   = get_post_meta( $post_id, $dep_meta_key, true );
 			if ( $dep_current !== $dep_value ) {
 				$wrapper_style = 'display: none;';
@@ -567,7 +567,7 @@ class Meta_Boxes {
 
 				case 'select':
 					printf( '<select name="%s" id="%s" class="%s" %s>', esc_attr( $name ), esc_attr( $id ), esc_attr( $class ), esc_attr( $required ) );
-					echo '<option value="">' . esc_html__( 'Select...', 'post-kinds-for-indieweb' ) . '</option>';
+					echo '<option value="">' . esc_html__( 'Select...', 'post-kinds-for-indieweb-in-block-themes' ) . '</option>';
 					foreach ( $field['options'] as $opt_value => $opt_label ) {
 						printf(
 							'<option value="%s" %s>%s</option>',
@@ -601,7 +601,7 @@ class Meta_Boxes {
 						$filled = ( (int) $value >= $i ) ? 'filled' : '';
 						echo '<span class="star ' . esc_attr( $filled ) . '" data-value="' . esc_attr( $i ) . '">&#9733;</span>';
 					}
-					echo '<button type="button" class="button button-small clear-rating">' . esc_html__( 'Clear', 'post-kinds-for-indieweb' ) . '</button>';
+					echo '<button type="button" class="button button-small clear-rating">' . esc_html__( 'Clear', 'post-kinds-for-indieweb-in-block-themes' ) . '</button>';
 					echo '</div>';
 					break;
 
@@ -621,10 +621,10 @@ class Meta_Boxes {
 						</div>
 						<input type="hidden" name="<?php echo esc_attr( $name ); ?>" id="<?php echo esc_attr( $id ); ?>" value="<?php echo esc_attr( $value ); ?>" class="image-value">
 						<button type="button" class="button select-image">
-							<?php esc_html_e( 'Select Image', 'post-kinds-for-indieweb' ); ?>
+							<?php esc_html_e( 'Select Image', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 						</button>
 						<button type="button" class="button remove-image" <?php echo $value ? '' : 'style="display: none;"'; ?>>
-							<?php esc_html_e( 'Remove', 'post-kinds-for-indieweb' ); ?>
+							<?php esc_html_e( 'Remove', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 						</button>
 					</div>
 					<?php
@@ -645,23 +645,23 @@ class Meta_Boxes {
 		?>
 		<div class="post-kinds-lookup-box">
 			<p class="description">
-				<?php esc_html_e( 'Search for media to auto-fill details.', 'post-kinds-for-indieweb' ); ?>
+				<?php esc_html_e( 'Search for media to auto-fill details.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 			</p>
 
 			<div class="lookup-form">
 				<select id="lookup-type" class="widefat">
-					<option value="music"><?php esc_html_e( 'Music', 'post-kinds-for-indieweb' ); ?></option>
-					<option value="movie"><?php esc_html_e( 'Movie', 'post-kinds-for-indieweb' ); ?></option>
-					<option value="tv"><?php esc_html_e( 'TV Show', 'post-kinds-for-indieweb' ); ?></option>
-					<option value="book"><?php esc_html_e( 'Book', 'post-kinds-for-indieweb' ); ?></option>
-					<option value="podcast"><?php esc_html_e( 'Podcast', 'post-kinds-for-indieweb' ); ?></option>
+					<option value="music"><?php esc_html_e( 'Music', 'post-kinds-for-indieweb-in-block-themes' ); ?></option>
+					<option value="movie"><?php esc_html_e( 'Movie', 'post-kinds-for-indieweb-in-block-themes' ); ?></option>
+					<option value="tv"><?php esc_html_e( 'TV Show', 'post-kinds-for-indieweb-in-block-themes' ); ?></option>
+					<option value="book"><?php esc_html_e( 'Book', 'post-kinds-for-indieweb-in-block-themes' ); ?></option>
+					<option value="podcast"><?php esc_html_e( 'Podcast', 'post-kinds-for-indieweb-in-block-themes' ); ?></option>
 				</select>
 
-				<input type="text" id="lookup-query" class="widefat" placeholder="<?php esc_attr_e( 'Search...', 'post-kinds-for-indieweb' ); ?>">
+				<input type="text" id="lookup-query" class="widefat" placeholder="<?php esc_attr_e( 'Search...', 'post-kinds-for-indieweb-in-block-themes' ); ?>">
 
 				<button type="button" id="lookup-search" class="button widefat">
 					<span class="dashicons dashicons-search"></span>
-					<?php esc_html_e( 'Search', 'post-kinds-for-indieweb' ); ?>
+					<?php esc_html_e( 'Search', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 				</button>
 			</div>
 
@@ -679,8 +679,8 @@ class Meta_Boxes {
 	 */
 	public function save_meta_boxes( int $post_id, \WP_Post $post ): void {
 		// Verify nonce.
-		if ( ! isset( $_POST['post_kinds_indieweb_meta_nonce'] ) ||
-			! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['post_kinds_indieweb_meta_nonce'] ) ), 'post_kinds_indieweb_meta' ) ) {
+		if ( ! isset( $_POST['pkiw_meta_nonce'] ) ||
+			! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['pkiw_meta_nonce'] ) ), 'pkiw_meta' ) ) {
 			return;
 		}
 
@@ -700,8 +700,8 @@ class Meta_Boxes {
 		}
 
 		// Save post kind.
-		if ( isset( $_POST['post_kinds_post_kind'] ) ) {
-			$kind = sanitize_text_field( wp_unslash( $_POST['post_kinds_post_kind'] ) );
+		if ( isset( $_POST['pkiw_post_kind'] ) ) {
+			$kind = sanitize_text_field( wp_unslash( $_POST['pkiw_post_kind'] ) );
 			if ( ! empty( $kind ) && taxonomy_exists( 'kind' ) ) {
 				wp_set_object_terms( $post_id, $kind, 'kind' );
 			}
@@ -709,7 +709,7 @@ class Meta_Boxes {
 
 		// Save meta fields.
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$meta_data = isset( $_POST['post_kinds_meta'] ) ? wp_unslash( $_POST['post_kinds_meta'] ) : [];
+		$meta_data = isset( $_POST['pkiw_meta'] ) ? wp_unslash( $_POST['pkiw_meta'] ) : [];
 
 		if ( ! is_array( $meta_data ) ) {
 			return;
@@ -725,7 +725,7 @@ class Meta_Boxes {
 					continue;
 				}
 
-				$meta_key = "_postkind_indieweb_{$field_id}";
+				$meta_key = "_pkiw_{$field_id}";
 				$field    = $this->meta_configs[ $kind ][ $field_id ];
 
 				// Sanitize based on field type.

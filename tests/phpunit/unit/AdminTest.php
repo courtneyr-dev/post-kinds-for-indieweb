@@ -2,19 +2,19 @@
 /**
  * Test the Admin class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\Admin\Admin;
-use PostKindsForIndieWeb\Plugin;
+use PKIW\Admin\Admin;
+use PKIW\Plugin;
 use WP_UnitTestCase;
 
 /**
  * Test the Admin controller.
  *
- * @covers \PostKindsForIndieWeb\Admin\Admin
+ * @covers \PKIW\Admin\Admin
  */
 class AdminTest extends WP_UnitTestCase {
 
@@ -106,7 +106,7 @@ class AdminTest extends WP_UnitTestCase {
 	/**
 	 * Test get_post_kinds each kind has label and icon.
 	 */
-	public function test_get_post_kinds_structure(): void {
+	public function test_get_pkiw_structure(): void {
 		$kinds = $this->admin->get_post_kinds();
 
 		foreach ( $kinds as $slug => $kind ) {
@@ -126,7 +126,7 @@ class AdminTest extends WP_UnitTestCase {
 
 		$this->assertCount( 2, $links );
 		$this->assertStringContainsString( 'Settings', $links[0] );
-		$this->assertStringContainsString( 'post-kinds-for-indieweb', $links[0] );
+		$this->assertStringContainsString( 'post-kinds-for-indieweb-in-block-themes', $links[0] );
 	}
 
 	/**
@@ -145,7 +145,7 @@ class AdminTest extends WP_UnitTestCase {
 	 * Test get_setting returns default when no option set.
 	 */
 	public function test_get_setting_default(): void {
-		delete_option( 'post_kinds_indieweb_settings' );
+		delete_option( 'pkiw_settings' );
 
 		$value = $this->admin->get_setting( 'default_post_status' );
 
@@ -156,7 +156,7 @@ class AdminTest extends WP_UnitTestCase {
 	 * Test get_setting returns stored value.
 	 */
 	public function test_get_setting_stored(): void {
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'default_post_status' => 'draft',
 		] );
 
@@ -226,7 +226,7 @@ class AdminTest extends WP_UnitTestCase {
 	 * Test sanitize_general_settings preserves booleans from other tabs.
 	 */
 	public function test_sanitize_general_settings_preserves_other_tab(): void {
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'listen_auto_import' => true,
 		] );
 
@@ -304,7 +304,7 @@ class AdminTest extends WP_UnitTestCase {
 	 * Test sanitize_general_settings triggers rewrite flush on storage mode change.
 	 */
 	public function test_sanitize_general_settings_storage_mode_change(): void {
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'import_storage_mode' => 'standard',
 		] );
 
@@ -314,7 +314,7 @@ class AdminTest extends WP_UnitTestCase {
 
 		$this->admin->sanitize_general_settings( $input );
 
-		$this->assertTrue( (bool) get_option( 'post_kinds_indieweb_flush_rewrite' ) );
+		$this->assertTrue( (bool) get_option( 'pkiw_flush_rewrite' ) );
 	}
 
 	// ─── sanitize_api_credentials ───
@@ -342,7 +342,7 @@ class AdminTest extends WP_UnitTestCase {
 	 * Test sanitize_api_credentials preserves existing on asterisks.
 	 */
 	public function test_sanitize_api_credentials_asterisk_mask(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [
+		update_option( 'pkiw_api_credentials', [
 			'lastfm' => [
 				'api_key' => 'real-key-value',
 			],
@@ -450,7 +450,7 @@ class AdminTest extends WP_UnitTestCase {
 	 * Test sanitize_webhook_settings preserves secret on asterisks.
 	 */
 	public function test_sanitize_webhook_settings_asterisk_secret(): void {
-		update_option( 'post_kinds_indieweb_webhook_settings', [
+		update_option( 'pkiw_webhook_settings', [
 			'plex' => [
 				'secret' => 'real-secret',
 			],

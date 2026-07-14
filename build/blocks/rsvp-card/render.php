@@ -7,7 +7,7 @@
  * via --pk-* custom properties. Cites the event via an h-cite/h-event and
  * preserves the RSVP status microformat.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @var array    $attributes Block attributes.
  * @var string   $content    Block content (empty for dynamic blocks).
  * @var WP_Block $block      Block instance.
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
-use function PostKindsForIndieWeb\get_kind_icon_svg;
+use function PKIW\get_kind_icon_svg;
 
 $pkiw_event_name        = $attributes['eventName'] ?? '';
 $pkiw_event_url         = $attributes['eventUrl'] ?? '';
@@ -36,11 +36,11 @@ $pkiw_rel               = $attributes['rel'] ?? '';
 $pkiw_layout            = $attributes['layout'] ?? 'horizontal';
 
 $pkiw_status_labels = [
-	'yes'        => __( 'Going', 'post-kinds-for-indieweb' ),
-	'no'         => __( 'Not Going', 'post-kinds-for-indieweb' ),
-	'maybe'      => __( 'Maybe', 'post-kinds-for-indieweb' ),
-	'interested' => __( 'Interested', 'post-kinds-for-indieweb' ),
-	'remote'     => __( 'Attending Remotely', 'post-kinds-for-indieweb' ),
+	'yes'        => __( 'Going', 'post-kinds-for-indieweb-in-block-themes' ),
+	'no'         => __( 'Not Going', 'post-kinds-for-indieweb-in-block-themes' ),
+	'maybe'      => __( 'Maybe', 'post-kinds-for-indieweb-in-block-themes' ),
+	'interested' => __( 'Interested', 'post-kinds-for-indieweb-in-block-themes' ),
+	'remote'     => __( 'Attending Remotely', 'post-kinds-for-indieweb-in-block-themes' ),
 ];
 $pkiw_label         = $pkiw_status_labels[ $pkiw_rsvp_status ] ?? $pkiw_status_labels['yes'];
 
@@ -97,7 +97,7 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'rsvp' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'RSVP', 'post-kinds-for-indieweb' ); ?></p>
+		<p class="pk-kindlabel"><?php esc_html_e( 'RSVP', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 
 		<div class="pk-event p-in-reply-to h-event">
 			<?php if ( $pkiw_event_name ) : ?>
@@ -138,7 +138,7 @@ ob_start();
 			<?php endif; ?>
 
 			<?php if ( $pkiw_event_image ) : ?>
-				<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_event_image ); ?>" alt="<?php echo esc_attr( $pkiw_event_image_alt ? $pkiw_event_image_alt : sprintf( /* translators: %s: event name */ __( '%s event', 'post-kinds-for-indieweb' ), $pkiw_event_name ) ); ?>" loading="lazy" /></div>
+				<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_event_image ); ?>" alt="<?php echo esc_attr( $pkiw_event_image_alt ? $pkiw_event_image_alt : sprintf( /* translators: %s: event name */ __( '%s event', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_event_name ) ); ?>" loading="lazy" /></div>
 			<?php endif; ?>
 		</div>
 
@@ -154,7 +154,7 @@ ob_start();
 					<?php
 					printf(
 						/* translators: %s: date the RSVP was made */
-						esc_html__( 'RSVPed %s', 'post-kinds-for-indieweb' ),
+						esc_html__( 'RSVPed %s', 'post-kinds-for-indieweb-in-block-themes' ),
 						esc_html( $pkiw_rsvp_display )
 					);
 					?>

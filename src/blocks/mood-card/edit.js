@@ -26,46 +26,88 @@ import { useSelect, useDispatch } from '@wordpress/data';
  */
 const MOOD_EMOJIS = {
 	// Happy - Unicode CLDR short names
-	'😊': __( 'smiling face with smiling eyes', 'post-kinds-for-indieweb' ),
-	'😃': __( 'grinning face with big eyes', 'post-kinds-for-indieweb' ),
-	'😄': __( 'grinning face with smiling eyes', 'post-kinds-for-indieweb' ),
-	'🥳': __( 'partying face', 'post-kinds-for-indieweb' ),
-	'😎': __( 'smiling face with sunglasses', 'post-kinds-for-indieweb' ),
-	'🤗': __( 'smiling face with open hands', 'post-kinds-for-indieweb' ),
-	'😌': __( 'relieved face', 'post-kinds-for-indieweb' ),
-	'🥰': __( 'smiling face with hearts', 'post-kinds-for-indieweb' ),
+	'😊': __(
+		'smiling face with smiling eyes',
+		'post-kinds-for-indieweb-in-block-themes'
+	),
+	'😃': __(
+		'grinning face with big eyes',
+		'post-kinds-for-indieweb-in-block-themes'
+	),
+	'😄': __(
+		'grinning face with smiling eyes',
+		'post-kinds-for-indieweb-in-block-themes'
+	),
+	'🥳': __( 'partying face', 'post-kinds-for-indieweb-in-block-themes' ),
+	'😎': __(
+		'smiling face with sunglasses',
+		'post-kinds-for-indieweb-in-block-themes'
+	),
+	'🤗': __(
+		'smiling face with open hands',
+		'post-kinds-for-indieweb-in-block-themes'
+	),
+	'😌': __( 'relieved face', 'post-kinds-for-indieweb-in-block-themes' ),
+	'🥰': __(
+		'smiling face with hearts',
+		'post-kinds-for-indieweb-in-block-themes'
+	),
 	// Neutral
-	'😐': __( 'neutral face', 'post-kinds-for-indieweb' ),
-	'🤔': __( 'thinking face', 'post-kinds-for-indieweb' ),
-	'😑': __( 'expressionless face', 'post-kinds-for-indieweb' ),
-	'🙄': __( 'face with rolling eyes', 'post-kinds-for-indieweb' ),
-	'😶': __( 'face without mouth', 'post-kinds-for-indieweb' ),
-	'😏': __( 'smirking face', 'post-kinds-for-indieweb' ),
+	'😐': __( 'neutral face', 'post-kinds-for-indieweb-in-block-themes' ),
+	'🤔': __( 'thinking face', 'post-kinds-for-indieweb-in-block-themes' ),
+	'😑': __(
+		'expressionless face',
+		'post-kinds-for-indieweb-in-block-themes'
+	),
+	'🙄': __(
+		'face with rolling eyes',
+		'post-kinds-for-indieweb-in-block-themes'
+	),
+	'😶': __( 'face without mouth', 'post-kinds-for-indieweb-in-block-themes' ),
+	'😏': __( 'smirking face', 'post-kinds-for-indieweb-in-block-themes' ),
 	// Sad
-	'😢': __( 'crying face', 'post-kinds-for-indieweb' ),
-	'😭': __( 'loudly crying face', 'post-kinds-for-indieweb' ),
-	'😔': __( 'pensive face', 'post-kinds-for-indieweb' ),
-	'😞': __( 'disappointed face', 'post-kinds-for-indieweb' ),
-	'🥺': __( 'pleading face', 'post-kinds-for-indieweb' ),
-	'😿': __( 'crying cat', 'post-kinds-for-indieweb' ),
+	'😢': __( 'crying face', 'post-kinds-for-indieweb-in-block-themes' ),
+	'😭': __( 'loudly crying face', 'post-kinds-for-indieweb-in-block-themes' ),
+	'😔': __( 'pensive face', 'post-kinds-for-indieweb-in-block-themes' ),
+	'😞': __( 'disappointed face', 'post-kinds-for-indieweb-in-block-themes' ),
+	'🥺': __( 'pleading face', 'post-kinds-for-indieweb-in-block-themes' ),
+	'😿': __( 'crying cat', 'post-kinds-for-indieweb-in-block-themes' ),
 	// Angry
-	'😡': __( 'enraged face', 'post-kinds-for-indieweb' ),
-	'😤': __( 'face with steam from nose', 'post-kinds-for-indieweb' ),
-	'🤬': __( 'face with symbols on mouth', 'post-kinds-for-indieweb' ),
-	'💢': __( 'anger symbol', 'post-kinds-for-indieweb' ),
-	'😠': __( 'angry face', 'post-kinds-for-indieweb' ),
+	'😡': __( 'enraged face', 'post-kinds-for-indieweb-in-block-themes' ),
+	'😤': __(
+		'face with steam from nose',
+		'post-kinds-for-indieweb-in-block-themes'
+	),
+	'🤬': __(
+		'face with symbols on mouth',
+		'post-kinds-for-indieweb-in-block-themes'
+	),
+	'💢': __( 'anger symbol', 'post-kinds-for-indieweb-in-block-themes' ),
+	'😠': __( 'angry face', 'post-kinds-for-indieweb-in-block-themes' ),
 	// Tired
-	'😴': __( 'sleeping face', 'post-kinds-for-indieweb' ),
-	'🥱': __( 'yawning face', 'post-kinds-for-indieweb' ),
-	'😪': __( 'sleepy face', 'post-kinds-for-indieweb' ),
-	'😩': __( 'weary face', 'post-kinds-for-indieweb' ),
-	'🤒': __( 'face with thermometer', 'post-kinds-for-indieweb' ),
+	'😴': __( 'sleeping face', 'post-kinds-for-indieweb-in-block-themes' ),
+	'🥱': __( 'yawning face', 'post-kinds-for-indieweb-in-block-themes' ),
+	'😪': __( 'sleepy face', 'post-kinds-for-indieweb-in-block-themes' ),
+	'😩': __( 'weary face', 'post-kinds-for-indieweb-in-block-themes' ),
+	'🤒': __(
+		'face with thermometer',
+		'post-kinds-for-indieweb-in-block-themes'
+	),
 	// Anxious
-	'😰': __( 'anxious face with sweat', 'post-kinds-for-indieweb' ),
-	'😨': __( 'fearful face', 'post-kinds-for-indieweb' ),
-	'😱': __( 'face screaming in fear', 'post-kinds-for-indieweb' ),
-	'🫣': __( 'face with peeking eye', 'post-kinds-for-indieweb' ),
-	'😬': __( 'grimacing face', 'post-kinds-for-indieweb' ),
+	'😰': __(
+		'anxious face with sweat',
+		'post-kinds-for-indieweb-in-block-themes'
+	),
+	'😨': __( 'fearful face', 'post-kinds-for-indieweb-in-block-themes' ),
+	'😱': __(
+		'face screaming in fear',
+		'post-kinds-for-indieweb-in-block-themes'
+	),
+	'🫣': __(
+		'face with peeking eye',
+		'post-kinds-for-indieweb-in-block-themes'
+	),
+	'😬': __( 'grimacing face', 'post-kinds-for-indieweb-in-block-themes' ),
 };
 
 /**
@@ -73,27 +115,27 @@ const MOOD_EMOJIS = {
  */
 const MOOD_CATEGORIES = [
 	{
-		name: __( 'Happy', 'post-kinds-for-indieweb' ),
+		name: __( 'Happy', 'post-kinds-for-indieweb-in-block-themes' ),
 		emojis: [ '😊', '😃', '😄', '🥳', '😎', '🤗', '😌', '🥰' ],
 	},
 	{
-		name: __( 'Neutral', 'post-kinds-for-indieweb' ),
+		name: __( 'Neutral', 'post-kinds-for-indieweb-in-block-themes' ),
 		emojis: [ '😐', '🤔', '😑', '🙄', '😶', '😏' ],
 	},
 	{
-		name: __( 'Sad', 'post-kinds-for-indieweb' ),
+		name: __( 'Sad', 'post-kinds-for-indieweb-in-block-themes' ),
 		emojis: [ '😢', '😭', '😔', '😞', '🥺', '😿' ],
 	},
 	{
-		name: __( 'Angry', 'post-kinds-for-indieweb' ),
+		name: __( 'Angry', 'post-kinds-for-indieweb-in-block-themes' ),
 		emojis: [ '😡', '😤', '🤬', '💢', '😠' ],
 	},
 	{
-		name: __( 'Tired', 'post-kinds-for-indieweb' ),
+		name: __( 'Tired', 'post-kinds-for-indieweb-in-block-themes' ),
 		emojis: [ '😴', '🥱', '😪', '😩', '🤒' ],
 	},
 	{
-		name: __( 'Anxious', 'post-kinds-for-indieweb' ),
+		name: __( 'Anxious', 'post-kinds-for-indieweb-in-block-themes' ),
 		emojis: [ '😰', '😨', '😱', '🫣', '😬' ],
 	},
 ];
@@ -143,7 +185,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	}, [] );
 
 	// Sync FROM post meta TO block attributes when meta changes from sidebar.
-	// _postkind_mood_* isn't a registered post meta key (no REST schema
+	// _pkiw_mood_* isn't a registered post meta key (no REST schema
 	// entry, so WordPress core silently drops writes to it and the key is
 	// never actually persisted server-side) — only ever apply a non-empty
 	// meta value here. Without this guard, a fresh/just-inserted block's
@@ -154,15 +196,15 @@ export default function Edit( { attributes, setAttributes } ) {
 	useEffect( () => {
 		const updates = {};
 
-		const metaMood = postMeta._postkind_mood_label;
+		const metaMood = postMeta._pkiw_mood_label;
 		if ( metaMood && metaMood !== ( mood || '' ) ) {
 			updates.mood = metaMood;
 		}
-		const metaEmoji = postMeta._postkind_mood_emoji;
+		const metaEmoji = postMeta._pkiw_mood_emoji;
 		if ( metaEmoji && metaEmoji !== ( emoji || '' ) ) {
 			updates.emoji = metaEmoji;
 		}
-		const metaIntensity = postMeta._postkind_mood_rating;
+		const metaIntensity = postMeta._pkiw_mood_rating;
 		if ( metaIntensity && metaIntensity !== ( intensity || 3 ) ) {
 			updates.intensity = metaIntensity;
 		}
@@ -171,23 +213,23 @@ export default function Edit( { attributes, setAttributes } ) {
 			setAttributes( updates );
 		}
 	}, [
-		postMeta._postkind_mood_label,
-		postMeta._postkind_mood_emoji,
-		postMeta._postkind_mood_rating,
+		postMeta._pkiw_mood_label,
+		postMeta._pkiw_mood_emoji,
+		postMeta._pkiw_mood_rating,
 	] );
 
 	// Sync FROM block attributes TO post meta when attributes change
 	useEffect( () => {
 		const metaUpdates = {};
 
-		if ( ( mood || '' ) !== ( postMeta._postkind_mood_label ?? '' ) ) {
-			metaUpdates._postkind_mood_label = mood || '';
+		if ( ( mood || '' ) !== ( postMeta._pkiw_mood_label ?? '' ) ) {
+			metaUpdates._pkiw_mood_label = mood || '';
 		}
-		if ( ( emoji || '' ) !== ( postMeta._postkind_mood_emoji ?? '' ) ) {
-			metaUpdates._postkind_mood_emoji = emoji || '';
+		if ( ( emoji || '' ) !== ( postMeta._pkiw_mood_emoji ?? '' ) ) {
+			metaUpdates._pkiw_mood_emoji = emoji || '';
 		}
-		if ( ( intensity || 3 ) !== ( postMeta._postkind_mood_rating ?? 3 ) ) {
-			metaUpdates._postkind_mood_rating = intensity || 3;
+		if ( ( intensity || 3 ) !== ( postMeta._pkiw_mood_rating ?? 3 ) ) {
+			metaUpdates._pkiw_mood_rating = intensity || 3;
 		}
 
 		if ( Object.keys( metaUpdates ).length > 0 ) {
@@ -203,22 +245,31 @@ export default function Edit( { attributes, setAttributes } ) {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Mood Details', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Mood Details',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ true }
 				>
 					<TextControl
-						label={ __( 'Mood', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Mood',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ mood || '' }
 						onChange={ ( value ) =>
 							setAttributes( { mood: value } )
 						}
 						placeholder={ __(
 							'How are you feeling?',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 					<SelectControl
-						label={ __( 'Emoji', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Emoji',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ emoji || '😊' }
 						options={ EMOJI_OPTIONS }
 						onChange={ ( value ) =>
@@ -226,7 +277,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<RangeControl
-						label={ __( 'Intensity', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Intensity',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ intensity || 3 }
 						onChange={ ( value ) =>
 							setAttributes( { intensity: value } )
@@ -241,18 +295,24 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Note', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Note',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<TextControl
-						label={ __( 'Note', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Note',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ note || '' }
 						onChange={ ( value ) =>
 							setAttributes( { note: value } )
 						}
 						placeholder={ __(
 							"What's on your mind?",
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 				</PanelBody>
@@ -281,7 +341,7 @@ export default function Edit( { attributes, setAttributes } ) {
 									}
 									aria-label={ `${ __(
 										'Set intensity to',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) } ${ i + 1 }` }
 								/>
 							) ) }
@@ -315,7 +375,11 @@ export default function Edit( { attributes, setAttributes } ) {
 
 					<div className="post-kinds-card__content">
 						<span className="post-kinds-card__badge">
-							😊 { __( 'Feeling', 'post-kinds-for-indieweb' ) }
+							😊{ ' ' }
+							{ __(
+								'Feeling',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }
 						</span>
 
 						<RichText
@@ -327,7 +391,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'How are you feeling?',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -340,7 +404,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								"What's on your mind?",
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 					</div>

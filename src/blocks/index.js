@@ -1,5 +1,5 @@
 /**
- * Post Kinds for IndieWeb - Block Registration
+ * Post Kinds for IndieWeb in Block Themes - Block Registration
  *
  * Entry point for all custom Gutenberg blocks.
  *
@@ -23,14 +23,14 @@ const heartIcon = (
 // Register our custom block category before importing blocks
 const categories = getCategories();
 const hasCategory = categories.some(
-	( cat ) => cat.slug === 'post-kinds-indieweb'
+	( cat ) => cat.slug === 'post-kinds-for-indieweb-in-block-themes'
 );
 
 if ( ! hasCategory ) {
 	setCategories( [
 		{
-			slug: 'post-kinds-indieweb',
-			title: 'Post Kinds for IndieWeb',
+			slug: 'post-kinds-for-indieweb-in-block-themes',
+			title: 'Post Kinds for IndieWeb in Block Themes',
 			icon: heartIcon,
 		},
 		...categories,
@@ -38,8 +38,8 @@ if ( ! hasCategory ) {
 }
 
 // Register block collection for icon/branding in the inserter
-registerBlockCollection( 'post-kinds-indieweb', {
-	title: 'Post Kinds for IndieWeb',
+registerBlockCollection( 'post-kinds-for-indieweb-in-block-themes', {
+	title: 'Post Kinds for IndieWeb in Block Themes',
 	icon: heartIcon,
 } );
 

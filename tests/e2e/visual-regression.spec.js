@@ -140,7 +140,9 @@ test.describe( 'Visual Regression', () => {
 	test( 'Settings page appearance', async ( { page } ) => {
 		// Plugin's main admin slug is `post-kinds-for-indieweb` (the menu
 		// label is "Reactions"). Settings page chrome is what we snapshot.
-		await page.goto( '/wp-admin/admin.php?page=post-kinds-for-indieweb' );
+		await page.goto(
+			'/wp-admin/admin.php?page=post-kinds-for-indieweb-in-block-themes'
+		);
 		await page.waitForLoadState( 'networkidle' );
 
 		const content = page.locator( '#wpcontent' );

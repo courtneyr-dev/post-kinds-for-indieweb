@@ -4,13 +4,13 @@
  *
  * A compound pattern combining food, drink, and venue for restaurant visits.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Patterns;
+namespace PKIW\Patterns;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -23,9 +23,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 register_block_pattern(
 	'post-kinds-indieweb/meal-checkin',
 	[
-		'title'       => __( 'Meal Check-in', 'post-kinds-for-indieweb' ),
-		'description' => __( 'Log a restaurant visit with food, drink, and location.', 'post-kinds-for-indieweb' ),
-		'categories'  => [ 'post-kinds-for-indieweb' ],
+		'title'       => __( 'Meal Check-in', 'post-kinds-for-indieweb-in-block-themes' ),
+		'description' => __( 'Log a restaurant visit with food, drink, and location.', 'post-kinds-for-indieweb-in-block-themes' ),
+		'categories'  => [ 'post-kinds-for-indieweb-in-block-themes' ],
 		'keywords'    => [ 'meal', 'food', 'drink', 'restaurant', 'checkin', 'dining', 'indieweb' ],
 		'blockTypes'  => [ 'core/group' ],
 		'postTypes'   => [ 'post' ],

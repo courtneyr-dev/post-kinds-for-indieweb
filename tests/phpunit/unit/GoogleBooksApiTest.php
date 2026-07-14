@@ -2,21 +2,21 @@
 /**
  * Test the Google Books API client.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
 // File doesn't match PSR-4 or the plugin autoloader naming (class-google-books vs class-googlebooks).
 require_once dirname( __DIR__, 3 ) . '/includes/apis/class-google-books.php';
 
-use PostKindsForIndieWeb\APIs\GoogleBooks;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\APIs\GoogleBooks;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Test the Google Books API integration.
  *
- * @covers \PostKindsForIndieWeb\APIs\GoogleBooks
+ * @covers \PKIW\APIs\GoogleBooks
  */
 class GoogleBooksApiTest extends ApiTestCase {
 

@@ -6,7 +6,7 @@
  * structure (badge → label → title → sub → media → note → meta), theme owns
  * paint via --pk-* custom properties.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @var array    $attributes Block attributes.
  * @var string   $content    Block content (empty for dynamic blocks).
  * @var WP_Block $block      Block instance.
@@ -18,14 +18,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
-use function PostKindsForIndieWeb\get_kind_icon_svg;
+use function PKIW\get_kind_icon_svg;
 
 $pkiw_status_labels = [
-	'playing'   => __( 'Playing', 'post-kinds-for-indieweb' ),
-	'completed' => __( 'Completed', 'post-kinds-for-indieweb' ),
-	'abandoned' => __( 'Abandoned', 'post-kinds-for-indieweb' ),
-	'backlog'   => __( 'Backlog', 'post-kinds-for-indieweb' ),
-	'wishlist'  => __( 'Wishlist', 'post-kinds-for-indieweb' ),
+	'playing'   => __( 'Playing', 'post-kinds-for-indieweb-in-block-themes' ),
+	'completed' => __( 'Completed', 'post-kinds-for-indieweb-in-block-themes' ),
+	'abandoned' => __( 'Abandoned', 'post-kinds-for-indieweb-in-block-themes' ),
+	'backlog'   => __( 'Backlog', 'post-kinds-for-indieweb-in-block-themes' ),
+	'wishlist'  => __( 'Wishlist', 'post-kinds-for-indieweb-in-block-themes' ),
 ];
 
 $pkiw_title        = $attributes['title'] ?? '';
@@ -67,7 +67,7 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'play' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'Play', 'post-kinds-for-indieweb' ); ?></p>
+		<p class="pk-kindlabel"><?php esc_html_e( 'Play', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 
 		<?php if ( $pkiw_title ) : ?>
 			<h2 class="pk-title p-name">
@@ -99,7 +99,7 @@ ob_start();
 					<?php
 					printf(
 						/* translators: %s: hours played */
-						esc_html__( '%s hours played', 'post-kinds-for-indieweb' ),
+						esc_html__( '%s hours played', 'post-kinds-for-indieweb-in-block-themes' ),
 						'<strong>' . esc_html( (string) $pkiw_hours_played ) . '</strong>'
 					);
 					?>
@@ -108,7 +108,7 @@ ob_start();
 		<?php endif; ?>
 
 		<?php if ( $pkiw_rating > 0 ) : ?>
-			<div class="pk-stars p-rating" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb' ), $pkiw_rating ) ); ?>">
+			<div class="pk-stars p-rating" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">
 				<?php for ( $pkiw_i = 1; $pkiw_i <= 5; $pkiw_i++ ) : ?>
 					<svg class="<?php echo $pkiw_i <= $pkiw_rating ? '' : 'off'; ?>" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17l-6.9 3.5 1.6-6.8L1.4 9.1l7-.6z"/></svg>
 				<?php endfor; ?>
@@ -127,21 +127,21 @@ ob_start();
 
 		<div class="pk-meta">
 			<?php if ( $pkiw_game_url ) : ?>
-				<a class="pk-link" href="<?php echo esc_url( $pkiw_game_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View on BGG', 'post-kinds-for-indieweb' ); ?></a>
+				<a class="pk-link" href="<?php echo esc_url( $pkiw_game_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View on BGG', 'post-kinds-for-indieweb-in-block-themes' ); ?></a>
 			<?php endif; ?>
 			<?php
 			if ( $pkiw_game_url && $pkiw_official_url ) :
 				?>
 				<span class="pk-dot"></span><?php endif; ?>
 			<?php if ( $pkiw_official_url ) : ?>
-				<a class="pk-link" href="<?php echo esc_url( $pkiw_official_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Official Site', 'post-kinds-for-indieweb' ); ?></a>
+				<a class="pk-link" href="<?php echo esc_url( $pkiw_official_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Official Site', 'post-kinds-for-indieweb-in-block-themes' ); ?></a>
 			<?php endif; ?>
 			<?php
 			if ( ( $pkiw_game_url || $pkiw_official_url ) && $pkiw_purchase_url ) :
 				?>
 				<span class="pk-dot"></span><?php endif; ?>
 			<?php if ( $pkiw_purchase_url ) : ?>
-				<a class="pk-link pk-link--buy" href="<?php echo esc_url( $pkiw_purchase_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Buy', 'post-kinds-for-indieweb' ); ?></a>
+				<a class="pk-link pk-link--buy" href="<?php echo esc_url( $pkiw_purchase_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Buy', 'post-kinds-for-indieweb-in-block-themes' ); ?></a>
 			<?php endif; ?>
 			<?php
 			if ( ( $pkiw_game_url || $pkiw_official_url || $pkiw_purchase_url ) && $pkiw_played_iso ) :

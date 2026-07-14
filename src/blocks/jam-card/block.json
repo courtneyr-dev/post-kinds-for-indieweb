@@ -7,7 +7,7 @@
 	"category": "post-kinds-indieweb",
 	"description": "Display a song you're jamming to with cover art and artist.",
 	"keywords": ["jam", "music", "song", "currently playing"],
-	"textdomain": "post-kinds-indieweb",
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
 	"attributes": {
 		"title": {
 			"type": "string"

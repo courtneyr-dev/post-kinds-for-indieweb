@@ -2,20 +2,20 @@
 /**
  * Test the Core Abilities provider class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\Abilities\Core_Abilities;
-use PostKindsForIndieWeb\Taxonomy;
-use PostKindsForIndieWeb\Meta_Fields;
+use PKIW\Abilities\Core_Abilities;
+use PKIW\Taxonomy;
+use PKIW\Meta_Fields;
 use WP_UnitTestCase;
 
 /**
  * Test the Core Abilities provider functionality.
  *
- * @covers \PostKindsForIndieWeb\Abilities\Core_Abilities
+ * @covers \PKIW\Abilities\Core_Abilities
  */
 class CoreAbilitiesTest extends WP_UnitTestCase {
 

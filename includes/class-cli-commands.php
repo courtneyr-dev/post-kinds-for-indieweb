@@ -4,13 +4,13 @@
  *
  * Provides CLI commands for managing check-ins and venues.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.2.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -26,7 +26,7 @@ use WP_CLI;
 use WP_CLI\Utils;
 
 /**
- * Manage Post Kinds for IndieWeb check-ins and venues.
+ * Manage Post Kinds for IndieWeb in Block Themes check-ins and venues.
  *
  * @since 1.2.0
  */

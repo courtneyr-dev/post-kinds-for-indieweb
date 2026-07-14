@@ -14,7 +14,7 @@
     "map",
     "dashboard"
   ],
-  "textdomain": "post-kinds-for-indieweb",
+  "textdomain": "post-kinds-for-indieweb-in-block-themes",
   "attributes": {
     "layout": {
       "type": "string",

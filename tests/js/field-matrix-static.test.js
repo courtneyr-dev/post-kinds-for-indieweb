@@ -47,7 +47,10 @@ import { sampleFor } from './sample-values';
 // src/blocks/index.js registers the custom block category before the block
 // imports; mirror that here so registerBlockType doesn't warn.
 setCategories( [
-	{ slug: 'post-kinds-indieweb', title: 'Post Kinds for IndieWeb' },
+	{
+		slug: 'post-kinds-indieweb',
+		title: 'Post Kinds for IndieWeb in Block Themes',
+	},
 	...getCategories(),
 ] );
 

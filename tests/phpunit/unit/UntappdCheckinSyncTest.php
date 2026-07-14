@@ -2,18 +2,18 @@
 /**
  * Test the Untappd Checkin Sync class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\Sync\Untappd_Checkin_Sync;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\Sync\Untappd_Checkin_Sync;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Test the Untappd Checkin Sync integration.
  *
- * @covers \PostKindsForIndieWeb\Sync\Untappd_Checkin_Sync
+ * @covers \PKIW\Sync\Untappd_Checkin_Sync
  */
 class UntappdCheckinSyncTest extends ApiTestCase {
 
@@ -30,7 +30,7 @@ class UntappdCheckinSyncTest extends ApiTestCase {
 	public function set_up(): void {
 		parent::set_up();
 
-		update_option( 'post_kinds_indieweb_api_credentials', [
+		update_option( 'pkiw_api_credentials', [
 			'untappd' => [
 				'client_id'     => 'test-client-id',
 				'client_secret' => 'test-client-secret',
@@ -61,7 +61,7 @@ class UntappdCheckinSyncTest extends ApiTestCase {
 	 * Test is_connected returns false without token.
 	 */
 	public function test_is_connected_false(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 
 		$sync = new Untappd_Checkin_Sync();
 		$this->assertFalse( $sync->is_connected() );
@@ -158,7 +158,7 @@ class UntappdCheckinSyncTest extends ApiTestCase {
 	 * Test fetch_recent_checkins returns empty without token.
 	 */
 	public function test_fetch_recent_checkins_no_token(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 
 		$sync     = new Untappd_Checkin_Sync();
 		$checkins = $sync->fetch_recent_checkins();

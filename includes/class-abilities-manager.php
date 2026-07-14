@@ -1,17 +1,17 @@
 <?php
 /**
- * Abilities Manager for Post Kinds for IndieWeb
+ * Abilities Manager for Post Kinds for IndieWeb in Block Themes
  *
  * Orchestrates registration of WordPress Abilities API abilities
  * for IndieWeb post kinds.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.1.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -128,8 +128,8 @@ final class Abilities_Manager {
 		wp_register_ability_category(
 			self::CATEGORY_SLUG,
 			[
-				'label'       => __( 'Post Kinds', 'post-kinds-for-indieweb' ),
-				'description' => __( 'Abilities for managing IndieWeb post kinds, including notes, articles, bookmarks, likes, replies, and other interaction types.', 'post-kinds-for-indieweb' ),
+				'label'       => __( 'Post Kinds', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Abilities for managing IndieWeb post kinds, including notes, articles, bookmarks, likes, replies, and other interaction types.', 'post-kinds-for-indieweb-in-block-themes' ),
 			]
 		);
 	}

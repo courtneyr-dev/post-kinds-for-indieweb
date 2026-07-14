@@ -2,18 +2,18 @@
 /**
  * Test the Foursquare Checkin Sync class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\Sync\Foursquare_Checkin_Sync;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\Sync\Foursquare_Checkin_Sync;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Test the Foursquare Checkin Sync integration.
  *
- * @covers \PostKindsForIndieWeb\Sync\Foursquare_Checkin_Sync
+ * @covers \PKIW\Sync\Foursquare_Checkin_Sync
  */
 class FoursquareCheckinSyncTest extends ApiTestCase {
 
@@ -30,7 +30,7 @@ class FoursquareCheckinSyncTest extends ApiTestCase {
 	public function set_up(): void {
 		parent::set_up();
 
-		update_option( 'post_kinds_indieweb_api_credentials', [
+		update_option( 'pkiw_api_credentials', [
 			'foursquare' => [
 				'client_id'         => 'test-client-id',
 				'client_secret'     => 'test-client-secret',
@@ -52,7 +52,7 @@ class FoursquareCheckinSyncTest extends ApiTestCase {
 	 * Test is_connected returns false without token.
 	 */
 	public function test_is_connected_false(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [
+		update_option( 'pkiw_api_credentials', [
 			'foursquare' => [
 				'client_id' => 'test-client-id',
 			],
@@ -84,7 +84,7 @@ class FoursquareCheckinSyncTest extends ApiTestCase {
 	 * Test get_auth_url returns empty without client_id.
 	 */
 	public function test_get_auth_url_empty_without_client_id(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 
 		$sync = new Foursquare_Checkin_Sync();
 		$this->assertSame( '', $sync->get_auth_url() );
@@ -165,7 +165,7 @@ class FoursquareCheckinSyncTest extends ApiTestCase {
 	 * Test fetch_recent_checkins returns empty when disconnected.
 	 */
 	public function test_fetch_recent_checkins_disconnected(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 
 		$sync     = new Foursquare_Checkin_Sync();
 		$checkins = $sync->fetch_recent_checkins();

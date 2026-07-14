@@ -1,20 +1,20 @@
 <?php
 /**
- * Core Abilities Provider for Post Kinds for IndieWeb
+ * Core Abilities Provider for Post Kinds for IndieWeb in Block Themes
  *
  * Registers 7 abilities for managing post kinds via the Abilities API.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Abilities;
+namespace PKIW\Abilities;
 
-use PostKindsForIndieWeb\Abilities_Manager;
-use PostKindsForIndieWeb\Meta_Fields;
-use PostKindsForIndieWeb\Taxonomy;
+use PKIW\Abilities_Manager;
+use PKIW\Meta_Fields;
+use PKIW\Taxonomy;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -139,8 +139,8 @@ final class Core_Abilities {
 		wp_register_ability(
 			'post_kinds/list_kinds',
 			[
-				'label'               => __( 'List Kinds', 'post-kinds-for-indieweb' ),
-				'description'         => __( 'Lists all available post kinds with slugs, labels, and descriptions.', 'post-kinds-for-indieweb' ),
+				'label'               => __( 'List Kinds', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'         => __( 'Lists all available post kinds with slugs, labels, and descriptions.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'            => Abilities_Manager::CATEGORY_SLUG,
 				'input_schema'        => [
 					'type'       => 'object',
@@ -179,15 +179,15 @@ final class Core_Abilities {
 		wp_register_ability(
 			'post_kinds/list_kind_fields',
 			[
-				'label'               => __( 'List Kind Fields', 'post-kinds-for-indieweb' ),
-				'description'         => __( 'Lists meta fields available for a specific kind.', 'post-kinds-for-indieweb' ),
+				'label'               => __( 'List Kind Fields', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'         => __( 'Lists meta fields available for a specific kind.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'            => Abilities_Manager::CATEGORY_SLUG,
 				'input_schema'        => [
 					'type'       => 'object',
 					'properties' => [
 						'kind' => [
 							'type'        => 'string',
-							'description' => __( 'Kind slug to get fields for.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Kind slug to get fields for.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 					],
 					'required'   => [ 'kind' ],
@@ -224,27 +224,27 @@ final class Core_Abilities {
 		wp_register_ability(
 			'post_kinds/create_post',
 			[
-				'label'               => __( 'Create Post', 'post-kinds-for-indieweb' ),
-				'description'         => __( 'Creates a post with a kind and optional meta fields.', 'post-kinds-for-indieweb' ),
+				'label'               => __( 'Create Post', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'         => __( 'Creates a post with a kind and optional meta fields.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'            => Abilities_Manager::CATEGORY_SLUG,
 				'input_schema'        => [
 					'type'                 => 'object',
 					'properties'           => [
 						'kind'    => [
 							'type'        => 'string',
-							'description' => __( 'Kind slug for the post.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Kind slug for the post.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 						'title'   => [
 							'type'        => 'string',
-							'description' => __( 'Post title.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Post title.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 						'content' => [
 							'type'        => 'string',
-							'description' => __( 'Post content.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Post content.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 						'status'  => [
 							'type'        => 'string',
-							'description' => __( 'Post status: draft, publish, or private.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Post status: draft, publish, or private.', 'post-kinds-for-indieweb-in-block-themes' ),
 							'default'     => 'draft',
 							'enum'        => [ 'draft', 'publish', 'private' ],
 						],
@@ -276,19 +276,19 @@ final class Core_Abilities {
 		wp_register_ability(
 			'post_kinds/set_kind',
 			[
-				'label'               => __( 'Set Kind', 'post-kinds-for-indieweb' ),
-				'description'         => __( 'Sets the kind on an existing post.', 'post-kinds-for-indieweb' ),
+				'label'               => __( 'Set Kind', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'         => __( 'Sets the kind on an existing post.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'            => Abilities_Manager::CATEGORY_SLUG,
 				'input_schema'        => [
 					'type'       => 'object',
 					'properties' => [
 						'post_id' => [
 							'type'        => 'integer',
-							'description' => __( 'Post ID.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Post ID.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 						'kind'    => [
 							'type'        => 'string',
-							'description' => __( 'Kind slug to assign.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Kind slug to assign.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 					],
 					'required'   => [ 'post_id', 'kind' ],
@@ -317,15 +317,15 @@ final class Core_Abilities {
 		wp_register_ability(
 			'post_kinds/get_kind',
 			[
-				'label'               => __( 'Get Kind', 'post-kinds-for-indieweb' ),
-				'description'         => __( 'Gets the kind assigned to a post.', 'post-kinds-for-indieweb' ),
+				'label'               => __( 'Get Kind', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'         => __( 'Gets the kind assigned to a post.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'            => Abilities_Manager::CATEGORY_SLUG,
 				'input_schema'        => [
 					'type'       => 'object',
 					'properties' => [
 						'post_id' => [
 							'type'        => 'integer',
-							'description' => __( 'Post ID.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Post ID.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 					],
 					'required'   => [ 'post_id' ],
@@ -354,22 +354,22 @@ final class Core_Abilities {
 		wp_register_ability(
 			'post_kinds/update_post_meta',
 			[
-				'label'               => __( 'Update Post Meta', 'post-kinds-for-indieweb' ),
-				'description'         => __( 'Updates a single meta field on a post.', 'post-kinds-for-indieweb' ),
+				'label'               => __( 'Update Post Meta', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'         => __( 'Updates a single meta field on a post.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'            => Abilities_Manager::CATEGORY_SLUG,
 				'input_schema'        => [
 					'type'       => 'object',
 					'properties' => [
 						'post_id'    => [
 							'type'        => 'integer',
-							'description' => __( 'Post ID.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Post ID.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 						'meta_key'   => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 							'type'        => 'string',
-							'description' => __( 'Meta field key without the _postkind_ prefix.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Meta field key without the _pkiw_ prefix.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 						'meta_value' => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
-							'description' => __( 'Value to set.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Value to set.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 					],
 					'required'   => [ 'post_id', 'meta_key', 'meta_value' ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_meta_value
@@ -398,20 +398,20 @@ final class Core_Abilities {
 		wp_register_ability(
 			'post_kinds/get_post_meta',
 			[
-				'label'               => __( 'Get Post Meta', 'post-kinds-for-indieweb' ),
-				'description'         => __( 'Gets meta fields from a post.', 'post-kinds-for-indieweb' ),
+				'label'               => __( 'Get Post Meta', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'         => __( 'Gets meta fields from a post.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'            => Abilities_Manager::CATEGORY_SLUG,
 				'input_schema'        => [
 					'type'       => 'object',
 					'properties' => [
 						'post_id'   => [
 							'type'        => 'integer',
-							'description' => __( 'Post ID.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Post ID.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 						'meta_keys' => [
 							'type'        => 'array',
 							'items'       => [ 'type' => 'string' ],
-							'description' => __( 'Meta field keys without the _postkind_ prefix. If omitted, returns all postkind meta.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Meta field keys without the _pkiw_ prefix. If omitted, returns all postkind meta.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 					],
 					'required'   => [ 'post_id' ],
@@ -470,7 +470,7 @@ final class Core_Abilities {
 				'invalid_kind',
 				sprintf(
 					/* translators: %s: kind slug */
-					__( 'Unknown kind: %s', 'post-kinds-for-indieweb' ),
+					__( 'Unknown kind: %s', 'post-kinds-for-indieweb-in-block-themes' ),
 					$kind
 				)
 			);
@@ -569,7 +569,7 @@ final class Core_Abilities {
 		if ( ! $post ) {
 			return new \WP_Error(
 				'invalid_post',
-				__( 'Post not found.', 'post-kinds-for-indieweb' )
+				__( 'Post not found.', 'post-kinds-for-indieweb-in-block-themes' )
 			);
 		}
 
@@ -598,7 +598,7 @@ final class Core_Abilities {
 		if ( ! $post ) {
 			return new \WP_Error(
 				'invalid_post',
-				__( 'Post not found.', 'post-kinds-for-indieweb' )
+				__( 'Post not found.', 'post-kinds-for-indieweb-in-block-themes' )
 			);
 		}
 
@@ -637,7 +637,7 @@ final class Core_Abilities {
 		if ( ! $post ) {
 			return new \WP_Error(
 				'invalid_post',
-				__( 'Post not found.', 'post-kinds-for-indieweb' )
+				__( 'Post not found.', 'post-kinds-for-indieweb-in-block-themes' )
 			);
 		}
 
@@ -665,7 +665,7 @@ final class Core_Abilities {
 		if ( ! $post ) {
 			return new \WP_Error(
 				'invalid_post',
-				__( 'Post not found.', 'post-kinds-for-indieweb' )
+				__( 'Post not found.', 'post-kinds-for-indieweb-in-block-themes' )
 			);
 		}
 
@@ -677,7 +677,7 @@ final class Core_Abilities {
 				$meta[ $key ] = get_post_meta( $post_id, Meta_Fields::PREFIX . $key, true );
 			}
 		} else {
-			// Return all _postkind_ prefixed meta.
+			// Return all _pkiw_ prefixed meta.
 			$all_meta = get_post_meta( $post_id );
 			foreach ( $all_meta as $full_key => $values ) {
 				if ( str_starts_with( $full_key, Meta_Fields::PREFIX ) ) {

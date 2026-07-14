@@ -2,7 +2,7 @@
 /**
  * Check-ins Feed Block - Server-side Render
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @var array    $attributes Block attributes.
  * @var string   $content    Block content.
  * @var WP_Block $block      Block instance.
@@ -14,10 +14,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
-use function PostKindsForIndieWeb\get_checkins;
-use function PostKindsForIndieWeb\get_checkins_at_venue;
-use function PostKindsForIndieWeb\get_checkin_location;
-use function PostKindsForIndieWeb\format_location;
+use function PKIW\get_checkins;
+use function PKIW\get_checkins_at_venue;
+use function PKIW\get_checkin_location;
+use function PKIW\format_location;
 
 // Extract attributes with defaults.
 $pkiw_count        = absint( $attributes['count'] ?? 10 );
@@ -83,7 +83,7 @@ $pkiw_map_id = 'checkins-map-' . wp_unique_id();
 		<div class="checkins-feed__map" id="<?php echo esc_attr( $pkiw_map_id ); ?>" data-markers="<?php echo esc_attr( wp_json_encode( $pkiw_map_markers ) ); ?>">
 			<noscript>
 				<p class="checkins-feed__map-fallback">
-					<?php esc_html_e( 'Map requires JavaScript to display.', 'post-kinds-for-indieweb' ); ?>
+					<?php esc_html_e( 'Map requires JavaScript to display.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 				</p>
 			</noscript>
 		</div>
@@ -157,7 +157,7 @@ $pkiw_map_id = 'checkins-map-' . wp_unique_id();
 		</div>
 	<?php else : ?>
 		<p class="checkins-feed__empty">
-			<?php esc_html_e( 'No check-ins found.', 'post-kinds-for-indieweb' ); ?>
+			<?php esc_html_e( 'No check-ins found.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 		</p>
 	<?php endif; ?>
 </div>

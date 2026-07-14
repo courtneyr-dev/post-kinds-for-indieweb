@@ -5,16 +5,16 @@
  * Query block showing recent posts of a specific kind.
  * Registered entirely in PHP — no JavaScript build step required.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.3.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Blocks;
+namespace PKIW\Blocks;
 
-use PostKindsForIndieWeb\Meta_Fields;
-use PostKindsForIndieWeb\Taxonomy;
+use PKIW\Meta_Fields;
+use PKIW\Taxonomy;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -61,8 +61,8 @@ final class Recent_Kinds {
 			'post-kinds/recent-kinds',
 			[
 				'api_version'     => 3,
-				'title'           => __( 'Recent Kinds', 'post-kinds-for-indieweb' ),
-				'description'     => __( 'Shows recent posts of a specific kind.', 'post-kinds-for-indieweb' ),
+				'title'           => __( 'Recent Kinds', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'     => __( 'Shows recent posts of a specific kind.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'        => 'widgets',
 				'icon'            => 'list-view',
 				'keywords'        => [ 'recent', 'posts', 'kind', 'listen', 'watch', 'read', 'indieweb' ],

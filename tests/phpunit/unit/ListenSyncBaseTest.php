@@ -2,12 +2,12 @@
 /**
  * Test the Listen Sync Base class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\Sync\Listen_Sync_Base;
+use PKIW\Sync\Listen_Sync_Base;
 use WP_UnitTestCase;
 
 /**
@@ -83,7 +83,7 @@ class Test_Listen_Sync extends Listen_Sync_Base {
 /**
  * Test the Listen Sync Base class.
  *
- * @covers \PostKindsForIndieWeb\Sync\Listen_Sync_Base
+ * @covers \PKIW\Sync\Listen_Sync_Base
  */
 class ListenSyncBaseTest extends WP_UnitTestCase {
 
@@ -158,7 +158,7 @@ class ListenSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_is_syndication_enabled_true_with_config(): void {
 		$post_id = self::factory()->post->create();
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'listen_sync_to_testmusic' => true,
 		] );
 
@@ -170,10 +170,10 @@ class ListenSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_is_syndication_enabled_false_on_opt_out(): void {
 		$post_id = self::factory()->post->create();
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'listen_sync_to_testmusic' => true,
 		] );
-		update_post_meta( $post_id, '_postkind_syndicate_testmusic', '0' );
+		update_post_meta( $post_id, '_pkiw_syndicate_testmusic', '0' );
 
 		$this->assertFalse( $this->sync->test_is_syndication_enabled( $post_id ) );
 	}
@@ -183,7 +183,7 @@ class ListenSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_is_syndication_enabled_false_disconnected(): void {
 		$post_id = self::factory()->post->create();
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'listen_sync_to_testmusic' => true,
 		] );
 		$this->sync->connected = false;
@@ -204,7 +204,7 @@ class ListenSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_is_already_syndicated_true(): void {
 		$post_id = self::factory()->post->create();
-		update_post_meta( $post_id, '_postkind_listen_testmusic_id', 'scrobble-123' );
+		update_post_meta( $post_id, '_pkiw_listen_testmusic_id', 'scrobble-123' );
 
 		$this->assertTrue( $this->sync->test_is_already_syndicated( $post_id ) );
 	}
@@ -214,7 +214,7 @@ class ListenSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_was_imported_true(): void {
 		$post_id = self::factory()->post->create();
-		update_post_meta( $post_id, '_postkind_imported_from', 'testmusic' );
+		update_post_meta( $post_id, '_pkiw_imported_from', 'testmusic' );
 
 		$this->assertTrue( $this->sync->test_was_imported_from_service( $post_id ) );
 	}
@@ -232,11 +232,11 @@ class ListenSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_get_listen_data_from_post(): void {
 		$post_id = self::factory()->post->create();
-		update_post_meta( $post_id, '_postkind_listen_track', 'Bohemian Rhapsody' );
-		update_post_meta( $post_id, '_postkind_listen_artist', 'Queen' );
-		update_post_meta( $post_id, '_postkind_listen_album', 'A Night at the Opera' );
-		update_post_meta( $post_id, '_postkind_listen_duration', '354' );
-		update_post_meta( $post_id, '_postkind_listen_mbid', 'mbid-123' );
+		update_post_meta( $post_id, '_pkiw_listen_track', 'Bohemian Rhapsody' );
+		update_post_meta( $post_id, '_pkiw_listen_artist', 'Queen' );
+		update_post_meta( $post_id, '_pkiw_listen_album', 'A Night at the Opera' );
+		update_post_meta( $post_id, '_pkiw_listen_duration', '354' );
+		update_post_meta( $post_id, '_pkiw_listen_mbid', 'mbid-123' );
 
 		$data = $this->sync->test_get_listen_data_from_post( $post_id );
 
@@ -252,10 +252,10 @@ class ListenSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_get_listen_data_includes_mbids(): void {
 		$post_id = self::factory()->post->create();
-		update_post_meta( $post_id, '_postkind_listen_track', 'Test' );
-		update_post_meta( $post_id, '_postkind_listen_artist', 'Artist' );
-		update_post_meta( $post_id, '_postkind_listen_album_mbid', 'album-mbid' );
-		update_post_meta( $post_id, '_postkind_listen_artist_mbid', 'artist-mbid' );
+		update_post_meta( $post_id, '_pkiw_listen_track', 'Test' );
+		update_post_meta( $post_id, '_pkiw_listen_artist', 'Artist' );
+		update_post_meta( $post_id, '_pkiw_listen_album_mbid', 'album-mbid' );
+		update_post_meta( $post_id, '_pkiw_listen_artist_mbid', 'artist-mbid' );
 
 		$data = $this->sync->test_get_listen_data_from_post( $post_id );
 
@@ -272,7 +272,7 @@ class ListenSyncBaseTest extends WP_UnitTestCase {
 
 		$this->assertSame(
 			'https://testmusic.com/scrobble/1',
-			get_post_meta( $post_id, '_postkind_syndication_testmusic', true )
+			get_post_meta( $post_id, '_pkiw_syndication_testmusic', true )
 		);
 	}
 
@@ -306,7 +306,7 @@ class ListenSyncBaseTest extends WP_UnitTestCase {
 	public function test_maybe_syndicate_skips_non_listen(): void {
 		$post = self::factory()->post->create_and_get();
 
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'listen_sync_to_testmusic' => true,
 		] );
 
@@ -323,11 +323,11 @@ class ListenSyncBaseTest extends WP_UnitTestCase {
 		$post_id = $this->create_listen_post();
 		$post    = get_post( $post_id );
 
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'listen_sync_to_testmusic' => true,
 		] );
-		update_post_meta( $post_id, '_postkind_listen_track', 'Test Song' );
-		update_post_meta( $post_id, '_postkind_listen_artist', 'Test Artist' );
+		update_post_meta( $post_id, '_pkiw_listen_track', 'Test Song' );
+		update_post_meta( $post_id, '_pkiw_listen_artist', 'Test Artist' );
 
 		$this->sync->syndication_result = [ 'id' => 'scr-42', 'url' => 'https://testmusic.com/42' ];
 		$this->sync->maybe_syndicate_listen( 'publish', 'draft', $post );
@@ -335,7 +335,7 @@ class ListenSyncBaseTest extends WP_UnitTestCase {
 		$this->assertCount( 1, $this->sync->syndicate_calls );
 		$this->assertSame(
 			'scr-42',
-			get_post_meta( $post_id, '_postkind_listen_testmusic_id', true )
+			get_post_meta( $post_id, '_pkiw_listen_testmusic_id', true )
 		);
 	}
 
@@ -346,7 +346,7 @@ class ListenSyncBaseTest extends WP_UnitTestCase {
 		$post_id = $this->create_listen_post();
 		$post    = get_post( $post_id );
 
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'listen_sync_to_testmusic' => true,
 		] );
 		// No track or artist meta set.

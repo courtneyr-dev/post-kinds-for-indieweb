@@ -9,7 +9,7 @@ parameters:
 	level: 5
 	paths:
 		- includes/
-		- post-kinds-for-indieweb.php
+		- post-kinds-for-indieweb-in-block-themes.php
 	excludePaths:
 		- vendor/
 		- node_modules/ (?)
@@ -28,7 +28,7 @@ parameters:
 	# declares signatures for excluded classes that the rest of the codebase
 	# references at runtime.
 	scanFiles:
-		- post-kinds-for-indieweb.php
+		- post-kinds-for-indieweb-in-block-themes.php
 		- stubs/companion-classes.php
 	scanDirectories:
 		- includes/

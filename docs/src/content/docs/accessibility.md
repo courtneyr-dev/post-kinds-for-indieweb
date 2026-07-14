@@ -1,6 +1,6 @@
 ---
 title: Accessibility
-description: "What Post Kinds for IndieWeb does for accessibility, what testing exists in the repository, and what still needs verification. Evidence, not claims."
+description: "What Post Kinds for IndieWeb in Block Themes does for accessibility, what testing exists in the repository, and what still needs verification. Evidence, not claims."
 ---
 
 What the plugin does for accessibility, what testing exists in the repository, and what still needs verification. This page describes evidence from the repository — it does not claim WCAG conformance.

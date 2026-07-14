@@ -2,18 +2,18 @@
 /**
  * Test the Foursquare API client.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\APIs\Foursquare;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\APIs\Foursquare;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Test the Foursquare API integration.
  *
- * @covers \PostKindsForIndieWeb\APIs\Foursquare
+ * @covers \PKIW\APIs\Foursquare
  */
 class FoursquareApiTest extends ApiTestCase {
 
@@ -30,7 +30,7 @@ class FoursquareApiTest extends ApiTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		update_option(
-			'post_kinds_indieweb_api_credentials',
+			'pkiw_api_credentials',
 			[ 'foursquare' => [ 'api_key' => 'test-foursquare-key' ] ]
 		);
 		$this->api = new Foursquare();
@@ -317,7 +317,7 @@ class FoursquareApiTest extends ApiTestCase {
 	 * Test test_connection fails without key.
 	 */
 	public function test_test_connection_fails_without_key(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 		$api = new Foursquare();
 
 		$this->assertFalse( $api->test_connection() );

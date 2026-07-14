@@ -8,16 +8,16 @@
  * Note: Foursquare's v3 Places API is read-only. For checkins, we use the
  * older v2 API which requires OAuth2 user authentication.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Sync;
+namespace PKIW\Sync;
 
-use PostKindsForIndieWeb\Meta_Fields;
-use PostKindsForIndieWeb\Taxonomy;
+use PKIW\Meta_Fields;
+use PKIW\Taxonomy;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -93,7 +93,7 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 	public function __construct() {
 		parent::__construct();
 
-		$credentials         = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials         = get_option( 'pkiw_api_credentials', [] );
 		$fs_creds            = $credentials['foursquare'] ?? [];
 		$this->client_id     = $fs_creds['client_id'] ?? '';
 		$this->client_secret = $fs_creds['client_secret'] ?? '';
@@ -168,13 +168,14 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 
 		// Store state for CSRF protection.
 		$state = wp_create_nonce( 'foursquare_oauth' );
-		set_transient( 'post_kinds_foursquare_oauth_state', $state, HOUR_IN_SECONDS );
+		set_transient( 'pkiw_foursquare_oauth_state', $state, HOUR_IN_SECONDS );
 
 		return add_query_arg(
 			[
 				'client_id'     => $this->client_id,
 				'response_type' => 'code',
 				'redirect_uri'  => $redirect_uri,
+				'state'         => $state,
 			],
 			self::OAUTH_URL . 'authenticate'
 		);
@@ -189,6 +190,7 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 	public function handle_oauth_callback_request( \WP_REST_Request $request ) {
 		$code  = $request->get_param( 'code' );
 		$error = $request->get_param( 'error' );
+		$state = $request->get_param( 'state' );
 
 		if ( $error ) {
 			return $this->oauth_redirect_with_error( $error );
@@ -196,6 +198,14 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 
 		if ( empty( $code ) ) {
 			return $this->oauth_redirect_with_error( 'missing_code' );
+		}
+
+		// Verify the CSRF state issued in get_auth_url(). The transient is
+		// single-use: deleted whether the comparison succeeds or fails.
+		$expected_state = get_transient( 'pkiw_foursquare_oauth_state' );
+		delete_transient( 'pkiw_foursquare_oauth_state' );
+		if ( ! is_string( $state ) || '' === $state || ! is_string( $expected_state ) || '' === $expected_state || ! hash_equals( $expected_state, $state ) ) {
+			return $this->oauth_redirect_with_error( 'invalid_state' );
 		}
 
 		$success = $this->handle_oauth_callback( $code );
@@ -242,9 +252,9 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 		}
 
 		// Store the user access token.
-		$credentials                                    = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials                                    = get_option( 'pkiw_api_credentials', [] );
 		$credentials['foursquare']['user_access_token'] = $body['access_token'];
-		update_option( 'post_kinds_indieweb_api_credentials', $credentials );
+		update_option( 'pkiw_api_credentials', $credentials );
 
 		$this->access_token = $body['access_token'];
 
@@ -265,10 +275,10 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 			$user = $this->api_get( 'users/self' );
 
 			if ( ! empty( $user['response']['user'] ) ) {
-				$credentials                            = get_option( 'post_kinds_indieweb_api_credentials', [] );
+				$credentials                            = get_option( 'pkiw_api_credentials', [] );
 				$credentials['foursquare']['user_id']   = $user['response']['user']['id'] ?? '';
 				$credentials['foursquare']['user_name'] = $user['response']['user']['firstName'] ?? '';
-				update_option( 'post_kinds_indieweb_api_credentials', $credentials );
+				update_option( 'pkiw_api_credentials', $credentials );
 			}
 		} catch ( \Exception $e ) {
 			$this->log( 'Failed to fetch user info', [ 'error' => $e->getMessage() ] );
@@ -285,7 +295,7 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 		if ( ! $this->is_connected() ) {
 			return new \WP_Error(
 				'not_connected',
-				__( 'Foursquare is not connected. Please authorize first.', 'post-kinds-for-indieweb' ),
+				__( 'Foursquare is not connected. Please authorize first.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 400 ]
 			);
 		}
@@ -303,20 +313,20 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 	 * @return \WP_REST_Response
 	 */
 	public function handle_disconnect_request( \WP_REST_Request $request ) {
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials = get_option( 'pkiw_api_credentials', [] );
 
 		unset( $credentials['foursquare']['user_access_token'] );
 		unset( $credentials['foursquare']['user_id'] );
 		unset( $credentials['foursquare']['user_name'] );
 
-		update_option( 'post_kinds_indieweb_api_credentials', $credentials );
+		update_option( 'pkiw_api_credentials', $credentials );
 
 		$this->access_token = null;
 
 		return rest_ensure_response(
 			[
 				'success' => true,
-				'message' => __( 'Foursquare disconnected.', 'post-kinds-for-indieweb' ),
+				'message' => __( 'Foursquare disconnected.', 'post-kinds-for-indieweb-in-block-themes' ),
 			]
 		);
 	}
@@ -456,8 +466,8 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 			'post_content' => $external_checkin['shout'] ?? '',
 			'post_title'   => sprintf(
 				/* translators: %s: venue name */
-				__( 'Checked in at %s', 'post-kinds-for-indieweb' ),
-				$venue['name'] ?? __( 'Unknown venue', 'post-kinds-for-indieweb' )
+				__( 'Checked in at %s', 'post-kinds-for-indieweb-in-block-themes' ),
+				$venue['name'] ?? __( 'Unknown venue', 'post-kinds-for-indieweb-in-block-themes' )
 			),
 		];
 
@@ -491,7 +501,7 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 		update_post_meta( $post_id, $prefix . 'checkin_foursquare_id', $venue['id'] ?? '' );
 
 		// Apply default privacy setting.
-		$settings        = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings        = get_option( 'pkiw_settings', [] );
 		$default_privacy = $settings['checkin_default_privacy'] ?? 'approximate';
 		update_post_meta( $post_id, $prefix . 'geo_privacy', $default_privacy );
 

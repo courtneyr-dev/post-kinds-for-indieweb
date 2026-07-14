@@ -2,19 +2,19 @@
 /**
  * Test the Webhook Handler class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
 use WP_UnitTestCase;
 use WP_REST_Request;
-use PostKindsForIndieWeb\Webhook_Handler;
+use PKIW\Webhook_Handler;
 
 /**
  * Test the Webhook_Handler class functionality.
  *
- * @covers \PostKindsForIndieWeb\Webhook_Handler
+ * @covers \PKIW\Webhook_Handler
  */
 class WebhookHandlerTest extends WP_UnitTestCase {
 
@@ -37,14 +37,14 @@ class WebhookHandlerTest extends WP_UnitTestCase {
 	 * Tear down test fixtures.
 	 */
 	public function tear_down(): void {
-		delete_option( 'post_kinds_webhook_token_plex' );
-		delete_option( 'post_kinds_webhook_token_jellyfin' );
-		delete_option( 'post_kinds_webhook_token_listenbrainz' );
-		delete_option( 'post_kinds_webhook_token_generic' );
-		delete_option( 'post_kinds_pending_scrobbles' );
-		delete_option( 'post_kinds_webhook_auto_post' );
-		delete_option( 'post_kinds_webhook_log' );
-		delete_option( 'post_kinds_raw_webhooks' );
+		delete_option( 'pkiw_webhook_token_plex' );
+		delete_option( 'pkiw_webhook_token_jellyfin' );
+		delete_option( 'pkiw_webhook_token_listenbrainz' );
+		delete_option( 'pkiw_webhook_token_generic' );
+		delete_option( 'pkiw_pending_scrobbles' );
+		delete_option( 'pkiw_webhook_auto_post' );
+		delete_option( 'pkiw_webhook_log' );
+		delete_option( 'pkiw_raw_webhooks' );
 		parent::tear_down();
 	}
 
@@ -147,7 +147,7 @@ class WebhookHandlerTest extends WP_UnitTestCase {
 	 * Test missing token returns 401 for token-auth service.
 	 */
 	public function test_missing_token_returns_401() {
-		update_option( 'post_kinds_webhook_token_plex', 'expected-token-value' );
+		update_option( 'pkiw_webhook_token_plex', 'expected-token-value' );
 
 		$request = new WP_REST_Request( 'POST' );
 		// No token header or param set.
@@ -164,7 +164,7 @@ class WebhookHandlerTest extends WP_UnitTestCase {
 	 * Test invalid token returns 403 for token-auth service.
 	 */
 	public function test_invalid_token_returns_403() {
-		update_option( 'post_kinds_webhook_token_plex', 'correct-token' );
+		update_option( 'pkiw_webhook_token_plex', 'correct-token' );
 
 		$request = new WP_REST_Request( 'POST' );
 		$request->set_header( 'X-Webhook-Token', 'wrong-token' );
@@ -183,7 +183,7 @@ class WebhookHandlerTest extends WP_UnitTestCase {
 	 */
 	public function test_valid_token_passes_auth_plex_scrobble() {
 		$token = 'my-valid-token-1234';
-		update_option( 'post_kinds_webhook_token_plex', $token );
+		update_option( 'pkiw_webhook_token_plex', $token );
 
 		$payload = wp_json_encode( [
 			'event'    => 'media.scrobble',
@@ -218,7 +218,7 @@ class WebhookHandlerTest extends WP_UnitTestCase {
 	 */
 	public function test_bearer_token_auth_works() {
 		$token = 'bearer-test-token-5678';
-		update_option( 'post_kinds_webhook_token_jellyfin', $token );
+		update_option( 'pkiw_webhook_token_jellyfin', $token );
 
 		$body = wp_json_encode( [
 			'NotificationType'     => 'PlaybackStop',
@@ -250,7 +250,7 @@ class WebhookHandlerTest extends WP_UnitTestCase {
 	 */
 	public function test_token_query_param_auth_works() {
 		$token = 'query-param-token-9012';
-		update_option( 'post_kinds_webhook_token_generic', $token );
+		update_option( 'pkiw_webhook_token_generic', $token );
 
 		$request = new WP_REST_Request( 'POST' );
 		$request->set_param( 'token', $token );
@@ -272,7 +272,7 @@ class WebhookHandlerTest extends WP_UnitTestCase {
 	 */
 	public function test_plex_ignores_non_scrobble_events() {
 		$token = 'plex-token';
-		update_option( 'post_kinds_webhook_token_plex', $token );
+		update_option( 'pkiw_webhook_token_plex', $token );
 
 		$payload = wp_json_encode( [
 			'event'    => 'media.play',
@@ -302,7 +302,7 @@ class WebhookHandlerTest extends WP_UnitTestCase {
 		$token = $this->handler->generate_token( 'plex' );
 
 		$this->assertSame( 32, strlen( $token ) );
-		$this->assertSame( $token, get_option( 'post_kinds_webhook_token_plex' ) );
+		$this->assertSame( $token, get_option( 'pkiw_webhook_token_plex' ) );
 	}
 
 	// ------------------------------------------------------------------
@@ -334,8 +334,8 @@ class WebhookHandlerTest extends WP_UnitTestCase {
 	 */
 	public function test_scrobble_is_queued_when_auto_post_off() {
 		$token = 'test-token';
-		update_option( 'post_kinds_webhook_token_plex', $token );
-		update_option( 'post_kinds_webhook_auto_post', false );
+		update_option( 'pkiw_webhook_token_plex', $token );
+		update_option( 'pkiw_webhook_auto_post', false );
 
 		$payload = wp_json_encode( [
 			'event'    => 'media.scrobble',
@@ -366,7 +366,7 @@ class WebhookHandlerTest extends WP_UnitTestCase {
 	 */
 	public function test_reject_scrobble_removes_from_pending() {
 		// Seed a pending scrobble.
-		update_option( 'post_kinds_pending_scrobbles', [
+		update_option( 'pkiw_pending_scrobbles', [
 			[
 				'source' => 'plex',
 				'type'   => 'movie',
@@ -400,12 +400,12 @@ class WebhookHandlerTest extends WP_UnitTestCase {
 				'title'  => "Movie {$i}",
 			];
 		}
-		update_option( 'post_kinds_pending_scrobbles', $items );
+		update_option( 'pkiw_pending_scrobbles', $items );
 
 		// Trigger store_pending_scrobble via a new webhook.
 		$token = 'cap-token';
-		update_option( 'post_kinds_webhook_token_plex', $token );
-		update_option( 'post_kinds_webhook_auto_post', false );
+		update_option( 'pkiw_webhook_token_plex', $token );
+		update_option( 'pkiw_webhook_auto_post', false );
 
 		$payload = wp_json_encode( [
 			'event'    => 'media.scrobble',
@@ -458,7 +458,7 @@ class WebhookHandlerTest extends WP_UnitTestCase {
 	 */
 	public function test_invalid_json_in_plex_payload_param_returns_400() {
 		$token = 'plex-json-test';
-		update_option( 'post_kinds_webhook_token_plex', $token );
+		update_option( 'pkiw_webhook_token_plex', $token );
 
 		$request = new WP_REST_Request( 'POST' );
 		$request->set_header( 'X-Webhook-Token', $token );

@@ -15,7 +15,7 @@
     "album",
     "artist"
   ],
-  "textdomain": "post-kinds-indieweb",
+  "textdomain": "post-kinds-for-indieweb-in-block-themes",
   "attributes": {
     "trackTitle": {
       "type": "string"

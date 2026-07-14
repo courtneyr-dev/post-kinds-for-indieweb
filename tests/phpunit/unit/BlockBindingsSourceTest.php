@@ -2,14 +2,14 @@
 /**
  * Test the Block Bindings Source class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
 use WP_UnitTestCase;
-use PostKindsForIndieWeb\Block_Bindings_Source;
-use PostKindsForIndieWeb\Meta_Fields;
+use PKIW\Block_Bindings_Source;
+use PKIW\Meta_Fields;
 
 /**
  * Test the Block_Bindings_Source class functionality.

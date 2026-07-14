@@ -4,13 +4,13 @@
  *
  * Provides podcast search and episode metadata from Podcast Index.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\APIs;
+namespace PKIW\APIs;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -71,7 +71,7 @@ class PodcastIndex extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials      = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials      = get_option( 'pkiw_api_credentials', [] );
 		$pi_creds         = $credentials['podcastindex'] ?? [];
 		$this->api_key    = $pi_creds['api_key'] ?? '';
 		$this->api_secret = $pi_creds['api_secret'] ?? '';

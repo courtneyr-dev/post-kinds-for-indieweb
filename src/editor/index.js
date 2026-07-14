@@ -1,5 +1,5 @@
 /**
- * Post Kinds for IndieWeb - Editor Entry Point
+ * Post Kinds for IndieWeb in Block Themes - Editor Entry Point
  *
  * Initializes the editor-side functionality including the Kind Selector
  * sidebar panel and post kinds data store.

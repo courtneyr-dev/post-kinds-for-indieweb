@@ -7,7 +7,7 @@
     "category": "post-kinds-indieweb",
     "description": "Add an interactive star rating to any content with customizable scale and style.",
     "keywords": ["rating", "stars", "review", "score", "feedback"],
-    "textdomain": "post-kinds-indieweb",
+    "textdomain": "post-kinds-for-indieweb-in-block-themes",
     "attributes": {
         "rating": {
             "type": "number",

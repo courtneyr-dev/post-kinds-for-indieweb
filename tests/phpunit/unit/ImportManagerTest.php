@@ -1,8 +1,8 @@
 <?php
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
 use WP_UnitTestCase;
-use PostKindsForIndieWeb\Import_Manager;
+use PKIW\Import_Manager;
 
 class ImportManagerTest extends WP_UnitTestCase {
 
@@ -164,7 +164,7 @@ class ImportManagerTest extends WP_UnitTestCase {
 
 		$this->assertTrue( $result['success'] );
 		// The job should have scheduled a cron event for processing.
-		$scheduled = wp_next_scheduled( 'post_kinds_indieweb_process_import', [ $result['job_id'], 'lastfm' ] );
+		$scheduled = wp_next_scheduled( 'pkiw_process_import', [ $result['job_id'], 'lastfm' ] );
 		$this->assertNotFalse( $scheduled );
 	}
 

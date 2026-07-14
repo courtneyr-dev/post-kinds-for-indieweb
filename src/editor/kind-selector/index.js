@@ -1,5 +1,5 @@
 /**
- * Post Kinds for IndieWeb - Kind Selector Sidebar Panel
+ * Post Kinds for IndieWeb in Block Themes - Kind Selector Sidebar Panel
  *
  * Main sidebar panel component for selecting post kinds and managing
  * kind-specific metadata in the block editor.
@@ -87,8 +87,7 @@ function getKindCardBlockMap() {
  * @return {string|null} Block name to use, or null for no block.
  */
 function getBookmarkBlockName( embedType, hasOembedSupport ) {
-	const bookmarkCardActive =
-		window.postKindsIndieWebEditor?.bookmarkCardActive;
+	const bookmarkCardActive = window.pkiwAdminEditor?.bookmarkCardActive;
 
 	switch ( embedType ) {
 		case 'oembed':
@@ -332,7 +331,7 @@ export default function KindSelectorPanel() {
 
 	useEffect( () => {
 		// Only sync for bookmark kind when Bookmark Card plugin is active.
-		if ( ! window.postKindsIndieWebEditor?.bookmarkCardActive ) {
+		if ( ! window.pkiwAdminEditor?.bookmarkCardActive ) {
 			return;
 		}
 
@@ -489,7 +488,7 @@ export default function KindSelectorPanel() {
 			return;
 		}
 
-		if ( ! window.postKindsIndieWebEditor?.bookmarkCardActive ) {
+		if ( ! window.pkiwAdminEditor?.bookmarkCardActive ) {
 			return;
 		}
 
@@ -659,7 +658,10 @@ export default function KindSelectorPanel() {
 	return (
 		<PluginDocumentSettingPanel
 			name="post-kinds-indieweb-kind-selector"
-			title={ __( 'Post Kind', 'post-kinds-for-indieweb' ) }
+			title={ __(
+				'Post Kind',
+				'post-kinds-for-indieweb-in-block-themes'
+			) }
 			className="post-kinds-indieweb-kind-panel"
 			icon={ <KindIcon /> }
 		>

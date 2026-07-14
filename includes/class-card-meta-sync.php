@@ -2,13 +2,13 @@
 /**
  * Card attrs → post meta sync.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.2.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Mirrors the first kind-card block's attributes into _postkind_* post
+ * Mirrors the first kind-card block's attributes into _pkiw_* post
  * meta on save, so Block Bindings (and templates) can consume what the
  * card knows. Card attrs win when non-empty; existing meta survives
  * empty attrs (completion and manual edits are never erased).

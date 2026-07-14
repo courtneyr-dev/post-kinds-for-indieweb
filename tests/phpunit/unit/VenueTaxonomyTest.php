@@ -1,8 +1,8 @@
 <?php
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
 use WP_UnitTestCase;
-use PostKindsForIndieWeb\Venue_Taxonomy;
+use PKIW\Venue_Taxonomy;
 
 class VenueTaxonomyTest extends WP_UnitTestCase {
 
@@ -16,7 +16,7 @@ class VenueTaxonomyTest extends WP_UnitTestCase {
 	}
 
 	public function test_taxonomy_constant() {
-		$this->assertSame( 'venue', Venue_Taxonomy::TAXONOMY );
+		$this->assertSame( 'pkiw_venue', Venue_Taxonomy::TAXONOMY );
 	}
 
 	public function test_taxonomy_is_registered() {
@@ -45,6 +45,8 @@ class VenueTaxonomyTest extends WP_UnitTestCase {
 
 	public function test_taxonomy_rewrite_slug() {
 		$tax = get_taxonomy( Venue_Taxonomy::TAXONOMY );
+		// The registered taxonomy is prefixed, but the public rewrite slug
+		// deliberately stays 'venue' so archive URLs don't change.
 		$this->assertSame( 'venue', $tax->rewrite['slug'] );
 		$this->assertFalse( $tax->rewrite['with_front'] );
 	}

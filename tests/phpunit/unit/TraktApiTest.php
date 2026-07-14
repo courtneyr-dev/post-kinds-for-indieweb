@@ -2,18 +2,18 @@
 /**
  * Test the Trakt API client.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\APIs\Trakt;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\APIs\Trakt;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Test the Trakt API integration.
  *
- * @covers \PostKindsForIndieWeb\APIs\Trakt
+ * @covers \PKIW\APIs\Trakt
  */
 class TraktApiTest extends ApiTestCase {
 
@@ -30,7 +30,7 @@ class TraktApiTest extends ApiTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		update_option(
-			'post_kinds_indieweb_api_credentials',
+			'pkiw_api_credentials',
 			[
 				'trakt' => [
 					'client_id'    => 'test-client-id-123',
@@ -52,7 +52,7 @@ class TraktApiTest extends ApiTestCase {
 	 * Test is_configured returns false without credentials.
 	 */
 	public function test_is_configured_without_credentials(): void {
-		delete_option( 'post_kinds_indieweb_api_credentials' );
+		delete_option( 'pkiw_api_credentials' );
 		$api = new Trakt();
 		$this->assertFalse( $api->is_configured() );
 	}
@@ -200,7 +200,7 @@ class TraktApiTest extends ApiTestCase {
 	 * Test test_connection returns false without client ID.
 	 */
 	public function test_test_connection_without_client_id(): void {
-		delete_option( 'post_kinds_indieweb_api_credentials' );
+		delete_option( 'pkiw_api_credentials' );
 		$api = new Trakt();
 		$this->assertFalse( $api->test_connection() );
 	}

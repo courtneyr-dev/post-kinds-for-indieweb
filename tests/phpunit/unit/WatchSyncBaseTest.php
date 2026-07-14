@@ -2,12 +2,12 @@
 /**
  * Test the Watch Sync Base class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\Sync\Watch_Sync_Base;
+use PKIW\Sync\Watch_Sync_Base;
 use WP_UnitTestCase;
 
 /**
@@ -83,7 +83,7 @@ class Test_Watch_Sync extends Watch_Sync_Base {
 /**
  * Test the Watch Sync Base class.
  *
- * @covers \PostKindsForIndieWeb\Sync\Watch_Sync_Base
+ * @covers \PKIW\Sync\Watch_Sync_Base
  */
 class WatchSyncBaseTest extends WP_UnitTestCase {
 
@@ -158,7 +158,7 @@ class WatchSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_is_syndication_enabled_true(): void {
 		$post_id = self::factory()->post->create();
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'watch_sync_to_testvideo' => true,
 		] );
 
@@ -170,10 +170,10 @@ class WatchSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_is_syndication_enabled_false_opt_out(): void {
 		$post_id = self::factory()->post->create();
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'watch_sync_to_testvideo' => true,
 		] );
-		update_post_meta( $post_id, '_postkind_syndicate_testvideo', '0' );
+		update_post_meta( $post_id, '_pkiw_syndicate_testvideo', '0' );
 
 		$this->assertFalse( $this->sync->test_is_syndication_enabled( $post_id ) );
 	}
@@ -183,7 +183,7 @@ class WatchSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_is_syndication_enabled_false_disconnected(): void {
 		$post_id = self::factory()->post->create();
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'watch_sync_to_testvideo' => true,
 		] );
 		$this->sync->connected = false;
@@ -204,7 +204,7 @@ class WatchSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_is_already_syndicated_true(): void {
 		$post_id = self::factory()->post->create();
-		update_post_meta( $post_id, '_postkind_watch_testvideo_id', 'watch-123' );
+		update_post_meta( $post_id, '_pkiw_watch_testvideo_id', 'watch-123' );
 
 		$this->assertTrue( $this->sync->test_is_already_syndicated( $post_id ) );
 	}
@@ -214,7 +214,7 @@ class WatchSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_was_imported_true(): void {
 		$post_id = self::factory()->post->create();
-		update_post_meta( $post_id, '_postkind_imported_from', 'testvideo' );
+		update_post_meta( $post_id, '_pkiw_imported_from', 'testvideo' );
 
 		$this->assertTrue( $this->sync->test_was_imported_from_service( $post_id ) );
 	}
@@ -232,11 +232,11 @@ class WatchSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_get_watch_data_movie(): void {
 		$post_id = self::factory()->post->create();
-		update_post_meta( $post_id, '_postkind_watch_title', 'Inception' );
-		update_post_meta( $post_id, '_postkind_watch_year', '2010' );
-		update_post_meta( $post_id, '_postkind_watch_tmdb_id', '27205' );
-		update_post_meta( $post_id, '_postkind_watch_imdb_id', 'tt1375666' );
-		update_post_meta( $post_id, '_postkind_rating', '9' );
+		update_post_meta( $post_id, '_pkiw_watch_title', 'Inception' );
+		update_post_meta( $post_id, '_pkiw_watch_year', '2010' );
+		update_post_meta( $post_id, '_pkiw_watch_tmdb_id', '27205' );
+		update_post_meta( $post_id, '_pkiw_watch_imdb_id', 'tt1375666' );
+		update_post_meta( $post_id, '_pkiw_rating', '9' );
 
 		$data = $this->sync->test_get_watch_data_from_post( $post_id );
 
@@ -253,10 +253,10 @@ class WatchSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_get_watch_data_episode(): void {
 		$post_id = self::factory()->post->create();
-		update_post_meta( $post_id, '_postkind_watch_title', 'Ozymandias' );
-		update_post_meta( $post_id, '_postkind_watch_season', '5' );
-		update_post_meta( $post_id, '_postkind_watch_episode', '14' );
-		update_post_meta( $post_id, '_postkind_watch_show_title', 'Breaking Bad' );
+		update_post_meta( $post_id, '_pkiw_watch_title', 'Ozymandias' );
+		update_post_meta( $post_id, '_pkiw_watch_season', '5' );
+		update_post_meta( $post_id, '_pkiw_watch_episode', '14' );
+		update_post_meta( $post_id, '_pkiw_watch_show_title', 'Breaking Bad' );
 
 		$data = $this->sync->test_get_watch_data_from_post( $post_id );
 
@@ -271,8 +271,8 @@ class WatchSyncBaseTest extends WP_UnitTestCase {
 	 */
 	public function test_get_watch_data_rewatch(): void {
 		$post_id = self::factory()->post->create();
-		update_post_meta( $post_id, '_postkind_watch_title', 'Test Movie' );
-		update_post_meta( $post_id, '_postkind_watch_rewatch', '1' );
+		update_post_meta( $post_id, '_pkiw_watch_title', 'Test Movie' );
+		update_post_meta( $post_id, '_pkiw_watch_rewatch', '1' );
 
 		$data = $this->sync->test_get_watch_data_from_post( $post_id );
 
@@ -288,7 +288,7 @@ class WatchSyncBaseTest extends WP_UnitTestCase {
 
 		$this->assertSame(
 			'https://testvideo.com/watch/1',
-			get_post_meta( $post_id, '_postkind_syndication_testvideo', true )
+			get_post_meta( $post_id, '_pkiw_syndication_testvideo', true )
 		);
 	}
 
@@ -323,10 +323,10 @@ class WatchSyncBaseTest extends WP_UnitTestCase {
 		$post_id = $this->create_watch_post();
 		$post    = get_post( $post_id );
 
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'watch_sync_to_testvideo' => true,
 		] );
-		update_post_meta( $post_id, '_postkind_watch_title', 'Test Movie' );
+		update_post_meta( $post_id, '_pkiw_watch_title', 'Test Movie' );
 
 		$this->sync->syndication_result = [ 'id' => 'watch-55', 'url' => 'https://testvideo.com/55' ];
 		$this->sync->maybe_syndicate_watch( 'publish', 'draft', $post );
@@ -334,11 +334,11 @@ class WatchSyncBaseTest extends WP_UnitTestCase {
 		$this->assertCount( 1, $this->sync->syndicate_calls );
 		$this->assertSame(
 			'watch-55',
-			get_post_meta( $post_id, '_postkind_watch_testvideo_id', true )
+			get_post_meta( $post_id, '_pkiw_watch_testvideo_id', true )
 		);
 		$this->assertSame(
 			'https://testvideo.com/55',
-			get_post_meta( $post_id, '_postkind_syndication_testvideo', true )
+			get_post_meta( $post_id, '_pkiw_syndication_testvideo', true )
 		);
 	}
 
@@ -349,7 +349,7 @@ class WatchSyncBaseTest extends WP_UnitTestCase {
 		$post_id = $this->create_watch_post();
 		$post    = get_post( $post_id );
 
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'watch_sync_to_testvideo' => true,
 		] );
 
@@ -366,11 +366,11 @@ class WatchSyncBaseTest extends WP_UnitTestCase {
 		$post_id = $this->create_watch_post();
 		$post    = get_post( $post_id );
 
-		update_option( 'post_kinds_indieweb_settings', [
+		update_option( 'pkiw_settings', [
 			'watch_sync_to_testvideo' => true,
 		] );
-		update_post_meta( $post_id, '_postkind_watch_title', 'Test Movie' );
-		update_post_meta( $post_id, '_postkind_watch_testvideo_id', 'already-done' );
+		update_post_meta( $post_id, '_pkiw_watch_title', 'Test Movie' );
+		update_post_meta( $post_id, '_pkiw_watch_testvideo_id', 'already-done' );
 
 		$this->sync->syndication_result = [ 'id' => 'ext-1' ];
 		$this->sync->maybe_syndicate_watch( 'publish', 'draft', $post );

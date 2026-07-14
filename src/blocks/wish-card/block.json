@@ -8,7 +8,7 @@
 	"category": "post-kinds-indieweb",
 	"description": "Display something you wish for or want with image and reason.",
 	"keywords": ["wish", "want", "wishlist", "gift"],
-	"textdomain": "post-kinds-indieweb",
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
 	"attributes": {
 		"title": {
 			"type": "string"

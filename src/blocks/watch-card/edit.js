@@ -161,10 +161,13 @@ export default function Edit( { attributes, setAttributes } ) {
 			<div { ...blockProps }>
 				<BlockPlaceholder
 					icon={ watchIcon }
-					label={ __( 'Watch Card', 'post-kinds-for-indieweb' ) }
+					label={ __(
+						'Watch Card',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					instructions={ __(
 						'Add a movie or TV show you watched. Search or enter details manually.',
-						'post-kinds-for-indieweb'
+						'post-kinds-for-indieweb-in-block-themes'
 					) }
 				>
 					<div className="post-kinds-card__url-prompt">
@@ -176,11 +179,11 @@ export default function Edit( { attributes, setAttributes } ) {
 							type="url"
 							placeholder={ __(
 								'Paste a YouTube, Letterboxd, or other URL…',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 							label={ __(
 								'What are you watching?',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 							hideLabelFromVision={ false }
 						/>
@@ -196,7 +199,10 @@ export default function Edit( { attributes, setAttributes } ) {
 									}
 									onClick={ () => setSearchType( 'movie' ) }
 								>
-									{ __( 'Movie', 'post-kinds-for-indieweb' ) }
+									{ __(
+										'Movie',
+										'post-kinds-for-indieweb-in-block-themes'
+									) }
 								</Button>
 								<Button
 									variant={
@@ -208,7 +214,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								>
 									{ __(
 										'TV Show',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 								</Button>
 							</div>
@@ -218,11 +224,11 @@ export default function Edit( { attributes, setAttributes } ) {
 									searchType === 'movie'
 										? __(
 												'Search for a movie…',
-												'post-kinds-for-indieweb'
+												'post-kinds-for-indieweb-in-block-themes'
 										  )
 										: __(
 												'Search for a TV show…',
-												'post-kinds-for-indieweb'
+												'post-kinds-for-indieweb-in-block-themes'
 										  )
 								}
 								onSelect={ handleSearchSelect }
@@ -233,7 +239,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							>
 								{ __(
 									'Enter manually',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							</Button>
 						</div>
@@ -245,7 +251,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							>
 								{ __(
 									'Search Movies & TV',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							</Button>
 							<Button
@@ -256,7 +262,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							>
 								{ __(
 									'Enter Manually',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							</Button>
 						</div>
@@ -270,7 +276,10 @@ export default function Edit( { attributes, setAttributes } ) {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Search', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Search',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<div
@@ -288,7 +297,10 @@ export default function Edit( { attributes, setAttributes } ) {
 							onClick={ () => setSearchType( 'movie' ) }
 							size="small"
 						>
-							{ __( 'Movie', 'post-kinds-for-indieweb' ) }
+							{ __(
+								'Movie',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }
 						</Button>
 						<Button
 							variant={
@@ -297,7 +309,10 @@ export default function Edit( { attributes, setAttributes } ) {
 							onClick={ () => setSearchType( 'tv' ) }
 							size="small"
 						>
-							{ __( 'TV Show', 'post-kinds-for-indieweb' ) }
+							{ __(
+								'TV Show',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }
 						</Button>
 					</div>
 					<MediaSearch
@@ -306,11 +321,11 @@ export default function Edit( { attributes, setAttributes } ) {
 							searchType === 'movie'
 								? __(
 										'Search for a movie…',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 								  )
 								: __(
 										'Search for a TV show…',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 								  )
 						}
 						onSelect={ handleSearchSelect }
@@ -321,32 +336,41 @@ export default function Edit( { attributes, setAttributes } ) {
 					>
 						{ __(
 							'Search to auto-fill details from TMDB.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					</p>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Media Details', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Media Details',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 				>
 					<SelectControl
-						label={ __( 'Type', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Type',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ mediaType }
 						options={ [
 							{
-								label: __( 'Movie', 'post-kinds-for-indieweb' ),
+								label: __(
+									'Movie',
+									'post-kinds-for-indieweb-in-block-themes'
+								),
 								value: 'movie',
 							},
 							{
 								label: __(
 									'TV Show',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'tv',
 							},
 							{
 								label: __(
 									'TV Episode',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'episode',
 							},
@@ -357,7 +381,10 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 
 					<TextControl
-						label={ __( 'Title', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Title',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ mediaTitle || '' }
 						onChange={ ( value ) =>
 							setAttributes( { mediaTitle: value } )
@@ -369,7 +396,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							<TextControl
 								label={ __(
 									'Show Title',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 								value={ showTitle || '' }
 								onChange={ ( value ) =>
@@ -381,7 +408,7 @@ export default function Edit( { attributes, setAttributes } ) {
 									type="number"
 									label={ __(
 										'Season',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 									value={ seasonNumber }
 									onChange={ ( value ) =>
@@ -396,7 +423,7 @@ export default function Edit( { attributes, setAttributes } ) {
 									type="number"
 									label={ __(
 										'Episode',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 									value={ episodeNumber }
 									onChange={ ( value ) =>
@@ -413,7 +440,10 @@ export default function Edit( { attributes, setAttributes } ) {
 
 					<TextControl
 						type="number"
-						label={ __( 'Year', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Year',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ releaseYear }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -425,7 +455,10 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 
 					<TextControl
-						label={ __( 'Director', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Director',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ director || '' }
 						onChange={ ( value ) =>
 							setAttributes( { director: value } )
@@ -434,11 +467,17 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Watch Info', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Watch Info',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 				>
 					<div className="components-base-control">
 						<span className="components-base-control__label">
-							{ __( 'Rating', 'post-kinds-for-indieweb' ) }
+							{ __(
+								'Rating',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }
 						</span>
 						<StarRating
 							value={ rating }
@@ -450,34 +489,40 @@ export default function Edit( { attributes, setAttributes } ) {
 					</div>
 
 					<ToggleControl
-						label={ __( 'Rewatch', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Rewatch',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						checked={ isRewatch }
 						onChange={ ( value ) =>
 							setAttributes( { isRewatch: value } )
 						}
 						help={ __(
 							'Check if this is a rewatch.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 
 					<div className="components-base-control">
 						<span className="components-base-control__label">
-							{ __( 'Watched At', 'post-kinds-for-indieweb' ) }
+							{ __(
+								'Watched At',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }
 						</span>
 						<Button
 							variant="secondary"
 							onClick={ () => setShowDatePicker( true ) }
 							aria-label={ __(
 								'Set watched date/time',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						>
 							{ watchedAt
 								? new Date( watchedAt ).toLocaleString()
 								: __(
 										'Set date/time',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 								  ) }
 						</Button>
 						{ showDatePicker && (
@@ -497,7 +542,10 @@ export default function Edit( { attributes, setAttributes } ) {
 					</div>
 
 					<TextControl
-						label={ __( 'Watch URL', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Watch URL',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ watchUrl || '' }
 						onChange={ ( value ) =>
 							setAttributes( { watchUrl: value } )
@@ -505,14 +553,14 @@ export default function Edit( { attributes, setAttributes } ) {
 						type="url"
 						help={ __(
 							'Link to the content on a streaming service.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 
 					<TextControl
 						label={ __(
 							'Caption file URL (VTT)',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ captionsUrl || '' }
 						onChange={ ( value ) =>
@@ -521,44 +569,49 @@ export default function Edit( { attributes, setAttributes } ) {
 						type="url"
 						help={ __(
 							'WebVTT caption file. When the Watch URL is a YouTube video played through Able Player, this supplies accessible captions and the interactive transcript.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 				</PanelBody>
 
-				<PanelBody title={ __( 'Layout', 'post-kinds-for-indieweb' ) }>
+				<PanelBody
+					title={ __(
+						'Layout',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
+				>
 					<SelectControl
 						label={ __(
 							'Layout Style',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ layout }
 						options={ [
 							{
 								label: __(
 									'Horizontal',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'horizontal',
 							},
 							{
 								label: __(
 									'Vertical',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'vertical',
 							},
 							{
 								label: __(
 									'Poster Focus',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'poster',
 							},
 							{
 								label: __(
 									'Compact',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'compact',
 							},
@@ -570,18 +623,27 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Metadata', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Metadata',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<TextControl
-						label={ __( 'TMDB ID', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'TMDB ID',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ tmdbId || '' }
 						onChange={ ( value ) =>
 							setAttributes( { tmdbId: value } )
 						}
 					/>
 					<TextControl
-						label={ __( 'IMDb ID', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'IMDb ID',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ imdbId || '' }
 						onChange={ ( value ) =>
 							setAttributes( { imdbId: value } )
@@ -639,11 +701,11 @@ export default function Edit( { attributes, setAttributes } ) {
 							{ posterImage
 								? __(
 										'Replace cover from TMDB',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 								  )
 								: __(
 										'Fetch cover from TMDB',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 								  ) }
 						</Button>
 					</div>
@@ -662,7 +724,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'Title',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -689,7 +751,10 @@ export default function Edit( { attributes, setAttributes } ) {
 							) }
 							{ director && (
 								<span className="director">
-									{ __( 'Dir.', 'post-kinds-for-indieweb' ) }{ ' ' }
+									{ __(
+										'Dir.',
+										'post-kinds-for-indieweb-in-block-themes'
+									) }{ ' ' }
 									{ director }
 								</span>
 							) }
@@ -697,7 +762,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								<span className="rewatch-badge">
 									{ __(
 										'Rewatch',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 								</span>
 							) }
@@ -722,7 +787,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'Write a review…',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 					</div>
@@ -736,9 +801,12 @@ export default function Edit( { attributes, setAttributes } ) {
 						type="url"
 						placeholder={ __(
 							'Paste a YouTube, Letterboxd, or other URL…',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
-						label={ __( 'Source URL', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Source URL',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						hideLabelFromVision={ false }
 					/>
 				</div>

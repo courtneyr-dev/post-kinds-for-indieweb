@@ -2,13 +2,13 @@
 /**
  * Default category for post-kind content.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.3.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -36,7 +36,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Default_Category {
 
-	/** Settings key (inside the `post_kinds_indieweb_settings` option) holding the term id. */
+	/** Settings key (inside the `pkiw_settings` option) holding the term id. */
 	public const SETTING_KEY = 'default_category';
 
 	/** Per-post marker set once the default has been applied. */
@@ -191,7 +191,7 @@ class Default_Category {
 	 * The configured default category term id, or 0 when unset.
 	 */
 	public static function configured_category_id(): int {
-		$settings = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings = get_option( 'pkiw_settings', [] );
 		if ( ! is_array( $settings ) || ! isset( $settings[ self::SETTING_KEY ] ) ) {
 			return 0;
 		}

@@ -5,16 +5,16 @@
  * Sidebar widget showing the most recent listen or watch post.
  * Registered entirely in PHP — no JavaScript build step required.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.3.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Blocks;
+namespace PKIW\Blocks;
 
-use PostKindsForIndieWeb\Meta_Fields;
-use PostKindsForIndieWeb\Taxonomy;
+use PKIW\Meta_Fields;
+use PKIW\Taxonomy;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -61,8 +61,8 @@ final class Now_Playing {
 			'post-kinds/now-playing',
 			[
 				'api_version'     => 3,
-				'title'           => __( 'Now Playing', 'post-kinds-for-indieweb' ),
-				'description'     => __( 'Shows the most recent listen or watch post.', 'post-kinds-for-indieweb' ),
+				'title'           => __( 'Now Playing', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'     => __( 'Shows the most recent listen or watch post.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'        => 'widgets',
 				'icon'            => 'format-audio',
 				'keywords'        => [ 'music', 'listen', 'watch', 'media', 'indieweb' ],
@@ -139,14 +139,14 @@ final class Now_Playing {
 			$cover = get_post_meta( $post_id, $prefix . 'listen_cover', true );
 			$url   = get_post_meta( $post_id, $prefix . 'listen_url', true );
 			$icon  = '&#127925;';
-			$label = __( 'Listening', 'post-kinds-for-indieweb' );
+			$label = __( 'Listening', 'post-kinds-for-indieweb-in-block-themes' );
 		} else {
 			$title = get_post_meta( $post_id, $prefix . 'watch_title', true );
 			$sub   = get_post_meta( $post_id, $prefix . 'watch_year', true );
 			$cover = get_post_meta( $post_id, $prefix . 'watch_poster', true );
 			$url   = get_post_meta( $post_id, $prefix . 'watch_url', true );
 			$icon  = '&#127916;';
-			$label = __( 'Watching', 'post-kinds-for-indieweb' );
+			$label = __( 'Watching', 'post-kinds-for-indieweb-in-block-themes' );
 		}
 
 		if ( ! $title ) {

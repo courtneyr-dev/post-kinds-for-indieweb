@@ -4,13 +4,13 @@
  *
  * Provides movie and TV show metadata from TMDB.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\APIs;
+namespace PKIW\APIs;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -85,7 +85,7 @@ class TMDB extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials        = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials        = get_option( 'pkiw_api_credentials', [] );
 		$tmdb_creds         = $credentials['tmdb'] ?? [];
 		$this->api_key      = $tmdb_creds['api_key'] ?? '';
 		$this->access_token = $tmdb_creds['access_token'] ?? '';
@@ -179,7 +179,7 @@ class TMDB extends API_Base {
 	public function test_connection(): bool {
 		if ( ! $this->api_key && ! $this->access_token ) {
 			// Debug: show what credentials we actually have.
-			$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+			$credentials = get_option( 'pkiw_api_credentials', [] );
 			$tmdb_creds  = $credentials['tmdb'] ?? [];
 			$has_token   = ! empty( $tmdb_creds['access_token'] );
 			$has_key     = ! empty( $tmdb_creds['api_key'] );
@@ -188,7 +188,7 @@ class TMDB extends API_Base {
 			throw new \Exception(
 				sprintf(
 					/* translators: 1: enabled status, 2: has token status, 3: has key status */
-					esc_html__( 'No API credentials loaded. Debug: enabled=%1$s, has_token=%2$s, has_key=%3$s', 'post-kinds-for-indieweb' ),
+					esc_html__( 'No API credentials loaded. Debug: enabled=%1$s, has_token=%2$s, has_key=%3$s', 'post-kinds-for-indieweb-in-block-themes' ),
 					$is_enabled ? 'yes' : 'no',
 					$has_token ? 'yes' : 'no',
 					$has_key ? 'yes' : 'no'
@@ -203,7 +203,7 @@ class TMDB extends API_Base {
 			throw new \Exception(
 				sprintf(
 					/* translators: %s: Error message */
-					esc_html__( 'API request failed: %s', 'post-kinds-for-indieweb' ),
+					esc_html__( 'API request failed: %s', 'post-kinds-for-indieweb-in-block-themes' ),
 					esc_html( $e->getMessage() )
 				)
 			);

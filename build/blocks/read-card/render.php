@@ -6,7 +6,7 @@
  * structure (badge → label → title → sub → media → note → meta), theme owns
  * paint via --pk-* custom properties.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @var array    $attributes Block attributes.
  * @var string   $content    Block content (empty for dynamic blocks).
  * @var WP_Block $block      Block instance.
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
-use function PostKindsForIndieWeb\get_kind_icon_svg;
+use function PKIW\get_kind_icon_svg;
 
 $pkiw_book_title     = $attributes['bookTitle'] ?? '';
 $pkiw_author_name    = $attributes['authorName'] ?? '';
@@ -42,10 +42,10 @@ $pkiw_progress_percent = ( $pkiw_page_count > 0 && $pkiw_current_page > 0 )
 	: 0;
 
 $pkiw_status_labels = [
-	'to-read'   => __( 'To Read', 'post-kinds-for-indieweb' ),
-	'reading'   => __( 'Currently Reading', 'post-kinds-for-indieweb' ),
-	'finished'  => __( 'Finished', 'post-kinds-for-indieweb' ),
-	'abandoned' => __( 'Abandoned', 'post-kinds-for-indieweb' ),
+	'to-read'   => __( 'To Read', 'post-kinds-for-indieweb-in-block-themes' ),
+	'reading'   => __( 'Currently Reading', 'post-kinds-for-indieweb-in-block-themes' ),
+	'finished'  => __( 'Finished', 'post-kinds-for-indieweb-in-block-themes' ),
+	'abandoned' => __( 'Abandoned', 'post-kinds-for-indieweb-in-block-themes' ),
 ];
 $pkiw_status_label  = $pkiw_status_labels[ $pkiw_read_status ] ?? '';
 
@@ -80,7 +80,7 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'read' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'Read', 'post-kinds-for-indieweb' ); ?></p>
+		<p class="pk-kindlabel"><?php esc_html_e( 'Read', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
 
 		<?php if ( $pkiw_book_title ) : ?>
 			<h2 class="pk-title p-name">
@@ -137,7 +137,7 @@ ob_start();
 					<?php
 					printf(
 						/* translators: 1: current page, 2: total pages, 3: percent */
-						esc_html__( '%1$d of %2$d pages (%3$d%%)', 'post-kinds-for-indieweb' ),
+						esc_html__( '%1$d of %2$d pages (%3$d%%)', 'post-kinds-for-indieweb-in-block-themes' ),
 						(int) $pkiw_current_page,
 						(int) $pkiw_page_count,
 						(int) $pkiw_progress_percent
@@ -148,7 +148,7 @@ ob_start();
 		<?php endif; ?>
 
 		<?php if ( $pkiw_rating > 0 ) : ?>
-			<div class="pk-stars p-rating" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb' ), $pkiw_rating ) ); ?>">
+			<div class="pk-stars p-rating" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">
 				<?php for ( $pkiw_i = 1; $pkiw_i <= 5; $pkiw_i++ ) : ?>
 					<svg class="<?php echo $pkiw_i <= $pkiw_rating ? '' : 'off'; ?>" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17l-6.9 3.5 1.6-6.8L1.4 9.1l7-.6z"/></svg>
 				<?php endfor; ?>
@@ -157,7 +157,7 @@ ob_start();
 
 		<?php if ( $pkiw_cover_image ) : ?>
 			<div class="pk-media">
-				<img class="pk-thumb--poster u-photo" src="<?php echo esc_url( $pkiw_cover_image ); ?>" alt="<?php echo esc_attr( $pkiw_cover_alt ? $pkiw_cover_alt : sprintf( /* translators: %s: book title */ __( 'Cover of %s', 'post-kinds-for-indieweb' ), $pkiw_book_title ) ); ?>" loading="lazy" />
+				<img class="pk-thumb--poster u-photo" src="<?php echo esc_url( $pkiw_cover_image ); ?>" alt="<?php echo esc_attr( $pkiw_cover_alt ? $pkiw_cover_alt : sprintf( /* translators: %s: book title */ __( 'Cover of %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_book_title ) ); ?>" loading="lazy" />
 			</div>
 		<?php endif; ?>
 
@@ -171,7 +171,7 @@ ob_start();
 					<?php
 					printf(
 						/* translators: %s: date */
-						esc_html__( 'Started: %s', 'post-kinds-for-indieweb' ),
+						esc_html__( 'Started: %s', 'post-kinds-for-indieweb-in-block-themes' ),
 						esc_html( $pkiw_started_display )
 					);
 					?>
@@ -186,7 +186,7 @@ ob_start();
 					<?php
 					printf(
 						/* translators: %s: date */
-						esc_html__( 'Finished: %s', 'post-kinds-for-indieweb' ),
+						esc_html__( 'Finished: %s', 'post-kinds-for-indieweb-in-block-themes' ),
 						esc_html( $pkiw_finished_display )
 					);
 					?>

@@ -2,38 +2,38 @@
 /**
  * Test the checkin helper functions.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
 use WP_UnitTestCase;
-use function PostKindsForIndieWeb\get_checkins;
-use function PostKindsForIndieWeb\get_checkins_at_venue;
-use function PostKindsForIndieWeb\get_checkins_by_author;
-use function PostKindsForIndieWeb\get_checkins_in_range;
-use function PostKindsForIndieWeb\get_checkins_archive_url;
-use function PostKindsForIndieWeb\is_checkin;
-use function PostKindsForIndieWeb\get_checkin_venue;
-use function PostKindsForIndieWeb\get_checkin_location;
-use function PostKindsForIndieWeb\get_checkin_count;
-use function PostKindsForIndieWeb\get_venue_count;
-use function PostKindsForIndieWeb\format_location;
+use function PKIW\get_checkins;
+use function PKIW\get_checkins_at_venue;
+use function PKIW\get_checkins_by_author;
+use function PKIW\get_checkins_in_range;
+use function PKIW\get_checkins_archive_url;
+use function PKIW\is_checkin;
+use function PKIW\get_checkin_venue;
+use function PKIW\get_checkin_location;
+use function PKIW\get_checkin_count;
+use function PKIW\get_venue_count;
+use function PKIW\format_location;
 
 /**
  * Test the checkin helper functions.
  *
- * @covers \PostKindsForIndieWeb\get_checkins
- * @covers \PostKindsForIndieWeb\get_checkins_at_venue
- * @covers \PostKindsForIndieWeb\get_checkins_by_author
- * @covers \PostKindsForIndieWeb\get_checkins_in_range
- * @covers \PostKindsForIndieWeb\get_checkins_archive_url
- * @covers \PostKindsForIndieWeb\is_checkin
- * @covers \PostKindsForIndieWeb\get_checkin_venue
- * @covers \PostKindsForIndieWeb\get_checkin_location
- * @covers \PostKindsForIndieWeb\get_checkin_count
- * @covers \PostKindsForIndieWeb\get_venue_count
- * @covers \PostKindsForIndieWeb\format_location
+ * @covers \PKIW\get_checkins
+ * @covers \PKIW\get_checkins_at_venue
+ * @covers \PKIW\get_checkins_by_author
+ * @covers \PKIW\get_checkins_in_range
+ * @covers \PKIW\get_checkins_archive_url
+ * @covers \PKIW\is_checkin
+ * @covers \PKIW\get_checkin_venue
+ * @covers \PKIW\get_checkin_location
+ * @covers \PKIW\get_checkin_count
+ * @covers \PKIW\get_venue_count
+ * @covers \PKIW\format_location
  */
 class FunctionsCheckinTest extends WP_UnitTestCase {
 
@@ -47,8 +47,8 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 			register_taxonomy( 'indieblocks_kind', 'post' );
 		}
 
-		if ( ! taxonomy_exists( 'venue' ) ) {
-			register_taxonomy( 'venue', 'post' );
+		if ( ! taxonomy_exists( 'pkiw_venue' ) ) {
+			register_taxonomy( 'pkiw_venue', 'post' );
 		}
 	}
 
@@ -83,7 +83,7 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	 * @return int Term ID.
 	 */
 	private function create_venue( string $name, array $meta = [] ): int {
-		$result = wp_insert_term( $name, 'venue' );
+		$result = wp_insert_term( $name, 'pkiw_venue' );
 		$term_id = $result['term_id'];
 
 		foreach ( $meta as $key => $value ) {
@@ -163,12 +163,12 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 		$venue_id = $this->create_venue( 'Test Cafe' );
 
 		$post_id = $this->create_checkin_post();
-		wp_set_object_terms( $post_id, [ $venue_id ], 'venue' );
+		wp_set_object_terms( $post_id, [ $venue_id ], 'pkiw_venue' );
 
 		// Checkin at different venue.
 		$other_venue = $this->create_venue( 'Other Place' );
 		$other_post  = $this->create_checkin_post();
-		wp_set_object_terms( $other_post, [ $other_venue ], 'venue' );
+		wp_set_object_terms( $other_post, [ $other_venue ], 'pkiw_venue' );
 
 		$query = get_checkins_at_venue( $venue_id );
 
@@ -293,7 +293,7 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	public function test_get_checkin_venue(): void {
 		$venue_id = $this->create_venue( 'Test Cafe' );
 		$post_id  = $this->create_checkin_post();
-		wp_set_object_terms( $post_id, [ $venue_id ], 'venue' );
+		wp_set_object_terms( $post_id, [ $venue_id ], 'pkiw_venue' );
 
 		$venue = get_checkin_venue( $post_id );
 
@@ -333,7 +333,7 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 		] );
 
 		$post_id = $this->create_checkin_post();
-		wp_set_object_terms( $post_id, [ $venue_id ], 'venue' );
+		wp_set_object_terms( $post_id, [ $venue_id ], 'pkiw_venue' );
 
 		$location = get_checkin_location( $post_id );
 
@@ -351,10 +351,10 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	 */
 	public function test_get_checkin_location_from_post_meta(): void {
 		$post_id = $this->create_checkin_post();
-		update_post_meta( $post_id, '_postkind_checkin_venue', 'Some Place' );
-		update_post_meta( $post_id, '_postkind_checkin_city', 'Seattle' );
-		update_post_meta( $post_id, '_postkind_checkin_latitude', '47.6' );
-		update_post_meta( $post_id, '_postkind_checkin_longitude', '-122.3' );
+		update_post_meta( $post_id, '_pkiw_checkin_venue', 'Some Place' );
+		update_post_meta( $post_id, '_pkiw_checkin_city', 'Seattle' );
+		update_post_meta( $post_id, '_pkiw_checkin_latitude', '47.6' );
+		update_post_meta( $post_id, '_pkiw_checkin_longitude', '-122.3' );
 
 		$location = get_checkin_location( $post_id );
 
@@ -375,7 +375,7 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	 */
 	public function test_get_checkin_location_filters_empty(): void {
 		$post_id = $this->create_checkin_post();
-		update_post_meta( $post_id, '_postkind_checkin_venue', 'Place' );
+		update_post_meta( $post_id, '_pkiw_checkin_venue', 'Place' );
 		// Don't set other meta.
 
 		$location = get_checkin_location( $post_id );
@@ -436,7 +436,7 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 		$this->create_venue( 'Empty Venue' );
 
 		$post_id = $this->create_checkin_post();
-		wp_set_object_terms( $post_id, [ $venue_id ], 'venue' );
+		wp_set_object_terms( $post_id, [ $venue_id ], 'pkiw_venue' );
 
 		$count = get_venue_count( true );
 

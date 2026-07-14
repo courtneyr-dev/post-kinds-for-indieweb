@@ -4,15 +4,15 @@
  *
  * Handles POSSE of watch posts to Trakt.tv history.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Sync;
+namespace PKIW\Sync;
 
-use PostKindsForIndieWeb\APIs\Trakt;
+use PKIW\APIs\Trakt;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {

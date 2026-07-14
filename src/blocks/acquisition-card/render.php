@@ -6,7 +6,7 @@
  * structure (badge → label → title → sub → media → note → meta), theme owns
  * paint via --pk-* custom properties.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @var array    $attributes Block attributes.
  * @var string   $content    Block content (empty for dynamic blocks).
  * @var WP_Block $block      Block instance.
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
-use function PostKindsForIndieWeb\get_kind_icon_svg;
+use function PKIW\get_kind_icon_svg;
 
 $pkiw_title       = $attributes['title'] ?? '';
 $pkiw_type        = $attributes['acquisitionType'] ?? '';
@@ -31,15 +31,15 @@ $pkiw_notes       = $attributes['notes'] ?? '';
 $pkiw_acquired_at = $attributes['acquiredAt'] ?? '';
 
 $pkiw_type_labels = [
-	'purchase' => __( 'Purchase', 'post-kinds-for-indieweb' ),
-	'gift'     => __( 'Gift', 'post-kinds-for-indieweb' ),
-	'found'    => __( 'Found', 'post-kinds-for-indieweb' ),
-	'won'      => __( 'Won', 'post-kinds-for-indieweb' ),
-	'trade'    => __( 'Trade', 'post-kinds-for-indieweb' ),
-	'free'     => __( 'Free', 'post-kinds-for-indieweb' ),
-	'other'    => __( 'Other', 'post-kinds-for-indieweb' ),
+	'purchase' => __( 'Purchase', 'post-kinds-for-indieweb-in-block-themes' ),
+	'gift'     => __( 'Gift', 'post-kinds-for-indieweb-in-block-themes' ),
+	'found'    => __( 'Found', 'post-kinds-for-indieweb-in-block-themes' ),
+	'won'      => __( 'Won', 'post-kinds-for-indieweb-in-block-themes' ),
+	'trade'    => __( 'Trade', 'post-kinds-for-indieweb-in-block-themes' ),
+	'free'     => __( 'Free', 'post-kinds-for-indieweb-in-block-themes' ),
+	'other'    => __( 'Other', 'post-kinds-for-indieweb-in-block-themes' ),
 ];
-$pkiw_type_label  = $pkiw_type_labels[ $pkiw_type ] ?? ( $pkiw_type ? $pkiw_type : __( 'Acquired', 'post-kinds-for-indieweb' ) );
+$pkiw_type_label  = $pkiw_type_labels[ $pkiw_type ] ?? ( $pkiw_type ? $pkiw_type : __( 'Acquired', 'post-kinds-for-indieweb-in-block-themes' ) );
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
@@ -74,7 +74,7 @@ ob_start();
 					?>
 					<span class="pk-dot"></span><?php endif; ?>
 				<?php if ( $pkiw_where ) : ?>
-					<span class="p-location"><?php printf( /* translators: %s: place the item was acquired. */ esc_html__( 'from %s', 'post-kinds-for-indieweb' ), esc_html( $pkiw_where ) ); ?></span>
+					<span class="p-location"><?php printf( /* translators: %s: place the item was acquired. */ esc_html__( 'from %s', 'post-kinds-for-indieweb-in-block-themes' ), esc_html( $pkiw_where ) ); ?></span>
 				<?php endif; ?>
 			</p>
 		<?php endif; ?>

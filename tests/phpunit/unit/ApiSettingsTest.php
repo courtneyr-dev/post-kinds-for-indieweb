@@ -2,20 +2,20 @@
 /**
  * Test the API Settings class.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\Admin\Admin;
-use PostKindsForIndieWeb\Admin\API_Settings;
-use PostKindsForIndieWeb\Plugin;
+use PKIW\Admin\Admin;
+use PKIW\Admin\API_Settings;
+use PKIW\Plugin;
 use WP_UnitTestCase;
 
 /**
  * Test the API Settings page.
  *
- * @covers \PostKindsForIndieWeb\Admin\API_Settings
+ * @covers \PKIW\Admin\API_Settings
  */
 class ApiSettingsTest extends WP_UnitTestCase {
 
@@ -46,7 +46,7 @@ class ApiSettingsTest extends WP_UnitTestCase {
 		$uri = $this->settings->get_oauth_redirect_uri( 'trakt' );
 
 		$this->assertStringContainsString( 'admin-post.php', $uri );
-		$this->assertStringContainsString( 'action=post_kinds_trakt_oauth', $uri );
+		$this->assertStringContainsString( 'action=pkiw_trakt_oauth', $uri );
 	}
 
 	/**
@@ -55,7 +55,7 @@ class ApiSettingsTest extends WP_UnitTestCase {
 	public function test_get_oauth_redirect_uri_foursquare(): void {
 		$uri = $this->settings->get_oauth_redirect_uri( 'foursquare' );
 
-		$this->assertStringContainsString( 'action=post_kinds_foursquare_oauth', $uri );
+		$this->assertStringContainsString( 'action=pkiw_foursquare_oauth', $uri );
 	}
 
 	// ─── get_oauth_url ───
@@ -64,7 +64,7 @@ class ApiSettingsTest extends WP_UnitTestCase {
 	 * Test get_oauth_url returns null without credentials.
 	 */
 	public function test_get_oauth_url_null_without_creds(): void {
-		delete_option( 'post_kinds_indieweb_api_credentials' );
+		delete_option( 'pkiw_api_credentials' );
 
 		$this->assertNull( $this->settings->get_oauth_url( 'trakt' ) );
 	}
@@ -73,7 +73,7 @@ class ApiSettingsTest extends WP_UnitTestCase {
 	 * Test get_oauth_url for Trakt.
 	 */
 	public function test_get_oauth_url_trakt(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [
+		update_option( 'pkiw_api_credentials', [
 			'trakt' => [ 'client_id' => 'test-trakt-id' ],
 		] );
 
@@ -88,7 +88,7 @@ class ApiSettingsTest extends WP_UnitTestCase {
 	 * Test get_oauth_url for Simkl.
 	 */
 	public function test_get_oauth_url_simkl(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [
+		update_option( 'pkiw_api_credentials', [
 			'simkl' => [ 'client_id' => 'test-simkl-id' ],
 		] );
 
@@ -102,7 +102,7 @@ class ApiSettingsTest extends WP_UnitTestCase {
 	 * Test get_oauth_url for Foursquare.
 	 */
 	public function test_get_oauth_url_foursquare(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [
+		update_option( 'pkiw_api_credentials', [
 			'foursquare' => [ 'client_id' => 'test-fsq-id' ],
 		] );
 
@@ -116,7 +116,7 @@ class ApiSettingsTest extends WP_UnitTestCase {
 	 * Test get_oauth_url for Untappd.
 	 */
 	public function test_get_oauth_url_untappd(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [
+		update_option( 'pkiw_api_credentials', [
 			'untappd' => [ 'client_id' => 'test-untappd-id' ],
 		] );
 
@@ -139,7 +139,7 @@ class ApiSettingsTest extends WP_UnitTestCase {
 	 * Test get_oauth_url returns null for Trakt without client_id.
 	 */
 	public function test_get_oauth_url_trakt_no_client_id(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [
+		update_option( 'pkiw_api_credentials', [
 			'trakt' => [ 'client_secret' => 'secret-only' ],
 		] );
 

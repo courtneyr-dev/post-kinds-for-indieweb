@@ -7,7 +7,7 @@ Symptoms, likely causes, and fixes for the most common problems, based on the pl
 
 ## The plugin won't run and shows a "Post Kinds" error
 
-**Symptom:** An error notice says Post Kinds for IndieWeb cannot run while Post Kinds is active, and none of the plugin's features appear.
+**Symptom:** An error notice says Post Kinds for IndieWeb in Block Themes cannot run while Post Kinds is active, and none of the plugin's features appear.
 
 **Likely cause:** The classic [Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin (`indieweb-post-kinds`) is active — including network-activated on multisite. Both plugins use the same `kind` taxonomy, so this plugin deliberately refuses to initialize.
 
@@ -66,7 +66,7 @@ Symptoms, likely causes, and fixes for the most common problems, based on the pl
 
 **Symptom:** Publishing from a mobile/Micropub client fails or nothing shows up on the site.
 
-**Likely cause:** Micropub is not something this plugin provides by itself — it requires the separate [Micropub plugin](https://wordpress.org/plugins/micropub/) (and IndieAuth for authentication). Post Kinds for IndieWeb only converts posts the Micropub plugin has already received.
+**Likely cause:** Micropub is not something this plugin provides by itself — it requires the separate [Micropub plugin](https://wordpress.org/plugins/micropub/) (and IndieAuth for authentication). Post Kinds for IndieWeb in Block Themes only converts posts the Micropub plugin has already received.
 
 **Fix:**
 

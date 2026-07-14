@@ -2,18 +2,18 @@
 /**
  * Test the Block Bindings Formats (post-formats/format-data) source.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
 use WP_UnitTestCase;
-use PostKindsForIndieWeb\Block_Bindings_Formats;
+use PKIW\Block_Bindings_Formats;
 
 /**
  * Test the Block_Bindings_Formats class functionality.
  *
- * @covers \PostKindsForIndieWeb\Block_Bindings_Formats
+ * @covers \PKIW\Block_Bindings_Formats
  */
 class BlockBindingsFormatsTest extends WP_UnitTestCase {
 

@@ -8,7 +8,7 @@
 	"category": "post-kinds-indieweb",
 	"description": "Display something you favorited with title, URL, and description.",
 	"keywords": ["favorite", "star", "like", "bookmark"],
-	"textdomain": "post-kinds-indieweb",
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
 	"attributes": {
 		"title": {
 			"type": "string"

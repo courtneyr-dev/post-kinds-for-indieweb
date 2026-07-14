@@ -1,4 +1,4 @@
-# Post Kinds for IndieWeb
+# Post Kinds for IndieWeb in Block Themes
 
 [![WordPress 7.0+](https://img.shields.io/badge/WordPress-7.0%2B-21759b.svg?logo=wordpress&logoColor=white)](https://wordpress.org/)
 [![PHP 8.2+](https://img.shields.io/badge/PHP-8.2%2B-777BB4.svg?logo=php&logoColor=white)](https://php.net/)
@@ -16,7 +16,7 @@ Try it without installing anything: see the [Playground preview](https://courtne
 
 ## User documentation
 
-**User documentation:** [Read the complete Post Kinds for IndieWeb documentation](https://courtneyr-dev.github.io/post-kinds-for-indieweb/)
+**User documentation:** [Read the complete Post Kinds for IndieWeb in Block Themes documentation](https://courtneyr-dev.github.io/post-kinds-for-indieweb/)
 
 Key pages:
 
@@ -107,7 +107,7 @@ Validate your output at [pin13.net/mf2](https://pin13.net/mf2/).
 ### Install from WordPress.org
 
 1. Go to **Plugins > Add New** in your WordPress admin
-2. Search for **Post Kinds for IndieWeb**
+2. Search for **Post Kinds for IndieWeb in Block Themes**
 3. Click **Install Now**, then **Activate**
 4. Configure API keys at **Reactions > API Connections**
 

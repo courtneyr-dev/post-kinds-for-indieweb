@@ -1,5 +1,5 @@
 {
-	"name": "post-kinds-for-indieweb",
+	"name": "post-kinds-for-indieweb-in-block-themes",
 	"version": "1.0.0",
 	"description": "Modern block editor support for IndieWeb post kinds and microformats. A successor to the classic IndieWeb Post Kinds plugin.",
 	"author": "Courtney Robertson",
@@ -31,7 +31,7 @@
 		"languages/",
 		"patterns/",
 		"templates/",
-		"post-kinds-for-indieweb.php",
+		"post-kinds-for-indieweb-in-block-themes.php",
 		"readme.txt",
 		"uninstall.php"
 	],

@@ -1,9 +1,9 @@
 ---
-title: Post Kinds for IndieWeb
-description: "User documentation for Post Kinds for IndieWeb: log what you listen to, watch, read, play, and visit on your own WordPress site."
+title: Post Kinds for IndieWeb in Block Themes
+description: "User documentation for Post Kinds for IndieWeb in Block Themes: log what you listen to, watch, read, play, and visit on your own WordPress site."
 ---
 
-Post Kinds for IndieWeb lets you track what you listen to, watch, read, play, and experience — all from your own WordPress site, with full block editor support and IndieWeb microformats. These docs help you install the plugin, set it up, and log your first activity.
+Post Kinds for IndieWeb in Block Themes lets you track what you listen to, watch, read, play, and experience — all from your own WordPress site, with full block editor support and IndieWeb microformats. These docs help you install the plugin, set it up, and log your first activity.
 
 ## What the plugin does
 
@@ -36,7 +36,7 @@ As of version 1.0.0, the plugin provides:
 
 ## Is it on WordPress.org?
 
-Not yet. Post Kinds for IndieWeb is not available in the WordPress.org plugin directory — you install it from a release ZIP on GitHub. [Playground preview](/post-kinds-for-indieweb/playground/) lets you try it in your browser first without installing anything.
+Not yet. Post Kinds for IndieWeb in Block Themes is not available in the WordPress.org plugin directory — you install it from a release ZIP on GitHub. [Playground preview](/post-kinds-for-indieweb/playground/) lets you try it in your browser first without installing anything.
 
 ## Get started
 

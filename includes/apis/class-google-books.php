@@ -4,13 +4,13 @@
  *
  * Provides book metadata from Google Books API.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\APIs;
+namespace PKIW\APIs;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -64,7 +64,7 @@ class GoogleBooks extends API_Base {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$credentials   = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials   = get_option( 'pkiw_api_credentials', [] );
 		$gb_creds      = $credentials['google_books'] ?? [];
 		$this->api_key = $gb_creds['api_key'] ?? '';
 	}

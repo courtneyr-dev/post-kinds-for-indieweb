@@ -2,18 +2,18 @@
 /**
  * Test the PodcastIndex API client.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\APIs\PodcastIndex;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\APIs\PodcastIndex;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Test the PodcastIndex API integration.
  *
- * @covers \PostKindsForIndieWeb\APIs\PodcastIndex
+ * @covers \PKIW\APIs\PodcastIndex
  */
 class PodcastIndexApiTest extends ApiTestCase {
 

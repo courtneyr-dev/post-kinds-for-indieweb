@@ -23,12 +23,12 @@
   },
   "autoload": {
     "psr-4": {
-      "PostKindsForIndieWeb\\": "includes/"
+      "PKIW\\": "includes/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "PostKindsForIndieWeb\\Tests\\": "tests/phpunit/"
+      "PKIW\\Tests\\": "tests/phpunit/"
     }
   },
   "scripts": {

@@ -5,13 +5,13 @@
  * Provides common functionality for all external API integrations including
  * caching, rate limiting, error handling, and HTTP requests.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\APIs;
+namespace PKIW\APIs;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -93,8 +93,8 @@ abstract class API_Base {
 	 */
 	public function __construct() {
 		$this->user_agent = sprintf(
-			'PostKindsForIndieWeb/%s (WordPress/%s; +%s)',
-			\POST_KINDS_INDIEWEB_VERSION,
+			'PKIW/%s (WordPress/%s; +%s)',
+			\PKIW_VERSION,
 			get_bloginfo( 'version' ),
 			home_url()
 		);
@@ -278,7 +278,7 @@ abstract class API_Base {
 			throw new \Exception(
 				sprintf(
 					/* translators: 1: API name, 2: Error message */
-					__( '%1$s API error: %2$s', 'post-kinds-for-indieweb' ),
+					__( '%1$s API error: %2$s', 'post-kinds-for-indieweb-in-block-themes' ),
 					esc_html( $this->api_name ),
 					esc_html( $last_error->get_error_message() )
 				)
@@ -290,7 +290,7 @@ abstract class API_Base {
 		throw new \Exception(
 			sprintf(
 				/* translators: %s: API name */
-				__( '%s API request failed after multiple attempts.', 'post-kinds-for-indieweb' ),
+				__( '%s API request failed after multiple attempts.', 'post-kinds-for-indieweb-in-block-themes' ),
 				esc_html( $this->api_name )
 			)
 		);
@@ -361,7 +361,7 @@ abstract class API_Base {
 		// Default error message.
 		return sprintf(
 			/* translators: 1: API name, 2: HTTP status code */
-			__( '%1$s API returned error code %2$d', 'post-kinds-for-indieweb' ),
+			__( '%1$s API returned error code %2$d', 'post-kinds-for-indieweb-in-block-themes' ),
 			$this->api_name,
 			$code
 		);
@@ -461,7 +461,7 @@ abstract class API_Base {
 	 * @return string Full cache key.
 	 */
 	protected function get_cache_key( string $key ): string {
-		return 'post_kinds_' . $this->api_name . '_' . md5( $key );
+		return 'pkiw_' . $this->api_name . '_' . md5( $key );
 	}
 
 	/**
@@ -505,7 +505,7 @@ abstract class API_Base {
 		 * @param string               $message  Error message.
 		 * @param array<string, mixed> $context  Additional context.
 		 */
-		do_action( 'post_kinds_indieweb_api_error', $this->api_name, $message, $context );
+		do_action( 'pkiw_api_error', $this->api_name, $message, $context );
 	}
 
 	/**
@@ -525,7 +525,7 @@ abstract class API_Base {
 		 * @param string               $message  Debug message.
 		 * @param array<string, mixed> $context  Additional context.
 		 */
-		do_action( 'post_kinds_indieweb_api_debug', $this->api_name, $message, $context );
+		do_action( 'pkiw_api_debug', $this->api_name, $message, $context );
 	}
 
 	/**
@@ -570,7 +570,7 @@ abstract class API_Base {
 	 * @return mixed Option value.
 	 */
 	protected function get_option( string $key, $default_value = '' ) {
-		return get_option( 'post_kinds_indieweb_' . $key, $default_value );
+		return get_option( 'pkiw_' . $key, $default_value );
 	}
 
 	/**

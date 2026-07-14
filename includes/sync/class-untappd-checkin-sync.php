@@ -4,11 +4,11 @@
  *
  * Handles bidirectional sync of beer checkins with Untappd.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.0.0
  */
 
-namespace PostKindsForIndieWeb\Sync;
+namespace PKIW\Sync;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -67,7 +67,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 	 */
 	public function get_auth_url(): string {
 		$credentials  = $this->get_credentials();
-		$redirect_uri = admin_url( 'admin-post.php?action=post_kinds_untappd_oauth' );
+		$redirect_uri = admin_url( 'admin-post.php?action=pkiw_untappd_oauth' );
 
 		return add_query_arg(
 			[
@@ -87,7 +87,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 	 */
 	public function handle_oauth_callback( string $code ): bool {
 		$credentials  = $this->get_credentials();
-		$redirect_uri = admin_url( 'admin-post.php?action=post_kinds_untappd_oauth' );
+		$redirect_uri = admin_url( 'admin-post.php?action=pkiw_untappd_oauth' );
 
 		$response = wp_remote_get(
 			add_query_arg(
@@ -116,7 +116,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 		}
 
 		// Save the token.
-		$all_credentials                            = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$all_credentials                            = get_option( 'pkiw_api_credentials', [] );
 		$all_credentials['untappd']['access_token'] = $body['response']['access_token'];
 
 		// Get user info.
@@ -125,7 +125,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 			$all_credentials['untappd']['username'] = $user_info['response']['user']['user_name'];
 		}
 
-		update_option( 'post_kinds_indieweb_api_credentials', $all_credentials );
+		update_option( 'pkiw_api_credentials', $all_credentials );
 
 		return true;
 	}
@@ -145,10 +145,10 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 		}
 
 		// Need beer ID to check in on Untappd.
-		$beer_id = get_post_meta( $post_id, '_postkind_untappd_beer_id', true );
+		$beer_id = get_post_meta( $post_id, '_pkiw_untappd_beer_id', true );
 		if ( empty( $beer_id ) ) {
 			// Try to find beer by name.
-			$beer_name = get_post_meta( $post_id, '_postkind_beer_name', true );
+			$beer_name = get_post_meta( $post_id, '_pkiw_beer_name', true );
 			if ( ! empty( $beer_name ) ) {
 				$search = $this->api_request(
 					'/search/beer',
@@ -179,7 +179,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 		];
 
 		// Add optional parameters.
-		$rating = get_post_meta( $post_id, '_postkind_rating', true );
+		$rating = get_post_meta( $post_id, '_pkiw_rating', true );
 		if ( ! empty( $rating ) ) {
 			// Untappd uses 0-5 scale with 0.25 increments.
 			$params['rating'] = min( 5, max( 0, floatval( $rating ) ) );
@@ -191,7 +191,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 		}
 
 		// Venue (Foursquare ID).
-		$foursquare_id = get_post_meta( $post_id, '_postkind_foursquare_id', true );
+		$foursquare_id = get_post_meta( $post_id, '_pkiw_foursquare_id', true );
 		if ( ! empty( $foursquare_id ) ) {
 			$params['foursquare_id'] = $foursquare_id;
 		}
@@ -205,7 +205,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 		$checkin_id = $response['response']['checkin']['checkin_id'] ?? null;
 
 		if ( $checkin_id ) {
-			update_post_meta( $post_id, '_postkind_untappd_checkin_id', $checkin_id );
+			update_post_meta( $post_id, '_pkiw_untappd_checkin_id', $checkin_id );
 			return (string) $checkin_id;
 		}
 
@@ -230,7 +230,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 			return false;
 		}
 
-		$settings    = get_option( 'post_kinds_indieweb_settings', [] );
+		$settings    = get_option( 'pkiw_settings', [] );
 		$post_status = $settings['checkin_import_status'] ?? 'publish';
 
 		// Build post content.
@@ -265,49 +265,49 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 		wp_set_object_terms( $post_id, 'checkin', 'kind' );
 
 		// Save meta.
-		update_post_meta( $post_id, '_postkind_kind', 'checkin' );
-		update_post_meta( $post_id, '_postkind_untappd_checkin_id', $checkin_id );
-		update_post_meta( $post_id, '_postkind_imported_from', 'untappd' );
+		update_post_meta( $post_id, '_pkiw_kind', 'checkin' );
+		update_post_meta( $post_id, '_pkiw_untappd_checkin_id', $checkin_id );
+		update_post_meta( $post_id, '_pkiw_imported_from', 'untappd' );
 
 		// Beer info.
 		if ( ! empty( $external_checkin['beer'] ) ) {
-			update_post_meta( $post_id, '_postkind_beer_name', $external_checkin['beer']['beer_name'] ?? '' );
-			update_post_meta( $post_id, '_postkind_untappd_beer_id', $external_checkin['beer']['bid'] ?? '' );
-			update_post_meta( $post_id, '_postkind_beer_style', $external_checkin['beer']['beer_style'] ?? '' );
-			update_post_meta( $post_id, '_postkind_beer_abv', $external_checkin['beer']['beer_abv'] ?? '' );
+			update_post_meta( $post_id, '_pkiw_beer_name', $external_checkin['beer']['beer_name'] ?? '' );
+			update_post_meta( $post_id, '_pkiw_untappd_beer_id', $external_checkin['beer']['bid'] ?? '' );
+			update_post_meta( $post_id, '_pkiw_beer_style', $external_checkin['beer']['beer_style'] ?? '' );
+			update_post_meta( $post_id, '_pkiw_beer_abv', $external_checkin['beer']['beer_abv'] ?? '' );
 
 			if ( ! empty( $external_checkin['beer']['beer_label'] ) ) {
-				update_post_meta( $post_id, '_postkind_beer_image', $external_checkin['beer']['beer_label'] );
+				update_post_meta( $post_id, '_pkiw_beer_image', $external_checkin['beer']['beer_label'] );
 			}
 		}
 
 		// Brewery info.
 		if ( ! empty( $external_checkin['brewery'] ) ) {
-			update_post_meta( $post_id, '_postkind_brewery_name', $external_checkin['brewery']['brewery_name'] ?? '' );
-			update_post_meta( $post_id, '_postkind_brewery_id', $external_checkin['brewery']['brewery_id'] ?? '' );
-			update_post_meta( $post_id, '_postkind_brewery_country', $external_checkin['brewery']['country_name'] ?? '' );
+			update_post_meta( $post_id, '_pkiw_brewery_name', $external_checkin['brewery']['brewery_name'] ?? '' );
+			update_post_meta( $post_id, '_pkiw_brewery_id', $external_checkin['brewery']['brewery_id'] ?? '' );
+			update_post_meta( $post_id, '_pkiw_brewery_country', $external_checkin['brewery']['country_name'] ?? '' );
 		}
 
 		// Rating.
 		if ( ! empty( $external_checkin['rating_score'] ) ) {
-			update_post_meta( $post_id, '_postkind_rating', $external_checkin['rating_score'] );
+			update_post_meta( $post_id, '_pkiw_rating', $external_checkin['rating_score'] );
 		}
 
 		// Venue info.
 		if ( ! empty( $external_checkin['venue'] ) ) {
 			$venue = $external_checkin['venue'];
-			update_post_meta( $post_id, '_postkind_checkin_name', $venue['venue_name'] ?? '' );
+			update_post_meta( $post_id, '_pkiw_checkin_name', $venue['venue_name'] ?? '' );
 
 			if ( ! empty( $venue['location'] ) ) {
-				update_post_meta( $post_id, '_postkind_geo_latitude', $venue['location']['lat'] ?? '' );
-				update_post_meta( $post_id, '_postkind_geo_longitude', $venue['location']['lng'] ?? '' );
-				update_post_meta( $post_id, '_postkind_checkin_locality', $venue['location']['venue_city'] ?? '' );
-				update_post_meta( $post_id, '_postkind_checkin_region', $venue['location']['venue_state'] ?? '' );
-				update_post_meta( $post_id, '_postkind_checkin_country', $venue['location']['venue_country'] ?? '' );
+				update_post_meta( $post_id, '_pkiw_geo_latitude', $venue['location']['lat'] ?? '' );
+				update_post_meta( $post_id, '_pkiw_geo_longitude', $venue['location']['lng'] ?? '' );
+				update_post_meta( $post_id, '_pkiw_checkin_locality', $venue['location']['venue_city'] ?? '' );
+				update_post_meta( $post_id, '_pkiw_checkin_region', $venue['location']['venue_state'] ?? '' );
+				update_post_meta( $post_id, '_pkiw_checkin_country', $venue['location']['venue_country'] ?? '' );
 			}
 
 			if ( ! empty( $venue['foursquare']['foursquare_id'] ) ) {
-				update_post_meta( $post_id, '_postkind_foursquare_id', $venue['foursquare']['foursquare_id'] );
+				update_post_meta( $post_id, '_pkiw_foursquare_id', $venue['foursquare']['foursquare_id'] );
 			}
 		}
 
@@ -430,7 +430,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 		$token       = $access_token ?? ( $credentials['access_token'] ?? '' );
 
 		if ( empty( $token ) ) {
-			return new \WP_Error( 'no_token', __( 'No access token available.', 'post-kinds-for-indieweb' ) );
+			return new \WP_Error( 'no_token', __( 'No access token available.', 'post-kinds-for-indieweb-in-block-themes' ) );
 		}
 
 		$params['access_token'] = $token;
@@ -440,7 +440,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 		$args = [
 			'timeout' => 30,
 			'headers' => [
-				'User-Agent' => 'Post Kinds for IndieWeb WordPress Plugin',
+				'User-Agent' => 'Post Kinds for IndieWeb in Block Themes WordPress Plugin',
 			],
 		];
 
@@ -461,7 +461,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( $code >= 400 ) {
-			$error_message = $body['meta']['error_detail'] ?? __( 'API request failed.', 'post-kinds-for-indieweb' );
+			$error_message = $body['meta']['error_detail'] ?? __( 'API request failed.', 'post-kinds-for-indieweb-in-block-themes' );
 			return new \WP_Error( 'api_error', $error_message );
 		}
 
@@ -474,7 +474,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 	 * @return array<string, mixed> Credentials.
 	 */
 	private function get_credentials(): array {
-		$all_credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$all_credentials = get_option( 'pkiw_api_credentials', [] );
 		return $all_credentials['untappd'] ?? [];
 	}
 }

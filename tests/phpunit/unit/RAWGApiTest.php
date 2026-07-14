@@ -2,18 +2,18 @@
 /**
  * Test the RAWG API client.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
-namespace PostKindsForIndieWeb\Tests\Unit;
+namespace PKIW\Tests\Unit;
 
-use PostKindsForIndieWeb\APIs\RAWG;
-use PostKindsForIndieWeb\Tests\ApiTestCase;
+use PKIW\APIs\RAWG;
+use PKIW\Tests\ApiTestCase;
 
 /**
  * Test the RAWG API integration.
  *
- * @covers \PostKindsForIndieWeb\APIs\RAWG
+ * @covers \PKIW\APIs\RAWG
  */
 class RAWGApiTest extends ApiTestCase {
 
@@ -30,7 +30,7 @@ class RAWGApiTest extends ApiTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		update_option(
-			'post_kinds_indieweb_api_credentials',
+			'pkiw_api_credentials',
 			[ 'rawg' => [ 'api_key' => 'test-rawg-key' ] ]
 		);
 		$this->api = new RAWG();
@@ -67,7 +67,7 @@ class RAWGApiTest extends ApiTestCase {
 	 * Test search returns empty when not configured.
 	 */
 	public function test_search_returns_empty_when_not_configured(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 		$api = new RAWG();
 
 		$results = $api->search( 'Mario' );
@@ -133,7 +133,7 @@ class RAWGApiTest extends ApiTestCase {
 	 * Test get_by_id returns null when not configured.
 	 */
 	public function test_get_by_id_returns_null_when_not_configured(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 		$api = new RAWG();
 
 		$this->assertNull( $api->get_by_id( '28199' ) );
@@ -164,7 +164,7 @@ class RAWGApiTest extends ApiTestCase {
 	 * Test get_by_platform returns empty when not configured.
 	 */
 	public function test_get_by_platform_returns_empty_when_not_configured(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 		$api = new RAWG();
 
 		$this->assertSame( [], $api->get_by_platform( 7 ) );
@@ -187,7 +187,7 @@ class RAWGApiTest extends ApiTestCase {
 	 * Test get_platforms returns empty when not configured.
 	 */
 	public function test_get_platforms_returns_empty_when_not_configured(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 		$api = new RAWG();
 
 		$this->assertSame( [], $api->get_platforms() );
@@ -204,7 +204,7 @@ class RAWGApiTest extends ApiTestCase {
 	 * Test is_configured returns false without key.
 	 */
 	public function test_is_configured_returns_false_without_key(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 		$api = new RAWG();
 
 		$this->assertFalse( $api->is_configured() );
@@ -223,7 +223,7 @@ class RAWGApiTest extends ApiTestCase {
 	 * Test test_connection fails without config.
 	 */
 	public function test_test_connection_fails_without_config(): void {
-		update_option( 'post_kinds_indieweb_api_credentials', [] );
+		update_option( 'pkiw_api_credentials', [] );
 		$api = new RAWG();
 
 		$this->assertFalse( $api->test_connection() );

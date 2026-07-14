@@ -10,13 +10,13 @@
  * - Smart Tagging: Suggest tags based on content and metadata.
  * - Content Summary: Generate review prompts from media metadata.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.3.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -105,7 +105,7 @@ final class AI_Enhancements {
 				'default'           => false,
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'show_in_rest'      => true,
-				'description'       => __( 'Enable AI-powered enhancements for post kind editing.', 'post-kinds-for-indieweb' ),
+				'description'       => __( 'Enable AI-powered enhancements for post kind editing.', 'post-kinds-for-indieweb-in-block-themes' ),
 			]
 		);
 	}
@@ -161,8 +161,10 @@ final class AI_Enhancements {
 			[
 				'methods'             => 'POST',
 				'callback'            => [ $this, 'handle_content_summary' ],
-				'permission_callback' => function () {
-					return current_user_can( 'edit_posts' );
+				'permission_callback' => function ( \WP_REST_Request $request ) {
+					// Capability check against the specific post, not just
+					// generic editing rights.
+					return current_user_can( 'edit_post', absint( $request->get_param( 'post_id' ) ) );
 				},
 				'args'                => [
 					'post_id' => [
@@ -214,7 +216,7 @@ final class AI_Enhancements {
 		if ( ! is_array( $parsed ) ) {
 			return new \WP_Error(
 				'pk_ai_parse_error',
-				__( 'Failed to parse AI response.', 'post-kinds-for-indieweb' ),
+				__( 'Failed to parse AI response.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 500 ]
 			);
 		}
@@ -250,7 +252,7 @@ final class AI_Enhancements {
 		if ( ! $post ) {
 			return new \WP_Error(
 				'pk_post_not_found',
-				__( 'Post not found.', 'post-kinds-for-indieweb' ),
+				__( 'Post not found.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 404 ]
 			);
 		}
@@ -280,7 +282,7 @@ final class AI_Enhancements {
 		if ( ! is_array( $tags ) ) {
 			return new \WP_Error(
 				'pk_ai_parse_error',
-				__( 'Failed to parse AI response.', 'post-kinds-for-indieweb' ),
+				__( 'Failed to parse AI response.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 500 ]
 			);
 		}
@@ -313,7 +315,7 @@ final class AI_Enhancements {
 		if ( ! $post ) {
 			return new \WP_Error(
 				'pk_post_not_found',
-				__( 'Post not found.', 'post-kinds-for-indieweb' ),
+				__( 'Post not found.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 404 ]
 			);
 		}
@@ -324,7 +326,7 @@ final class AI_Enhancements {
 		if ( ! in_array( $kind, [ 'read', 'watch', 'listen' ], true ) ) {
 			return new \WP_Error(
 				'pk_invalid_kind',
-				__( 'Content summaries are only available for read, watch, and listen posts.', 'post-kinds-for-indieweb' ),
+				__( 'Content summaries are only available for read, watch, and listen posts.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 400 ]
 			);
 		}
@@ -351,7 +353,7 @@ final class AI_Enhancements {
 		if ( ! is_array( $prompts ) ) {
 			return new \WP_Error(
 				'pk_ai_parse_error',
-				__( 'Failed to parse AI response.', 'post-kinds-for-indieweb' ),
+				__( 'Failed to parse AI response.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 500 ]
 			);
 		}
@@ -374,7 +376,7 @@ final class AI_Enhancements {
 		if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
 			return new \WP_Error(
 				'pk_ai_unavailable',
-				__( 'WP AI Client is not available.', 'post-kinds-for-indieweb' ),
+				__( 'WP AI Client is not available.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 503 ]
 			);
 		}
@@ -394,7 +396,7 @@ final class AI_Enhancements {
 
 			return new \WP_Error(
 				'pk_ai_exception',
-				__( 'AI request failed.', 'post-kinds-for-indieweb' ),
+				__( 'AI request failed.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 500 ]
 			);
 		}
@@ -415,7 +417,7 @@ final class AI_Enhancements {
 		if ( get_transient( $transient_key ) ) {
 			return new \WP_Error(
 				'pk_rate_limited',
-				__( 'Please wait a few seconds before making another AI request.', 'post-kinds-for-indieweb' ),
+				__( 'Please wait a few seconds before making another AI request.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 429 ]
 			);
 		}

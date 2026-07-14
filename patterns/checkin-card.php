@@ -4,13 +4,13 @@
  *
  * A block pattern for location check-ins at venues.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.0.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Patterns;
+namespace PKIW\Patterns;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -23,9 +23,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 register_block_pattern(
 	'post-kinds-indieweb/checkin-card',
 	[
-		'title'       => __( 'Check-in Card', 'post-kinds-for-indieweb' ),
-		'description' => __( 'Check in at a location or venue.', 'post-kinds-for-indieweb' ),
-		'categories'  => [ 'post-kinds-for-indieweb' ],
+		'title'       => __( 'Check-in Card', 'post-kinds-for-indieweb-in-block-themes' ),
+		'description' => __( 'Check in at a location or venue.', 'post-kinds-for-indieweb-in-block-themes' ),
+		'categories'  => [ 'post-kinds-for-indieweb-in-block-themes' ],
 		'keywords'    => [ 'checkin', 'check-in', 'location', 'venue', 'place', 'geo', 'indieweb', 'reaction' ],
 		'blockTypes'  => [ 'core/group' ],
 		'postTypes'   => [ 'post' ],

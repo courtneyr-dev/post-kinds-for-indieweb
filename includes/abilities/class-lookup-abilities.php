@@ -1,19 +1,19 @@
 <?php
 /**
- * Lookup Abilities Provider for Post Kinds for IndieWeb
+ * Lookup Abilities Provider for Post Kinds for IndieWeb in Block Themes
  *
  * Registers 6 lookup abilities that proxy to existing REST API endpoints.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Abilities;
+namespace PKIW\Abilities;
 
-use PostKindsForIndieWeb\Abilities_Manager;
-use PostKindsForIndieWeb\REST_API;
+use PKIW\Abilities_Manager;
+use PKIW\REST_API;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -123,106 +123,106 @@ final class Lookup_Abilities {
 	public function get_lookup_definitions(): array {
 		return [
 			'music'   => [
-				'label'        => __( 'Lookup Music', 'post-kinds-for-indieweb' ),
-				'description'  => __( 'Search for music by artist, track, or album name.', 'post-kinds-for-indieweb' ),
+				'label'        => __( 'Lookup Music', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'  => __( 'Search for music by artist, track, or album name.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'rest_route'   => '/' . REST_API::NAMESPACE . '/lookup/music',
 				'input_schema' => [
 					'type'       => 'object',
 					'properties' => [
 						'query' => [
 							'type'        => 'string',
-							'description' => __( 'Search query (artist, track, or album).', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Search query (artist, track, or album).', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 						'type'  => [
 							'type'        => 'string',
 							'enum'        => [ 'recording', 'release', 'artist' ],
 							'default'     => 'recording',
-							'description' => __( 'Type of music entity to search for.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Type of music entity to search for.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 					],
 					'required'   => [ 'query' ],
 				],
 			],
 			'video'   => [
-				'label'        => __( 'Lookup Video', 'post-kinds-for-indieweb' ),
-				'description'  => __( 'Search for movies or TV shows by title.', 'post-kinds-for-indieweb' ),
+				'label'        => __( 'Lookup Video', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'  => __( 'Search for movies or TV shows by title.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'rest_route'   => '/' . REST_API::NAMESPACE . '/lookup/video',
 				'input_schema' => [
 					'type'       => 'object',
 					'properties' => [
 						'query' => [
 							'type'        => 'string',
-							'description' => __( 'Movie or TV show title.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Movie or TV show title.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 						'type'  => [
 							'type'        => 'string',
 							'enum'        => [ 'movie', 'tv' ],
 							'default'     => 'movie',
-							'description' => __( 'Type of video content to search for.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Type of video content to search for.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 					],
 					'required'   => [ 'query' ],
 				],
 			],
 			'book'    => [
-				'label'        => __( 'Lookup Book', 'post-kinds-for-indieweb' ),
-				'description'  => __( 'Search for books by title, author, or ISBN.', 'post-kinds-for-indieweb' ),
+				'label'        => __( 'Lookup Book', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'  => __( 'Search for books by title, author, or ISBN.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'rest_route'   => '/' . REST_API::NAMESPACE . '/lookup/book',
 				'input_schema' => [
 					'type'       => 'object',
 					'properties' => [
 						'query' => [
 							'type'        => 'string',
-							'description' => __( 'Book title, author, or ISBN.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Book title, author, or ISBN.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 					],
 					'required'   => [ 'query' ],
 				],
 			],
 			'podcast' => [
-				'label'        => __( 'Lookup Podcast', 'post-kinds-for-indieweb' ),
-				'description'  => __( 'Search for podcasts by name.', 'post-kinds-for-indieweb' ),
+				'label'        => __( 'Lookup Podcast', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'  => __( 'Search for podcasts by name.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'rest_route'   => '/' . REST_API::NAMESPACE . '/lookup/podcast',
 				'input_schema' => [
 					'type'       => 'object',
 					'properties' => [
 						'query' => [
 							'type'        => 'string',
-							'description' => __( 'Podcast name.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Podcast name.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 					],
 					'required'   => [ 'query' ],
 				],
 			],
 			'venue'   => [
-				'label'        => __( 'Lookup Venue', 'post-kinds-for-indieweb' ),
-				'description'  => __( 'Search for venues and places by name or location.', 'post-kinds-for-indieweb' ),
+				'label'        => __( 'Lookup Venue', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'  => __( 'Search for venues and places by name or location.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'rest_route'   => '/' . REST_API::NAMESPACE . '/lookup/venue',
 				'input_schema' => [
 					'type'       => 'object',
 					'properties' => [
 						'query' => [
 							'type'        => 'string',
-							'description' => __( 'Venue or place name.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Venue or place name.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 						'll'    => [
 							'type'        => 'string',
-							'description' => __( 'Latitude,longitude for nearby search.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Latitude,longitude for nearby search.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 					],
 					'required'   => [ 'query' ],
 				],
 			],
 			'game'    => [
-				'label'        => __( 'Lookup Game', 'post-kinds-for-indieweb' ),
-				'description'  => __( 'Search for video games or board games by title.', 'post-kinds-for-indieweb' ),
+				'label'        => __( 'Lookup Game', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'  => __( 'Search for video games or board games by title.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'rest_route'   => '/' . REST_API::NAMESPACE . '/lookup/game',
 				'input_schema' => [
 					'type'       => 'object',
 					'properties' => [
 						'query' => [
 							'type'        => 'string',
-							'description' => __( 'Game title.', 'post-kinds-for-indieweb' ),
+							'description' => __( 'Game title.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 					],
 					'required'   => [ 'query' ],

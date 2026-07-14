@@ -5,13 +5,13 @@
  * Registers post-formats/format-data so theme developers can bind
  * core blocks to post format information (name, label, icon, etc.).
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.3.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -104,7 +104,7 @@ final class Block_Bindings_Formats {
 		register_block_bindings_source(
 			self::SOURCE_NAME,
 			[
-				'label'              => __( 'Post Format Data', 'post-kinds-for-indieweb' ),
+				'label'              => __( 'Post Format Data', 'post-kinds-for-indieweb-in-block-themes' ),
 				'get_value_callback' => [ $this, 'get_value' ],
 				'uses_context'       => [ 'postId', 'postType' ],
 			]
@@ -181,7 +181,7 @@ final class Block_Bindings_Formats {
 	 */
 	private function get_format_label( string $format ): string {
 		if ( 'standard' === $format ) {
-			return __( 'Standard', 'post-kinds-for-indieweb' );
+			return __( 'Standard', 'post-kinds-for-indieweb-in-block-themes' );
 		}
 
 		$label = get_post_format_string( $format );

@@ -4,13 +4,13 @@
  *
  * Provides integration with RAWG.io API for video game lookups.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since   1.1.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\APIs;
+namespace PKIW\APIs;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -61,7 +61,7 @@ class RAWG extends API_Base {
 	 * @return array<string, string> Credentials.
 	 */
 	private function get_credentials(): array {
-		$credentials = get_option( 'post_kinds_indieweb_api_credentials', [] );
+		$credentials = get_option( 'pkiw_api_credentials', [] );
 		return $credentials['rawg'] ?? [];
 	}
 

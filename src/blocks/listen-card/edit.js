@@ -111,10 +111,13 @@ export default function Edit( { attributes, setAttributes } ) {
 			<div { ...blockProps }>
 				<BlockPlaceholder
 					icon={ listenIcon }
-					label={ __( 'Listen Card', 'post-kinds-for-indieweb' ) }
+					label={ __(
+						'Listen Card',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					instructions={ __(
 						'Add a track you listened to. Search for music or enter details manually.',
-						'post-kinds-for-indieweb'
+						'post-kinds-for-indieweb-in-block-themes'
 					) }
 				>
 					<div className="post-kinds-card__url-prompt">
@@ -126,11 +129,11 @@ export default function Edit( { attributes, setAttributes } ) {
 							type="url"
 							placeholder={ __(
 								'Paste a Spotify, Apple Music, or other URL…',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 							label={ __(
 								'What are you listening to?',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 							hideLabelFromVision={ false }
 						/>
@@ -141,7 +144,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								type="music"
 								placeholder={ __(
 									'Search for a song or album…',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 								onSelect={ handleSearchSelect }
 							/>
@@ -151,7 +154,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							>
 								{ __(
 									'Enter manually',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							</Button>
 						</div>
@@ -163,7 +166,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							>
 								{ __(
 									'Search Music',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							</Button>
 							<Button
@@ -174,7 +177,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							>
 								{ __(
 									'Enter Manually',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							</Button>
 						</div>
@@ -188,14 +191,17 @@ export default function Edit( { attributes, setAttributes } ) {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Search Music', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Search Music',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<MediaSearch
 						type="music"
 						placeholder={ __(
 							'Search for a song or album…',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						onSelect={ handleSearchSelect }
 					/>
@@ -205,29 +211,41 @@ export default function Edit( { attributes, setAttributes } ) {
 					>
 						{ __(
 							'Search MusicBrainz to auto-fill track details.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					</p>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Track Details', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Track Details',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 				>
 					<TextControl
-						label={ __( 'Track Title', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Track Title',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ trackTitle || '' }
 						onChange={ ( value ) =>
 							setAttributes( { trackTitle: value } )
 						}
 					/>
 					<TextControl
-						label={ __( 'Artist', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Artist',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ artistName || '' }
 						onChange={ ( value ) =>
 							setAttributes( { artistName: value } )
 						}
 					/>
 					<TextControl
-						label={ __( 'Album', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Album',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ albumTitle || '' }
 						onChange={ ( value ) =>
 							setAttributes( { albumTitle: value } )
@@ -236,7 +254,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<TextControl
 						label={ __(
 							'Release Date',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ releaseDate || '' }
 						onChange={ ( value ) =>
@@ -247,11 +265,17 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Listen Info', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Listen Info',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 				>
 					<div className="components-base-control">
 						<span className="components-base-control__label">
-							{ __( 'Rating', 'post-kinds-for-indieweb' ) }
+							{ __(
+								'Rating',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }
 						</span>
 						<StarRating
 							value={ rating }
@@ -264,21 +288,24 @@ export default function Edit( { attributes, setAttributes } ) {
 
 					<div className="components-base-control">
 						<span className="components-base-control__label">
-							{ __( 'Listened At', 'post-kinds-for-indieweb' ) }
+							{ __(
+								'Listened At',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }
 						</span>
 						<Button
 							variant="secondary"
 							onClick={ () => setShowDatePicker( true ) }
 							aria-label={ __(
 								'Set listened date/time',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						>
 							{ listenedAt
 								? new Date( listenedAt ).toLocaleString()
 								: __(
 										'Set date/time',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 								  ) }
 						</Button>
 						{ showDatePicker && (
@@ -298,7 +325,10 @@ export default function Edit( { attributes, setAttributes } ) {
 					</div>
 
 					<TextControl
-						label={ __( 'Listen URL', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Listen URL',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ listenUrl || '' }
 						onChange={ ( value ) =>
 							setAttributes( { listenUrl: value } )
@@ -306,37 +336,42 @@ export default function Edit( { attributes, setAttributes } ) {
 						type="url"
 						help={ __(
 							'Link to the track on a streaming service.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 				</PanelBody>
 
-				<PanelBody title={ __( 'Layout', 'post-kinds-for-indieweb' ) }>
+				<PanelBody
+					title={ __(
+						'Layout',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
+				>
 					<SelectControl
 						label={ __(
 							'Layout Style',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ layout }
 						options={ [
 							{
 								label: __(
 									'Horizontal',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'horizontal',
 							},
 							{
 								label: __(
 									'Vertical',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'vertical',
 							},
 							{
 								label: __(
 									'Compact',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								),
 								value: 'compact',
 							},
@@ -348,13 +383,16 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Metadata', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Metadata',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<TextControl
 						label={ __(
 							'MusicBrainz ID',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						value={ musicbrainzId || '' }
 						onChange={ ( value ) =>
@@ -362,7 +400,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 						help={ __(
 							'Used for linking to music databases.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 				</PanelBody>
@@ -417,7 +455,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'Track title',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -430,7 +468,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'Artist name',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -444,7 +482,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								}
 								placeholder={ __(
 									'Album title',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							/>
 						) }
@@ -469,9 +507,12 @@ export default function Edit( { attributes, setAttributes } ) {
 						type="url"
 						placeholder={ __(
 							'Paste a Spotify, Apple Music, or other URL…',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
-						label={ __( 'Source URL', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Source URL',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						hideLabelFromVision={ false }
 					/>
 				</div>

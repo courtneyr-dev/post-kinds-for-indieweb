@@ -51,16 +51,16 @@ export default function Edit( { attributes, setAttributes } ) {
 	useEffect( () => {
 		const metaUpdates = {};
 		if ( title !== undefined ) {
-			metaUpdates._postkind_reply_title = title || '';
+			metaUpdates._pkiw_reply_title = title || '';
 		}
 		if ( url !== undefined ) {
-			metaUpdates._postkind_reply_url = url || '';
+			metaUpdates._pkiw_reply_url = url || '';
 		}
 		if ( author !== undefined ) {
-			metaUpdates._postkind_reply_author = author || '';
+			metaUpdates._pkiw_reply_author = author || '';
 		}
 		if ( image !== undefined ) {
-			metaUpdates._postkind_reply_image = image || '';
+			metaUpdates._pkiw_reply_image = image || '';
 		}
 
 		if ( Object.keys( metaUpdates ).length > 0 ) {
@@ -74,7 +74,10 @@ export default function Edit( { attributes, setAttributes } ) {
 			imageAlt:
 				media.alt ||
 				title ||
-				__( 'Reply context image', 'post-kinds-for-indieweb' ),
+				__(
+					'Reply context image',
+					'post-kinds-for-indieweb-in-block-themes'
+				),
 		} );
 	};
 
@@ -87,22 +90,31 @@ export default function Edit( { attributes, setAttributes } ) {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Reply Details', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Reply Details',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ true }
 				>
 					<TextControl
-						label={ __( 'Title', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Title',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ title || '' }
 						onChange={ ( value ) =>
 							setAttributes( { title: value } )
 						}
 						placeholder={ __(
 							'What are you replying to?',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 					<TextControl
-						label={ __( 'URL', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'URL',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ url || '' }
 						onChange={ ( value ) =>
 							setAttributes( { url: value } )
@@ -110,34 +122,43 @@ export default function Edit( { attributes, setAttributes } ) {
 						type="url"
 						placeholder={ __(
 							'https://…',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 					<TextControl
-						label={ __( 'Author', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Author',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ author || '' }
 						onChange={ ( value ) =>
 							setAttributes( { author: value } )
 						}
 						placeholder={ __(
 							'Original author',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Description', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Description',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<TextControl
-						label={ __( 'Description', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Description',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ description || '' }
 						onChange={ ( value ) =>
 							setAttributes( { description: value } )
 						}
 						placeholder={ __(
 							'Context from the original post',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 				</PanelBody>
@@ -171,7 +192,7 @@ export default function Edit( { attributes, setAttributes } ) {
 													}
 													aria-label={ __(
 														'Remove image',
-														'post-kinds-for-indieweb'
+														'post-kinds-for-indieweb-in-block-themes'
 													) }
 												>
 													&times;
@@ -185,7 +206,7 @@ export default function Edit( { attributes, setAttributes } ) {
 												<span className="post-kinds-card__media-text">
 													{ __(
 														'Add Image',
-														'post-kinds-for-indieweb'
+														'post-kinds-for-indieweb-in-block-themes'
 													) }
 												</span>
 											</div>
@@ -199,7 +220,10 @@ export default function Edit( { attributes, setAttributes } ) {
 					<div className="post-kinds-card__content">
 						<span className="post-kinds-card__badge">
 							&#8618;{ ' ' }
-							{ __( 'In reply to', 'post-kinds-for-indieweb' ) }
+							{ __(
+								'In reply to',
+								'post-kinds-for-indieweb-in-block-themes'
+							) }
 						</span>
 
 						<RichText
@@ -211,7 +235,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'What are you replying to?',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -228,7 +252,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								}
 								placeholder={ __(
 									'https://example.com/…',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							/>
 						</div>
@@ -242,7 +266,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'By whom?',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 
@@ -255,7 +279,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							}
 							placeholder={ __(
 								'Context from the original post',
-								'post-kinds-for-indieweb'
+								'post-kinds-for-indieweb-in-block-themes'
 							) }
 						/>
 					</div>

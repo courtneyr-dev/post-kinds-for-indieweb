@@ -1,5 +1,5 @@
 /**
- * Post Kinds for IndieWeb - Post Kinds Data Store
+ * Post Kinds for IndieWeb in Block Themes - Post Kinds Data Store
  *
  * Manages post kind state, auto-detection, and metadata in the block editor.
  *
@@ -26,7 +26,7 @@ export const STORE_NAME = 'post-kinds-indieweb/post-kinds';
  *
  * @type {string}
  */
-const META_PREFIX = '_postkind_';
+const META_PREFIX = '_pkiw_';
 
 /**
  * Default state shape.

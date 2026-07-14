@@ -7,15 +7,15 @@
  * after the kind taxonomy is assigned — the same hook Taxonomy uses, so this
  * covers editor, REST, and Micropub/Outpost content alike).
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb\Tests\Integration;
+namespace PKIW\Tests\Integration;
 
 use WP_UnitTestCase;
-use PostKindsForIndieWeb\Default_Category;
+use PKIW\Default_Category;
 
 class DefaultCategoryTest extends WP_UnitTestCase {
 
@@ -24,11 +24,11 @@ class DefaultCategoryTest extends WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		$this->activity_id = self::factory()->category->create( [ 'name' => 'Activity' ] );
-		update_option( 'post_kinds_indieweb_settings', [ 'default_category' => $this->activity_id ] );
+		update_option( 'pkiw_settings', [ 'default_category' => $this->activity_id ] );
 	}
 
 	public function tear_down(): void {
-		delete_option( 'post_kinds_indieweb_settings' );
+		delete_option( 'pkiw_settings' );
 		remove_all_filters( 'pkiw_default_category' );
 		parent::tear_down();
 	}
@@ -115,7 +115,7 @@ class DefaultCategoryTest extends WP_UnitTestCase {
 	}
 
 	public function test_does_nothing_when_no_default_configured(): void {
-		update_option( 'post_kinds_indieweb_settings', [ 'default_category' => 0 ] );
+		update_option( 'pkiw_settings', [ 'default_category' => 0 ] );
 		$post_id = $this->make_kind_post( 'listen' );
 		$this->assertNotContains( $this->activity_id, $this->category_ids( $post_id ) );
 	}

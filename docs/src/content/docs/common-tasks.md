@@ -8,7 +8,7 @@ Step-by-step instructions for the things you'll do most often. All of these are 
 ## Add a listen, watch, read, or other kind post
 
 1. Go to **Posts → Add New Post**.
-2. Insert the matching card block from the **Post Kinds for IndieWeb** inserter category (Listen Card, Watch Card, Read Card, Checkin Card, Play Card, and so on).
+2. Insert the matching card block from the **Post Kinds for IndieWeb in Block Themes** inserter category (Listen Card, Watch Card, Read Card, Checkin Card, Play Card, and so on).
 3. Search for the media in the card (or use the **Media Lookup** block for a universal search across services), or fill fields manually.
 4. Publish. The post's kind is set automatically from the first card block in the post; a manual kind choice in the Post Kind panel is never overridden.
 
@@ -73,7 +73,7 @@ POSSE = Publish on your Own Site, Syndicate Elsewhere. Nothing is sent until you
 
 1. Install and configure the separate [Micropub plugin](https://wordpress.org/plugins/micropub/) and an IndieAuth setup (for example the IndieAuth plugin).
 2. Sign in to a Micropub app with your site URL and publish.
-3. Post Kinds for IndieWeb converts the incoming post into the right card block and assigns the kind (it detects listens, watches, reads, check-ins, RSVPs, likes, reposts, bookmarks, replies, and more, and handles photos and `geo:` locations).
+3. Post Kinds for IndieWeb in Block Themes converts the incoming post into the right card block and assigns the kind (it detects listens, watches, reads, check-ins, RSVPs, likes, reposts, bookmarks, replies, and more, and handles photos and `geo:` locations).
 
 ## Change which category kind posts get
 

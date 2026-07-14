@@ -71,19 +71,19 @@ export default function Edit( { attributes, setAttributes } ) {
 	useEffect( () => {
 		const metaUpdates = {};
 		if ( title !== undefined ) {
-			metaUpdates._postkind_jam_title = title || '';
+			metaUpdates._pkiw_jam_title = title || '';
 		}
 		if ( artist !== undefined ) {
-			metaUpdates._postkind_jam_artist = artist || '';
+			metaUpdates._pkiw_jam_artist = artist || '';
 		}
 		if ( album !== undefined ) {
-			metaUpdates._postkind_jam_album = album || '';
+			metaUpdates._pkiw_jam_album = album || '';
 		}
 		if ( cover !== undefined ) {
-			metaUpdates._postkind_jam_cover = cover || '';
+			metaUpdates._pkiw_jam_cover = cover || '';
 		}
 		if ( url !== undefined ) {
-			metaUpdates._postkind_jam_url = url || '';
+			metaUpdates._pkiw_jam_url = url || '';
 		}
 
 		if ( Object.keys( metaUpdates ).length > 0 ) {
@@ -120,14 +120,17 @@ export default function Edit( { attributes, setAttributes } ) {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Search Music', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Search Music',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ ! title }
 				>
 					<MediaSearch
 						type="music"
 						placeholder={ __(
 							'Search for a song…',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						onSelect={ handleSearchSelect }
 					/>
@@ -137,49 +140,64 @@ export default function Edit( { attributes, setAttributes } ) {
 					>
 						{ __(
 							'Search MusicBrainz to auto-fill song details.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					</p>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Song Details', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Song Details',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ true }
 				>
 					<TextControl
-						label={ __( 'Song Title', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Song Title',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ title || '' }
 						onChange={ ( value ) =>
 							setAttributes( { title: value } )
 						}
 						placeholder={ __(
 							'Song name',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 					<TextControl
-						label={ __( 'Artist', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Artist',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ artist || '' }
 						onChange={ ( value ) =>
 							setAttributes( { artist: value } )
 						}
 						placeholder={ __(
 							'Artist name',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 					<TextControl
-						label={ __( 'Album', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Album',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ album || '' }
 						onChange={ ( value ) =>
 							setAttributes( { album: value } )
 						}
 						placeholder={ __(
 							'Album name',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 					<TextControl
-						label={ __( 'Listen URL', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Listen URL',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ url || '' }
 						onChange={ ( value ) =>
 							setAttributes( { url: value } )
@@ -187,23 +205,29 @@ export default function Edit( { attributes, setAttributes } ) {
 						type="url"
 						help={ __(
 							'Link to Spotify, Apple Music, etc.',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Note', 'post-kinds-for-indieweb' ) }
+					title={ __(
+						'Note',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
 					initialOpen={ false }
 				>
 					<TextControl
-						label={ __( 'Note', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Note',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						value={ note || '' }
 						onChange={ ( value ) =>
 							setAttributes( { note: value } )
 						}
 						placeholder={ __(
 							'Why are you jamming to this?',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
 				</PanelBody>
@@ -218,7 +242,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								type="music"
 								placeholder={ __(
 									'Search for a song…',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 								onSelect={ handleSearchSelect }
 							/>
@@ -267,7 +291,7 @@ export default function Edit( { attributes, setAttributes } ) {
 														}
 														aria-label={ __(
 															'Remove cover',
-															'post-kinds-for-indieweb'
+															'post-kinds-for-indieweb-in-block-themes'
 														) }
 													>
 														×
@@ -281,7 +305,7 @@ export default function Edit( { attributes, setAttributes } ) {
 													<span className="post-kinds-card__media-text">
 														{ __(
 															'Add Cover',
-															'post-kinds-for-indieweb'
+															'post-kinds-for-indieweb-in-block-themes'
 														) }
 													</span>
 												</div>
@@ -298,7 +322,7 @@ export default function Edit( { attributes, setAttributes } ) {
 									🎵{ ' ' }
 									{ __(
 										'Now Playing',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 								</span>
 								<button
@@ -307,7 +331,7 @@ export default function Edit( { attributes, setAttributes } ) {
 									onClick={ () => setIsSearching( true ) }
 									title={ __(
 										'Search for music',
-										'post-kinds-for-indieweb'
+										'post-kinds-for-indieweb-in-block-themes'
 									) }
 								>
 									🔍
@@ -323,7 +347,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								}
 								placeholder={ __(
 									'What song are you jamming to?',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							/>
 
@@ -336,7 +360,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								}
 								placeholder={ __(
 									'Artist name…',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							/>
 
@@ -349,7 +373,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								}
 								placeholder={ __(
 									'Album name…',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							/>
 
@@ -362,7 +386,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								}
 								placeholder={ __(
 									'Why are you jamming to this?',
-									'post-kinds-for-indieweb'
+									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							/>
 						</div>
@@ -377,9 +401,12 @@ export default function Edit( { attributes, setAttributes } ) {
 						type="url"
 						placeholder={ __(
 							'Paste a Spotify, Apple Music, or other URL…',
-							'post-kinds-for-indieweb'
+							'post-kinds-for-indieweb-in-block-themes'
 						) }
-						label={ __( 'Source URL', 'post-kinds-for-indieweb' ) }
+						label={ __(
+							'Source URL',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						hideLabelFromVision={ false }
 					/>
 				</div>

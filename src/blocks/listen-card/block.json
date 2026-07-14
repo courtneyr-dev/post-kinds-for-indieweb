@@ -7,7 +7,7 @@
     "category": "post-kinds-indieweb",
     "description": "Display a listen/scrobble with track, artist, and album information.",
     "keywords": ["listen", "music", "scrobble", "track", "song", "album", "artist"],
-    "textdomain": "post-kinds-indieweb",
+    "textdomain": "post-kinds-for-indieweb-in-block-themes",
     "attributes": {
         "trackTitle": {
             "type": "string"

@@ -1,17 +1,17 @@
 <?php
 /**
- * Block Bindings Source for Post Kinds for IndieWeb
+ * Block Bindings Source for Post Kinds for IndieWeb in Block Themes
  *
  * Registers a kind-aware block bindings source that maps friendly key names
  * to the appropriate internal post meta based on the post's kind taxonomy term.
  *
- * @package PostKindsForIndieWeb
+ * @package PKIW
  * @since 1.2.0
  */
 
 declare(strict_types=1);
 
-namespace PostKindsForIndieWeb;
+namespace PKIW;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Provides a simplified, kind-aware block bindings source for WordPress 7.0+.
  * Maps 9 friendly key names (title, artist, album, etc.) to the correct
- * internal _postkind_* meta key based on the post's indieblocks_kind term.
+ * internal _pkiw_* meta key based on the post's indieblocks_kind term.
  *
  * Supplements the existing Block_Bindings class which provides 30+ detailed
  * bindings for WordPress 6.5+.
@@ -159,7 +159,7 @@ final class Block_Bindings_Source {
 		register_block_bindings_source(
 			self::SOURCE_NAME,
 			[
-				'label'              => __( 'Post Kind Meta', 'post-kinds-for-indieweb' ),
+				'label'              => __( 'Post Kind Meta', 'post-kinds-for-indieweb-in-block-themes' ),
 				'get_value_callback' => [ $this, 'get_value' ],
 				'uses_context'       => [ 'postId', 'postType' ],
 			]
@@ -169,7 +169,7 @@ final class Block_Bindings_Source {
 	/**
 	 * Register public post meta aliases for REST API access.
 	 *
-	 * Creates pk_* prefixed meta keys that mirror the internal _postkind_* keys,
+	 * Creates pk_* prefixed meta keys that mirror the internal _pkiw_* keys,
 	 * making them accessible via the REST API and block bindings.
 	 *
 	 * @since 1.2.0
