@@ -29,7 +29,7 @@ class Venue_Taxonomy {
 	 *
 	 * @var string
 	 */
-	public const TAXONOMY = 'venue';
+	public const TAXONOMY = 'pkiw_venue';
 
 	/**
 	 * Constructor.

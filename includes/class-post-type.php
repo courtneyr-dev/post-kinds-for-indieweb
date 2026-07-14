@@ -29,7 +29,7 @@ class Post_Type {
 	 *
 	 * @var string
 	 */
-	public const POST_TYPE = 'reaction';
+	public const POST_TYPE = 'pkiw_reaction';
 
 	/**
 	 * Constructor.

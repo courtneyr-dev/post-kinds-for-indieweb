@@ -218,7 +218,7 @@ class Taxonomy {
 		$storage_mode = $settings['import_storage_mode'] ?? 'standard';
 
 		if ( 'cpt' === $storage_mode ) {
-			$this->post_types[] = 'reaction';
+			$this->post_types[] = \PKIW\Post_Type::POST_TYPE;
 		}
 
 		/**

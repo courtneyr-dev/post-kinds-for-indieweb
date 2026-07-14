@@ -1500,7 +1500,7 @@ class Import_Manager {
 		$settings     = get_option( 'pkiw_settings', [] );
 		$storage_mode = $settings['import_storage_mode'] ?? 'standard';
 
-		return 'cpt' === $storage_mode ? 'reaction' : 'post';
+		return 'cpt' === $storage_mode ? \PKIW\Post_Type::POST_TYPE : 'post';
 	}
 
 	/**
@@ -1685,7 +1685,7 @@ class Import_Manager {
 		// Find posts imported from this source.
 		$posts = get_posts(
 			[
-				'post_type'      => [ 'post', 'reaction' ],
+				'post_type'      => [ 'post', \PKIW\Post_Type::POST_TYPE ],
 				'post_status'    => 'any',
 				'posts_per_page' => -1,
 				'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query

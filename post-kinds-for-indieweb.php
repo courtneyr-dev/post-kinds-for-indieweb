@@ -314,6 +314,14 @@ function maybe_migrate_option_prefixes(): void {
 		delete_option( $old_name );
 	}
 
+	// The venue taxonomy and reaction post type gained the prefix too;
+	// re-home any existing rows so terms and imported posts survive.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- one-time schema migration.
+	$wpdb->update( $wpdb->term_taxonomy, [ 'taxonomy' => 'pkiw_venue' ], [ 'taxonomy' => 'venue' ] );
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- one-time schema migration.
+	$wpdb->update( $wpdb->posts, [ 'post_type' => 'pkiw_reaction' ], [ 'post_type' => 'reaction' ] );
+	clean_taxonomy_cache( 'pkiw_venue' );
+
 	// The cron hooks were renamed with the prefix; clear stale schedules.
 	wp_clear_scheduled_hook( 'post_kinds_indieweb_process_import' );
 	wp_clear_scheduled_hook( 'post_kinds_indieweb_scheduled_sync' );
