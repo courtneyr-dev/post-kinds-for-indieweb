@@ -302,8 +302,8 @@ final class Core_Abilities {
 					],
 				],
 				'execute_callback'    => [ $this, 'execute_set_kind' ],
-				'permission_callback' => function () {
-					return current_user_can( 'edit_posts' );
+				'permission_callback' => function ( $input ) {
+					return current_user_can( 'edit_post', (int) ( $input['post_id'] ?? 0 ) );
 				},
 				'meta'                => [ 'show_in_rest' => true ],
 			]
@@ -339,8 +339,8 @@ final class Core_Abilities {
 					],
 				],
 				'execute_callback'    => [ $this, 'execute_get_kind' ],
-				'permission_callback' => function () {
-					return current_user_can( 'read' );
+				'permission_callback' => function ( $input ) {
+					return current_user_can( 'read_post', (int) ( $input['post_id'] ?? 0 ) );
 				},
 				'meta'                => [ 'show_in_rest' => true ],
 			]
@@ -383,8 +383,8 @@ final class Core_Abilities {
 					],
 				],
 				'execute_callback'    => [ $this, 'execute_update_post_meta' ],
-				'permission_callback' => function () {
-					return current_user_can( 'edit_posts' );
+				'permission_callback' => function ( $input ) {
+					return current_user_can( 'edit_post', (int) ( $input['post_id'] ?? 0 ) );
 				},
 				'meta'                => [ 'show_in_rest' => true ],
 			]
@@ -424,8 +424,8 @@ final class Core_Abilities {
 					],
 				],
 				'execute_callback'    => [ $this, 'execute_get_post_meta' ],
-				'permission_callback' => function () {
-					return current_user_can( 'read' );
+				'permission_callback' => function ( $input ) {
+					return current_user_can( 'read_post', (int) ( $input['post_id'] ?? 0 ) );
 				},
 				'meta'                => [ 'show_in_rest' => true ],
 			]
@@ -516,6 +516,11 @@ final class Core_Abilities {
 		}
 
 		if ( ! in_array( $status, [ 'draft', 'publish', 'private' ], true ) ) {
+			$status = 'draft';
+		}
+
+		// Publishing (or creating private posts) requires more than edit_posts.
+		if ( 'draft' !== $status && ! current_user_can( 'publish_posts' ) ) {
 			$status = 'draft';
 		}
 

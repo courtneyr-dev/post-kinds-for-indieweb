@@ -703,6 +703,11 @@ class Admin {
 	public function sanitize_api_credentials( array $input ): array {
 		$sanitized = [];
 
+		// Secret material (keys, tokens, shared secrets) may legitimately contain
+		// characters that sanitize_text_field() would strip or alter, so those
+		// fields are only minimally validated via sanitize_secret_value().
+		$secret_fields = [ 'token', 'api_key', 'api_secret', 'session_key', 'access_token', 'refresh_token', 'client_id', 'client_secret', 'api_token' ];
+
 		$api_configs = [
 			'musicbrainz'  => [ 'app_name', 'app_version', 'contact' ],
 			'listenbrainz' => [ 'token', 'username' ],
@@ -738,6 +743,10 @@ class Admin {
 					} elseif ( 'email' === $field || 'contact' === $field ) {
 						// Email-type fields use the email sanitizer.
 						$sanitized[ $api ][ $field ] = sanitize_email( $input[ $api ][ $field ] );
+					} elseif ( 'token_expires' === $field ) {
+						$sanitized[ $api ][ $field ] = absint( $input[ $api ][ $field ] );
+					} elseif ( in_array( $field, $secret_fields, true ) ) {
+						$sanitized[ $api ][ $field ] = $this->sanitize_secret_value( $input[ $api ][ $field ] );
 					} else {
 						$sanitized[ $api ][ $field ] = sanitize_text_field( $input[ $api ][ $field ] );
 					}
@@ -746,6 +755,23 @@ class Admin {
 		}
 
 		return $sanitized;
+	}
+
+	/**
+	 * Minimally validate a secret value (API key, token, shared secret).
+	 *
+	 * Secrets are stored as entered so they keep working with the remote
+	 * service; only surrounding whitespace and control characters are removed.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return string Validated secret.
+	 */
+	private function sanitize_secret_value( mixed $value ): string {
+		if ( ! is_scalar( $value ) ) {
+			return '';
+		}
+
+		return (string) preg_replace( '/[\x00-\x1F\x7F]/', '', trim( (string) $value ) );
 	}
 
 	/**
@@ -778,7 +804,7 @@ class Admin {
 					$existing                     = get_option( 'pkiw_webhook_settings', [] );
 					$sanitized[ $type ]['secret'] = $existing[ $type ]['secret'] ?? '';
 				} else {
-					$sanitized[ $type ]['secret'] = sanitize_text_field( $input[ $type ]['secret'] );
+					$sanitized[ $type ]['secret'] = $this->sanitize_secret_value( $input[ $type ]['secret'] );
 				}
 			}
 

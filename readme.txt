@@ -179,6 +179,10 @@ When you connect an account, the plugin stores your token and, on import, schedu
 
 * **Letterboxd** — when you paste a Letterboxd link into a watch post, the plugin fetches that page once to identify the film. Only the URL you pasted is requested. [Terms](https://letterboxd.com/legal/terms-of-use/), [Privacy](https://letterboxd.com/legal/privacy-policy/).
 
+= Book previews =
+
+* **Amazon Kindle previews** — when you paste an Amazon or Kindle book link into a read post (or a bulk import creates one), the post can embed that book's preview from read.amazon.com. The preview frame is loaded by the editor's and site visitors' browsers directly from Amazon, with only the book's ID in the URL; the plugin itself sends nothing to Amazon. [Conditions of Use](https://www.amazon.com/gp/help/customer/display.html?nodeId=GLSBYFE9MGKKQXXM), [Privacy Notice](https://www.amazon.com/gp/help/customer/display.html?nodeId=GX7NJQ4ZB8MHFRNJ).
+
 = Inbound webhooks (no data sent) =
 
 Plex, Jellyfin, Trakt, ListenBrainz, and OwnTracks scrobbling works through webhooks: those services send data *to* your site at the secret URL you configure. The plugin makes no outbound request to them for this feature.
@@ -209,6 +213,7 @@ External services contacted (when you use the matching feature):
 * Foursquare — venue information
 * OpenStreetMap / Nominatim — geocoding and map data
 * Letterboxd — fetched when you paste a Letterboxd URL into a Watch Card, to find the matching movie
+* Amazon (read.amazon.com) — Kindle book previews embedded in read posts load in the browser directly from Amazon
 
 Each external service has its own privacy policy. API calls retrieve public metadata for the items you look up.
 
