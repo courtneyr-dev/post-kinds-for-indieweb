@@ -38,6 +38,7 @@ Separately, **Coordinate Handling** governs storage itself: store-and-show, stor
 - Places: Foursquare, Nominatim (OpenStreetMap)
 - Other: Untappd (code present; its API currently requires a commercial agreement), and oEmbed providers (YouTube, Spotify, and similar) for embeds
 - **Letterboxd page fetches:** pasting a Letterboxd URL into a watch lookup makes the plugin fetch that Letterboxd page's HTML to extract the film's TMDB id — an outbound request to letterboxd.com worth knowing about.
+- **Amazon Kindle previews:** when a read post embeds a Kindle book preview, the preview frame loads in the browser — yours in the editor, your visitors' on the published post — directly from read.amazon.com with the book's ID in the URL. The plugin's server sends nothing to Amazon; the request comes from whoever views the post, so Amazon sees their IP address the same way any embedded frame's host does.
 
 These requests carry your search terms or media identifiers (and your API credentials for that service). The plugin readme states API calls retrieve only public metadata and that the plugin includes no analytics or tracking.
 
