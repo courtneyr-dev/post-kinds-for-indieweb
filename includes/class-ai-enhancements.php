@@ -3,7 +3,7 @@
  * AI Enhancements (WordPress 7.0+ WP AI Client)
  *
  * Optional AI-powered features using the WordPress AI Client API.
- * Double-gated: requires both wp_ai_client_prompt() and pk_enable_ai setting.
+ * Double-gated: requires both wp_ai_client_prompt() and pkiw_enable_ai setting.
  *
  * Features:
  * - Auto-Populate from URL: Extract title, summary, author from URLs.
@@ -70,11 +70,11 @@ final class AI_Enhancements {
 	 *
 	 * @since 1.3.0
 	 *
-	 * @return bool True if both wp_ai_client_prompt exists and pk_enable_ai is true.
+	 * @return bool True if both wp_ai_client_prompt exists and pkiw_enable_ai is true.
 	 */
 	public static function is_available(): bool {
 		return function_exists( 'wp_ai_client_prompt' )
-			&& (bool) get_option( 'pk_enable_ai', false );
+			&& (bool) get_option( 'pkiw_enable_ai', false );
 	}
 
 	/**
@@ -98,8 +98,8 @@ final class AI_Enhancements {
 	 */
 	public function register_setting(): void {
 		register_setting(
-			'pk_settings',
-			'pk_enable_ai',
+			'pkiw_settings',
+			'pkiw_enable_ai',
 			[
 				'type'              => 'boolean',
 				'default'           => false,
@@ -142,8 +142,8 @@ final class AI_Enhancements {
 			[
 				'methods'             => 'POST',
 				'callback'            => [ $this, 'handle_suggest_tags' ],
-				'permission_callback' => function () {
-					return current_user_can( 'edit_posts' );
+				'permission_callback' => function ( \WP_REST_Request $request ) {
+					return current_user_can( 'edit_post', absint( $request->get_param( 'post_id' ) ) );
 				},
 				'args'                => [
 					'post_id' => [
@@ -215,7 +215,7 @@ final class AI_Enhancements {
 
 		if ( ! is_array( $parsed ) ) {
 			return new \WP_Error(
-				'pk_ai_parse_error',
+				'pkiw_ai_parse_error',
 				__( 'Failed to parse AI response.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 500 ]
 			);
@@ -251,7 +251,7 @@ final class AI_Enhancements {
 
 		if ( ! $post ) {
 			return new \WP_Error(
-				'pk_post_not_found',
+				'pkiw_post_not_found',
 				__( 'Post not found.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 404 ]
 			);
@@ -281,7 +281,7 @@ final class AI_Enhancements {
 
 		if ( ! is_array( $tags ) ) {
 			return new \WP_Error(
-				'pk_ai_parse_error',
+				'pkiw_ai_parse_error',
 				__( 'Failed to parse AI response.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 500 ]
 			);
@@ -314,7 +314,7 @@ final class AI_Enhancements {
 
 		if ( ! $post ) {
 			return new \WP_Error(
-				'pk_post_not_found',
+				'pkiw_post_not_found',
 				__( 'Post not found.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 404 ]
 			);
@@ -325,7 +325,7 @@ final class AI_Enhancements {
 
 		if ( ! in_array( $kind, [ 'read', 'watch', 'listen' ], true ) ) {
 			return new \WP_Error(
-				'pk_invalid_kind',
+				'pkiw_invalid_kind',
 				__( 'Content summaries are only available for read, watch, and listen posts.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 400 ]
 			);
@@ -352,7 +352,7 @@ final class AI_Enhancements {
 
 		if ( ! is_array( $prompts ) ) {
 			return new \WP_Error(
-				'pk_ai_parse_error',
+				'pkiw_ai_parse_error',
 				__( 'Failed to parse AI response.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 500 ]
 			);
@@ -375,7 +375,7 @@ final class AI_Enhancements {
 	private function ai_request( string $prompt ) {
 		if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
 			return new \WP_Error(
-				'pk_ai_unavailable',
+				'pkiw_ai_unavailable',
 				__( 'WP AI Client is not available.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 503 ]
 			);
@@ -395,7 +395,7 @@ final class AI_Enhancements {
 			$this->log_error( 'AI request exception', $e->getMessage() );
 
 			return new \WP_Error(
-				'pk_ai_exception',
+				'pkiw_ai_exception',
 				__( 'AI request failed.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 500 ]
 			);
@@ -412,11 +412,11 @@ final class AI_Enhancements {
 	 */
 	private function check_rate_limit( string $action ) {
 		$user_id       = get_current_user_id();
-		$transient_key = 'pk_ai_rate_' . $action . '_' . $user_id;
+		$transient_key = 'pkiw_ai_rate_' . $action . '_' . $user_id;
 
 		if ( get_transient( $transient_key ) ) {
 			return new \WP_Error(
-				'pk_rate_limited',
+				'pkiw_rate_limited',
 				__( 'Please wait a few seconds before making another AI request.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 429 ]
 			);

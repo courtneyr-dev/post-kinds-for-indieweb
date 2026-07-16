@@ -174,7 +174,7 @@ final class Media_Stats {
 	 * @return array<string, int> Counts keyed by kind slug.
 	 */
 	private function get_stats( string $period ): array {
-		$cache_key = 'pk_media_stats_' . $period;
+		$cache_key = 'pkiw_media_stats_' . $period;
 		$cached    = get_transient( $cache_key );
 
 		if ( is_array( $cached ) ) {

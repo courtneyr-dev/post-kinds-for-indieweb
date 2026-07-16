@@ -97,7 +97,7 @@ if ( version_compare( get_bloginfo( 'version' ), '7.0', '>=' ) ) { /* 7.0 code *
 if ( function_exists( 'wp_register_ability' ) ) { /* abilities code */ }
 
 // AI gate pattern (doubly gated)
-if ( function_exists( 'wp_ai_client_prompt' ) && get_option( 'pk_enable_ai' ) ) { /* AI code */ }
+if ( function_exists( 'wp_ai_client_prompt' ) && get_option( 'pkiw_enable_ai' ) ) { /* AI code */ }
 ```
 
 ## Priority Order
