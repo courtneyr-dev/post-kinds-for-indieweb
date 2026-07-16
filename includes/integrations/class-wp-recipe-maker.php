@@ -474,8 +474,8 @@ class WP_Recipe_Maker {
 			[
 				'methods'             => 'GET',
 				'callback'            => [ $this, 'rest_check_recipe' ],
-				'permission_callback' => function () {
-					return current_user_can( 'edit_posts' );
+				'permission_callback' => function ( \WP_REST_Request $request ) {
+					return current_user_can( 'edit_post', absint( $request['id'] ) );
 				},
 				'args'                => [
 					'id' => [

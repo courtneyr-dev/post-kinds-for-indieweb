@@ -288,7 +288,7 @@ function init(): void {
  * @return void
  */
 function maybe_migrate_option_prefixes(): void {
-	if ( get_option( 'pkiw_prefix_migrated' ) ) {
+	if ( (int) get_option( 'pkiw_prefix_migrated' ) >= 2 ) {
 		return;
 	}
 
@@ -326,7 +326,14 @@ function maybe_migrate_option_prefixes(): void {
 	wp_clear_scheduled_hook( 'post_kinds_indieweb_process_import' );
 	wp_clear_scheduled_hook( 'post_kinds_indieweb_scheduled_sync' );
 
-	update_option( 'pkiw_prefix_migrated', 1, false );
+	// v2: the AI toggle gained the full prefix too.
+	$legacy_ai = get_option( 'pk_enable_ai', null );
+	if ( null !== $legacy_ai && false === get_option( 'pkiw_enable_ai', false ) ) {
+		add_option( 'pkiw_enable_ai', $legacy_ai );
+	}
+	delete_option( 'pk_enable_ai' );
+
+	update_option( 'pkiw_prefix_migrated', 2, false );
 }
 
 // Load helper functions.
