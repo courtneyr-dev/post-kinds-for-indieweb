@@ -369,18 +369,26 @@ class AdminTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test sanitize_api_credentials strips HTML.
+	 * Test sanitize_api_credentials stores secrets as entered.
+	 *
+	 * Secret fields must not be altered by sanitization (only trimmed and
+	 * stripped of control characters), while non-secret text fields still
+	 * go through sanitize_text_field().
 	 */
-	public function test_sanitize_api_credentials_strips_html(): void {
+	public function test_sanitize_api_credentials_preserves_secrets(): void {
 		$input = [
-			'tmdb' => [
-				'api_key' => '<b>key</b>',
+			'tmdb'   => [
+				'api_key' => " <b>key</b>+/=~\x01 ",
+			],
+			'lastfm' => [
+				'username' => '<b>user</b>',
 			],
 		];
 
 		$result = $this->admin->sanitize_api_credentials( $input );
 
-		$this->assertSame( 'key', $result['tmdb']['api_key'] );
+		$this->assertSame( '<b>key</b>+/=~', $result['tmdb']['api_key'] );
+		$this->assertSame( 'user', $result['lastfm']['username'] );
 	}
 
 	/**
