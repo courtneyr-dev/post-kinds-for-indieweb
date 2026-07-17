@@ -1,102 +1,94 @@
 {
-  "$schema": "https://schemas.wp.org/trunk/block.json",
-  "apiVersion": 3,
-  "name": "post-kinds-indieweb/jam-card",
-  "version": "1.0.0",
-  "title": "Jam Card",
-  "category": "post-kinds-indieweb",
-  "description": "Display a song you're jamming to with cover art and artist.",
-  "keywords": [
-    "jam",
-    "music",
-    "song",
-    "currently playing"
-  ],
-  "textdomain": "post-kinds-for-indieweb-in-block-themes",
-  "attributes": {
-    "title": {
-      "type": "string"
-    },
-    "artist": {
-      "type": "string"
-    },
-    "album": {
-      "type": "string"
-    },
-    "cover": {
-      "type": "string"
-    },
-    "coverAlt": {
-      "type": "string"
-    },
-    "url": {
-      "type": "string"
-    },
-    "note": {
-      "type": "string"
-    },
-    "jammedAt": {
-      "type": "string"
-    },
-    "rel": {
-      "type": "string",
-      "default": ""
-    },
-    "layout": {
-      "type": "string",
-      "default": "horizontal"
-    }
-  },
-  "supports": {
-    "html": false,
-    "align": [
-      "wide",
-      "full"
-    ],
-    "color": {
-      "background": true,
-      "text": true,
-      "gradients": true,
-      "link": true
-    },
-    "spacing": {
-      "margin": true,
-      "padding": true,
-      "blockGap": true
-    },
-    "typography": {
-      "fontSize": true,
-      "lineHeight": true,
-      "__experimentalFontFamily": true,
-      "__experimentalFontWeight": true,
-      "__experimentalFontStyle": true,
-      "__experimentalTextTransform": true,
-      "__experimentalTextDecoration": true,
-      "__experimentalLetterSpacing": true
-    },
-    "__experimentalBorder": {
-      "color": true,
-      "radius": true,
-      "width": true,
-      "style": true,
-      "__experimentalDefaultControls": {
-        "color": true,
-        "radius": true,
-        "width": true,
-        "style": true
-      }
-    },
-    "shadow": true,
-    "dimensions": {
-      "minHeight": true
-    }
-  },
-  "example": {
-    "attributes": {
-      "title": "Bohemian Rhapsody",
-      "artist": "Queen",
-      "album": "A Night at the Opera"
-    }
-  },
-  "render": "file:./render.php"
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "post-kinds-indieweb/jam-card",
+	"version": "1.0.0",
+	"title": "Jam Card",
+	"category": "post-kinds-indieweb",
+	"description": "Display a song you're jamming to with cover art and artist.",
+	"keywords": ["jam", "music", "song", "currently playing"],
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
+	"attributes": {
+		"title": {
+			"type": "string"
+		},
+		"artist": {
+			"type": "string"
+		},
+		"album": {
+			"type": "string"
+		},
+		"cover": {
+			"type": "string"
+		},
+		"coverAlt": {
+			"type": "string"
+		},
+		"url": {
+			"type": "string"
+		},
+		"note": {
+			"type": "string"
+		},
+		"jammedAt": {
+			"type": "string"
+		},
+		"rel": {
+			"type": "string",
+			"default": ""
+		},
+		"layout": {
+			"type": "string",
+			"default": "horizontal"
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"color": {
+			"background": true,
+			"text": true,
+			"gradients": true,
+			"link": true
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true,
+			"blockGap": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"__experimentalFontFamily": true,
+			"__experimentalFontWeight": true,
+			"__experimentalFontStyle": true,
+			"__experimentalTextTransform": true,
+			"__experimentalTextDecoration": true,
+			"__experimentalLetterSpacing": true
+		},
+		"__experimentalBorder": {
+			"color": true,
+			"radius": true,
+			"width": true,
+			"style": true,
+			"__experimentalDefaultControls": {
+				"color": true,
+				"radius": true,
+				"width": true,
+				"style": true
+			}
+		},
+		"shadow": true,
+		"dimensions": {
+			"minHeight": true
+		}
+	},
+	"example": {
+		"attributes": {
+			"title": "Bohemian Rhapsody",
+			"artist": "Queen",
+			"album": "A Night at the Opera"
+		}
+	},
+	"render": "file:./render.php"
 }

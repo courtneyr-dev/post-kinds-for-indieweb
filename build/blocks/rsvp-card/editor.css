@@ -1,0 +1,45 @@
+/**
+ * RSVP Card Block - Editor Styles
+ *
+ * @package Reactions_For_IndieWeb
+ */
+
+.wp-block-post-kinds-indieweb-rsvp-card .event-image {
+	cursor: pointer;
+}
+
+.wp-block-post-kinds-indieweb-rsvp-card .event-image:hover {
+	opacity: 0.8;
+}
+
+.wp-block-post-kinds-indieweb-rsvp-card .image-placeholder {
+	width: 150px;
+	height: 100px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	background: var(--pkiw-card-media-button-bg, transparent);
+	border: 2px dashed var(--pkiw-card-media-button-border, transparent);
+	border-radius: 4px;
+	color: var(--pkiw-card-text-secondary, inherit);
+	font-size: 0.75rem;
+	text-align: center;
+	gap: 0.5rem;
+}
+
+.wp-block-post-kinds-indieweb-rsvp-card .image-placeholder .rsvp-icon {
+	font-size: 2rem;
+}
+
+.wp-block-post-kinds-indieweb-rsvp-card .rsvp-quick-buttons {
+	margin: 0.5rem 0;
+}
+
+.wp-block-post-kinds-indieweb-rsvp-card .placeholder-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	width: 100%;
+	max-width: 400px;
+}

@@ -1,0 +1,123 @@
+/**
+ * Checkin Card Block - Editor Styles
+ *
+ * @package Reactions_For_IndieWeb
+ */
+
+.wp-block-post-kinds-indieweb-checkin-card .checkin-photo {
+	cursor: pointer;
+}
+
+.wp-block-post-kinds-indieweb-checkin-card .checkin-photo:hover {
+	opacity: 0.8;
+}
+
+.wp-block-post-kinds-indieweb-checkin-card .photo-placeholder {
+	width: 150px;
+	height: 150px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	background: var(--pkiw-card-media-button-bg, transparent);
+	border: 2px dashed var(--pkiw-card-media-button-border, transparent);
+	border-radius: 4px;
+	color: var(--pkiw-card-text-secondary, inherit);
+	font-size: 0.75rem;
+	text-align: center;
+	gap: 0.5rem;
+}
+
+.wp-block-post-kinds-indieweb-checkin-card .photo-placeholder .venue-icon {
+	font-size: 2rem;
+}
+
+.wp-block-post-kinds-indieweb-checkin-card .placeholder-actions {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
+/* Nearby venues UI */
+.wp-block-post-kinds-indieweb-checkin-card .nearby-venues-label {
+	font-weight: 600;
+	font-size: 0.875rem;
+	color: var(--pkiw-card-fg, inherit);
+	margin: 1rem 0 0.5rem;
+}
+
+.wp-block-post-kinds-indieweb-checkin-card .checkin-nearby-results {
+	max-height: 300px;
+	overflow-y: auto;
+}
+
+.wp-block-post-kinds-indieweb-checkin-card .result-distance {
+	font-size: 0.75rem;
+	color: var(--pkiw-card-badge-fg, inherit);
+	background: var(--pkiw-card-badge-bg, transparent);
+	padding: 0.125rem 0.375rem;
+	border-radius: 3px;
+	margin-left: auto;
+}
+
+.wp-block-post-kinds-indieweb-checkin-card .result-type {
+	font-size: 0.75rem;
+	color: var(--pkiw-state-info, currentcolor);
+	background: var(--pkiw-card-badge-bg, transparent);
+	padding: 0.125rem 0.375rem;
+	border-radius: 3px;
+}
+
+.wp-block-post-kinds-indieweb-checkin-card .loading-nearby {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 1rem;
+	color: var(--pkiw-card-text-secondary, inherit);
+	font-size: 0.875rem;
+}
+
+.wp-block-post-kinds-indieweb-checkin-card .checkin-result-item {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 0.25rem;
+	width: 100%;
+	padding: 0.75rem;
+	background: none;
+	border: none;
+	cursor: pointer;
+	text-align: left;
+}
+
+.wp-block-post-kinds-indieweb-checkin-card .checkin-result-item:hover {
+	background: var(--pkiw-card-hover-bg, transparent);
+}
+
+.wp-block-post-kinds-indieweb-checkin-card .checkin-result-item .result-name {
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: var(--pkiw-card-fg, inherit);
+}
+
+.wp-block-post-kinds-indieweb-checkin-card .checkin-result-item .result-address {
+	font-size: 0.75rem;
+	color: var(--pkiw-card-text-secondary, inherit);
+}
+
+.wp-block-post-kinds-indieweb-checkin-card .checkin-search-results {
+	list-style: none;
+	margin: 0.5rem 0 0;
+	padding: 0;
+	border: 1px solid var(--pkiw-card-border, transparent);
+	border-radius: 4px;
+	background: var(--pkiw-card-bg, transparent);
+}
+
+.wp-block-post-kinds-indieweb-checkin-card .checkin-search-results li {
+	border-bottom: 1px solid var(--pkiw-card-border, transparent);
+}
+
+.wp-block-post-kinds-indieweb-checkin-card .checkin-search-results li:last-child {
+	border-bottom: none;
+}

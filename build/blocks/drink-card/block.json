@@ -1,129 +1,119 @@
 {
-  "$schema": "https://schemas.wp.org/trunk/block.json",
-  "apiVersion": 3,
-  "name": "post-kinds-indieweb/drink-card",
-  "version": "1.0.0",
-  "title": "Drink Card",
-  "category": "post-kinds-indieweb",
-  "description": "Display a drink you had with photo, type, brand, and rating.",
-  "keywords": [
-    "drink",
-    "beverage",
-    "coffee",
-    "beer",
-    "wine",
-    "cocktail"
-  ],
-  "textdomain": "post-kinds-for-indieweb-in-block-themes",
-  "attributes": {
-    "name": {
-      "type": "string"
-    },
-    "drinkType": {
-      "type": "string",
-      "default": "coffee"
-    },
-    "brand": {
-      "type": "string"
-    },
-    "photo": {
-      "type": "string"
-    },
-    "photoAlt": {
-      "type": "string"
-    },
-    "rating": {
-      "type": "number",
-      "default": 0
-    },
-    "drankAt": {
-      "type": "string"
-    },
-    "notes": {
-      "type": "string"
-    },
-    "venueUrl": {
-      "type": "string"
-    },
-    "locationName": {
-      "type": "string"
-    },
-    "locationAddress": {
-      "type": "string"
-    },
-    "locationLocality": {
-      "type": "string"
-    },
-    "locationRegion": {
-      "type": "string"
-    },
-    "locationCountry": {
-      "type": "string"
-    },
-    "geoLatitude": {
-      "type": "number",
-      "default": 0
-    },
-    "geoLongitude": {
-      "type": "number",
-      "default": 0
-    },
-    "layout": {
-      "type": "string",
-      "default": "horizontal"
-    }
-  },
-  "supports": {
-    "html": false,
-    "align": [
-      "wide",
-      "full"
-    ],
-    "color": {
-      "background": true,
-      "text": true,
-      "gradients": true,
-      "link": true
-    },
-    "spacing": {
-      "margin": true,
-      "padding": true,
-      "blockGap": true
-    },
-    "typography": {
-      "fontSize": true,
-      "lineHeight": true,
-      "__experimentalFontFamily": true,
-      "__experimentalFontWeight": true,
-      "__experimentalFontStyle": true,
-      "__experimentalTextTransform": true,
-      "__experimentalTextDecoration": true,
-      "__experimentalLetterSpacing": true
-    },
-    "__experimentalBorder": {
-      "color": true,
-      "radius": true,
-      "width": true,
-      "style": true,
-      "__experimentalDefaultControls": {
-        "color": true,
-        "radius": true,
-        "width": true,
-        "style": true
-      }
-    },
-    "shadow": true,
-    "dimensions": {
-      "minHeight": true
-    }
-  },
-  "example": {
-    "attributes": {
-      "name": "Flat White",
-      "drinkType": "coffee",
-      "brand": "Blue Bottle",
-      "rating": 4
-    }
-  },
-  "render": "file:./render.php"
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "post-kinds-indieweb/drink-card",
+	"version": "1.0.0",
+	"title": "Drink Card",
+	"category": "post-kinds-indieweb",
+	"description": "Display a drink you had with photo, type, brand, and rating.",
+	"keywords": ["drink", "beverage", "coffee", "beer", "wine", "cocktail"],
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
+	"attributes": {
+		"name": {
+			"type": "string"
+		},
+		"drinkType": {
+			"type": "string",
+			"default": "coffee"
+		},
+		"brand": {
+			"type": "string"
+		},
+		"photo": {
+			"type": "string"
+		},
+		"photoAlt": {
+			"type": "string"
+		},
+		"rating": {
+			"type": "number",
+			"default": 0
+		},
+		"drankAt": {
+			"type": "string"
+		},
+		"notes": {
+			"type": "string"
+		},
+		"venueUrl": {
+			"type": "string"
+		},
+		"locationName": {
+			"type": "string"
+		},
+		"locationAddress": {
+			"type": "string"
+		},
+		"locationLocality": {
+			"type": "string"
+		},
+		"locationRegion": {
+			"type": "string"
+		},
+		"locationCountry": {
+			"type": "string"
+		},
+		"geoLatitude": {
+			"type": "number",
+			"default": 0
+		},
+		"geoLongitude": {
+			"type": "number",
+			"default": 0
+		},
+		"layout": {
+			"type": "string",
+			"default": "horizontal"
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"color": {
+			"background": true,
+			"text": true,
+			"gradients": true,
+			"link": true
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true,
+			"blockGap": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"__experimentalFontFamily": true,
+			"__experimentalFontWeight": true,
+			"__experimentalFontStyle": true,
+			"__experimentalTextTransform": true,
+			"__experimentalTextDecoration": true,
+			"__experimentalLetterSpacing": true
+		},
+		"__experimentalBorder": {
+			"color": true,
+			"radius": true,
+			"width": true,
+			"style": true,
+			"__experimentalDefaultControls": {
+				"color": true,
+				"radius": true,
+				"width": true,
+				"style": true
+			}
+		},
+		"shadow": true,
+		"dimensions": {
+			"minHeight": true
+		}
+	},
+	"example": {
+		"attributes": {
+			"name": "Flat White",
+			"drinkType": "coffee",
+			"brand": "Blue Bottle",
+			"rating": 4
+		}
+	},
+	"render": "file:./render.php"
 }

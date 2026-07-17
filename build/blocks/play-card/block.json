@@ -1,132 +1,117 @@
 {
-  "$schema": "https://schemas.wp.org/trunk/block.json",
-  "apiVersion": 3,
-  "name": "post-kinds-indieweb/play-card",
-  "version": "1.0.0",
-  "title": "Play Card",
-  "category": "post-kinds-indieweb",
-  "description": "Display a game you played with cover art, platform, status, and rating.",
-  "keywords": [
-    "play",
-    "game",
-    "gaming",
-    "video game",
-    "board game"
-  ],
-  "textdomain": "post-kinds-for-indieweb-in-block-themes",
-  "attributes": {
-    "title": {
-      "type": "string"
-    },
-    "platform": {
-      "type": "string"
-    },
-    "cover": {
-      "type": "string"
-    },
-    "coverAlt": {
-      "type": "string"
-    },
-    "status": {
-      "type": "string",
-      "default": "playing",
-      "enum": [
-        "playing",
-        "completed",
-        "abandoned",
-        "backlog",
-        "wishlist"
-      ]
-    },
-    "hoursPlayed": {
-      "type": "number",
-      "default": 0
-    },
-    "rating": {
-      "type": "number",
-      "default": 0
-    },
-    "playedAt": {
-      "type": "string"
-    },
-    "review": {
-      "type": "string"
-    },
-    "gameUrl": {
-      "type": "string"
-    },
-    "bggId": {
-      "type": "string"
-    },
-    "rawgId": {
-      "type": "string"
-    },
-    "steamId": {
-      "type": "string"
-    },
-    "officialUrl": {
-      "type": "string"
-    },
-    "purchaseUrl": {
-      "type": "string"
-    },
-    "layout": {
-      "type": "string",
-      "default": "horizontal"
-    }
-  },
-  "supports": {
-    "html": false,
-    "align": [
-      "wide",
-      "full"
-    ],
-    "color": {
-      "background": true,
-      "text": true,
-      "gradients": true,
-      "link": true
-    },
-    "spacing": {
-      "margin": true,
-      "padding": true,
-      "blockGap": true
-    },
-    "typography": {
-      "fontSize": true,
-      "lineHeight": true,
-      "__experimentalFontFamily": true,
-      "__experimentalFontWeight": true,
-      "__experimentalFontStyle": true,
-      "__experimentalTextTransform": true,
-      "__experimentalTextDecoration": true,
-      "__experimentalLetterSpacing": true
-    },
-    "__experimentalBorder": {
-      "color": true,
-      "radius": true,
-      "width": true,
-      "style": true,
-      "__experimentalDefaultControls": {
-        "color": true,
-        "radius": true,
-        "width": true,
-        "style": true
-      }
-    },
-    "shadow": true,
-    "dimensions": {
-      "minHeight": true
-    }
-  },
-  "example": {
-    "attributes": {
-      "title": "The Legend of Zelda: Breath of the Wild",
-      "platform": "Nintendo Switch",
-      "status": "completed",
-      "rating": 5,
-      "hoursPlayed": 120
-    }
-  },
-  "render": "file:./render.php"
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "post-kinds-indieweb/play-card",
+	"version": "1.0.0",
+	"title": "Play Card",
+	"category": "post-kinds-indieweb",
+	"description": "Display a game you played with cover art, platform, status, and rating.",
+	"keywords": ["play", "game", "gaming", "video game", "board game"],
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
+	"attributes": {
+		"title": {
+			"type": "string"
+		},
+		"platform": {
+			"type": "string"
+		},
+		"cover": {
+			"type": "string"
+		},
+		"coverAlt": {
+			"type": "string"
+		},
+		"status": {
+			"type": "string",
+			"default": "playing",
+			"enum": ["playing", "completed", "abandoned", "backlog", "wishlist"]
+		},
+		"hoursPlayed": {
+			"type": "number",
+			"default": 0
+		},
+		"rating": {
+			"type": "number",
+			"default": 0
+		},
+		"playedAt": {
+			"type": "string"
+		},
+		"review": {
+			"type": "string"
+		},
+		"gameUrl": {
+			"type": "string"
+		},
+		"bggId": {
+			"type": "string"
+		},
+		"rawgId": {
+			"type": "string"
+		},
+		"steamId": {
+			"type": "string"
+		},
+		"officialUrl": {
+			"type": "string"
+		},
+		"purchaseUrl": {
+			"type": "string"
+		},
+		"layout": {
+			"type": "string",
+			"default": "horizontal"
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"color": {
+			"background": true,
+			"text": true,
+			"gradients": true,
+			"link": true
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true,
+			"blockGap": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"__experimentalFontFamily": true,
+			"__experimentalFontWeight": true,
+			"__experimentalFontStyle": true,
+			"__experimentalTextTransform": true,
+			"__experimentalTextDecoration": true,
+			"__experimentalLetterSpacing": true
+		},
+		"__experimentalBorder": {
+			"color": true,
+			"radius": true,
+			"width": true,
+			"style": true,
+			"__experimentalDefaultControls": {
+				"color": true,
+				"radius": true,
+				"width": true,
+				"style": true
+			}
+		},
+		"shadow": true,
+		"dimensions": {
+			"minHeight": true
+		}
+	},
+	"example": {
+		"attributes": {
+			"title": "The Legend of Zelda: Breath of the Wild",
+			"platform": "Nintendo Switch",
+			"status": "completed",
+			"rating": 5,
+			"hoursPlayed": 120
+		}
+	},
+	"render": "file:./render.php"
 }

@@ -1,141 +1,127 @@
 {
-  "$schema": "https://schemas.wp.org/trunk/block.json",
-  "apiVersion": 3,
-  "name": "post-kinds-indieweb/checkin-card",
-  "version": "1.0.0",
-  "title": "Checkin Card",
-  "category": "post-kinds-indieweb",
-  "description": "Display a location checkin with venue details, map, and optional notes.",
-  "keywords": [
-    "checkin",
-    "location",
-    "venue",
-    "place",
-    "map",
-    "travel"
-  ],
-  "textdomain": "post-kinds-for-indieweb-in-block-themes",
-  "attributes": {
-    "venueName": {
-      "type": "string"
-    },
-    "venueType": {
-      "type": "string",
-      "default": "place"
-    },
-    "address": {
-      "type": "string"
-    },
-    "locality": {
-      "type": "string"
-    },
-    "region": {
-      "type": "string"
-    },
-    "country": {
-      "type": "string"
-    },
-    "postalCode": {
-      "type": "string"
-    },
-    "latitude": {
-      "type": "number"
-    },
-    "longitude": {
-      "type": "number"
-    },
-    "locationPrivacy": {
-      "type": "string",
-      "default": "approximate",
-      "enum": [
-        "public",
-        "approximate",
-        "private"
-      ]
-    },
-    "osmId": {
-      "type": "string"
-    },
-    "venueUrl": {
-      "type": "string"
-    },
-    "foursquareId": {
-      "type": "string"
-    },
-    "checkinAt": {
-      "type": "string"
-    },
-    "note": {
-      "type": "string"
-    },
-    "photo": {
-      "type": "string"
-    },
-    "photoAlt": {
-      "type": "string"
-    },
-    "showMap": {
-      "type": "boolean",
-      "default": true
-    },
-    "layout": {
-      "type": "string",
-      "default": "horizontal"
-    }
-  },
-  "supports": {
-    "html": false,
-    "align": [
-      "wide",
-      "full"
-    ],
-    "color": {
-      "background": true,
-      "text": true,
-      "gradients": true,
-      "link": true
-    },
-    "spacing": {
-      "margin": true,
-      "padding": true,
-      "blockGap": true
-    },
-    "typography": {
-      "fontSize": true,
-      "lineHeight": true,
-      "__experimentalFontFamily": true,
-      "__experimentalFontWeight": true,
-      "__experimentalFontStyle": true,
-      "__experimentalTextTransform": true,
-      "__experimentalTextDecoration": true,
-      "__experimentalLetterSpacing": true
-    },
-    "__experimentalBorder": {
-      "color": true,
-      "radius": true,
-      "width": true,
-      "style": true,
-      "__experimentalDefaultControls": {
-        "color": true,
-        "radius": true,
-        "width": true,
-        "style": true
-      }
-    },
-    "shadow": true,
-    "dimensions": {
-      "minHeight": true
-    }
-  },
-  "example": {
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "post-kinds-indieweb/checkin-card",
+    "version": "1.0.0",
+    "title": "Checkin Card",
+    "category": "post-kinds-indieweb",
+    "description": "Display a location checkin with venue details, map, and optional notes.",
+    "keywords": ["checkin", "location", "venue", "place", "map", "travel"],
+    "textdomain": "post-kinds-for-indieweb-in-block-themes",
     "attributes": {
-      "venueName": "Central Park",
-      "venueType": "park",
-      "locality": "New York",
-      "region": "NY",
-      "country": "United States"
-    }
-  },
-  "editorStyle": "file:./editor.css",
-  "render": "file:./render.php"
+        "venueName": {
+            "type": "string"
+        },
+        "venueType": {
+            "type": "string",
+            "default": "place"
+        },
+        "address": {
+            "type": "string"
+        },
+        "locality": {
+            "type": "string"
+        },
+        "region": {
+            "type": "string"
+        },
+        "country": {
+            "type": "string"
+        },
+        "postalCode": {
+            "type": "string"
+        },
+        "latitude": {
+            "type": "number"
+        },
+        "longitude": {
+            "type": "number"
+        },
+        "locationPrivacy": {
+            "type": "string",
+            "default": "approximate",
+            "enum": ["public", "approximate", "private"]
+        },
+        "osmId": {
+            "type": "string"
+        },
+        "venueUrl": {
+            "type": "string"
+        },
+        "foursquareId": {
+            "type": "string"
+        },
+        "checkinAt": {
+            "type": "string"
+        },
+        "note": {
+            "type": "string"
+        },
+        "photo": {
+            "type": "string"
+        },
+        "photoAlt": {
+            "type": "string"
+        },
+        "showMap": {
+            "type": "boolean",
+            "default": true
+        },
+        "layout": {
+            "type": "string",
+            "default": "horizontal"
+        }
+    },
+    "supports": {
+        "html": false,
+        "align": ["wide", "full"],
+        "color": {
+            "background": true,
+            "text": true,
+            "gradients": true,
+            "link": true
+        },
+        "spacing": {
+            "margin": true,
+            "padding": true,
+            "blockGap": true
+        },
+        "typography": {
+            "fontSize": true,
+            "lineHeight": true,
+            "__experimentalFontFamily": true,
+            "__experimentalFontWeight": true,
+            "__experimentalFontStyle": true,
+            "__experimentalTextTransform": true,
+            "__experimentalTextDecoration": true,
+            "__experimentalLetterSpacing": true
+        },
+        "__experimentalBorder": {
+            "color": true,
+            "radius": true,
+            "width": true,
+            "style": true,
+            "__experimentalDefaultControls": {
+                "color": true,
+                "radius": true,
+                "width": true,
+                "style": true
+            }
+        },
+        "shadow": true,
+        "dimensions": {
+            "minHeight": true
+        }
+    },
+    "example": {
+        "attributes": {
+            "venueName": "Central Park",
+            "venueType": "park",
+            "locality": "New York",
+            "region": "NY",
+            "country": "United States"
+        }
+    },
+    "editorStyle": "file:./editor.css",
+    "render": "file:./render.php"
 }

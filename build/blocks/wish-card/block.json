@@ -1,107 +1,99 @@
 {
-  "$schema": "https://schemas.wp.org/trunk/block.json",
-  "apiVersion": 3,
-  "name": "post-kinds-indieweb/wish-card",
-  "render": "file:./render.php",
-  "version": "1.0.0",
-  "title": "Wish Card",
-  "category": "post-kinds-indieweb",
-  "description": "Display something you wish for or want with image and reason.",
-  "keywords": [
-    "wish",
-    "want",
-    "wishlist",
-    "gift"
-  ],
-  "textdomain": "post-kinds-for-indieweb-in-block-themes",
-  "attributes": {
-    "title": {
-      "type": "string"
-    },
-    "wishType": {
-      "type": "string",
-      "default": "item"
-    },
-    "url": {
-      "type": "string"
-    },
-    "image": {
-      "type": "string"
-    },
-    "imageAlt": {
-      "type": "string"
-    },
-    "price": {
-      "type": "string"
-    },
-    "reason": {
-      "type": "string"
-    },
-    "priority": {
-      "type": "string",
-      "default": "medium"
-    },
-    "wishedAt": {
-      "type": "string"
-    },
-    "rel": {
-      "type": "string",
-      "default": ""
-    },
-    "layout": {
-      "type": "string",
-      "default": "horizontal"
-    }
-  },
-  "supports": {
-    "html": false,
-    "align": [
-      "wide",
-      "full"
-    ],
-    "color": {
-      "background": true,
-      "text": true,
-      "gradients": true,
-      "link": true
-    },
-    "spacing": {
-      "margin": true,
-      "padding": true,
-      "blockGap": true
-    },
-    "typography": {
-      "fontSize": true,
-      "lineHeight": true,
-      "__experimentalFontFamily": true,
-      "__experimentalFontWeight": true,
-      "__experimentalFontStyle": true,
-      "__experimentalTextTransform": true,
-      "__experimentalTextDecoration": true,
-      "__experimentalLetterSpacing": true
-    },
-    "__experimentalBorder": {
-      "color": true,
-      "radius": true,
-      "width": true,
-      "style": true,
-      "__experimentalDefaultControls": {
-        "color": true,
-        "radius": true,
-        "width": true,
-        "style": true
-      }
-    },
-    "shadow": true,
-    "dimensions": {
-      "minHeight": true
-    }
-  },
-  "example": {
-    "attributes": {
-      "title": "Mechanical Keyboard",
-      "wishType": "item",
-      "priority": "high"
-    }
-  }
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "post-kinds-indieweb/wish-card",
+	"render": "file:./render.php",
+	"version": "1.0.0",
+	"title": "Wish Card",
+	"category": "post-kinds-indieweb",
+	"description": "Display something you wish for or want with image and reason.",
+	"keywords": ["wish", "want", "wishlist", "gift"],
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
+	"attributes": {
+		"title": {
+			"type": "string"
+		},
+		"wishType": {
+			"type": "string",
+			"default": "item"
+		},
+		"url": {
+			"type": "string"
+		},
+		"image": {
+			"type": "string"
+		},
+		"imageAlt": {
+			"type": "string"
+		},
+		"price": {
+			"type": "string"
+		},
+		"reason": {
+			"type": "string"
+		},
+		"priority": {
+			"type": "string",
+			"default": "medium"
+		},
+		"wishedAt": {
+			"type": "string"
+		},
+		"rel": {
+			"type": "string",
+			"default": ""
+		},
+		"layout": {
+			"type": "string",
+			"default": "horizontal"
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"color": {
+			"background": true,
+			"text": true,
+			"gradients": true,
+			"link": true
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true,
+			"blockGap": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"__experimentalFontFamily": true,
+			"__experimentalFontWeight": true,
+			"__experimentalFontStyle": true,
+			"__experimentalTextTransform": true,
+			"__experimentalTextDecoration": true,
+			"__experimentalLetterSpacing": true
+		},
+		"__experimentalBorder": {
+			"color": true,
+			"radius": true,
+			"width": true,
+			"style": true,
+			"__experimentalDefaultControls": {
+				"color": true,
+				"radius": true,
+				"width": true,
+				"style": true
+			}
+		},
+		"shadow": true,
+		"dimensions": {
+			"minHeight": true
+		}
+	},
+	"example": {
+		"attributes": {
+			"title": "Mechanical Keyboard",
+			"wishType": "item",
+			"priority": "high"
+		}
+	}
 }

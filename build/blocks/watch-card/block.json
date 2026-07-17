@@ -1,137 +1,126 @@
 {
-  "$schema": "https://schemas.wp.org/trunk/block.json",
-  "apiVersion": 3,
-  "name": "post-kinds-indieweb/watch-card",
-  "version": "1.0.0",
-  "title": "Watch Card",
-  "category": "post-kinds-indieweb",
-  "description": "Display a movie or TV show you watched with poster, rating, and details.",
-  "keywords": [
-    "watch",
-    "movie",
-    "tv",
-    "film",
-    "show",
-    "episode",
-    "video"
-  ],
-  "textdomain": "post-kinds-for-indieweb-in-block-themes",
-  "attributes": {
-    "mediaTitle": {
-      "type": "string"
-    },
-    "mediaType": {
-      "type": "string",
-      "default": "movie"
-    },
-    "showTitle": {
-      "type": "string"
-    },
-    "seasonNumber": {
-      "type": "number"
-    },
-    "episodeNumber": {
-      "type": "number"
-    },
-    "episodeTitle": {
-      "type": "string"
-    },
-    "releaseYear": {
-      "type": "number"
-    },
-    "director": {
-      "type": "string"
-    },
-    "posterImage": {
-      "type": "string"
-    },
-    "posterImageAlt": {
-      "type": "string"
-    },
-    "watchUrl": {
-      "type": "string"
-    },
-    "captionsUrl": {
-      "type": "string"
-    },
-    "tmdbId": {
-      "type": "string"
-    },
-    "imdbId": {
-      "type": "string"
-    },
-    "rating": {
-      "type": "number",
-      "default": 0
-    },
-    "isRewatch": {
-      "type": "boolean",
-      "default": false
-    },
-    "watchedAt": {
-      "type": "string"
-    },
-    "review": {
-      "type": "string"
-    },
-    "layout": {
-      "type": "string",
-      "default": "horizontal"
-    }
-  },
-  "supports": {
-    "html": false,
-    "align": [
-      "wide",
-      "full"
-    ],
-    "color": {
-      "background": true,
-      "text": true,
-      "gradients": true,
-      "link": true
-    },
-    "spacing": {
-      "margin": true,
-      "padding": true,
-      "blockGap": true
-    },
-    "typography": {
-      "fontSize": true,
-      "lineHeight": true,
-      "__experimentalFontFamily": true,
-      "__experimentalFontWeight": true,
-      "__experimentalFontStyle": true,
-      "__experimentalTextTransform": true,
-      "__experimentalTextDecoration": true,
-      "__experimentalLetterSpacing": true
-    },
-    "__experimentalBorder": {
-      "color": true,
-      "radius": true,
-      "width": true,
-      "style": true,
-      "__experimentalDefaultControls": {
-        "color": true,
-        "radius": true,
-        "width": true,
-        "style": true
-      }
-    },
-    "shadow": true,
-    "dimensions": {
-      "minHeight": true
-    }
-  },
-  "example": {
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "post-kinds-indieweb/watch-card",
+    "version": "1.0.0",
+    "title": "Watch Card",
+    "category": "post-kinds-indieweb",
+    "description": "Display a movie or TV show you watched with poster, rating, and details.",
+    "keywords": ["watch", "movie", "tv", "film", "show", "episode", "video"],
+    "textdomain": "post-kinds-for-indieweb-in-block-themes",
     "attributes": {
-      "mediaTitle": "The Shawshank Redemption",
-      "mediaType": "movie",
-      "releaseYear": 1994,
-      "director": "Frank Darabont",
-      "rating": 5
-    }
-  },
-  "editorStyle": "file:./editor.css",
-  "render": "file:./render.php"
+        "mediaTitle": {
+            "type": "string"
+        },
+        "mediaType": {
+            "type": "string",
+            "default": "movie"
+        },
+        "showTitle": {
+            "type": "string"
+        },
+        "seasonNumber": {
+            "type": "number"
+        },
+        "episodeNumber": {
+            "type": "number"
+        },
+        "episodeTitle": {
+            "type": "string"
+        },
+        "releaseYear": {
+            "type": "number"
+        },
+        "director": {
+            "type": "string"
+        },
+        "posterImage": {
+            "type": "string"
+        },
+        "posterImageAlt": {
+            "type": "string"
+        },
+        "watchUrl": {
+            "type": "string"
+        },
+        "captionsUrl": {
+            "type": "string"
+        },
+        "tmdbId": {
+            "type": "string"
+        },
+        "imdbId": {
+            "type": "string"
+        },
+        "rating": {
+            "type": "number",
+            "default": 0
+        },
+        "isRewatch": {
+            "type": "boolean",
+            "default": false
+        },
+        "watchedAt": {
+            "type": "string"
+        },
+        "review": {
+            "type": "string"
+        },
+        "layout": {
+            "type": "string",
+            "default": "horizontal"
+        }
+    },
+    "supports": {
+        "html": false,
+        "align": ["wide", "full"],
+        "color": {
+            "background": true,
+            "text": true,
+            "gradients": true,
+            "link": true
+        },
+        "spacing": {
+            "margin": true,
+            "padding": true,
+            "blockGap": true
+        },
+        "typography": {
+            "fontSize": true,
+            "lineHeight": true,
+            "__experimentalFontFamily": true,
+            "__experimentalFontWeight": true,
+            "__experimentalFontStyle": true,
+            "__experimentalTextTransform": true,
+            "__experimentalTextDecoration": true,
+            "__experimentalLetterSpacing": true
+        },
+        "__experimentalBorder": {
+            "color": true,
+            "radius": true,
+            "width": true,
+            "style": true,
+            "__experimentalDefaultControls": {
+                "color": true,
+                "radius": true,
+                "width": true,
+                "style": true
+            }
+        },
+        "shadow": true,
+        "dimensions": {
+            "minHeight": true
+        }
+    },
+    "example": {
+        "attributes": {
+            "mediaTitle": "The Shawshank Redemption",
+            "mediaType": "movie",
+            "releaseYear": 1994,
+            "director": "Frank Darabont",
+            "rating": 5
+        }
+    },
+    "editorStyle": "file:./editor.css",
+    "render": "file:./render.php"
 }

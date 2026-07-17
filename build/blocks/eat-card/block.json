@@ -1,127 +1,118 @@
 {
-  "$schema": "https://schemas.wp.org/trunk/block.json",
-  "apiVersion": 3,
-  "name": "post-kinds-indieweb/eat-card",
-  "version": "1.0.0",
-  "title": "Eat Card",
-  "category": "post-kinds-indieweb",
-  "description": "Display a meal or food you ate with photo, restaurant, cuisine, and rating.",
-  "keywords": [
-    "eat",
-    "food",
-    "meal",
-    "restaurant",
-    "dining"
-  ],
-  "textdomain": "post-kinds-for-indieweb-in-block-themes",
-  "attributes": {
-    "name": {
-      "type": "string"
-    },
-    "restaurant": {
-      "type": "string"
-    },
-    "cuisine": {
-      "type": "string"
-    },
-    "photo": {
-      "type": "string"
-    },
-    "photoAlt": {
-      "type": "string"
-    },
-    "rating": {
-      "type": "number",
-      "default": 0
-    },
-    "ateAt": {
-      "type": "string"
-    },
-    "notes": {
-      "type": "string"
-    },
-    "restaurantUrl": {
-      "type": "string"
-    },
-    "locationName": {
-      "type": "string"
-    },
-    "locationAddress": {
-      "type": "string"
-    },
-    "locationLocality": {
-      "type": "string"
-    },
-    "locationRegion": {
-      "type": "string"
-    },
-    "locationCountry": {
-      "type": "string"
-    },
-    "geoLatitude": {
-      "type": "number",
-      "default": 0
-    },
-    "geoLongitude": {
-      "type": "number",
-      "default": 0
-    },
-    "layout": {
-      "type": "string",
-      "default": "horizontal"
-    }
-  },
-  "supports": {
-    "html": false,
-    "align": [
-      "wide",
-      "full"
-    ],
-    "color": {
-      "background": true,
-      "text": true,
-      "gradients": true,
-      "link": true
-    },
-    "spacing": {
-      "margin": true,
-      "padding": true,
-      "blockGap": true
-    },
-    "typography": {
-      "fontSize": true,
-      "lineHeight": true,
-      "__experimentalFontFamily": true,
-      "__experimentalFontWeight": true,
-      "__experimentalFontStyle": true,
-      "__experimentalTextTransform": true,
-      "__experimentalTextDecoration": true,
-      "__experimentalLetterSpacing": true
-    },
-    "__experimentalBorder": {
-      "color": true,
-      "radius": true,
-      "width": true,
-      "style": true,
-      "__experimentalDefaultControls": {
-        "color": true,
-        "radius": true,
-        "width": true,
-        "style": true
-      }
-    },
-    "shadow": true,
-    "dimensions": {
-      "minHeight": true
-    }
-  },
-  "example": {
-    "attributes": {
-      "name": "Margherita Pizza",
-      "restaurant": "Pizzeria Napoletana",
-      "cuisine": "Italian",
-      "rating": 5
-    }
-  },
-  "render": "file:./render.php"
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "post-kinds-indieweb/eat-card",
+	"version": "1.0.0",
+	"title": "Eat Card",
+	"category": "post-kinds-indieweb",
+	"description": "Display a meal or food you ate with photo, restaurant, cuisine, and rating.",
+	"keywords": ["eat", "food", "meal", "restaurant", "dining"],
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
+	"attributes": {
+		"name": {
+			"type": "string"
+		},
+		"restaurant": {
+			"type": "string"
+		},
+		"cuisine": {
+			"type": "string"
+		},
+		"photo": {
+			"type": "string"
+		},
+		"photoAlt": {
+			"type": "string"
+		},
+		"rating": {
+			"type": "number",
+			"default": 0
+		},
+		"ateAt": {
+			"type": "string"
+		},
+		"notes": {
+			"type": "string"
+		},
+		"restaurantUrl": {
+			"type": "string"
+		},
+		"locationName": {
+			"type": "string"
+		},
+		"locationAddress": {
+			"type": "string"
+		},
+		"locationLocality": {
+			"type": "string"
+		},
+		"locationRegion": {
+			"type": "string"
+		},
+		"locationCountry": {
+			"type": "string"
+		},
+		"geoLatitude": {
+			"type": "number",
+			"default": 0
+		},
+		"geoLongitude": {
+			"type": "number",
+			"default": 0
+		},
+		"layout": {
+			"type": "string",
+			"default": "horizontal"
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"color": {
+			"background": true,
+			"text": true,
+			"gradients": true,
+			"link": true
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true,
+			"blockGap": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"__experimentalFontFamily": true,
+			"__experimentalFontWeight": true,
+			"__experimentalFontStyle": true,
+			"__experimentalTextTransform": true,
+			"__experimentalTextDecoration": true,
+			"__experimentalLetterSpacing": true
+		},
+		"__experimentalBorder": {
+			"color": true,
+			"radius": true,
+			"width": true,
+			"style": true,
+			"__experimentalDefaultControls": {
+				"color": true,
+				"radius": true,
+				"width": true,
+				"style": true
+			}
+		},
+		"shadow": true,
+		"dimensions": {
+			"minHeight": true
+		}
+	},
+	"example": {
+		"attributes": {
+			"name": "Margherita Pizza",
+			"restaurant": "Pizzeria Napoletana",
+			"cuisine": "Italian",
+			"rating": 5
+		}
+	},
+	"render": "file:./render.php"
 }
