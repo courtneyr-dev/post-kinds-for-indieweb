@@ -63,8 +63,8 @@
 		"lint-staged": "^17.0.8"
 	},
 	"scripts": {
-		"build": "wp-scripts build",
-		"build:prod": "wp-scripts build --mode=production",
+		"build": "wp-scripts build && node bin/sync-block-assets.mjs",
+		"build:prod": "wp-scripts build --mode=production && node bin/sync-block-assets.mjs",
 		"start": "wp-scripts start",
 		"lint": "npm run lint:js && npm run lint:css && npm run lint:pkg-json",
 		"lint:js": "wp-scripts lint-js src/",

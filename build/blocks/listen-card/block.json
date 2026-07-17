@@ -1,111 +1,100 @@
 {
-  "$schema": "https://schemas.wp.org/trunk/block.json",
-  "apiVersion": 3,
-  "name": "post-kinds-indieweb/listen-card",
-  "version": "1.0.0",
-  "title": "Listen Card",
-  "category": "post-kinds-indieweb",
-  "description": "Display a listen/scrobble with track, artist, and album information.",
-  "keywords": [
-    "listen",
-    "music",
-    "scrobble",
-    "track",
-    "song",
-    "album",
-    "artist"
-  ],
-  "textdomain": "post-kinds-for-indieweb-in-block-themes",
-  "attributes": {
-    "trackTitle": {
-      "type": "string"
-    },
-    "artistName": {
-      "type": "string"
-    },
-    "albumTitle": {
-      "type": "string"
-    },
-    "releaseDate": {
-      "type": "string"
-    },
-    "coverImage": {
-      "type": "string"
-    },
-    "coverImageAlt": {
-      "type": "string"
-    },
-    "listenUrl": {
-      "type": "string"
-    },
-    "musicbrainzId": {
-      "type": "string"
-    },
-    "rating": {
-      "type": "number",
-      "default": 0
-    },
-    "listenedAt": {
-      "type": "string"
-    },
-    "layout": {
-      "type": "string",
-      "default": "horizontal"
-    }
-  },
-  "supports": {
-    "html": false,
-    "align": [
-      "wide",
-      "full"
-    ],
-    "color": {
-      "background": true,
-      "text": true,
-      "gradients": true,
-      "link": true
-    },
-    "spacing": {
-      "margin": true,
-      "padding": true,
-      "blockGap": true
-    },
-    "typography": {
-      "fontSize": true,
-      "lineHeight": true,
-      "__experimentalFontFamily": true,
-      "__experimentalFontWeight": true,
-      "__experimentalFontStyle": true,
-      "__experimentalTextTransform": true,
-      "__experimentalTextDecoration": true,
-      "__experimentalLetterSpacing": true
-    },
-    "__experimentalBorder": {
-      "color": true,
-      "radius": true,
-      "width": true,
-      "style": true,
-      "__experimentalDefaultControls": {
-        "color": true,
-        "radius": true,
-        "width": true,
-        "style": true
-      }
-    },
-    "shadow": true,
-    "dimensions": {
-      "minHeight": true
-    }
-  },
-  "example": {
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "post-kinds-indieweb/listen-card",
+    "version": "1.0.0",
+    "title": "Listen Card",
+    "category": "post-kinds-indieweb",
+    "description": "Display a listen/scrobble with track, artist, and album information.",
+    "keywords": ["listen", "music", "scrobble", "track", "song", "album", "artist"],
+    "textdomain": "post-kinds-for-indieweb-in-block-themes",
     "attributes": {
-      "trackTitle": "Bohemian Rhapsody",
-      "artistName": "Queen",
-      "albumTitle": "A Night at the Opera",
-      "releaseDate": "1975-10-31",
-      "rating": 5
-    }
-  },
-  "editorStyle": "file:./editor.css",
-  "render": "file:./render.php"
+        "trackTitle": {
+            "type": "string"
+        },
+        "artistName": {
+            "type": "string"
+        },
+        "albumTitle": {
+            "type": "string"
+        },
+        "releaseDate": {
+            "type": "string"
+        },
+        "coverImage": {
+            "type": "string"
+        },
+        "coverImageAlt": {
+            "type": "string"
+        },
+        "listenUrl": {
+            "type": "string"
+        },
+        "musicbrainzId": {
+            "type": "string"
+        },
+        "rating": {
+            "type": "number",
+            "default": 0
+        },
+        "listenedAt": {
+            "type": "string"
+        },
+        "layout": {
+            "type": "string",
+            "default": "horizontal"
+        }
+    },
+    "supports": {
+        "html": false,
+        "align": ["wide", "full"],
+        "color": {
+            "background": true,
+            "text": true,
+            "gradients": true,
+            "link": true
+        },
+        "spacing": {
+            "margin": true,
+            "padding": true,
+            "blockGap": true
+        },
+        "typography": {
+            "fontSize": true,
+            "lineHeight": true,
+            "__experimentalFontFamily": true,
+            "__experimentalFontWeight": true,
+            "__experimentalFontStyle": true,
+            "__experimentalTextTransform": true,
+            "__experimentalTextDecoration": true,
+            "__experimentalLetterSpacing": true
+        },
+        "__experimentalBorder": {
+            "color": true,
+            "radius": true,
+            "width": true,
+            "style": true,
+            "__experimentalDefaultControls": {
+                "color": true,
+                "radius": true,
+                "width": true,
+                "style": true
+            }
+        },
+        "shadow": true,
+        "dimensions": {
+            "minHeight": true
+        }
+    },
+    "example": {
+        "attributes": {
+            "trackTitle": "Bohemian Rhapsody",
+            "artistName": "Queen",
+            "albumTitle": "A Night at the Opera",
+            "releaseDate": "1975-10-31",
+            "rating": 5
+        }
+    },
+    "editorStyle": "file:./editor.css",
+    "render": "file:./render.php"
 }

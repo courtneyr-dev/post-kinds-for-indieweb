@@ -1,71 +1,62 @@
 {
-  "$schema": "https://schemas.wp.org/trunk/block.json",
-  "apiVersion": 3,
-  "name": "post-kinds-indieweb/checkins-feed",
-  "version": "1.2.0",
-  "title": "Check-ins Feed",
-  "category": "post-kinds-indieweb",
-  "icon": "location-alt",
-  "description": "Display a feed of recent check-ins with optional map.",
-  "textdomain": "post-kinds-for-indieweb-in-block-themes",
-  "keywords": [
-    "checkin",
-    "feed",
-    "location",
-    "map",
-    "venue"
-  ],
-  "attributes": {
-    "count": {
-      "type": "number",
-      "default": 10
-    },
-    "showMap": {
-      "type": "boolean",
-      "default": true
-    },
-    "showVenue": {
-      "type": "boolean",
-      "default": true
-    },
-    "showDate": {
-      "type": "boolean",
-      "default": true
-    },
-    "showExcerpt": {
-      "type": "boolean",
-      "default": false
-    },
-    "venueId": {
-      "type": "number",
-      "default": 0
-    },
-    "layout": {
-      "type": "string",
-      "default": "list"
-    },
-    "columns": {
-      "type": "number",
-      "default": 2
-    }
-  },
-  "supports": {
-    "html": false,
-    "align": [
-      "wide",
-      "full"
-    ],
-    "spacing": {
-      "margin": true,
-      "padding": true
-    },
-    "color": {
-      "background": true,
-      "text": true
-    },
-    "typography": {
-      "fontSize": true
-    }
-  },
-  "render": "file:./render.php"
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "post-kinds-indieweb/checkins-feed",
+	"version": "1.2.0",
+	"title": "Check-ins Feed",
+	"category": "post-kinds-indieweb",
+	"icon": "location-alt",
+	"description": "Display a feed of recent check-ins with optional map.",
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
+	"keywords": ["checkin", "feed", "location", "map", "venue"],
+	"attributes": {
+		"count": {
+			"type": "number",
+			"default": 10
+		},
+		"showMap": {
+			"type": "boolean",
+			"default": true
+		},
+		"showVenue": {
+			"type": "boolean",
+			"default": true
+		},
+		"showDate": {
+			"type": "boolean",
+			"default": true
+		},
+		"showExcerpt": {
+			"type": "boolean",
+			"default": false
+		},
+		"venueId": {
+			"type": "number",
+			"default": 0
+		},
+		"layout": {
+			"type": "string",
+			"default": "list"
+		},
+		"columns": {
+			"type": "number",
+			"default": 2
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"color": {
+			"background": true,
+			"text": true
+		},
+		"typography": {
+			"fontSize": true
+		}
+	},
+	"render": "file:./render.php"
 }

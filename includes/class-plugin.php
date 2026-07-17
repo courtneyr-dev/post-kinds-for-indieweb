@@ -867,8 +867,17 @@ final class Plugin {
 		}
 
 		// Register each block with the shared editor script and styles.
+		// Blocks register from build/blocks (kept in sync by
+		// bin/sync-block-assets.mjs after each build) so the distributed
+		// plugin works without src/; src is the dev-only fallback.
 		foreach ( $blocks as $block ) {
-			$block_dir = \PKIW_PATH . 'src/blocks/' . $block;
+			$block_dir     = \PKIW_PATH . 'build/blocks/' . $block;
+			$block_dir_url = \PKIW_URL . 'build/blocks/' . $block;
+
+			if ( ! file_exists( $block_dir . '/block.json' ) ) {
+				$block_dir     = \PKIW_PATH . 'src/blocks/' . $block;
+				$block_dir_url = \PKIW_URL . 'src/blocks/' . $block;
+			}
 
 			if ( ! file_exists( $block_dir . '/block.json' ) ) {
 				continue;
@@ -888,7 +897,7 @@ final class Plugin {
 			if ( file_exists( $style_file ) ) {
 				wp_register_style(
 					'pkiw-block-' . $block,
-					\PKIW_URL . 'src/blocks/' . $block . '/style.css',
+					$block_dir_url . '/style.css',
 					$style_deps,
 					filemtime( $style_file )
 				);
@@ -903,7 +912,7 @@ final class Plugin {
 			if ( file_exists( $editor_style_file ) ) {
 				wp_register_style(
 					'pkiw-block-' . $block . '-editor',
-					\PKIW_URL . 'src/blocks/' . $block . '/editor.css',
+					$block_dir_url . '/editor.css',
 					$style_deps,
 					filemtime( $editor_style_file )
 				);

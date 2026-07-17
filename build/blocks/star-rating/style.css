@@ -1,0 +1,94 @@
+/**
+ * Star Rating Block - Frontend Styles
+ *
+ * @package Reactions_For_IndieWeb
+ */
+
+/*
+ * Rating colors come from the --pkiw-star-rating-* token catalog
+ * (styles/kind-tokens.css). Defaults are neutral: filled icons inherit
+ * the surrounding text color; empty icons render as a muted mix of it.
+ * Themes opt into gold stars, pink hearts, etc. by setting the tokens.
+ */
+
+.star-rating-inner {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
+/* Label */
+.star-rating-block .rating-label {
+	font-weight: 500;
+	margin-right: 0.25rem;
+}
+
+/* Rating display */
+.star-rating-block .rating-display {
+	display: inline-flex;
+	align-items: center;
+}
+
+.star-rating-block .rating-icon {
+	color: var(--pkiw-star-rating-empty, color-mix(in srgb, currentcolor 35%, transparent));
+	transition: color 0.15s ease;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Symbol", system-ui, sans-serif;
+	line-height: 1;
+}
+
+.star-rating-block .rating-icon.filled {
+	color: var(--pkiw-star-rating-fill, currentcolor);
+}
+
+/* Size variations */
+.star-rating-block.size-small .rating-icon {
+	font-size: 1rem;
+}
+
+.star-rating-block.size-medium .rating-icon {
+	font-size: 1.25rem;
+}
+
+.star-rating-block.size-large .rating-icon {
+	font-size: 1.75rem;
+}
+
+/* Half stars */
+.star-rating-block .half-star {
+	position: relative;
+	display: inline-block;
+}
+
+.star-rating-block .half-filled-part {
+	position: absolute;
+	width: 50%;
+	overflow: hidden;
+	color: var(--pkiw-star-rating-fill, currentcolor);
+}
+
+.star-rating-block .half-empty-part {
+	color: var(--pkiw-star-rating-empty, color-mix(in srgb, currentcolor 35%, transparent));
+}
+
+/* Style variations */
+.star-rating-block.style-hearts .rating-icon.filled {
+	color: var(--pkiw-star-rating-variant-1, currentcolor);
+}
+
+.star-rating-block.style-circles .rating-icon.filled {
+	color: var(--pkiw-star-rating-variant-2, currentcolor);
+}
+
+/* Rating value */
+.star-rating-block .rating-value {
+	font-size: 0.85em;
+	color: var(--pkiw-star-rating-caption, inherit);
+	margin-left: 0.25rem;
+}
+
+/* Numeric style */
+.star-rating-block .rating-numeric-display {
+	font-size: 1.1em;
+	font-weight: 600;
+}
