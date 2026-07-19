@@ -1541,11 +1541,12 @@ class REST_API {
 		// Film: /film/slug or /film/slug/.
 		if ( preg_match( '/\/film\/([^\/]+)/', $path, $matches ) ) {
 			// Fetch the Letterboxd page and look for TMDB link.
-			$response = wp_remote_get(
+			$response = wp_safe_remote_get(
 				$url,
 				[
-					'timeout'    => 15,
-					'user-agent' => 'Mozilla/5.0 (compatible; WordPress/' . get_bloginfo( 'version' ) . ')',
+					'timeout'            => 15,
+					'user-agent'         => 'Mozilla/5.0 (compatible; WordPress/' . get_bloginfo( 'version' ) . ')',
+					'reject_unsafe_urls' => true,
 				]
 			);
 

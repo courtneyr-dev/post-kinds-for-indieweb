@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Letterboxd lookups now use WordPress's safe HTTP fetch and reject unsafe redirect targets.
 - The public OAuth callback now rejects requests with a missing or malformed `code`/`state` as a clean 400 instead of hitting `hash_equals()` with a non-string (a PHP 8 fatal → 500). State validation itself was already sound: single-use transient, constant-time comparison.
 
 ## [1.4.3] - 2026-07-07

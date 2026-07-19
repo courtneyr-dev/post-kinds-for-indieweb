@@ -347,6 +347,33 @@ class RestApiTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test Letterboxd fetches reject unsafe URLs.
+	 */
+	public function test_letterboxd_fetch_rejects_unsafe_urls() {
+		$request_args = null;
+		$interceptor  = static function ( $preempt, $parsed_args ) use ( &$request_args ) {
+			$request_args = $parsed_args;
+			return new \WP_Error( 'http_request_blocked', 'HTTP request blocked by test.' );
+		};
+
+		add_filter( 'pre_http_request', $interceptor, 10, 2 );
+
+		$request = new WP_REST_Request( 'GET', '/' . REST_API::NAMESPACE . '/lookup/watch-url' );
+		$request->set_param( 'url', 'https://letterboxd.com/film/test-film/' );
+
+		try {
+			$this->rest_api->lookup_watch_url( $request );
+		} finally {
+			remove_filter( 'pre_http_request', $interceptor, 10 );
+		}
+
+		$this->assertTrue(
+			$request_args['reject_unsafe_urls'] ?? false,
+			'Letterboxd fetches must reject unsafe URLs.'
+		);
+	}
+
+	/**
 	 * Test settings routes require admin capabilities.
 	 *
 	 * There's no plain `/settings` route — the API exposes `/settings/apis`,
