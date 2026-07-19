@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - The public OAuth callback now rejects requests with a missing or malformed `code`/`state` as a clean 400 instead of hitting `hash_equals()` with a non-string (a PHP 8 fatal → 500). State validation itself was already sound: single-use transient, constant-time comparison.
+- The syndication admin handlers (`ajax_syndicate_now`, `handle_actions`) now require the per-post `edit_post` capability before syndicating, closing an IDOR where any user with the generic `edit_posts` capability could syndicate another user's post.
 
 ## [1.4.3] - 2026-07-07
 

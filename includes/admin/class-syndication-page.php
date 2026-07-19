@@ -139,6 +139,10 @@ class Syndication_Page {
 			return;
 		}
 
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return;
+		}
+
 		$result = $this->syndicate_post( $post_id, $service );
 
 		if ( $result ) {
@@ -179,6 +183,10 @@ class Syndication_Page {
 
 		if ( ! $post_id || ! $service ) {
 			wp_send_json_error( [ 'message' => __( 'Invalid parameters.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
+		}
+
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
 		}
 
 		$result = $this->syndicate_post( $post_id, $service );
