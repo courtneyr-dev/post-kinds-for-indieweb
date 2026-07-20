@@ -3,7 +3,7 @@
  * Post Kinds for IndieWeb in Block Themes
  *
  * Modern block editor support for IndieWeb post kinds and microformats.
- * A successor to the classic IndieWeb Post Kinds plugin by David Shanske.
+ * A successor to the classic IndieWeb Post Kinds plugin.
  *
  * @package     PKIW
  * @author      Courtney Robertson

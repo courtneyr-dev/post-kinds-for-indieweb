@@ -12,7 +12,7 @@ Track what you listen to, watch, read, play, and experience — all from your Wo
 
 == Description ==
 
-Post Kinds for IndieWeb in Block Themes is a block-editor successor to David Shanske's [Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin.
+Post Kinds for IndieWeb in Block Themes is a block-editor successor to the classic [Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin.
 
 A post kind is a label that describes what a post *is* — a note, a check-in, a song you listened to, a movie you watched — rather than what it's about. The idea comes from the [IndieWeb](https://indieweb.org/) movement: publish your activity on your own site instead of (or in addition to) social networks and tracking apps.
 
@@ -224,6 +224,6 @@ Each external service has its own privacy policy. API calls retrieve public meta
 == Credits ==
 
 * **Author:** [Courtney Robertson](https://courtneyr.dev)
-* **Original plugin:** [Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) by David Shanske
+* **Original plugin:** [Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/)
 * Built for the [IndieWeb](https://indieweb.org/) community
 * Uses open data from MusicBrainz, TMDB, Open Library, RAWG, OpenStreetMap, and other services
