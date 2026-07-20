@@ -11,9 +11,13 @@ declare(strict_types=1);
  * Verifies that published kind cards expose their canonical properties.
  *
  * TODO: Follow has no card; u-follow-of comes from the Micropub content
- * builder and needs a later Micropub-output test. The experimental eat,
- * drink, jam, checkin, and acquisition kinds are omitted while their
- * microformats2 vocabulary remains unsettled.
+ * builder and needs a later Micropub-output test. RSVP is omitted here: its
+ * card roots as its own h-entry and emits p-rsvp inside the nested h-event,
+ * while the entry-level p-rsvp comes from add_hidden_mf2_data() on the
+ * the_content filter (which do_blocks() alone does not run) — so RSVP needs a
+ * dedicated test that exercises the full published pipeline, not the card
+ * render. The experimental eat, drink, jam, checkin, and acquisition kinds are
+ * omitted while their microformats2 vocabulary remains unsettled.
  *
  * @group integration
  */
@@ -34,7 +38,6 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 			'listen'   => [ 'listen', 'listen-of', 'https://example.com/targets/listen' ],
 			'watch'    => [ 'watch', 'watch-of', 'https://example.com/targets/watch' ],
 			'read'     => [ 'read', 'read-of', 'https://example.com/targets/read' ],
-			'rsvp'     => [ 'rsvp', 'rsvp', 'https://example.com/targets/rsvp' ],
 		];
 	}
 
@@ -71,22 +74,13 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 		$this->go_to( get_permalink( $post_id ) );
 		$html = do_blocks( (string) get_post_field( 'post_content', $post_id ) );
 
-		if ( 'rsvp' !== $kind ) {
-			$html = '<div class="h-entry">' . $html . '</div>';
-		}
+		// Simulate the theme's post_class h-entry wrapper around the card h-cite.
+		$html = '<div class="h-entry">' . $html . '</div>';
 
 		$entry      = $this->top_level_h_entry( \Mf2\parse( $html ) );
 		$properties = $entry['properties'] ?? [];
 
 		$this->assertArrayHasKey( $canonical_property, $properties );
-
-		if ( 'rsvp' === $kind ) {
-			$this->assertContains( $properties['rsvp'][0], [ 'yes', 'no', 'maybe', 'interested' ] );
-			$this->assertArrayHasKey( 'in-reply-to', $properties );
-			$this->assertPropertyContainsTarget( $properties['in-reply-to'], $target_url );
-			return;
-		}
-
 		$this->assertPropertyContainsTarget( $properties[ $canonical_property ], $target_url );
 	}
 
