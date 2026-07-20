@@ -8,7 +8,7 @@
 
 **Own your media life.** Track what you listen to, watch, read, play, and experience — all from your WordPress site, with full block editor support and IndieWeb microformats.
 
-A modern, block-editor successor to David Shanske's [IndieWeb Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin. Built for IndieWeb users who want to own their listening, watching, reading, and check-in history, and for bloggers migrating from the classic Post Kinds plugin to the block editor.
+A modern, block-editor successor to the classic [IndieWeb Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin. Built for IndieWeb users who want to own their listening, watching, reading, and check-in history, and for bloggers migrating from the classic Post Kinds plugin to the block editor.
 
 Try it without installing anything: see the [Playground preview](https://courtneyr-dev.github.io/post-kinds-for-indieweb/playground/) for a one-command browser demo.
 
@@ -235,7 +235,7 @@ GPL v2 or later. See [LICENSE](LICENSE).
 
 ## Credits
 
-Created by [Courtney Robertson](https://courtneyr.dev). Built as a modern successor to [IndieWeb Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) by David Shanske.
+Created by [Courtney Robertson](https://courtneyr.dev). Built as a modern successor to [IndieWeb Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/).
 
 Uses open data from MusicBrainz, TMDB, Open Library, RAWG, OpenStreetMap, and other services.
 
