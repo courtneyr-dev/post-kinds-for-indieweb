@@ -37,7 +37,7 @@ $pkiw_embed = $pkiw_listen_url ? get_cached_embed_html( $pkiw_listen_url ) : fal
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
-		'class' => 'pk-card k-listen h-cite',
+		'class' => 'pk-card k-listen h-cite u-listen-of',
 	]
 );
 
@@ -105,7 +105,7 @@ ob_start();
 		</div>
 	</div>
 
-	<data class="u-listen-of" value="<?php echo esc_url( $pkiw_listen_url ); ?>" hidden></data>
+	<data value="<?php echo esc_url( $pkiw_listen_url ); ?>" hidden></data>
 	<?php if ( $pkiw_musicbrainz_id ) : ?>
 		<data class="u-uid" value="<?php echo esc_url( 'https://musicbrainz.org/recording/' . $pkiw_musicbrainz_id ); ?>" hidden></data>
 	<?php endif; ?>

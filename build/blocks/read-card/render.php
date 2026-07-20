@@ -51,7 +51,7 @@ $pkiw_status_label  = $pkiw_status_labels[ $pkiw_read_status ] ?? '';
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
-		'class' => 'pk-card k-read h-cite',
+		'class' => 'pk-card k-read h-cite u-read-of',
 	]
 );
 
@@ -195,7 +195,7 @@ ob_start();
 		</div>
 	</div>
 
-	<data class="u-read-of" value="<?php echo esc_attr( $pkiw_book_url ); ?>" hidden></data>
+	<data value="<?php echo esc_attr( $pkiw_book_url ); ?>" hidden></data>
 	<?php if ( $pkiw_isbn ) : ?>
 		<data class="p-isbn" value="<?php echo esc_attr( $pkiw_isbn ); ?>" hidden></data>
 	<?php endif; ?>
