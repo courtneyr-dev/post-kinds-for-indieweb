@@ -116,9 +116,9 @@ Each check-in has a location privacy level: public (full address and coordinates
 
 Media lookups and imports contact the services you use them with (MusicBrainz, TMDB, Open Library, and so on — see the Privacy Policy section below). Syndication sends posts to Last.fm, Trakt, or Foursquare only when you enable those toggles. Nothing else is sent.
 
-= Does this work with the Classic Editor? =
+= Does this work with classic themes or the Classic Editor? =
 
-The custom blocks require the block editor. With the Classic Editor you can still assign kinds through the taxonomy box, but with limited UI and no card blocks.
+No. This plugin is built for block themes and the block editor — its card blocks and templates rely on them and won't work as intended on a classic (non-block) theme or in the Classic Editor. If you're on a classic theme or the Classic Editor, use the original [Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin instead.
 
 = Where can I read the full documentation? =
 
