@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Response-kind cards (like, reply, repost, bookmark, favorite, listen, watch, read) now carry their microformats2 property (`u-like-of`, `u-in-reply-to`, `u-repost-of`, and so on) on the card's `h-cite` root instead of a nested element, so the post's `h-entry` actually exposes the property. Webmention receivers and feed readers now recognize these posts as their kind. Added an integration test that parses each rendered card with a real microformats2 parser to guard against regressions.
 - Letterboxd lookups now use WordPress's safe HTTP fetch and reject unsafe redirect targets.
 - The public OAuth callback now rejects requests with a missing or malformed `code`/`state` as a clean 400 instead of hitting `hash_equals()` with a non-string (a PHP 8 fatal → 500). State validation itself was already sound: single-use transient, constant-time comparison.
 - The syndication admin handlers (`ajax_syndicate_now`, `handle_actions`) now require the per-post `edit_post` capability before syndicating, closing an IDOR where any user with the generic `edit_posts` capability could syndicate another user's post.
