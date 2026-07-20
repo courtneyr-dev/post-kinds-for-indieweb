@@ -139,6 +139,7 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 = 1.0.1 =
 * Security: syndication handlers now require the per-post `edit_post` capability, closing an IDOR where a user with generic `edit_posts` could syndicate another user's post.
 * Security: Letterboxd lookups use `wp_safe_remote_get` with `reject_unsafe_urls`, so a redirect target can't reach private or loopback hosts.
+* Fixed: like, reply, repost, bookmark, favorite, listen, watch, and read posts now expose the correct microformats2 markup, so webmention receivers and feed readers recognize them as their kind.
 
 = 1.0.0 =
 * Initial WordPress.org release: 24 post kinds with card blocks, media lookup, imports and webhook scrobbling, microformats2 markup, syndication, and Micropub support. Development history for the pre-release builds lives in CHANGELOG.md in the GitHub repository.
