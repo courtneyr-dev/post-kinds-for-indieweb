@@ -27,13 +27,15 @@ npm run build         # dev build
 npm run build:prod    # production build (what CI and plugin-zip use)
 ```
 
-Block source lives in `src/blocks/`. `includes/class-plugin.php` registers
-each block directly from `src/blocks/<block>/` via `register_block_type()` —
-**not** from `build/`. `build/` is compiled output but is tracked in git
-(not gitignored) because it ships as part of the plugin distribution. Any
-change to a block's `block.json` or `render.php` must exist in `src/blocks/`
-to take effect; a stale `build/` copy doesn't matter for registration but do
-rebuild before shipping so the compiled JS matches.
+Block source lives in `src/blocks/`, but the plugin **registers each block from
+`build/blocks/<block>/`** — the build step (`bin/sync-block-assets.mjs`, run
+after every `npm run build`) copies each block's `block.json`, `render.php`,
+`style.css`, and `editor.css` from `src/blocks/` into `build/blocks/`, so the
+shipped zip works without `src/` (which `.distignore` excludes). `build/` is
+compiled output but is tracked in git because it ships as part of the
+distribution. Edit `block.json`/`render.php` in `src/blocks/` and rebuild —
+`build/blocks/` is what actually loads, so a stale `build/` copy WILL take
+effect until you rebuild.
 
 ## Lint
 
@@ -236,10 +238,12 @@ never auto-deploys anything.
 - **Port 8888 conflict:** Stream Deck commonly owns 8888 on this machine —
   use a gitignored `.wp-env.override.json` with alternate ports plus
   `WP_BASE_URL` rather than fighting for the default port.
-- **Blocks register from `src/blocks/`, not `build/`.** `class-plugin.php`
-  points `register_block_type()` at `src/blocks/<block>/` directly. A
-  deploy needs the `src/blocks/<block>/block.json` and `render.php` present
-  (not just a `build/` artifact) for registration to work at all.
+- **Blocks register from `build/blocks/`, not `src/blocks/`.** The build step
+  (`bin/sync-block-assets.mjs`) copies each block's `block.json`/`render.php`/
+  `style.css`/`editor.css` from `src/blocks/` into `build/blocks/`, and the
+  plugin registers from there — so the shipped zip works without `src/`
+  (`.distignore` excludes it). Edit in `src/blocks/` and rebuild; `build/blocks/`
+  is what loads, so ship a fresh `build/`.
 - **Block category slug is `post-kinds-indieweb`** (no "for") across every
   `block.json`. Don't "fix" it to match the plugin slug — existing saved
   posts reference this category slug, and changing it breaks them.
