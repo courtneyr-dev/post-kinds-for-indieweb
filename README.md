@@ -1,5 +1,6 @@
 # Post Kinds for IndieWeb in Block Themes
 
+[![WordPress.org Plugin](https://img.shields.io/wordpress/plugin/v/post-kinds-for-indieweb-in-block-themes.svg?label=WordPress.org&logo=wordpress&logoColor=white)](https://wordpress.org/plugins/post-kinds-for-indieweb-in-block-themes/)
 [![WordPress 7.0+](https://img.shields.io/badge/WordPress-7.0%2B-21759b.svg?logo=wordpress&logoColor=white)](https://wordpress.org/)
 [![PHP 8.2+](https://img.shields.io/badge/PHP-8.2%2B-777BB4.svg?logo=php&logoColor=white)](https://php.net/)
 [![License: GPL v2+](https://img.shields.io/badge/License-GPL%20v2%2B-blue.svg)](LICENSE)
@@ -10,7 +11,7 @@
 
 A modern, block-editor successor to the classic [IndieWeb Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin. Built for IndieWeb users who want to own their listening, watching, reading, and check-in history, and for bloggers migrating from the classic Post Kinds plugin to the block editor.
 
-Try it without installing anything: see the [Playground preview](https://courtneyr-dev.github.io/post-kinds-for-indieweb/playground/) for a one-command browser demo.
+**Install it from the [WordPress.org Plugin Directory](https://wordpress.org/plugins/post-kinds-for-indieweb-in-block-themes/)**, or try it without installing anything: see the [Playground preview](https://courtneyr-dev.github.io/post-kinds-for-indieweb/playground/) for a one-command browser demo.
 
 ---
 
