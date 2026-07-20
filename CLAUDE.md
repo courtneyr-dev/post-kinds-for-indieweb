@@ -31,6 +31,19 @@ Block editor support for IndieWeb post kinds (listen, watch, read, checkin, play
 - No OR-assertions, no self-grading tests
 - CI green is the source of truth over local runs
 
+### IndieWeb validation
+
+The plugin's whole value is interop — output that consuming parsers (webmention receivers, feed readers) actually recognize. Validate it, don't assume it.
+
+- **Automated gate (CI):** `tests/phpunit/integration/MicroformatsRenderTest.php` renders each response-kind card, parses it with the `mf2/mf2` parser, and asserts the post's `h-entry` carries the canonical property (`like-of`, `in-reply-to`, `repost-of`, `bookmark-of`, `favorite-of`, `listen-of`, `watch-of`, `read-of`). A property class must sit on the same element as its microformat root or it won't attach to the entry — this test catches that regression. Extend it when adding a kind (rsvp, and the experimental kinds, still need their own coverage).
+- **Pre-release manual pass** (a representative published post of each kind, before tagging):
+  - [indiewebify.me](https://indiewebify.me/) — `h-entry` / `h-card` recognized
+  - [pin13.net/mf2](https://pin13.net/mf2/) or [microformats.io](https://microformats.io/) — eyeball the parsed mf2 JSON
+  - [monocle.p3k.io/preview](https://monocle.p3k.io/preview) — the `h-feed` parses as intended (nothing missing/extra)
+  - [webmention.rocks](https://webmention.rocks/) — the webmention sender conforms
+  - [micropub.rocks](https://micropub.rocks/) — the Micropub server conforms (also exercised by the `micropub-kinds` e2e)
+  - W3C validator — no malformed HTML
+
 ### Accessibility floor: WCAG 2.2 AA
 
 - Semantic HTML first; ARIA only where semantics can't cover it
