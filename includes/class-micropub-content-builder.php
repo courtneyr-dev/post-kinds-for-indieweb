@@ -2,7 +2,7 @@
 /**
  * Micropub content builder — converts h-entry properties into block markup.
  *
- * The Micropub plugin (David Shanske) creates a wp_posts row whose
+ * The upstream Micropub plugin (`wordpress-micropub`) creates a wp_posts row whose
  * `post_content` is the literal `content` property string. Front-end render
  * is then "whatever the user typed" — no card, no map, no venue detail.
  *
@@ -699,7 +699,7 @@ final class Micropub_Content_Builder {
 		}
 
 		// Deduplicate photo URLs while preserving alt-text alignment.
-		// The upstream Micropub plugin (David Shanske's `wordpress-micropub`)
+		// The upstream Micropub plugin (`wordpress-micropub`)
 		// enriches `$input['photo']` post-sideload — when an Outpost
 		// gallery uploads 3 images and posts them as `photo[]=url1&...`,
 		// the plugin's processing produces a 6-entry array (the original
