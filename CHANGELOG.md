@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-07-20
+
 ### Removed
 
 - The "Enabled Reaction Types" control on the General settings tab. The `enabled_kinds` option it saved had no runtime consumers — disabling a kind never removed it from the editor, taxonomy, or blocks, despite the on-screen promise. The renderer and any saved values are kept so the control can return together with real enforcement.
