@@ -5,11 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-> **WordPress.org versioning note (2026-07-10):** the plugin's public WordPress.org line starts at **1.0.0**, which contains everything through GitHub build 1.4.3. The entries below record the pre-release GitHub-only builds.
+> **WordPress.org versioning note:** the public WordPress.org debut is **[1.0.0] dated 2026-07-20**, which bundles the full feature set from the pre-release GitHub builds (1.4.3 and earlier, listed below) plus the final pre-launch fixes. The 1.4.x–1.1.0 entries and the earlier `[1.0.0] - 2024-12-23 (pre-release GitHub build)` were GitHub-only and never shipped on WordPress.org.
 
 ## [Unreleased]
 
-## [1.0.1] - 2026-07-20
+## [1.0.0] - 2026-07-20
+
+Initial public WordPress.org release — the full feature set from the pre-release GitHub builds (through 1.4.3, listed below), plus the final pre-launch changes noted here.
 
 ### Removed
 
@@ -177,7 +179,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ESLint exhaustive-deps warnings in Jam Card useEffect hooks
 - CSS selector formatting in shared card-editor.css
 
-## [1.0.0] - 2024-12-23
+## [1.0.0] - 2024-12-23 (pre-release GitHub build)
 
 ### Added
 
