@@ -9,6 +9,7 @@
 /tests
 /bin
 /src
+/scripts
 
 # Hidden/config files to exclude
 .distignore
@@ -31,6 +32,11 @@ package-lock.json
 phpunit.xml.dist
 phpstan.neon
 webpack.config.js
+eslint.config.js
+jest.config.js
+playwright.config.js
+lighthouserc.js
+phpstan-baseline.neon
 
 # Development documentation
 CLAUDE.md

@@ -86,9 +86,9 @@ npm run test:e2e        # Playwright
 includes/                      # PHP classes
 includes/abilities/            # Abilities API (existing)
 includes/class-abilities-manager.php  # Abilities registration (existing)
-src/blocks/                    # Block source (JS) — registered directly, not build/
+src/blocks/                    # Block source (JS) — synced into build/blocks/ at build time
 src/interactivity/             # Interactivity API view scripts (new)
-build/                         # Compiled (tracked, not gitignored — shipped for distribution)
+build/                         # Compiled (tracked, shipped for distribution) — blocks register from here
 tests/phpunit/unit/            # PHPUnit unit tests
 tests/phpunit/integration/     # PHPUnit integration tests (WP_UnitTestCase)
 tests/phpunit/fixtures/        # Fixture data (per external API)
