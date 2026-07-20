@@ -69,7 +69,7 @@ $pkiw_embed = $pkiw_watch_url ? get_card_embed_html( $pkiw_watch_url, 'watch', [
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
-		'class' => 'pk-card k-watch h-cite',
+		'class' => 'pk-card k-watch h-cite u-watch-of',
 	]
 );
 
@@ -157,7 +157,7 @@ ob_start();
 		</div>
 	</div>
 
-	<data class="u-watch-of" value="<?php echo esc_url( $pkiw_watch_url ); ?>" hidden></data>
+	<data value="<?php echo esc_url( $pkiw_watch_url ); ?>" hidden></data>
 	<?php if ( $pkiw_tmdb_url ) : ?>
 		<data class="u-uid" value="<?php echo esc_url( $pkiw_tmdb_url ); ?>" hidden></data>
 	<?php endif; ?>

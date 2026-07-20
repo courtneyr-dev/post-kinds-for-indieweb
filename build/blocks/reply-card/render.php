@@ -37,7 +37,7 @@ $pkiw_link_rel = $pkiw_rel
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
-		'class' => 'pk-card k-reply h-cite',
+		'class' => 'pk-card k-reply h-cite u-in-reply-to',
 	]
 );
 
@@ -51,7 +51,7 @@ ob_start();
 		<?php if ( $pkiw_title ) : ?>
 			<h2 class="pk-title p-name">
 				<?php if ( $pkiw_url ) : ?>
-					<a class="u-url u-in-reply-to" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_title ); ?></a>
+					<a class="u-url" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_title ); ?></a>
 				<?php else : ?>
 					<?php echo esc_html( $pkiw_title ); ?>
 				<?php endif; ?>

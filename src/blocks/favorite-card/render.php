@@ -33,7 +33,7 @@ $pkiw_link_rel = $pkiw_rel ? 'noopener noreferrer ' . $pkiw_rel : 'noopener nore
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
-		'class' => 'pk-card k-favorite h-cite',
+		'class' => 'pk-card k-favorite h-cite u-favorite-of',
 	]
 );
 
@@ -47,7 +47,7 @@ ob_start();
 		<?php if ( $pkiw_title ) : ?>
 			<h2 class="pk-title p-name">
 				<?php if ( $pkiw_url ) : ?>
-					<a class="u-url u-favorite-of" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_title ); ?></a>
+					<a class="u-url" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_title ); ?></a>
 				<?php else : ?>
 					<?php echo esc_html( $pkiw_title ); ?>
 				<?php endif; ?>
