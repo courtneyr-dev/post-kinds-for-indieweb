@@ -100,6 +100,12 @@ No, but it's recommended and the plugin shows an admin notice suggesting it. Ind
 
 Install the separate [Micropub](https://wordpress.org/plugins/micropub/) plugin and an IndieAuth setup (for example the [IndieAuth](https://wordpress.org/plugins/indieauth/) plugin). Micropub is a standard API that lets mobile and third-party apps publish to your site. Once it's active, this plugin converts incoming Micropub posts into the right card block and assigns the kind.
 
+For one-tap posting and bookmarklet-style sharing from any page or your phone's share sheet, [Outpost](https://github.com/courtneyr-dev/outpost) is a companion progressive web app that posts to your site over Micropub. This plugin doesn't ship its own bookmarklet — Micropub and Outpost cover that.
+
+= Can I browse or subscribe to one kind at a time? =
+
+Yes — every kind gets its own archive and RSS feed automatically. Visit `/kind/listen/` (swap `listen` for any kind) to see all posts of that kind, and `/kind/listen/feed/` — or `/feed/?kind=listen` — to subscribe to just that kind in a feed reader. This works as soon as the plugin is active and your permalinks are refreshed (visit **Settings &rarr; Permalinks** once if the links 404).
+
 = Why isn't the media search finding anything? =
 
 Check your API keys under **Reactions > API Connections** — each service has a link to register for one, and MusicBrainz and Open Library need no key. Verify your server can make outbound HTTPS requests. Try different search terms.
