@@ -12,6 +12,8 @@ Step-by-step instructions for the things you'll do most often. All of these are 
 3. Search for the media in the card (or use the **Media Lookup** block for a universal search across services), or fill fields manually.
 4. Publish. The post's kind is set automatically from the first card block in the post; a manual kind choice in the Post Kind panel is never overridden.
 
+![Media Lookup block showing search results](../../assets/screenshots/editor-media-lookup.png)
+
 ## Assign a kind without a card block
 
 For kinds that have no dedicated card (note, article, event, photo, video, review, recipe) or any post you want to label:
@@ -38,6 +40,8 @@ MusicBrainz (music) and Open Library (books) work without keys.
 4. Publish. The front-end markup honors the privacy level: private hides venue, address, and coordinates; approximate shows only city/region/country.
 
 ![Checkin Card with location and venue details](../../assets/screenshots/editor-checkin-card.png)
+
+![Three published check-ins showing how each privacy level redacts location detail](../../assets/screenshots/frontend-checkin-privacy-levels.png)
 
 ## Display your check-ins on a page
 

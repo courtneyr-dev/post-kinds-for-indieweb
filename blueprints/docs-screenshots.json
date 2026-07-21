@@ -1,0 +1,47 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"preferredVersions": {
+		"php": "8.2",
+		"wp": "latest"
+	},
+	"features": {
+		"networking": true
+	},
+	"steps": [
+		{
+			"step": "login",
+			"username": "admin",
+			"password": "password"
+		},
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "wordpress.org/plugins",
+				"slug": "indieblocks"
+			}
+		},
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "wordpress.org/plugins",
+				"slug": "webmention"
+			}
+		},
+		{
+			"step": "setSiteOptions",
+			"options": {
+				"blogname": "Post Kinds Demo",
+				"blogdescription": "Modern IndieWeb post kinds for the block editor",
+				"permalink_structure": "/%postname%/"
+			}
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php require_once '/wordpress/wp-load.php'; update_user_meta( 1, 'show_admin_bar_front', 'false' ); foreach ( array( 'listen', 'watch', 'read', 'checkin', 'rsvp', 'play' ) as $pkiw_slug ) { if ( taxonomy_exists( 'kind' ) && ! term_exists( $pkiw_slug, 'kind' ) ) { wp_insert_term( $pkiw_slug, 'kind', array( 'slug' => $pkiw_slug ) ); } } $pkiw_up = wp_upload_dir(); wp_mkdir_p( $pkiw_up['basedir'] ); file_put_contents( $pkiw_up['basedir'] . '/pkiw-docs-game-cover.svg', '<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"600\" height=\"800\" viewBox=\"0 0 600 800\"><rect width=\"600\" height=\"800\" fill=\"#1e3a5f\"/><rect x=\"40\" y=\"40\" width=\"520\" height=\"720\" fill=\"none\" stroke=\"#7fb3d5\" stroke-width=\"6\"/><text x=\"300\" y=\"360\" fill=\"#eaf2f8\" font-family=\"Georgia,serif\" font-size=\"64\" text-anchor=\"middle\">Sample</text><text x=\"300\" y=\"440\" fill=\"#eaf2f8\" font-family=\"Georgia,serif\" font-size=\"64\" text-anchor=\"middle\">Game</text><text x=\"300\" y=\"520\" fill=\"#7fb3d5\" font-family=\"Georgia,serif\" font-size=\"40\" text-anchor=\"middle\">Cover Art</text></svg>' );"
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php require_once '/wordpress/wp-load.php'; $pkiw_cards = array( array( 'public', 'Reading Terminal Market', 'Public - exact address, coordinates, and map pin', true ), array( 'approximate', 'Reading Terminal Market', 'Approximate - city-level area only, no street address', true ), array( 'private', 'Reading Terminal Market', 'Private - location details stay on the server', true ) ); $pkiw_content = ''; foreach ( $pkiw_cards as $pkiw_c ) { $pkiw_attrs = array( 'venueName' => $pkiw_c[1], 'address' => '1136 Arch St', 'locality' => 'Philadelphia', 'region' => 'PA', 'country' => 'US', 'postalCode' => '19107', 'latitude' => 39.95333, 'longitude' => -75.15928, 'locationPrivacy' => $pkiw_c[0], 'checkinAt' => '2026-07-14 12:30:00', 'note' => $pkiw_c[2], 'showMap' => $pkiw_c[3] ); $pkiw_content .= '<!-- wp:post-kinds-indieweb/checkin-card ' . wp_json_encode( $pkiw_attrs ) . ' /-->'; } wp_insert_post( array( 'post_title' => 'Check-in privacy levels', 'post_name' => 'checkin-privacy-levels', 'post_type' => 'page', 'post_status' => 'publish', 'post_content' => $pkiw_content ) );"
+		}
+	]
+}
