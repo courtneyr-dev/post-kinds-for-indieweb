@@ -483,6 +483,11 @@ final class Plugin {
 			$this->query_filter = new Query_Filter();
 		}
 
+		// Firehose feed (all posts, including imports).
+		if ( class_exists( __NAMESPACE__ . '\\Firehose_Feed' ) ) {
+			( new Firehose_Feed() )->register();
+		}
+
 		// Initialize sync services.
 		$this->init_checkin_sync_services();
 		$this->init_listen_sync_services();
