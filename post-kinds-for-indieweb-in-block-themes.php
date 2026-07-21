@@ -233,8 +233,8 @@ function activate(): void {
 	// Store activation timestamp for future reference.
 	add_option( 'pkiw_activated', time() );
 
-	// Flush rewrite rules on activation for taxonomy archives.
-	flush_rewrite_rules();
+	// Flush rewrite rules after feed and taxonomy registration on the next init.
+	update_option( 'pkiw_flush_rewrite', true );
 }
 
 /**

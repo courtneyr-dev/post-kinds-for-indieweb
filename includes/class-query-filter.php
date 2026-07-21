@@ -81,7 +81,8 @@ class Query_Filter {
 		$should_filter = $query->is_home()
 			|| $query->is_front_page()
 			|| ( $query->is_archive() && ! $query->is_tax( 'kind' ) )
-			|| $query->is_search();
+			|| $query->is_search()
+			|| $query->is_feed();
 
 		if ( ! $should_filter ) {
 			return;
