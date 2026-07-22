@@ -24,6 +24,8 @@ Each check-in has a privacy level (per post, with a site default under Settings 
 - **Approximate** — locality/region/country appear; street address and coordinates are withheld.
 - **Private** — the location is stored in your database but venue, address, and coordinates are all withheld from the public page.
 
+![Three published check-ins showing how each privacy level redacts location detail](../../assets/screenshots/frontend-checkin-privacy-levels.png)
+
 Separately, **Coordinate Handling** governs storage itself: store-and-show, store-but-hide, round to ~1 km, or discard coordinates entirely (discarded coordinates can't be recovered later).
 
 ## What the plugin sends to external services

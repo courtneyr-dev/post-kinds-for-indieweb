@@ -29,6 +29,16 @@ Key pages:
 
 The docs site builds from [`docs/`](docs/) with Astro Starlight — see [docs/MAINTAINING.md](docs/MAINTAINING.md) to update it.
 
+## Screenshots
+
+![Listen Card block displaying a song with album art and rating](docs/src/assets/screenshots/editor-listen-card.png)
+
+![Post Kind panel in the editor sidebar with the kind grid and an auto-detection notice](docs/src/assets/screenshots/editor-post-kind-panel.png)
+
+![Three published check-ins showing how each privacy level redacts location detail](docs/src/assets/screenshots/frontend-checkin-privacy-levels.png)
+
+More screens — every admin page, the card blocks, and capture specs — live in the [screenshots gallery](https://courtneyr-dev.github.io/post-kinds-for-indieweb/screenshots/).
+
 ## Why Post Kinds?
 
 The original Post Kinds plugin brought IndieWeb interaction types to WordPress, but it was built for the Classic Editor. WordPress has moved on — block themes, the Block Bindings API, and the Interactivity API open new possibilities.

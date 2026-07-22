@@ -33,11 +33,41 @@ A **Read Card** tracking a book with cover and progress. See [Common tasks](/pos
 
 A **Checkin Card** with venue details — location privacy levels control what publishes. See [Privacy and data](/post-kinds-for-indieweb/privacy-and-data/).
 
+![RSVP Card block showing an event response](../../assets/screenshots/editor-rsvp-card.png)
+
+An **RSVP Card**: record whether you're attending an event. See [Common tasks](/post-kinds-for-indieweb/common-tasks/).
+
+![Play Card block with game cover and platform details](../../assets/screenshots/editor-play-card.png)
+
+A **Play Card**: log a game session with artwork filled for you. See [Common tasks](/post-kinds-for-indieweb/common-tasks/).
+
+![Star Rating block with half-star rating selected](../../assets/screenshots/editor-star-rating.png)
+
+The **Star Rating** block: rate media in half-star steps. See [Common tasks](/post-kinds-for-indieweb/common-tasks/).
+
+![Media Lookup block showing search results](../../assets/screenshots/editor-media-lookup.png)
+
+The **Media Lookup** block: search every connected media service from one block. See [Common tasks](/post-kinds-for-indieweb/common-tasks/).
+
+## Front end
+
+![Three published check-ins showing how each privacy level redacts location detail](../../assets/screenshots/frontend-checkin-privacy-levels.png)
+
+Three published check-ins at the public, approximate, and private levels: choose how precisely each check-in reveals where you were. See [Privacy and data](/post-kinds-for-indieweb/privacy-and-data/).
+
+![Check-in Dashboard block showing a populated grid of check-ins](../../assets/screenshots/frontend-checkin-dashboard.png)
+
+The **Check-in Dashboard** block: show your check-in history on any page. See [Common tasks](/post-kinds-for-indieweb/common-tasks/).
+
 ## Admin screens
 
 ![General settings tab showing default category, post status, microformats, syndication, and format sync options](../../assets/screenshots/admin-general-settings.png)
 
 **Reactions → Settings, General tab**: plugin defaults. See [Settings](/post-kinds-for-indieweb/settings/).
+
+![Integrations tab with status cards for related plugins](../../assets/screenshots/admin-integrations-tab.png)
+
+**Reactions → Settings, Integrations tab**: see which companion plugins the site already runs. See [Settings](/post-kinds-for-indieweb/settings/).
 
 ![API Connections page with per-service credential fields](../../assets/screenshots/admin-api-connections.png)
 
@@ -51,17 +81,7 @@ A **Checkin Card** with venue details — location privacy levels control what p
 
 **Reactions → Webhooks**: per-service webhook URLs and secrets for scrobbling from Plex, Jellyfin, Trakt, and ListenBrainz. See [Settings](/post-kinds-for-indieweb/settings/).
 
-## Screenshots still needed
+![Quick Post page with media search and manual entry form](../../assets/screenshots/admin-quick-post.png)
 
-Each row is the full capture specification. The repository's Playwright visual-regression suite (`tests/e2e/visual-regression.spec.js` with `tests/js/sample-values.js`) and the Playground blueprint can drive most of these with populated demo data; capture at 1280×800 at 2x.
+**Reactions → Quick Post**: create a reaction post without opening the editor. See [Settings](/post-kinds-for-indieweb/settings/).
 
-| Filename | Screen and state | What to highlight | Alt text | Caption |
-| --- | --- | --- | --- | --- |
-| editor-rsvp-card.png | RSVP Card with a yes/no/maybe/interested state (baseline: rsvp-card-populated) | The response selector | RSVP Card block showing an event response | Record whether you're attending an event. |
-| editor-play-card.png | Play Card with game cover via RAWG/BGG (baseline: play-card-populated) | Cover and platform fields | Play Card block with game cover and platform details | Log a game session with artwork filled for you. |
-| editor-star-rating.png | Star Rating block on any card post (baseline: star-rating-populated) | A half-star rating | Star Rating block with half-star rating selected | Rate media in half-star steps. |
-| editor-media-lookup.png | Media Lookup block with search results (needs one API key) | The results list | Media Lookup block showing search results | Search every connected media service from one block. |
-| frontend-checkin-privacy-levels.png | Three published check-ins at public/approximate/private levels | The differing location detail | Three published check-ins showing how each privacy level redacts location detail | Choose how precisely each check-in reveals where you were. |
-| frontend-checkin-dashboard.png | Check-in Dashboard block with several check-ins (baseline: checkin-dashboard-populated) | The grid and map | Check-in Dashboard block showing a grid of check-ins with map | Show your check-in history on any page. |
-| admin-integrations-tab.png | Reactions → Settings, Integrations tab with IndieBlocks + Webmention installed | The Active status cards | Integrations tab with status cards for related plugins | See which companion plugins the site already runs. |
-| admin-quick-post.png | Reactions → Quick Post with search results | Media search and manual entry form | Quick Post page with media search and manual entry form | Create a reaction post without opening the editor. |

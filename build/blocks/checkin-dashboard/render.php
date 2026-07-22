@@ -37,15 +37,9 @@ $pkiw_args = [
 	'post_status'    => 'publish',
 	'tax_query'      => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 		[
-			'taxonomy' => 'indieblocks_kind',
+			'taxonomy' => 'kind',
 			'field'    => 'slug',
 			'terms'    => 'checkin',
-		],
-	],
-	'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-		[
-			'key'     => '_reactions_checkin_venue_name',
-			'compare' => 'EXISTS',
 		],
 	],
 	'orderby'        => 'date',
@@ -62,20 +56,21 @@ if ( $pkiw_checkins_query->have_posts() ) {
 
 		$pkiw_checkin = [
 			'id'         => $pkiw_post_id,
-			'venue_name' => get_post_meta( $pkiw_post_id, '_reactions_checkin_venue_name', true ),
-			'address'    => get_post_meta( $pkiw_post_id, '_reactions_checkin_address', true ),
-			'venue_type' => get_post_meta( $pkiw_post_id, '_reactions_checkin_venue_type', true ),
-			'latitude'   => get_post_meta( $pkiw_post_id, '_reactions_checkin_latitude', true ),
-			'longitude'  => get_post_meta( $pkiw_post_id, '_reactions_checkin_longitude', true ),
-			'photo'      => get_post_meta( $pkiw_post_id, '_reactions_checkin_photo', true ),
+			'venue_name' => get_post_meta( $pkiw_post_id, '_pkiw_checkin_name', true ),
+			'address'    => get_post_meta( $pkiw_post_id, '_pkiw_checkin_address', true ),
+			'venue_type' => get_post_meta( $pkiw_post_id, '_pkiw_checkin_type', true ),
+			'latitude'   => get_post_meta( $pkiw_post_id, '_pkiw_geo_latitude', true ),
+			'longitude'  => get_post_meta( $pkiw_post_id, '_pkiw_geo_longitude', true ),
+			'photo'      => get_post_meta( $pkiw_post_id, '_pkiw_checkin_photo', true ),
 			'note'       => get_the_excerpt(),
 			'date'       => get_the_date( 'c' ),
 			'permalink'  => get_permalink(),
 		];
 
-		// Check privacy settings.
-		$pkiw_privacy = get_post_meta( $pkiw_post_id, '_reactions_checkin_geo_privacy', true );
-		if ( 'private' === $pkiw_privacy ) {
+		// Only public check-ins expose coordinates — matches the REST
+		// layer, where the plugin-wide default "approximate" also hides them.
+		$pkiw_privacy = get_post_meta( $pkiw_post_id, '_pkiw_geo_privacy', true );
+		if ( 'public' !== $pkiw_privacy ) {
 			$pkiw_checkin['latitude']  = null;
 			$pkiw_checkin['longitude'] = null;
 		}
@@ -184,11 +179,13 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 			<?php
 			echo esc_attr(
 				wp_json_encode(
-					array_filter(
-						$pkiw_checkins,
-						function ( $c ) {
-							return ! empty( $c['latitude'] );
-						}
+					array_values(
+						array_filter(
+							$pkiw_checkins,
+							function ( $c ) {
+								return ! empty( $c['latitude'] );
+							}
+						)
 					)
 				)
 			);

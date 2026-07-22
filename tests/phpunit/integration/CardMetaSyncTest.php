@@ -28,6 +28,24 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 		$this->assertSame( '517', get_post_meta( $post_id, '_pkiw_read_pages', true ) );
 	}
 
+	public function test_checkin_card_attrs_mirror_into_pkiw_meta(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/checkin-card {"venueName":"Reading Terminal Market","venueType":"cafe","address":"1136 Arch St","locality":"Philadelphia","region":"PA","country":"US","latitude":39.95333,"longitude":-75.15928,"locationPrivacy":"public","venueUrl":"https://readingterminalmarket.org","photo":"https://example.com/photo.jpg"} /-->',
+		] );
+
+		$this->assertSame( 'Reading Terminal Market', get_post_meta( $post_id, '_pkiw_checkin_name', true ) );
+		$this->assertSame( 'cafe', get_post_meta( $post_id, '_pkiw_checkin_type', true ) );
+		$this->assertSame( '1136 Arch St', get_post_meta( $post_id, '_pkiw_checkin_address', true ) );
+		$this->assertSame( 'Philadelphia', get_post_meta( $post_id, '_pkiw_checkin_locality', true ) );
+		$this->assertSame( 'PA', get_post_meta( $post_id, '_pkiw_checkin_region', true ) );
+		$this->assertSame( 'US', get_post_meta( $post_id, '_pkiw_checkin_country', true ) );
+		$this->assertSame( '39.95333', get_post_meta( $post_id, '_pkiw_geo_latitude', true ) );
+		$this->assertSame( '-75.15928', get_post_meta( $post_id, '_pkiw_geo_longitude', true ) );
+		$this->assertSame( 'public', get_post_meta( $post_id, '_pkiw_geo_privacy', true ) );
+		$this->assertSame( 'https://readingterminalmarket.org', get_post_meta( $post_id, '_pkiw_checkin_url', true ) );
+		$this->assertSame( 'https://example.com/photo.jpg', get_post_meta( $post_id, '_pkiw_checkin_photo', true ) );
+	}
+
 	public function test_manual_meta_not_clobbered_by_empty_attr(): void {
 		$post_id = self::factory()->post->create( [
 			'post_content' => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Fourth Wing"} /-->',

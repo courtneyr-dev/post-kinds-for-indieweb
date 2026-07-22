@@ -37,6 +37,8 @@ The same flow works for movies (Watch Card), books (Read Card), places (Checkin 
 
 ![Read Card block with book cover and reading progress](../../assets/screenshots/editor-read-card.png)
 
+![Play Card block with game cover and platform details](../../assets/screenshots/editor-play-card.png)
+
 ## Next steps
 
 1. **Add API keys for richer search.** MusicBrainz and Open Library work without keys, but movie/TV search (TMDB), games (RAWG, BoardGameGeek), and others need keys. Go to **Reactions → API Connections**, where each service links to its sign-up page and has a "Test connection" style check. See [Settings](/post-kinds-for-indieweb/settings/#api-connections-page-reactions--api-connections).

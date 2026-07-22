@@ -139,6 +139,7 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 5. API configuration settings for external services
 6. General settings page with plugin options
 7. Block inserter showing all post kind blocks
+8. Three published check-ins showing how each privacy level redacts location detail
 
 == Changelog ==
 

@@ -78,6 +78,8 @@ See [Privacy and data](/post-kinds-for-indieweb/privacy-and-data/) for how priva
 
 ### Integrations tab
 
+![Integrations tab with status cards for related plugins](../../assets/screenshots/admin-integrations-tab.png)
+
 Status cards for related plugins — each shows whether the plugin is detected as active, with a short description and link:
 
 - **IndieBlocks** — companion blocks for bookmarks, likes, replies, reposts.
@@ -131,6 +133,8 @@ Webhooks let external apps push events to your site so posts are created automat
 - A **Webhook Log** of recent deliveries, and a **Pending Scrobbles** count.
 
 ## Quick Post page (Reactions → Quick Post)
+
+![Quick Post page with media search and manual entry form](../../assets/screenshots/admin-quick-post.png)
 
 A fast composer for reaction posts without opening the block editor: search for media (Quick Listen and similar sections) or enter details manually, and the page creates the post. It also lists your recent reactions. Available to anyone who can edit posts.
 
