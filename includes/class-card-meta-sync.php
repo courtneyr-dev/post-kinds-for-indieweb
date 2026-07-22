@@ -33,7 +33,7 @@ class Card_Meta_Sync {
 	 * @var array<string, array<string, string>>
 	 */
 	public const ATTR_META_MAP = [
-		'post-kinds-indieweb/read-card' => [
+		'post-kinds-indieweb/read-card'    => [
 			'bookTitle'   => 'read_title',
 			'authorName'  => 'read_author',
 			'isbn'        => 'read_isbn',
@@ -48,6 +48,20 @@ class Card_Meta_Sync {
 			'startedAt'   => 'read_started_at',
 			'finishedAt'  => 'read_finished_at',
 			'review'      => 'read_review',
+		],
+		'post-kinds-indieweb/checkin-card' => [
+			'venueName'       => 'checkin_name',
+			'venueType'       => 'checkin_type',
+			'address'         => 'checkin_address',
+			'locality'        => 'checkin_locality',
+			'region'          => 'checkin_region',
+			'country'         => 'checkin_country',
+			'latitude'        => 'geo_latitude',
+			'longitude'       => 'geo_longitude',
+			'locationPrivacy' => 'geo_privacy',
+			'venueUrl'        => 'checkin_url',
+			'osmId'           => 'checkin_osm_id',
+			'photo'           => 'checkin_photo',
 		],
 		// Other card blocks join this map in follow-on work; the class is
 		// deliberately map-driven so each is one entry, no new code.
