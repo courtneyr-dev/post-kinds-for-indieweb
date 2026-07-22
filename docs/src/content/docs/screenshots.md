@@ -55,6 +55,10 @@ The **Media Lookup** block: search every connected media service from one block.
 
 Three published check-ins at the public, approximate, and private levels: choose how precisely each check-in reveals where you were. See [Privacy and data](/post-kinds-for-indieweb/privacy-and-data/).
 
+![Check-in Dashboard block showing a populated grid of check-ins](../../assets/screenshots/frontend-checkin-dashboard.png)
+
+The **Check-in Dashboard** block: show your check-in history on any page. See [Common tasks](/post-kinds-for-indieweb/common-tasks/).
+
 ## Admin screens
 
 ![General settings tab showing default category, post status, microformats, syndication, and format sync options](../../assets/screenshots/admin-general-settings.png)
@@ -81,12 +85,3 @@ Three published check-ins at the public, approximate, and private levels: choose
 
 **Reactions → Quick Post**: create a reaction post without opening the editor. See [Settings](/post-kinds-for-indieweb/settings/).
 
-## Screenshots still needed
-
-Each row is the full capture specification. The repository's Playwright visual-regression suite (`tests/e2e/visual-regression.spec.js` with `tests/js/sample-values.js`) and the Playground blueprint can drive most of these with populated demo data; capture at 1280×800 at 2x.
-
-| Filename | Screen and state | What to highlight | Alt text | Caption |
-| --- | --- | --- | --- | --- |
-| frontend-checkin-dashboard.png | Check-in Dashboard block with several check-ins (baseline: checkin-dashboard-populated) | The grid and map | Check-in Dashboard block showing a grid of check-ins with map | Show your check-in history on any page. |
-
-This capture is blocked by a bug, not by the harness: the block's front-end render queries an `indieblocks_kind` taxonomy and `_reactions_checkin_*` post meta that nothing registers or writes, so it renders its empty state on every install. Capture it once that query is fixed.

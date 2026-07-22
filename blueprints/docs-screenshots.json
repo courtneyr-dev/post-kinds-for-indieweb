@@ -14,6 +14,10 @@
 			"password": "password"
 		},
 		{
+			"step": "activatePlugin",
+			"pluginPath": "/wordpress/wp-content/plugins/post-kinds-for-indieweb/post-kinds-for-indieweb-in-block-themes.php"
+		},
+		{
 			"step": "installPlugin",
 			"pluginData": {
 				"resource": "wordpress.org/plugins",
@@ -42,6 +46,10 @@
 		{
 			"step": "runPHP",
 			"code": "<?php require_once '/wordpress/wp-load.php'; $pkiw_cards = array( array( 'public', 'Reading Terminal Market', 'Public - exact address, coordinates, and map pin', true ), array( 'approximate', 'Reading Terminal Market', 'Approximate - city-level area only, no street address', true ), array( 'private', 'Reading Terminal Market', 'Private - location details stay on the server', true ) ); $pkiw_content = ''; foreach ( $pkiw_cards as $pkiw_c ) { $pkiw_attrs = array( 'venueName' => $pkiw_c[1], 'address' => '1136 Arch St', 'locality' => 'Philadelphia', 'region' => 'PA', 'country' => 'US', 'postalCode' => '19107', 'latitude' => 39.95333, 'longitude' => -75.15928, 'locationPrivacy' => $pkiw_c[0], 'checkinAt' => '2026-07-14 12:30:00', 'note' => $pkiw_c[2], 'showMap' => $pkiw_c[3] ); $pkiw_content .= '<!-- wp:post-kinds-indieweb/checkin-card ' . wp_json_encode( $pkiw_attrs ) . ' /-->'; } wp_insert_post( array( 'post_title' => 'Check-in privacy levels', 'post_name' => 'checkin-privacy-levels', 'post_type' => 'page', 'post_status' => 'publish', 'post_content' => $pkiw_content ) );"
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php require_once '/wordpress/wp-load.php'; $pkiw_venues = array( array( 'Reading Terminal Market', '1136 Arch St', 39.95333, -75.15928, '2026-07-14 12:30:00', 'Lunch at the market.' ), array( 'Independence Hall', '520 Chestnut St', 39.94895, -75.15, '2026-07-12 10:15:00', 'History walk.' ), array( 'Philadelphia Museum of Art', '2600 Benjamin Franklin Pkwy', 39.9656, -75.181, '2026-07-10 14:00:00', 'New exhibit.' ), array( 'Liberty Bell Center', '526 Market St', 39.94962, -75.15012, '2026-07-08 11:45:00', 'Quick stop.' ), array( 'The Franklin Institute', '222 N 20th St', 39.95823, -75.1728, '2026-07-05 13:20:00', 'Science afternoon.' ), array( 'Rittenhouse Square', '210 W Rittenhouse Sq', 39.9495, -75.1716, '2026-07-02 17:30:00', 'Evening in the park.' ) ); foreach ( $pkiw_venues as $pkiw_v ) { $pkiw_attrs = array( 'venueName' => $pkiw_v[0], 'address' => $pkiw_v[1], 'locality' => 'Philadelphia', 'region' => 'PA', 'country' => 'US', 'latitude' => $pkiw_v[2], 'longitude' => $pkiw_v[3], 'locationPrivacy' => 'public', 'checkinAt' => $pkiw_v[4], 'note' => $pkiw_v[5], 'showMap' => false ); wp_insert_post( array( 'post_title' => 'Checked in at ' . $pkiw_v[0], 'post_status' => 'publish', 'post_date' => $pkiw_v[4], 'post_content' => '<!-- wp:post-kinds-indieweb/checkin-card ' . wp_json_encode( $pkiw_attrs ) . ' /-->' ) ); } wp_insert_post( array( 'post_title' => 'Check-in dashboard', 'post_name' => 'checkin-dashboard', 'post_type' => 'page', 'post_status' => 'publish', 'post_content' => '<!-- wp:post-kinds-indieweb/checkin-dashboard {\"showMap\":false} /-->' ) );"
 		}
 	]
 }

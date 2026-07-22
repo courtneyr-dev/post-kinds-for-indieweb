@@ -448,10 +448,6 @@ async function insertBlock( page, blockName, attrs, title ) {
 		await shoot( 'editor-media-lookup.png' );
 
 		// 12. Frontend: three published check-ins at each privacy level.
-		// (frontend-checkin-dashboard.png stays in "still needed": the block's
-		// frontend render queries the `indieblocks_kind` taxonomy and
-		// `_reactions_checkin_*` meta, which nothing registers or writes, so it
-		// renders the empty state on every real install until that is fixed.)
 		await page.goto( BASE + '/checkin-privacy-levels/', {
 			waitUntil: 'networkidle',
 		} );
@@ -468,6 +464,22 @@ async function insertBlock( page, blockName, attrs, title ) {
 		await page.waitForTimeout( 12000 ); // Let both OpenStreetMap embeds finish painting.
 		await shoot( 'frontend-checkin-privacy-levels.png' );
 		await page.setViewportSize( { width: 1280, height: 800 } );
+
+		// 13. Frontend: Check-in Dashboard — stats + grid, fed by
+		// kind=checkin posts whose card attrs Card_Meta_Sync mirrors into
+		// _pkiw_* meta. (Grid only: the map view needs Leaflet, which is
+		// not shipped yet — see assets/vendor references in render.php.)
+		await page.goto( BASE + '/checkin-dashboard/', {
+			waitUntil: 'networkidle',
+		} );
+		// An empty grid means the dashboard query regressed — fail the
+		// capture loudly instead of shooting the empty state.
+		await page
+			.locator( '.checkin-card' )
+			.first()
+			.waitFor( { timeout: 15000 } );
+		await page.waitForTimeout( 1000 );
+		await shoot( 'frontend-checkin-dashboard.png' );
 
 		await browser.close();
 		console.log(
