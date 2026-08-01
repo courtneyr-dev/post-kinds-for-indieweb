@@ -92,12 +92,42 @@ final class Block_Bindings_Formats {
 	}
 
 	/**
+	 * Is the shared source name already registered by another plugin?
+	 *
+	 * `post-formats/format-data` is a shared namespace, not ours alone. Post
+	 * Formats for Block Themes registers the same source with a superset of our
+	 * keys, and it registers earlier (`after_setup_theme`, priority 99) than we
+	 * do (`init`). Calling register_block_bindings_source() a second time is
+	 * rejected by core with a _doing_it_wrong() notice on every request.
+	 *
+	 * @since 1.3.1
+	 *
+	 * @return bool True when some other plugin has already registered it.
+	 */
+	private static function already_registered(): bool {
+		if ( ! class_exists( '\WP_Block_Bindings_Registry' ) ) {
+			return false;
+		}
+
+		return null !== \WP_Block_Bindings_Registry::get_instance()->get_registered( self::SOURCE_NAME );
+	}
+
+	/**
 	 * Register the block bindings source.
+	 *
+	 * Defers to whichever plugin registered `post-formats/format-data` first.
+	 * Bindings in content keep resolving either way — the other provider serves
+	 * the same keys — so deferring costs nothing and removes the duplicate
+	 * registration notice.
 	 *
 	 * @since 1.3.0
 	 */
 	public function register_source(): void {
 		if ( ! function_exists( 'register_block_bindings_source' ) ) {
+			return;
+		}
+
+		if ( self::already_registered() ) {
 			return;
 		}
 
