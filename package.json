@@ -54,13 +54,13 @@
 	"devDependencies": {
 		"@axe-core/playwright": "^4.12.1",
 		"@lhci/cli": "^0.15.1",
-		"@playwright/test": "^1.61.1",
-		"@testing-library/jest-dom": "^6.6.0",
+		"@playwright/test": "^1.62.1",
+		"@testing-library/jest-dom": "^7.0.0",
 		"@testing-library/react": "^16.3.2",
 		"@wordpress/env": "^11.10.0",
 		"@wordpress/scripts": "^32.6.0",
 		"husky": "^9.0.0",
-		"lint-staged": "^17.1.0"
+		"lint-staged": "^17.3.0"
 	},
 	"scripts": {
 		"build": "wp-scripts build && node bin/sync-block-assets.mjs",
