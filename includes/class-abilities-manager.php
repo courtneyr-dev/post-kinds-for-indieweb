@@ -205,19 +205,19 @@ final class Abilities_Manager {
 	 */
 	public static function get_ability_names(): array {
 		return [
-			'post_kinds/list_kinds',
-			'post_kinds/list_kind_fields',
-			'post_kinds/create_post',
-			'post_kinds/set_kind',
-			'post_kinds/get_kind',
-			'post_kinds/update_post_meta',
-			'post_kinds/get_post_meta',
-			'post_kinds/lookup_music',
-			'post_kinds/lookup_video',
-			'post_kinds/lookup_book',
-			'post_kinds/lookup_podcast',
-			'post_kinds/lookup_venue',
-			'post_kinds/lookup_game',
+			'post-kinds/list-kinds',
+			'post-kinds/list-kind-fields',
+			'post-kinds/create-post',
+			'post-kinds/set-kind',
+			'post-kinds/get-kind',
+			'post-kinds/update-post-meta',
+			'post-kinds/get-post-meta',
+			'post-kinds/lookup-music',
+			'post-kinds/lookup-video',
+			'post-kinds/lookup-book',
+			'post-kinds/lookup-podcast',
+			'post-kinds/lookup-venue',
+			'post-kinds/lookup-game',
 		];
 	}
 
@@ -253,7 +253,7 @@ final class Abilities_Manager {
 	 * @return array Modified arguments.
 	 */
 	public static function filter_ability_args( array $args, string $name ): array {
-		if ( ! str_starts_with( $name, 'post_kinds/' ) ) {
+		if ( ! str_starts_with( $name, 'post-kinds/' ) ) {
 			return $args;
 		}
 

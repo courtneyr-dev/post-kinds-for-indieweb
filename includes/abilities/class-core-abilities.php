@@ -137,7 +137,7 @@ final class Core_Abilities {
 	 */
 	private function register_list_kinds(): void {
 		wp_register_ability(
-			'post_kinds/list_kinds',
+			'post-kinds/list-kinds',
 			[
 				'label'               => __( 'List Kinds', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description'         => __( 'Lists all available post kinds with slugs, labels, and descriptions.', 'post-kinds-for-indieweb-in-block-themes' ),
@@ -177,7 +177,7 @@ final class Core_Abilities {
 	 */
 	private function register_list_kind_fields(): void {
 		wp_register_ability(
-			'post_kinds/list_kind_fields',
+			'post-kinds/list-kind-fields',
 			[
 				'label'               => __( 'List Kind Fields', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description'         => __( 'Lists meta fields available for a specific kind.', 'post-kinds-for-indieweb-in-block-themes' ),
@@ -222,7 +222,7 @@ final class Core_Abilities {
 	 */
 	private function register_create_post(): void {
 		wp_register_ability(
-			'post_kinds/create_post',
+			'post-kinds/create-post',
 			[
 				'label'               => __( 'Create Post', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description'         => __( 'Creates a post with a kind and optional meta fields.', 'post-kinds-for-indieweb-in-block-themes' ),
@@ -274,7 +274,7 @@ final class Core_Abilities {
 	 */
 	private function register_set_kind(): void {
 		wp_register_ability(
-			'post_kinds/set_kind',
+			'post-kinds/set-kind',
 			[
 				'label'               => __( 'Set Kind', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description'         => __( 'Sets the kind on an existing post.', 'post-kinds-for-indieweb-in-block-themes' ),
@@ -315,7 +315,7 @@ final class Core_Abilities {
 	 */
 	private function register_get_kind(): void {
 		wp_register_ability(
-			'post_kinds/get_kind',
+			'post-kinds/get-kind',
 			[
 				'label'               => __( 'Get Kind', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description'         => __( 'Gets the kind assigned to a post.', 'post-kinds-for-indieweb-in-block-themes' ),
@@ -352,7 +352,7 @@ final class Core_Abilities {
 	 */
 	private function register_update_post_meta(): void {
 		wp_register_ability(
-			'post_kinds/update_post_meta',
+			'post-kinds/update-post-meta',
 			[
 				'label'               => __( 'Update Post Meta', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description'         => __( 'Updates a single meta field on a post.', 'post-kinds-for-indieweb-in-block-themes' ),
@@ -396,7 +396,7 @@ final class Core_Abilities {
 	 */
 	private function register_get_post_meta(): void {
 		wp_register_ability(
-			'post_kinds/get_post_meta',
+			'post-kinds/get-post-meta',
 			[
 				'label'               => __( 'Get Post Meta', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description'         => __( 'Gets meta fields from a post.', 'post-kinds-for-indieweb-in-block-themes' ),
