@@ -89,7 +89,7 @@ final class Lookup_Abilities {
 	public function register(): void {
 		foreach ( $this->get_lookup_definitions() as $slug => $definition ) {
 			wp_register_ability(
-				'post_kinds/lookup_' . $slug,
+				'post-kinds/lookup-' . $slug,
 				[
 					'label'               => $definition['label'],
 					'description'         => $definition['description'],

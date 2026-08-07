@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- All 13 abilities now actually register. Their names used underscores (`post_kinds/list_kinds`, `post_kinds/lookup_book`), and core's `WP_Abilities_Registry::register()` only accepts `/^[a-z0-9-]+\/[a-z0-9-]+$/` — lowercase alphanumerics, dashes, one slash. Every one was refused with a `_doing_it_wrong()` notice and nothing else, so with `WP_DEBUG` off they had been missing since 1.1.0 without a trace. Renamed to dashes throughout (`post-kinds/list-kinds`, `post-kinds/lookup-book`), including the MCP server list and the `post_kinds/` prefix check in `Abilities_Manager::filter_ability_args()`. No aliases: the old names never registered, so nothing can be calling them.
+
+### Added
+
+- `AbilitiesRegistrationTest` asserts every declared ability is present in `wp_get_abilities()` after init, that declared names satisfy core's grammar, and that the declared list and the registry agree in both directions. A rejected name now fails CI instead of vanishing into a notice.
+
 ## [1.0.0] - 2026-07-20
 
 Initial public WordPress.org release — the full feature set from the pre-release GitHub builds (through 1.4.3, listed below), plus the final pre-launch changes noted here.
