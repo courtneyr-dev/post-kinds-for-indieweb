@@ -246,11 +246,95 @@ class Standard_Site {
 			return null;
 		}
 
+		$backlink = self::check_backlink( $record, $url, $pds );
+
 		return [
-			'uri'      => $at_uri,
-			'did'      => $parts['did'],
-			'record'   => $record,
-			'verified' => self::verify_backlink( $record, $url, $pds ),
+			'uri'         => $at_uri,
+			'did'         => $parts['did'],
+			'record'      => $record,
+			'publication' => $backlink['publication'],
+			'verified'    => $backlink['verified'],
+		];
+	}
+
+	/**
+	 * Resolve a site's publication record from its domain.
+	 *
+	 * Uses the `.well-known` endpoint, which is the authoritative half of
+	 * standard.site verification. The `<link rel="site.standard.publication">`
+	 * tag a page may also carry is documented as a discovery hint only, so it
+	 * is deliberately not consulted here.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param string $url Any URL on the site, or the site root.
+	 * @return array|null {
+	 *     Publication, or null when the site publishes none.
+	 *
+	 *     @type string $uri    The publication's AT-URI.
+	 *     @type string $did    The owning DID.
+	 *     @type array  $record The site.standard.publication record value.
+	 * }
+	 */
+	public static function resolve_publication( string $url ): ?array {
+		$parts = wp_parse_url( esc_url_raw( $url ) );
+		if ( ! is_array( $parts ) || empty( $parts['host'] ) ) {
+			return null;
+		}
+
+		$origin    = 'https://' . $parts['host'];
+		$cache_key = self::CACHE_PREFIX . 'pub_' . md5( $origin );
+		$cached    = get_transient( $cache_key );
+
+		if ( 'none' === $cached ) {
+			return null;
+		}
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+
+		$result = self::resolve_publication_uncached( $origin );
+
+		set_transient( $cache_key, null === $result ? 'none' : $result, self::CACHE_TTL );
+
+		return $result;
+	}
+
+	/**
+	 * Do the work behind resolve_publication().
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param string $origin Scheme and host, no trailing slash.
+	 * @return array|null Publication, or null.
+	 */
+	private static function resolve_publication_uncached( string $origin ): ?array {
+		$body = self::remote_get_body( $origin . '/.well-known/site.standard.publication', 2048 );
+		if ( null === $body ) {
+			return null;
+		}
+
+		$at_uri = trim( $body );
+		$parts  = self::parse_at_uri( $at_uri );
+
+		if ( null === $parts || 'site.standard.publication' !== $parts['collection'] ) {
+			return null;
+		}
+
+		$pds = self::resolve_pds( $parts['did'] );
+		if ( null === $pds ) {
+			return null;
+		}
+
+		$record = self::fetch_record( $pds, $parts['did'], $parts['collection'], $parts['rkey'] );
+		if ( null === $record ) {
+			return null;
+		}
+
+		return [
+			'uri'    => $at_uri,
+			'did'    => $parts['did'],
+			'record' => $record,
 		];
 	}
 
@@ -420,46 +504,62 @@ class Standard_Site {
 	 * @param array  $record The document record.
 	 * @param string $url    The URL the record was discovered on.
 	 * @param string $pds    PDS serving the author's repository.
-	 * @return bool True when the record points back at this URL.
+	 * @return array{verified: bool, publication: array|null} The verdict, and the
+	 *                                                        publication if one was fetched.
 	 */
-	private static function verify_backlink( array $record, string $url, string $pds ): bool {
+	private static function check_backlink( array $record, string $url, string $pds ): array {
+		$fail = [
+			'verified'    => false,
+			'publication' => null,
+		];
+
 		$site = isset( $record['site'] ) ? (string) $record['site'] : '';
 		$path = isset( $record['path'] ) ? (string) $record['path'] : '';
 
 		if ( '' === $site ) {
-			return false;
+			return $fail;
 		}
 
-		$base = '';
+		$base        = '';
+		$publication = null;
 
 		if ( str_starts_with( $site, 'at://' ) ) {
 			$pub_parts = self::parse_at_uri( $site );
 			if ( null === $pub_parts || 'site.standard.publication' !== $pub_parts['collection'] ) {
-				return false;
+				return $fail;
 			}
 
-			$publication = self::fetch_record(
+			$record_value = self::fetch_record(
 				$pds,
 				$pub_parts['did'],
 				$pub_parts['collection'],
 				$pub_parts['rkey']
 			);
 
-			if ( null === $publication || empty( $publication['url'] ) ) {
-				return false;
+			if ( null === $record_value || empty( $record_value['url'] ) ) {
+				return $fail;
 			}
 
-			$base = (string) $publication['url'];
+			$publication = [
+				'uri'    => $site,
+				'did'    => $pub_parts['did'],
+				'record' => $record_value,
+			];
+
+			$base = (string) $record_value['url'];
 		} elseif ( str_starts_with( $site, 'https://' ) ) {
 			// A loose document names its site directly.
 			$base = $site;
 		} else {
-			return false;
+			return $fail;
 		}
 
 		$reconstructed = untrailingslashit( $base ) . $path;
 
-		return self::same_url( $reconstructed, $url );
+		return [
+			'verified'    => self::same_url( $reconstructed, $url ),
+			'publication' => $publication,
+		];
 	}
 
 	/**

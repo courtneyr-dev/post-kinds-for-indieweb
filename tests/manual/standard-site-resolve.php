@@ -106,14 +106,25 @@ foreach ( $targets as $url ) {
 	}
 
 	printf(
-		"   uri      : %s\n   did      : %s\n   title    : %s\n   published: %s\n   tags     : %s\n   verified : %s  (%dms)\n",
+		"   uri      : %s\n   did      : %s\n   title    : %s\n   published: %s\n   tags     : %s\n   from     : %s\n   verified : %s  (%dms)\n",
 		$result['uri'],
 		$result['did'],
 		$result['record']['title'] ?? '(none)',
 		$result['record']['publishedAt'] ?? '(none)',
 		implode( ', ', $result['record']['tags'] ?? [] ) ?: '(none)',
+		$result['publication']['record']['name'] ?? '(loose document)',
 		$result['verified'] ? 'YES' : 'no',
 		$ms
+	);
+}
+
+echo "\n== publication resolution from a bare domain\n";
+foreach ( [ 'https://notes.pckt.blog', 'https://standard.site' ] as $site ) {
+	$pub = Standard_Site::resolve_publication( $site );
+	printf(
+		"   %-28s -> %s\n",
+		$site,
+		null === $pub ? '(no publication)' : ( $pub['record']['name'] ?? '(unnamed)' ) . '  ' . $pub['uri']
 	);
 }
 
