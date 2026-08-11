@@ -17,6 +17,7 @@ import {
 import { PanelBody, TextControl } from '@wordpress/components';
 import { useEffect } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
+import StandardSitePanel from '../../components/standard-site-panel';
 
 export default function Edit( { attributes, setAttributes } ) {
 	const { title, url, description, image, imageAlt, author } = attributes;
@@ -162,6 +163,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						) }
 					/>
 				</PanelBody>
+				<StandardSitePanel url={ url } />
 			</InspectorControls>
 
 			<div { ...blockProps }>
