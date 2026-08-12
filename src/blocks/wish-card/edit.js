@@ -17,6 +17,7 @@ import {
 import { PanelBody, TextControl, SelectControl } from '@wordpress/components';
 import { useEffect } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
+import StandardSitePanel from '../../components/standard-site-panel';
 
 /**
  * Wish type options with emojis.
@@ -274,6 +275,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						) }
 					/>
 				</PanelBody>
+				<StandardSitePanel url={ url } />
 			</InspectorControls>
 
 			<div { ...blockProps }>

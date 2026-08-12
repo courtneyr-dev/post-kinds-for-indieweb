@@ -23,6 +23,7 @@ import {
 import { useEffect, useState } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
+import StandardSitePanel from '../../components/standard-site-panel';
 import { MediaSearch } from '../shared/components';
 
 export default function Edit( { attributes, setAttributes } ) {
@@ -231,6 +232,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						) }
 					/>
 				</PanelBody>
+				<StandardSitePanel url={ url } />
 			</InspectorControls>
 
 			<div { ...blockProps }>

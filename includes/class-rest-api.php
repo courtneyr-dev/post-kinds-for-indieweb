@@ -98,6 +98,25 @@ class REST_API {
 			]
 		);
 
+		// Standard.site document lookup for a cited URL.
+		register_rest_route(
+			self::NAMESPACE,
+			'/resolve/standard-site',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'resolve_standard_site' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'url' => [
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'esc_url_raw',
+						'description'       => __( 'URL to check for a standard.site document record', 'post-kinds-for-indieweb-in-block-themes' ),
+					],
+				],
+			]
+		);
+
 		// Music lookup.
 		register_rest_route(
 			self::NAMESPACE,
@@ -870,6 +889,68 @@ class REST_API {
 	 */
 	public function can_edit_posts(): bool {
 		return current_user_can( 'edit_posts' );
+	}
+
+	/**
+	 * Look up the standard.site document record behind a URL.
+	 *
+	 * Fetches a URL the editor supplied, so it is rate limited per user on
+	 * top of the capability check. Standard_Site itself uses
+	 * wp_safe_remote_get, which keeps the request off the host's own network.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param \WP_REST_Request $request The request.
+	 * @return \WP_REST_Response|\WP_Error The lookup result.
+	 */
+	public function resolve_standard_site( \WP_REST_Request $request ) {
+		$url = (string) $request->get_param( 'url' );
+
+		if ( '' === $url ) {
+			return new \WP_Error(
+				'pkiw_invalid_url',
+				__( 'A URL is required.', 'post-kinds-for-indieweb-in-block-themes' ),
+				[ 'status' => 400 ]
+			);
+		}
+
+		$limit_key = 'pkiw_ss_rl_' . get_current_user_id();
+		$used      = (int) get_transient( $limit_key );
+
+		if ( $used >= 30 ) {
+			return new \WP_Error(
+				'pkiw_rate_limited',
+				__( 'Too many lookups. Try again in a few minutes.', 'post-kinds-for-indieweb-in-block-themes' ),
+				[ 'status' => 429 ]
+			);
+		}
+
+		set_transient( $limit_key, $used + 1, 5 * MINUTE_IN_SECONDS );
+
+		$result = Standard_Site::resolve_url( $url );
+
+		if ( null === $result ) {
+			return rest_ensure_response( [ 'found' => false ] );
+		}
+
+		$record = $result['record'];
+
+		return rest_ensure_response(
+			[
+				'found'       => true,
+				'uri'         => $result['uri'],
+				'did'         => $result['did'],
+				'verified'    => (bool) $result['verified'],
+				'title'       => $record['title'] ?? '',
+				'description' => $record['description'] ?? '',
+				'publishedAt' => $record['publishedAt'] ?? '',
+				'tags'        => array_values( (array) ( $record['tags'] ?? [] ) ),
+				'publication' => [
+					'name' => $result['publication']['record']['name'] ?? '',
+					'uri'  => $result['publication']['uri'] ?? '',
+				],
+			]
+		);
 	}
 
 	/**

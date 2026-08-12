@@ -432,6 +432,13 @@ final class Plugin {
 			$this->card_meta_sync = new Card_Meta_Sync();
 		}
 
+		// Resolves cited URLs to standard.site document records on AT
+		// Protocol. Read-only and unauthenticated, so it needs no account,
+		// connection, or third-party service.
+		if ( class_exists( __NAMESPACE__ . '\\Standard_Site' ) ) {
+			new Standard_Site();
+		}
+
 		// Applies the site default category to kind-bearing posts (opt-in).
 		if ( class_exists( __NAMESPACE__ . '\\Default_Category' ) ) {
 			new Default_Category();

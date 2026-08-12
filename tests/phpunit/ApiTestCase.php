@@ -110,6 +110,18 @@ abstract class ApiTestCase extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Every request URL seen so far, in order.
+	 *
+	 * The assert_* helpers cover "was this called", but some tests need to
+	 * inspect the URL itself, such as checking a value was encoded once.
+	 *
+	 * @return array<string> Request URLs.
+	 */
+	protected function get_recorded_request_urls(): array {
+		return $this->recorded_requests;
+	}
+
+	/**
 	 * Mock an HTTP error (WP_Error) for URLs matching a pattern.
 	 *
 	 * @param string $url_pattern   Substring to match in request URL.
