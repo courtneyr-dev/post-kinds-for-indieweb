@@ -151,6 +151,7 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 6. General settings page with plugin options
 7. Block inserter showing all post kind blocks
 8. Three published check-ins showing how each privacy level redacts location detail
+9. Standard.site record panel on a Bookmark Card, showing the cited page's own title, publication, description, and tags read from AT Protocol
 
 == Changelog ==
 
