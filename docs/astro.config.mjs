@@ -68,7 +68,12 @@ export default defineConfig( {
 				},
 				{
 					label: 'Using Post Kinds',
-					items: [ 'settings', 'common-tasks', 'works-together' ],
+					items: [
+						'settings',
+						'common-tasks',
+						'standard-site',
+						'works-together',
+					],
 				},
 				{
 					label: 'Reference',
