@@ -30,6 +30,7 @@ import KindGrid from './components/KindGrid';
 import KindFields from './components/KindFields';
 import AutoDetectionNotice from './components/AutoDetectionNotice';
 import { kindIcons } from './icons';
+import hasBookmarkBlock from './has-bookmark-block';
 
 /**
  * Block names that indicate specific kinds.
@@ -279,26 +280,7 @@ export default function KindSelectorPanel() {
 			return;
 		}
 
-		// Check if a bookmark-related block already exists.
-		const checkForBookmarkBlock = ( blockList ) => {
-			for ( const block of blockList ) {
-				if (
-					block.name === 'core/embed' ||
-					block.name === 'mamaduka/bookmark-card' ||
-					block.name === 'indieblocks/bookmark'
-				) {
-					return true;
-				}
-				if ( block.innerBlocks && block.innerBlocks.length > 0 ) {
-					if ( checkForBookmarkBlock( block.innerBlocks ) ) {
-						return true;
-					}
-				}
-			}
-			return false;
-		};
-
-		if ( checkForBookmarkBlock( blocks ) ) {
+		if ( hasBookmarkBlock( blocks ) ) {
 			hasInsertedBookmarkEmbedRef.current = true;
 			return;
 		}
@@ -399,14 +381,7 @@ export default function KindSelectorPanel() {
 		}
 
 		// Check if we already have a bookmark-related block in the post.
-		const hasBookmarkBlock = blocks.some(
-			( block ) =>
-				block.name === 'core/embed' ||
-				block.name === 'mamaduka/bookmark-card' ||
-				block.name === 'indieblocks/bookmark'
-		);
-
-		if ( hasBookmarkBlock ) {
+		if ( hasBookmarkBlock( blocks ) ) {
 			// Already have a block, update the ref.
 			lastInsertedUrlRef.current = citeUrl;
 			return;
@@ -566,38 +541,12 @@ export default function KindSelectorPanel() {
 	}, [ blocks, selectedKind, autoDetectedKind, replaceBlock ] );
 
 	/**
-	 * Check if a bookmark-related block already exists in the post.
-	 *
-	 * @return {boolean} True if a bookmark block exists.
-	 */
-	const hasBookmarkBlock = useCallback( () => {
-		const checkBlocks = ( blockList ) => {
-			for ( const block of blockList ) {
-				if (
-					block.name === 'core/embed' ||
-					block.name === 'mamaduka/bookmark-card' ||
-					block.name === 'indieblocks/bookmark'
-				) {
-					return true;
-				}
-				if ( block.innerBlocks && block.innerBlocks.length > 0 ) {
-					if ( checkBlocks( block.innerBlocks ) ) {
-						return true;
-					}
-				}
-			}
-			return false;
-		};
-		return checkBlocks( blocks );
-	}, [ blocks ] );
-
-	/**
 	 * Insert an embed block for bookmark kind.
 	 * Uses core/embed which will fall back to Bookmark Card if oEmbed fails.
 	 */
 	const insertBookmarkEmbedBlock = useCallback( () => {
 		// Don't insert if a bookmark block already exists.
-		if ( hasBookmarkBlock() ) {
+		if ( hasBookmarkBlock( blocks ) ) {
 			return;
 		}
 
@@ -605,7 +554,7 @@ export default function KindSelectorPanel() {
 		// if oEmbed fails (handled by the failed embed detection useEffect).
 		const newBlock = createBlock( 'core/embed' );
 		insertBlocks( newBlock, 0 );
-	}, [ hasBookmarkBlock, insertBlocks ] );
+	}, [ blocks, insertBlocks ] );
 
 	/**
 	 * Handle kind selection.
