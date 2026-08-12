@@ -44,6 +44,20 @@ Separately, **Coordinate Handling** governs storage itself: store-and-show, stor
 
 These requests carry your search terms or media identifiers (and your API credentials for that service). The plugin readme states API calls retrieve only public metadata and that the plugin includes no analytics or tracking.
 
+**Standard.site record lookups.** When you press **Check this URL** in a card block's sidebar, or a few seconds after you publish a post whose card cites a URL, the plugin follows a chain of up to three requests:
+
+1. **The cited page itself**, to read its `site.standard.document` tag. An ordinary request for a URL you already linked to.
+2. **plc.directory**, to turn the identifier in that tag into the address of the server holding the record. Operated by Bluesky Social PBC. Skipped for `did:web` identifiers, which name their own host instead.
+3. **That server**, to read the record.
+
+No credentials are involved at any step, and nothing about you or your site is sent beyond what any HTTP request carries.
+
+The third host is the part worth understanding: it is not a fixed service. It is whichever Personal Data Server the author of the page you cited happens to use, so which hosts get contacted depends entirely on which pages you bookmark. All three requests use `wp_safe_remote_get()`, which will not follow a URL into your own network.
+
+Results are cached for a day, misses included, so a page is not re-fetched on every save. Nothing is contacted for a card with no URL, and a page that turns out not to be on AT Protocol costs one request, not three.
+
+Only the resolved record's address is stored, in the `_pkiw_standard_site_uri` post meta key, and only when the record verifies against the page it was found on.
+
 **POSSE syndication (outbound publishing).** The plugin sends your activity to Last.fm, Trakt, or Foursquare **only when you enable the matching toggle** (Scrobble to Last.fm, Sync to Trakt, Sync to Foursquare). All three default to off.
 
 **Webhooks (inbound).** Plex, Jellyfin, Trakt, ListenBrainz, and generic webhooks push data *to* your site; deliveries are verified with an HMAC-SHA256 signature against your webhook secret.

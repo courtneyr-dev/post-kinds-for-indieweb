@@ -25,6 +25,7 @@ The original Post Kinds plugin was built for the Classic Editor. This plugin is 
 * **Bulk import** — pull in your history from Last.fm, Trakt, Hardcover, and more
 * **Real-time scrobbling** — webhooks for Plex, Jellyfin, Trakt, and ListenBrainz. Scrobbling means automatically logging each song or show as you play it.
 * **microformats2 markup** on every post. Microformats are standard HTML classes that let other IndieWeb sites and tools read your posts as structured data — a listen, an RSVP, a check-in — instead of plain text.
+* **Standard.site records** — when a page you bookmark publishes its metadata to AT Protocol, read the author's own title, description, and tags instead of guessing from the page. No account or setup needed.
 
 = Post kinds =
 
@@ -96,6 +97,16 @@ No. Both plugins register the same `kind` taxonomy, so this plugin refuses to in
 
 No, but it's recommended and the plugin shows an admin notice suggesting it. IndieBlocks provides companion blocks for bookmarks, likes, replies, and reposts; this plugin detects it but doesn't implement its features.
 
+= What is the "Standard.site record" panel on my bookmark cards? =
+
+Some sites publish their posts' metadata to AT Protocol using the [standard.site](https://standard.site/) schemas. When a page you cite does, that panel reads the author's own title, description, and tags rather than guessing from the page, and tells you which publication it came from.
+
+Choose "Check this URL" to look. Most of the web publishes no such record, and the panel says so plainly when that happens — it isn't an error. Nothing is checked until you ask, and the panel stays hidden until the card has a URL.
+
+= Does the Standard.site panel publish my posts to AT Protocol? =
+
+No. It only reads. Your posts are not sent anywhere, no account is involved, and there is nothing to connect or configure. Publishing your own posts as standard.site records needs an authenticated connection, which this plugin does not do.
+
 = How do I post from my phone or a Micropub app? =
 
 Install the separate [Micropub](https://wordpress.org/plugins/micropub/) plugin and an IndieAuth setup (for example the [IndieAuth](https://wordpress.org/plugins/indieauth/) plugin). Micropub is a standard API that lets mobile and third-party apps publish to your site. Once it's active, this plugin converts incoming Micropub posts into the right card block and assigns the kind.
@@ -140,8 +151,13 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 6. General settings page with plugin options
 7. Block inserter showing all post kind blocks
 8. Three published check-ins showing how each privacy level redacts location detail
+9. Standard.site record panel on a Bookmark Card, showing the cited page's own title, publication, description, and tags read from AT Protocol
 
 == Changelog ==
+
+= Unreleased =
+* Added: read standard.site records from pages you cite. When a bookmarked page publishes its metadata to AT Protocol, the block sidebar can show the author's own title, description, tags, and publication instead of guessing from the page. Read-only and unauthenticated — no account, no setup, and your posts are never published to AT Protocol.
+* A record is only stored on your post once it points back at the page it was found on, so a page cannot claim someone else's writing.
 
 = 1.0.0 =
 * Initial WordPress.org release: 24 post kinds with card blocks, media lookup, imports and webhook scrobbling, microformats2 markup, syndication, and Micropub support. Development history for the pre-release builds lives in CHANGELOG.md in the GitHub repository.
@@ -188,6 +204,16 @@ When you connect an account, the plugin stores your token and, on import, schedu
 = Link identification =
 
 * **Letterboxd** — when you paste a Letterboxd link into a watch post, the plugin fetches that page once to identify the film. Only the URL you pasted is requested. [Terms](https://letterboxd.com/legal/terms-of-use/), [Privacy](https://letterboxd.com/legal/privacy-policy/).
+
+= Standard.site records on AT Protocol (used when you check a cited URL) =
+
+When you choose "Check this URL" on a bookmark, like, reply, repost, favorite, jam, or wish card, or a few seconds after you publish a post containing one, the plugin looks for a [standard.site](https://standard.site/) record published by the page you cited. Nothing about you or your site is sent, and no account or credential is involved: these are public, unauthenticated reads.
+
+* **The cited page** — requested once to read its `site.standard.document` tag. Only the URL you already linked to is requested, the same as the Letterboxd fetch above. Terms and privacy are whatever that site publishes.
+* **plc.directory** — receives the identifier found in that tag and returns the address of the server holding the record. Operated by Bluesky Social PBC. Not contacted for `did:web` identifiers, which name their own host. [Terms](https://bsky.social/about/support/tos), [Privacy](https://bsky.social/about/support/privacy-policy).
+* **The author's Personal Data Server** — receives the record's identifier and returns the record. This host is not a fixed service: it is whichever server the author of the page you cited uses, so which hosts are contacted depends on which pages you bookmark. Terms and privacy are whatever that server's operator publishes.
+
+Results are cached for a day, including pages that publish no record, so a page is not re-fetched every time you save. The plugin only reads. It never publishes your posts to AT Protocol.
 
 = Book previews =
 

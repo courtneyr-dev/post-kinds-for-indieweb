@@ -25,6 +25,7 @@ Key pages:
 - [Getting started](https://courtneyr-dev.github.io/post-kinds-for-indieweb/getting-started/) — your first post kind
 - [Settings](https://courtneyr-dev.github.io/post-kinds-for-indieweb/settings/) — every option under the Reactions menu
 - [Troubleshooting](https://courtneyr-dev.github.io/post-kinds-for-indieweb/troubleshooting/) — common problems and fixes
+- [Standard.site records](https://courtneyr-dev.github.io/post-kinds-for-indieweb/standard-site/) — reading a cited page's own metadata from AT Protocol
 - [Privacy and data](https://courtneyr-dev.github.io/post-kinds-for-indieweb/privacy-and-data/) — what's stored, what's sent externally, and check-in location privacy
 
 The docs site builds from [`docs/`](docs/) with Astro Starlight — see [docs/MAINTAINING.md](docs/MAINTAINING.md) to update it.
@@ -49,6 +50,7 @@ This plugin bridges that gap:
 - **API-powered** — search MusicBrainz, TMDB, Open Library, and more directly from the editor
 - **Import everything** — bulk import from Last.fm, Trakt, Hardcover, and other services
 - **IndieWeb-first** — proper microformats2 markup on every post
+- **Reads the wider web** — when a page you cite publishes a [standard.site](https://standard.site/) record, read the author's own metadata from AT Protocol instead of guessing from their page
 
 ## Post Kinds
 
@@ -178,6 +180,23 @@ add_filter( 'post_kinds_indieweb_cache_duration', function ( $duration, $api ) {
     return 3600; // 1 hour
 }, 10, 2 );
 ```
+
+### Reading standard.site records
+
+Pages that publish a [standard.site](https://standard.site/) document record can be resolved to the author's own metadata. Read-only and unauthenticated — public AT Protocol repositories serve `com.atproto.repo.getRecord` without credentials.
+
+```php
+$result = \PKIW\Standard_Site::resolve_url( 'https://example.com/a-post' );
+
+if ( $result && $result['verified'] ) {
+    echo $result['record']['title'];
+    echo $result['publication']['record']['name'] ?? '';
+}
+```
+
+`resolve_url()` returns `null` when the page publishes no record. `verified` reports whether the record points back at the URL it was found on — a page can name any record, including someone else's, so unverified results are never stored on a post.
+
+See [Standard.site records](https://courtneyr-dev.github.io/post-kinds-for-indieweb/standard-site/) for the full return shape, `resolve_publication()`, and the REST route behind the editor panel.
 
 ### Actions
 
