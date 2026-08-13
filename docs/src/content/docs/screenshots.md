@@ -84,4 +84,3 @@ The **Check-in Dashboard** block: show your check-in history on any page. See [C
 ![Quick Post page with media search and manual entry form](../../assets/screenshots/admin-quick-post.png)
 
 **Reactions → Quick Post**: create a reaction post without opening the editor. See [Settings](/post-kinds-for-indieweb/settings/).
-

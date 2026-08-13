@@ -48,8 +48,8 @@ Resolution is available directly:
 $result = \PKIW\Standard_Site::resolve_url( 'https://example.com/a-post' );
 
 if ( $result && $result['verified'] ) {
-	echo $result['record']['title'];
-	echo $result['publication']['record']['name'] ?? '';
+    echo $result['record']['title'];
+    echo $result['publication']['record']['name'] ?? '';
 }
 ```
 
