@@ -16,6 +16,7 @@
 declare(strict_types=1);
 
 use PKIW\Integrations\Yoast_SEO;
+use PKIW\Kind_Artwork;
 
 /**
  * @group integration
@@ -88,7 +89,7 @@ final class YoastSeoIntegrationTest extends WP_UnitTestCase {
 		wp_set_object_terms( $post_id, 'listen', 'kind' );
 		update_post_meta( $post_id, '_pkiw_listen_cover', self::COVER );
 
-		$this->assertSame( self::COVER, Yoast_SEO::get_representative_image_url( $post_id ) );
+		$this->assertSame( self::COVER, Kind_Artwork::get_representative_image_url( $post_id ) );
 	}
 
 	public function test_block_attr_fallback_covers_posts_saved_before_sync(): void {
@@ -98,7 +99,7 @@ final class YoastSeoIntegrationTest extends WP_UnitTestCase {
 		delete_post_meta( $post_id, '_pkiw_listen_cover' ); // Simulate the pre-change save.
 		wp_set_object_terms( $post_id, 'listen', 'kind' );
 
-		$this->assertSame( self::COVER, Yoast_SEO::get_representative_image_url( $post_id ) );
+		$this->assertSame( self::COVER, Kind_Artwork::get_representative_image_url( $post_id ) );
 	}
 
 	public function test_listen_without_artwork_resolves_null(): void {
@@ -106,14 +107,14 @@ final class YoastSeoIntegrationTest extends WP_UnitTestCase {
 		$post_id = $this->make_listen_post( [ 'trackTitle' => 'American Obituary', 'artistName' => 'U2' ] );
 		wp_set_object_terms( $post_id, 'listen', 'kind' );
 
-		$this->assertNull( Yoast_SEO::get_representative_image_url( $post_id ) );
+		$this->assertNull( Kind_Artwork::get_representative_image_url( $post_id ) );
 	}
 
 	public function test_ordinary_post_resolves_null(): void {
 		// Matrix case 2: no kind media, no card — nothing to expose.
 		$post_id = self::factory()->post->create( [ 'post_content' => 'Just words.' ] );
 
-		$this->assertNull( Yoast_SEO::get_representative_image_url( $post_id ) );
+		$this->assertNull( Kind_Artwork::get_representative_image_url( $post_id ) );
 	}
 
 	public function test_watch_poster_resolves_from_meta(): void {
@@ -125,7 +126,7 @@ final class YoastSeoIntegrationTest extends WP_UnitTestCase {
 
 		$this->assertSame(
 			'https://image.tmdb.org/t/p/w500/dune.jpg',
-			Yoast_SEO::get_representative_image_url( $post_id ),
+			Kind_Artwork::get_representative_image_url( $post_id ),
 			'watch poster must resolve (via the meta Card_Meta_Sync mirrored on create)'
 		);
 	}
@@ -143,7 +144,7 @@ final class YoastSeoIntegrationTest extends WP_UnitTestCase {
 		// hostile or corrupted stored data reaching the resolver.
 		update_metadata( 'post', $post_id, '_pkiw_listen_cover', $bad_url );
 
-		$this->assertNull( Yoast_SEO::get_representative_image_url( $post_id ) );
+		$this->assertNull( Kind_Artwork::get_representative_image_url( $post_id ) );
 	}
 
 	public function bad_url_provider(): array {
@@ -164,7 +165,7 @@ final class YoastSeoIntegrationTest extends WP_UnitTestCase {
 		wp_set_object_terms( $post_id, 'listen', 'kind' );
 		update_metadata( 'post', $post_id, '_pkiw_listen_cover', 'http://example.com/cover.jpg' );
 
-		$this->assertSame( 'http://example.com/cover.jpg', Yoast_SEO::get_representative_image_url( $post_id ) );
+		$this->assertSame( 'http://example.com/cover.jpg', Kind_Artwork::get_representative_image_url( $post_id ) );
 	}
 
 	// --- Graph wiring -------------------------------------------------------
@@ -296,6 +297,6 @@ final class YoastSeoIntegrationTest extends WP_UnitTestCase {
 		// artwork rides the card attr — so the *schema image* both posts
 		// end up with is the same URL, arriving via the two documented
 		// lanes.
-		$this->assertSame( self::COVER, Yoast_SEO::get_representative_image_url( $editor_id ) );
+		$this->assertSame( self::COVER, Kind_Artwork::get_representative_image_url( $editor_id ) );
 	}
 }

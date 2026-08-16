@@ -231,6 +231,13 @@ final class Plugin {
 	private ?Integrations\Yoast_SEO $yoast_integration = null;
 
 	/**
+	 * Featured-artwork behavior instance.
+	 *
+	 * @var Featured_Artwork|null
+	 */
+	private ?Featured_Artwork $featured_artwork = null;
+
+	/**
 	 * Get the singleton instance.
 	 *
 	 * @return Plugin The singleton instance.
@@ -437,6 +444,12 @@ final class Plugin {
 
 		if ( class_exists( __NAMESPACE__ . '\\Card_Meta_Sync' ) ) {
 			$this->card_meta_sync = new Card_Meta_Sync();
+		}
+
+		// Featured image from kind artwork (sideloads once per URL,
+		// respects editorial choice — see Featured_Artwork).
+		if ( class_exists( __NAMESPACE__ . '\\Featured_Artwork' ) ) {
+			$this->featured_artwork = new Featured_Artwork();
 		}
 
 		// Resolves cited URLs to standard.site document records on AT
@@ -1336,6 +1349,15 @@ final class Plugin {
 	 */
 	public function get_card_meta_sync(): ?Card_Meta_Sync {
 		return $this->card_meta_sync;
+	}
+
+	/**
+	 * Get the Featured_Artwork component.
+	 *
+	 * @return Featured_Artwork|null The Featured_Artwork instance or null if not loaded.
+	 */
+	public function get_featured_artwork(): ?Featured_Artwork {
+		return $this->featured_artwork;
 	}
 
 	/**

@@ -476,7 +476,35 @@ class Taxonomy {
 				continue;
 			}
 
-			return self::KIND_CARD_BLOCKS[ $block['blockName'] ] ?? null;
+			return self::first_visible_block_kind( $block );
+		}
+
+		return null;
+	}
+
+	/**
+	 * Resolve a block to a kind, descending through wrapper blocks.
+	 *
+	 * A card nested first inside a group (the shape the Micropub bridge
+	 * writes: card inside an h-entry core/group) is still the first
+	 * thing a person sees, so it decides the kind. A wrapper whose
+	 * first real child is not a card resolves to null — same as a
+	 * paragraph-first post.
+	 *
+	 * @param array<string, mixed> $block Parsed block.
+	 * @return string|null Kind slug, or null.
+	 */
+	private static function first_visible_block_kind( array $block ): ?string {
+		$kind = self::KIND_CARD_BLOCKS[ $block['blockName'] ] ?? null;
+		if ( null !== $kind ) {
+			return $kind;
+		}
+
+		foreach ( $block['innerBlocks'] ?? [] as $inner ) {
+			if ( null === ( $inner['blockName'] ?? null ) ) {
+				continue;
+			}
+			return self::first_visible_block_kind( $inner );
 		}
 
 		return null;

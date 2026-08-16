@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `Card_Meta_Sync` never reached cards nested inside wrapper blocks — including the h-entry `core/group` the Micropub bridge wraps around every card it generates, so Micropub-created posts got no `_pkiw_*` meta at all. The block walk now descends into `innerBlocks` (first card in document order still wins).
 
+- Kind auto-detection (`Taxonomy::get_first_block_kind`) now sees a card nested first inside a wrapper block — the shape the Micropub bridge writes — instead of leaving those posts with no kind term. A wrapper whose first visible child is not a card still gets no auto-kind, same as a paragraph-first post.
+
 ### Added
 
 - `AbilitiesRegistrationTest` asserts every declared ability is present in `wp_get_abilities()` after init, that declared names satisfy core's grammar, and that the declared list and the registry agree in both directions. A rejected name now fails CI instead of vanishing into a notice.
@@ -22,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Yoast SEO integration: kind posts without a featured image now expose their representative media (album cover, movie poster, book cover, game art, checkin photo) as the schema.org primary image. Kind cards are dynamic blocks, so their artwork never appears as an `<img>` in raw post content and Yoast's featured-image/first-content-image resolution couldn't see it — Article schema on kind micro-posts lost its optional `image` and site audits warned about it. The integration hooks Yoast's documented `wpseo_schema_graph` filter, fills in only when Yoast itself found no image, reuses Yoast's native `#primaryimage` node shape (Article `image`/`thumbnailUrl`, WebPage `primaryImageOfPage`), reads normalized `_pkiw_*` meta with a block-attribute fallback for posts saved before the meta sync covered their kind, accepts only valid http(s) URLs, and is completely inert when Yoast is inactive. A featured image always wins untouched; posts with no real artwork truthfully emit no image; `wordCount` is never altered.
 
 - `Card_Meta_Sync` now mirrors listen, watch, jam, and play cards into `_pkiw_*` meta (previously only read and checkin): track/artist/album/cover for listen, title/year/poster and show/episode fields for watch, and title/platform/status/art for jam and play.
+
+- Featured images from kind artwork: a kind post saved without a featured image now gets one from its representative media — remote artwork is sideloaded into the media library once per URL (with the post title as alt text when the image has none), and artwork that is already a local attachment is reused without any fetch. Editorial choice stays in charge: an image you picked is never replaced, removing the auto-set image sticks (the same URL is not re-applied), a failed fetch is not retried until the artwork URL changes, and `add_filter( 'pkiw_set_featured_from_artwork', '__return_false' )` turns the behavior off. `wp postkind featured-artwork backfill [--dry-run]` applies it to existing posts. Shared resolution lives in the new `Kind_Artwork` class, so the featured image and the Yoast schema image always agree.
 
 ## [1.0.0] - 2026-07-20
 
