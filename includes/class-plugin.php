@@ -224,6 +224,13 @@ final class Plugin {
 	private ?Integrations\WP_Recipe_Maker $wprm_integration = null;
 
 	/**
+	 * Yoast SEO integration instance.
+	 *
+	 * @var Integrations\Yoast_SEO|null
+	 */
+	private ?Integrations\Yoast_SEO $yoast_integration = null;
+
+	/**
 	 * Get the singleton instance.
 	 *
 	 * @return Plugin The singleton instance.
@@ -572,6 +579,12 @@ final class Plugin {
 		// WP Recipe Maker integration.
 		if ( class_exists( __NAMESPACE__ . '\\Integrations\\WP_Recipe_Maker' ) ) {
 			$this->wprm_integration = new Integrations\WP_Recipe_Maker();
+		}
+
+		// Yoast SEO integration (inert unless Yoast is active).
+		if ( class_exists( __NAMESPACE__ . '\\Integrations\\Yoast_SEO' ) ) {
+			$this->yoast_integration = new Integrations\Yoast_SEO();
+			$this->yoast_integration->register();
 		}
 
 		/**
