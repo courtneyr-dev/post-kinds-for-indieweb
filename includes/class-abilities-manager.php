@@ -232,7 +232,13 @@ final class Abilities_Manager {
 	}
 
 	/**
-	 * Append Post Kinds abilities to the MCP server abilities list.
+	 * Append registered Post Kinds abilities to the MCP server abilities list.
+	 *
+	 * Only names present in the abilities registry are advertised. In
+	 * lifecycles where wp_abilities_api_init never registered the Post Kinds
+	 * abilities (e.g. WP-CLI building the MCP tool list before init), an
+	 * advertised-but-unregistered name makes the mcp-adapter log an error
+	 * per name, so unregistered names must stay off the list.
 	 *
 	 * @since 1.1.0
 	 *
@@ -240,7 +246,14 @@ final class Abilities_Manager {
 	 * @return array Modified ability name strings.
 	 */
 	public static function filter_mcp_server_abilities( array $abilities ): array {
-		return array_merge( $abilities, self::get_ability_names() );
+		if ( ! function_exists( 'wp_has_ability' ) || ! did_action( 'init' ) ) {
+			return $abilities;
+		}
+
+		return array_merge(
+			$abilities,
+			array_values( array_filter( self::get_ability_names(), 'wp_has_ability' ) )
+		);
 	}
 
 	/**
