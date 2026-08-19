@@ -68,14 +68,14 @@ class Microformats {
 	 */
 	private function define_kind_formats(): void {
 		$this->kind_formats = [
-			'note'     => [
+			'note'      => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
 					'content' => 'e-content',
 					'date'    => 'dt-published',
 				],
 			],
-			'article'  => [
+			'article'   => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
 					'title'   => 'p-name',
@@ -84,7 +84,7 @@ class Microformats {
 					'author'  => 'p-author h-card',
 				],
 			],
-			'reply'    => [
+			'reply'     => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
 					'content'  => 'e-content',
@@ -93,14 +93,14 @@ class Microformats {
 					'cite'     => 'h-cite',
 				],
 			],
-			'like'     => [
+			'like'      => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
 					'like-of' => 'u-like-of',
 					'date'    => 'dt-published',
 				],
 			],
-			'repost'   => [
+			'repost'    => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
 					'repost-of' => 'u-repost-of',
@@ -108,7 +108,7 @@ class Microformats {
 					'date'      => 'dt-published',
 				],
 			],
-			'bookmark' => [
+			'bookmark'  => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
 					'bookmark-of' => 'u-bookmark-of',
@@ -117,7 +117,7 @@ class Microformats {
 					'date'        => 'dt-published',
 				],
 			],
-			'rsvp'     => [
+			'rsvp'      => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
 					'rsvp'     => 'p-rsvp',
@@ -126,7 +126,7 @@ class Microformats {
 					'date'     => 'dt-published',
 				],
 			],
-			'checkin'  => [
+			'checkin'   => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
 					'checkin'  => 'u-checkin h-card',
@@ -144,7 +144,7 @@ class Microformats {
 					'date'     => 'dt-published',
 				],
 			],
-			'listen'   => [
+			'listen'    => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
 					'listen-of' => 'u-listen-of',
@@ -156,7 +156,7 @@ class Microformats {
 					'date'      => 'dt-published',
 				],
 			],
-			'watch'    => [
+			'watch'     => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
 					'watch-of' => 'u-watch-of',
@@ -167,7 +167,7 @@ class Microformats {
 					'date'     => 'dt-published',
 				],
 			],
-			'read'     => [
+			'read'      => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
 					'read-of' => 'u-read-of',
@@ -180,7 +180,7 @@ class Microformats {
 					'date'    => 'dt-published',
 				],
 			],
-			'event'    => [
+			'event'     => [
 				'root'       => [ 'h-event' ],
 				'properties' => [
 					'name'     => 'p-name',
@@ -191,7 +191,7 @@ class Microformats {
 					'url'      => 'u-url',
 				],
 			],
-			'photo'    => [
+			'photo'     => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
 					'photo'   => 'u-photo',
@@ -199,7 +199,7 @@ class Microformats {
 					'date'    => 'dt-published',
 				],
 			],
-			'video'    => [
+			'video'     => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
 					'video'   => 'u-video',
@@ -207,7 +207,7 @@ class Microformats {
 					'date'    => 'dt-published',
 				],
 			],
-			'review'   => [
+			'review'    => [
 				'root'       => [ 'h-review' ],
 				'properties' => [
 					'item'    => 'p-item h-product',
@@ -220,7 +220,7 @@ class Microformats {
 					'date'    => 'dt-published',
 				],
 			],
-			'recipe'   => [
+			'recipe'    => [
 				'root'       => [ 'h-recipe' ],
 				'properties' => [
 					'name'         => 'p-name',
@@ -231,6 +231,108 @@ class Microformats {
 					'ingredient'   => 'p-ingredient',
 					'instructions' => 'e-instructions',
 					'content'      => 'e-content',
+				],
+			],
+			'audio'     => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'audio'   => 'u-audio',
+					'content' => 'e-content',
+					'date'    => 'dt-published',
+				],
+			],
+			'quote'     => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'quotation-of' => 'u-quotation-of',
+					'cite'         => 'h-cite',
+					'content'      => 'e-content',
+					'date'         => 'dt-published',
+				],
+			],
+			'tag'       => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'tag-of'   => 'u-tag-of',
+					'category' => 'p-category',
+					'date'     => 'dt-published',
+				],
+			],
+			'weather'   => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'weather' => 'p-weather',
+					'content' => 'e-content',
+					'date'    => 'dt-published',
+				],
+			],
+			'exercise'  => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'exercise' => 'p-exercise',
+					'content'  => 'e-content',
+					'date'     => 'dt-published',
+				],
+			],
+			'trip'      => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'trip'    => 'p-trip',
+					'content' => 'e-content',
+					'date'    => 'dt-published',
+				],
+			],
+			'itinerary' => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'itinerary' => 'p-itinerary',
+					'content'   => 'e-content',
+					'date'      => 'dt-published',
+				],
+			],
+			'follow'    => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'follow-of' => 'u-follow-of',
+					'cite'      => 'h-cite',
+					'date'      => 'dt-published',
+				],
+			],
+			// An issue is a reply to a source-code repository, so it reuses
+			// in-reply-to (matching classic Post Kinds) rather than a
+			// dedicated issue-of property.
+			'issue'     => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'reply-to' => 'u-in-reply-to',
+					'cite'     => 'h-cite',
+					'name'     => 'p-name',
+					'content'  => 'e-content',
+					'date'     => 'dt-published',
+				],
+			],
+			'question'  => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'question' => 'p-question',
+					'content'  => 'e-content',
+					'date'     => 'dt-published',
+				],
+			],
+			'sleep'     => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'sleep'   => 'p-sleep',
+					'content' => 'e-content',
+					'date'    => 'dt-published',
+				],
+			],
+			'craft'     => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'craft-of' => 'u-craft-of',
+					'content'  => 'e-content',
+					'date'     => 'dt-published',
 				],
 			],
 		];

@@ -44,6 +44,18 @@ function get_kind_icon_paths( string $kind ): string {
 		'bookmark'    => '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
 		'rsvp'        => '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/>',
 		'wish'        => '<path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>',
+		'audio'       => '<path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/>',
+		'quote'       => '<path d="M3 21c3-1 4.5-3.5 4.5-7H4V7h7v7c0 4.5-2.5 6.5-8 7z"/><path d="M13 21c3-1 4.5-3.5 4.5-7H14V7h7v7c0 4.5-2.5 6.5-8 7z"/>',
+		'tag'         => '<path d="M20.6 13.4L12 22l-9-9V4h9l8.6 8.6a1 1 0 0 1 0 .8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+		'weather'     => '<path d="M17.5 19a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.5 1.5A4 4 0 0 0 7 19z"/>',
+		'exercise'    => '<path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/>',
+		'trip'        => '<circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M7 19h8a4 4 0 0 0 0-8H9a4 4 0 0 1 0-8h8"/>',
+		'itinerary'   => '<path d="M3 8a2 2 0 0 0 0 8v4h18v-4a2 2 0 0 1 0-8V4H3z"/><path d="M13 5v2M13 11v2M13 17v2"/>',
+		'follow'      => '<circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6"/><path d="M19 8v6M16 11h6"/>',
+		'issue'       => '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/>',
+		'question'    => '<circle cx="12" cy="12" r="9"/><path d="M9 9.5a3 3 0 1 1 4 3c-.8.5-1 1-1 2M12 17.5h.01"/>',
+		'sleep'       => '<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/><path d="M14 4h4l-4 4h4"/>',
+		'craft'       => '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.1 8.1L20 20M8.1 15.9L20 4"/>',
 	];
 
 	return $icons[ $kind ] ?? '<circle cx="12" cy="12" r="4"/>';

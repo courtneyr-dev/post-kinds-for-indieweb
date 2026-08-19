@@ -282,18 +282,54 @@ final class StreamCardTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * A title-less long-form post renders nothing (no empty link).
+	 * A title-less post still renders a full card — the kind label stands in
+	 * as the linked title, without claiming to be the entry's p-name.
 	 */
-	public function test_long_form_without_title_renders_nothing(): void {
+	public function test_long_form_without_title_renders_card_with_label_title(): void {
+		$this->ensure_kind_term( 'weather' );
 		$post_id = self::factory()->post->create(
 			[
 				'post_title'   => '',
-				'post_content' => "<!-- wp:paragraph -->\n<p>Body.</p>\n<!-- /wp:paragraph -->",
+				'post_content' => "<!-- wp:paragraph -->\n<p>Sunny, 22°C.</p>\n<!-- /wp:paragraph -->",
 			]
 		);
+		wp_set_object_terms( $post_id, 'weather', 'kind' );
 		$GLOBALS['post'] = get_post( $post_id );
 
-		$this->assertSame( '', \PKIW\render_stream_card() );
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( 'pk-card--stream', $html );
+		$this->assertStringContainsString( 'k-weather', $html );
+		$this->assertStringContainsString( 'pk-title', $html );
+		// The synthetic title is navigation, not the entry name.
+		$this->assertStringNotContainsString( 'p-name', $html );
+		$this->assertStringContainsString( '>Weather</a>', $html );
+	}
+
+	/**
+	 * A kind term the plugin has never heard of — no card block, no icon, no
+	 * default entry — still renders a complete generic card carrying the
+	 * standard structure classes the theme styles against.
+	 */
+	public function test_unknown_kind_renders_generic_card(): void {
+		$this->ensure_kind_term( 'zzz-future-kind' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => '',
+				'post_content' => "<!-- wp:paragraph -->\n<p>From the future.</p>\n<!-- /wp:paragraph -->",
+			]
+		);
+		wp_set_object_terms( $post_id, 'zzz-future-kind', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertNotSame( '', $html );
+		$this->assertStringContainsString( 'k-zzz-future-kind', $html );
+		$this->assertStringContainsString( 'pk-badge', $html );
+		$this->assertStringContainsString( 'pk-kindlabel', $html );
+		$this->assertStringContainsString( 'pk-title', $html );
+		$this->assertStringContainsString( 'pk-stream-date', $html );
 	}
 
 	/**

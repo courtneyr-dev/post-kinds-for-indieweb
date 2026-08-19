@@ -97,23 +97,30 @@ function render_stream_card( array $attributes = [], string $content = '', ?\WP_
  *
  * Articles, notes, and any long-form kind get a glanceable card — badge,
  * kind label, linked title, date, featured image, and the excerpt (never
- * the full body). Returns '' for a title-less post so the feed shows no
- * empty card.
+ * the full body). This is the catch-all for every kind, known or future:
+ * a kind slug with no dedicated card block still renders here. Title-less
+ * posts (most experimental kinds — a weather report, a follow, a quote —
+ * are title-less by IndieWeb convention) show the kind label as the linked
+ * title instead of vanishing from the feed.
  *
  * @param \WP_Post $post Post to render.
- * @return string Card HTML, or '' when the post has no title.
+ * @return string Card HTML.
  */
 function render_generic_stream_card( \WP_Post $post ): string {
-	$title = get_the_title( $post );
-	if ( '' === trim( $title ) ) {
-		return '';
-	}
-
 	$permalink  = esc_url( (string) get_permalink( $post ) );
 	$kind_slug  = get_post_kind_slug( $post );
 	$badge_kind = '' !== $kind_slug ? $kind_slug : 'note';
 	$kind_label = stream_card_kind_label( $post );
 	$excerpt    = trim( wp_strip_all_tags( get_the_excerpt( $post ) ) );
+
+	$title     = trim( get_the_title( $post ) );
+	$has_title = '' !== $title;
+	if ( ! $has_title ) {
+		$title = $kind_label;
+	}
+	// A synthetic title is navigation, not the entry's name — no p-name, so
+	// mf2 parsers fall back to the implied name / content as intended.
+	$title_class = $has_title ? 'pk-title p-name' : 'pk-title';
 
 	$thumb_html = has_post_thumbnail( $post )
 		? get_the_post_thumbnail(
@@ -132,7 +139,7 @@ function render_generic_stream_card( \WP_Post $post ): string {
 	$out .= '<div class="pk-body">';
 	$out .= '<p class="pk-kindlabel">' . esc_html( get_kind_label( $kind_label, $badge_kind, 'stream-card' ) ) . '</p>';
 	$out .= '<div class="pk-caption">';
-	$out .= '<h2 class="pk-title p-name"><a href="' . $permalink . '">' . esc_html( $title ) . '</a></h2>';
+	$out .= '<h2 class="' . esc_attr( $title_class ) . '"><a href="' . $permalink . '">' . esc_html( $title ) . '</a></h2>';
 
 	$date_display = get_the_date( '', $post );
 	if ( '' !== $date_display ) {

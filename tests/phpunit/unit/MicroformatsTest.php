@@ -46,6 +46,18 @@ class MicroformatsTest extends WP_UnitTestCase {
 			'event'    => [ 'event',    [ 'h-event' ] ],
 			'review'   => [ 'review',   [ 'h-review' ] ],
 			'recipe'   => [ 'recipe',   [ 'h-recipe' ] ],
+			'audio'    => [ 'audio',    [ 'h-entry' ] ],
+			'quote'    => [ 'quote',    [ 'h-entry' ] ],
+			'tag'      => [ 'tag',      [ 'h-entry' ] ],
+			'weather'  => [ 'weather',  [ 'h-entry' ] ],
+			'exercise' => [ 'exercise', [ 'h-entry' ] ],
+			'trip'     => [ 'trip',     [ 'h-entry' ] ],
+			'itinerary' => [ 'itinerary', [ 'h-entry' ] ],
+			'follow'   => [ 'follow',   [ 'h-entry' ] ],
+			'issue'    => [ 'issue',    [ 'h-entry' ] ],
+			'question' => [ 'question', [ 'h-entry' ] ],
+			'sleep'    => [ 'sleep',    [ 'h-entry' ] ],
+			'craft'    => [ 'craft',    [ 'h-entry' ] ],
 		];
 	}
 
@@ -78,6 +90,14 @@ class MicroformatsTest extends WP_UnitTestCase {
 			'review: p-best'        => [ 'review',   'best',         'p-best' ],
 			'recipe: p-ingredient'  => [ 'recipe',   'ingredient',   'p-ingredient' ],
 			'recipe: e-instructions' => [ 'recipe',  'instructions', 'e-instructions' ],
+			'audio: u-audio'        => [ 'audio',    'audio',        'u-audio' ],
+			'quote: u-quotation-of' => [ 'quote',    'quotation-of', 'u-quotation-of' ],
+			'tag: u-tag-of'         => [ 'tag',      'tag-of',       'u-tag-of' ],
+			'follow: u-follow-of'   => [ 'follow',   'follow-of',    'u-follow-of' ],
+			// Issues reply to a repository, so the kind reuses in-reply-to
+			// (matching classic Post Kinds) rather than a dedicated property.
+			'issue: u-in-reply-to'  => [ 'issue',    'reply-to',     'u-in-reply-to' ],
+			'craft: u-craft-of'     => [ 'craft',    'craft-of',     'u-craft-of' ],
 		];
 	}
 
@@ -103,7 +123,9 @@ class MicroformatsTest extends WP_UnitTestCase {
 		$formats = $this->microformats->get_all_formats();
 		$expected = [ 'note', 'article', 'reply', 'like', 'repost', 'bookmark',
 			'rsvp', 'checkin', 'listen', 'watch', 'read', 'event', 'photo',
-			'video', 'review', 'recipe' ];
+			'video', 'review', 'recipe', 'audio', 'quote', 'tag', 'weather',
+			'exercise', 'trip', 'itinerary', 'follow', 'issue', 'question',
+			'sleep', 'craft' ];
 
 		foreach ( $expected as $kind ) {
 			$this->assertArrayHasKey( $kind, $formats, "Missing kind: $kind" );
