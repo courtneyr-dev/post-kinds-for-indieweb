@@ -1,0 +1,11 @@
+{
+	"event_id": 14,
+	"event_title": "Block Editor Meetup",
+	"event_begin": "2026-10-12",
+	"event_time": "18:30:00",
+	"event_end": "2026-10-12",
+	"event_endtime": "20:00:00",
+	"event_label": "Happy Valley Library",
+	"event_link": "https://example.com/events/block-editor-meetup",
+	"event_location": 0
+}

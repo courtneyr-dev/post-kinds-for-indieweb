@@ -374,6 +374,59 @@
             }
         }
     },
+    "post-kinds-indieweb/event-card": {
+        "render": "dynamic",
+        "attributes": {
+            "eventName": {
+                "type": "string",
+                "sample": "Sample eventName value"
+            },
+            "eventStart": {
+                "type": "string",
+                "sample": "Sample eventStart value"
+            },
+            "eventEnd": {
+                "type": "string",
+                "sample": "Sample eventEnd value"
+            },
+            "eventLocation": {
+                "type": "string",
+                "sample": "Sample eventLocation value"
+            },
+            "eventUrl": {
+                "type": "string",
+                "sample": "https://example.com/sample-eventurl"
+            },
+            "eventDescription": {
+                "type": "string",
+                "sample": "Sample eventDescription value"
+            },
+            "eventImage": {
+                "type": "string",
+                "sample": "https://example.com/sample-eventimage"
+            },
+            "eventImageAlt": {
+                "type": "string",
+                "sample": "Sample eventImageAlt value"
+            },
+            "calendarSource": {
+                "type": "string",
+                "sample": "Sample calendarSource value"
+            },
+            "calendarEventId": {
+                "type": "number",
+                "sample": 4
+            },
+            "rel": {
+                "type": "string",
+                "sample": "Sample rel value"
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    },
     "post-kinds-indieweb/favorite-card": {
         "render": "dynamic",
         "attributes": {

@@ -111,3 +111,39 @@ namespace {
 		}
 	}
 }
+
+// 5. Calendar plugin functions (The Events Calendar, My Calendar). Both
+// plugins are optional; the integrations only call these behind
+// function_exists() guards, which PHPStan doesn't resolve to signatures.
+namespace {
+	if ( ! function_exists( 'tribe_get_start_date' ) ) {
+		function tribe_get_start_date( $event = null, bool $display_time = true, ?string $date_format = '' ) {
+			return '';
+		}
+	}
+	if ( ! function_exists( 'tribe_get_end_date' ) ) {
+		function tribe_get_end_date( $event = null, bool $display_time = true, ?string $date_format = '' ) {
+			return '';
+		}
+	}
+	if ( ! function_exists( 'tribe_get_venue' ) ) {
+		function tribe_get_venue( $post_id = null ): string {
+			return '';
+		}
+	}
+	if ( ! function_exists( 'mc_get_event_core' ) ) {
+		function mc_get_event_core( $id ) {
+			return false;
+		}
+	}
+	if ( ! function_exists( 'mc_get_event' ) ) {
+		function mc_get_event( $id ) {
+			return false;
+		}
+	}
+	if ( ! function_exists( 'mc_get_location' ) ) {
+		function mc_get_location( $location_id ) {
+			return false;
+		}
+	}
+}
