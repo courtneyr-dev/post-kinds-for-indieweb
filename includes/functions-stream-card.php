@@ -130,7 +130,8 @@ function render_generic_stream_card( \WP_Post $post ): string {
 	// Badge SVG is a static, decorative glyph from get_kind_icon_svg().
 	$out .= '<div class="pk-badge">' . get_kind_icon_svg( $badge_kind ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	$out .= '<div class="pk-body">';
-	$out .= '<p class="pk-kindlabel">' . esc_html( $kind_label ) . '</p>';
+	$out .= '<p class="pk-kindlabel">' . esc_html( get_kind_label( $kind_label, $badge_kind, 'stream-card' ) ) . '</p>';
+	$out .= '<div class="pk-caption">';
 	$out .= '<h2 class="pk-title p-name"><a href="' . $permalink . '">' . esc_html( $title ) . '</a></h2>';
 
 	$date_display = get_the_date( '', $post );
@@ -139,6 +140,8 @@ function render_generic_stream_card( \WP_Post $post ): string {
 			. esc_attr( (string) get_post_time( 'c', true, $post ) ) . '">'
 			. esc_html( $date_display ) . '</time></p>';
 	}
+
+	$out .= '</div>';
 
 	if ( '' !== $thumb_html ) {
 		// get_the_post_thumbnail() returns core-generated, escaped <img> markup.

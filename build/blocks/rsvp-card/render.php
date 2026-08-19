@@ -20,6 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
 use function PKIW\get_kind_icon_svg;
+use function PKIW\get_kind_label;
 
 $pkiw_event_name        = $attributes['eventName'] ?? '';
 $pkiw_event_url         = $attributes['eventUrl'] ?? '';
@@ -97,41 +98,43 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'rsvp' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'RSVP', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
+		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'RSVP', 'post-kinds-for-indieweb-in-block-themes' ), 'rsvp', 'rsvp-card' ) ); ?></p>
 
 		<div class="pk-event p-in-reply-to h-event">
-			<?php if ( $pkiw_event_name ) : ?>
-				<h2 class="pk-title p-name">
-					<?php if ( $pkiw_event_url ) : ?>
-						<a class="u-url" href="<?php echo esc_url( $pkiw_event_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_event_name ); ?></a>
-					<?php else : ?>
-						<?php echo esc_html( $pkiw_event_name ); ?>
-					<?php endif; ?>
-				</h2>
-			<?php endif; ?>
-
-			<?php if ( $pkiw_event_start_iso || $pkiw_event_location ) : ?>
-				<p class="pk-sub">
-					<data class="pk-chip p-rsvp" value="<?php echo esc_attr( $pkiw_rsvp_status ); ?>"><?php echo esc_html( $pkiw_label ); ?></data>
-					<?php if ( $pkiw_event_start_iso ) : ?>
-						<time class="dt-start" datetime="<?php echo esc_attr( $pkiw_event_start_iso ); ?>"><?php echo esc_html( $pkiw_event_range_disp ); ?></time>
-						<?php if ( $pkiw_event_end_iso ) : ?>
-							<data class="dt-end" value="<?php echo esc_attr( $pkiw_event_end_iso ); ?>" hidden></data>
+			<div class="pk-caption">
+				<?php if ( $pkiw_event_name ) : ?>
+					<h2 class="pk-title p-name">
+						<?php if ( $pkiw_event_url ) : ?>
+							<a class="u-url" href="<?php echo esc_url( $pkiw_event_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_event_name ); ?></a>
+						<?php else : ?>
+							<?php echo esc_html( $pkiw_event_name ); ?>
 						<?php endif; ?>
-					<?php endif; ?>
-					<?php
-					if ( $pkiw_event_start_iso && $pkiw_event_location ) :
-						?>
-						<span class="pk-dot"></span><?php endif; ?>
-					<?php if ( $pkiw_event_location ) : ?>
-						<span class="p-location"><?php echo esc_html( $pkiw_event_location ); ?></span>
-					<?php endif; ?>
-				</p>
-			<?php else : ?>
-				<p class="pk-sub">
-					<data class="pk-chip p-rsvp" value="<?php echo esc_attr( $pkiw_rsvp_status ); ?>"><?php echo esc_html( $pkiw_label ); ?></data>
-				</p>
-			<?php endif; ?>
+					</h2>
+				<?php endif; ?>
+
+				<?php if ( $pkiw_event_start_iso || $pkiw_event_location ) : ?>
+					<p class="pk-sub">
+						<data class="pk-chip p-rsvp" value="<?php echo esc_attr( $pkiw_rsvp_status ); ?>"><?php echo esc_html( $pkiw_label ); ?></data>
+						<?php if ( $pkiw_event_start_iso ) : ?>
+							<time class="dt-start" datetime="<?php echo esc_attr( $pkiw_event_start_iso ); ?>"><?php echo esc_html( $pkiw_event_range_disp ); ?></time>
+							<?php if ( $pkiw_event_end_iso ) : ?>
+								<data class="dt-end" value="<?php echo esc_attr( $pkiw_event_end_iso ); ?>" hidden></data>
+							<?php endif; ?>
+						<?php endif; ?>
+						<?php
+						if ( $pkiw_event_start_iso && $pkiw_event_location ) :
+							?>
+							<span class="pk-dot"></span><?php endif; ?>
+						<?php if ( $pkiw_event_location ) : ?>
+							<span class="p-location"><?php echo esc_html( $pkiw_event_location ); ?></span>
+						<?php endif; ?>
+					</p>
+				<?php else : ?>
+					<p class="pk-sub">
+						<data class="pk-chip p-rsvp" value="<?php echo esc_attr( $pkiw_rsvp_status ); ?>"><?php echo esc_html( $pkiw_label ); ?></data>
+					</p>
+				<?php endif; ?>
+			</div>
 
 			<?php if ( $pkiw_event_description ) : ?>
 				<p class="p-summary"><?php echo esc_html( $pkiw_event_description ); ?></p>

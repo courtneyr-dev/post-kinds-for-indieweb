@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `AbilitiesRegistrationTest` asserts every declared ability is present in `wp_get_abilities()` after init, that declared names satisfy core's grammar, and that the declared list and the registry agree in both directions. A rejected name now fails CI instead of vanishing into a notice.
+- `pkiw_kind_label` filter. Every card's visible `.pk-kindlabel` text — the block templates and the generic Stream card — now flows through `PKIW\get_kind_label( $label, $kind, $context )`, so a theme can swap the kind noun ("Watch", "Acquisition") for a status verb ("WATCHED", "GOT IT") per kind or per render context. Default output is unchanged when nothing hooks the filter.
+- Card templates group the title, date, and sub lines (year, players, venue, …) in a `<div class="pk-caption">` wrapper so themes can style them as one tight caption strip. Additive markup only; every existing class and microformat stays where it was.
 
 ## [1.0.0] - 2026-07-20
 

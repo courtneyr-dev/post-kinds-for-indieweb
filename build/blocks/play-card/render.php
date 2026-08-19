@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
 use function PKIW\get_kind_icon_svg;
+use function PKIW\get_kind_label;
 
 $pkiw_status_labels = [
 	'playing'   => __( 'Playing', 'post-kinds-for-indieweb-in-block-themes' ),
@@ -67,45 +68,47 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'play' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'Play', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
+		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Play', 'post-kinds-for-indieweb-in-block-themes' ), 'play', 'play-card' ) ); ?></p>
 
-		<?php if ( $pkiw_title ) : ?>
-			<h2 class="pk-title p-name">
-				<?php if ( $pkiw_game_url ) : ?>
-					<a class="u-url" href="<?php echo esc_url( $pkiw_game_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_title ); ?></a>
-				<?php else : ?>
-					<?php echo esc_html( $pkiw_title ); ?>
-				<?php endif; ?>
-			</h2>
-		<?php endif; ?>
+		<div class="pk-caption">
+			<?php if ( $pkiw_title ) : ?>
+				<h2 class="pk-title p-name">
+					<?php if ( $pkiw_game_url ) : ?>
+						<a class="u-url" href="<?php echo esc_url( $pkiw_game_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_title ); ?></a>
+					<?php else : ?>
+						<?php echo esc_html( $pkiw_title ); ?>
+					<?php endif; ?>
+				</h2>
+			<?php endif; ?>
 
-		<?php if ( $pkiw_status_label || $pkiw_platform || $pkiw_hours_played > 0 ) : ?>
-			<p class="pk-sub">
-				<?php if ( $pkiw_status_label ) : ?>
-					<span><?php echo esc_html( $pkiw_status_label ); ?></span>
-				<?php endif; ?>
-				<?php
-				if ( $pkiw_status_label && $pkiw_platform ) :
-					?>
-					&mdash; <?php endif; ?>
-				<?php if ( $pkiw_platform ) : ?>
-					<span><?php echo esc_html( $pkiw_platform ); ?></span>
-				<?php endif; ?>
-				<?php
-				if ( ( $pkiw_status_label || $pkiw_platform ) && $pkiw_hours_played > 0 ) :
-					?>
-					&bull; <?php endif; ?>
-				<?php if ( $pkiw_hours_played > 0 ) : ?>
+			<?php if ( $pkiw_status_label || $pkiw_platform || $pkiw_hours_played > 0 ) : ?>
+				<p class="pk-sub">
+					<?php if ( $pkiw_status_label ) : ?>
+						<span><?php echo esc_html( $pkiw_status_label ); ?></span>
+					<?php endif; ?>
 					<?php
-					printf(
-						/* translators: %s: hours played */
-						esc_html__( '%s hours played', 'post-kinds-for-indieweb-in-block-themes' ),
-						'<strong>' . esc_html( (string) $pkiw_hours_played ) . '</strong>'
-					);
-					?>
-				<?php endif; ?>
-			</p>
-		<?php endif; ?>
+					if ( $pkiw_status_label && $pkiw_platform ) :
+						?>
+						&mdash; <?php endif; ?>
+					<?php if ( $pkiw_platform ) : ?>
+						<span><?php echo esc_html( $pkiw_platform ); ?></span>
+					<?php endif; ?>
+					<?php
+					if ( ( $pkiw_status_label || $pkiw_platform ) && $pkiw_hours_played > 0 ) :
+						?>
+						&bull; <?php endif; ?>
+					<?php if ( $pkiw_hours_played > 0 ) : ?>
+						<?php
+						printf(
+							/* translators: %s: hours played */
+							esc_html__( '%s hours played', 'post-kinds-for-indieweb-in-block-themes' ),
+							'<strong>' . esc_html( (string) $pkiw_hours_played ) . '</strong>'
+						);
+						?>
+					<?php endif; ?>
+				</p>
+			<?php endif; ?>
+		</div>
 
 		<?php if ( $pkiw_rating > 0 ) : ?>
 			<div class="pk-stars p-rating" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">

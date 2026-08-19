@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
 use function PKIW\get_kind_icon_svg;
+use function PKIW\get_kind_label;
 
 $pkiw_mood    = $attributes['mood'] ?? '';
 $pkiw_emoji   = $attributes['emoji'] ?? '😊';
@@ -42,7 +43,7 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'mood' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'Mood', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
+		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Mood', 'post-kinds-for-indieweb-in-block-themes' ), 'mood', 'mood-card' ) ); ?></p>
 
 		<div class="pk-mood">
 			<?php if ( $pkiw_emoji ) : ?>

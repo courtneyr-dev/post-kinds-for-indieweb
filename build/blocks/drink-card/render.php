@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
 use function PKIW\get_kind_icon_svg;
+use function PKIW\get_kind_label;
 
 $pkiw_drink_labels = [
 	'coffee'   => __( 'Coffee', 'post-kinds-for-indieweb-in-block-themes' ),
@@ -73,52 +74,54 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'drink' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'Drank', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
+		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Drank', 'post-kinds-for-indieweb-in-block-themes' ), 'drink', 'drink-card' ) ); ?></p>
 
-		<?php if ( $pkiw_name ) : ?>
-			<h2 class="pk-title p-name"><?php echo esc_html( $pkiw_name ); ?></h2>
-		<?php endif; ?>
+		<div class="pk-caption">
+			<?php if ( $pkiw_name ) : ?>
+				<h2 class="pk-title p-name"><?php echo esc_html( $pkiw_name ); ?></h2>
+			<?php endif; ?>
 
-		<?php if ( $pkiw_brand || $pkiw_badge_label ) : ?>
-			<p class="pk-sub">
-				<span><?php echo esc_html( $pkiw_badge_label ); ?></span>
-				<?php
-				if ( $pkiw_badge_label && $pkiw_brand ) :
-					?>
-					&mdash; <?php endif; ?>
-				<?php if ( $pkiw_brand ) : ?>
-					<span class="p-author h-card"><span class="p-name"><?php echo esc_html( $pkiw_brand ); ?></span></span>
-				<?php endif; ?>
-			</p>
-		<?php endif; ?>
+			<?php if ( $pkiw_brand || $pkiw_badge_label ) : ?>
+				<p class="pk-sub">
+					<span><?php echo esc_html( $pkiw_badge_label ); ?></span>
+					<?php
+					if ( $pkiw_badge_label && $pkiw_brand ) :
+						?>
+						&mdash; <?php endif; ?>
+					<?php if ( $pkiw_brand ) : ?>
+						<span class="p-author h-card"><span class="p-name"><?php echo esc_html( $pkiw_brand ); ?></span></span>
+					<?php endif; ?>
+				</p>
+			<?php endif; ?>
 
-		<?php if ( $pkiw_location_name ) : ?>
-			<p class="pk-sub p-location h-card">
-				<?php if ( $pkiw_venue_url ) : ?>
-					<a class="pk-chip p-name u-url" href="<?php echo esc_url( $pkiw_venue_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_location_name ); ?></a>
-				<?php else : ?>
-					<span class="pk-chip p-name"><?php echo esc_html( $pkiw_location_name ); ?></span>
-				<?php endif; ?>
-				<?php if ( $pkiw_location_address ) : ?>
-					<span class="p-street-address"><?php echo esc_html( $pkiw_location_address ); ?></span>
-				<?php endif; ?>
-				<?php if ( $pkiw_location_locality ) : ?>
-					<span class="p-locality"><?php echo esc_html( $pkiw_location_locality ); ?></span>
-				<?php endif; ?>
-				<?php if ( $pkiw_location_region ) : ?>
-					<span class="p-region"><?php echo esc_html( $pkiw_location_region ); ?></span>
-				<?php endif; ?>
-				<?php if ( $pkiw_location_country ) : ?>
-					<span class="p-country-name"><?php echo esc_html( $pkiw_location_country ); ?></span>
-				<?php endif; ?>
-				<?php if ( 0.0 !== $pkiw_geo_lat || 0.0 !== $pkiw_geo_lon ) : ?>
-					<data class="p-geo h-geo" value="<?php echo esc_attr( $pkiw_geo_lat . ',' . $pkiw_geo_lon ); ?>" hidden>
-						<span class="p-latitude"><?php echo esc_html( (string) $pkiw_geo_lat ); ?></span>
-						<span class="p-longitude"><?php echo esc_html( (string) $pkiw_geo_lon ); ?></span>
-					</data>
-				<?php endif; ?>
-			</p>
-		<?php endif; ?>
+			<?php if ( $pkiw_location_name ) : ?>
+				<p class="pk-sub p-location h-card">
+					<?php if ( $pkiw_venue_url ) : ?>
+						<a class="pk-chip p-name u-url" href="<?php echo esc_url( $pkiw_venue_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_location_name ); ?></a>
+					<?php else : ?>
+						<span class="pk-chip p-name"><?php echo esc_html( $pkiw_location_name ); ?></span>
+					<?php endif; ?>
+					<?php if ( $pkiw_location_address ) : ?>
+						<span class="p-street-address"><?php echo esc_html( $pkiw_location_address ); ?></span>
+					<?php endif; ?>
+					<?php if ( $pkiw_location_locality ) : ?>
+						<span class="p-locality"><?php echo esc_html( $pkiw_location_locality ); ?></span>
+					<?php endif; ?>
+					<?php if ( $pkiw_location_region ) : ?>
+						<span class="p-region"><?php echo esc_html( $pkiw_location_region ); ?></span>
+					<?php endif; ?>
+					<?php if ( $pkiw_location_country ) : ?>
+						<span class="p-country-name"><?php echo esc_html( $pkiw_location_country ); ?></span>
+					<?php endif; ?>
+					<?php if ( 0.0 !== $pkiw_geo_lat || 0.0 !== $pkiw_geo_lon ) : ?>
+						<data class="p-geo h-geo" value="<?php echo esc_attr( $pkiw_geo_lat . ',' . $pkiw_geo_lon ); ?>" hidden>
+							<span class="p-latitude"><?php echo esc_html( (string) $pkiw_geo_lat ); ?></span>
+							<span class="p-longitude"><?php echo esc_html( (string) $pkiw_geo_lon ); ?></span>
+						</data>
+					<?php endif; ?>
+				</p>
+			<?php endif; ?>
+		</div>
 
 		<?php if ( $pkiw_rating > 0 ) : ?>
 			<div class="pk-stars p-rating" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">

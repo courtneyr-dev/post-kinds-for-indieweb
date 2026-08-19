@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
 use function PKIW\get_kind_icon_svg;
+use function PKIW\get_kind_label;
 
 $pkiw_title     = $attributes['title'] ?? '';
 $pkiw_url       = $attributes['url'] ?? '';
@@ -42,21 +43,23 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'wish' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'Wish', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
+		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Wish', 'post-kinds-for-indieweb-in-block-themes' ), 'wish', 'wish-card' ) ); ?></p>
 
-		<?php if ( $pkiw_title ) : ?>
-			<h2 class="pk-title p-name">
-				<?php if ( $pkiw_url ) : ?>
-					<a class="u-url u-wish-of" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_title ); ?></a>
-				<?php else : ?>
-					<?php echo esc_html( $pkiw_title ); ?>
-				<?php endif; ?>
-			</h2>
-		<?php endif; ?>
+		<div class="pk-caption">
+			<?php if ( $pkiw_title ) : ?>
+				<h2 class="pk-title p-name">
+					<?php if ( $pkiw_url ) : ?>
+						<a class="u-url u-wish-of" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_title ); ?></a>
+					<?php else : ?>
+						<?php echo esc_html( $pkiw_title ); ?>
+					<?php endif; ?>
+				</h2>
+			<?php endif; ?>
 
-		<?php if ( $pkiw_price ) : ?>
-			<p class="pk-sub"><span class="pk-chip"><?php echo esc_html( $pkiw_price ); ?></span></p>
-		<?php endif; ?>
+			<?php if ( $pkiw_price ) : ?>
+				<p class="pk-sub"><span class="pk-chip"><?php echo esc_html( $pkiw_price ); ?></span></p>
+			<?php endif; ?>
+		</div>
 
 		<?php if ( $pkiw_image ) : ?>
 			<div class="pk-media">

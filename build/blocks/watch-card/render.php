@@ -21,6 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use function PKIW\get_card_embed_html;
 use function PKIW\get_kind_icon_svg;
+use function PKIW\get_kind_label;
 
 $pkiw_media_title    = $attributes['mediaTitle'] ?? '';
 $pkiw_media_type     = $attributes['mediaType'] ?? 'movie';
@@ -78,43 +79,45 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'watch' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'Watch', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
+		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Watch', 'post-kinds-for-indieweb-in-block-themes' ), 'watch', 'watch-card' ) ); ?></p>
 
-		<?php if ( $pkiw_media_title ) : ?>
-			<h2 class="pk-title p-name">
-				<?php if ( $pkiw_watch_url ) : ?>
-					<a class="u-url" href="<?php echo esc_url( $pkiw_watch_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_media_title ); ?></a>
-				<?php else : ?>
-					<?php echo esc_html( $pkiw_media_title ); ?>
-				<?php endif; ?>
-			</h2>
-		<?php endif; ?>
+		<div class="pk-caption">
+			<?php if ( $pkiw_media_title ) : ?>
+				<h2 class="pk-title p-name">
+					<?php if ( $pkiw_watch_url ) : ?>
+						<a class="u-url" href="<?php echo esc_url( $pkiw_watch_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_media_title ); ?></a>
+					<?php else : ?>
+						<?php echo esc_html( $pkiw_media_title ); ?>
+					<?php endif; ?>
+				</h2>
+			<?php endif; ?>
 
-		<?php if ( 'episode' === $pkiw_media_type && $pkiw_show_title ) : ?>
-			<p class="pk-sub"><?php echo esc_html( $pkiw_show_title ); ?></p>
-		<?php endif; ?>
+			<?php if ( 'episode' === $pkiw_media_type && $pkiw_show_title ) : ?>
+				<p class="pk-sub"><?php echo esc_html( $pkiw_show_title ); ?></p>
+			<?php endif; ?>
 
-		<?php if ( $pkiw_episode_string ) : ?>
-			<p class="pk-sub"><?php echo esc_html( $pkiw_episode_string ); ?></p>
-		<?php endif; ?>
+			<?php if ( $pkiw_episode_string ) : ?>
+				<p class="pk-sub"><?php echo esc_html( $pkiw_episode_string ); ?></p>
+			<?php endif; ?>
 
-		<?php if ( $pkiw_release_year || $pkiw_director || $pkiw_is_rewatch ) : ?>
-			<p class="pk-sub">
-				<?php if ( $pkiw_release_year ) : ?>
-					<span>(<?php echo esc_html( $pkiw_release_year ); ?>)</span>
-				<?php endif; ?>
-				<?php
-				if ( $pkiw_release_year && $pkiw_director ) :
-					?>
-					&bull; <?php endif; ?>
-				<?php if ( $pkiw_director ) : ?>
-					<span class="p-author h-card"><span class="p-name"><?php echo esc_html( $pkiw_director ); ?></span></span>
-				<?php endif; ?>
-				<?php if ( $pkiw_is_rewatch ) : ?>
-					<span class="pk-rewatch"><?php esc_html_e( 'Rewatch', 'post-kinds-for-indieweb-in-block-themes' ); ?></span>
-				<?php endif; ?>
-			</p>
-		<?php endif; ?>
+			<?php if ( $pkiw_release_year || $pkiw_director || $pkiw_is_rewatch ) : ?>
+				<p class="pk-sub">
+					<?php if ( $pkiw_release_year ) : ?>
+						<span>(<?php echo esc_html( $pkiw_release_year ); ?>)</span>
+					<?php endif; ?>
+					<?php
+					if ( $pkiw_release_year && $pkiw_director ) :
+						?>
+						&bull; <?php endif; ?>
+					<?php if ( $pkiw_director ) : ?>
+						<span class="p-author h-card"><span class="p-name"><?php echo esc_html( $pkiw_director ); ?></span></span>
+					<?php endif; ?>
+					<?php if ( $pkiw_is_rewatch ) : ?>
+						<span class="pk-rewatch"><?php esc_html_e( 'Rewatch', 'post-kinds-for-indieweb-in-block-themes' ); ?></span>
+					<?php endif; ?>
+				</p>
+			<?php endif; ?>
+		</div>
 
 		<?php if ( $pkiw_rating > 0 ) : ?>
 			<div class="pk-stars p-rating" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">

@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
 use function PKIW\get_kind_icon_svg;
+use function PKIW\get_kind_label;
 
 $pkiw_book_title     = $attributes['bookTitle'] ?? '';
 $pkiw_author_name    = $attributes['authorName'] ?? '';
@@ -80,46 +81,48 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'read' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'Read', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
+		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Read', 'post-kinds-for-indieweb-in-block-themes' ), 'read', 'read-card' ) ); ?></p>
 
-		<?php if ( $pkiw_book_title ) : ?>
-			<h2 class="pk-title p-name">
-				<?php if ( $pkiw_book_url ) : ?>
-					<a class="u-url" href="<?php echo esc_url( $pkiw_book_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_book_title ); ?></a>
-				<?php else : ?>
-					<?php echo esc_html( $pkiw_book_title ); ?>
-				<?php endif; ?>
-			</h2>
-		<?php endif; ?>
+		<div class="pk-caption">
+			<?php if ( $pkiw_book_title ) : ?>
+				<h2 class="pk-title p-name">
+					<?php if ( $pkiw_book_url ) : ?>
+						<a class="u-url" href="<?php echo esc_url( $pkiw_book_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_book_title ); ?></a>
+					<?php else : ?>
+						<?php echo esc_html( $pkiw_book_title ); ?>
+					<?php endif; ?>
+				</h2>
+			<?php endif; ?>
 
-		<?php if ( $pkiw_author_name ) : ?>
-			<p class="pk-sub">
-				<span class="p-author h-card"><span class="p-name"><?php echo esc_html( $pkiw_author_name ); ?></span></span>
-			</p>
-		<?php endif; ?>
+			<?php if ( $pkiw_author_name ) : ?>
+				<p class="pk-sub">
+					<span class="p-author h-card"><span class="p-name"><?php echo esc_html( $pkiw_author_name ); ?></span></span>
+				</p>
+			<?php endif; ?>
 
-		<?php if ( $pkiw_status_label || $pkiw_publisher || $pkiw_publish_date ) : ?>
-			<p class="pk-sub">
-				<?php if ( $pkiw_status_label ) : ?>
-					<span><?php echo esc_html( $pkiw_status_label ); ?></span>
-				<?php endif; ?>
-				<?php
-				if ( $pkiw_status_label && ( $pkiw_publisher || $pkiw_publish_date ) ) :
+			<?php if ( $pkiw_status_label || $pkiw_publisher || $pkiw_publish_date ) : ?>
+				<p class="pk-sub">
+					<?php if ( $pkiw_status_label ) : ?>
+						<span><?php echo esc_html( $pkiw_status_label ); ?></span>
+					<?php endif; ?>
+					<?php
+					if ( $pkiw_status_label && ( $pkiw_publisher || $pkiw_publish_date ) ) :
+						?>
+						&mdash; <?php endif; ?>
+					<?php if ( $pkiw_publisher ) : ?>
+						<span><?php echo esc_html( $pkiw_publisher ); ?></span>
+					<?php endif; ?>
+					<?php
+					if ( $pkiw_publisher && $pkiw_publish_date ) {
+						echo ', ';
+					}
 					?>
-					&mdash; <?php endif; ?>
-				<?php if ( $pkiw_publisher ) : ?>
-					<span><?php echo esc_html( $pkiw_publisher ); ?></span>
-				<?php endif; ?>
-				<?php
-				if ( $pkiw_publisher && $pkiw_publish_date ) {
-					echo ', ';
-				}
-				?>
-				<?php if ( $pkiw_publish_date ) : ?>
-					<span><?php echo esc_html( $pkiw_publish_date ); ?></span>
-				<?php endif; ?>
-			</p>
-		<?php endif; ?>
+					<?php if ( $pkiw_publish_date ) : ?>
+						<span><?php echo esc_html( $pkiw_publish_date ); ?></span>
+					<?php endif; ?>
+				</p>
+			<?php endif; ?>
+		</div>
 
 		<?php if ( 'reading' === $pkiw_read_status && $pkiw_progress_percent > 0 ) : ?>
 			<div class="pk-progress">

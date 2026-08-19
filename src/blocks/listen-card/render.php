@@ -21,6 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use function PKIW\get_cached_embed_html;
 use function PKIW\get_kind_icon_svg;
+use function PKIW\get_kind_label;
 
 $pkiw_track_title    = $attributes['trackTitle'] ?? '';
 $pkiw_artist_name    = $attributes['artistName'] ?? '';
@@ -46,36 +47,38 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'listen' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'Listen', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
+		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Listen', 'post-kinds-for-indieweb-in-block-themes' ), 'listen', 'listen-card' ) ); ?></p>
 
-		<?php if ( $pkiw_track_title ) : ?>
-			<h2 class="pk-title p-name">
-				<?php if ( $pkiw_listen_url ) : ?>
-					<a class="u-url" href="<?php echo esc_url( $pkiw_listen_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_track_title ); ?></a>
-				<?php else : ?>
-					<?php echo esc_html( $pkiw_track_title ); ?>
-				<?php endif; ?>
-			</h2>
-		<?php endif; ?>
+		<div class="pk-caption">
+			<?php if ( $pkiw_track_title ) : ?>
+				<h2 class="pk-title p-name">
+					<?php if ( $pkiw_listen_url ) : ?>
+						<a class="u-url" href="<?php echo esc_url( $pkiw_listen_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_track_title ); ?></a>
+					<?php else : ?>
+						<?php echo esc_html( $pkiw_track_title ); ?>
+					<?php endif; ?>
+				</h2>
+			<?php endif; ?>
 
-		<?php if ( $pkiw_artist_name || $pkiw_album_title ) : ?>
-			<p class="pk-sub">
-				<?php if ( $pkiw_artist_name ) : ?>
-					<span class="p-author h-card"><span class="p-name"><?php echo esc_html( $pkiw_artist_name ); ?></span></span>
-				<?php endif; ?>
-				<?php
-				if ( $pkiw_artist_name && $pkiw_album_title ) :
-					?>
-					&mdash; <?php endif; ?>
-				<?php if ( $pkiw_album_title ) : ?>
-					<em><?php echo esc_html( $pkiw_album_title ); ?></em>
+			<?php if ( $pkiw_artist_name || $pkiw_album_title ) : ?>
+				<p class="pk-sub">
+					<?php if ( $pkiw_artist_name ) : ?>
+						<span class="p-author h-card"><span class="p-name"><?php echo esc_html( $pkiw_artist_name ); ?></span></span>
+					<?php endif; ?>
 					<?php
-					if ( $pkiw_release_date ) :
+					if ( $pkiw_artist_name && $pkiw_album_title ) :
 						?>
-						(<?php echo esc_html( gmdate( 'Y', (int) strtotime( $pkiw_release_date ) ) ); ?>)<?php endif; ?>
-				<?php endif; ?>
-			</p>
-		<?php endif; ?>
+						&mdash; <?php endif; ?>
+					<?php if ( $pkiw_album_title ) : ?>
+						<em><?php echo esc_html( $pkiw_album_title ); ?></em>
+						<?php
+						if ( $pkiw_release_date ) :
+							?>
+							(<?php echo esc_html( gmdate( 'Y', (int) strtotime( $pkiw_release_date ) ) ); ?>)<?php endif; ?>
+					<?php endif; ?>
+				</p>
+			<?php endif; ?>
+		</div>
 
 		<?php if ( $pkiw_rating > 0 ) : ?>
 			<div class="pk-stars p-rating" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">

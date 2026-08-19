@@ -340,6 +340,7 @@ function maybe_migrate_option_prefixes(): void {
 require_once PKIW_PATH . 'includes/functions-checkin.php';
 require_once PKIW_PATH . 'includes/functions-embeds.php';
 require_once PKIW_PATH . 'includes/functions-card-icons.php';
+require_once PKIW_PATH . 'includes/functions-card-labels.php';
 require_once PKIW_PATH . 'includes/functions-stream-card.php';
 
 // Hook into WordPress init (priority 0 so component registrations land

@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
 use function PKIW\get_kind_icon_svg;
+use function PKIW\get_kind_label;
 
 $pkiw_title       = $attributes['title'] ?? '';
 $pkiw_type        = $attributes['acquisitionType'] ?? '';
@@ -52,32 +53,34 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'acquisition' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php echo esc_html( $pkiw_type_label ); ?></p>
+		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( $pkiw_type_label, 'acquisition', 'acquisition-card' ) ); ?></p>
 
-		<?php if ( $pkiw_title ) : ?>
-			<h2 class="pk-title p-name">
-				<?php if ( $pkiw_where_url ) : ?>
-					<a class="u-url" href="<?php echo esc_url( $pkiw_where_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_title ); ?></a>
-				<?php else : ?>
-					<?php echo esc_html( $pkiw_title ); ?>
-				<?php endif; ?>
-			</h2>
-		<?php endif; ?>
+		<div class="pk-caption">
+			<?php if ( $pkiw_title ) : ?>
+				<h2 class="pk-title p-name">
+					<?php if ( $pkiw_where_url ) : ?>
+						<a class="u-url" href="<?php echo esc_url( $pkiw_where_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_title ); ?></a>
+					<?php else : ?>
+						<?php echo esc_html( $pkiw_title ); ?>
+					<?php endif; ?>
+				</h2>
+			<?php endif; ?>
 
-		<?php if ( $pkiw_cost || $pkiw_where ) : ?>
-			<p class="pk-sub">
-				<?php if ( $pkiw_cost ) : ?>
-					<span><?php echo esc_html( $pkiw_cost ); ?></span>
-				<?php endif; ?>
-				<?php
-				if ( $pkiw_cost && $pkiw_where ) :
-					?>
-					<span class="pk-dot"></span><?php endif; ?>
-				<?php if ( $pkiw_where ) : ?>
-					<span class="p-location"><?php printf( /* translators: %s: place the item was acquired. */ esc_html__( 'from %s', 'post-kinds-for-indieweb-in-block-themes' ), esc_html( $pkiw_where ) ); ?></span>
-				<?php endif; ?>
-			</p>
-		<?php endif; ?>
+			<?php if ( $pkiw_cost || $pkiw_where ) : ?>
+				<p class="pk-sub">
+					<?php if ( $pkiw_cost ) : ?>
+						<span><?php echo esc_html( $pkiw_cost ); ?></span>
+					<?php endif; ?>
+					<?php
+					if ( $pkiw_cost && $pkiw_where ) :
+						?>
+						<span class="pk-dot"></span><?php endif; ?>
+					<?php if ( $pkiw_where ) : ?>
+						<span class="p-location"><?php printf( /* translators: %s: place the item was acquired. */ esc_html__( 'from %s', 'post-kinds-for-indieweb-in-block-themes' ), esc_html( $pkiw_where ) ); ?></span>
+					<?php endif; ?>
+				</p>
+			<?php endif; ?>
+		</div>
 
 		<?php if ( $pkiw_photo ) : ?>
 			<div class="pk-media">
