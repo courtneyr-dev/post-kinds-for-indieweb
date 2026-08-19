@@ -21,6 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use function PKIW\get_cached_embed_html;
 use function PKIW\get_kind_icon_svg;
+use function PKIW\get_kind_label;
 
 $pkiw_title     = $attributes['title'] ?? '';
 $pkiw_artist    = $attributes['artist'] ?? '';
@@ -49,32 +50,34 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'jam' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'Jam', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
+		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Jam', 'post-kinds-for-indieweb-in-block-themes' ), 'jam', 'jam-card' ) ); ?></p>
 
-		<?php if ( $pkiw_title ) : ?>
-			<h2 class="pk-title p-name">
-				<?php if ( $pkiw_url ) : ?>
-					<a class="u-url u-jam-of" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_title ); ?></a>
-				<?php else : ?>
-					<?php echo esc_html( $pkiw_title ); ?>
-				<?php endif; ?>
-			</h2>
-		<?php endif; ?>
+		<div class="pk-caption">
+			<?php if ( $pkiw_title ) : ?>
+				<h2 class="pk-title p-name">
+					<?php if ( $pkiw_url ) : ?>
+						<a class="u-url u-jam-of" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_title ); ?></a>
+					<?php else : ?>
+						<?php echo esc_html( $pkiw_title ); ?>
+					<?php endif; ?>
+				</h2>
+			<?php endif; ?>
 
-		<?php if ( $pkiw_artist || $pkiw_album ) : ?>
-			<p class="pk-sub">
-				<?php if ( $pkiw_artist ) : ?>
-					<span class="p-author h-card"><span class="p-name"><?php echo esc_html( $pkiw_artist ); ?></span></span>
-				<?php endif; ?>
-				<?php
-				if ( $pkiw_artist && $pkiw_album ) :
-					?>
-					&mdash; <?php endif; ?>
-				<?php if ( $pkiw_album ) : ?>
-					<em><?php echo esc_html( $pkiw_album ); ?></em>
-				<?php endif; ?>
-			</p>
-		<?php endif; ?>
+			<?php if ( $pkiw_artist || $pkiw_album ) : ?>
+				<p class="pk-sub">
+					<?php if ( $pkiw_artist ) : ?>
+						<span class="p-author h-card"><span class="p-name"><?php echo esc_html( $pkiw_artist ); ?></span></span>
+					<?php endif; ?>
+					<?php
+					if ( $pkiw_artist && $pkiw_album ) :
+						?>
+						&mdash; <?php endif; ?>
+					<?php if ( $pkiw_album ) : ?>
+						<em><?php echo esc_html( $pkiw_album ); ?></em>
+					<?php endif; ?>
+				</p>
+			<?php endif; ?>
+		</div>
 
 		<?php if ( $pkiw_note ) : ?>
 			<p class="pk-note p-content"><?php echo esc_html( $pkiw_note ); ?></p>

@@ -21,6 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
 use function PKIW\get_kind_icon_svg;
+use function PKIW\get_kind_label;
 
 $pkiw_venue_name       = $attributes['venueName'] ?? '';
 $pkiw_venue_type       = $attributes['venueType'] ?? 'place';
@@ -88,7 +89,7 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'checkin' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php esc_html_e( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
+		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' ), 'checkin', 'checkin-card' ) ); ?></p>
 
 		<?php if ( $pkiw_is_private ) : ?>
 			<p class="pk-note">
@@ -112,56 +113,58 @@ ob_start();
 				<?php endif; ?>
 			</div>
 		<?php else : ?>
-			<?php if ( $pkiw_venue_name ) : ?>
-				<h2 class="pk-title p-name">
-					<?php if ( $pkiw_venue_url ) : ?>
-						<a class="u-url" href="<?php echo esc_url( $pkiw_venue_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_venue_name ); ?></a>
-					<?php else : ?>
-						<?php echo esc_html( $pkiw_venue_name ); ?>
+			<div class="pk-caption">
+				<?php if ( $pkiw_venue_name ) : ?>
+					<h2 class="pk-title p-name">
+						<?php if ( $pkiw_venue_url ) : ?>
+							<a class="u-url" href="<?php echo esc_url( $pkiw_venue_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_venue_name ); ?></a>
+						<?php else : ?>
+							<?php echo esc_html( $pkiw_venue_name ); ?>
+						<?php endif; ?>
+					</h2>
+				<?php endif; ?>
+
+				<p class="pk-sub p-location h-card">
+					<?php if ( $pkiw_show_address ) : ?>
+						<span class="p-street-address"><?php echo esc_html( $pkiw_address ); ?></span>
 					<?php endif; ?>
-				</h2>
-			<?php endif; ?>
 
-			<p class="pk-sub p-location h-card">
-				<?php if ( $pkiw_show_address ) : ?>
-					<span class="p-street-address"><?php echo esc_html( $pkiw_address ); ?></span>
-				<?php endif; ?>
+					<?php if ( $pkiw_locality || $pkiw_region || $pkiw_country ) : ?>
+						<span class="pk-sub-parts">
+							<?php if ( $pkiw_locality ) : ?>
+								<span class="p-locality"><?php echo esc_html( $pkiw_locality ); ?></span>
+							<?php endif; ?>
+							<?php
+							if ( $pkiw_locality && $pkiw_region ) {
+								echo ', ';
+							}
+							?>
+							<?php if ( $pkiw_region ) : ?>
+								<span class="p-region"><?php echo esc_html( $pkiw_region ); ?></span>
+							<?php endif; ?>
+							<?php
+							if ( ( $pkiw_locality || $pkiw_region ) && $pkiw_country ) {
+								echo ', ';
+							}
+							?>
+							<?php if ( $pkiw_country ) : ?>
+								<span class="p-country-name"><?php echo esc_html( $pkiw_country ); ?></span>
+							<?php endif; ?>
+						</span>
+					<?php endif; ?>
 
-				<?php if ( $pkiw_locality || $pkiw_region || $pkiw_country ) : ?>
-					<span class="pk-sub-parts">
-						<?php if ( $pkiw_locality ) : ?>
-							<span class="p-locality"><?php echo esc_html( $pkiw_locality ); ?></span>
-						<?php endif; ?>
-						<?php
-						if ( $pkiw_locality && $pkiw_region ) {
-							echo ', ';
-						}
-						?>
-						<?php if ( $pkiw_region ) : ?>
-							<span class="p-region"><?php echo esc_html( $pkiw_region ); ?></span>
-						<?php endif; ?>
-						<?php
-						if ( ( $pkiw_locality || $pkiw_region ) && $pkiw_country ) {
-							echo ', ';
-						}
-						?>
-						<?php if ( $pkiw_country ) : ?>
-							<span class="p-country-name"><?php echo esc_html( $pkiw_country ); ?></span>
-						<?php endif; ?>
-					</span>
-				<?php endif; ?>
+					<?php if ( $pkiw_is_public && $pkiw_postal_code ) : ?>
+						<span class="p-postal-code"><?php echo esc_html( $pkiw_postal_code ); ?></span>
+					<?php endif; ?>
 
-				<?php if ( $pkiw_is_public && $pkiw_postal_code ) : ?>
-					<span class="p-postal-code"><?php echo esc_html( $pkiw_postal_code ); ?></span>
-				<?php endif; ?>
-
-				<?php if ( $pkiw_show_coords ) : ?>
-					<data class="p-geo h-geo" value="<?php echo esc_attr( $pkiw_geo_uri ); ?>">
-						<data class="p-latitude" value="<?php echo esc_attr( (string) $pkiw_latitude ); ?>" hidden></data>
-						<data class="p-longitude" value="<?php echo esc_attr( (string) $pkiw_longitude ); ?>" hidden></data>
-					</data>
-				<?php endif; ?>
-			</p>
+					<?php if ( $pkiw_show_coords ) : ?>
+						<data class="p-geo h-geo" value="<?php echo esc_attr( $pkiw_geo_uri ); ?>">
+							<data class="p-latitude" value="<?php echo esc_attr( (string) $pkiw_latitude ); ?>" hidden></data>
+							<data class="p-longitude" value="<?php echo esc_attr( (string) $pkiw_longitude ); ?>" hidden></data>
+						</data>
+					<?php endif; ?>
+				</p>
+			</div>
 
 			<?php if ( $pkiw_show_map_emb ) : ?>
 				<div class="pk-embed pk-embed--map">
