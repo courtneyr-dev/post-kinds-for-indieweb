@@ -187,9 +187,10 @@ final class Micropub_Content_Builder {
 	 * in the wrong kind archives. `wp_set_post_terms` (via set_post_kind)
 	 * replaces the default cleanly.
 	 *
-	 * Kinds without a registered term (follow, weather) are skipped and
-	 * keep the core default; if a site later creates those terms the
-	 * assignment picks them up automatically.
+	 * Kinds without a registered term are skipped and keep the core
+	 * default; if a site later creates those terms the assignment picks
+	 * them up automatically (as happened when follow and weather became
+	 * default terms).
 	 *
 	 * @param int                  $post_id    Post ID created by Micropub.
 	 * @param array<string, mixed> $properties h-entry properties bag.
