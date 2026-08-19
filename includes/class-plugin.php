@@ -811,6 +811,7 @@ final class Plugin {
 			'read-card',
 			'checkin-card',
 			'rsvp-card',
+			'event-card',
 			'play-card',
 			'eat-card',
 			'drink-card',

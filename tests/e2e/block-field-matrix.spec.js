@@ -123,6 +123,16 @@ const RENDER_EXCEPTIONS = {
 		eventEnd:
 			'rendered as a dt-end <data> only after strtotime() parses it, same gate as eventStart',
 	},
+	'post-kinds-indieweb/event-card': {
+		eventStart:
+			'rendered as a dt-start <time> only after strtotime() parses it; the non-date sample fails the parse gate by design (same gate as rsvp-card)',
+		eventEnd:
+			'rendered as a dt-end <data> only after strtotime() parses it, same gate as eventStart',
+		calendarSource:
+			'calendar plugin selector consumed by the render-time lookup; the sample matches no active source so nothing is fetched and the slug is never echoed',
+		calendarEventId:
+			'calendar event lookup key for the render-time fetch, never echoed (the single-digit sample can match markup by coincidence, so the exception keeps the gate honest)',
+	},
 	'post-kinds-indieweb/venue-detail': {
 		venueId:
 			'venue term lookup; term 4 does not exist in the test DB so the block renders nothing (all its content comes from term meta, not attributes)',

@@ -53,6 +53,7 @@ import './watch-card';
 import './read-card';
 import './checkin-card';
 import './rsvp-card';
+import './event-card';
 import './play-card';
 import './eat-card';
 import './drink-card';
