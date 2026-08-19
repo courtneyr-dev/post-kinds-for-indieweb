@@ -127,6 +127,46 @@ final class TheEventsCalendarIntegrationTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * An unpublished (draft) event never resolves — the card renders to
+	 * anonymous visitors, so referencing a draft by ID must not leak it.
+	 */
+	public function test_returns_null_for_unpublished_event(): void {
+		$fixture  = $this->fixture();
+		$event_id = self::factory()->post->create(
+			[
+				'post_type'   => 'tribe_events',
+				'post_title'  => $fixture['title'],
+				'post_status' => 'draft',
+			]
+		);
+		update_post_meta( $event_id, '_EventStartDate', $fixture['meta']['_EventStartDate'] );
+
+		$this->assertNull(
+			Calendar_Events::get_event( Calendar_Events::SOURCE_THE_EVENTS_CALENDAR, $event_id )
+		);
+	}
+
+	/**
+	 * A password-protected event never resolves, same disclosure gate.
+	 */
+	public function test_returns_null_for_password_protected_event(): void {
+		$fixture  = $this->fixture();
+		$event_id = self::factory()->post->create(
+			[
+				'post_type'     => 'tribe_events',
+				'post_title'    => $fixture['title'],
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			]
+		);
+		update_post_meta( $event_id, '_EventStartDate', $fixture['meta']['_EventStartDate'] );
+
+		$this->assertNull(
+			Calendar_Events::get_event( Calendar_Events::SOURCE_THE_EVENTS_CALENDAR, $event_id )
+		);
+	}
+
+	/**
 	 * When detection says the plugin is inactive, the lookup returns null.
 	 */
 	public function test_returns_null_when_inactive(): void {

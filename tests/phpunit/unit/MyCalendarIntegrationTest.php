@@ -101,6 +101,20 @@ final class MyCalendarIntegrationTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * An unapproved (draft/trash) event never resolves — the card renders to
+	 * anonymous visitors, so referencing an unpublished row must not leak it.
+	 */
+	public function test_returns_null_for_unapproved_event(): void {
+		$event_id = $this->seed_fixture_event();
+
+		$GLOBALS['pkiw_test_mc_events'][ $event_id ]->event_approved = 0;
+
+		$this->assertNull(
+			Calendar_Events::get_event( Calendar_Events::SOURCE_MY_CALENDAR, $event_id )
+		);
+	}
+
+	/**
 	 * When detection says the plugin is inactive, the lookup returns null —
 	 * even though the stub function exists.
 	 */

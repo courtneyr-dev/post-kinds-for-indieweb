@@ -59,6 +59,13 @@ class My_Calendar {
 			return null;
 		}
 
+		// Only approved (published) events resolve. My Calendar's
+		// event_approved column is 0 for draft and 2 for trash — neither may
+		// leak into a card rendered to anonymous visitors.
+		if ( isset( $event->event_approved ) && 1 !== (int) $event->event_approved ) {
+			return null;
+		}
+
 		return [
 			'name'     => $this->field( $event, 'event_title' ),
 			'start'    => $this->event_datetime( $event, 'event_begin', 'event_time' ),

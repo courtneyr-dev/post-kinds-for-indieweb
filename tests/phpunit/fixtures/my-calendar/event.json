@@ -7,5 +7,6 @@
 	"event_endtime": "20:00:00",
 	"event_label": "Happy Valley Library",
 	"event_link": "https://example.com/events/block-editor-meetup",
-	"event_location": 0
+	"event_location": 0,
+	"event_approved": 1
 }

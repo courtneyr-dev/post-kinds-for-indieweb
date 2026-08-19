@@ -73,6 +73,13 @@ class The_Events_Calendar {
 			return null;
 		}
 
+		// Only publicly viewable events resolve. The card renders to anonymous
+		// visitors, so a draft, private, pending, or password-protected event
+		// referenced by ID must not leak its title, dates, or venue.
+		if ( ! is_post_publicly_viewable( $event ) || '' !== $event->post_password ) {
+			return null;
+		}
+
 		return [
 			'name'     => $event->post_title,
 			'start'    => $this->event_date( $event_id, '_EventStartDate', 'tribe_get_start_date' ),
