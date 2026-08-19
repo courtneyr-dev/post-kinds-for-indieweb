@@ -898,6 +898,54 @@ class Admin {
 				'label' => __( 'Recipe', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-clipboard',
 			],
+			'audio'       => [
+				'label' => __( 'Audio', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'  => 'dashicons-media-audio',
+			],
+			'quote'       => [
+				'label' => __( 'Quote', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'  => 'dashicons-format-quote',
+			],
+			'tag'         => [
+				'label' => __( 'Tag', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'  => 'dashicons-tag',
+			],
+			'weather'     => [
+				'label' => __( 'Weather', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'  => 'dashicons-cloud',
+			],
+			'exercise'    => [
+				'label' => __( 'Exercise', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'  => 'dashicons-performance',
+			],
+			'trip'        => [
+				'label' => __( 'Trip', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'  => 'dashicons-airplane',
+			],
+			'itinerary'   => [
+				'label' => __( 'Itinerary', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'  => 'dashicons-tickets-alt',
+			],
+			'follow'      => [
+				'label' => __( 'Follow', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'  => 'dashicons-groups',
+			],
+			'issue'       => [
+				'label' => __( 'Issue', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'  => 'dashicons-warning',
+			],
+			'question'    => [
+				'label' => __( 'Question', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'  => 'dashicons-editor-help',
+			],
+			'sleep'       => [
+				'label' => __( 'Sleep', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'  => 'dashicons-clock',
+			],
+			'craft'       => [
+				'label' => __( 'Craft', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'  => 'dashicons-hammer',
+			],
 		];
 
 		/**

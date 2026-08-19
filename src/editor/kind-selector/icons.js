@@ -279,6 +279,139 @@ export const PlayIcon = () => (
 );
 
 /**
+ * Audio icon - speaker with sound waves
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const AudioIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+	</SVG>
+);
+
+/**
+ * Quote icon - quotation marks
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const QuoteIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z" />
+	</SVG>
+);
+
+/**
+ * Tag icon - price tag with hole
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const TagIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z" />
+	</SVG>
+);
+
+/**
+ * Weather icon - cloud
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const WeatherIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" />
+	</SVG>
+);
+
+/**
+ * Exercise icon - dumbbell
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const ExerciseIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z" />
+	</SVG>
+);
+
+/**
+ * Trip icon - airplane
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const TripIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+	</SVG>
+);
+
+/**
+ * Itinerary icon - ticket
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const ItineraryIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M22 10V6c0-1.11-.9-2-2-2H4c-1.1 0-1.99.89-1.99 2v4c1.1 0 1.99.9 1.99 2s-.89 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2s.9-2 2-2zm-9 7.5h-2v-2h2v2zm0-4.5h-2v-2h2v2zm0-4.5h-2v-2h2v2z" />
+	</SVG>
+);
+
+/**
+ * Follow icon - person with plus
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const FollowIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+	</SVG>
+);
+
+/**
+ * Issue icon - circle with center dot
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const IssueIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" />
+		<Circle cx="12" cy="12" r="3" />
+	</SVG>
+);
+
+/**
+ * Question icon - question mark in circle
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const QuestionIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z" />
+	</SVG>
+);
+
+/**
+ * Sleep icon - crescent moon
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const SleepIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M12.34 2.02C6.59 1.82 2 6.42 2 12c0 5.52 4.48 10 10 10 3.71 0 6.93-2.02 8.66-5.02-7.51-.25-12.09-8.43-8.32-14.96z" />
+	</SVG>
+);
+
+/**
+ * Craft icon - wrench/build tool
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const CraftIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z" />
+	</SVG>
+);
+
+/**
  * Map of kind slugs to icon components.
  *
  * @type {Object}
@@ -308,6 +441,18 @@ export const kindIcons = {
 	drink: DrinkIcon,
 	eat: EatIcon,
 	play: PlayIcon,
+	audio: AudioIcon,
+	quote: QuoteIcon,
+	tag: TagIcon,
+	weather: WeatherIcon,
+	exercise: ExerciseIcon,
+	trip: TripIcon,
+	itinerary: ItineraryIcon,
+	follow: FollowIcon,
+	issue: IssueIcon,
+	question: QuestionIcon,
+	sleep: SleepIcon,
+	craft: CraftIcon,
 };
 
 export default kindIcons;

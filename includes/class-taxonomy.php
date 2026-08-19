@@ -180,6 +180,54 @@ class Taxonomy {
 			'name'        => 'Play',
 			'description' => 'Video game, board game, or other game play log.',
 		],
+		'audio'       => [
+			'name'        => 'Audio',
+			'description' => 'Audio-centric post, like a voice memo or podcast episode.',
+		],
+		'quote'       => [
+			'name'        => 'Quote',
+			'description' => 'Quoted excerpt from another work, with attribution.',
+		],
+		'tag'         => [
+			'name'        => 'Tag',
+			'description' => 'Tags external content or a person with a category or label.',
+		],
+		'weather'     => [
+			'name'        => 'Weather',
+			'description' => 'Current weather conditions log.',
+		],
+		'exercise'    => [
+			'name'        => 'Exercise',
+			'description' => 'Physical activity log - walk, run, cycle, hike, yoga.',
+		],
+		'trip'        => [
+			'name'        => 'Trip',
+			'description' => 'A geographic journey from one place to another.',
+		],
+		'itinerary'   => [
+			'name'        => 'Itinerary',
+			'description' => 'Scheduled legs of a trip - flights, trains, transit.',
+		],
+		'follow'      => [
+			'name'        => 'Follow',
+			'description' => 'Announcement that you now follow someone\'s activity online.',
+		],
+		'issue'       => [
+			'name'        => 'Issue',
+			'description' => 'Article-length reply filed against a source code repository.',
+		],
+		'question'    => [
+			'name'        => 'Question',
+			'description' => 'Post soliciting answers or replies.',
+		],
+		'sleep'       => [
+			'name'        => 'Sleep',
+			'description' => 'Passive sleep-time metrics log.',
+		],
+		'craft'       => [
+			'name'        => 'Craft',
+			'description' => 'Making something by hand - knitting, woodworking, 3D printing.',
+		],
 	];
 
 	/**

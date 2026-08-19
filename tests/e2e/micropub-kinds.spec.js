@@ -153,8 +153,8 @@ test.describe( 'Micropub kind creation', () => {
 		} );
 		expect( content ).toContain( 'u-follow-of' );
 		expect( content ).toContain( 'https://example.com/author' );
-		// No `follow` term exists — builder-only kinds keep the note default.
-		expect( kinds ).toEqual( [ 'note' ] );
+		// `follow` is a default kind term now, so the bridge assigns it.
+		expect( kinds ).toEqual( [ 'follow' ] );
 	} );
 
 	test( 'contentless weather creates a post with a p-weather reading', async () => {
@@ -163,8 +163,8 @@ test.describe( 'Micropub kind creation', () => {
 		} );
 		expect( content ).toContain( 'p-weather' );
 		expect( content ).toContain( 'Sunny, 28C, light breeze' );
-		// No `weather` term exists — builder-only kinds keep the note default.
-		expect( kinds ).toEqual( [ 'note' ] );
+		// `weather` is a default kind term now, so the bridge assigns it.
+		expect( kinds ).toEqual( [ 'weather' ] );
 	} );
 
 	test( 'contentless like-of creates a post with a like card', async () => {

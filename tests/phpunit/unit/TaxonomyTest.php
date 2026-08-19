@@ -47,9 +47,9 @@ class TaxonomyTest extends WP_UnitTestCase {
 		$this->assertSame( 'note', $tax->default_term['slug'] );
 	}
 
-	public function test_get_default_kinds_returns_24() {
+	public function test_get_default_kinds_returns_36() {
 		$kinds = $this->taxonomy->get_default_kinds();
-		$this->assertCount( 24, $kinds );
+		$this->assertCount( 36, $kinds );
 	}
 
 	/**
@@ -86,6 +86,18 @@ class TaxonomyTest extends WP_UnitTestCase {
 			'eat'         => [ 'eat' ],
 			'recipe'      => [ 'recipe' ],
 			'play'        => [ 'play' ],
+			'audio'       => [ 'audio' ],
+			'quote'       => [ 'quote' ],
+			'tag'         => [ 'tag' ],
+			'weather'     => [ 'weather' ],
+			'exercise'    => [ 'exercise' ],
+			'trip'        => [ 'trip' ],
+			'itinerary'   => [ 'itinerary' ],
+			'follow'      => [ 'follow' ],
+			'issue'       => [ 'issue' ],
+			'question'    => [ 'question' ],
+			'sleep'       => [ 'sleep' ],
+			'craft'       => [ 'craft' ],
 		];
 	}
 
