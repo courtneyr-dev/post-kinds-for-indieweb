@@ -9,10 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-19
+
 ### Fixed
 
 - Title-less posts no longer vanish from the Stream. `render_generic_stream_card()` returned `''` for a post with no title — and title-less is the IndieWeb convention for most experimental kinds, so a published weather or follow post made an empty stream item. The kind label now stands in as the linked title (without `p-name`, so mf2 implied-name parsing is unaffected), and any kind term — known or future — renders the full badge/label/date/excerpt card.
 - All 13 abilities now actually register. Their names used underscores (`post_kinds/list_kinds`, `post_kinds/lookup_book`), and core's `WP_Abilities_Registry::register()` only accepts `/^[a-z0-9-]+\/[a-z0-9-]+$/` — lowercase alphanumerics, dashes, one slash. Every one was refused with a `_doing_it_wrong()` notice and nothing else, so with `WP_DEBUG` off they had been missing since 1.1.0 without a trace. Renamed to dashes throughout (`post-kinds/list-kinds`, `post-kinds/lookup-book`), including the MCP server list and the `post_kinds/` prefix check in `Abilities_Manager::filter_ability_args()`. No aliases: the old names never registered, so nothing can be calling them.
+- The WP Pinch MCP server list advertises only abilities that actually registered, instead of the full declared list.
+- Block bindings registration defers when another plugin already owns the `post-formats/format-data` source (Post Formats for Block Themes registers it earlier with a superset of keys), silencing the `_doing_it_wrong()` notice on every request for sites running both plugins.
+- A bookmark post built with this plugin's own Bookmark Card no longer gets an empty core/embed block inserted above it on every editor load.
+- Dev configs and scripts are excluded from the distribution zip.
 
 ### Added
 
@@ -20,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `AbilitiesRegistrationTest` asserts every declared ability is present in `wp_get_abilities()` after init, that declared names satisfy core's grammar, and that the declared list and the registry agree in both directions. A rejected name now fails CI instead of vanishing into a notice.
 - `pkiw_kind_label` filter. Every card's visible `.pk-kindlabel` text — the block templates and the generic Stream card — now flows through `PKIW\get_kind_label( $label, $kind, $context )`, so a theme can swap the kind noun ("Watch", "Acquisition") for a status verb ("WATCHED", "GOT IT") per kind or per render context. Default output is unchanged when nothing hooks the filter.
 - Card templates group the title, date, and sub lines (year, players, venue, …) in a `<div class="pk-caption">` wrapper so themes can style them as one tight caption strip. Additive markup only; every existing class and microformat stays where it was.
+- Standard.site records behind cited URLs. When a bookmarked, liked, replied-to, or read page carries a `rel=site.standard.document` link, the block sidebar can read the author's own title, description, tags, and publication straight from their PDS instead of guessing from Open Graph tags. Read-only and unauthenticated; a record is only stored once it points back at the page it was found on.
+- Firehose RSS feed at `/firehose`, `/feed/firehose/`, and `?feed=firehose` that includes bulk-imported posts, reusing the `pkiw_include_imported` escape hatch.
 
 ## [1.0.0] - 2026-07-20
 
@@ -285,7 +293,7 @@ This project uses Semantic Versioning:
 - [Issues](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues)
 - [IndieWeb Wiki](https://indieweb.org/)
 
-[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/1.1.0...HEAD
+[1.1.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/1.0.0...1.1.0
 [1.2.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.1.0...v1.2.0
-[1.1.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/releases/tag/v1.0.0
