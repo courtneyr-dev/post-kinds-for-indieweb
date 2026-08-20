@@ -5,16 +5,16 @@ description: "Create your first post kind in the block editor: pick a kind, look
 
 Create your first post kind and learn how the pieces fit together. This assumes the plugin is [installed and activated](/post-kinds-for-indieweb/installation/).
 
-## The 24 kinds at a glance
+## The 36 kinds at a glance
 
-Every kind is a term in the `kind` taxonomy, and every kind gets an archive at `/kind/<slug>/`. They fall into four rough groups:
+Every kind is a term in the `kind` taxonomy, and every kind gets an archive at `/kind/<slug>/` — the full vocabulary of the classic Post Kinds plugin. They fall into four rough groups:
 
 **Media and activity tracking** — listen, watch, read, play, jam, eat, drink, checkin
-**IndieWeb responses** — reply, like, repost, bookmark, rsvp
-**Content types** — note, article, event, photo, video, review, recipe
-**Personal tracking** — favorite, wish, mood, acquisition
+**IndieWeb responses** — reply, like, repost, bookmark, rsvp, follow, tag, quote, issue
+**Content types** — note, article, event, photo, video, audio, review, recipe, question
+**Personal tracking** — favorite, wish, mood, acquisition, weather, exercise, sleep, trip, itinerary, craft
 
-Most kinds have a matching **card block** (Listen Card, Watch Card, Read Card, Checkin Card, RSVP Card, Play Card, Eat Card, Drink Card, Jam Card, Favorite Card, Wish Card, Mood Card, Acquisition Card, Bookmark Card, Like Card, Reply Card, Repost Card). Seven kinds — **note, article, event, photo, video, review, and recipe** — have no dedicated card block: they work as taxonomy terms with microformats2 markup, and you build their content with regular blocks (recipe pairs with the WP Recipe Maker plugin; review data such as star ratings lives inside the other cards).
+Eighteen kinds have a matching **card block** (Listen Card, Watch Card, Read Card, Checkin Card, RSVP Card, Event Card, Play Card, Eat Card, Drink Card, Jam Card, Favorite Card, Wish Card, Mood Card, Acquisition Card, Bookmark Card, Like Card, Reply Card, Repost Card). The rest — **note, article, photo, video, review, recipe**, and the twelve classic-parity kinds (**audio, quote, tag, weather, exercise, trip, itinerary, follow, issue, question, sleep, craft**) — have no dedicated card block: they work as taxonomy terms with microformats2 markup, and you build their content with regular blocks (recipe pairs with the WP Recipe Maker plugin; review data such as star ratings lives inside the other cards). Every kind, with or without a block, renders as a card on the Stream.
 
 ## Your first post: log something you listened to
 

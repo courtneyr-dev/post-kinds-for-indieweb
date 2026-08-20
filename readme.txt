@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,7 +20,7 @@ The original Post Kinds plugin was built for the Classic Editor. This plugin is 
 
 = What you get =
 
-* **25 custom blocks** — 22 editor blocks (card blocks for most kinds, plus utilities like Star Rating, Media Lookup, Check-in Dashboard, Check-ins Feed, and Venue Detail) and 3 server-rendered blocks (Now Playing, Media Stats, Recent Kinds)
+* **26 custom blocks** — 23 editor blocks (card blocks for most kinds, plus utilities like Star Rating, Media Lookup, Check-in Dashboard, Check-ins Feed, and Venue Detail) and 3 server-rendered blocks (Now Playing, Media Stats, Recent Kinds)
 * **API-powered search** — find music, movies, books, games, and venues directly from the editor
 * **Bulk import** — pull in your history from Last.fm, Trakt, Hardcover, and more
 * **Real-time scrobbling** — webhooks for Plex, Jellyfin, Trakt, and ListenBrainz. Scrobbling means automatically logging each song or show as you play it.
@@ -39,6 +39,10 @@ The original Post Kinds plugin was built for the Classic Editor. This plugin is 
 * **RSVP** — event responses (yes, no, maybe, interested, remote)
 * **Like, Reply, Repost, Bookmark** — IndieWeb interactions
 * **Favorite, Wish, Mood, Acquisition** — personal tracking
+* **Follow, Tag, Quote, Issue, Question** — more IndieWeb response types
+* **Audio, Weather, Exercise, Sleep, Trip, Itinerary, Craft** — logs and experimental kinds
+
+That's the full 36-kind vocabulary of the classic Post Kinds plugin. Kinds without a dedicated card block still render as cards on the Stream and carry correct microformats2 markup.
 
 Each kind gets its own archive page (for example `/kind/listen/`), and the kind is set automatically from the first card block in a post — or pick it yourself in the Post Kind editor panel.
 
@@ -155,9 +159,17 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 
 == Changelog ==
 
-= Unreleased =
-* Added: read standard.site records from pages you cite. When a bookmarked page publishes its metadata to AT Protocol, the block sidebar can show the author's own title, description, tags, and publication instead of guessing from the page. Read-only and unauthenticated — no account, no setup, and your posts are never published to AT Protocol.
-* A record is only stored on your post once it points back at the page it was found on, so a page cannot claim someone else's writing.
+= 1.1.0 =
+* Added: an Event Card block with h-event microformats. The event's start date renders under the title so themes can feature the event date instead of the publish date.
+* Added: the Event Card can pull its details from The Events Calendar or My Calendar at render time — optional, feature-detected, and only publicly viewable events resolve.
+* Added: the 12 remaining IndieWeb post kinds — audio, quote, tag, weather, exercise, trip, itinerary, follow, issue, question, sleep, and craft — completing the full 36-kind vocabulary of the classic Post Kinds plugin. Each appears in the kind pickers with its own icon and carries kind-appropriate microformats2 markup.
+* Added: read standard.site records from pages you cite. When a bookmarked page publishes its metadata to AT Protocol, the block sidebar can show the author's own title, description, tags, and publication instead of guessing from the page. Read-only and unauthenticated — no account, no setup, and your posts are never published to AT Protocol. A record is only stored on your post once it points back at the page it was found on, so a page cannot claim someone else's writing.
+* Added: a firehose RSS feed at /firehose that includes bulk-imported posts.
+* Added: a pkiw_kind_label filter so themes can swap each card's visible kind label, and a pk-caption wrapper grouping each card's title, date, and sub lines for styling.
+* Fixed: posts without a title no longer disappear from the Stream — the kind label stands in as the linked title, and any kind renders a complete card.
+* Fixed: the plugin's abilities (Abilities API) now actually register; their old underscore names were rejected by WordPress core.
+* Fixed: a bookmark post built with the Bookmark Card no longer gets an empty Embed block inserted above it in the editor.
+* Fixed: no more "doing it wrong" notice when Post Formats for Block Themes also registers the shared block-bindings source.
 
 = 1.0.0 =
 * Initial WordPress.org release: 24 post kinds with card blocks, media lookup, imports and webhook scrobbling, microformats2 markup, syndication, and Micropub support. Development history for the pre-release builds lives in CHANGELOG.md in the GitHub repository.

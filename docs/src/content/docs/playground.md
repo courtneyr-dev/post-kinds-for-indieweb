@@ -11,7 +11,7 @@ The blueprint boots a WordPress site (latest WordPress, PHP 8.2 requested) named
 
 - logs you in as an admin and lands on the new-post screen, where the Post Kind panel appears in the editor sidebar,
 - installs and activates the plugin plus [IndieBlocks](https://wordpress.org/plugins/indieblocks/), the recommended companion,
-- seeds the listen, watch, read, checkin, and rsvp kind terms (the plugin creates the rest of its 24 kinds on init),
+- seeds the listen, watch, read, checkin, and rsvp kind terms (the plugin creates the rest of its 36 kinds on init),
 - sets pretty permalinks so kind archives like `/kind/listen/` resolve.
 
 From the new-post screen you can insert any card block (Listen Card, Watch Card, Read Card, and so on) and watch the post kind get assigned automatically. Media lookups work because the blueprint enables networking; MusicBrainz and Open Library need no API key.

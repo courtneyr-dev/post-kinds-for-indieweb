@@ -11,11 +11,11 @@ A label describing what a post *is* — a note, a listen, a check-in, a book you
 
 ## How many blocks does the plugin include?
 
-25: 22 blocks registered from the editor source (17 kind cards plus Star Rating, Media Lookup, Check-in Dashboard, Check-ins Feed, and Venue Detail) and 3 server-rendered blocks (Now Playing, Media Stats, Recent Kinds). Older plugin copy said "16 custom blocks" — that figure was outdated.
+26: 23 blocks registered from the editor source (18 kind cards plus Star Rating, Media Lookup, Check-in Dashboard, Check-ins Feed, and Venue Detail) and 3 server-rendered blocks (Now Playing, Media Stats, Recent Kinds). Older plugin copy said "16 custom blocks" — that figure was outdated.
 
-## Do all 24 kinds have their own block?
+## Do all 36 kinds have their own block?
 
-No. Seventeen kinds have dedicated card blocks. Note, article, event, photo, video, review, and recipe are taxonomy-and-microformats kinds: you assign them in the Post Kind panel and build the content with regular blocks (recipe integrates with WP Recipe Maker; review-style data like star ratings lives inside the media cards).
+No. Eighteen kinds have dedicated card blocks (the Event Card is the newest). The rest — note, article, photo, video, review, recipe, and the twelve kinds added for full classic Post Kinds parity (audio, quote, tag, weather, exercise, trip, itinerary, follow, issue, question, sleep, craft) — are taxonomy-and-microformats kinds: you assign them in the Post Kind panel and build the content with regular blocks (recipe integrates with WP Recipe Maker; review-style data like star ratings lives inside the media cards). Every kind, with or without a block, renders as a card on the Stream.
 
 ## Do I need IndieBlocks?
 
