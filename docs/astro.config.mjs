@@ -20,7 +20,8 @@ export default defineConfig( {
 				...( meta.wporg
 					? [
 							{
-								icon: 'wordpress',
+								// Starlight has no 'wordpress' icon; puzzle = plugin.
+								icon: 'puzzle',
 								label: 'WordPress.org listing',
 								href: meta.wporg,
 							},

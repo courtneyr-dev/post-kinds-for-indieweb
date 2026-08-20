@@ -11,7 +11,7 @@ The plugin adds a "post kind" system to your posts. A post kind is a label that 
 
 As of version 1.0.0, the plugin provides:
 
-- A **kind taxonomy** with 24 kinds you can assign to posts, each with its own archive page (for example `/kind/listen/`).
+- A **kind taxonomy** with 36 kinds you can assign to posts — the full vocabulary of the classic Post Kinds plugin — each with its own archive page (for example `/kind/listen/`).
 - **25 custom blocks** — card blocks for most kinds, utility blocks like Star Rating and Media Lookup, and server-rendered blocks (Now Playing, Media Stats, Recent Kinds).
 - **Media lookup** from the editor: search music, movies, TV, books, podcasts, games, and venues through services like MusicBrainz, TMDB, Open Library, and Foursquare.
 - **Imports and scrobbling**: bulk-import your history from services like Last.fm, Trakt, and Readwise, and receive automatic posts via webhooks from Plex, Jellyfin, Trakt, and ListenBrainz.
