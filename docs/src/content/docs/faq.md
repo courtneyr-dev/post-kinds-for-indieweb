@@ -11,7 +11,7 @@ A label describing what a post *is* — a note, a listen, a check-in, a book you
 
 ## How many blocks does the plugin include?
 
-26: 23 blocks registered from the editor source (18 kind cards plus Star Rating, Media Lookup, Check-in Dashboard, Check-ins Feed, and Venue Detail) and 3 server-rendered blocks (Now Playing, Media Stats, Recent Kinds). Older plugin copy said "16 custom blocks" — that figure was outdated.
+27: 23 blocks registered from the editor source (18 kind cards plus Star Rating, Media Lookup, Check-in Dashboard, Check-ins Feed, and Venue Detail), 3 server-rendered blocks (Now Playing, Media Stats, Recent Kinds), and Stream Card, which is registered in PHP and hidden from the inserter — it replaces Post Content inside the Stream query loop, so you never place it by hand. Older plugin copy said "16 custom blocks" — that figure was outdated.
 
 ## Do all 36 kinds have their own block?
 

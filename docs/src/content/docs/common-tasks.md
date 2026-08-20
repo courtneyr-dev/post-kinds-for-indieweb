@@ -93,7 +93,25 @@ POSSE = Publish on your Own Site, Syndicate Elsewhere. Nothing is sent until you
 
 1. Publish a kind post.
 2. Visit [pin13.net/mf2](https://pin13.net/mf2/) and enter the post URL.
-3. The parser shows the detected microformats (for example `h-entry` with `u-listen-of`, or `p-rsvp` for RSVPs).
+3. The parser shows the detected microformats. What you want is the kind's property
+   (`u-listen-of`, `u-like-of`, `u-in-reply-to`, `p-rsvp`, and so on) nested **inside** the
+   post's `h-entry` — not sitting beside it.
+
+### If the property parses outside the `h-entry`
+
+Some block themes render the single-post template without passing the post wrapper through
+`post_class()`. That filter is where this plugin adds the `h-entry` root, so when a theme
+skips it the card parses as a standalone top-level `h-cite` and the property never attaches
+to the entry. Twenty Twenty-Five behaves this way.
+
+To tell the two apart, parse the post's archive URL as well (`/kind/listen/`, for example).
+If the property attaches there but not at the permalink, the theme's single template is the
+cause, not the plugin's markup.
+
+This is worth fixing in your theme, because webmention receivers and feed readers fetch the
+**permalink**. In a block theme, make sure the single template's post wrapper renders through
+`post_class()` — a Post Template block does; a plain Group wrapping Post Title and Post
+Content does not.
 
 ## Clear cached API data
 
