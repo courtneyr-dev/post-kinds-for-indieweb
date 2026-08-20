@@ -1241,19 +1241,19 @@ function WatchFields() {
 				updateKindMeta( 'watch_title', result.title );
 			}
 			if ( result.year ) {
-				updateKindMeta( 'watch_year', result.year );
+				updateKindMeta( 'watch_year', String( result.year ) );
 			}
 			if ( result.poster ) {
 				updateKindMeta( 'watch_poster', result.poster );
 			}
 			if ( result.tmdb_id ) {
-				updateKindMeta( 'watch_tmdb_id', result.tmdb_id );
+				updateKindMeta( 'watch_tmdb_id', String( result.tmdb_id ) );
 			}
 			if ( result.imdb_id ) {
-				updateKindMeta( 'watch_imdb_id', result.imdb_id );
+				updateKindMeta( 'watch_imdb_id', String( result.imdb_id ) );
 			}
 			if ( result.trakt_id ) {
-				updateKindMeta( 'watch_trakt_id', result.trakt_id );
+				updateKindMeta( 'watch_trakt_id', String( result.trakt_id ) );
 			}
 			// Store the URL for reference.
 			updateKindMeta( 'watch_url', url );
@@ -1292,9 +1292,15 @@ function WatchFields() {
 	const handleSelectResult = useCallback(
 		( result ) => {
 			updateKindMeta( 'watch_title', result.title );
-			updateKindMeta( 'watch_year', result.year );
+			updateKindMeta(
+				'watch_year',
+				result.year ? String( result.year ) : ''
+			);
 			updateKindMeta( 'watch_poster', result.poster );
-			updateKindMeta( 'watch_tmdb_id', result.tmdb_id );
+			updateKindMeta(
+				'watch_tmdb_id',
+				result.tmdb_id ? String( result.tmdb_id ) : ''
+			);
 			clearApiResults();
 			setSearchQuery( '' );
 		},

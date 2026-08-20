@@ -97,8 +97,8 @@ export default function Edit( { attributes, setAttributes } ) {
 			director: item.director || '',
 			posterImage: item.poster || item.image || '',
 			posterImageAlt: item.title || item.name || '',
-			tmdbId: item.tmdb_id || item.id || '',
-			imdbId: item.imdb_id || '',
+			tmdbId: String( item.tmdb_id || item.id || '' ),
+			imdbId: String( item.imdb_id || '' ),
 			mediaType: searchType,
 		} );
 		setIsSearching( false );
@@ -144,7 +144,7 @@ export default function Edit( { attributes, setAttributes } ) {
 				setAttributes( {
 					posterImage: match.poster || match.image || posterImage,
 					posterImageAlt: match.title || match.name || mediaTitle,
-					tmdbId: match.tmdb_id || match.id || tmdbId,
+					tmdbId: String( match.tmdb_id || match.id || tmdbId || '' ),
 					releaseYear:
 						match.year || match.release_year || releaseYear,
 				} );
