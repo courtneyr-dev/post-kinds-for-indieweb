@@ -15,7 +15,8 @@
  * taxonomy registers `note` as its default_term, so before the bridge
  * assigned terms every Micropub post landed as kind=note regardless of
  * its actual kind (wrong badge, wrong kind archive). Builder-only kinds
- * without terms (follow/weather) intentionally keep the note default.
+ * without terms (currently only weather) intentionally keep the note
+ * default.
  *
  * Requires: wp-env with micropub + indieauth active (see .wp-env.json),
  * the tests/env/pkiw-test-auth.php fixture (grants Micropub scope to
@@ -153,8 +154,9 @@ test.describe( 'Micropub kind creation', () => {
 		} );
 		expect( content ).toContain( 'u-follow-of' );
 		expect( content ).toContain( 'https://example.com/author' );
-		// No `follow` term exists — builder-only kinds keep the note default.
-		expect( kinds ).toEqual( [ 'note' ] );
+		// `follow` is a registered default kind now, so the assignment
+		// path picks it up (it used to fall back to the note default).
+		expect( kinds ).toEqual( [ 'follow' ] );
 	} );
 
 	test( 'contentless weather creates a post with a p-weather reading', async () => {

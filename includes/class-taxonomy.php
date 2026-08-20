@@ -84,101 +84,137 @@ class Taxonomy {
 	 * @var array<string, array<string, string>>
 	 */
 	private array $default_kinds = [
-		'note'        => [
+		'note'         => [
 			'name'        => 'Note',
 			'description' => 'Short, untitled post similar to a tweet or status update.',
 		],
-		'article'     => [
+		'article'      => [
 			'name'        => 'Article',
 			'description' => 'Long-form content with a title, like a blog post or essay.',
 		],
-		'reply'       => [
+		'reply'        => [
 			'name'        => 'Reply',
 			'description' => 'Response to external content on another website.',
 		],
-		'like'        => [
+		'like'         => [
 			'name'        => 'Like',
 			'description' => 'Appreciation or approval of external content.',
 		],
-		'repost'      => [
+		'repost'       => [
 			'name'        => 'Repost',
 			'description' => 'Reshare of external content with attribution.',
 		],
-		'bookmark'    => [
+		'bookmark'     => [
 			'name'        => 'Bookmark',
 			'description' => 'Saved link with optional annotation.',
 		],
-		'rsvp'        => [
+		'rsvp'         => [
 			'name'        => 'RSVP',
 			'description' => 'Response to an event invitation (yes, no, maybe, interested).',
 		],
-		'checkin'     => [
+		'checkin'      => [
 			'name'        => 'Check-in',
 			'description' => 'Location check-in at a venue or place.',
 		],
-		'listen'      => [
+		'listen'       => [
 			'name'        => 'Listen',
 			'description' => 'Music or podcast listening log (scrobble).',
 		],
-		'watch'       => [
+		'watch'        => [
 			'name'        => 'Watch',
 			'description' => 'Film or TV show watching log.',
 		],
-		'read'        => [
+		'read'         => [
 			'name'        => 'Read',
 			'description' => 'Book or article reading progress and log.',
 		],
-		'event'       => [
+		'event'        => [
 			'name'        => 'Event',
 			'description' => 'Event announcement with date, time, and location.',
 		],
-		'photo'       => [
+		'photo'        => [
 			'name'        => 'Photo',
 			'description' => 'Image-centric post, like a photo gallery.',
 		],
-		'video'       => [
+		'video'        => [
 			'name'        => 'Video',
 			'description' => 'Video-centric post.',
 		],
-		'review'      => [
+		'review'       => [
 			'name'        => 'Review',
 			'description' => 'Rating and evaluation of an item, place, or service.',
 		],
-		'favorite'    => [
+		'favorite'     => [
 			'name'        => 'Favorite',
 			'description' => 'Starred or saved item for later reference.',
 		],
-		'jam'         => [
+		'jam'          => [
 			'name'        => 'Jam',
 			'description' => 'Current music highlight - "this is my jam right now."',
 		],
-		'wish'        => [
+		'wish'         => [
 			'name'        => 'Wish',
 			'description' => 'Wishlist item you want to read, watch, buy, or experience.',
 		],
-		'mood'        => [
+		'mood'         => [
 			'name'        => 'Mood',
 			'description' => 'Emotional state or feeling.',
 		],
-		'acquisition' => [
+		'acquisition'  => [
 			'name'        => 'Acquisition',
 			'description' => 'Item you acquired or added to your collection.',
 		],
-		'drink'       => [
+		'drink'        => [
 			'name'        => 'Drink',
 			'description' => 'Beverage log - coffee, beer, wine, cocktails.',
 		],
-		'eat'         => [
+		'eat'          => [
 			'name'        => 'Eat',
 			'description' => 'Food or meal log.',
 		],
-		'recipe'      => [
+		'recipe'       => [
 			'name'        => 'Recipe',
 			'description' => 'Food recipe with ingredients and instructions.',
 		],
-		'play'        => [
+		'play'         => [
 			'name'        => 'Play',
 			'description' => 'Video game, board game, or other game play log.',
+		],
+		'audio'        => [
+			'name'        => 'Audio',
+			'description' => 'Audio you recorded or published, like a voice memo or podcast episode.',
+		],
+		'quotation'    => [
+			'name'        => 'Quotation',
+			'description' => 'A quoted excerpt from another post or work, with a citation of its source.',
+		],
+		'follow'       => [
+			'name'        => 'Follow',
+			'description' => 'Announcement that you now follow another person or site.',
+		],
+		'presentation' => [
+			'name'        => 'Presentation',
+			'description' => 'Slides or a talk you gave, like a conference presentation.',
+		],
+		'collection'   => [
+			'name'        => 'Collection',
+			'description' => 'A curated list of related posts or links.',
+		],
+		'comics'       => [
+			'name'        => 'Comics',
+			'description' => 'A comic strip or panel you drew or published.',
+		],
+		'issue'        => [
+			'name'        => 'Issue',
+			'description' => 'A bug report or issue filed against a project, published on your own site.',
+		],
+		'exercise'     => [
+			'name'        => 'Exercise',
+			'description' => 'A workout, run, ride, or other physical activity log.',
+		],
+		'chicken'      => [
+			'name'        => 'Chicken',
+			'description' => 'A post about chickens — an IndieWeb community tradition.',
 		],
 	];
 
@@ -356,11 +392,16 @@ class Taxonomy {
 			return;
 		}
 
-		// Check version to only run once per plugin version.
-		$version_key     = 'pkiw_terms_version';
-		$current_version = get_option( $version_key, '0' );
+		// Run once per default-kind set. A fingerprint of the slugs
+		// (rather than the plugin version) means kinds added in an
+		// update reach existing installs even without a version bump.
+		// The option previously held a plugin version string; any
+		// non-matching stored value simply triggers one idempotent
+		// backfill pass, so no migration is needed.
+		$version_key = 'pkiw_terms_version';
+		$fingerprint = md5( implode( ',', array_keys( $this->default_kinds ) ) );
 
-		if ( version_compare( $current_version, PKIW_VERSION, '>=' ) ) {
+		if ( get_option( $version_key, '0' ) === $fingerprint ) {
 			return;
 		}
 
@@ -378,7 +419,7 @@ class Taxonomy {
 			}
 		}
 
-		update_option( $version_key, PKIW_VERSION );
+		update_option( $version_key, $fingerprint );
 	}
 
 	/**

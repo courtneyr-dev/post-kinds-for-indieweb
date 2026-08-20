@@ -734,9 +734,10 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertSame( array( 'rsvp' ), $this->kind_slugs( $post_id ) );
 	}
 
-	public function test_apply_leaves_default_note_for_termless_follow_kind(): void {
-		// follow/weather are builder-only kinds with no taxonomy term —
-		// they keep core's `note` default (but still get their content).
+	public function test_apply_leaves_default_note_for_termless_weather_kind(): void {
+		// weather is the one remaining builder-only kind with no taxonomy
+		// term — it keeps core's `note` default (but still gets content).
+		// (follow graduated to a registered default kind.)
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'author' ) ) );
 		$post_id = self::factory()->post->create(
 			array(
@@ -748,14 +749,13 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 
 		Micropub_Content_Builder::apply(
 			array(
-				'h'         => 'entry',
-				'follow-of' => 'https://example.test/author',
+				'h'       => 'entry',
+				'weather' => 'Sunny, 22C',
 			),
 			array( 'ID' => $post_id )
 		);
 
 		$this->assertSame( array( 'note' ), $this->kind_slugs( $post_id ) );
-		$this->assertStringContainsString( 'u-follow-of', (string) get_post_field( 'post_content', $post_id ) );
 	}
 
 	public function test_apply_does_not_reassign_kind_after_generation(): void {
@@ -1249,5 +1249,102 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$all     = array_keys( $matrix[ $block ]['attributes'] );
 		$covered = array_merge( array_keys( $expected_attrs ), $known_gaps, array( 'layout' ) );
 		$this->assertSame( array(), array_diff( $all, $covered ), "$block has attrs neither asserted nor declared as gaps" );
+	}
+
+	// --- Wiki post kinds: quotation / audio detection and builders ---------
+
+	public function test_detect_kind_quotation_of() {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'quotation-of' => array( 'https://example.com/post' ) ) )
+		);
+		$this->assertSame( 'quotation', $kind );
+	}
+
+	public function test_in_reply_to_beats_quotation_of() {
+		// Per indieweb.org/quotation: a quotation with commentary is a
+		// reply — the quote is just its reply-context.
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array(
+				array(
+					'in-reply-to'  => array( 'https://example.com/post' ),
+					'quotation-of' => array( 'https://example.com/post' ),
+				),
+			)
+		);
+		$this->assertSame( 'reply', $kind );
+	}
+
+	public function test_detect_kind_audio() {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'audio' => array( 'https://example.com/voice-memo.mp3' ) ) )
+		);
+		$this->assertSame( 'audio', $kind );
+	}
+
+	public function test_audio_beats_photo_but_not_listen() {
+		// An audio post carrying cover art stays audio…
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array(
+				array(
+					'audio' => array( 'https://example.com/a.mp3' ),
+					'photo' => array( 'https://example.com/cover.jpg' ),
+				),
+			)
+		);
+		$this->assertSame( 'audio', $kind );
+
+		// …but listen-of (listening to someone else's audio) still wins.
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array(
+				array(
+					'listen-of' => array( 'https://example.com/song' ),
+					'audio'     => array( 'https://example.com/a.mp3' ),
+				),
+			)
+		);
+		$this->assertSame( 'listen', $kind );
+	}
+
+	public function test_quotation_paragraph_carries_u_quotation_of_cite() {
+		$markup = $this->invoke_private(
+			'quotation_paragraph',
+			array( array( 'quotation-of' => array( 'https://example.com/post' ) ) )
+		);
+		$this->assertStringContainsString( 'u-quotation-of h-cite', $markup );
+		$this->assertStringContainsString( 'class="u-url"', $markup );
+		$this->assertStringContainsString( 'https://example.com/post', $markup );
+	}
+
+	public function test_audio_figure_emits_core_audio_block() {
+		$markup = $this->invoke_private(
+			'audio_figure',
+			array( array( 'audio' => array( 'https://example.com/voice-memo.mp3' ) ) )
+		);
+		$this->assertStringContainsString( '<!-- wp:audio -->', $markup );
+		$this->assertStringContainsString( 'u-audio', $markup );
+		$this->assertStringContainsString( 'https://example.com/voice-memo.mp3', $markup );
+	}
+
+	public function test_apply_assigns_follow_term_now_that_it_exists() {
+		// Follow was a builder-only kind kept on the note default while no
+		// term existed; the term is a registered default now, so the
+		// existing assignment path must pick it up with no builder change.
+		if ( ! term_exists( 'follow', 'kind' ) ) {
+			wp_insert_term( 'Follow', 'kind', array( 'slug' => 'follow' ) );
+		}
+		$post_id = self::factory()->post->create();
+		Micropub_Content_Builder::apply(
+			array( 'properties' => array( 'follow-of' => array( 'https://example.com/@person' ) ) ),
+			array( 'ID' => $post_id )
+		);
+		$this->assertSame(
+			array( 'follow' ),
+			wp_get_post_terms( $post_id, 'kind', array( 'fields' => 'slugs' ) )
+		);
 	}
 }

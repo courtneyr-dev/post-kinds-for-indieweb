@@ -279,6 +279,105 @@ export const PlayIcon = () => (
 );
 
 /**
+ * Audio icon - microphone
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const AudioIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z" />
+	</SVG>
+);
+
+/**
+ * Quotation icon - quote marks
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const QuotationIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M6 17h3l2-4V7H5v6h3l-2 4zm8 0h3l2-4V7h-6v6h3l-2 4z" />
+	</SVG>
+);
+
+/**
+ * Follow icon - person with plus
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const FollowIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+	</SVG>
+);
+
+/**
+ * Presentation icon - screen with play
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const PresentationIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h6v2h6v-2h6c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12zm-11-2l5-3.5L10 8v7z" />
+	</SVG>
+);
+
+/**
+ * Collection icon - folder with bookmark
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const CollectionIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M22 4H14l-2-2H2C.9 2 0 2.9 0 4v14c0 1.1.9 2 2 2h20c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-6 10.5l-3-2.25L10 14.5V6h6v8.5z" />
+	</SVG>
+);
+
+/**
+ * Comics icon - speech bubbles
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const ComicsIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M21 6h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1zm-4 6V3c0-.55-.45-1-1-1H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1z" />
+	</SVG>
+);
+
+/**
+ * Issue icon - bug
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const IssueIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M20 8h-2.81c-.45-.78-1.07-1.45-1.82-1.96L17 4.41 15.59 3l-2.17 2.17C12.96 5.06 12.49 5 12 5c-.49 0-.96.06-1.41.17L8.41 3 7 4.41l1.62 1.63C7.88 6.55 7.26 7.22 6.81 8H4v2h2.09c-.05.33-.09.66-.09 1v1H4v2h2v1c0 .34.04.67.09 1H4v2h2.81c1.04 1.79 2.97 3 5.19 3s4.15-1.21 5.19-3H20v-2h-2.09c.05-.33.09-.66.09-1v-1h2v-2h-2v-1c0-.34-.04-.67-.09-1H20V8zm-6 8h-4v-2h4v2zm0-4h-4v-2h4v2z" />
+	</SVG>
+);
+
+/**
+ * Exercise icon - dumbbell
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const ExerciseIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29l-1.43-1.43z" />
+	</SVG>
+);
+
+/**
+ * Chicken icon - egg
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const ChickenIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M12 2C8.5 2 5.5 7.5 5.5 12.5S8.5 22 12 22s6.5-4.5 6.5-9.5S15.5 2 12 2zm0 18c-2.5 0-4.5-3.5-4.5-7.5S9.5 4 12 4s4.5 4.5 4.5 8.5S14.5 20 12 20z" />
+	</SVG>
+);
+
+/**
  * Map of kind slugs to icon components.
  *
  * @type {Object}
@@ -308,6 +407,15 @@ export const kindIcons = {
 	drink: DrinkIcon,
 	eat: EatIcon,
 	play: PlayIcon,
+	audio: AudioIcon,
+	quotation: QuotationIcon,
+	follow: FollowIcon,
+	presentation: PresentationIcon,
+	collection: CollectionIcon,
+	comics: ComicsIcon,
+	issue: IssueIcon,
+	exercise: ExerciseIcon,
+	chicken: ChickenIcon,
 };
 
 export default kindIcons;

@@ -187,9 +187,9 @@ final class Micropub_Content_Builder {
 	 * in the wrong kind archives. `wp_set_post_terms` (via set_post_kind)
 	 * replaces the default cleanly.
 	 *
-	 * Kinds without a registered term (follow, weather) are skipped and
-	 * keep the core default; if a site later creates those terms the
-	 * assignment picks them up automatically.
+	 * Kinds without a registered term (currently only weather) are
+	 * skipped and keep the core default; if a site later creates those
+	 * terms the assignment picks them up automatically.
 	 *
 	 * @param int                  $post_id    Post ID created by Micropub.
 	 * @param array<string, mixed> $properties h-entry properties bag.
@@ -337,6 +337,12 @@ final class Micropub_Content_Builder {
 		if ( self::has_property( $properties, 'in-reply-to' ) ) {
 			return 'reply';
 		}
+		// Quotation is checked AFTER in-reply-to: per the IndieWeb wiki, a
+		// quotation with commentary is really a reply (the quote is its
+		// reply-context), so an in-reply-to property wins.
+		if ( self::has_property( $properties, 'quotation-of' ) ) {
+			return 'quotation';
+		}
 		if ( self::has_property( $properties, 'follow-of' ) ) {
 			return 'follow';
 		}
@@ -349,6 +355,12 @@ final class Micropub_Content_Builder {
 		// Checkin = location property without one of the food/drink/media of-kinds.
 		if ( self::has_property( $properties, 'location' ) ) {
 			return 'checkin';
+		}
+		// Audio = `audio` property (Micropub's reserved media property)
+		// without any of the of-kinds above. Checked before photo so an
+		// audio post carrying cover art stays an audio post.
+		if ( self::has_property( $properties, 'audio' ) ) {
+			return 'audio';
 		}
 		// Photo / gallery = `photo` property without any of the of-kinds above.
 		// Single-photo and multi-photo posts both route here; photo_card()
@@ -399,6 +411,10 @@ final class Micropub_Content_Builder {
 				return self::follow_paragraph( $properties );
 			case 'weather':
 				return self::weather_paragraph( $properties );
+			case 'quotation':
+				return self::quotation_paragraph( $properties );
+			case 'audio':
+				return self::audio_figure( $properties );
 			case 'photo':
 				return self::photo_card( $properties );
 		}
@@ -806,6 +822,61 @@ final class Micropub_Content_Builder {
 			]
 		);
 		return self::self_closing_block( 'post-kinds-indieweb/mood-card', $attrs );
+	}
+
+	/**
+	 * Build a quotation citation paragraph from the h-entry property bag.
+	 *
+	 * Used when a quotation post arrives with no content of its own —
+	 * the citation link carries the documented `u-quotation-of h-cite`
+	 * markup (see indieweb.org/quotation) so consumers can attribute
+	 * the source.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `quotation-of`).
+	 * @return string Block-comment markup for the citation paragraph.
+	 */
+	private static function quotation_paragraph( array $properties ): string {
+		$url = self::flatten_scalar( $properties, 'quotation-of' );
+		if ( '' === $url ) {
+			return '';
+		}
+		return '<!-- wp:paragraph -->' . "\n"
+			. '<p>' . esc_html__( 'Quoted from', 'post-kinds-for-indieweb-in-block-themes' )
+			. ' <cite class="u-quotation-of h-cite"><a class="u-url" href="' . esc_url( $url ) . '">' . esc_html( $url ) . '</a></cite></p>' . "\n"
+			. '<!-- /wp:paragraph -->';
+	}
+
+	/**
+	 * Build a core/audio block from the h-entry property bag.
+	 *
+	 * Audio is Micropub's reserved media property (the plugin has
+	 * already sideloaded the file, like it does for `photo`); without
+	 * this block a content-less audio post would die inside
+	 * wp_insert_post() as a phantom post.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `audio`).
+	 * @return string Block-comment markup for the audio block.
+	 */
+	private static function audio_figure( array $properties ): string {
+		$urls = self::flatten_string_array( $properties, 'audio' );
+		if ( empty( $urls ) ) {
+			return '';
+		}
+		// Mirror photo_card()'s dedupe: the Micropub plugin enriches the
+		// property with the sideloaded copy alongside the original URL.
+		$url = '';
+		foreach ( $urls as $candidate ) {
+			if ( '' !== $candidate ) {
+				$url = $candidate;
+				break;
+			}
+		}
+		if ( '' === $url ) {
+			return '';
+		}
+		return '<!-- wp:audio -->' . "\n"
+			. '<figure class="wp-block-audio"><audio controls src="' . esc_url( $url ) . '" class="u-audio"></audio></figure>' . "\n"
+			. '<!-- /wp:audio -->';
 	}
 
 	/**

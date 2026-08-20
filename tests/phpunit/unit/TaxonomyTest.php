@@ -47,9 +47,9 @@ class TaxonomyTest extends WP_UnitTestCase {
 		$this->assertSame( 'note', $tax->default_term['slug'] );
 	}
 
-	public function test_get_default_kinds_returns_24() {
+	public function test_get_default_kinds_returns_33() {
 		$kinds = $this->taxonomy->get_default_kinds();
-		$this->assertCount( 24, $kinds );
+		$this->assertCount( 33, $kinds );
 	}
 
 	/**
@@ -201,6 +201,24 @@ class TaxonomyTest extends WP_UnitTestCase {
 				"<!-- wp:paragraph --><p>hi</p><!-- /wp:paragraph -->\n<!-- wp:post-kinds-indieweb/eat-card /-->"
 			)
 		);
+	}
+
+	public function test_wiki_post_kinds_are_registered_defaults() {
+		// Coverage target: every kind on indieweb.org/posts#Types_of_Posts
+		// except the "Posted by only one indieweb site so far" tier.
+		// (venue is deliberately a separate taxonomy, food maps to
+		// eat/drink, game play maps to play.)
+		$defaults = ( new Taxonomy() )->get_default_kinds();
+		$wiki     = array(
+			'note', 'article', 'reply', 'rsvp', 'photo', 'like', 'favorite',
+			'video', 'repost', 'checkin', 'event', 'presentation', 'bookmark',
+			'jam', 'read', 'watch', 'review', 'listen', 'collection', 'comics',
+			'acquisition', 'issue', 'audio', 'exercise', 'quotation', 'follow',
+			'recipe', 'wish', 'chicken', 'eat', 'drink', 'play',
+		);
+		foreach ( $wiki as $slug ) {
+			$this->assertArrayHasKey( $slug, $defaults, "wiki kind '$slug' missing from defaults" );
+		}
 	}
 
 	public function test_get_first_block_kind_descends_into_wrapper_blocks() {
