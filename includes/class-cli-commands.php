@@ -110,6 +110,65 @@ class CLI_Commands {
 	}
 
 	/**
+	 * Set featured images from kind artwork for existing posts.
+	 *
+	 * New saves handle this automatically; this backfills posts created
+	 * before the feature existed. Posts with a featured image are left
+	 * alone, and a previously attempted artwork URL is never re-tried,
+	 * so deliberate removals stay removed.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <action>
+	 * : Must be 'backfill'.
+	 *
+	 * [--dry-run]
+	 * : Report what would change without fetching or writing anything.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp postkind featured-artwork backfill
+	 *     wp postkind featured-artwork backfill --dry-run
+	 *
+	 * @subcommand featured-artwork
+	 *
+	 * @param array $args       Positional arguments; expects 'backfill'.
+	 * @param array $assoc_args Associative arguments (dry-run).
+	 * @return void
+	 */
+	public function featured_artwork( array $args, array $assoc_args ): void {
+		$sub = $args[0] ?? '';
+		if ( 'backfill' !== $sub ) {
+			WP_CLI::error( 'Usage: wp postkind featured-artwork backfill [--dry-run]' );
+		}
+
+		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$stats   = ( new Featured_Artwork() )->backfill( $dry_run );
+
+		if ( $dry_run ) {
+			WP_CLI::success(
+				sprintf(
+					'Dry run: %d kind post(s) scanned, %d would get a featured image, %d skipped.',
+					$stats['scanned'],
+					$stats['updated'],
+					$stats['skipped']
+				)
+			);
+			return;
+		}
+
+		WP_CLI::success(
+			sprintf(
+				'%d kind post(s) scanned, %d featured image(s) set, %d skipped, %d failed.',
+				$stats['scanned'],
+				$stats['updated'],
+				$stats['skipped'],
+				$stats['failed']
+			)
+		);
+	}
+
+	/**
 	 * Display check-in statistics.
 	 *
 	 * ## EXAMPLES

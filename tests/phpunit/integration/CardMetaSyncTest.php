@@ -46,6 +46,32 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 		$this->assertSame( 'https://example.com/photo.jpg', get_post_meta( $post_id, '_pkiw_checkin_photo', true ) );
 	}
 
+	public function test_listen_card_attrs_mirror_into_pkiw_meta(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/listen-card {"trackTitle":"One","artistName":"U2","albumTitle":"Achtung Baby","coverImage":"https://coverartarchive.org/release/abc/front-500.jpg","musicbrainzId":"mbid-123","listenUrl":"https://musicbrainz.org/recording/one","rating":5} /-->',
+		] );
+
+		$this->assertSame( 'One', get_post_meta( $post_id, '_pkiw_listen_track', true ) );
+		$this->assertSame( 'U2', get_post_meta( $post_id, '_pkiw_listen_artist', true ) );
+		$this->assertSame( 'Achtung Baby', get_post_meta( $post_id, '_pkiw_listen_album', true ) );
+		$this->assertSame( 'https://coverartarchive.org/release/abc/front-500.jpg', get_post_meta( $post_id, '_pkiw_listen_cover', true ) );
+		$this->assertSame( 'mbid-123', get_post_meta( $post_id, '_pkiw_listen_mbid', true ) );
+		$this->assertSame( 'https://musicbrainz.org/recording/one', get_post_meta( $post_id, '_pkiw_listen_url', true ) );
+		$this->assertSame( '5', get_post_meta( $post_id, '_pkiw_listen_rating', true ) );
+	}
+
+	public function test_card_nested_in_h_entry_group_still_syncs(): void {
+		// Regression: the Micropub bridge wraps its card inside an h-entry
+		// core/group, and a top-level-only block walk never reached it —
+		// Micropub-created posts got no _pkiw_* meta at all.
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:group {"className":"h-entry","layout":{"type":"constrained"}} --><div class="wp-block-group h-entry"><!-- wp:post-kinds-indieweb/listen-card {"trackTitle":"American Obituary","artistName":"U2"} /--></div><!-- /wp:group -->',
+		] );
+
+		$this->assertSame( 'American Obituary', get_post_meta( $post_id, '_pkiw_listen_track', true ) );
+		$this->assertSame( 'U2', get_post_meta( $post_id, '_pkiw_listen_artist', true ) );
+	}
+
 	public function test_manual_meta_not_clobbered_by_empty_attr(): void {
 		$post_id = self::factory()->post->create( [
 			'post_content' => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Fourth Wing"} /-->',

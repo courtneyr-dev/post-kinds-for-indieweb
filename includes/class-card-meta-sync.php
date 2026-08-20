@@ -63,6 +63,56 @@ class Card_Meta_Sync {
 			'osmId'           => 'checkin_osm_id',
 			'photo'           => 'checkin_photo',
 		],
+		'post-kinds-indieweb/listen-card'  => [
+			'trackTitle'    => 'listen_track',
+			'artistName'    => 'listen_artist',
+			'albumTitle'    => 'listen_album',
+			'coverImage'    => 'listen_cover',
+			'musicbrainzId' => 'listen_mbid',
+			'listenUrl'     => 'listen_url',
+			'rating'        => 'listen_rating',
+			'releaseDate'   => 'listen_release_date',
+			'listenedAt'    => 'listen_listened_at',
+		],
+		'post-kinds-indieweb/watch-card'   => [
+			'mediaTitle'    => 'watch_title',
+			'releaseYear'   => 'watch_year',
+			'posterImage'   => 'watch_poster',
+			'tmdbId'        => 'watch_tmdb_id',
+			'watchUrl'      => 'watch_url',
+			'rating'        => 'watch_rating',
+			'review'        => 'watch_review',
+			'isRewatch'     => 'watch_is_rewatch',
+			'mediaType'     => 'watch_media_type',
+			'director'      => 'watch_director',
+			'imdbId'        => 'watch_imdb_id',
+			'showTitle'     => 'watch_show_title',
+			'seasonNumber'  => 'watch_season',
+			'episodeNumber' => 'watch_episode',
+			'episodeTitle'  => 'watch_episode_title',
+		],
+		'post-kinds-indieweb/jam-card'     => [
+			'title'  => 'jam_track',
+			'artist' => 'jam_artist',
+			'album'  => 'jam_album',
+			'cover'  => 'jam_cover',
+			'url'    => 'jam_url',
+		],
+		'post-kinds-indieweb/play-card'    => [
+			'title'       => 'play_title',
+			'platform'    => 'play_platform',
+			'status'      => 'play_status',
+			'hoursPlayed' => 'play_hours',
+			'cover'       => 'play_cover',
+			'rating'      => 'play_rating',
+			'review'      => 'play_review',
+			'gameUrl'     => 'play_game_url',
+			'officialUrl' => 'play_official_url',
+			'purchaseUrl' => 'play_purchase_url',
+			'steamId'     => 'play_steam_id',
+			'bggId'       => 'play_bgg_id',
+			'rawgId'      => 'play_rawg_id',
+		],
 		// Other card blocks join this map in follow-on work; the class is
 		// deliberately map-driven so each is one entry, no new code.
 	];
@@ -91,11 +141,9 @@ class Card_Meta_Sync {
 			return;
 		}
 
-		foreach ( parse_blocks( $post->post_content ) as $block ) {
-			$map = self::ATTR_META_MAP[ $block['blockName'] ?? '' ] ?? null;
-			if ( null === $map ) {
-				continue;
-			}
+		$block = self::find_first_mapped_block( parse_blocks( $post->post_content ) );
+		if ( null !== $block ) {
+			$map = self::ATTR_META_MAP[ $block['blockName'] ];
 
 			foreach ( $map as $attr => $suffix ) {
 				$value = $block['attrs'][ $attr ] ?? null;
@@ -123,8 +171,32 @@ class Card_Meta_Sync {
 
 				update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, sanitize_text_field( $value ) );
 			}
-
-			break; // First card block wins, mirroring the kind-sync semantics.
 		}
+	}
+
+	/**
+	 * Depth-first search for the first card block present in
+	 * ATTR_META_MAP. Recursion matters: Micropub-generated content
+	 * wraps its card inside an h-entry core/group, and editors can
+	 * nest cards in groups/columns too — a top-level-only walk never
+	 * sees those cards at all. First match in document order wins,
+	 * mirroring the kind-sync semantics.
+	 *
+	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
+	 * @return array<string, mixed>|null The first mapped block, or null.
+	 */
+	private static function find_first_mapped_block( array $blocks ): ?array {
+		foreach ( $blocks as $block ) {
+			if ( isset( self::ATTR_META_MAP[ $block['blockName'] ?? '' ] ) ) {
+				return $block;
+			}
+			if ( ! empty( $block['innerBlocks'] ) ) {
+				$found = self::find_first_mapped_block( $block['innerBlocks'] );
+				if ( null !== $found ) {
+					return $found;
+				}
+			}
+		}
+		return null;
 	}
 }

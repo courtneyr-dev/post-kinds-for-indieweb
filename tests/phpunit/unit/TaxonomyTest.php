@@ -215,6 +215,24 @@ class TaxonomyTest extends WP_UnitTestCase {
 		);
 	}
 
+	public function test_get_first_block_kind_descends_into_wrapper_blocks() {
+		// The Micropub bridge wraps its card in an h-entry core/group —
+		// the card is still the first thing a person sees.
+		$this->assertSame(
+			'listen',
+			Taxonomy::get_first_block_kind(
+				'<!-- wp:group {"className":"h-entry"} --><div class="wp-block-group h-entry"><!-- wp:post-kinds-indieweb/listen-card {"trackTitle":"One"} /--></div><!-- /wp:group -->'
+			)
+		);
+		// A wrapper whose first visible child is not a card behaves like
+		// a paragraph-first post.
+		$this->assertNull(
+			Taxonomy::get_first_block_kind(
+				'<!-- wp:group --><div class="wp-block-group"><!-- wp:paragraph --><p>hi</p><!-- /wp:paragraph --><!-- wp:post-kinds-indieweb/eat-card /--></div><!-- /wp:group -->'
+			)
+		);
+	}
+
 	public function test_save_assigns_kind_from_first_card_block() {
 		$this->ensure_kind_terms( 'eat' );
 
