@@ -16,7 +16,7 @@ Step-by-step instructions for the things you'll do most often. All of these are 
 
 ## Assign a kind without a card block
 
-For kinds that have no dedicated card (note, article, event, photo, video, review, recipe) or any post you want to label:
+For kinds that have no dedicated card (note, article, event, photo, video, audio, review, recipe, quotation, follow, presentation, collection, comics, issue, exercise, chicken) or any post you want to label:
 
 1. In the post editor sidebar, open the **Post Kind** panel.
 2. Pick the kind from the grid.

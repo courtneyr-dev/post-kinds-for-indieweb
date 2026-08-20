@@ -71,6 +71,7 @@ export default defineConfig( {
 					items: [
 						'settings',
 						'common-tasks',
+						'schema-and-featured-images',
 						'standard-site',
 						'works-together',
 					],

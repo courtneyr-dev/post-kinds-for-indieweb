@@ -5,16 +5,17 @@ description: "Create your first post kind in the block editor: pick a kind, look
 
 Create your first post kind and learn how the pieces fit together. This assumes the plugin is [installed and activated](/post-kinds-for-indieweb/installation/).
 
-## The 24 kinds at a glance
+## The 33 kinds at a glance
 
-Every kind is a term in the `kind` taxonomy, and every kind gets an archive at `/kind/<slug>/`. They fall into four rough groups:
+Every kind is a term in the `kind` taxonomy, and every kind gets an archive at `/kind/<slug>/`. Together they cover every post kind the [IndieWeb wiki](https://indieweb.org/posts#Types_of_Posts) documents as actually being published (only the wiki's single-site experimental tier is left out). They fall into five rough groups:
 
-**Media and activity tracking** — listen, watch, read, play, jam, eat, drink, checkin
-**IndieWeb responses** — reply, like, repost, bookmark, rsvp
-**Content types** — note, article, event, photo, video, review, recipe
+**Media and activity tracking** — listen, watch, read, play, jam, eat, drink, checkin, exercise
+**IndieWeb responses** — reply, like, repost, bookmark, rsvp, quotation, follow
+**Content types** — note, article, event, photo, video, audio, review, recipe, presentation, collection, comics, issue
 **Personal tracking** — favorite, wish, mood, acquisition
+**Community tradition** — [chicken](https://indieweb.org/chicken)
 
-Most kinds have a matching **card block** (Listen Card, Watch Card, Read Card, Checkin Card, RSVP Card, Play Card, Eat Card, Drink Card, Jam Card, Favorite Card, Wish Card, Mood Card, Acquisition Card, Bookmark Card, Like Card, Reply Card, Repost Card). Seven kinds — **note, article, event, photo, video, review, and recipe** — have no dedicated card block: they work as taxonomy terms with microformats2 markup, and you build their content with regular blocks (recipe pairs with the WP Recipe Maker plugin; review data such as star ratings lives inside the other cards).
+Many kinds have a matching **card block** (Listen Card, Watch Card, Read Card, Checkin Card, RSVP Card, Play Card, Eat Card, Drink Card, Jam Card, Favorite Card, Wish Card, Mood Card, Acquisition Card, Bookmark Card, Like Card, Reply Card, Repost Card). The rest — **note, article, event, photo, video, audio, review, recipe, quotation, follow, presentation, collection, comics, issue, exercise, and chicken** — have no dedicated card block: they work as taxonomy terms with microformats2 markup, and you build their content with regular blocks (recipe pairs with the WP Recipe Maker plugin; review data such as star ratings lives inside the other cards). Posts arriving over Micropub are classified automatically, including the card-less kinds with established properties: `follow-of`, `quotation-of`, and `audio` posts land with the right kind and markup.
 
 ## Your first post: log something you listened to
 

@@ -25,6 +25,10 @@ With Post Formats for Block Themes active, its format modal advertises the kind 
 
 The Outpost composer publishes to your site over Micropub. Kind-shaped posts — notes, replies, photos, listens — arrive as regular posts that this plugin's cards and microformats understand, so a listen logged from your phone renders as a full Listen Card on your site.
 
+## Yoast SEO sees your kind artwork
+
+With Yoast SEO active, a kind post's artwork reaches the schema.org graph search engines read — either through the featured image the plugin sets from card artwork, or, when there's no featured image at all, through a direct addition to Yoast's graph in Yoast's own native shape. Posts with no real artwork truthfully emit no image, and without Yoast the integration does nothing at all. Details and the off switch: [Schema and featured images](/post-kinds-for-indieweb/schema-and-featured-images/).
+
 ## What each plugin adds
 
 - **Post Kinds for IndieWeb** — this plugin: card blocks, media lookup, microformats, imports, and webhooks.
