@@ -37,12 +37,12 @@ Not published to the docs site (audit files stay at `docs/` root).
 
 | Field | Value |
 |---|---|
-| Baseline → target | `1.0.0` (tag) → `1.1.0` (feature/full-36-kinds HEAD) |
-| Commits / tags reviewed | 25 non-merge commits (15 substantive, 10 dependabot); tags `1.0.0`, dev-era `v1.1.0–v1.4.3` (naming: new releases use unprefixed tags) |
+| Baseline → target | `1.0.0` (tag) → `1.1.0` (release/1.1.0 = main@98604d0 + docs/release prep) |
+| Commits / tags reviewed | 27 non-merge commits (17 substantive incl. #135 squash and #136 event card, 10 dependabot); tags `1.0.0`, dev-era `v1.1.0–v1.4.3` (naming: new releases use unprefixed tags) |
 | Releases reviewed | 1.0.0 (WordPress.org, 2026-07-20) |
-| Files changed | 125 (+7,914 / −5,184) |
-| Public APIs changed | +12 default kinds; abilities renamed underscores→dashes (old names never registered, no aliases needed) |
-| Hooks changed | +`pkiw_kind_label` (filter), +`pkiw_standard_site_resolved` |
+| Files changed | ~150 across the range |
+| Public APIs changed | +12 default kinds; +`post-kinds-indieweb/event-card` block (18th kind card, 26 blocks total); abilities renamed underscores→dashes (old names never registered, no aliases needed) |
+| Hooks changed | +`pkiw_kind_label` (filter), +`pkiw_standard_site_resolved`, +`pkiw_pre_calendar_event`, +`pkiw_calendar_source_active` |
 | Routes changed | +`/firehose`, `/feed/firehose/`, `?feed=firehose` |
 | Schemas changed | none |
 | Dependencies changed | 10 dependabot groups, dev-deps only |
