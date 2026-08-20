@@ -397,6 +397,9 @@ function register_stream_card_block(): void {
 	register_block_type(
 		'post-kinds-indieweb/stream-card',
 		[
+			// No block.json for this block, so declare the API version here —
+			// register_block_type() otherwise defaults it to 1.
+			'api_version'     => 3,
 			'render_callback' => __NAMESPACE__ . '\\render_stream_card',
 			'uses_context'    => [ 'postId', 'postType' ],
 			'supports'        => [ 'inserter' => false ],

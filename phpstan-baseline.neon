@@ -319,6 +319,12 @@ parameters:
 			path: includes/class-webhook-handler.php
 
 		-
+			message: '#^Parameter \#2 \$args of function register_block_type expects array\{api_version\?\: string, title\?\: string, category\?\: string\|null, parent\?\: array\<string\>\|null, ancestor\?\: array\<string\>\|null, allowed_blocks\?\: array\<string\>\|null, icon\?\: string\|null, description\?\: string, \.\.\.\}, array\{api_version\: 3, render_callback\: ''PKIW\\\\render_stream…'', uses_context\: array\{''postId'', ''postType''\}, supports\: array\{inserter\: false\}\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/functions-stream-card.php
+
+		-
 			message: '#^Call to function method_exists\(\) with ''WPRM_Recipe_Manager'' and ''get_recipe'' will always evaluate to false\.$#'
 			identifier: function.impossibleType
 			count: 1
