@@ -236,6 +236,13 @@ class TMDB extends API_Base {
 
 			if ( isset( $response['results'] ) && is_array( $response['results'] ) ) {
 				foreach ( $response['results'] as $item ) {
+					// Type-specific endpoints (search/tv, search/movie) omit
+					// media_type — only search/multi includes it. Without this,
+					// TV results fall through to the movie normalizer and come
+					// back with empty titles.
+					if ( $type && ! isset( $item['media_type'] ) ) {
+						$item['media_type'] = $type;
+					}
 					$normalized = $this->normalize_result( $item );
 					if ( $normalized ) {
 						$results[] = $normalized;
