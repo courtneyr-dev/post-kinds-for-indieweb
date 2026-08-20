@@ -74,6 +74,17 @@ class Featured_Artwork {
 			return;
 		}
 
+		// Sideloading mints media library attachments, so a user-context
+		// save requires the upload_files capability (a contributor can
+		// edit their own drafts but must not create attachments this
+		// way). System contexts — cron, WP-CLI — carry no user and are
+		// deliberate operator actions. Checked before any state is
+		// written so a blocked save leaves no attempt marker and a
+		// capable user's later save still applies the artwork.
+		if ( get_current_user_id() > 0 && ! current_user_can( 'upload_files' ) ) {
+			return;
+		}
+
 		$url = Kind_Artwork::get_representative_image_url( $post_id );
 		if ( null === $url ) {
 			return; // No real artwork — never invent or remove anything.

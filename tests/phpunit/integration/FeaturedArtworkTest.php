@@ -193,6 +193,32 @@ final class FeaturedArtworkTest extends WP_UnitTestCase {
 		$this->assertSame( 0, $this->http_requests );
 	}
 
+	public function test_user_without_upload_files_cannot_trigger_sideload(): void {
+		$contributor = self::factory()->user->create( [ 'role' => 'contributor' ] );
+		wp_set_current_user( $contributor );
+
+		$post_id = self::factory()->post->create( [
+			'post_author'  => $contributor,
+			'post_status'  => 'draft',
+			'post_content' => '<!-- wp:post-kinds-indieweb/listen-card {"trackTitle":"One","coverImage":"' . self::COVER . '"} /-->',
+		] );
+
+		$this->assertSame( 0, (int) get_post_thumbnail_id( $post_id ) );
+		$this->assertSame( 0, $this->http_requests, 'no sideload for a user without upload_files' );
+		$this->assertSame(
+			'',
+			get_post_meta( $post_id, Featured_Artwork::SOURCE_META, true ),
+			'a blocked save must leave no attempt marker'
+		);
+
+		// A capable user's later save applies the same artwork normally.
+		$editor = self::factory()->user->create( [ 'role' => 'editor' ] );
+		wp_set_current_user( $editor );
+		wp_update_post( [ 'ID' => $post_id, 'post_title' => 'touch' ] );
+
+		$this->assertGreaterThan( 0, get_post_thumbnail_id( $post_id ), 'an upload-capable save still applies the artwork' );
+	}
+
 	public function test_backfill_sets_missing_featured_images(): void {
 		// A post that predates the feature: artwork attr present, no
 		// featured image, no attempt marker.
