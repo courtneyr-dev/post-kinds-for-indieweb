@@ -321,9 +321,15 @@ export function MediaSearch( { type, placeholder, onSelect } ) {
 								className="search-result-item"
 								onClick={ () => handleSelect( item ) }
 							>
-								{ ( item.image || item.cover ) && (
+								{ ( item.image ||
+									item.cover ||
+									item.poster ) && (
 									<img
-										src={ item.image || item.cover }
+										src={
+											item.image ||
+											item.cover ||
+											item.poster
+										}
 										alt=""
 										className="result-image"
 									/>
