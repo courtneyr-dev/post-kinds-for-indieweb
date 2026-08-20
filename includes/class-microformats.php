@@ -35,6 +35,16 @@ class Microformats {
 	private array $kind_formats = [];
 
 	/**
+	 * Post IDs whose wrapper already went through the post_class filter
+	 * during this request. A theme wrapper renders before its inner
+	 * content, so by the time the_content runs for a post, its presence
+	 * here means the theme supplied the h-entry root itself.
+	 *
+	 * @var array<int, true>
+	 */
+	private array $post_class_seen = [];
+
+	/**
 	 * IndieBlocks block names to skip (they already have mf2).
 	 *
 	 * @var array<string>
@@ -361,6 +371,9 @@ class Microformats {
 
 		// Add hidden mf2 data elements.
 		add_filter( 'the_content', [ $this, 'add_hidden_mf2_data' ], 99 );
+
+		// After the hidden data (99) so it lands inside the wrapper.
+		add_filter( 'the_content', [ $this, 'wrap_singular_content' ], 100 );
 	}
 
 	/**
@@ -372,6 +385,8 @@ class Microformats {
 	 * @return array<string> Modified classes.
 	 */
 	public function add_post_classes( array $classes, array $class, int $post_id ): array {
+		$this->post_class_seen[ $post_id ] = true;
+
 		$kind = $this->get_post_kind( $post_id );
 
 		if ( ! $kind || ! isset( $this->kind_formats[ $kind ] ) ) {
@@ -541,6 +556,79 @@ class Microformats {
 			},
 			$html,
 			1
+		);
+	}
+
+	/**
+	 * Wrap singular content in an h-entry when the theme supplied none.
+	 *
+	 * The kind properties ride markup inside the content (the card's
+	 * h-cite, the hidden mf2 data), and they only reach a consuming
+	 * parser if an h-entry root wraps them. That root normally comes
+	 * from the post_class filter — but a block theme whose single
+	 * template wraps the post in a plain Group (Twenty Twenty-Five,
+	 * Twenty Twenty-Four) never calls post_class(), the card parses as
+	 * a top-level orphan h-cite, and a webmention receiver fetching the
+	 * permalink cannot tell what kind of post it is. See GH issue 142.
+	 *
+	 * Wraps only the queried post on singular requests, only for posts
+	 * with a kind, and only when post_class() has not already run for
+	 * that post this request.
+	 *
+	 * @param string $content Post content.
+	 * @return string Content, wrapped when the theme supplied no h-entry.
+	 */
+	public function wrap_singular_content( string $content ): string {
+		$post_id = get_the_ID();
+
+		if ( ! $post_id || ! is_singular() || get_queried_object_id() !== $post_id ) {
+			return $content;
+		}
+
+		// The theme already produced an h-entry wrapper via post_class().
+		if ( isset( $this->post_class_seen[ $post_id ] ) ) {
+			return $content;
+		}
+
+		// the_content can be applied more than once per request.
+		if ( str_contains( $content, 'pkiw-singular-entry' ) ) {
+			return $content;
+		}
+
+		$kind = $this->get_post_kind( $post_id );
+
+		if ( ! $kind || ! isset( $this->kind_formats[ $kind ] ) ) {
+			return $content;
+		}
+
+		$root_classes = $this->kind_formats[ $kind ]['root'] ?? [ 'h-entry' ];
+		$classes      = array_merge( $root_classes, [ 'kind-' . $kind, 'pkiw-singular-entry' ] );
+
+		// Entry-level essentials so the h-entry stands alone for parsers.
+		$entry_meta = sprintf(
+			'<a class="u-url" href="%s" hidden></a><time class="dt-published" datetime="%s" hidden></time>',
+			esc_url( get_permalink( $post_id ) ),
+			esc_attr( (string) get_the_date( 'c', $post_id ) )
+		);
+
+		// Only name the entry where the kind's vocabulary has a name —
+		// notes and responses are intentionally title-less in mf2.
+		$properties = $this->kind_formats[ $kind ]['properties'] ?? [];
+		if ( in_array( 'p-name', $properties, true ) ) {
+			$title = get_the_title( $post_id );
+			if ( '' !== $title ) {
+				$entry_meta .= sprintf(
+					'<span class="p-name" hidden>%s</span>',
+					esc_html( $title )
+				);
+			}
+		}
+
+		return sprintf(
+			'<div class="%s">%s%s</div>',
+			esc_attr( implode( ' ', $classes ) ),
+			$content,
+			$entry_meta
 		);
 	}
 
