@@ -29,7 +29,7 @@ import { STORE_NAME } from '../stores/post-kinds';
 import KindGrid from './components/KindGrid';
 import KindFields from './components/KindFields';
 import AutoDetectionNotice from './components/AutoDetectionNotice';
-import { kindIcons } from './icons';
+import { getKindIcon } from './icons';
 import hasBookmarkBlock from './has-bookmark-block';
 
 /**
@@ -602,7 +602,7 @@ export default function KindSelectorPanel() {
 	);
 
 	// Get icon for current kind.
-	const KindIcon = kindIcons[ currentKind ] || kindIcons.note;
+	const KindIcon = getKindIcon( currentKind );
 
 	return (
 		<PluginDocumentSettingPanel

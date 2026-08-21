@@ -11,6 +11,7 @@
  * WordPress dependencies
  */
 import { SVG, Path, Circle } from '@wordpress/primitives';
+import { applyFilters } from '@wordpress/hooks';
 
 /**
  * Note icon - simple document/text
@@ -454,5 +455,28 @@ export const kindIcons = {
 	sleep: SleepIcon,
 	craft: CraftIcon,
 };
+
+/**
+ * Resolve the icon component for a kind slug.
+ *
+ * Runs the `postKindsIndieweb.kindIcons` filter so sites can register
+ * icons for custom kind terms (or override built-ins):
+ *
+ *     wp.hooks.addFilter( 'postKindsIndieweb.kindIcons', 'my-site', ( icons ) => ( {
+ *         ...icons,
+ *         chicken: () => wp.element.createElement( 'span', { 'aria-hidden': true }, '\u{1F414}' ),
+ *     } ) );
+ *
+ * Unknown slugs fall back to the note icon.
+ *
+ * @param {string} slug Kind slug.
+ * @return {Function} Icon component.
+ */
+export function getKindIcon( slug ) {
+	const icons = applyFilters( 'postKindsIndieweb.kindIcons', {
+		...kindIcons,
+	} );
+	return icons[ slug ] || icons.note || kindIcons.note;
+}
 
 export default kindIcons;
