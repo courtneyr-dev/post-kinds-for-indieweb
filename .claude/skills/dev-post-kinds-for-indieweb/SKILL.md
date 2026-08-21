@@ -1,6 +1,6 @@
 ---
 name: dev-post-kinds-for-indieweb
-description: Development workflow for the Post Kinds for IndieWeb WordPress plugin — setup, build, lint, test (PHPUnit/Jest/Playwright), wp-env, branch/PR conventions, and release steps. Use when building, testing, or releasing this plugin, or when picking up work in a fresh session/worktree.
+description: Development workflow for the Post Kinds for IndieWeb WordPress plugin — setup, build, lint, test (PHPUnit/Jest/Playwright), wp-env, branch/PR conventions, release steps, and discovery audits (microformats2 + Standard.site/AT Protocol). Use when building, testing, or releasing this plugin, when picking up work in a fresh session/worktree, or when a change touches head output, rewrites, permalinks, feeds, lifecycle hooks, or anything AT Protocol-shaped.
 ---
 
 # Post Kinds for IndieWeb — dev workflow
@@ -268,3 +268,73 @@ never auto-deploys anything.
   level 6; `phpstan.neon` has always said 5 (corrected in commit
   `97a711b`, which is also the origin of the "verify docs against the repo
   before trusting them" habit this retrofit continues).
+
+## Discovery audits — run with every session in this repo
+
+Any change touching head output, rewrite rules, permalinks, feeds,
+lifecycle hooks (`save_post` / `transition_post_status` / delete paths),
+uninstall, or rendered card markup affects one or both discovery surfaces.
+Audit both before calling the change done:
+
+### IndieWeb (microformats2) discovery
+
+- Automated gate: `tests/phpunit/integration/MicroformatsRenderTest.php`
+  parses each response-kind card with `mf2/mf2` and asserts the canonical
+  property lands on the `h-entry`. Extend it when adding a kind.
+- Manual per-kind validator pass (pre-release) is listed in the repo
+  `CLAUDE.md` "IndieWeb validation" section — indiewebify.me, pin13.net/mf2,
+  monocle preview, webmention.rocks, micropub.rocks. That section is the
+  source of truth; don't restate it, run it.
+- The hidden `u-url`/`dt-published` markers come from
+  `class-microformats.php::wrap_singular_content` (`the_content` @100) —
+  any plaintext/content extraction must exclude them.
+
+### Standard.site (AT Protocol) discovery
+
+Full audit + implementation plan:
+`docs/audits/standard-site-discovery-audit.md` (in-repo). Durable facts:
+
+- **Canonical lexicons are AT Protocol records, not a GitHub repo**: the
+  `com.atproto.lexicon.schema` collection of
+  `did:plc:re3ebnp5v7ffagz6rb6xfei4` (8 records: publication, document,
+  theme.basic, theme.color, graph.subscription, graph.recommend, authFull,
+  authSocial). CID = revision. Pin a baseline with:
+  `curl "$PDS/xrpc/com.atproto.repo.getRecord?repo=did:plc:re3ebnp5v7ffagz6rb6xfei4&collection=com.atproto.lexicon.schema&rkey=site.standard.document"`
+  (resolve `$PDS` via `https://plc.directory/<did>`). The docs-site field
+  tables lag the records — trust the records.
+- **Verification model**: publications verify via
+  `/.well-known/site.standard.publication` returning a plain-text AT-URI
+  (authoritative); documents verify via
+  `<link rel="site.standard.document" href="at://…">` in the canonical
+  page's `<head>`. Publication record must exist before documents.
+- **What the plugin ships (as of 1.5.2): consumer only.**
+  `includes/class-standard-site.php` reads other sites' records (PR #128);
+  reuse its `parse_at_uri`/`resolve_pds`/`same_url` for anything AT-shaped.
+  There is NO publishing side: no PDS writes, no atproto auth, no
+  `.well-known` route, no link-tag emission, no `wp_head` hook anywhere in
+  the plugin, and `_pkiw_standard_site_uri` meta is write-only (and leaks
+  through uninstall). Verify these against the tree before relying on them
+  — the audit doc's traceability matrix has file:line evidence.
+- **Live-site trap**: courtneyr.dev already has a publication record
+  (`did:plc:zpnx6i5fecbk2ni2g2qx5amx`, zero document records) and serves
+  `.well-known` via a non-PKIW mechanism — any publishing work must adopt
+  existing records, never create duplicates, and must not fight the
+  existing `.well-known` responder.
+- Quick end-to-end resolver check (live network, no WP needed):
+  `php tests/manual/standard-site-resolve.php [url]`.
+- External validator for records: site-validator.fly.dev.
+
+### Audit checklist per change
+
+1. Does the change alter any rendered card, wrapper, or head output? →
+   run `MicroformatsRenderTest` + eyeball parsed mf2 for the touched kind.
+2. Does it add/modify a rewrite, feed, or `.well-known` route? → it must
+   ride `maybe_flush_rewrite_rules`' `pkiw_rewrite_version` stamp (bump
+   `PKIW_VERSION`) or it 404s for upgrading users (the 1.5.0 `/firehose`
+   bug).
+3. Does it touch permalinks, post lifecycle, or uninstall? → check both
+   the mf2 `u-url` source (`get_permalink()`) and the Standard.site audit
+   doc's lifecycle section for what would drift.
+4. Anything AT Protocol-shaped? → re-pin the lexicon CIDs before trusting
+   cached knowledge; `StandardSiteTest` (20 tests) must stay green:
+   `WP_TESTS_DIR=~/.wp-tests/wordpress-tests-lib php -d memory_limit=1G vendor/bin/phpunit --filter StandardSiteTest`.
