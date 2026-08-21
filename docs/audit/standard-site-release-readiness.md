@@ -127,6 +127,9 @@ output) · `observed` (read directly from source or a live response) ·
 
 ## Release steps that remain Courtney's call
 
-- Push branch / open PR; version bump + `@since` normalization (1.6.0
-  assumed); readme.txt changelog + screenshots; POT refresh; file the two
-  upstream proposals; dispatch Visual Baselines if CI's Linux run drifts.
+- Branch pushed and draft PR #160 open (2026-08-21); marking it ready
+  for review, merging, version bump + `@since` normalization (1.6.0
+  assumed), readme.txt changelog + screenshots, POT refresh, filing the
+  two upstream proposals, and the wp.org deploy that unlocks the Live
+  Preview check all remain Courtney's call. Linux visual needed no
+  baseline changes.
