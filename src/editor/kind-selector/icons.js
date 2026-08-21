@@ -413,6 +413,50 @@ export const CraftIcon = () => (
 );
 
 /**
+ * Chicken icon - a chicken (yes, really - indieweb.org/chicken).
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const ChickenIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M16.5 3.5c.8 0 1.5.7 1.5 1.5 0 .4-.2.8-.4 1l1.9 1.4c.3.2.3.7 0 .9l-1.7 1.1c.1.5.2 1 .2 1.6 0 3.9-2.9 7-6.7 7h-.6l.3 2.1c0 .3-.2.5-.5.5h-1c-.2 0-.4-.2-.5-.4L8.7 18c-.4-.1-.8-.3-1.1-.5L6.2 19c-.2.2-.5.2-.7 0l-.7-.7c-.2-.2-.2-.5 0-.7l1.4-1.4C5.4 15.1 5 13.8 5 12.5 5 8.4 8 5 12 5c1 0 1.9.2 2.7.6.2-1.2 1-2.1 1.8-2.1Zm-.4 3.2a.7.7 0 1 0 0-1.4.7.7 0 0 0 0 1.4Z" />
+	</SVG>
+);
+
+/**
+ * Comics icon - POW! starburst.
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const ComicsIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M12 1.5 14 7l4.2-3-1.6 5 5.6-.4-4.3 3.3 4.7 2.6-5.4.8 2.6 4.8-5-2.3L14 22.5l-2-4.7-4.2 3 1.6-5-5.6.4 4.3-3.3-4.7-2.6 5.4-.8L6.2 4.7l5 2.3Zm-1.7 8.2v4.6h1.2v-1.5h.6c1 0 1.8-.7 1.8-1.6 0-.9-.8-1.5-1.8-1.5h-1.8Zm1.2 1h.5c.4 0 .6.2.6.5s-.2.6-.6.6h-.5v-1.1Z" />
+	</SVG>
+);
+
+/**
+ * Collection icon - stacked items.
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const CollectionIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M4 8h16c.6 0 1 .4 1 1v10c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V9c0-.6.4-1 1-1Zm1 2v9h14v-9H5ZM5 5h14v1.5H5V5Zm2-3h10v1.5H7V2Z" />
+	</SVG>
+);
+
+/**
+ * Presentation icon - screen and microphone.
+ *
+ * @return {JSX.Element} SVG icon.
+ */
+export const PresentationIcon = () => (
+	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<Path d="M3 4h18c.6 0 1 .4 1 1v10c0 .6-.4 1-1 1h-7.6l1.4 3H16a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2h1.2l1.4-3H3c-.6 0-1-.4-1-1V5c0-.6.4-1 1-1Zm1 2v8h16V6H4Zm12.6 1c.9 0 1.6.7 1.6 1.6v1.8a1.6 1.6 0 0 1-3.2 0V8.6c0-.9.7-1.6 1.6-1.6Zm-2.8 3.5a2.8 2.8 0 0 0 5.6 0h1.2a4 4 0 0 1-3.4 3.9v1.1h-1.2v-1.1a4 4 0 0 1-3.4-3.9h1.2Z" />
+	</SVG>
+);
+
+/**
  * Map of kind slugs to icon components.
  *
  * @type {Object}
@@ -459,50 +503,6 @@ export const kindIcons = {
 	collection: CollectionIcon,
 	presentation: PresentationIcon,
 };
-
-/**
- * Chicken icon - a chicken (yes, really - indieweb.org/chicken).
- *
- * @return {JSX.Element} SVG icon.
- */
-export const ChickenIcon = () => (
-	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-		<Path d="M16.5 3.5c.8 0 1.5.7 1.5 1.5 0 .4-.2.8-.4 1l1.9 1.4c.3.2.3.7 0 .9l-1.7 1.1c.1.5.2 1 .2 1.6 0 3.9-2.9 7-6.7 7h-.6l.3 2.1c0 .3-.2.5-.5.5h-1c-.2 0-.4-.2-.5-.4L8.7 18c-.4-.1-.8-.3-1.1-.5L6.2 19c-.2.2-.5.2-.7 0l-.7-.7c-.2-.2-.2-.5 0-.7l1.4-1.4C5.4 15.1 5 13.8 5 12.5 5 8.4 8 5 12 5c1 0 1.9.2 2.7.6.2-1.2 1-2.1 1.8-2.1Zm-.4 3.2a.7.7 0 1 0 0-1.4.7.7 0 0 0 0 1.4Z" />
-	</SVG>
-);
-
-/**
- * Comics icon - POW! starburst.
- *
- * @return {JSX.Element} SVG icon.
- */
-export const ComicsIcon = () => (
-	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-		<Path d="M12 1.5 14 7l4.2-3-1.6 5 5.6-.4-4.3 3.3 4.7 2.6-5.4.8 2.6 4.8-5-2.3L14 22.5l-2-4.7-4.2 3 1.6-5-5.6.4 4.3-3.3-4.7-2.6 5.4-.8L6.2 4.7l5 2.3Zm-1.7 8.2v4.6h1.2v-1.5h.6c1 0 1.8-.7 1.8-1.6 0-.9-.8-1.5-1.8-1.5h-1.8Zm1.2 1h.5c.4 0 .6.2.6.5s-.2.6-.6.6h-.5v-1.1Z" />
-	</SVG>
-);
-
-/**
- * Collection icon - stacked items.
- *
- * @return {JSX.Element} SVG icon.
- */
-export const CollectionIcon = () => (
-	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-		<Path d="M4 8h16c.6 0 1 .4 1 1v10c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V9c0-.6.4-1 1-1Zm1 2v9h14v-9H5ZM5 5h14v1.5H5V5Zm2-3h10v1.5H7V2Z" />
-	</SVG>
-);
-
-/**
- * Presentation icon - screen and microphone.
- *
- * @return {JSX.Element} SVG icon.
- */
-export const PresentationIcon = () => (
-	<SVG viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-		<Path d="M3 4h18c.6 0 1 .4 1 1v10c0 .6-.4 1-1 1h-7.6l1.4 3H16a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2h1.2l1.4-3H3c-.6 0-1-.4-1-1V5c0-.6.4-1 1-1Zm1 2v8h16V6H4Zm12.6 1c.9 0 1.6.7 1.6 1.6v1.8a1.6 1.6 0 0 1-3.2 0V8.6c0-.9.7-1.6 1.6-1.6Zm-2.8 3.5a2.8 2.8 0 0 0 5.6 0h1.2a4 4 0 0 1-3.4 3.9v1.1h-1.2v-1.1a4 4 0 0 1-3.4-3.9h1.2Z" />
-	</SVG>
-);
 
 /**
  * Resolve the icon component for a kind slug.

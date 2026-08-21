@@ -17,20 +17,20 @@ describe( 'getKindIcon', () => {
 	} );
 
 	it( 'falls back to the note icon for unknown slugs', () => {
-		expect( getKindIcon( 'chicken' ) ).toBe( kindIcons.note );
+		expect( getKindIcon( 'zine-club' ) ).toBe( kindIcons.note );
 	} );
 
 	it( 'lets a filter register icons for custom kind terms', () => {
-		const ChickenIcon = () => null;
+		const ZineClubIcon = () => null;
 		addFilter(
 			'postKindsIndieweb.kindIcons',
 			'test/custom',
 			( icons ) => ( {
 				...icons,
-				chicken: ChickenIcon,
+				'zine-club': ZineClubIcon,
 			} )
 		);
-		expect( getKindIcon( 'chicken' ) ).toBe( ChickenIcon );
+		expect( getKindIcon( 'zine-club' ) ).toBe( ZineClubIcon );
 		// Built-ins are untouched by an additive filter.
 		expect( getKindIcon( 'watch' ) ).toBe( kindIcons.watch );
 	} );
