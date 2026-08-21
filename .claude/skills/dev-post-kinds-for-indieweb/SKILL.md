@@ -27,15 +27,16 @@ npm run build         # dev build
 npm run build:prod    # production build (what CI and plugin-zip use)
 ```
 
-Block source lives in `src/blocks/`, but the plugin **registers each block from
-`build/blocks/<block>/`** — the build step (`bin/sync-block-assets.mjs`, run
-after every `npm run build`) copies each block's `block.json`, `render.php`,
-`style.css`, and `editor.css` from `src/blocks/` into `build/blocks/`, so the
-shipped zip works without `src/` (which `.distignore` excludes). `build/` is
-compiled output but is tracked in git because it ships as part of the
-distribution. Edit `block.json`/`render.php` in `src/blocks/` and rebuild —
-`build/blocks/` is what actually loads, so a stale `build/` copy WILL take
-effect until you rebuild.
+Block source lives in `src/blocks/`. `includes/class-plugin.php` registers
+each block from `build/blocks/<block>/` **first**, falling back to
+`src/blocks/<block>/` only when the build copy's `block.json` is missing
+(verified against main @ `44745e5`, 2026-08-16 — this inverted at some
+point; earlier notes claiming src-first are wrong for current code).
+`bin/sync-block-assets.mjs` copies `block.json`/`render.php` into
+`build/blocks/` after every `npm run build`, and the dist zip excludes
+`/src` entirely (`.distignore`), so a `block.json`/`render.php` edit in
+`src/blocks/` needs a build (or manual sync) before the registered copy
+sees it. `build/` is tracked in git because it ships as the distribution.
 
 ## Lint
 
@@ -238,12 +239,13 @@ never auto-deploys anything.
 - **Port 8888 conflict:** Stream Deck commonly owns 8888 on this machine —
   use a gitignored `.wp-env.override.json` with alternate ports plus
   `WP_BASE_URL` rather than fighting for the default port.
-- **Blocks register from `build/blocks/`, not `src/blocks/`.** The build step
-  (`bin/sync-block-assets.mjs`) copies each block's `block.json`/`render.php`/
-  `style.css`/`editor.css` from `src/blocks/` into `build/blocks/`, and the
-  plugin registers from there — so the shipped zip works without `src/`
-  (`.distignore` excludes it). Edit in `src/blocks/` and rebuild; `build/blocks/`
-  is what loads, so ship a fresh `build/`.
+- **Blocks register from `build/blocks/` first, `src/blocks/` is the
+  dev-only fallback** (current main; earlier versions of this note said
+  the opposite — always reverify in `class-plugin.php` ~line 880 before
+  relying on it). Run `npm run build` (which runs
+  `bin/sync-block-assets.mjs`) after editing a block's `block.json` or
+  `render.php`, or the registered `build/` copy stays stale. The dist zip
+  ships `build/` only (`.distignore` excludes `/src`).
 - **Block category slug is `post-kinds-indieweb`** (no "for") across every
   `block.json`. Don't "fix" it to match the plugin slug — existing saved
   posts reference this category slug, and changing it breaks them.
