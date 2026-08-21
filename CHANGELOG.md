@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-08-21
+
 ### Added
 
 - Standard.site publishing through the ATmosphere plugin as an **optional companion integration** (minimum ATmosphere 2.1.0; Post Kinds installs, activates, and works fully without it). ATmosphere keeps sole ownership of AT Protocol connectivity, records, verification, and lifecycle sync; this plugin contributes what ATmosphere can't know about Post Kinds. Public content and public logs (notes, articles, photos, videos, audio, reviews, recipes, events, quotes, questions, crafts, listens, watches, reads, plays, eats, drinks, jams, replies, bookmarks, RSVPs, issues) publish by default; thin signals and privacy-sensitive kinds (likes, reposts, favorites, follows, tags, check-ins, moods, wishes, acquisitions, weather, exercise, sleep, trips, itineraries) are opt-in per site (Settings → Post Kinds → Integrations) or per post via ATmosphere's own sharing toggle, which always wins — implemented as a metadata *default* on `atmosphere_disabled`, so nothing is written and posts that already published a record are never retracted by a settings change. On upgrade, sites that were already publishing kind posts through ATmosphere are seeded all-eligible so nothing changes silently. Per-kind reasoning: docs/integrations/standard-site-kind-eligibility.md.

@@ -2,7 +2,7 @@
 
 **Target:** Automattic/wordpress-atmosphere trunk (the filter is
 `@since unreleased`; it does not exist in the 2.1.0 release)
-**Status:** proposal only.
+**Status:** FILED 2026-08-21 as https://github.com/Automattic/wordpress-atmosphere/issues/239 (text below is what was filed).
 
 ## The gap, proven from source
 
@@ -50,7 +50,7 @@ ships — after release this would be additive anyway.
 
 ---
 
-## Review-ready issue draft (2026-08-21; not filed — no equivalent issue or PR exists upstream, verified via GitHub search)
+## Issue as filed (2026-08-21, https://github.com/Automattic/wordpress-atmosphere/issues/239; no equivalent existed upstream, verified via GitHub search)
 
 **Title:** Pass the post to `atmosphere_should_publish_bluesky_post` so integrations can decide per post
 

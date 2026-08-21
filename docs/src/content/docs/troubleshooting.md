@@ -56,11 +56,27 @@ Symptoms, likely causes, and fixes for the most common problems, based on the pl
 
 **Symptom:** Card contents scattered into a strange layout in the editor, or published cards missing padding and shadow.
 
-**Likely cause:** Known regressions in pre-release builds, all fixed in 1.0.0: an editor grid layout that scattered card contents, front-end padding and shadow stripped by an unscoped editor rule, and a fatal error with hooked blocks in some block themes.
+**Likely cause:** Known regressions in earlier releases, all fixed since: pre-1.0.0 layout and styling bugs, and four editor crashes fixed in 1.5.2 — the Check-in Dashboard, the Play Card with a non-default status, and Event and RSVP cards given an unparseable date all crashed into the block editor's gray error boundary.
 
-**Fix:** Update to the latest version (1.0.0 or later). If cards still look off afterward, hard-refresh to clear cached CSS.
+**Fix:** Update to the latest version (1.5.2 or later). If cards still look off afterward, hard-refresh to clear cached CSS.
 
 **What to check next:** Your theme's design tokens — cards take color and typography from block-theme styles, so a theme without editor styles can look plainer than the screenshots.
+
+## The /firehose feed returns 404
+
+**Symptom:** `/firehose` and `/feed/firehose/` return 404, while `?feed=firehose` works.
+
+**Likely cause:** You updated from a version before 1.5.1. The feed's rewrite rules were only registered on fresh activation, and WordPress doesn't run activation on update — 1.5.1 fixed this so updating rebuilds them.
+
+**Fix:** Update to 1.5.1 or later. If the 404 persists, visit **Settings → Permalinks** and click **Save Changes** once to rebuild the rewrite rules.
+
+## Newer kind archives 404 for visitors
+
+**Symptom:** Archives for kinds added in 1.5.0 (for example `/kind/weather/`) return 404, and kind pickers show 24 kinds instead of 36.
+
+**Likely cause:** A pre-1.5.1 version only created the newer kind terms on a wp-admin visit, so a freshly updated site served the old set to visitors until someone logged in.
+
+**Fix:** Update to 1.5.1 or later — the terms now appear on the next request of any kind. As with the feed, a **Settings → Permalinks → Save Changes** pass clears any lingering archive 404.
 
 ## Posts from a Micropub app don't arrive
 
@@ -100,7 +116,7 @@ Standard.site publishing runs through the optional ATmosphere companion plugin. 
 In order of likelihood:
 
 1. ATmosphere isn't connected — check Settings → ATmosphere (its Site Health section reports connection problems too).
-2. The kind is off by default — reaction and log kinds are opt-in. Check the kind under Settings → Post Kinds → Integrations, or flip the post's own sharing toggle in the editor, which always wins.
+2. The kind is off by default — thin signal kinds (likes, reposts, favorites, follows) and privacy-sensitive kinds (check-ins, moods, wishes, and the health and travel logs) are opt-in. Check the kind under Settings → Post Kinds → Integrations, or flip the post's own sharing toggle in the editor, which always wins.
 3. The post isn't public — drafts, private, and password-protected posts never publish.
 4. The post predates the connection — routine edits don't retro-publish old posts by design. Bring existing posts over deliberately with `wp atmosphere backfill` (`--dry-run` first).
 

@@ -59,7 +59,7 @@ Enter a post URL at [pin13.net/mf2](https://pin13.net/mf2/); it shows every micr
 
 ## How do I customize how cards look?
 
-Use the block settings sidebar in the editor, Global Styles in the Site Editor, or theme CSS. The cards are built on `--pkiw-*` design tokens so block themes can restyle them; see the [design tokens reference](https://github.com/courtneyr-dev/post-kinds-for-indieweb/blob/main/docs/audit/DESIGN-TOKENS.md).
+Use the block settings sidebar in the editor, Global Styles in the Site Editor, or theme CSS. The cards are built on `--pkiw-*` design tokens so block themes can restyle them; see the [design tokens reference](https://github.com/courtneyr-dev/post-kinds-for-indieweb/blob/main/docs/audit/DESIGN-TOKENS.md). For deeper changes: every card's visible kind label passes through the `pkiw_kind_label` filter, and each card groups its title, date, and sub-lines in a `pk-caption` wrapper you can target with CSS.
 
 ## What happens to my data if I delete the plugin?
 

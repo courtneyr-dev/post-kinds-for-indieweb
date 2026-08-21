@@ -58,6 +58,24 @@ Add one of these blocks to any post or page:
 3. Use **Preview** to check what would be imported, then **Start Import**.
 4. Large imports run in the background; watch progress under **Active Imports** or via the admin notice. **Re-sync** fetches new items later.
 
+## Subscribe to everything, including imports
+
+Your site's normal feeds leave out bulk-imported posts. The firehose feed includes them:
+
+- `/firehose` or `/feed/firehose/` — standard RSS2, everything your normal feed carries plus imported posts.
+- `?feed=firehose` works too, on any permalink setting.
+
+Point a feed reader at it to follow your complete activity, imports and all. If it returns 404 after an update, see [Troubleshooting](/post-kinds-for-indieweb/troubleshooting/#the-firehose-feed-returns-404).
+
+## Give kind posts a featured image automatically
+
+Six media kinds set their artwork as the post's featured image when the post has none: listen and jam (album cover), watch (poster), read (book cover), play (game cover), and check-in (venue photo).
+
+- An image you set yourself always wins — the plugin never replaces it, and it respects your removing the automatic one.
+- The same artwork feeds Yoast SEO's schema graph as the primary image when Yoast finds none itself.
+- To turn the behavior off: `add_filter( 'pkiw_set_featured_from_artwork', '__return_false' );`
+- To backfill posts that existed before this feature: `wp postkind featured-artwork backfill` (add `--dry-run` to preview).
+
 ## Set up automatic scrobbling via webhooks
 
 1. Go to **Reactions → Webhooks**.

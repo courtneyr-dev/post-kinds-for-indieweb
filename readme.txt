@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.5.2
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,6 +25,8 @@ The original Post Kinds plugin was built for the Classic Editor. This plugin is 
 * **Bulk import** — pull in your history from Last.fm, Trakt, Hardcover, and more
 * **Real-time scrobbling** — webhooks for Plex, Jellyfin, Trakt, and ListenBrainz. Scrobbling means automatically logging each song or show as you play it.
 * **microformats2 markup** on every post. Microformats are standard HTML classes that let other IndieWeb sites and tools read your posts as structured data — a listen, an RSVP, a check-in — instead of plain text.
+* **Automatic featured images** — album art, posters, and book covers from your media posts become the featured image when a post has none.
+* **A firehose feed** at /firehose — your site's RSS plus the bulk-imported posts that normal feeds leave out.
 * **Standard.site records** — when a page you bookmark publishes its metadata to AT Protocol, read the author's own title, description, and tags instead of guessing from the page. No account or setup needed.
 * **Standard.site publishing** — add the optional [ATmosphere](https://wordpress.org/plugins/atmosphere/) companion plugin (2.1.0+) and your own posts publish as Standard.site documents on AT Protocol. Post Kinds adds what ATmosphere can't know: which kinds publish by default, readable titles for untitled posts ("Listened to … by …", "Checked in at …"), the kind as a tag, and check-in privacy rules. Everything else in Post Kinds works without it.
 
@@ -38,12 +40,13 @@ The original Post Kinds plugin was built for the Classic Editor. This plugin is 
 * **Eat / Drink** — food and beverages
 * **Jam** — music you love, with oEmbed previews
 * **RSVP** — event responses (yes, no, maybe, interested, remote)
+* **Event** — events with date, time, and location; the Event Card can pull details from The Events Calendar or My Calendar
 * **Like, Reply, Repost, Bookmark** — IndieWeb interactions
 * **Favorite, Wish, Mood, Acquisition** — personal tracking
 * **Follow, Tag, Quote, Issue, Question** — more IndieWeb response types
 * **Audio, Weather, Exercise, Sleep, Trip, Itinerary, Craft** — logs and experimental kinds
 
-That's the full 36-kind vocabulary of the classic Post Kinds plugin. Kinds without a dedicated card block still render as cards on the Stream and carry correct microformats2 markup.
+Along with Note, Article, Photo, Video, Review, and Recipe, that's the full 36-kind vocabulary of the classic Post Kinds plugin. Kinds without a dedicated card block still render as cards on the Stream and carry correct microformats2 markup.
 
 Each kind gets its own archive page (for example `/kind/listen/`), and the kind is set automatically from the first card block in a post — or pick it yourself in the Post Kind editor panel.
 
@@ -168,6 +171,12 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 
 == Changelog ==
 
+= 1.6.0 =
+* Added: Standard.site publishing through the optional [ATmosphere](https://wordpress.org/plugins/atmosphere/) companion plugin (2.1.0 or later). Public content and public logs — notes, articles, photos, videos, reviews, recipes, events, listens, watches, reads, plays, eats, drinks, jams, replies, bookmarks, and RSVPs — publish as Standard.site documents by default once ATmosphere is connected; likes, reposts, favorites, follows, check-ins, moods, and the other privacy-sensitive kinds stay off until you turn them on, per kind or per post. Untitled posts get readable derived titles ("Listened to … by …", "Checked in at …" — or just "Checked in" for a private check-in), the kind rides along as a tag, and a post's own sharing toggle always has the final say. Posts that already published are never removed by a settings change, and nothing backfills automatically. Post Kinds works fully without ATmosphere.
+* Added: a Standard.site column on the posts list showing each post's publish state, and per-kind publishing controls on the Integrations settings tab.
+* Fixed: hidden microformats markers no longer appear in ATmosphere's record previews, so what you preview is exactly what publishes.
+
+
 = 1.5.2 =
 * Fixed: the Check-in Dashboard block crashed in the editor for everyone who inserted it, with any settings. It read its data feed in the wrong shape.
 * Fixed: the Play Card crashed in the editor whenever its status differed from the default — pasted, imported, or pattern-inserted cards hit this every time.
@@ -197,12 +206,26 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 * Fixed: the plugin's abilities (Abilities API) now actually register; their old underscore names were rejected by WordPress core.
 * Fixed: a bookmark post built with the Bookmark Card no longer gets an empty Embed block inserted above it in the editor.
 * Fixed: no more "doing it wrong" notice when Post Formats for Block Themes also registers the shared block-bindings source.
+* Added: media artwork (album covers, posters, book covers) becomes the post's featured image when none is set, with a pkiw_set_featured_from_artwork filter to opt out and a wp postkind featured-artwork backfill command for existing posts.
+* Added: kind artwork reaches Yoast SEO's schema graph as the primary image when Yoast finds none itself.
+* Added: listen, watch, jam, and play card fields mirror into post meta on save, so themes and plugins can read them without parsing blocks.
 
 = 1.0.0 =
 * Initial WordPress.org release: 24 post kinds with card blocks, media lookup, imports and webhook scrobbling, microformats2 markup, syndication, and Micropub support. Development history for the pre-release builds lives in CHANGELOG.md in the GitHub repository.
 * Security: syndication handlers require the per-post `edit_post` capability, closing an IDOR where a user with generic `edit_posts` could syndicate another user's post.
 * Security: Letterboxd lookups use `wp_safe_remote_get` with `reject_unsafe_urls`, so a redirect target can't reach private or loopback hosts.
 * Fixed: like, reply, repost, bookmark, favorite, listen, watch, and read posts expose the correct microformats2 markup, so webmention receivers and feed readers recognize them as their kind.
+
+== Upgrade Notice ==
+
+= 1.6.0 =
+Adds optional Standard.site publishing via the ATmosphere companion plugin. Nothing publishes until you install ATmosphere and connect an account.
+
+= 1.5.2 =
+Fixes four editor crashes and shrinks the download from 4.8M to 0.6M. Recommended for everyone.
+
+= 1.5.1 =
+Fixes /firehose 404s and missing kind archives on updated sites — both self-heal on update.
 
 == External services ==
 
