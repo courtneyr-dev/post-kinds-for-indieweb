@@ -10,7 +10,7 @@ How to install and activate Post Kinds for IndieWeb in Block Themes, what the pl
 - **WordPress 7.0 or later.** This minimum is unusually high — sites on WordPress 6.x can't run this plugin. If your WordPress version is too old, activation is blocked and an admin notice tells you which version you're running and what's required.
 - **PHP 8.2 or later**, enforced the same way with an admin notice.
 - The custom blocks require the **block editor**. Classic Editor users get only basic kind assignment through the taxonomy box.
-- Optional: the **[ATmosphere plugin](https://wordpress.org/plugins/atmosphere/), 2.1.0 or later**, enables [Standard.site publishing](/post-kinds-for-indieweb/standard-site/). Post Kinds installs, activates, and works fully without it — the Integrations settings tab simply offers it as a companion.
+- Optional: the **[ATmosphere plugin](https://wordpress.org/plugins/atmosphere/), 2.1.0 or later**, enables [Standard.site publishing](/post-kinds-for-indieweb/standard-site/). Post Kinds installs, activates, and works fully without it — the Integrations settings tab offers it as a companion.
 
 ## Before you install: check for the classic Post Kinds plugin
 

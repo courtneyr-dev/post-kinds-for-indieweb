@@ -52,3 +52,7 @@ SUPPORT.md
 TESTING.md
 /stubs
 /docs
+
+# CI-only checkout of the companion plugin for the live integration suite
+# (.github/workflows/ci.yml); never part of the distribution.
+/wordpress-atmosphere
