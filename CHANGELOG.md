@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.2] - 2026-08-21
+
 ### Fixed
 
 - Saving can no longer be blocked by an unparseable date. The same unguarded `toISOString()` fixed in the editor renders survived in three live save serializers (wish, favorite, acquisition), the play-card front-end save, four deprecated saves, and the check-in card editor — a throw during save serialization blocks the whole post from saving, which is worse than a crashed preview. Every date site in the plugin now goes through `parseDate()`. No block deprecations needed: with a valid date the output is byte-identical, and an invalid date could never have produced saved markup because the old serializer threw.
@@ -339,7 +341,8 @@ This project uses Semantic Versioning:
 - [Issues](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues)
 - [IndieWeb Wiki](https://indieweb.org/)
 
-[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.2...HEAD
+[1.5.2]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/1.0.0...v1.5.0
 [1.2.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.1.0...v1.2.0
