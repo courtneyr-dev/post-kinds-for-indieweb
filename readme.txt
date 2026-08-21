@@ -162,6 +162,7 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 = 1.5.0 =
 * Fixed: a kind post's microformats2 property (u-like-of, u-listen-of, and the rest) now attaches to an h-entry at the post's own URL — the page webmention receivers actually fetch. Block themes whose single template never calls post_class() (Twenty Twenty-Five, Twenty Twenty-Four) left the card parsing as an orphan citation; the plugin now supplies its own h-entry wrapper there, with the permalink and publish date included, and steps aside on themes that already provide one.
 * Fixed: the Stream Card registers with block API version 3 like every other block.
+* Fixed: the plugin package includes its stylesheet and admin assets again — a packaging manifest had gone stale, so the downloaded zip was missing the card design tokens and the whole admin interface.
 * Fixed: card links show a visible focus outline again for keyboard users — the style referenced a color token the plugin never defines, which silently removed the outline entirely.
 * Fixed: favorite, eat, drink, play, jam, mood, acquisition, and wish posts now carry their microformats root at the post's own URL, like every other kind.
 * Tested up to WordPress 7.1, with the CI test matrix now covering 7.0 and 7.1 on PHP 8.2–8.4.
