@@ -18,6 +18,7 @@ delete_option( 'pkiw_settings' );
 delete_option( 'pkiw_api_credentials' );
 delete_option( 'pkiw_webhook_settings' );
 delete_option( 'pkiw_flush_rewrite' );
+delete_option( 'pkiw_rewrite_version' );
 delete_option( 'pkiw_terms_created' );
 delete_option( 'pkiw_terms_version' );
 delete_option( 'pkiw_active_imports' );

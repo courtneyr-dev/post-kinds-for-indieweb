@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-08-21
+
+### Fixed
+
+- `/firehose` no longer 404s on updated sites — the one defect here that never self-corrected. Rewrite rules were flushed only from the activation hook and on a storage-mode change, and WordPress does not fire activation on an in-place update, so the feed registered in 1.5.0 never entered the persisted ruleset for anyone who updated rather than installed fresh. `/firehose` and `/feed/firehose` both 404'd indefinitely while `?feed=firehose` worked. `maybe_flush_rewrite_rules()` now also flushes when the stored rewrite version differs from the plugin version. Kind archives were unaffected — they resolve through a generic `kind/([^/]+)` rule stored since 1.0.0 — which is what made this easy to miss.
+- Kinds added since a site's install now appear without waiting for an admin visit. `ensure_all_terms_exist()` already back-filled them, but only on `is_admin()` requests, so a freshly-updated site served 24 kinds and 404'd `/kind/weather/` and friends to visitors until someone loaded wp-admin. The first-run seeder is now version-stamped rather than guarded by a write-once boolean, so the back-fill happens on the next request of any kind. Measured on the published builds: updating 1.0.0 to 1.5.0 showed 24 kinds on the front end and 36 after one wp-admin load.
+
 ## [1.5.0] - 2026-08-21
 
 ### Fixed
@@ -316,7 +323,8 @@ This project uses Semantic Versioning:
 - [Issues](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues)
 - [IndieWeb Wiki](https://indieweb.org/)
 
-[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/1.0.0...v1.5.0
 [1.2.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.1.0...v1.2.0
 [1.0.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/releases/tag/v1.0.0
