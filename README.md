@@ -46,10 +46,12 @@ The original Post Kinds plugin brought IndieWeb interaction types to WordPress, 
 
 This plugin bridges that gap:
 
-- **Block-native** — 22 custom blocks plus 3 server-rendered blocks, not shortcodes or meta boxes
+- **Block-native** — 27 custom blocks (23 editor blocks, 3 server-rendered, and the Stream Card), not shortcodes or meta boxes
 - **API-powered** — search MusicBrainz, TMDB, Open Library, and more directly from the editor
 - **Import everything** — bulk import from Last.fm, Trakt, Hardcover, and other services
 - **IndieWeb-first** — proper microformats2 markup on every post
+- **Automatic featured images** — album art, posters, and covers from media kinds become the featured image when a post has none
+- **A firehose feed** — `/firehose` carries your posts plus the bulk-imported ones that normal feeds leave out
 - **Reads the wider web** — when a page you cite publishes a [standard.site](https://standard.site/) record, read the author's own metadata from AT Protocol instead of guessing from their page
 - **Publishes to the wider web** — with the optional [ATmosphere](https://wordpress.org/plugins/atmosphere/) companion plugin, your posts publish as standard.site documents with kind-aware titles, tags, and privacy rules ([integration contract](docs/integrations/atmosphere-standard-site.md))
 
@@ -67,6 +69,9 @@ This plugin bridges that gap:
 | **RSVP**                              | Event responses          | Manual entry                          |
 | **Like, Reply, Repost, Bookmark**     | IndieWeb interactions    | Works with IndieBlocks                |
 | **Favorite, Wish, Mood, Acquisition** | Personal tracking        | Manual entry                          |
+| **Event**                             | Events with date, time, and location | My Calendar, The Events Calendar |
+
+Along with Note, Article, Photo, Video, Review, Recipe, and the response and log kinds — the full 36-kind vocabulary of the classic Post Kinds plugin. Kinds without a dedicated card block still render as cards and carry correct microformats2 markup.
 
 ## Custom Blocks
 
@@ -88,6 +93,12 @@ This plugin bridges that gap:
 | **Star Rating**       | Standalone component — stars, hearts, circles, half-star support |
 | **Media Lookup**      | Universal search across all integrated APIs                      |
 | **Checkin Dashboard** | Overview of recent check-ins                                     |
+| **Check-ins Feed**    | Recent check-ins list with optional map                          |
+| **Venue Detail**      | One venue's info, map, and visit history                         |
+| **Event Card**        | Full h-event markup; can source details from calendar plugins    |
+| **Bookmark, Like, Reply, Repost Cards** | IndieWeb response cards for cited pages        |
+
+Plus three server-rendered blocks — Now Playing, Media Stats, Recent Kinds — and the Stream Card, which stands in for Post Content inside the Stream query loop.
 
 ## Import and Sync
 
@@ -106,7 +117,7 @@ Every block outputs proper [microformats2](http://microformats.org/wiki/microfor
 - `h-cite` for cited media (listen-of, watch-of, read-of)
 - `h-card` for people and artists
 - `h-adr` / `h-geo` for locations
-- `h-event` for RSVP responses
+- `h-event` for events and RSVP responses
 - `p-rating` for star ratings
 
 Validate your output at [pin13.net/mf2](https://pin13.net/mf2/).

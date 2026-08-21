@@ -9,15 +9,18 @@ Post Kinds for IndieWeb in Block Themes lets you track what you listen to, watch
 
 The plugin adds a "post kind" system to your posts. A post kind is a label that describes what a post *is* — a note, a check-in, a song you listened to, a movie you watched — rather than what it's about. The idea comes from the [IndieWeb](https://indieweb.org/) movement, where people publish this kind of activity on their own site instead of (or in addition to) social networks and tracking apps.
 
-As of version 1.0.0, the plugin provides:
+The plugin provides:
 
 - A **kind taxonomy** with 36 kinds you can assign to posts — the full vocabulary of the classic Post Kinds plugin — each with its own archive page (for example `/kind/listen/`).
-- **25 custom blocks** — card blocks for most kinds, utility blocks like Star Rating and Media Lookup, and server-rendered blocks (Now Playing, Media Stats, Recent Kinds).
+- **27 custom blocks** — 23 editor blocks (card blocks for most kinds plus utilities like Star Rating and Media Lookup), 3 server-rendered blocks (Now Playing, Media Stats, Recent Kinds), and the Stream Card. The [FAQ](/post-kinds-for-indieweb/faq/) has the full breakdown.
 - **Media lookup** from the editor: search music, movies, TV, books, podcasts, games, and venues through services like MusicBrainz, TMDB, Open Library, and Foursquare.
 - **Imports and scrobbling**: bulk-import your history from services like Last.fm, Trakt, and Readwise, and receive automatic posts via webhooks from Plex, Jellyfin, Trakt, and ListenBrainz.
 - **[microformats2](https://microformats.org/wiki/microformats2) markup** on the front end, so other IndieWeb sites and tools can read your posts as structured data.
 - **Syndication ([POSSE](https://indieweb.org/POSSE)) options** — post on your own site first, then optionally send a copy to services like Last.fm, Trakt, or Foursquare.
 - **[Micropub](https://indieweb.org/Micropub) support** through the separate [Micropub plugin](https://wordpress.org/plugins/micropub/), converting incoming app posts into the right card block and kind.
+- **[Standard.site](https://standard.site/) on AT Protocol** — read cited pages' own records, and publish your posts as standard.site documents through the optional [ATmosphere](https://wordpress.org/plugins/atmosphere/) companion plugin.
+- **Automatic featured images** — album art, posters, and book covers from media posts become the featured image when a post has none.
+- **A firehose feed** at `/firehose` — your site's RSS including the bulk-imported posts that normal feeds leave out.
 
 ## Who it's for
 
@@ -36,7 +39,7 @@ As of version 1.0.0, the plugin provides:
 
 ## Is it on WordPress.org?
 
-Not yet. Post Kinds for IndieWeb in Block Themes is not available in the WordPress.org plugin directory — you install it from a release ZIP on GitHub. [Playground preview](/post-kinds-for-indieweb/playground/) lets you try it in your browser first without installing anything.
+Yes — install it from the [WordPress.org plugin directory](https://wordpress.org/plugins/post-kinds-for-indieweb-in-block-themes/) (**Plugins → Add New**, search for "Post Kinds for IndieWeb in Block Themes"). [Playground preview](/post-kinds-for-indieweb/playground/) lets you try it in your browser first without installing anything.
 
 ## Get started
 

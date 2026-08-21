@@ -28,7 +28,7 @@ Post Kinds for IndieWeb in Block Themes is a successor to David Shanske's classi
 
 The repository commits its built block assets in the `build/` directory, so a ZIP made from the repository works without a build step.
 
-The plugin's readme.txt also describes installing from the WordPress.org plugin directory (**Plugins → Add New**, search for "Post Kinds for IndieWeb in Block Themes"). If the plugin appears there for your site, that's the simplest route.
+The plugin is in the [WordPress.org plugin directory](https://wordpress.org/plugins/post-kinds-for-indieweb-in-block-themes/): **Plugins → Add New**, search for "Post Kinds for IndieWeb in Block Themes". That's the recommended route — updates then arrive through the normal WordPress updater.
 
 ## Install from GitHub (clone)
 
