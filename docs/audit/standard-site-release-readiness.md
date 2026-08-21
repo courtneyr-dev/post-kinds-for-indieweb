@@ -81,15 +81,32 @@ output) · `observed` (read directly from source or a live response) ·
 - [x] Playwright e2e + a11y (chromium, wp-env with ATmosphere active
   and disconnected) `reproduced` — see record for counts
 - [x] Visual regression against darwin baselines `reproduced`
-- [x] Playground blueprints validate; ordinary demo has no ATmosphere
-  dependency `reproduced` (schema/lint level) — wp.org preview render
-  `unverified` until next deploy
+- [x] **GitHub CI matrix green end to end** on `d3c2b0e` (PR #160):
+  all 7 PHP legs incl. the live ATmosphere suite, **Linux e2e + visual
+  regression passed with no baseline changes**, accessibility, plugin
+  check, i18n, docs build + prose lint, non-gating trunk job.
+  `reproduced`. Two branch-caused failures found on the first run and
+  fixed: the CI companion checkout tripping DistributionManifestTest
+  (excluded via .distignore) and one Vale prose-lint error ("simply").
+- [x] **Rendered Playground verified on the branch build** (Chromium,
+  in-app browser, blueprint pinned to the branch ref): activation
+  without ATmosphere, Integrations-tab recommendation with the exact
+  copy + Find ATmosphere link, front end and block editor load, zero
+  PHP errors in page output. `reproduced`. The wp.org Live Preview
+  reads blueprints from SVN `assets/blueprints/` and is `blocked`
+  until the next wp.org deploy.
 
 ## Blocked — exact remaining procedure
 
-- [ ] **Real-PDS contract tests** `blocked` (no disposable AT Protocol
-  account available to this environment; account creation and credential
-  entry are out of scope for the assistant). Procedure: disposable
+- [ ] **Real-PDS contract tests** `blocked` at the credential boundary.
+  Needed from Courtney: (1) a disposable public HTTPS WordPress site
+  (throwaway host — not courtneyr.dev or its staging) with admin access,
+  running the PR branch build + ATmosphere 2.1.0; (2) a disposable AT
+  Protocol account created for this test; (3) the OAuth connect
+  performed once in that site's Settings → ATmosphere (account creation
+  and credential entry are out of scope for the assistant). From there
+  the 26-step matrix below is drivable end to end, including cleanup of
+  the records the test creates. Procedure: disposable
   WordPress site + disposable AT Protocol account → activate Post Kinds
   alone and verify ordinary behavior → add ATmosphere 2.1.0 → connect →
   publication sync → verify `/.well-known/site.standard.publication` →

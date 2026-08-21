@@ -290,3 +290,37 @@ Standard.site-only mode (blocked for released 2.1.0 anyway), and indexer
 discovery remain blocked with exact procedures in
 `docs/audit/standard-site-release-readiness.md`. Nothing was pushed,
 filed, released, or changed remotely; courtneyr.dev was only read.
+
+---
+
+# Release-verification pass — 2026-08-21 (PR #160)
+
+- Branch pushed (ordinary upstream-tracking first push; remote branch did
+  not previously exist); draft PR:
+  https://github.com/courtneyr-dev/post-kinds-for-indieweb/pull/160
+- **CI matrix green** on `d3c2b0e`: CI + Docs workflows `completed
+  success` — 7 PHP legs (each ~1,415 tests with the live ATmosphere 2.1.0
+  suite; 7 env-pinned skips; 2 pre-existing risky), Linux e2e + **visual
+  regression passed with no baseline updates needed**, accessibility,
+  Build, WordPress Plugin Check, i18n, JS/CSS lint, Jest, PHPCS, PHPStan,
+  security scans, ATmosphere-trunk compatibility (non-gating). First-run
+  failures, both branch-caused and both fixed same day: (1) all PHP legs
+  failed `DistributionManifestTest` because the CI step checks
+  `wordpress-atmosphere/` out inside the workspace — a real contract
+  catch, resolved by excluding the CI-only path in `.distignore` (local
+  reproduction with a simulated directory, then green); (2) the Docs
+  workflow's Vale prose lint rejected one "simply" in installation.md.
+- **Playground (rendered, branch build):** activation without ATmosphere,
+  the Integrations recommendation with exact copy and working Find
+  ATmosphere link, front end and editor load, zero PHP errors. wp.org
+  Live Preview remains blocked until a deploy publishes the SVN
+  `assets/blueprints/` copy.
+- **Upstream proposal:** GitHub search found no equivalent issue or PR in
+  Automattic/wordpress-atmosphere; the review-ready issue draft is
+  appended to `docs/upstream/atmosphere/02-bluesky-filter-post-context.md`.
+  Not filed — filing awaits explicit authorization.
+- **Contract boundary:** real-PDS matrix, indexer visibility, and the
+  2.1.0-limitation live proof stop at the disposable-credential boundary
+  (exact resource list in the readiness checklist). No production
+  account, option, or record was touched at any point.
+
