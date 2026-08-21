@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.1.0
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,7 +20,7 @@ The original Post Kinds plugin was built for the Classic Editor. This plugin is 
 
 = What you get =
 
-* **26 custom blocks** — 23 editor blocks (card blocks for most kinds, plus utilities like Star Rating, Media Lookup, Check-in Dashboard, Check-ins Feed, and Venue Detail) and 3 server-rendered blocks (Now Playing, Media Stats, Recent Kinds)
+* **27 custom blocks** — 23 editor blocks (card blocks for most kinds, plus utilities like Star Rating, Media Lookup, Check-in Dashboard, Check-ins Feed, and Venue Detail), 3 server-rendered blocks (Now Playing, Media Stats, Recent Kinds), and the Stream Card, which is registered in PHP, hidden from the inserter, and stands in for Post Content inside the Stream query loop
 * **API-powered search** — find music, movies, books, games, and venues directly from the editor
 * **Bulk import** — pull in your history from Last.fm, Trakt, Hardcover, and more
 * **Real-time scrobbling** — webhooks for Plex, Jellyfin, Trakt, and ListenBrainz. Scrobbling means automatically logging each song or show as you play it.
@@ -82,7 +82,7 @@ Each kind gets its own archive page (for example `/kind/listen/`), and the kind 
 
 1. Clone or download from [GitHub](https://github.com/courtneyr-dev/post-kinds-for-indieweb)
 2. Run `composer install` and `npm run build`
-3. Upload to `/wp-content/plugins/post-kinds-for-indieweb/` and activate
+3. Upload to `/wp-content/plugins/post-kinds-for-indieweb-in-block-themes/` and activate
 
 = After activation =
 
@@ -159,7 +159,10 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 
 == Changelog ==
 
-= 1.1.0 =
+= 1.5.0 =
+* Fixed: a kind post's microformats2 property (u-like-of, u-listen-of, and the rest) now attaches to an h-entry at the post's own URL — the page webmention receivers actually fetch. Block themes whose single template never calls post_class() (Twenty Twenty-Five, Twenty Twenty-Four) left the card parsing as an orphan citation; the plugin now supplies its own h-entry wrapper there, with the permalink and publish date included, and steps aside on themes that already provide one.
+* Fixed: the Stream Card registers with block API version 3 like every other block.
+* Tested up to WordPress 7.1, with the CI test matrix now covering 7.0 and 7.1 on PHP 8.2–8.4.
 * Added: an Event Card block with h-event microformats. The event's start date renders under the title so themes can feature the event date instead of the publish date.
 * Added: the Event Card can pull its details from The Events Calendar or My Calendar at render time — optional, feature-detected, and only publicly viewable events resolve.
 * Added: the 12 remaining IndieWeb post kinds — audio, quote, tag, weather, exercise, trip, itinerary, follow, issue, question, sleep, and craft — completing the full 36-kind vocabulary of the classic Post Kinds plugin. Each appears in the kind pickers with its own icon and carries kind-appropriate microformats2 markup.
