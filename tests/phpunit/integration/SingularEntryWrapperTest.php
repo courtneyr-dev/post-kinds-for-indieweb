@@ -147,6 +147,28 @@ final class SingularEntryWrapperTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Kinds without a kind_formats entry still get the default h-entry root —
+	 * their cards emit properties too (the favorite card's u-favorite-of made
+	 * this gap visible in the 1.5.0 pre-release gate).
+	 */
+	public function test_formatless_kind_content_is_wrapped(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Formatless kind probe',
+				'post_content' => '<!-- wp:post-kinds-indieweb/favorite-card {"title":"Target","url":"https://example.com/fav"} /-->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'favorite', 'kind' );
+
+		$this->go_to( get_permalink( $post_id ) );
+		$content = apply_filters( 'the_content', get_post_field( 'post_content', $post_id ) );
+		$entry   = $this->find_entry_with_property( \Mf2\parse( $content, get_permalink( $post_id ) )['items'] ?? [], 'favorite-of' );
+
+		$this->assertNotNull( $entry, 'favorite-of did not attach to an h-entry for a kind with no format entry.' );
+	}
+
+	/**
 	 * Posts without a kind keep their content untouched.
 	 */
 	public function test_kindless_post_content_is_untouched(): void {
