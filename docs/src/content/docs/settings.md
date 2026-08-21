@@ -110,6 +110,15 @@ Maintenance actions rather than saved settings:
 - **Export Settings** — downloads settings as a JSON file. API keys are excluded from the export.
 - **Import Settings** — restores settings from a JSON export.
 
+## Standard.site publishing (Integrations tab)
+
+The Integrations tab carries the Standard.site publishing controls:
+
+- A status line — whether ATmosphere is active and connected, with a link to its own settings screen where the account connection lives. Post Kinds never duplicates ATmosphere's connection, publication, or Bluesky controls.
+- One checkbox per kind, controlling which kinds publish Standard.site documents **by default**. Content kinds ship checked; reaction and log kinds ship unchecked. A post's own sharing toggle (ATmosphere's, in the editor sidebar) always overrides the default, and unchecking a kind never removes records that already published — it only changes what future posts do.
+
+See [Standard.site records](/post-kinds-for-indieweb/standard-site/) for how publishing works end to end.
+
 ## API Connections page (Reactions → API Connections)
 
 Where you enter credentials for the external services that power media search, imports, and syndication. Each service card shows a description, links to the provider's docs and sign-up page, the credential fields it needs, and a connection test.

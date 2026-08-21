@@ -231,6 +231,13 @@ final class Plugin {
 	private ?Integrations\Yoast_SEO $yoast_integration = null;
 
 	/**
+	 * ATmosphere (Standard.site publishing) integration instance.
+	 *
+	 * @var Integrations\Atmosphere|null
+	 */
+	private ?Integrations\Atmosphere $atmosphere_integration = null;
+
+	/**
 	 * Featured-artwork behavior instance.
 	 *
 	 * @var Featured_Artwork|null
@@ -598,6 +605,13 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Integrations\\Yoast_SEO' ) ) {
 			$this->yoast_integration = new Integrations\Yoast_SEO();
 			$this->yoast_integration->register();
+		}
+
+		// ATmosphere integration (Standard.site publishing; inert without
+		// a compatible ATmosphere beyond a dependency notice).
+		if ( class_exists( __NAMESPACE__ . '\\Integrations\\Atmosphere' ) ) {
+			$this->atmosphere_integration = new Integrations\Atmosphere();
+			$this->atmosphere_integration->register();
 		}
 
 		/**

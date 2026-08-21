@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Standard.site publishing through the ATmosphere plugin as an **optional companion integration** (minimum ATmosphere 2.1.0; Post Kinds installs, activates, and works fully without it). ATmosphere keeps sole ownership of AT Protocol connectivity, records, verification, and lifecycle sync; this plugin contributes what ATmosphere can't know about Post Kinds. Public content and public logs (notes, articles, photos, videos, audio, reviews, recipes, events, quotes, questions, crafts, listens, watches, reads, plays, eats, drinks, jams, replies, bookmarks, RSVPs, issues) publish by default; thin signals and privacy-sensitive kinds (likes, reposts, favorites, follows, tags, check-ins, moods, wishes, acquisitions, weather, exercise, sleep, trips, itineraries) are opt-in per site (Settings → Post Kinds → Integrations) or per post via ATmosphere's own sharing toggle, which always wins — implemented as a metadata *default* on `atmosphere_disabled`, so nothing is written and posts that already published a record are never retracted by a settings change. On upgrade, sites that were already publishing kind posts through ATmosphere are seeded all-eligible so nothing changes silently. Per-kind reasoning: docs/integrations/standard-site-kind-eligibility.md.
+- Derived Standard.site document titles for intentionally untitled kinds — "Listened to Range Life by Pavement", "Checked in at Powell's Books", "RSVP: WordCamp US" — with check-in privacy tiers (a private check-in derives "Checked in", no venue), a 500-grapheme cap, and content/kind-label fallbacks. The kind slug also rides along as a document tag. New filters: `pkiw_atmosphere_default_eligible_kinds`, `pkiw_atmosphere_post_default_disabled`, `pkiw_atmosphere_document_title`, `pkiw_atmosphere_document_kind_tag`.
+- A Standard.site column on the posts list (Published / Pending / Off, with the record's address on hover) and an integration status field on the Integrations settings tab linking to ATmosphere's own connection screen.
+
+### Fixed
+
+- Hidden microformats2 markers no longer leak into ATmosphere's `?atproto` record previews. The preview renders content on a singular request where the mf2 marker elements would add text the actually-published record never carries; both `the_content` filters now skip the projection, so preview and published records agree.
+
+### Changed
+
+- Every ATmosphere state degrades to a single contextual status line on the Integrations tab — not installed (recommendation with an install link), installed but inactive (capability-gated activate link), too old (minimum version), disconnected (connect link), or connected. No site-wide notices, no fatals, verified including mid-runtime deactivation of ATmosphere.
+
 ## [1.5.2] - 2026-08-21
 
 ### Fixed

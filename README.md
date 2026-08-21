@@ -51,6 +51,7 @@ This plugin bridges that gap:
 - **Import everything** — bulk import from Last.fm, Trakt, Hardcover, and other services
 - **IndieWeb-first** — proper microformats2 markup on every post
 - **Reads the wider web** — when a page you cite publishes a [standard.site](https://standard.site/) record, read the author's own metadata from AT Protocol instead of guessing from their page
+- **Publishes to the wider web** — with the optional [ATmosphere](https://wordpress.org/plugins/atmosphere/) companion plugin, your posts publish as standard.site documents with kind-aware titles, tags, and privacy rules ([integration contract](docs/integrations/atmosphere-standard-site.md))
 
 ## Post Kinds
 

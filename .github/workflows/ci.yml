@@ -138,8 +138,20 @@ jobs:
       - name: Install WordPress test suite
         run: bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1 ${{ matrix.wp }} true
 
+      # The ATmosphere integration's live suite (@group atmosphere) runs
+      # against a real checkout of the dependency, pinned to the minimum
+      # supported release. Without this checkout those tests skip.
+      - name: Checkout ATmosphere 2.1.0
+        uses: actions/checkout@v7
+        with:
+          repository: Automattic/wordpress-atmosphere
+          ref: 2.1.0
+          path: wordpress-atmosphere
+
       - name: Run PHPUnit
         run: composer test
+        env:
+          PKIW_TESTS_ATMOSPHERE_FILE: ${{ github.workspace }}/wordpress-atmosphere/atmosphere.php
 
       - name: Upload coverage to Codecov
         if: matrix.php == '8.4' && matrix.wp == '7.0'
@@ -148,6 +160,57 @@ jobs:
           files: ./coverage/clover.xml
           flags: php
           name: php-coverage
+
+  # ===== ATmosphere trunk compatibility (non-gating) =====
+  # Early warning when ATmosphere's next release would break the
+  # integration. Runs the atmosphere group only, against their trunk;
+  # failures don't block merge — the supported contract is the pinned
+  # release tested in the phpunit matrix above.
+  atmosphere-trunk:
+    name: ATmosphere trunk compatibility
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Subversion
+        run: sudo apt-get update && sudo apt-get install -y subversion
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          tools: composer:v2
+          coverage: none
+          extensions: mysqli
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Install WordPress test suite
+        run: bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1 7.1 true
+
+      - name: Checkout ATmosphere trunk
+        uses: actions/checkout@v7
+        with:
+          repository: Automattic/wordpress-atmosphere
+          ref: trunk
+          path: wordpress-atmosphere
+
+      - name: Run atmosphere group against trunk
+        run: vendor/bin/phpunit --group atmosphere
+        env:
+          PKIW_TESTS_ATMOSPHERE_FILE: ${{ github.workspace }}/wordpress-atmosphere/atmosphere.php
 
   # ===== JavaScript Linting =====
   eslint:

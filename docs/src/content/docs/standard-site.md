@@ -1,6 +1,6 @@
 ---
 title: Standard.site records
-description: "Read a bookmarked page's own metadata from AT Protocol when the site publishes a standard.site document record."
+description: "Read cited pages' standard.site records from AT Protocol, and publish your own posts as standard.site documents through ATmosphere."
 ---
 
 When you bookmark, like, reply to, or note that you read someone else's page, Post Kinds stores the URL and whatever it can work out from the page. If that page publishes a [standard.site](https://standard.site) record, there is something better available: the author's own metadata, written by them, read straight from their AT Protocol repository.
@@ -34,11 +34,27 @@ An unverified record still appears in the sidebar, with a warning above it, beca
 
 ## Where the data goes
 
-Nowhere. This reads; it does not write. Your posts are not published to AT Protocol, no account of yours is involved, and nothing about you is sent to the sites being checked beyond an ordinary request for a page you already linked to.
+The checking described above reads; it does not write. Checking a URL sends nothing about you to anyone beyond an ordinary request for the page you already linked to.
 
-Publishing your own posts as standard.site records is a different job that needs an authenticated connection. Post Kinds does not do it.
+Publishing your own posts as standard.site records is a separate job with its own section below — it runs through the [ATmosphere](https://wordpress.org/plugins/atmosphere/) plugin and only after you connect an account there.
 
 See [Privacy and data](/post-kinds-for-indieweb/privacy-and-data/) for exactly which servers are contacted and when.
+
+## Publishing your own posts
+
+Post Kinds integrates with the optional [ATmosphere](https://wordpress.org/plugins/atmosphere/) companion plugin (2.1.0 or later), which publishes WordPress posts to AT Protocol — the `site.standard.publication` record for your site, a `site.standard.document` record per post, the `/.well-known` verification, and the link tags that let indexers confirm the records are really yours. ATmosphere owns all of that, including the account connection and everything that goes with it.
+
+What Post Kinds adds is the part ATmosphere can't know:
+
+- **Which kinds publish.** Public content and public logs publish by default: notes, articles, photos, videos, audio, reviews, recipes, events, quotes, questions, crafts — and your listens, watches, reads, plays, eats, drinks, and jams, plus replies, bookmarks, RSVPs, and issues. Thin signals (likes, reposts, favorites, follows, tags) and privacy-sensitive kinds (check-ins, moods, wishes, acquisitions, weather, exercise, sleep, trips, itineraries) stay off by default. Turn any kind on or off under **Settings → Post Kinds → Integrations**, or turn a single post on or off with ATmosphere's sharing toggle in the editor — the per-post toggle always wins, and changing the site setting never removes records that already published. The full per-kind reasoning lives in the repository's [eligibility decision table](https://github.com/courtneyr-dev/post-kinds-for-indieweb/blob/main/docs/integrations/standard-site-kind-eligibility.md).
+- **Readable titles.** Standard.site requires every document to have a title; many kinds are intentionally untitled. Post Kinds derives one from the kind's own details — *Listened to Range Life by Pavement*, *Checked in at Powell's Books*, *RSVP: WordCamp US* — without ever touching your post. A private check-in derives just *Checked in*, no venue.
+- **The kind as a tag.** A listen carries `listen` in the record's tags, a review carries `review`, so your posts stay discoverable as what they are.
+
+To start publishing: install and activate both plugins, connect your AT Protocol account under **Settings → ATmosphere**, and publish normally. Existing posts can be brought over intentionally with `wp atmosphere backfill` (it honors the kind settings; run `--dry-run` first to see what it would do). Updating a post updates its record; unpublishing, trashing, or deleting removes it — ATmosphere handles all of that.
+
+Standard.site documents and Bluesky posts are related but separate: whether a Bluesky post accompanies the document follows ATmosphere's settings, and Post Kinds never changes them.
+
+If your site already has a standard.site publication record created by another tool, be aware that ATmosphere currently creates its own publication record rather than adopting an existing one — see the repository's [ATmosphere integration guide](https://github.com/courtneyr-dev/post-kinds-for-indieweb/blob/main/docs/integrations/atmosphere-standard-site.md) for the current state of that limitation before connecting.
 
 ## For developers
 
