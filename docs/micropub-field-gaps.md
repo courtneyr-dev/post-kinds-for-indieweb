@@ -151,6 +151,30 @@ a plain `core/paragraph` carrying a microformats2 class (`u-follow-of`,
 is no card attribute schema to reconcile against, so these kinds are outside
 the scope of the wire-matrix completeness assertion.
 
+## Paragraph-only kinds and the `pkiw-kind` hint
+
+The bridge now classifies every registered kind. Kinds without a card
+builder follow the follow/weather pattern — `paragraph_for_kind()` emits a
+one-line `core/paragraph` carrying the canonical microformats2 class:
+
+- URL-shaped: `jam-of` (`u-jam-of`), `favorite-of` (`u-favorite-of`),
+  `wish-of` (`u-wish-of`; `wishlist-of` accepted as a compat alias),
+  `tag-of` (`u-tag-of`), `issue-of` (`u-in-reply-to` — an issue is a reply
+  to a repository), `craft-of` (`u-craft-of`), `acquisition-of`
+  (`u-acquisition-of`), `video` (`u-video`), `audio` (`u-audio`).
+- Text-shaped: `exercise`, `sleep`, `trip`, `itinerary`, `question`
+  (each `p-<property>`).
+- Detected for kind assignment only (no generated content; these shapes
+  carry a `name` that becomes the post title): `start` → event, `item` →
+  review, `ingredient` → recipe.
+
+Clients can also send an explicit **`pkiw-kind`** vendor property (mirrors
+`pkiw-promote`). A valid kind slug there overrides property inference — the
+only way to reach kinds whose property shape is ambiguous (issue vs. reply,
+quote with content only). Invalid values fall back to inference. Like the
+follow/weather trio, none of these are card blocks, so they're outside the
+wire-matrix completeness assertion.
+
 ## Follow-on work
 
 Every "proposed property" above is a **sender-side** change: Outpost (the

@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The Micropub bridge now classifies **every registered kind**, not just the original 16. New property inference: `jam-of`, `favorite-of`, `wish-of` (plus `wishlist-of` compat alias), `quotation-of`, `tag-of`, `issue-of` (compat alias), `craft-of`, `acquisition-of`, `exercise`, `sleep`, `trip`, `itinerary`, `question`, `start` (event), `item` (review), `ingredient` (recipe), `video`, and `audio` — video/audio detect ahead of `photo` so a poster image can't demote them, and `start` detects ahead of `location` so events with venues don't read as check-ins.
+- New `pkiw-kind` vendor property (mirrors `pkiw-promote`): a Micropub client that knows its kind names it explicitly, overriding inference. This is the only route to kinds whose property shape is ambiguous — issue (which reuses `in-reply-to`) and content-only quotes. Invalid values fall back to inference.
+- Kinds without a card block now generate a typed one-line paragraph (the follow/weather pattern) carrying the canonical microformats2 class, which also prevents title-less posts of those kinds from dying in `wp_insert_post()` with `empty_content`.
+
 ## [1.6.0] - 2026-08-21
 
 ### Added

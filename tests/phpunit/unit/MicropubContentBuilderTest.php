@@ -30,7 +30,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 	 */
 	public function set_up(): void {
 		parent::set_up();
-		foreach ( array( 'note', 'checkin', 'eat', 'drink', 'like', 'rsvp' ) as $slug ) {
+		foreach ( array( 'note', 'checkin', 'eat', 'drink', 'like', 'rsvp', 'jam', 'favorite', 'wish', 'exercise', 'event', 'video', 'quote', 'issue', 'listen' ) as $slug ) {
 			if ( ! term_exists( $slug, 'kind' ) ) {
 				wp_insert_term( ucfirst( $slug ), 'kind', array( 'slug' => $slug ) );
 			}
@@ -99,6 +99,243 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 			array( array( 'mood' => 'focused' ) )
 		);
 		$this->assertSame( 'mood', $kind );
+	}
+
+	// --- detect_kind — extended kind coverage ------------------------------
+
+	public function test_detect_kind_jam_takes_precedence_over_listen(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array(
+				array(
+					'jam-of'    => 'https://example.test/track/9',
+					'listen-of' => 'https://example.test/track/9',
+				),
+			)
+		);
+		$this->assertSame( 'jam', $kind );
+	}
+
+	public function test_detect_kind_favorite_recognized(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'favorite-of' => 'https://example.test/post/1' ) )
+		);
+		$this->assertSame( 'favorite', $kind );
+	}
+
+	public function test_detect_kind_wish_recognized_via_canonical_property(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'wish-of' => 'https://example.test/item/1' ) )
+		);
+		$this->assertSame( 'wish', $kind );
+	}
+
+	public function test_detect_kind_wish_recognized_via_wishlist_alias(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'wishlist-of' => 'https://example.test/item/1' ) )
+		);
+		$this->assertSame( 'wish', $kind );
+	}
+
+	public function test_detect_kind_quote_recognized(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'quotation-of' => 'https://example.test/essay' ) )
+		);
+		$this->assertSame( 'quote', $kind );
+	}
+
+	public function test_detect_kind_tag_recognized(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'tag-of' => 'https://example.test/page' ) )
+		);
+		$this->assertSame( 'tag', $kind );
+	}
+
+	public function test_detect_kind_issue_alias_takes_precedence_over_reply(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array(
+				array(
+					'issue-of'    => 'https://example.test/repo',
+					'in-reply-to' => 'https://example.test/repo',
+				),
+			)
+		);
+		$this->assertSame( 'issue', $kind );
+	}
+
+	public function test_detect_kind_craft_recognized(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'craft-of' => 'hand-knit scarf' ) )
+		);
+		$this->assertSame( 'craft', $kind );
+	}
+
+	public function test_detect_kind_acquisition_recognized(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'acquisition-of' => 'https://example.test/product' ) )
+		);
+		$this->assertSame( 'acquisition', $kind );
+	}
+
+	public function test_detect_kind_exercise_takes_precedence_over_location(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array(
+				array(
+					'exercise' => '5k run',
+					'location' => 'geo:29.12,-103.24',
+				),
+			)
+		);
+		$this->assertSame( 'exercise', $kind );
+	}
+
+	public function test_detect_kind_sleep_recognized(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'sleep' => '7h 40m' ) )
+		);
+		$this->assertSame( 'sleep', $kind );
+	}
+
+	public function test_detect_kind_trip_recognized(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'trip' => 'Chicago to Detroit' ) )
+		);
+		$this->assertSame( 'trip', $kind );
+	}
+
+	public function test_detect_kind_itinerary_recognized(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'itinerary' => 'ORD → DTW → YYZ' ) )
+		);
+		$this->assertSame( 'itinerary', $kind );
+	}
+
+	public function test_detect_kind_question_recognized(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'question' => 'Best static site host in 2026?' ) )
+		);
+		$this->assertSame( 'question', $kind );
+	}
+
+	public function test_detect_kind_event_takes_precedence_over_checkin(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array(
+				array(
+					'name'     => 'WordCamp',
+					'start'    => '2026-09-01T10:00:00-04:00',
+					'location' => 'geo:29.12,-103.24',
+				),
+			)
+		);
+		$this->assertSame( 'event', $kind );
+	}
+
+	public function test_detect_kind_review_recognized(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'item' => 'https://example.test/gadget' ) )
+		);
+		$this->assertSame( 'review', $kind );
+	}
+
+	public function test_detect_kind_recipe_recognized(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'ingredient' => array( '2 eggs', '1 cup flour' ) ) )
+		);
+		$this->assertSame( 'recipe', $kind );
+	}
+
+	public function test_detect_kind_video_takes_precedence_over_photo(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array(
+				array(
+					'video' => 'https://example.test/clip.mp4',
+					'photo' => 'https://example.test/poster.jpg',
+				),
+			)
+		);
+		$this->assertSame( 'video', $kind );
+	}
+
+	public function test_detect_kind_audio_recognized(): void {
+		$kind = $this->invoke_private(
+			'detect_kind',
+			array( array( 'audio' => 'https://example.test/memo.mp3' ) )
+		);
+		$this->assertSame( 'audio', $kind );
+	}
+
+	// --- explicit_kind ------------------------------------------------------
+
+	public function test_explicit_kind_reads_and_sanitizes_hint(): void {
+		$slug = $this->invoke_private(
+			'explicit_kind',
+			array( array( 'pkiw-kind' => array( 'Jam' ) ) )
+		);
+		$this->assertSame( 'jam', $slug );
+	}
+
+	public function test_explicit_kind_null_when_absent(): void {
+		$slug = $this->invoke_private(
+			'explicit_kind',
+			array( array( 'content' => 'plain note' ) )
+		);
+		$this->assertNull( $slug );
+	}
+
+	// --- typed_paragraph ----------------------------------------------------
+
+	public function test_typed_paragraph_renders_url_as_link_with_mf2_class(): void {
+		$markup = $this->invoke_private(
+			'typed_paragraph',
+			array(
+				array( 'favorite-of' => 'https://example.test/post/1' ),
+				'favorite-of',
+				'u-favorite-of',
+				'Favorited',
+			)
+		);
+		$this->assertStringContainsString( '<a class="u-favorite-of" href="https://example.test/post/1">', $markup );
+		$this->assertStringContainsString( 'Favorited', $markup );
+		$this->assertStringContainsString( '<!-- wp:paragraph -->', $markup );
+	}
+
+	public function test_typed_paragraph_renders_text_as_span(): void {
+		$markup = $this->invoke_private(
+			'typed_paragraph',
+			array(
+				array( 'exercise' => '5k run' ),
+				'exercise',
+				'p-exercise',
+				'',
+			)
+		);
+		$this->assertStringContainsString( '<span class="p-exercise">5k run</span>', $markup );
+		$this->assertStringNotContainsString( '<a ', $markup );
+	}
+
+	public function test_typed_paragraph_empty_when_property_missing(): void {
+		$markup = $this->invoke_private(
+			'typed_paragraph',
+			array( array(), 'favorite-of', 'u-favorite-of', 'Favorited' )
+		);
+		$this->assertSame( '', $markup );
 	}
 
 	// --- parse_geo_from_location -------------------------------------------
@@ -313,6 +550,100 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$content = (string) get_post_field( 'post_content', $post_id );
 		$this->assertSame( 'just a note, no card kind', $content );
 		$this->assertSame( '', (string) get_post_meta( $post_id, '_pkiw_block_content_generated', true ) );
+	}
+
+	// --- pkiw-kind explicit hint --------------------------------------------
+
+	public function test_apply_explicit_hint_overrides_property_inference(): void {
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_content' => 'current jam',
+			)
+		);
+
+		// listen-of would infer 'listen'; the explicit hint says jam.
+		Micropub_Content_Builder::apply(
+			array(
+				'h'         => 'entry',
+				'listen-of' => 'https://example.test/track/9',
+				'pkiw-kind' => 'jam',
+				'content'   => 'current jam',
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$this->assertSame( array( 'jam' ), $this->kind_slugs( $post_id ) );
+	}
+
+	public function test_apply_invalid_hint_falls_back_to_inference(): void {
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_content' => 'listening',
+			)
+		);
+
+		Micropub_Content_Builder::apply(
+			array(
+				'h'         => 'entry',
+				'listen-of' => 'https://example.test/track/9',
+				'pkiw-kind' => 'definitely-not-a-kind',
+				'content'   => 'listening',
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$this->assertSame( array( 'listen' ), $this->kind_slugs( $post_id ) );
+	}
+
+	public function test_apply_hint_reaches_kinds_with_ambiguous_properties(): void {
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_content' => 'the linked repo mislabels its license',
+			)
+		);
+
+		// An issue is property-identical to a reply (in-reply-to); only the
+		// hint can classify it.
+		Micropub_Content_Builder::apply(
+			array(
+				'h'           => 'entry',
+				'in-reply-to' => 'https://example.test/repo',
+				'pkiw-kind'   => 'issue',
+				'content'     => 'the linked repo mislabels its license',
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$this->assertSame( array( 'issue' ), $this->kind_slugs( $post_id ) );
+	}
+
+	public function test_apply_favorite_generates_typed_paragraph_content(): void {
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_content' => 'placeholder',
+			)
+		);
+
+		Micropub_Content_Builder::apply(
+			array(
+				'h'           => 'entry',
+				'favorite-of' => 'https://example.test/post/1',
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$this->assertSame( array( 'favorite' ), $this->kind_slugs( $post_id ) );
+		$content = (string) get_post_field( 'post_content', $post_id );
+		$this->assertStringContainsString( 'u-favorite-of', $content );
+		$this->assertStringContainsString( 'https://example.test/post/1', $content );
 	}
 
 	// --- photo / gallery ----------------------------------------------------
@@ -734,9 +1065,15 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertSame( array( 'rsvp' ), $this->kind_slugs( $post_id ) );
 	}
 
-	public function test_apply_leaves_default_note_for_termless_follow_kind(): void {
-		// follow/weather are builder-only kinds with no taxonomy term —
-		// they keep core's `note` default (but still get their content).
+	public function test_apply_leaves_default_note_for_termless_kind(): void {
+		// A kind whose taxonomy term is missing (e.g. a site deleted it)
+		// keeps core's `note` default — but still gets its typed content.
+		// (follow used to lack a term by default; now that every kind ships
+		// a default term, the termless state must be created explicitly.)
+		$follow = get_term_by( 'slug', 'follow', 'kind' );
+		if ( $follow instanceof \WP_Term ) {
+			wp_delete_term( $follow->term_id, 'kind' );
+		}
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'author' ) ) );
 		$post_id = self::factory()->post->create(
 			array(

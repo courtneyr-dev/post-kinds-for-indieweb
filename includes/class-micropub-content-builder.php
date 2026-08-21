@@ -197,17 +197,49 @@ final class Micropub_Content_Builder {
 	 * @return void
 	 */
 	private static function assign_kind_term( int $post_id, array $properties ): void {
-		$kind = self::detect_kind( $properties ) ?? self::detect_term_only_kind( $properties );
-		if ( null === $kind ) {
+		$taxonomy = Plugin::get_instance()->get_taxonomy();
+		if ( null === $taxonomy ) {
 			return;
 		}
 
-		$taxonomy = Plugin::get_instance()->get_taxonomy();
-		if ( null === $taxonomy || ! $taxonomy->is_valid_kind( $kind ) ) {
+		// An explicit `pkiw-kind` hint from the client (e.g. Outpost) wins
+		// over property inference — it's the only way to reach kinds whose
+		// property shape is ambiguous (issue reuses in-reply-to; quote posts
+		// may carry content only). Invalid hints fall through to inference
+		// rather than dropping the post's kind entirely.
+		$explicit = self::explicit_kind( $properties );
+		if ( null !== $explicit && $taxonomy->is_valid_kind( $explicit ) ) {
+			$taxonomy->set_post_kind( $post_id, $explicit );
+			return;
+		}
+
+		$kind = self::detect_kind( $properties ) ?? self::detect_term_only_kind( $properties );
+		if ( null === $kind || ! $taxonomy->is_valid_kind( $kind ) ) {
 			return;
 		}
 
 		$taxonomy->set_post_kind( $post_id, $kind );
+	}
+
+	/**
+	 * Read the explicit `pkiw-kind` vendor property from the request.
+	 *
+	 * Mirrors the `pkiw-promote` vendor-property pattern: a Micropub client
+	 * that knows exactly which kind it's posting (Outpost's composer
+	 * variants) names it directly instead of relying on inference. The
+	 * value is sanitized to a slug; validation against registered terms
+	 * happens in assign_kind_term().
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return string|null Sanitized kind slug, or null when absent.
+	 */
+	private static function explicit_kind( array $properties ): ?string {
+		$raw = self::flatten_scalar( $properties, 'pkiw-kind' );
+		if ( '' === $raw ) {
+			return null;
+		}
+		$slug = sanitize_key( $raw );
+		return '' === $slug ? null : $slug;
 	}
 
 	/**
@@ -303,59 +335,62 @@ final class Micropub_Content_Builder {
 	 * @return string|null Kind slug ('eat'|'drink'|'listen'|...) or null when no kind matches.
 	 */
 	private static function detect_kind( array $properties ): ?string {
-		if ( self::has_property( $properties, 'eat-of' ) ) {
-			return 'eat';
-		}
-		if ( self::has_property( $properties, 'drink-of' ) ) {
-			return 'drink';
-		}
-		if ( self::has_property( $properties, 'listen-of' ) ) {
-			return 'listen';
-		}
-		if ( self::has_property( $properties, 'watch-of' ) ) {
-			return 'watch';
-		}
-		if ( self::has_property( $properties, 'read-of' ) ) {
-			return 'read';
-		}
-		if ( self::has_property( $properties, 'play-of' ) ) {
-			return 'play';
-		}
-		if ( self::has_property( $properties, 'rsvp' ) ) {
-			return 'rsvp';
-		}
-		if ( self::has_property( $properties, 'like-of' ) ) {
-			return 'like';
-		}
-		if ( self::has_property( $properties, 'repost-of' ) ) {
-			return 'repost';
-		}
-		if ( self::has_property( $properties, 'bookmark-of' ) ) {
-			return 'bookmark';
-		}
-		// Reply must be checked AFTER rsvp — RSVP posts carry `in-reply-to`
-		// as the event URL, so a reply match here means no rsvp was present.
-		if ( self::has_property( $properties, 'in-reply-to' ) ) {
-			return 'reply';
-		}
-		if ( self::has_property( $properties, 'follow-of' ) ) {
-			return 'follow';
-		}
-		if ( self::has_property( $properties, 'mood' ) ) {
-			return 'mood';
-		}
-		if ( self::has_property( $properties, 'weather' ) ) {
-			return 'weather';
-		}
-		// Checkin = location property without one of the food/drink/media of-kinds.
-		if ( self::has_property( $properties, 'location' ) ) {
-			return 'checkin';
-		}
-		// Photo / gallery = `photo` property without any of the of-kinds above.
-		// Single-photo and multi-photo posts both route here; photo_card()
-		// emits a single core/image or a core/gallery accordingly.
-		if ( self::has_property( $properties, 'photo' ) ) {
-			return 'photo';
+		/*
+		 * Ordered property → kind map; the first present property wins,
+		 * so array order IS the precedence order. Notable orderings:
+		 *   - eat-of/drink-of before location (those posts carry a venue).
+		 *   - jam-of before listen-of (a jam is a deliberate highlight).
+		 *   - rsvp, issue-of, quotation-of, tag-of before in-reply-to
+		 *     (all of those shapes may also carry a reply target).
+		 *   - wishlist-of is a compat alias for wish-of (older senders).
+		 *   - start (h-event) and exercise before location — an event or
+		 *     workout with a venue must not read as a checkin.
+		 *   - item = flattened h-review; ingredient = h-recipe signature.
+		 *   - video/audio before photo — a poster image must not demote
+		 *     a video/audio post to a photo post.
+		 */
+		$property_kind_map = [
+			'eat-of'         => 'eat',
+			'drink-of'       => 'drink',
+			'jam-of'         => 'jam',
+			'listen-of'      => 'listen',
+			'watch-of'       => 'watch',
+			'read-of'        => 'read',
+			'play-of'        => 'play',
+			'rsvp'           => 'rsvp',
+			'favorite-of'    => 'favorite',
+			'like-of'        => 'like',
+			'repost-of'      => 'repost',
+			'wish-of'        => 'wish',
+			'wishlist-of'    => 'wish',
+			'bookmark-of'    => 'bookmark',
+			'quotation-of'   => 'quote',
+			'tag-of'         => 'tag',
+			'issue-of'       => 'issue',
+			'in-reply-to'    => 'reply',
+			'follow-of'      => 'follow',
+			'craft-of'       => 'craft',
+			'acquisition-of' => 'acquisition',
+			'exercise'       => 'exercise',
+			'sleep'          => 'sleep',
+			'trip'           => 'trip',
+			'itinerary'      => 'itinerary',
+			'question'       => 'question',
+			'mood'           => 'mood',
+			'weather'        => 'weather',
+			'start'          => 'event',
+			'item'           => 'review',
+			'ingredient'     => 'recipe',
+			'location'       => 'checkin',
+			'video'          => 'video',
+			'audio'          => 'audio',
+			'photo'          => 'photo',
+		];
+
+		foreach ( $property_kind_map as $property => $kind ) {
+			if ( self::has_property( $properties, $property ) ) {
+				return $kind;
+			}
 		}
 		return null;
 	}
@@ -402,6 +437,61 @@ final class Micropub_Content_Builder {
 				return self::weather_paragraph( $properties );
 			case 'photo':
 				return self::photo_card( $properties );
+		}
+		return self::paragraph_for_kind( $kind, $properties );
+	}
+
+	/**
+	 * Build a typed paragraph for kinds without a dedicated card block.
+	 *
+	 * These kinds emit a one-line paragraph carrying the canonical
+	 * microformats2 property (the follow/weather pattern) so the property
+	 * still lands in content AND the post is never empty. Without this, a
+	 * title-less/content-less post of these kinds dies in wp_insert_post()
+	 * with empty_content (the "phantom post" failure fill_empty_content()
+	 * exists to prevent).
+	 *
+	 * @param string               $kind       Post-kind slug as returned by detect_kind().
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return string|null Block-comment markup, or null when the kind has no paragraph shape.
+	 */
+	private static function paragraph_for_kind( string $kind, array $properties ): ?string {
+		switch ( $kind ) {
+			case 'jam':
+				return self::typed_paragraph( $properties, 'jam-of', 'u-jam-of', __( 'Jamming to', 'post-kinds-for-indieweb-in-block-themes' ) );
+			case 'favorite':
+				return self::typed_paragraph( $properties, 'favorite-of', 'u-favorite-of', __( 'Favorited', 'post-kinds-for-indieweb-in-block-themes' ) );
+			case 'wish':
+				return self::typed_paragraph(
+					$properties,
+					self::has_property( $properties, 'wish-of' ) ? 'wish-of' : 'wishlist-of',
+					'u-wish-of',
+					__( 'Wishing for', 'post-kinds-for-indieweb-in-block-themes' )
+				);
+			case 'tag':
+				return self::typed_paragraph( $properties, 'tag-of', 'u-tag-of', __( 'Tagged', 'post-kinds-for-indieweb-in-block-themes' ) );
+			case 'issue':
+				// Legacy issue-of senders; canonical class stays u-in-reply-to
+				// (an issue is a reply to a repository — see class-microformats.php).
+				return self::typed_paragraph( $properties, 'issue-of', 'u-in-reply-to', __( 'Issue for', 'post-kinds-for-indieweb-in-block-themes' ) );
+			case 'craft':
+				return self::typed_paragraph( $properties, 'craft-of', 'u-craft-of', __( 'Crafted', 'post-kinds-for-indieweb-in-block-themes' ) );
+			case 'acquisition':
+				return self::typed_paragraph( $properties, 'acquisition-of', 'u-acquisition-of', __( 'Acquired', 'post-kinds-for-indieweb-in-block-themes' ) );
+			case 'exercise':
+				return self::typed_paragraph( $properties, 'exercise', 'p-exercise', '' );
+			case 'sleep':
+				return self::typed_paragraph( $properties, 'sleep', 'p-sleep', '' );
+			case 'trip':
+				return self::typed_paragraph( $properties, 'trip', 'p-trip', '' );
+			case 'itinerary':
+				return self::typed_paragraph( $properties, 'itinerary', 'p-itinerary', '' );
+			case 'question':
+				return self::typed_paragraph( $properties, 'question', 'p-question', '' );
+			case 'video':
+				return self::typed_paragraph( $properties, 'video', 'u-video', '' );
+			case 'audio':
+				return self::typed_paragraph( $properties, 'audio', 'u-audio', '' );
 		}
 		return null;
 	}
@@ -846,6 +936,37 @@ final class Micropub_Content_Builder {
 		}
 		return '<!-- wp:paragraph -->' . "\n"
 			. '<p><span class="p-weather">' . esc_html( $reading ) . '</span></p>' . "\n"
+			. '<!-- /wp:paragraph -->';
+	}
+
+	/**
+	 * Build a one-line typed paragraph carrying a microformats2 class.
+	 *
+	 * Generalizes the follow/weather paragraph pattern for kinds without a
+	 * dedicated card block. URL values render as a link (so u-* classes
+	 * resolve for parsers); plain-text values render as a span (p-* kinds
+	 * like exercise/sleep, and name-shaped u-* values like a crafted item).
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @param string               $key        Property to read the value from.
+	 * @param string               $mf2_class  Microformats2 class for the value element.
+	 * @param string               $prefix     Translated lead-in text ('' for none).
+	 * @return string Block-comment markup, or '' when the property is empty.
+	 */
+	private static function typed_paragraph( array $properties, string $key, string $mf2_class, string $prefix ): string {
+		$value = self::flatten_scalar( $properties, $key );
+		if ( '' === $value ) {
+			return '';
+		}
+		$is_url = 0 === strpos( $value, 'http://' ) || 0 === strpos( $value, 'https://' );
+		if ( $is_url ) {
+			$inner = '<a class="' . esc_attr( $mf2_class ) . '" href="' . esc_url( $value ) . '">' . esc_html( $value ) . '</a>';
+		} else {
+			$inner = '<span class="' . esc_attr( $mf2_class ) . '">' . esc_html( $value ) . '</span>';
+		}
+		$lead = '' === $prefix ? '' : esc_html( $prefix ) . ' ';
+		return '<!-- wp:paragraph -->' . "\n"
+			. '<p>' . $lead . $inner . '</p>' . "\n"
 			. '<!-- /wp:paragraph -->';
 	}
 
