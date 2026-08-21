@@ -579,6 +579,15 @@ class Microformats {
 	 * @return string Content, wrapped when the theme supplied no h-entry.
 	 */
 	public function wrap_singular_content( string $content ): string {
+		// ATmosphere's ?atproto preview renders the_content during a
+		// singular GET to project record JSON. Publishing renders in a
+		// cron context where is_singular() is false, so mf2 markup must
+		// stay out of the projection or preview and written records
+		// diverge. Absent the var (or ATmosphere), this reads null.
+		if ( null !== get_query_var( 'atproto', null ) ) {
+			return $content;
+		}
+
 		$post_id = get_the_ID();
 
 		if ( ! $post_id || ! is_singular() || get_queried_object_id() !== $post_id ) {
@@ -643,6 +652,12 @@ class Microformats {
 	 * @return string Modified content.
 	 */
 	public function add_hidden_mf2_data( string $content ): string {
+		// Hidden markers belong to the HTML page, not to ATmosphere's
+		// ?atproto record projection — see wrap_singular_content().
+		if ( null !== get_query_var( 'atproto', null ) ) {
+			return $content;
+		}
+
 		$post_id = get_the_ID();
 
 		if ( ! $post_id || ! is_singular() ) {
