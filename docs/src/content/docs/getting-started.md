@@ -29,7 +29,7 @@ Eighteen kinds have a matching **card block** (Listen Card, Watch Card, Read Car
 **Expected results at each stage:**
 
 - After inserting the card, the editor sidebar's **Post Kind** panel shows a notice that the kind was auto-detected from the block. On save, the post's kind is set to **listen** automatically — you don't have to pick it by hand. If you do pick a kind manually, your choice is never overridden.
-- After publishing, the post appears at `/kind/listen/` and its HTML carries microformats2 markup (`u-listen-of` on an `h-cite`), which IndieWeb readers and parsers can understand. On the archive that property attaches to the post's `h-entry`; at the permalink it depends on whether your theme's single template runs `post_class()`. See [Confirm your microformats are valid](/post-kinds-for-indieweb/common-tasks/#confirm-your-microformats-are-valid).
+- After publishing, the post appears at `/kind/listen/` and its HTML carries microformats2 markup (`u-listen-of` on an `h-cite`, nested in the post's `h-entry`), which IndieWeb readers and parsers can understand — on the archive and at the post's own URL alike. See [Confirm your microformats are valid](/post-kinds-for-indieweb/common-tasks/#confirm-your-microformats-are-valid) to check it yourself.
 
 The same flow works for movies (Watch Card), books (Read Card), places (Checkin Card), games (Play Card), and the rest.
 
