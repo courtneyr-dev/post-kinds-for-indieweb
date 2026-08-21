@@ -91,7 +91,14 @@ export default function Edit( { attributes, setAttributes } ) {
 			apiFetch( { path: '/post-kinds-indieweb/v1/checkins/stats' } ),
 		] )
 			.then( ( [ checkinsData, statsData ] ) => {
-				setCheckins( checkinsData || [] );
+				// The endpoint returns a paginated envelope
+				// ({ checkins, total, … }), not a bare array — an object in
+				// state reaches checkins.slice() below and throws.
+				setCheckins(
+					Array.isArray( checkinsData )
+						? checkinsData
+						: checkinsData?.checkins || []
+				);
 				setStats( statsData || {} );
 				setLoading( false );
 			} )

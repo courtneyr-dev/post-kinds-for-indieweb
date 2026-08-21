@@ -21,7 +21,7 @@ import {
 	RangeControl,
 	ExternalLink,
 } from '@wordpress/components';
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useRef } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { StarRating, MediaSearch } from '../shared/components';
 
@@ -160,67 +160,76 @@ export default function Edit( { attributes, setAttributes } ) {
 		}
 	}, [] );
 
-	// Sync FROM post meta TO block attributes when meta changes from sidebar.
-	// This handles updates from KindFields.js.
-	// _pkiw_play_* isn't a registered post meta key (no REST schema
-	// entry, so WordPress core silently drops writes to it and the key is
-	// never actually persisted server-side) — only ever apply a non-empty
-	// meta value here. Without this guard, a fresh/just-inserted block's
-	// attribute gets raced back to blank: the "sync attrs -> meta" effect
-	// below writes meta asynchronously via editPost(), and depending on
-	// render timing this effect can still observe the pre-write ''/undefined
-	// meta value and stomp a real attribute with it.
+	// Two-way sync between block attributes and _pkiw_play_* post meta.
+	//
+	// Each direction reacts only to changes on ITS OWN side, tracked in a
+	// prev-values ref. Diffing against the other side instead is what the
+	// old code did, and it cannot work: registered meta reports its
+	// schema default ('playing' for status) before anything is saved, so
+	// "non-empty meta wins" adopted the default over a real attribute,
+	// the attrs -> meta effect pushed the attribute back, and the two
+	// writes re-armed each other every commit until React's update-depth
+	// limit crashed the block. Any card inserted with a non-default
+	// status hit it — paste, pattern, import, or Micropub.
+	//
+	// On the first commit the block's own content wins: attributes are
+	// seeded into meta, never the reverse, so a card's saved markup is
+	// authoritative over schema defaults.
+	const SYNC_KEYS = [
+		[ '_pkiw_play_title', 'title', '' ],
+		[ '_pkiw_play_platform', 'platform', '' ],
+		[ '_pkiw_play_cover', 'cover', '' ],
+		[ '_pkiw_play_status', 'status', '' ],
+		[ '_pkiw_play_hours', 'hoursPlayed', 0 ],
+		[ '_pkiw_play_rating', 'rating', 0 ],
+		[ '_pkiw_play_bgg_id', 'bggId', '' ],
+		[ '_pkiw_play_rawg_id', 'rawgId', '' ],
+		[ '_pkiw_play_steam_id', 'steamId', '' ],
+		[ '_pkiw_play_official_url', 'officialUrl', '' ],
+		[ '_pkiw_play_purchase_url', 'purchaseUrl', '' ],
+	];
+
+	const attrValues = {
+		title: title || '',
+		platform: platform || '',
+		cover: cover || '',
+		status: status || '',
+		hoursPlayed: hoursPlayed || 0,
+		rating: rating || 0,
+		bggId: bggId || '',
+		rawgId: rawgId || '',
+		steamId: steamId || '',
+		officialUrl: officialUrl || '',
+		purchaseUrl: purchaseUrl || '',
+	};
+
+	const prevMeta = useRef( null );
+	const prevAttrs = useRef( null );
+
+	// Sync FROM post meta TO block attributes — sidebar (KindFields) edits.
 	useEffect( () => {
+		const snapshot = {};
 		const updates = {};
 
-		const metaTitle = postMeta._pkiw_play_title;
-		if ( metaTitle && metaTitle !== ( title || '' ) ) {
-			updates.title = metaTitle;
+		for ( const [ metaKey, attr, empty ] of SYNC_KEYS ) {
+			const value = postMeta[ metaKey ] ?? empty;
+			snapshot[ metaKey ] = value;
+
+			if (
+				prevMeta.current &&
+				value !== prevMeta.current[ metaKey ] &&
+				value !== attrValues[ attr ]
+			) {
+				updates[ attr ] = value;
+			}
 		}
-		const metaPlatform = postMeta._pkiw_play_platform;
-		if ( metaPlatform && metaPlatform !== ( platform || '' ) ) {
-			updates.platform = metaPlatform;
-		}
-		const metaCover = postMeta._pkiw_play_cover;
-		if ( metaCover && metaCover !== ( cover || '' ) ) {
-			updates.cover = metaCover;
-		}
-		const metaStatus = postMeta._pkiw_play_status;
-		if ( metaStatus && metaStatus !== ( status || '' ) ) {
-			updates.status = metaStatus;
-		}
-		const metaHours = postMeta._pkiw_play_hours;
-		if ( metaHours && metaHours !== ( hoursPlayed || 0 ) ) {
-			updates.hoursPlayed = metaHours;
-		}
-		const metaRating = postMeta._pkiw_play_rating;
-		if ( metaRating && metaRating !== ( rating || 0 ) ) {
-			updates.rating = metaRating;
-		}
-		const metaBggId = postMeta._pkiw_play_bgg_id;
-		if ( metaBggId && metaBggId !== ( bggId || '' ) ) {
-			updates.bggId = metaBggId;
-		}
-		const metaRawgId = postMeta._pkiw_play_rawg_id;
-		if ( metaRawgId && metaRawgId !== ( rawgId || '' ) ) {
-			updates.rawgId = metaRawgId;
-		}
-		const metaSteamId = postMeta._pkiw_play_steam_id;
-		if ( metaSteamId && metaSteamId !== ( steamId || '' ) ) {
-			updates.steamId = metaSteamId;
-		}
-		const metaOfficialUrl = postMeta._pkiw_play_official_url;
-		if ( metaOfficialUrl && metaOfficialUrl !== ( officialUrl || '' ) ) {
-			updates.officialUrl = metaOfficialUrl;
-		}
-		const metaPurchaseUrl = postMeta._pkiw_play_purchase_url;
-		if ( metaPurchaseUrl && metaPurchaseUrl !== ( purchaseUrl || '' ) ) {
-			updates.purchaseUrl = metaPurchaseUrl;
-		}
+
+		prevMeta.current = snapshot;
 
 		if ( Object.keys( updates ).length > 0 ) {
 			setAttributes( updates );
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
 		postMeta._pkiw_play_title,
 		postMeta._pkiw_play_platform,
@@ -235,53 +244,32 @@ export default function Edit( { attributes, setAttributes } ) {
 		postMeta._pkiw_play_purchase_url,
 	] );
 
-	// Sync FROM block attributes TO post meta when attributes change
-	// This handles updates from the block editor UI
+	// Sync FROM block attributes TO post meta — block editor UI edits.
+	// The first run seeds meta from the block's own content.
 	useEffect( () => {
+		const seeding = ! prevAttrs.current;
+		const snapshot = {};
 		const metaUpdates = {};
 
-		// Only update if attribute differs from current meta
-		if ( ( title || '' ) !== ( postMeta._pkiw_play_title ?? '' ) ) {
-			metaUpdates._pkiw_play_title = title || '';
+		for ( const [ metaKey, attr, empty ] of SYNC_KEYS ) {
+			const value = attrValues[ attr ];
+			snapshot[ attr ] = value;
+
+			const changed = seeding
+				? value !== empty
+				: value !== prevAttrs.current[ attr ];
+
+			if ( changed && value !== ( postMeta[ metaKey ] ?? empty ) ) {
+				metaUpdates[ metaKey ] = value;
+			}
 		}
-		if ( ( platform || '' ) !== ( postMeta._pkiw_play_platform ?? '' ) ) {
-			metaUpdates._pkiw_play_platform = platform || '';
-		}
-		if ( ( cover || '' ) !== ( postMeta._pkiw_play_cover ?? '' ) ) {
-			metaUpdates._pkiw_play_cover = cover || '';
-		}
-		if ( ( status || '' ) !== ( postMeta._pkiw_play_status ?? '' ) ) {
-			metaUpdates._pkiw_play_status = status || '';
-		}
-		if ( ( hoursPlayed || 0 ) !== ( postMeta._pkiw_play_hours ?? 0 ) ) {
-			metaUpdates._pkiw_play_hours = hoursPlayed || 0;
-		}
-		if ( ( rating || 0 ) !== ( postMeta._pkiw_play_rating ?? 0 ) ) {
-			metaUpdates._pkiw_play_rating = rating || 0;
-		}
-		if ( ( bggId || '' ) !== ( postMeta._pkiw_play_bgg_id ?? '' ) ) {
-			metaUpdates._pkiw_play_bgg_id = bggId || '';
-		}
-		if ( ( rawgId || '' ) !== ( postMeta._pkiw_play_rawg_id ?? '' ) ) {
-			metaUpdates._pkiw_play_rawg_id = rawgId || '';
-		}
-		if ( ( steamId || '' ) !== ( postMeta._pkiw_play_steam_id ?? '' ) ) {
-			metaUpdates._pkiw_play_steam_id = steamId || '';
-		}
-		if (
-			( officialUrl || '' ) !== ( postMeta._pkiw_play_official_url ?? '' )
-		) {
-			metaUpdates._pkiw_play_official_url = officialUrl || '';
-		}
-		if (
-			( purchaseUrl || '' ) !== ( postMeta._pkiw_play_purchase_url ?? '' )
-		) {
-			metaUpdates._pkiw_play_purchase_url = purchaseUrl || '';
-		}
+
+		prevAttrs.current = snapshot;
 
 		if ( Object.keys( metaUpdates ).length > 0 ) {
 			editPost( { meta: metaUpdates } );
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
 		title,
 		platform,

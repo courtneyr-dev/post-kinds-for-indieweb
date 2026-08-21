@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The Check-in Dashboard block no longer crashes in the editor. Its REST endpoint returns a paginated envelope (`{ checkins, total, … }`), but the edit component stored the envelope as if it were a bare array and called `.slice()` on it — an unconditional crash into Gutenberg's error boundary for anyone who inserted the block, with any settings, on any site. The response is now unwrapped at the boundary, which also un-breaks the empty state and the "+ more" indicator that the object shape had silently disabled.
+- The Play Card no longer crashes when its status differs from the default. The two attribute/meta sync effects each diffed against the other side's values, and registered meta reports its schema default (`playing`) before anything is saved — so a card inserted with any other status (paste, pattern, import, Micropub) had "non-empty meta" stomp the attribute while the other effect pushed it back, every commit, until React's update-depth limit crashed the block. Each direction now reacts only to changes on its own side, with the block's saved content winning the first commit.
+- Event and RSVP cards no longer crash on an unparseable date. `toISOString()` is the one Date method that throws on an Invalid Date instead of degrading, and both cards called it behind a truthiness check rather than a parseability check. A shared `parseDate()` guard now sits between every string date attribute and serialization — same behavior the server side already had via `strtotime()`.
+- The visual-regression suite fails when a block renders Gutenberg's error boundary instead of its content. A crashed block screenshots as a perfectly stable grey error box, so the suite had been green while baselining all four crashes above as the expected appearance.
+
+### Changed
+
+- The distribution zip drops `img/` — 4.8M of marketing imagery nothing in the shipped plugin reads (the directory listing is fed from SVN `assets/`, not the plugin package). The download shrinks from 4.8M to 0.6M.
+- All darwin visual baselines regenerated; they predated the current editor canvas width on every WordPress version and made the visual suite unusable on macOS.
+
 ## [1.5.1] - 2026-08-21
 
 ### Fixed
