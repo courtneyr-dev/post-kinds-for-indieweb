@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.5.0
+Stable tag: 1.5.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -158,6 +158,10 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 9. Standard.site record panel on a Bookmark Card, showing the cited page's own title, publication, description, and tags read from AT Protocol
 
 == Changelog ==
+
+= 1.5.1 =
+* Fixed: the /firehose feed added in 1.5.0 returned 404 on any site that updated rather than installed fresh, and stayed that way. Rewrite rules were only rebuilt on activation, which WordPress doesn't run on update, so the feed's address was never registered. Updating now rebuilds them.
+* Fixed: kinds added in a previous update now show up right away. They were only filled in on a wp-admin page load, so a freshly-updated site briefly showed 24 kinds instead of 36 and 404'd the newer kind archives for visitors.
 
 = 1.5.0 =
 * Fixed: a kind post's microformats2 property (u-like-of, u-listen-of, and the rest) now attaches to an h-entry at the post's own URL — the page webmention receivers actually fetch. Block themes whose single template never calls post_class() (Twenty Twenty-Five, Twenty Twenty-Four) left the card parsing as an orphan citation; the plugin now supplies its own h-entry wrapper there, with the permalink and publish date included, and steps aside on themes that already provide one.

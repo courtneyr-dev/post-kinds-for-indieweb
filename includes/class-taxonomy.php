@@ -347,16 +347,27 @@ class Taxonomy {
 	}
 
 	/**
-	 * Create default terms on first activation.
+	 * Create default terms on install, and again whenever the plugin adds kinds.
+	 *
+	 * The guard records the version that last seeded rather than a bare
+	 * boolean. WordPress does not fire the activation hook on update, so a
+	 * write-once flag meant every kind introduced after a site's first
+	 * install never got a term there — sites installed on 1.0.0 and updated
+	 * to 1.5.0 carried 24 kinds while the plugin declared 36. Re-seeding is
+	 * cheap and safe: create_default_terms() skips slugs that already exist.
+	 *
+	 * A boolean from a pre-1.5.1 install never equals PKIW_VERSION, so those
+	 * sites re-seed once on their next request and pick up what they missed.
 	 *
 	 * @return void
 	 */
 	public function maybe_create_default_terms(): void {
-		// Only run once after activation.
-		if ( ! get_option( 'pkiw_terms_created' ) ) {
-			$this->create_default_terms();
-			update_option( 'pkiw_terms_created', true );
+		if ( PKIW_VERSION === get_option( 'pkiw_terms_created' ) ) {
+			return;
 		}
+
+		$this->create_default_terms();
+		update_option( 'pkiw_terms_created', PKIW_VERSION );
 	}
 
 	/**

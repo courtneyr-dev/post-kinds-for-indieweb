@@ -1515,15 +1515,36 @@ final class Plugin {
 	}
 
 	/**
-	 * Flush rewrite rules if storage mode changed.
+	 * Flush rewrite rules when they are stale.
+	 *
+	 * Two triggers. The `pkiw_flush_rewrite` flag covers activation and a
+	 * storage-mode change. The version stamp covers plugin updates, which
+	 * WordPress handles without firing the activation hook — so a release
+	 * that adds a feed or rewrite rule (1.5.0 added `/firehose`) would
+	 * otherwise leave every upgrading site serving the ruleset generated
+	 * at its original activation, and the new URL 404s until someone
+	 * re-saves permalinks.
+	 *
+	 * Runs at init priority 999 so every add_feed()/add_rewrite_rule()
+	 * registration has already happened.
 	 *
 	 * @return void
 	 */
 	public function maybe_flush_rewrite_rules(): void {
-		if ( get_option( 'pkiw_flush_rewrite' ) ) {
-			flush_rewrite_rules();
+		$requested   = (bool) get_option( 'pkiw_flush_rewrite' );
+		$stale_rules = PKIW_VERSION !== get_option( 'pkiw_rewrite_version' );
+
+		if ( ! $requested && ! $stale_rules ) {
+			return;
+		}
+
+		flush_rewrite_rules();
+
+		if ( $requested ) {
 			delete_option( 'pkiw_flush_rewrite' );
 		}
+
+		update_option( 'pkiw_rewrite_version', PKIW_VERSION );
 	}
 
 	/**
