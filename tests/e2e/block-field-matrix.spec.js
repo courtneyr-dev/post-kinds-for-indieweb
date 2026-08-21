@@ -237,6 +237,21 @@ for ( const [ name, def ] of Object.entries( matrix ) ) {
 		}, name );
 
 		expect( saved, `${ name } block missing after reload` ).not.toBeNull();
+
+		// A block whose edit component throws renders Gutenberg's error
+		// boundary — attributes still round-trip through the parser, so
+		// every assertion below passes while the block is unusable. The
+		// sampler deliberately feeds awkward values (unparseable strings
+		// in date-named fields, enum-adjacent text), which makes this
+		// matrix the crash canary for every block at once. See #152 for
+		// the four crashes the visual suite baselined instead of catching.
+		await expect(
+			page
+				.locator( 'iframe[name="editor-canvas"]' )
+				.contentFrame()
+				.locator( `[data-type="${ name }"] .block-editor-warning` ),
+			`${ name } crashed in the editor after reload — Gutenberg rendered its error boundary`
+		).toHaveCount( 0 );
 		for ( const attr of attrsToCheck ) {
 			expect(
 				saved[ attr ],
