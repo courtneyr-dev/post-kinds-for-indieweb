@@ -57,6 +57,10 @@ function get_kind_icon_paths( string $kind ): string {
 		'question'    => '<circle cx="12" cy="12" r="9"/><path d="M9 9.5a3 3 0 1 1 4 3c-.8.5-1 1-1 2M12 17.5h.01"/>',
 		'sleep'       => '<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/><path d="M14 4h4l-4 4h4"/>',
 		'craft'       => '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.1 8.1L20 20M8.1 15.9L20 4"/>',
+		'chicken'     => '<path d="M16 4a2 2 0 0 1 2 2l2 1.5-2 1.3A7 7 0 0 1 11 19l.3 2h-1.5l-.4-2.2-1.3-.5L6.5 20l-1-1 1.6-1.6A7 7 0 0 1 12 5.5c1 0 2 .2 2.8.7A2 2 0 0 1 16 4Z"/>',
+		'comics'      => '<path d="M12 2l1.7 4.6 3.5-2.5-1.3 4.2 4.6-.3-3.6 2.7 4 2.2-4.6.7 2.2 4-4.2-2L12 22l-1.7-4-3.5 2.6 1.3-4.2-4.6.3 3.6-2.7-4-2.2 4.6-.7-2.2-4 4.2 2z"/>',
+		'collection'  => '<rect x="3" y="8" width="18" height="12" rx="1.5"/><path d="M5 5h14M7 2h10"/>',
+		'presentation' => '<rect x="2" y="4" width="20" height="12" rx="1"/><path d="M12 16l2 4M12 16l-2 4M17 8v2a1.5 1.5 0 0 1-3 0V8a1.5 1.5 0 0 1 3 0Z"/>',
 	];
 
 	return $icons[ $kind ] ?? '<circle cx="12" cy="12" r="4"/>';

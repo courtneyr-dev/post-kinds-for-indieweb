@@ -228,6 +228,22 @@ class Taxonomy {
 			'name'        => 'Craft',
 			'description' => 'Making something by hand - knitting, woodworking, 3D printing.',
 		],
+		'chicken'     => [
+			'name'        => 'Chicken',
+			'description' => 'A chicken post. Yes, really - see indieweb.org/chicken.',
+		],
+		'comics'      => [
+			'name'        => 'Comics',
+			'description' => 'A comic strip or panel you drew or published.',
+		],
+		'collection'  => [
+			'name'        => 'Collection',
+			'description' => 'A curated set of posts or items gathered together.',
+		],
+		'presentation' => [
+			'name'        => 'Presentation',
+			'description' => 'Slides or a talk you gave - deck, recording, or notes.',
+		],
 	];
 
 	/**

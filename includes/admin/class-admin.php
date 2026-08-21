@@ -946,6 +946,22 @@ class Admin {
 				'label' => __( 'Craft', 'post-kinds-for-indieweb-in-block-themes' ),
 				'icon'  => 'dashicons-hammer',
 			],
+			'chicken'     => [
+				'label' => __( 'Chicken', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'  => 'dashicons-pets',
+			],
+			'comics'      => [
+				'label' => __( 'Comics', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'  => 'dashicons-images-alt2',
+			],
+			'collection'  => [
+				'label' => __( 'Collection', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'  => 'dashicons-portfolio',
+			],
+			'presentation' => [
+				'label' => __( 'Presentation', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'  => 'dashicons-slides',
+			],
 		];
 
 		/**

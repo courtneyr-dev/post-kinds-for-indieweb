@@ -58,6 +58,10 @@ class MicroformatsTest extends WP_UnitTestCase {
 			'question' => [ 'question', [ 'h-entry' ] ],
 			'sleep'    => [ 'sleep',    [ 'h-entry' ] ],
 			'craft'    => [ 'craft',    [ 'h-entry' ] ],
+			'chicken'  => [ 'chicken',  [ 'h-entry' ] ],
+			'comics'   => [ 'comics',   [ 'h-entry' ] ],
+			'collection' => [ 'collection', [ 'h-entry' ] ],
+			'presentation' => [ 'presentation', [ 'h-entry' ] ],
 		];
 	}
 
@@ -125,7 +129,8 @@ class MicroformatsTest extends WP_UnitTestCase {
 			'rsvp', 'checkin', 'listen', 'watch', 'read', 'event', 'photo',
 			'video', 'review', 'recipe', 'audio', 'quote', 'tag', 'weather',
 			'exercise', 'trip', 'itinerary', 'follow', 'issue', 'question',
-			'sleep', 'craft' ];
+			'sleep', 'craft', 'chicken', 'comics', 'collection',
+			'presentation' ];
 
 		foreach ( $expected as $kind ) {
 			$this->assertArrayHasKey( $kind, $formats, "Missing kind: $kind" );
