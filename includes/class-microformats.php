@@ -345,6 +345,38 @@ class Microformats {
 					'date'     => 'dt-published',
 				],
 			],
+			'chicken'   => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'content' => 'e-content',
+					'date'    => 'dt-published',
+				],
+			],
+			'comics'    => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'name'    => 'p-name',
+					'photo'   => 'u-photo',
+					'content' => 'e-content',
+					'date'    => 'dt-published',
+				],
+			],
+			'collection' => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'name'    => 'p-name',
+					'content' => 'e-content',
+					'date'    => 'dt-published',
+				],
+			],
+			'presentation' => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'name'    => 'p-name',
+					'content' => 'e-content',
+					'date'    => 'dt-published',
+				],
+			],
 		];
 
 		/**
