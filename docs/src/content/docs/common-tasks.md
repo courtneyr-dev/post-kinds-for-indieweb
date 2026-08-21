@@ -97,21 +97,18 @@ POSSE = Publish on your Own Site, Syndicate Elsewhere. Nothing is sent until you
    (`u-listen-of`, `u-like-of`, `u-in-reply-to`, `p-rsvp`, and so on) nested **inside** the
    post's `h-entry` — not sitting beside it.
 
+The plugin supplies the `h-entry` root itself on single posts, so this works on any block
+theme — including ones whose single template never calls `post_class()`, such as Twenty
+Twenty-Five and Twenty Twenty-Four. If your theme already provides the root, the plugin
+steps aside rather than nesting a second one.
+
 ### If the property parses outside the `h-entry`
 
-Some block themes render the single-post template without passing the post wrapper through
-`post_class()`. That filter is where this plugin adds the `h-entry` root, so when a theme
-skips it the card parses as a standalone top-level `h-cite` and the property never attaches
-to the entry. Twenty Twenty-Five behaves this way.
-
-To tell the two apart, parse the post's archive URL as well (`/kind/listen/`, for example).
-If the property attaches there but not at the permalink, the theme's single template is the
-cause, not the plugin's markup.
-
-This is worth fixing in your theme, because webmention receivers and feed readers fetch the
-**permalink**. In a block theme, make sure the single template's post wrapper renders through
-`post_class()` — a Post Template block does; a plain Group wrapping Post Title and Post
-Content does not.
+On **1.1.0 and earlier** the root came only from `post_class()`, so on those themes the card
+parsed as a standalone top-level `h-cite` and the property never attached. Updating to 1.5.0
+or later fixes it. If you see it on a current version, parse the post's archive URL as well
+(`/kind/listen/`, for example) and [open an issue](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues)
+with both results — that pair tells us whether the theme or the plugin is at fault.
 
 ## Clear cached API data
 

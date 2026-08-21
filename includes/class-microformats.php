@@ -597,10 +597,12 @@ class Microformats {
 
 		$kind = $this->get_post_kind( $post_id );
 
-		if ( ! $kind || ! isset( $this->kind_formats[ $kind ] ) ) {
+		if ( ! $kind ) {
 			return $content;
 		}
 
+		// Mirror add_post_classes(): kinds without a format definition
+		// still root as h-entry — their cards emit properties too.
 		$root_classes = $this->kind_formats[ $kind ]['root'] ?? [ 'h-entry' ];
 		$classes      = array_merge( $root_classes, [ 'kind-' . $kind, 'pkiw-singular-entry' ] );
 

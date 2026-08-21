@@ -314,7 +314,11 @@
 }
 
 .pk-card :focus-visible {
-	outline: 2px solid var(--pk-accent);
+
+	/* currentColor fallback: --pk-accent is theme-supplied; without a
+	   fallback an undefined var collapses the whole outline shorthand
+	   (outline-style: none) and the focus indicator vanishes. */
+	outline: 2px solid var(--pk-accent, currentColor);
 	outline-offset: 3px;
 	border-radius: 4px;
 }

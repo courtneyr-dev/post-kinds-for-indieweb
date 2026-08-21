@@ -25,14 +25,21 @@
 		"npm": ">=9.0.0"
 	},
 	"files": [
+		"CHANGELOG.md",
+		"LICENSE",
+		"README.md",
+		"admin/",
 		"assets/",
+		"blueprints/",
 		"build/",
+		"img/",
 		"includes/",
 		"languages/",
 		"patterns/",
-		"templates/",
 		"post-kinds-for-indieweb-in-block-themes.php",
 		"readme.txt",
+		"styles/",
+		"templates/",
 		"uninstall.php"
 	],
 	"main": "build/index.js",
