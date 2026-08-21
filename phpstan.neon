@@ -30,6 +30,7 @@ parameters:
 	scanFiles:
 		- post-kinds-for-indieweb-in-block-themes.php
 		- stubs/companion-classes.php
+		- stubs/atmosphere-stubs.php
 	scanDirectories:
 		- includes/
 	parallel:

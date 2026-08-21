@@ -32,8 +32,9 @@ final class Feature_Flags {
 	 * @var array<string, bool>
 	 */
 	private static $defaults = [
-		'abilities_api'   => true,
-		'mcp_integration' => true,
+		'abilities_api'          => true,
+		'mcp_integration'        => true,
+		'atmosphere_integration' => true,
 	];
 
 	/**
