@@ -1032,6 +1032,12 @@ final class Plugin {
 			'restUrl'             => rest_url( 'post-kinds-indieweb/v1/' ),
 			'nonce'               => wp_create_nonce( 'wp_rest' ),
 			'syndicationServices' => $syndication_services,
+			// Registered type per kind-meta field, so the editor store can
+			// coerce API lookup values before they hit REST validation.
+			// External APIs return numbers for fields registered as strings
+			// (OpenLibrary ISBNs, TMDB ids, years); an uncoerced write makes
+			// the next save fail with "meta.<key> is not of type string".
+			'metaFieldTypes'      => $this->get_meta_field_types(),
 		];
 
 		// Pass data to JavaScript using wp_add_inline_script for more reliable delivery.
@@ -1346,6 +1352,27 @@ final class Plugin {
 	 */
 	public function get_taxonomy(): ?Taxonomy {
 		return $this->taxonomy;
+	}
+
+	/**
+	 * Map of kind-meta field name => registered REST type.
+	 *
+	 * Consumed by the editor store to coerce values before writing meta.
+	 *
+	 * @return array<string, string> Field name to type.
+	 */
+	public function get_meta_field_types(): array {
+		$types = [];
+
+		if ( ! $this->meta_fields ) {
+			return $types;
+		}
+
+		foreach ( $this->meta_fields->get_fields() as $field => $config ) {
+			$types[ $field ] = $config['type'] ?? 'string';
+		}
+
+		return $types;
 	}
 
 	/**

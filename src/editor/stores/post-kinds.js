@@ -13,6 +13,7 @@
 import { createReduxStore, createRegistrySelector } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 import { store as editorStore } from '@wordpress/editor';
+import { coerceMetaValue } from './coerce-meta-value';
 
 /**
  * Store name constant.
@@ -231,7 +232,7 @@ const actions = {
 
 			await editPost( {
 				meta: {
-					[ metaKey ]: value,
+					[ metaKey ]: coerceMetaValue( key, value ),
 				},
 			} );
 		};
