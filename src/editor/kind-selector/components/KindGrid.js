@@ -17,7 +17,7 @@ import { useRef, useCallback } from '@wordpress/element';
 /**
  * Internal dependencies
  */
-import { kindIcons } from '../icons';
+import { getKindIcon } from '../icons';
 
 /**
  * Kind Grid Component
@@ -128,7 +128,7 @@ export default function KindGrid( { kinds, selectedKind, onSelect } ) {
 			) }
 		>
 			{ sortedKinds.map( ( kind, index ) => {
-				const Icon = kindIcons[ kind.slug ] || kindIcons.note;
+				const Icon = getKindIcon( kind.slug );
 				const isSelected = kind.slug === selectedKind;
 
 				return (
