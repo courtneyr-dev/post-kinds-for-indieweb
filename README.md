@@ -109,6 +109,16 @@ Pull in your existing data:
 - **Background processing** via WP-Cron for large imports
 - **Duplicate prevention** on re-imports
 
+## Micropub
+
+With the [Micropub](https://wordpress.org/plugins/micropub/) plugin handling the endpoint, this plugin classifies every incoming Micropub post as its kind and builds the matching content:
+
+- **Every registered kind is reachable.** Classification reads the kind's canonical property — `listen-of`, `watch-of`, `read-of`, `jam-of`, `favorite-of`, `wish-of`, `tag-of`, `craft-of`, `acquisition-of`, `quotation-of`, `exercise`, `sleep`, `trip`, `itinerary`, `question`, `mood`, `weather`, `start` (event), `item` (review), `ingredient` (recipe), `video`, `audio`, `photo`, `location` (checkin), and the response properties (`in-reply-to`, `like-of`, `repost-of`, `bookmark-of`, `rsvp`, `follow-of`). Ordering handles the overlaps: an event with a venue is an event, not a checkin; a video with a poster image is a video, not a photo.
+- **Clients can name the kind outright.** A `pkiw-kind` property (a vendor extension, like `pkiw-promote`) overrides inference — the only way to reach kinds whose properties are ambiguous, such as issue, which shares `in-reply-to` with reply. Unknown values fall back to inference. [Outpost](https://github.com/courtneyr-dev/outpost) sends this for every composer mode.
+- **Content is generated per kind.** Kinds with card blocks get the card; kinds without one get a one-line paragraph carrying the canonical microformats2 class, so parsers see the property and the post is never empty.
+
+The receiving side's property-by-property contract lives in [docs/micropub-field-gaps.md](docs/micropub-field-gaps.md).
+
 ## Microformats
 
 Every block outputs proper [microformats2](http://microformats.org/wiki/microformats2) markup:
