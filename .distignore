@@ -38,6 +38,11 @@ playwright.config.js
 lighthouserc.js
 phpstan-baseline.neon
 
+# Marketing and documentation imagery. Nothing in the shipped plugin reads
+# it — the directory listing is fed from .wordpress-org/ instead — and it is
+# the single largest thing in the download.
+/img
+
 # Development documentation
 CLAUDE.md
 CODE_OF_CONDUCT.md

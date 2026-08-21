@@ -24,7 +24,7 @@ import {
 } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import { rsvpIcon } from '../shared/icons';
-import { BlockPlaceholder } from '../shared/components';
+import { BlockPlaceholder, parseDate } from '../shared/components';
 
 /**
  * Edit component for the RSVP Card block.
@@ -59,6 +59,8 @@ export default function Edit( { attributes, setAttributes } ) {
 	} );
 
 	// RSVP status options
+	const eventStartDate = parseDate( eventStart );
+
 	const rsvpStatuses = [
 		{
 			label: __( 'Yes', 'post-kinds-for-indieweb-in-block-themes' ),
@@ -135,12 +137,13 @@ export default function Edit( { attributes, setAttributes } ) {
 	 * Format date range for display
 	 */
 	const formatDateRange = () => {
-		if ( ! eventStart ) {
+		const startDate = parseDate( eventStart );
+
+		if ( ! startDate ) {
 			return null;
 		}
 
-		const startDate = new Date( eventStart );
-		const endDate = eventEnd ? new Date( eventEnd ) : null;
+		const endDate = parseDate( eventEnd );
 
 		const startStr = startDate.toLocaleDateString( undefined, {
 			weekday: 'short',
@@ -292,7 +295,8 @@ export default function Edit( { attributes, setAttributes } ) {
 							) }
 						>
 							{ eventStart
-								? new Date( eventStart ).toLocaleString()
+								? parseDate( eventStart )?.toLocaleString() ||
+								  eventStart
 								: __(
 										'Set start time',
 										'post-kinds-for-indieweb-in-block-themes'
@@ -547,7 +551,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						/>
 
 						{ /* Event date/time */ }
-						{ eventStart && (
+						{ eventStartDate && (
 							<div className="event-datetime">
 								<span
 									className="datetime-icon"
@@ -555,11 +559,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								>
 									📅
 								</span>
-								<time
-									dateTime={ new Date(
-										eventStart
-									).toISOString() }
-								>
+								<time dateTime={ eventStartDate.toISOString() }>
 									{ formatDateRange() }
 								</time>
 							</div>

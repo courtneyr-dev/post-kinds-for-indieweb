@@ -24,7 +24,7 @@ import {
 } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import { eventIcon } from '../shared/icons';
-import { BlockPlaceholder } from '../shared/components';
+import { BlockPlaceholder, parseDate } from '../shared/components';
 
 /**
  * Edit component for the Event Card block.
@@ -93,12 +93,13 @@ export default function Edit( { attributes, setAttributes } ) {
 	 * Format date range for display
 	 */
 	const formatDateRange = () => {
-		if ( ! eventStart ) {
+		const startDate = parseDate( eventStart );
+
+		if ( ! startDate ) {
 			return null;
 		}
 
-		const startDate = new Date( eventStart );
-		const endDate = eventEnd ? new Date( eventEnd ) : null;
+		const endDate = parseDate( eventEnd );
 
 		const startStr = startDate.toLocaleDateString( undefined, {
 			weekday: 'short',
@@ -133,6 +134,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	};
 
 	const hasCalendarRef = calendarSource && calendarEventId > 0;
+	const eventStartDate = parseDate( eventStart );
 
 	// Show placeholder if no event info at all
 	if ( ! eventName && ! eventUrl && ! hasCalendarRef ) {
@@ -481,7 +483,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						/>
 
 						{ /* Event date/time */ }
-						{ eventStart && (
+						{ eventStartDate && (
 							<div className="event-datetime">
 								<span
 									className="datetime-icon"
@@ -489,11 +491,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								>
 									📅
 								</span>
-								<time
-									dateTime={ new Date(
-										eventStart
-									).toISOString() }
-								>
+								<time dateTime={ eventStartDate.toISOString() }>
 									{ formatDateRange() }
 								</time>
 							</div>

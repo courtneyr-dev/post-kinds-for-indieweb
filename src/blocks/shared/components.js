@@ -504,6 +504,26 @@ export function CiteBlock( { url, name, author, type = 'u-cite' } ) {
 }
 
 /**
+ * Parse a datetime attribute into a Date, or null when unparseable.
+ *
+ * Block attributes typed as bare strings accept anything an importer,
+ * Micropub client, or REST write hands them. Every Date method degrades
+ * quietly on an Invalid Date except toISOString(), which throws
+ * RangeError — inside an edit render that crashes the whole block into
+ * Gutenberg's error boundary. Parse first, gate on the result.
+ *
+ * @param {string} value Datetime string from block attributes.
+ * @return {Date|null} Valid Date, or null when the value cannot be parsed.
+ */
+export function parseDate( value ) {
+	if ( ! value ) {
+		return null;
+	}
+	const parsed = new Date( value );
+	return Number.isNaN( parsed.getTime() ) ? null : parsed;
+}
+
+/**
  * Date Display Component
  *
  * @param {Object} props           Component props.
@@ -512,11 +532,12 @@ export function CiteBlock( { url, name, author, type = 'u-cite' } ) {
  * @param {string} props.className Additional classes.
  */
 export function DateDisplay( { date, format = 'long', className = '' } ) {
-	if ( ! date ) {
+	const dateObj = parseDate( date );
+
+	if ( ! dateObj ) {
 		return null;
 	}
 
-	const dateObj = new Date( date );
 	const isoDate = dateObj.toISOString();
 
 	let displayDate;

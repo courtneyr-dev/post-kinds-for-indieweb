@@ -131,6 +131,17 @@ test.describe( 'Visual Regression', () => {
 				.waitFor( { state: 'detached', timeout: 10000 } )
 				.catch( () => {} );
 
+			// A crashed block still renders — as Gutenberg's error boundary,
+			// a ~53px grey box reading "This block has encountered an
+			// error and cannot be previewed." Screenshotting that produces
+			// a perfectly stable baseline, so the suite went green over
+			// four genuinely broken blocks until the images were opened by
+			// hand. Fail on the boundary before comparing pixels.
+			await expect(
+				block.locator( '.block-editor-warning' ),
+				`${ name } crashed in the editor — Gutenberg rendered its error boundary instead of the block. Check the browser console for the underlying exception; do NOT regenerate this baseline.`
+			).toHaveCount( 0 );
+
 			await expect( block ).toHaveScreenshot( `${ slug }-populated.png`, {
 				maxDiffPixelRatio: 0.02,
 			} );
