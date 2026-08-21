@@ -5,13 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-> **WordPress.org versioning note:** the public WordPress.org debut is **[1.0.0] dated 2026-07-20**, which bundles the full feature set from the pre-release GitHub builds (1.4.3 and earlier, listed below) plus the final pre-launch fixes. The 1.4.x–1.1.0 entries and the earlier `[1.0.0] - 2024-12-23 (pre-release GitHub build)` were GitHub-only and never shipped on WordPress.org.
+> **WordPress.org versioning note:** the public WordPress.org debut is **[1.0.0] dated 2026-07-20**, which bundles the full feature set from the pre-release GitHub builds (1.4.3 and earlier, listed below) plus the final pre-launch fixes. The 1.4.x–1.1.0 entries and the earlier `[1.0.0] - 2024-12-23 (pre-release GitHub build)` were GitHub-only and never shipped on WordPress.org. The first update after the debut ships as **[1.5.0]** — 1.1.0 through 1.4.3 are skipped because those numbers (tags, GitHub releases, and the entries below) were used by the pre-launch builds.
 
 ## [Unreleased]
 
-## [1.1.0] - 2026-08-19
+## [1.5.0] - 2026-08-21
 
 ### Fixed
+
+- A kind post's canonical microformats2 property now attaches to an `h-entry` at the permalink — the URL webmention receivers fetch. The `h-entry` root only ever came from the `post_class` filter, which Twenty Twenty-Five's and Twenty Twenty-Four's single templates never call, so the card parsed as a top-level orphan `h-cite` and the entry-level property never existed (on TT4 it attached nowhere at all, since its archives render excerpts without the card). `wrap_singular_content()` on `the_content` now wraps singular kind content in the kind's root classes — with hidden `u-url` and `dt-published`, and `p-name` only for kinds whose vocabulary names entries — and steps aside when `post_class` already ran for the post, so themes that provide their own wrapper are untouched. Covered by `SingularEntryWrapperTest`, which renders the real TT5 single template instead of fabricating the wrapper the way `MicroformatsRenderTest` does. (#142, #143, #146)
+- The Stream Card registers with block API version 3. It has no block.json — the PHP registration omitted `api_version`, silently defaulting to 1 while the other 26 blocks declare 3. `BlockApiVersionTest` now sweeps the live registry across both plugin namespaces so the next omission fails in CI. (#144, #145)
 
 - Title-less posts no longer vanish from the Stream. `render_generic_stream_card()` returned `''` for a post with no title — and title-less is the IndieWeb convention for most experimental kinds, so a published weather or follow post made an empty stream item. The kind label now stands in as the linked title (without `p-name`, so mf2 implied-name parsing is unaffected), and any kind term — known or future — renders the full badge/label/date/excerpt card.
 - All 13 abilities now actually register. Their names used underscores (`post_kinds/list_kinds`, `post_kinds/lookup_book`), and core's `WP_Abilities_Registry::register()` only accepts `/^[a-z0-9-]+\/[a-z0-9-]+$/` — lowercase alphanumerics, dashes, one slash. Every one was refused with a `_doing_it_wrong()` notice and nothing else, so with `WP_DEBUG` off they had been missing since 1.1.0 without a trace. Renamed to dashes throughout (`post-kinds/list-kinds`, `post-kinds/lookup-book`), including the MCP server list and the `post_kinds/` prefix check in `Abilities_Manager::filter_ability_args()`. No aliases: the old names never registered, so nothing can be calling them.
@@ -23,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Card_Meta_Sync` never reached cards nested inside wrapper blocks — including the h-entry `core/group` the Micropub bridge wraps around every card it generates, so Micropub-created posts got no `_pkiw_*` meta at all. The block walk now descends into `innerBlocks` (first card in document order still wins).
 
 - Kind auto-detection (`Taxonomy::get_first_block_kind`) now sees a card nested first inside a wrapper block — the shape the Micropub bridge writes — instead of leaving those posts with no kind term. A wrapper whose first visible child is not a card still gets no auto-kind, same as a paragraph-first post.
+
+### Changed
+
+- Tested up to WordPress 7.1; the CI matrix gates 7.0 and 7.1 on PHP 8.2–8.4, so the readme claim stays verified. Docs screenshots re-captured against 7.1. (#141)
+- Docs: the microformats verification guide now explains archive-vs-permalink parsing and theme `post_class()` requirements, and the block count is corrected to 27. (#141)
 
 ### Added
 
@@ -305,7 +313,7 @@ This project uses Semantic Versioning:
 - [Issues](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues)
 - [IndieWeb Wiki](https://indieweb.org/)
 
-[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/1.1.0...HEAD
-[1.1.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/1.0.0...1.1.0
+[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/1.0.0...v1.5.0
 [1.2.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.1.0...v1.2.0
 [1.0.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/releases/tag/v1.0.0
