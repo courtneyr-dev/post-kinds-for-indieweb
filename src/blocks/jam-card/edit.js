@@ -271,48 +271,53 @@ export default function Edit( { attributes, setAttributes } ) {
 									onSelect={ handleImageSelect }
 									allowedTypes={ [ 'image' ] }
 									render={ ( { open } ) => (
-										<button
-											type="button"
-											className="post-kinds-card__media-button"
-											onClick={ open }
-										>
-											{ cover ? (
-												<>
-													<img
-														src={ cover }
-														alt={
-															coverAlt || title
-														}
-														className="post-kinds-card__image"
-													/>
-													<button
-														type="button"
-														className="post-kinds-card__media-remove"
-														onClick={
-															handleImageRemove
-														}
-														aria-label={ __(
-															'Remove cover',
-															'post-kinds-for-indieweb-in-block-themes'
-														) }
-													>
-														×
-													</button>
-												</>
-											) : (
-												<div className="post-kinds-card__media-placeholder">
-													<span className="post-kinds-card__media-icon">
-														🎵
-													</span>
-													<span className="post-kinds-card__media-text">
-														{ __(
-															'Add Cover',
-															'post-kinds-for-indieweb-in-block-themes'
-														) }
-													</span>
-												</div>
+										<div className="post-kinds-card__media-frame">
+											<button
+												type="button"
+												className="post-kinds-card__media-button"
+												onClick={ open }
+											>
+												{ cover ? (
+													<>
+														<img
+															src={ cover }
+															alt={
+																coverAlt ||
+																title
+															}
+															className="post-kinds-card__image"
+														/>
+													</>
+												) : (
+													<div className="post-kinds-card__media-placeholder">
+														<span className="post-kinds-card__media-icon">
+															🎵
+														</span>
+														<span className="post-kinds-card__media-text">
+															{ __(
+																'Add Cover',
+																'post-kinds-for-indieweb-in-block-themes'
+															) }
+														</span>
+													</div>
+												) }
+											</button>
+											{ cover && (
+												<button
+													type="button"
+													className="post-kinds-card__media-remove"
+													onClick={
+														handleImageRemove
+													}
+													aria-label={ __(
+														'Remove cover',
+														'post-kinds-for-indieweb-in-block-themes'
+													) }
+												>
+													×
+												</button>
 											) }
-										</button>
+										</div>
 									) }
 								/>
 							</MediaUploadCheck>

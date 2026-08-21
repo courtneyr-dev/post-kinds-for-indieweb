@@ -173,6 +173,10 @@
 	width: 100px;
 }
 
+.post-kinds-card__media-frame {
+	position: relative;
+}
+
 .post-kinds-card__media-button {
 	position: relative;
 	display: block;
@@ -242,7 +246,8 @@
 	transition: opacity 0.2s;
 }
 
-.post-kinds-card__media-button:hover .post-kinds-card__media-remove {
+.post-kinds-card__media-frame:hover .post-kinds-card__media-remove,
+.post-kinds-card__media-remove:focus-visible {
 	opacity: 1;
 }
 
