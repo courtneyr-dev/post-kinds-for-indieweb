@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.5.1
+Stable tag: 1.5.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -158,6 +158,14 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 9. Standard.site record panel on a Bookmark Card, showing the cited page's own title, publication, description, and tags read from AT Protocol
 
 == Changelog ==
+
+= 1.5.2 =
+* Fixed: the Check-in Dashboard block crashed in the editor for everyone who inserted it, with any settings. It read its data feed in the wrong shape.
+* Fixed: the Play Card crashed in the editor whenever its status differed from the default — pasted, imported, or pattern-inserted cards hit this every time.
+* Fixed: Event and RSVP cards crashed in the editor on a date they couldn't parse, and a similar problem in several cards' saving code could block a post from saving at all. Every date now degrades gracefully instead.
+* Fixed: the Check-in Dashboard's "Check-ins" and "Countries" stats always showed 0 regardless of your data.
+* Fixed: the cover image's remove control was a button nested inside another button in all eleven card blocks — invalid HTML that confuses screen readers, and it was invisible to keyboard users. It's now a proper sibling control that appears on keyboard focus too.
+* Changed: the plugin download shrinks from 4.8M to 0.6M — a folder of marketing imagery that the plugin never loads no longer ships.
 
 = 1.5.1 =
 * Fixed: the /firehose feed added in 1.5.0 returned 404 on any site that updated rather than installed fresh, and stayed that way. Rewrite rules were only rebuilt on activation, which WordPress doesn't run on update, so the feed's address was never registered. Updating now rebuilds them.

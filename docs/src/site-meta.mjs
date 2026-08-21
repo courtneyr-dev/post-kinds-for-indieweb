@@ -9,7 +9,7 @@ export default {
 		'User documentation for Post Kinds for IndieWeb in Block Themes: log what you listen to, watch, read, play, and visit on your own WordPress site.',
 	github: 'https://github.com/courtneyr-dev/post-kinds-for-indieweb',
 	wporg: 'https://wordpress.org/plugins/post-kinds-for-indieweb-in-block-themes/',
-	version: '1.5.0',
+	version: '1.5.2',
 	requiresWP: '7.0',
 	requiresPHP: '8.2',
 	author: 'Courtney Robertson',
