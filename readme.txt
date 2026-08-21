@@ -59,7 +59,7 @@ Each kind gets its own archive page (for example `/kind/listen/`), and the kind 
 
 = Works with =
 
-* [Micropub](https://wordpress.org/plugins/micropub/) — **required for posting from Micropub apps.** This plugin doesn't implement the Micropub endpoint itself; install the Micropub plugin (plus [IndieAuth](https://wordpress.org/plugins/indieauth/) for authentication), and this plugin converts incoming posts into the right card block and kind.
+* [Micropub](https://wordpress.org/plugins/micropub/) — **required for posting from Micropub apps.** This plugin doesn't implement the Micropub endpoint itself; install the Micropub plugin (plus [IndieAuth](https://wordpress.org/plugins/indieauth/) for authentication), and this plugin classifies every incoming post as its kind — all registered kinds, not just the common ones — and converts it into the right card block or microformats paragraph. Clients that know their kind can name it outright with a `pkiw-kind` property; [Outpost](https://github.com/courtneyr-dev/outpost) does.
 * [IndieBlocks](https://wordpress.org/plugins/indieblocks/) — detected and recommended, not required. It provides companion blocks (Facepile, Location, Syndication, Link Preview); this plugin doesn't implement those features itself.
 * [Webmention](https://wordpress.org/plugins/webmention/) — detected on the Integrations settings tab. Cross-site conversations come from that plugin, not this one.
 * [Syndication Links](https://wordpress.org/plugins/syndication-links/), [Post Formats for Block Themes](https://wordpress.org/plugins/post-formats-for-block-themes/), [Bookmark Card](https://wordpress.org/plugins/bookmark-card/) — detected and enhanced when present.
@@ -125,7 +125,7 @@ That's ATmosphere's choice, not this plugin's: Bluesky cross-posting follows ATm
 
 = How do I post from my phone or a Micropub app? =
 
-Install the separate [Micropub](https://wordpress.org/plugins/micropub/) plugin and an IndieAuth setup (for example the [IndieAuth](https://wordpress.org/plugins/indieauth/) plugin). Micropub is a standard API that lets mobile and third-party apps publish to your site. Once it's active, this plugin converts incoming Micropub posts into the right card block and assigns the kind.
+Install the separate [Micropub](https://wordpress.org/plugins/micropub/) plugin and an IndieAuth setup (for example the [IndieAuth](https://wordpress.org/plugins/indieauth/) plugin). Micropub is a standard API that lets mobile and third-party apps publish to your site. Once it's active, this plugin assigns the kind and builds the content for every incoming Micropub post — each registered kind is reachable, whether the client sends the kind's canonical property or names the kind directly with the `pkiw-kind` property.
 
 For one-tap posting and bookmarklet-style sharing from any page or your phone's share sheet, [Outpost](https://github.com/courtneyr-dev/outpost) is a companion progressive web app that posts to your site over Micropub. This plugin doesn't ship its own bookmarklet — Micropub and Outpost cover that.
 
