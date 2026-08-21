@@ -24,6 +24,7 @@ import {
 import { useState, useEffect, useRef } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { StarRating, MediaSearch } from '../shared/components';
+import { suggestPlayStyle, applySuggestedStyle } from '../shared/play-style';
 
 /**
  * Status options for games.
@@ -90,6 +91,7 @@ const PLATFORM_OPTIONS = [
 
 export default function Edit( { attributes, setAttributes } ) {
 	const {
+		className,
 		title,
 		platform,
 		cover,
@@ -307,6 +309,17 @@ export default function Edit( { attributes, setAttributes } ) {
 			bggId: item.source === 'bgg' ? String( item.id ) : '',
 			rawgId: item.source === 'rawg' ? String( item.id ) : '',
 		} );
+		const suggested = applySuggestedStyle(
+			className,
+			suggestPlayStyle( {
+				platform: selectedPlatform,
+				source: item.source || '',
+				title: item.title || item.name || '',
+			} )
+		);
+		if ( suggested ) {
+			setAttributes( { className: suggested } );
+		}
 		setIsSearching( false );
 	};
 
@@ -506,6 +519,18 @@ export default function Edit( { attributes, setAttributes } ) {
 							} else {
 								setShowCustomPlatform( false );
 								setAttributes( { platform: value } );
+								const suggested = applySuggestedStyle(
+									className,
+									suggestPlayStyle( {
+										platform: value,
+										title: title || '',
+									} )
+								);
+								if ( suggested ) {
+									setAttributes( {
+										className: suggested,
+									} );
+								}
 							}
 						} }
 					/>
