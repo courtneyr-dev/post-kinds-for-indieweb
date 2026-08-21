@@ -161,6 +161,57 @@ jobs:
           flags: php
           name: php-coverage
 
+  # ===== ATmosphere trunk compatibility (non-gating) =====
+  # Early warning when ATmosphere's next release would break the
+  # integration. Runs the atmosphere group only, against their trunk;
+  # failures don't block merge — the supported contract is the pinned
+  # release tested in the phpunit matrix above.
+  atmosphere-trunk:
+    name: ATmosphere trunk compatibility
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Subversion
+        run: sudo apt-get update && sudo apt-get install -y subversion
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          tools: composer:v2
+          coverage: none
+          extensions: mysqli
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Install WordPress test suite
+        run: bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1 7.1 true
+
+      - name: Checkout ATmosphere trunk
+        uses: actions/checkout@v7
+        with:
+          repository: Automattic/wordpress-atmosphere
+          ref: trunk
+          path: wordpress-atmosphere
+
+      - name: Run atmosphere group against trunk
+        run: vendor/bin/phpunit --group atmosphere
+        env:
+          PKIW_TESTS_ATMOSPHERE_FILE: ${{ github.workspace }}/wordpress-atmosphere/atmosphere.php
+
   # ===== JavaScript Linting =====
   eslint:
     name: JavaScript Linting
@@ -416,8 +467,7 @@ jobs:
         # Basic auth. PKIW_TEST_PHOTO_HOST is the host as seen from
         # INSIDE the wp-env container (the runner's docker bridge).
         run: |
-          npx wp-env run cli wp plugin activate indieauth micropub atmosphere
-          npx wp-env run cli wp plugin activate post-kinds-for-indieweb
+          npx wp-env run cli wp plugin activate indieauth micropub
           echo "WP_APP_PASSWORD=$(npx wp-env run cli wp user application-password create admin e2e --porcelain)" >> "$GITHUB_ENV"
           echo "PKIW_TEST_PHOTO_HOST=http://172.17.0.1:8888" >> "$GITHUB_ENV"
 

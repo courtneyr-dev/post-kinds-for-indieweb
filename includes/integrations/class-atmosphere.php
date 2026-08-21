@@ -97,8 +97,14 @@ class Atmosphere {
 
 		$this->registered = true;
 
+		// The settings-tab status renders in every state — recommendation
+		// when ATmosphere is absent, an activate link when it is installed
+		// but inactive, the minimum version when it is too old, a connect
+		// link when disconnected. Availability gates only the publishing
+		// policy below. Priority 11: after Settings_Page's sections at 10.
+		add_action( 'admin_init', [ $this, 'register_settings_ui' ], 11 );
+
 		if ( ! self::is_available() ) {
-			add_action( 'admin_notices', [ $this, 'dependency_notice' ] );
 			return;
 		}
 
@@ -111,8 +117,6 @@ class Atmosphere {
 		$this->maybe_support_reaction_cpt();
 
 		add_action( 'admin_init', [ $this, 'maybe_initialize_settings' ] );
-		// Priority 11: after Settings_Page builds its sections at 10.
-		add_action( 'admin_init', [ $this, 'register_settings_ui' ], 11 );
 		add_filter( 'manage_post_posts_columns', [ $this, 'add_status_column' ] );
 		add_action( 'manage_post_posts_custom_column', [ $this, 'render_status_column' ], 10, 2 );
 	}
@@ -127,7 +131,6 @@ class Atmosphere {
 	public function unregister(): void {
 		$this->registered = false;
 
-		remove_action( 'admin_notices', [ $this, 'dependency_notice' ] );
 		remove_action( 'admin_init', [ $this, 'maybe_initialize_settings' ] );
 		remove_action( 'admin_init', [ $this, 'register_settings_ui' ], 11 );
 		remove_filter( 'manage_post_posts_columns', [ $this, 'add_status_column' ] );
@@ -159,16 +162,38 @@ class Atmosphere {
 	/**
 	 * Integration status for admin surfaces.
 	 *
+	 * `installed` (plugin files present while inactive) is detected only
+	 * in admin requests, where the plugin registry is loadable; front-end
+	 * callers get `false` and must not branch on it.
+	 *
 	 * @since 1.6.0
 	 *
-	 * @return array{active: bool, version: string|null, compatible: bool, connected: bool, needs_reauth: bool, settings_url: string}
+	 * @return array{active: bool, installed: bool, plugin_file: string, version: string|null, compatible: bool, connected: bool, needs_reauth: bool, settings_url: string}
 	 */
 	public static function status(): array {
-		$active     = defined( 'ATMOSPHERE_VERSION' );
-		$compatible = self::is_available();
+		$active      = defined( 'ATMOSPHERE_VERSION' );
+		$compatible  = self::is_available();
+		$installed   = $active;
+		$plugin_file = '';
+
+		if ( ! $active && is_admin() ) {
+			if ( ! function_exists( 'get_plugins' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/plugin.php';
+			}
+
+			foreach ( array_keys( get_plugins() ) as $file ) {
+				if ( 'atmosphere/atmosphere.php' === $file || str_ends_with( $file, '/atmosphere.php' ) ) {
+					$installed   = true;
+					$plugin_file = $file;
+					break;
+				}
+			}
+		}
 
 		return [
 			'active'       => $active,
+			'installed'    => $installed,
+			'plugin_file'  => $plugin_file,
 			'version'      => $active ? (string) ATMOSPHERE_VERSION : null,
 			'compatible'   => $compatible,
 			'connected'    => $compatible && function_exists( '\\Atmosphere\\is_connected' ) && \Atmosphere\is_connected(),
@@ -177,41 +202,6 @@ class Atmosphere {
 				? \Atmosphere\settings_url()
 				: admin_url( 'plugins.php' ),
 		];
-	}
-
-	/**
-	 * Tell administrators the dependency is missing or too old.
-	 *
-	 * Covers the paths WordPress's own plugin-dependency UI does not:
-	 * a version below MIN_VERSION, and installs where enforcement was
-	 * bypassed (WP-CLI, direct database changes).
-	 *
-	 * @since 1.6.0
-	 *
-	 * @return void
-	 */
-	public function dependency_notice(): void {
-		if ( ! current_user_can( 'activate_plugins' ) ) {
-			return;
-		}
-
-		if ( defined( 'ATMOSPHERE_VERSION' ) ) {
-			$message = sprintf(
-				/* translators: 1: installed ATmosphere version, 2: minimum supported version. */
-				__( 'Post Kinds for IndieWeb publishes to Standard.site through the ATmosphere plugin, but the active ATmosphere %1$s is older than the supported %2$s. Standard.site publishing stays off until ATmosphere is updated; everything else works normally.', 'post-kinds-for-indieweb-in-block-themes' ),
-				(string) ATMOSPHERE_VERSION,
-				self::MIN_VERSION
-			);
-		} else {
-			$message = __( 'Post Kinds for IndieWeb publishes to Standard.site through the ATmosphere plugin, which is not active. Standard.site publishing stays off until ATmosphere is installed and activated; everything else works normally.', 'post-kinds-for-indieweb-in-block-themes' );
-		}
-
-		printf(
-			'<div class="notice notice-warning"><p>%s <a href="%s">%s</a></p></div>',
-			esc_html( $message ),
-			esc_url( admin_url( 'plugins.php' ) ),
-			esc_html__( 'Manage plugins', 'post-kinds-for-indieweb-in-block-themes' )
-		);
 	}
 
 	/**
@@ -381,6 +371,47 @@ class Atmosphere {
 	 */
 	public function render_settings_field(): void {
 		$status = self::status();
+
+		// Optional companion: each degraded state gets its own line and
+		// the one action that resolves it. None of these are errors —
+		// everything else in the plugin works regardless.
+		if ( ! $status['installed'] ) {
+			printf(
+				'<p>%s <a href="%s">%s</a></p>',
+				esc_html__( 'Optional: publish your posts to the Standard.site network (AT Protocol) by adding the ATmosphere plugin. Everything else in Post Kinds works without it.', 'post-kinds-for-indieweb-in-block-themes' ),
+				esc_url( admin_url( 'plugin-install.php?s=atmosphere&tab=search&type=term' ) ),
+				esc_html__( 'Find ATmosphere', 'post-kinds-for-indieweb-in-block-themes' )
+			);
+			return;
+		}
+
+		if ( ! $status['active'] ) {
+			echo '<p>' . esc_html__( 'ATmosphere is installed but not active. Activate it to enable Standard.site publishing.', 'post-kinds-for-indieweb-in-block-themes' );
+			if ( current_user_can( 'activate_plugins' ) && '' !== $status['plugin_file'] ) {
+				printf(
+					' <a href="%s">%s</a>',
+					esc_url( wp_nonce_url( self_admin_url( 'plugins.php?action=activate&plugin=' . rawurlencode( $status['plugin_file'] ) ), 'activate-plugin_' . $status['plugin_file'] ) ),
+					esc_html__( 'Activate ATmosphere', 'post-kinds-for-indieweb-in-block-themes' )
+				);
+			}
+			echo '</p>';
+			return;
+		}
+
+		if ( ! $status['compatible'] ) {
+			printf(
+				'<p>%s</p>',
+				esc_html(
+					sprintf(
+						/* translators: 1: installed ATmosphere version, 2: minimum supported version. */
+						__( 'ATmosphere %1$s is active, but Standard.site publishing needs %2$s or later. Update ATmosphere to enable it; everything else works normally.', 'post-kinds-for-indieweb-in-block-themes' ),
+						(string) $status['version'],
+						self::MIN_VERSION
+					)
+				)
+			);
+			return;
+		}
 
 		if ( $status['needs_reauth'] ) {
 			$connection = __( 'The AT Protocol connection needs to be reauthorized in ATmosphere.', 'post-kinds-for-indieweb-in-block-themes' );

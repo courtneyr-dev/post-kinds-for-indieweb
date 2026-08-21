@@ -18,7 +18,6 @@
  * Requires at least: 7.0
  * Tested up to:      7.1
  * Requires PHP:      8.2
- * Requires Plugins:  atmosphere
  * Author:            Courtney Robertson
  * Author URI:        https://courtneyr.dev
  * Text Domain:       post-kinds-for-indieweb-in-block-themes

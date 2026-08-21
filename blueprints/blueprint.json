@@ -17,13 +17,6 @@
 		{
 			"step": "installPlugin",
 			"pluginData": {
-				"resource": "wordpress.org/plugins",
-				"slug": "atmosphere"
-			}
-		},
-		{
-			"step": "installPlugin",
-			"pluginData": {
 				"resource": "git:directory",
 				"url": "https://github.com/courtneyr-dev/post-kinds-for-indieweb",
 				"ref": "main"
