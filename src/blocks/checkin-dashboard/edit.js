@@ -191,7 +191,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						<div className="checkin-stats-preview">
 							<div className="stat-item">
 								<span className="stat-value">
-									{ stats.total || 0 }
+									{ stats.total_checkins || 0 }
 								</span>
 								<span className="stat-label">
 									{ __(
@@ -213,7 +213,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							</div>
 							<div className="stat-item">
 								<span className="stat-value">
-									{ stats.countries?.length || 0 }
+									{ stats.countries || 0 }
 								</span>
 								<span className="stat-label">
 									{ __(

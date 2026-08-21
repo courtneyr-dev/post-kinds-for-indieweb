@@ -6,6 +6,8 @@
 
 import { useBlockProps } from '@wordpress/block-editor';
 
+import { parseDate } from '../shared/components';
+
 const TYPE_LABELS = {
 	item: 'Item',
 	experience: 'Experience',
@@ -93,12 +95,12 @@ export default function Save( { attributes } ) {
 						</p>
 					) }
 
-					{ wishedAt && (
+					{ parseDate( wishedAt ) && (
 						<time
 							className="post-kinds-card__timestamp dt-published"
-							dateTime={ new Date( wishedAt ).toISOString() }
+							dateTime={ parseDate( wishedAt ).toISOString() }
 						>
-							{ new Date( wishedAt ).toLocaleString() }
+							{ parseDate( wishedAt ).toLocaleString() }
 						</time>
 					) }
 				</div>

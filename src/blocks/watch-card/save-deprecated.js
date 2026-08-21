@@ -9,6 +9,8 @@
 
 import { useBlockProps, RichText } from '@wordpress/block-editor';
 
+import { parseDate } from '../shared/components';
+
 /**
  * Deprecated save component for the Watch Card block.
  *
@@ -204,12 +206,12 @@ export default function Save( { attributes } ) {
 					) }
 
 					{ /* Watched timestamp */ }
-					{ watchedAt && (
+					{ parseDate( watchedAt ) && (
 						<time
 							className="post-kinds-card__timestamp dt-published"
-							dateTime={ new Date( watchedAt ).toISOString() }
+							dateTime={ parseDate( watchedAt ).toISOString() }
 						>
-							{ new Date( watchedAt ).toLocaleString() }
+							{ parseDate( watchedAt ).toLocaleString() }
 						</time>
 					) }
 

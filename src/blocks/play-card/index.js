@@ -6,6 +6,8 @@
 
 import { registerBlockType } from '@wordpress/blocks';
 import { useBlockProps } from '@wordpress/block-editor';
+
+import { parseDate } from '../shared/components';
 import { playIcon } from '../shared/icons';
 import Edit from './edit';
 import Save from './save';
@@ -146,12 +148,12 @@ const v1Save = ( { attributes } ) => {
 							{ review }
 						</p>
 					) }
-					{ playedAt && (
+					{ parseDate( playedAt ) && (
 						<time
 							className="post-kinds-card__timestamp dt-published"
-							dateTime={ new Date( playedAt ).toISOString() }
+							dateTime={ parseDate( playedAt ).toISOString() }
 						>
-							{ new Date( playedAt ).toLocaleString() }
+							{ parseDate( playedAt ).toLocaleString() }
 						</time>
 					) }
 				</div>

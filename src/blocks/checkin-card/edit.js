@@ -31,7 +31,11 @@ import { useState, useRef, useCallback, useEffect } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 import { checkinIcon } from '../shared/icons';
-import { BlockPlaceholder, LocationDisplay } from '../shared/components';
+import {
+	BlockPlaceholder,
+	LocationDisplay,
+	parseDate,
+} from '../shared/components';
 import { STORE_NAME } from '../../editor/stores/post-kinds';
 
 /**
@@ -1579,12 +1583,14 @@ export default function Edit( { attributes, setAttributes } ) {
 							/>
 						</div>
 
-						{ checkinAt && (
+						{ parseDate( checkinAt ) && (
 							<time
 								className="checkin-time dt-published"
-								dateTime={ new Date( checkinAt ).toISOString() }
+								dateTime={ parseDate(
+									checkinAt
+								).toISOString() }
 							>
-								{ new Date( checkinAt ).toLocaleString() }
+								{ parseDate( checkinAt ).toLocaleString() }
 							</time>
 						) }
 

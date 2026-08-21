@@ -174,46 +174,50 @@ export default function Edit( { attributes, setAttributes } ) {
 								onSelect={ handleImageSelect }
 								allowedTypes={ [ 'image' ] }
 								render={ ( { open } ) => (
-									<button
-										type="button"
-										className="post-kinds-card__media-button"
-										onClick={ open }
-									>
-										{ image ? (
-											<>
-												<img
-													src={ image }
-													alt={ imageAlt || title }
-													className="post-kinds-card__image"
-												/>
-												<button
-													type="button"
-													className="post-kinds-card__media-remove"
-													onClick={
-														handleImageRemove
-													}
-													aria-label={ __(
-														'Remove image',
-														'post-kinds-for-indieweb-in-block-themes'
-													) }
-												>
-													&times;
-												</button>
-											</>
-										) : (
-											<div className="post-kinds-card__media-placeholder">
-												<span className="post-kinds-card__media-icon">
-													&#8635;
-												</span>
-												<span className="post-kinds-card__media-text">
-													{ __(
-														'Add Image',
-														'post-kinds-for-indieweb-in-block-themes'
-													) }
-												</span>
-											</div>
+									<div className="post-kinds-card__media-frame">
+										<button
+											type="button"
+											className="post-kinds-card__media-button"
+											onClick={ open }
+										>
+											{ image ? (
+												<>
+													<img
+														src={ image }
+														alt={
+															imageAlt || title
+														}
+														className="post-kinds-card__image"
+													/>
+												</>
+											) : (
+												<div className="post-kinds-card__media-placeholder">
+													<span className="post-kinds-card__media-icon">
+														&#8635;
+													</span>
+													<span className="post-kinds-card__media-text">
+														{ __(
+															'Add Image',
+															'post-kinds-for-indieweb-in-block-themes'
+														) }
+													</span>
+												</div>
+											) }
+										</button>
+										{ image && (
+											<button
+												type="button"
+												className="post-kinds-card__media-remove"
+												onClick={ handleImageRemove }
+												aria-label={ __(
+													'Remove image',
+													'post-kinds-for-indieweb-in-block-themes'
+												) }
+											>
+												&times;
+											</button>
 										) }
-									</button>
+									</div>
 								) }
 							/>
 						</MediaUploadCheck>

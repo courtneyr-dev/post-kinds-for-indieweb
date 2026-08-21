@@ -9,6 +9,8 @@
 
 import { useBlockProps } from '@wordpress/block-editor';
 
+import { parseDate } from '../shared/components';
+
 /**
  * Deprecated save component for the Listen Card block.
  *
@@ -125,12 +127,12 @@ export default function Save( { attributes } ) {
 					{ renderStars() }
 
 					{ /* Listened timestamp */ }
-					{ listenedAt && (
+					{ parseDate( listenedAt ) && (
 						<time
 							className="post-kinds-card__timestamp dt-published"
-							dateTime={ new Date( listenedAt ).toISOString() }
+							dateTime={ parseDate( listenedAt ).toISOString() }
 						>
-							{ new Date( listenedAt ).toLocaleString() }
+							{ parseDate( listenedAt ).toLocaleString() }
 						</time>
 					) }
 				</div>

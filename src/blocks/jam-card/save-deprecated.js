@@ -9,6 +9,8 @@
 
 import { useBlockProps } from '@wordpress/block-editor';
 
+import { parseDate } from '../shared/components';
+
 export default function Save( { attributes } ) {
 	const {
 		title,
@@ -83,12 +85,12 @@ export default function Save( { attributes } ) {
 						</p>
 					) }
 
-					{ jammedAt && (
+					{ parseDate( jammedAt ) && (
 						<time
 							className="post-kinds-card__timestamp dt-published"
-							dateTime={ new Date( jammedAt ).toISOString() }
+							dateTime={ parseDate( jammedAt ).toISOString() }
 						>
-							{ new Date( jammedAt ).toLocaleString() }
+							{ parseDate( jammedAt ).toLocaleString() }
 						</time>
 					) }
 				</div>
