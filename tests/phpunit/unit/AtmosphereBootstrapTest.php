@@ -17,6 +17,8 @@ use PKIW\Integrations\Atmosphere;
 
 /**
  * Atmosphere bootstrap tests.
+ *
+ * @group atmosphere
  */
 class AtmosphereBootstrapTest extends \WP_UnitTestCase {
 

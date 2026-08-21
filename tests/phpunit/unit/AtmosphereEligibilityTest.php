@@ -17,6 +17,8 @@ use PKIW\Integrations\Atmosphere_Eligibility;
 
 /**
  * Atmosphere_Eligibility tests.
+ *
+ * @group atmosphere
  */
 class AtmosphereEligibilityTest extends \WP_UnitTestCase {
 
@@ -141,6 +143,10 @@ class AtmosphereEligibilityTest extends \WP_UnitTestCase {
 	}
 
 	public function test_unregister_removes_the_default() {
+		if ( defined( 'ATMOSPHERE_VERSION' ) ) {
+			$this->markTestSkipped( 'With ATmosphere loaded, the plugin coordinator keeps its own instance registered; this pins the standalone class behavior.' );
+		}
+
 		$post_id = $this->make_kind_post( 'listen' );
 		$this->assertFalse( $this->sharing_enabled( $post_id ) );
 

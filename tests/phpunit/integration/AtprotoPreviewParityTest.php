@@ -21,6 +21,8 @@ use PKIW\Meta_Fields;
 
 /**
  * Atproto preview-parity tests.
+ *
+ * @group atmosphere
  */
 class AtprotoPreviewParityTest extends \WP_UnitTestCase {
 

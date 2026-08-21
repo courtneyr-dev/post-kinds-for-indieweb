@@ -111,6 +111,8 @@ class Atmosphere {
 		$this->maybe_support_reaction_cpt();
 
 		add_action( 'admin_init', [ $this, 'maybe_initialize_settings' ] );
+		// Priority 11: after Settings_Page builds its sections at 10.
+		add_action( 'admin_init', [ $this, 'register_settings_ui' ], 11 );
 		add_filter( 'manage_post_posts_columns', [ $this, 'add_status_column' ] );
 		add_action( 'manage_post_posts_custom_column', [ $this, 'render_status_column' ], 10, 2 );
 	}
@@ -127,6 +129,7 @@ class Atmosphere {
 
 		remove_action( 'admin_notices', [ $this, 'dependency_notice' ] );
 		remove_action( 'admin_init', [ $this, 'maybe_initialize_settings' ] );
+		remove_action( 'admin_init', [ $this, 'register_settings_ui' ], 11 );
 		remove_filter( 'manage_post_posts_columns', [ $this, 'add_status_column' ] );
 		remove_action( 'manage_post_posts_custom_column', [ $this, 'render_status_column' ], 10 );
 
@@ -302,6 +305,127 @@ class Atmosphere {
 		if ( 'cpt' === $mode ) {
 			add_post_type_support( \PKIW\Post_Type::POST_TYPE, 'atmosphere' );
 		}
+	}
+
+	/**
+	 * Register the settings field on the Integrations tab.
+	 *
+	 * Renders inside Settings_Page's existing pkiw_integrations section
+	 * and submits with the pkiw_general settings group, so no new tab,
+	 * page, or form is added. ATmosphere's own screen keeps everything
+	 * connection-related; this field carries only Post Kind policy and a
+	 * read-only status line pointing there.
+	 *
+	 * @since 1.6.0
+	 *
+	 * @return void
+	 */
+	public function register_settings_ui(): void {
+		register_setting(
+			'pkiw_general',
+			Atmosphere_Eligibility::OPTION,
+			[
+				'type'              => 'array',
+				'sanitize_callback' => [ $this, 'sanitize_settings' ],
+				'default'           => [],
+			]
+		);
+
+		add_settings_field(
+			'pkiw_atmosphere',
+			__( 'Standard.site publishing', 'post-kinds-for-indieweb-in-block-themes' ),
+			[ $this, 'render_settings_field' ],
+			'pkiw_integrations',
+			'pkiw_integrations_section'
+		);
+	}
+
+	/**
+	 * Sanitize the integration settings.
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param mixed $value Submitted value.
+	 * @return array{eligible_kinds: string[]}
+	 */
+	public function sanitize_settings( $value ): array {
+		$kinds = [];
+
+		if ( is_array( $value ) && isset( $value['eligible_kinds'] ) && is_array( $value['eligible_kinds'] ) ) {
+			$valid = get_terms(
+				[
+					'taxonomy'   => 'kind',
+					'hide_empty' => false,
+					'fields'     => 'slugs',
+				]
+			);
+			$valid = is_array( $valid ) ? array_map( 'strval', $valid ) : [];
+
+			$kinds = array_values(
+				array_intersect(
+					array_map( 'sanitize_key', $value['eligible_kinds'] ),
+					$valid
+				)
+			);
+		}
+
+		return [ 'eligible_kinds' => $kinds ];
+	}
+
+	/**
+	 * Render the status line and per-kind eligibility checkboxes.
+	 *
+	 * @since 1.6.0
+	 *
+	 * @return void
+	 */
+	public function render_settings_field(): void {
+		$status = self::status();
+
+		if ( $status['needs_reauth'] ) {
+			$connection = __( 'The AT Protocol connection needs to be reauthorized in ATmosphere.', 'post-kinds-for-indieweb-in-block-themes' );
+		} elseif ( $status['connected'] ) {
+			$connection = __( 'Connected to an AT Protocol account through ATmosphere.', 'post-kinds-for-indieweb-in-block-themes' );
+		} else {
+			$connection = __( 'Not connected — connect an AT Protocol account in ATmosphere to publish.', 'post-kinds-for-indieweb-in-block-themes' );
+		}
+
+		printf(
+			'<p>%s <a href="%s">%s</a></p>',
+			esc_html( $connection ),
+			esc_url( $status['settings_url'] ),
+			esc_html__( 'ATmosphere settings', 'post-kinds-for-indieweb-in-block-themes' )
+		);
+
+		$eligible = ( new Atmosphere_Eligibility() )->get_eligible_kinds();
+		$terms    = get_terms(
+			[
+				'taxonomy'   => 'kind',
+				'hide_empty' => false,
+			]
+		);
+
+		if ( is_array( $terms ) && ! empty( $terms ) ) {
+			echo '<fieldset><legend class="screen-reader-text">';
+			esc_html_e( 'Kinds that publish to Standard.site by default', 'post-kinds-for-indieweb-in-block-themes' );
+			echo '</legend>';
+
+			foreach ( $terms as $term ) {
+				printf(
+					'<label style="display:inline-block;min-width:12em;margin:0 1em 0.25em 0;"><input type="checkbox" name="%s[eligible_kinds][]" value="%s" %s /> %s</label>',
+					esc_attr( Atmosphere_Eligibility::OPTION ),
+					esc_attr( $term->slug ),
+					checked( in_array( $term->slug, $eligible, true ), true, false ),
+					esc_html( $term->name )
+				);
+			}
+
+			echo '</fieldset>';
+		}
+
+		echo '<p class="description">';
+		esc_html_e( 'Checked kinds publish a Standard.site document automatically when a post is published. A post\'s own sharing toggle in the editor always wins, and posts that already published a record are unaffected by changes here. Bluesky cross-posting follows ATmosphere\'s settings unchanged.', 'post-kinds-for-indieweb-in-block-themes' );
+		echo '</p>';
 	}
 
 	/**

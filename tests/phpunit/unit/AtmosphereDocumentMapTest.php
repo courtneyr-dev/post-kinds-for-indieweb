@@ -17,6 +17,8 @@ use PKIW\Meta_Fields;
 
 /**
  * Atmosphere_Document_Map tests.
+ *
+ * @group atmosphere
  */
 class AtmosphereDocumentMapTest extends \WP_UnitTestCase {
 

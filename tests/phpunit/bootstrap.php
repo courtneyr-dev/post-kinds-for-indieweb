@@ -36,6 +36,21 @@ function _manually_load_plugin() {
 	require dirname( __DIR__, 2 ) . '/post-kinds-for-indieweb-in-block-themes.php';
 }
 
+// Optionally load the ATmosphere plugin so the integration suite can run
+// with both plugins active. Point PKIW_TESTS_ATMOSPHERE_FILE at a checkout's
+// atmosphere.php; tests in @group atmosphere skip their live halves when it
+// is absent. Registered before the plugin loader so ATmosphere's constants
+// and helpers exist by the time this plugin's init runs, as in production.
+$_pkiw_atmosphere_file = getenv( 'PKIW_TESTS_ATMOSPHERE_FILE' );
+if ( $_pkiw_atmosphere_file && file_exists( $_pkiw_atmosphere_file ) ) {
+	tests_add_filter(
+		'muplugins_loaded',
+		static function () use ( $_pkiw_atmosphere_file ) {
+			require $_pkiw_atmosphere_file;
+		}
+	);
+}
+
 tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 
 // Start up the WP testing environment.

@@ -18,6 +18,8 @@ use PKIW\Meta_Fields;
 
 /**
  * Atmosphere_Titles tests.
+ *
+ * @group atmosphere
  */
 class AtmosphereTitlesTest extends \WP_UnitTestCase {
 
