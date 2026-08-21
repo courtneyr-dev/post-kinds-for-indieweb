@@ -73,11 +73,19 @@ class Atmosphere_Eligibility {
 	/**
 	 * Kinds whose posts publish to Standard.site by default.
 	 *
-	 * Self-contained content whose page is the canonical artifact. Reaction
-	 * and consumption kinds (likes, listens, check-ins, …) default to
-	 * opt-in: their pages are thin, high-volume, and — for check-ins —
-	 * privacy-sensitive. The lexicon would accept them; this is product
-	 * judgment, and both the site setting and the filters can widen it.
+	 * Public content and public logs whose pages are already the point:
+	 * ordinary content kinds, consumption logs (listen/watch/read/play/
+	 * eat/drink/jam — the plugin exists to publish these), and the
+	 * substantive response kinds (reply, bookmark, RSVP, issue).
+	 *
+	 * Deliberately absent, defaulting to opt-in: thin social signals
+	 * (like, repost, favorite, follow, tag) whose discovery value is low
+	 * and whose volume is high, and privacy-sensitive kinds (checkin,
+	 * mood, wish, acquisition, weather, exercise, sleep, trip,
+	 * itinerary). A kind added through the `pkiw_default_kinds` registry
+	 * filter that is unknown here also defaults to opt-in — conservative
+	 * by construction. Per-kind rationale:
+	 * docs/integrations/standard-site-kind-eligibility.md.
 	 *
 	 * @since 1.6.0
 	 *
@@ -92,10 +100,20 @@ class Atmosphere_Eligibility {
 		'review',
 		'recipe',
 		'event',
-		'jam',
 		'quote',
 		'question',
 		'craft',
+		'listen',
+		'watch',
+		'read',
+		'play',
+		'eat',
+		'drink',
+		'jam',
+		'reply',
+		'bookmark',
+		'rsvp',
+		'issue',
 	];
 
 	/**

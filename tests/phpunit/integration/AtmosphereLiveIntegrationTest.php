@@ -32,6 +32,15 @@ class AtmosphereLiveIntegrationTest extends \WP_UnitTestCase {
 		if ( ! defined( 'ATMOSPHERE_VERSION' ) ) {
 			$this->markTestSkipped( 'Set PKIW_TESTS_ATMOSPHERE_FILE to run the both-plugins suite.' );
 		}
+
+		// The WP test framework unregisters ALL meta keys between tests,
+		// so ATmosphere's init-time registration only survives the first
+		// test in a process. Re-register as a production request would;
+		// without this, REST meta writes silently no-op from the second
+		// test on (found the hard way — see the implementation record).
+		if ( ! registered_meta_key_exists( 'post', 'atmosphere_disabled', 'post' ) ) {
+			( new \Atmosphere\Atmosphere() )->register_share_meta();
+		}
 	}
 
 	public function tear_down(): void {
@@ -119,15 +128,17 @@ class AtmosphereLiveIntegrationTest extends \WP_UnitTestCase {
 	}
 
 	public function test_kind_defaults_gate_atmosphere_eligibility() {
-		$listen = $this->make_kind_post( 'listen', [ 'listen_track' => 'Song' ] );
-		$note   = $this->make_kind_post( 'note', [], [ 'post_content' => 'A note.' ] );
+		$checkin = $this->make_kind_post( 'checkin', [ 'checkin_name' => 'Somewhere' ] );
+		$listen  = $this->make_kind_post( 'listen', [ 'listen_track' => 'Song' ] );
+		$note    = $this->make_kind_post( 'note', [], [ 'post_content' => 'A note.' ] );
 
-		$this->assertFalse( \Atmosphere\is_post_publishable( $listen ), 'consumption kinds default to opt-in' );
+		$this->assertFalse( \Atmosphere\is_post_publishable( $checkin ), 'privacy-sensitive kinds default to opt-in' );
+		$this->assertTrue( \Atmosphere\is_post_publishable( $listen ), 'public consumption logs default to eligible' );
 		$this->assertTrue( \Atmosphere\is_post_publishable( $note ), 'content kinds default to eligible' );
 
 		// The author's explicit toggle wins over the kind default.
-		update_post_meta( $listen->ID, ATMOSPHERE_META_DISABLED, '' );
-		$this->assertTrue( \Atmosphere\is_post_publishable( $listen ) );
+		update_post_meta( $checkin->ID, ATMOSPHERE_META_DISABLED, '' );
+		$this->assertTrue( \Atmosphere\is_post_publishable( get_post( $checkin->ID ) ) );
 	}
 
 	public function test_publish_writes_the_enriched_record_and_document_meta() {
@@ -200,5 +211,104 @@ class AtmosphereLiveIntegrationTest extends \WP_UnitTestCase {
 			substr_count( $head, 'rel="site.standard.document"' ),
 			'the verification link must appear exactly once — ATmosphere emits it, this plugin must not add another'
 		);
+	}
+
+	public function test_rest_toggle_write_survives_the_kind_default() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		$post = $this->make_kind_post( 'checkin', [ 'checkin_name' => 'Somewhere' ] );
+
+		$this->assertFalse( \Atmosphere\is_post_publishable( $post ), 'checkin defaults to opt-in' );
+
+		// The editor toggle writes the registered boolean over REST. An
+		// opt-in writes `false` — the registered default — which is the
+		// exact case where core might delete the row instead of storing
+		// it, silently re-applying the kind default.
+		$request = new \WP_REST_Request( 'POST', '/wp/v2/posts/' . $post->ID );
+		$request->set_body_params( [ 'meta' => [ 'atmosphere_disabled' => false ] ] );
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertTrue(
+			metadata_exists( 'post', $post->ID, 'atmosphere_disabled' ),
+			'the explicit opt-in must persist as a stored row, or the kind default silently wins again'
+		);
+		$this->assertTrue( \Atmosphere\is_post_publishable( get_post( $post->ID ) ), 'REST opt-in must stick' );
+
+		// And the opposite direction: explicit opt-out over REST.
+		$note    = $this->make_kind_post( 'note', [], [ 'post_content' => 'x' ] );
+		$request = new \WP_REST_Request( 'POST', '/wp/v2/posts/' . $note->ID );
+		$request->set_body_params( [ 'meta' => [ 'atmosphere_disabled' => true ] ] );
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertFalse( \Atmosphere\is_post_publishable( get_post( $note->ID ) ), 'REST opt-out must stick' );
+	}
+
+	public function test_revisions_and_autosaves_pass_through_untouched() {
+		$post = $this->make_kind_post( 'checkin' );
+
+		$revision_id = wp_save_post_revision( $post->ID );
+		if ( $revision_id ) {
+			$this->assertSame(
+				'',
+				(string) get_post_meta( $revision_id, 'atmosphere_disabled', true ),
+				'revisions have no kind terms; the default filter must not touch them'
+			);
+		}
+
+		$autosave_id = wp_create_post_autosave(
+			[
+				'post_ID'      => $post->ID,
+				'post_title'   => 'autosave',
+				'post_content' => 'autosave body',
+				'post_type'    => 'post',
+			]
+		);
+		if ( is_int( $autosave_id ) && $autosave_id > 0 ) {
+			$this->assertSame( '', (string) get_post_meta( $autosave_id, 'atmosphere_disabled', true ) );
+		}
+	}
+
+	public function test_ordinary_edits_do_not_disturb_the_default() {
+		$post = $this->make_kind_post( 'checkin' );
+
+		// Quick-edit / bulk-edit shaped update: fields only, no meta.
+		wp_update_post(
+			[
+				'ID'         => $post->ID,
+				'post_title' => 'Edited title',
+			]
+		);
+
+		$this->assertFalse( metadata_exists( 'post', $post->ID, 'atmosphere_disabled' ) );
+		$this->assertFalse( \Atmosphere\is_post_publishable( get_post( $post->ID ) ) );
+	}
+
+	public function test_narrowing_the_site_default_never_retracts_published_posts() {
+		$note = $this->make_kind_post( 'note', [], [ 'post_content' => 'x' ] );
+		update_post_meta( $note->ID, \Atmosphere\Transformer\Document::META_URI, 'at://did:plc:abc/site.standard.document/3xyz' );
+
+		// Administrator unchecks every kind after this post published.
+		update_option( \PKIW\Integrations\Atmosphere_Eligibility::OPTION, [ 'eligible_kinds' => [] ] );
+
+		$this->assertTrue(
+			\Atmosphere\is_post_publishable( get_post( $note->ID ) ),
+			'a published record is exempt from any later default change'
+		);
+
+		delete_option( \PKIW\Integrations\Atmosphere_Eligibility::OPTION );
+	}
+
+	public function test_reserved_but_unpublished_doc_tid_stays_default_gated() {
+		// A failed publish reserves the document TID without a URI.
+		// has_post_records() deliberately ignores the doc TID, and the
+		// eligibility guard mirrors that: the post is still governed by
+		// the kind default, so a failed write on a default-off kind does
+		// not quietly convert the post to eligible.
+		$post = $this->make_kind_post( 'checkin' );
+		update_post_meta( $post->ID, \Atmosphere\Transformer\Document::META_TID, '3sometid' );
+
+		$this->assertFalse( \Atmosphere\is_post_publishable( get_post( $post->ID ) ) );
 	}
 }
