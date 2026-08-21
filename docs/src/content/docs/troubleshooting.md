@@ -91,9 +91,9 @@ Symptoms, likely causes, and fixes for the most common problems, based on the pl
 
 **Fix:** Give it time and visits, or lower the Rate Limit Delay / raise the Import Batch Size on **Reactions → Settings → Performance** with care (aggressive values can hit provider rate limits).
 
-## A notice says ATmosphere is missing or too old
+## The Integrations tab says ATmosphere is missing, inactive, or too old
 
-Standard.site publishing runs through the ATmosphere plugin, and Post Kinds declares it as a required dependency. WordPress normally won't let Post Kinds activate without it, but a WP-CLI deactivation or an unusual install can create the gap. Install or update ATmosphere from the plugins screen (2.1.0 or later); everything else in Post Kinds keeps working in the meantime.
+Standard.site publishing runs through the optional ATmosphere companion plugin. Post Kinds works fully without it — the status line on Settings → Post Kinds → Integrations just tells you what would enable publishing: install ATmosphere (2.1.0 or later), activate it, or update it, then connect an account on its own settings screen.
 
 ## A kind post isn't publishing to Standard.site
 

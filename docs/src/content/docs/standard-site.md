@@ -42,11 +42,11 @@ See [Privacy and data](/post-kinds-for-indieweb/privacy-and-data/) for exactly w
 
 ## Publishing your own posts
 
-Post Kinds requires the [ATmosphere](https://wordpress.org/plugins/atmosphere/) plugin, which publishes WordPress posts to AT Protocol — the `site.standard.publication` record for your site, a `site.standard.document` record per post, the `/.well-known` verification, and the link tags that let indexers confirm the records are really yours. ATmosphere owns all of that, including the account connection and everything that goes with it.
+Post Kinds integrates with the optional [ATmosphere](https://wordpress.org/plugins/atmosphere/) companion plugin (2.1.0 or later), which publishes WordPress posts to AT Protocol — the `site.standard.publication` record for your site, a `site.standard.document` record per post, the `/.well-known` verification, and the link tags that let indexers confirm the records are really yours. ATmosphere owns all of that, including the account connection and everything that goes with it.
 
 What Post Kinds adds is the part ATmosphere can't know:
 
-- **Which kinds publish.** Content kinds — notes, articles, photos, videos, audio, reviews, recipes, events, jams, quotes, questions, crafts — publish by default. Reaction and log kinds (likes, replies, reposts, bookmarks, RSVPs, listens, watches, reads, check-ins, and the rest) stay off by default: their pages are brief, they arrive in volume, and check-ins carry location. Turn any kind on under **Settings → Post Kinds → Integrations**, or turn a single post on or off with ATmosphere's sharing toggle in the editor — the per-post toggle always wins, and changing the site setting never removes records that already published.
+- **Which kinds publish.** Public content and public logs publish by default: notes, articles, photos, videos, audio, reviews, recipes, events, quotes, questions, crafts — and your listens, watches, reads, plays, eats, drinks, and jams, plus replies, bookmarks, RSVPs, and issues. Thin signals (likes, reposts, favorites, follows, tags) and privacy-sensitive kinds (check-ins, moods, wishes, acquisitions, weather, exercise, sleep, trips, itineraries) stay off by default. Turn any kind on or off under **Settings → Post Kinds → Integrations**, or turn a single post on or off with ATmosphere's sharing toggle in the editor — the per-post toggle always wins, and changing the site setting never removes records that already published. The full per-kind reasoning lives in the repository's [eligibility decision table](https://github.com/courtneyr-dev/post-kinds-for-indieweb/blob/main/docs/integrations/standard-site-kind-eligibility.md).
 - **Readable titles.** Standard.site requires every document to have a title; many kinds are intentionally untitled. Post Kinds derives one from the kind's own details — *Listened to Range Life by Pavement*, *Checked in at Powell's Books*, *RSVP: WordCamp US* — without ever touching your post. A private check-in derives just *Checked in*, no venue.
 - **The kind as a tag.** A listen carries `listen` in the record's tags, a review carries `review`, so your posts stay discoverable as what they are.
 
@@ -54,7 +54,7 @@ To start publishing: install and activate both plugins, connect your AT Protocol
 
 Standard.site documents and Bluesky posts are related but separate: whether a Bluesky post accompanies the document follows ATmosphere's settings, and Post Kinds never changes them.
 
-If your site already has a standard.site publication record created by another tool, see the migration note in the repository's [ATmosphere integration guide](https://github.com/courtneyr-dev/post-kinds-for-indieweb/blob/main/docs/integrations/atmosphere-standard-site.md) before connecting, so ATmosphere adopts your existing record instead of minting a second one.
+If your site already has a standard.site publication record created by another tool, be aware that ATmosphere currently creates its own publication record rather than adopting an existing one — see the repository's [ATmosphere integration guide](https://github.com/courtneyr-dev/post-kinds-for-indieweb/blob/main/docs/integrations/atmosphere-standard-site.md) for the current state of that limitation before connecting.
 
 ## For developers
 

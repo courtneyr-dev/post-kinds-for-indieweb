@@ -26,9 +26,14 @@ tool, or by hand) creates a second, competing publication record. The
 publication reference then point at ATmosphere's copy while the original
 keeps existing — indexers see two publications claiming one URL.
 
-This is a real deployment case: the audit that preceded this integration
-found a live site (courtneyr.dev) with exactly this shape — an existing
-publication record, zero documents, ATmosphere not yet installed.
+The gap is additionally proven executable in Post Kinds' test suite
+(`test_publication_rkey_is_minted_blind_never_adopted`): with an identity
+present and no stored TID, `get_rkey()` mints with zero network requests.
+The deployment that first raised the concern turned out to be a
+non-case — read-only inspection found that site's publication record was
+ATmosphere's own (stored TID matches the live record) — but any site
+moving to ATmosphere from Sequoia, Leaflet, a static-site tool, or a
+manual record still hits the limitation.
 
 ## Smallest general-purpose API
 

@@ -9,8 +9,8 @@ How to install and activate Post Kinds for IndieWeb in Block Themes, what the pl
 
 - **WordPress 7.0 or later.** This minimum is unusually high — sites on WordPress 6.x can't run this plugin. If your WordPress version is too old, activation is blocked and an admin notice tells you which version you're running and what's required.
 - **PHP 8.2 or later**, enforced the same way with an admin notice.
-- **The [ATmosphere plugin](https://wordpress.org/plugins/atmosphere/), 2.1.0 or later.** It handles all AT Protocol connectivity and Standard.site publishing; Post Kinds declares it as a WordPress plugin dependency, so the plugins screen prompts you to install and activate it first and blocks activation until it's there. Everything except Standard.site publishing still works if the dependency is somehow bypassed — you'll just see a notice.
 - The custom blocks require the **block editor**. Classic Editor users get only basic kind assignment through the taxonomy box.
+- Optional: the **[ATmosphere plugin](https://wordpress.org/plugins/atmosphere/), 2.1.0 or later**, enables [Standard.site publishing](/post-kinds-for-indieweb/standard-site/). Post Kinds installs, activates, and works fully without it — the Integrations settings tab simply offers it as a companion.
 
 ## Before you install: check for the classic Post Kinds plugin
 
@@ -53,10 +53,9 @@ On the **Plugins** screen, click **Activate** under Post Kinds for IndieWeb in B
 
 ## Companion plugins
 
-- **[ATmosphere](https://wordpress.org/plugins/atmosphere/)** — **required** (see Requirements above). Connect your AT Protocol account under Settings → ATmosphere to publish posts as [Standard.site records](/post-kinds-for-indieweb/standard-site/); until you connect, nothing publishes and nothing is sent.
+None of these are required, but the plugin is built to work alongside them:
 
-None of the rest are required, but the plugin is built to work alongside them:
-
+- **[ATmosphere](https://wordpress.org/plugins/atmosphere/)** — recommended for [Standard.site publishing](/post-kinds-for-indieweb/standard-site/). Install and activate it, connect your AT Protocol account under Settings → ATmosphere, and eligible posts publish as Standard.site documents; until then, nothing publishes and nothing is sent.
 - **[IndieBlocks](https://wordpress.org/plugins/indieblocks/)** — recommended. The plugin shows an admin notice until IndieBlocks is active, because IndieBlocks provides companion blocks for bookmarks, likes, replies, and reposts. Post Kinds for IndieWeb in Block Themes detects IndieBlocks; it doesn't replace it.
 - **[Micropub](https://wordpress.org/plugins/micropub/)** — required only if you want to publish from Micropub apps (mobile composers and similar). Without it, Micropub posting doesn't work at all; with it, this plugin converts incoming Micropub posts into card blocks and assigns the right kind. Micropub apps also need IndieAuth for sign-in (for example the [IndieAuth plugin](https://wordpress.org/plugins/indieauth/)).
 - **[Webmention](https://wordpress.org/plugins/webmention/)** — detected and shown on the Integrations settings tab for cross-site conversations. This plugin does not send or receive webmentions itself.

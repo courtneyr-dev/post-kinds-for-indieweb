@@ -96,6 +96,10 @@ class AtmosphereLiveIntegrationTest extends \WP_UnitTestCase {
 				'expires_at'   => time() + HOUR_IN_SECONDS,
 			]
 		);
+		// Released 2.1.0 reads the DID from its own option (the identity
+		// option + lazy migration arrived later on trunk); seed both, as
+		// ATmosphere's own test suite does.
+		update_option( 'atmosphere_did', 'did:plc:pkiwtest123' );
 	}
 
 	public function test_integration_literals_match_atmosphere_constants() {
@@ -193,12 +197,19 @@ class AtmosphereLiveIntegrationTest extends \WP_UnitTestCase {
 		$this->seed_connection();
 
 		$post = $this->make_kind_post( 'note', [], [ 'post_content' => 'A note.' ] );
+		// A normally-published dual post carries both record families.
+		// Released 2.1.0 only emits the document link when a Bluesky
+		// record exists (it rebuilds the URI from the stored doc TID);
+		// trunk emits from the stored document URI directly. Seeding the
+		// full set keeps this assertion meaningful on both.
 		update_post_meta(
 			$post->ID,
 			\Atmosphere\Transformer\Document::META_URI,
 			'at://did:plc:pkiwtest123/site.standard.document/3testrkey'
 		);
+		update_post_meta( $post->ID, \Atmosphere\Transformer\Document::META_TID, '3testrkey' );
 		update_post_meta( $post->ID, \Atmosphere\Transformer\Document::META_DID, 'did:plc:pkiwtest123' );
+		update_post_meta( $post->ID, \Atmosphere\Transformer\Post::META_URI, 'at://did:plc:pkiwtest123/app.bsky.feed.post/3bskyrkey' );
 
 		$this->go_to( get_permalink( $post->ID ) );
 
@@ -310,5 +321,35 @@ class AtmosphereLiveIntegrationTest extends \WP_UnitTestCase {
 		update_post_meta( $post->ID, \Atmosphere\Transformer\Document::META_TID, '3sometid' );
 
 		$this->assertFalse( \Atmosphere\is_post_publishable( get_post( $post->ID ) ) );
+	}
+
+	public function test_publication_rkey_is_minted_blind_never_adopted() {
+		// Upstream limitation, proven executable: with an identity present
+		// and no stored TID, ATmosphere mints a publication rkey locally
+		// without ever listing the repo's existing publication records —
+		// so a pre-existing record from another tool would be duplicated,
+		// not adopted. (docs/upstream/atmosphere/01-publication-adoption.md)
+		update_option( 'atmosphere_identity', [ 'did' => 'did:plc:pkiwtest123' ] );
+		delete_option( 'atmosphere_publication_tid' );
+
+		$requests = [];
+		$block    = function ( $short_circuit, $args, $url ) use ( &$requests ) {
+			$requests[] = $url;
+			return new \WP_Error( 'blocked', 'no network in tests' );
+		};
+		add_filter( 'pre_http_request', $block, 5, 3 );
+
+		$rkey = ( new \Atmosphere\Transformer\Publication( null ) )->get_rkey();
+
+		remove_filter( 'pre_http_request', $block, 5 );
+
+		$this->assertNotEmpty( $rkey, 'a fresh TID is minted' );
+		$this->assertSame( [], $requests, 'no listRecords (or any request) is attempted before minting' );
+
+		// The documented developer-recovery path: a pre-seeded TID is
+		// respected, which is what makes manual adoption possible at all.
+		update_option( 'atmosphere_publication_tid', '3preseededrkey' );
+		$this->assertSame( '3preseededrkey', ( new \Atmosphere\Transformer\Publication( null ) )->get_rkey() );
+		delete_option( 'atmosphere_publication_tid' );
 	}
 }

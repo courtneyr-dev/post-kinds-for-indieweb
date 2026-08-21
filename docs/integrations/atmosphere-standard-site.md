@@ -2,15 +2,61 @@
 
 Post Kinds for IndieWeb publishes posts to the Standard.site ecosystem
 (AT Protocol) **through the [ATmosphere plugin](https://wordpress.org/plugins/atmosphere/)**,
-never beside it. ATmosphere owns the protocol; Post Kinds owns the Post
-Kind semantics. This document is the developer contract: what each side
-owns, which public APIs the integration uses, what it adds, and what is
-deliberately not implemented.
+never beside it. ATmosphere is an **optional companion**: Post Kinds
+installs, activates, and works fully without it, and every ATmosphere
+state short of connected degrades to a contextual status line on the
+Integrations settings tab. ATmosphere owns the protocol; Post Kinds owns
+the Post Kind semantics. This document is the developer contract: what
+each side owns, which public APIs the integration uses, what it adds,
+and what is deliberately not implemented.
 
 Verified against ATmosphere 2.1.0 (wp.org release, 2026-07-22) and
-repository `Automattic/wordpress-atmosphere` @ `bf8e267`. Minimum
-supported version: **2.1.0**, enforced at runtime by
-`PKIW\Integrations\Atmosphere::MIN_VERSION`.
+repository `Automattic/wordpress-atmosphere` @ `bf8e267` (trunk,
+2.1.0 + 12). Minimum supported version: **2.1.0**, enforced at runtime
+by `PKIW\Integrations\Atmosphere::MIN_VERSION`.
+
+## Optional-integration behavior
+
+| ATmosphere state | Post Kinds behavior |
+|---|---|
+| Not installed | Everything works; Integrations tab shows a recommendation with an install link |
+| Installed, inactive | Everything works; capability-gated activate link |
+| Active, below 2.1.0 | Everything works; integration stays unwired; the minimum version is shown |
+| Active, compatible, disconnected | Policy wired but nothing publishes (ATmosphere's `is_connected()` gate); connect link shown |
+| Active, compatible, connected | Standard.site publishing enabled |
+| Deactivated during runtime | Next request degrades to the not-active state; verified non-fatal |
+| Deleted after configuration | As not-installed; the `pkiw_atmosphere` setting persists until uninstall |
+| Reauthorized / reconnected | ATmosphere's own lifecycle resumes; its per-record DID provenance prevents duplicate records across account changes |
+
+## Compatibility matrix (verified against the 2.1.0 tag and trunk)
+
+| API or behavior | First available | Used by Post Kinds? | Required / optional | Fallback |
+|---|---|---|---|---|
+| `ATMOSPHERE_VERSION` constant | ≤2.1.0 | yes — detection | required | integration unwired without it |
+| `atmosphere_transform_document` filter | 1.0.0 | yes — title + kind tag | required | — |
+| `atmosphere_disabled` registered meta | ≤2.1.0 | yes — eligibility default | required | — |
+| `Document::META_URI/META_TID`, `Post::META_TID` | ≤2.1.0 | yes — guards, status column | required | — |
+| `is_connected()` / `needs_reauth()` / `settings_url()` | ≤2.1.0 | yes — status surface | required | `function_exists`-guarded |
+| `add_post_type_support( …, 'atmosphere' )` | ≤2.1.0 | yes — reaction CPT mode | optional | skipped |
+| `atmosphere_pre_apply_writes` | ≤2.1.0 | tests only | optional | — |
+| `atmosphere_document_links/labels/contributors` | 2.0.0 | no — documented decision | optional | n/a |
+| `atmosphere_should_auto_publish` / `_should_sync_publication` / `_connection_only_mode` | ≤2.1.0 | no | n/a | n/a |
+| `atmosphere_publish_post_result` | ≤2.1.0 | no — ATmosphere's own panel surfaces results | optional | n/a |
+| Content-parser registry / preview transformers | 1.2.0 / 2.0.0 | no — built-in HTML parser chosen | optional | n/a |
+| `atmosphere_should_publish_bluesky_post` (document-only lane) | **trunk only** (`@since unreleased`; absent from the 2.1.0 tag — verified) | documented only | optional | blocked until released |
+| AT Tags output + `atmosphere_at_tags` | **trunk only** | no | n/a | docs note the difference |
+
+One behavioral difference found while testing both (pinned by the live
+suite's dual-record seeding): **released 2.1.0 emits the
+`<link rel="site.standard.document">` tag only when the post also has a
+Bluesky record** (`output_document_link()` bails on an empty
+`Post::META_URI`, then rebuilds the URI from the stored doc TID); trunk
+emits from the stored document URI itself. Immaterial for 2.1.0 users —
+every 2.1.0 publish is a dual publish — but worth knowing when reasoning
+about document-only futures.
+
+A non-gating CI job runs the integration group against ATmosphere trunk
+to catch upcoming-release breakage early.
 
 ## Ownership boundary
 
@@ -97,12 +143,12 @@ add_filter(
 
 ## Eligibility model
 
-- Default-eligible kinds: `note`, `article`, `photo`, `video`, `audio`,
-  `review`, `recipe`, `event`, `jam`, `quote`, `question`, `craft` —
-  self-contained content whose page is the canonical artifact.
-- Everything else (reactions, consumption logs, check-ins, quantified-self
-  kinds) is **opt-in**: per site under Settings → Post Kinds →
-  Integrations, or per post via ATmosphere's own sharing toggle.
+- 22 kinds default-eligible (public content, public consumption logs,
+  and substantive responses), 14 opt-in (thin signals and
+  privacy-sensitive kinds). The complete verified inventory and per-kind
+  reasoning: [standard-site-kind-eligibility.md](standard-site-kind-eligibility.md).
+- Unknown kinds (added via the `pkiw_default_kinds` registry filter)
+  default to opt-in by construction.
 - Mechanism: a `default_post_metadata` filter (priority 20) answers `'1'`
   (disabled) for non-eligible kinds **only when the post has no stored
   `atmosphere_disabled` value and no published record meta**. Zero writes;
@@ -139,33 +185,40 @@ ATmosphere 2.1.0 **always mints its own publication rkey**
 (`atmosphere_publication_tid`, generated blind on activation) and never
 lists or adopts an existing `site.standard.publication` record —
 verified in source (`includes/class-publisher.php::sync_publication()` is
-an unconditional `putRecord` at the locally stored TID). A site whose
-account already has a publication record written by another tool (the
-audit's courtneyr.dev case) would get a **second, competing record**.
+an unconditional `putRecord` at the locally stored TID) and proven
+executable in the test suite
+(`test_publication_rkey_is_minted_blind_never_adopted`: with an identity
+present and no stored TID, `get_rkey()` mints with zero network requests
+— no `listRecords`, no adoption). A site whose account already holds a
+publication record written by another tool would get a **second,
+competing record**.
 
-**Migration procedure for such sites** (do this *before* connecting
-ATmosphere, or before its first publication sync):
+The general limitation stands and a first-class adoption flow belongs
+upstream (`docs/upstream/atmosphere/01-publication-adoption.md`). The
+site that originally motivated the concern turned out not to need it:
+read-only inspection of courtneyr.dev (2026-08-21, authorized WP-CLI)
+found ATmosphere 2.1.0 **active** with `atmosphere_publication_tid`
+exactly matching the live publication record's rkey — the record was
+ATmosphere's own all along, local and remote state agree, and no
+migration is necessary there.
 
-```bash
-wp option update atmosphere_publication_tid <existing-rkey>
-```
-
-where `<existing-rkey>` is the rkey of the existing
-`at://did/site.standard.publication/<rkey>` record.
-`Publication::get_rkey()` respects a pre-existing option value and
-`putRecord` upserts, so ATmosphere then updates the existing record in
-place instead of minting a duplicate. This is an administrator action on
-ATmosphere's documented option surface, performed once; Post Kinds
-deliberately does not automate it — a first-class adoption flow belongs
-upstream (`docs/upstream/atmosphere/01-publication-adoption.md`).
+**Unsupported developer recovery** — not setup guidance and not a
+supported migration: the proof test also pins that a pre-seeded
+`atmosphere_publication_tid` is respected, so a developer can, at their
+own risk, seed the existing record's rkey *before* connecting. If you go
+there anyway: take a database backup first; verify the record's DID
+matches the account you will connect and fetch the record by rkey via
+`com.atproto.repo.getRecord` to confirm ownership; know the option is
+coupled to `atmosphere_publication_cid` (captured on the next sync) and
+to every document's publication reference. Wrong values make ATmosphere
+upsert over a record it does not own, or split documents across two
+publications.
 
 ## Failure and compatibility behavior
 
-- **ATmosphere missing:** WordPress's `Requires Plugins: atmosphere`
-  header guides installation; if bypassed, the integration registers
-  nothing but a capability-gated notice. No fatals; all other Post Kinds
-  features work.
-- **ATmosphere below 2.1.0:** same degradation, version-specific notice.
+- **ATmosphere missing or below 2.1.0:** the integration wires nothing
+  but the settings-tab status line (see the behavior matrix above). No
+  site-wide notices, no fatals; all other Post Kinds features work.
 - **Deactivated after load / deactivation order:** hooks reference
   ATmosphere symbols only inside availability-guarded paths; the next
   request degrades cleanly. Deactivating Post Kinds leaves ATmosphere

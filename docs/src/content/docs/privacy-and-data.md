@@ -66,12 +66,12 @@ Only the resolved record's address is stored, in the `_pkiw_standard_site_uri` p
 
 ## Standard.site publishing (through ATmosphere)
 
-Once you connect an AT Protocol account in the required ATmosphere plugin, eligible published posts are written to your Personal Data Server as public `site.standard.document` records — title (including the titles Post Kinds derives for untitled kinds), your post's address, publish date, excerpt, plain-text content, tags (including the kind), and the featured image. These records live **outside your WordPress database**, on your PDS, and propagate to public AT Protocol indexers. Unpublishing, trashing, or deleting a post removes its record through ATmosphere; disconnecting stops publishing but leaves existing records on your PDS until removed.
+This section applies only when the optional ATmosphere companion plugin is installed. Once you connect an AT Protocol account there, eligible published posts are written to your Personal Data Server as public `site.standard.document` records — title (including the titles Post Kinds derives for untitled kinds), your post's address, publish date, excerpt, plain-text content, tags (including the kind), and the featured image. These records live **outside your WordPress database**, on your PDS, and propagate to public AT Protocol indexers. Unpublishing, trashing, or deleting a post removes its record through ATmosphere; disconnecting stops publishing but leaves existing records on your PDS until removed.
 
 What Post Kinds controls on top of ATmosphere's own eligibility rules:
 
-- Reaction and log kinds — including check-ins — never publish unless you turn them on, per kind or per post.
-- A check-in that does publish follows your existing check-in privacy setting: a private check-in's derived title is just "Checked in", and the record's text comes from the same privacy-filtered rendering your site shows.
+- Thin signal kinds (likes, reposts, favorites, follows, tags) and privacy-sensitive kinds — check-ins, moods, wishes, acquisitions, weather, exercise, sleep, trips, itineraries — never publish unless you turn them on, per kind or per post. Public logs (listens, watches, reads, plays, eats, drinks, jams) publish by default, carrying only what their public pages already show.
+- A check-in that does publish follows your existing check-in privacy setting: a private check-in's derived title is just "Checked in", and the record's text comes from the same privacy-filtered rendering your site shows. Eat and drink posts have optional venue fields with no equivalent privacy tier — whatever venue detail the public card shows is what the record carries.
 - Drafts, scheduled, private, and password-protected posts never publish — that's ATmosphere's own gate, which Post Kinds narrows and never widens.
 
 Credentials never touch this plugin: the AT Protocol connection, its tokens, and their encryption are ATmosphere's alone.
