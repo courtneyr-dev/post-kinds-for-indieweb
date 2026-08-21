@@ -3,6 +3,7 @@
 	"core": "WordPress/WordPress#7.0",
 	"phpVersion": "8.2",
 	"plugins": [
+		"https://downloads.wordpress.org/plugin/atmosphere.2.1.0.zip",
 		"."
 	],
 	"themes": [],

@@ -91,6 +91,21 @@ Symptoms, likely causes, and fixes for the most common problems, based on the pl
 
 **Fix:** Give it time and visits, or lower the Rate Limit Delay / raise the Import Batch Size on **Reactions → Settings → Performance** with care (aggressive values can hit provider rate limits).
 
+## A notice says ATmosphere is missing or too old
+
+Standard.site publishing runs through the ATmosphere plugin, and Post Kinds declares it as a required dependency. WordPress normally won't let Post Kinds activate without it, but a WP-CLI deactivation or an unusual install can create the gap. Install or update ATmosphere from the plugins screen (2.1.0 or later); everything else in Post Kinds keeps working in the meantime.
+
+## A kind post isn't publishing to Standard.site
+
+In order of likelihood:
+
+1. ATmosphere isn't connected — check Settings → ATmosphere (its Site Health section reports connection problems too).
+2. The kind is off by default — reaction and log kinds are opt-in. Check the kind under Settings → Post Kinds → Integrations, or flip the post's own sharing toggle in the editor, which always wins.
+3. The post isn't public — drafts, private, and password-protected posts never publish.
+4. The post predates the connection — routine edits don't retro-publish old posts by design. Bring existing posts over deliberately with `wp atmosphere backfill` (`--dry-run` first).
+
+The Standard.site column on the posts list shows each post's state at a glance: Published (hover for the record address), Pending, or Off.
+
 ## When to open an issue
 
 If none of the above fixes your problem:

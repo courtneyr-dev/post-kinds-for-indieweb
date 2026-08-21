@@ -28,6 +28,7 @@ The Outpost composer publishes to your site over Micropub. Kind-shaped posts —
 ## What each plugin adds
 
 - **Post Kinds for IndieWeb** — this plugin: card blocks, media lookup, microformats, imports, and webhooks.
+- **ATmosphere** — required; owns the AT Protocol connection and publishes posts as [Standard.site records](/post-kinds-for-indieweb/standard-site/) with Bluesky cross-posting under its own settings. Post Kinds feeds it kind eligibility, derived titles, and kind tags.
 - **Post Formats for Block Themes** — format patterns, detection, badges, and templates; formats map onto kinds automatically.
 - **Link Extension for XFN** — relationship attributes on links in any post or card.
 - **Outpost** — a phone-friendly composer that publishes via Micropub and IndieAuth.

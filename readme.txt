@@ -4,6 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
+Requires Plugins: atmosphere
 Stable tag: 1.5.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -26,6 +27,7 @@ The original Post Kinds plugin was built for the Classic Editor. This plugin is 
 * **Real-time scrobbling** — webhooks for Plex, Jellyfin, Trakt, and ListenBrainz. Scrobbling means automatically logging each song or show as you play it.
 * **microformats2 markup** on every post. Microformats are standard HTML classes that let other IndieWeb sites and tools read your posts as structured data — a listen, an RSVP, a check-in — instead of plain text.
 * **Standard.site records** — when a page you bookmark publishes its metadata to AT Protocol, read the author's own title, description, and tags instead of guessing from the page. No account or setup needed.
+* **Standard.site publishing** — through the required [ATmosphere](https://wordpress.org/plugins/atmosphere/) plugin, your own posts publish as Standard.site documents on AT Protocol. Post Kinds adds what ATmosphere can't know: which kinds publish by default, readable titles for untitled posts ("Listened to … by …", "Checked in at …"), the kind as a tag, and check-in privacy rules. Connect once in ATmosphere; publishing follows your normal posting.
 
 = Post kinds =
 
@@ -109,7 +111,15 @@ Choose "Check this URL" to look. Most of the web publishes no such record, and t
 
 = Does the Standard.site panel publish my posts to AT Protocol? =
 
-No. It only reads. Your posts are not sent anywhere, no account is involved, and there is nothing to connect or configure. Publishing your own posts as standard.site records needs an authenticated connection, which this plugin does not do.
+The panel itself only reads — checking a URL sends nothing about you or your site. Publishing your own posts is separate and runs through the required [ATmosphere](https://wordpress.org/plugins/atmosphere/) plugin: connect an AT Protocol account there, and eligible posts publish as Standard.site documents when you publish them. Until you connect, nothing is ever sent.
+
+= Which posts publish to Standard.site? =
+
+Content kinds — notes, articles, photos, videos, reviews, recipes, events, and similar — publish by default once ATmosphere is connected. Reaction and log kinds (likes, listens, watches, check-ins, and friends) stay private by default; turn them on per kind under Settings → Post Kinds → Integrations, or per post with ATmosphere's sharing toggle in the editor, which always has the final say. Posts published before you change a setting are never removed by it.
+
+= Do my posts also go to Bluesky? =
+
+That's ATmosphere's choice, not this plugin's: Bluesky cross-posting follows ATmosphere's own settings unchanged. Standard.site documents and Bluesky posts are related but separate — see the plugin documentation for publishing documents without Bluesky companions.
 
 = How do I post from my phone or a Micropub app? =
 

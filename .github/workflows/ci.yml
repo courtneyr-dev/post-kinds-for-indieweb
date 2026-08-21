@@ -138,8 +138,20 @@ jobs:
       - name: Install WordPress test suite
         run: bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1 ${{ matrix.wp }} true
 
+      # The ATmosphere integration's live suite (@group atmosphere) runs
+      # against a real checkout of the dependency, pinned to the minimum
+      # supported release. Without this checkout those tests skip.
+      - name: Checkout ATmosphere 2.1.0
+        uses: actions/checkout@v7
+        with:
+          repository: Automattic/wordpress-atmosphere
+          ref: 2.1.0
+          path: wordpress-atmosphere
+
       - name: Run PHPUnit
         run: composer test
+        env:
+          PKIW_TESTS_ATMOSPHERE_FILE: ${{ github.workspace }}/wordpress-atmosphere/atmosphere.php
 
       - name: Upload coverage to Codecov
         if: matrix.php == '8.4' && matrix.wp == '7.0'
@@ -404,7 +416,8 @@ jobs:
         # Basic auth. PKIW_TEST_PHOTO_HOST is the host as seen from
         # INSIDE the wp-env container (the runner's docker bridge).
         run: |
-          npx wp-env run cli wp plugin activate indieauth micropub
+          npx wp-env run cli wp plugin activate indieauth micropub atmosphere
+          npx wp-env run cli wp plugin activate post-kinds-for-indieweb
           echo "WP_APP_PASSWORD=$(npx wp-env run cli wp user application-password create admin e2e --porcelain)" >> "$GITHUB_ENV"
           echo "PKIW_TEST_PHOTO_HOST=http://172.17.0.1:8888" >> "$GITHUB_ENV"
 

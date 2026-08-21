@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Standard.site publishing through the ATmosphere plugin, now a required dependency (`Requires Plugins: atmosphere`, minimum 2.1.0). ATmosphere keeps sole ownership of AT Protocol connectivity, records, verification, and lifecycle sync; this plugin contributes what ATmosphere can't know about Post Kinds. Content kinds (note, article, photo, video, audio, review, recipe, event, jam, quote, question, craft) publish by default; reaction and log kinds are opt-in per site (Settings → Post Kinds → Integrations) or per post via ATmosphere's own sharing toggle, which always wins — implemented as a metadata *default* on `atmosphere_disabled`, so nothing is written and posts that already published a record are never retracted by a settings change. On upgrade, sites that were already publishing kind posts through ATmosphere are seeded all-eligible so nothing changes silently.
+- Derived Standard.site document titles for intentionally untitled kinds — "Listened to Range Life by Pavement", "Checked in at Powell's Books", "RSVP: WordCamp US" — with check-in privacy tiers (a private check-in derives "Checked in", no venue), a 500-grapheme cap, and content/kind-label fallbacks. The kind slug also rides along as a document tag. New filters: `pkiw_atmosphere_default_eligible_kinds`, `pkiw_atmosphere_post_default_disabled`, `pkiw_atmosphere_document_title`, `pkiw_atmosphere_document_kind_tag`.
+- A Standard.site column on the posts list (Published / Pending / Off, with the record's address on hover) and an integration status field on the Integrations settings tab linking to ATmosphere's own connection screen.
+
+### Fixed
+
+- Hidden microformats2 markers no longer leak into ATmosphere's `?atproto` record previews. The preview renders content on a singular request where the mf2 marker elements would add text the actually-published record never carries; both `the_content` filters now skip the projection, so preview and published records agree.
+
+### Changed
+
+- Missing or outdated ATmosphere degrades safely: everything else in the plugin keeps working and administrators see one actionable notice. WordPress blocks *activating* this plugin without ATmosphere but WP-CLI can still deactivate the dependency afterward (verified) — that state is handled, not fatal.
+
 ## [1.5.2] - 2026-08-21
 
 ### Fixed
