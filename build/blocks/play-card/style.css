@@ -1,0 +1,96 @@
+/**
+ * Play Card — block style variations.
+ *
+ * Six game-family treatments picked from the editor's Styles panel (or
+ * auto-suggested from lookup metadata — see shared/play-style.js). Each
+ * style layers an accent onto the shared pk-card paint system without
+ * overriding theme-owned --pk-* surfaces: a corner glyph, a distinctive
+ * edge, and one texture cue. Raw glyph colors ride --pk-kind with an
+ * ink fallback so they follow the theme's per-kind accent.
+ */
+
+.wp-block-post-kinds-indieweb-play-card[class*="is-style-"] {
+	position: relative;
+	overflow: visible;
+}
+
+.wp-block-post-kinds-indieweb-play-card[class*="is-style-"]::after {
+	content: "";
+	position: absolute;
+	top: 0.55rem;
+	right: 0.55rem;
+	width: 1.5rem;
+	height: 1.5rem;
+	background-color: var(--pk-kind, currentColor);
+	-webkit-mask: var(--pkiw-play-glyph) center / contain no-repeat;
+	mask: var(--pkiw-play-glyph) center / contain no-repeat;
+	opacity: 0.8;
+	pointer-events: none;
+}
+
+/* Board game: box-lid depth edge + meeple. */
+.wp-block-post-kinds-indieweb-play-card.is-style-board-game {
+	--pkiw-play-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3c1.7 0 3 1.4 3 3.1 0 1-.5 1.9-1.2 2.5 1.6.8 2.9 2 3.7 3.6l2.6.9c.8.3 1.1 1.3.5 2l-2.3 2.7c.6 1 .9 2 .9 2.9 0 .7-.6 1.3-1.3 1.3H6.1c-.7 0-1.3-.6-1.3-1.3 0-.9.3-1.9.9-2.9L3.4 15c-.6-.7-.3-1.7.5-2l2.6-.9c.8-1.6 2.1-2.8 3.7-3.6C9.5 7.9 9 7 9 6.1 9 4.4 10.3 3 12 3Z'/%3E%3C/svg%3E");
+	border-left: 0.55rem solid var(--pk-kind, currentColor);
+	box-shadow: inset 0.35rem 0 0 var(--pk-surface, transparent);
+}
+
+/* Console game: cartridge top-notch bar. */
+.wp-block-post-kinds-indieweb-play-card.is-style-console-game {
+	--pkiw-play-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 6h10c3 0 5 2.4 5 5.4 0 3.7-1.4 6.6-3.2 6.6-1 0-1.8-.6-2.6-1.6-.6-.8-1.2-1.1-2.1-1.1h-4.2c-.9 0-1.5.3-2.1 1.1-.8 1-1.6 1.6-2.6 1.6C3.4 18 2 15.1 2 11.4 2 8.4 4 6 7 6Zm1.8 2.7h-1.6v1.7H5.5V12h1.7v1.7h1.6V12h1.7v-1.6H8.8V8.7Zm8.1.3a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2Zm-2.4 2.4a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2Z'/%3E%3C/svg%3E");
+	border-top: 0.55rem solid var(--pk-kind, currentColor);
+	border-radius: 10px 10px 4px 4px;
+}
+
+.wp-block-post-kinds-indieweb-play-card.is-style-console-game::before {
+	content: "";
+	position: absolute;
+	top: -0.55rem;
+	left: 18%;
+	width: 30%;
+	height: 0.55rem;
+	background: repeating-linear-gradient(90deg, var(--pk-surface, transparent) 0 3px, transparent 3px 7px);
+	pointer-events: none;
+}
+
+/* Computer game: monospace title + status-bar footer rule. */
+.wp-block-post-kinds-indieweb-play-card.is-style-computer-game {
+	--pkiw-play-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 4h18c.6 0 1 .4 1 1v11c0 .6-.4 1-1 1h-7v2h3a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2h3v-2H3c-.6 0-1-.4-1-1V5c0-.6.4-1 1-1Zm1 2v9h16V6H4Z'/%3E%3C/svg%3E");
+	border-bottom: 3px double var(--pk-kind, currentColor);
+}
+
+.wp-block-post-kinds-indieweb-play-card.is-style-computer-game .pk-title {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	letter-spacing: 0.02em;
+}
+
+.wp-block-post-kinds-indieweb-play-card.is-style-computer-game .pk-title::before {
+	content: "> ";
+	color: var(--pk-kind, currentColor);
+}
+
+/* Card game: fanned-deck stack behind the card. */
+.wp-block-post-kinds-indieweb-play-card.is-style-card-game {
+	--pkiw-play-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3.2c2 2.3 5.4 4.5 5.4 8 0 2-1.4 3.7-3.3 3.7-.8 0-1.5-.3-2.1-.8v3.6h3a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2h3v-3.6c-.6.5-1.3.8-2.1.8-1.9 0-3.3-1.7-3.3-3.7 0-3.5 3.4-5.7 5.4-8Z'/%3E%3C/svg%3E");
+	border-radius: 12px;
+	box-shadow:
+		3px 3px 0 -1px var(--pk-surface, transparent),
+		3px 3px 0 0 var(--pk-border, currentColor),
+		6px 6px 0 -1px var(--pk-surface, transparent),
+		6px 6px 0 0 var(--pk-border, currentColor);
+}
+
+/* Dice game: pip corners + rounded die silhouette. */
+.wp-block-post-kinds-indieweb-play-card.is-style-dice-game {
+	--pkiw-play-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 2h12a4 4 0 0 1 4 4v12a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V6a4 4 0 0 1 4-4Zm1.8 3.9a1.9 1.9 0 1 0 0 3.8 1.9 1.9 0 0 0 0-3.8Zm8.4 0a1.9 1.9 0 1 0 0 3.8 1.9 1.9 0 0 0 0-3.8ZM12 10.1a1.9 1.9 0 1 0 0 3.8 1.9 1.9 0 0 0 0-3.8Zm-4.2 4.2a1.9 1.9 0 1 0 0 3.8 1.9 1.9 0 0 0 0-3.8Zm8.4 0a1.9 1.9 0 1 0 0 3.8 1.9 1.9 0 0 0 0-3.8Z'/%3E%3C/svg%3E");
+	border-radius: 16px;
+	border-width: 2px;
+}
+
+/* Tabletop RPG: character-sheet rules + d20. */
+.wp-block-post-kinds-indieweb-play-card.is-style-ttrpg {
+	--pkiw-play-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.5 21.5 7v10L12 22.5 2.5 17V7L12 1.5Zm0 2.3L5.6 7.5 12 9.4l6.4-1.9L12 3.8ZM4.5 9v6.4l5.4 3.1L7.6 12 4.5 9Zm15 0-3.1 3-2.3 6.5 5.4-3.1V9Zm-7.5 2.1L9.2 12l2.8 7 2.8-7-2.8-.9Z'/%3E%3C/svg%3E");
+	background-image: repeating-linear-gradient(180deg, transparent 0, transparent calc(1.6em - 1px), var(--pk-border, transparent) calc(1.6em - 1px), var(--pk-border, transparent) 1.6em);
+	border-style: double;
+	border-width: 4px;
+}

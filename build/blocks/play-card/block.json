@@ -6,7 +6,13 @@
 	"title": "Play Card",
 	"category": "post-kinds-indieweb",
 	"description": "Display a game you played with cover art, platform, status, and rating.",
-	"keywords": ["play", "game", "gaming", "video game", "board game"],
+	"keywords": [
+		"play",
+		"game",
+		"gaming",
+		"video game",
+		"board game"
+	],
 	"textdomain": "post-kinds-for-indieweb-in-block-themes",
 	"attributes": {
 		"title": {
@@ -24,7 +30,13 @@
 		"status": {
 			"type": "string",
 			"default": "playing",
-			"enum": ["playing", "completed", "abandoned", "backlog", "wishlist"]
+			"enum": [
+				"playing",
+				"completed",
+				"abandoned",
+				"backlog",
+				"wishlist"
+			]
 		},
 		"hoursPlayed": {
 			"type": "number",
@@ -65,7 +77,10 @@
 	},
 	"supports": {
 		"html": false,
-		"align": ["wide", "full"],
+		"align": [
+			"wide",
+			"full"
+		],
 		"color": {
 			"background": true,
 			"text": true,
@@ -113,5 +128,32 @@
 			"hoursPlayed": 120
 		}
 	},
-	"render": "file:./render.php"
+	"render": "file:./render.php",
+	"styles": [
+		{
+			"name": "board-game",
+			"label": "Board game"
+		},
+		{
+			"name": "console-game",
+			"label": "Console game"
+		},
+		{
+			"name": "computer-game",
+			"label": "Computer game"
+		},
+		{
+			"name": "card-game",
+			"label": "Card game"
+		},
+		{
+			"name": "dice-game",
+			"label": "Dice game"
+		},
+		{
+			"name": "ttrpg",
+			"label": "Tabletop RPG"
+		}
+	],
+	"style": "file:./style.css"
 }
