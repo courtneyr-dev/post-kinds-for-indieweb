@@ -63,6 +63,10 @@ Each kind gets its own archive page (for example `/kind/listen/`), and the kind 
 * [IndieBlocks](https://wordpress.org/plugins/indieblocks/) — detected and recommended, not required. It provides companion blocks (Facepile, Location, Syndication, Link Preview); this plugin doesn't implement those features itself.
 * [Webmention](https://wordpress.org/plugins/webmention/) — detected on the Integrations settings tab. Cross-site conversations come from that plugin, not this one.
 * [Syndication Links](https://wordpress.org/plugins/syndication-links/), [Post Formats for Block Themes](https://wordpress.org/plugins/post-formats-for-block-themes/), [Bookmark Card](https://wordpress.org/plugins/bookmark-card/) — detected and enhanced when present.
+* [ATmosphere](https://wordpress.org/plugins/atmosphere/) — optional companion (2.1.0+) for Standard.site publishing on AT Protocol. ATmosphere owns the connection and the records; this plugin decides which kinds publish, derives readable titles for untitled posts, and applies check-in privacy rules. Everything else works without it.
+* [Link Extension for XFN](https://wordpress.org/plugins/link-extension-for-xfn/) — detected on the Integrations settings tab. Adds XFN relationship options to the block editor's link popover, so a reply or mention can say how you know the person.
+* [The Events Calendar](https://wordpress.org/plugins/the-events-calendar/) and [My Calendar](https://wordpress.org/plugins/my-calendar/) — either one feeds the Event card. Event name, start, end, location, and URL are read from whichever is installed; with neither, the card falls back to its own fields.
+* [WP Recipe Maker](https://wordpress.org/plugins/wp-recipe-maker/) — a post containing a WPRM recipe is detected, and the recipe kind is suggested for it.
 * [ActivityPub](https://wordpress.org/plugins/activitypub/) — a recommendation only; this plugin contains no ActivityPub integration.
 
 = Conflicts =
