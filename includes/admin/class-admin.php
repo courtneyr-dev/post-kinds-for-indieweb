@@ -490,7 +490,10 @@ class Admin {
 				'gallery'  => 'photo',
 				'image'    => 'photo',
 				'link'     => 'bookmark',
-				'quote'    => 'repost',
+				// The quote format is a quotation of someone else, which is
+				// the quote kind (u-quotation-of). This defaulted to repost
+				// before the quote kind existed.
+				'quote'    => 'quote',
 				'status'   => 'note',
 				'video'    => 'watch',
 			],
