@@ -103,6 +103,32 @@ class DistributionManifestTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Heavy dot-directories are excluded by name.
+	 *
+	 * `expected_shipped()` skips every dot-entry, so a dot-directory missing
+	 * from `.distignore` is invisible to the manifest comparison — but
+	 * `wp dist-archive` reads `.distignore` alone and would package it.
+	 * `.wordpress-org/` (banners and screenshots for the directory listing,
+	 * ~6M) belongs in the SVN repo's assets/, never in trunk, and shipped
+	 * that way only because the 1.7.0 build excluded it by hand.
+	 */
+	public function test_distignore_excludes_directory_listing_assets(): void {
+		$ignored = $this->ignored_entries();
+
+		foreach ( [ '.wordpress-org', '.git', '.github' ] as $entry ) {
+			if ( ! is_dir( $this->repo_root() . '/' . $entry ) ) {
+				continue;
+			}
+
+			$this->assertContains(
+				$entry,
+				$ignored,
+				"$entry exists in the repo but .distignore does not exclude it, so wp dist-archive would ship it"
+			);
+		}
+	}
+
+	/**
 	 * The manifest ships exactly what `.distignore` does not exclude.
 	 */
 	public function test_manifest_matches_distignore_contract(): void {
