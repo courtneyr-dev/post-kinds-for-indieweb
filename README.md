@@ -175,6 +175,12 @@ Then activate the plugin in WordPress admin.
 - [Post Formats for Block Themes](https://wordpress.org/plugins/post-formats-for-block-themes/) — post format support in block themes
 - [Link Extension for XFN](https://wordpress.org/plugins/link-extension-for-xfn/) — XFN relationship options
 
+**Integrated** (detected at runtime; each stays optional):
+
+- [ATmosphere](https://wordpress.org/plugins/atmosphere/) — Standard.site publishing on AT Protocol (2.1.0+). It owns the connection and records; this plugin supplies kind eligibility, derived titles, and check-in privacy rules.
+- [The Events Calendar](https://wordpress.org/plugins/the-events-calendar/) / [My Calendar](https://wordpress.org/plugins/my-calendar/) — either one feeds the Event card's name, start, end, location, and URL. Neither installed, and the card uses its own fields.
+- [WP Recipe Maker](https://wordpress.org/plugins/wp-recipe-maker/) — detects a WPRM recipe in a post and suggests the recipe kind.
+
 **Optional:**
 
 - [ActivityPub](https://wordpress.org/plugins/activitypub/) — federate with Mastodon and the Fediverse
