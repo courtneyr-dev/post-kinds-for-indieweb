@@ -428,7 +428,23 @@ abstract class API_Base {
 	}
 
 	/**
+	 * How long an empty result is remembered, in seconds.
+	 *
+	 * Short on purpose — see set_cache().
+	 */
+	protected const EMPTY_CACHE_DURATION = 300;
+
+	/**
 	 * Set cached data.
+	 *
+	 * An empty result is cached for EMPTY_CACHE_DURATION rather than the
+	 * full duration. A lookup can come back empty for reasons that have
+	 * nothing to do with the query — a rate limit, a transient upstream
+	 * failure, a service returning 200 with no rows — and at the normal
+	 * duration that answer is then repeated for a day, so the same search
+	 * keeps reporting "no results found" long after the service recovered
+	 * and no request is ever made to notice. Keeping a short window still
+	 * protects the service from a user retrying in frustration.
 	 *
 	 * @param string $key      Cache key.
 	 * @param mixed  $data     Data to cache.
@@ -438,6 +454,10 @@ abstract class API_Base {
 	protected function set_cache( string $key, $data, ?int $duration = null ): bool {
 		$cache_key = $this->get_cache_key( $key );
 		$duration  = $duration ?? $this->cache_duration;
+
+		if ( empty( $data ) ) {
+			$duration = min( $duration, static::EMPTY_CACHE_DURATION );
+		}
 
 		return set_transient( $cache_key, $data, $duration );
 	}
