@@ -282,4 +282,54 @@ class ApiBaseTest extends ApiTestCase {
 
 		$this->assertSame( [], $results );
 	}
+
+	/**
+	 * An empty result is remembered briefly, not for a full day.
+	 *
+	 * A lookup can return empty because of a rate limit or a transient
+	 * upstream failure. At the normal duration that answer is repeated for
+	 * a day and the same search keeps reporting "no results found" with no
+	 * request ever made to notice the service recovered.
+	 */
+	public function test_empty_results_get_a_short_ttl(): void {
+		$this->api->exposed_set_cache( 'empty_search', [] );
+
+		$key     = $this->api->exposed_get_cache_key( 'empty_search' );
+		$timeout = (int) get_option( '_transient_timeout_' . $key );
+
+		$this->assertGreaterThan( time(), $timeout, 'empty result should still be cached' );
+		$this->assertLessThanOrEqual(
+			time() + 300,
+			$timeout,
+			'empty result should expire within the short window, not the full cache duration'
+		);
+	}
+
+	/**
+	 * A real result still gets the full cache duration.
+	 */
+	public function test_non_empty_results_keep_the_full_ttl(): void {
+		$this->api->exposed_set_cache( 'real_search', [ [ 'title' => 'A Day of Fallen Night' ] ] );
+
+		$key     = $this->api->exposed_get_cache_key( 'real_search' );
+		$timeout = (int) get_option( '_transient_timeout_' . $key );
+
+		$this->assertGreaterThan(
+			time() + 300,
+			$timeout,
+			'a real result should outlive the short empty-result window'
+		);
+	}
+
+	/**
+	 * Both cases round-trip through get_cache unchanged.
+	 */
+	public function test_cached_values_round_trip(): void {
+		$this->api->exposed_set_cache( 'roundtrip_empty', [] );
+		$this->assertSame( [], $this->api->exposed_get_cache( 'roundtrip_empty' ) );
+
+		$rows = [ [ 'title' => 'Tomorrow, and Tomorrow, and Tomorrow' ] ];
+		$this->api->exposed_set_cache( 'roundtrip_rows', $rows );
+		$this->assertSame( $rows, $this->api->exposed_get_cache( 'roundtrip_rows' ) );
+	}
 }
