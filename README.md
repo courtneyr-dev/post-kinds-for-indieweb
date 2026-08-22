@@ -184,6 +184,7 @@ Then activate the plugin in WordPress admin.
 **Optional:**
 
 - [ActivityPub](https://wordpress.org/plugins/activitypub/) — federate with Mastodon and the Fediverse
+- [RSS Chat](https://github.com/pfefferle/wordpress-rss-chat) — publish to the rss.chat network. Recommendation only; there is no integration here. RSS Chat routes on the core `chat` post format, which is independent of kinds, so kinds do not drive rss.chat syndication today — see [issue #6](https://github.com/pfefferle/wordpress-rss-chat/issues/6). GitHub only, not on WordPress.org.
 
 **Conflicts:**
 

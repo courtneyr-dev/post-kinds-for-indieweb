@@ -68,6 +68,7 @@ Each kind gets its own archive page (for example `/kind/listen/`), and the kind 
 * [The Events Calendar](https://wordpress.org/plugins/the-events-calendar/) and [My Calendar](https://wordpress.org/plugins/my-calendar/) — either one feeds the Event card. Event name, start, end, location, and URL are read from whichever is installed; with neither, the card falls back to its own fields.
 * [WP Recipe Maker](https://wordpress.org/plugins/wp-recipe-maker/) — a post containing a WPRM recipe is detected, and the recipe kind is suggested for it.
 * [ActivityPub](https://wordpress.org/plugins/activitypub/) — a recommendation only; this plugin contains no ActivityPub integration.
+* [RSS Chat](https://github.com/pfefferle/wordpress-rss-chat) — a recommendation only; this plugin contains no rss.chat integration, and RSS Chat is on GitHub rather than WordPress.org. It syndicates posts carrying the core **chat** post format, which is separate from kinds, so a note or a reply is not sent to rss.chat unless you also set that format on it. Whether that check could become filterable, so a kind could decide instead, is open upstream: [issue #6](https://github.com/pfefferle/wordpress-rss-chat/issues/6).
 
 = Conflicts =
 
