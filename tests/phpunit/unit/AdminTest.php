@@ -87,6 +87,27 @@ class AdminTest extends WP_UnitTestCase {
 		$this->assertIsArray( $defaults['format_kind_mappings'] );
 	}
 
+	/**
+	 * Each post format maps to the kind that means the same thing.
+	 *
+	 * The quote format defaulted to the repost kind before the quote kind
+	 * existed; a quotation of someone else is a quote (u-quotation-of),
+	 * not a reshare.
+	 */
+	public function test_format_kind_mappings_pair_equivalent_meanings(): void {
+		$map = $this->admin->get_default_settings()['format_kind_mappings'];
+
+		$this->assertSame( 'quote', $map['quote'] );
+		$this->assertSame( 'article', $map['standard'] );
+		$this->assertSame( 'note', $map['aside'] );
+		$this->assertSame( 'listen', $map['audio'] );
+		$this->assertSame( 'photo', $map['image'] );
+		$this->assertSame( 'photo', $map['gallery'] );
+		$this->assertSame( 'bookmark', $map['link'] );
+		$this->assertSame( 'watch', $map['video'] );
+		$this->assertSame( 'note', $map['status'] );
+	}
+
 	// ─── get_post_kinds ───
 
 	/**
