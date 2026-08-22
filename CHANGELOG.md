@@ -9,11 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-08-21
+
 ### Added
 
+- Four more kinds from the IndieWeb posts vocabulary: **chicken**, **comics**, **collection**, and **presentation**, bringing the registry to 40. Each gets its taxonomy term, admin picker entry, editor icon, badge glyph, and microformats2 mapping.
+- Kind icons in the editor picker are filterable — `postKindsIndieweb.kindIcons` lets a site register an icon component for a custom kind term, or override a built-in. Custom terms previously always fell back to the note icon with no way to change it.
+- Six block style variations for the Play Card — board game, console game, computer game, card game, dice game, and tabletop RPG — selectable from the editor's Styles panel. The style is suggested automatically from what's known about the game (platform first, then title keywords, then lookup source: BoardGameGeek implies board game, Steam implies computer, RAWG implies console), and never overrides a style you picked yourself.
 - The Micropub bridge now classifies **every registered kind**, not just the original 16. New property inference: `jam-of`, `favorite-of`, `wish-of` (plus `wishlist-of` compat alias), `quotation-of`, `tag-of`, `issue-of` (compat alias), `craft-of`, `acquisition-of`, `exercise`, `sleep`, `trip`, `itinerary`, `question`, `start` (event), `item` (review), `ingredient` (recipe), `video`, and `audio` — video/audio detect ahead of `photo` so a poster image can't demote them, and `start` detects ahead of `location` so events with venues don't read as check-ins.
 - New `pkiw-kind` vendor property (mirrors `pkiw-promote`): a Micropub client that knows its kind names it explicitly, overriding inference. This is the only route to kinds whose property shape is ambiguous — issue (which reuses `in-reply-to`) and content-only quotes. Invalid values fall back to inference.
 - Kinds without a card block now generate a typed one-line paragraph (the follow/weather pattern) carrying the canonical microformats2 class, which also prevents title-less posts of those kinds from dying in `wp_insert_post()` with `empty_content`.
+
+### Fixed
+
+- Publishing failed with "meta._pkiw_read_isbn is not of type string" after a book lookup. External APIs return numbers where the meta is registered as a string — OpenLibrary ISBNs, TMDB and Trakt ids, release years — and REST rejects the whole post update. Values are now coerced to the registered type at the single point where kind meta is written, rather than cast per call site, so the ~20 other lookup fields with the same exposure (check-in address, listen track and album, play title and ids) are covered too. The type map comes from the PHP registry itself, so JS and PHP can't drift apart.
 
 ## [1.6.0] - 2026-08-21
 

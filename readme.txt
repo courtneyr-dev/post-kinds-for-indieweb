@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.6.0
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -170,6 +170,13 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 9. Standard.site record panel on a Bookmark Card, showing the cited page's own title, publication, description, and tags read from AT Protocol
 
 == Changelog ==
+
+= 1.7.0 =
+* Added: four more kinds — chicken, comics, collection, and presentation — bringing the total to 40.
+* Added: the Play Card has six looks to choose from in the editor's Styles panel — board game, console game, computer game, card game, dice game, and tabletop RPG. It picks one for you based on what it knows about the game, and leaves your choice alone if you've made one.
+* Added: sites can now give their own custom kinds an icon in the kind picker, instead of every custom kind showing the generic note icon. Developers: the new `postKindsIndieweb.kindIcons` JavaScript filter.
+* Added: the Micropub bridge understands every registered kind, not just the original 16, and clients can name a kind outright with the new `pkiw-kind` property.
+* Fixed: publishing a book post after a lookup failed with "meta._pkiw_read_isbn is not of type string". Lookup services return ISBNs, IDs, and years as numbers where the plugin stores text, which made WordPress reject the whole save. Values are now converted where they're stored, so every lookup field is covered rather than just the ones reported.
 
 = 1.6.0 =
 * Added: Standard.site publishing through the optional [ATmosphere](https://wordpress.org/plugins/atmosphere/) companion plugin (2.1.0 or later). Public content and public logs — notes, articles, photos, videos, reviews, recipes, events, listens, watches, reads, plays, eats, drinks, jams, replies, bookmarks, and RSVPs — publish as Standard.site documents by default once ATmosphere is connected; likes, reposts, favorites, follows, check-ins, moods, and the other privacy-sensitive kinds stay off until you turn them on, per kind or per post. Untitled posts get readable derived titles ("Listened to … by …", "Checked in at …" — or just "Checked in" for a private check-in), the kind rides along as a tag, and a post's own sharing toggle always has the final say. Posts that already published are never removed by a settings change, and nothing backfills automatically. Post Kinds works fully without ATmosphere.
