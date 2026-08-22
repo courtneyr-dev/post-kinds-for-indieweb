@@ -43,6 +43,11 @@ phpstan-baseline.neon
 # the single largest thing in the download.
 /img
 
+# Banners, icons, and screenshots for the plugin directory listing. These
+# belong in the SVN repo's own assets/ directory, never in trunk — shipping
+# them would add ~6M to every download.
+/.wordpress-org
+
 # Development documentation
 CLAUDE.md
 CODE_OF_CONDUCT.md
