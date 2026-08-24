@@ -179,6 +179,9 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 = 1.7.1 =
 * Fixed: long mood posts lost their emoji on the Stream. The compact card now shows the emoji from the post's mood card.
 * Fixed: mood posts read as a stack of stray lines in feed readers. Feeds now show the emoji inline with the post text instead of the flattened card markup.
+* Fixed: choosing the quote post format now maps to the quote kind instead of repost.
+* Fixed: a search that found nothing kept saying "no results found" for a full day, even after the service recovered. Empty lookups now retry after five minutes.
+* Fixed: the plugin download no longer includes the directory-listing artwork, making it noticeably smaller.
 
 = 1.7.0 =
 * Added: four more kinds — chicken, comics, collection, and presentation — bringing the total to 40.
