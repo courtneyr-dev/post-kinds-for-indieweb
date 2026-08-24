@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Long-form mood posts (a mood card plus real paragraphs) lost their emoji on the Stream. The generic stream card builds from post metadata and never read the mood-card block's attributes, so the emoji vanished from the feed item. The card now renders the emoji from the post's first mood-card block, ahead of its caption — a card saved without an explicit emoji shows the block's 😊 default, and a mood post with no mood card gets no invented one.
 - Mood posts arrived in RSS/Atom feeds as a stack of stray lines — the "Mood" kind label, the emoji alone, then the text — because feed readers flatten the card's block-level markup. In feeds the card now collapses to its essence: the emoji inline at the head of the post text, or a single "emoji note" paragraph when the card is the whole post. Excerpt feeds get the same treatment; web rendering is untouched.
+- The quote post format mapped to the repost kind instead of quote.
+- A media or venue lookup that came back empty was cached for a full day, so the same search kept reporting "no results found" long after a rate limit or upstream hiccup cleared. Empty results now expire after five minutes; real results keep the full duration.
+- The plugin directory's banners, icons, and screenshots (`.wordpress-org/`) no longer ship inside the download.
 
 ## [1.7.0] - 2026-08-21
 
