@@ -333,6 +333,70 @@ final class StreamCardTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A long-form mood post keeps its mood-card emoji on the generic card,
+	 * ahead of the caption so the theme can paint it as the enamel pin.
+	 */
+	public function test_long_form_mood_renders_mood_card_emoji(): void {
+		$this->ensure_kind_term( 'mood' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => 'A rainy-day reflection',
+				'post_content' => '<!-- wp:post-kinds-indieweb/mood-card {"mood":"Melancholy","emoji":"🌧️"} /-->' .
+					"\n\n<!-- wp:paragraph -->\n<p>Long thoughts about the rain.</p>\n<!-- /wp:paragraph -->",
+			]
+		);
+		wp_set_object_terms( $post_id, 'mood', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( 'pk-card--stream', $html );
+		$this->assertStringContainsString( '<span class="pk-mood__emoji" aria-hidden="true">🌧️</span>', $html );
+		$this->assertLessThan( strpos( $html, 'pk-caption' ), strpos( $html, 'pk-mood__emoji' ) );
+	}
+
+	/**
+	 * A mood-card block with no explicit emoji still pins the block's 😊
+	 * default to the card.
+	 */
+	public function test_long_form_mood_without_explicit_emoji_uses_block_default(): void {
+		$this->ensure_kind_term( 'mood' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => 'Feeling fine',
+				'post_content' => '<!-- wp:post-kinds-indieweb/mood-card {"mood":"Content"} /-->' .
+					"\n\n<!-- wp:paragraph -->\n<p>Nothing much to add.</p>\n<!-- /wp:paragraph -->",
+			]
+		);
+		wp_set_object_terms( $post_id, 'mood', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( '<span class="pk-mood__emoji" aria-hidden="true">😊</span>', $html );
+	}
+
+	/**
+	 * A mood post with no mood-card block in the body gets no invented pin.
+	 */
+	public function test_long_form_mood_without_mood_card_block_has_no_emoji(): void {
+		$this->ensure_kind_term( 'mood' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => 'Mood, in prose only',
+				'post_content' => "<!-- wp:paragraph -->\n<p>Words about a feeling.</p>\n<!-- /wp:paragraph -->",
+			]
+		);
+		wp_set_object_terms( $post_id, 'mood', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( 'k-mood', $html );
+		$this->assertStringNotContainsString( 'pk-mood__emoji', $html );
+	}
+
+	/**
 	 * Make sure a `kind` term exists so it can be assigned to a post.
 	 *
 	 * @param string $slug Kind slug.
