@@ -342,6 +342,7 @@ require_once PKIW_PATH . 'includes/functions-embeds.php';
 require_once PKIW_PATH . 'includes/functions-card-icons.php';
 require_once PKIW_PATH . 'includes/functions-card-labels.php';
 require_once PKIW_PATH . 'includes/functions-stream-card.php';
+require_once PKIW_PATH . 'includes/functions-feed-mood.php';
 
 // Hook into WordPress init (priority 0 so component registrations land
 // before the priority-10 callbacks they depend on).
