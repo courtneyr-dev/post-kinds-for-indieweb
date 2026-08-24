@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.7.0
+Stable tag: 1.7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -175,6 +175,10 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 9. Standard.site record panel on a Bookmark Card, showing the cited page's own title, publication, description, and tags read from AT Protocol
 
 == Changelog ==
+
+= 1.7.1 =
+* Fixed: long mood posts lost their emoji on the Stream. The compact card now shows the emoji from the post's mood card.
+* Fixed: mood posts read as a stack of stray lines in feed readers. Feeds now show the emoji inline with the post text instead of the flattened card markup.
 
 = 1.7.0 =
 * Added: four more kinds — chicken, comics, collection, and presentation — bringing the total to 40.
