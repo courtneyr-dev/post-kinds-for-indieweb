@@ -138,6 +138,16 @@ function render_generic_stream_card( \WP_Post $post ): string {
 	$out .= '<div class="pk-badge">' . get_kind_icon_svg( $badge_kind ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	$out .= '<div class="pk-body">';
 	$out .= '<p class="pk-kindlabel">' . esc_html( get_kind_label( $kind_label, $badge_kind, 'stream-card' ) ) . '</p>';
+
+	// A long-form mood post falls through to this card, which would otherwise
+	// drop the mood-card block's emoji — carry it over as the mood pin.
+	if ( 'mood' === $kind_slug ) {
+		$emoji = extract_mood_card_emoji( (string) $post->post_content );
+		if ( '' !== $emoji ) {
+			$out .= '<span class="pk-mood__emoji" aria-hidden="true">' . esc_html( $emoji ) . '</span>';
+		}
+	}
+
 	$out .= '<div class="pk-caption">';
 	$out .= '<h2 class="' . esc_attr( $title_class ) . '"><a href="' . $permalink . '">' . esc_html( $title ) . '</a></h2>';
 
@@ -360,6 +370,35 @@ function extract_first_video_url( string $content ): string {
 
 	if ( preg_match( '#https?://(?:www\.)?(?:youtube\.com/watch\?[^\s"<]+|youtu\.be/[A-Za-z0-9_-]{6,})#i', $content, $matches ) ) {
 		return $matches[0];
+	}
+
+	return '';
+}
+
+/**
+ * The emoji attribute of the first mood-card block in a post body.
+ *
+ * Saved block comments carry raw attributes — parse_blocks() applies no
+ * block.json defaults — so a mood-card saved without an explicit emoji has
+ * no `emoji` key at all. Mirror the block renderer's own 😊 fallback in
+ * that case; a body with no mood-card block yields '' so the card renders
+ * without a pin rather than inventing one.
+ *
+ * @param string $content Post content.
+ * @return string The emoji, or '' when the body has no mood-card block.
+ */
+function extract_mood_card_emoji( string $content ): string {
+	if ( ! str_contains( $content, 'post-kinds-indieweb/mood-card' ) ) {
+		return '';
+	}
+
+	foreach ( flatten_blocks( parse_blocks( $content ) ) as $block ) {
+		if ( 'post-kinds-indieweb/mood-card' !== ( $block['blockName'] ?? '' ) ) {
+			continue;
+		}
+
+		$emoji = trim( (string) ( $block['attrs']['emoji'] ?? '' ) );
+		return '' !== $emoji ? $emoji : '😊';
 	}
 
 	return '';
