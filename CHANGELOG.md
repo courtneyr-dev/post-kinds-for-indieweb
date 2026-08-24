@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.1] - 2026-08-24
+
+### Fixed
+
+- Long-form mood posts (a mood card plus real paragraphs) lost their emoji on the Stream. The generic stream card builds from post metadata and never read the mood-card block's attributes, so the emoji vanished from the feed item. The card now renders the emoji from the post's first mood-card block, ahead of its caption — a card saved without an explicit emoji shows the block's 😊 default, and a mood post with no mood card gets no invented one.
+- Mood posts arrived in RSS/Atom feeds as a stack of stray lines — the "Mood" kind label, the emoji alone, then the text — because feed readers flatten the card's block-level markup. In feeds the card now collapses to its essence: the emoji inline at the head of the post text, or a single "emoji note" paragraph when the card is the whole post. Excerpt feeds get the same treatment; web rendering is untouched.
+
 ## [1.7.0] - 2026-08-21
 
 ### Added
@@ -372,7 +379,10 @@ This project uses Semantic Versioning:
 - [Issues](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues)
 - [IndieWeb Wiki](https://indieweb.org/)
 
-[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.2...HEAD
+[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.7.1...HEAD
+[1.7.1]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.7.0...v1.7.1
+[1.7.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.6.0...v1.7.0
+[1.6.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.2...v1.6.0
 [1.5.2]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/1.0.0...v1.5.0
