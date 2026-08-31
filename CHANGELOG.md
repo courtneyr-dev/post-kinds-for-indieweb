@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Stream cards' "Read more" links all announced identically to screen readers. Each link now carries the post title as visually hidden text (new `.pk-sr-only` utility), so link lists read "Read more: {title}" instead of thirty indistinguishable "Read more"s.
+- Mood emoji were wrapped in `aria-hidden="true"`, hiding the mood itself from assistive tech. The emoji is the content — it is now exposed (`role="img"`) so screen readers announce it, in both the mood card and the Stream's mood pin.
+- Watch/play/read cards rendered an empty `alt` on their poster/cover art when the saved block's media-title attribute was blank (common on cards filled via the media pickers). The alt now falls back to the post title, so the artwork always names the work.
+
 ## [1.7.1] - 2026-08-24
 
 ### Fixed

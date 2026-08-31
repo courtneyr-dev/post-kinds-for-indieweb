@@ -131,7 +131,7 @@ ob_start();
 			<div class="pk-embed pk-embed--video"><?php echo $pkiw_embed; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 		<?php elseif ( $pkiw_poster_image ) : ?>
 			<div class="pk-media">
-				<img class="pk-thumb--poster u-photo" src="<?php echo esc_url( $pkiw_poster_image ); ?>" alt="<?php echo esc_attr( $pkiw_poster_alt ? $pkiw_poster_alt : $pkiw_media_title ); ?>" loading="lazy" />
+				<img class="pk-thumb--poster u-photo" src="<?php echo esc_url( $pkiw_poster_image ); ?>" alt="<?php echo esc_attr( $pkiw_poster_alt ? $pkiw_poster_alt : ( $pkiw_media_title ? $pkiw_media_title : get_the_title() ) ); ?>" loading="lazy" />
 			</div>
 		<?php endif; ?>
 

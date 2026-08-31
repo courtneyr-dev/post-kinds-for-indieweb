@@ -160,7 +160,7 @@ ob_start();
 
 		<?php if ( $pkiw_cover_image ) : ?>
 			<div class="pk-media">
-				<img class="pk-thumb--poster u-photo" src="<?php echo esc_url( $pkiw_cover_image ); ?>" alt="<?php echo esc_attr( $pkiw_cover_alt ? $pkiw_cover_alt : sprintf( /* translators: %s: book title */ __( 'Cover of %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_book_title ) ); ?>" loading="lazy" />
+				<img class="pk-thumb--poster u-photo" src="<?php echo esc_url( $pkiw_cover_image ); ?>" alt="<?php echo esc_attr( $pkiw_cover_alt ? $pkiw_cover_alt : sprintf( /* translators: %s: book title */ __( 'Cover of %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_book_title ? $pkiw_book_title : get_the_title() ) ); ?>" loading="lazy" />
 			</div>
 		<?php endif; ?>
 
