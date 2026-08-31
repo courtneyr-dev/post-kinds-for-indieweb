@@ -47,7 +47,7 @@ ob_start();
 
 		<div class="pk-mood">
 			<?php if ( $pkiw_emoji ) : ?>
-				<span class="pk-mood__emoji" aria-hidden="true"><?php echo esc_html( $pkiw_emoji ); ?></span>
+				<span class="pk-mood__emoji" role="img"><?php echo esc_html( $pkiw_emoji ); ?></span>
 			<?php endif; ?>
 			<?php if ( $pkiw_note ) : ?>
 				<p class="pk-mood__note p-content"><?php echo wp_kses_post( $pkiw_note ); ?></p>

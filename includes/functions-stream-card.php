@@ -144,7 +144,8 @@ function render_generic_stream_card( \WP_Post $post ): string {
 	if ( 'mood' === $kind_slug ) {
 		$emoji = extract_mood_card_emoji( (string) $post->post_content );
 		if ( '' !== $emoji ) {
-			$out .= '<span class="pk-mood__emoji" aria-hidden="true">' . esc_html( $emoji ) . '</span>';
+			// The emoji IS the mood — expose it so assistive tech announces it.
+			$out .= '<span class="pk-mood__emoji" role="img">' . esc_html( $emoji ) . '</span>';
 		}
 	}
 
@@ -170,7 +171,8 @@ function render_generic_stream_card( \WP_Post $post ): string {
 	}
 
 	$out .= '<div class="pk-meta"><a class="pk-link" href="' . $permalink . '">'
-		. esc_html__( 'Read more', 'post-kinds-for-indieweb-in-block-themes' ) . '</a></div>';
+		. esc_html__( 'Read more', 'post-kinds-for-indieweb-in-block-themes' )
+		. '<span class="pk-sr-only">' . esc_html( ': ' . $title ) . '</span></a></div>';
 	$out .= '</div></article>';
 
 	return $out;
