@@ -351,7 +351,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$html = \PKIW\render_stream_card();
 
 		$this->assertStringContainsString( 'pk-card--stream', $html );
-		$this->assertStringContainsString( '<span class="pk-mood__emoji" aria-hidden="true">🌧️</span>', $html );
+		$this->assertStringContainsString( '<span class="pk-mood__emoji" role="img">🌧️</span>', $html );
 		$this->assertLessThan( strpos( $html, 'pk-caption' ), strpos( $html, 'pk-mood__emoji' ) );
 	}
 
@@ -373,7 +373,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 
 		$html = \PKIW\render_stream_card();
 
-		$this->assertStringContainsString( '<span class="pk-mood__emoji" aria-hidden="true">😊</span>', $html );
+		$this->assertStringContainsString( '<span class="pk-mood__emoji" role="img">😊</span>', $html );
 	}
 
 	/**
