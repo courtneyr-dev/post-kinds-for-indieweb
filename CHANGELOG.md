@@ -15,6 +15,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mood emoji were wrapped in `aria-hidden="true"`, hiding the mood itself from assistive tech. The emoji is the content — it is now exposed (`role="img"`) so screen readers announce it, in both the mood card and the Stream's mood pin.
 - Watch/play/read cards rendered an empty `alt` on their poster/cover art when the saved block's media-title attribute was blank (common on cards filled via the media pickers). The alt now falls back to the post title, so the artwork always names the work.
 
+## [1.8.0] - 2026-09-09
+
+### Added
+
+- Image captions on Stream cards. The featured image's caption renders beneath it in the feed,
+  read from the attachment — the same value the media library and the block editor show.
+- A thumbnail row on posts carrying more than one image, with a `+N` link to the post past
+  four, so a six-photo post no longer looks identical to a one-photo post.
+- Choosing a thumbnail swaps the hero image and its caption. Thumbnails are buttons, so they
+  work by keyboard as well as by tap; the caption region is polite-live and the hero's alt
+  swaps with it; the crossfade respects `prefers-reduced-motion`. The card is complete and
+  correct without JavaScript.
+
 ## [1.7.1] - 2026-08-24
 
 ### Fixed

@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.7.1
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -175,6 +175,9 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 9. Standard.site record panel on a Bookmark Card, showing the cited page's own title, publication, description, and tags read from AT Protocol
 
 == Changelog ==
+
+= 1.8.0 =
+* Added: image captions on Stream cards. The featured image's caption now shows under it in the feed, and a post with more than one image gets a row of thumbnails so it no longer looks identical to a single-image post. Choosing a thumbnail swaps the image and its caption; the card is complete without JavaScript, and thumbnails work by keyboard as well as by tap.
 
 = 1.7.1 =
 * Fixed: long mood posts lost their emoji on the Stream. The compact card now shows the emoji from the post's mood card.

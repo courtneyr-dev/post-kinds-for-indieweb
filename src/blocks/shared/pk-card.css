@@ -387,3 +387,93 @@
 .pk-card--compact .pk-embed {
 	display: none;
 }
+
+/* ---------------------------------------------------------------------------
+   Stream card captions and gallery thumbnails
+
+   A caption lives on the attachment, which is where WordPress keeps one. The
+   hero's caption renders under it; past a single image a row of thumbnails
+   shows the post carries more, so a six-photo post stops looking identical to
+   a one-photo post in the feed.
+
+   Thumbnails are buttons rather than bare images so they are reachable by
+   keyboard and work on a phone, where there is no hover.
+   ------------------------------------------------------------------------ */
+
+.pk-media--stream {
+	display: block;
+}
+
+.pk-media__caption {
+	margin: var(--pk-space-2) 0 0;
+	font-size: 0.9em;
+	line-height: 1.45;
+	color: var(--pk-ink-muted, var(--pk-ink));
+}
+
+.pk-media__thumbs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--pk-space-2);
+	margin: var(--pk-space-2) 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.pk-media__thumb {
+	margin: 0;
+}
+
+.pk-media__thumb-button {
+	display: block;
+	padding: 0;
+	border: 1px solid var(--pk-border);
+	border-radius: var(--pk-radius-sm);
+	background: none;
+	cursor: pointer;
+	overflow: hidden;
+	line-height: 0;
+}
+
+.pk-media__thumb-button img {
+	width: var(--pk-thumb);
+	height: var(--pk-thumb);
+	object-fit: cover;
+	display: block;
+}
+
+/* Focus must be visible on its own, not only as a colour change. */
+.pk-media__thumb-button:focus-visible {
+	outline: 2px solid currentcolor;
+	outline-offset: 2px;
+}
+
+.pk-media__thumb-button[aria-pressed="true"] {
+	border-color: currentcolor;
+}
+
+.pk-media__thumb-more-link {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--pk-thumb);
+	height: var(--pk-thumb);
+	border: 1px dashed var(--pk-border);
+	border-radius: var(--pk-radius-sm);
+	text-decoration: none;
+	font-size: 0.85em;
+}
+
+/* Motion is opt-out, and the swap is instant for anyone who asked for that. */
+@media (prefers-reduced-motion: no-preference) {
+
+	.pk-media--stream .wp-post-image,
+	.pk-media__caption {
+		transition: opacity 150ms ease-in-out;
+	}
+
+	.pk-media--stream.is-swapping .wp-post-image,
+	.pk-media--stream.is-swapping .pk-media__caption {
+		opacity: 0;
+	}
+}

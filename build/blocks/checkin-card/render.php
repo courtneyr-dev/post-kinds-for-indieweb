@@ -124,38 +124,40 @@ ob_start();
 					</h2>
 				<?php endif; ?>
 
+				<?php
+				// Build the address as one string. Interleaving these spans with
+				// template indentation put raw newlines between them, so the
+				// street address ran into the locality with no separator and the
+				// comma arrived with a space in front of it.
+				$pkiw_address_parts = [];
+				if ( $pkiw_show_address && $pkiw_address ) {
+					$pkiw_address_parts[] = '<span class="p-street-address">' . esc_html( $pkiw_address ) . '</span>';
+				}
+
+				$pkiw_place_parts = [];
+				if ( $pkiw_locality ) {
+					$pkiw_place_parts[] = '<span class="p-locality">' . esc_html( $pkiw_locality ) . '</span>';
+				}
+				if ( $pkiw_region ) {
+					$pkiw_place_parts[] = '<span class="p-region">' . esc_html( $pkiw_region ) . '</span>';
+				}
+				if ( $pkiw_country ) {
+					$pkiw_place_parts[] = '<span class="p-country-name">' . esc_html( $pkiw_country ) . '</span>';
+				}
+				if ( $pkiw_place_parts ) {
+					$pkiw_address_parts[] = '<span class="pk-sub-parts">'
+						. implode( ', ', $pkiw_place_parts )
+						. '</span>';
+				}
+				if ( $pkiw_is_public && $pkiw_postal_code ) {
+					$pkiw_address_parts[] = '<span class="p-postal-code">' . esc_html( $pkiw_postal_code ) . '</span>';
+				}
+				?>
 				<p class="pk-sub p-location h-card">
-					<?php if ( $pkiw_show_address ) : ?>
-						<span class="p-street-address"><?php echo esc_html( $pkiw_address ); ?></span>
-					<?php endif; ?>
-
-					<?php if ( $pkiw_locality || $pkiw_region || $pkiw_country ) : ?>
-						<span class="pk-sub-parts">
-							<?php if ( $pkiw_locality ) : ?>
-								<span class="p-locality"><?php echo esc_html( $pkiw_locality ); ?></span>
-							<?php endif; ?>
-							<?php
-							if ( $pkiw_locality && $pkiw_region ) {
-								echo ', ';
-							}
-							?>
-							<?php if ( $pkiw_region ) : ?>
-								<span class="p-region"><?php echo esc_html( $pkiw_region ); ?></span>
-							<?php endif; ?>
-							<?php
-							if ( ( $pkiw_locality || $pkiw_region ) && $pkiw_country ) {
-								echo ', ';
-							}
-							?>
-							<?php if ( $pkiw_country ) : ?>
-								<span class="p-country-name"><?php echo esc_html( $pkiw_country ); ?></span>
-							<?php endif; ?>
-						</span>
-					<?php endif; ?>
-
-					<?php if ( $pkiw_is_public && $pkiw_postal_code ) : ?>
-						<span class="p-postal-code"><?php echo esc_html( $pkiw_postal_code ); ?></span>
-					<?php endif; ?>
+					<?php
+					// Each part is already escaped above.
+					echo implode( ', ', $pkiw_address_parts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					?>
 
 					<?php if ( $pkiw_show_coords ) : ?>
 						<data class="p-geo h-geo" value="<?php echo esc_attr( $pkiw_geo_uri ); ?>">
