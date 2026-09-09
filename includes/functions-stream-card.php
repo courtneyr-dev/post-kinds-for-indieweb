@@ -30,6 +30,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * How many thumbnails a Stream card shows before collapsing the rest into a
+ * +N link. Four keeps every card the same height so the feed stays scannable.
+ */
+const PK_STREAM_THUMB_LIMIT = 4;
+
+/**
  * Render the Stream card for the current post in the loop.
  *
  * Runs as a dynamic block render_callback so it executes inside the Query
@@ -163,7 +169,9 @@ function render_generic_stream_card( \WP_Post $post ): string {
 
 	if ( '' !== $thumb_html ) {
 		// get_the_post_thumbnail() returns core-generated, escaped <img> markup.
-		$out .= '<div class="pk-media pk-media--stream">' . $thumb_html . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		$out .= '<div class="pk-media pk-media--stream">' . $thumb_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		$out .= stream_card_media_extras( $post );
+		$out .= '</div>';
 	}
 
 	if ( '' !== $excerpt ) {
@@ -177,6 +185,86 @@ function render_generic_stream_card( \WP_Post $post ): string {
 
 	return $out;
 }
+
+/**
+ * The caption under a Stream card's hero image, plus a thumbnail row when the
+ * post carries more than one image.
+ *
+ * A caption lives on the attachment, which is where WordPress keeps one and
+ * where Outpost's Micropub bridge writes it. The card renders the hero's
+ * caption and, past a single image, a row of thumbnails so a six-photo post
+ * stops looking identical to a one-photo post in the feed.
+ *
+ * Everything here is server-rendered and correct with no JavaScript: that is
+ * what a feed reader or an unfurler parsing the h-entry receives. Swapping the
+ * caption when a thumbnail is chosen is enhancement layered on top, never the
+ * reason a caption exists.
+ *
+ * @param \WP_Post $post Post being rendered.
+ * @return string
+ */
+function stream_card_media_extras( \WP_Post $post ): string {
+	$hero_id = (int) get_post_thumbnail_id( $post );
+	$images  = get_attached_media( 'image', $post );
+
+	$hero_caption = $hero_id > 0
+		? trim( (string) get_post_field( 'post_excerpt', $hero_id ) )
+		: '';
+
+	$out = '';
+	if ( '' !== $hero_caption ) {
+		// Polite, not assertive: a caption changing must never interrupt.
+		$out .= '<p class="pk-media__caption" aria-live="polite">'
+			. esc_html( $hero_caption ) . '</p>';
+	}
+
+	// Everything except the hero, in attachment order.
+	$rest = [];
+	foreach ( $images as $image ) {
+		if ( (int) $image->ID !== $hero_id ) {
+			$rest[] = $image;
+		}
+	}
+	if ( empty( $rest ) ) {
+		return $out;
+	}
+
+	$visible   = array_slice( $rest, 0, PK_STREAM_THUMB_LIMIT );
+	$remaining = count( $rest ) - count( $visible );
+
+	$out .= '<ul class="pk-media__thumbs">';
+	foreach ( $visible as $image ) {
+		$id      = (int) $image->ID;
+		$alt     = trim( (string) get_post_meta( $id, '_wp_attachment_image_alt', true ) );
+		$caption = trim( (string) get_post_field( 'post_excerpt', $id ) );
+		$src     = (string) wp_get_attachment_image_url( $id, 'medium' );
+		$thumb   = (string) wp_get_attachment_image_url( $id, 'thumbnail' );
+
+		// A button, not a bare image: reachable by Tab and activated by Enter
+		// or Space, so this works on a phone and by keyboard rather than only
+		// on hover. Its accessible name is the image's own alt text.
+		$out .= '<li class="pk-media__thumb">'
+			. '<button type="button" class="pk-media__thumb-button"'
+			. ' data-pk-full="' . esc_url( $src ) . '"'
+			. ' data-pk-alt="' . esc_attr( $alt ) . '"'
+			. ' data-pk-caption="' . esc_attr( $caption ) . '">'
+			. '<img src="' . esc_url( $thumb ) . '" alt="' . esc_attr( $alt ) . '" loading="lazy" />'
+			. '</button></li>';
+	}
+	if ( $remaining > 0 ) {
+		$out .= '<li class="pk-media__thumb pk-media__thumb--more">'
+			. '<a class="pk-media__thumb-more-link" href="' . esc_url( (string) get_permalink( $post ) ) . '">'
+			/* translators: %d: number of further images on the post. */
+			. esc_html( sprintf( __( '+%d', 'post-kinds-for-indieweb-in-block-themes' ), $remaining ) )
+			. '<span class="pk-sr-only">'
+			. esc_html__( ' more images on this post', 'post-kinds-for-indieweb-in-block-themes' )
+			. '</span></a></li>';
+	}
+	$out .= '</ul>';
+
+	return $out;
+}
+
 
 /**
  * The display label for a post's kind, or a neutral default when it has none.

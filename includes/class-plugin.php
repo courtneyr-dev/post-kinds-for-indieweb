@@ -990,6 +990,20 @@ final class Plugin {
 		if ( wp_style_is( 'post-kinds-indieweb-blocks', 'registered' ) ) {
 			wp_enqueue_style( 'post-kinds-indieweb-blocks' );
 		}
+
+		// Stream-card gallery. Enhancement only — the hero, its caption and the
+		// thumbnail row are server-rendered and correct without this file, so it
+		// loads in the footer and nothing waits on it.
+		$gallery = \PKIW_PATH . 'assets/js/stream-card-gallery.js';
+		if ( file_exists( $gallery ) ) {
+			wp_enqueue_script(
+				'pkiw-stream-card-gallery',
+				\PKIW_URL . 'assets/js/stream-card-gallery.js',
+				[],
+				(string) filemtime( $gallery ),
+				true
+			);
+		}
 	}
 
 	/**
