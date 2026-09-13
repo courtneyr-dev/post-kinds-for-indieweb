@@ -135,7 +135,10 @@ function ensure_entry_properties( string $html, \WP_Post $post, bool $card_roote
 	// (they belong to the card entry). Cards rooted as h-cite / h-food: the
 	// entry is the <li>, so properties inside the object do not count.
 	$scope = $card_rooted ? $html : (string) preg_replace( '#<article\b.*</article>#is', '', $html );
-	$needs_url    = false === strpos( $scope, 'u-url' );
+	// A cited object inside the card carries its own u-url; only a u-url that
+	// points at this post counts as the entry's.
+	$permalink    = esc_url( (string) get_permalink( $post ) );
+	$needs_url    = '' === $permalink || ! preg_match( '#<a\b[^>]*(?:class="[^"]*\bu-url\b[^"]*"[^>]*href="' . preg_quote( $permalink, '#' ) . '"|href="' . preg_quote( $permalink, '#' ) . '"[^>]*class="[^"]*\bu-url\b[^"]*")#', $scope );
 	$needs_date   = false === strpos( $scope, 'dt-published' );
 	$needs_author = false === strpos( $scope, 'p-author' );
 	if ( ! $needs_url && ! $needs_date && ! $needs_author ) {

@@ -406,4 +406,18 @@ final class StreamCardTest extends WP_UnitTestCase {
 			wp_insert_term( ucfirst( $slug ), 'kind', [ 'slug' => $slug ] );
 		}
 	}
+
+	/**
+	 * A reply card whose only u-url belongs to the cited object still gets the
+	 * entry's own hidden u-url (a nested h-cite must not satisfy the check).
+	 */
+	public function test_ensure_entry_properties_ignores_cited_u_url(): void {
+		$post_id = self::factory()->post->create( [ 'post_title' => 'Reply' ] );
+		$post    = get_post( $post_id );
+		$html    = '<article class="pk-card k-reply h-entry"><div class="h-cite u-in-reply-to"><a class="u-url" href="https://example.com/other/">Other</a></div><time class="dt-published" datetime="2026-01-01T00:00:00+00:00"></time></article>';
+
+		$out = \PKIW\ensure_entry_properties( $html, $post, true );
+
+		$this->assertStringContainsString( '<a class="u-url" href="' . esc_url( (string) get_permalink( $post_id ) ) . '"', $out );
+	}
 }
