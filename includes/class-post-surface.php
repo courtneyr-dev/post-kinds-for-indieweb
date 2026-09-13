@@ -79,12 +79,6 @@ final class Post_Surface {
 	}
 
 	/**
-	 * Recompute and cache the surface when a post is saved.
-	 *
-	 * @param int $post_id Post ID.
-	 * @return void
-	 */
-	/**
 	 * Recompute the surface when a post's kind or post-format terms change.
 	 *
 	 * @param int      $object_id  Post ID.

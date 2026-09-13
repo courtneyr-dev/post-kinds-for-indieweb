@@ -622,14 +622,14 @@ function register_stream_card_block(): void {
 		\PKIW_VERSION,
 		true
 	);
-	wp_set_script_translations( 'pkiw-stream-card-editor', 'post-kinds-for-indieweb' );
+	wp_set_script_translations( 'pkiw-stream-card-editor', 'post-kinds-for-indieweb-in-block-themes' );
 
 	register_block_type(
 		'post-kinds-indieweb/stream-card',
 		[
 			// No block.json for this block, so declare the API version here —
 			// register_block_type() otherwise defaults it to 1.
-			'api_version'     => '3',
+			'api_version'     => 3,
 			'render_callback' => __NAMESPACE__ . '\\render_stream_card',
 			'uses_context'    => [ 'postId', 'postType' ],
 			'supports'        => [ 'inserter' => true, 'html' => false, 'reusable' => false ],

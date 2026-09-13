@@ -31,8 +31,8 @@
 
 	wp.blocks.registerBlockType( 'post-kinds-indieweb/stream-card', {
 		apiVersion: 3,
-		title: __( 'Stream card', 'post-kinds-for-indieweb' ),
-		description: __( 'Renders the current post as its Post Kinds stream card. Use inside a Query Loop.', 'post-kinds-for-indieweb' ),
+		title: __( 'Stream card', 'post-kinds-for-indieweb-in-block-themes' ),
+		description: __( 'Renders the current post as its Post Kinds stream card. Use inside a Query Loop.', 'post-kinds-for-indieweb-in-block-themes' ),
 		category: 'post-kinds-indieweb',
 		icon: 'index-card',
 		usesContext: [ 'postId', 'postType' ],
@@ -46,7 +46,7 @@
 				return el(
 					'div',
 					blockProps,
-					el( Placeholder, null, __( 'Stream card: place this block inside a Query Loop’s Post Template.', 'post-kinds-for-indieweb' ) )
+					el( Placeholder, null, __( 'Stream card: place this block inside a Query Loop’s Post Template.', 'post-kinds-for-indieweb-in-block-themes' ) )
 				);
 			}
 
@@ -58,10 +58,10 @@
 					attributes: {},
 					urlQueryArgs: { post_id: postId },
 					LoadingResponsePlaceholder: function () {
-						return el( Placeholder, null, __( 'Loading stream card…', 'post-kinds-for-indieweb' ) );
+						return el( Placeholder, null, __( 'Loading stream card…', 'post-kinds-for-indieweb-in-block-themes' ) );
 					},
 					EmptyResponsePlaceholder: function () {
-						return el( Placeholder, null, __( 'This post renders no stream card.', 'post-kinds-for-indieweb' ) );
+						return el( Placeholder, null, __( 'This post renders no stream card.', 'post-kinds-for-indieweb-in-block-themes' ) );
 					},
 				} )
 			);
