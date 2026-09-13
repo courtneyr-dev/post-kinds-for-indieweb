@@ -957,6 +957,7 @@ class Meta_Fields {
 	 * @var string[]
 	 */
 	public const LOCATION_KEYS = [
+		'checkin_url',
 		'checkin_address',
 		'geo_latitude',
 		'geo_longitude',

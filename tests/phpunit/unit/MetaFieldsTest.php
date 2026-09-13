@@ -83,6 +83,13 @@ class MetaFieldsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test precise check-in venue URLs are part of the location redaction list.
+	 */
+	public function test_location_keys_include_checkin_url() {
+		$this->assertContains( 'checkin_url', Meta_Fields::LOCATION_KEYS );
+	}
+
+	/**
 	 * Test sanitize_rsvp_status with valid values.
 	 *
 	 * @dataProvider rsvp_status_valid_provider
