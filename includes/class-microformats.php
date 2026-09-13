@@ -421,6 +421,18 @@ class Microformats {
 
 		$kind = $this->get_post_kind( $post_id );
 
+		// 1.8.1: a Query Loop item whose stream card already rendered its own
+		// h-entry root (functions-stream-card.php) must not get a second root on
+		// the <li>; parsers otherwise see two entries per card. The kind class
+		// stays for styling. Core renders the inner blocks before it asks for
+		// the post classes, so the card has already registered itself here.
+		if ( ! empty( $GLOBALS['pkiw_stream_card_root_seen'][ $post_id ] ) ) {
+			if ( $kind ) {
+				$classes[] = 'kind-' . $kind;
+			}
+			return array_unique( $classes );
+		}
+
 		if ( ! $kind || ! isset( $this->kind_formats[ $kind ] ) ) {
 			// Default to h-entry for posts without a kind.
 			$classes[] = 'h-entry';

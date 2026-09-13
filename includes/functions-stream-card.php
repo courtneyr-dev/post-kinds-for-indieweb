@@ -48,6 +48,23 @@ const PK_STREAM_THUMB_LIMIT = 4;
  * @return string Card HTML.
  */
 function render_stream_card( array $attributes = [], string $content = '', ?\WP_Block $block = null ): string {
+	$html = render_stream_card_inner( $attributes, $content, $block );
+
+	// 1.8.1: when the card's own outermost element is an h-entry, register it so
+	// Microformats::add_post_classes() leaves the Query Loop <li> without a
+	// second root (the read card is an h-cite and keeps the <li> root).
+	$post_id = ( $block instanceof \WP_Block && ! empty( $block->context['postId'] ) ) ? (int) $block->context['postId'] : (int) get_the_ID();
+	if ( $post_id && preg_match( '/^\s*<[a-z][a-z0-9-]*\b[^>]*\bclass="[^"]*\bh-entry\b/i', $html ) ) {
+		$GLOBALS['pkiw_stream_card_root_seen'][ $post_id ] = true;
+	}
+
+	return $html;
+}
+
+/**
+ * The card body; see render_stream_card() for the root bookkeeping.
+ */
+function render_stream_card_inner( array $attributes = [], string $content = '', ?\WP_Block $block = null ): string {
 	$post_id = ( $block instanceof \WP_Block && ! empty( $block->context['postId'] ) )
 		? (int) $block->context['postId']
 		: 0;
@@ -57,6 +74,7 @@ function render_stream_card( array $attributes = [], string $content = '', ?\WP_
 	if ( ! $post instanceof \WP_Post ) {
 		return '';
 	}
+
 
 	// Micro-post: the body is nothing but Post Kinds card block(s). Render
 	// it exactly as it renders today — this is the Enola-Holmes shape.
@@ -523,6 +541,18 @@ function flatten_blocks( array $blocks ): array {
  * collapse to the same fallback.
  */
 function register_stream_card_block(): void {
+	// Editor representation: a ServerSideRender edit component (plain script,
+	// no build) so the canvas shows the real card for each loop post instead
+	// of the "doesn't include support" fallback. See assets/js/stream-card-editor.js.
+	wp_register_script(
+		'pkiw-stream-card-editor',
+		\PKIW_URL . 'assets/js/stream-card-editor.js',
+		[ 'wp-blocks', 'wp-element', 'wp-i18n', 'wp-block-editor', 'wp-server-side-render' ],
+		\PKIW_VERSION,
+		true
+	);
+	wp_set_script_translations( 'pkiw-stream-card-editor', 'post-kinds-for-indieweb' );
+
 	register_block_type(
 		'post-kinds-indieweb/stream-card',
 		[
@@ -531,7 +561,9 @@ function register_stream_card_block(): void {
 			'api_version'     => 3,
 			'render_callback' => __NAMESPACE__ . '\\render_stream_card',
 			'uses_context'    => [ 'postId', 'postType' ],
-			'supports'        => [ 'inserter' => false ],
+			'supports'        => [ 'inserter' => true, 'html' => false, 'reusable' => false ],
+			'ancestor'        => [ 'core/post-template' ],
+			'editor_script'   => 'pkiw-stream-card-editor',
 		]
 	);
 }
