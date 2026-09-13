@@ -182,6 +182,10 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 * Fixed: street address and coordinates of a check-in, meal or drink are no longer exposed through the REST API, block bindings or cards unless the location is public.
 * Fixed: star ratings, the reading progress bar and thumbnail buttons without alt text now have accessible names.
 * Fixed: a post whose kind or post format is assigned after the first save (REST, WP-CLI, Micropub, Quick Edit) now moves to the right surface immediately.
+* Fixed: toggling "Promote to main archive" now moves the post immediately instead of after the next save.
+* Fixed: the ListenBrainz, Trakt, Plex, Jellyfin and generic webhook endpoints returned a server error on every authenticated call.
+* Fixed: private and protected Simple Location data no longer appears in REST API responses for readers who cannot edit the post.
+* Added: Stream cards and singular entries name their author as a microformats h-card (filter `pkiw_entry_author`).
 * Changed: the Kind and Promote editor panels load only on post types that support kinds, so they no longer appear on navigation menus and templates in the site editor.
 * Changed: the Stream card block previews in the editor with the real card (server-rendered); Micropub-created posts wrap their card in a plain group instead of a second h-entry.
 

@@ -47,6 +47,12 @@ final class Post_Surface {
 		// saved; recompute when those terms change so the value never lags.
 		add_action( 'set_object_terms', [ $this, 'on_terms_changed' ], 20, 6 );
 		add_action( 'deleted_term_relationships', [ $this, 'on_terms_removed' ], 20, 3 );
+		// The promote toggle is an ordinary meta write (REST, Quick Edit,
+		// WP-CLI) that never passes through save_post; recompute on the
+		// meta change itself so the stored surface is never one save behind.
+		add_action( 'added_post_meta', [ $this, 'on_promote_meta' ], 20, 4 );
+		add_action( 'updated_post_meta', [ $this, 'on_promote_meta' ], 20, 4 );
+		add_action( 'deleted_post_meta', [ $this, 'on_promote_meta' ], 20, 4 );
 	}
 
 	/**
@@ -122,10 +128,24 @@ final class Post_Surface {
 	}
 
 	/**
-	 * Recompute and persist the surface marker for a saved post.
+	 * Recompute the surface when the promote flag is added, changed or removed.
 	 *
-	 * @param int $post_id Post ID.
+	 * @param int|int[] $meta_ids  Meta ID(s) (unused).
+	 * @param int       $object_id Post ID.
+	 * @param string    $meta_key  Meta key.
+	 * @param mixed     $value     Meta value (unused).
 	 */
+	public function on_promote_meta( $meta_ids, $object_id, $meta_key, $value ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+		if ( 'pkiw_promote' !== $meta_key ) {
+			return;
+		}
+		$post = get_post( (int) $object_id );
+		if ( ! $post instanceof \WP_Post || 'post' !== $post->post_type ) {
+			return;
+		}
+		$this->on_save( (int) $object_id );
+	}
+
 	public function on_save( int $post_id ): void {
 		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
 			return;

@@ -83,4 +83,21 @@ final class PostSurfaceMetaTest extends WP_UnitTestCase {
 		$keys = get_registered_meta_keys( 'post', 'post' );
 		$this->assertTrue( $keys['pkiw_promote']['show_in_rest'] );
 	}
+
+	/**
+	 * Toggling the promote flag through a plain meta write (REST, Quick Edit,
+	 * WP-CLI) recomputes the stored surface immediately.
+	 */
+	public function test_promote_meta_change_recomputes_stored_surface(): void {
+		add_filter( 'pkiw_stream_kinds', static fn() => [ 'checkin' ] );
+		$id = self::factory()->post->create();
+		wp_set_object_terms( $id, 'checkin', 'kind' );
+		$this->assertSame( 'stream', get_post_meta( $id, '_pkiw_surface', true ) );
+
+		update_post_meta( $id, 'pkiw_promote', '1' );
+		$this->assertSame( 'main', get_post_meta( $id, '_pkiw_surface', true ), 'promote on must store main without a save' );
+
+		delete_post_meta( $id, 'pkiw_promote' );
+		$this->assertSame( 'stream', get_post_meta( $id, '_pkiw_surface', true ), 'promote off must store stream without a save' );
+	}
 }

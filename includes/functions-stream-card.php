@@ -86,6 +86,42 @@ function ensure_entry_properties_filter( string $html, array $block, $instance )
 add_filter( 'render_block_post-kinds-indieweb/stream-card', __NAMESPACE__ . '\\ensure_entry_properties_filter', 99, 3 );
 
 /**
+ * Hidden `p-author h-card` for an entry (empty when no author identity).
+ *
+ * @since 1.8.1
+ *
+ * @param \WP_Post $post The post.
+ * @return string
+ */
+function entry_author_html( \WP_Post $post ): string {
+	/**
+	 * Filters the author identity emitted as the entry's hidden `p-author h-card`.
+	 *
+	 * @since 1.8.1
+	 *
+	 * @param array{name: string, url: string, photo: string} $author Name, URL, photo URL.
+	 * @param \WP_Post                                          $post   The post.
+	 */
+	$author = apply_filters(
+		'pkiw_entry_author',
+		[
+			'name'  => (string) get_the_author_meta( 'display_name', (int) $post->post_author ),
+			'url'   => (string) get_author_posts_url( (int) $post->post_author ),
+			'photo' => (string) get_avatar_url( (int) $post->post_author, [ 'size' => 96 ] ),
+		],
+		$post
+	);
+	if ( ! is_array( $author ) || empty( $author['name'] ) || empty( $author['url'] ) ) {
+		return '';
+	}
+	$html = '<span class="p-author h-card"><a class="u-url p-name" href="' . esc_url( (string) $author['url'] ) . '" tabindex="-1">' . esc_html( (string) $author['name'] ) . '</a>';
+	if ( ! empty( $author['photo'] ) ) {
+		$html .= '<img class="u-photo" src="' . esc_url( (string) $author['photo'] ) . '" alt="" loading="lazy" />';
+	}
+	return $html . '</span>';
+}
+
+/**
  * Append hidden `u-url` / `dt-published` for the entry when the card does not
  * expose them outside a nested object.
  *
@@ -99,12 +135,16 @@ function ensure_entry_properties( string $html, \WP_Post $post, bool $card_roote
 	// (they belong to the card entry). Cards rooted as h-cite / h-food: the
 	// entry is the <li>, so properties inside the object do not count.
 	$scope = $card_rooted ? $html : (string) preg_replace( '#<article\b.*</article>#is', '', $html );
-	$needs_url  = false === strpos( $scope, 'u-url' );
-	$needs_date = false === strpos( $scope, 'dt-published' );
-	if ( ! $needs_url && ! $needs_date ) {
+	$needs_url    = false === strpos( $scope, 'u-url' );
+	$needs_date   = false === strpos( $scope, 'dt-published' );
+	$needs_author = false === strpos( $scope, 'p-author' );
+	if ( ! $needs_url && ! $needs_date && ! $needs_author ) {
 		return $html;
 	}
 	$extra = '';
+	if ( $needs_author ) {
+		$extra .= entry_author_html( $post );
+	}
 	if ( $needs_url ) {
 		$extra .= '<a class="u-url" href="' . esc_url( (string) get_permalink( $post ) ) . '" tabindex="-1" aria-hidden="true"></a>';
 	}

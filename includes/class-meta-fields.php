@@ -997,17 +997,53 @@ class Meta_Fields {
 		if ( ! $response instanceof \WP_REST_Response || ! $post instanceof \WP_Post ) {
 			return $response;
 		}
-		$data = $response->get_data();
-		if ( empty( $data['meta'] ) || ! is_array( $data['meta'] ) || self::location_visible( (int) $post->ID ) ) {
-			return $response;
-		}
-		foreach ( self::LOCATION_KEYS as $key ) {
-			$full = self::PREFIX . $key;
-			if ( array_key_exists( $full, $data['meta'] ) ) {
-				$data['meta'][ $full ] = is_numeric( $data['meta'][ $full ] ) ? 0 : '';
+		$data    = $response->get_data();
+		$changed = false;
+		if ( ! empty( $data['meta'] ) && is_array( $data['meta'] ) && ! self::location_visible( (int) $post->ID ) ) {
+			foreach ( self::LOCATION_KEYS as $key ) {
+				$full = self::PREFIX . $key;
+				if ( array_key_exists( $full, $data['meta'] ) ) {
+					$data['meta'][ $full ] = is_numeric( $data['meta'][ $full ] ) ? 0 : '';
+					$changed               = true;
+				}
 			}
 		}
-		$response->set_data( $data );
+		// Simple Location / IndieBlocks carry the same coordinates under their
+		// own keys; honor Simple Location's geo_public (0 private, 2 protected:
+		// text only) for anyone who cannot edit the post. Stored data is untouched.
+		if ( ! current_user_can( 'edit_post', (int) $post->ID ) ) {
+			$geo_public  = (string) get_post_meta( (int) $post->ID, 'geo_public', true );
+			$hide_coords = '1' !== $geo_public;
+			$hide_text   = '0' === $geo_public || '' === $geo_public;
+			$coord_keys  = [ 'geo_latitude', 'geo_longitude', 'geo_altitude' ];
+			$text_keys   = [ 'geo_address', 'geo_venue', 'geo_locality', 'geo_region', 'geo_country_name', 'geo_street_address', 'geo_postal_code' ];
+			if ( ! empty( $data['meta'] ) && is_array( $data['meta'] ) ) {
+				foreach ( ( $hide_coords ? $coord_keys : [] ) as $key ) {
+					if ( array_key_exists( $key, $data['meta'] ) && '' !== (string) $data['meta'][ $key ] ) {
+						$data['meta'][ $key ] = '';
+						$changed              = true;
+					}
+				}
+				foreach ( ( $hide_text ? $text_keys : [] ) as $key ) {
+					if ( array_key_exists( $key, $data['meta'] ) && '' !== (string) $data['meta'][ $key ] ) {
+						$data['meta'][ $key ] = '';
+						$changed              = true;
+					}
+				}
+			}
+			if ( ! empty( $data['indieblocks_location'] ) && is_array( $data['indieblocks_location'] ) ) {
+				foreach ( array_keys( $data['indieblocks_location'] ) as $key ) {
+					$is_coord = in_array( $key, $coord_keys, true ) || preg_match( '/lat|lon|geo_(?!address)/', (string) $key );
+					if ( ( $hide_coords && $is_coord ) || ( $hide_text && ! $is_coord ) ) {
+						$data['indieblocks_location'][ $key ] = '';
+						$changed                              = true;
+					}
+				}
+			}
+		}
+		if ( $changed ) {
+			$response->set_data( $data );
+		}
 		return $response;
 	}
 

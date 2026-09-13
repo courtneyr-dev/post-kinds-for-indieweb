@@ -667,6 +667,14 @@ class Microformats {
 			esc_url( get_permalink( $post_id ) ),
 			esc_attr( (string) get_the_date( 'c', $post_id ) )
 		);
+		// R-21 authorship: the singular entry names its author like every card does.
+		$singular_post = get_post( $post_id );
+		if ( $singular_post instanceof \WP_Post && function_exists( __NAMESPACE__ . '\\entry_author_html' ) && ! str_contains( $content, 'p-author' ) ) {
+			$author_html = entry_author_html( $singular_post );
+			if ( '' !== $author_html ) {
+				$entry_meta .= '<span hidden>' . $author_html . '</span>';
+			}
+		}
 
 		// Only name the entry where the kind's vocabulary has a name —
 		// notes and responses are intentionally title-less in mf2.
