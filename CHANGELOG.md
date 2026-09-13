@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Every Stream card carries an entry-level `u-url` and `dt-published` (hidden, appended when the entry lacks them), eat/drink cards bind `p-ate h-food` / `p-drank h-food`, and the card root is detected by the `pk-card` article so an authored wrapper Group no longer yields a nested `h-entry`.
+- Stream-card thumbnail buttons whose image has no alt text get an accessible name (`Show image N of M`).
 - `.pk-stars` gets `role="img"` (its `aria-label` was prohibited on a div) and the read-card progress bar gets an `aria-label`.
 - `_pkiw_surface` is recomputed when kind or post-format terms change after the post row is saved (`set_object_terms`, `deleted_term_relationships`), so REST/WP-CLI/Micropub/Quick Edit assignments no longer leave a Stream-format post on the main surface.
 - Stream cards' "Read more" links all announced identically to screen readers. Each link now carries the post title as visually hidden text (new `.pk-sr-only` utility), so link lists read "Read more: {title}" instead of thirty indistinguishable "Read more"s.

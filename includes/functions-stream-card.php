@@ -309,8 +309,11 @@ function stream_card_media_extras( \WP_Post $post ): string {
 	$visible   = array_slice( $rest, 0, PK_STREAM_THUMB_LIMIT );
 	$remaining = count( $rest ) - count( $visible );
 
-	$out .= '<ul class="pk-media__thumbs">';
+	$out  .= '<ul class="pk-media__thumbs">';
+	$total = count( $visible );
+	$n     = 0;
 	foreach ( $visible as $image ) {
+		++$n;
 		$id      = (int) $image->ID;
 		$alt     = trim( (string) get_post_meta( $id, '_wp_attachment_image_alt', true ) );
 		$caption = trim( (string) get_post_field( 'post_excerpt', $id ) );
@@ -319,9 +322,18 @@ function stream_card_media_extras( \WP_Post $post ): string {
 
 		// A button, not a bare image: reachable by Tab and activated by Enter
 		// or Space, so this works on a phone and by keyboard rather than only
-		// on hover. Its accessible name is the image's own alt text.
+		// on hover. Its accessible name is the image's own alt text; an image
+		// without alt text still needs a name (axe button-name), so the button
+		// then says which image it shows.
+		$name = '' !== $alt ? $alt : sprintf(
+			/* translators: 1: image position, 2: number of thumbnails. */
+			__( 'Show image %1$d of %2$d', 'post-kinds-for-indieweb-in-block-themes' ),
+			$n,
+			$total
+		);
 		$out .= '<li class="pk-media__thumb">'
 			. '<button type="button" class="pk-media__thumb-button"'
+			. ' aria-label="' . esc_attr( $name ) . '"'
 			. ' data-pk-full="' . esc_url( $src ) . '"'
 			. ' data-pk-alt="' . esc_attr( $alt ) . '"'
 			. ' data-pk-caption="' . esc_attr( $caption ) . '">'
