@@ -1011,6 +1011,9 @@ class Meta_Fields {
 		return $response;
 	}
 
+	/**
+	 * Register all plugin post meta fields.
+	 */
 	public function register_meta_fields(): void {
 		// Check if CPT mode is enabled and add reaction post type.
 		$settings     = get_option( 'pkiw_settings', [] );

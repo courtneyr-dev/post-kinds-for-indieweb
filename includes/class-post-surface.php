@@ -81,12 +81,12 @@ final class Post_Surface {
 	/**
 	 * Recompute the surface when a post's kind or post-format terms change.
 	 *
-	 * @param int      $object_id  Post ID.
-	 * @param array    $terms      Terms (unused).
-	 * @param array    $tt_ids     Term taxonomy IDs (unused).
-	 * @param string   $taxonomy   Taxonomy slug.
-	 * @param bool     $append     Whether terms were appended (unused).
-	 * @param array    $old_tt_ids Previous term taxonomy IDs.
+	 * @param int    $object_id  Post ID.
+	 * @param array  $terms      Terms (unused).
+	 * @param array  $tt_ids     Term taxonomy IDs (unused).
+	 * @param string $taxonomy   Taxonomy slug.
+	 * @param bool   $append     Whether terms were appended (unused).
+	 * @param array  $old_tt_ids Previous term taxonomy IDs.
 	 */
 	public function on_terms_changed( $object_id, $terms, $tt_ids, $taxonomy, $append, $old_tt_ids ): void {
 		if ( ! in_array( $taxonomy, [ 'kind', 'post_format' ], true ) ) {
@@ -121,6 +121,11 @@ final class Post_Surface {
 		$this->on_save( (int) $object_id );
 	}
 
+	/**
+	 * Recompute and persist the surface marker for a saved post.
+	 *
+	 * @param int $post_id Post ID.
+	 */
 	public function on_save( int $post_id ): void {
 		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
 			return;

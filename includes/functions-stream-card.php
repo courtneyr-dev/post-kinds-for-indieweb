@@ -122,6 +122,11 @@ function ensure_entry_properties( string $html, \WP_Post $post, bool $card_roote
 
 /**
  * The card body; see render_stream_card() for the root bookkeeping.
+ *
+ * @param array<string,mixed> $attributes Block attributes.
+ * @param string              $content    Block content.
+ * @param \WP_Block|null      $block      Parsed block instance.
+ * @return string
  */
 function render_stream_card_inner( array $attributes = [], string $content = '', ?\WP_Block $block = null ): string {
 	$post_id = ( $block instanceof \WP_Block && ! empty( $block->context['postId'] ) )
@@ -133,7 +138,6 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 	if ( ! $post instanceof \WP_Post ) {
 		return '';
 	}
-
 
 	// Micro-post: the body is nothing but Post Kinds card block(s). Render
 	// it exactly as it renders today — this is the Enola-Holmes shape.
@@ -632,7 +636,11 @@ function register_stream_card_block(): void {
 			'api_version'     => 3,
 			'render_callback' => __NAMESPACE__ . '\\render_stream_card',
 			'uses_context'    => [ 'postId', 'postType' ],
-			'supports'        => [ 'inserter' => true, 'html' => false, 'reusable' => false ],
+			'supports'        => [
+				'inserter' => true,
+				'html'     => false,
+				'reusable' => false,
+			],
 			'ancestor'        => [ 'core/post-template' ],
 			'editor_script'   => 'pkiw-stream-card-editor',
 		]
