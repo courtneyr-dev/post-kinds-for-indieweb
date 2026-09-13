@@ -174,7 +174,7 @@ function render_generic_stream_card( \WP_Post $post ): string {
 	}
 
 	$out .= '<div class="pk-caption">';
-	$out .= '<h2 class="' . esc_attr( $title_class ) . '"><a href="' . $permalink . '">' . esc_html( $title ) . '</a></h2>';
+	$out .= '<h2 class="' . esc_attr( $title_class ) . '"><a class="u-url" href="' . $permalink . '">' . esc_html( $title ) . '</a></h2>';
 
 	$date_display = get_the_date( '', $post );
 	if ( '' !== $date_display ) {
@@ -397,7 +397,7 @@ function link_title_to_post( string $html, \WP_Post $post ): string {
 	$relinked = preg_replace_callback(
 		'#(<h[1-6] class="pk-title[^"]*">\s*)<a\b[^>]*>#s',
 		static function ( $matches ) use ( $permalink ) {
-			return $matches[1] . '<a href="' . $permalink . '">';
+			return $matches[1] . '<a class="u-url" href="' . $permalink . '">';
 		},
 		$html,
 		1,
@@ -411,7 +411,7 @@ function link_title_to_post( string $html, \WP_Post $post ): string {
 	$wrapped = preg_replace_callback(
 		'#(<h[1-6] class="pk-title[^"]*">)(\s*)([^<]+?)(\s*)(</h[1-6]>)#s',
 		static function ( $matches ) use ( $permalink ) {
-			return $matches[1] . $matches[2] . '<a href="' . $permalink . '">' . $matches[3] . '</a>' . $matches[4] . $matches[5];
+			return $matches[1] . $matches[2] . '<a class="u-url" href="' . $permalink . '">' . $matches[3] . '</a>' . $matches[4] . $matches[5];
 		},
 		$html,
 		1

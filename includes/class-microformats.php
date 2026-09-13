@@ -430,7 +430,9 @@ class Microformats {
 			if ( $kind ) {
 				$classes[] = 'kind-' . $kind;
 			}
-			return array_unique( $classes );
+			// Core's classic `hentry` would be upgraded to a second h-entry root by
+			// microformats parsers (mf1 backcompat), so it goes too.
+			return array_values( array_unique( array_diff( $classes, [ 'hentry' ] ) ) );
 		}
 
 		if ( ! $kind || ! isset( $this->kind_formats[ $kind ] ) ) {
