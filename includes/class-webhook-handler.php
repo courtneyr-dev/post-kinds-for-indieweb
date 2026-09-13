@@ -104,7 +104,7 @@ class Webhook_Handler {
 	 *
 	 * @param \WP_REST_Request $request REST request.
 	 * @param string           $service Service identifier.
-	 * @param bool             $authenticated True when the REST route already verified the site webhook secret (signature or token); skips the per-service token check.
+	 * @param bool             $authenticated True when the REST route's permission_callback already authorized the request (site secret for ListenBrainz, Trakt and generic; per-service token for Plex and Jellyfin); skips the handler's own token check.
 	 * @return \WP_REST_Response|\WP_Error Response.
 	 */
 	public function handle_request( \WP_REST_Request $request, string $service, bool $authenticated = false ) {

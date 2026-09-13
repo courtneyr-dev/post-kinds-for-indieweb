@@ -1,0 +1,48 @@
+{
+	"event": "media.scrobble",
+	"user": true,
+	"owner": true,
+	"Account": {
+		"id": 1,
+		"thumb": "https://plex.tv/users/0f0f0f0f0f0f0f0f/avatar?c=1726246800",
+		"title": "fixture-owner"
+	},
+	"Server": {
+		"title": "Fixture Server",
+		"uuid": "5f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6"
+	},
+	"Player": {
+		"local": true,
+		"publicAddress": "203.0.113.10",
+		"title": "Plex Web (Firefox)",
+		"uuid": "fixtureplayeruuid0000000"
+	},
+	"Metadata": {
+		"librarySectionType": "movie",
+		"ratingKey": "48213",
+		"key": "/library/metadata/48213",
+		"guid": "plex://movie/5d7768ba96b655001fdc0408",
+		"studio": "Warner Bros. Pictures",
+		"type": "movie",
+		"title": "Inception",
+		"librarySectionTitle": "Movies",
+		"librarySectionID": 1,
+		"contentRating": "PG-13",
+		"summary": "",
+		"audienceRating": 9.1,
+		"viewCount": 1,
+		"lastViewedAt": 1726246800,
+		"year": 2010,
+		"thumb": "/library/metadata/48213/thumb/1726240000",
+		"art": "/library/metadata/48213/art/1726240000",
+		"duration": 8880000,
+		"originallyAvailableAt": "2010-07-16",
+		"addedAt": 1726240000,
+		"updatedAt": 1726240000,
+		"Guid": [
+			{ "id": "imdb://tt1375666" },
+			{ "id": "tmdb://27205" },
+			{ "id": "tvdb://1116" }
+		]
+	}
+}
