@@ -42,6 +42,11 @@ final class Post_Surface {
 			add_action( 'init', [ $this, 'register_meta' ] );
 		}
 		add_action( 'save_post', [ $this, 'on_save' ], 20, 1 );
+		// The surface depends on the kind and post-format terms, which REST,
+		// WP-CLI, Micropub and Quick Edit often assign after the post row is
+		// saved; recompute when those terms change so the value never lags.
+		add_action( 'set_object_terms', [ $this, 'on_terms_changed' ], 20, 6 );
+		add_action( 'deleted_term_relationships', [ $this, 'on_terms_removed' ], 20, 3 );
 	}
 
 	/**
@@ -79,6 +84,49 @@ final class Post_Surface {
 	 * @param int $post_id Post ID.
 	 * @return void
 	 */
+	/**
+	 * Recompute the surface when a post's kind or post-format terms change.
+	 *
+	 * @param int      $object_id  Post ID.
+	 * @param array    $terms      Terms (unused).
+	 * @param array    $tt_ids     Term taxonomy IDs (unused).
+	 * @param string   $taxonomy   Taxonomy slug.
+	 * @param bool     $append     Whether terms were appended (unused).
+	 * @param array    $old_tt_ids Previous term taxonomy IDs.
+	 */
+	public function on_terms_changed( $object_id, $terms, $tt_ids, $taxonomy, $append, $old_tt_ids ): void {
+		if ( ! in_array( $taxonomy, [ 'kind', 'post_format' ], true ) ) {
+			return;
+		}
+		if ( (array) $tt_ids === (array) $old_tt_ids ) {
+			return;
+		}
+		$post = get_post( (int) $object_id );
+		if ( ! $post instanceof \WP_Post || 'post' !== $post->post_type ) {
+			return;
+		}
+		$this->on_save( (int) $object_id );
+	}
+
+	/**
+	 * Recompute the surface when kind or post-format terms are removed
+	 * (wp_remove_object_terms() does not fire set_object_terms).
+	 *
+	 * @param int    $object_id Post ID.
+	 * @param array  $tt_ids    Removed term taxonomy IDs (unused).
+	 * @param string $taxonomy  Taxonomy slug.
+	 */
+	public function on_terms_removed( $object_id, $tt_ids, $taxonomy ): void {
+		if ( ! in_array( $taxonomy, [ 'kind', 'post_format' ], true ) ) {
+			return;
+		}
+		$post = get_post( (int) $object_id );
+		if ( ! $post instanceof \WP_Post || 'post' !== $post->post_type ) {
+			return;
+		}
+		$this->on_save( (int) $object_id );
+	}
+
 	public function on_save( int $post_id ): void {
 		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
 			return;
