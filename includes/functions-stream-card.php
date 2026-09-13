@@ -122,6 +122,59 @@ function entry_author_html( \WP_Post $post ): string {
 }
 
 /**
+ * Whether the entry itself (not a nested microformats object) carries a property.
+ *
+ * With a rooted card the entry is the `pk-card` article; otherwise the entry is
+ * the surrounding list item and everything inside the article is nested.
+ *
+ * @since 1.8.1
+ *
+ * @param string $html        Rendered card.
+ * @param bool   $card_rooted Whether the pk-card article is the h-entry root.
+ * @param string $class       Property class, e.g. `u-url`.
+ * @param string $href        Optional href the property must point at.
+ * @return bool
+ */
+function entry_has_own_property( string $html, bool $card_rooted, string $class, string $href = '' ): bool {
+	if ( false === strpos( $html, $class ) ) {
+		return false;
+	}
+	$doc      = new \DOMDocument();
+	$previous = libxml_use_internal_errors( true );
+	$doc->loadHTML( '<?xml encoding="utf-8" ?><div id="pkiw-entry-scope">' . $html . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD );
+	libxml_clear_errors();
+	libxml_use_internal_errors( $previous );
+	$xpath = new \DOMXPath( $doc );
+	$has   = static function ( \DOMElement $el, string $pattern ): bool {
+		return (bool) preg_match( $pattern, ' ' . $el->getAttribute( 'class' ) . ' ' );
+	};
+	foreach ( $xpath->query( '//*[contains(concat(" ", normalize-space(@class), " "), " ' . $class . ' ")]' ) as $node ) {
+		if ( ! $node instanceof \DOMElement ) {
+			continue;
+		}
+		if ( '' !== $href && untrailingslashit( $node->getAttribute( 'href' ) ) !== untrailingslashit( $href ) ) {
+			continue;
+		}
+		// Nearest microformats root above the property.
+		$owner = null;
+		for ( $p = $node->parentNode; $p instanceof \DOMElement; $p = $p->parentNode ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM API property.
+			if ( 'pkiw-entry-scope' === $p->getAttribute( 'id' ) ) {
+				break;
+			}
+			if ( $has( $p, '/\sh-[a-z]+(-[a-z]+)*\s/' ) ) {
+				$owner = $p;
+				break;
+			}
+		}
+		$owner_is_card = $owner instanceof \DOMElement && 'article' === strtolower( $owner->tagName ) && $has( $owner, '/\spk-card\s/' ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM API property.
+		if ( $card_rooted ? $owner_is_card : null === $owner ) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * Append hidden `u-url` / `dt-published` for the entry when the card does not
  * expose them outside a nested object.
  *
@@ -131,16 +184,13 @@ function entry_author_html( \WP_Post $post ): string {
  * @return string
  */
 function ensure_entry_properties( string $html, \WP_Post $post, bool $card_rooted ): string {
-	// Cards rooted as h-entry: look for the properties anywhere in the card
-	// (they belong to the card entry). Cards rooted as h-cite / h-food: the
-	// entry is the <li>, so properties inside the object do not count.
-	$scope = $card_rooted ? $html : (string) preg_replace( '#<article\b.*</article>#is', '', $html );
-	// A cited object inside the card carries its own u-url; only a u-url that
-	// points at this post counts as the entry's.
-	$permalink    = esc_url( (string) get_permalink( $post ) );
-	$needs_url    = '' === $permalink || ! preg_match( '#<a\b[^>]*(?:class="[^"]*\bu-url\b[^"]*"[^>]*href="' . preg_quote( $permalink, '#' ) . '"|href="' . preg_quote( $permalink, '#' ) . '"[^>]*class="[^"]*\bu-url\b[^"]*")#', $scope );
-	$needs_date   = false === strpos( $scope, 'dt-published' );
-	$needs_author = false === strpos( $scope, 'p-author' );
+	// Only properties whose nearest microformats root is the entry count: a
+	// nested object (h-cite, h-event, h-card, h-food) owns its own u-url,
+	// dt-published and p-author even when they point at this post.
+	$permalink    = (string) get_permalink( $post );
+	$needs_url    = ! entry_has_own_property( $html, $card_rooted, 'u-url', $permalink );
+	$needs_date   = ! entry_has_own_property( $html, $card_rooted, 'dt-published' );
+	$needs_author = ! entry_has_own_property( $html, $card_rooted, 'p-author' );
 	if ( ! $needs_url && ! $needs_date && ! $needs_author ) {
 		return $html;
 	}

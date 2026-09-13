@@ -420,4 +420,34 @@ final class StreamCardTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( '<a class="u-url" href="' . esc_url( (string) get_permalink( $post_id ) ) . '"', $out );
 	}
+
+	/**
+	 * An RSVP card whose permalink link sits inside a nested h-event still gets
+	 * the entry's own u-url: the h-event owns that link for parsers.
+	 */
+	public function test_ensure_entry_properties_ignores_u_url_inside_nested_event(): void {
+		$post_id   = self::factory()->post->create( [ 'post_title' => 'Town hall' ] );
+		$post      = get_post( $post_id );
+		$permalink = esc_url( (string) get_permalink( $post_id ) );
+		$html      = '<article class="pk-card k-rsvp h-entry"><div class="pk-event p-in-reply-to h-event"><h2 class="pk-title p-name"><a class="u-url" href="' . $permalink . '">Town hall</a></h2></div><div class="pk-meta"><time class="dt-published" datetime="2026-08-04T00:00:00+00:00">RSVPed</time></div></article>';
+
+		$out = \PKIW\ensure_entry_properties( $html, $post, true );
+
+		$this->assertMatchesRegularExpression( '#<span class="pk-entry-props" hidden><a class="u-url" href="' . preg_quote( $permalink, '#' ) . '"#', $out );
+		$this->assertStringNotContainsString( '<time class="dt-published" datetime="' . esc_attr( (string) get_post_time( 'c', true, $post ) ) . '" aria-hidden="true">', $out, 'the card already has its own dt-published' );
+	}
+
+	/**
+	 * A card that already carries its own permalink u-url gets no duplicate.
+	 */
+	public function test_ensure_entry_properties_keeps_own_u_url(): void {
+		$post_id   = self::factory()->post->create( [ 'post_title' => 'Own' ] );
+		$post      = get_post( $post_id );
+		$permalink = esc_url( (string) get_permalink( $post_id ) );
+		$html      = '<article class="pk-card k-note h-entry"><h2 class="pk-title p-name"><a class="u-url" href="' . $permalink . '">Own</a></h2><time class="dt-published" datetime="2026-01-01T00:00:00+00:00"></time></article>';
+
+		$out = \PKIW\ensure_entry_properties( $html, $post, true );
+
+		$this->assertSame( 1, substr_count( $out, 'class="u-url" href="' . $permalink . '"' ) );
+	}
 }
