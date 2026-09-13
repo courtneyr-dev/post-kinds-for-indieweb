@@ -684,7 +684,11 @@ function extract_mood_card_emoji( string $content ): string {
 /**
  * Accessible name for a mood emoji: the first mood-card block's mood label.
  *
+ * A label picked from the mood vocabulary follows the mood spelling
+ * setting (Mood_Vocabulary::display_label()); typed labels stay as saved.
+ *
  * @since 1.8.1
+ * @since 1.9.0 Resolves vocabulary labels through Mood_Vocabulary.
  *
  * @param string $content Post content.
  * @return string The mood label, or "Mood" when the block has none.
@@ -694,7 +698,11 @@ function mood_card_accessible_name( string $content ): string {
 		if ( 'post-kinds-indieweb/mood-card' !== ( $block['blockName'] ?? '' ) ) {
 			continue;
 		}
-		$label = trim( wp_strip_all_tags( (string) ( $block['attrs']['mood'] ?? '' ) ) );
+		$label = trim(
+			wp_strip_all_tags(
+				Mood_Vocabulary::display_label( (string) ( $block['attrs']['mood'] ?? '' ), (string) ( $block['attrs']['moodKey'] ?? '' ) )
+			)
+		);
 		if ( '' !== $label ) {
 			return $label;
 		}

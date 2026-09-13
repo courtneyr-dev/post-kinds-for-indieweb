@@ -1537,7 +1537,8 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 					'mood' => 'focused',
 					'note' => 'Sample note',
 				),
-				array( 'emoji', 'intensity', 'moodAt' ),
+				// moodKey is never set from Micropub: incoming mood text stays authored.
+				array( 'emoji', 'intensity', 'moodAt', 'moodKey' ),
 			),
 		);
 	}

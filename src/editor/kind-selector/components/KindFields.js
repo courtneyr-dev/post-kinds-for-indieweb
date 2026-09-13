@@ -33,6 +33,12 @@ import apiFetch from '@wordpress/api-fetch';
  */
 import { STORE_NAME } from '../../stores/post-kinds';
 import SyndicationControls from './SyndicationControls';
+import {
+	MoodSuggestions,
+	moodDisplayLabel,
+	moodKeyForLabel,
+	useMoodVocabulary,
+} from '../../../blocks/shared/mood-vocabulary';
 
 /**
  * Kind Fields Component
@@ -4046,16 +4052,23 @@ function WishFields() {
  * @return {JSX.Element} Mood fields.
  */
 function MoodFields() {
-	const { moodEmoji, moodLabel, moodRating } = useSelect( ( select ) => {
-		const getKindMeta = select( STORE_NAME ).getKindMeta;
-		return {
-			moodEmoji: getKindMeta( 'mood_emoji' ),
-			moodLabel: getKindMeta( 'mood_label' ),
-			moodRating: getKindMeta( 'mood_rating' ),
-		};
-	}, [] );
+	const { moodEmoji, moodLabel, moodKey, moodRating } = useSelect(
+		( select ) => {
+			const getKindMeta = select( STORE_NAME ).getKindMeta;
+			return {
+				moodEmoji: getKindMeta( 'mood_emoji' ),
+				moodLabel: getKindMeta( 'mood_label' ),
+				moodKey: getKindMeta( 'mood_key' ),
+				moodRating: getKindMeta( 'mood_rating' ),
+			};
+		},
+		[]
+	);
 
 	const { updateKindMeta } = useDispatch( STORE_NAME );
+
+	// Suggestions follow the site's mood spelling setting (see mood card).
+	const moods = useMoodVocabulary();
 
 	const ratingOptions = [
 		{
@@ -4114,14 +4127,27 @@ function MoodFields() {
 					'Mood Label',
 					'post-kinds-for-indieweb-in-block-themes'
 				) }
-				value={ moodLabel }
-				onChange={ ( value ) => updateKindMeta( 'mood_label', value ) }
+				value={ moodDisplayLabel( moodLabel, moodKey, moods ) }
+				onChange={ ( value ) => {
+					// Key first: the mood card applies a changed label together
+					// with whatever key is stored at that moment.
+					updateKindMeta(
+						'mood_key',
+						moodKeyForLabel( value, moods )
+					);
+					updateKindMeta( 'mood_label', value );
+				} }
+				list="pkiw-kind-fields-mood-suggestions"
 				placeholder={ __(
 					'How are you feeling?',
 					'post-kinds-for-indieweb-in-block-themes'
 				) }
 				__nextHasNoMarginBottom
 				__next40pxDefaultSize
+			/>
+			<MoodSuggestions
+				id="pkiw-kind-fields-mood-suggestions"
+				moods={ moods }
 			/>
 			<SelectControl
 				label={ __(

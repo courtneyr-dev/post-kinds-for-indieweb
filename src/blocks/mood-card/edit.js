@@ -20,6 +20,13 @@ import {
 } from '@wordpress/components';
 import { useEffect } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
+import { useInstanceId } from '@wordpress/compose';
+import {
+	MoodSuggestions,
+	moodDisplayLabel,
+	moodKeyForLabel,
+	useMoodVocabulary,
+} from '../shared/mood-vocabulary';
 
 /**
  * Mood emojis with labels organized by category.
@@ -149,7 +156,19 @@ const EMOJI_OPTIONS = Object.entries( MOOD_EMOJIS ).map(
 );
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { mood, emoji, note, intensity } = attributes;
+	const { mood, moodKey, emoji, note, intensity } = attributes;
+
+	// Suggestions and the shown label follow the site's mood spelling
+	// setting. The saved `mood` text changes only when the author edits it;
+	// moodKey is kept only while the text is exactly a vocabulary label.
+	const moods = useMoodVocabulary();
+	const displayMood = moodDisplayLabel( mood, moodKey, moods );
+	const suggestionsId = useInstanceId( Edit, 'pkiw-mood-card-suggestions' );
+	const setMood = ( value ) =>
+		setAttributes( {
+			mood: value,
+			moodKey: moodKeyForLabel( value, moods ) || undefined,
+		} );
 
 	const blockProps = useBlockProps( {
 		className: 'mood-card-block pk-card k-mood',
@@ -199,6 +218,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		const metaMood = postMeta._pkiw_mood_label;
 		if ( metaMood && metaMood !== ( mood || '' ) ) {
 			updates.mood = metaMood;
+			updates.moodKey = postMeta._pkiw_mood_key || undefined;
 		}
 		const metaEmoji = postMeta._pkiw_mood_emoji;
 		if ( metaEmoji && metaEmoji !== ( emoji || '' ) ) {
@@ -214,6 +234,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		}
 	}, [
 		postMeta._pkiw_mood_label,
+		postMeta._pkiw_mood_key,
 		postMeta._pkiw_mood_emoji,
 		postMeta._pkiw_mood_rating,
 	] );
@@ -225,6 +246,9 @@ export default function Edit( { attributes, setAttributes } ) {
 		if ( ( mood || '' ) !== ( postMeta._pkiw_mood_label ?? '' ) ) {
 			metaUpdates._pkiw_mood_label = mood || '';
 		}
+		if ( ( moodKey || '' ) !== ( postMeta._pkiw_mood_key ?? '' ) ) {
+			metaUpdates._pkiw_mood_key = moodKey || '';
+		}
 		if ( ( emoji || '' ) !== ( postMeta._pkiw_mood_emoji ?? '' ) ) {
 			metaUpdates._pkiw_mood_emoji = emoji || '';
 		}
@@ -235,7 +259,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		if ( Object.keys( metaUpdates ).length > 0 ) {
 			editPost( { meta: metaUpdates } );
 		}
-	}, [ mood, emoji, intensity ] );
+	}, [ mood, moodKey, emoji, intensity ] );
 
 	const handleEmojiSelect = ( selectedEmoji ) => {
 		setAttributes( { emoji: selectedEmoji } );
@@ -256,15 +280,19 @@ export default function Edit( { attributes, setAttributes } ) {
 							'Mood',
 							'post-kinds-for-indieweb-in-block-themes'
 						) }
-						value={ mood || '' }
-						onChange={ ( value ) =>
-							setAttributes( { mood: value } )
-						}
+						value={ displayMood }
+						onChange={ setMood }
+						list={ suggestionsId }
+						help={ __(
+							'Pick a suggestion or type your own.',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
 						placeholder={ __(
 							'How are you feeling?',
 							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
+					<MoodSuggestions id={ suggestionsId } moods={ moods } />
 					<SelectControl
 						label={ __(
 							'Emoji',
@@ -385,10 +413,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						<RichText
 							tagName="h3"
 							className="post-kinds-card__title"
-							value={ mood }
-							onChange={ ( value ) =>
-								setAttributes( { mood: value } )
-							}
+							value={ displayMood }
+							onChange={ setMood }
 							placeholder={ __(
 								'How are you feeling?',
 								'post-kinds-for-indieweb-in-block-themes'

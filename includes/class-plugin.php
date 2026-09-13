@@ -471,6 +471,9 @@ final class Plugin {
 			new Default_Category();
 		}
 
+		// Mood identities and their spelling-resolved labels (REST /moods).
+		Mood_Vocabulary::register();
+
 		if ( class_exists( __NAMESPACE__ . '\\Book_Completion_Controller' ) ) {
 			$this->book_completion_controller = new Book_Completion_Controller();
 		}

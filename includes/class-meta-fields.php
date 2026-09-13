@@ -605,6 +605,12 @@ class Meta_Fields {
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
+			'mood_key'                => [
+				'type'        => 'string',
+				'description' => __( 'Mood identity from the plugin mood vocabulary (e.g., energized); empty for a label typed by hand.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'sanitize_key',
+				'default'     => '',
+			],
 			'mood_rating'             => [
 				'type'        => 'number',
 				'description' => __( 'Mood rating on 1-5 scale.', 'post-kinds-for-indieweb-in-block-themes' ),
