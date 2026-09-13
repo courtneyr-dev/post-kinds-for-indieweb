@@ -34,7 +34,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 
 		$out = \PKIW\link_title_to_post( $html, $post );
 
-		$this->assertStringContainsString( '<a href="' . esc_url( (string) get_permalink( $post_id ) ) . '">Movie</a>', $out );
+		$this->assertStringContainsString( '<a class="u-url" href="' . esc_url( (string) get_permalink( $post_id ) ) . '">Movie</a>', $out );
 		$this->assertStringNotContainsString( 'youtu.be', $out );
 	}
 
@@ -48,7 +48,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 
 		$out = \PKIW\link_title_to_post( $html, $post );
 
-		$this->assertStringContainsString( '<a href="' . esc_url( (string) get_permalink( $post_id ) ) . '">Enola</a>', $out );
+		$this->assertStringContainsString( '<a class="u-url" href="' . esc_url( (string) get_permalink( $post_id ) ) . '">Enola</a>', $out );
 	}
 
 	/**
