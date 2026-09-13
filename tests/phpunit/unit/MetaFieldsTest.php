@@ -97,6 +97,17 @@ class MetaFieldsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Every redaction key names a registered field (a typo would silently leak).
+	 */
+	public function test_location_keys_are_registered_fields() {
+		$fields = $this->meta_fields->get_fields();
+		foreach ( Meta_Fields::LOCATION_KEYS as $key ) {
+			$this->assertArrayHasKey( $key, $fields, "LOCATION_KEYS lists {$key}, which is not a registered field." );
+		}
+		$this->assertContains( 'eat_restaurant_url', Meta_Fields::LOCATION_KEYS );
+	}
+
+	/**
 	 * Test sanitize_rsvp_status with valid values.
 	 *
 	 * @dataProvider rsvp_status_valid_provider

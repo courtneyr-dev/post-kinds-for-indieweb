@@ -242,6 +242,7 @@ class BlockBindingsTest extends WP_UnitTestCase {
 	 */
 	public function test_computed_coordinates() {
 		$post_id = self::factory()->post->create();
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'public' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_latitude', '37.7749' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_longitude', '-122.4194' );
 
@@ -270,6 +271,7 @@ class BlockBindingsTest extends WP_UnitTestCase {
 	 */
 	public function test_computed_full_address() {
 		$post_id = self::factory()->post->create();
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'public' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_address', '123 Main St' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_locality', 'Springfield' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_region', 'IL' );
@@ -537,6 +539,84 @@ class BlockBindingsTest extends WP_UnitTestCase {
 		$editor_bindings = $this->block_bindings->get_bindings_for_editor();
 
 		$this->assertSame( array_keys( $bindings ), array_keys( $editor_bindings ) );
+	}
+
+	/**
+	 * Location bindings stay empty for visitors when the location is not public.
+	 *
+	 * @dataProvider location_binding_keys
+	 *
+	 * @param string $key Binding key.
+	 */
+	public function test_location_binding_hidden_for_visitor_when_not_public( string $key ) {
+		$post_id = $this->location_post( 'approximate' );
+		wp_set_current_user( 0 );
+		$this->assertNull( $this->block_bindings->get_binding_value( [ 'key' => $key ], $this->create_mock_block( $post_id ), 'content' ) );
+	}
+
+	/**
+	 * Location bindings render for visitors when the location is public.
+	 *
+	 * @dataProvider location_binding_keys
+	 *
+	 * @param string $key Binding key.
+	 */
+	public function test_location_binding_shown_when_public( string $key ) {
+		$post_id = $this->location_post( 'public' );
+		wp_set_current_user( 0 );
+		$this->assertNotNull( $this->block_bindings->get_binding_value( [ 'key' => $key ], $this->create_mock_block( $post_id ), 'content' ) );
+	}
+
+	/**
+	 * Editors still see precise location while editing.
+	 *
+	 * @dataProvider location_binding_keys
+	 *
+	 * @param string $key Binding key.
+	 */
+	public function test_location_binding_shown_to_editor( string $key ) {
+		$post_id = $this->location_post( 'private' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		$this->assertNotNull( $this->block_bindings->get_binding_value( [ 'key' => $key ], $this->create_mock_block( $post_id ), 'content' ) );
+	}
+
+	/**
+	 * A non-public full address keeps city, region and country, not the street.
+	 */
+	public function test_full_address_drops_street_when_not_public() {
+		$post_id = $this->location_post( 'approximate' );
+		wp_set_current_user( 0 );
+		$this->assertSame( 'Testville', $this->block_bindings->get_binding_value( [ 'key' => 'checkin_full_address' ], $this->create_mock_block( $post_id ), 'content' ) );
+	}
+
+	/**
+	 * Keys that expose precise location.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function location_binding_keys(): array {
+		return [
+			'checkin_url'          => [ 'checkin_url' ],
+			'checkin_address'      => [ 'checkin_address' ],
+			'geo_coordinates'      => [ 'geo_coordinates' ],
+		];
+	}
+
+	/**
+	 * A post with precise location meta and the given privacy.
+	 *
+	 * @param string $privacy geo_privacy value.
+	 * @return int Post ID.
+	 */
+	private function location_post( string $privacy ): int {
+		$post_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_url', 'https://example.test/venue' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_address', '1 Test Street' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_locality', 'Testville' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_latitude', '10.5' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_longitude', '20.5' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', $privacy );
+		return $post_id;
 	}
 
 	/**

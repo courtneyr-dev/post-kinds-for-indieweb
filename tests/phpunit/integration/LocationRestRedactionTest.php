@@ -95,4 +95,14 @@ final class LocationRestRedactionTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'meta', $data );
 		$this->assertEquals( 0, $data['meta']['_pkiw_geo_latitude'] );
 	}
+
+	public function test_pkiw_eat_restaurant_url_is_blank_for_non_public_location(): void {
+		( new Meta_Fields() )->register_meta_fields();
+		update_post_meta( $this->post_id, '_pkiw_eat_restaurant_url', 'https://example.test/restaurant' );
+		update_post_meta( $this->post_id, '_pkiw_geo_privacy', 'approximate' );
+		$data = $this->response();
+		$this->assertArrayHasKey( '_pkiw_eat_restaurant_url', $data['meta'] );
+		$this->assertSame( '', $data['meta']['_pkiw_eat_restaurant_url'] );
+		$this->assertSame( 'https://example.test/restaurant', get_post_meta( $this->post_id, '_pkiw_eat_restaurant_url', true ) );
+	}
 }

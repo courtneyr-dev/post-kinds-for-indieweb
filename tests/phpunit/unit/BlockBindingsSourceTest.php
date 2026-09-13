@@ -446,6 +446,19 @@ class BlockBindingsSourceTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * No friendly key resolves to a precise-location field; if one ever does,
+	 * get_value() needs a Meta_Fields::location_visible() check (R-03).
+	 */
+	public function test_no_bindable_key_resolves_to_a_location_field(): void {
+		$map = ( new \ReflectionClassConstant( Block_Bindings_Source::class, 'KEY_MAP' ) )->getValue();
+		foreach ( $map as $friendly => $per_kind ) {
+			foreach ( $per_kind as $meta_suffix ) {
+				$this->assertNotContains( $meta_suffix, Meta_Fields::LOCATION_KEYS, "Binding key {$friendly} resolves to location field {$meta_suffix}." );
+			}
+		}
+	}
+
+	/**
 	 * Assign a kind taxonomy term to a post.
 	 *
 	 * @param int    $post_id Post ID.

@@ -971,7 +971,7 @@ class Meta_Fields {
 		'eat_location_address',
 		'eat_geo_latitude',
 		'eat_geo_longitude',
-		'eat_venue_url',
+		'eat_restaurant_url',
 	];
 
 	/**
