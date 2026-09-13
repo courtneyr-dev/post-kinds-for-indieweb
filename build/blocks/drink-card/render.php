@@ -55,7 +55,7 @@ $pkiw_badge_label = $pkiw_drink_labels[ $pkiw_drink_type ] ?? $pkiw_drink_type;
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
-		'class' => 'pk-card k-drink h-food',
+		'class' => 'pk-card k-drink p-drank h-food',
 	]
 );
 

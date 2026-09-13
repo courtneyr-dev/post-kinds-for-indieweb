@@ -40,7 +40,7 @@ $pkiw_geo_lon           = isset( $attributes['geoLongitude'] ) ? (float) $attrib
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
-		'class' => 'pk-card k-eat h-food',
+		'class' => 'pk-card k-eat p-ate h-food',
 	]
 );
 

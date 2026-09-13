@@ -1015,8 +1015,10 @@ final class Micropub_Content_Builder {
 				. "\t<!-- /wp:group -->";
 		}
 
-		return "<!-- wp:group {\"className\":\"h-entry\",\"layout\":{\"type\":\"constrained\"}} -->\n"
-			. "<div class=\"wp-block-group h-entry\">\n"
+		// 1.8.1: no h-entry on the wrapper — the Query Loop item, the card or the
+		// singular wrapper supplies the entry root; a classed Group made a second one.
+		return "<!-- wp:group {\"className\":\"pkiw-entry\",\"layout\":{\"type\":\"constrained\"}} -->\n"
+			. "<div class=\"wp-block-group pkiw-entry\">\n"
 			. "\t" . $card_markup
 			. $paragraph
 			. "\n</div>\n"

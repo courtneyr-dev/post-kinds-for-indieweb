@@ -50,15 +50,74 @@ const PK_STREAM_THUMB_LIMIT = 4;
 function render_stream_card( array $attributes = [], string $content = '', ?\WP_Block $block = null ): string {
 	$html = render_stream_card_inner( $attributes, $content, $block );
 
-	// 1.8.1: when the card's own outermost element is an h-entry, register it so
+	// 1.8.1: when the card carries its own h-entry root (the pk-card article,
+	// possibly inside an authored wrapper), register it so
 	// Microformats::add_post_classes() leaves the Query Loop <li> without a
-	// second root (the read card is an h-cite and keeps the <li> root).
+	// second root. Cards rooted as h-cite / h-food keep the <li> root.
 	$post_id = ( $block instanceof \WP_Block && ! empty( $block->context['postId'] ) ) ? (int) $block->context['postId'] : (int) get_the_ID();
-	if ( $post_id && preg_match( '/^\s*<[a-z][a-z0-9-]*\b[^>]*\bclass="[^"]*\bh-entry\b/i', $html ) ) {
+	$post    = $post_id ? get_post( $post_id ) : null;
+	$card_rooted = (bool) preg_match( '/<article\b[^>]*\bclass="[^"]*\bpk-card\b[^"]*\bh-entry\b/i', $html );
+	if ( $post_id && $card_rooted ) {
 		$GLOBALS['pkiw_stream_card_root_seen'][ $post_id ] = true;
 	}
 
 	return $html;
+}
+
+/**
+ * The entry itself needs a permalink and a publication date that parsers can
+ * attribute to it, not to a nested h-cite / h-food object. Runs late on the
+ * block's render filter so theme adapters that rebuild the card have finished.
+ *
+ * @param string    $html     Rendered card (after adapters).
+ * @param array     $block    Parsed block.
+ * @param \WP_Block $instance Block instance.
+ * @return string
+ */
+function ensure_entry_properties_filter( string $html, array $block, $instance ): string {
+	$post_id = ( $instance instanceof \WP_Block && ! empty( $instance->context['postId'] ) ) ? (int) $instance->context['postId'] : (int) get_the_ID();
+	$post    = $post_id ? get_post( $post_id ) : null;
+	if ( ! $post instanceof \WP_Post || '' === $html ) {
+		return $html;
+	}
+	$card_rooted = (bool) preg_match( '/<article\b[^>]*\bclass="[^"]*\bpk-card\b[^"]*\bh-entry\b/i', $html );
+	return ensure_entry_properties( $html, $post, $card_rooted );
+}
+add_filter( 'render_block_post-kinds-indieweb/stream-card', __NAMESPACE__ . '\\ensure_entry_properties_filter', 99, 3 );
+
+/**
+ * Append hidden `u-url` / `dt-published` for the entry when the card does not
+ * expose them outside a nested object.
+ *
+ * @param string   $html        Rendered card.
+ * @param \WP_Post $post        The post.
+ * @param bool     $card_rooted Whether the pk-card article is the h-entry root.
+ * @return string
+ */
+function ensure_entry_properties( string $html, \WP_Post $post, bool $card_rooted ): string {
+	// Cards rooted as h-entry: look for the properties anywhere in the card
+	// (they belong to the card entry). Cards rooted as h-cite / h-food: the
+	// entry is the <li>, so properties inside the object do not count.
+	$scope = $card_rooted ? $html : (string) preg_replace( '#<article\b.*</article>#is', '', $html );
+	$needs_url  = false === strpos( $scope, 'u-url' );
+	$needs_date = false === strpos( $scope, 'dt-published' );
+	if ( ! $needs_url && ! $needs_date ) {
+		return $html;
+	}
+	$extra = '';
+	if ( $needs_url ) {
+		$extra .= '<a class="u-url" href="' . esc_url( (string) get_permalink( $post ) ) . '" tabindex="-1" aria-hidden="true"></a>';
+	}
+	if ( $needs_date ) {
+		$extra .= '<time class="dt-published" datetime="' . esc_attr( (string) get_post_time( 'c', true, $post ) ) . '" aria-hidden="true"></time>';
+	}
+	$extra = '<span class="pk-entry-props" hidden>' . $extra . '</span>';
+	if ( $card_rooted ) {
+		// Inside the rooted article, before its closing tag.
+		$pos = strrpos( $html, '</article>' );
+		return false === $pos ? $html . $extra : substr( $html, 0, $pos ) . $extra . substr( $html, $pos );
+	}
+	return $html . $extra;
 }
 
 /**
