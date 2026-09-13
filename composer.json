@@ -34,7 +34,6 @@
   },
   "scripts": {
     "lint": "phpcs --standard=.phpcs.xml.dist --runtime-set ignore_warnings_on_exit 1",
-    "lint:warnings": "phpcs --standard=.phpcs.xml.dist --runtime-set ignore_warnings_on_exit 1",
     "lint:fix": "phpcbf",
     "analyze": "phpstan analyse --memory-limit=2G",
     "analyze:baseline": "phpstan analyse --generate-baseline",
