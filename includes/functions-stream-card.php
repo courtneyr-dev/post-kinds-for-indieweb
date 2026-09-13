@@ -325,7 +325,8 @@ function render_generic_stream_card( \WP_Post $post ): string {
 		$emoji = extract_mood_card_emoji( (string) $post->post_content );
 		if ( '' !== $emoji ) {
 			// The emoji IS the mood — expose it so assistive tech announces it.
-			$out .= '<span class="pk-mood__emoji" role="img">' . esc_html( $emoji ) . '</span>';
+			// role="img" takes its name from aria-label, never from its text.
+			$out .= '<span class="pk-mood__emoji" role="img" aria-label="' . esc_attr( mood_card_accessible_name( (string) $post->post_content ) ) . '">' . esc_html( $emoji ) . '</span>';
 		}
 	}
 
@@ -678,6 +679,28 @@ function extract_mood_card_emoji( string $content ): string {
 	}
 
 	return '';
+}
+
+/**
+ * Accessible name for a mood emoji: the first mood-card block's mood label.
+ *
+ * @since 1.8.1
+ *
+ * @param string $content Post content.
+ * @return string The mood label, or "Mood" when the block has none.
+ */
+function mood_card_accessible_name( string $content ): string {
+	foreach ( flatten_blocks( parse_blocks( $content ) ) as $block ) {
+		if ( 'post-kinds-indieweb/mood-card' !== ( $block['blockName'] ?? '' ) ) {
+			continue;
+		}
+		$label = trim( wp_strip_all_tags( (string) ( $block['attrs']['mood'] ?? '' ) ) );
+		if ( '' !== $label ) {
+			return $label;
+		}
+		break;
+	}
+	return __( 'Mood', 'post-kinds-for-indieweb-in-block-themes' );
 }
 
 /**

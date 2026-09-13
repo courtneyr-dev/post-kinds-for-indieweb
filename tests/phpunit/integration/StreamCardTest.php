@@ -351,7 +351,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$html = \PKIW\render_stream_card();
 
 		$this->assertStringContainsString( 'pk-card--stream', $html );
-		$this->assertStringContainsString( '<span class="pk-mood__emoji" role="img">🌧️</span>', $html );
+		$this->assertStringContainsString( '<span class="pk-mood__emoji" role="img" aria-label="Melancholy">🌧️</span>', $html );
 		$this->assertLessThan( strpos( $html, 'pk-caption' ), strpos( $html, 'pk-mood__emoji' ) );
 	}
 
@@ -373,7 +373,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 
 		$html = \PKIW\render_stream_card();
 
-		$this->assertStringContainsString( '<span class="pk-mood__emoji" role="img">😊</span>', $html );
+		$this->assertStringContainsString( '<span class="pk-mood__emoji" role="img" aria-label="Content">😊</span>', $html );
 	}
 
 	/**
@@ -449,5 +449,14 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$out = \PKIW\ensure_entry_properties( $html, $post, true );
 
 		$this->assertSame( 1, substr_count( $out, 'class="u-url" href="' . $permalink . '"' ) );
+	}
+
+	/**
+	 * The mood emoji carries an accessible name from the mood label.
+	 */
+	public function test_mood_card_accessible_name_uses_the_mood_label(): void {
+		$content = '<!-- wp:post-kinds-indieweb/mood-card {"mood":"Recharged","emoji":"🔋"} /-->';
+		$this->assertSame( 'Recharged', \PKIW\mood_card_accessible_name( $content ) );
+		$this->assertSame( 'Mood', \PKIW\mood_card_accessible_name( '<!-- wp:post-kinds-indieweb/mood-card {"emoji":"🔋"} /-->' ) );
 	}
 }

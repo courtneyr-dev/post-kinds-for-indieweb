@@ -75,4 +75,66 @@ final class WebhookRestWiringTest extends WP_UnitTestCase {
 			'generic'      => array( 'generic' ),
 		);
 	}
+
+	/**
+	 * A POST signed with the site webhook secret reaches the handler and succeeds
+	 * without a second per-service token (the two layers used to disagree).
+	 */
+	public function test_signed_listenbrainz_post_is_accepted(): void {
+		update_option( 'pkiw_webhook_secret', 'unit-secret' );
+		$GLOBALS['wp_rest_server'] = null;
+		$rest                      = new REST_API();
+		add_action( 'rest_api_init', array( $rest, 'register_routes' ) );
+		$server = rest_get_server();
+		remove_action( 'rest_api_init', array( $rest, 'register_routes' ) );
+
+		$body    = wp_json_encode( array( 'listen_type' => 'single', 'payload' => array( array( 'listened_at' => 1726000000, 'track_metadata' => array( 'artist_name' => 'Unit Artist', 'track_name' => 'Unit Track' ) ) ) ) );
+		$request = new WP_REST_Request( 'POST', '/post-kinds-indieweb/v1/webhook/listenbrainz' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_header( 'X-Webhook-Signature', hash_hmac( 'sha256', $body, 'unit-secret' ) );
+		$request->set_body( $body );
+		$status = $server->dispatch( $request )->get_status();
+
+		$this->assertGreaterThanOrEqual( 200, $status );
+		$this->assertLessThan( 300, $status, 'a correctly signed ListenBrainz POST must succeed' );
+	}
+
+	/**
+	 * A tampered signature is still refused before the handler runs.
+	 */
+	public function test_tampered_signature_is_refused(): void {
+		update_option( 'pkiw_webhook_secret', 'unit-secret' );
+		$GLOBALS['wp_rest_server'] = null;
+		$rest                      = new REST_API();
+		add_action( 'rest_api_init', array( $rest, 'register_routes' ) );
+		$server = rest_get_server();
+		remove_action( 'rest_api_init', array( $rest, 'register_routes' ) );
+
+		$request = new WP_REST_Request( 'POST', '/post-kinds-indieweb/v1/webhook/listenbrainz' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_header( 'X-Webhook-Signature', hash_hmac( 'sha256', '{"other":1}', 'unit-secret' ) );
+		$request->set_body( '{"listen_type":"single"}' );
+
+		$this->assertContains( $server->dispatch( $request )->get_status(), array( 401, 403 ) );
+	}
+
+	/**
+	 * The generic route accepts the site secret as its token.
+	 */
+	public function test_generic_post_with_site_token_is_accepted(): void {
+		update_option( 'pkiw_webhook_secret', 'unit-secret' );
+		$GLOBALS['wp_rest_server'] = null;
+		$rest                      = new REST_API();
+		add_action( 'rest_api_init', array( $rest, 'register_routes' ) );
+		$server = rest_get_server();
+		remove_action( 'rest_api_init', array( $rest, 'register_routes' ) );
+
+		$request = new WP_REST_Request( 'POST', '/post-kinds-indieweb/v1/webhook/generic' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_header( 'X-Webhook-Token', 'unit-secret' );
+		$request->set_body( wp_json_encode( array( 'kind' => 'listen', 'title' => 'Unit Generic' ) ) );
+		$status = $server->dispatch( $request )->get_status();
+
+		$this->assertNotContains( $status, array( 401, 403, 500 ), 'a valid site token must pass both layers' );
+	}
 }
