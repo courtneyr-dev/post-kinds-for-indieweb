@@ -49,65 +49,65 @@ final class Block_Bindings_Source {
 	 * @var array<string, array<string, string>>
 	 */
 	private const KEY_MAP = [
-		'title'        => [
+		'title'            => [
 			'listen'   => 'listen_track',
 			'jam'      => 'listen_track',
 			'watch'    => 'watch_title',
 			'read'     => 'read_title',
 			'_default' => 'cite_name',
 		],
-		'artist'       => [
+		'artist'           => [
 			'listen'   => 'listen_artist',
 			'jam'      => 'listen_artist',
 			'_default' => 'cite_author',
 		],
-		'album'        => [
+		'album'            => [
 			'_default' => 'listen_album',
 		],
-		'rating'       => [
+		'rating'           => [
 			'listen'   => 'listen_rating',
 			'watch'    => 'watch_rating',
 			'read'     => 'read_rating',
 			'_default' => 'review_rating',
 		],
-		'url'          => [
+		'url'              => [
 			'listen'   => 'listen_url',
 			'jam'      => 'listen_url',
 			'watch'    => 'watch_url',
 			'read'     => 'read_url',
 			'_default' => 'cite_url',
 		],
-		'cover_image'  => [
+		'cover_image'      => [
 			'listen'   => 'listen_cover',
 			'jam'      => 'listen_cover',
 			'watch'    => 'watch_poster',
 			'read'     => 'read_cover',
 			'_default' => 'cite_photo',
 		],
-		'summary'      => [
+		'summary'          => [
 			'_default' => 'cite_summary',
 		],
-		'author'       => [
+		'author'           => [
 			'read'     => 'read_author',
 			'_default' => 'cite_author',
 		],
-		'isbn'         => [
+		'isbn'             => [
 			'_default' => 'read_isbn',
 		],
-		'publisher'    => [
+		'publisher'        => [
 			'_default' => 'read_publisher',
 		],
-		'page_count'   => [
+		'page_count'       => [
 			'_default' => 'read_pages',
 		],
-		'publish_date' => [
+		'publish_date'     => [
 			'_default' => 'read_publish_date',
 		],
-		'asin'         => [
+		'asin'             => [
 			'_default' => 'read_asin',
 		],
-		'kind'              => [],
-		'kindle_embed_url'  => [],
+		'kind'             => [],
+		'kindle_embed_url' => [],
 	];
 
 	/**
@@ -269,6 +269,10 @@ final class Block_Bindings_Source {
 		$kind        = $this->get_kind( (int) $post_id );
 		$key_map     = self::KEY_MAP[ $key ];
 		$meta_suffix = $key_map[ $kind ] ?? $key_map['_default'];
+
+		// R-03: no KEY_MAP entry resolves to a Meta_Fields::LOCATION_KEYS field,
+		// so this source never exposes precise location (BlockBindingsSourceTest
+		// fails if one is added). Location bindings live in Block_Bindings.
 
 		$meta_key = Meta_Fields::PREFIX . $meta_suffix;
 		$value    = get_post_meta( (int) $post_id, $meta_key, true );

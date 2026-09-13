@@ -421,6 +421,20 @@ class Microformats {
 
 		$kind = $this->get_post_kind( $post_id );
 
+		// 1.8.1: a Query Loop item whose stream card already rendered its own
+		// h-entry root (functions-stream-card.php) must not get a second root on
+		// the <li>; parsers otherwise see two entries per card. The kind class
+		// stays for styling. Core renders the inner blocks before it asks for
+		// the post classes, so the card has already registered itself here.
+		if ( ! empty( $GLOBALS['pkiw_stream_card_root_seen'][ $post_id ] ) ) {
+			if ( $kind ) {
+				$classes[] = 'kind-' . $kind;
+			}
+			// Core's classic `hentry` would be upgraded to a second h-entry root by
+			// microformats parsers (mf1 backcompat), so it goes too.
+			return array_values( array_unique( array_diff( $classes, [ 'hentry' ] ) ) );
+		}
+
 		if ( ! $kind || ! isset( $this->kind_formats[ $kind ] ) ) {
 			// Default to h-entry for posts without a kind.
 			$classes[] = 'h-entry';
@@ -653,6 +667,14 @@ class Microformats {
 			esc_url( get_permalink( $post_id ) ),
 			esc_attr( (string) get_the_date( 'c', $post_id ) )
 		);
+		// R-21 authorship: the singular entry names its author like every card does.
+		$singular_post = get_post( $post_id );
+		if ( $singular_post instanceof \WP_Post && function_exists( __NAMESPACE__ . '\\entry_author_html' ) && ! str_contains( $content, 'p-author' ) ) {
+			$author_html = entry_author_html( $singular_post );
+			if ( '' !== $author_html ) {
+				$entry_meta .= '<span hidden>' . $author_html . '</span>';
+			}
+		}
 
 		// Only name the entry where the kind's vocabulary has a name —
 		// notes and responses are intentionally title-less in mf2.

@@ -104,9 +104,10 @@ class Webhook_Handler {
 	 *
 	 * @param \WP_REST_Request $request REST request.
 	 * @param string           $service Service identifier.
+	 * @param bool             $authenticated True when the REST route already verified the site webhook secret (signature or token); skips the per-service token check.
 	 * @return \WP_REST_Response|\WP_Error Response.
 	 */
-	public function handle_request( \WP_REST_Request $request, string $service ) {
+	public function handle_request( \WP_REST_Request $request, string $service, bool $authenticated = false ) {
 		if ( ! isset( $this->endpoints[ $service ] ) ) {
 			return new \WP_Error(
 				'unknown_service',
@@ -117,8 +118,10 @@ class Webhook_Handler {
 
 		$endpoint = $this->endpoints[ $service ];
 
-		// Authenticate.
-		$auth_result = $this->authenticate( $request, $service, $endpoint );
+		// Authenticate. REST routes verify the site-wide webhook secret in their
+		// permission_callback; asking the same request for a second, per-service
+		// token made every token-type service unreachable (R-10).
+		$auth_result = $authenticated ? true : $this->authenticate( $request, $service, $endpoint );
 
 		if ( is_wp_error( $auth_result ) ) {
 			$this->log_webhook( $service, 'auth_failed', $auth_result->get_error_message() );

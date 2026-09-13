@@ -352,9 +352,20 @@ class Block_Bindings {
 
 		$binding = $this->bindings[ $key ];
 
+		// R-03: precise location only for public locations or editors, for
+		// stored location keys and the values computed from them.
+		// The full address degrades to city, region and country instead (see
+		// compute_value()); coordinates have no coarse form, so they hide.
+		$location_computes = [ 'coordinates' ];
+		$is_location       = ( ! empty( $binding['meta_key'] ) && in_array( $binding['meta_key'], Meta_Fields::LOCATION_KEYS, true ) )
+			|| ( 'computed' === $binding['type'] && in_array( $binding['compute'] ?? '', $location_computes, true ) );
+		if ( $is_location && ! Meta_Fields::location_visible( (int) $post_id ) ) {
+			return null;
+		}
+
 		// Handle computed fields.
 		if ( 'computed' === $binding['type'] ) {
-			return $this->compute_value( $binding['compute'], $post_id );
+			return $this->compute_value( $binding['compute'], $post_id, Meta_Fields::location_visible( (int) $post_id ) );
 		}
 
 		// Get the meta value.
@@ -378,15 +389,16 @@ class Block_Bindings {
 	 *
 	 * @param string $compute_type The type of computation.
 	 * @param int    $post_id      Post ID.
+	 * @param bool   $precise_location Whether the street address may be included.
 	 * @return string|null The computed value.
 	 */
-	private function compute_value( string $compute_type, int $post_id ): ?string {
+	private function compute_value( string $compute_type, int $post_id, bool $precise_location = true ): ?string {
 		$prefix = Meta_Fields::PREFIX;
 
 		switch ( $compute_type ) {
 			case 'full_address':
 				$parts = [
-					get_post_meta( $post_id, $prefix . 'checkin_address', true ),
+					$precise_location ? get_post_meta( $post_id, $prefix . 'checkin_address', true ) : '',
 					get_post_meta( $post_id, $prefix . 'checkin_locality', true ),
 					get_post_meta( $post_id, $prefix . 'checkin_region', true ),
 					get_post_meta( $post_id, $prefix . 'checkin_country', true ),

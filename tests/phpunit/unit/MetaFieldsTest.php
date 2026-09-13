@@ -83,6 +83,31 @@ class MetaFieldsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test precise check-in venue URLs are part of the location redaction list.
+	 */
+	public function test_location_keys_include_checkin_url() {
+		$this->assertContains( 'checkin_url', Meta_Fields::LOCATION_KEYS );
+	}
+
+	/**
+	 * Test OpenStreetMap place ids are part of the location redaction list.
+	 */
+	public function test_location_keys_include_checkin_osm_id() {
+		$this->assertContains( 'checkin_osm_id', Meta_Fields::LOCATION_KEYS );
+	}
+
+	/**
+	 * Every redaction key names a registered field (a typo would silently leak).
+	 */
+	public function test_location_keys_are_registered_fields() {
+		$fields = $this->meta_fields->get_fields();
+		foreach ( Meta_Fields::LOCATION_KEYS as $key ) {
+			$this->assertArrayHasKey( $key, $fields, "LOCATION_KEYS lists {$key}, which is not a registered field." );
+		}
+		$this->assertContains( 'eat_restaurant_url', Meta_Fields::LOCATION_KEYS );
+	}
+
+	/**
 	 * Test sanitize_rsvp_status with valid values.
 	 *
 	 * @dataProvider rsvp_status_valid_provider

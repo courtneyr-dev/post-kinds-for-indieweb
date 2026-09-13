@@ -1014,6 +1014,18 @@ final class Plugin {
 	 * @return void
 	 */
 	public function enqueue_editor_assets(): void {
+		// The bundle registers the Kind selector and Promote panels only, so
+		// skip screens whose post type cannot carry a kind (site editor,
+		// navigation menus, widgets): the panels would render there without
+		// a post to describe.
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( $screen instanceof \WP_Screen ) {
+			$post_type = (string) $screen->post_type;
+			if ( '' === $post_type || ! is_object_in_taxonomy( $post_type, 'kind' ) ) {
+				return;
+			}
+		}
+
 		$asset_file = \PKIW_PATH . 'build/index.asset.php';
 
 		if ( ! file_exists( $asset_file ) ) {

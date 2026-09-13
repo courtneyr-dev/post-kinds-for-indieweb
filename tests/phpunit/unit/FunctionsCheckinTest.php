@@ -333,6 +333,7 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 		] );
 
 		$post_id = $this->create_checkin_post();
+		update_post_meta( $post_id, '_pkiw_geo_privacy', 'public' );
 		wp_set_object_terms( $post_id, [ $venue_id ], 'pkiw_venue' );
 
 		$location = get_checkin_location( $post_id );
@@ -351,6 +352,7 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	 */
 	public function test_get_checkin_location_from_post_meta(): void {
 		$post_id = $this->create_checkin_post();
+		update_post_meta( $post_id, '_pkiw_geo_privacy', 'public' );
 		update_post_meta( $post_id, '_pkiw_checkin_venue', 'Some Place' );
 		update_post_meta( $post_id, '_pkiw_checkin_city', 'Seattle' );
 		update_post_meta( $post_id, '_pkiw_checkin_latitude', '47.6' );

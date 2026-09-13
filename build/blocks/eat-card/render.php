@@ -40,7 +40,7 @@ $pkiw_geo_lon           = isset( $attributes['geoLongitude'] ) ? (float) $attrib
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
-		'class' => 'pk-card k-eat h-food',
+		'class' => 'pk-card k-eat p-ate h-food',
 	]
 );
 
@@ -112,7 +112,7 @@ ob_start();
 		</div>
 
 		<?php if ( $pkiw_rating > 0 ) : ?>
-			<div class="pk-stars p-rating" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">
+			<div class="pk-stars p-rating" role="img" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">
 				<?php for ( $pkiw_i = 1; $pkiw_i <= 5; $pkiw_i++ ) : ?>
 					<svg class="<?php echo $pkiw_i <= $pkiw_rating ? '' : 'off'; ?>" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17l-6.9 3.5 1.6-6.8L1.4 9.1l7-.6z"/></svg>
 				<?php endfor; ?>

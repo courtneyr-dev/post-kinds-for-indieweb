@@ -131,6 +131,7 @@ ob_start();
 						class="pk-progress-fill"
 						style="width: <?php echo esc_attr( (string) $pkiw_progress_percent ); ?>%"
 						role="progressbar"
+						aria-label="<?php echo esc_attr( sprintf( /* translators: %d: percent read */ __( 'Reading progress: %d%%', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_progress_percent ) ); ?>"
 						aria-valuenow="<?php echo esc_attr( (string) $pkiw_progress_percent ); ?>"
 						aria-valuemin="0"
 						aria-valuemax="100"
@@ -151,7 +152,7 @@ ob_start();
 		<?php endif; ?>
 
 		<?php if ( $pkiw_rating > 0 ) : ?>
-			<div class="pk-stars p-rating" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">
+			<div class="pk-stars p-rating" role="img" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">
 				<?php for ( $pkiw_i = 1; $pkiw_i <= 5; $pkiw_i++ ) : ?>
 					<svg class="<?php echo $pkiw_i <= $pkiw_rating ? '' : 'off'; ?>" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17l-6.9 3.5 1.6-6.8L1.4 9.1l7-.6z"/></svg>
 				<?php endfor; ?>

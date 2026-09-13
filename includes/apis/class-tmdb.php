@@ -848,57 +848,61 @@ class TMDB extends API_Base {
 	 * @return array<string, mixed> Normalized movie.
 	 */
 	private function normalize_movie( array $movie, bool $detailed = false ): array {
+		$movie = wp_parse_args(
+			$movie,
+			[
+				'id'                   => 0,
+				'title'                => '',
+				'original_title'       => '',
+				'overview'             => '',
+				'poster_path'          => '',
+				'backdrop_path'        => '',
+				'release_date'         => '',
+				'vote_average'         => 0,
+				'vote_count'           => 0,
+				'popularity'           => 0,
+				'runtime'              => null,
+				'tagline'              => '',
+				'status'               => '',
+				'budget'               => 0,
+				'revenue'              => 0,
+				'homepage'             => '',
+				'genres'               => [],
+				'genre_ids'            => [],
+				'production_companies' => [],
+				'spoken_languages'     => [],
+			]
+		);
+
 		$result = [
-			'id'             => $movie['id'] ?? 0,
-			'tmdb_id'        => $movie['id'] ?? 0,
-			'title'          => $movie['title'] ?? '',
-			'original_title' => $movie['original_title'] ?? '',
-			'overview'       => $movie['overview'] ?? '',
-			'poster'         => $this->get_image_url( $movie['poster_path'] ?? '', 'w342' ),
-			'backdrop'       => $this->get_image_url( $movie['backdrop_path'] ?? '', 'w1280' ),
-			'release_date'   => $movie['release_date'] ?? '',
-			'year'           => $movie['release_date'] ? substr( $movie['release_date'], 0, 4 ) : '',
-			'vote_average'   => $movie['vote_average'] ?? 0,
-			'vote_count'     => $movie['vote_count'] ?? 0,
-			'popularity'     => $movie['popularity'] ?? 0,
+			'id'             => $movie['id'],
+			'tmdb_id'        => $movie['id'],
+			'title'          => $movie['title'],
+			'original_title' => $movie['original_title'],
+			'overview'       => $movie['overview'],
+			'poster'         => $this->get_image_url( $movie['poster_path'], 'w342' ),
+			'backdrop'       => $this->get_image_url( $movie['backdrop_path'], 'w1280' ),
+			'release_date'   => $movie['release_date'],
+			'year'           => $this->get_year_from_date( $movie['release_date'] ),
+			'vote_average'   => $movie['vote_average'],
+			'vote_count'     => $movie['vote_count'],
+			'popularity'     => $movie['popularity'],
 			'type'           => 'movie',
 			'source'         => 'tmdb',
 		];
 
 		if ( $detailed ) {
-			$result['runtime']  = $movie['runtime'] ?? null;
-			$result['tagline']  = $movie['tagline'] ?? '';
-			$result['status']   = $movie['status'] ?? '';
-			$result['budget']   = $movie['budget'] ?? 0;
-			$result['revenue']  = $movie['revenue'] ?? 0;
-			$result['homepage'] = $movie['homepage'] ?? '';
-
-			$result['genres'] = array_map(
-				function ( $genre ) {
-					return $genre['name'];
-				},
-				$movie['genres'] ?? []
-			);
-
-			$result['production_companies'] = array_map(
-				function ( $company ) {
-					return [
-						'id'   => $company['id'],
-						'name' => $company['name'],
-						'logo' => $this->get_image_url( $company['logo_path'] ?? '', 'w92' ),
-					];
-				},
-				$movie['production_companies'] ?? []
-			);
-
-			$result['spoken_languages'] = array_map(
-				function ( $lang ) {
-					return $lang['english_name'] ?? $lang['name'];
-				},
-				$movie['spoken_languages'] ?? []
-			);
+			$result['runtime']              = $movie['runtime'];
+			$result['tagline']              = $movie['tagline'];
+			$result['status']               = $movie['status'];
+			$result['budget']               = $movie['budget'];
+			$result['revenue']              = $movie['revenue'];
+			$result['homepage']             = $movie['homepage'];
+			$result['genres']               = $this->normalize_named_items( $movie['genres'] );
+			$result['production_companies'] = $this->normalize_companies( $movie['production_companies'] );
+			$result['spoken_languages']     = $this->normalize_language_names( $movie['spoken_languages'] );
 		} else {
-			$result['genre_ids'] = $movie['genre_ids'] ?? [];
+			$result['genre_ids'] = is_array( $movie['genre_ids'] ) ? $movie['genre_ids'] : [];
 		}
 
 		return $result;
@@ -912,77 +916,165 @@ class TMDB extends API_Base {
 	 * @return array<string, mixed> Normalized TV show.
 	 */
 	private function normalize_tv( array $show, bool $detailed = false ): array {
+		$show = wp_parse_args(
+			$show,
+			[
+				'id'                  => 0,
+				'name'                => '',
+				'original_name'       => '',
+				'overview'            => '',
+				'poster_path'         => '',
+				'backdrop_path'       => '',
+				'first_air_date'      => '',
+				'vote_average'        => 0,
+				'vote_count'          => 0,
+				'popularity'          => 0,
+				'last_air_date'       => '',
+				'tagline'             => '',
+				'status'              => '',
+				'homepage'            => '',
+				'in_production'       => false,
+				'number_of_seasons'   => 0,
+				'number_of_episodes'  => 0,
+				'episode_run_time'    => [],
+				'genres'              => [],
+				'genre_ids'           => [],
+				'networks'            => [],
+				'seasons'             => [],
+				'last_episode_to_air' => null,
+				'next_episode_to_air' => null,
+			]
+		);
+
 		$result = [
-			'id'             => $show['id'] ?? 0,
-			'tmdb_id'        => $show['id'] ?? 0,
-			'title'          => $show['name'] ?? '',
-			'original_title' => $show['original_name'] ?? '',
-			'overview'       => $show['overview'] ?? '',
-			'poster'         => $this->get_image_url( $show['poster_path'] ?? '', 'w342' ),
-			'backdrop'       => $this->get_image_url( $show['backdrop_path'] ?? '', 'w1280' ),
-			'first_air_date' => $show['first_air_date'] ?? '',
-			'year'           => $show['first_air_date'] ? substr( $show['first_air_date'], 0, 4 ) : '',
-			'vote_average'   => $show['vote_average'] ?? 0,
-			'vote_count'     => $show['vote_count'] ?? 0,
-			'popularity'     => $show['popularity'] ?? 0,
+			'id'             => $show['id'],
+			'tmdb_id'        => $show['id'],
+			'title'          => $show['name'],
+			'original_title' => $show['original_name'],
+			'overview'       => $show['overview'],
+			'poster'         => $this->get_image_url( $show['poster_path'], 'w342' ),
+			'backdrop'       => $this->get_image_url( $show['backdrop_path'], 'w1280' ),
+			'first_air_date' => $show['first_air_date'],
+			'year'           => $this->get_year_from_date( $show['first_air_date'] ),
+			'vote_average'   => $show['vote_average'],
+			'vote_count'     => $show['vote_count'],
+			'popularity'     => $show['popularity'],
 			'type'           => 'tv',
 			'source'         => 'tmdb',
 		];
 
 		if ( $detailed ) {
-			$result['last_air_date']      = $show['last_air_date'] ?? '';
-			$result['tagline']            = $show['tagline'] ?? '';
-			$result['status']             = $show['status'] ?? '';
-			$result['homepage']           = $show['homepage'] ?? '';
-			$result['in_production']      = $show['in_production'] ?? false;
-			$result['number_of_seasons']  = $show['number_of_seasons'] ?? 0;
-			$result['number_of_episodes'] = $show['number_of_episodes'] ?? 0;
-			$result['episode_run_time']   = $show['episode_run_time'] ?? [];
+			$result['last_air_date']      = $show['last_air_date'];
+			$result['tagline']            = $show['tagline'];
+			$result['status']             = $show['status'];
+			$result['homepage']           = $show['homepage'];
+			$result['in_production']      = $show['in_production'];
+			$result['number_of_seasons']  = $show['number_of_seasons'];
+			$result['number_of_episodes'] = $show['number_of_episodes'];
+			$result['episode_run_time']   = is_array( $show['episode_run_time'] ) ? $show['episode_run_time'] : [];
+			$result['genres']             = $this->normalize_named_items( $show['genres'] );
+			$result['networks']           = $this->normalize_companies( $show['networks'] );
+			$result['seasons']            = $this->normalize_seasons( $show['seasons'] );
 
-			$result['genres'] = array_map(
-				function ( $genre ) {
-					return $genre['name'];
-				},
-				$show['genres'] ?? []
-			);
-
-			$result['networks'] = array_map(
-				function ( $network ) {
-					return [
-						'id'   => $network['id'],
-						'name' => $network['name'],
-						'logo' => $this->get_image_url( $network['logo_path'] ?? '', 'w92' ),
-					];
-				},
-				$show['networks'] ?? []
-			);
-
-			// Normalize seasons.
-			$result['seasons'] = [];
-			if ( isset( $show['seasons'] ) ) {
-				foreach ( $show['seasons'] as $season ) {
-					$result['seasons'][] = [
-						'id'            => $season['id'] ?? 0,
-						'name'          => $season['name'] ?? '',
-						'season_number' => $season['season_number'] ?? 0,
-						'episode_count' => $season['episode_count'] ?? 0,
-						'air_date'      => $season['air_date'] ?? '',
-						'poster'        => $this->get_image_url( $season['poster_path'] ?? '', 'w185' ),
-					];
-				}
+			if ( is_array( $show['last_episode_to_air'] ) ) {
+				$result['last_episode'] = $this->normalize_episode( $show['last_episode_to_air'], (int) $show['id'] );
 			}
 
-			// Last episode.
-			if ( isset( $show['last_episode_to_air'] ) ) {
-				$result['last_episode'] = $this->normalize_episode( $show['last_episode_to_air'], $show['id'] );
-			}
-
-			// Next episode.
-			if ( isset( $show['next_episode_to_air'] ) ) {
-				$result['next_episode'] = $this->normalize_episode( $show['next_episode_to_air'], $show['id'] );
+			if ( is_array( $show['next_episode_to_air'] ) ) {
+				$result['next_episode'] = $this->normalize_episode( $show['next_episode_to_air'], (int) $show['id'] );
 			}
 		} else {
-			$result['genre_ids'] = $show['genre_ids'] ?? [];
+			$result['genre_ids'] = is_array( $show['genre_ids'] ) ? $show['genre_ids'] : [];
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Get a year from a date string.
+	 *
+	 * @param string $date Date string.
+	 * @return string
+	 */
+	private function get_year_from_date( string $date ): string {
+		if ( '' === $date ) {
+			return '';
+		}
+
+		return substr( $date, 0, 4 );
+	}
+
+	/**
+	 * Normalize arrays of named items.
+	 *
+	 * @param array<int, array<string, mixed>> $items Item arrays.
+	 * @return array<int, string>
+	 */
+	private function normalize_named_items( array $items ): array {
+		return array_map(
+			static function ( array $item ): string {
+				return (string) ( $item['name'] ?? '' );
+			},
+			$items
+		);
+	}
+
+	/**
+	 * Normalize company-like items with logos.
+	 *
+	 * @param array<int, array<string, mixed>> $items Item arrays.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function normalize_companies( array $items ): array {
+		return array_map(
+			function ( array $item ): array {
+				return [
+					'id'   => $item['id'] ?? 0,
+					'name' => $item['name'] ?? '',
+					'logo' => $this->get_image_url( $item['logo_path'] ?? '', 'w92' ),
+				];
+			},
+			$items
+		);
+	}
+
+	/**
+	 * Normalize language names.
+	 *
+	 * @param array<int, array<string, mixed>> $languages Language arrays.
+	 * @return array<int, string>
+	 */
+	private function normalize_language_names( array $languages ): array {
+		return array_map(
+			static function ( array $language ): string {
+				if ( ! empty( $language['english_name'] ) ) {
+					return (string) $language['english_name'];
+				}
+
+				return (string) ( $language['name'] ?? '' );
+			},
+			$languages
+		);
+	}
+
+	/**
+	 * Normalize season data.
+	 *
+	 * @param array<int, array<string, mixed>> $seasons Season arrays.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function normalize_seasons( array $seasons ): array {
+		$result = [];
+
+		foreach ( $seasons as $season ) {
+			$result[] = [
+				'id'            => $season['id'] ?? 0,
+				'name'          => $season['name'] ?? '',
+				'season_number' => $season['season_number'] ?? 0,
+				'episode_count' => $season['episode_count'] ?? 0,
+				'air_date'      => $season['air_date'] ?? '',
+				'poster'        => $this->get_image_url( $season['poster_path'] ?? '', 'w185' ),
+			];
 		}
 
 		return $result;

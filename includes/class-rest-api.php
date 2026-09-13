@@ -2360,7 +2360,7 @@ class REST_API {
 	 */
 	public function webhook_listenbrainz( \WP_REST_Request $request ) {
 		$handler = new Webhook_Handler();
-		return $handler->process_listenbrainz( $request );
+		return $handler->handle_request( $request, 'listenbrainz', true );
 	}
 
 	/**
@@ -2371,7 +2371,7 @@ class REST_API {
 	 */
 	public function webhook_trakt( \WP_REST_Request $request ) {
 		$handler = new Webhook_Handler();
-		return $handler->process_trakt( $request );
+		return $handler->handle_request( $request, 'trakt', true );
 	}
 
 	/**
@@ -2382,7 +2382,7 @@ class REST_API {
 	 */
 	public function webhook_plex( \WP_REST_Request $request ) {
 		$handler = new Webhook_Handler();
-		return $handler->process_plex( $request );
+		return $handler->handle_request( $request, 'plex', true );
 	}
 
 	/**
@@ -2393,7 +2393,7 @@ class REST_API {
 	 */
 	public function webhook_jellyfin( \WP_REST_Request $request ) {
 		$handler = new Webhook_Handler();
-		return $handler->process_jellyfin( $request );
+		return $handler->handle_request( $request, 'jellyfin', true );
 	}
 
 	/**
@@ -2404,7 +2404,7 @@ class REST_API {
 	 */
 	public function webhook_generic( \WP_REST_Request $request ) {
 		$handler = new Webhook_Handler();
-		return $handler->process_generic( $request );
+		return $handler->handle_request( $request, 'generic', true );
 	}
 
 	// =========================================================================

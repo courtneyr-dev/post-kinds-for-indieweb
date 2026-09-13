@@ -994,12 +994,15 @@ final class Micropub_Content_Builder {
 	}
 
 	/**
-	 * Wrap a card block + optional body content in an h-entry group so
-	 * microformats2 readers see one h-entry root per post and the typed
-	 * body lands inside `e-content`.
+	 * Wrap a card block + optional body content in a container group so the
+	 * builder's stored block markup stays structured and the typed body lands
+	 * inside `e-content`.
 	 *
 	 * @param string $card_markup Block-comment markup produced by one of the *_card builders.
 	 * @param string $body        User's typed body content; rendered inside an `e-content` paragraph when non-empty.
+	 * The front-end stream card, Query Loop item, or singular content wrapper
+	 * supplies the h-entry root; duplicating it here created nested entries.
+	 *
 	 * @return string Composed block markup ready for post_content.
 	 */
 	private static function wrap_h_entry( string $card_markup, string $body ): string {
@@ -1015,8 +1018,10 @@ final class Micropub_Content_Builder {
 				. "\t<!-- /wp:group -->";
 		}
 
-		return "<!-- wp:group {\"className\":\"h-entry\",\"layout\":{\"type\":\"constrained\"}} -->\n"
-			. "<div class=\"wp-block-group h-entry\">\n"
+		// 1.8.1: no h-entry on the wrapper — the Query Loop item, the card or the
+		// singular wrapper supplies the entry root; a classed Group made a second one.
+		return "<!-- wp:group {\"className\":\"pkiw-entry\",\"layout\":{\"type\":\"constrained\"}} -->\n"
+			. "<div class=\"wp-block-group pkiw-entry\">\n"
 			. "\t" . $card_markup
 			. $paragraph
 			. "\n</div>\n"

@@ -319,7 +319,7 @@ parameters:
 			path: includes/class-webhook-handler.php
 
 		-
-			message: '#^Parameter \#2 \$args of function register_block_type expects array\{api_version\?\: string, title\?\: string, category\?\: string\|null, parent\?\: array\<string\>\|null, ancestor\?\: array\<string\>\|null, allowed_blocks\?\: array\<string\>\|null, icon\?\: string\|null, description\?\: string, \.\.\.\}, array\{api_version\: 3, render_callback\: ''PKIW\\\\render_stream…'', uses_context\: array\{''postId'', ''postType''\}, supports\: array\{inserter\: false\}\} given\.$#'
+			message: '#^Parameter \#2 \$args of function register_block_type expects array\{api_version\?\: string, title\?\: string, category\?\: string\|null, parent\?\: array\<string\>\|null, ancestor\?\: array\<string\>\|null, allowed_blocks\?\: array\<string\>\|null, icon\?\: string\|null, description\?\: string, \.\.\.\}, array\{api_version\: 3, render_callback\: ''PKIW\\\\render_stream…'', uses_context\: array\{''postId'', ''postType''\}, supports\: array\{inserter\: true, html\: false, reusable\: false\}, ancestor\: array\{''core/post-template''\}, editor_script\: ''pkiw-stream-card…''\} given\.$#'
 			identifier: argument.type
 			count: 1
 			path: includes/functions-stream-card.php
@@ -353,12 +353,6 @@ parameters:
 			identifier: method.void
 			count: 1
 			path: includes/sync/class-foursquare-checkin-sync.php
-
-		-
-			message: '#^Ternary operator condition is always false\.$#'
-			identifier: ternary.alwaysFalse
-			count: 1
-			path: includes/sync/class-owntracks-checkin-sync.php
 
 		-
 			message: '#^Call to an undefined method PKIW\\Sync\\Untappd_Checkin_Sync\:\:find_existing_post\(\)\.$#'

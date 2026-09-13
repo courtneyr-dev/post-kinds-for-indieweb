@@ -445,7 +445,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 			'wrap_h_entry',
 			array( '<!-- wp:post-kinds-indieweb/checkin-card /-->', 'a sunny afternoon' )
 		);
-		$this->assertStringContainsString( 'class="wp-block-group h-entry"', $markup );
+		$this->assertStringContainsString( 'class="wp-block-group pkiw-entry"', $markup );
 		$this->assertStringContainsString( 'class="wp-block-group e-content"', $markup );
 		$this->assertStringContainsString( '<p>a sunny afternoon</p>', $markup );
 	}
@@ -455,7 +455,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 			'wrap_h_entry',
 			array( '<!-- wp:post-kinds-indieweb/checkin-card /-->', '' )
 		);
-		$this->assertStringContainsString( 'class="wp-block-group h-entry"', $markup );
+		$this->assertStringContainsString( 'class="wp-block-group pkiw-entry"', $markup );
 		$this->assertStringNotContainsString( 'e-content', $markup );
 	}
 
@@ -795,7 +795,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		);
 
 		$content = (string) get_post_field( 'post_content', $post_id );
-		$this->assertStringContainsString( 'h-entry', $content );
+		$this->assertStringContainsString( 'pkiw-entry', $content );
 		$this->assertStringContainsString( '<!-- wp:gallery', $content );
 		$this->assertStringContainsString( 'cat-1.jpg', $content );
 		$this->assertStringContainsString( 'cat-3.jpg', $content );

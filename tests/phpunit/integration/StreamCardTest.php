@@ -34,7 +34,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 
 		$out = \PKIW\link_title_to_post( $html, $post );
 
-		$this->assertStringContainsString( '<a href="' . esc_url( (string) get_permalink( $post_id ) ) . '">Movie</a>', $out );
+		$this->assertStringContainsString( '<a class="u-url" href="' . esc_url( (string) get_permalink( $post_id ) ) . '">Movie</a>', $out );
 		$this->assertStringNotContainsString( 'youtu.be', $out );
 	}
 
@@ -48,7 +48,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 
 		$out = \PKIW\link_title_to_post( $html, $post );
 
-		$this->assertStringContainsString( '<a href="' . esc_url( (string) get_permalink( $post_id ) ) . '">Enola</a>', $out );
+		$this->assertStringContainsString( '<a class="u-url" href="' . esc_url( (string) get_permalink( $post_id ) ) . '">Enola</a>', $out );
 	}
 
 	/**
@@ -351,7 +351,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$html = \PKIW\render_stream_card();
 
 		$this->assertStringContainsString( 'pk-card--stream', $html );
-		$this->assertStringContainsString( '<span class="pk-mood__emoji" role="img">🌧️</span>', $html );
+		$this->assertStringContainsString( '<span class="pk-mood__emoji" role="img" aria-label="Melancholy">🌧️</span>', $html );
 		$this->assertLessThan( strpos( $html, 'pk-caption' ), strpos( $html, 'pk-mood__emoji' ) );
 	}
 
@@ -373,7 +373,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 
 		$html = \PKIW\render_stream_card();
 
-		$this->assertStringContainsString( '<span class="pk-mood__emoji" role="img">😊</span>', $html );
+		$this->assertStringContainsString( '<span class="pk-mood__emoji" role="img" aria-label="Content">😊</span>', $html );
 	}
 
 	/**
@@ -405,5 +405,58 @@ final class StreamCardTest extends WP_UnitTestCase {
 		if ( ! term_exists( $slug, 'kind' ) ) {
 			wp_insert_term( ucfirst( $slug ), 'kind', [ 'slug' => $slug ] );
 		}
+	}
+
+	/**
+	 * A reply card whose only u-url belongs to the cited object still gets the
+	 * entry's own hidden u-url (a nested h-cite must not satisfy the check).
+	 */
+	public function test_ensure_entry_properties_ignores_cited_u_url(): void {
+		$post_id = self::factory()->post->create( [ 'post_title' => 'Reply' ] );
+		$post    = get_post( $post_id );
+		$html    = '<article class="pk-card k-reply h-entry"><div class="h-cite u-in-reply-to"><a class="u-url" href="https://example.com/other/">Other</a></div><time class="dt-published" datetime="2026-01-01T00:00:00+00:00"></time></article>';
+
+		$out = \PKIW\ensure_entry_properties( $html, $post, true );
+
+		$this->assertStringContainsString( '<a class="u-url" href="' . esc_url( (string) get_permalink( $post_id ) ) . '"', $out );
+	}
+
+	/**
+	 * An RSVP card whose permalink link sits inside a nested h-event still gets
+	 * the entry's own u-url: the h-event owns that link for parsers.
+	 */
+	public function test_ensure_entry_properties_ignores_u_url_inside_nested_event(): void {
+		$post_id   = self::factory()->post->create( [ 'post_title' => 'Town hall' ] );
+		$post      = get_post( $post_id );
+		$permalink = esc_url( (string) get_permalink( $post_id ) );
+		$html      = '<article class="pk-card k-rsvp h-entry"><div class="pk-event p-in-reply-to h-event"><h2 class="pk-title p-name"><a class="u-url" href="' . $permalink . '">Town hall</a></h2></div><div class="pk-meta"><time class="dt-published" datetime="2026-08-04T00:00:00+00:00">RSVPed</time></div></article>';
+
+		$out = \PKIW\ensure_entry_properties( $html, $post, true );
+
+		$this->assertMatchesRegularExpression( '#<span class="pk-entry-props" hidden><a class="u-url" href="' . preg_quote( $permalink, '#' ) . '"#', $out );
+		$this->assertStringNotContainsString( '<time class="dt-published" datetime="' . esc_attr( (string) get_post_time( 'c', true, $post ) ) . '" aria-hidden="true">', $out, 'the card already has its own dt-published' );
+	}
+
+	/**
+	 * A card that already carries its own permalink u-url gets no duplicate.
+	 */
+	public function test_ensure_entry_properties_keeps_own_u_url(): void {
+		$post_id   = self::factory()->post->create( [ 'post_title' => 'Own' ] );
+		$post      = get_post( $post_id );
+		$permalink = esc_url( (string) get_permalink( $post_id ) );
+		$html      = '<article class="pk-card k-note h-entry"><h2 class="pk-title p-name"><a class="u-url" href="' . $permalink . '">Own</a></h2><time class="dt-published" datetime="2026-01-01T00:00:00+00:00"></time></article>';
+
+		$out = \PKIW\ensure_entry_properties( $html, $post, true );
+
+		$this->assertSame( 1, substr_count( $out, 'class="u-url" href="' . $permalink . '"' ) );
+	}
+
+	/**
+	 * The mood emoji carries an accessible name from the mood label.
+	 */
+	public function test_mood_card_accessible_name_uses_the_mood_label(): void {
+		$content = '<!-- wp:post-kinds-indieweb/mood-card {"mood":"Recharged","emoji":"🔋"} /-->';
+		$this->assertSame( 'Recharged', \PKIW\mood_card_accessible_name( $content ) );
+		$this->assertSame( 'Mood', \PKIW\mood_card_accessible_name( '<!-- wp:post-kinds-indieweb/mood-card {"emoji":"🔋"} /-->' ) );
 	}
 }
