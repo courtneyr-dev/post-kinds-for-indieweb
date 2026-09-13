@@ -236,6 +236,15 @@ function get_checkin_location( $post = null ): array {
 		$location['longitude'] = get_post_meta( $post->ID, '_pkiw_checkin_longitude', true );
 	}
 
+	// R-03: street address and coordinates only when the post's location
+	// privacy is public or the viewer can edit the post; venue name and
+	// city/region/country stay (that is what "approximate" means).
+	if ( ! \PKIW\Meta_Fields::location_visible( (int) $post->ID ) ) {
+		$location['address']   = '';
+		$location['latitude']  = '';
+		$location['longitude'] = '';
+	}
+
 	return array_filter( $location, fn( $val ) => '' !== $val );
 }
 

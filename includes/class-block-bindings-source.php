@@ -247,6 +247,11 @@ final class Block_Bindings_Source {
 			return null;
 		}
 
+		// R-03: precise location only for public locations or editors.
+		if ( in_array( $key, Meta_Fields::LOCATION_KEYS, true ) && ! Meta_Fields::location_visible( (int) $post_id ) ) {
+			return null;
+		}
+
 		// Handle 'kind' key specially — it comes from taxonomy, not meta.
 		if ( 'kind' === $key ) {
 			return $this->get_kind( (int) $post_id );

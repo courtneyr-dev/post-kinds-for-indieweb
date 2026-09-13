@@ -941,6 +941,9 @@ class Meta_Fields {
 	 */
 	private function register_hooks(): void {
 		add_action( 'init', [ $this, 'register_meta_fields' ] );
+		// R-03: location detail leaves the REST response unless the post's
+		// location privacy is public or the requester can edit the post.
+		add_filter( 'rest_prepare_post', [ $this, 'redact_location_meta' ], 20, 3 );
 	}
 
 	/**
@@ -948,6 +951,65 @@ class Meta_Fields {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Meta keys (without prefix) that carry a precise location.
+	 *
+	 * @var string[]
+	 */
+	public const LOCATION_KEYS = [
+		'checkin_address',
+		'geo_latitude',
+		'geo_longitude',
+		'drink_location_address',
+		'drink_geo_latitude',
+		'drink_geo_longitude',
+		'drink_venue_url',
+		'eat_location_address',
+		'eat_geo_latitude',
+		'eat_geo_longitude',
+		'eat_venue_url',
+	];
+
+	/**
+	 * Whether precise location detail may be shown for a post to the current requester.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	public static function location_visible( int $post_id ): bool {
+		$privacy = get_post_meta( $post_id, self::PREFIX . 'geo_privacy', true );
+		if ( 'public' === $privacy ) {
+			return true;
+		}
+		return current_user_can( 'edit_post', $post_id );
+	}
+
+	/**
+	 * Strip precise location meta from REST responses the requester may not see.
+	 *
+	 * @param \WP_REST_Response $response Response.
+	 * @param \WP_Post          $post     Post.
+	 * @param \WP_REST_Request  $request  Request.
+	 * @return \WP_REST_Response
+	 */
+	public function redact_location_meta( $response, $post, $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		if ( ! $response instanceof \WP_REST_Response || ! $post instanceof \WP_Post ) {
+			return $response;
+		}
+		$data = $response->get_data();
+		if ( empty( $data['meta'] ) || ! is_array( $data['meta'] ) || self::location_visible( (int) $post->ID ) ) {
+			return $response;
+		}
+		foreach ( self::LOCATION_KEYS as $key ) {
+			$full = self::PREFIX . $key;
+			if ( array_key_exists( $full, $data['meta'] ) ) {
+				$data['meta'][ $full ] = is_numeric( $data['meta'][ $full ] ) ? 0 : '';
+			}
+		}
+		$response->set_data( $data );
+		return $response;
+	}
+
 	public function register_meta_fields(): void {
 		// Check if CPT mode is enabled and add reaction post type.
 		$settings     = get_option( 'pkiw_settings', [] );
