@@ -158,6 +158,10 @@ Media lookups and imports contact the services you use them with (MusicBrainz, T
 
 No. This plugin is built for block themes and the block editor — its card blocks and templates rely on them and won't work as intended on a classic (non-block) theme or in the Classic Editor. If you're on a classic theme or the Classic Editor, use the original [Post Kinds](https://wordpress.org/plugins/indieweb-post-kinds/) plugin instead.
 
+= Can mood labels use American or British spelling? =
+
+Yes. On the General tab of the Post Kinds settings, "Mood label spelling" follows your Site Language by default, or you can choose English (United States) or English (United Kingdom). It changes the mood suggestions and the mood names Post Kinds generates. Labels you type yourself, notes and saved posts stay exactly as written.
+
 = Where can I read the full documentation? =
 
 Long-form guides — installation, settings, common tasks, troubleshooting, privacy — live at [courtneyr-dev.github.io/post-kinds-for-indieweb](https://courtneyr-dev.github.io/post-kinds-for-indieweb/).

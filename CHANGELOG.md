@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Mood label spelling setting on the General tab of the Post Kinds settings: "Follow the site language" (default), "English (United States)" or "English (United Kingdom)". It sets the spelling of the mood suggestions in the mood card and Kind fields, and of the mood names Post Kinds generates: the mood card's `aria-label` and hidden `p-name`, the Stream card mood pin's `aria-label`, and ATmosphere derived titles. "Follow the site language" reads the Site Language, not the administrator's profile language (#207).
+- Mood identity is stored beside the authored text: the mood card's new `moodKey` attribute and the registered `_pkiw_mood_key` meta. A label renders in the chosen spelling only while it is still an untouched vocabulary pick; typed or edited labels, notes, feeds, Micropub text and existing posts render exactly as saved, and changing the setting never rewrites a post.
+- `PKIW\Mood_Vocabulary` PHP API, the `pkiw_mood_labels` filter, and `GET post-kinds-indieweb/v1/moods` (requires `edit_posts`) returning the resolved labels, their known spellings and a `version` hash for editor pickers and companion plugins such as Outpost. Contract: `docs/integrations/mood-labels.md`.
+
 ## [1.8.1] - 2026-09-13
 
 ### Fixed
