@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.8.0
+Stable tag: 1.8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -175,6 +175,14 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 9. Standard.site record panel on a Bookmark Card, showing the cited page's own title, publication, description, and tags read from AT Protocol
 
 == Changelog ==
+
+= 1.8.1 =
+* Fixed: Stream card "Read more" links now carry the post title for screen readers; mood emoji are announced instead of hidden; watch/play/read artwork falls back to the post title for alt text.
+* Fixed: every Stream card carries an entry-level permalink and publication date for microformats parsers, the eat/drink cards bind their food object, and a card inside an authored wrapper no longer produces a second entry root.
+* Fixed: star ratings and the reading progress bar now have accessible names.
+* Fixed: a post whose kind or post format is assigned after the first save (REST, WP-CLI, Micropub, Quick Edit) now moves to the right surface immediately.
+* Changed: the Kind and Promote editor panels load only on post types that support kinds, so they no longer appear on navigation menus and templates in the site editor.
+* Changed: the Stream card block previews in the editor with the real card (server-rendered); Micropub-created posts wrap their card in a plain group instead of a second h-entry.
 
 = 1.8.0 =
 * Added: image captions on Stream cards. The featured image's caption now shows under it in the feed, and a post with more than one image gets a row of thumbnails so it no longer looks identical to a single-image post. Choosing a thumbnail swaps the image and its caption; the card is complete without JavaScript, and thumbnails work by keyboard as well as by tap.

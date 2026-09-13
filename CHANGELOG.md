@@ -9,11 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.1] - 2026-09-13
+
 ### Fixed
 
+- Every Stream card carries an entry-level `u-url` and `dt-published` (hidden, appended when the entry lacks them), eat/drink cards bind `p-ate h-food` / `p-drank h-food`, and the card root is detected by the `pk-card` article so an authored wrapper Group no longer yields a nested `h-entry`.
+- `.pk-stars` gets `role="img"` (its `aria-label` was prohibited on a div) and the read-card progress bar gets an `aria-label`.
+- `_pkiw_surface` is recomputed when kind or post-format terms change after the post row is saved (`set_object_terms`, `deleted_term_relationships`), so REST/WP-CLI/Micropub/Quick Edit assignments no longer leave a Stream-format post on the main surface.
 - Stream cards' "Read more" links all announced identically to screen readers. Each link now carries the post title as visually hidden text (new `.pk-sr-only` utility), so link lists read "Read more: {title}" instead of thirty indistinguishable "Read more"s.
 - Mood emoji were wrapped in `aria-hidden="true"`, hiding the mood itself from assistive tech. The emoji is the content — it is now exposed (`role="img"`) so screen readers announce it, in both the mood card and the Stream's mood pin.
 - Watch/play/read cards rendered an empty `alt` on their poster/cover art when the saved block's media-title attribute was blank (common on cards filled via the media pickers). The alt now falls back to the post title, so the artwork always names the work.
+
+### Changed
+
+- The editor bundle (Kind selector and Promote panels) loads only on screens whose post type supports the `kind` taxonomy.
+- The Stream card block renders a ServerSideRender preview in the editor; the Micropub content builder wraps cards in `.pkiw-entry` instead of `.h-entry`.
 
 ## [1.8.0] - 2026-09-09
 
