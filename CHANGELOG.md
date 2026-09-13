@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Plex and Jellyfin webhooks refused every real delivery with a 401: both routes demanded an HMAC signature of the body (`X-Webhook-Signature`), and neither Plex Media Server nor the Jellyfin Webhook plugin can compute one. The routes now authorize with a per-service token (`pkiw_webhook_token_plex`, `pkiw_webhook_token_jellyfin`), compared with `hash_equals()`; an unset or empty token authorizes nothing. Plex sends it in the URL's `token` query parameter; Jellyfin sends it in an `X-Webhook-Token` header or `Authorization: Bearer`; use `X-Webhook-Token` when IndieAuth is active, because IndieAuth 4.6.0 answers 401 to any Bearer token it didn't issue before the route's permission check runs. The site webhook secret no longer authorizes these two routes, and one service's token doesn't authorize the other. ListenBrainz, Trakt and generic authentication is unchanged.
+- Reactions → Webhooks showed `/webhooks/{service}` URLs, a route that doesn't exist, and a per-service "Secret Key" nothing verified. The Plex and Jellyfin cards now show the Plex URL with its token and the Jellyfin URL, header name and token, masked with autocomplete off, plus Generate/Rotate token buttons and a note that query-string tokens can appear in access logs.
+- `GET /settings/webhooks` returns the Plex URL with its token, and uninstall deletes both tokens.
+
 ## [1.8.1] - 2026-09-13
 
 ### Fixed

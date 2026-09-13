@@ -20,6 +20,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Webhooks_Page {
 
 	/**
+	 * Services whose routes authorize with a per-service webhook token.
+	 *
+	 * @var string[]
+	 */
+	private const TOKEN_SERVICES = [ 'plex', 'jellyfin' ];
+
+	/**
 	 * Admin instance.
 	 *
 	 * @var Admin
@@ -53,6 +60,7 @@ class Webhooks_Page {
 		add_action( 'wp_ajax_pkiw_clear_pending_scrobbles', [ $this, 'ajax_clear_pending' ] );
 		add_action( 'wp_ajax_pkiw_approve_scrobble', [ $this, 'ajax_approve_scrobble' ] );
 		add_action( 'wp_ajax_pkiw_reject_scrobble', [ $this, 'ajax_reject_scrobble' ] );
+		add_action( 'admin_post_pkiw_rotate_webhook_token', [ $this, 'handle_rotate_token' ] );
 	}
 
 	/**
@@ -160,6 +168,8 @@ class Webhooks_Page {
 		<div class="wrap post-kinds-indieweb-webhooks">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 
+			<?php $this->render_token_rotated_notice(); ?>
+
 			<p class="description">
 				<?php esc_html_e( 'Configure webhooks to automatically create posts when you watch, listen, or check in using external apps.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 			</p>
@@ -186,6 +196,14 @@ class Webhooks_Page {
 
 				<?php submit_button(); ?>
 			</form>
+
+			<?php foreach ( self::TOKEN_SERVICES as $token_service ) : ?>
+				<form id="pkiw-rotate-token-<?php echo esc_attr( $token_service ); ?>" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+					<input type="hidden" name="action" value="pkiw_rotate_webhook_token">
+					<input type="hidden" name="service" value="<?php echo esc_attr( $token_service ); ?>">
+					<input type="hidden" name="_wpnonce" value="<?php echo esc_attr( wp_create_nonce( 'pkiw_rotate_webhook_token' ) ); ?>">
+				</form>
+			<?php endforeach; ?>
 
 			<hr>
 
@@ -228,42 +246,46 @@ class Webhooks_Page {
 			<p class="webhook-description"><?php echo esc_html( $config['description'] ); ?></p>
 
 			<div class="webhook-body" <?php echo $is_enabled ? '' : 'style="display: none;"'; ?>>
-				<!-- Webhook URL -->
-				<div class="webhook-url-section">
-					<label><?php esc_html_e( 'Webhook URL', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
-					<div class="webhook-url-field">
-						<input type="text" value="<?php echo esc_url( $webhook_url ); ?>" readonly class="webhook-url-input">
-						<button type="button" class="button copy-webhook-url" data-url="<?php echo esc_url( $webhook_url ); ?>">
-							<span class="dashicons dashicons-clipboard"></span>
-							<?php esc_html_e( 'Copy', 'post-kinds-for-indieweb-in-block-themes' ); ?>
-						</button>
+				<?php if ( in_array( $webhook_id, self::TOKEN_SERVICES, true ) ) : ?>
+					<?php $this->render_token_setup( $webhook_id ); ?>
+				<?php else : ?>
+					<!-- Webhook URL -->
+					<div class="webhook-url-section">
+						<label><?php esc_html_e( 'Webhook URL', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
+						<div class="webhook-url-field">
+							<input type="text" value="<?php echo esc_url( $webhook_url ); ?>" readonly class="webhook-url-input">
+							<button type="button" class="button copy-webhook-url" data-url="<?php echo esc_url( $webhook_url ); ?>">
+								<span class="dashicons dashicons-clipboard"></span>
+								<?php esc_html_e( 'Copy', 'post-kinds-for-indieweb-in-block-themes' ); ?>
+							</button>
+						</div>
+						<p class="description">
+							<?php esc_html_e( 'Use this URL in your external service to send webhook notifications.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
+						</p>
 					</div>
-					<p class="description">
-						<?php esc_html_e( 'Use this URL in your external service to send webhook notifications.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
-					</p>
-				</div>
 
-				<!-- Secret Key -->
-				<div class="webhook-secret-section">
-					<label><?php esc_html_e( 'Secret Key', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
-					<div class="webhook-secret-field">
-						<input type="password"
-								name="pkiw_webhook_settings[<?php echo esc_attr( $webhook_id ); ?>][secret]"
-								value="<?php echo esc_attr( $secret ); ?>"
-								class="regular-text webhook-secret-input"
-								autocomplete="off">
-						<button type="button" class="button toggle-secret-visibility">
-							<span class="dashicons dashicons-visibility"></span>
-						</button>
-						<button type="button" class="button regenerate-secret" data-webhook="<?php echo esc_attr( $webhook_id ); ?>">
-							<span class="dashicons dashicons-update"></span>
-							<?php esc_html_e( 'Generate', 'post-kinds-for-indieweb-in-block-themes' ); ?>
-						</button>
+					<!-- Secret Key -->
+					<div class="webhook-secret-section">
+						<label><?php esc_html_e( 'Secret Key', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
+						<div class="webhook-secret-field">
+							<input type="password"
+									name="pkiw_webhook_settings[<?php echo esc_attr( $webhook_id ); ?>][secret]"
+									value="<?php echo esc_attr( $secret ); ?>"
+									class="regular-text webhook-secret-input"
+									autocomplete="off">
+							<button type="button" class="button toggle-secret-visibility">
+								<span class="dashicons dashicons-visibility"></span>
+							</button>
+							<button type="button" class="button regenerate-secret" data-webhook="<?php echo esc_attr( $webhook_id ); ?>">
+								<span class="dashicons dashicons-update"></span>
+								<?php esc_html_e( 'Generate', 'post-kinds-for-indieweb-in-block-themes' ); ?>
+							</button>
+						</div>
+						<p class="description">
+							<?php esc_html_e( 'Secret key for authenticating webhook requests.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
+						</p>
 					</div>
-					<p class="description">
-						<?php esc_html_e( 'Secret key for authenticating webhook requests.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
-					</p>
-				</div>
+				<?php endif; ?>
 
 				<!-- Common Settings -->
 				<table class="form-table webhook-settings">
@@ -389,7 +411,161 @@ class Webhooks_Page {
 	 * @return string Webhook URL.
 	 */
 	private function get_webhook_url( string $webhook_id ): string {
-		return rest_url( "post-kinds-indieweb/v1/webhooks/{$webhook_id}" );
+		return rest_url( "post-kinds-indieweb/v1/webhook/{$webhook_id}" );
+	}
+
+	/**
+	 * Render the URL and token setup for a token-authenticated service.
+	 *
+	 * Plex can only carry the token in the URL, so the whole URL is the secret.
+	 * Jellyfin sends it in a request header, so the URL stays plain and only the
+	 * token is masked.
+	 *
+	 * @param string $service Service slug from TOKEN_SERVICES.
+	 * @return void
+	 */
+	private function render_token_setup( string $service ): void {
+		$token     = get_option( "pkiw_webhook_token_{$service}" );
+		$has_token = is_string( $token ) && '' !== $token;
+		$name      = $this->webhook_configs[ $service ]['name'];
+		$base_url  = $this->get_webhook_url( $service );
+		$form_id   = 'pkiw-rotate-token-' . $service;
+		$url_id    = 'pkiw-webhook-url-' . $service;
+		$token_id  = 'pkiw-webhook-token-' . $service;
+		?>
+		<div class="webhook-url-section webhook-token-setup">
+			<?php if ( ! $has_token ) : ?>
+				<p class="description">
+					<?php
+					/* translators: %s: service name, such as Plex. */
+					echo esc_html( sprintf( __( '%s webhooks need a token before they can be accepted. Generate one to get the setup details.', 'post-kinds-for-indieweb-in-block-themes' ), $name ) );
+					?>
+				</p>
+				<p>
+					<button type="submit" form="<?php echo esc_attr( $form_id ); ?>" class="button button-secondary">
+						<?php esc_html_e( 'Generate token', 'post-kinds-for-indieweb-in-block-themes' ); ?>
+					</button>
+				</p>
+			<?php elseif ( 'plex' === $service ) : ?>
+				<label for="<?php echo esc_attr( $url_id ); ?>"><?php esc_html_e( 'Webhook URL (contains the token)', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
+				<div class="webhook-url-field">
+					<input type="password" id="<?php echo esc_attr( $url_id ); ?>" value="<?php echo esc_attr( add_query_arg( 'token', rawurlencode( $token ), $base_url ) ); ?>" class="large-text webhook-secret-input" readonly autocomplete="off" spellcheck="false">
+					<button type="button" class="button toggle-secret-visibility" aria-label="<?php esc_attr_e( 'Show or hide the webhook URL', 'post-kinds-for-indieweb-in-block-themes' ); ?>">
+						<span class="dashicons dashicons-visibility" aria-hidden="true"></span>
+					</button>
+					<button type="button" class="button copy-webhook-url">
+						<?php esc_html_e( 'Copy', 'post-kinds-for-indieweb-in-block-themes' ); ?>
+					</button>
+				</div>
+				<p class="description">
+					<?php esc_html_e( 'In Plex Web, open your account settings, choose Webhooks, select Add Webhook, and paste this URL.', 'post-kinds-for-indieweb-in-block-themes' ); ?>
+				</p>
+			<?php else : ?>
+				<label for="<?php echo esc_attr( $url_id ); ?>"><?php esc_html_e( 'Webhook URL', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
+				<div class="webhook-url-field">
+					<input type="text" id="<?php echo esc_attr( $url_id ); ?>" value="<?php echo esc_url( $base_url ); ?>" class="large-text webhook-url-input" readonly>
+					<button type="button" class="button copy-webhook-url">
+						<?php esc_html_e( 'Copy', 'post-kinds-for-indieweb-in-block-themes' ); ?>
+					</button>
+				</div>
+				<label for="<?php echo esc_attr( $token_id ); ?>"><?php esc_html_e( 'Token', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
+				<div class="webhook-secret-field">
+					<input type="password" id="<?php echo esc_attr( $token_id ); ?>" value="<?php echo esc_attr( $token ); ?>" class="regular-text webhook-secret-input" readonly autocomplete="off" spellcheck="false">
+					<button type="button" class="button toggle-secret-visibility" aria-label="<?php esc_attr_e( 'Show or hide the token', 'post-kinds-for-indieweb-in-block-themes' ); ?>">
+						<span class="dashicons dashicons-visibility" aria-hidden="true"></span>
+					</button>
+					<button type="button" class="button copy-webhook-url">
+						<?php esc_html_e( 'Copy', 'post-kinds-for-indieweb-in-block-themes' ); ?>
+					</button>
+				</div>
+				<p class="description">
+					<?php
+					printf(
+						/* translators: %s: the request header name, X-Webhook-Token. */
+						esc_html__( 'In Jellyfin, open Dashboard, Plugins, Webhook, and add a Generic destination. Paste the URL, then add a header with the key %s and the token as its value.', 'post-kinds-for-indieweb-in-block-themes' ),
+						'<code>X-Webhook-Token</code>'
+					);
+					?>
+				</p>
+			<?php endif; ?>
+
+			<?php if ( $has_token ) : ?>
+				<p>
+					<button type="submit" form="<?php echo esc_attr( $form_id ); ?>" class="button">
+						<?php esc_html_e( 'Rotate token', 'post-kinds-for-indieweb-in-block-themes' ); ?>
+					</button>
+				</p>
+				<p class="description">
+					<?php
+					/* translators: %s: service name, such as Plex. */
+					echo esc_html( sprintf( __( 'Rotating replaces the token at once. %1$s deliveries fail until you paste the new value into %1$s.', 'post-kinds-for-indieweb-in-block-themes' ), $name ) );
+					?>
+				</p>
+			<?php endif; ?>
+
+			<p class="description webhook-security-note">
+				<?php
+				if ( 'plex' === $service ) {
+					esc_html_e( 'Security: Plex can only send the token in the URL query string, so it can appear in web server, proxy and CDN access logs. If the URL may have leaked, rotate the token and update Plex.', 'post-kinds-for-indieweb-in-block-themes' );
+				} else {
+					esc_html_e( 'Security: send the token in the header, not the URL, so it stays out of access logs. If it may have leaked, rotate it and update Jellyfin.', 'post-kinds-for-indieweb-in-block-themes' );
+				}
+				?>
+			</p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Show a one-time notice after a token rotation.
+	 *
+	 * @return void
+	 */
+	private function render_token_rotated_notice(): void {
+		$key     = 'pkiw_webhook_token_rotated_' . get_current_user_id();
+		$service = get_transient( $key );
+
+		if ( ! is_string( $service ) || ! in_array( $service, self::TOKEN_SERVICES, true ) ) {
+			return;
+		}
+
+		delete_transient( $key );
+		$name = $this->webhook_configs[ $service ]['name'];
+		?>
+		<div class="notice notice-success is-dismissible">
+			<p>
+				<?php
+				/* translators: %s: service name, such as Plex. */
+				echo esc_html( sprintf( __( 'New %1$s webhook token saved. The previous token no longer works; update %1$s with the new value.', 'post-kinds-for-indieweb-in-block-themes' ), $name ) );
+				?>
+			</p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Generate or rotate a Plex or Jellyfin webhook token (admin-post handler).
+	 *
+	 * @return void
+	 */
+	public function handle_rotate_token(): void {
+		check_admin_referer( 'pkiw_rotate_webhook_token' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to change webhook tokens.', 'post-kinds-for-indieweb-in-block-themes' ), '', [ 'response' => 403 ] );
+		}
+
+		$service = isset( $_POST['service'] ) ? sanitize_key( wp_unslash( $_POST['service'] ) ) : '';
+
+		if ( ! in_array( $service, self::TOKEN_SERVICES, true ) ) {
+			wp_die( esc_html__( 'Unknown webhook service.', 'post-kinds-for-indieweb-in-block-themes' ), '', [ 'response' => 400 ] );
+		}
+
+		( new \PKIW\Webhook_Handler() )->generate_token( $service );
+		set_transient( 'pkiw_webhook_token_rotated_' . get_current_user_id(), $service, MINUTE_IN_SECONDS );
+
+		wp_safe_redirect( admin_url( 'admin.php?page=post-kinds-indieweb-webhooks' ) );
+		exit;
 	}
 
 	/**
