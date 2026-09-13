@@ -944,6 +944,8 @@ class Meta_Fields {
 		// R-03: location detail leaves the REST response unless the post's
 		// location privacy is public or the requester can edit the post.
 		add_filter( 'rest_prepare_post', [ $this, 'redact_location_meta' ], 20, 3 );
+		// CPT import storage registers the same meta on the reaction post type.
+		add_filter( 'rest_prepare_' . Post_Type::POST_TYPE, [ $this, 'redact_location_meta' ], 20, 3 );
 	}
 
 	/**
@@ -958,6 +960,7 @@ class Meta_Fields {
 	 */
 	public const LOCATION_KEYS = [
 		'checkin_url',
+		'checkin_osm_id',
 		'checkin_address',
 		'geo_latitude',
 		'geo_longitude',

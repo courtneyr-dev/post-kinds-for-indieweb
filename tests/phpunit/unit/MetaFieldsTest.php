@@ -90,6 +90,13 @@ class MetaFieldsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test OpenStreetMap place ids are part of the location redaction list.
+	 */
+	public function test_location_keys_include_checkin_osm_id() {
+		$this->assertContains( 'checkin_osm_id', Meta_Fields::LOCATION_KEYS );
+	}
+
+	/**
 	 * Test sanitize_rsvp_status with valid values.
 	 *
 	 * @dataProvider rsvp_status_valid_provider

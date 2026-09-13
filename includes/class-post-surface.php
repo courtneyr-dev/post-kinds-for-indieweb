@@ -146,6 +146,11 @@ final class Post_Surface {
 		$this->on_save( (int) $object_id );
 	}
 
+	/**
+	 * Store the computed surface for a post.
+	 *
+	 * @param int $post_id Post ID.
+	 */
 	public function on_save( int $post_id ): void {
 		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
 			return;

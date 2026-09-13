@@ -68,4 +68,31 @@ final class LocationRestRedactionTest extends WP_UnitTestCase {
 		$data = $this->response();
 		$this->assertSame( '40.20192', $data['meta']['geo_latitude'] );
 	}
+
+	public function test_pkiw_osm_id_is_blank_for_non_public_location(): void {
+		// The test framework wipes registered meta between tests; register the plugin's fields again.
+		( new Meta_Fields() )->register_meta_fields();
+		update_post_meta( $this->post_id, '_pkiw_checkin_osm_id', 'node/123456' );
+		update_post_meta( $this->post_id, '_pkiw_geo_privacy', 'approximate' );
+		$data = $this->response();
+		$this->assertArrayHasKey( '_pkiw_checkin_osm_id', $data['meta'] );
+		$this->assertSame( '', $data['meta']['_pkiw_checkin_osm_id'] );
+		$this->assertSame( 'node/123456', get_post_meta( $this->post_id, '_pkiw_checkin_osm_id', true ) );
+	}
+
+	public function test_reaction_post_type_rest_response_is_redacted(): void {
+		if ( ! post_type_exists( \PKIW\Post_Type::POST_TYPE ) ) {
+			register_post_type( \PKIW\Post_Type::POST_TYPE, [ 'public' => true, 'show_in_rest' => true, 'rest_base' => 'post-kinds', 'supports' => [ 'title', 'custom-fields' ] ] );
+		}
+		register_post_meta( \PKIW\Post_Type::POST_TYPE, '_pkiw_geo_latitude', [ 'show_in_rest' => true, 'single' => true, 'type' => 'number', 'auth_callback' => '__return_true' ] );
+		new Meta_Fields();
+		$this->assertNotFalse( has_filter( 'rest_prepare_' . \PKIW\Post_Type::POST_TYPE ), 'redaction must be hooked for the reaction post type' );
+		$id = self::factory()->post->create( [ 'post_type' => \PKIW\Post_Type::POST_TYPE, 'post_status' => 'publish' ] );
+		update_post_meta( $id, '_pkiw_geo_latitude', 40.20192 );
+		update_post_meta( $id, '_pkiw_geo_privacy', 'approximate' );
+		$GLOBALS['wp_rest_server'] = null;
+		$data = rest_get_server()->dispatch( new WP_REST_Request( 'GET', '/wp/v2/post-kinds/' . $id ) )->get_data();
+		$this->assertArrayHasKey( 'meta', $data );
+		$this->assertEquals( 0, $data['meta']['_pkiw_geo_latitude'] );
+	}
 }
