@@ -68,7 +68,7 @@ final class CheckinDashboardRenderTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'No check-ins yet.', $html, 'a kind=checkin post must not leave the dashboard empty' );
 	}
 
-	public function test_coordinates_only_exposed_for_public_privacy(): void {
+	public function test_coordinates_reach_map_for_public_and_default_privacy(): void {
 		$this->create_checkin(
 			[
 				'_pkiw_checkin_name' => 'Public Venue',
@@ -77,8 +77,10 @@ final class CheckinDashboardRenderTest extends WP_UnitTestCase {
 				'_pkiw_geo_privacy'   => 'public',
 			]
 		);
-		// No privacy meta: the plugin-wide default is "approximate",
-		// which (matching the REST layer) must not expose coordinates.
+		// A check-in is a venue post (Meta_Fields::has_venue()); an unset
+		// _pkiw_geo_privacy (the plugin-wide default, "approximate") is a
+		// default, not an author choice, and is ignored for venue posts —
+		// this one shows the same as the explicit 'public' check-in above.
 		$this->create_checkin(
 			[
 				'_pkiw_checkin_name' => 'Default Privacy Venue',
@@ -90,7 +92,33 @@ final class CheckinDashboardRenderTest extends WP_UnitTestCase {
 		$html = $this->render_dashboard();
 
 		$this->assertStringContainsString( '12.345678', $html, 'public check-in coordinates must reach the map data' );
-		$this->assertStringNotContainsString( '23.456789', $html, 'non-public check-in coordinates must never reach the markup' );
+		$this->assertStringContainsString( '23.456789', $html, 'a venue check-in with an unset (default) privacy still shows coordinates' );
+	}
+
+	public function test_coordinates_hidden_when_geo_public_restricts_them(): void {
+		$this->create_checkin(
+			[
+				'_pkiw_checkin_name' => 'Public Venue',
+				'_pkiw_geo_latitude'  => '12.345678',
+				'_pkiw_geo_longitude' => '-76.543219',
+				'_pkiw_geo_privacy'   => 'public',
+			]
+		);
+		// Simple Location's geo_public '0' (explicitly hidden) overrides
+		// the venue-post full-visibility default.
+		$this->create_checkin(
+			[
+				'_pkiw_checkin_name' => 'Hidden Venue',
+				'_pkiw_geo_latitude'  => '23.456789',
+				'_pkiw_geo_longitude' => '-65.432198',
+				'geo_public'          => '0',
+			]
+		);
+
+		$html = $this->render_dashboard();
+
+		$this->assertStringContainsString( '12.345678', $html, 'public check-in coordinates must reach the map data' );
+		$this->assertStringNotContainsString( '23.456789', $html, 'geo_public-hidden check-in coordinates must never reach the markup' );
 	}
 
 	public function test_map_data_is_a_json_list_even_when_filter_drops_the_newest_checkin(): void {

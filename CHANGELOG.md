@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `Meta_Fields::redact_location_meta()` gated Post Kinds' own `_pkiw_*` location keys by `get_visible_location_fields()`'s tiers, but gated Simple Location's/IndieBlocks' native `geo_*` keys and `indieblocks_location` only by Simple Location's own `geo_public`, ignoring `_pkiw_geo_privacy` entirely. A check-in with `_pkiw_geo_privacy` unset (the default, "approximate") and `geo_public` `1` returned exact coordinates and a street address to an anonymous `GET /wp/v2/posts/<id>`.
+  `get_visible_location_fields()` is now the single source for both key families (cards, block bindings, REST meta, the `/checkins` routes and the dashboard all inherit it): a new `Meta_Fields::has_venue()` recognizes venue posts — a check-in by kind, or any post with venue-identity data (Post Kinds' own venue/restaurant/drink-location-name fields, a stored Foursquare venue id, the `pkiw_venue` taxonomy, or Simple Location's `geo_venue`/`geo_venue_id`). Venue posts show full location unless explicitly marked private (`_pkiw_geo_privacy` `private` or `geo_public` `0`), or `geo_public` `2` (Protected — an explicit text-only choice), which hides coordinates, the map and OSM/Foursquare ids but keeps name, street, postal code, locality, region, country and URL; an unset/`approximate` `_pkiw_geo_privacy` is a default, not an author choice, and is ignored for venue posts. Non-venue posts (geotagged notes, photos, articles with no venue) keep the original combined rule: the Post Kinds tier and `geo_public`, the stricter of the two winning per field.
+  The checkin, eat and drink cards now sync their location attributes to post meta on save (`Card_Meta_Sync::ATTR_META_MAP` gained `eat-card` and `drink-card` entries, mirroring the existing checkin-card mapping) — without it, a block-editor-authored eat/drink post had no stored venue signal for `has_venue()` to find, so anonymous visitors saw nothing at all on a plain "approximate" eat or drink card. Stored data is never modified by the redaction itself.
+
 ## [1.8.2] - 2026-09-14
 
 ### Added

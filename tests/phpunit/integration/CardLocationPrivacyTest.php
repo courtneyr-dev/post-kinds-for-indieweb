@@ -48,11 +48,12 @@ final class CardLocationPrivacyTest extends WP_UnitTestCase {
 	 * _pkiw_geo_privacy meta to the given value (after any card-attrs
 	 * mirror save_post triggers), and render it through do_blocks().
 	 *
-	 * @param string $block_comment Full block HTML comment + markup.
-	 * @param string $privacy       geo_privacy value to force.
+	 * @param string      $block_comment Full block HTML comment + markup.
+	 * @param string      $privacy       geo_privacy value to force.
+	 * @param string|null $geo_public    Simple Location geo_public value to force, if any.
 	 * @return array{0: int, 1: string} Post ID and rendered HTML.
 	 */
-	private function render_card( string $block_comment, string $privacy ): array {
+	private function render_card( string $block_comment, string $privacy, ?string $geo_public = null ): array {
 		$post_id = self::factory()->post->create(
 			[
 				'post_status'  => 'publish',
@@ -60,6 +61,9 @@ final class CardLocationPrivacyTest extends WP_UnitTestCase {
 			]
 		);
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', $privacy );
+		if ( null !== $geo_public ) {
+			update_post_meta( $post_id, 'geo_public', $geo_public );
+		}
 
 		$this->go_to( get_permalink( $post_id ) );
 		$html = do_blocks( (string) get_post_field( 'post_content', $post_id ) );
@@ -172,49 +176,110 @@ final class CardLocationPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( self::COUNTRY, $html );
 	}
 
+	// Checkin/eat/drink cards always carry venue-identity data (a venue,
+	// restaurant, or drink-location name), so Meta_Fields::has_venue()
+	// treats every card fixture in this file as a venue post. Per the
+	// confirmed rule (2026-09-14), an unset/'approximate' _pkiw_geo_privacy
+	// is a default, not an author choice, and is ignored for venue posts:
+	// full location shows unless the post is explicitly marked private
+	// (geo_privacy 'private' or Simple Location geo_public '0'), or
+	// Simple Location geo_public '2' (Protected) asks for text only.
+
 	/**
 	 * @dataProvider card_builders
 	 */
-	public function test_approximate_card_hides_street_address( string $builder ): void {
+	public function test_approximate_venue_card_shows_street_address( string $builder ): void {
 		wp_set_current_user( 0 );
 		[ , $html ] = $this->render_card( $this->{$builder}(), 'approximate' );
 
-		$this->assertStringNotContainsString( self::STREET, $html );
+		$this->assertStringContainsString( self::STREET, $html );
 	}
 
 	/**
 	 * @dataProvider card_builders
 	 */
-	public function test_approximate_card_hides_coordinates( string $builder ): void {
+	public function test_approximate_venue_card_shows_coordinates( string $builder ): void {
 		wp_set_current_user( 0 );
 		[ , $html ] = $this->render_card( $this->{$builder}(), 'approximate' );
+
+		$this->assertStringContainsString( (string) self::LATITUDE, $html );
+		$this->assertStringContainsString( (string) self::LONGITUDE, $html );
+	}
+
+	/**
+	 * @dataProvider card_builders
+	 */
+	public function test_approximate_venue_card_shows_venue_url( string $builder ): void {
+		wp_set_current_user( 0 );
+		[ , $html ] = $this->render_card( $this->{$builder}(), 'approximate' );
+
+		$this->assertStringContainsString( self::VENUE_URL, $html );
+	}
+
+	public function test_approximate_checkin_card_shows_map(): void {
+		wp_set_current_user( 0 );
+		[ , $html ] = $this->render_card( $this->checkin_block(), 'approximate' );
+
+		$this->assertStringContainsString( 'pk-embed--map', $html );
+	}
+
+	public function test_approximate_checkin_card_shows_osm_and_foursquare_ids(): void {
+		wp_set_current_user( 0 );
+		[ , $html ] = $this->render_card( $this->checkin_block(), 'approximate' );
+
+		$this->assertStringContainsString( self::OSM_ID, $html );
+		$this->assertStringContainsString( self::FOURSQUARE_ID, $html );
+	}
+
+	// ─── Simple Location geo_public '0' on a venue post: still nothing,
+	// even though the venue rule would otherwise show everything. ───
+
+	/**
+	 * @dataProvider card_builders
+	 */
+	public function test_venue_card_hides_everything_when_geo_public_hidden( string $builder ): void {
+		wp_set_current_user( 0 );
+		[ , $html ] = $this->render_card( $this->{$builder}(), 'approximate', '0' );
+
+		$this->assertStringNotContainsString( self::VENUE_NAME, $html );
+		$this->assertStringNotContainsString( self::STREET, $html );
+		$this->assertStringNotContainsString( self::LOCALITY, $html );
+		$this->assertStringNotContainsString( (string) self::LATITUDE, $html );
+		$this->assertStringNotContainsString( self::VENUE_URL, $html );
+	}
+
+	// ─── Simple Location geo_public '2' (Protected) on a venue post: text
+	// only — name/street/place/url visible, coordinates/map/ids hidden. ───
+
+	/**
+	 * @dataProvider card_builders
+	 */
+	public function test_venue_card_geo_public_protected_keeps_text( string $builder ): void {
+		wp_set_current_user( 0 );
+		[ , $html ] = $this->render_card( $this->{$builder}(), 'approximate', '2' );
+
+		$this->assertStringContainsString( self::VENUE_NAME, $html );
+		$this->assertStringContainsString( self::STREET, $html );
+		$this->assertStringContainsString( self::LOCALITY, $html );
+		$this->assertStringContainsString( self::VENUE_URL, $html );
+	}
+
+	/**
+	 * @dataProvider card_builders
+	 */
+	public function test_venue_card_geo_public_protected_hides_coordinates( string $builder ): void {
+		wp_set_current_user( 0 );
+		[ , $html ] = $this->render_card( $this->{$builder}(), 'approximate', '2' );
 
 		$this->assertStringNotContainsString( (string) self::LATITUDE, $html );
 		$this->assertStringNotContainsString( (string) self::LONGITUDE, $html );
 	}
 
-	/**
-	 * @dataProvider card_builders
-	 */
-	public function test_approximate_card_hides_venue_url( string $builder ): void {
+	public function test_checkin_card_geo_public_protected_hides_map_and_ids(): void {
 		wp_set_current_user( 0 );
-		[ , $html ] = $this->render_card( $this->{$builder}(), 'approximate' );
-
-		$this->assertStringNotContainsString( self::VENUE_URL, $html );
-	}
-
-	public function test_approximate_checkin_card_omits_map_entirely(): void {
-		wp_set_current_user( 0 );
-		[ , $html ] = $this->render_card( $this->checkin_block(), 'approximate' );
+		[ , $html ] = $this->render_card( $this->checkin_block(), 'approximate', '2' );
 
 		$this->assertStringNotContainsString( 'pk-embed--map', $html );
-		$this->assertStringNotContainsString( 'openstreetmap.org/export/embed.html', $html );
-	}
-
-	public function test_approximate_checkin_card_hides_osm_and_foursquare_ids(): void {
-		wp_set_current_user( 0 );
-		[ , $html ] = $this->render_card( $this->checkin_block(), 'approximate' );
-
 		$this->assertStringNotContainsString( self::OSM_ID, $html );
 		$this->assertStringNotContainsString( self::FOURSQUARE_ID, $html );
 	}
@@ -260,9 +325,11 @@ final class CardLocationPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( self::VENUE_URL, $html );
 	}
 
-	// ─── microformats2: approximate keeps a slimmed p-location h-card ───
+	// ─── microformats2: an approximate check-in is still a venue post, so
+	// mf2 keeps the full h-card; geo_public '2' (Protected) is what slims
+	// it to a text-only p-location. ───
 
-	public function test_approximate_checkin_mf2_location_drops_precise_fields(): void {
+	public function test_approximate_checkin_mf2_location_keeps_precise_fields(): void {
 		wp_set_current_user( 0 );
 		[ , $html ] = $this->render_card( $this->checkin_block(), 'approximate' );
 
@@ -271,9 +338,21 @@ final class CardLocationPrivacyTest extends WP_UnitTestCase {
 
 		$this->assertNotNull( $location, 'Expected a parsed p-location h-card.' );
 		$properties = $location['properties'];
+		$this->assertArrayHasKey( 'street-address', $properties );
+		$this->assertSame( self::STREET, $properties['street-address'][0] );
+	}
+
+	public function test_checkin_mf2_location_geo_public_protected_drops_precise_fields(): void {
+		wp_set_current_user( 0 );
+		[ , $html ] = $this->render_card( $this->checkin_block(), 'approximate', '2' );
+
+		$parsed   = \Mf2\parse( '<div class="h-entry">' . $html . '</div>' );
+		$location = $this->find_h_card( $parsed );
+
+		$this->assertNotNull( $location, 'Expected a parsed p-location h-card.' );
+		$properties = $location['properties'];
 		$this->assertArrayHasKey( 'locality', $properties );
 		$this->assertSame( self::LOCALITY, $properties['locality'][0] );
-		$this->assertArrayNotHasKey( 'street-address', $properties );
 		$this->assertArrayNotHasKey( 'geo', $properties );
 	}
 

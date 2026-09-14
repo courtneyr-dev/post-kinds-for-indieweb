@@ -157,6 +157,14 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 		);
 
 		$post_id = self::factory()->post->create();
+		// This bare post never goes through save_post with block content, so
+		// Card_Meta_Sync never populates Post Kinds' own venue-identity meta
+		// and Meta_Fields::has_venue() is false: it's a non-venue post, whose
+		// visibility is the Post Kinds tier combined with Simple Location's
+		// geo_public, the stricter of the two winning. geo_public '1'
+		// isolates the Post Kinds tier this test means to cover (matching
+		// the location/eat/drink card assertion_exceptions() below).
+		update_post_meta( $post_id, 'geo_public', '1' );
 		$this->go_to( get_permalink( $post_id ) );
 
 		$attrs   = array_map( static fn( $a ) => $a['sample'], $attributes );

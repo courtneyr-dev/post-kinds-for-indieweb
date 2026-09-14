@@ -115,8 +115,12 @@ final class CheckinRestLocationPrivacyTest extends WP_UnitTestCase {
 	 */
 	public function visibility_matrix(): array {
 		return [
+			// A check-in is a venue post (Meta_Fields::has_venue()); an
+			// unset/'approximate' _pkiw_geo_privacy is a default, not an
+			// author choice, and is ignored for venue posts, so it shows
+			// the same as 'public'.
 			'public, contributor'      => [ 'public', 'contributor', true, true, true ],
-			'approximate, contributor' => [ 'approximate', 'contributor', true, false, false ],
+			'approximate, contributor' => [ 'approximate', 'contributor', true, true, true ],
 			'private, contributor'     => [ 'private', 'contributor', false, false, false ],
 			'public, editor'           => [ 'public', 'editor', true, true, true ],
 			'approximate, editor'      => [ 'approximate', 'editor', true, true, true ],

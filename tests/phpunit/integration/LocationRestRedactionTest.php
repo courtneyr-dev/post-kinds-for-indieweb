@@ -18,7 +18,7 @@ final class LocationRestRedactionTest extends WP_UnitTestCase {
 
 	public function set_up(): void {
 		parent::set_up();
-		foreach ( [ 'geo_latitude', 'geo_longitude', 'geo_address', 'geo_public' ] as $key ) {
+		foreach ( [ 'geo_latitude', 'geo_longitude', 'geo_address', 'geo_locality', 'geo_public' ] as $key ) {
 			register_post_meta( 'post', $key, [ 'show_in_rest' => true, 'single' => true, 'type' => 'string' ] );
 		}
 		register_rest_field( 'post', 'indieblocks_location', [ 'get_callback' => static fn( $p ) => [ 'geo_latitude' => get_post_meta( $p['id'], 'geo_latitude', true ), 'geo_address' => get_post_meta( $p['id'], 'geo_address', true ) ] ] );
@@ -47,15 +47,37 @@ final class LocationRestRedactionTest extends WP_UnitTestCase {
 		$this->assertSame( '40.20192', get_post_meta( $this->post_id, 'geo_latitude', true ), 'stored data must stay intact' );
 	}
 
-	public function test_protected_location_keeps_text_hides_coordinates(): void {
+	// This post has no venue-identity data (no geo_venue, no _pkiw_
+	// checkin/eat/drink name, no venue taxonomy term, no checkin kind), so
+	// Meta_Fields::has_venue() is false and it follows the non-venue rule:
+	// the Post Kinds tier (here unset, falling back to 'approximate') and
+	// Simple Location's geo_public are combined, the stricter of the two
+	// winning per field. Approximate only ever unlocks name/locality/
+	// region/country — never street/coordinates — regardless of geo_public.
+
+	public function test_non_venue_protected_location_keeps_place_hides_street_and_coordinates(): void {
+		update_post_meta( $this->post_id, 'geo_locality', 'Sentinel Locality Q4' );
 		update_post_meta( $this->post_id, 'geo_public', '2' );
 		$data = $this->response();
 		$this->assertSame( '', $data['meta']['geo_latitude'] );
-		$this->assertSame( 'Molly Pitcher Brewing Company, Carlisle, PA', $data['meta']['geo_address'] );
+		$this->assertSame( '', $data['meta']['geo_address'], 'street tier stays capped by the approximate pkiw default, even though Simple Location Protected would otherwise show it' );
+		$this->assertSame( 'Sentinel Locality Q4', $data['meta']['geo_locality'] );
 		$this->assertSame( '', $data['indieblocks_location']['geo_latitude'] );
 	}
 
-	public function test_public_location_is_untouched(): void {
+	public function test_non_venue_approximate_default_caps_geo_public_public_at_place_tier(): void {
+		update_post_meta( $this->post_id, 'geo_locality', 'Sentinel Locality Q4' );
+		update_post_meta( $this->post_id, 'geo_public', '1' );
+		$data = $this->response();
+		$this->assertSame( '', $data['meta']['geo_latitude'], 'the unset _pkiw_geo_privacy default (approximate) caps this even though geo_public is public — this was the leak' );
+		$this->assertSame( '', $data['meta']['geo_address'] );
+		$this->assertSame( 'Sentinel Locality Q4', $data['meta']['geo_locality'] );
+		$this->assertSame( '40.20192', get_post_meta( $this->post_id, 'geo_latitude', true ), 'stored data must stay intact' );
+	}
+
+	public function test_non_venue_pkiw_public_tier_shows_everything(): void {
+		( new Meta_Fields() )->register_meta_fields();
+		update_post_meta( $this->post_id, '_pkiw_geo_privacy', 'public' );
 		update_post_meta( $this->post_id, 'geo_public', '1' );
 		$data = $this->response();
 		$this->assertSame( '40.20192', $data['meta']['geo_latitude'] );
