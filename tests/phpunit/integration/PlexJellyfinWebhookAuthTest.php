@@ -392,6 +392,16 @@ final class PlexJellyfinWebhookAuthTest extends WP_UnitTestCase {
 		$this->assertSame( rest_url( 'post-kinds-indieweb/v1/webhook/jellyfin' ), $data['jellyfin'] );
 	}
 
+	public function test_settings_endpoint_encodes_reserved_characters_in_plex_token_once(): void {
+		$token = 'plex+token/with=reserved?chars';
+		update_option( 'pkiw_webhook_token_plex', $token );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		$data = $this->server->dispatch( new WP_REST_Request( 'GET', self::NS . '/settings/webhooks' ) )->get_data();
+
+		$this->assertSame( add_query_arg( 'token', $token, rest_url( 'post-kinds-indieweb/v1/webhook/plex' ) ), $data['plex'] );
+	}
+
 	public function test_settings_endpoint_does_not_create_a_plex_token(): void {
 		delete_option( 'pkiw_webhook_token_plex' );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );

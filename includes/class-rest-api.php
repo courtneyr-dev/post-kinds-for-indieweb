@@ -2820,7 +2820,7 @@ class REST_API {
 		$plex_token = get_option( 'pkiw_webhook_token_plex' );
 
 		if ( is_string( $plex_token ) && '' !== $plex_token ) {
-			$plex_url = add_query_arg( 'token', rawurlencode( $plex_token ), $plex_url );
+			$plex_url = add_query_arg( 'token', $plex_token, $plex_url );
 		}
 
 		return rest_ensure_response(

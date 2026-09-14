@@ -71,6 +71,24 @@ final class WebhooksPageTokenSetupTest extends WP_UnitTestCase {
 		$this->assertSame( 200, $this->dispatch_as_guest( $request ) );
 	}
 
+	public function test_plex_url_shown_on_the_page_encodes_reserved_characters_once(): void {
+		$token = 'plex+token/with=reserved?chars';
+		update_option( 'pkiw_webhook_token_plex', $token );
+
+		$xpath = $this->render_page();
+		$url   = $this->element( $xpath, '//input[@id="pkiw-webhook-url-plex"]' )->getAttribute( 'value' );
+		wp_parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query );
+		unset( $query['rest_route'] );
+
+		$this->assertSame( add_query_arg( 'token', $token, rest_url( 'post-kinds-indieweb/v1/webhook/plex' ) ), $url );
+
+		$request = new WP_REST_Request( 'POST', '/post-kinds-indieweb/v1/webhook/plex' );
+		$request->set_query_params( $query );
+		$request->set_body_params( [ 'payload' => '{"event":"media.pause"}' ] );
+
+		$this->assertSame( 200, $this->dispatch_as_guest( $request ) );
+	}
+
 	public function test_jellyfin_shows_plain_url_header_name_and_masked_token(): void {
 		$xpath = $this->render_page();
 		$url   = $this->element( $xpath, '//input[@id="pkiw-webhook-url-jellyfin"]' );
@@ -82,6 +100,7 @@ final class WebhooksPageTokenSetupTest extends WP_UnitTestCase {
 		$this->assertSame( 'off', $token->getAttribute( 'autocomplete' ) );
 		$this->assertSame( self::JELLYFIN_TOKEN, $token->getAttribute( 'value' ) );
 		$this->assertStringContainsString( 'X-Webhook-Token', $this->text( $xpath, '//div[@data-webhook="jellyfin"]' ) );
+		$this->assertSame( 1, $xpath->query( '//div[@data-webhook="jellyfin"]//p[contains(@class,"description")]//code[text()="X-Webhook-Token"]' )->length );
 	}
 
 	public function test_page_links_no_nonexistent_webhooks_route_and_no_token_leaks_outside_its_field(): void {
