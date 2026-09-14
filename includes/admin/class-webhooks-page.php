@@ -481,9 +481,9 @@ class Webhooks_Page {
 				<p class="description">
 					<?php
 					printf(
-						/* translators: %s: the request header name, X-Webhook-Token. */
 						wp_kses_post(
 							sprintf(
+								/* translators: %s: the request header name, X-Webhook-Token. */
 								__( 'In Jellyfin, open Dashboard, Plugins, Webhook, and add a Generic destination. Paste the URL, then add a header with the key %s and the token as its value.', 'post-kinds-for-indieweb-in-block-themes' ),
 								'<code>X-Webhook-Token</code>'
 							)
