@@ -85,6 +85,97 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Card-backed kinds that render a star rating, and the minimal
+	 * attributes each render.php needs to render at all.
+	 *
+	 * @return array<string, array{0: string, 1: array<string, mixed>}>
+	 */
+	public function rating_cards(): array {
+		return [
+			'listen' => [ 'listen', [ 'trackTitle' => 'Test track', 'listenUrl' => 'https://example.com/listen' ] ],
+			'watch'  => [ 'watch', [ 'mediaTitle' => 'Test film', 'watchUrl' => 'https://example.com/watch' ] ],
+			'read'   => [ 'read', [ 'bookTitle' => 'Test book', 'bookUrl' => 'https://example.com/read' ] ],
+			'play'   => [ 'play', [ 'title' => 'Test game' ] ],
+			'eat'    => [ 'eat', [ 'name' => 'Test dish' ] ],
+			'drink'  => [ 'drink', [ 'name' => 'Test drink' ] ],
+		];
+	}
+
+	/**
+	 * The card's `.p-rating` holds only `aria-hidden` SVG stars, so mf2
+	 * parsers previously read `rating` as an empty string with no value.
+	 * Each of the six cards must expose the numeric rating via the
+	 * value-class pattern (a hidden `<data class="value" value="N">` inside
+	 * the `.p-rating` element).
+	 *
+	 * @dataProvider rating_cards
+	 *
+	 * @param string               $kind            Post kind and card slug.
+	 * @param array<string, mixed> $base_attributes Minimal attributes the card needs to render.
+	 */
+	public function test_kind_card_rating_parses_as_numeric_value( string $kind, array $base_attributes ): void {
+		$attributes = array_merge( $base_attributes, [ 'rating' => 4 ] );
+		$block      = sprintf(
+			'<!-- wp:post-kinds-indieweb/%s-card %s /-->',
+			$kind,
+			wp_json_encode( $attributes )
+		);
+		$post_id    = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => $block,
+			]
+		);
+
+		$term_result = wp_set_object_terms( $post_id, $kind, 'kind' );
+		$this->assertNotWPError( $term_result );
+
+		$this->go_to( get_permalink( $post_id ) );
+		$html = do_blocks( (string) get_post_field( 'post_content', $post_id ) );
+		$html = '<div class="h-entry">' . $html . '</div>';
+
+		$entry     = $this->top_level_h_entry( \Mf2\parse( $html ) );
+		$card_item = $this->find_item_with_property( [ $entry ], 'rating' );
+
+		$this->assertNotNull( $card_item, "No parsed item carried a rating property for the {$kind} card." );
+		$this->assertSame( [ '4' ], $card_item['properties']['rating'] );
+	}
+
+	/**
+	 * Control: a card with no rating attribute renders no `.p-rating`
+	 * markup at all (every render.php guards it behind `$pkiw_rating > 0`),
+	 * so no item in the parsed tree should carry a rating property.
+	 */
+	public function test_kind_card_without_rating_emits_no_rating_property(): void {
+		$attributes = [
+			'trackTitle' => 'Test track',
+			'listenUrl'  => 'https://example.com/listen',
+		];
+		$block      = sprintf(
+			'<!-- wp:post-kinds-indieweb/listen-card %s /-->',
+			wp_json_encode( $attributes )
+		);
+		$post_id    = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => $block,
+			]
+		);
+
+		$term_result = wp_set_object_terms( $post_id, 'listen', 'kind' );
+		$this->assertNotWPError( $term_result );
+
+		$this->go_to( get_permalink( $post_id ) );
+		$html = do_blocks( (string) get_post_field( 'post_content', $post_id ) );
+		$html = '<div class="h-entry">' . $html . '</div>';
+
+		$entry     = $this->top_level_h_entry( \Mf2\parse( $html ) );
+		$card_item = $this->find_item_with_property( [ $entry ], 'rating' );
+
+		$this->assertNull( $card_item, 'A card with no rating attribute must not emit a rating property.' );
+	}
+
+	/**
 	 * Attributes each render.php reads to emit its target URL.
 	 *
 	 * @param string $kind       Card kind.
@@ -136,6 +227,58 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 		}
 
 		$this->fail( 'No top-level h-entry item was parsed.' );
+	}
+
+	/**
+	 * Recursively search parsed microformats2 items — including nested
+	 * items embedded as property values (e.g. a `u-listen-of h-cite` card)
+	 * and as unclaimed children (e.g. a bare `h-cite` card with no matching
+	 * `u-*-of` property on the entry) — for the first item exposing
+	 * $property.
+	 *
+	 * @param array<int, array<string, mixed>> $items    Parsed mf2 items to search.
+	 * @param string                            $property Property name to find.
+	 * @return array<string, mixed>|null The first matching item, or null.
+	 */
+	private function find_item_with_property( array $items, string $property ): ?array {
+		foreach ( $items as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+
+			if ( isset( $item['properties'][ $property ] ) ) {
+				return $item;
+			}
+
+			foreach ( $item['properties'] ?? [] as $values ) {
+				if ( ! is_array( $values ) ) {
+					continue;
+				}
+
+				$nested_items = array_values(
+					array_filter(
+						$values,
+						static fn( $value ) => is_array( $value ) && isset( $value['type'] )
+					)
+				);
+
+				if ( $nested_items ) {
+					$found = $this->find_item_with_property( $nested_items, $property );
+					if ( null !== $found ) {
+						return $found;
+					}
+				}
+			}
+
+			if ( ! empty( $item['children'] ) ) {
+				$found = $this->find_item_with_property( $item['children'], $property );
+				if ( null !== $found ) {
+					return $found;
+				}
+			}
+		}
+
+		return null;
 	}
 
 	/**
