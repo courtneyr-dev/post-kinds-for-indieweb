@@ -449,7 +449,7 @@ class Webhooks_Page {
 			<?php elseif ( 'plex' === $service ) : ?>
 				<label for="<?php echo esc_attr( $url_id ); ?>"><?php esc_html_e( 'Webhook URL (contains the token)', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
 				<div class="webhook-url-field">
-					<input type="password" id="<?php echo esc_attr( $url_id ); ?>" value="<?php echo esc_attr( add_query_arg( 'token', $token, $base_url ) ); ?>" class="large-text webhook-secret-input" readonly autocomplete="off" spellcheck="false">
+					<input type="password" id="<?php echo esc_attr( $url_id ); ?>" value="<?php echo esc_attr( add_query_arg( 'token', rawurlencode( $token ), $base_url ) ); ?>" class="large-text webhook-secret-input" readonly autocomplete="off" spellcheck="false">
 					<button type="button" class="button toggle-secret-visibility" aria-label="<?php esc_attr_e( 'Show or hide the webhook URL', 'post-kinds-for-indieweb-in-block-themes' ); ?>">
 						<span class="dashicons dashicons-visibility" aria-hidden="true"></span>
 					</button>
@@ -480,13 +480,11 @@ class Webhooks_Page {
 				</div>
 				<p class="description">
 					<?php
-					printf(
-						wp_kses_post(
-							sprintf(
-								/* translators: %s: the request header name, X-Webhook-Token. */
-								__( 'In Jellyfin, open Dashboard, Plugins, Webhook, and add a Generic destination. Paste the URL, then add a header with the key %s and the token as its value.', 'post-kinds-for-indieweb-in-block-themes' ),
-								'<code>X-Webhook-Token</code>'
-							)
+					echo wp_kses_post(
+						sprintf(
+							/* translators: %s: the request header name, X-Webhook-Token. */
+							__( 'In Jellyfin, open Dashboard, Plugins, Webhook, and add a Generic destination. Paste the URL, then add a header with the key %s and the token as its value.', 'post-kinds-for-indieweb-in-block-themes' ),
+							'<code>X-Webhook-Token</code>'
 						)
 					);
 					?>

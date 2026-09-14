@@ -399,7 +399,9 @@ final class PlexJellyfinWebhookAuthTest extends WP_UnitTestCase {
 
 		$data = $this->server->dispatch( new WP_REST_Request( 'GET', self::NS . '/settings/webhooks' ) )->get_data();
 
-		$this->assertSame( add_query_arg( 'token', $token, rest_url( 'post-kinds-indieweb/v1/webhook/plex' ) ), $data['plex'] );
+		$this->assertSame( add_query_arg( 'token', rawurlencode( $token ), rest_url( 'post-kinds-indieweb/v1/webhook/plex' ) ), $data['plex'] );
+		wp_parse_str( (string) wp_parse_url( $data['plex'], PHP_URL_QUERY ), $query );
+		$this->assertSame( $token, $query['token'] );
 	}
 
 	public function test_settings_endpoint_does_not_create_a_plex_token(): void {

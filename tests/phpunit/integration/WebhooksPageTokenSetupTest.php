@@ -54,7 +54,7 @@ final class WebhooksPageTokenSetupTest extends WP_UnitTestCase {
 		$this->assertSame( 'password', $input->getAttribute( 'type' ) );
 		$this->assertSame( 'off', $input->getAttribute( 'autocomplete' ) );
 		$this->assertTrue( $input->hasAttribute( 'readonly' ) );
-		$this->assertSame( add_query_arg( 'token', self::PLEX_TOKEN, rest_url( 'post-kinds-indieweb/v1/webhook/plex' ) ), $input->getAttribute( 'value' ) );
+		$this->assertSame( add_query_arg( 'token', rawurlencode( self::PLEX_TOKEN ), rest_url( 'post-kinds-indieweb/v1/webhook/plex' ) ), $input->getAttribute( 'value' ) );
 		$this->assertStringContainsString( 'access logs', $this->text( $xpath, '//div[@data-webhook="plex"]' ) );
 	}
 
@@ -80,7 +80,9 @@ final class WebhooksPageTokenSetupTest extends WP_UnitTestCase {
 		wp_parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query );
 		unset( $query['rest_route'] );
 
-		$this->assertSame( add_query_arg( 'token', $token, rest_url( 'post-kinds-indieweb/v1/webhook/plex' ) ), $url );
+		// add_query_arg() doesn't encode values, so the token must be encoded exactly once by the caller.
+		$this->assertSame( add_query_arg( 'token', rawurlencode( $token ), rest_url( 'post-kinds-indieweb/v1/webhook/plex' ) ), $url );
+		$this->assertSame( $token, $query['token'] );
 
 		$request = new WP_REST_Request( 'POST', '/post-kinds-indieweb/v1/webhook/plex' );
 		$request->set_query_params( $query );
