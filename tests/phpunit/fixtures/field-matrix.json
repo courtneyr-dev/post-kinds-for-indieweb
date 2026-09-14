@@ -643,6 +643,10 @@
                 "type": "string",
                 "sample": "Sample mood value"
             },
+            "moodKey": {
+                "type": "string",
+                "sample": "Sample moodKey value"
+            },
             "emoji": {
                 "type": "string",
                 "sample": "Sample emoji value"

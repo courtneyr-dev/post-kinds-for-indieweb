@@ -158,6 +158,20 @@ class Settings_Page {
 		);
 
 		add_settings_field(
+			'mood_spelling',
+			__( 'Mood label spelling', 'post-kinds-for-indieweb-in-block-themes' ),
+			[ $this, 'render_select_field' ],
+			'pkiw_general',
+			'pkiw_general_section',
+			[
+				'id'        => 'mood_spelling',
+				'label_for' => 'mood_spelling',
+				'options'   => \PKIW\Mood_Vocabulary::spelling_options(),
+				'desc'      => __( 'Spelling for the mood suggestions in the editor and the mood names Post Kinds generates on cards, accessible names and ATmosphere titles. "Follow the site language" uses the Site Language under Settings > General, not your own profile language. Labels you type yourself, notes and saved posts are never rewritten.', 'post-kinds-for-indieweb-in-block-themes' ),
+			]
+		);
+
+		add_settings_field(
 			'default_post_status',
 			__( 'Default Post Status', 'post-kinds-for-indieweb-in-block-themes' ),
 			[ $this, 'render_select_field' ],

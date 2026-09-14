@@ -85,6 +85,8 @@ const RENDER_EXCEPTIONS = {
 			'free-string status mapped to a human label (Reading/Finished/…); an unknown value like the fixture sample maps to an empty label and is never echoed raw',
 	},
 	'post-kinds-indieweb/mood-card': {
+		moodKey:
+			'stable vocabulary identity used to pick the displayed label in the chosen spelling; by design it is never echoed, so authored text and label stay the only rendered values',
 		intensity:
 			'dropped from the minimal mood card (emoji + note only) in the pk-card redesign',
 	},

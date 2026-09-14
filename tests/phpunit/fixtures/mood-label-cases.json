@@ -1,0 +1,94 @@
+{
+	"_comment": "Shared by MoodVocabularyTest (PHP render rule) and tests/js/blocks/mood-vocabulary.test.js (editor rule) so the picker and public output apply one table. The moods are the en_GB REST output for these keys; MoodVocabularyTest fails if they drift.",
+	"spelling": "en_GB",
+	"moods": [
+		{
+			"key": "energized",
+			"label": "Energised",
+			"variants": [ "Energized", "Energised" ]
+		},
+		{
+			"key": "happy",
+			"label": "Happy",
+			"variants": [ "Happy" ]
+		}
+	],
+	"display": [
+		{
+			"case": "vocabulary pick saved with US spelling shows UK spelling",
+			"authored": "Energized",
+			"key": "energized",
+			"expected": "Energised"
+		},
+		{
+			"case": "vocabulary pick saved with UK spelling stays UK",
+			"authored": "Energised",
+			"key": "energized",
+			"expected": "Energised"
+		},
+		{
+			"case": "edited label keeps authored text",
+			"authored": "Energized!!",
+			"key": "energized",
+			"expected": "Energized!!"
+		},
+		{
+			"case": "different casing is authored text",
+			"authored": "energized",
+			"key": "energized",
+			"expected": "energized"
+		},
+		{
+			"case": "no key keeps matching text as authored",
+			"authored": "Energized",
+			"key": "",
+			"expected": "Energized"
+		},
+		{
+			"case": "unknown key keeps authored text",
+			"authored": "Zen",
+			"key": "zen",
+			"expected": "Zen"
+		},
+		{
+			"case": "key with empty text shows the label",
+			"authored": "",
+			"key": "energized",
+			"expected": "Energised"
+		},
+		{
+			"case": "surrounding spaces still match a spelling",
+			"authored": " Energized ",
+			"key": "energized",
+			"expected": "Energised"
+		},
+		{
+			"case": "label without variants resolves to itself",
+			"authored": "Happy",
+			"key": "happy",
+			"expected": "Happy"
+		}
+	],
+	"keyForLabel": [
+		{
+			"case": "current label maps to its key",
+			"label": "Energised",
+			"expected": "energized"
+		},
+		{
+			"case": "the other spelling is custom text",
+			"label": "Energized",
+			"expected": ""
+		},
+		{
+			"case": "custom text has no key",
+			"label": "Recharged",
+			"expected": ""
+		},
+		{
+			"case": "empty text has no key",
+			"label": "",
+			"expected": ""
+		}
+	]
+}

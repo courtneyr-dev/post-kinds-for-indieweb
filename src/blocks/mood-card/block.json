@@ -12,6 +12,9 @@
 		"mood": {
 			"type": "string"
 		},
+		"moodKey": {
+			"type": "string"
+		},
 		"emoji": {
 			"type": "string",
 			"default": ""

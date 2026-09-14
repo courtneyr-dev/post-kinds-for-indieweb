@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Mood label spelling setting on the General tab of the Post Kinds settings: "Follow the site language" (default), "English (United States)" or "English (United Kingdom)". It sets the spelling of the mood suggestions in the mood card and Kind fields, and of the mood names Post Kinds generates: the mood card's `aria-label` and hidden `p-name`, the Stream card mood pin's `aria-label`, and ATmosphere derived titles. "Follow the site language" reads the Site Language, not the administrator's profile language (#207).
+- Mood identity is stored beside the authored text: the mood card's new `moodKey` attribute and the registered `_pkiw_mood_key` meta. A label renders in the chosen spelling only while it is still an untouched vocabulary pick; typed or edited labels, notes, feeds, Micropub text and existing posts render exactly as saved, and changing the setting never rewrites a post.
+- `PKIW\Mood_Vocabulary` PHP API, the `pkiw_mood_labels` filter, and `GET post-kinds-indieweb/v1/moods` (requires `edit_posts`) returning the resolved labels, their known spellings and a `version` hash for editor pickers and companion plugins such as Outpost. Contract: `docs/integrations/mood-labels.md`.
+
 ### Fixed
 
 - Plex and Jellyfin webhooks refused every real delivery with a 401: both routes demanded an HMAC signature of the body (`X-Webhook-Signature`), and neither Plex Media Server nor the Jellyfin Webhook plugin can compute one. The routes now authorize with a per-service token (`pkiw_webhook_token_plex`, `pkiw_webhook_token_jellyfin`), compared with `hash_equals()`; an unset or empty token authorizes nothing. Plex sends it in the URL's `token` query parameter; Jellyfin sends it in an `X-Webhook-Token` header or `Authorization: Bearer`; use `X-Webhook-Token` when IndieAuth is active, because IndieAuth 4.6.0 answers 401 to any Bearer token it didn't issue before the route's permission check runs. The site webhook secret no longer authorizes these two routes, and one service's token doesn't authorize the other. ListenBrainz, Trakt and generic authentication is unchanged.

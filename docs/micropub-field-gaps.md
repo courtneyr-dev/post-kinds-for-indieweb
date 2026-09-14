@@ -142,6 +142,7 @@ cited post's own description).
 | `emoji` | — | `mp-emoji` (vendor extension) |
 | `intensity` | — | `mp-intensity` |
 | `moodAt` | — | `published` |
+| `moodKey` | — (by design) | none today: incoming `mood` text stays authored and renders as sent under every spelling setting. If Outpost picks should follow later spelling changes, map a property such as `pkiw-mood-key` (see `docs/integrations/mood-labels.md`) |
 
 ## follow / weather / photo
 

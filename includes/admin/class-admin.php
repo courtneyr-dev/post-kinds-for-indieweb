@@ -437,6 +437,7 @@ class Admin {
 			'enable_microformats'        => true,
 			'enable_syndication'         => true,
 			'default_category'           => 0,
+			'mood_spelling'              => \PKIW\Mood_Vocabulary::SPELLING_SITE,
 
 			// Content settings.
 			'auto_fetch_metadata'        => true,
@@ -638,6 +639,14 @@ class Admin {
 			$sanitized['default_category'] = absint( $old_settings['default_category'] );
 		} else {
 			$sanitized['default_category'] = 0;
+		}
+
+		// Mood label spelling. Survives saving a different tab like
+		// default_category; anything but site/en_US/en_GB becomes site.
+		if ( isset( $input['mood_spelling'] ) ) {
+			$sanitized['mood_spelling'] = \PKIW\Mood_Vocabulary::sanitize_spelling( $input['mood_spelling'] );
+		} else {
+			$sanitized['mood_spelling'] = \PKIW\Mood_Vocabulary::sanitize_spelling( $old_settings['mood_spelling'] ?? null );
 		}
 
 		// Check if storage mode changed - need to flush rewrite rules.

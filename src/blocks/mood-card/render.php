@@ -14,10 +14,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
+use PKIW\Mood_Vocabulary;
 use function PKIW\get_kind_icon_svg;
 use function PKIW\get_kind_label;
 
-$pkiw_mood    = $attributes['mood'] ?? '';
+// A vocabulary label follows the mood spelling setting; typed text stays as saved.
+$pkiw_mood    = Mood_Vocabulary::display_label( (string) ( $attributes['mood'] ?? '' ), (string) ( $attributes['moodKey'] ?? '' ) );
 $pkiw_emoji   = $attributes['emoji'] ?? '😊';
 $pkiw_note    = $attributes['note'] ?? '';
 $pkiw_mood_at = $attributes['moodAt'] ?? '';

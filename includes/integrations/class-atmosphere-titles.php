@@ -300,7 +300,7 @@ final class Atmosphere_Titles {
 		$parts = array_filter(
 			[
 				self::meta( $post, 'mood_emoji' ),
-				self::meta( $post, 'mood_label' ),
+				\PKIW\Mood_Vocabulary::display_label( self::meta( $post, 'mood_label' ), self::meta( $post, 'mood_key' ) ),
 			],
 			static fn( string $part ): bool => '' !== $part
 		);
