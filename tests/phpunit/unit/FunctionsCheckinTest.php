@@ -8,6 +8,7 @@
 namespace PKIW\Tests\Unit;
 
 use WP_UnitTestCase;
+use PKIW\Taxonomy;
 use function PKIW\get_checkins;
 use function PKIW\get_checkins_at_venue;
 use function PKIW\get_checkins_by_author;
@@ -43,8 +44,10 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 
-		if ( ! taxonomy_exists( 'indieblocks_kind' ) ) {
-			register_taxonomy( 'indieblocks_kind', 'post' );
+		// The plugin registers the real 'kind' taxonomy on init; register it
+		// defensively in case a prior test reset taxonomies mid-process.
+		if ( ! taxonomy_exists( Taxonomy::TAXONOMY ) ) {
+			( new Taxonomy() )->register_taxonomy();
 		}
 
 		if ( ! taxonomy_exists( 'pkiw_venue' ) ) {
@@ -53,7 +56,7 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Create a checkin post with the indieblocks_kind taxonomy.
+	 * Create a checkin post with the real kind taxonomy.
 	 *
 	 * @param array $args Post args.
 	 * @return int Post ID.
@@ -66,11 +69,11 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 			)
 		);
 
-		if ( ! term_exists( 'checkin', 'indieblocks_kind' ) ) {
-			wp_insert_term( 'checkin', 'indieblocks_kind' );
+		if ( ! term_exists( 'checkin', Taxonomy::TAXONOMY ) ) {
+			wp_insert_term( 'checkin', Taxonomy::TAXONOMY );
 		}
 
-		wp_set_object_terms( $post_id, 'checkin', 'indieblocks_kind' );
+		wp_set_object_terms( $post_id, 'checkin', Taxonomy::TAXONOMY );
 
 		return $post_id;
 	}
@@ -94,6 +97,28 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	}
 
 	// ─── get_checkins ───
+
+	/**
+	 * Regression: the checkin helpers must query the plugin's real `kind`
+	 * taxonomy (Taxonomy::TAXONOMY), not a nonexistent `indieblocks_kind`
+	 * taxonomy. Assign the checkin term entirely through the real taxonomy
+	 * API (bypassing create_checkin_post()'s helper) and confirm both
+	 * get_checkins() and is_checkin() still find the post.
+	 */
+	public function test_get_checkins_finds_a_post_kinded_via_real_taxonomy(): void {
+		$post_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+
+		if ( ! term_exists( 'checkin', Taxonomy::TAXONOMY ) ) {
+			wp_insert_term( 'checkin', Taxonomy::TAXONOMY );
+		}
+		wp_set_object_terms( $post_id, 'checkin', Taxonomy::TAXONOMY );
+
+		$query = get_checkins();
+
+		$this->assertSame( 1, $query->post_count );
+		$this->assertSame( $post_id, $query->posts[0]->ID );
+		$this->assertTrue( is_checkin( $post_id ) );
+	}
 
 	/**
 	 * Test get_checkins returns query object.
@@ -141,9 +166,9 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	 */
 	public function test_get_checkins_without_term(): void {
 		// Ensure no checkin term.
-		$term = get_term_by( 'slug', 'checkin', 'indieblocks_kind' );
+		$term = get_term_by( 'slug', 'checkin', Taxonomy::TAXONOMY );
 		if ( $term ) {
-			wp_delete_term( $term->term_id, 'indieblocks_kind' );
+			wp_delete_term( $term->term_id, Taxonomy::TAXONOMY );
 		}
 
 		self::factory()->post->create( [ 'post_status' => 'publish' ] );
@@ -226,9 +251,9 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	 */
 	public function test_get_checkins_archive_url_no_term(): void {
 		// Ensure no checkin term exists.
-		$term = get_term_by( 'slug', 'checkin', 'indieblocks_kind' );
+		$term = get_term_by( 'slug', 'checkin', Taxonomy::TAXONOMY );
 		if ( $term ) {
-			wp_delete_term( $term->term_id, 'indieblocks_kind' );
+			wp_delete_term( $term->term_id, Taxonomy::TAXONOMY );
 		}
 
 		$url = get_checkins_archive_url();
@@ -240,8 +265,8 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	 * Test get_checkins_archive_url returns term link.
 	 */
 	public function test_get_checkins_archive_url_with_term(): void {
-		if ( ! term_exists( 'checkin', 'indieblocks_kind' ) ) {
-			wp_insert_term( 'checkin', 'indieblocks_kind' );
+		if ( ! term_exists( 'checkin', Taxonomy::TAXONOMY ) ) {
+			wp_insert_term( 'checkin', Taxonomy::TAXONOMY );
 		}
 
 		$url = get_checkins_archive_url();
@@ -397,7 +422,7 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 		$this->create_checkin_post();
 
 		// Clean term cache to get accurate count.
-		clean_term_cache( 0, 'indieblocks_kind' );
+		clean_term_cache( 0, Taxonomy::TAXONOMY );
 
 		$count = get_checkin_count();
 
@@ -408,9 +433,9 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	 * Test get_checkin_count returns zero when no term.
 	 */
 	public function test_get_checkin_count_zero(): void {
-		$term = get_term_by( 'slug', 'checkin', 'indieblocks_kind' );
+		$term = get_term_by( 'slug', 'checkin', Taxonomy::TAXONOMY );
 		if ( $term ) {
-			wp_delete_term( $term->term_id, 'indieblocks_kind' );
+			wp_delete_term( $term->term_id, Taxonomy::TAXONOMY );
 		}
 
 		$this->assertSame( 0, get_checkin_count() );
