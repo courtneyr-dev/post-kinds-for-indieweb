@@ -2911,18 +2911,39 @@ class REST_API {
 			];
 		}
 
-		$query    = new \WP_Query( $args );
-		$checkins = [];
+		if ( $search ) {
+			// A match on a venue name the viewer can't see would confirm that
+			// name even with the field blanked, so drop those before counting
+			// and paginating.
+			$args['posts_per_page'] = -1;
+			$args['no_found_rows']  = true;
 
-		foreach ( $query->posts as $post ) {
+			$posts       = array_values(
+				array_filter(
+					( new \WP_Query( $args ) )->posts,
+					static fn( \WP_Post $post ): bool => Meta_Fields::get_visible_location_fields( $post->ID )['name']
+				)
+			);
+			$total       = count( $posts );
+			$total_pages = (int) ceil( $total / $per_page );
+			$posts       = array_slice( $posts, ( $page - 1 ) * $per_page, $per_page );
+		} else {
+			$query       = new \WP_Query( $args );
+			$posts       = $query->posts;
+			$total       = $query->found_posts;
+			$total_pages = $query->max_num_pages;
+		}
+
+		$checkins = [];
+		foreach ( $posts as $post ) {
 			$checkins[] = $this->format_checkin_for_response( $post );
 		}
 
 		return rest_ensure_response(
 			[
 				'checkins'    => $checkins,
-				'total'       => $query->found_posts,
-				'total_pages' => $query->max_num_pages,
+				'total'       => $total,
+				'total_pages' => $total_pages,
 				'page'        => $page,
 				'per_page'    => $per_page,
 			]
@@ -2967,9 +2988,11 @@ class REST_API {
 		$most_visited = [];
 
 		foreach ( $query->posts as $post ) {
-			$venue_name = get_post_meta( $post->ID, '_pkiw_checkin_name', true );
-			$locality   = get_post_meta( $post->ID, '_pkiw_checkin_locality', true );
-			$country    = get_post_meta( $post->ID, '_pkiw_checkin_country', true );
+			// Count only the names and places this viewer may see on each post.
+			$visible    = Meta_Fields::get_visible_location_fields( $post->ID );
+			$venue_name = $visible['name'] ? get_post_meta( $post->ID, '_pkiw_checkin_name', true ) : '';
+			$locality   = $visible['locality'] ? get_post_meta( $post->ID, '_pkiw_checkin_locality', true ) : '';
+			$country    = $visible['country'] ? get_post_meta( $post->ID, '_pkiw_checkin_country', true ) : '';
 
 			if ( $venue_name ) {
 				$venues[ $venue_name ] = true;
@@ -3105,32 +3128,27 @@ class REST_API {
 		$privacy_value = get_post_meta( $post->ID, '_pkiw_geo_privacy', true );
 		$privacy       = ! empty( $privacy_value ) ? $privacy_value : 'approximate';
 
-		$data = [
+		// Contributors reach this route, so every location field follows the
+		// viewer's tier for this post; hidden text is '' and hidden coordinates null.
+		$visible = Meta_Fields::get_visible_location_fields( $post->ID );
+		$field   = static fn( string $tier, string $key ): string => $visible[ $tier ] ? (string) get_post_meta( $post->ID, $key, true ) : '';
+
+		return [
 			'id'         => $post->ID,
 			'title'      => get_the_title( $post ),
 			'date'       => get_the_date( 'c', $post ),
 			'permalink'  => get_permalink( $post ),
 			'edit_link'  => get_edit_post_link( $post->ID, 'raw' ),
-			'venue_name' => get_post_meta( $post->ID, '_pkiw_checkin_name', true ),
+			'venue_name' => $field( 'name', '_pkiw_checkin_name' ),
 			'venue_type' => get_post_meta( $post->ID, '_pkiw_checkin_type', true ),
-			'address'    => get_post_meta( $post->ID, '_pkiw_checkin_address', true ),
-			'locality'   => get_post_meta( $post->ID, '_pkiw_checkin_locality', true ),
-			'region'     => get_post_meta( $post->ID, '_pkiw_checkin_region', true ),
-			'country'    => get_post_meta( $post->ID, '_pkiw_checkin_country', true ),
+			'address'    => $field( 'street', '_pkiw_checkin_address' ),
+			'locality'   => $field( 'locality', '_pkiw_checkin_locality' ),
+			'region'     => $field( 'region', '_pkiw_checkin_region' ),
+			'country'    => $field( 'country', '_pkiw_checkin_country' ),
 			'privacy'    => $privacy,
 			'thumbnail'  => get_the_post_thumbnail_url( $post, 'thumbnail' ),
+			'latitude'   => $visible['coordinates'] ? (float) get_post_meta( $post->ID, '_pkiw_geo_latitude', true ) : null,
+			'longitude'  => $visible['coordinates'] ? (float) get_post_meta( $post->ID, '_pkiw_geo_longitude', true ) : null,
 		];
-
-		// Only include coordinates based on privacy setting.
-		if ( 'public' === $privacy ) {
-			$data['latitude']  = (float) get_post_meta( $post->ID, '_pkiw_geo_latitude', true );
-			$data['longitude'] = (float) get_post_meta( $post->ID, '_pkiw_geo_longitude', true );
-		} elseif ( 'approximate' === $privacy ) {
-			// For approximate, we could add city-level coords if needed.
-			$data['latitude']  = null;
-			$data['longitude'] = null;
-		}
-
-		return $data;
 	}
 }

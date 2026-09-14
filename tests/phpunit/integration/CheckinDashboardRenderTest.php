@@ -52,17 +52,19 @@ final class CheckinDashboardRenderTest extends WP_UnitTestCase {
 	}
 
 	public function test_dashboard_lists_checkins_by_kind_taxonomy_and_pkiw_meta(): void {
+		// Public, so the street address is visible to an anonymous viewer.
 		$this->create_checkin(
 			[
-				'_pkiw_checkin_name'    => 'Reading Terminal Market',
-				'_pkiw_checkin_address' => '1136 Arch St',
+				'_pkiw_checkin_name'    => 'Sentinel Venue Zyx9',
+				'_pkiw_checkin_address' => '742 Sentinel Ave Qwrt',
+				'_pkiw_geo_privacy'     => 'public',
 			]
 		);
 
 		$html = $this->render_dashboard();
 
-		$this->assertStringContainsString( 'Reading Terminal Market', $html, 'venue name from _pkiw_checkin_name must render' );
-		$this->assertStringContainsString( '1136 Arch St', $html, 'address from _pkiw_checkin_address must render' );
+		$this->assertStringContainsString( 'Sentinel Venue Zyx9', $html, 'venue name from _pkiw_checkin_name must render' );
+		$this->assertStringContainsString( '742 Sentinel Ave Qwrt', $html, 'address from _pkiw_checkin_address must render' );
 		$this->assertStringNotContainsString( 'No check-ins yet.', $html, 'a kind=checkin post must not leave the dashboard empty' );
 	}
 
@@ -70,8 +72,8 @@ final class CheckinDashboardRenderTest extends WP_UnitTestCase {
 		$this->create_checkin(
 			[
 				'_pkiw_checkin_name' => 'Public Venue',
-				'_pkiw_geo_latitude'  => '39.95333',
-				'_pkiw_geo_longitude' => '-75.15928',
+				'_pkiw_geo_latitude'  => '12.345678',
+				'_pkiw_geo_longitude' => '-76.543219',
 				'_pkiw_geo_privacy'   => 'public',
 			]
 		);
@@ -80,15 +82,15 @@ final class CheckinDashboardRenderTest extends WP_UnitTestCase {
 		$this->create_checkin(
 			[
 				'_pkiw_checkin_name' => 'Default Privacy Venue',
-				'_pkiw_geo_latitude'  => '40.44062',
-				'_pkiw_geo_longitude' => '-79.99589',
+				'_pkiw_geo_latitude'  => '23.456789',
+				'_pkiw_geo_longitude' => '-65.432198',
 			]
 		);
 
 		$html = $this->render_dashboard();
 
-		$this->assertStringContainsString( '39.95333', $html, 'public check-in coordinates must reach the map data' );
-		$this->assertStringNotContainsString( '40.44062', $html, 'non-public check-in coordinates must never reach the markup' );
+		$this->assertStringContainsString( '12.345678', $html, 'public check-in coordinates must reach the map data' );
+		$this->assertStringNotContainsString( '23.456789', $html, 'non-public check-in coordinates must never reach the markup' );
 	}
 
 	public function test_map_data_is_a_json_list_even_when_filter_drops_the_newest_checkin(): void {
@@ -96,8 +98,8 @@ final class CheckinDashboardRenderTest extends WP_UnitTestCase {
 		$this->create_checkin(
 			[
 				'_pkiw_checkin_name' => 'Public Venue',
-				'_pkiw_geo_latitude'  => '39.95333',
-				'_pkiw_geo_longitude' => '-75.15928',
+				'_pkiw_geo_latitude'  => '12.345678',
+				'_pkiw_geo_longitude' => '-76.543219',
 				'_pkiw_geo_privacy'   => 'public',
 			],
 			'2026-07-01 12:00:00'
@@ -108,8 +110,8 @@ final class CheckinDashboardRenderTest extends WP_UnitTestCase {
 		$this->create_checkin(
 			[
 				'_pkiw_checkin_name' => 'Private Venue',
-				'_pkiw_geo_latitude'  => '40.44062',
-				'_pkiw_geo_longitude' => '-79.99589',
+				'_pkiw_geo_latitude'  => '23.456789',
+				'_pkiw_geo_longitude' => '-65.432198',
 				'_pkiw_geo_privacy'   => 'private',
 			],
 			'2026-07-02 12:00:00'
