@@ -617,11 +617,6 @@ class MetaFieldsTest extends WP_UnitTestCase {
 	public function test_visible_location_fields_public_shows_everything() {
 		$post_id = self::factory()->post->create();
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'public' );
-		// A bare post (no venue signal) is non-venue: its visibility is the
-		// Post Kinds tier combined with Simple Location's geo_public, the
-		// stricter of the two winning. geo_public '1' isolates the Post
-		// Kinds tier this test means to cover.
-		update_post_meta( $post_id, 'geo_public', '1' );
 		wp_set_current_user( 0 );
 
 		$visible = Meta_Fields::get_visible_location_fields( $post_id );
@@ -639,8 +634,6 @@ class MetaFieldsTest extends WP_UnitTestCase {
 	public function test_visible_location_fields_approximate_keeps_place_hides_precise() {
 		$post_id = self::factory()->post->create();
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'approximate' );
-		// Non-venue post; geo_public '1' isolates the Post Kinds tier.
-		update_post_meta( $post_id, 'geo_public', '1' );
 		wp_set_current_user( 0 );
 
 		$visible = Meta_Fields::get_visible_location_fields( $post_id );
@@ -706,8 +699,6 @@ class MetaFieldsTest extends WP_UnitTestCase {
 	public function test_visible_location_fields_unrecognized_privacy_treated_as_approximate() {
 		$post_id = self::factory()->post->create();
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'not-a-real-value' );
-		// Non-venue post; geo_public '1' isolates the Post Kinds tier.
-		update_post_meta( $post_id, 'geo_public', '1' );
 		wp_set_current_user( 0 );
 
 		$visible = Meta_Fields::get_visible_location_fields( $post_id );
@@ -725,8 +716,6 @@ class MetaFieldsTest extends WP_UnitTestCase {
 	 */
 	public function test_visible_location_fields_no_meta_treated_as_approximate() {
 		$post_id = self::factory()->post->create();
-		// Non-venue post; geo_public '1' isolates the Post Kinds tier.
-		update_post_meta( $post_id, 'geo_public', '1' );
 		wp_set_current_user( 0 );
 
 		$visible = Meta_Fields::get_visible_location_fields( $post_id );

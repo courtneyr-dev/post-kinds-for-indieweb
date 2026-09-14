@@ -1120,7 +1120,11 @@ class Meta_Fields {
 	 * - Non-venue posts (geotagged notes, photos, articles — location data
 	 *   with no identifiable venue): the Post Kinds tier and Simple
 	 *   Location's geo_public are combined per field, the stricter of the
-	 *   two winning.
+	 *   two winning. geo_public '0' is nothing (handled above); '2'
+	 *   (Protected) narrows to text only; an empty/unset/unrecognized
+	 *   geo_public means Simple Location was never used on this post and
+	 *   must not restrict anything — the Post Kinds tier alone decides,
+	 *   same as '1' (explicit public).
 	 *
 	 * @param int $post_id Post ID.
 	 * @return array{name:bool,locality:bool,region:bool,country:bool,street:bool,postal_code:bool,coordinates:bool,map:bool,url:bool,osm_id:bool,venue_id:bool}
@@ -1196,11 +1200,12 @@ class Meta_Fields {
 				'venue_id'    => false,
 			];
 
-		$sl_tier = match ( $geo_public ) {
-			'1'     => $all_visible,
-			'2'     => $text_only_visible,
-			default => $none_visible, // '0' already returned above; '' or unrecognized means nothing.
-		};
+		// '0' is handled by the early return above. '2' (Protected) is the
+		// only value that narrows visibility here: an empty geo_public
+		// means Simple Location was never used on this post and must not
+		// restrict anything, and '1' is explicit public — both leave the
+		// Post Kinds tier as the only restriction.
+		$sl_tier = '2' === $geo_public ? $text_only_visible : $all_visible;
 
 		$visible = [];
 		foreach ( $all_visible as $key => $_true ) {

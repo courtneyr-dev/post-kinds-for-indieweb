@@ -65,6 +65,21 @@ final class LocationRestRedactionTest extends WP_UnitTestCase {
 		$this->assertSame( '', $data['indieblocks_location']['geo_latitude'] );
 	}
 
+	// An absent geo_public (Simple Location never used on this post) must
+	// not restrict anything: the Post Kinds tier alone decides. This is
+	// the common live case — a geotagged photo/article/quote with Post
+	// Kinds place data and no Simple Location involvement at all.
+	public function test_non_venue_approximate_with_no_geo_public_shows_place_tier(): void {
+		( new Meta_Fields() )->register_meta_fields();
+		update_post_meta( $this->post_id, '_pkiw_geo_privacy', 'approximate' );
+		update_post_meta( $this->post_id, 'geo_locality', 'Sentinel Locality Q4' );
+		// geo_public is deliberately never set.
+		$data = $this->response();
+		$this->assertSame( 'Sentinel Locality Q4', $data['meta']['geo_locality'], 'an absent geo_public must not restrict the Post Kinds place tier' );
+		$this->assertSame( '', $data['meta']['geo_latitude'], 'approximate still caps coordinates regardless of geo_public' );
+		$this->assertSame( '', $data['meta']['geo_address'] );
+	}
+
 	public function test_non_venue_approximate_default_caps_geo_public_public_at_place_tier(): void {
 		update_post_meta( $this->post_id, 'geo_locality', 'Sentinel Locality Q4' );
 		update_post_meta( $this->post_id, 'geo_public', '1' );

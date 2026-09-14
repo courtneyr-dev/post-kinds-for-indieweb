@@ -245,10 +245,6 @@ class BlockBindingsTest extends WP_UnitTestCase {
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'public' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_latitude', '37.7749' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_longitude', '-122.4194' );
-		// A non-venue post's visibility is the Post Kinds tier combined with
-		// Simple Location's geo_public, the stricter of the two winning; an
-		// explicit 'public' on both sides is what this test means to cover.
-		update_post_meta( $post_id, 'geo_public', '1' );
 
 		$block  = $this->create_mock_block( $post_id );
 		$result = $this->block_bindings->get_binding_value( [ 'key' => 'geo_coordinates' ], $block, 'content' );
@@ -280,10 +276,6 @@ class BlockBindingsTest extends WP_UnitTestCase {
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_locality', 'Springfield' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_region', 'IL' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_country', 'US' );
-		// No checkin_name here, so this is a non-venue post: the Post Kinds
-		// tier and Simple Location's geo_public combine, stricter wins. An
-		// explicit 'public' on both sides is what this test means to cover.
-		update_post_meta( $post_id, 'geo_public', '1' );
 
 		$block  = $this->create_mock_block( $post_id );
 		$result = $this->block_bindings->get_binding_value( [ 'key' => 'checkin_full_address' ], $block, 'content' );
@@ -298,10 +290,6 @@ class BlockBindingsTest extends WP_UnitTestCase {
 		$post_id = self::factory()->post->create();
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_locality', 'Springfield' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_region', 'IL' );
-		// No checkin_name (non-venue) and no explicit geo_privacy (falls back
-		// to 'approximate', which keeps locality/region); geo_public '1'
-		// keeps the Simple Location side from being the stricter one here.
-		update_post_meta( $post_id, 'geo_public', '1' );
 
 		$block  = $this->create_mock_block( $post_id );
 		$result = $this->block_bindings->get_binding_value( [ 'key' => 'checkin_full_address' ], $block, 'content' );
