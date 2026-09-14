@@ -981,17 +981,120 @@ class Meta_Fields {
 	];
 
 	/**
+	 * Registered location meta keys (without prefix), mapped to the
+	 * visibility tier that gates them — the tier names returned by
+	 * get_visible_location_fields(). Drives redact_location_meta() so a
+	 * key can't leak by being missing from a hand-rolled list.
+	 *
+	 * There is no field literally named "venue_id" registered anywhere in
+	 * this plugin (grepped); the Foursquare place ID carried in the
+	 * checkin card's `foursquareId` attribute is the closest analog to a
+	 * generic venue identifier distinct from the OpenStreetMap id, so the
+	 * checkin card gates it on the 'venue_id' tier. No key maps here
+	 * because no such value is persisted to post meta today.
+	 *
+	 * @var array<string, string>
+	 */
+	private const LOCATION_KEY_TIERS = [
+		'checkin_name'            => 'name',
+		'checkin_locality'        => 'locality',
+		'checkin_region'          => 'region',
+		'checkin_country'         => 'country',
+		'checkin_address'         => 'street',
+		'checkin_url'             => 'url',
+		'checkin_osm_id'          => 'osm_id',
+		'geo_latitude'            => 'coordinates',
+		'geo_longitude'           => 'coordinates',
+		'drink_location_name'     => 'name',
+		'drink_location_locality' => 'locality',
+		'drink_location_region'   => 'region',
+		'drink_location_country'  => 'country',
+		'drink_location_address'  => 'street',
+		'drink_venue_url'         => 'url',
+		'drink_geo_latitude'      => 'coordinates',
+		'drink_geo_longitude'     => 'coordinates',
+		'eat_location_name'       => 'name',
+		'eat_location_locality'   => 'locality',
+		'eat_location_region'     => 'region',
+		'eat_location_country'    => 'country',
+		'eat_location_address'    => 'street',
+		'eat_restaurant_url'      => 'url',
+		'eat_geo_latitude'        => 'coordinates',
+		'eat_geo_longitude'       => 'coordinates',
+	];
+
+	/**
+	 * Which location fields the current user may see for a post, given its
+	 * geo_privacy state. The one place this rule lives — cards, block
+	 * bindings, REST meta redaction and the theme all call this.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array{name:bool,locality:bool,region:bool,country:bool,street:bool,postal_code:bool,coordinates:bool,map:bool,url:bool,osm_id:bool,venue_id:bool}
+	 */
+	public static function get_visible_location_fields( int $post_id ): array {
+		$all_visible = [
+			'name'        => true,
+			'locality'    => true,
+			'region'      => true,
+			'country'     => true,
+			'street'      => true,
+			'postal_code' => true,
+			'coordinates' => true,
+			'map'         => true,
+			'url'         => true,
+			'osm_id'      => true,
+			'venue_id'    => true,
+		];
+
+		if ( $post_id <= 0 ) {
+			return array_fill_keys( array_keys( $all_visible ), false );
+		}
+
+		if ( current_user_can( 'edit_post', $post_id ) ) {
+			return $all_visible;
+		}
+
+		$privacy = get_post_meta( $post_id, self::PREFIX . 'geo_privacy', true );
+
+		if ( 'public' === $privacy ) {
+			return $all_visible;
+		}
+
+		if ( 'private' === $privacy ) {
+			return array_fill_keys( array_keys( $all_visible ), false );
+		}
+
+		// 'approximate', unset (no meta row and no registered default
+		// resolved — e.g. in test isolation), or any other unrecognized
+		// value: sanitize_geo_privacy() and the field's own registration
+		// both fall back to 'approximate', so this does too.
+		return [
+			'name'        => true,
+			'locality'    => true,
+			'region'      => true,
+			'country'     => true,
+			'street'      => false,
+			'postal_code' => false,
+			'coordinates' => false,
+			'map'         => false,
+			'url'         => false,
+			'osm_id'      => false,
+			'venue_id'    => false,
+		];
+	}
+
+	/**
 	 * Whether precise location detail may be shown for a post to the current requester.
+	 *
+	 * Kept for existing call sites (functions-checkin.php,
+	 * class-block-bindings.php); its meaning — "precise location visible"
+	 * — is exactly the 'coordinates' tier of get_visible_location_fields().
 	 *
 	 * @param int $post_id Post ID.
 	 * @return bool
 	 */
 	public static function location_visible( int $post_id ): bool {
-		$privacy = get_post_meta( $post_id, self::PREFIX . 'geo_privacy', true );
-		if ( 'public' === $privacy ) {
-			return true;
-		}
-		return current_user_can( 'edit_post', $post_id );
+		return self::get_visible_location_fields( $post_id )['coordinates'];
 	}
 
 	/**
@@ -1008,8 +1111,12 @@ class Meta_Fields {
 		}
 		$data    = $response->get_data();
 		$changed = false;
-		if ( ! empty( $data['meta'] ) && is_array( $data['meta'] ) && ! self::location_visible( (int) $post->ID ) ) {
-			foreach ( self::LOCATION_KEYS as $key ) {
+		if ( ! empty( $data['meta'] ) && is_array( $data['meta'] ) ) {
+			$visible = self::get_visible_location_fields( (int) $post->ID );
+			foreach ( self::LOCATION_KEY_TIERS as $key => $tier ) {
+				if ( ! empty( $visible[ $tier ] ) ) {
+					continue;
+				}
 				$full = self::PREFIX . $key;
 				if ( array_key_exists( $full, $data['meta'] ) ) {
 					$data['meta'][ $full ] = is_numeric( $data['meta'][ $full ] ) ? 0 : '';

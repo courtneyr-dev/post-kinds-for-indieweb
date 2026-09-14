@@ -72,9 +72,20 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 			],
 			'post-kinds-indieweb/checkin-card'      => [
 				'venueType'       => 'enum mapped to icon + translated label; unknown values fall back to the Place label, raw slug never echoed',
-				'locationPrivacy' => 'block.json enum (public/approximate/private); core drops the invalid sample pre-render and the gate value itself is never echoed',
-				'address'         => 'privacy-aware by design: street address renders only when locationPrivacy=public, and enum validation forces the sample back to approximate',
-				'postalCode'      => 'privacy-aware by design: renders only when locationPrivacy=public, same gate as address',
+				'locationPrivacy' => 'block.json enum (public/approximate/private); core drops the invalid sample pre-render, and the render now reads the post\'s own _pkiw_geo_privacy meta (Meta_Fields::get_visible_location_fields()) rather than this attribute, so the gate value itself is never echoed either way',
+				'address'         => 'privacy-aware by design: street address renders only when the post\'s geo_privacy resolves to public (or the viewer can edit_post); the test post has no geo_privacy meta, which resolves to approximate, same gate as postalCode',
+				'postalCode'      => 'privacy-aware by design: renders only when geo_privacy is public, same gate as address',
+				'osmId'           => 'privacy-aware by design: the OpenStreetMap id renders only when geo_privacy is public (the osm_id tier), same gate as address',
+				'venueUrl'        => 'privacy-aware by design: the venue link renders only when geo_privacy is public (the url tier), same gate as address',
+				'foursquareId'    => 'privacy-aware by design: the Foursquare id renders only when geo_privacy is public (the venue_id tier), same gate as address',
+			],
+			'post-kinds-indieweb/eat-card'          => [
+				'restaurantUrl'   => 'privacy-aware by design: the restaurant link renders only when the post\'s geo_privacy resolves to public (or the viewer can edit_post); the url tier of Meta_Fields::get_visible_location_fields()',
+				'locationAddress' => 'privacy-aware by design: renders only when geo_privacy is public, same gate as restaurantUrl (the street tier)',
+			],
+			'post-kinds-indieweb/drink-card'        => [
+				'venueUrl'        => 'privacy-aware by design: the venue link renders only when the post\'s geo_privacy resolves to public (or the viewer can edit_post); the url tier of Meta_Fields::get_visible_location_fields()',
+				'locationAddress' => 'privacy-aware by design: renders only when geo_privacy is public, same gate as venueUrl (the street tier)',
 			],
 			'post-kinds-indieweb/checkins-feed'     => [
 				'count'   => 'posts_per_page query arg, never echoed',

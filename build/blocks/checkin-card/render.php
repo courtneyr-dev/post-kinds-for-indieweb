@@ -8,6 +8,14 @@
  * the venue name, address, coordinates, and map; public checkins get the full
  * h-card / h-adr / h-geo microformat tree plus an optional OpenStreetMap embed.
  *
+ * What's visible is decided by Meta_Fields::get_visible_location_fields()
+ * for the post's current _pkiw_geo_privacy meta — not by this block's own
+ * (possibly stale) locationPrivacy attribute — so a privacy change made
+ * after the card was saved, or via REST, takes effect on the next render.
+ * Approximate never gets a map: a coarsened/widened-bbox map still marks
+ * a real position near the true one, so it's omitted entirely rather than
+ * approximated.
+ *
  * @package PKIW
  * @var array    $attributes Block attributes.
  * @var string   $content    Block content (empty for dynamic blocks).
@@ -20,39 +28,45 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
+use PKIW\Meta_Fields;
 use function PKIW\get_kind_icon_svg;
 use function PKIW\get_kind_label;
 
-$pkiw_venue_name       = $attributes['venueName'] ?? '';
-$pkiw_venue_type       = $attributes['venueType'] ?? 'place';
-$pkiw_address          = $attributes['address'] ?? '';
-$pkiw_locality         = $attributes['locality'] ?? '';
-$pkiw_region           = $attributes['region'] ?? '';
-$pkiw_country          = $attributes['country'] ?? '';
-$pkiw_postal_code      = $attributes['postalCode'] ?? '';
-$pkiw_latitude         = isset( $attributes['latitude'] ) ? (float) $attributes['latitude'] : null;
-$pkiw_longitude        = isset( $attributes['longitude'] ) ? (float) $attributes['longitude'] : null;
-$pkiw_location_privacy = $attributes['locationPrivacy'] ?? 'approximate';
-$pkiw_osm_id           = $attributes['osmId'] ?? '';
-$pkiw_venue_url        = $attributes['venueUrl'] ?? '';
-$pkiw_foursquare_id    = $attributes['foursquareId'] ?? '';
-$pkiw_checkin_at       = $attributes['checkinAt'] ?? '';
-$pkiw_note             = $attributes['note'] ?? '';
-$pkiw_photo            = $attributes['photo'] ?? '';
-$pkiw_photo_alt        = $attributes['photoAlt'] ?? '';
-$pkiw_show_map         = isset( $attributes['showMap'] ) ? (bool) $attributes['showMap'] : true;
+$pkiw_venue_name    = $attributes['venueName'] ?? '';
+$pkiw_venue_type    = $attributes['venueType'] ?? 'place';
+$pkiw_address       = $attributes['address'] ?? '';
+$pkiw_locality      = $attributes['locality'] ?? '';
+$pkiw_region        = $attributes['region'] ?? '';
+$pkiw_country       = $attributes['country'] ?? '';
+$pkiw_postal_code   = $attributes['postalCode'] ?? '';
+$pkiw_latitude      = isset( $attributes['latitude'] ) ? (float) $attributes['latitude'] : null;
+$pkiw_longitude     = isset( $attributes['longitude'] ) ? (float) $attributes['longitude'] : null;
+$pkiw_osm_id        = $attributes['osmId'] ?? '';
+$pkiw_venue_url     = $attributes['venueUrl'] ?? '';
+$pkiw_foursquare_id = $attributes['foursquareId'] ?? '';
+$pkiw_checkin_at    = $attributes['checkinAt'] ?? '';
+$pkiw_note          = $attributes['note'] ?? '';
+$pkiw_photo         = $attributes['photo'] ?? '';
+$pkiw_photo_alt     = $attributes['photoAlt'] ?? '';
+$pkiw_show_map      = isset( $attributes['showMap'] ) ? (bool) $attributes['showMap'] : true;
 
-$pkiw_is_private   = 'private' === $pkiw_location_privacy;
-$pkiw_is_public    = 'public' === $pkiw_location_privacy;
-$pkiw_has_coords   = null !== $pkiw_latitude && null !== $pkiw_longitude;
-$pkiw_show_coords  = $pkiw_is_public && $pkiw_has_coords;
-$pkiw_show_address = $pkiw_is_public && $pkiw_address;
-$pkiw_show_map_emb = $pkiw_show_map && $pkiw_has_coords && ! $pkiw_is_private;
+// R-03: the post's own geo_privacy meta (and edit_post capability) decide
+// what's visible, not the block's saved locationPrivacy attribute.
+$pkiw_post_id = $block->context['postId'] ?? get_the_ID();
+$pkiw_visible = Meta_Fields::get_visible_location_fields( (int) $pkiw_post_id );
 
-// Map URL — wider bbox for approximate privacy.
+$pkiw_show_location = ! empty( $pkiw_visible['name'] );
+$pkiw_has_coords    = null !== $pkiw_latitude && null !== $pkiw_longitude;
+$pkiw_show_coords   = ! empty( $pkiw_visible['coordinates'] ) && $pkiw_has_coords;
+$pkiw_show_address  = ! empty( $pkiw_visible['street'] ) && $pkiw_address;
+$pkiw_show_url      = ! empty( $pkiw_visible['url'] ) && $pkiw_venue_url;
+$pkiw_show_map_emb  = $pkiw_show_map && $pkiw_has_coords && ! empty( $pkiw_visible['map'] );
+
+// Map URL — only ever built for the fully-visible (public/editor) case;
+// approximate and private get no map at all, coarsened or otherwise.
 $pkiw_map_url = '';
-if ( $pkiw_has_coords ) {
-	$pkiw_bbox    = $pkiw_is_public ? 0.01 : 0.1;
+if ( $pkiw_show_map_emb ) {
+	$pkiw_bbox    = 0.01;
 	$pkiw_map_url = sprintf(
 		'https://www.openstreetmap.org/export/embed.html?bbox=%F,%F,%F,%F&layer=mapnik&marker=%F,%F',
 		$pkiw_longitude - $pkiw_bbox,
@@ -65,7 +79,7 @@ if ( $pkiw_has_coords ) {
 }
 
 // Geo URI for microformats.
-$pkiw_geo_uri = $pkiw_has_coords ? sprintf( 'geo:%F,%F', $pkiw_latitude, $pkiw_longitude ) : '';
+$pkiw_geo_uri = $pkiw_show_coords ? sprintf( 'geo:%F,%F', $pkiw_latitude, $pkiw_longitude ) : '';
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
@@ -91,7 +105,7 @@ ob_start();
 	<div class="pk-body">
 		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' ), 'checkin', 'checkin-card' ) ); ?></p>
 
-		<?php if ( $pkiw_is_private ) : ?>
+		<?php if ( ! $pkiw_show_location ) : ?>
 			<p class="pk-note">
 				<span class="dashicons dashicons-lock" aria-hidden="true"></span>
 				<?php esc_html_e( 'Location saved privately', 'post-kinds-for-indieweb-in-block-themes' ); ?>
@@ -116,7 +130,7 @@ ob_start();
 			<div class="pk-caption">
 				<?php if ( $pkiw_venue_name ) : ?>
 					<h2 class="pk-title p-name">
-						<?php if ( $pkiw_venue_url ) : ?>
+						<?php if ( $pkiw_show_url ) : ?>
 							<a class="u-url" href="<?php echo esc_url( $pkiw_venue_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_venue_name ); ?></a>
 						<?php else : ?>
 							<?php echo esc_html( $pkiw_venue_name ); ?>
@@ -130,7 +144,7 @@ ob_start();
 				// street address ran into the locality with no separator and the
 				// comma arrived with a space in front of it.
 				$pkiw_address_parts = [];
-				if ( $pkiw_show_address && $pkiw_address ) {
+				if ( $pkiw_show_address ) {
 					$pkiw_address_parts[] = '<span class="p-street-address">' . esc_html( $pkiw_address ) . '</span>';
 				}
 
@@ -149,7 +163,7 @@ ob_start();
 						. implode( ', ', $pkiw_place_parts )
 						. '</span>';
 				}
-				if ( $pkiw_is_public && $pkiw_postal_code ) {
+				if ( ! empty( $pkiw_visible['postal_code'] ) && $pkiw_postal_code ) {
 					$pkiw_address_parts[] = '<span class="p-postal-code">' . esc_html( $pkiw_postal_code ) . '</span>';
 				}
 				?>
@@ -181,20 +195,14 @@ ob_start();
 						src="<?php echo esc_url( $pkiw_map_url ); ?>"
 						loading="lazy"
 					></iframe>
-					<?php if ( $pkiw_is_public ) : ?>
-						<a
-							href="<?php echo esc_url( sprintf( 'https://www.openstreetmap.org/?mlat=%F&mlon=%F#map=16/%F/%F', $pkiw_latitude, $pkiw_longitude, $pkiw_latitude, $pkiw_longitude ) ); ?>"
-							class="pk-map-link"
-							target="_blank"
-							rel="noopener noreferrer"
-						>
-							<?php esc_html_e( 'View larger map', 'post-kinds-for-indieweb-in-block-themes' ); ?>
-						</a>
-					<?php else : ?>
-						<p class="pk-map-note">
-							<?php esc_html_e( 'Showing approximate area', 'post-kinds-for-indieweb-in-block-themes' ); ?>
-						</p>
-					<?php endif; ?>
+					<a
+						href="<?php echo esc_url( sprintf( 'https://www.openstreetmap.org/?mlat=%F&mlon=%F#map=16/%F/%F', $pkiw_latitude, $pkiw_longitude, $pkiw_latitude, $pkiw_longitude ) ); ?>"
+						class="pk-map-link"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						<?php esc_html_e( 'View larger map', 'post-kinds-for-indieweb-in-block-themes' ); ?>
+					</a>
 				</div>
 			<?php endif; ?>
 
@@ -214,11 +222,13 @@ ob_start();
 				<?php endif; ?>
 			</div>
 
-			<data class="u-checkin" value="<?php echo esc_attr( $pkiw_venue_url ); ?>" hidden></data>
-			<?php if ( $pkiw_foursquare_id ) : ?>
+			<?php if ( $pkiw_show_url && $pkiw_venue_url ) : ?>
+				<data class="u-checkin" value="<?php echo esc_attr( $pkiw_venue_url ); ?>" hidden></data>
+			<?php endif; ?>
+			<?php if ( ! empty( $pkiw_visible['venue_id'] ) && $pkiw_foursquare_id ) : ?>
 				<data class="u-uid" value="<?php echo esc_attr( 'https://foursquare.com/v/' . $pkiw_foursquare_id ); ?>" hidden></data>
 			<?php endif; ?>
-			<?php if ( $pkiw_osm_id ) : ?>
+			<?php if ( ! empty( $pkiw_visible['osm_id'] ) && $pkiw_osm_id ) : ?>
 				<data class="u-uid" value="<?php echo esc_attr( 'https://www.openstreetmap.org/' . $pkiw_osm_id ); ?>" hidden></data>
 			<?php endif; ?>
 		<?php endif; ?>

@@ -18,6 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
+use PKIW\Meta_Fields;
 use function PKIW\get_kind_icon_svg;
 use function PKIW\get_kind_label;
 
@@ -37,6 +38,16 @@ $pkiw_location_region   = $attributes['locationRegion'] ?? '';
 $pkiw_location_country  = $attributes['locationCountry'] ?? '';
 $pkiw_geo_lat           = isset( $attributes['geoLatitude'] ) ? (float) $attributes['geoLatitude'] : 0.0;
 $pkiw_geo_lon           = isset( $attributes['geoLongitude'] ) ? (float) $attributes['geoLongitude'] : 0.0;
+
+// R-03: the post's geo_privacy meta (and edit_post capability) decide what's
+// visible — see Meta_Fields::get_visible_location_fields(). Approximate keeps
+// name/locality/region/country; street address, coordinates and the
+// restaurant URL are precise-tier and stay hidden until public or editor.
+$pkiw_post_id      = $block->context['postId'] ?? get_the_ID();
+$pkiw_visible      = Meta_Fields::get_visible_location_fields( (int) $pkiw_post_id );
+$pkiw_show_address = ! empty( $pkiw_visible['street'] ) && $pkiw_location_address;
+$pkiw_show_coords  = ! empty( $pkiw_visible['coordinates'] ) && ( 0.0 !== $pkiw_geo_lat || 0.0 !== $pkiw_geo_lon );
+$pkiw_show_url     = ! empty( $pkiw_visible['url'] ) && $pkiw_restaurant_url;
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
@@ -82,14 +93,14 @@ ob_start();
 				</p>
 			<?php endif; ?>
 
-			<?php if ( $pkiw_location_name ) : ?>
+			<?php if ( $pkiw_location_name && ! empty( $pkiw_visible['name'] ) ) : ?>
 				<p class="pk-sub p-location h-card">
-					<?php if ( $pkiw_restaurant_url ) : ?>
+					<?php if ( $pkiw_show_url ) : ?>
 						<a class="pk-chip p-name u-url" href="<?php echo esc_url( $pkiw_restaurant_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_location_name ); ?></a>
 					<?php else : ?>
 						<span class="pk-chip p-name"><?php echo esc_html( $pkiw_location_name ); ?></span>
 					<?php endif; ?>
-					<?php if ( $pkiw_location_address ) : ?>
+					<?php if ( $pkiw_show_address ) : ?>
 						<span class="p-street-address"><?php echo esc_html( $pkiw_location_address ); ?></span>
 					<?php endif; ?>
 					<?php if ( $pkiw_location_locality ) : ?>
@@ -101,7 +112,7 @@ ob_start();
 					<?php if ( $pkiw_location_country ) : ?>
 						<span class="p-country-name"><?php echo esc_html( $pkiw_location_country ); ?></span>
 					<?php endif; ?>
-					<?php if ( 0.0 !== $pkiw_geo_lat || 0.0 !== $pkiw_geo_lon ) : ?>
+					<?php if ( $pkiw_show_coords ) : ?>
 						<data class="p-geo h-geo" value="<?php echo esc_attr( $pkiw_geo_lat . ',' . $pkiw_geo_lon ); ?>" hidden>
 							<span class="p-latitude"><?php echo esc_html( (string) $pkiw_geo_lat ); ?></span>
 							<span class="p-longitude"><?php echo esc_html( (string) $pkiw_geo_lon ); ?></span>

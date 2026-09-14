@@ -590,6 +590,47 @@ class BlockBindingsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A private post's full address is entirely null — R-03 also redacts
+	 * locality/region/country on 'private', not only the street.
+	 */
+	public function test_full_address_null_when_private() {
+		$post_id = $this->location_post( 'private' );
+		wp_set_current_user( 0 );
+		$this->assertNull( $this->block_bindings->get_binding_value( [ 'key' => 'checkin_full_address' ], $this->create_mock_block( $post_id ), 'content' ) );
+	}
+
+	/**
+	 * checkin_name is visible on an approximate post ("approximate" keeps
+	 * venue name/locality/region/country).
+	 */
+	public function test_checkin_name_visible_when_approximate() {
+		$post_id = $this->location_post( 'approximate' );
+		wp_set_current_user( 0 );
+		$this->assertSame( 'Test Venue', $this->block_bindings->get_binding_value( [ 'key' => 'checkin_name' ], $this->create_mock_block( $post_id ), 'content' ) );
+	}
+
+	/**
+	 * checkin_name is hidden on a private post for a visitor who cannot
+	 * edit it — this was the R-03 gap: checkin_name is not one of
+	 * Meta_Fields::LOCATION_KEYS, so the old all-or-nothing check never
+	 * gated it at all.
+	 */
+	public function test_checkin_name_hidden_when_private() {
+		$post_id = $this->location_post( 'private' );
+		wp_set_current_user( 0 );
+		$this->assertNull( $this->block_bindings->get_binding_value( [ 'key' => 'checkin_name' ], $this->create_mock_block( $post_id ), 'content' ) );
+	}
+
+	/**
+	 * checkin_name still resolves for an editor on a private post.
+	 */
+	public function test_checkin_name_shown_to_editor_when_private() {
+		$post_id = $this->location_post( 'private' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		$this->assertSame( 'Test Venue', $this->block_bindings->get_binding_value( [ 'key' => 'checkin_name' ], $this->create_mock_block( $post_id ), 'content' ) );
+	}
+
+	/**
 	 * Keys that expose precise location.
 	 *
 	 * @return array<string, array{0: string}>
@@ -610,6 +651,7 @@ class BlockBindingsTest extends WP_UnitTestCase {
 	 */
 	private function location_post( string $privacy ): int {
 		$post_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_name', 'Test Venue' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_url', 'https://example.test/venue' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_address', '1 Test Street' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_locality', 'Testville' );

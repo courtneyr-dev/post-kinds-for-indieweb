@@ -352,20 +352,26 @@ class Block_Bindings {
 
 		$binding = $this->bindings[ $key ];
 
-		// R-03: precise location only for public locations or editors, for
-		// stored location keys and the values computed from them.
-		// The full address degrades to city, region and country instead (see
-		// compute_value()); coordinates have no coarse form, so they hide.
-		$location_computes = [ 'coordinates' ];
-		$is_location       = ( ! empty( $binding['meta_key'] ) && in_array( $binding['meta_key'], Meta_Fields::LOCATION_KEYS, true ) )
-			|| ( 'computed' === $binding['type'] && in_array( $binding['compute'] ?? '', $location_computes, true ) );
-		if ( $is_location && ! Meta_Fields::location_visible( (int) $post_id ) ) {
+		// R-03: location fields are gated per field-visibility tier from
+		// Meta_Fields::get_visible_location_fields() — the single source of
+		// truth cards, REST redaction and the theme also call — instead of
+		// an all-or-nothing check, so 'private' fully redacts (name/city/
+		// region/country included) while 'approximate' keeps those and
+		// only drops street/coordinates/url.
+		$visible               = Meta_Fields::get_visible_location_fields( (int) $post_id );
+		$location_field_tiers  = [
+			'checkin_name'    => 'name',
+			'checkin_url'     => 'url',
+			'checkin_address' => 'street',
+		];
+		$binding_meta_key_tier = $location_field_tiers[ $key ] ?? null;
+		if ( null !== $binding_meta_key_tier && empty( $visible[ $binding_meta_key_tier ] ) ) {
 			return null;
 		}
 
 		// Handle computed fields.
 		if ( 'computed' === $binding['type'] ) {
-			return $this->compute_value( $binding['compute'], $post_id, Meta_Fields::location_visible( (int) $post_id ) );
+			return $this->compute_value( $binding['compute'], $post_id, $visible );
 		}
 
 		// Get the meta value.
@@ -387,26 +393,31 @@ class Block_Bindings {
 	/**
 	 * Compute a dynamic value from multiple meta fields.
 	 *
-	 * @param string $compute_type The type of computation.
-	 * @param int    $post_id      Post ID.
-	 * @param bool   $precise_location Whether the street address may be included.
+	 * @param string              $compute_type     The type of computation.
+	 * @param int                 $post_id          Post ID.
+	 * @param array<string, bool> $visible_location_fields Result of Meta_Fields::get_visible_location_fields()
+	 *                                                      for this post; only 'full_address' and 'coordinates'
+	 *                                                      consult it.
 	 * @return string|null The computed value.
 	 */
-	private function compute_value( string $compute_type, int $post_id, bool $precise_location = true ): ?string {
+	private function compute_value( string $compute_type, int $post_id, array $visible_location_fields = [] ): ?string {
 		$prefix = Meta_Fields::PREFIX;
 
 		switch ( $compute_type ) {
 			case 'full_address':
 				$parts = [
-					$precise_location ? get_post_meta( $post_id, $prefix . 'checkin_address', true ) : '',
-					get_post_meta( $post_id, $prefix . 'checkin_locality', true ),
-					get_post_meta( $post_id, $prefix . 'checkin_region', true ),
-					get_post_meta( $post_id, $prefix . 'checkin_country', true ),
+					! empty( $visible_location_fields['street'] ) ? get_post_meta( $post_id, $prefix . 'checkin_address', true ) : '',
+					! empty( $visible_location_fields['locality'] ) ? get_post_meta( $post_id, $prefix . 'checkin_locality', true ) : '',
+					! empty( $visible_location_fields['region'] ) ? get_post_meta( $post_id, $prefix . 'checkin_region', true ) : '',
+					! empty( $visible_location_fields['country'] ) ? get_post_meta( $post_id, $prefix . 'checkin_country', true ) : '',
 				];
 				$parts = array_filter( $parts );
 				return ! empty( $parts ) ? implode( ', ', $parts ) : null;
 
 			case 'coordinates':
+				if ( empty( $visible_location_fields['coordinates'] ) ) {
+					return null;
+				}
 				$lat = get_post_meta( $post_id, $prefix . 'geo_latitude', true );
 				$lng = get_post_meta( $post_id, $prefix . 'geo_longitude', true );
 				if ( $lat && $lng ) {

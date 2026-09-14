@@ -8,6 +8,7 @@
 	"description": "Display a drink you had with photo, type, brand, and rating.",
 	"keywords": ["drink", "beverage", "coffee", "beer", "wine", "cocktail"],
 	"textdomain": "post-kinds-for-indieweb-in-block-themes",
+	"usesContext": ["postId"],
 	"attributes": {
 		"name": {
 			"type": "string"

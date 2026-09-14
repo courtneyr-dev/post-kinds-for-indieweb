@@ -412,6 +412,70 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'latitude', $location );
 	}
 
+	/**
+	 * Approximate privacy: name/city/region/country stay, address/coordinates drop.
+	 */
+	public function test_get_checkin_location_approximate_keeps_place_drops_precise(): void {
+		$post_id = $this->create_checkin_post();
+		update_post_meta( $post_id, '_pkiw_geo_privacy', 'approximate' );
+		update_post_meta( $post_id, '_pkiw_checkin_venue', 'Sentinel Place' );
+		update_post_meta( $post_id, '_pkiw_checkin_address', 'Sentinel Street' );
+		update_post_meta( $post_id, '_pkiw_checkin_city', 'Sentinel City' );
+		update_post_meta( $post_id, '_pkiw_checkin_region', 'Sentinel Region' );
+		update_post_meta( $post_id, '_pkiw_checkin_country', 'Sentinel Country' );
+		update_post_meta( $post_id, '_pkiw_checkin_latitude', '1.111' );
+		update_post_meta( $post_id, '_pkiw_checkin_longitude', '2.222' );
+		wp_set_current_user( 0 );
+
+		$location = get_checkin_location( $post_id );
+
+		$this->assertSame( 'Sentinel Place', $location['name'] );
+		$this->assertSame( 'Sentinel City', $location['city'] );
+		$this->assertSame( 'Sentinel Region', $location['region'] );
+		$this->assertSame( 'Sentinel Country', $location['country'] );
+		$this->assertArrayNotHasKey( 'address', $location );
+		$this->assertArrayNotHasKey( 'latitude', $location );
+		$this->assertArrayNotHasKey( 'longitude', $location );
+	}
+
+	/**
+	 * Private privacy: nothing at all for a visitor, including name/city/
+	 * region/country (the R-03 gap this fix closes — the old code only
+	 * stripped address/lat/long on non-public).
+	 */
+	public function test_get_checkin_location_private_hides_everything(): void {
+		$post_id = $this->create_checkin_post();
+		update_post_meta( $post_id, '_pkiw_geo_privacy', 'private' );
+		update_post_meta( $post_id, '_pkiw_checkin_venue', 'Sentinel Place' );
+		update_post_meta( $post_id, '_pkiw_checkin_address', 'Sentinel Street' );
+		update_post_meta( $post_id, '_pkiw_checkin_city', 'Sentinel City' );
+		update_post_meta( $post_id, '_pkiw_checkin_region', 'Sentinel Region' );
+		update_post_meta( $post_id, '_pkiw_checkin_country', 'Sentinel Country' );
+		update_post_meta( $post_id, '_pkiw_checkin_latitude', '1.111' );
+		update_post_meta( $post_id, '_pkiw_checkin_longitude', '2.222' );
+		wp_set_current_user( 0 );
+
+		$location = get_checkin_location( $post_id );
+
+		$this->assertSame( [], $location );
+	}
+
+	/**
+	 * An editor still sees everything on a private check-in.
+	 */
+	public function test_get_checkin_location_editor_sees_everything_when_private(): void {
+		$post_id = $this->create_checkin_post();
+		update_post_meta( $post_id, '_pkiw_geo_privacy', 'private' );
+		update_post_meta( $post_id, '_pkiw_checkin_venue', 'Sentinel Place' );
+		update_post_meta( $post_id, '_pkiw_checkin_address', 'Sentinel Street' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$location = get_checkin_location( $post_id );
+
+		$this->assertSame( 'Sentinel Place', $location['name'] );
+		$this->assertSame( 'Sentinel Street', $location['address'] );
+	}
+
 	// ─── get_checkin_count ───
 
 	/**

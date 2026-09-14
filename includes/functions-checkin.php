@@ -236,13 +236,31 @@ function get_checkin_location( $post = null ): array {
 		$location['longitude'] = get_post_meta( $post->ID, '_pkiw_checkin_longitude', true );
 	}
 
-	// R-03: street address and coordinates only when the post's location
-	// privacy is public or the viewer can edit the post; venue name and
-	// city/region/country stay (that is what "approximate" means).
-	if ( ! \PKIW\Meta_Fields::location_visible( (int) $post->ID ) ) {
-		$location['address']   = '';
+	// R-03: which fields may show depends on the post's location privacy —
+	// street/coordinates only for public or an editor; name/city/region/
+	// country also disappear on 'private' (approximate keeps them; see
+	// Meta_Fields::get_visible_location_fields(), the single source of
+	// truth other consumers — cards, block bindings, REST redaction —
+	// also call).
+	$pkiw_visible = \PKIW\Meta_Fields::get_visible_location_fields( (int) $post->ID );
+	if ( empty( $pkiw_visible['street'] ) ) {
+		$location['address'] = '';
+	}
+	if ( empty( $pkiw_visible['coordinates'] ) ) {
 		$location['latitude']  = '';
 		$location['longitude'] = '';
+	}
+	if ( empty( $pkiw_visible['name'] ) ) {
+		$location['name'] = '';
+	}
+	if ( empty( $pkiw_visible['locality'] ) ) {
+		$location['city'] = '';
+	}
+	if ( empty( $pkiw_visible['region'] ) ) {
+		$location['region'] = '';
+	}
+	if ( empty( $pkiw_visible['country'] ) ) {
+		$location['country'] = '';
 	}
 
 	return array_filter( $location, fn( $val ) => '' !== $val );
