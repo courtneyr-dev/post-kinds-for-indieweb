@@ -54,7 +54,7 @@ final class WebhooksPageTokenSetupTest extends WP_UnitTestCase {
 		$this->assertSame( 'password', $input->getAttribute( 'type' ) );
 		$this->assertSame( 'off', $input->getAttribute( 'autocomplete' ) );
 		$this->assertTrue( $input->hasAttribute( 'readonly' ) );
-		$this->assertSame( add_query_arg( 'token', self::PLEX_TOKEN, rest_url( 'post-kinds-indieweb/v1/webhook/plex' ) ), $input->getAttribute( 'value' ) );
+		$this->assertSame( add_query_arg( 'token', rawurlencode( self::PLEX_TOKEN ), rest_url( 'post-kinds-indieweb/v1/webhook/plex' ) ), $input->getAttribute( 'value' ) );
 		$this->assertStringContainsString( 'access logs', $this->text( $xpath, '//div[@data-webhook="plex"]' ) );
 	}
 
@@ -63,6 +63,26 @@ final class WebhooksPageTokenSetupTest extends WP_UnitTestCase {
 		$url   = $this->element( $xpath, '//input[@id="pkiw-webhook-url-plex"]' )->getAttribute( 'value' );
 		wp_parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query );
 		unset( $query['rest_route'] );
+
+		$request = new WP_REST_Request( 'POST', '/post-kinds-indieweb/v1/webhook/plex' );
+		$request->set_query_params( $query );
+		$request->set_body_params( [ 'payload' => '{"event":"media.pause"}' ] );
+
+		$this->assertSame( 200, $this->dispatch_as_guest( $request ) );
+	}
+
+	public function test_plex_url_shown_on_the_page_encodes_reserved_characters_once(): void {
+		$token = 'plex+token/with=reserved?chars';
+		update_option( 'pkiw_webhook_token_plex', $token );
+
+		$xpath = $this->render_page();
+		$url   = $this->element( $xpath, '//input[@id="pkiw-webhook-url-plex"]' )->getAttribute( 'value' );
+		wp_parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query );
+		unset( $query['rest_route'] );
+
+		// add_query_arg() doesn't encode values, so the token must be encoded exactly once by the caller.
+		$this->assertSame( add_query_arg( 'token', rawurlencode( $token ), rest_url( 'post-kinds-indieweb/v1/webhook/plex' ) ), $url );
+		$this->assertSame( $token, $query['token'] );
 
 		$request = new WP_REST_Request( 'POST', '/post-kinds-indieweb/v1/webhook/plex' );
 		$request->set_query_params( $query );
@@ -82,6 +102,7 @@ final class WebhooksPageTokenSetupTest extends WP_UnitTestCase {
 		$this->assertSame( 'off', $token->getAttribute( 'autocomplete' ) );
 		$this->assertSame( self::JELLYFIN_TOKEN, $token->getAttribute( 'value' ) );
 		$this->assertStringContainsString( 'X-Webhook-Token', $this->text( $xpath, '//div[@data-webhook="jellyfin"]' ) );
+		$this->assertSame( 1, $xpath->query( '//div[@data-webhook="jellyfin"]//p[contains(@class,"description")]//code[text()="X-Webhook-Token"]' )->length );
 	}
 
 	public function test_page_links_no_nonexistent_webhooks_route_and_no_token_leaks_outside_its_field(): void {

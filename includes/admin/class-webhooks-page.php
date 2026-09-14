@@ -437,8 +437,8 @@ class Webhooks_Page {
 			<?php if ( ! $has_token ) : ?>
 				<p class="description">
 					<?php
-					/* translators: %s: service name, such as Plex. */
-					echo esc_html( sprintf( __( '%s webhooks need a token before they can be accepted. Generate one to get the setup details.', 'post-kinds-for-indieweb-in-block-themes' ), $name ) );
+					/* translators: %1$s: service name, such as Plex. */
+					echo esc_html( sprintf( __( '%1$s webhooks need a token before they can be accepted. Generate one to get the setup details.', 'post-kinds-for-indieweb-in-block-themes' ), $name ) );
 					?>
 				</p>
 				<p>
@@ -480,10 +480,12 @@ class Webhooks_Page {
 				</div>
 				<p class="description">
 					<?php
-					printf(
-						/* translators: %s: the request header name, X-Webhook-Token. */
-						esc_html__( 'In Jellyfin, open Dashboard, Plugins, Webhook, and add a Generic destination. Paste the URL, then add a header with the key %s and the token as its value.', 'post-kinds-for-indieweb-in-block-themes' ),
-						'<code>X-Webhook-Token</code>'
+					echo wp_kses_post(
+						sprintf(
+							/* translators: %s: the request header name, X-Webhook-Token. */
+							__( 'In Jellyfin, open Dashboard, Plugins, Webhook, and add a Generic destination. Paste the URL, then add a header with the key %s and the token as its value.', 'post-kinds-for-indieweb-in-block-themes' ),
+							'<code>X-Webhook-Token</code>'
+						)
 					);
 					?>
 				</p>
