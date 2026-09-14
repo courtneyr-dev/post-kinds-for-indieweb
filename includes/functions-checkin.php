@@ -37,7 +37,7 @@ function get_checkins( array $args = [] ): \WP_Query {
 	$args = wp_parse_args( $args, $defaults );
 
 	// Add checkin kind to tax_query.
-	$checkin_term = get_term_by( 'slug', 'checkin', 'indieblocks_kind' );
+	$checkin_term = get_term_by( 'slug', 'checkin', Taxonomy::TAXONOMY );
 
 	if ( $checkin_term ) {
 		$existing_tax_query = $args['tax_query'] ?? []; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
@@ -46,7 +46,7 @@ function get_checkins( array $args = [] ): \WP_Query {
 			$existing_tax_query,
 			[
 				[
-					'taxonomy' => 'indieblocks_kind',
+					'taxonomy' => Taxonomy::TAXONOMY,
 					'field'    => 'term_id',
 					'terms'    => $checkin_term->term_id,
 				],
@@ -126,7 +126,7 @@ function get_checkins_in_range( string $after, string $before = '', array $args 
  * @return string Archive URL.
  */
 function get_checkins_archive_url(): string {
-	$checkin_term = get_term_by( 'slug', 'checkin', 'indieblocks_kind' );
+	$checkin_term = get_term_by( 'slug', 'checkin', Taxonomy::TAXONOMY );
 
 	if ( $checkin_term ) {
 		$url = get_term_link( $checkin_term );
@@ -142,7 +142,7 @@ function get_checkins_archive_url(): string {
  * @return bool True if on a check-ins archive.
  */
 function is_checkins_archive(): bool {
-	return is_tax( 'indieblocks_kind', 'checkin' );
+	return is_tax( Taxonomy::TAXONOMY, 'checkin' );
 }
 
 /**
@@ -160,7 +160,7 @@ function is_checkin( $post = null ): bool {
 
 	// Check if it's a standard post with checkin kind.
 	if ( 'post' === $post->post_type ) {
-		return has_term( 'checkin', 'indieblocks_kind', $post );
+		return has_term( 'checkin', Taxonomy::TAXONOMY, $post );
 	}
 
 	return false;
@@ -254,7 +254,7 @@ function get_checkin_location( $post = null ): array {
  * @return int Total number of published check-ins.
  */
 function get_checkin_count(): int {
-	$checkin_term = get_term_by( 'slug', 'checkin', 'indieblocks_kind' );
+	$checkin_term = get_term_by( 'slug', 'checkin', Taxonomy::TAXONOMY );
 
 	if ( ! $checkin_term ) {
 		return 0;

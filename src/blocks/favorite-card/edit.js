@@ -28,10 +28,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 	const { editPost } = useDispatch( 'core/editor' );
 	const currentKind = useSelect( ( select ) => {
-		const terms =
-			select( 'core/editor' ).getEditedPostAttribute(
-				'indieblocks_kind'
-			);
+		const terms = select( 'core/editor' ).getEditedPostAttribute( 'kind' );
 		return terms && terms.length > 0 ? terms[ 0 ] : null;
 	}, [] );
 
@@ -41,7 +38,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			wp.apiFetch( { path: '/wp/v2/kind?slug=favorite' } )
 				.then( ( terms ) => {
 					if ( terms && terms.length > 0 ) {
-						editPost( { indieblocks_kind: [ terms[ 0 ].id ] } );
+						editPost( { kind: [ terms[ 0 ].id ] } );
 					}
 				} )
 				.catch( () => {} );

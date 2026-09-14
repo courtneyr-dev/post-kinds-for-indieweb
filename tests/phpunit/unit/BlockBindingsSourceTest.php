@@ -10,6 +10,7 @@ namespace PKIW\Tests\Unit;
 use WP_UnitTestCase;
 use PKIW\Block_Bindings_Source;
 use PKIW\Meta_Fields;
+use PKIW\Taxonomy;
 
 /**
  * Test the Block_Bindings_Source class functionality.
@@ -180,6 +181,35 @@ class BlockBindingsSourceTest extends WP_UnitTestCase {
 		$result = $this->source->get_value( [ 'key' => 'rating' ], $block, 'content' );
 
 		$this->assertSame( '4', $result );
+	}
+
+	/**
+	 * Regression: the binding source must read the plugin's real `kind`
+	 * taxonomy (Taxonomy::TAXONOMY), not a nonexistent `indieblocks_kind`
+	 * taxonomy. A listen post whose kind is assigned only through the real
+	 * taxonomy term (no other signal) must resolve both `rating` and `url` —
+	 * mirroring a theme part binding a listen card's rating and Spotify
+	 * link, which previously rendered empty because get_kind() queried a
+	 * taxonomy nothing registers.
+	 */
+	public function test_get_value_rating_and_url_for_listen_kind_via_real_taxonomy(): void {
+		$post_id = self::factory()->post->create();
+		$this->assign_kind( $post_id, 'listen' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'listen_rating', '4' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'listen_url', 'https://open.spotify.com/track/example' );
+
+		$block = $this->make_block_instance( $post_id );
+
+		$this->assertSame(
+			'4',
+			$this->source->get_value( [ 'key' => 'rating' ], $block, 'content' ),
+			'rating must resolve for a listen post whose kind comes only from the real kind taxonomy'
+		);
+		$this->assertSame(
+			'https://open.spotify.com/track/example',
+			$this->source->get_value( [ 'key' => 'url' ], $block, 'content' ),
+			'url must resolve for a listen post whose kind comes only from the real kind taxonomy'
+		);
 	}
 
 	/**
@@ -465,12 +495,13 @@ class BlockBindingsSourceTest extends WP_UnitTestCase {
 	 * @param string $kind    Kind slug.
 	 */
 	private function assign_kind( int $post_id, string $kind ): void {
-		// Ensure taxonomy is registered.
-		if ( ! taxonomy_exists( 'indieblocks_kind' ) ) {
-			register_taxonomy( 'indieblocks_kind', 'post' );
+		// The plugin registers the real 'kind' taxonomy on init; register it
+		// defensively in case a prior test reset taxonomies mid-process.
+		if ( ! taxonomy_exists( Taxonomy::TAXONOMY ) ) {
+			( new Taxonomy() )->register_taxonomy();
 		}
 
-		wp_set_object_terms( $post_id, $kind, 'indieblocks_kind' );
+		wp_set_object_terms( $post_id, $kind, Taxonomy::TAXONOMY );
 	}
 
 	/**
