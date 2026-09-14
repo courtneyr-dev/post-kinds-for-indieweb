@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.4] - 2026-09-14
+
 ### Fixed
 
 - `Meta_Fields::redact_location_meta()` gated Post Kinds' own `_pkiw_*` location keys by `get_visible_location_fields()`'s tiers, but gated Simple Location's/IndieBlocks' native `geo_*` keys and `indieblocks_location` only by Simple Location's own `geo_public`, ignoring `_pkiw_geo_privacy` entirely. A check-in with `_pkiw_geo_privacy` unset (the default, "approximate") and `geo_public` `1` returned exact coordinates and a street address to an anonymous `GET /wp/v2/posts/<id>`.
@@ -16,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The checkin, eat and drink cards now sync their location attributes to post meta on save (`Card_Meta_Sync::ATTR_META_MAP` gained `eat-card` and `drink-card` entries, mirroring the existing checkin-card mapping) — without it, a block-editor-authored eat/drink post had no stored venue signal for `has_venue()` to find, so anonymous visitors saw nothing at all on a plain "approximate" eat or drink card. This sync runs on save and does not rewrite existing posts. Stored data is never modified by the redaction itself.
 
 ## [1.8.3] - 2026-09-14
+
+### Fixed
+
+- The Check-in Dashboard block and the `GET /checkins` and `GET /checkins/stats` REST routes behind it didn't call `Meta_Fields::get_visible_location_fields()`. On the front end the dashboard showed anonymous visitors a private check-in's venue name and an approximate check-in's street address, in the grid and the timeline, and counted private venues in its Venues stat. It also hid coordinates from editors on any check-in that wasn't public. The REST routes, which any Contributor can call, returned venue name, street address, locality, region and country for every check-in, and `search` matched private venue names, so a result confirmed a name the response blanked. Each check-in is now gated per field for the current viewer. The grid, timeline, map data, stats and REST fields blank what the viewer's tier hides; `search` only matches names the viewer can see; stats count only visible names and places. A check-in with no visible venue name links as "Check-in" instead of an empty link. REST responses always include `latitude` and `longitude`, `null` when hidden, where private check-ins used to omit both keys. Anyone who can edit a check-in sees its full location, coordinates included.
 
 ## [1.8.2] - 2026-09-14
 
@@ -35,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reactions → Webhooks showed `/webhooks/{service}` URLs, a route that doesn't exist, and a per-service "Secret Key" nothing verified. The Plex and Jellyfin cards now show the Plex URL with its token and the Jellyfin URL, header name and token, masked with autocomplete off, plus Generate/Rotate token buttons and a note that query-string tokens can appear in access logs.
 - `GET /settings/webhooks` returns the Plex URL with its token, and uninstall deletes both tokens.
 - Scheduled imports created the same posts again on every run. Imports are saved as drafts by default, and the duplicate check matched only published posts outside wp-admin: in the hourly background sync, in import jobs started from the REST endpoint, and in the later batches of a manual import, which run from WP-Cron. An hourly Readwise Books sync kept adding draft copies of the same books. Listen, watch and read imports now match an earlier import in any status, including trash, so trashing an import keeps the next sync from recreating it; restore it to keep it, or delete it permanently to allow a fresh import. Duplicates already created stay in place.
-- The Check-in Dashboard block and the `GET /checkins` and `GET /checkins/stats` REST routes behind it didn't call `Meta_Fields::get_visible_location_fields()`. On the front end the dashboard showed anonymous visitors a private check-in's venue name and an approximate check-in's street address, in the grid and the timeline, and counted private venues in its Venues stat. It also hid coordinates from editors on any check-in that wasn't public. The REST routes, which any Contributor can call, returned venue name, street address, locality, region and country for every check-in, and `search` matched private venue names, so a result confirmed a name the response blanked. Each check-in is now gated per field for the current viewer. The grid, timeline, map data, stats and REST fields blank what the viewer's tier hides; `search` only matches names the viewer can see; stats count only visible names and places. A check-in with no visible venue name links as "Check-in" instead of an empty link. REST responses always include `latitude` and `longitude`, `null` when hidden, where private check-ins used to omit both keys. Anyone who can edit a check-in sees its full location, coordinates included.
+
 
 ## [1.8.1] - 2026-09-13
 
