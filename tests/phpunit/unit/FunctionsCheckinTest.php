@@ -413,9 +413,12 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Approximate privacy: name/city/region/country stay, address/coordinates drop.
+	 * A check-in (create_checkin_post() assigns the 'checkin' kind term) is
+	 * a venue post per Meta_Fields::has_venue(); an unset/'approximate'
+	 * _pkiw_geo_privacy is a default, not an author choice, and is ignored
+	 * for venue posts, so the full location shows.
 	 */
-	public function test_get_checkin_location_approximate_keeps_place_drops_precise(): void {
+	public function test_get_checkin_location_approximate_venue_shows_everything(): void {
 		$post_id = $this->create_checkin_post();
 		update_post_meta( $post_id, '_pkiw_geo_privacy', 'approximate' );
 		update_post_meta( $post_id, '_pkiw_checkin_venue', 'Sentinel Place' );
@@ -433,7 +436,30 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 		$this->assertSame( 'Sentinel City', $location['city'] );
 		$this->assertSame( 'Sentinel Region', $location['region'] );
 		$this->assertSame( 'Sentinel Country', $location['country'] );
-		$this->assertArrayNotHasKey( 'address', $location );
+		$this->assertSame( 'Sentinel Street', $location['address'] );
+		$this->assertSame( '1.111', $location['latitude'] );
+		$this->assertSame( '2.222', $location['longitude'] );
+	}
+
+	/**
+	 * Simple Location's geo_public '2' (Protected) on a venue post hides
+	 * coordinates but keeps the rest, including the street address.
+	 */
+	public function test_get_checkin_location_geo_public_protected_hides_coordinates_only(): void {
+		$post_id = $this->create_checkin_post();
+		update_post_meta( $post_id, '_pkiw_geo_privacy', 'approximate' );
+		update_post_meta( $post_id, 'geo_public', '2' );
+		update_post_meta( $post_id, '_pkiw_checkin_venue', 'Sentinel Place' );
+		update_post_meta( $post_id, '_pkiw_checkin_address', 'Sentinel Street' );
+		update_post_meta( $post_id, '_pkiw_checkin_city', 'Sentinel City' );
+		update_post_meta( $post_id, '_pkiw_checkin_latitude', '1.111' );
+		update_post_meta( $post_id, '_pkiw_checkin_longitude', '2.222' );
+		wp_set_current_user( 0 );
+
+		$location = get_checkin_location( $post_id );
+
+		$this->assertSame( 'Sentinel Place', $location['name'] );
+		$this->assertSame( 'Sentinel Street', $location['address'] );
 		$this->assertArrayNotHasKey( 'latitude', $location );
 		$this->assertArrayNotHasKey( 'longitude', $location );
 	}

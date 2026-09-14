@@ -1025,15 +1025,112 @@ class Meta_Fields {
 	];
 
 	/**
+	 * Native Simple Location / IndieBlocks meta keys (unprefixed, no
+	 * self::PREFIX), mapped to the same visibility tiers as
+	 * LOCATION_KEY_TIERS. Both integrations store the same shape of data
+	 * under their own keys instead of this plugin's `_pkiw_*` fields, so
+	 * they are gated by the identical tier rule rather than a separate
+	 * geo_public-only check.
+	 *
+	 * @var array<string, string>
+	 */
+	private const NATIVE_LOCATION_KEY_TIERS = [
+		'geo_latitude'       => 'coordinates',
+		'geo_longitude'      => 'coordinates',
+		'geo_altitude'       => 'coordinates',
+		'geo_address'        => 'street',
+		'geo_street_address' => 'street',
+		'geo_postal_code'    => 'postal_code',
+		'geo_venue'          => 'name',
+		'geo_locality'       => 'locality',
+		'geo_region'         => 'region',
+		'geo_country_name'   => 'country',
+	];
+
+	/**
+	 * Whether a post has an identifiable venue: a check-in (by kind), or any
+	 * post carrying venue-identity data from Post Kinds' own fields, the
+	 * venue taxonomy, or Simple Location. Checked against stored data only
+	 * — never against geo_privacy/geo_public, which govern *visibility*,
+	 * not venue-ness.
+	 *
+	 * Keys checked (all confirmed present in this codebase):
+	 * - `_pkiw_checkin_name`, `_pkiw_eat_restaurant`, `_pkiw_eat_location_name`,
+	 *   `_pkiw_drink_location_name` — Post Kinds' own venue-name fields.
+	 * - `_pkiw_checkin_venue_id` — the stored Foursquare venue id.
+	 * - the `pkiw_venue` taxonomy (Venue_Taxonomy::TAXONOMY) term assignment.
+	 * - Simple Location's `geo_venue` (venue name) meta key.
+	 * - `geo_venue_id`, checked defensively as Simple Location's documented
+	 *   convention for a venue-post association; not otherwise referenced
+	 *   in this codebase, so treat this one key as an assumption to revisit
+	 *   if it doesn't match the installed Simple Location version.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	public static function has_venue( int $post_id ): bool {
+		if ( $post_id <= 0 ) {
+			return false;
+		}
+
+		if ( has_term( 'checkin', Taxonomy::TAXONOMY, $post_id ) ) {
+			return true;
+		}
+
+		foreach ( [ 'checkin_name', 'eat_restaurant', 'eat_location_name', 'drink_location_name' ] as $key ) {
+			if ( '' !== (string) get_post_meta( $post_id, self::PREFIX . $key, true ) ) {
+				return true;
+			}
+		}
+
+		if ( '' !== (string) get_post_meta( $post_id, self::PREFIX . 'checkin_venue_id', true ) ) {
+			return true;
+		}
+
+		if ( has_term( '', Venue_Taxonomy::TAXONOMY, $post_id ) ) {
+			return true;
+		}
+
+		foreach ( [ 'geo_venue', 'geo_venue_id' ] as $key ) {
+			if ( '' !== (string) get_post_meta( $post_id, $key, true ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * Which location fields the current user may see for a post, given its
 	 * geo_privacy state. The one place this rule lives — cards, block
-	 * bindings, REST meta redaction and the theme all call this.
+	 * bindings, REST meta redaction (both `_pkiw_*` and native Simple
+	 * Location / IndieBlocks keys), the /checkins routes, the dashboard,
+	 * and the theme all call this.
+	 *
+	 * Two regimes, chosen by has_venue():
+	 *
+	 * - Venue posts (a check-in, or any post with venue-identity data):
+	 *   full location unless explicitly marked private (`_pkiw_geo_privacy`
+	 *   'private' or Simple Location `geo_public` '0'), or Simple Location
+	 *   `geo_public` '2' (Protected — an explicit text-only choice), which
+	 *   hides coordinates/map/osm_id/venue_id but keeps everything else,
+	 *   including street/postal_code/url. An unset or 'approximate'
+	 *   `_pkiw_geo_privacy` is a default, not an author choice, and is
+	 *   ignored for venue posts.
+	 * - Non-venue posts (geotagged notes, photos, articles — location data
+	 *   with no identifiable venue): the Post Kinds tier and Simple
+	 *   Location's geo_public are combined per field, the stricter of the
+	 *   two winning. geo_public '0' is nothing (handled above); '2'
+	 *   (Protected) narrows to text only; an empty/unset/unrecognized
+	 *   geo_public means Simple Location was never used on this post and
+	 *   must not restrict anything — the Post Kinds tier alone decides,
+	 *   same as '1' (explicit public).
 	 *
 	 * @param int $post_id Post ID.
 	 * @return array{name:bool,locality:bool,region:bool,country:bool,street:bool,postal_code:bool,coordinates:bool,map:bool,url:bool,osm_id:bool,venue_id:bool}
 	 */
 	public static function get_visible_location_fields( int $post_id ): array {
-		$all_visible = [
+		$all_visible  = [
 			'name'        => true,
 			'locality'    => true,
 			'region'      => true,
@@ -1046,42 +1143,75 @@ class Meta_Fields {
 			'osm_id'      => true,
 			'venue_id'    => true,
 		];
+		$none_visible = array_fill_keys( array_keys( $all_visible ), false );
 
 		if ( $post_id <= 0 ) {
-			return array_fill_keys( array_keys( $all_visible ), false );
+			return $none_visible;
 		}
 
 		if ( current_user_can( 'edit_post', $post_id ) ) {
 			return $all_visible;
 		}
 
-		$privacy = get_post_meta( $post_id, self::PREFIX . 'geo_privacy', true );
+		$privacy    = (string) get_post_meta( $post_id, self::PREFIX . 'geo_privacy', true );
+		$geo_public = (string) get_post_meta( $post_id, 'geo_public', true );
 
-		if ( 'public' === $privacy ) {
-			return $all_visible;
+		// Explicit private, from either system, wins outright.
+		if ( 'private' === $privacy || '0' === $geo_public ) {
+			return $none_visible;
 		}
 
-		if ( 'private' === $privacy ) {
-			return array_fill_keys( array_keys( $all_visible ), false );
-		}
-
-		// 'approximate', unset (no meta row and no registered default
-		// resolved — e.g. in test isolation), or any other unrecognized
-		// value: sanitize_geo_privacy() and the field's own registration
-		// both fall back to 'approximate', so this does too.
-		return [
+		// Simple Location's Protected (text only, no coordinates/map/ids).
+		$text_only_visible = [
 			'name'        => true,
 			'locality'    => true,
 			'region'      => true,
 			'country'     => true,
-			'street'      => false,
-			'postal_code' => false,
+			'street'      => true,
+			'postal_code' => true,
 			'coordinates' => false,
 			'map'         => false,
-			'url'         => false,
+			'url'         => true,
 			'osm_id'      => false,
 			'venue_id'    => false,
 		];
+
+		if ( self::has_venue( $post_id ) ) {
+			return '2' === $geo_public ? $text_only_visible : $all_visible;
+		}
+
+		// Non-venue posts: the Post Kinds tier ('approximate'/unset falls
+		// back to 'approximate' — sanitize_geo_privacy() and the field's
+		// own registration both do the same) combined with Simple
+		// Location's geo_public, the stricter of the two wins per field.
+		$pkiw_tier = 'public' === $privacy
+			? $all_visible
+			: [
+				'name'        => true,
+				'locality'    => true,
+				'region'      => true,
+				'country'     => true,
+				'street'      => false,
+				'postal_code' => false,
+				'coordinates' => false,
+				'map'         => false,
+				'url'         => false,
+				'osm_id'      => false,
+				'venue_id'    => false,
+			];
+
+		// '0' is handled by the early return above. '2' (Protected) is the
+		// only value that narrows visibility here: an empty geo_public
+		// means Simple Location was never used on this post and must not
+		// restrict anything, and '1' is explicit public — both leave the
+		// Post Kinds tier as the only restriction.
+		$sl_tier = '2' === $geo_public ? $text_only_visible : $all_visible;
+
+		$visible = [];
+		foreach ( $all_visible as $key => $_true ) {
+			$visible[ $key ] = $pkiw_tier[ $key ] && $sl_tier[ $key ];
+		}
+		return $visible;
 	}
 
 	/**
@@ -1110,10 +1240,15 @@ class Meta_Fields {
 		if ( ! $response instanceof \WP_REST_Response || ! $post instanceof \WP_Post ) {
 			return $response;
 		}
+		if ( current_user_can( 'edit_post', (int) $post->ID ) ) {
+			return $response;
+		}
+
 		$data    = $response->get_data();
 		$changed = false;
+		$visible = self::get_visible_location_fields( (int) $post->ID );
+
 		if ( ! empty( $data['meta'] ) && is_array( $data['meta'] ) ) {
-			$visible = self::get_visible_location_fields( (int) $post->ID );
 			foreach ( self::LOCATION_KEY_TIERS as $key => $tier ) {
 				if ( ! empty( $visible[ $tier ] ) ) {
 					continue;
@@ -1124,40 +1259,39 @@ class Meta_Fields {
 					$changed               = true;
 				}
 			}
-		}
-		// Simple Location / IndieBlocks carry the same coordinates under their
-		// own keys; honor Simple Location's geo_public (0 private, 2 protected:
-		// text only) for anyone who cannot edit the post. Stored data is untouched.
-		if ( ! current_user_can( 'edit_post', (int) $post->ID ) ) {
-			$geo_public  = (string) get_post_meta( (int) $post->ID, 'geo_public', true );
-			$hide_coords = '1' !== $geo_public;
-			$hide_text   = '0' === $geo_public || '' === $geo_public;
-			$coord_keys  = [ 'geo_latitude', 'geo_longitude', 'geo_altitude' ];
-			$text_keys   = [ 'geo_address', 'geo_venue', 'geo_locality', 'geo_region', 'geo_country_name', 'geo_street_address', 'geo_postal_code' ];
-			if ( ! empty( $data['meta'] ) && is_array( $data['meta'] ) ) {
-				foreach ( ( $hide_coords ? $coord_keys : [] ) as $key ) {
-					if ( array_key_exists( $key, $data['meta'] ) && '' !== (string) $data['meta'][ $key ] ) {
-						$data['meta'][ $key ] = '';
-						$changed              = true;
-					}
+
+			// Simple Location / IndieBlocks carry the same location data
+			// under their own (unprefixed) keys; gate them by the same
+			// per-field tiers get_visible_location_fields() already
+			// resolved above, instead of a separate geo_public-only check.
+			// Stored data is untouched.
+			foreach ( self::NATIVE_LOCATION_KEY_TIERS as $key => $tier ) {
+				if ( ! empty( $visible[ $tier ] ) ) {
+					continue;
 				}
-				foreach ( ( $hide_text ? $text_keys : [] ) as $key ) {
-					if ( array_key_exists( $key, $data['meta'] ) && '' !== (string) $data['meta'][ $key ] ) {
-						$data['meta'][ $key ] = '';
-						$changed              = true;
-					}
-				}
-			}
-			if ( ! empty( $data['indieblocks_location'] ) && is_array( $data['indieblocks_location'] ) ) {
-				foreach ( array_keys( $data['indieblocks_location'] ) as $key ) {
-					$is_coord = in_array( $key, $coord_keys, true ) || preg_match( '/lat|lon|geo_(?!address)/', (string) $key );
-					if ( ( $hide_coords && $is_coord ) || ( $hide_text && ! $is_coord ) ) {
-						$data['indieblocks_location'][ $key ] = '';
-						$changed                              = true;
-					}
+				if ( array_key_exists( $key, $data['meta'] ) && '' !== (string) $data['meta'][ $key ] ) {
+					$data['meta'][ $key ] = '';
+					$changed              = true;
 				}
 			}
 		}
+
+		if ( ! empty( $data['indieblocks_location'] ) && is_array( $data['indieblocks_location'] ) ) {
+			foreach ( array_keys( $data['indieblocks_location'] ) as $key ) {
+				// Match the same key-to-tier mapping used for the native
+				// meta keys above; an unrecognized key name falls back to a
+				// coordinate-pattern guess, then the most conservative
+				// ("street") tier so an unknown field defaults to hidden
+				// under the approximate/protected tiers.
+				$tier = self::NATIVE_LOCATION_KEY_TIERS[ $key ]
+					?? ( preg_match( '/lat|lon|geo_(?!address)/', (string) $key ) ? 'coordinates' : 'street' );
+				if ( empty( $visible[ $tier ] ) ) {
+					$data['indieblocks_location'][ $key ] = '';
+					$changed                              = true;
+				}
+			}
+		}
+
 		if ( $changed ) {
 			$response->set_data( $data );
 		}

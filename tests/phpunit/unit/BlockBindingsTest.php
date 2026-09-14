@@ -542,14 +542,32 @@ class BlockBindingsTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Location bindings stay empty for visitors when the location is not public.
+	 * Location bindings stay full for visitors on an approximate check-in:
+	 * a checkin_name makes this a venue post (Meta_Fields::has_venue()),
+	 * and an unset/'approximate' _pkiw_geo_privacy is a default, not an
+	 * author choice — it's ignored for venue posts.
 	 *
 	 * @dataProvider location_binding_keys
 	 *
 	 * @param string $key Binding key.
 	 */
-	public function test_location_binding_hidden_for_visitor_when_not_public( string $key ) {
+	public function test_location_binding_shown_for_visitor_when_approximate_venue( string $key ) {
 		$post_id = $this->location_post( 'approximate' );
+		wp_set_current_user( 0 );
+		$this->assertNotNull( $this->block_bindings->get_binding_value( [ 'key' => $key ], $this->create_mock_block( $post_id ), 'content' ) );
+	}
+
+	/**
+	 * Location bindings stay empty for visitors when Simple Location's
+	 * geo_public explicitly marks the post hidden — this overrides the
+	 * venue-post full-visibility default.
+	 *
+	 * @dataProvider location_binding_keys
+	 *
+	 * @param string $key Binding key.
+	 */
+	public function test_location_binding_hidden_for_visitor_when_geo_public_hidden( string $key ) {
+		$post_id = $this->location_post( 'approximate', '0' );
 		wp_set_current_user( 0 );
 		$this->assertNull( $this->block_bindings->get_binding_value( [ 'key' => $key ], $this->create_mock_block( $post_id ), 'content' ) );
 	}
@@ -581,12 +599,23 @@ class BlockBindingsTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * A non-public full address keeps city, region and country, not the street.
+	 * A check-in is a venue post: an approximate/unset _pkiw_geo_privacy is
+	 * ignored, so the full address (including the street) still shows.
 	 */
-	public function test_full_address_drops_street_when_not_public() {
+	public function test_full_address_includes_street_when_approximate_venue() {
 		$post_id = $this->location_post( 'approximate' );
 		wp_set_current_user( 0 );
-		$this->assertSame( 'Testville', $this->block_bindings->get_binding_value( [ 'key' => 'checkin_full_address' ], $this->create_mock_block( $post_id ), 'content' ) );
+		$this->assertSame( '1 Test Street, Testville', $this->block_bindings->get_binding_value( [ 'key' => 'checkin_full_address' ], $this->create_mock_block( $post_id ), 'content' ) );
+	}
+
+	/**
+	 * Simple Location's geo_public '0' (explicitly hidden) overrides the
+	 * venue-post full-visibility default, dropping the address entirely.
+	 */
+	public function test_full_address_null_when_geo_public_hidden() {
+		$post_id = $this->location_post( 'approximate', '0' );
+		wp_set_current_user( 0 );
+		$this->assertNull( $this->block_bindings->get_binding_value( [ 'key' => 'checkin_full_address' ], $this->create_mock_block( $post_id ), 'content' ) );
 	}
 
 	/**
@@ -644,12 +673,14 @@ class BlockBindingsTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * A post with precise location meta and the given privacy.
+	 * A post with precise location meta and the given privacy. Setting
+	 * checkin_name makes this a venue post per Meta_Fields::has_venue().
 	 *
-	 * @param string $privacy geo_privacy value.
+	 * @param string      $privacy    geo_privacy value.
+	 * @param string|null $geo_public Simple Location geo_public value to set, if any.
 	 * @return int Post ID.
 	 */
-	private function location_post( string $privacy ): int {
+	private function location_post( string $privacy, ?string $geo_public = null ): int {
 		$post_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_name', 'Test Venue' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_url', 'https://example.test/venue' );
@@ -658,6 +689,9 @@ class BlockBindingsTest extends WP_UnitTestCase {
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_latitude', '10.5' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_longitude', '20.5' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', $privacy );
+		if ( null !== $geo_public ) {
+			update_post_meta( $post_id, 'geo_public', $geo_public );
+		}
 		return $post_id;
 	}
 

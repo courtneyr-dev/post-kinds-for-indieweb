@@ -42,7 +42,7 @@ final class CheckinDashboardLocationPrivacyTest extends WP_UnitTestCase {
 	 * @param string $street  Street address.
 	 * @return int Post ID.
 	 */
-	private function create_checkin( string $privacy, string $name = self::VENUE_NAME, string $street = self::STREET ): int {
+	private function create_checkin( string $privacy, string $name = self::VENUE_NAME, string $street = self::STREET, ?string $geo_public = null ): int {
 		$post_id = self::factory()->post->create(
 			[
 				'post_status' => 'publish',
@@ -56,6 +56,9 @@ final class CheckinDashboardLocationPrivacyTest extends WP_UnitTestCase {
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_latitude', self::LATITUDE );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_longitude', self::LONGITUDE );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', $privacy );
+		if ( null !== $geo_public ) {
+			update_post_meta( $post_id, 'geo_public', $geo_public );
+		}
 
 		return $post_id;
 	}
@@ -75,8 +78,12 @@ final class CheckinDashboardLocationPrivacyTest extends WP_UnitTestCase {
 	 */
 	public function visibility_matrix(): array {
 		return [
+			// A check-in is a venue post (Meta_Fields::has_venue()); an
+			// unset/'approximate' _pkiw_geo_privacy is a default, not an
+			// author choice, and is ignored for venue posts, so it shows
+			// the same as 'public'.
 			'public, anonymous'      => [ 'public', 'anonymous', true, true, true ],
-			'approximate, anonymous' => [ 'approximate', 'anonymous', true, false, false ],
+			'approximate, anonymous' => [ 'approximate', 'anonymous', true, true, true ],
 			'private, anonymous'     => [ 'private', 'anonymous', false, false, false ],
 			'public, editor'         => [ 'public', 'editor', true, true, true ],
 			'approximate, editor'    => [ 'approximate', 'editor', true, true, true ],
@@ -118,7 +125,11 @@ final class CheckinDashboardLocationPrivacyTest extends WP_UnitTestCase {
 
 	public function test_map_data_carries_only_fully_visible_checkins(): void {
 		$this->create_checkin( 'public', 'Sentinel Public Venue', '1 Sentinel Public Way' );
-		$this->create_checkin( 'approximate', 'Sentinel Approx Venue', '2 Sentinel Approx Way' );
+		// A check-in is a venue post: an unset/approximate _pkiw_geo_privacy
+		// is ignored, so what keeps this one off the map is Simple
+		// Location's geo_public '2' (Protected — explicit text-only,
+		// coordinates/map hidden), not the approximate tier itself.
+		$this->create_checkin( 'approximate', 'Sentinel Protected Venue', '2 Sentinel Protected Way', '2' );
 		$this->create_checkin( 'private', 'Sentinel Private Venue', '3 Sentinel Private Way' );
 		$this->become( 'anonymous' );
 
@@ -128,8 +139,8 @@ final class CheckinDashboardLocationPrivacyTest extends WP_UnitTestCase {
 		$json = trim( html_entity_decode( $matches[1], ENT_QUOTES ) );
 		$this->assertCount( 1, json_decode( $json, true ) );
 		$this->assertStringContainsString( 'Sentinel Public Venue', $json );
-		foreach ( [ 'Sentinel Approx Venue', '2 Sentinel Approx Way', 'Sentinel Private Venue', '3 Sentinel Private Way' ] as $hidden ) {
-			$this->assertStringNotContainsString( $hidden, $json, 'map data must not carry non-public check-ins' );
+		foreach ( [ 'Sentinel Protected Venue', '2 Sentinel Protected Way', 'Sentinel Private Venue', '3 Sentinel Private Way' ] as $hidden ) {
+			$this->assertStringNotContainsString( $hidden, $json, 'map data must not carry check-ins whose coordinates are not visible' );
 		}
 	}
 
