@@ -236,12 +236,10 @@ function get_checkin_location( $post = null ): array {
 		$location['longitude'] = get_post_meta( $post->ID, '_pkiw_checkin_longitude', true );
 	}
 
-	// R-03: which fields may show depends on the post's location privacy —
-	// street/coordinates only for public or an editor; name/city/region/
-	// country also disappear on 'private' (approximate keeps them; see
+	// R-03: which fields may show comes from
 	// Meta_Fields::get_visible_location_fields(), the single source of
-	// truth other consumers — cards, block bindings, REST redaction —
-	// also call).
+	// truth other consumers — cards, block bindings, REST redaction — also
+	// call. Check-ins and venue posts show everything unless private.
 	$pkiw_visible = \PKIW\Meta_Fields::get_visible_location_fields( (int) $post->ID );
 	if ( empty( $pkiw_visible['street'] ) ) {
 		$location['address'] = '';

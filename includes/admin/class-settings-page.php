@@ -1834,8 +1834,8 @@ CSS;
 				'desc'  => __( 'Shows full address, venue name, and precise coordinates. Best for public venues like restaurants or parks where you want others to find the same place.', 'post-kinds-for-indieweb-in-block-themes' ),
 			],
 			'approximate' => [
-				'label' => __( 'Approximate (city level)', 'post-kinds-for-indieweb-in-block-themes' ),
-				'desc'  => __( 'Shows city/region but hides street address and exact coordinates. Good balance of sharing where you are without revealing precise location.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'label' => __( 'Approximate', 'post-kinds-for-indieweb-in-block-themes' ),
+				'desc'  => __( 'Check-ins and posts with a venue show the exact location, the same as Public. Geotagged posts without a venue show only the place name, city, region and country.', 'post-kinds-for-indieweb-in-block-themes' ),
 			],
 			'private'     => [
 				'label' => __( 'Private (hidden)', 'post-kinds-for-indieweb-in-block-themes' ),

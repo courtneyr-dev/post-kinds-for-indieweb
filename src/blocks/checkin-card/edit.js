@@ -299,7 +299,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		},
 		{
 			label: __(
-				'Approximate (city level)',
+				'Approximate',
 				'post-kinds-for-indieweb-in-block-themes'
 			),
 			value: 'approximate',
@@ -706,8 +706,8 @@ export default function Edit( { attributes, setAttributes } ) {
 		if ( ! latitude || ! longitude ) {
 			return null;
 		}
-		// Adjust bounding box based on privacy
-		const bbox = locationPrivacy === 'public' ? 0.01 : 0.1;
+		// Check-ins show the exact location unless private, which hides the map.
+		const bbox = 0.01;
 		return `https://www.openstreetmap.org/export/embed.html?bbox=${
 			longitude - bbox
 		},${ latitude - bbox },${ longitude + bbox },${
@@ -1061,12 +1061,12 @@ export default function Edit( { attributes, setAttributes } ) {
 							</Notice>
 						) }
 						{ locationPrivacy === 'approximate' && (
-							<p className="description">
+							<Notice status="warning" isDismissible={ false }>
 								{ __(
-									'Only city/region will be shown. Coordinates are stored but not displayed.',
+									'Check-ins show the exact location to everyone, the same as Public. Choose Private to hide it.',
 									'post-kinds-for-indieweb-in-block-themes'
 								) }
-							</p>
+							</Notice>
 						) }
 						{ locationPrivacy === 'private' && (
 							<p className="description">
@@ -1575,7 +1575,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						<div className="venue-location p-location h-card">
 							<LocationDisplay
 								address={
-									locationPrivacy === 'public' ? address : ''
+									locationPrivacy === 'private' ? '' : address
 								}
 								locality={ locality }
 								region={ region }
@@ -1639,14 +1639,6 @@ export default function Edit( { attributes, setAttributes } ) {
 									marginWidth="0"
 									src={ getMapUrl() }
 								/>
-								{ locationPrivacy === 'approximate' && (
-									<p className="map-note">
-										{ __(
-											'Showing approximate area. Exact location hidden.',
-											'post-kinds-for-indieweb-in-block-themes'
-										) }
-									</p>
-								) }
 							</div>
 						) }
 

@@ -37,7 +37,7 @@ MusicBrainz (music) and Open Library (books) work without keys.
 1. Insert a **Checkin Card** in a new post.
 2. Search for the venue (OpenStreetMap works without a key; Foursquare needs an API key) or enter it manually.
 3. Set the card's location privacy — public, approximate, or private — or rely on the default from **Reactions → Settings → Checkin**.
-4. Publish. The front-end markup honors the privacy level: private hides venue, address, and coordinates; approximate shows only city/region/country.
+4. Publish. Check-ins show the venue, address, map and coordinates to everyone unless the privacy is private, which hides them. Approximate limits only geotagged posts without a venue, which then show the place name, city, region and country.
 
 ![Checkin Card with location and venue details](../../assets/screenshots/editor-checkin-card.png)
 
