@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.8.2
+Stable tag: 1.8.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -179,6 +179,9 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 9. Standard.site record panel on a Bookmark Card, showing the cited page's own title, publication, description, and tags read from AT Protocol
 
 == Changelog ==
+
+= 1.8.3 =
+* Fixed: the Check-in Dashboard block and the `/checkins` and `/checkins/stats` REST routes follow location privacy. Approximate check-ins show only venue name, city, region and country, private check-ins show nothing to people who can't edit them, and search, totals and pagination no longer confirm hidden venue names.
 
 = 1.8.2 =
 * Added: a "Mood label spelling" setting (follow the site language, US English or UK English) for plugin-supplied mood suggestions, card names, accessible names and ATmosphere titles. Mood identity is stored separately, so changing the setting never rewrites a post (#207).
