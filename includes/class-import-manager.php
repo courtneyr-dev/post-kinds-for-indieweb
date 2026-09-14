@@ -772,11 +772,7 @@ class Import_Manager {
 			];
 		}
 
-		$query = new \WP_Query( $args );
-
-		if ( $query->have_posts() ) {
-			return $query->posts[0];
-		}
+		$lookups = [ $args ];
 
 		// Fallback: search by post title (for posts imported before meta was added).
 		if ( ! empty( $post_title ) ) {
@@ -791,10 +787,33 @@ class Import_Manager {
 				$title_args['date_query'] = $args['date_query'];
 			}
 
-			$title_query = new \WP_Query( $title_args );
+			$lookups[] = $title_args;
+		}
 
-			if ( $title_query->have_posts() ) {
-				return $title_query->posts[0];
+		/*
+		 * Search every status. Imports default to draft, and a WP_Query with
+		 * no post_status matches drafts only inside wp-admin, so scheduled
+		 * sync, REST and WP-CLI runs never found earlier drafts and imported
+		 * the same items again on every run.
+		 *
+		 * Trashed posts count as existing: trashing is how someone removes an
+		 * import they don't want, and the next scheduled sync must not bring
+		 * it back. Restoring the post keeps it; deleting it permanently allows
+		 * a fresh import. Live statuses ('any' covers publish, future, draft,
+		 * pending and private) are searched before trash, so update_existing
+		 * never picks a trashed copy over a live one.
+		 */
+		foreach ( [ 'any', 'trash' ] as $post_status ) {
+			foreach ( $lookups as $lookup ) {
+				$lookup['post_status']            = $post_status;
+				$lookup['no_found_rows']          = true;
+				$lookup['update_post_meta_cache'] = false;
+
+				$query = new \WP_Query( $lookup );
+
+				if ( $query->have_posts() ) {
+					return (int) $query->posts[0];
+				}
 			}
 		}
 
