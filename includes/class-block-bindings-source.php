@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Provides a simplified, kind-aware block bindings source for WordPress 7.0+.
  * Maps 9 friendly key names (title, artist, album, etc.) to the correct
- * internal _pkiw_* meta key based on the post's indieblocks_kind term.
+ * internal _pkiw_* meta key based on the post's kind taxonomy term.
  *
  * Supplements the existing Block_Bindings class which provides 30+ detailed
  * bindings for WordPress 6.5+.
@@ -289,7 +289,7 @@ final class Block_Bindings_Source {
 	 * @return string Kind slug, or empty string if none assigned.
 	 */
 	private function get_kind( int $post_id ): string {
-		$terms = get_the_terms( $post_id, 'indieblocks_kind' );
+		$terms = get_the_terms( $post_id, Taxonomy::TAXONOMY );
 
 		if ( is_wp_error( $terms ) || empty( $terms ) ) {
 			return '';
