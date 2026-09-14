@@ -608,4 +608,119 @@ class MetaFieldsTest extends WP_UnitTestCase {
 			$this->assertArrayHasKey( $key, $fields, "Field '{$key}' should exist" );
 		}
 	}
+
+	// ─── get_visible_location_fields ───
+
+	/**
+	 * Public privacy: every tier is visible, even for a logged-out visitor.
+	 */
+	public function test_visible_location_fields_public_shows_everything() {
+		$post_id = self::factory()->post->create();
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'public' );
+		wp_set_current_user( 0 );
+
+		$visible = Meta_Fields::get_visible_location_fields( $post_id );
+
+		foreach ( $visible as $tier => $is_visible ) {
+			$this->assertTrue( $is_visible, "Expected '{$tier}' visible for public." );
+		}
+	}
+
+	/**
+	 * Approximate privacy: name/locality/region/country visible; every
+	 * precise-detail tier (street, postal code, coordinates, map, url,
+	 * osm_id, venue_id) hidden.
+	 */
+	public function test_visible_location_fields_approximate_keeps_place_hides_precise() {
+		$post_id = self::factory()->post->create();
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'approximate' );
+		wp_set_current_user( 0 );
+
+		$visible = Meta_Fields::get_visible_location_fields( $post_id );
+
+		foreach ( [ 'name', 'locality', 'region', 'country' ] as $tier ) {
+			$this->assertTrue( $visible[ $tier ], "Expected '{$tier}' visible for approximate." );
+		}
+		foreach ( [ 'street', 'postal_code', 'coordinates', 'map', 'url', 'osm_id', 'venue_id' ] as $tier ) {
+			$this->assertFalse( $visible[ $tier ], "Expected '{$tier}' hidden for approximate." );
+		}
+	}
+
+	/**
+	 * Private privacy: nothing at all visible to a logged-out visitor.
+	 */
+	public function test_visible_location_fields_private_hides_everything() {
+		$post_id = self::factory()->post->create();
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
+		wp_set_current_user( 0 );
+
+		$visible = Meta_Fields::get_visible_location_fields( $post_id );
+
+		foreach ( $visible as $tier => $is_visible ) {
+			$this->assertFalse( $is_visible, "Expected '{$tier}' hidden for private." );
+		}
+	}
+
+	/**
+	 * Anyone who can edit_post sees everything, regardless of geo_privacy.
+	 */
+	public function test_visible_location_fields_editor_sees_everything_on_private_post() {
+		$post_id = self::factory()->post->create();
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$visible = Meta_Fields::get_visible_location_fields( $post_id );
+
+		foreach ( $visible as $tier => $is_visible ) {
+			$this->assertTrue( $is_visible, "Expected '{$tier}' visible to an editor." );
+		}
+	}
+
+	/**
+	 * location_visible() is the 'coordinates' tier of get_visible_location_fields().
+	 */
+	public function test_location_visible_matches_coordinates_tier() {
+		$post_id = self::factory()->post->create();
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'approximate' );
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			Meta_Fields::get_visible_location_fields( $post_id )['coordinates'],
+			Meta_Fields::location_visible( $post_id )
+		);
+	}
+
+	/**
+	 * An unset or unrecognized geo_privacy value falls back to
+	 * 'approximate', matching sanitize_geo_privacy()'s own fallback and
+	 * the field's registered default — only an explicit 'private' hides
+	 * name/locality/region/country.
+	 */
+	public function test_visible_location_fields_unrecognized_privacy_treated_as_approximate() {
+		$post_id = self::factory()->post->create();
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'not-a-real-value' );
+		wp_set_current_user( 0 );
+
+		$visible = Meta_Fields::get_visible_location_fields( $post_id );
+
+		foreach ( [ 'name', 'locality', 'region', 'country' ] as $tier ) {
+			$this->assertTrue( $visible[ $tier ], "Expected '{$tier}' visible for an unrecognized privacy value." );
+		}
+		$this->assertFalse( $visible['coordinates'] );
+		$this->assertFalse( $visible['street'] );
+	}
+
+	/**
+	 * A post with no geo_privacy meta at all also falls back to
+	 * 'approximate' (this is the field's own registered default).
+	 */
+	public function test_visible_location_fields_no_meta_treated_as_approximate() {
+		$post_id = self::factory()->post->create();
+		wp_set_current_user( 0 );
+
+		$visible = Meta_Fields::get_visible_location_fields( $post_id );
+
+		$this->assertTrue( $visible['name'] );
+		$this->assertFalse( $visible['coordinates'] );
+	}
 }

@@ -338,6 +338,7 @@ function maybe_migrate_option_prefixes(): void {
 
 // Load helper functions.
 require_once PKIW_PATH . 'includes/functions-checkin.php';
+require_once PKIW_PATH . 'includes/functions-privacy.php';
 require_once PKIW_PATH . 'includes/functions-embeds.php';
 require_once PKIW_PATH . 'includes/functions-card-icons.php';
 require_once PKIW_PATH . 'includes/functions-card-labels.php';

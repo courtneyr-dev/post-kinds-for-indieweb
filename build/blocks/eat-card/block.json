@@ -8,6 +8,7 @@
 	"description": "Display a meal or food you ate with photo, restaurant, cuisine, and rating.",
 	"keywords": ["eat", "food", "meal", "restaurant", "dining"],
 	"textdomain": "post-kinds-for-indieweb-in-block-themes",
+	"usesContext": ["postId"],
 	"attributes": {
 		"name": {
 			"type": "string"

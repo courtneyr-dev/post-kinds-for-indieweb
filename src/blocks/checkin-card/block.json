@@ -8,6 +8,7 @@
     "description": "Display a location checkin with venue details, map, and optional notes.",
     "keywords": ["checkin", "location", "venue", "place", "map", "travel"],
     "textdomain": "post-kinds-for-indieweb-in-block-themes",
+    "usesContext": ["postId"],
     "attributes": {
         "venueName": {
             "type": "string"
