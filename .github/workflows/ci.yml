@@ -516,8 +516,21 @@ jobs:
           name: build
           path: build/
 
+      - name: Skip companion-plugin bootstrap
+        # Accessibility coverage only exercises the plugin's own admin UI
+        # and editor blocks; it does not hit the Micropub/IndieAuth flow.
+        # Avoid making this job depend on wordpress.org downloads from
+        # .wp-env.json's afterStart lifecycle.
+        run: |
+          printf '{ "lifecycleScripts": {} }\n' > .wp-env.override.json
+
       - name: Start wp-env
         run: npm run env:start
+
+      # Persist the dismissed welcome guide server-side so the editor scan
+      # runs against the actual canvas instead of a first-run modal.
+      - name: Dismiss editor welcome guide
+        run: npx wp-env run cli wp user meta update admin wp_persisted_preferences --format=json '{"core":{"welcomeGuide":false},"core/edit-post":{"welcomeGuide":false},"_modified":"2026-01-01T00:00:00.000Z"}'
 
       - name: Run accessibility tests
         run: npm run test:a11y -- --project=chromium

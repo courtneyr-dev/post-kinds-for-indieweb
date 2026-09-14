@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.8.1
+Stable tag: 1.8.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -179,6 +179,14 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 9. Standard.site record panel on a Bookmark Card, showing the cited page's own title, publication, description, and tags read from AT Protocol
 
 == Changelog ==
+
+= 1.8.2 =
+* Added: a "Mood label spelling" setting (follow the site language, US English or UK English) for plugin-supplied mood suggestions, card names, accessible names and ATmosphere titles. Mood identity is stored separately, so changing the setting never rewrites a post (#207).
+* Fixed: location privacy is applied the same way everywhere. Approximate locations show only the venue name, city, region and country; private locations show nothing to visitors, across cards, block bindings and REST.
+* Fixed: block bindings, check-in helpers and card blocks used a taxonomy that doesn't exist, so bound listen ratings and links rendered empty and inserting a card didn't set the post's kind.
+* Fixed: star ratings on listen, watch, read, play, eat and drink cards now parse as a microformats rating without adding the number to the card's text.
+* Fixed: Plex and Jellyfin webhooks authorize with a per-service token instead of a signature neither service can send.
+* Fixed: scheduled imports no longer create the same draft again on every run.
 
 = 1.8.1 =
 * Fixed: Stream card "Read more" links now carry the post title for screen readers; mood emoji are announced instead of hidden; watch/play/read artwork falls back to the post title for alt text.

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.2] - 2026-09-14
+
 ### Added
 
 - Mood label spelling setting on the General tab of the Post Kinds settings: "Follow the site language" (default), "English (United States)" or "English (United Kingdom)". It sets the spelling of the mood suggestions in the mood card and Kind fields, and of the mood names Post Kinds generates: the mood card's `aria-label` and hidden `p-name`, the Stream card mood pin's `aria-label`, and ATmosphere derived titles. "Follow the site language" reads the Site Language, not the administrator's profile language (#207).
