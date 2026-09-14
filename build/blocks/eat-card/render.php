@@ -48,6 +48,9 @@ $pkiw_visible      = Meta_Fields::get_visible_location_fields( (int) $pkiw_post_
 $pkiw_show_address = ! empty( $pkiw_visible['street'] ) && $pkiw_location_address;
 $pkiw_show_coords  = ! empty( $pkiw_visible['coordinates'] ) && ( 0.0 !== $pkiw_geo_lat || 0.0 !== $pkiw_geo_lon );
 $pkiw_show_url     = ! empty( $pkiw_visible['url'] ) && $pkiw_restaurant_url;
+// The restaurant name is venue identity: the name tier, so approximate keeps
+// it and private hides it, same as locationName.
+$pkiw_show_restaurant = ! empty( $pkiw_visible['name'] ) && $pkiw_restaurant;
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
@@ -78,13 +81,13 @@ ob_start();
 				<h2 class="pk-title p-name"><?php echo esc_html( $pkiw_name ); ?></h2>
 			<?php endif; ?>
 
-			<?php if ( $pkiw_restaurant || $pkiw_cuisine ) : ?>
+			<?php if ( $pkiw_show_restaurant || $pkiw_cuisine ) : ?>
 				<p class="pk-sub">
-					<?php if ( $pkiw_restaurant ) : ?>
+					<?php if ( $pkiw_show_restaurant ) : ?>
 						<span class="p-location h-card"><span class="p-name"><?php echo esc_html( $pkiw_restaurant ); ?></span></span>
 					<?php endif; ?>
 					<?php
-					if ( $pkiw_restaurant && $pkiw_cuisine ) :
+					if ( $pkiw_show_restaurant && $pkiw_cuisine ) :
 						?>
 						&mdash; <?php endif; ?>
 					<?php if ( $pkiw_cuisine ) : ?>

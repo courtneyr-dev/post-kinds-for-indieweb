@@ -1013,6 +1013,7 @@ class Meta_Fields {
 		'drink_venue_url'         => 'url',
 		'drink_geo_latitude'      => 'coordinates',
 		'drink_geo_longitude'     => 'coordinates',
+		'eat_restaurant'          => 'name',
 		'eat_location_name'       => 'name',
 		'eat_location_locality'   => 'locality',
 		'eat_location_region'     => 'region',
