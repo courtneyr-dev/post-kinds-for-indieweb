@@ -53,29 +53,22 @@ if ( $pkiw_checkins_query->have_posts() ) {
 	while ( $pkiw_checkins_query->have_posts() ) {
 		$pkiw_checkins_query->the_post();
 		$pkiw_post_id = get_the_ID();
+		// Blank every field this viewer's privacy tier hides, before the grid,
+		// timeline, map data or stats read it.
+		$pkiw_visible = \PKIW\Meta_Fields::get_visible_location_fields( (int) $pkiw_post_id );
 
-		$pkiw_checkin = [
+		$pkiw_checkins[] = [
 			'id'         => $pkiw_post_id,
-			'venue_name' => get_post_meta( $pkiw_post_id, '_pkiw_checkin_name', true ),
-			'address'    => get_post_meta( $pkiw_post_id, '_pkiw_checkin_address', true ),
+			'venue_name' => $pkiw_visible['name'] ? get_post_meta( $pkiw_post_id, '_pkiw_checkin_name', true ) : '',
+			'address'    => $pkiw_visible['street'] ? get_post_meta( $pkiw_post_id, '_pkiw_checkin_address', true ) : '',
 			'venue_type' => get_post_meta( $pkiw_post_id, '_pkiw_checkin_type', true ),
-			'latitude'   => get_post_meta( $pkiw_post_id, '_pkiw_geo_latitude', true ),
-			'longitude'  => get_post_meta( $pkiw_post_id, '_pkiw_geo_longitude', true ),
+			'latitude'   => $pkiw_visible['coordinates'] ? get_post_meta( $pkiw_post_id, '_pkiw_geo_latitude', true ) : null,
+			'longitude'  => $pkiw_visible['coordinates'] ? get_post_meta( $pkiw_post_id, '_pkiw_geo_longitude', true ) : null,
 			'photo'      => get_post_meta( $pkiw_post_id, '_pkiw_checkin_photo', true ),
 			'note'       => get_the_excerpt(),
 			'date'       => get_the_date( 'c' ),
 			'permalink'  => get_permalink(),
 		];
-
-		// Only public check-ins expose coordinates — matches the REST
-		// layer, where the plugin-wide default "approximate" also hides them.
-		$pkiw_privacy = get_post_meta( $pkiw_post_id, '_pkiw_geo_privacy', true );
-		if ( 'public' !== $pkiw_privacy ) {
-			$pkiw_checkin['latitude']  = null;
-			$pkiw_checkin['longitude'] = null;
-		}
-
-		$pkiw_checkins[] = $pkiw_checkin;
 	}
 	wp_reset_postdata();
 }
@@ -156,7 +149,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 					<div class="checkin-card-content">
 						<h3 class="checkin-card-venue p-name">
 							<a href="<?php echo esc_url( $pkiw_checkin['permalink'] ); ?>" class="u-url">
-								<?php echo esc_html( $pkiw_checkin['venue_name'] ); ?>
+								<?php echo esc_html( ! empty( $pkiw_checkin['venue_name'] ) ? $pkiw_checkin['venue_name'] : __( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' ) ); ?>
 							</a>
 						</h3>
 						<?php if ( ! empty( $pkiw_checkin['address'] ) ) : ?>
@@ -216,7 +209,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 						<div class="timeline-marker"></div>
 						<div class="timeline-content">
 							<a href="<?php echo esc_url( $pkiw_checkin['permalink'] ); ?>" class="timeline-venue u-url p-name">
-								<?php echo esc_html( $pkiw_checkin['venue_name'] ); ?>
+								<?php echo esc_html( ! empty( $pkiw_checkin['venue_name'] ) ? $pkiw_checkin['venue_name'] : __( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' ) ); ?>
 							</a>
 							<?php if ( ! empty( $pkiw_checkin['address'] ) ) : ?>
 							<span class="timeline-address p-location"><?php echo esc_html( $pkiw_checkin['address'] ); ?></span>
