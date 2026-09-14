@@ -184,6 +184,7 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 * Fixed: check-ins and posts with a venue show their location to visitors unless the author marks it private. Simple Location's "Protected" setting hides coordinates and the map but keeps the place name and address.
 * Fixed: Simple Location and IndieBlocks location fields in the REST API follow the same visibility rule as Post Kinds' own fields, so a geotagged note without a venue no longer returns exact coordinates to visitors.
 * Fixed: eat and drink cards save their venue to post meta on save, so their location follows the venue rule.
+* Fixed: the Checkin Card and the Default Location Privacy setting no longer describe Approximate as city level for check-ins, and the editor preview shows the exact location unless private.
 
 = 1.8.3 =
 * Fixed: the Check-in Dashboard block and the `/checkins` and `/checkins/stats` REST routes follow location privacy. Approximate check-ins show only venue name, city, region and country, private check-ins show nothing to people who can't edit them, and search, totals and pagination no longer confirm hidden venue names.
