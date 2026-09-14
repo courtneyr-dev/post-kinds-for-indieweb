@@ -72,13 +72,28 @@ export default function Edit( { attributes, setAttributes } ) {
 				setIsLoading( false );
 			} )
 			.catch( () => {
-				// Try falling back to posts with checkin kind.
-				apiFetch( {
-					path: `/wp/v2/posts?per_page=${ count }&indieblocks_kind=checkin&_embed`,
-				} )
-					.then( ( data ) => {
-						setCheckins( data || [] );
-						setIsLoading( false );
+				// Try falling back to posts with the checkin kind. The
+				// `kind` REST taxonomy filter takes term IDs, not slugs,
+				// so resolve the "checkin" term first.
+				apiFetch( { path: '/wp/v2/kind?slug=checkin' } )
+					.then( ( terms ) => {
+						if ( ! terms || terms.length === 0 ) {
+							setCheckins( [] );
+							setIsLoading( false );
+							return;
+						}
+
+						apiFetch( {
+							path: `/wp/v2/posts?per_page=${ count }&kind=${ terms[ 0 ].id }&_embed`,
+						} )
+							.then( ( data ) => {
+								setCheckins( data || [] );
+								setIsLoading( false );
+							} )
+							.catch( () => {
+								setCheckins( [] );
+								setIsLoading( false );
+							} );
 					} )
 					.catch( () => {
 						setCheckins( [] );

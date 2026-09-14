@@ -137,10 +137,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 	// Get post meta and kind - meta is the source of truth for sidebar sync
 	const { currentKind, postMeta } = useSelect( ( select ) => {
-		const terms =
-			select( 'core/editor' ).getEditedPostAttribute(
-				'indieblocks_kind'
-			);
+		const terms = select( 'core/editor' ).getEditedPostAttribute( 'kind' );
 		const meta =
 			select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
 		return {
@@ -155,7 +152,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			wp.apiFetch( { path: '/wp/v2/kind?slug=play' } )
 				.then( ( terms ) => {
 					if ( terms && terms.length > 0 ) {
-						editPost( { indieblocks_kind: [ terms[ 0 ].id ] } );
+						editPost( { kind: [ terms[ 0 ].id ] } );
 					}
 				} )
 				.catch( () => {} );
