@@ -437,8 +437,8 @@ class Webhooks_Page {
 			<?php if ( ! $has_token ) : ?>
 				<p class="description">
 					<?php
-					/* translators: %s: service name, such as Plex. */
-					echo esc_html( sprintf( __( '%s webhooks need a token before they can be accepted. Generate one to get the setup details.', 'post-kinds-for-indieweb-in-block-themes' ), $name ) );
+					/* translators: %1$s: service name, such as Plex. */
+					echo esc_html( sprintf( __( '%1$s webhooks need a token before they can be accepted. Generate one to get the setup details.', 'post-kinds-for-indieweb-in-block-themes' ), $name ) );
 					?>
 				</p>
 				<p>
