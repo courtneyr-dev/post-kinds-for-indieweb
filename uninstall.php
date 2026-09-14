@@ -25,6 +25,8 @@ delete_option( 'pkiw_active_imports' );
 delete_option( 'pkiw_import_history' );
 delete_option( 'pkiw_last_sync' );
 delete_option( 'pkiw_webhook_secret' );
+delete_option( 'pkiw_webhook_token_plex' );
+delete_option( 'pkiw_webhook_token_jellyfin' );
 delete_option( 'pkiw_webhook_log' );
 delete_option( 'pkiw_pending_scrobbles' );
 delete_option( 'pkiw_owntracks_last_location' );

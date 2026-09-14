@@ -138,7 +138,8 @@ Bulk-imports your history from connected services. Shows **Active Imports** (pro
 Webhooks let external apps push events to your site so posts are created automatically as you watch, listen, or check in (for example from Plex, Jellyfin, Trakt, or ListenBrainz). The page shows, per service:
 
 - A **Webhook URL** to copy into the external service.
-- A **Secret Key** with a Generate button. Incoming webhooks are verified with an HMAC-SHA256 signature; regenerating the secret invalidates the old one.
+- For **Plex** and **Jellyfin**, a per-service token with Generate and Rotate token buttons. Plex can't send headers, so its URL carries the token (`?token=`) and is masked like a password; query-string tokens can show up in server access logs, so rotate the token if the URL leaks. Jellyfin sends the token in an `X-Webhook-Token` request header, set on the Webhook plugin's Generic destination. Rotating a token stops the old one immediately.
+- For ListenBrainz and Trakt, requests are verified with an HMAC-SHA256 signature of the body made with the site webhook secret; the generic endpoint accepts that secret as its token.
 - A **Webhook Log** of recent deliveries, and a **Pending Scrobbles** count.
 
 ## Quick Post page (Reactions → Quick Post)

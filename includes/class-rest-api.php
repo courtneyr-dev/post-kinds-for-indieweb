@@ -612,7 +612,7 @@ class REST_API {
 			[
 				'methods'             => 'POST',
 				'callback'            => [ $this, 'webhook_plex' ],
-				'permission_callback' => [ $this, 'verify_webhook_signature' ],
+				'permission_callback' => [ $this, 'verify_plex_webhook_token' ],
 			]
 		);
 
@@ -623,7 +623,7 @@ class REST_API {
 			[
 				'methods'             => 'POST',
 				'callback'            => [ $this, 'webhook_jellyfin' ],
-				'permission_callback' => [ $this, 'verify_webhook_signature' ],
+				'permission_callback' => [ $this, 'verify_jellyfin_webhook_token' ],
 			]
 		);
 
@@ -997,6 +997,64 @@ class REST_API {
 		}
 
 		return hash_equals( $secret, $token );
+	}
+
+	/**
+	 * Authorize a Plex webhook delivery with the Plex token.
+	 *
+	 * Plex Media Server posts multipart/form-data to the URL the owner pastes
+	 * into Plex and cannot add request headers or sign the body, so the token
+	 * travels in the URL's `token` query parameter. Only the query string is
+	 * read, and the site-wide HMAC secret does not authorize this route.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return bool
+	 */
+	public function verify_plex_webhook_token( \WP_REST_Request $request ): bool {
+		$query = $request->get_query_params();
+
+		return $this->webhook_token_matches( 'plex', $query['token'] ?? null );
+	}
+
+	/**
+	 * Authorize a Jellyfin webhook delivery with the Jellyfin token.
+	 *
+	 * The Jellyfin Webhook plugin's Generic destination can send custom request
+	 * headers but cannot sign the body. The token is read from X-Webhook-Token,
+	 * or from an Authorization: Bearer header when X-Webhook-Token is absent.
+	 * The query string is not read, so the token stays out of access logs.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return bool
+	 */
+	public function verify_jellyfin_webhook_token( \WP_REST_Request $request ): bool {
+		$token = $request->get_header( 'X-Webhook-Token' );
+
+		if ( null === $token || '' === $token ) {
+			$authorization = (string) $request->get_header( 'Authorization' );
+			$token         = 0 === stripos( $authorization, 'Bearer ' ) ? trim( substr( $authorization, 7 ) ) : null;
+		}
+
+		return $this->webhook_token_matches( 'jellyfin', $token );
+	}
+
+	/**
+	 * Compare a presented token with a service's stored webhook token.
+	 *
+	 * An unset or empty stored token authorizes nothing; this never creates one.
+	 *
+	 * @param string $service  Service slug.
+	 * @param mixed  $provided Token presented by the request.
+	 * @return bool
+	 */
+	private function webhook_token_matches( string $service, $provided ): bool {
+		$expected = get_option( "pkiw_webhook_token_{$service}" );
+
+		if ( ! is_string( $expected ) || '' === $expected || ! is_string( $provided ) || '' === $provided ) {
+			return false;
+		}
+
+		return hash_equals( $expected, $provided );
 	}
 
 	// =========================================================================
@@ -2757,13 +2815,19 @@ class REST_API {
 			update_option( 'pkiw_webhook_secret', $secret );
 		}
 
-		$base_url = rest_url( self::NAMESPACE . '/webhook/' );
+		$base_url   = rest_url( self::NAMESPACE . '/webhook/' );
+		$plex_url   = $base_url . 'plex';
+		$plex_token = get_option( 'pkiw_webhook_token_plex' );
+
+		if ( is_string( $plex_token ) && '' !== $plex_token ) {
+			$plex_url = add_query_arg( 'token', rawurlencode( $plex_token ), $plex_url );
+		}
 
 		return rest_ensure_response(
 			[
 				'listenbrainz' => $base_url . 'listenbrainz',
 				'trakt'        => $base_url . 'trakt',
-				'plex'         => $base_url . 'plex',
+				'plex'         => $plex_url,
 				'jellyfin'     => $base_url . 'jellyfin',
 				'generic'      => $base_url . 'generic?token=' . $secret,
 				'secret'       => $secret,
