@@ -58,6 +58,8 @@ Add one of these blocks to any post or page:
 3. Use **Preview** to check what would be imported, then **Start Import**.
 4. Large imports run in the background; watch progress under **Active Imports** or via the admin notice. **Re-sync** fetches new items later.
 
+Running an import again skips listen, watch and read items that are already on your site in any status, including drafts and trash. To import one of those items again, delete its post permanently.
+
 ## Subscribe to everything, including imports
 
 Your site's normal feeds leave out bulk-imported posts. The firehose feed includes them:
