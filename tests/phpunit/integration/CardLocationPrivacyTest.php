@@ -35,6 +35,7 @@ final class CardLocationPrivacyTest extends WP_UnitTestCase {
 	private const VENUE_URL      = 'https://sentinel.example/venue-zyx9';
 	private const OSM_ID         = 'node/9998887';
 	private const FOURSQUARE_ID  = '4sq-sentinel-777';
+	private const RESTAURANT     = 'Sentinel Eatery Qvx4';
 
 	public function set_up(): void {
 		parent::set_up();
@@ -93,6 +94,7 @@ final class CardLocationPrivacyTest extends WP_UnitTestCase {
 			wp_json_encode(
 				[
 					'name'             => 'Sentinel Dish',
+					'restaurant'       => self::RESTAURANT,
 					'restaurantUrl'    => self::VENUE_URL,
 					'locationName'     => self::VENUE_NAME,
 					'locationAddress'  => self::STREET,
@@ -393,6 +395,52 @@ final class CardLocationPrivacyTest extends WP_UnitTestCase {
 
 		$this->assertSame( '', $data['meta']['_pkiw_eat_location_name'] );
 		$this->assertSame( '', $data['meta']['_pkiw_eat_location_locality'] );
+	}
+
+	// ─── Eat card `restaurant` is venue identity: the name tier ───
+
+	public function test_private_eat_card_hides_restaurant(): void {
+		wp_set_current_user( 0 );
+		[ , $html ] = $this->render_card( $this->eat_block(), 'private' );
+
+		$this->assertStringNotContainsString( self::RESTAURANT, $html );
+	}
+
+	public function test_approximate_eat_card_keeps_restaurant(): void {
+		wp_set_current_user( 0 );
+		[ , $html ] = $this->render_card( $this->eat_block(), 'approximate' );
+
+		$this->assertStringContainsString( self::RESTAURANT, $html );
+	}
+
+	public function test_editor_sees_restaurant_on_private_eat_card(): void {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		[ , $html ] = $this->render_card( $this->eat_block(), 'private' );
+
+		$this->assertStringContainsString( self::RESTAURANT, $html );
+	}
+
+	public function test_rest_private_eat_strips_restaurant_meta(): void {
+		$post_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'eat_restaurant', self::RESTAURANT );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
+
+		wp_set_current_user( 0 );
+		$data = $this->rest_get( $post_id );
+
+		$this->assertSame( '', $data['meta']['_pkiw_eat_restaurant'] );
+		$this->assertSame( self::RESTAURANT, get_post_meta( $post_id, Meta_Fields::PREFIX . 'eat_restaurant', true ), 'stored data must stay intact' );
+	}
+
+	public function test_rest_approximate_eat_keeps_restaurant_meta(): void {
+		$post_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'eat_restaurant', self::RESTAURANT );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'approximate' );
+
+		wp_set_current_user( 0 );
+		$data = $this->rest_get( $post_id );
+
+		$this->assertSame( self::RESTAURANT, $data['meta']['_pkiw_eat_restaurant'] );
 	}
 
 	public function test_rest_editor_sees_full_meta_on_private_post(): void {
