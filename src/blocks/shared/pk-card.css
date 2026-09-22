@@ -84,7 +84,7 @@
 .pk-kindlabel {
 	display: inline-block;
 	font-family: var(--pk-font-meta);
-	font-size: 0.7rem;
+	font-size: 0.75rem;
 	font-weight: 700;
 	letter-spacing: 0.09em;
 	text-transform: uppercase;
@@ -279,7 +279,7 @@
 	align-items: center;
 	gap: 6px;
 	font-family: var(--pk-font-meta);
-	font-size: 0.75rem;
+	font-size: 0.875rem;
 	font-weight: 600;
 	color: var(--pk-accent);
 	text-decoration: none;
