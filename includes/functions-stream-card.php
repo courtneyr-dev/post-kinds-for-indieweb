@@ -390,7 +390,19 @@ function stream_card_media_extras( \WP_Post $post ): string {
 	if ( '' !== $hero_caption ) {
 		// Polite, not assertive: a caption changing must never interrupt.
 		$out .= '<p class="pk-media__caption" aria-live="polite">'
-			. esc_html( $hero_caption ) . '</p>';
+			. wp_kses(
+				$hero_caption,
+				[
+					'a'      => [
+						'href'  => [],
+						'rel'   => [],
+						'title' => [],
+					],
+					'em'     => [],
+					'strong' => [],
+					'br'     => [],
+				]
+			) . '</p>';
 	}
 
 	// Everything except the hero, in attachment order.
