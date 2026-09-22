@@ -382,6 +382,11 @@ function stream_card_media_extras( \WP_Post $post ): string {
 	$hero_id = (int) get_post_thumbnail_id( $post );
 	$images  = get_attached_media( 'image', $post );
 
+	$ids = array_filter( array_merge( [ $hero_id ], wp_list_pluck( $images, 'ID' ) ) );
+	if ( $ids ) {
+		_prime_post_caches( array_map( 'intval', $ids ), false, true );
+	}
+
 	$hero_caption = $hero_id > 0
 		? trim( (string) get_post_field( 'post_excerpt', $hero_id ) )
 		: '';
