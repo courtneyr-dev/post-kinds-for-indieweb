@@ -42,7 +42,8 @@ const PK_STREAM_THUMB_LIMIT = 4;
  * Loop with the correct post in scope. It reads the loop post from the
  * block's `postId` context, falling back to the global post.
  *
- * @param array          $attributes Block attributes (unused).
+ * @param array          $attributes Block attributes. `headingLevel` (int, default 2,
+ *                                   clamped 2–4) sets the card title's heading tag.
  * @param string         $content    Inner content (unused).
  * @param \WP_Block|null $block     Block instance, carries loop context.
  * @return string Card HTML.
@@ -54,8 +55,8 @@ function render_stream_card( array $attributes = [], string $content = '', ?\WP_
 	// possibly inside an authored wrapper), register it so
 	// Microformats::add_post_classes() leaves the Query Loop <li> without a
 	// second root. Cards rooted as h-cite / h-food keep the <li> root.
-	$post_id = ( $block instanceof \WP_Block && ! empty( $block->context['postId'] ) ) ? (int) $block->context['postId'] : (int) get_the_ID();
-	$post    = $post_id ? get_post( $post_id ) : null;
+	$post_id     = ( $block instanceof \WP_Block && ! empty( $block->context['postId'] ) ) ? (int) $block->context['postId'] : (int) get_the_ID();
+	$post        = $post_id ? get_post( $post_id ) : null;
 	$card_rooted = (bool) preg_match( '/<article\b[^>]*\bclass="[^"]*\bpk-card\b[^"]*\bh-entry\b/i', $html );
 	if ( $post_id && $card_rooted ) {
 		$GLOBALS['pkiw_stream_card_root_seen'][ $post_id ] = true;
@@ -269,7 +270,7 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 	// Any other long-form post (an article, a note, a kind with a full body):
 	// a compact card with the title, date, featured image, and excerpt —
 	// never the full body. Every Stream item reads as a card.
-	return render_generic_stream_card( $post );
+	return render_generic_stream_card( $post, $attributes );
 }
 
 /**
@@ -283,15 +284,20 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
  * are title-less by IndieWeb convention) show the kind label as the linked
  * title instead of vanishing from the feed.
  *
- * @param \WP_Post $post Post to render.
+ * @param \WP_Post            $post       Post to render.
+ * @param array<string,mixed> $attributes Block attributes. `headingLevel` (int,
+ *                                        default 2, clamped 2–4) sets the title's
+ *                                        heading tag, so the card matches the
+ *                                        theme's heading outline wherever it sits.
  * @return string Card HTML.
  */
-function render_generic_stream_card( \WP_Post $post ): string {
-	$permalink  = esc_url( (string) get_permalink( $post ) );
-	$kind_slug  = get_post_kind_slug( $post );
-	$badge_kind = '' !== $kind_slug ? $kind_slug : 'note';
-	$kind_label = stream_card_kind_label( $post );
-	$excerpt    = trim( wp_strip_all_tags( get_the_excerpt( $post ) ) );
+function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): string {
+	$heading_level = max( 2, min( 4, (int) ( $attributes['headingLevel'] ?? 2 ) ) );
+	$permalink     = esc_url( (string) get_permalink( $post ) );
+	$kind_slug     = get_post_kind_slug( $post );
+	$badge_kind    = '' !== $kind_slug ? $kind_slug : 'note';
+	$kind_label    = stream_card_kind_label( $post );
+	$excerpt       = trim( wp_strip_all_tags( get_the_excerpt( $post ) ) );
 
 	$title     = trim( get_the_title( $post ) );
 	$has_title = '' !== $title;
@@ -331,7 +337,7 @@ function render_generic_stream_card( \WP_Post $post ): string {
 	}
 
 	$out .= '<div class="pk-caption">';
-	$out .= '<h2 class="' . esc_attr( $title_class ) . '"><a class="u-url" href="' . $permalink . '">' . esc_html( $title ) . '</a></h2>';
+	$out .= '<h' . $heading_level . ' class="' . esc_attr( $title_class ) . '"><a class="u-url" href="' . $permalink . '">' . esc_html( $title ) . '</a></h' . $heading_level . '>';
 
 	$date_display = get_the_date( '', $post );
 	if ( '' !== $date_display ) {
@@ -777,6 +783,15 @@ function register_stream_card_block(): void {
 			'api_version'     => 3,
 			'render_callback' => __NAMESPACE__ . '\\render_stream_card',
 			'uses_context'    => [ 'postId', 'postType' ],
+			'attributes'      => [
+				// Clamped 2–4 at render time so a theme's own heading outline
+				// (the home page in particular) stays intact regardless of
+				// where the Stream sits in it.
+				'headingLevel' => [
+					'type'    => 'integer',
+					'default' => 2,
+				],
+			],
 			'supports'        => [
 				'inserter' => true,
 				'html'     => false,
