@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The `post-kinds/get-post-meta` ability returned every stored `_pkiw_*` location field regardless of the requester's permissions, bypassing the location redaction `rest_prepare_post` applies. The key→tier walk is now shared via `Meta_Fields::redact_location_array()`, so a requester without `edit_post` gets the same zeroed/blanked coordinates, address and venue fields the REST API already hides; the author and any user with `edit_post` still see everything.
+
 ## [1.8.5] - 2026-09-23
 
 ### Added

@@ -692,6 +692,22 @@ final class Core_Abilities {
 			}
 		}
 
+		// R-03 parity: apply the same per-post location-visibility tiers
+		// REST responses apply (Meta_Fields::redact_location_meta), so a
+		// requester who cannot edit the post never receives precise
+		// location fields the post's privacy setting hides. The author
+		// and any user with edit_post keep the full set, because
+		// get_visible_location_fields() already returns everything
+		// visible for them.
+		$prefixed = [];
+		foreach ( $meta as $short_key => $value ) {
+			$prefixed[ Meta_Fields::PREFIX . $short_key ] = $value;
+		}
+		$prefixed = Meta_Fields::redact_location_array( $prefixed, $post_id );
+		foreach ( $prefixed as $full_key => $value ) {
+			$meta[ substr( $full_key, strlen( Meta_Fields::PREFIX ) ) ] = $value;
+		}
+
 		return [
 			'post_id' => $post_id,
 			'meta'    => $meta,
