@@ -1229,6 +1229,34 @@ class Meta_Fields {
 	}
 
 	/**
+	 * Zero/blank out this plugin's own `_pkiw_*` location fields the
+	 * post's current visibility tier hides, leaving every other key in
+	 * $meta untouched. This is the LOCATION_KEY_TIERS walk shared by
+	 * redact_location_meta() (REST) and the post-kinds/get-post-meta
+	 * ability, so a key can't stay redacted on one path while leaking on
+	 * the other.
+	 *
+	 * @param array<string, mixed> $meta    Meta values keyed by the full `_pkiw_`-prefixed field name.
+	 * @param int                  $post_id Post the meta belongs to.
+	 * @return array<string, mixed> $meta with hidden fields zeroed (numeric) or blanked (string).
+	 */
+	public static function redact_location_array( array $meta, int $post_id ): array {
+		$visible = self::get_visible_location_fields( $post_id );
+
+		foreach ( self::LOCATION_KEY_TIERS as $key => $tier ) {
+			if ( ! empty( $visible[ $tier ] ) ) {
+				continue;
+			}
+			$full = self::PREFIX . $key;
+			if ( array_key_exists( $full, $meta ) ) {
+				$meta[ $full ] = is_numeric( $meta[ $full ] ) ? 0 : '';
+			}
+		}
+
+		return $meta;
+	}
+
+	/**
 	 * Strip precise location meta from REST responses the requester may not see.
 	 *
 	 * @param \WP_REST_Response $response Response.
@@ -1249,16 +1277,11 @@ class Meta_Fields {
 		$visible = self::get_visible_location_fields( (int) $post->ID );
 
 		if ( ! empty( $data['meta'] ) && is_array( $data['meta'] ) ) {
-			foreach ( self::LOCATION_KEY_TIERS as $key => $tier ) {
-				if ( ! empty( $visible[ $tier ] ) ) {
-					continue;
-				}
-				$full = self::PREFIX . $key;
-				if ( array_key_exists( $full, $data['meta'] ) ) {
-					$data['meta'][ $full ] = is_numeric( $data['meta'][ $full ] ) ? 0 : '';
-					$changed               = true;
-				}
+			$redacted = self::redact_location_array( $data['meta'], (int) $post->ID );
+			if ( $redacted !== $data['meta'] ) {
+				$changed = true;
 			}
+			$data['meta'] = $redacted;
 
 			// Simple Location / IndieBlocks carry the same location data
 			// under their own (unprefixed) keys; gate them by the same

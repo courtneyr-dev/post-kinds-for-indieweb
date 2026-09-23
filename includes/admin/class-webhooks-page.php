@@ -874,6 +874,7 @@ class Webhooks_Page {
 			'post_title'   => $title,
 			'post_content' => $content,
 			'post_date'    => ! empty( $scrobble['timestamp'] ) ? wp_date( 'Y-m-d H:i:s', $scrobble['timestamp'] ) : current_time( 'mysql' ),
+			'post_author'  => get_current_user_id(),
 		];
 
 		$post_id = wp_insert_post( $post_data, true );

@@ -589,7 +589,10 @@ class ListenBrainz extends API_Base {
 	 * @return array<string, mixed> Normalized listen.
 	 */
 	protected function normalize_result( array $raw_listen ): array {
-		return $this->normalize_listen( $raw_listen );
+		return $this->sanitize_normalized_result(
+			$this->normalize_listen( $raw_listen ),
+			[ 'origin_url' ]
+		);
 	}
 
 	/**
@@ -610,20 +613,26 @@ class ListenBrainz extends API_Base {
 			$artist_mbid = $additional_info['artist_mbids'][0];
 		}
 
-		return [
-			'track'          => $metadata['track_name'] ?? '',
-			'artist'         => $metadata['artist_name'] ?? '',
-			'album'          => $metadata['release_name'] ?? '',
-			'listened_at'    => $listen['listened_at'] ?? null,
-			'recording_msid' => $listen['recording_msid'] ?? '',
-			'mbid'           => $mbid,
-			'artist_mbid'    => $artist_mbid,
-			'album_mbid'     => $album_mbid,
-			'duration'       => isset( $additional_info['duration_ms'] ) ? (int) ( $additional_info['duration_ms'] / 1000 ) : null,
-			'spotify_id'     => $additional_info['spotify_id'] ?? '',
-			'origin_url'     => $additional_info['origin_url'] ?? '',
-			'source'         => 'listenbrainz',
-		];
+		// Sanitize here, not just in the unused normalize_result(): the
+		// real call sites (get_listens(), get_playing_now()) call this
+		// method directly (review round 1, Important 2).
+		return $this->sanitize_normalized_result(
+			[
+				'track'          => $metadata['track_name'] ?? '',
+				'artist'         => $metadata['artist_name'] ?? '',
+				'album'          => $metadata['release_name'] ?? '',
+				'listened_at'    => $listen['listened_at'] ?? null,
+				'recording_msid' => $listen['recording_msid'] ?? '',
+				'mbid'           => $mbid,
+				'artist_mbid'    => $artist_mbid,
+				'album_mbid'     => $album_mbid,
+				'duration'       => isset( $additional_info['duration_ms'] ) ? (int) ( $additional_info['duration_ms'] / 1000 ) : null,
+				'spotify_id'     => $additional_info['spotify_id'] ?? '',
+				'origin_url'     => $additional_info['origin_url'] ?? '',
+				'source'         => 'listenbrainz',
+			],
+			[ 'origin_url' ]
+		);
 	}
 
 	/**

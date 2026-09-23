@@ -56,8 +56,9 @@ module.exports = [
 
 	// Non-bundled scripts enqueued on admin and front-end pages. These run
 	// in the browser alongside globals provided by wp_localize_script()
-	// (pkiwAdmin, reactionsCheckinDashboard) and enqueued libraries
-	// (jQuery, Leaflet's L).
+	// (pkiwAdmin, reactionsCheckinDashboard), enqueued libraries (jQuery,
+	// Leaflet's L), and admin.js's own dependency, lookup-render.js
+	// (PKIWLookupRender).
 	{
 		files: [ 'admin/js/**/*.js', 'assets/js/**/*.js' ],
 		languageOptions: {
@@ -69,6 +70,7 @@ module.exports = [
 				L: 'readonly',
 				pkiwAdmin: 'readonly',
 				reactionsCheckinDashboard: 'readonly',
+				PKIWLookupRender: 'readonly',
 			},
 		},
 	},

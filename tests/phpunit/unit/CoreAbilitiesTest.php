@@ -135,6 +135,28 @@ class CoreAbilitiesTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * create-post may only persist meta for this plugin's own registered
+	 * field keys (finding K3). `imported_from` isn't one of them — it's
+	 * an internal bookkeeping key the sync classes write themselves
+	 * (`_pkiw_imported_from`) and trust to mean "this post came from an
+	 * external import" — so a caller must not be able to set it here.
+	 */
+	public function test_execute_create_post_ignores_unregistered_meta_key() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$result = $this->abilities->execute_create_post( [
+			'kind'          => 'note',
+			'title'         => 'Test Note',
+			'imported_from' => 'malicious-source',
+		] );
+
+		$this->assertIsArray( $result );
+		$post_id = $result['post_id'];
+
+		$this->assertSame( '', get_post_meta( $post_id, Meta_Fields::PREFIX . 'imported_from', true ) );
+	}
+
+	/**
 	 * Test execute_set_kind.
 	 */
 	public function test_execute_set_kind() {
@@ -189,6 +211,87 @@ class CoreAbilitiesTest extends WP_UnitTestCase {
 			'Updated Track Name',
 			get_post_meta( $post_id, Meta_Fields::PREFIX . 'listen_track', true )
 		);
+	}
+
+	/**
+	 * update-post-meta must reject a non-scalar value (finding K3) rather
+	 * than storing a PHP array under a _pkiw_* key other code expects to
+	 * be a string.
+	 */
+	public function test_execute_update_post_meta_rejects_array_value() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$post_id = self::factory()->post->create();
+		$result  = $this->abilities->execute_update_post_meta( [
+			'post_id'    => $post_id,
+			'meta_key'   => 'listen_track',
+			'meta_value' => [ 'not', 'a', 'scalar' ],
+		] );
+
+		$this->assertInstanceOf( \WP_Error::class, $result );
+		$this->assertSame( '', get_post_meta( $post_id, Meta_Fields::PREFIX . 'listen_track', true ) );
+	}
+
+	/**
+	 * execute_update_post_meta() must itself refuse a write from a user
+	 * who cannot edit the post (finding K3) — defense in depth alongside
+	 * the ability's own permission_callback, which a caller invoking the
+	 * execute method directly never runs.
+	 */
+	public function test_execute_update_post_meta_forbids_user_without_edit_post() {
+		$author_id = self::factory()->user->create( [ 'role' => 'author' ] );
+		$post_id   = self::factory()->post->create( [ 'post_author' => $author_id ] );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'subscriber' ] ) );
+
+		$result = $this->abilities->execute_update_post_meta( [
+			'post_id'    => $post_id,
+			'meta_key'   => 'listen_track',
+			'meta_value' => 'hijacked',
+		] );
+
+		$this->assertInstanceOf( \WP_Error::class, $result );
+		$this->assertSame( '', get_post_meta( $post_id, Meta_Fields::PREFIX . 'listen_track', true ) );
+	}
+
+	/**
+	 * Review round 1, Important 1: update-post-meta must refuse an
+	 * unregistered key with a WP_Error rather than writing it — the same
+	 * gate create-post's meta loop already applies. `imported_from` is
+	 * the concrete example: it isn't a registered field, but
+	 * Query_Filter::is_imported_post() and the sync classes'
+	 * was_imported_from_service() both key on `_pkiw_imported_from`
+	 * being set to mean "this post came from an external import".
+	 */
+	public function test_execute_update_post_meta_rejects_unregistered_bookkeeping_key() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$post_id = self::factory()->post->create();
+		$result  = $this->abilities->execute_update_post_meta( [
+			'post_id'    => $post_id,
+			'meta_key'   => 'imported_from',
+			'meta_value' => 'lastfm',
+		] );
+
+		$this->assertInstanceOf( \WP_Error::class, $result );
+		$this->assertSame( '', get_post_meta( $post_id, Meta_Fields::PREFIX . 'imported_from', true ) );
+	}
+
+	/**
+	 * Review round 1, Important 1: a random, never-registered key must
+	 * also be refused, not just recognizable bookkeeping keys.
+	 */
+	public function test_execute_update_post_meta_rejects_random_unregistered_key() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$post_id = self::factory()->post->create();
+		$result  = $this->abilities->execute_update_post_meta( [
+			'post_id'    => $post_id,
+			'meta_key'   => 'Totally Unregistered!',
+			'meta_value' => 'x',
+		] );
+
+		$this->assertInstanceOf( \WP_Error::class, $result );
+		$this->assertSame( '', get_post_meta( $post_id, Meta_Fields::PREFIX . 'totallyunregistered', true ) );
 	}
 
 	/**

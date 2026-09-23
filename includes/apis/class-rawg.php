@@ -195,17 +195,23 @@ class RAWG extends API_Base {
 			}
 		}
 
-		return [
-			'id'         => $item['id'] ?? 0,
-			'slug'       => $item['slug'] ?? '',
-			'name'       => $item['name'] ?? '',
-			'year'       => ! empty( $item['released'] ) ? substr( $item['released'], 0, 4 ) : '',
-			'cover'      => $item['background_image'] ?? '',
-			'rating'     => $item['rating'] ?? 0,
-			'metacritic' => $item['metacritic'] ?? null,
-			'platforms'  => $platforms,
-			'source'     => 'rawg',
-		];
+		// Sanitize here: search() calls this method directly (not
+		// normalize_result()) — this was RAWG's actual, unsanitized
+		// search path (review round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result(
+			[
+				'id'         => $item['id'] ?? 0,
+				'slug'       => $item['slug'] ?? '',
+				'name'       => $item['name'] ?? '',
+				'year'       => ! empty( $item['released'] ) ? substr( $item['released'], 0, 4 ) : '',
+				'cover'      => $item['background_image'] ?? '',
+				'rating'     => $item['rating'] ?? 0,
+				'metacritic' => $item['metacritic'] ?? null,
+				'platforms'  => $platforms,
+				'source'     => 'rawg',
+			],
+			[ 'cover' ]
+		);
 	}
 
 	/**
@@ -257,27 +263,30 @@ class RAWG extends API_Base {
 			}
 		}
 
-		return [
-			'id'           => $item['id'] ?? 0,
-			'slug'         => $item['slug'] ?? '',
-			'title'        => $item['name'] ?? '',
-			'year'         => ! empty( $item['released'] ) ? substr( $item['released'], 0, 4 ) : '',
-			'released'     => $item['released'] ?? '',
-			'cover'        => $item['background_image'] ?? '',
-			'description'  => $this->strip_html( $item['description'] ?? $item['description_raw'] ?? '' ),
-			'rating'       => $item['rating'] ?? 0,
-			'rating_count' => $item['ratings_count'] ?? 0,
-			'metacritic'   => $item['metacritic'] ?? null,
-			'playtime'     => $item['playtime'] ?? 0,
-			'platforms'    => $platforms,
-			'genres'       => $genres,
-			'developers'   => $developers,
-			'publishers'   => $publishers,
-			'stores'       => $stores,
-			'website'      => $item['website'] ?? '',
-			'url'          => ! empty( $item['slug'] ) ? 'https://rawg.io/games/' . $item['slug'] : '',
-			'source'       => 'rawg',
-		];
+		return $this->sanitize_normalized_result(
+			[
+				'id'           => $item['id'] ?? 0,
+				'slug'         => $item['slug'] ?? '',
+				'title'        => $item['name'] ?? '',
+				'year'         => ! empty( $item['released'] ) ? substr( $item['released'], 0, 4 ) : '',
+				'released'     => $item['released'] ?? '',
+				'cover'        => $item['background_image'] ?? '',
+				'description'  => $this->strip_html( $item['description'] ?? $item['description_raw'] ?? '' ),
+				'rating'       => $item['rating'] ?? 0,
+				'rating_count' => $item['ratings_count'] ?? 0,
+				'metacritic'   => $item['metacritic'] ?? null,
+				'playtime'     => $item['playtime'] ?? 0,
+				'platforms'    => $platforms,
+				'genres'       => $genres,
+				'developers'   => $developers,
+				'publishers'   => $publishers,
+				'stores'       => $stores,
+				'website'      => $item['website'] ?? '',
+				'url'          => ! empty( $item['slug'] ) ? 'https://rawg.io/games/' . $item['slug'] : '',
+				'source'       => 'rawg',
+			],
+			[ 'cover', 'website', 'url' ]
+		);
 	}
 
 	/**

@@ -99,4 +99,45 @@ class PostStatusGuardTest extends WP_UnitTestCase {
 		$this->assertIsInt( $post_id );
 		$this->assertSame( 'pending', get_post_status( $post_id ) );
 	}
+
+	/**
+	 * create_reaction_post() must set post_author to the caller explicitly
+	 * (security review close-out item, finding K3) rather than leaving it
+	 * to wp_insert_post()'s current-user default, so authorship can't
+	 * silently drift if this method is ever called from a context with no
+	 * reliably-current user.
+	 */
+	public function test_create_reaction_post_sets_post_author_to_caller() {
+		$user_id = self::factory()->user->create( [ 'role' => 'editor' ] );
+		wp_set_current_user( $user_id );
+		$quick_post = new Quick_Post( new Admin( Plugin::get_instance() ) );
+
+		$post_id = $this->invoke_private(
+			$quick_post,
+			'create_reaction_post',
+			[ 'like', [] ]
+		);
+
+		$this->assertIsInt( $post_id );
+		$this->assertSame( $user_id, (int) get_post( $post_id )->post_author );
+	}
+
+	/**
+	 * create_post_from_scrobble() (scrobble approval) also sets
+	 * post_author to the caller explicitly.
+	 */
+	public function test_create_post_from_scrobble_sets_post_author_to_caller() {
+		$user_id = self::factory()->user->create( [ 'role' => 'editor' ] );
+		wp_set_current_user( $user_id );
+		$webhooks_page = new Webhooks_Page( new Admin( Plugin::get_instance() ) );
+
+		$post_id = $this->invoke_private(
+			$webhooks_page,
+			'create_post_from_scrobble',
+			[ [ 'type' => 'track', 'track' => 'Song', 'artist' => 'Artist' ] ]
+		);
+
+		$this->assertIsInt( $post_id );
+		$this->assertSame( $user_id, (int) get_post( $post_id )->post_author );
+	}
 }

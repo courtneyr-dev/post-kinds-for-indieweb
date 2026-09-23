@@ -851,7 +851,10 @@ class TVmaze extends API_Base {
 			$result['updated']       = $show['updated'] ?? null;
 		}
 
-		return $result;
+		// Sanitize here, not just via normalize_result(): get_show()
+		// (embed=false) calls this method directly (review round 2,
+		// BGG-class audit finding).
+		return $this->sanitize_normalized_result( $result, [ 'url', 'poster', 'poster_original', 'official_site' ] );
 	}
 
 	/**
@@ -886,7 +889,10 @@ class TVmaze extends API_Base {
 			$result['overview'] = wp_strip_all_tags( $result['overview'] );
 		}
 
-		return $result;
+		// Sanitize here: get_episode()/get_episodes()/get_episode_by_id()
+		// call this method directly and it was never sanitized at all
+		// (review round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result( $result, [ 'url', 'image', 'image_original' ] );
 	}
 
 	/**
@@ -896,23 +902,26 @@ class TVmaze extends API_Base {
 	 * @return array<string, mixed> Normalized season.
 	 */
 	private function normalize_season( array $season ): array {
-		return [
-			'id'             => $season['id'] ?? 0,
-			'tvmaze_id'      => $season['id'] ?? 0,
-			'url'            => $season['url'] ?? '',
-			'number'         => $season['number'] ?? 0,
-			'name'           => $season['name'] ?? '',
-			'episode_order'  => $season['episodeOrder'] ?? null,
-			'premiere_date'  => $season['premiereDate'] ?? '',
-			'end_date'       => $season['endDate'] ?? '',
-			'network'        => isset( $season['network'] ) ? $season['network']['name'] ?? '' : '',
-			'web_channel'    => isset( $season['webChannel'] ) ? $season['webChannel']['name'] ?? '' : '',
-			'image'          => $season['image']['medium'] ?? null,
-			'image_original' => $season['image']['original'] ?? null,
-			'overview'       => wp_strip_all_tags( $season['summary'] ?? '' ),
-			'type'           => 'season',
-			'source'         => 'tvmaze',
-		];
+		return $this->sanitize_normalized_result(
+			[
+				'id'             => $season['id'] ?? 0,
+				'tvmaze_id'      => $season['id'] ?? 0,
+				'url'            => $season['url'] ?? '',
+				'number'         => $season['number'] ?? 0,
+				'name'           => $season['name'] ?? '',
+				'episode_order'  => $season['episodeOrder'] ?? null,
+				'premiere_date'  => $season['premiereDate'] ?? '',
+				'end_date'       => $season['endDate'] ?? '',
+				'network'        => isset( $season['network'] ) ? $season['network']['name'] ?? '' : '',
+				'web_channel'    => isset( $season['webChannel'] ) ? $season['webChannel']['name'] ?? '' : '',
+				'image'          => $season['image']['medium'] ?? null,
+				'image_original' => $season['image']['original'] ?? null,
+				'overview'       => wp_strip_all_tags( $season['summary'] ?? '' ),
+				'type'           => 'season',
+				'source'         => 'tvmaze',
+			],
+			[ 'url', 'image', 'image_original' ]
+		);
 	}
 
 	/**
@@ -938,7 +947,9 @@ class TVmaze extends API_Base {
 			];
 		}
 
-		return $result;
+		// Sanitize here: get_cast() calls this method directly and it was
+		// never sanitized at all (review round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result( $result, [ 'image' ] );
 	}
 
 	/**
@@ -961,7 +972,9 @@ class TVmaze extends API_Base {
 			];
 		}
 
-		return $result;
+		// Sanitize here: get_crew() calls this method directly and it was
+		// never sanitized at all (review round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result( $result, [ 'image' ] );
 	}
 
 	/**
@@ -971,20 +984,26 @@ class TVmaze extends API_Base {
 	 * @return array<string, mixed> Normalized person.
 	 */
 	private function normalize_person( array $person ): array {
-		return [
-			'id'             => $person['id'] ?? 0,
-			'tvmaze_id'      => $person['id'] ?? 0,
-			'url'            => $person['url'] ?? '',
-			'name'           => $person['name'] ?? '',
-			'country'        => $person['country']['name'] ?? '',
-			'birthday'       => $person['birthday'] ?? '',
-			'deathday'       => $person['deathday'] ?? '',
-			'gender'         => $person['gender'] ?? '',
-			'image'          => $person['image']['medium'] ?? null,
-			'image_original' => $person['image']['original'] ?? null,
-			'type'           => 'person',
-			'source'         => 'tvmaze',
-		];
+		// Sanitize here: get_person() calls this method directly and it
+		// was never sanitized at all (review round 2, BGG-class audit
+		// finding).
+		return $this->sanitize_normalized_result(
+			[
+				'id'             => $person['id'] ?? 0,
+				'tvmaze_id'      => $person['id'] ?? 0,
+				'url'            => $person['url'] ?? '',
+				'name'           => $person['name'] ?? '',
+				'country'        => $person['country']['name'] ?? '',
+				'birthday'       => $person['birthday'] ?? '',
+				'deathday'       => $person['deathday'] ?? '',
+				'gender'         => $person['gender'] ?? '',
+				'image'          => $person['image']['medium'] ?? null,
+				'image_original' => $person['image']['original'] ?? null,
+				'type'           => 'person',
+				'source'         => 'tvmaze',
+			],
+			[ 'url', 'image', 'image_original' ]
+		);
 	}
 
 	/**

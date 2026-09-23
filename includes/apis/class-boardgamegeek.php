@@ -199,26 +199,29 @@ class BoardGameGeek extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	public function normalize_result( array $item ): array {
-		return [
-			'id'           => $item['id'] ?? '',
-			'title'        => $item['name'] ?? '',
-			'year'         => $item['year'] ?? '',
-			'cover'        => $item['image'] ?? $item['thumbnail'] ?? '',
-			'thumbnail'    => $item['thumbnail'] ?? '',
-			'description'  => $item['description'] ?? '',
-			'rating'       => $item['rating'] ?? 0,
-			'rating_count' => $item['rating_count'] ?? 0,
-			'type'         => $item['type'] ?? 'boardgame',
-			'designers'    => $item['designers'] ?? [],
-			'publishers'   => $item['publishers'] ?? [],
-			'min_players'  => $item['min_players'] ?? 0,
-			'max_players'  => $item['max_players'] ?? 0,
-			'play_time'    => $item['play_time'] ?? 0,
-			'categories'   => $item['categories'] ?? [],
-			'mechanics'    => $item['mechanics'] ?? [],
-			'url'          => $this->get_game_url( $item['id'] ?? '', $item['type'] ?? 'boardgame' ),
-			'source'       => 'bgg',
-		];
+		return $this->sanitize_normalized_result(
+			[
+				'id'           => $item['id'] ?? '',
+				'title'        => $item['name'] ?? '',
+				'year'         => $item['year'] ?? '',
+				'cover'        => $item['image'] ?? $item['thumbnail'] ?? '',
+				'thumbnail'    => $item['thumbnail'] ?? '',
+				'description'  => $item['description'] ?? '',
+				'rating'       => $item['rating'] ?? 0,
+				'rating_count' => $item['rating_count'] ?? 0,
+				'type'         => $item['type'] ?? 'boardgame',
+				'designers'    => $item['designers'] ?? [],
+				'publishers'   => $item['publishers'] ?? [],
+				'min_players'  => $item['min_players'] ?? 0,
+				'max_players'  => $item['max_players'] ?? 0,
+				'play_time'    => $item['play_time'] ?? 0,
+				'categories'   => $item['categories'] ?? [],
+				'mechanics'    => $item['mechanics'] ?? [],
+				'url'          => $this->get_game_url( $item['id'] ?? '', $item['type'] ?? 'boardgame' ),
+				'source'       => 'bgg',
+			],
+			[ 'cover', 'thumbnail', 'url' ]
+		);
 	}
 
 	/**
@@ -352,12 +355,16 @@ class BoardGameGeek extends API_Base {
 			}
 
 			if ( ! empty( $id ) && ! empty( $name ) ) {
-				$results[] = [
-					'id'   => $id,
-					'name' => $name,
-					'year' => $year,
-					'type' => $type,
-				];
+				// search() calls this method directly, never
+				// normalize_result() — review round 2, BGG audit finding.
+				$results[] = $this->sanitize_normalized_result(
+					[
+						'id'   => $id,
+						'name' => $name,
+						'year' => $year,
+						'type' => $type,
+					]
+				);
 			}
 		}
 
@@ -480,7 +487,9 @@ class BoardGameGeek extends API_Base {
 			}
 		}
 
-		return $result;
+		// get_by_id() calls this method directly, never normalize_result()
+		// (review round 2, BGG audit finding).
+		return $this->sanitize_normalized_result( $result, [ 'image', 'thumbnail' ] );
 	}
 
 	/**

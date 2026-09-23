@@ -425,6 +425,13 @@ class TMDB extends API_Base {
 				$result['watch_providers'] = $response['watch/providers']['results'];
 			}
 
+			// normalize_movie() sanitizes its own fields, but cast, crew,
+			// director, trailer and watch_providers are merged in after
+			// it returns, so they need their own pass (review round 2,
+			// BGG-class audit finding — merged-in fields bypassed
+			// sanitization even after the round-1 TMDB fix).
+			$result = $this->sanitize_normalized_result( $result, [ 'poster', 'backdrop', 'url' ] );
+
 			$this->set_cache( $cache_key, $result );
 
 			return $result;
@@ -499,6 +506,12 @@ class TMDB extends API_Base {
 				$result['watch_providers'] = $response['watch/providers']['results'];
 			}
 
+			// normalize_tv() sanitizes its own fields, but cast, crew,
+			// creators, trailer and watch_providers are merged in after
+			// it returns, so they need their own pass (review round 2,
+			// BGG-class audit finding).
+			$result = $this->sanitize_normalized_result( $result, [ 'poster', 'backdrop', 'url', 'image' ] );
+
 			$this->set_cache( $cache_key, $result );
 
 			return $result;
@@ -550,6 +563,11 @@ class TMDB extends API_Base {
 					$result['episodes'][] = $this->normalize_episode( $episode, $tv_id );
 				}
 			}
+
+			// get_season() builds its own top-level fields inline and
+			// never went through any normalize_* helper (review round 2,
+			// BGG-class audit finding).
+			$result = $this->sanitize_normalized_result( $result, [ 'poster' ] );
 
 			$this->set_cache( $cache_key, $result );
 
@@ -828,13 +846,14 @@ class TMDB extends API_Base {
 	 */
 	protected function normalize_result( array $raw_result ): array {
 		$media_type = $raw_result['media_type'] ?? 'movie';
+		$url_keys   = [ 'poster', 'backdrop', 'image' ];
 
 		if ( 'movie' === $media_type ) {
-			return $this->normalize_movie( $raw_result );
+			return $this->sanitize_normalized_result( $this->normalize_movie( $raw_result ), $url_keys );
 		} elseif ( 'tv' === $media_type ) {
-			return $this->normalize_tv( $raw_result );
+			return $this->sanitize_normalized_result( $this->normalize_tv( $raw_result ), $url_keys );
 		} elseif ( 'person' === $media_type ) {
-			return $this->normalize_person( $raw_result );
+			return $this->sanitize_normalized_result( $this->normalize_person( $raw_result ), $url_keys );
 		}
 
 		return [];
@@ -905,7 +924,12 @@ class TMDB extends API_Base {
 			$result['genre_ids'] = is_array( $movie['genre_ids'] ) ? $movie['genre_ids'] : [];
 		}
 
-		return $result;
+		// Sanitize here, not just in normalize_result(): search_movies(),
+		// get_popular_movies(), get_trending() and get_movie() all call
+		// this method directly, bypassing normalize_result() (review
+		// round 1, Important 2 — the admin movie lookup path returned
+		// unstripped provider titles).
+		return $this->sanitize_normalized_result( $result, [ 'poster', 'backdrop' ] );
 	}
 
 	/**
@@ -987,7 +1011,11 @@ class TMDB extends API_Base {
 			$result['genre_ids'] = is_array( $show['genre_ids'] ) ? $show['genre_ids'] : [];
 		}
 
-		return $result;
+		// Sanitize here, not just in normalize_result(): search_tv(),
+		// get_popular_tv(), get_trending() and get_tv() all call this
+		// method directly, bypassing normalize_result() (review round 1,
+		// Important 2).
+		return $this->sanitize_normalized_result( $result, [ 'poster', 'backdrop' ] );
 	}
 
 	/**
@@ -1077,7 +1105,10 @@ class TMDB extends API_Base {
 			];
 		}
 
-		return $result;
+		// Sanitize here: normalize_tv()'s detailed branch merges this in
+		// after its own sanitize call already ran (review round 2,
+		// BGG-class audit finding).
+		return $this->sanitize_normalized_result( $result, [ 'poster' ] );
 	}
 
 	/**
@@ -1088,21 +1119,27 @@ class TMDB extends API_Base {
 	 * @return array<string, mixed> Normalized episode.
 	 */
 	private function normalize_episode( array $episode, int $tv_id ): array {
-		return [
-			'id'             => $episode['id'] ?? 0,
-			'tv_id'          => $tv_id,
-			'name'           => $episode['name'] ?? '',
-			'overview'       => $episode['overview'] ?? '',
-			'still'          => $this->get_image_url( $episode['still_path'] ?? '', 'w300' ),
-			'air_date'       => $episode['air_date'] ?? '',
-			'episode_number' => $episode['episode_number'] ?? 0,
-			'season_number'  => $episode['season_number'] ?? 0,
-			'runtime'        => $episode['runtime'] ?? null,
-			'vote_average'   => $episode['vote_average'] ?? 0,
-			'vote_count'     => $episode['vote_count'] ?? 0,
-			'type'           => 'episode',
-			'source'         => 'tmdb',
-		];
+		// Sanitize here: get_season(), get_episode() and normalize_tv()'s
+		// last_episode/next_episode call this method directly, never
+		// normalize_result() (review round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result(
+			[
+				'id'             => $episode['id'] ?? 0,
+				'tv_id'          => $tv_id,
+				'name'           => $episode['name'] ?? '',
+				'overview'       => $episode['overview'] ?? '',
+				'still'          => $this->get_image_url( $episode['still_path'] ?? '', 'w300' ),
+				'air_date'       => $episode['air_date'] ?? '',
+				'episode_number' => $episode['episode_number'] ?? 0,
+				'season_number'  => $episode['season_number'] ?? 0,
+				'runtime'        => $episode['runtime'] ?? null,
+				'vote_average'   => $episode['vote_average'] ?? 0,
+				'vote_count'     => $episode['vote_count'] ?? 0,
+				'type'           => 'episode',
+				'source'         => 'tmdb',
+			],
+			[ 'still' ]
+		);
 	}
 
 	/**
@@ -1112,15 +1149,18 @@ class TMDB extends API_Base {
 	 * @return array<string, mixed> Normalized person.
 	 */
 	private function normalize_person( array $person ): array {
-		return [
-			'id'                   => $person['id'] ?? 0,
-			'name'                 => $person['name'] ?? '',
-			'image'                => $this->get_image_url( $person['profile_path'] ?? '', 'w185' ),
-			'known_for_department' => $person['known_for_department'] ?? '',
-			'popularity'           => $person['popularity'] ?? 0,
-			'type'                 => 'person',
-			'source'               => 'tmdb',
-		];
+		return $this->sanitize_normalized_result(
+			[
+				'id'                   => $person['id'] ?? 0,
+				'name'                 => $person['name'] ?? '',
+				'image'                => $this->get_image_url( $person['profile_path'] ?? '', 'w185' ),
+				'known_for_department' => $person['known_for_department'] ?? '',
+				'popularity'           => $person['popularity'] ?? 0,
+				'type'                 => 'person',
+				'source'               => 'tmdb',
+			],
+			[ 'image' ]
+		);
 	}
 
 	/**
@@ -1143,7 +1183,11 @@ class TMDB extends API_Base {
 			];
 		}
 
-		return $result;
+		// Sanitize here: get_movie()/get_tv()/get_episode() call this
+		// method directly and merge its output in after normalize_movie()/
+		// normalize_tv() already sanitized theirs (review round 2,
+		// BGG-class audit finding).
+		return $this->sanitize_normalized_result( $result, [ 'image' ] );
 	}
 
 	/**
@@ -1196,7 +1240,9 @@ class TMDB extends API_Base {
 			];
 		}
 
-		return $result;
+		// Sanitize here: get_movie()/get_tv()/get_episode() call this
+		// method directly (review round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result( $result, [ 'image' ] );
 	}
 
 	/**

@@ -250,7 +250,13 @@ final class Core_Abilities {
 						],
 					],
 					'required'             => [ 'kind' ],
-					'additionalProperties' => true,
+					// Kind-specific fields (e.g. listen_track) arrive as
+					// additional properties; each one must still be a
+					// scalar so a caller cannot smuggle an array/object
+					// into post meta.
+					'additionalProperties' => [
+						'type' => [ 'string', 'number', 'integer', 'boolean' ],
+					],
 				],
 				'output_schema'       => [
 					'type'       => 'object',
@@ -369,6 +375,7 @@ final class Core_Abilities {
 							'description' => __( 'Meta field key without the _pkiw_ prefix.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 						'meta_value' => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+							'type'        => [ 'string', 'number', 'integer', 'boolean' ],
 							'description' => __( 'Value to set.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 					],
@@ -541,10 +548,21 @@ final class Core_Abilities {
 		// Set the kind taxonomy term.
 		wp_set_post_terms( $post_id, [ $kind ], Taxonomy::TAXONOMY );
 
-		// Set meta fields from remaining args.
+		// Set meta fields from remaining args, restricted to this plugin's
+		// own registered field keys. sanitize_key() first so a caller
+		// can't dodge is_valid_field() with an unnormalized key, then
+		// require the value to be scalar — this keeps a caller from
+		// writing an internal bookkeeping key the sync classes trust
+		// (e.g. `imported_from`, read by was_imported_from_service()) or
+		// an array/object value into a _pkiw_* field other code expects
+		// to be a plain string.
 		$reserved_keys = [ 'kind', 'title', 'content', 'status' ];
 		foreach ( $args as $key => $value ) {
 			if ( in_array( $key, $reserved_keys, true ) ) {
+				continue;
+			}
+			$key = sanitize_key( (string) $key );
+			if ( '' === $key || ! $this->meta_fields->is_valid_field( $key ) || ! is_scalar( $value ) ) {
 				continue;
 			}
 			update_post_meta( $post_id, Meta_Fields::PREFIX . $key, $value );
@@ -646,7 +664,42 @@ final class Core_Abilities {
 			);
 		}
 
-		$full_key = Meta_Fields::PREFIX . sanitize_key( $meta_key );
+		// The ability's own permission_callback already checks this for a
+		// request routed through the Abilities API; re-check here so a
+		// direct call to this method (as a future caller might make) can't
+		// skip it.
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return new \WP_Error(
+				'forbidden',
+				__( 'You do not have permission to edit this post.', 'post-kinds-for-indieweb-in-block-themes' ),
+				[ 'status' => 403 ]
+			);
+		}
+
+		if ( ! is_scalar( $meta_value ) ) {
+			return new \WP_Error(
+				'invalid_meta_value',
+				__( 'Meta value must be a string, number, or boolean.', 'post-kinds-for-indieweb-in-block-themes' ),
+				[ 'status' => 400 ]
+			);
+		}
+
+		// Same allowlist create-post's meta loop uses: only this plugin's
+		// own registered field keys may be written, so a caller can't set
+		// an internal bookkeeping key (_pkiw_imported_from, read by
+		// was_imported_from_service()/Query_Filter::is_imported_post()
+		// to mean "this post came from an external import") or any other
+		// unregistered key through this ability.
+		$meta_key = sanitize_key( (string) $meta_key );
+		if ( '' === $meta_key || ! $this->meta_fields->is_valid_field( $meta_key ) ) {
+			return new \WP_Error(
+				'invalid_meta_key',
+				__( 'This is not a registered Post Kinds meta field.', 'post-kinds-for-indieweb-in-block-themes' ),
+				[ 'status' => 400 ]
+			);
+		}
+
+		$full_key = Meta_Fields::PREFIX . $meta_key;
 		update_post_meta( $post_id, $full_key, $meta_value );
 
 		return [
@@ -676,20 +729,51 @@ final class Core_Abilities {
 
 		$meta = [];
 
+		// Only this plugin's own registered fields are ever returned, in
+		// both branches below — matching what REST exposes (registered
+		// meta only) and closing the gap a bookkeeping key (imported_from)
+		// or a legacy importer/sync key outside the registered field list
+		// (e.g. the Swarm import's checkin_latitude/checkin_venue_id,
+		// class-import-manager.php:1300-1304) would otherwise leak
+		// through, keyed by name or via the full-meta scan.
 		if ( ! empty( $meta_keys ) ) {
 			// Return specific keys.
 			foreach ( $meta_keys as $key ) {
+				$key = sanitize_key( (string) $key );
+				if ( '' === $key || ! $this->meta_fields->is_valid_field( $key ) ) {
+					continue;
+				}
 				$meta[ $key ] = get_post_meta( $post_id, Meta_Fields::PREFIX . $key, true );
 			}
 		} else {
 			// Return all _pkiw_ prefixed meta.
 			$all_meta = get_post_meta( $post_id );
 			foreach ( $all_meta as $full_key => $values ) {
-				if ( str_starts_with( $full_key, Meta_Fields::PREFIX ) ) {
-					$short_key          = substr( $full_key, strlen( Meta_Fields::PREFIX ) );
-					$meta[ $short_key ] = $values[0] ?? '';
+				if ( ! str_starts_with( $full_key, Meta_Fields::PREFIX ) ) {
+					continue;
 				}
+				$short_key = substr( $full_key, strlen( Meta_Fields::PREFIX ) );
+				if ( ! $this->meta_fields->is_valid_field( $short_key ) ) {
+					continue;
+				}
+				$meta[ $short_key ] = $values[0] ?? '';
 			}
+		}
+
+		// R-03 parity: apply the same per-post location-visibility tiers
+		// REST responses apply (Meta_Fields::redact_location_meta), so a
+		// requester who cannot edit the post never receives precise
+		// location fields the post's privacy setting hides. The author
+		// and any user with edit_post keep the full set, because
+		// get_visible_location_fields() already returns everything
+		// visible for them.
+		$prefixed = [];
+		foreach ( $meta as $short_key => $value ) {
+			$prefixed[ Meta_Fields::PREFIX . $short_key ] = $value;
+		}
+		$prefixed = Meta_Fields::redact_location_array( $prefixed, $post_id );
+		foreach ( $prefixed as $full_key => $value ) {
+			$meta[ substr( $full_key, strlen( Meta_Fields::PREFIX ) ) ] = $value;
 		}
 
 		return [
