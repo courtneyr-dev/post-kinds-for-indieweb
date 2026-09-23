@@ -139,7 +139,7 @@ Webhooks let external apps push events to your site so posts are created automat
 
 - A **Webhook URL** to copy into the external service.
 - For **Plex** and **Jellyfin**, a per-service token with Generate and Rotate token buttons. Plex can't send headers, so its URL carries the token (`?token=`) and is masked like a password; query-string tokens can show up in server access logs, so rotate the token if the URL leaks. Jellyfin sends the token in an `X-Webhook-Token` request header, set on the Webhook plugin's Generic destination. Rotating a token stops the old one immediately.
-- For ListenBrainz and Trakt, requests are verified with an HMAC-SHA256 signature of the body made with the site webhook secret; the generic endpoint accepts that secret as its token.
+- For ListenBrainz and Trakt, requests are verified with an HMAC-SHA256 signature of the body made with the site webhook secret. The `/webhook/generic` endpoint accepts that same secret as a token, but only in the `X-Webhook-Token` request header — a `?token=` query string is not accepted, since query strings can show up in server and CDN access logs.
 - A **Webhook Log** of recent deliveries, and a **Pending Scrobbles** count.
 
 ## Quick Post page (Reactions → Quick Post)

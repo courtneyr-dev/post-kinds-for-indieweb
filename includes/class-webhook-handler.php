@@ -717,15 +717,16 @@ class Webhook_Handler {
 	/**
 	 * Create a post from a scrobble.
 	 *
-	 * @param array<string, mixed> $item Item data.
+	 * @param array<string, mixed> $item        Item data.
+	 * @param string               $post_status Post status to create with; defaults to publish for the direct webhook path.
 	 * @return int|\WP_Error Post ID or error.
 	 */
-	private function create_scrobble_post( array $item ) {
+	private function create_scrobble_post( array $item, string $post_status = 'publish' ) {
 		$type = $item['type'] ?? '';
 
 		$post_data = [
 			'post_type'   => 'post',
-			'post_status' => 'publish',
+			'post_status' => $post_status,
 			'post_author' => get_option( 'pkiw_default_author', 1 ),
 		];
 
@@ -922,10 +923,11 @@ class Webhook_Handler {
 	/**
 	 * Approve a pending scrobble.
 	 *
-	 * @param int $index Scrobble index.
+	 * @param int    $index             Scrobble index.
+	 * @param string $requested_status  Requested post status; only used when the approver may publish.
 	 * @return int|\WP_Error Post ID or error.
 	 */
-	public function approve_scrobble( int $index ) {
+	public function approve_scrobble( int $index, string $requested_status = 'publish' ) {
 		$pending = $this->get_pending_scrobbles();
 
 		if ( ! isset( $pending[ $index ] ) ) {
@@ -935,7 +937,8 @@ class Webhook_Handler {
 		$item = $pending[ $index ];
 
 		// Create post.
-		$post_id = $this->create_scrobble_post( $item );
+		$post_status = \PKIW\Admin\Quick_Post::resolve_post_status( $requested_status, 'pending' );
+		$post_id     = $this->create_scrobble_post( $item, $post_status );
 
 		if ( ! is_wp_error( $post_id ) ) {
 			// Remove from pending.

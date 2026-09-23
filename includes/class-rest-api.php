@@ -983,7 +983,11 @@ class REST_API {
 	}
 
 	/**
-	 * Verify webhook token (simpler auth).
+	 * Verify the /webhook/generic route's token (simpler auth).
+	 *
+	 * Reads the secret from the X-Webhook-Token request header only; a
+	 * ?token= query string is not accepted, since query strings can show up
+	 * in CDN and access logs.
 	 *
 	 * @param \WP_REST_Request $request Request object.
 	 * @return bool
