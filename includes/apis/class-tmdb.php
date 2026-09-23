@@ -906,7 +906,12 @@ class TMDB extends API_Base {
 			$result['genre_ids'] = is_array( $movie['genre_ids'] ) ? $movie['genre_ids'] : [];
 		}
 
-		return $result;
+		// Sanitize here, not just in normalize_result(): search_movies(),
+		// get_popular_movies(), get_trending() and get_movie() all call
+		// this method directly, bypassing normalize_result() (review
+		// round 1, Important 2 — the admin movie lookup path returned
+		// unstripped provider titles).
+		return $this->sanitize_normalized_result( $result, [ 'poster', 'backdrop' ] );
 	}
 
 	/**
@@ -988,7 +993,11 @@ class TMDB extends API_Base {
 			$result['genre_ids'] = is_array( $show['genre_ids'] ) ? $show['genre_ids'] : [];
 		}
 
-		return $result;
+		// Sanitize here, not just in normalize_result(): search_tv(),
+		// get_popular_tv(), get_trending() and get_tv() all call this
+		// method directly, bypassing normalize_result() (review round 1,
+		// Important 2).
+		return $this->sanitize_normalized_result( $result, [ 'poster', 'backdrop' ] );
 	}
 
 	/**

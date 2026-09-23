@@ -377,21 +377,27 @@ class Readwise extends API_Base {
 	 * @return array<string, mixed> Normalized book data.
 	 */
 	private function normalize_book( array $book ): array {
-		return [
-			'id'                => $book['id'] ?? 0,
-			'title'             => $book['title'] ?? '',
-			'author'            => $book['author'] ?? '',
-			'category'          => $book['category'] ?? '',
-			'source'            => $book['source'] ?? '',
-			'source_url'        => $book['source_url'] ?? '',
-			'cover_image'       => $book['cover_image_url'] ?? '',
-			'highlight_count'   => $book['num_highlights'] ?? 0,
-			'last_highlight_at' => $book['last_highlight_at'] ?? '',
-			'updated_at'        => $book['updated'] ?? '',
-			'asin'              => $book['asin'] ?? '',
-			'tags'              => $book['tags'] ?? [],
-			'document_note'     => $book['document_note'] ?? '',
-		];
+		// Sanitize here, not just in normalize_result(): the real call
+		// sites (get_books(), get_by_id()) call this method directly
+		// (review round 1, Important 2).
+		return $this->sanitize_normalized_result(
+			[
+				'id'                => $book['id'] ?? 0,
+				'title'             => $book['title'] ?? '',
+				'author'            => $book['author'] ?? '',
+				'category'          => $book['category'] ?? '',
+				'source'            => $book['source'] ?? '',
+				'source_url'        => $book['source_url'] ?? '',
+				'cover_image'       => $book['cover_image_url'] ?? '',
+				'highlight_count'   => $book['num_highlights'] ?? 0,
+				'last_highlight_at' => $book['last_highlight_at'] ?? '',
+				'updated_at'        => $book['updated'] ?? '',
+				'asin'              => $book['asin'] ?? '',
+				'tags'              => $book['tags'] ?? [],
+				'document_note'     => $book['document_note'] ?? '',
+			],
+			[ 'source_url', 'cover_image' ]
+		);
 	}
 
 	/**
@@ -401,25 +407,31 @@ class Readwise extends API_Base {
 	 * @return array<string, mixed> Normalized highlight data.
 	 */
 	private function normalize_highlight( array $highlight ): array {
-		return [
-			'id'            => $highlight['id'] ?? 0,
-			'text'          => $highlight['text'] ?? '',
-			'note'          => $highlight['note'] ?? '',
-			'location'      => $highlight['location'] ?? 0,
-			'location_type' => $highlight['location_type'] ?? '',
-			'url'           => $highlight['url'] ?? '',
-			'color'         => $highlight['color'] ?? '',
-			'created_at'    => $highlight['created_at'] ?? '',
-			'updated_at'    => $highlight['updated'] ?? '',
-			'book_id'       => $highlight['book_id'] ?? 0,
-			'book'          => [
-				'id'       => $highlight['book']['id'] ?? 0,
-				'title'    => $highlight['book']['title'] ?? '',
-				'author'   => $highlight['book']['author'] ?? '',
-				'category' => $highlight['book']['category'] ?? '',
+		// Sanitize here: get_highlights() calls this method directly and
+		// never went through normalize_result() at all (review round 1,
+		// Important 2).
+		return $this->sanitize_normalized_result(
+			[
+				'id'            => $highlight['id'] ?? 0,
+				'text'          => $highlight['text'] ?? '',
+				'note'          => $highlight['note'] ?? '',
+				'location'      => $highlight['location'] ?? 0,
+				'location_type' => $highlight['location_type'] ?? '',
+				'url'           => $highlight['url'] ?? '',
+				'color'         => $highlight['color'] ?? '',
+				'created_at'    => $highlight['created_at'] ?? '',
+				'updated_at'    => $highlight['updated'] ?? '',
+				'book_id'       => $highlight['book_id'] ?? 0,
+				'book'          => [
+					'id'       => $highlight['book']['id'] ?? 0,
+					'title'    => $highlight['book']['title'] ?? '',
+					'author'   => $highlight['book']['author'] ?? '',
+					'category' => $highlight['book']['category'] ?? '',
+				],
+				'tags'          => $highlight['tags'] ?? [],
 			],
-			'tags'          => $highlight['tags'] ?? [],
-		];
+			[ 'url' ]
+		);
 	}
 
 	/**

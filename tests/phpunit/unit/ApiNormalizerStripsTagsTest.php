@@ -11,6 +11,7 @@
 namespace PKIW\Tests\Unit;
 
 use PKIW\APIs\OpenLibrary;
+use PKIW\APIs\TMDB;
 use ReflectionMethod;
 use WP_UnitTestCase;
 
@@ -78,5 +79,51 @@ final class ApiNormalizerStripsTagsTest extends WP_UnitTestCase {
 		);
 
 		$this->assertStringContainsString( 'covers.openlibrary.org', $result['cover'] );
+	}
+
+	/**
+	 * Review round 1, Important 2: TMDB::search_movies() and search_tv()
+	 * (the methods Admin::lookup_media() actually calls for the admin
+	 * movie/TV lookup) call normalize_movie()/normalize_tv() directly and
+	 * never went through normalize_result(), so the admin lookup path
+	 * returned unstripped provider markup even though search()'s own
+	 * results (via normalize_result()) were already clean.
+	 */
+	public function test_tmdb_search_movies_and_search_tv_strip_tags(): void {
+		update_option( 'pkiw_api_credentials', [ 'tmdb' => [ 'enabled' => true, 'api_key' => 'fake-key-for-test' ] ] );
+		add_filter(
+			'pre_http_request',
+			static function () {
+				$payload = '<img src=x onerror=alert(1)>';
+				$body    = [
+					'results' => [
+						[
+							'id'             => 11,
+							'media_type'     => 'movie',
+							'title'          => 'M ' . $payload,
+							'name'           => 'T ' . $payload,
+							'release_date'   => '2020-01-01',
+							'first_air_date' => '2020-01-01',
+						],
+					],
+				];
+				return [
+					'headers'  => [],
+					'body'     => wp_json_encode( $body ),
+					'response' => [ 'code' => 200, 'message' => 'OK' ],
+					'cookies'  => [],
+					'filename' => null,
+				];
+			},
+			1,
+			0
+		);
+
+		$tmdb   = new TMDB();
+		$movies = $tmdb->search_movies( 'probe' );
+		$tv     = $tmdb->search_tv( 'probe' );
+
+		$this->assertStringNotContainsString( '<img', $movies[0]['title'] );
+		$this->assertStringNotContainsString( '<img', $tv[0]['title'] );
 	}
 }
