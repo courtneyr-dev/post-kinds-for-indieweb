@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - The `post-kinds/get-post-meta` ability returned every stored `_pkiw_*` location field regardless of the requester's permissions, bypassing the location redaction `rest_prepare_post` applies. The key→tier walk is now shared via `Meta_Fields::redact_location_array()`, so a requester without `edit_post` gets the same zeroed/blanked coordinates, address and venue fields the REST API already hides; the author and any user with `edit_post` still see everything.
+- The `post-kinds/create-post` ability wrote any extra input key as `_pkiw_*` post meta, including internal bookkeeping keys the sync classes trust (e.g. `imported_from`) and non-scalar values. It now only persists keys registered in `Meta_Fields`, sanitized with `sanitize_key()`, and only scalar values; the input schema's `additionalProperties` also requires a scalar type. **Breaking:** an unregistered or non-scalar extra key is now silently dropped instead of being written as meta.
+- `post-kinds/update-post-meta` accepted any value, including arrays/objects, and relied solely on the Abilities API's `permission_callback` for the `edit_post` check, which a direct call to the execute method bypasses. It now returns a 400 `WP_Error` for a non-scalar `meta_value` and a 403 `WP_Error` when the caller cannot edit the post, regardless of caller. **Breaking:** a caller sending an array/object `meta_value` now gets a `WP_Error` instead of it being stored.
+- Quick Post's `create_reaction_post()` and scrobble approval's `create_post_from_scrobble()` relied on `wp_insert_post()`'s implicit current-user default for `post_author`; both now set it explicitly to `get_current_user_id()`.
 
 ## [1.8.5] - 2026-09-23
 

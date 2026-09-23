@@ -135,6 +135,28 @@ class CoreAbilitiesTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * create-post may only persist meta for this plugin's own registered
+	 * field keys (finding K3). `imported_from` isn't one of them — it's
+	 * an internal bookkeeping key the sync classes write themselves
+	 * (`_pkiw_imported_from`) and trust to mean "this post came from an
+	 * external import" — so a caller must not be able to set it here.
+	 */
+	public function test_execute_create_post_ignores_unregistered_meta_key() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$result = $this->abilities->execute_create_post( [
+			'kind'          => 'note',
+			'title'         => 'Test Note',
+			'imported_from' => 'malicious-source',
+		] );
+
+		$this->assertIsArray( $result );
+		$post_id = $result['post_id'];
+
+		$this->assertSame( '', get_post_meta( $post_id, Meta_Fields::PREFIX . 'imported_from', true ) );
+	}
+
+	/**
 	 * Test execute_set_kind.
 	 */
 	public function test_execute_set_kind() {
@@ -189,6 +211,46 @@ class CoreAbilitiesTest extends WP_UnitTestCase {
 			'Updated Track Name',
 			get_post_meta( $post_id, Meta_Fields::PREFIX . 'listen_track', true )
 		);
+	}
+
+	/**
+	 * update-post-meta must reject a non-scalar value (finding K3) rather
+	 * than storing a PHP array under a _pkiw_* key other code expects to
+	 * be a string.
+	 */
+	public function test_execute_update_post_meta_rejects_array_value() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$post_id = self::factory()->post->create();
+		$result  = $this->abilities->execute_update_post_meta( [
+			'post_id'    => $post_id,
+			'meta_key'   => 'listen_track', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+			'meta_value' => [ 'not', 'a', 'scalar' ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+		] );
+
+		$this->assertInstanceOf( \WP_Error::class, $result );
+		$this->assertSame( '', get_post_meta( $post_id, Meta_Fields::PREFIX . 'listen_track', true ) );
+	}
+
+	/**
+	 * execute_update_post_meta() must itself refuse a write from a user
+	 * who cannot edit the post (finding K3) — defense in depth alongside
+	 * the ability's own permission_callback, which a caller invoking the
+	 * execute method directly never runs.
+	 */
+	public function test_execute_update_post_meta_forbids_user_without_edit_post() {
+		$author_id = self::factory()->user->create( [ 'role' => 'author' ] );
+		$post_id   = self::factory()->post->create( [ 'post_author' => $author_id ] );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'subscriber' ] ) );
+
+		$result = $this->abilities->execute_update_post_meta( [
+			'post_id'    => $post_id,
+			'meta_key'   => 'listen_track', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+			'meta_value' => 'hijacked', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+		] );
+
+		$this->assertInstanceOf( \WP_Error::class, $result );
+		$this->assertSame( '', get_post_meta( $post_id, Meta_Fields::PREFIX . 'listen_track', true ) );
 	}
 
 	/**

@@ -250,7 +250,13 @@ final class Core_Abilities {
 						],
 					],
 					'required'             => [ 'kind' ],
-					'additionalProperties' => true,
+					// Kind-specific fields (e.g. listen_track) arrive as
+					// additional properties; each one must still be a
+					// scalar so a caller cannot smuggle an array/object
+					// into post meta.
+					'additionalProperties' => [
+						'type' => [ 'string', 'number', 'integer', 'boolean' ],
+					],
 				],
 				'output_schema'       => [
 					'type'       => 'object',
@@ -541,10 +547,21 @@ final class Core_Abilities {
 		// Set the kind taxonomy term.
 		wp_set_post_terms( $post_id, [ $kind ], Taxonomy::TAXONOMY );
 
-		// Set meta fields from remaining args.
+		// Set meta fields from remaining args, restricted to this plugin's
+		// own registered field keys. sanitize_key() first so a caller
+		// can't dodge is_valid_field() with an unnormalized key, then
+		// require the value to be scalar — this keeps a caller from
+		// writing an internal bookkeeping key the sync classes trust
+		// (e.g. `imported_from`, read by was_imported_from_service()) or
+		// an array/object value into a _pkiw_* field other code expects
+		// to be a plain string.
 		$reserved_keys = [ 'kind', 'title', 'content', 'status' ];
 		foreach ( $args as $key => $value ) {
 			if ( in_array( $key, $reserved_keys, true ) ) {
+				continue;
+			}
+			$key = sanitize_key( (string) $key );
+			if ( '' === $key || ! $this->meta_fields->is_valid_field( $key ) || ! is_scalar( $value ) ) {
 				continue;
 			}
 			update_post_meta( $post_id, Meta_Fields::PREFIX . $key, $value );
@@ -643,6 +660,26 @@ final class Core_Abilities {
 			return new \WP_Error(
 				'invalid_post',
 				__( 'Post not found.', 'post-kinds-for-indieweb-in-block-themes' )
+			);
+		}
+
+		// The ability's own permission_callback already checks this for a
+		// request routed through the Abilities API; re-check here so a
+		// direct call to this method (as a future caller might make) can't
+		// skip it.
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return new \WP_Error(
+				'forbidden',
+				__( 'You do not have permission to edit this post.', 'post-kinds-for-indieweb-in-block-themes' ),
+				[ 'status' => 403 ]
+			);
+		}
+
+		if ( ! is_scalar( $meta_value ) ) {
+			return new \WP_Error(
+				'invalid_meta_value',
+				__( 'Meta value must be a string, number, or boolean.', 'post-kinds-for-indieweb-in-block-themes' ),
+				[ 'status' => 400 ]
 			);
 		}
 
