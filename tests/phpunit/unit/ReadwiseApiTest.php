@@ -57,6 +57,40 @@ class ReadwiseApiTest extends ApiTestCase {
 	}
 
 	/**
+	 * Review round 3: `document_note` is the reader's own note on the
+	 * book/document, not provider metadata — the same class of field as
+	 * highlight `text`/`note`. Import_Manager::build_note_payload() (the
+	 * Readwise Supplementals import) already esc_html()s it before
+	 * writing it into post content.
+	 */
+	public function test_get_books_keeps_document_note_characters(): void {
+		$this->mock_http_response(
+			'readwise.io',
+			[
+				'count'          => 1,
+				'nextPageCursor' => null,
+				'results'        => [
+					[
+						'id'              => 1,
+						'title'           => 'Effective Java',
+						'author'          => 'Joshua Bloch',
+						'category'        => 'books',
+						'source'          => 'kindle',
+						'source_url'      => 'https://www.amazon.com/dp/0134685997',
+						'cover_image_url' => 'https://example.com/cover.jpg',
+						'num_highlights'  => 1,
+						'document_note'   => 'Use List<String> for typed lists.',
+					],
+				],
+			]
+		);
+
+		$books = $this->api->get_books();
+
+		$this->assertSame( 'Use List<String> for typed lists.', $books[0]['document_note'] );
+	}
+
+	/**
 	 * Test get_books returns empty when not configured.
 	 */
 	public function test_get_books_returns_empty_when_not_configured(): void {
@@ -106,6 +140,52 @@ class ReadwiseApiTest extends ApiTestCase {
 		$this->assertSame( 1234, $highlights[0]['location'] );
 		$this->assertSame( 12345, $highlights[0]['book_id'] );
 		$this->assertSame( 'Atomic Habits', $highlights[0]['book']['title'] );
+	}
+
+	/**
+	 * Review round 3: highlight `text` and `note` are the highlighter's
+	 * own words, not provider metadata that needs stripping. Before this
+	 * fix, wp_strip_all_tags() (added for finding K2) silently truncated
+	 * both at a bare "<" — a class of prose entirely ordinary in reading
+	 * notes about code or comparisons. The only consumer,
+	 * Import_Manager::build_highlight_blocks(), already esc_html()s both
+	 * before writing them into post content, so nothing needed the strip.
+	 * Uses the reviewer's exact failing inputs, asserted byte-for-byte.
+	 */
+	public function test_get_highlights_keeps_text_and_note_characters(): void {
+		$this->mock_http_response(
+			'readwise.io',
+			[
+				'count'          => 1,
+				'nextPageCursor' => null,
+				'results'        => [
+					[
+						'id'            => 1,
+						'text'          => 'Use List<String> for typed lists.',
+						'note'          => 'I <3 this chapter, it explains <details> well.',
+						'location'      => 1,
+						'location_type' => 'location',
+						'url'           => 'https://readwise.io/open/1',
+						'color'         => 'yellow',
+						'created_at'    => '2024-06-10T08:15:00Z',
+						'updated'       => '2024-06-10T08:15:00Z',
+						'book_id'       => 1,
+						'book'          => [
+							'id'       => 1,
+							'title'    => 'Effective Java',
+							'author'   => 'Joshua Bloch',
+							'category' => 'books',
+						],
+						'tags'          => [],
+					],
+				],
+			]
+		);
+
+		$highlights = $this->api->get_highlights();
+
+		$this->assertSame( 'Use List<String> for typed lists.', $highlights[0]['text'] );
+		$this->assertSame( 'I <3 this chapter, it explains <details> well.', $highlights[0]['note'] );
 	}
 
 	/**

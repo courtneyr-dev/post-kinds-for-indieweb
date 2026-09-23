@@ -380,7 +380,7 @@ class Readwise extends API_Base {
 		// Sanitize here, not just in normalize_result(): the real call
 		// sites (get_books(), get_by_id()) call this method directly
 		// (review round 1, Important 2).
-		return $this->sanitize_normalized_result(
+		$result = $this->sanitize_normalized_result(
 			[
 				'id'                => $book['id'] ?? 0,
 				'title'             => $book['title'] ?? '',
@@ -394,10 +394,20 @@ class Readwise extends API_Base {
 				'updated_at'        => $book['updated'] ?? '',
 				'asin'              => $book['asin'] ?? '',
 				'tags'              => $book['tags'] ?? [],
-				'document_note'     => $book['document_note'] ?? '',
 			],
 			[ 'source_url', 'cover_image' ]
 		);
+
+		// document_note is the reader's own note on the book/document, not
+		// provider metadata — wp_strip_all_tags() silently truncates real
+		// prose at a bare "<". Import_Manager::build_note_payload()
+		// (includes/class-import-manager.php:1362) already esc_html()s it
+		// before writing it into post content, so the strip added no
+		// safety here, only data loss on the Readwise Supplementals import
+		// (review round 3).
+		$result['document_note'] = $book['document_note'] ?? '';
+
+		return $result;
 	}
 
 	/**
@@ -410,11 +420,9 @@ class Readwise extends API_Base {
 		// Sanitize here: get_highlights() calls this method directly and
 		// never went through normalize_result() at all (review round 1,
 		// Important 2).
-		return $this->sanitize_normalized_result(
+		$result = $this->sanitize_normalized_result(
 			[
 				'id'            => $highlight['id'] ?? 0,
-				'text'          => $highlight['text'] ?? '',
-				'note'          => $highlight['note'] ?? '',
 				'location'      => $highlight['location'] ?? 0,
 				'location_type' => $highlight['location_type'] ?? '',
 				'url'           => $highlight['url'] ?? '',
@@ -432,6 +440,21 @@ class Readwise extends API_Base {
 			],
 			[ 'url' ]
 		);
+
+		// text/note are the highlighter's own words — the quote they
+		// selected and the note they wrote about it — not provider
+		// metadata. wp_strip_all_tags() silently truncated real prose at
+		// a bare "<" (e.g. "Use List<String> for..." became "Use List").
+		// The only consumer, Import_Manager::build_highlight_blocks()
+		// (includes/class-import-manager.php:1467-1476), already
+		// esc_html()s both before writing them into post content, so the
+		// strip added no safety, only silent data loss on re-import
+		// (skip_existing defaults to true, so the damage sticks) (review
+		// round 3).
+		$result['text'] = $highlight['text'] ?? '';
+		$result['note'] = $highlight['note'] ?? '';
+
+		return $result;
 	}
 
 	/**
