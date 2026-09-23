@@ -207,7 +207,12 @@ class Webhook_Handler {
 			update_option( "pkiw_webhook_token_{$service}", $expected_token );
 		}
 
-		// Check various token locations.
+		// The token is read from headers only: X-Webhook-Token, or an
+		// Authorization: Bearer header when X-Webhook-Token is absent. The
+		// query string and body are not read, so the token stays out of CDN
+		// and access logs. Plex cannot send headers; its query-string token is
+		// checked by REST_API::verify_plex_webhook_token(), and that route
+		// passes $authenticated = true, so it never reaches this method.
 		$token = $request->get_header( 'X-Webhook-Token' );
 
 		if ( ! $token ) {
@@ -215,10 +220,6 @@ class Webhook_Handler {
 			if ( $token && strpos( $token, 'Bearer ' ) === 0 ) {
 				$token = substr( $token, 7 );
 			}
-		}
-
-		if ( ! $token ) {
-			$token = $request->get_param( 'token' );
 		}
 
 		if ( ! $token ) {
