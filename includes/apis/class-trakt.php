@@ -1028,25 +1028,24 @@ class Trakt extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	protected function normalize_result( array $raw_result ): array {
-		$type     = $raw_result['type'] ?? '';
-		$url_keys = [ 'trailer', 'homepage' ];
+		$type = $raw_result['type'] ?? '';
 
 		if ( 'movie' === $type && isset( $raw_result['movie'] ) ) {
-			return $this->sanitize_normalized_result( $this->normalize_movie( $raw_result['movie'] ), $url_keys );
+			return $this->normalize_movie( $raw_result['movie'] );
 		} elseif ( 'show' === $type && isset( $raw_result['show'] ) ) {
-			return $this->sanitize_normalized_result( $this->normalize_show( $raw_result['show'] ), $url_keys );
+			return $this->normalize_show( $raw_result['show'] );
 		} elseif ( 'episode' === $type && isset( $raw_result['episode'] ) ) {
 			$episode = $this->normalize_episode( $raw_result['episode'] );
 			if ( isset( $raw_result['show'] ) ) {
 				$episode['show'] = $this->normalize_show( $raw_result['show'] );
 			}
-			return $this->sanitize_normalized_result( $episode, $url_keys );
+			return $episode;
 		}
 
 		// Direct item.
 		if ( isset( $raw_result['ids']['trakt'] ) ) {
 			if ( isset( $raw_result['title'] ) ) {
-				return $this->sanitize_normalized_result( $this->normalize_movie( $raw_result ), $url_keys );
+				return $this->normalize_movie( $raw_result );
 			}
 		}
 
@@ -1060,29 +1059,36 @@ class Trakt extends API_Base {
 	 * @return array<string, mixed> Normalized movie.
 	 */
 	private function normalize_movie( array $movie ): array {
-		return [
-			'id'            => $movie['ids']['trakt'] ?? 0,
-			'trakt_id'      => $movie['ids']['trakt'] ?? 0,
-			'tmdb_id'       => $movie['ids']['tmdb'] ?? null,
-			'imdb_id'       => $movie['ids']['imdb'] ?? '',
-			'slug'          => $movie['ids']['slug'] ?? '',
-			'title'         => $movie['title'] ?? '',
-			'year'          => $movie['year'] ?? null,
-			'overview'      => $movie['overview'] ?? '',
-			'runtime'       => $movie['runtime'] ?? null,
-			'tagline'       => $movie['tagline'] ?? '',
-			'released'      => $movie['released'] ?? '',
-			'certification' => $movie['certification'] ?? '',
-			'trailer'       => $movie['trailer'] ?? '',
-			'homepage'      => $movie['homepage'] ?? '',
-			'rating'        => $movie['rating'] ?? 0,
-			'votes'         => $movie['votes'] ?? 0,
-			'genres'        => $movie['genres'] ?? [],
-			'language'      => $movie['language'] ?? '',
-			'country'       => $movie['country'] ?? '',
-			'type'          => 'movie',
-			'source'        => 'trakt',
-		];
+		// Sanitize here, not just via normalize_result(): get_movie(),
+		// get_trending_movies() and the history/watchlist/ratings list
+		// builders all call this method directly (review round 2,
+		// BGG-class audit finding).
+		return $this->sanitize_normalized_result(
+			[
+				'id'            => $movie['ids']['trakt'] ?? 0,
+				'trakt_id'      => $movie['ids']['trakt'] ?? 0,
+				'tmdb_id'       => $movie['ids']['tmdb'] ?? null,
+				'imdb_id'       => $movie['ids']['imdb'] ?? '',
+				'slug'          => $movie['ids']['slug'] ?? '',
+				'title'         => $movie['title'] ?? '',
+				'year'          => $movie['year'] ?? null,
+				'overview'      => $movie['overview'] ?? '',
+				'runtime'       => $movie['runtime'] ?? null,
+				'tagline'       => $movie['tagline'] ?? '',
+				'released'      => $movie['released'] ?? '',
+				'certification' => $movie['certification'] ?? '',
+				'trailer'       => $movie['trailer'] ?? '',
+				'homepage'      => $movie['homepage'] ?? '',
+				'rating'        => $movie['rating'] ?? 0,
+				'votes'         => $movie['votes'] ?? 0,
+				'genres'        => $movie['genres'] ?? [],
+				'language'      => $movie['language'] ?? '',
+				'country'       => $movie['country'] ?? '',
+				'type'          => 'movie',
+				'source'        => 'trakt',
+			],
+			[ 'trailer', 'homepage' ]
+		);
 	}
 
 	/**
@@ -1092,32 +1098,39 @@ class Trakt extends API_Base {
 	 * @return array<string, mixed> Normalized show.
 	 */
 	private function normalize_show( array $show ): array {
-		return [
-			'id'             => $show['ids']['trakt'] ?? 0,
-			'trakt_id'       => $show['ids']['trakt'] ?? 0,
-			'tmdb_id'        => $show['ids']['tmdb'] ?? null,
-			'imdb_id'        => $show['ids']['imdb'] ?? '',
-			'tvdb_id'        => $show['ids']['tvdb'] ?? null,
-			'slug'           => $show['ids']['slug'] ?? '',
-			'title'          => $show['title'] ?? '',
-			'year'           => $show['year'] ?? null,
-			'overview'       => $show['overview'] ?? '',
-			'runtime'        => $show['runtime'] ?? null,
-			'first_aired'    => $show['first_aired'] ?? '',
-			'certification'  => $show['certification'] ?? '',
-			'network'        => $show['network'] ?? '',
-			'trailer'        => $show['trailer'] ?? '',
-			'homepage'       => $show['homepage'] ?? '',
-			'status'         => $show['status'] ?? '',
-			'rating'         => $show['rating'] ?? 0,
-			'votes'          => $show['votes'] ?? 0,
-			'aired_episodes' => $show['aired_episodes'] ?? 0,
-			'genres'         => $show['genres'] ?? [],
-			'language'       => $show['language'] ?? '',
-			'country'        => $show['country'] ?? '',
-			'type'           => 'tv',
-			'source'         => 'trakt',
-		];
+		// Sanitize here, not just via normalize_result(): get_show(),
+		// get_trending_shows() and the history/watchlist/ratings list
+		// builders all call this method directly (review round 2,
+		// BGG-class audit finding).
+		return $this->sanitize_normalized_result(
+			[
+				'id'             => $show['ids']['trakt'] ?? 0,
+				'trakt_id'       => $show['ids']['trakt'] ?? 0,
+				'tmdb_id'        => $show['ids']['tmdb'] ?? null,
+				'imdb_id'        => $show['ids']['imdb'] ?? '',
+				'tvdb_id'        => $show['ids']['tvdb'] ?? null,
+				'slug'           => $show['ids']['slug'] ?? '',
+				'title'          => $show['title'] ?? '',
+				'year'           => $show['year'] ?? null,
+				'overview'       => $show['overview'] ?? '',
+				'runtime'        => $show['runtime'] ?? null,
+				'first_aired'    => $show['first_aired'] ?? '',
+				'certification'  => $show['certification'] ?? '',
+				'network'        => $show['network'] ?? '',
+				'trailer'        => $show['trailer'] ?? '',
+				'homepage'       => $show['homepage'] ?? '',
+				'status'         => $show['status'] ?? '',
+				'rating'         => $show['rating'] ?? 0,
+				'votes'          => $show['votes'] ?? 0,
+				'aired_episodes' => $show['aired_episodes'] ?? 0,
+				'genres'         => $show['genres'] ?? [],
+				'language'       => $show['language'] ?? '',
+				'country'        => $show['country'] ?? '',
+				'type'           => 'tv',
+				'source'         => 'trakt',
+			],
+			[ 'trailer', 'homepage' ]
+		);
 	}
 
 	/**
@@ -1127,23 +1140,28 @@ class Trakt extends API_Base {
 	 * @return array<string, mixed> Normalized episode.
 	 */
 	private function normalize_episode( array $episode ): array {
-		return [
-			'id'          => $episode['ids']['trakt'] ?? 0,
-			'trakt_id'    => $episode['ids']['trakt'] ?? 0,
-			'tmdb_id'     => $episode['ids']['tmdb'] ?? null,
-			'imdb_id'     => $episode['ids']['imdb'] ?? '',
-			'tvdb_id'     => $episode['ids']['tvdb'] ?? null,
-			'title'       => $episode['title'] ?? '',
-			'season'      => $episode['season'] ?? 0,
-			'number'      => $episode['number'] ?? 0,
-			'overview'    => $episode['overview'] ?? '',
-			'runtime'     => $episode['runtime'] ?? null,
-			'first_aired' => $episode['first_aired'] ?? '',
-			'rating'      => $episode['rating'] ?? 0,
-			'votes'       => $episode['votes'] ?? 0,
-			'type'        => 'episode',
-			'source'      => 'trakt',
-		];
+		// Sanitize here: get_episodes() and get_episode() call this
+		// method directly and it was never sanitized at all (review
+		// round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result(
+			[
+				'id'          => $episode['ids']['trakt'] ?? 0,
+				'trakt_id'    => $episode['ids']['trakt'] ?? 0,
+				'tmdb_id'     => $episode['ids']['tmdb'] ?? null,
+				'imdb_id'     => $episode['ids']['imdb'] ?? '',
+				'tvdb_id'     => $episode['ids']['tvdb'] ?? null,
+				'title'       => $episode['title'] ?? '',
+				'season'      => $episode['season'] ?? 0,
+				'number'      => $episode['number'] ?? 0,
+				'overview'    => $episode['overview'] ?? '',
+				'runtime'     => $episode['runtime'] ?? null,
+				'first_aired' => $episode['first_aired'] ?? '',
+				'rating'      => $episode['rating'] ?? 0,
+				'votes'       => $episode['votes'] ?? 0,
+				'type'        => 'episode',
+				'source'      => 'trakt',
+			]
+		);
 	}
 
 	/**

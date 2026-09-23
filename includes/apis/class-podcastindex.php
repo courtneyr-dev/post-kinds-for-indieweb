@@ -792,10 +792,7 @@ class PodcastIndex extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	protected function normalize_result( array $raw_result ): array {
-		return $this->sanitize_normalized_result(
-			$this->normalize_podcast( $raw_result ),
-			[ 'url', 'original_url', 'link', 'image', 'artwork' ]
-		);
+		return $this->normalize_podcast( $raw_result );
 	}
 
 	/**
@@ -840,7 +837,14 @@ class PodcastIndex extends API_Base {
 			$result['value']            = $feed['value'] ?? [];
 		}
 
-		return $result;
+		// Sanitize here, not just via normalize_result(): get_podcast(),
+		// get_by_itunes_id(), get_by_feed_url(), get_by_guid(), and the
+		// get_recent_feeds()/get_trending() list builders all call this
+		// method directly (review round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result(
+			$result,
+			[ 'url', 'original_url', 'link', 'image', 'artwork' ]
+		);
 	}
 
 	/**
@@ -886,7 +890,14 @@ class PodcastIndex extends API_Base {
 			$result['value']           = $episode['value'] ?? [];
 		}
 
-		return $result;
+		// Sanitize here: get_episodes(), get_episode(), get_episode_by_guid(),
+		// get_recent_episodes(), get_random_episodes() and get_new_episodes()
+		// all call this method directly, never normalize_result() (review
+		// round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result(
+			$result,
+			[ 'enclosure_url', 'image', 'feed_image', 'chapters_url', 'transcript_url' ]
+		);
 	}
 
 	/**

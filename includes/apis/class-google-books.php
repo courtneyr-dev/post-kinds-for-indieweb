@@ -543,10 +543,7 @@ class GoogleBooks extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	protected function normalize_result( array $raw_result ): array {
-		return $this->sanitize_normalized_result(
-			$this->normalize_volume( $raw_result ),
-			[ 'cover', 'preview_link', 'info_link', 'buy_link', 'web_reader' ]
-		);
+		return $this->normalize_volume( $raw_result );
 	}
 
 	/**
@@ -640,7 +637,15 @@ class GoogleBooks extends API_Base {
 			}
 		}
 
-		return $result;
+		// Sanitize here, not just via normalize_result(): get_volume(),
+		// get_by_isbn(), search_by_title/author/subject/publisher(),
+		// get_new_releases(), advanced_search() and
+		// get_bookshelf_volumes() all call this method directly (review
+		// round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result(
+			$result,
+			[ 'cover', 'preview_link', 'info_link', 'buy_link', 'web_reader' ]
+		);
 	}
 
 	/**

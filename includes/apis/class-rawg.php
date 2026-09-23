@@ -195,17 +195,23 @@ class RAWG extends API_Base {
 			}
 		}
 
-		return [
-			'id'         => $item['id'] ?? 0,
-			'slug'       => $item['slug'] ?? '',
-			'name'       => $item['name'] ?? '',
-			'year'       => ! empty( $item['released'] ) ? substr( $item['released'], 0, 4 ) : '',
-			'cover'      => $item['background_image'] ?? '',
-			'rating'     => $item['rating'] ?? 0,
-			'metacritic' => $item['metacritic'] ?? null,
-			'platforms'  => $platforms,
-			'source'     => 'rawg',
-		];
+		// Sanitize here: search() calls this method directly (not
+		// normalize_result()) — this was RAWG's actual, unsanitized
+		// search path (review round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result(
+			[
+				'id'         => $item['id'] ?? 0,
+				'slug'       => $item['slug'] ?? '',
+				'name'       => $item['name'] ?? '',
+				'year'       => ! empty( $item['released'] ) ? substr( $item['released'], 0, 4 ) : '',
+				'cover'      => $item['background_image'] ?? '',
+				'rating'     => $item['rating'] ?? 0,
+				'metacritic' => $item['metacritic'] ?? null,
+				'platforms'  => $platforms,
+				'source'     => 'rawg',
+			],
+			[ 'cover' ]
+		);
 	}
 
 	/**

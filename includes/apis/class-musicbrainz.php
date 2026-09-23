@@ -169,14 +169,16 @@ class MusicBrainz extends API_Base {
 
 			if ( isset( $response['artists'] ) && is_array( $response['artists'] ) ) {
 				foreach ( $response['artists'] as $artist_data ) {
-					$results[] = [
-						'id'        => $artist_data['id'],
-						'name'      => $artist_data['name'],
-						'sort_name' => $artist_data['sort-name'] ?? $artist_data['name'],
-						'type'      => $artist_data['type'] ?? 'Unknown',
-						'country'   => $artist_data['country'] ?? '',
-						'score'     => $artist_data['score'] ?? 0,
-					];
+					$results[] = $this->sanitize_normalized_result(
+						[
+							'id'        => $artist_data['id'],
+							'name'      => $artist_data['name'],
+							'sort_name' => $artist_data['sort-name'] ?? $artist_data['name'],
+							'type'      => $artist_data['type'] ?? 'Unknown',
+							'country'   => $artist_data['country'] ?? '',
+							'score'     => $artist_data['score'] ?? 0,
+						]
+					);
 				}
 			}
 
@@ -489,17 +491,23 @@ class MusicBrainz extends API_Base {
 			$cover = $this->get_cover_art( $release_mbid, '250' );
 		}
 
-		return [
-			'album'       => $release['title'] ?? '',
-			'artist'      => $artist,
-			'mbid'        => $release_mbid,
-			'date'        => $release['date'] ?? '',
-			'country'     => $release['country'] ?? '',
-			'cover'       => $cover,
-			'track_count' => $release['track-count'] ?? null,
-			'score'       => $release['score'] ?? 0,
-			'source'      => 'musicbrainz',
-		];
+		// Sanitize here: search_release() and get_release() call this
+		// method directly, never normalize_result() (review round 2,
+		// BGG-class audit finding).
+		return $this->sanitize_normalized_result(
+			[
+				'album'       => $release['title'] ?? '',
+				'artist'      => $artist,
+				'mbid'        => $release_mbid,
+				'date'        => $release['date'] ?? '',
+				'country'     => $release['country'] ?? '',
+				'cover'       => $cover,
+				'track_count' => $release['track-count'] ?? null,
+				'score'       => $release['score'] ?? 0,
+				'source'      => 'musicbrainz',
+			],
+			[ 'cover' ]
+		);
 	}
 
 	/**

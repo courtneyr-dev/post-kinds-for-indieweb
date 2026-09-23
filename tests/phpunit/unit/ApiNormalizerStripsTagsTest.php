@@ -10,7 +10,9 @@
 
 namespace PKIW\Tests\Unit;
 
+use PKIW\APIs\BoardGameGeek;
 use PKIW\APIs\OpenLibrary;
+use PKIW\APIs\RAWG;
 use PKIW\APIs\TMDB;
 use ReflectionMethod;
 use WP_UnitTestCase;
@@ -75,7 +77,12 @@ final class ApiNormalizerStripsTagsTest extends WP_UnitTestCase {
 		$result = $this->invoke_protected(
 			$api,
 			'normalize_result',
-			[ [ 'title' => 'A Book', 'cover_i' => 12345 ] ] // phpcs:ignore WordPress.Arrays.MultipleStatementAlignment.DoubleArrowNotAligned
+			[
+				[
+					'title'   => 'A Book',
+					'cover_i' => 12345,
+				],
+			]
 		);
 
 		$this->assertStringContainsString( 'covers.openlibrary.org', $result['cover'] );
@@ -125,5 +132,73 @@ final class ApiNormalizerStripsTagsTest extends WP_UnitTestCase {
 
 		$this->assertStringNotContainsString( '<img', $movies[0]['title'] );
 		$this->assertStringNotContainsString( '<img', $tv[0]['title'] );
+	}
+
+	/**
+	 * Review round 2: BoardGameGeek's search() calls parse_search_results()
+	 * directly (never normalize_result()) — this was BGG's real,
+	 * unsanitized search path, the same bug class the review round 1
+	 * TMDB finding named.
+	 */
+	public function test_bgg_search_strips_tags_from_name(): void {
+		update_option( 'pkiw_api_credentials', [ 'bgg' => [ 'api_token' => 'fake-token-for-test' ] ] );
+		add_filter(
+			'pre_http_request',
+			static function () {
+				$xml = '<?xml version="1.0" encoding="utf-8"?>'
+					. '<items total="1" termsofuse="https://boardgamegeek.com/xmlapi/termsofuse">'
+					. '<item type="boardgame" id="13">'
+					. '<name type="primary" value="A &lt;img src=x onerror=alert(1)&gt; B"/>'
+					. '<yearpublished value="1995"/>'
+					. '</item>'
+					. '</items>';
+				return [
+					'headers'  => [],
+					'body'     => $xml,
+					'response' => [ 'code' => 200, 'message' => 'OK' ],
+					'cookies'  => [],
+					'filename' => null,
+				];
+			},
+			1,
+			0
+		);
+
+		$bgg     = new BoardGameGeek();
+		$results = $bgg->search( 'Catan' );
+
+		$this->assertStringNotContainsString( '<img', $results[0]['name'] );
+		$this->assertStringContainsString( 'A', $results[0]['name'] );
+		$this->assertStringContainsString( 'B', $results[0]['name'] );
+	}
+
+	/**
+	 * Review round 2, minor 3: a nested URL field (RAWG's stores[].url)
+	 * must be escaped, not just tag-stripped — the reviewer's exact case,
+	 * `javascript:alert(1)` surviving because $url_keys previously only
+	 * matched top-level keys.
+	 */
+	public function test_rawg_nested_store_url_is_escaped(): void {
+		$rawg = new RAWG();
+
+		$result = $this->invoke_protected(
+			$rawg,
+			'normalize_result',
+			[
+				[
+					'id'     => 1,
+					'name'   => 'A Game',
+					'slug'   => 'a-game',
+					'stores' => [
+						[
+							'store' => [ 'name' => 'Steam' ],
+							'url'   => 'javascript:alert(1)',
+						],
+					],
+				],
+			]
+		);
+
+		$this->assertSame( '', $result['stores'][0]['url'] );
 	}
 }

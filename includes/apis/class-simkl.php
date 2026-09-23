@@ -802,18 +802,17 @@ class Simkl extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	protected function normalize_result( array $raw_result ): array {
-		$type      = $raw_result['type'] ?? 'movie';
-		$url_keys  = [ 'poster', 'fanart', 'trailer' ];
+		$type = $raw_result['type'] ?? 'movie';
 
 		if ( 'movie' === $type ) {
-			return $this->sanitize_normalized_result( $this->normalize_movie( $raw_result ), $url_keys );
+			return $this->normalize_movie( $raw_result );
 		} elseif ( 'tv' === $type || 'show' === $type ) {
-			return $this->sanitize_normalized_result( $this->normalize_show( $raw_result ), $url_keys );
+			return $this->normalize_show( $raw_result );
 		} elseif ( 'anime' === $type ) {
-			return $this->sanitize_normalized_result( $this->normalize_anime( $raw_result ), $url_keys );
+			return $this->normalize_anime( $raw_result );
 		}
 
-		return $this->sanitize_normalized_result( $this->normalize_movie( $raw_result ), $url_keys );
+		return $this->normalize_movie( $raw_result );
 	}
 
 	/**
@@ -825,26 +824,32 @@ class Simkl extends API_Base {
 	private function normalize_movie( array $movie ): array {
 		$ids = $movie['ids'] ?? [];
 
-		return [
-			'id'            => $ids['simkl'] ?? 0,
-			'simkl_id'      => $ids['simkl'] ?? 0,
-			'imdb_id'       => $ids['imdb'] ?? '',
-			'tmdb_id'       => $ids['tmdb'] ?? null,
-			'slug'          => $ids['slug'] ?? '',
-			'title'         => $movie['title'] ?? '',
-			'year'          => $movie['year'] ?? null,
-			'poster'        => $this->get_poster_url( $movie['poster'] ?? '' ),
-			'fanart'        => $movie['fanart'] ?? '',
-			'runtime'       => $movie['runtime'] ?? null,
-			'overview'      => $movie['overview'] ?? '',
-			'genres'        => $movie['genres'] ?? [],
-			'certification' => $movie['certification'] ?? '',
-			'released'      => $movie['released'] ?? '',
-			'trailer'       => $movie['trailer'] ?? '',
-			'ratings'       => $movie['ratings'] ?? [],
-			'type'          => 'movie',
-			'source'        => 'simkl',
-		];
+		// Sanitize here, not just via normalize_result(): get_movie() and
+		// the history/watchlist list builders call this method directly
+		// (review round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result(
+			[
+				'id'            => $ids['simkl'] ?? 0,
+				'simkl_id'      => $ids['simkl'] ?? 0,
+				'imdb_id'       => $ids['imdb'] ?? '',
+				'tmdb_id'       => $ids['tmdb'] ?? null,
+				'slug'          => $ids['slug'] ?? '',
+				'title'         => $movie['title'] ?? '',
+				'year'          => $movie['year'] ?? null,
+				'poster'        => $this->get_poster_url( $movie['poster'] ?? '' ),
+				'fanart'        => $movie['fanart'] ?? '',
+				'runtime'       => $movie['runtime'] ?? null,
+				'overview'      => $movie['overview'] ?? '',
+				'genres'        => $movie['genres'] ?? [],
+				'certification' => $movie['certification'] ?? '',
+				'released'      => $movie['released'] ?? '',
+				'trailer'       => $movie['trailer'] ?? '',
+				'ratings'       => $movie['ratings'] ?? [],
+				'type'          => 'movie',
+				'source'        => 'simkl',
+			],
+			[ 'poster', 'fanart', 'trailer' ]
+		);
 	}
 
 	/**
@@ -856,30 +861,36 @@ class Simkl extends API_Base {
 	private function normalize_show( array $show ): array {
 		$ids = $show['ids'] ?? [];
 
-		return [
-			'id'             => $ids['simkl'] ?? 0,
-			'simkl_id'       => $ids['simkl'] ?? 0,
-			'imdb_id'        => $ids['imdb'] ?? '',
-			'tmdb_id'        => $ids['tmdb'] ?? null,
-			'tvdb_id'        => $ids['tvdb'] ?? null,
-			'slug'           => $ids['slug'] ?? '',
-			'title'          => $show['title'] ?? '',
-			'year'           => $show['year'] ?? null,
-			'poster'         => $this->get_poster_url( $show['poster'] ?? '' ),
-			'fanart'         => $show['fanart'] ?? '',
-			'runtime'        => $show['runtime'] ?? null,
-			'overview'       => $show['overview'] ?? '',
-			'genres'         => $show['genres'] ?? [],
-			'certification'  => $show['certification'] ?? '',
-			'first_aired'    => $show['first_aired'] ?? '',
-			'network'        => $show['network'] ?? '',
-			'status'         => $show['status'] ?? '',
-			'total_episodes' => $show['total_episodes'] ?? 0,
-			'aired_episodes' => $show['aired_episodes'] ?? 0,
-			'ratings'        => $show['ratings'] ?? [],
-			'type'           => 'tv',
-			'source'         => 'simkl',
-		];
+		// Sanitize here, not just via normalize_result(): get_show() and
+		// the history/watchlist list builders call this method directly
+		// (review round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result(
+			[
+				'id'             => $ids['simkl'] ?? 0,
+				'simkl_id'       => $ids['simkl'] ?? 0,
+				'imdb_id'        => $ids['imdb'] ?? '',
+				'tmdb_id'        => $ids['tmdb'] ?? null,
+				'tvdb_id'        => $ids['tvdb'] ?? null,
+				'slug'           => $ids['slug'] ?? '',
+				'title'          => $show['title'] ?? '',
+				'year'           => $show['year'] ?? null,
+				'poster'         => $this->get_poster_url( $show['poster'] ?? '' ),
+				'fanart'         => $show['fanart'] ?? '',
+				'runtime'        => $show['runtime'] ?? null,
+				'overview'       => $show['overview'] ?? '',
+				'genres'         => $show['genres'] ?? [],
+				'certification'  => $show['certification'] ?? '',
+				'first_aired'    => $show['first_aired'] ?? '',
+				'network'        => $show['network'] ?? '',
+				'status'         => $show['status'] ?? '',
+				'total_episodes' => $show['total_episodes'] ?? 0,
+				'aired_episodes' => $show['aired_episodes'] ?? 0,
+				'ratings'        => $show['ratings'] ?? [],
+				'type'           => 'tv',
+				'source'         => 'simkl',
+			],
+			[ 'poster', 'fanart' ]
+		);
 	}
 
 	/**
@@ -891,33 +902,39 @@ class Simkl extends API_Base {
 	private function normalize_anime( array $anime ): array {
 		$ids = $anime['ids'] ?? [];
 
-		return [
-			'id'             => $ids['simkl'] ?? 0,
-			'simkl_id'       => $ids['simkl'] ?? 0,
-			'mal_id'         => $ids['mal'] ?? null,
-			'anidb_id'       => $ids['anidb'] ?? null,
-			'anilist_id'     => $ids['anilist'] ?? null,
-			'kitsu_id'       => $ids['kitsu'] ?? null,
-			'imdb_id'        => $ids['imdb'] ?? '',
-			'slug'           => $ids['slug'] ?? '',
-			'title'          => $anime['title'] ?? '',
-			'title_romaji'   => $anime['title_romaji'] ?? '',
-			'title_en'       => $anime['title_en'] ?? '',
-			'year'           => $anime['year'] ?? null,
-			'poster'         => $this->get_poster_url( $anime['poster'] ?? '' ),
-			'fanart'         => $anime['fanart'] ?? '',
-			'runtime'        => $anime['runtime'] ?? null,
-			'overview'       => $anime['overview'] ?? '',
-			'genres'         => $anime['genres'] ?? [],
-			'first_aired'    => $anime['first_aired'] ?? '',
-			'anime_type'     => $anime['anime_type'] ?? '',
-			'status'         => $anime['status'] ?? '',
-			'total_episodes' => $anime['total_episodes'] ?? 0,
-			'aired_episodes' => $anime['aired_episodes'] ?? 0,
-			'ratings'        => $anime['ratings'] ?? [],
-			'type'           => 'anime',
-			'source'         => 'simkl',
-		];
+		// Sanitize here, not just via normalize_result(): get_anime()
+		// calls this method directly (review round 2, BGG-class audit
+		// finding).
+		return $this->sanitize_normalized_result(
+			[
+				'id'             => $ids['simkl'] ?? 0,
+				'simkl_id'       => $ids['simkl'] ?? 0,
+				'mal_id'         => $ids['mal'] ?? null,
+				'anidb_id'       => $ids['anidb'] ?? null,
+				'anilist_id'     => $ids['anilist'] ?? null,
+				'kitsu_id'       => $ids['kitsu'] ?? null,
+				'imdb_id'        => $ids['imdb'] ?? '',
+				'slug'           => $ids['slug'] ?? '',
+				'title'          => $anime['title'] ?? '',
+				'title_romaji'   => $anime['title_romaji'] ?? '',
+				'title_en'       => $anime['title_en'] ?? '',
+				'year'           => $anime['year'] ?? null,
+				'poster'         => $this->get_poster_url( $anime['poster'] ?? '' ),
+				'fanart'         => $anime['fanart'] ?? '',
+				'runtime'        => $anime['runtime'] ?? null,
+				'overview'       => $anime['overview'] ?? '',
+				'genres'         => $anime['genres'] ?? [],
+				'first_aired'    => $anime['first_aired'] ?? '',
+				'anime_type'     => $anime['anime_type'] ?? '',
+				'status'         => $anime['status'] ?? '',
+				'total_episodes' => $anime['total_episodes'] ?? 0,
+				'aired_episodes' => $anime['aired_episodes'] ?? 0,
+				'ratings'        => $anime['ratings'] ?? [],
+				'type'           => 'anime',
+				'source'         => 'simkl',
+			],
+			[ 'poster', 'fanart' ]
+		);
 	}
 
 	/**
@@ -927,17 +944,23 @@ class Simkl extends API_Base {
 	 * @return array<string, mixed> Normalized episode.
 	 */
 	private function normalize_episode( array $episode ): array {
-		return [
-			'id'          => $episode['ids']['simkl'] ?? 0,
-			'title'       => $episode['title'] ?? '',
-			'season'      => $episode['season'] ?? 0,
-			'episode'     => $episode['episode'] ?? 0,
-			'description' => $episode['description'] ?? '',
-			'img'         => $episode['img'] ?? '',
-			'date'        => $episode['date'] ?? '',
-			'type'        => 'episode',
-			'source'      => 'simkl',
-		];
+		// Sanitize here: get_episodes() calls this method directly and
+		// it was never sanitized at all — not even via normalize_result()
+		// (review round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result(
+			[
+				'id'          => $episode['ids']['simkl'] ?? 0,
+				'title'       => $episode['title'] ?? '',
+				'season'      => $episode['season'] ?? 0,
+				'episode'     => $episode['episode'] ?? 0,
+				'description' => $episode['description'] ?? '',
+				'img'         => $episode['img'] ?? '',
+				'date'        => $episode['date'] ?? '',
+				'type'        => 'episode',
+				'source'      => 'simkl',
+			],
+			[ 'img' ]
+		);
 	}
 
 	/**

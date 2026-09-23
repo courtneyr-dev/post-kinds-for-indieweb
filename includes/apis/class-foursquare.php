@@ -624,10 +624,7 @@ class Foursquare extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	protected function normalize_result( array $raw_result ): array {
-		return $this->sanitize_normalized_result(
-			$this->normalize_place( $raw_result ),
-			[ 'category_icon', 'website' ]
-		);
+		return $this->normalize_place( $raw_result );
 	}
 
 	/**
@@ -761,7 +758,11 @@ class Foursquare extends API_Base {
 			}
 		}
 
-		return $result;
+		// Sanitize here, not just via normalize_result(): search(),
+		// search_nearby(), get_place() (non-detailed), autocomplete(),
+		// match_place() and search_by_category() all call this method
+		// directly (review round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result( $result, [ 'category_icon', 'website' ] );
 	}
 
 	/**
@@ -774,18 +775,21 @@ class Foursquare extends API_Base {
 		$prefix = $photo['prefix'] ?? '';
 		$suffix = $photo['suffix'] ?? '';
 
-		return [
-			'id'           => $photo['id'] ?? '',
-			'created_at'   => $photo['created_at'] ?? '',
-			'prefix'       => $prefix,
-			'suffix'       => $suffix,
-			'width'        => $photo['width'] ?? 0,
-			'height'       => $photo['height'] ?? 0,
-			'url_small'    => $prefix . '100x100' . $suffix,
-			'url_medium'   => $prefix . '300x300' . $suffix,
-			'url_large'    => $prefix . '500x500' . $suffix,
-			'url_original' => $prefix . 'original' . $suffix,
-		];
+		return $this->sanitize_normalized_result(
+			[
+				'id'           => $photo['id'] ?? '',
+				'created_at'   => $photo['created_at'] ?? '',
+				'prefix'       => $prefix,
+				'suffix'       => $suffix,
+				'width'        => $photo['width'] ?? 0,
+				'height'       => $photo['height'] ?? 0,
+				'url_small'    => $prefix . '100x100' . $suffix,
+				'url_medium'   => $prefix . '300x300' . $suffix,
+				'url_large'    => $prefix . '500x500' . $suffix,
+				'url_original' => $prefix . 'original' . $suffix,
+			],
+			[ 'url_small', 'url_medium', 'url_large', 'url_original' ]
+		);
 	}
 
 	/**

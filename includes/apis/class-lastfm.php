@@ -475,13 +475,16 @@ class LastFM extends API_Base {
 				}
 
 				foreach ( $list as $artist ) {
-					$artists[] = [
-						'name'      => $artist['name'] ?? '',
-						'playcount' => (int) ( $artist['playcount'] ?? 0 ),
-						'mbid'      => $artist['mbid'] ?? '',
-						'url'       => $artist['url'] ?? '',
-						'image'     => $this->get_best_image( $artist['image'] ?? [] ),
-					];
+					$artists[] = $this->sanitize_normalized_result(
+						[
+							'name'      => $artist['name'] ?? '',
+							'playcount' => (int) ( $artist['playcount'] ?? 0 ),
+							'mbid'      => $artist['mbid'] ?? '',
+							'url'       => $artist['url'] ?? '',
+							'image'     => $this->get_best_image( $artist['image'] ?? [] ),
+						],
+						[ 'url', 'image' ]
+					);
 				}
 			}
 
@@ -536,14 +539,17 @@ class LastFM extends API_Base {
 				}
 
 				foreach ( $list as $track ) {
-					$tracks[] = [
-						'track'     => $track['name'] ?? '',
-						'artist'    => $track['artist']['name'] ?? '',
-						'playcount' => (int) ( $track['playcount'] ?? 0 ),
-						'mbid'      => $track['mbid'] ?? '',
-						'url'       => $track['url'] ?? '',
-						'image'     => $this->get_best_image( $track['image'] ?? [] ),
-					];
+					$tracks[] = $this->sanitize_normalized_result(
+						[
+							'track'     => $track['name'] ?? '',
+							'artist'    => $track['artist']['name'] ?? '',
+							'playcount' => (int) ( $track['playcount'] ?? 0 ),
+							'mbid'      => $track['mbid'] ?? '',
+							'url'       => $track['url'] ?? '',
+							'image'     => $this->get_best_image( $track['image'] ?? [] ),
+						],
+						[ 'url', 'image' ]
+					);
 				}
 			}
 
@@ -582,15 +588,18 @@ class LastFM extends API_Base {
 			if ( isset( $response['user'] ) ) {
 				$user = $response['user'];
 
-				$result = [
-					'username'   => $user['name'] ?? '',
-					'real_name'  => $user['realname'] ?? '',
-					'url'        => $user['url'] ?? '',
-					'country'    => $user['country'] ?? '',
-					'playcount'  => (int) ( $user['playcount'] ?? 0 ),
-					'registered' => $user['registered']['unixtime'] ?? null,
-					'image'      => $this->get_best_image( $user['image'] ?? [] ),
-				];
+				$result = $this->sanitize_normalized_result(
+					[
+						'username'   => $user['name'] ?? '',
+						'real_name'  => $user['realname'] ?? '',
+						'url'        => $user['url'] ?? '',
+						'country'    => $user['country'] ?? '',
+						'playcount'  => (int) ( $user['playcount'] ?? 0 ),
+						'registered' => $user['registered']['unixtime'] ?? null,
+						'image'      => $this->get_best_image( $user['image'] ?? [] ),
+					],
+					[ 'url', 'image' ]
+				);
 
 				$this->set_cache( $cache_key, $result, DAY_IN_SECONDS );
 				return $result;
@@ -675,6 +684,7 @@ class LastFM extends API_Base {
 					}
 				}
 
+				$result = $this->sanitize_normalized_result( $result, [ 'url', 'image' ] );
 				$this->set_cache( $cache_key, $result );
 				return $result;
 			}
@@ -759,6 +769,7 @@ class LastFM extends API_Base {
 					}
 				}
 
+				$result = $this->sanitize_normalized_result( $result, [ 'url', 'image' ] );
 				$this->set_cache( $cache_key, $result );
 				return $result;
 			}
@@ -930,21 +941,24 @@ class LastFM extends API_Base {
 	 * @return array<string, mixed> Normalized track.
 	 */
 	private function normalize_track_info( array $track ): array {
-		return [
-			'track'       => $track['name'] ?? '',
-			'artist'      => $track['artist']['name'] ?? '',
-			'album'       => $track['album']['title'] ?? '',
-			'mbid'        => $track['mbid'] ?? '',
-			'artist_mbid' => $track['artist']['mbid'] ?? '',
-			'album_mbid'  => $track['album']['mbid'] ?? '',
-			'url'         => $track['url'] ?? '',
-			'image'       => $this->get_best_image( $track['album']['image'] ?? [] ),
-			'duration'    => isset( $track['duration'] ) ? (int) ( $track['duration'] / 1000 ) : null,
-			'listeners'   => (int) ( $track['listeners'] ?? 0 ),
-			'playcount'   => (int) ( $track['playcount'] ?? 0 ),
-			'tags'        => $this->extract_tags( $track['toptags']['tag'] ?? [] ),
-			'source'      => 'lastfm',
-		];
+		return $this->sanitize_normalized_result(
+			[
+				'track'       => $track['name'] ?? '',
+				'artist'      => $track['artist']['name'] ?? '',
+				'album'       => $track['album']['title'] ?? '',
+				'mbid'        => $track['mbid'] ?? '',
+				'artist_mbid' => $track['artist']['mbid'] ?? '',
+				'album_mbid'  => $track['album']['mbid'] ?? '',
+				'url'         => $track['url'] ?? '',
+				'image'       => $this->get_best_image( $track['album']['image'] ?? [] ),
+				'duration'    => isset( $track['duration'] ) ? (int) ( $track['duration'] / 1000 ) : null,
+				'listeners'   => (int) ( $track['listeners'] ?? 0 ),
+				'playcount'   => (int) ( $track['playcount'] ?? 0 ),
+				'tags'        => $this->extract_tags( $track['toptags']['tag'] ?? [] ),
+				'source'      => 'lastfm',
+			],
+			[ 'url', 'image' ]
+		);
 	}
 
 	/**
@@ -954,19 +968,22 @@ class LastFM extends API_Base {
 	 * @return array<string, mixed> Normalized scrobble.
 	 */
 	private function normalize_scrobble( array $scrobble ): array {
-		return [
-			'track'       => $scrobble['name'] ?? '',
-			'artist'      => $scrobble['artist']['name'] ?? ( $scrobble['artist']['#text'] ?? '' ),
-			'album'       => $scrobble['album']['#text'] ?? '',
-			'mbid'        => $scrobble['mbid'] ?? '',
-			'artist_mbid' => $scrobble['artist']['mbid'] ?? '',
-			'album_mbid'  => $scrobble['album']['mbid'] ?? '',
-			'url'         => $scrobble['url'] ?? '',
-			'image'       => $this->get_best_image( $scrobble['image'] ?? [] ),
-			'listened_at' => isset( $scrobble['date']['uts'] ) ? (int) $scrobble['date']['uts'] : null,
-			'loved'       => isset( $scrobble['loved'] ) && '1' === $scrobble['loved'],
-			'source'      => 'lastfm',
-		];
+		return $this->sanitize_normalized_result(
+			[
+				'track'       => $scrobble['name'] ?? '',
+				'artist'      => $scrobble['artist']['name'] ?? ( $scrobble['artist']['#text'] ?? '' ),
+				'album'       => $scrobble['album']['#text'] ?? '',
+				'mbid'        => $scrobble['mbid'] ?? '',
+				'artist_mbid' => $scrobble['artist']['mbid'] ?? '',
+				'album_mbid'  => $scrobble['album']['mbid'] ?? '',
+				'url'         => $scrobble['url'] ?? '',
+				'image'       => $this->get_best_image( $scrobble['image'] ?? [] ),
+				'listened_at' => isset( $scrobble['date']['uts'] ) ? (int) $scrobble['date']['uts'] : null,
+				'loved'       => isset( $scrobble['loved'] ) && '1' === $scrobble['loved'],
+				'source'      => 'lastfm',
+			],
+			[ 'url', 'image' ]
+		);
 	}
 
 	/**

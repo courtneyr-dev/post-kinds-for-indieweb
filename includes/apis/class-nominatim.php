@@ -520,7 +520,7 @@ class Nominatim extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	protected function normalize_result( array $raw_result ): array {
-		return $this->sanitize_normalized_result( $this->normalize_location( $raw_result ) );
+		return $this->normalize_location( $raw_result );
 	}
 
 	/**
@@ -579,53 +579,60 @@ class Nominatim extends API_Base {
 			];
 		}
 
-		return [
-			'place_id'          => $location['place_id'] ?? 0,
-			'osm_type'          => $osm_type,
-			'osm_id'            => $osm_id,
-			'osm_full_id'       => $osm_full_id,
-			'latitude'          => (float) ( $location['lat'] ?? 0 ),
-			'longitude'         => (float) ( $location['lon'] ?? 0 ),
-			'display_name'      => $location['display_name'] ?? '',
-			'name'              => $location['name'] ?? $location['namedetails']['name'] ?? '',
-			'class'             => $location['class'] ?? '',
-			'type'              => $location['type'] ?? '',
-			'importance'        => $location['importance'] ?? 0,
-			'place_rank'        => $location['place_rank'] ?? 0,
-			'address'           => [
-				'house_number'  => $address['house_number'] ?? '',
-				'road'          => $address['road'] ?? '',
-				'neighbourhood' => $address['neighbourhood'] ?? $address['suburb'] ?? '',
-				'locality'      => $locality,
-				'county'        => $address['county'] ?? '',
-				'region'        => $region,
-				'postcode'      => $address['postcode'] ?? '',
-				'country'       => $address['country'] ?? '',
-				'country_code'  => $address['country_code'] ?? '',
+		// Sanitize here, not just via normalize_result(): structured_search(),
+		// geocode(), reverse(), lookup(), lookup_multiple() and
+		// search_bounded()/search_by_type() all call this method directly
+		// (review round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result(
+			[
+				'place_id'          => $location['place_id'] ?? 0,
+				'osm_type'          => $osm_type,
+				'osm_id'            => $osm_id,
+				'osm_full_id'       => $osm_full_id,
+				'latitude'          => (float) ( $location['lat'] ?? 0 ),
+				'longitude'         => (float) ( $location['lon'] ?? 0 ),
+				'display_name'      => $location['display_name'] ?? '',
+				'name'              => $location['name'] ?? $location['namedetails']['name'] ?? '',
+				'class'             => $location['class'] ?? '',
+				'type'              => $location['type'] ?? '',
+				'importance'        => $location['importance'] ?? 0,
+				'place_rank'        => $location['place_rank'] ?? 0,
+				'address'           => [
+					'house_number'  => $address['house_number'] ?? '',
+					'road'          => $address['road'] ?? '',
+					'neighbourhood' => $address['neighbourhood'] ?? $address['suburb'] ?? '',
+					'locality'      => $locality,
+					'county'        => $address['county'] ?? '',
+					'region'        => $region,
+					'postcode'      => $address['postcode'] ?? '',
+					'country'       => $address['country'] ?? '',
+					'country_code'  => $address['country_code'] ?? '',
+				],
+				'formatted_address' => implode(
+					', ',
+					array_filter(
+						[
+							implode( ' ', $address_parts ),
+							$locality,
+							$region,
+							$address['country'] ?? '',
+						]
+					)
+				),
+				'bounding_box'      => $bbox,
+				'category'          => $location['category'] ?? '',
+				'icon'              => $location['icon'] ?? '',
+				'extra'             => [
+					'wikipedia'     => $extratags['wikipedia'] ?? '',
+					'wikidata'      => $extratags['wikidata'] ?? '',
+					'website'       => $extratags['website'] ?? '',
+					'phone'         => $extratags['phone'] ?? '',
+					'opening_hours' => $extratags['opening_hours'] ?? '',
+				],
+				'source'            => 'nominatim',
 			],
-			'formatted_address' => implode(
-				', ',
-				array_filter(
-					[
-						implode( ' ', $address_parts ),
-						$locality,
-						$region,
-						$address['country'] ?? '',
-					]
-				)
-			),
-			'bounding_box'      => $bbox,
-			'category'          => $location['category'] ?? '',
-			'icon'              => $location['icon'] ?? '',
-			'extra'             => [
-				'wikipedia'     => $extratags['wikipedia'] ?? '',
-				'wikidata'      => $extratags['wikidata'] ?? '',
-				'website'       => $extratags['website'] ?? '',
-				'phone'         => $extratags['phone'] ?? '',
-				'opening_hours' => $extratags['opening_hours'] ?? '',
-			],
-			'source'            => 'nominatim',
-		];
+			[ 'icon' ]
+		);
 	}
 
 	/**

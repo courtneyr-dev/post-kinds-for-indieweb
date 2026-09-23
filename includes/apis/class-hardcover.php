@@ -1020,10 +1020,7 @@ class Hardcover extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	protected function normalize_result( array $raw_result ): array {
-		return $this->sanitize_normalized_result(
-			$this->normalize_book( $raw_result ),
-			[ 'cover' ]
-		);
+		return $this->normalize_book( $raw_result );
 	}
 
 	/**
@@ -1096,7 +1093,11 @@ class Hardcover extends API_Base {
 			}
 		}
 
-		return $result;
+		// Sanitize here, not just via normalize_result(): get_book(),
+		// get_by_isbn(), get_reading_list() and friends, get_author()'s
+		// nested books, and get_trending() all call this method directly
+		// (review round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result( $result, [ 'cover' ] );
 	}
 
 	/**
@@ -1106,20 +1107,23 @@ class Hardcover extends API_Base {
 	 * @return array<string, mixed> Normalized edition.
 	 */
 	private function normalize_edition( array $edition ): array {
-		return [
-			'id'           => $edition['id'] ?? 0,
-			'title'        => $edition['title'] ?? '',
-			'isbn_10'      => $edition['isbn_10'] ?? '',
-			'isbn_13'      => $edition['isbn_13'] ?? '',
-			'isbn'         => $edition['isbn_13'] ?? $edition['isbn_10'] ?? '',
-			'pages'        => $edition['pages'] ?? null,
-			'format'       => $edition['format'] ?? '',
-			'publisher'    => $edition['publisher'] ?? '',
-			'release_date' => $edition['release_date'] ?? '',
-			'cover'        => $edition['image']['url'] ?? null,
-			'type'         => 'edition',
-			'source'       => 'hardcover',
-		];
+		return $this->sanitize_normalized_result(
+			[
+				'id'           => $edition['id'] ?? 0,
+				'title'        => $edition['title'] ?? '',
+				'isbn_10'      => $edition['isbn_10'] ?? '',
+				'isbn_13'      => $edition['isbn_13'] ?? '',
+				'isbn'         => $edition['isbn_13'] ?? $edition['isbn_10'] ?? '',
+				'pages'        => $edition['pages'] ?? null,
+				'format'       => $edition['format'] ?? '',
+				'publisher'    => $edition['publisher'] ?? '',
+				'release_date' => $edition['release_date'] ?? '',
+				'cover'        => $edition['image']['url'] ?? null,
+				'type'         => 'edition',
+				'source'       => 'hardcover',
+			],
+			[ 'cover' ]
+		);
 	}
 
 	/**
@@ -1147,7 +1151,7 @@ class Hardcover extends API_Base {
 			}
 		}
 
-		return $result;
+		return $this->sanitize_normalized_result( $result, [ 'image' ] );
 	}
 
 	/**
@@ -1157,19 +1161,22 @@ class Hardcover extends API_Base {
 	 * @return array<string, mixed> Normalized user.
 	 */
 	private function normalize_user( array $user ): array {
-		return [
-			'id'              => $user['id'] ?? 0,
-			'username'        => $user['username'] ?? '',
-			'name'            => $user['name'] ?? '',
-			'bio'             => $user['bio'] ?? '',
-			'image'           => $user['image'] ?? null,
-			'books_count'     => $user['books_count'] ?? 0,
-			'followers_count' => $user['followers_count'] ?? 0,
-			'following_count' => $user['following_count'] ?? 0,
-			'created_at'      => $user['created_at'] ?? '',
-			'type'            => 'user',
-			'source'          => 'hardcover',
-		];
+		return $this->sanitize_normalized_result(
+			[
+				'id'              => $user['id'] ?? 0,
+				'username'        => $user['username'] ?? '',
+				'name'            => $user['name'] ?? '',
+				'bio'             => $user['bio'] ?? '',
+				'image'           => $user['image'] ?? null,
+				'books_count'     => $user['books_count'] ?? 0,
+				'followers_count' => $user['followers_count'] ?? 0,
+				'following_count' => $user['following_count'] ?? 0,
+				'created_at'      => $user['created_at'] ?? '',
+				'type'            => 'user',
+				'source'          => 'hardcover',
+			],
+			[ 'image' ]
+		);
 	}
 
 	/**

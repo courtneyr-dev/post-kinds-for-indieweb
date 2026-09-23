@@ -791,21 +791,27 @@ class OpenLibrary extends API_Base {
 			$cover_id = $work['covers'][0];
 		}
 
-		return [
-			'key'                => $key,
-			'ol_work_id'         => $ol_id,
-			'title'              => $work['title'] ?? '',
-			'description'        => $description,
-			'subjects'           => $work['subjects'] ?? [],
-			'subject_places'     => $work['subject_places'] ?? [],
-			'subject_times'      => $work['subject_times'] ?? [],
-			'subject_people'     => $work['subject_people'] ?? [],
-			'cover_id'           => $cover_id,
-			'cover'              => $cover_id ? $this->get_cover_url( $cover_id, 'M' ) : null,
-			'first_publish_date' => $work['first_publish_date'] ?? '',
-			'type'               => 'work',
-			'source'             => 'openlibrary',
-		];
+		// Sanitize here, not just via normalize_result(): get_work() and
+		// get_author_works() call this method directly (review round 2,
+		// BGG-class audit finding).
+		return $this->sanitize_normalized_result(
+			[
+				'key'                => $key,
+				'ol_work_id'         => $ol_id,
+				'title'              => $work['title'] ?? '',
+				'description'        => $description,
+				'subjects'           => $work['subjects'] ?? [],
+				'subject_places'     => $work['subject_places'] ?? [],
+				'subject_times'      => $work['subject_times'] ?? [],
+				'subject_people'     => $work['subject_people'] ?? [],
+				'cover_id'           => $cover_id,
+				'cover'              => $cover_id ? $this->get_cover_url( $cover_id, 'M' ) : null,
+				'first_publish_date' => $work['first_publish_date'] ?? '',
+				'type'               => 'work',
+				'source'             => 'openlibrary',
+			],
+			[ 'cover' ]
+		);
 	}
 
 	/**
@@ -826,28 +832,34 @@ class OpenLibrary extends API_Base {
 		$isbn_10 = $edition['isbn_10'][0] ?? '';
 		$isbn_13 = $edition['isbn_13'][0] ?? '';
 
-		return [
-			'key'             => $key,
-			'ol_edition_id'   => $ol_id,
-			'title'           => $edition['title'] ?? '',
-			'subtitle'        => $edition['subtitle'] ?? '',
-			'full_title'      => $edition['full_title'] ?? '',
-			'authors'         => $edition['authors'] ?? [],
-			'publishers'      => $edition['publishers'] ?? [],
-			'publish_date'    => $edition['publish_date'] ?? '',
-			'publish_places'  => $edition['publish_places'] ?? [],
-			'number_of_pages' => $edition['number_of_pages'] ?? null,
-			'isbn_10'         => $isbn_10,
-			'isbn_13'         => $isbn_13,
-			'isbn'            => $isbn_13 ?: $isbn_10,
-			'languages'       => $edition['languages'] ?? [],
-			'physical_format' => $edition['physical_format'] ?? '',
-			'cover_id'        => $cover_id,
-			'cover'           => $cover_id ? $this->get_cover_url( $cover_id, 'M' ) : null,
-			'work_key'        => $edition['works'][0]['key'] ?? '',
-			'type'            => 'edition',
-			'source'          => 'openlibrary',
-		];
+		// Sanitize here, not just via normalize_result(): get_edition()
+		// and get_work_editions() call this method directly (review
+		// round 2, BGG-class audit finding).
+		return $this->sanitize_normalized_result(
+			[
+				'key'             => $key,
+				'ol_edition_id'   => $ol_id,
+				'title'           => $edition['title'] ?? '',
+				'subtitle'        => $edition['subtitle'] ?? '',
+				'full_title'      => $edition['full_title'] ?? '',
+				'authors'         => $edition['authors'] ?? [],
+				'publishers'      => $edition['publishers'] ?? [],
+				'publish_date'    => $edition['publish_date'] ?? '',
+				'publish_places'  => $edition['publish_places'] ?? [],
+				'number_of_pages' => $edition['number_of_pages'] ?? null,
+				'isbn_10'         => $isbn_10,
+				'isbn_13'         => $isbn_13,
+				'isbn'            => $isbn_13 ?: $isbn_10,
+				'languages'       => $edition['languages'] ?? [],
+				'physical_format' => $edition['physical_format'] ?? '',
+				'cover_id'        => $cover_id,
+				'cover'           => $cover_id ? $this->get_cover_url( $cover_id, 'M' ) : null,
+				'work_key'        => $edition['works'][0]['key'] ?? '',
+				'type'            => 'edition',
+				'source'          => 'openlibrary',
+			],
+			[ 'cover' ]
+		);
 	}
 
 	/**
@@ -879,21 +891,27 @@ class OpenLibrary extends API_Base {
 			}
 		}
 
-		return [
-			'title'           => $data['title'] ?? '',
-			'subtitle'        => $data['subtitle'] ?? '',
-			'authors'         => $authors,
-			'publishers'      => isset( $data['publishers'] ) ? array_column( $data['publishers'], 'name' ) : [],
-			'publish_date'    => $data['publish_date'] ?? '',
-			'number_of_pages' => $data['number_of_pages'] ?? null,
-			'isbn'            => $isbn,
-			'subjects'        => $subjects,
-			'cover'           => $cover,
-			'url'             => $data['url'] ?? '',
-			'key'             => $data['key'] ?? '',
-			'type'            => 'book',
-			'source'          => 'openlibrary',
-		];
+		// Sanitize here: get_by_isbn()'s Books API path calls this method
+		// directly and it was never sanitized at all (review round 2,
+		// BGG-class audit finding).
+		return $this->sanitize_normalized_result(
+			[
+				'title'           => $data['title'] ?? '',
+				'subtitle'        => $data['subtitle'] ?? '',
+				'authors'         => $authors,
+				'publishers'      => isset( $data['publishers'] ) ? array_column( $data['publishers'], 'name' ) : [],
+				'publish_date'    => $data['publish_date'] ?? '',
+				'number_of_pages' => $data['number_of_pages'] ?? null,
+				'isbn'            => $isbn,
+				'subjects'        => $subjects,
+				'cover'           => $cover,
+				'url'             => $data['url'] ?? '',
+				'key'             => $data['key'] ?? '',
+				'type'            => 'book',
+				'source'          => 'openlibrary',
+			],
+			[ 'cover', 'url' ]
+		);
 	}
 
 	/**
@@ -913,17 +931,23 @@ class OpenLibrary extends API_Base {
 			$authors = $work['author_name'];
 		}
 
-		return [
-			'key'                => $work['key'] ?? '',
-			'title'              => $work['title'] ?? '',
-			'authors'            => $authors,
-			'author_keys'        => $work['author_key'] ?? [],
-			'first_publish_year' => $work['first_publish_year'] ?? null,
-			'cover'              => $cover,
-			'availability'       => $work['availability'] ?? [],
-			'type'               => 'book',
-			'source'             => 'openlibrary',
-		];
+		// Sanitize here: get_trending() calls this method directly and it
+		// was never sanitized at all (review round 2, BGG-class audit
+		// finding).
+		return $this->sanitize_normalized_result(
+			[
+				'key'                => $work['key'] ?? '',
+				'title'              => $work['title'] ?? '',
+				'authors'            => $authors,
+				'author_keys'        => $work['author_key'] ?? [],
+				'first_publish_year' => $work['first_publish_year'] ?? null,
+				'cover'              => $cover,
+				'availability'       => $work['availability'] ?? [],
+				'type'               => 'book',
+				'source'             => 'openlibrary',
+			],
+			[ 'cover' ]
+		);
 	}
 
 	/**

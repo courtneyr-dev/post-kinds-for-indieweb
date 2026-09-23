@@ -355,12 +355,16 @@ class BoardGameGeek extends API_Base {
 			}
 
 			if ( ! empty( $id ) && ! empty( $name ) ) {
-				$results[] = [
-					'id'   => $id,
-					'name' => $name,
-					'year' => $year,
-					'type' => $type,
-				];
+				// search() calls this method directly, never
+				// normalize_result() — review round 2, BGG audit finding.
+				$results[] = $this->sanitize_normalized_result(
+					[
+						'id'   => $id,
+						'name' => $name,
+						'year' => $year,
+						'type' => $type,
+					]
+				);
 			}
 		}
 
@@ -483,7 +487,9 @@ class BoardGameGeek extends API_Base {
 			}
 		}
 
-		return $result;
+		// get_by_id() calls this method directly, never normalize_result()
+		// (review round 2, BGG audit finding).
+		return $this->sanitize_normalized_result( $result, [ 'image', 'thumbnail' ] );
 	}
 
 	/**

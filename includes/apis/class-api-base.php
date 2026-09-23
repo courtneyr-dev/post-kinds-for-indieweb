@@ -583,7 +583,17 @@ abstract class API_Base {
 	abstract protected function normalize_result( array $raw_result ): array;
 
 	/**
-	 * Recursively strip HTML tags from every string in a value.
+	 * Recursively sanitize a value: strip HTML tags from every string,
+	 * except the value under a key named in $url_keys, which is run
+	 * through esc_url_raw() instead so it can't carry a disallowed
+	 * protocol (e.g. `javascript:`).
+	 *
+	 * $url_keys is matched at every depth, not just the top level
+	 * (review round 2, minor 3): RAWG's `stores[].url`, Foursquare's
+	 * nested category icons, and similar nested URL fields share their
+	 * key name with a top-level field the caller already lists, so
+	 * matching by key name regardless of nesting depth catches them too
+	 * without every caller having to enumerate every nested path.
 	 *
 	 * A provider's title, name, artist, author, year or description field
 	 * reaches the admin lookup/search UI and the import preview; without
@@ -593,12 +603,21 @@ abstract class API_Base {
 	 * recursively so nested sub-results (authors, genres, cast, etc.) are
 	 * covered too; non-string scalars and null pass through unchanged.
 	 *
-	 * @param mixed $value Value to sanitize.
+	 * @param mixed    $value    Value to sanitize.
+	 * @param string[] $url_keys Key names, at any depth, whose value is a URL.
 	 * @return mixed Sanitized value, same shape as the input.
 	 */
-	protected function strip_tags_deep( $value ) {
+	protected function strip_tags_deep( $value, array $url_keys = [] ) {
 		if ( is_array( $value ) ) {
-			return array_map( [ $this, 'strip_tags_deep' ], $value );
+			$sanitized = [];
+			foreach ( $value as $key => $item ) {
+				if ( is_string( $key ) && in_array( $key, $url_keys, true ) && is_string( $item ) ) {
+					$sanitized[ $key ] = '' !== $item ? esc_url_raw( $item ) : $item;
+					continue;
+				}
+				$sanitized[ $key ] = $this->strip_tags_deep( $item, $url_keys );
+			}
+			return $sanitized;
 		}
 
 		if ( is_string( $value ) ) {
@@ -610,25 +629,24 @@ abstract class API_Base {
 
 	/**
 	 * Sanitize a normalize_result() return value before it leaves the API
-	 * client (finding K2): every string field is passed through
-	 * strip_tags_deep(), except the given top-level $url_keys, which are
-	 * run through esc_url_raw() instead so an image/cover URL can't carry
-	 * a disallowed protocol (e.g. `javascript:`).
+	 * client (finding K2): every string field, at every depth, is passed
+	 * through strip_tags_deep(), except a value under a key named in
+	 * $url_keys, which is run through esc_url_raw() instead so an
+	 * image/cover URL — top-level or nested — can't carry a disallowed
+	 * protocol.
 	 *
-	 * @param array<string, mixed> $result   Normalized result.
-	 * @param string[]             $url_keys Top-level keys to esc_url_raw() instead of stripping.
-	 * @return array<string, mixed> Sanitized result.
+	 * Accepts either a single normalized result (an associative array) or
+	 * a list of them (e.g. a cast/crew list) — strip_tags_deep() recurses
+	 * generically over array keys regardless of shape, and several
+	 * callers (TMDB/TVmaze's normalize_cast()/normalize_crew(), etc.)
+	 * sanitize a list of items directly rather than a single object.
+	 *
+	 * @param array<array-key, mixed> $result   Normalized result, or a list of them.
+	 * @param string[]                $url_keys Key names, at any depth, to esc_url_raw() instead of stripping.
+	 * @return array<array-key, mixed> Sanitized result, same shape as the input.
 	 */
 	protected function sanitize_normalized_result( array $result, array $url_keys = [] ): array {
-		foreach ( $result as $key => $value ) {
-			if ( in_array( $key, $url_keys, true ) ) {
-				$result[ $key ] = is_string( $value ) && '' !== $value ? esc_url_raw( $value ) : $value;
-				continue;
-			}
-			$result[ $key ] = $this->strip_tags_deep( $value );
-		}
-
-		return $result;
+		return $this->strip_tags_deep( $result, $url_keys );
 	}
 
 	/**
