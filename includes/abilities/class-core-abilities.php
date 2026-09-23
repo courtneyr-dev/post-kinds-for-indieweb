@@ -683,7 +683,22 @@ final class Core_Abilities {
 			);
 		}
 
-		$full_key = Meta_Fields::PREFIX . sanitize_key( $meta_key );
+		// Same allowlist create-post's meta loop uses: only this plugin's
+		// own registered field keys may be written, so a caller can't set
+		// an internal bookkeeping key (_pkiw_imported_from, read by
+		// was_imported_from_service()/Query_Filter::is_imported_post()
+		// to mean "this post came from an external import") or any other
+		// unregistered key through this ability.
+		$meta_key = sanitize_key( (string) $meta_key );
+		if ( '' === $meta_key || ! $this->meta_fields->is_valid_field( $meta_key ) ) {
+			return new \WP_Error(
+				'invalid_meta_key',
+				__( 'This is not a registered Post Kinds meta field.', 'post-kinds-for-indieweb-in-block-themes' ),
+				[ 'status' => 400 ]
+			);
+		}
+
+		$full_key = Meta_Fields::PREFIX . $meta_key;
 		update_post_meta( $post_id, $full_key, $meta_value );
 
 		return [

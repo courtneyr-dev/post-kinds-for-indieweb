@@ -254,6 +254,47 @@ class CoreAbilitiesTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Review round 1, Important 1: update-post-meta must refuse an
+	 * unregistered key with a WP_Error rather than writing it — the same
+	 * gate create-post's meta loop already applies. `imported_from` is
+	 * the concrete example: it isn't a registered field, but
+	 * Query_Filter::is_imported_post() and the sync classes'
+	 * was_imported_from_service() both key on `_pkiw_imported_from`
+	 * being set to mean "this post came from an external import".
+	 */
+	public function test_execute_update_post_meta_rejects_unregistered_bookkeeping_key() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$post_id = self::factory()->post->create();
+		$result  = $this->abilities->execute_update_post_meta( [
+			'post_id'    => $post_id,
+			'meta_key'   => 'imported_from', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+			'meta_value' => 'lastfm', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+		] );
+
+		$this->assertInstanceOf( \WP_Error::class, $result );
+		$this->assertSame( '', get_post_meta( $post_id, Meta_Fields::PREFIX . 'imported_from', true ) );
+	}
+
+	/**
+	 * Review round 1, Important 1: a random, never-registered key must
+	 * also be refused, not just recognizable bookkeeping keys.
+	 */
+	public function test_execute_update_post_meta_rejects_random_unregistered_key() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$post_id = self::factory()->post->create();
+		$result  = $this->abilities->execute_update_post_meta( [
+			'post_id'    => $post_id,
+			'meta_key'   => 'Totally Unregistered!', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+			'meta_value' => 'x', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+		] );
+
+		$this->assertInstanceOf( \WP_Error::class, $result );
+		$this->assertSame( '', get_post_meta( $post_id, Meta_Fields::PREFIX . 'totallyunregistered', true ) );
+	}
+
+	/**
 	 * Test execute_get_post_meta.
 	 */
 	public function test_execute_get_post_meta() {
