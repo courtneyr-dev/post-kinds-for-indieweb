@@ -713,19 +713,34 @@ final class Core_Abilities {
 
 		$meta = [];
 
+		// Only this plugin's own registered fields are ever returned, in
+		// both branches below — matching what REST exposes (registered
+		// meta only) and closing the gap a bookkeeping key (imported_from)
+		// or a legacy importer/sync key outside the registered field list
+		// (e.g. the Swarm import's checkin_latitude/checkin_venue_id,
+		// class-import-manager.php:1300-1304) would otherwise leak
+		// through, keyed by name or via the full-meta scan.
 		if ( ! empty( $meta_keys ) ) {
 			// Return specific keys.
 			foreach ( $meta_keys as $key ) {
+				$key = sanitize_key( (string) $key );
+				if ( '' === $key || ! $this->meta_fields->is_valid_field( $key ) ) {
+					continue;
+				}
 				$meta[ $key ] = get_post_meta( $post_id, Meta_Fields::PREFIX . $key, true );
 			}
 		} else {
 			// Return all _pkiw_ prefixed meta.
 			$all_meta = get_post_meta( $post_id );
 			foreach ( $all_meta as $full_key => $values ) {
-				if ( str_starts_with( $full_key, Meta_Fields::PREFIX ) ) {
-					$short_key          = substr( $full_key, strlen( Meta_Fields::PREFIX ) );
-					$meta[ $short_key ] = $values[0] ?? '';
+				if ( ! str_starts_with( $full_key, Meta_Fields::PREFIX ) ) {
+					continue;
 				}
+				$short_key = substr( $full_key, strlen( Meta_Fields::PREFIX ) );
+				if ( ! $this->meta_fields->is_valid_field( $short_key ) ) {
+					continue;
+				}
+				$meta[ $short_key ] = $values[0] ?? '';
 			}
 		}
 
