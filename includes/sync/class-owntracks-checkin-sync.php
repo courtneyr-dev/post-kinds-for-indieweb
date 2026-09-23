@@ -74,9 +74,9 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 		$expected_username = $settings['owntracks_username'] ?? '';
 		$expected_password = $settings['owntracks_password'] ?? '';
 
-		// If no credentials configured, allow all (not recommended).
-		if ( empty( $expected_username ) && empty( $expected_password ) ) {
-			return true;
+		// No credentials means no access: the integration is on but not configured.
+		if ( '' === (string) $expected_username || '' === (string) $expected_password ) {
+			return new \WP_Error( 'unconfigured', __( 'OwnTracks credentials are not configured.', 'post-kinds-for-indieweb-in-block-themes' ), [ 'status' => 403 ] );
 		}
 
 		// Check HTTP Basic auth.
@@ -89,7 +89,7 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 		$credentials                 = base64_decode( substr( $auth_header, 6 ) );
 		list( $username, $password ) = explode( ':', $credentials, 2 );
 
-		if ( $username !== $expected_username || $password !== $expected_password ) {
+		if ( ! hash_equals( (string) $expected_username, (string) $username ) || ! hash_equals( (string) $expected_password, (string) $password ) ) {
 			return new \WP_Error( 'forbidden', __( 'Invalid credentials.', 'post-kinds-for-indieweb-in-block-themes' ), [ 'status' => 403 ] );
 		}
 
