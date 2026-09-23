@@ -86,8 +86,11 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 		}
 
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
-		$credentials                 = base64_decode( substr( $auth_header, 6 ) );
-		list( $username, $password ) = explode( ':', $credentials, 2 );
+		$decoded = base64_decode( substr( $auth_header, 6 ), true );
+		if ( false === $decoded || ! str_contains( $decoded, ':' ) ) {
+			return new \WP_Error( 'unauthorized', __( 'Invalid credentials.', 'post-kinds-for-indieweb-in-block-themes' ), [ 'status' => 401 ] );
+		}
+		list( $username, $password ) = explode( ':', $decoded, 2 );
 
 		if ( ! hash_equals( (string) $expected_username, (string) $username ) || ! hash_equals( (string) $expected_password, (string) $password ) ) {
 			return new \WP_Error( 'forbidden', __( 'Invalid credentials.', 'post-kinds-for-indieweb-in-block-themes' ), [ 'status' => 403 ] );
