@@ -246,21 +246,24 @@ class WebhookHandlerTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test token query param auth works.
+	 * Test the token is ignored outside the headers.
+	 *
+	 * A correct token in the query string or the request body must not
+	 * authorize the request; query-string tokens land in CDN and access logs.
 	 */
-	public function test_token_query_param_auth_works() {
+	public function test_query_string_token_is_rejected() {
 		$token = 'query-param-token-9012';
 		update_option( 'pkiw_webhook_token_generic', $token );
 
 		$request = new WP_REST_Request( 'POST' );
-		$request->set_param( 'token', $token );
-		// Generic with empty body returns params (no JSON parse error).
-		$request->set_body( '' );
+		$request->set_query_params( [ 'token' => $token ] );
+		$request->set_body_params( [ 'token' => $token ] );
 
 		$result = $this->handler->handle_request( $request, 'generic' );
 
-		$this->assertNotWPError( $result );
-		$this->assertSame( 200, $result->get_status() );
+		$this->assertWPError( $result );
+		$this->assertSame( 'missing_token', $result->get_error_code() );
+		$this->assertSame( 401, $result->get_error_data()['status'] );
 	}
 
 	// ------------------------------------------------------------------
