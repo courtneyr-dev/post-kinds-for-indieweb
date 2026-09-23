@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.8.4
+Stable tag: 1.8.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -180,6 +180,15 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 
 == Changelog ==
 
+= 1.8.5 =
+* Added: the Stream card block's headingLevel attribute (default 2, clamped 2–4) lets the generic card's title tag match a theme's heading outline; per-kind cards still render an h2.
+* Changed: the /webhook/generic route reads its secret from the X-Webhook-Token header only; it no longer accepts a ?token= query string. Query strings can show up in CDN and access logs.
+* Changed: generic webhook callers that used the query string now get a 401 — send the same secret in an X-Webhook-Token header instead. GET /wp-json/post-kinds-indieweb/v1/settings/webhooks (requires manage_options) returns it. Plex's own webhook URL is unchanged.
+* Changed: OwnTracks enabled with an empty username or password now refuses every check-in with a 403 instead of accepting them, and compares credentials in constant time.
+* Changed: .pk-kindlabel and .pk-link font sizes increased to 0.75rem and 0.875rem for legibility.
+* Fixed: Stream card captions keep their credit links instead of printing markup, and swapped thumbnail captions show plain text.
+* Fixed: Quick Post and scrobble approval only publish a post or mark it private for users with the publish_posts capability; everyone else gets a pending post.
+
 = 1.8.4 =
 * Fixed: check-ins and posts with a venue show their location to visitors unless the author marks it private. Simple Location's "Protected" setting hides coordinates and the map but keeps the place name and address.
 * Fixed: Simple Location and IndieBlocks location fields in the REST API follow the same visibility rule as Post Kinds' own fields, so a geotagged note without a venue no longer returns exact coordinates to visitors.
@@ -273,6 +282,9 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 * Fixed: like, reply, repost, bookmark, favorite, listen, watch, and read posts expose the correct microformats2 markup, so webmention receivers and feed readers recognize them as their kind.
 
 == Upgrade Notice ==
+
+= 1.8.5 =
+Generic webhook callers must send the site secret in an X-Webhook-Token header (the query string is no longer accepted). OwnTracks needs both a username and a password set.
 
 = 1.6.0 =
 Adds optional Standard.site publishing via the ATmosphere companion plugin. Nothing publishes until you install ATmosphere and connect an account.

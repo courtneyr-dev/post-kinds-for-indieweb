@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.5] - 2026-09-23
+
 ### Added
 
 - The Stream card block's `headingLevel` attribute (integer, default 2, clamped 2–4) sets the generic card's title tag; per-kind cards still render `<h2>`.
@@ -468,7 +470,8 @@ This project uses Semantic Versioning:
 - [Issues](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues)
 - [IndieWeb Wiki](https://indieweb.org/)
 
-[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.7.1...HEAD
+[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.8.5...HEAD
+[1.8.5]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.7.1...v1.8.5
 [1.7.1]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.2...v1.6.0
