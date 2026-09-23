@@ -989,7 +989,7 @@ class REST_API {
 	 * @return bool
 	 */
 	public function verify_webhook_token( \WP_REST_Request $request ): bool {
-		$token  = $request->get_param( 'token' ) ?? $request->get_header( 'X-Webhook-Token' );
+		$token  = (string) $request->get_header( 'X-Webhook-Token' );
 		$secret = get_option( 'pkiw_webhook_secret' );
 
 		if ( empty( $token ) || empty( $secret ) ) {
@@ -2829,7 +2829,7 @@ class REST_API {
 				'trakt'        => $base_url . 'trakt',
 				'plex'         => $plex_url,
 				'jellyfin'     => $base_url . 'jellyfin',
-				'generic'      => $base_url . 'generic?token=' . $secret,
+				'generic'      => $base_url . 'generic',
 				'secret'       => $secret,
 			]
 		);

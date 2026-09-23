@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The generic webhook's `verify_webhook_token()` no longer accepts the token from the `?token=` query string; only the `X-Webhook-Token` header is read. `get_webhook_urls()` no longer embeds the secret in the generic webhook URL it returns. Query-string tokens land in CDN and access logs.
+
 ## [1.8.4] - 2026-09-14
 
 ### Fixed
