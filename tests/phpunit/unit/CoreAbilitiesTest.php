@@ -224,8 +224,8 @@ class CoreAbilitiesTest extends WP_UnitTestCase {
 		$post_id = self::factory()->post->create();
 		$result  = $this->abilities->execute_update_post_meta( [
 			'post_id'    => $post_id,
-			'meta_key'   => 'listen_track', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-			'meta_value' => [ 'not', 'a', 'scalar' ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			'meta_key'   => 'listen_track',
+			'meta_value' => [ 'not', 'a', 'scalar' ],
 		] );
 
 		$this->assertInstanceOf( \WP_Error::class, $result );
@@ -245,8 +245,8 @@ class CoreAbilitiesTest extends WP_UnitTestCase {
 
 		$result = $this->abilities->execute_update_post_meta( [
 			'post_id'    => $post_id,
-			'meta_key'   => 'listen_track', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-			'meta_value' => 'hijacked', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			'meta_key'   => 'listen_track',
+			'meta_value' => 'hijacked',
 		] );
 
 		$this->assertInstanceOf( \WP_Error::class, $result );
@@ -268,8 +268,8 @@ class CoreAbilitiesTest extends WP_UnitTestCase {
 		$post_id = self::factory()->post->create();
 		$result  = $this->abilities->execute_update_post_meta( [
 			'post_id'    => $post_id,
-			'meta_key'   => 'imported_from', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-			'meta_value' => 'lastfm', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			'meta_key'   => 'imported_from',
+			'meta_value' => 'lastfm',
 		] );
 
 		$this->assertInstanceOf( \WP_Error::class, $result );
@@ -286,8 +286,8 @@ class CoreAbilitiesTest extends WP_UnitTestCase {
 		$post_id = self::factory()->post->create();
 		$result  = $this->abilities->execute_update_post_meta( [
 			'post_id'    => $post_id,
-			'meta_key'   => 'Totally Unregistered!', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-			'meta_value' => 'x', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			'meta_key'   => 'Totally Unregistered!',
+			'meta_value' => 'x',
 		] );
 
 		$this->assertInstanceOf( \WP_Error::class, $result );

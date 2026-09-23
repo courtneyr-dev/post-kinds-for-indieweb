@@ -91,6 +91,56 @@ final class AbilitiesRegistrationTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Review round 2, minor 1: update-post-meta's meta_value schema had
+	 * no `type`, so core's rest_validate_value_from_schema() raised a
+	 * _doing_it_wrong() notice plus an "Undefined array key \"type\""
+	 * PHP warning on every real call routed through WP_Ability::execute()
+	 * (REST, MCP, or any other caller that isn't the raw PHP method).
+	 * PHPUnit converts that warning to a test error, so this test failing
+	 * with anything other than the assertions below is itself evidence
+	 * the notice/warning came back.
+	 */
+	public function test_update_post_meta_schema_declares_scalar_value_type(): void {
+		$this->skip_without_abilities_api();
+
+		$ability = wp_get_ability( 'post-kinds/update-post-meta' );
+		$this->assertNotNull( $ability );
+
+		$schema = $ability->get_input_schema();
+		$this->assertSame(
+			[ 'string', 'number', 'integer', 'boolean' ],
+			$schema['properties']['meta_value']['type'] ?? null
+		);
+	}
+
+	/**
+	 * The same fix proven end to end: a real WP_Ability::execute() call
+	 * with a scalar meta_value succeeds without the schema-validation
+	 * notice/warning that a missing `type` used to raise.
+	 */
+	public function test_update_post_meta_execute_accepts_scalar_value(): void {
+		$this->skip_without_abilities_api();
+
+		$user_id = self::factory()->user->create( [ 'role' => 'editor' ] );
+		wp_set_current_user( $user_id );
+		$post_id = self::factory()->post->create( [ 'post_author' => $user_id ] );
+
+		$ability = wp_get_ability( 'post-kinds/update-post-meta' );
+		$this->assertNotNull( $ability );
+
+		$result = $ability->execute(
+			[
+				'post_id'    => $post_id,
+				'meta_key'   => 'listen_track',
+				'meta_value' => 'Test Track',
+			]
+		);
+
+		$this->assertIsArray( $result );
+		$this->assertTrue( $result['success'] ?? false );
+	}
+
+	/**
 	 * Skip when running against a WordPress without the Abilities API.
 	 */
 	private function skip_without_abilities_api(): void {

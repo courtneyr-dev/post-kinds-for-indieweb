@@ -375,6 +375,7 @@ final class Core_Abilities {
 							'description' => __( 'Meta field key without the _pkiw_ prefix.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 						'meta_value' => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+							'type'        => [ 'string', 'number', 'integer', 'boolean' ],
 							'description' => __( 'Value to set.', 'post-kinds-for-indieweb-in-block-themes' ),
 						],
 					],
