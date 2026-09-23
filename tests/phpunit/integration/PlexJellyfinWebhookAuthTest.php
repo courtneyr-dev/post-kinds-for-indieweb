@@ -359,12 +359,17 @@ final class PlexJellyfinWebhookAuthTest extends WP_UnitTestCase {
 		];
 	}
 
-	public function test_generic_still_accepts_site_secret_token_only(): void {
+	/**
+	 * The generic route only reads the site secret from the X-Webhook-Token
+	 * header; a ?token= query string is refused, since query strings can
+	 * show up in CDN and access logs.
+	 */
+	public function test_generic_accepts_site_secret_in_header_only(): void {
 		$body = '{"kind":"listen","title":"Fixture Generic"}';
 
 		$query = $this->json_request( 'generic', $body );
 		$query->set_query_params( [ 'token' => self::SITE_SECRET ] );
-		$this->assertSame( 200, $this->server->dispatch( $query )->get_status(), 'site secret in query' );
+		$this->assertSame( 401, $this->server->dispatch( $query )->get_status(), 'site secret in query' );
 
 		$header = $this->json_request( 'generic', $body );
 		$header->set_header( 'X-Webhook-Token', self::SITE_SECRET );

@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.5] - 2026-09-23
+
+### Added
+
+- The Stream card block's `headingLevel` attribute (integer, default 2, clamped 2–4) sets the generic card's title tag; per-kind cards still render `<h2>`.
+
+### Changed
+
+- The `/webhook/generic` route's `verify_webhook_token()` reads the secret from the `X-Webhook-Token` request header only; it no longer accepts a `?token=` query string. `get_webhook_urls()` no longer embeds the secret in the generic webhook URL it returns. Query-string tokens land in CDN and access logs.
+- **Breaking:** callers that sent `?token=` to `/webhook/generic` now get 401; send the same site secret in an `X-Webhook-Token` header instead. `GET /wp-json/post-kinds-indieweb/v1/settings/webhooks` (`manage_options`) returns it. Plex's `?token=` URL is unchanged.
+- **Breaking:** OwnTracks enabled with an empty username or password now answers 403 `unconfigured` instead of accepting every request, and credentials are compared in constant time. On sites where any user has an Application Password, WordPress checks Basic credentials first and answers 401 unless they are a real username plus one of its application passwords.
+- `.pk-kindlabel` 0.7rem → 0.75rem and `.pk-link` 0.75rem → 0.875rem.
+
+### Fixed
+
+- Stream card captions render `a`, `em`, `strong` and `br` through a `wp_kses` allowlist instead of printing markup, and swapped thumbnail captions show plain text.
+- Quick Post and scrobble approval create published or private posts only for users with `publish_posts`; everyone else gets pending, and an unrecognized status falls back to the site default.
+
 ## [1.8.4] - 2026-09-14
 
 ### Fixed
@@ -452,7 +470,8 @@ This project uses Semantic Versioning:
 - [Issues](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues)
 - [IndieWeb Wiki](https://indieweb.org/)
 
-[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.7.1...HEAD
+[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.8.5...HEAD
+[1.8.5]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.7.1...v1.8.5
 [1.7.1]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.2...v1.6.0

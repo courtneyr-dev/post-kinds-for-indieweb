@@ -1232,6 +1232,24 @@ class Quick_Post {
 	}
 
 	/**
+	 * Resolve the post status a request may use.
+	 *
+	 * Only a caller who may publish gets publish or private; everything else is capped at pending.
+	 *
+	 * @param string $requested Requested post status.
+	 * @param string $fallback  Fallback post status when the requested one is not recognized.
+	 * @return string One of draft|pending|publish|private.
+	 */
+	public static function resolve_post_status( string $requested, string $fallback ): string {
+		$allowed = [ 'draft', 'pending', 'publish', 'private' ];
+		$status  = in_array( $requested, $allowed, true ) ? $requested : ( in_array( $fallback, $allowed, true ) ? $fallback : 'draft' );
+		if ( in_array( $status, [ 'publish', 'private' ], true ) && ! current_user_can( 'publish_posts' ) ) {
+			return 'pending';
+		}
+		return $status;
+	}
+
+	/**
 	 * Create a reaction post.
 	 *
 	 * @param string               $kind Post kind.
@@ -1240,7 +1258,7 @@ class Quick_Post {
 	 */
 	private function create_reaction_post( string $kind, array $data ) {
 		$settings    = get_option( 'pkiw_settings', [] );
-		$post_status = $data['post_status'] ?? ( $settings['default_post_status'] ?? 'publish' );
+		$post_status = self::resolve_post_status( (string) ( $data['post_status'] ?? '' ), (string) ( $settings['default_post_status'] ?? 'publish' ) );
 
 		// Build title based on kind.
 		$title = $this->build_post_title( $kind, $data );

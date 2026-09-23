@@ -521,6 +521,21 @@ class WebhookHandlerTest extends WP_UnitTestCase {
 		$this->assertSame( 'not_found', $result->get_error_code() );
 	}
 
+	/**
+	 * A contributor approving a scrobble is capped at pending, not publish.
+	 */
+	public function test_approve_scrobble_contributor_cannot_publish() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'contributor' ] ) );
+		update_option( 'pkiw_pending_scrobbles', [
+			[ 'type' => 'track', 'track' => 'Song', 'artist' => 'Artist' ],
+		] );
+
+		$post_id = $this->handler->approve_scrobble( 0 );
+
+		$this->assertIsInt( $post_id );
+		$this->assertSame( 'pending', get_post_status( $post_id ) );
+	}
+
 	// ------------------------------------------------------------------
 	// get_log
 	// ------------------------------------------------------------------

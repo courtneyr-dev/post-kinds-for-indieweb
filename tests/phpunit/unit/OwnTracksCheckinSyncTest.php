@@ -108,7 +108,10 @@ class OwnTracksCheckinSyncTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test verify_webhook_auth allows when no credentials set.
+	 * Test verify_webhook_auth denies when no credentials are configured.
+	 *
+	 * The integration being enabled with nothing configured is not the same
+	 * as an operator choosing to leave it open, so it must fail closed.
 	 */
 	public function test_verify_webhook_auth_no_credentials(): void {
 		update_option( 'pkiw_settings', [
@@ -118,7 +121,7 @@ class OwnTracksCheckinSyncTest extends WP_UnitTestCase {
 		$sync    = new OwnTracks_Checkin_Sync();
 		$request = new \WP_REST_Request( 'POST', '/post-kinds-indieweb/v1/owntracks' );
 
-		$this->assertTrue( $sync->verify_webhook_auth( $request ) );
+		$this->assertInstanceOf( \WP_Error::class, $sync->verify_webhook_auth( $request ) );
 	}
 
 	/**
