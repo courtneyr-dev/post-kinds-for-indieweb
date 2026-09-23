@@ -802,7 +802,10 @@ class TVmaze extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	protected function normalize_result( array $raw_result ): array {
-		return $this->normalize_show( $raw_result );
+		return $this->sanitize_normalized_result(
+			$this->normalize_show( $raw_result ),
+			[ 'url', 'poster', 'poster_original' ]
+		);
 	}
 
 	/**

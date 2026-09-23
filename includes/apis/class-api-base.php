@@ -583,6 +583,55 @@ abstract class API_Base {
 	abstract protected function normalize_result( array $raw_result ): array;
 
 	/**
+	 * Recursively strip HTML tags from every string in a value.
+	 *
+	 * A provider's title, name, artist, author, year or description field
+	 * reaches the admin lookup/search UI and the import preview; without
+	 * this, a value like `<img src=x onerror=...>` from an external API
+	 * response could be rendered as markup by a caller that isn't careful
+	 * to treat it as plain text (finding K2). Arrays are walked
+	 * recursively so nested sub-results (authors, genres, cast, etc.) are
+	 * covered too; non-string scalars and null pass through unchanged.
+	 *
+	 * @param mixed $value Value to sanitize.
+	 * @return mixed Sanitized value, same shape as the input.
+	 */
+	protected function strip_tags_deep( $value ) {
+		if ( is_array( $value ) ) {
+			return array_map( [ $this, 'strip_tags_deep' ], $value );
+		}
+
+		if ( is_string( $value ) ) {
+			return wp_strip_all_tags( $value );
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Sanitize a normalize_result() return value before it leaves the API
+	 * client (finding K2): every string field is passed through
+	 * strip_tags_deep(), except the given top-level $url_keys, which are
+	 * run through esc_url_raw() instead so an image/cover URL can't carry
+	 * a disallowed protocol (e.g. `javascript:`).
+	 *
+	 * @param array<string, mixed> $result   Normalized result.
+	 * @param string[]             $url_keys Top-level keys to esc_url_raw() instead of stripping.
+	 * @return array<string, mixed> Sanitized result.
+	 */
+	protected function sanitize_normalized_result( array $result, array $url_keys = [] ): array {
+		foreach ( $result as $key => $value ) {
+			if ( in_array( $key, $url_keys, true ) ) {
+				$result[ $key ] = is_string( $value ) && '' !== $value ? esc_url_raw( $value ) : $value;
+				continue;
+			}
+			$result[ $key ] = $this->strip_tags_deep( $value );
+		}
+
+		return $result;
+	}
+
+	/**
 	 * Get option value.
 	 *
 	 * @param string $key           Option key (without prefix).

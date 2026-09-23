@@ -828,13 +828,14 @@ class TMDB extends API_Base {
 	 */
 	protected function normalize_result( array $raw_result ): array {
 		$media_type = $raw_result['media_type'] ?? 'movie';
+		$url_keys   = [ 'poster', 'backdrop', 'image' ];
 
 		if ( 'movie' === $media_type ) {
-			return $this->normalize_movie( $raw_result );
+			return $this->sanitize_normalized_result( $this->normalize_movie( $raw_result ), $url_keys );
 		} elseif ( 'tv' === $media_type ) {
-			return $this->normalize_tv( $raw_result );
+			return $this->sanitize_normalized_result( $this->normalize_tv( $raw_result ), $url_keys );
 		} elseif ( 'person' === $media_type ) {
-			return $this->normalize_person( $raw_result );
+			return $this->sanitize_normalized_result( $this->normalize_person( $raw_result ), $url_keys );
 		}
 
 		return [];

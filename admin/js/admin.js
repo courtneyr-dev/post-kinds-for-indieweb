@@ -519,18 +519,23 @@
 					if ( response.success ) {
 						PostKindsAdmin.renderPreview( response.data );
 					} else {
-						$( '.preview-content' ).html(
-							'<p class="error">' + response.data.message + '</p>'
-						);
+						$( '.preview-content' )
+							.empty()
+							.append(
+								$( '<p>' )
+									.addClass( 'error' )
+									.text( response.data.message )
+							);
 					}
 				},
 				error() {
 					$( '.preview-loading' ).hide();
 					$( '.preview-content' )
-						.html(
-							'<p class="error">' +
-								pkiwAdmin.strings.error +
-								'</p>'
+						.empty()
+						.append(
+							$( '<p>' )
+								.addClass( 'error' )
+								.text( pkiwAdmin.strings.error )
 						)
 						.show();
 				},
@@ -542,36 +547,56 @@
 		 * @param {Object} data Preview data returned by the server.
 		 */
 		renderPreview( data ) {
-			let html =
-				'<p><strong>Source:</strong> ' + data.source_name + '</p>';
-			html +=
-				'<p><strong>Total items:</strong> ~' +
-				data.total_count +
-				'</p>';
-			html += '<p><strong>Post kind:</strong> ' + data.post_kind + '</p>';
+			const $content = $( '.preview-content' ).empty();
 
-			if ( data.sample && data.sample.length ) {
-				html += '<h4>Sample items:</h4><ul>';
-				data.sample.forEach( function ( item ) {
-					html += '<li>';
-					if ( item.title ) {
-						html += '<strong>' + item.title + '</strong>';
-					}
-					if ( item.artist ) {
-						html += ' by ' + item.artist;
-					}
-					if ( item.year ) {
-						html += ' (' + item.year + ')';
-					}
-					if ( item.date ) {
-						html += ' - ' + item.date;
-					}
-					html += '</li>';
-				} );
-				html += '</ul>';
+			/**
+			 * Build a `<p><strong>LABEL</strong> VALUE</p>` line without
+			 * ever parsing `value` as HTML.
+			 *
+			 * @param {string} label Bold label text.
+			 * @param {string} value Plain-text value, e.g. from an import source.
+			 * @return {jQuery} The built paragraph.
+			 */
+			function labeledLine( label, value ) {
+				return $( '<p>' ).append(
+					$( '<strong>' ).text( label ),
+					document.createTextNode( ' ' + value )
+				);
 			}
 
-			$( '.preview-content' ).html( html );
+			$content.append( labeledLine( 'Source:', data.source_name || '' ) );
+			$content.append(
+				labeledLine( 'Total items:', '~' + data.total_count )
+			);
+			$content.append(
+				labeledLine( 'Post kind:', data.post_kind || '' )
+			);
+
+			if ( data.sample && data.sample.length ) {
+				$content.append( $( '<h4>' ).text( 'Sample items:' ) );
+				const $list = $( '<ul>' );
+				data.sample.forEach( function ( item ) {
+					const $item = $( '<li>' );
+					if ( item.title ) {
+						$item.append( $( '<strong>' ).text( item.title ) );
+					}
+					let rest = '';
+					if ( item.artist ) {
+						rest += ' by ' + item.artist;
+					}
+					if ( item.year ) {
+						rest += ' (' + item.year + ')';
+					}
+					if ( item.date ) {
+						rest += ' - ' + item.date;
+					}
+					if ( rest ) {
+						$item.append( document.createTextNode( rest ) );
+					}
+					$list.append( $item );
+				} );
+				$content.append( $list );
+			}
 		},
 
 		/**
@@ -1184,35 +1209,29 @@
 				},
 				success( response ) {
 					if ( response.success && response.data.results.length ) {
-						let html = '';
+						$results.empty();
 						response.data.results.forEach( function ( item ) {
-							html +=
-								'<div class="lookup-result" data-item=\'' +
-								JSON.stringify( item ) +
-								"'>";
-							html +=
-								'<strong>' +
-								( item.title || item.name ) +
-								'</strong>';
-							if ( item.artist ) {
-								html += '<br>' + item.artist;
-							}
-							if ( item.year ) {
-								html += ' (' + item.year + ')';
-							}
-							html += '</div>';
+							const $item = $(
+								PKIWLookupRender.buildLookupResultItem( item )
+							).data( 'item', item );
+							$results.append( $item );
 						} );
-						$results.html( html );
 					} else {
-						$results.html(
-							'<p>' + pkiwAdmin.strings.noResults + '</p>'
-						);
+						$results
+							.empty()
+							.append(
+								$( '<p>' ).text( pkiwAdmin.strings.noResults )
+							);
 					}
 				},
 				error() {
-					$results.html(
-						'<p class="error">' + pkiwAdmin.strings.error + '</p>'
-					);
+					$results
+						.empty()
+						.append(
+							$( '<p>' )
+								.addClass( 'error' )
+								.text( pkiwAdmin.strings.error )
+						);
 				},
 			} );
 		},
@@ -1378,50 +1397,29 @@
 						response.data.results &&
 						response.data.results.length
 					) {
-						let html = '';
+						$results.empty();
 						response.data.results.forEach( function ( item ) {
-							html +=
-								'<div class="search-result-item" data-item=\'' +
-								JSON.stringify( item ).replace(
-									/'/g,
-									'&#39;'
-								) +
-								"'>";
-							if ( item.image || item.cover ) {
-								html +=
-									'<img src="' +
-									( item.image || item.cover ) +
-									'" alt="">';
-							}
-							html += '<div class="search-result-info">';
-							html +=
-								'<div class="search-result-title">' +
-								( item.title || item.name ) +
-								'</div>';
-							html += '<div class="search-result-subtitle">';
-							if ( item.artist ) {
-								html += item.artist;
-							}
-							if ( item.year ) {
-								html +=
-									( item.artist ? ' - ' : '' ) + item.year;
-							}
-							if ( item.author ) {
-								html += item.author;
-							}
-							html += '</div></div></div>';
+							const $item = $(
+								PKIWLookupRender.buildSearchResultItem( item )
+							).data( 'item', item );
+							$results.append( $item );
 						} );
-						$results.html( html );
 					} else {
-						$results.html(
-							'<p>' + pkiwAdmin.strings.noResults + '</p>'
-						);
+						$results
+							.empty()
+							.append(
+								$( '<p>' ).text( pkiwAdmin.strings.noResults )
+							);
 					}
 				},
 				error() {
-					$results.html(
-						'<p class="error">' + pkiwAdmin.strings.error + '</p>'
-					);
+					$results
+						.empty()
+						.append(
+							$( '<p>' )
+								.addClass( 'error' )
+								.text( pkiwAdmin.strings.error )
+						);
 				},
 			} );
 		},

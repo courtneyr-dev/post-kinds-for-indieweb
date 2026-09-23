@@ -589,7 +589,10 @@ class ListenBrainz extends API_Base {
 	 * @return array<string, mixed> Normalized listen.
 	 */
 	protected function normalize_result( array $raw_listen ): array {
-		return $this->normalize_listen( $raw_listen );
+		return $this->sanitize_normalized_result(
+			$this->normalize_listen( $raw_listen ),
+			[ 'origin_url' ]
+		);
 	}
 
 	/**

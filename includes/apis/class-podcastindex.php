@@ -792,7 +792,10 @@ class PodcastIndex extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	protected function normalize_result( array $raw_result ): array {
-		return $this->normalize_podcast( $raw_result );
+		return $this->sanitize_normalized_result(
+			$this->normalize_podcast( $raw_result ),
+			[ 'url', 'original_url', 'link', 'image', 'artwork' ]
+		);
 	}
 
 	/**

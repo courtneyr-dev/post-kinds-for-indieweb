@@ -802,17 +802,18 @@ class Simkl extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	protected function normalize_result( array $raw_result ): array {
-		$type = $raw_result['type'] ?? 'movie';
+		$type      = $raw_result['type'] ?? 'movie';
+		$url_keys  = [ 'poster', 'fanart', 'trailer' ];
 
 		if ( 'movie' === $type ) {
-			return $this->normalize_movie( $raw_result );
+			return $this->sanitize_normalized_result( $this->normalize_movie( $raw_result ), $url_keys );
 		} elseif ( 'tv' === $type || 'show' === $type ) {
-			return $this->normalize_show( $raw_result );
+			return $this->sanitize_normalized_result( $this->normalize_show( $raw_result ), $url_keys );
 		} elseif ( 'anime' === $type ) {
-			return $this->normalize_anime( $raw_result );
+			return $this->sanitize_normalized_result( $this->normalize_anime( $raw_result ), $url_keys );
 		}
 
-		return $this->normalize_movie( $raw_result );
+		return $this->sanitize_normalized_result( $this->normalize_movie( $raw_result ), $url_keys );
 	}
 
 	/**

@@ -199,26 +199,29 @@ class BoardGameGeek extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	public function normalize_result( array $item ): array {
-		return [
-			'id'           => $item['id'] ?? '',
-			'title'        => $item['name'] ?? '',
-			'year'         => $item['year'] ?? '',
-			'cover'        => $item['image'] ?? $item['thumbnail'] ?? '',
-			'thumbnail'    => $item['thumbnail'] ?? '',
-			'description'  => $item['description'] ?? '',
-			'rating'       => $item['rating'] ?? 0,
-			'rating_count' => $item['rating_count'] ?? 0,
-			'type'         => $item['type'] ?? 'boardgame',
-			'designers'    => $item['designers'] ?? [],
-			'publishers'   => $item['publishers'] ?? [],
-			'min_players'  => $item['min_players'] ?? 0,
-			'max_players'  => $item['max_players'] ?? 0,
-			'play_time'    => $item['play_time'] ?? 0,
-			'categories'   => $item['categories'] ?? [],
-			'mechanics'    => $item['mechanics'] ?? [],
-			'url'          => $this->get_game_url( $item['id'] ?? '', $item['type'] ?? 'boardgame' ),
-			'source'       => 'bgg',
-		];
+		return $this->sanitize_normalized_result(
+			[
+				'id'           => $item['id'] ?? '',
+				'title'        => $item['name'] ?? '',
+				'year'         => $item['year'] ?? '',
+				'cover'        => $item['image'] ?? $item['thumbnail'] ?? '',
+				'thumbnail'    => $item['thumbnail'] ?? '',
+				'description'  => $item['description'] ?? '',
+				'rating'       => $item['rating'] ?? 0,
+				'rating_count' => $item['rating_count'] ?? 0,
+				'type'         => $item['type'] ?? 'boardgame',
+				'designers'    => $item['designers'] ?? [],
+				'publishers'   => $item['publishers'] ?? [],
+				'min_players'  => $item['min_players'] ?? 0,
+				'max_players'  => $item['max_players'] ?? 0,
+				'play_time'    => $item['play_time'] ?? 0,
+				'categories'   => $item['categories'] ?? [],
+				'mechanics'    => $item['mechanics'] ?? [],
+				'url'          => $this->get_game_url( $item['id'] ?? '', $item['type'] ?? 'boardgame' ),
+				'source'       => 'bgg',
+			],
+			[ 'cover', 'thumbnail', 'url' ]
+		);
 	}
 
 	/**

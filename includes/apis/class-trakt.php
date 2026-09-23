@@ -1028,24 +1028,25 @@ class Trakt extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	protected function normalize_result( array $raw_result ): array {
-		$type = $raw_result['type'] ?? '';
+		$type     = $raw_result['type'] ?? '';
+		$url_keys = [ 'trailer', 'homepage' ];
 
 		if ( 'movie' === $type && isset( $raw_result['movie'] ) ) {
-			return $this->normalize_movie( $raw_result['movie'] );
+			return $this->sanitize_normalized_result( $this->normalize_movie( $raw_result['movie'] ), $url_keys );
 		} elseif ( 'show' === $type && isset( $raw_result['show'] ) ) {
-			return $this->normalize_show( $raw_result['show'] );
+			return $this->sanitize_normalized_result( $this->normalize_show( $raw_result['show'] ), $url_keys );
 		} elseif ( 'episode' === $type && isset( $raw_result['episode'] ) ) {
 			$episode = $this->normalize_episode( $raw_result['episode'] );
 			if ( isset( $raw_result['show'] ) ) {
 				$episode['show'] = $this->normalize_show( $raw_result['show'] );
 			}
-			return $episode;
+			return $this->sanitize_normalized_result( $episode, $url_keys );
 		}
 
 		// Direct item.
 		if ( isset( $raw_result['ids']['trakt'] ) ) {
 			if ( isset( $raw_result['title'] ) ) {
-				return $this->normalize_movie( $raw_result );
+				return $this->sanitize_normalized_result( $this->normalize_movie( $raw_result ), $url_keys );
 			}
 		}
 

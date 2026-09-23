@@ -910,14 +910,17 @@ class LastFM extends API_Base {
 	 * @return array<string, mixed> Normalized result.
 	 */
 	protected function normalize_result( array $raw_result ): array {
-		return [
-			'track'  => $raw_result['name'] ?? '',
-			'artist' => $raw_result['artist'] ?? '',
-			'mbid'   => $raw_result['mbid'] ?? '',
-			'url'    => $raw_result['url'] ?? '',
-			'image'  => $this->get_best_image( $raw_result['image'] ?? [] ),
-			'source' => 'lastfm',
-		];
+		return $this->sanitize_normalized_result(
+			[
+				'track'  => $raw_result['name'] ?? '',
+				'artist' => $raw_result['artist'] ?? '',
+				'mbid'   => $raw_result['mbid'] ?? '',
+				'url'    => $raw_result['url'] ?? '',
+				'image'  => $this->get_best_image( $raw_result['image'] ?? [] ),
+				'source' => 'lastfm',
+			],
+			[ 'url', 'image' ]
+		);
 	}
 
 	/**

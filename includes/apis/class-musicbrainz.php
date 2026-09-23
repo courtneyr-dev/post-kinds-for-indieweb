@@ -440,18 +440,21 @@ class MusicBrainz extends API_Base {
 			}
 		}
 
-		return [
-			'track'       => $raw_result['title'] ?? '',
-			'artist'      => $artist,
-			'album'       => $album,
-			'mbid'        => $raw_result['id'] ?? '',
-			'artist_mbid' => $artist_mbid,
-			'album_mbid'  => $album_mbid,
-			'cover'       => $cover,
-			'duration'    => isset( $raw_result['length'] ) ? (int) ( $raw_result['length'] / 1000 ) : null,
-			'score'       => $raw_result['score'] ?? 0,
-			'source'      => 'musicbrainz',
-		];
+		return $this->sanitize_normalized_result(
+			[
+				'track'       => $raw_result['title'] ?? '',
+				'artist'      => $artist,
+				'album'       => $album,
+				'mbid'        => $raw_result['id'] ?? '',
+				'artist_mbid' => $artist_mbid,
+				'album_mbid'  => $album_mbid,
+				'cover'       => $cover,
+				'duration'    => isset( $raw_result['length'] ) ? (int) ( $raw_result['length'] / 1000 ) : null,
+				'score'       => $raw_result['score'] ?? 0,
+				'source'      => 'musicbrainz',
+			],
+			[ 'cover' ]
+		);
 	}
 
 	/**

@@ -744,28 +744,31 @@ class OpenLibrary extends API_Base {
 		$cover_id   = $raw_result['cover_i'] ?? null;
 		$ol_work_id = str_replace( '/works/', '', $raw_result['key'] ?? '' );
 
-		return [
-			'key'                => $raw_result['key'] ?? '',
-			'ol_work_id'         => $ol_work_id,
-			'title'              => $raw_result['title'] ?? '',
-			'subtitle'           => $raw_result['subtitle'] ?? '',
-			'authors'            => $raw_result['author_name'] ?? [],
-			'author_keys'        => $raw_result['author_key'] ?? [],
-			'first_publish_year' => $raw_result['first_publish_year'] ?? null,
-			'edition_count'      => $raw_result['edition_count'] ?? 0,
-			'isbn'               => $raw_result['isbn'] ?? [],
-			'publisher'          => $raw_result['publisher'] ?? [],
-			'language'           => $raw_result['language'] ?? [],
-			'subjects'           => $raw_result['subject'] ?? [],
-			'cover_id'           => $cover_id,
-			'cover'              => $cover_id ? $this->get_cover_url( $cover_id, 'M' ) : null,
-			'cover_large'        => $cover_id ? $this->get_cover_url( $cover_id, 'L' ) : null,
-			'number_of_pages'    => $raw_result['number_of_pages_median'] ?? null,
-			'ratings_average'    => $raw_result['ratings_average'] ?? null,
-			'ratings_count'      => $raw_result['ratings_count'] ?? null,
-			'type'               => 'book',
-			'source'             => 'openlibrary',
-		];
+		return $this->sanitize_normalized_result(
+			[
+				'key'                => $raw_result['key'] ?? '',
+				'ol_work_id'         => $ol_work_id,
+				'title'              => $raw_result['title'] ?? '',
+				'subtitle'           => $raw_result['subtitle'] ?? '',
+				'authors'            => $raw_result['author_name'] ?? [],
+				'author_keys'        => $raw_result['author_key'] ?? [],
+				'first_publish_year' => $raw_result['first_publish_year'] ?? null,
+				'edition_count'      => $raw_result['edition_count'] ?? 0,
+				'isbn'               => $raw_result['isbn'] ?? [],
+				'publisher'          => $raw_result['publisher'] ?? [],
+				'language'           => $raw_result['language'] ?? [],
+				'subjects'           => $raw_result['subject'] ?? [],
+				'cover_id'           => $cover_id,
+				'cover'              => $cover_id ? $this->get_cover_url( $cover_id, 'M' ) : null,
+				'cover_large'        => $cover_id ? $this->get_cover_url( $cover_id, 'L' ) : null,
+				'number_of_pages'    => $raw_result['number_of_pages_median'] ?? null,
+				'ratings_average'    => $raw_result['ratings_average'] ?? null,
+				'ratings_count'      => $raw_result['ratings_count'] ?? null,
+				'type'               => 'book',
+				'source'             => 'openlibrary',
+			],
+			[ 'cover', 'cover_large' ]
+		);
 	}
 
 	/**

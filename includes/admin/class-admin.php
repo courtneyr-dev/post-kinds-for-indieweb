@@ -296,11 +296,21 @@ class Admin {
 			\PKIW_VERSION
 		);
 
+		// Lookup/search result rendering — loaded before admin.js, which
+		// calls into it as the PKIWLookupRender global.
+		wp_enqueue_script(
+			'pkiw-lookup-render',
+			\PKIW_PLUGIN_URL . 'admin/js/lookup-render.js',
+			[],
+			\PKIW_VERSION,
+			true
+		);
+
 		// Core scripts.
 		wp_enqueue_script(
 			'pkiw-admin',
 			\PKIW_PLUGIN_URL . 'admin/js/admin.js',
-			[ 'jquery', 'wp-util', 'wp-api-fetch' ],
+			[ 'jquery', 'wp-util', 'wp-api-fetch', 'pkiw-lookup-render' ],
 			\PKIW_VERSION,
 			true
 		);
