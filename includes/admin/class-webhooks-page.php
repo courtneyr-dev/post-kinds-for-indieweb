@@ -837,7 +837,7 @@ class Webhooks_Page {
 	 */
 	private function create_post_from_scrobble( array $scrobble ) {
 		$settings    = get_option( 'pkiw_settings', [] );
-		$post_status = $settings['default_post_status'] ?? 'publish';
+		$post_status = \PKIW\Admin\Quick_Post::resolve_post_status( '', (string) ( $settings['default_post_status'] ?? 'publish' ) );
 
 		// Determine post kind.
 		$type      = $scrobble['type'] ?? 'unknown';
