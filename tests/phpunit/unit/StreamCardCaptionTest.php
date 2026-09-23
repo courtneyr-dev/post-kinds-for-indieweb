@@ -18,6 +18,32 @@ class StreamCardCaptionTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( '&lt;a href', $html );
 	}
 
+	/**
+	 * Swapped thumbnails carry their caption in a `data-pk-caption` attribute
+	 * that assets/js/stream-card-gallery.js writes via `caption.textContent`,
+	 * not innerHTML — so the attribute must be plain text, never markup.
+	 */
+	public function test_swapped_thumbnail_caption_is_plain_text() {
+		$post_id  = self::factory()->post->create( array( 'post_status' => 'publish' ) );
+		$hero_id  = self::factory()->attachment->create_upload_object( DIR_TESTDATA . '/images/canola.jpg', $post_id );
+		set_post_thumbnail( $post_id, $hero_id );
+		$thumb_id = self::factory()->attachment->create_upload_object( DIR_TESTDATA . '/images/canola.jpg', $post_id );
+		wp_update_post(
+			array(
+				'ID'           => $thumb_id,
+				'post_excerpt' => 'Photo by <a href="https://example.test/" rel="nofollow">Someone</a>',
+			)
+		);
+
+		$html = \PKIW\stream_card_media_extras( get_post( $post_id ) );
+
+		$this->assertMatchesRegularExpression( '/data-pk-caption="([^"]*)"/', $html );
+		preg_match( '/data-pk-caption="([^"]*)"/', $html, $matches );
+		$this->assertStringNotContainsString( '&lt;a', $matches[1] );
+		$this->assertStringNotContainsString( '<a', $matches[1] );
+		$this->assertSame( 'Photo by Someone', $matches[1] );
+	}
+
 	public function test_caption_scripts_are_stripped() {
 		$post_id = self::factory()->post->create( array( 'post_status' => 'publish' ) );
 		$att_id  = self::factory()->attachment->create_upload_object( DIR_TESTDATA . '/images/canola.jpg', $post_id );

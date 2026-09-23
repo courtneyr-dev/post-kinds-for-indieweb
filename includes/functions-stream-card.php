@@ -457,7 +457,7 @@ function stream_card_media_extras( \WP_Post $post ): string {
 			. ' aria-label="' . esc_attr( $name ) . '"'
 			. ' data-pk-full="' . esc_url( $src ) . '"'
 			. ' data-pk-alt="' . esc_attr( $alt ) . '"'
-			. ' data-pk-caption="' . esc_attr( $caption ) . '">'
+			. ' data-pk-caption="' . esc_attr( wp_strip_all_tags( $caption ) ) . '">'
 			. '<img src="' . esc_url( $thumb ) . '" alt="' . esc_attr( $alt ) . '" loading="lazy" />'
 			. '</button></li>';
 	}
