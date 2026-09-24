@@ -226,7 +226,8 @@
 /* stylelint-disable-next-line no-descending-specificity */
 .pk-meta a {
 	color: var(--pk-muted);
-	text-decoration: none;
+	text-decoration: underline;
+	text-underline-offset: 0.15em;
 }
 
 .pk-meta a:hover {
