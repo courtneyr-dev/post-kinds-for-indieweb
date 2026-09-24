@@ -1,5 +1,10 @@
 /**
- * Star Rating Block - Save Component
+ * Star Rating Block - Deprecations
+ *
+ * v1 (pre-1.8.6): the accessible name lived in an `aria-label` on a plain
+ * `<div>` with no ARIA role — aria-label only has a defined mapping on an
+ * element with a role that supports naming, so it was unreliable at best.
+ * 1.8.6 removes it and adds a visually-hidden text alternative instead.
  *
  * @package
  */
@@ -7,13 +12,13 @@
 import { useBlockProps } from '@wordpress/block-editor';
 
 /**
- * Save component for the Star Rating block.
+ * v1 save output — matches the block as it shipped before 1.8.6.
  *
  * @param {Object} props            Block props.
  * @param {Object} props.attributes Block attributes.
  * @return {JSX.Element} Block save component.
  */
-export default function Save( { attributes } ) {
+function saveV1( { attributes } ) {
 	const {
 		rating,
 		maxRating,
@@ -31,12 +36,6 @@ export default function Save( { attributes } ) {
 		className: `star-rating-block size-${ size } style-${ style }`,
 	} );
 
-	/**
-	 * Get the icon for current style
-	 *
-	 * @param {boolean} filled Whether to return filled icon.
-	 * @return {string|null} Icon character or null.
-	 */
 	const getIcon = ( filled ) => {
 		const icons = {
 			stars: { filled: '★', empty: '☆' },
@@ -47,9 +46,6 @@ export default function Save( { attributes } ) {
 		return filled ? icons[ style ]?.filled : icons[ style ]?.empty;
 	};
 
-	/**
-	 * Render icons for visual rating
-	 */
 	const renderIcons = () => {
 		const icons = [];
 
@@ -85,9 +81,6 @@ export default function Save( { attributes } ) {
 		return icons;
 	};
 
-	/**
-	 * Render numeric display
-	 */
 	const renderNumeric = () => (
 		<span className="rating-numeric-display">
 			{ rating } / { maxRating }
@@ -96,39 +89,29 @@ export default function Save( { attributes } ) {
 
 	return (
 		<div { ...blockProps }>
-			<div className="star-rating-inner h-review">
-				{ /* Accessible name: aria-label on a plain div with no ARIA
-				 * role has no defined mapping, so screen readers can't
-				 * reliably announce it. A visually-hidden text node works
-				 * everywhere instead. */ }
-				<span className="screen-reader-text">
-					{ `Rating: ${ rating } of ${ maxRating }` }
-				</span>
-
-				{ /* Label */ }
+			<div
+				className="star-rating-inner h-review"
+				aria-label={ `Rating: ${ rating } out of ${ maxRating }` }
+			>
 				{ showLabel && label && (
 					<span className="rating-label">{ label }</span>
 				) }
 
-				{ /* Visual rating */ }
 				<div className="rating-display">
 					{ style === 'numeric' ? renderNumeric() : renderIcons() }
 				</div>
 
-				{ /* Text value */ }
 				{ showValue && style !== 'numeric' && (
 					<span className="rating-value">
 						{ rating } / { maxRating }
 					</span>
 				) }
 
-				{ /* Microformat data */ }
 				<data className="p-rating" value={ rating }>
 					<data className="p-best" value={ maxRating } hidden />
 					<data className="p-worst" value="0" hidden />
 				</data>
 
-				{ /* Item being rated */ }
 				{ itemName && (
 					<span className="p-item h-product" hidden>
 						{ itemUrl ? (
@@ -141,7 +124,6 @@ export default function Save( { attributes } ) {
 					</span>
 				) }
 
-				{ /* Schema.org compatible rating */ }
 				<span
 					itemProp="reviewRating"
 					itemScope
@@ -162,3 +144,23 @@ export default function Save( { attributes } ) {
 		</div>
 	);
 }
+
+const deprecated = [
+	{
+		attributes: {
+			rating: { type: 'number', default: 0 },
+			maxRating: { type: 'number', default: 5 },
+			showLabel: { type: 'boolean', default: true },
+			label: { type: 'string', default: 'Rating' },
+			showValue: { type: 'boolean', default: true },
+			size: { type: 'string', default: 'medium' },
+			style: { type: 'string', default: 'stars' },
+			allowHalf: { type: 'boolean', default: false },
+			itemUrl: { type: 'string' },
+			itemName: { type: 'string' },
+		},
+		save: saveV1,
+	},
+];
+
+export default deprecated;
