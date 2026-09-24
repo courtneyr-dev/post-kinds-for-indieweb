@@ -188,6 +188,10 @@
             "showFilters": {
                 "type": "boolean",
                 "sample": true
+            },
+            "headingLevel": {
+                "type": "number",
+                "sample": 4
             }
         }
     },
@@ -223,6 +227,10 @@
                 "sample": "list"
             },
             "columns": {
+                "type": "number",
+                "sample": 4
+            },
+            "headingLevel": {
                 "type": "number",
                 "sample": 4
             }

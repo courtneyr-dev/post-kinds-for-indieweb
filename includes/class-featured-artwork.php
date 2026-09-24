@@ -151,9 +151,18 @@ class Featured_Artwork {
 		update_post_meta( $post_id, self::ATTACHMENT_META, $attachment_id );
 
 		// Give the artwork a usable alt if it has none — the post title
-		// is the entity name for every kind card ("American Obituary").
+		// is the entity name for every kind card ("American Obituary"),
+		// but the bare title alone doesn't say what the image shows.
 		if ( '' === (string) get_post_meta( $attachment_id, '_wp_attachment_image_alt', true ) ) {
-			update_post_meta( $attachment_id, '_wp_attachment_image_alt', get_the_title( $post_id ) );
+			update_post_meta(
+				$attachment_id,
+				'_wp_attachment_image_alt',
+				sprintf(
+					/* translators: %s: post title */
+					__( 'Poster for %s', 'post-kinds-for-indieweb-in-block-themes' ),
+					get_the_title( $post_id )
+				)
+			);
 		}
 
 		return $attachment_id;

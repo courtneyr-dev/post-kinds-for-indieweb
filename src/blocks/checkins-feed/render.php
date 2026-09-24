@@ -26,8 +26,9 @@ $pkiw_show_venue   = $attributes['showVenue'] ?? true;
 $pkiw_show_date    = $attributes['showDate'] ?? true;
 $pkiw_show_excerpt = ! empty( $attributes['showExcerpt'] );
 $pkiw_venue_id     = absint( $attributes['venueId'] ?? 0 );
-$pkiw_layout       = $attributes['layout'] ?? 'list';
-$pkiw_columns      = absint( $attributes['columns'] ?? 2 );
+$pkiw_layout        = $attributes['layout'] ?? 'list';
+$pkiw_columns       = absint( $attributes['columns'] ?? 2 );
+$pkiw_heading_level = max( 2, min( 4, (int) ( $attributes['headingLevel'] ?? 2 ) ) );
 
 // Query check-ins.
 $pkiw_args = [ 'posts_per_page' => $pkiw_count ];
@@ -98,18 +99,18 @@ $pkiw_map_id = 'checkins-map-' . wp_unique_id();
 				<article class="checkins-feed__item h-entry">
 					<?php if ( has_post_thumbnail() ) : ?>
 						<div class="checkins-feed__thumbnail">
-							<a href="<?php the_permalink(); ?>" class="u-url">
+							<a href="<?php the_permalink(); ?>" class="u-url" tabindex="-1" aria-hidden="true">
 								<?php the_post_thumbnail( 'thumbnail', [ 'class' => 'u-photo' ] ); ?>
 							</a>
 						</div>
 					<?php endif; ?>
 
 					<div class="checkins-feed__content">
-						<h3 class="checkins-feed__title p-name">
+						<?php echo '<h' . $pkiw_heading_level . ' class="checkins-feed__title p-name">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							<a href="<?php the_permalink(); ?>" class="u-url">
 								<?php the_title(); ?>
 							</a>
-						</h3>
+						<?php echo '</h' . $pkiw_heading_level . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
 						<?php if ( $pkiw_show_venue && ! empty( $pkiw_location['name'] ) ) : ?>
 							<div class="checkins-feed__venue">

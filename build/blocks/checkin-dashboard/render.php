@@ -15,11 +15,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
-$pkiw_layout       = $attributes['layout'] ?? 'grid';
-$pkiw_show_map     = $attributes['showMap'] ?? true;
-$pkiw_show_stats   = $attributes['showStats'] ?? true;
-$pkiw_limit        = $attributes['limit'] ?? 12;
-$pkiw_show_filters = $attributes['showFilters'] ?? false;
+$pkiw_layout        = $attributes['layout'] ?? 'grid';
+$pkiw_show_map      = $attributes['showMap'] ?? true;
+$pkiw_show_stats    = $attributes['showStats'] ?? true;
+$pkiw_limit         = $attributes['limit'] ?? 12;
+$pkiw_show_filters  = $attributes['showFilters'] ?? false;
+$pkiw_heading_level = max( 2, min( 4, (int) ( $attributes['headingLevel'] ?? 2 ) ) );
 
 // Enqueue Leaflet for map view.
 if ( $pkiw_show_map ) {
@@ -116,15 +117,15 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 
 	<?php if ( $pkiw_show_filters ) : ?>
 	<div class="checkin-dashboard-filters">
-		<button type="button" class="view-btn active" data-view="grid">
+		<button type="button" class="view-btn<?php echo 'grid' === $pkiw_layout ? ' active' : ''; ?>" data-view="grid" aria-pressed="<?php echo 'grid' === $pkiw_layout ? 'true' : 'false'; ?>">
 			<?php esc_html_e( 'Grid', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 		</button>
 		<?php if ( $pkiw_show_map ) : ?>
-		<button type="button" class="view-btn" data-view="map">
+		<button type="button" class="view-btn<?php echo 'map' === $pkiw_layout ? ' active' : ''; ?>" data-view="map" aria-pressed="<?php echo 'map' === $pkiw_layout ? 'true' : 'false'; ?>">
 			<?php esc_html_e( 'Map', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 		</button>
 		<?php endif; ?>
-		<button type="button" class="view-btn" data-view="timeline">
+		<button type="button" class="view-btn<?php echo 'timeline' === $pkiw_layout ? ' active' : ''; ?>" data-view="timeline" aria-pressed="<?php echo 'timeline' === $pkiw_layout ? 'true' : 'false'; ?>">
 			<?php esc_html_e( 'Timeline', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 		</button>
 	</div>
@@ -143,15 +144,15 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 				<article class="checkin-card h-entry">
 					<?php if ( ! empty( $pkiw_checkin['photo'] ) ) : ?>
 					<div class="checkin-card-photo">
-						<img src="<?php echo esc_url( $pkiw_checkin['photo'] ); ?>" alt="<?php echo esc_attr( $pkiw_checkin['venue_name'] ); ?>" class="u-photo" loading="lazy">
+						<img src="<?php echo esc_url( $pkiw_checkin['photo'] ); ?>" alt="<?php echo esc_attr( sprintf( '%1$s, %2$s', ! empty( $pkiw_checkin['venue_name'] ) ? $pkiw_checkin['venue_name'] : __( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' ), date_i18n( get_option( 'date_format' ), strtotime( $pkiw_checkin['date'] ) ) ) ); ?>" class="u-photo" loading="lazy">
 					</div>
 					<?php endif; ?>
 					<div class="checkin-card-content">
-						<h3 class="checkin-card-venue p-name">
+						<?php echo '<h' . $pkiw_heading_level . ' class="checkin-card-venue p-name">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							<a href="<?php echo esc_url( $pkiw_checkin['permalink'] ); ?>" class="u-url">
 								<?php echo esc_html( ! empty( $pkiw_checkin['venue_name'] ) ? $pkiw_checkin['venue_name'] : __( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' ) ); ?>
 							</a>
-						</h3>
+						<?php echo '</h' . $pkiw_heading_level . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 						<?php if ( ! empty( $pkiw_checkin['address'] ) ) : ?>
 						<p class="checkin-card-address p-location"><?php echo esc_html( $pkiw_checkin['address'] ); ?></p>
 						<?php endif; ?>
@@ -168,7 +169,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 		<?php if ( $pkiw_show_map ) : ?>
 		<!-- Map View -->
 		<div class="checkin-view-map <?php echo 'map' === $pkiw_layout ? 'active' : ''; ?>">
-			<div id="checkin-frontend-map" class="checkin-map" data-checkins="
+			<div id="checkin-frontend-map" class="checkin-map" role="region" aria-label="<?php esc_attr_e( 'Check-in map', 'post-kinds-for-indieweb-in-block-themes' ); ?>" data-checkins="
 			<?php
 			echo esc_attr(
 				wp_json_encode(
@@ -202,7 +203,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 			?>
 			<?php foreach ( $pkiw_grouped as $pkiw_month => $pkiw_month_checkins ) : ?>
 			<div class="timeline-group">
-				<h3 class="timeline-month"><?php echo esc_html( $pkiw_month ); ?></h3>
+				<?php echo '<h' . $pkiw_heading_level . ' class="timeline-month">' . esc_html( $pkiw_month ) . '</h' . $pkiw_heading_level . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				<div class="timeline-items">
 					<?php foreach ( $pkiw_month_checkins as $pkiw_checkin ) : ?>
 					<div class="timeline-item h-entry">

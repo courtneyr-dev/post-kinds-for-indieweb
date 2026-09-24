@@ -85,7 +85,7 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'drink' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Drank', 'post-kinds-for-indieweb-in-block-themes' ), 'drink', 'drink-card' ) ); ?></p>
+		<span class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Drank', 'post-kinds-for-indieweb-in-block-themes' ), 'drink', 'drink-card' ) ); ?></span>
 
 		<div class="pk-caption">
 			<?php if ( $pkiw_name ) : ?>
@@ -108,7 +108,7 @@ ob_start();
 			<?php if ( $pkiw_location_name && ! empty( $pkiw_visible['name'] ) ) : ?>
 				<p class="pk-sub p-location h-card">
 					<?php if ( $pkiw_show_url ) : ?>
-						<a class="pk-chip p-name u-url" href="<?php echo esc_url( $pkiw_venue_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_location_name ); ?></a>
+						<a class="pk-chip p-name u-url" href="<?php echo esc_url( $pkiw_venue_url ); ?>" target="_blank" rel="noopener noreferrer"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_location_name ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_location_name ); ?></a>
 					<?php else : ?>
 						<span class="pk-chip p-name"><?php echo esc_html( $pkiw_location_name ); ?></span>
 					<?php endif; ?>
@@ -137,14 +137,14 @@ ob_start();
 		<?php if ( $pkiw_rating > 0 ) : ?>
 			<div class="pk-stars" role="img" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">
 				<?php for ( $pkiw_i = 1; $pkiw_i <= 5; $pkiw_i++ ) : ?>
-					<svg class="<?php echo $pkiw_i <= $pkiw_rating ? '' : 'off'; ?>" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17l-6.9 3.5 1.6-6.8L1.4 9.1l7-.6z"/></svg>
+					<svg class="<?php echo $pkiw_i <= $pkiw_rating ? '' : 'off'; ?>" viewBox="0 0 24 24" fill="currentColor" focusable="false"><path d="M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17l-6.9 3.5 1.6-6.8L1.4 9.1l7-.6z"/></svg>
 				<?php endfor; ?>
 			</div>
 			<data class="p-rating" value="<?php echo esc_attr( $pkiw_rating ); ?>" hidden></data>
 		<?php endif; ?>
 
 		<?php if ( $pkiw_photo ) : ?>
-			<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_photo ); ?>" alt="<?php echo esc_attr( $pkiw_photo_alt ? $pkiw_photo_alt : $pkiw_name ); ?>" loading="lazy" /></div>
+			<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_photo ); ?>" alt="<?php echo esc_attr( $pkiw_photo_alt ? $pkiw_photo_alt : sprintf( /* translators: %s: food/drink name */ __( 'Picture of %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_name ) ); ?>" loading="lazy" /></div>
 		<?php endif; ?>
 
 		<?php if ( $pkiw_notes ) : ?>

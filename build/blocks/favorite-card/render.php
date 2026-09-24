@@ -43,13 +43,13 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'favorite' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Favorite', 'post-kinds-for-indieweb-in-block-themes' ), 'favorite', 'favorite-card' ) ); ?></p>
+		<span class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Favorite', 'post-kinds-for-indieweb-in-block-themes' ), 'favorite', 'favorite-card' ) ); ?></span>
 
 		<div class="pk-caption">
 			<?php if ( $pkiw_title ) : ?>
 				<h2 class="pk-title p-name">
 					<?php if ( $pkiw_url ) : ?>
-						<a class="u-url" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_title ); ?></a>
+						<a class="u-url" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_title ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_title ); ?></a>
 					<?php else : ?>
 						<?php echo esc_html( $pkiw_title ); ?>
 					<?php endif; ?>
@@ -63,7 +63,7 @@ ob_start();
 
 		<?php if ( $pkiw_image ) : ?>
 			<div class="pk-media">
-				<img class="pk-thumb u-photo" src="<?php echo esc_url( $pkiw_image ); ?>" alt="<?php echo esc_attr( $pkiw_image_alt ? $pkiw_image_alt : $pkiw_title ); ?>" loading="lazy" />
+				<img class="pk-thumb u-photo" src="<?php echo esc_url( $pkiw_image ); ?>" alt="<?php echo esc_attr( $pkiw_image_alt ? $pkiw_image_alt : sprintf( /* translators: %s: linked page title */ __( 'Preview image for %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_title ) ); ?>" loading="lazy" />
 			</div>
 		<?php endif; ?>
 

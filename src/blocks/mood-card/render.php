@@ -45,7 +45,7 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'mood' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Mood', 'post-kinds-for-indieweb-in-block-themes' ), 'mood', 'mood-card' ) ); ?></p>
+		<span class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Mood', 'post-kinds-for-indieweb-in-block-themes' ), 'mood', 'mood-card' ) ); ?></span>
 
 		<div class="pk-mood">
 			<?php if ( $pkiw_emoji ) : ?>

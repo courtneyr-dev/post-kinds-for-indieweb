@@ -1,20 +1,25 @@
 /**
- * Media Lookup Block - Save Component
+ * Media Lookup Block - Deprecations
+ *
+ * v1 (pre-1.8.6): the "opens in a new tab" link lacked a visually-hidden
+ * hint, and the year's `dt-published` `<time>` had no `dateTime` attribute.
+ * Both changed in 1.8.6 for WCAG 2.2 AA; this deprecation keeps existing
+ * saved content validating against the block's markup.
  *
  * @package
  */
 
 import { useBlockProps } from '@wordpress/block-editor';
-import { __ } from '@wordpress/i18n';
+import metadata from './block.json';
 
 /**
- * Save component for the Media Lookup block.
+ * v1 save output — matches the block as it shipped before 1.8.6.
  *
  * @param {Object} props            Block props.
  * @param {Object} props.attributes Block attributes.
  * @return {JSX.Element|null} Block save component.
  */
-export default function Save( { attributes } ) {
+function saveV1( { attributes } ) {
 	const {
 		mediaType,
 		selectedItem,
@@ -24,7 +29,6 @@ export default function Save( { attributes } ) {
 		linkToSource,
 	} = attributes;
 
-	// Don't render if no item selected
 	if ( ! selectedItem ) {
 		return null;
 	}
@@ -33,7 +37,6 @@ export default function Save( { attributes } ) {
 		className: `media-lookup-block type-${ mediaType } style-${ displayStyle }`,
 	} );
 
-	// Extract common fields
 	const title = selectedItem.title || selectedItem.name || '';
 	const subtitle =
 		selectedItem.author ||
@@ -51,9 +54,6 @@ export default function Save( { attributes } ) {
 	const url = selectedItem.url || selectedItem.link || '';
 	const id = selectedItem.id || selectedItem.key || '';
 
-	/**
-	 * Get source URL based on media type
-	 */
 	const getSourceUrl = () => {
 		if ( url ) {
 			return url;
@@ -89,9 +89,6 @@ export default function Save( { attributes } ) {
 
 	const sourceUrl = getSourceUrl();
 
-	/**
-	 * Get microformat class based on media type
-	 */
 	const getMicroformatClass = () => {
 		switch ( mediaType ) {
 			case 'book':
@@ -108,7 +105,6 @@ export default function Save( { attributes } ) {
 	return (
 		<div { ...blockProps }>
 			<div className={ `media-lookup-inner ${ getMicroformatClass() }` }>
-				{ /* Cover image */ }
 				{ showImage && image && (
 					<div className="media-image">
 						<img
@@ -121,7 +117,6 @@ export default function Save( { attributes } ) {
 				) }
 
 				<div className="media-info">
-					{ /* Title */ }
 					<h3 className="media-title p-name">
 						{ linkToSource && sourceUrl ? (
 							<a
@@ -131,39 +126,24 @@ export default function Save( { attributes } ) {
 								rel="noopener noreferrer"
 							>
 								{ title }
-								<span className="pk-sr-only">
-									{ ' ' }
-									{ __(
-										'(opens in a new tab)',
-										'post-kinds-for-indieweb-in-block-themes'
-									) }
-								</span>
 							</a>
 						) : (
 							title
 						) }
 					</h3>
 
-					{ /* Subtitle (author/artist/director) */ }
 					{ subtitle && (
 						<p className="media-subtitle p-author h-card">
 							<span className="p-name">{ subtitle }</span>
 						</p>
 					) }
 
-					{ /* Year */ }
 					{ year && (
 						<span className="media-year">
-							<time
-								className="dt-published"
-								dateTime={ String( year ) }
-							>
-								{ year }
-							</time>
+							<time className="dt-published">{ year }</time>
 						</span>
 					) }
 
-					{ /* Description */ }
 					{ showDescription &&
 						description &&
 						displayStyle !== 'compact' && (
@@ -174,7 +154,6 @@ export default function Save( { attributes } ) {
 							</p>
 						) }
 
-					{ /* Additional metadata based on type */ }
 					<div className="media-meta">
 						{ mediaType === 'book' && selectedItem.isbn && (
 							<data
@@ -201,7 +180,6 @@ export default function Save( { attributes } ) {
 					</div>
 				</div>
 
-				{ /* Hidden microformat data */ }
 				{ sourceUrl && (
 					<data className="u-uid" value={ sourceUrl } hidden />
 				) }
@@ -210,3 +188,12 @@ export default function Save( { attributes } ) {
 		</div>
 	);
 }
+
+const deprecated = [
+	{
+		attributes: metadata.attributes,
+		save: saveV1,
+	},
+];
+
+export default deprecated;

@@ -98,14 +98,14 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'rsvp' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'RSVP', 'post-kinds-for-indieweb-in-block-themes' ), 'rsvp', 'rsvp-card' ) ); ?></p>
+		<span class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'RSVP', 'post-kinds-for-indieweb-in-block-themes' ), 'rsvp', 'rsvp-card' ) ); ?></span>
 
 		<div class="pk-event p-in-reply-to h-event">
 			<div class="pk-caption">
 				<?php if ( $pkiw_event_name ) : ?>
 					<h2 class="pk-title p-name">
 						<?php if ( $pkiw_event_url ) : ?>
-							<a class="u-url" href="<?php echo esc_url( $pkiw_event_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_event_name ); ?></a>
+							<a class="u-url" href="<?php echo esc_url( $pkiw_event_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_event_name ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_event_name ); ?></a>
 						<?php else : ?>
 							<?php echo esc_html( $pkiw_event_name ); ?>
 						<?php endif; ?>

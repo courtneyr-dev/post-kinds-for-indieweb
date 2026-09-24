@@ -91,6 +91,7 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 				'count'   => 'posts_per_page query arg, never echoed',
 				'venueId' => 'venue term query filter, never echoed',
 				'columns' => 'echoed only as a columns-N wrapper class when layout=grid; fixture layout sample is list',
+				'headingLevel' => 'heading tag name (h2-h4) on each item title; the fixture renders against an empty check-in query, so no title is echoed',
 			],
 			'post-kinds-indieweb/listen-card'       => [
 				'musicbrainzId' => 'embedded in a canonical musicbrainz.org URL via esc_url(), which percent-encodes the space-containing sample',

@@ -103,13 +103,13 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'event' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Event', 'post-kinds-for-indieweb-in-block-themes' ), 'event', 'event-card' ) ); ?></p>
+		<span class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Event', 'post-kinds-for-indieweb-in-block-themes' ), 'event', 'event-card' ) ); ?></span>
 
 		<div class="pk-caption">
 			<?php if ( $pkiw_event_name ) : ?>
 				<h2 class="pk-title p-name">
 					<?php if ( $pkiw_event_url ) : ?>
-						<a class="u-url" href="<?php echo esc_url( $pkiw_event_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_event_name ); ?></a>
+						<a class="u-url" href="<?php echo esc_url( $pkiw_event_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_event_name ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_event_name ); ?></a>
 					<?php else : ?>
 						<?php echo esc_html( $pkiw_event_name ); ?>
 					<?php endif; ?>

@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.8.5
+Stable tag: 1.8.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -179,6 +179,22 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 9. Standard.site record panel on a Bookmark Card, showing the cited page's own title, publication, description, and tags read from AT Protocol
 
 == Changelog ==
+
+= 1.8.6 =
+* Added: checkin-dashboard and checkins-feed gained a headingLevel attribute (default 2, clamped 2–4), matching the Stream card block.
+* Changed: checkin-dashboard's and checkins-feed's headings default to h2 instead of the previous hardcoded h3, unless a site sets headingLevel.
+* Changed: .pk-meta links are underlined, not color-only.
+* Fixed: a stray block of prose outside any CSS comment in kind-tokens.css, which broke parsing from that point on.
+* Fixed: dark-mode card colors now also follow a site theme's own dark-mode switch (data-theme="dark"), not only the OS-level prefers-color-scheme.
+* Fixed: every front-end link that opens in a new tab now tells screen reader users so, including the media lookup block.
+* Fixed: check-in photo alt text, poster/cover fallback alt text, sideloaded artwork alt text, and check-in dashboard grid photo alt text all describe what's shown instead of repeating a title or saying nothing.
+* Fixed: the kind label badge is a span, not a paragraph, and the decorative pushpin emoji is gone from the check-in card pattern.
+* Fixed: Stream cards rendered from a card block or a long-form watch post now honor the Stream's heading level, matching the generic card branch.
+* Fixed: star-rating SVGs, the dashicons-lock icon on private check-ins, and the Stream card's hidden microformats fallback markup all use accessibility-checker-clean patterns instead of redundant ARIA, an unenqueued icon font, and empty aria-hidden elements.
+* Fixed: check-in dashboard view buttons report their pressed state, inactive panels are properly hidden, the map is a landmark region, and map popup links name the venue and escape it and the permalink before inserting them.
+* Fixed: checkins-feed thumbnail links no longer duplicate the adjacent title link in the tab order.
+* Fixed: star-rating's accessible name no longer relies on an aria-label with no defined ARIA mapping.
+* Fixed: the Stream card's generic-branch featured image gets real alt text instead of alt="".
 
 = 1.8.5 =
 * Added: the Stream card block's headingLevel attribute (default 2, clamped 2–4) lets the generic card's title tag match a theme's heading outline; per-kind cards still render an h2.
