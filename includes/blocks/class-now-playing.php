@@ -179,7 +179,7 @@ final class Now_Playing {
 			<div class="pk-now-playing__info">
 				<?php if ( $url ) : ?>
 					<a href="<?php echo esc_url( $url ); ?>" class="pk-now-playing__title" target="_blank" rel="noopener noreferrer">
-						<?php echo esc_html( $title ); ?>
+						<?php echo esc_html( $title ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 					</a>
 				<?php else : ?>
 					<span class="pk-now-playing__title"><?php echo esc_html( $title ); ?></span>

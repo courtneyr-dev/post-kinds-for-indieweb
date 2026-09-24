@@ -74,7 +74,7 @@ ob_start();
 			<?php if ( $pkiw_title ) : ?>
 				<h2 class="pk-title p-name">
 					<?php if ( $pkiw_game_url ) : ?>
-						<a class="u-url" href="<?php echo esc_url( $pkiw_game_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_title ); ?></a>
+						<a class="u-url" href="<?php echo esc_url( $pkiw_game_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_title ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 					<?php else : ?>
 						<?php echo esc_html( $pkiw_title ); ?>
 					<?php endif; ?>
@@ -131,21 +131,21 @@ ob_start();
 
 		<div class="pk-meta">
 			<?php if ( $pkiw_game_url ) : ?>
-				<a class="pk-link" href="<?php echo esc_url( $pkiw_game_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View on BGG', 'post-kinds-for-indieweb-in-block-themes' ); ?></a>
+				<a class="pk-link" href="<?php echo esc_url( $pkiw_game_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View on BGG', 'post-kinds-for-indieweb-in-block-themes' ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 			<?php endif; ?>
 			<?php
 			if ( $pkiw_game_url && $pkiw_official_url ) :
 				?>
 				<span class="pk-dot"></span><?php endif; ?>
 			<?php if ( $pkiw_official_url ) : ?>
-				<a class="pk-link" href="<?php echo esc_url( $pkiw_official_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Official Site', 'post-kinds-for-indieweb-in-block-themes' ); ?></a>
+				<a class="pk-link" href="<?php echo esc_url( $pkiw_official_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Official Site', 'post-kinds-for-indieweb-in-block-themes' ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 			<?php endif; ?>
 			<?php
 			if ( ( $pkiw_game_url || $pkiw_official_url ) && $pkiw_purchase_url ) :
 				?>
 				<span class="pk-dot"></span><?php endif; ?>
 			<?php if ( $pkiw_purchase_url ) : ?>
-				<a class="pk-link pk-link--buy" href="<?php echo esc_url( $pkiw_purchase_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Buy', 'post-kinds-for-indieweb-in-block-themes' ); ?></a>
+				<a class="pk-link pk-link--buy" href="<?php echo esc_url( $pkiw_purchase_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Buy', 'post-kinds-for-indieweb-in-block-themes' ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 			<?php endif; ?>
 			<?php
 			if ( ( $pkiw_game_url || $pkiw_official_url || $pkiw_purchase_url ) && $pkiw_played_iso ) :

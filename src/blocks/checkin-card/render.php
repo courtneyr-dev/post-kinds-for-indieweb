@@ -131,7 +131,7 @@ ob_start();
 				<?php if ( $pkiw_venue_name ) : ?>
 					<h2 class="pk-title p-name">
 						<?php if ( $pkiw_show_url ) : ?>
-							<a class="u-url" href="<?php echo esc_url( $pkiw_venue_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_venue_name ); ?></a>
+							<a class="u-url" href="<?php echo esc_url( $pkiw_venue_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_venue_name ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 						<?php else : ?>
 							<?php echo esc_html( $pkiw_venue_name ); ?>
 						<?php endif; ?>
@@ -201,7 +201,7 @@ ob_start();
 						target="_blank"
 						rel="noopener noreferrer"
 					>
-						<?php esc_html_e( 'View larger map', 'post-kinds-for-indieweb-in-block-themes' ); ?>
+						<?php esc_html_e( 'View larger map', 'post-kinds-for-indieweb-in-block-themes' ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 					</a>
 				</div>
 			<?php endif; ?>

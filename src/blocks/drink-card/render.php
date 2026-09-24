@@ -108,7 +108,7 @@ ob_start();
 			<?php if ( $pkiw_location_name && ! empty( $pkiw_visible['name'] ) ) : ?>
 				<p class="pk-sub p-location h-card">
 					<?php if ( $pkiw_show_url ) : ?>
-						<a class="pk-chip p-name u-url" href="<?php echo esc_url( $pkiw_venue_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_location_name ); ?></a>
+						<a class="pk-chip p-name u-url" href="<?php echo esc_url( $pkiw_venue_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_location_name ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 					<?php else : ?>
 						<span class="pk-chip p-name"><?php echo esc_html( $pkiw_location_name ); ?></span>
 					<?php endif; ?>

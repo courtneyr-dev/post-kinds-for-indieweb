@@ -337,6 +337,7 @@ function maybe_migrate_option_prefixes(): void {
 }
 
 // Load helper functions.
+require_once PKIW_PATH . 'includes/functions-a11y.php';
 require_once PKIW_PATH . 'includes/functions-checkin.php';
 require_once PKIW_PATH . 'includes/functions-privacy.php';
 require_once PKIW_PATH . 'includes/functions-embeds.php';

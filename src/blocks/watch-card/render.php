@@ -85,7 +85,7 @@ ob_start();
 			<?php if ( $pkiw_media_title ) : ?>
 				<h2 class="pk-title p-name">
 					<?php if ( $pkiw_watch_url ) : ?>
-						<a class="u-url" href="<?php echo esc_url( $pkiw_watch_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_media_title ); ?></a>
+						<a class="u-url" href="<?php echo esc_url( $pkiw_watch_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_media_title ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 					<?php else : ?>
 						<?php echo esc_html( $pkiw_media_title ); ?>
 					<?php endif; ?>
@@ -142,14 +142,14 @@ ob_start();
 
 		<div class="pk-meta">
 			<?php if ( $pkiw_imdb_url ) : ?>
-				<a class="pk-link" href="<?php echo esc_url( $pkiw_imdb_url ); ?>" target="_blank" rel="noopener noreferrer">IMDb</a>
+				<a class="pk-link" href="<?php echo esc_url( $pkiw_imdb_url ); ?>" target="_blank" rel="noopener noreferrer">IMDb<?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 			<?php endif; ?>
 			<?php
 			if ( $pkiw_imdb_url && $pkiw_tmdb_url ) :
 				?>
 				<span class="pk-dot"></span><?php endif; ?>
 			<?php if ( $pkiw_tmdb_url ) : ?>
-				<a class="pk-link" href="<?php echo esc_url( $pkiw_tmdb_url ); ?>" target="_blank" rel="noopener noreferrer">TMDB</a>
+				<a class="pk-link" href="<?php echo esc_url( $pkiw_tmdb_url ); ?>" target="_blank" rel="noopener noreferrer">TMDB<?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 			<?php endif; ?>
 			<?php
 			if ( ( $pkiw_imdb_url || $pkiw_tmdb_url ) && $pkiw_watched_at ) :

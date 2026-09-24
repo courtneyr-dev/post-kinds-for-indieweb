@@ -53,7 +53,7 @@ ob_start();
 			<?php if ( $pkiw_track_title ) : ?>
 				<h2 class="pk-title p-name">
 					<?php if ( $pkiw_listen_url ) : ?>
-						<a class="u-url" href="<?php echo esc_url( $pkiw_listen_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_track_title ); ?></a>
+						<a class="u-url" href="<?php echo esc_url( $pkiw_listen_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_track_title ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 					<?php else : ?>
 						<?php echo esc_html( $pkiw_track_title ); ?>
 					<?php endif; ?>
@@ -97,7 +97,7 @@ ob_start();
 
 		<div class="pk-meta">
 			<?php if ( $pkiw_listen_url ) : ?>
-				<a class="pk-link" href="<?php echo esc_url( $pkiw_listen_url ); ?>" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 9-14 9z"/></svg><?php esc_html_e( 'Listen', 'post-kinds-for-indieweb-in-block-themes' ); ?></a>
+				<a class="pk-link" href="<?php echo esc_url( $pkiw_listen_url ); ?>" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 9-14 9z"/></svg><?php esc_html_e( 'Listen', 'post-kinds-for-indieweb-in-block-themes' ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 			<?php endif; ?>
 			<?php
 			if ( $pkiw_listen_url && $pkiw_listened_at ) :

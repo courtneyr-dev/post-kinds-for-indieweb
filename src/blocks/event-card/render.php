@@ -109,7 +109,7 @@ ob_start();
 			<?php if ( $pkiw_event_name ) : ?>
 				<h2 class="pk-title p-name">
 					<?php if ( $pkiw_event_url ) : ?>
-						<a class="u-url" href="<?php echo esc_url( $pkiw_event_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_event_name ); ?></a>
+						<a class="u-url" href="<?php echo esc_url( $pkiw_event_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_event_name ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 					<?php else : ?>
 						<?php echo esc_html( $pkiw_event_name ); ?>
 					<?php endif; ?>
