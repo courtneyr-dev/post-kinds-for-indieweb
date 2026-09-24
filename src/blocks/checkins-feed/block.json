@@ -41,6 +41,10 @@
 		"columns": {
 			"type": "number",
 			"default": 2
+		},
+		"headingLevel": {
+			"type": "number",
+			"default": 2
 		}
 	},
 	"supports": {

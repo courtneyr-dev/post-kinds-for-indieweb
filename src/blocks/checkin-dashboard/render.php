@@ -15,11 +15,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- render.php variables are scoped by WordPress block rendering.
 
-$pkiw_layout       = $attributes['layout'] ?? 'grid';
-$pkiw_show_map     = $attributes['showMap'] ?? true;
-$pkiw_show_stats   = $attributes['showStats'] ?? true;
-$pkiw_limit        = $attributes['limit'] ?? 12;
-$pkiw_show_filters = $attributes['showFilters'] ?? false;
+$pkiw_layout        = $attributes['layout'] ?? 'grid';
+$pkiw_show_map      = $attributes['showMap'] ?? true;
+$pkiw_show_stats    = $attributes['showStats'] ?? true;
+$pkiw_limit         = $attributes['limit'] ?? 12;
+$pkiw_show_filters  = $attributes['showFilters'] ?? false;
+$pkiw_heading_level = max( 2, min( 4, (int) ( $attributes['headingLevel'] ?? 2 ) ) );
 
 // Enqueue Leaflet for map view.
 if ( $pkiw_show_map ) {
@@ -147,11 +148,11 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 					</div>
 					<?php endif; ?>
 					<div class="checkin-card-content">
-						<h3 class="checkin-card-venue p-name">
+						<?php echo '<h' . $pkiw_heading_level . ' class="checkin-card-venue p-name">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							<a href="<?php echo esc_url( $pkiw_checkin['permalink'] ); ?>" class="u-url">
 								<?php echo esc_html( ! empty( $pkiw_checkin['venue_name'] ) ? $pkiw_checkin['venue_name'] : __( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' ) ); ?>
 							</a>
-						</h3>
+						<?php echo '</h' . $pkiw_heading_level . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 						<?php if ( ! empty( $pkiw_checkin['address'] ) ) : ?>
 						<p class="checkin-card-address p-location"><?php echo esc_html( $pkiw_checkin['address'] ); ?></p>
 						<?php endif; ?>
@@ -202,7 +203,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 			?>
 			<?php foreach ( $pkiw_grouped as $pkiw_month => $pkiw_month_checkins ) : ?>
 			<div class="timeline-group">
-				<h3 class="timeline-month"><?php echo esc_html( $pkiw_month ); ?></h3>
+				<?php echo '<h' . $pkiw_heading_level . ' class="timeline-month">' . esc_html( $pkiw_month ) . '</h' . $pkiw_heading_level . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				<div class="timeline-items">
 					<?php foreach ( $pkiw_month_checkins as $pkiw_checkin ) : ?>
 					<div class="timeline-item h-entry">

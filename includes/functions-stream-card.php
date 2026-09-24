@@ -233,10 +233,18 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 		return '';
 	}
 
+	// Card blocks always render `<h2 class="pk-title …">`; clamp and apply
+	// the Stream's own headingLevel so every card in one Stream — however
+	// it got rendered — shares one heading level in the outline.
+	$heading_level = max( 2, min( 4, (int) ( $attributes['headingLevel'] ?? 2 ) ) );
+
 	// Micro-post: the body is nothing but Post Kinds card block(s). Render
 	// it exactly as it renders today — this is the Enola-Holmes shape.
 	if ( content_is_kind_card_only( (string) $post->post_content ) ) {
-		return inject_post_date_into_card( link_title_to_post( do_blocks( $post->post_content ), $post ), $post );
+		return apply_stream_heading_level(
+			inject_post_date_into_card( link_title_to_post( do_blocks( $post->post_content ), $post ), $post ),
+			$heading_level
+		);
 	}
 
 	// Long-form watch post: show a watch card with the video from the body,
@@ -250,20 +258,23 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 			$attrs['watchUrl'] = $video_url;
 		}
 
-		return inject_post_date_into_card(
-			link_title_to_post(
-				render_block(
-					[
-						'blockName'    => 'post-kinds-indieweb/watch-card',
-						'attrs'        => $attrs,
-						'innerBlocks'  => [],
-						'innerHTML'    => '',
-						'innerContent' => [],
-					]
+		return apply_stream_heading_level(
+			inject_post_date_into_card(
+				link_title_to_post(
+					render_block(
+						[
+							'blockName'    => 'post-kinds-indieweb/watch-card',
+							'attrs'        => $attrs,
+							'innerBlocks'  => [],
+							'innerHTML'    => '',
+							'innerContent' => [],
+						]
+					),
+					$post
 				),
 				$post
 			),
-			$post
+			$heading_level
 		);
 	}
 
@@ -604,6 +615,39 @@ function link_title_to_post( string $html, \WP_Post $post ): string {
 		1
 	);
 	return null !== $wrapped ? $wrapped : $html;
+}
+
+/**
+ * Re-level a rendered card's title heading.
+ *
+ * Every card render.php hardcodes `<h2 class="pk-title …">` since a card
+ * rendered on its own (single post view, a non-Stream block) is the page's
+ * first heading under the title. On the Stream, though, the surrounding
+ * theme may already be at h2 or h3, and every card in one Stream should
+ * share a level regardless of which branch rendered it — a card block
+ * rendered via do_blocks(), a synthetic watch-card block, or the generic
+ * stream card (which sets its own level directly).
+ *
+ * @param string $html  Rendered card HTML.
+ * @param int    $level Clamped heading level (2–4).
+ * @return string HTML with the title heading re-leveled.
+ */
+function apply_stream_heading_level( string $html, int $level ): string {
+	if ( 2 === $level ) {
+		return $html;
+	}
+
+	$out = preg_replace_callback(
+		'#<h2( class="pk-title[^"]*")>(.*?)</h2>#s',
+		static function ( $matches ) use ( $level ) {
+			return '<h' . $level . $matches[1] . '>' . $matches[2] . '</h' . $level . '>';
+		},
+		$html,
+		1,
+		$count
+	);
+
+	return ( null !== $out && $count > 0 ) ? $out : $html;
 }
 
 /**
