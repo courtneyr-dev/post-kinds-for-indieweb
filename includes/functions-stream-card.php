@@ -324,13 +324,15 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	// mf2 parsers fall back to the implied name / content as intended.
 	$title_class = $has_title ? 'pk-title p-name' : 'pk-title';
 
-	$thumb_html = has_post_thumbnail( $post )
+	$thumbnail_id = has_post_thumbnail( $post ) ? (int) get_post_thumbnail_id( $post ) : 0;
+	$thumb_html   = $thumbnail_id > 0
 		? get_the_post_thumbnail(
 			$post,
 			'medium',
 			[
 				'class'   => 'u-photo',
 				'loading' => 'lazy',
+				'alt'     => stream_card_thumbnail_alt( $post, $thumbnail_id ),
 			]
 		)
 		: '';
@@ -486,6 +488,93 @@ function stream_card_media_extras( \WP_Post $post ): string {
 	return $out;
 }
 
+
+/**
+ * Resolve alt text for the generic Stream card's featured image.
+ *
+ * The attachment's own `_wp_attachment_image_alt` is frequently empty —
+ * Outpost and Micropub uploads set the featured image without touching the
+ * attachment's alt meta, since the real alt text lives on the body's
+ * core/image block instead. get_the_post_thumbnail() otherwise ships
+ * alt="" with no aria-hidden, and the image sits outside any link, so an
+ * accessibility checker flags it and a screen reader gets nothing from it.
+ *
+ * Falls back through: the body's core/image block alt (preferring the
+ * block whose attrs.id matches the featured image, else the first image
+ * block in the post), then the attachment's own alt meta, then the post
+ * title. A real alt string is used rather than aria-hidden because a
+ * <picture> wrapper (e.g. the Modern Image Formats plugin) drops
+ * aria-hidden/role from the <img> it generates, so hiding the image that
+ * way isn't reliable.
+ *
+ * @param \WP_Post $post         Post being rendered.
+ * @param int      $thumbnail_id Featured image attachment ID.
+ * @return string Alt text — never empty.
+ */
+function stream_card_thumbnail_alt( \WP_Post $post, int $thumbnail_id ): string {
+	$image_blocks = collect_image_blocks( parse_blocks( (string) $post->post_content ) );
+
+	$alt = '';
+	foreach ( $image_blocks as $block ) {
+		$block_id = (int) ( $block['attrs']['id'] ?? 0 );
+		if ( $thumbnail_id > 0 && $block_id === $thumbnail_id ) {
+			$alt = extract_first_img_alt( (string) ( $block['innerHTML'] ?? '' ) );
+			break;
+		}
+	}
+	if ( '' === $alt && ! empty( $image_blocks ) ) {
+		$alt = extract_first_img_alt( (string) ( $image_blocks[0]['innerHTML'] ?? '' ) );
+	}
+	if ( '' !== $alt ) {
+		return $alt;
+	}
+
+	$attachment_alt = $thumbnail_id > 0
+		? trim( (string) get_post_meta( $thumbnail_id, '_wp_attachment_image_alt', true ) )
+		: '';
+	if ( '' !== $attachment_alt ) {
+		return $attachment_alt;
+	}
+
+	return wp_strip_all_tags( get_the_title( $post ) );
+}
+
+/**
+ * Flatten a parsed block tree into its core/image blocks, in document
+ * order, including ones nested inside columns, groups, and galleries.
+ *
+ * @param array<int,array<string,mixed>> $blocks Parsed blocks (parse_blocks() output).
+ * @return array<int,array<string,mixed>> The core/image blocks found.
+ */
+function collect_image_blocks( array $blocks ): array {
+	$found = [];
+	foreach ( $blocks as $block ) {
+		if ( 'core/image' === ( $block['blockName'] ?? '' ) ) {
+			$found[] = $block;
+		}
+		if ( ! empty( $block['innerBlocks'] ) ) {
+			$found = array_merge( $found, collect_image_blocks( $block['innerBlocks'] ) );
+		}
+	}
+	return $found;
+}
+
+/**
+ * Read the `alt` attribute off the first `<img>` in a fragment of HTML.
+ *
+ * @param string $html HTML fragment (a core/image block's innerHTML).
+ * @return string Alt text, or '' when there's no img or no non-empty alt.
+ */
+function extract_first_img_alt( string $html ): string {
+	if ( '' === $html || ! class_exists( '\WP_HTML_Tag_Processor' ) ) {
+		return '';
+	}
+	$processor = new \WP_HTML_Tag_Processor( $html );
+	if ( ! $processor->next_tag( [ 'tag_name' => 'img' ] ) ) {
+		return '';
+	}
+	return trim( (string) ( $processor->get_attribute( 'alt' ) ?? '' ) );
+}
 
 /**
  * The display label for a post's kind, or a neutral default when it has none.

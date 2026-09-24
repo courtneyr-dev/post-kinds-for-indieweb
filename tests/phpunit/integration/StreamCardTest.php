@@ -282,6 +282,83 @@ final class StreamCardTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The featured image's alt text comes from the body's core/image block
+	 * when one matches the thumbnail's attachment ID — Outpost and Micropub
+	 * uploads leave `_wp_attachment_image_alt` empty, but the real alt text
+	 * lives on the block, not the attachment.
+	 */
+	public function test_generic_card_thumbnail_alt_prefers_matching_image_block(): void {
+		$post_id       = self::factory()->post->create( [ 'post_title' => 'Illustrated post' ] );
+		$attachment_id = self::factory()->attachment->create_upload_object(
+			DIR_TESTDATA . '/images/canola.jpg',
+			$post_id
+		);
+		// Attachment alt deliberately left empty, matching real uploads.
+		wp_update_post(
+			[
+				'ID'           => $post_id,
+				'post_content' => '<!-- wp:image {"id":' . $attachment_id . '} -->'
+					. '<figure class="wp-block-image"><img src="canola.jpg" alt="Yellow canola field at sunset" class="wp-image-' . $attachment_id . '"/></figure>'
+					. '<!-- /wp:image -->',
+			]
+		);
+		set_post_thumbnail( $post_id, $attachment_id );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( 'alt="Yellow canola field at sunset"', $html );
+	}
+
+	/**
+	 * With no matching core/image block, the attachment's own alt meta is
+	 * used instead of shipping alt="".
+	 */
+	public function test_generic_card_thumbnail_alt_falls_back_to_attachment_alt(): void {
+		$post_id       = self::factory()->post->create(
+			[
+				'post_title'   => 'Illustrated post',
+				'post_content' => "<!-- wp:paragraph -->\n<p>No image block here.</p>\n<!-- /wp:paragraph -->",
+			]
+		);
+		$attachment_id = self::factory()->attachment->create_upload_object(
+			DIR_TESTDATA . '/images/canola.jpg',
+			$post_id
+		);
+		update_post_meta( $attachment_id, '_wp_attachment_image_alt', 'A field of canola' );
+		set_post_thumbnail( $post_id, $attachment_id );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( 'alt="A field of canola"', $html );
+	}
+
+	/**
+	 * With no image block and no attachment alt, the post title is the last
+	 * resort — never an empty alt.
+	 */
+	public function test_generic_card_thumbnail_alt_falls_back_to_post_title(): void {
+		$post_id       = self::factory()->post->create(
+			[
+				'post_title'   => 'Illustrated post',
+				'post_content' => "<!-- wp:paragraph -->\n<p>No image block here.</p>\n<!-- /wp:paragraph -->",
+			]
+		);
+		$attachment_id = self::factory()->attachment->create_upload_object(
+			DIR_TESTDATA . '/images/canola.jpg',
+			$post_id
+		);
+		set_post_thumbnail( $post_id, $attachment_id );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( 'alt="Illustrated post"', $html );
+		$this->assertStringNotContainsString( 'alt=""', $html );
+	}
+
+	/**
 	 * A title-less post still renders a full card — the kind label stands in
 	 * as the linked title, without claiming to be the entry's p-name.
 	 */
