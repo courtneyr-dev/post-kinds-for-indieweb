@@ -53,7 +53,7 @@ ob_start();
 			<?php if ( $pkiw_title ) : ?>
 				<h2 class="pk-title p-name">
 					<?php if ( $pkiw_url ) : ?>
-						<a class="u-url" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><?php echo esc_html( $pkiw_title ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
+						<a class="u-url" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_title ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_title ); ?></a>
 					<?php else : ?>
 						<?php echo esc_html( $pkiw_title ); ?>
 					<?php endif; ?>
