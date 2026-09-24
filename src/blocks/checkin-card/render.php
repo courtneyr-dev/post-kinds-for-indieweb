@@ -139,7 +139,7 @@ ob_start();
 				<?php if ( $pkiw_venue_name ) : ?>
 					<h2 class="pk-title p-name">
 						<?php if ( $pkiw_show_url ) : ?>
-							<a class="u-url" href="<?php echo esc_url( $pkiw_venue_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_venue_name ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
+							<a class="u-url" href="<?php echo esc_url( $pkiw_venue_url ); ?>" target="_blank" rel="noopener noreferrer"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_venue_name ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_venue_name ); ?></a>
 						<?php else : ?>
 							<?php echo esc_html( $pkiw_venue_name ); ?>
 						<?php endif; ?>
