@@ -18,6 +18,23 @@
 	flex-wrap: wrap;
 }
 
+/* Visually hidden, still read by assistive tech — carries the rating's
+   accessible name now that it's no longer an aria-label on a plain div.
+   Matches WordPress core's convention so it also works if a theme already
+   defines it. */
+.star-rating-inner .screen-reader-text {
+	border: 0;
+	clip: rect(1px, 1px, 1px, 1px);
+	clip-path: inset(50%);
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	padding: 0;
+	position: absolute;
+	width: 1px;
+	word-wrap: normal !important;
+}
+
 /* Label */
 .star-rating-block .rating-label {
 	font-weight: 500;

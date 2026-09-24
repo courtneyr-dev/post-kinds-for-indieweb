@@ -79,13 +79,13 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'watch' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Watch', 'post-kinds-for-indieweb-in-block-themes' ), 'watch', 'watch-card' ) ); ?></p>
+		<span class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Watch', 'post-kinds-for-indieweb-in-block-themes' ), 'watch', 'watch-card' ) ); ?></span>
 
 		<div class="pk-caption">
 			<?php if ( $pkiw_media_title ) : ?>
 				<h2 class="pk-title p-name">
 					<?php if ( $pkiw_watch_url ) : ?>
-						<a class="u-url" href="<?php echo esc_url( $pkiw_watch_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_media_title ); ?></a>
+						<a class="u-url" href="<?php echo esc_url( $pkiw_watch_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $pkiw_media_title ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 					<?php else : ?>
 						<?php echo esc_html( $pkiw_media_title ); ?>
 					<?php endif; ?>
@@ -122,7 +122,7 @@ ob_start();
 		<?php if ( $pkiw_rating > 0 ) : ?>
 			<div class="pk-stars" role="img" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">
 				<?php for ( $pkiw_i = 1; $pkiw_i <= 5; $pkiw_i++ ) : ?>
-					<svg class="<?php echo $pkiw_i <= $pkiw_rating ? '' : 'off'; ?>" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17l-6.9 3.5 1.6-6.8L1.4 9.1l7-.6z"/></svg>
+					<svg class="<?php echo $pkiw_i <= $pkiw_rating ? '' : 'off'; ?>" viewBox="0 0 24 24" fill="currentColor" focusable="false"><path d="M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17l-6.9 3.5 1.6-6.8L1.4 9.1l7-.6z"/></svg>
 				<?php endfor; ?>
 			</div>
 			<data class="p-rating" value="<?php echo esc_attr( $pkiw_rating ); ?>" hidden></data>
@@ -132,7 +132,7 @@ ob_start();
 			<div class="pk-embed pk-embed--video"><?php echo $pkiw_embed; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 		<?php elseif ( $pkiw_poster_image ) : ?>
 			<div class="pk-media">
-				<img class="pk-thumb--poster u-photo" src="<?php echo esc_url( $pkiw_poster_image ); ?>" alt="<?php echo esc_attr( $pkiw_poster_alt ? $pkiw_poster_alt : ( $pkiw_media_title ? $pkiw_media_title : get_the_title() ) ); ?>" loading="lazy" />
+				<img class="pk-thumb--poster u-photo" src="<?php echo esc_url( $pkiw_poster_image ); ?>" alt="<?php echo esc_attr( $pkiw_poster_alt ? $pkiw_poster_alt : sprintf( /* translators: %s: movie/show title */ __( 'Poster for %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_media_title ? $pkiw_media_title : get_the_title() ) ); ?>" loading="lazy" />
 			</div>
 		<?php endif; ?>
 
@@ -142,14 +142,14 @@ ob_start();
 
 		<div class="pk-meta">
 			<?php if ( $pkiw_imdb_url ) : ?>
-				<a class="pk-link" href="<?php echo esc_url( $pkiw_imdb_url ); ?>" target="_blank" rel="noopener noreferrer">IMDb</a>
+				<a class="pk-link" href="<?php echo esc_url( $pkiw_imdb_url ); ?>" target="_blank" rel="noopener noreferrer">IMDb<?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 			<?php endif; ?>
 			<?php
 			if ( $pkiw_imdb_url && $pkiw_tmdb_url ) :
 				?>
 				<span class="pk-dot"></span><?php endif; ?>
 			<?php if ( $pkiw_tmdb_url ) : ?>
-				<a class="pk-link" href="<?php echo esc_url( $pkiw_tmdb_url ); ?>" target="_blank" rel="noopener noreferrer">TMDB</a>
+				<a class="pk-link" href="<?php echo esc_url( $pkiw_tmdb_url ); ?>" target="_blank" rel="noopener noreferrer">TMDB<?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 			<?php endif; ?>
 			<?php
 			if ( ( $pkiw_imdb_url || $pkiw_tmdb_url ) && $pkiw_watched_at ) :

@@ -9,8 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.6] - 2026-09-24
+
+### Added
+
+- `checkin-dashboard` and `checkins-feed` gained a `headingLevel` attribute (integer, default 2, clamped 2–4), matching the Stream card block, for their venue/timeline and item-title headings.
+
+### Changed
+
+- `checkin-dashboard`'s and `checkins-feed`'s heading defaults to `<h2>` instead of the previous hardcoded `<h3>`, unless a site sets `headingLevel` itself.
+- `.pk-meta a` is underlined (`text-underline-offset: 0.15em`), not color-only, so its links don't rely on color alone to read as links.
+
 ### Fixed
 
+- `styles/kind-tokens.css` had a block of prose sitting outside any comment, which broke CSS parsing from the `pk-card` paint defaults onward; it's now wrapped in `/* … */`.
+- Dark-mode `.pk-card` tokens were gated only on `prefers-color-scheme: dark`; they now also apply under `:root[data-theme="dark"]` (the site theme's own dark-mode switch), with the OS-level media query staying as a fallback that backs off once `:root[data-theme="light"]` is set.
+- Every front-end `target="_blank"` link — card templates, Now Playing, media lookup — carries a visually-hidden "(opens in a new tab)" hint for screen reader users.
+- Check-in card photo alt text ("Photo" / "Photo at %s") now reads "Check-in on {date}" (location private) or "Check-in at {venue}" (location public) instead of describing nothing.
+- Poster/cover fallback alt text (watch, play, acquisition, wish, bookmark, favorite, like, reply, repost, eat, drink cards) describes the image instead of repeating the post title a screen reader just heard from the card's own heading.
+- Sideloaded featured artwork's alt text is "Poster for {title}" instead of the bare title.
+- Check-in Dashboard grid photos: alt is "{venue}, {date}" instead of the venue name alone, so two check-ins at the same venue no longer read identically.
+- `.pk-kindlabel` is a `<span>`, not a `<p>`, across every card template and the Stream card's generated markup — a badge caption isn't a text block.
+- Removed the decorative 24px pushpin emoji paragraph from the `checkin-card` block pattern; it carried no accessible name.
+- The Stream block's micro-post and long-form-watch card branches now honor its `headingLevel` attribute, matching the generic card branch that already did — previously changing a Stream's heading level only re-leveled some of its cards.
+- Per-star SVGs inside `role="img"` rating containers no longer carry a redundant `aria-hidden`; they carry `focusable="false"` instead.
+- Replaced the dashicons-lock icon on private check-ins with an inline SVG — dashicons isn't enqueued on the front end, so it rendered as nothing.
+- The Stream card's hidden microformats fallback properties (`u-url`, `dt-published`, author photo) are `<data>` elements instead of an empty `aria-hidden`/`tabindex="-1"` anchor and time, and an `<img alt="">`.
+- Check-in Dashboard: view toggle buttons report `aria-pressed`; inactive view panels get the native `hidden` attribute; the map container is a `role="region"` landmark; map popup links read "View post: {venue}" with the venue name and permalink escaped before insertion (the permalink was previously inserted unescaped).
+- `checkins-feed` thumbnail links are `tabindex="-1" aria-hidden="true"` — the title link beside them already carries the accessible name.
+- Star Rating's accessible name moved off an `aria-label` on a plain `<div>` (which has no defined ARIA mapping) to a visually-hidden text alternative.
+- `media-lookup`'s static save output gets the same "(opens in a new tab)" hint and a `dateTime` attribute on its `dt-published` `<time>`.
+- The Stream card's generic-branch featured image gets real alt text — from the body's matching `core/image` block, then the attachment's own alt, then the post title — instead of shipping `alt=""`.
 - The `post-kinds/get-post-meta` ability returned every stored `_pkiw_*` location field regardless of the requester's permissions, bypassing the location redaction `rest_prepare_post` applies. The key→tier walk is now shared via `Meta_Fields::redact_location_array()`, so a requester without `edit_post` gets the same zeroed/blanked coordinates, address and venue fields the REST API already hides; the author and any user with `edit_post` still see everything.
 - The `post-kinds/create-post` ability wrote any extra input key as `_pkiw_*` post meta, including internal bookkeeping keys the sync classes trust (e.g. `imported_from`) and non-scalar values. It now only persists keys registered in `Meta_Fields`, sanitized with `sanitize_key()`, and only scalar values; the input schema's `additionalProperties` also requires a scalar type. **Breaking:** an unregistered or non-scalar extra key is now silently dropped instead of being written as meta.
 - `post-kinds/update-post-meta` accepted any value, including arrays/objects, and relied solely on the Abilities API's `permission_callback` for the `edit_post` check, which a direct call to the execute method bypasses. It now returns a 400 `WP_Error` for a non-scalar `meta_value` and a 403 `WP_Error` when the caller cannot edit the post, regardless of caller. **Breaking:** a caller sending an array/object `meta_value` now gets a `WP_Error` instead of it being stored.
@@ -479,7 +508,8 @@ This project uses Semantic Versioning:
 - [Issues](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues)
 - [IndieWeb Wiki](https://indieweb.org/)
 
-[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.8.5...HEAD
+[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.8.6...HEAD
+[1.8.6]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.8.5...v1.8.6
 [1.8.5]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.7.1...v1.8.5
 [1.7.1]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.6.0...v1.7.0

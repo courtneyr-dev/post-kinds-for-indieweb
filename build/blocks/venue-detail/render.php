@@ -124,7 +124,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 				<div class="venue-detail__website">
 					<span class="venue-detail__website-icon" aria-hidden="true">🔗</span>
 					<a href="<?php echo esc_url( $pkiw_url ); ?>" class="u-url" target="_blank" rel="noopener noreferrer">
-						<?php echo esc_html( wp_parse_url( $pkiw_url, PHP_URL_HOST ) ); ?>
+						<?php echo esc_html( wp_parse_url( $pkiw_url, PHP_URL_HOST ) ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 					</a>
 				</div>
 			<?php endif; ?>
