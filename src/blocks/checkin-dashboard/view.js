@@ -26,20 +26,31 @@
 		const viewBtns = dashboard.querySelectorAll( '.view-btn' );
 		const views = dashboard.querySelectorAll( '[class*="checkin-view-"]' );
 
+		// Sync the server-rendered state: hide every panel the "active"
+		// class doesn't already mark, so assistive tech skips them too.
+		views.forEach( function ( v ) {
+			v.hidden = ! v.classList.contains( 'active' );
+		} );
+
 		viewBtns.forEach( function ( btn ) {
 			btn.addEventListener( 'click', function () {
 				const view = this.dataset.view;
 
 				// Update buttons
-				viewBtns.forEach( ( b ) => b.classList.remove( 'active' ) );
+				viewBtns.forEach( function ( b ) {
+					b.classList.remove( 'active' );
+					b.setAttribute( 'aria-pressed', 'false' );
+				} );
 				this.classList.add( 'active' );
+				this.setAttribute( 'aria-pressed', 'true' );
 
 				// Update views
 				views.forEach( function ( v ) {
-					v.classList.remove( 'active' );
-					if ( v.classList.contains( 'checkin-view-' + view ) ) {
-						v.classList.add( 'active' );
-					}
+					const isActive = v.classList.contains(
+						'checkin-view-' + view
+					);
+					v.classList.toggle( 'active', isActive );
+					v.hidden = ! isActive;
 				} );
 
 				// Initialize map on first view
@@ -105,15 +116,17 @@
 
 		checkins.forEach( function ( checkin ) {
 			if ( checkin.latitude && checkin.longitude ) {
-				const marker = L.marker( [
-					checkin.latitude,
-					checkin.longitude,
-				] );
+				const marker = L.marker(
+					[ checkin.latitude, checkin.longitude ],
+					{ alt: checkin.venue_name || '' }
+				);
+
+				const venueName = escapeHtml( checkin.venue_name );
 
 				marker.bindPopup(
 					'<div class="checkin-popup">' +
 						'<strong>' +
-						escapeHtml( checkin.venue_name ) +
+						venueName +
 						'</strong>' +
 						( checkin.address
 							? '<br><span>' +
@@ -121,8 +134,12 @@
 							  '</span>'
 							: '' ) +
 						'<br><a href="' +
-						checkin.permalink +
-						'">View post</a>' +
+						escapeAttribute( checkin.permalink ) +
+						'">' +
+						escapeHtml(
+							'View post: ' + ( checkin.venue_name || '' )
+						) +
+						'</a>' +
 						'</div>'
 				);
 
@@ -148,5 +165,13 @@
 		const div = document.createElement( 'div' );
 		div.textContent = str;
 		return div.innerHTML;
+	}
+
+	// escapeHtml() only escapes what's needed for element content (&, <, >),
+	// not quotes — unsafe to drop straight into a quoted HTML attribute.
+	function escapeAttribute( str ) {
+		return escapeHtml( str )
+			.replace( /"/g, '&quot;' )
+			.replace( /'/g, '&#39;' );
 	}
 } )();

@@ -117,15 +117,15 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 
 	<?php if ( $pkiw_show_filters ) : ?>
 	<div class="checkin-dashboard-filters">
-		<button type="button" class="view-btn active" data-view="grid">
+		<button type="button" class="view-btn<?php echo 'grid' === $pkiw_layout ? ' active' : ''; ?>" data-view="grid" aria-pressed="<?php echo 'grid' === $pkiw_layout ? 'true' : 'false'; ?>">
 			<?php esc_html_e( 'Grid', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 		</button>
 		<?php if ( $pkiw_show_map ) : ?>
-		<button type="button" class="view-btn" data-view="map">
+		<button type="button" class="view-btn<?php echo 'map' === $pkiw_layout ? ' active' : ''; ?>" data-view="map" aria-pressed="<?php echo 'map' === $pkiw_layout ? 'true' : 'false'; ?>">
 			<?php esc_html_e( 'Map', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 		</button>
 		<?php endif; ?>
-		<button type="button" class="view-btn" data-view="timeline">
+		<button type="button" class="view-btn<?php echo 'timeline' === $pkiw_layout ? ' active' : ''; ?>" data-view="timeline" aria-pressed="<?php echo 'timeline' === $pkiw_layout ? 'true' : 'false'; ?>">
 			<?php esc_html_e( 'Timeline', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 		</button>
 	</div>
@@ -169,7 +169,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 		<?php if ( $pkiw_show_map ) : ?>
 		<!-- Map View -->
 		<div class="checkin-view-map <?php echo 'map' === $pkiw_layout ? 'active' : ''; ?>">
-			<div id="checkin-frontend-map" class="checkin-map" data-checkins="
+			<div id="checkin-frontend-map" class="checkin-map" role="region" aria-label="<?php esc_attr_e( 'Check-in map', 'post-kinds-for-indieweb-in-block-themes' ); ?>" data-checkins="
 			<?php
 			echo esc_attr(
 				wp_json_encode(
