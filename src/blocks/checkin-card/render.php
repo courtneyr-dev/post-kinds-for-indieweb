@@ -98,21 +98,29 @@ if ( $pkiw_checkin_at ) {
 	}
 }
 
+// Fallback alt text for the checkin photo when no photoAlt is saved.
+// Private/approximate checkins hide the venue name, so that branch falls
+// back to the checkin date/time instead; the public branch names the venue.
+$pkiw_photo_alt_private = $pkiw_checkin_display
+	? sprintf( /* translators: %s: check-in date and time */ __( 'Check-in on %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_checkin_display )
+	: __( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' );
+$pkiw_photo_alt_public  = sprintf( /* translators: %s: venue name */ __( 'Check-in at %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_venue_name );
+
 ob_start();
 ?>
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'checkin' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' ), 'checkin', 'checkin-card' ) ); ?></p>
+		<span class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' ), 'checkin', 'checkin-card' ) ); ?></span>
 
 		<?php if ( ! $pkiw_show_location ) : ?>
 			<p class="pk-note">
-				<span class="dashicons dashicons-lock" aria-hidden="true"></span>
+				<svg class="pk-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
 				<?php esc_html_e( 'Location saved privately', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 			</p>
 
 			<?php if ( $pkiw_photo ) : ?>
-				<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_photo ); ?>" alt="<?php echo esc_attr( $pkiw_photo_alt ? $pkiw_photo_alt : __( 'Photo', 'post-kinds-for-indieweb-in-block-themes' ) ); ?>" loading="lazy" /></div>
+				<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_photo ); ?>" alt="<?php echo esc_attr( $pkiw_photo_alt ? $pkiw_photo_alt : $pkiw_photo_alt_private ); ?>" loading="lazy" /></div>
 			<?php endif; ?>
 
 			<?php if ( $pkiw_note ) : ?>
@@ -207,7 +215,7 @@ ob_start();
 			<?php endif; ?>
 
 				<?php if ( $pkiw_photo ) : ?>
-				<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_photo ); ?>" alt="<?php echo esc_attr( $pkiw_photo_alt ? $pkiw_photo_alt : sprintf( /* translators: %s: venue name */ __( 'Photo at %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_venue_name ) ); ?>" loading="lazy" /></div>
+				<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_photo ); ?>" alt="<?php echo esc_attr( $pkiw_photo_alt ? $pkiw_photo_alt : $pkiw_photo_alt_public ); ?>" loading="lazy" /></div>
 			<?php endif; ?>
 
 			<?php if ( $pkiw_note ) : ?>

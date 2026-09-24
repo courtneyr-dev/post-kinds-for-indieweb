@@ -98,7 +98,7 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'rsvp' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'RSVP', 'post-kinds-for-indieweb-in-block-themes' ), 'rsvp', 'rsvp-card' ) ); ?></p>
+		<span class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'RSVP', 'post-kinds-for-indieweb-in-block-themes' ), 'rsvp', 'rsvp-card' ) ); ?></span>
 
 		<div class="pk-event p-in-reply-to h-event">
 			<div class="pk-caption">

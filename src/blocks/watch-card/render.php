@@ -79,7 +79,7 @@ ob_start();
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'watch' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<p class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Watch', 'post-kinds-for-indieweb-in-block-themes' ), 'watch', 'watch-card' ) ); ?></p>
+		<span class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Watch', 'post-kinds-for-indieweb-in-block-themes' ), 'watch', 'watch-card' ) ); ?></span>
 
 		<div class="pk-caption">
 			<?php if ( $pkiw_media_title ) : ?>

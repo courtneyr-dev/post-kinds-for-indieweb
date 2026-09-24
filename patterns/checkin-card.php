@@ -38,10 +38,6 @@ register_block_pattern(
 		<!-- wp:group {"layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"flex-start"}} -->
 		<div class="wp-block-group">
 
-			<!-- wp:paragraph {"style":{"typography":{"fontSize":"24px"}}} -->
-			<p style="font-size:24px">📍</p>
-			<!-- /wp:paragraph -->
-
 			<!-- wp:heading {"level":2,"className":"p-name","metadata":{"bindings":{"content":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"checkin_name"}}}}} -->
 			<h2 class="wp-block-heading p-name"></h2>
 			<!-- /wp:heading -->

@@ -323,7 +323,7 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	// Badge SVG is a static, decorative glyph from get_kind_icon_svg().
 	$out .= '<div class="pk-badge">' . get_kind_icon_svg( $badge_kind ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	$out .= '<div class="pk-body">';
-	$out .= '<p class="pk-kindlabel">' . esc_html( get_kind_label( $kind_label, $badge_kind, 'stream-card' ) ) . '</p>';
+	$out .= '<span class="pk-kindlabel">' . esc_html( get_kind_label( $kind_label, $badge_kind, 'stream-card' ) ) . '</span>';
 
 	// A long-form mood post falls through to this card, which would otherwise
 	// drop the mood-card block's emoji — carry it over as the mood pin.
