@@ -72,7 +72,7 @@ final class KindLabelTest extends WP_UnitTestCase {
 
 		$html = $this->render_watch_card();
 
-		$this->assertStringContainsString( '<p class="pk-kindlabel">WATCHED</p>', $html );
+		$this->assertStringContainsString( '<span class="pk-kindlabel">WATCHED</span>', $html );
 	}
 
 	/**
@@ -137,7 +137,7 @@ final class KindLabelTest extends WP_UnitTestCase {
 
 		$html = \PKIW\render_stream_card();
 
-		$this->assertStringContainsString( '<p class="pk-kindlabel">POSTED</p>', $html );
+		$this->assertStringContainsString( '<span class="pk-kindlabel">POSTED</span>', $html );
 		$this->assertSame( [ 'Note', 'note', 'stream-card' ], $received );
 
 		// Title and date sit together inside the caption wrapper.

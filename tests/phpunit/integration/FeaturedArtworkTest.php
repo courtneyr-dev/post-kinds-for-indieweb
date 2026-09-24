@@ -104,7 +104,7 @@ final class FeaturedArtworkTest extends WP_UnitTestCase {
 		$this->assertSame( self::COVER, get_post_meta( $post_id, Featured_Artwork::SOURCE_META, true ) );
 		$this->assertSame( (string) $thumbnail_id, get_post_meta( $post_id, Featured_Artwork::ATTACHMENT_META, true ) );
 		$this->assertSame(
-			'One',
+			'Poster for One',
 			get_post_meta( $thumbnail_id, '_wp_attachment_image_alt', true ),
 			'sideloaded artwork gets the post title as alt text'
 		);

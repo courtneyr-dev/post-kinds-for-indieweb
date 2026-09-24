@@ -495,7 +495,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 
 		$out = \PKIW\ensure_entry_properties( $html, $post, true );
 
-		$this->assertStringContainsString( '<a class="u-url" href="' . esc_url( (string) get_permalink( $post_id ) ) . '"', $out );
+		$this->assertStringContainsString( '<data class="u-url" value="' . esc_url( (string) get_permalink( $post_id ) ) . '"', $out );
 	}
 
 	/**
@@ -510,7 +510,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 
 		$out = \PKIW\ensure_entry_properties( $html, $post, true );
 
-		$this->assertMatchesRegularExpression( '#<span class="pk-entry-props" hidden><a class="u-url" href="' . preg_quote( $permalink, '#' ) . '"#', $out );
+		$this->assertMatchesRegularExpression( '#<span class="pk-entry-props" hidden><data class="u-url" value="' . preg_quote( $permalink, '#' ) . '"#', $out );
 		$this->assertStringNotContainsString( '<time class="dt-published" datetime="' . esc_attr( (string) get_post_time( 'c', true, $post ) ) . '" aria-hidden="true">', $out, 'the card already has its own dt-published' );
 	}
 
