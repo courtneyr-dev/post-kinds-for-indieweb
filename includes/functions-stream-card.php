@@ -117,7 +117,10 @@ function entry_author_html( \WP_Post $post ): string {
 	}
 	$html = '<span class="p-author h-card"><a class="u-url p-name" href="' . esc_url( (string) $author['url'] ) . '" tabindex="-1">' . esc_html( (string) $author['name'] ) . '</a>';
 	if ( ! empty( $author['photo'] ) ) {
-		$html .= '<img class="u-photo" src="' . esc_url( (string) $author['photo'] ) . '" alt="" loading="lazy" />';
+		// This markup only ever renders inside an already-`hidden` mf2
+		// wrapper, so <data> (no rendered image, no meaningless empty alt)
+		// carries the value without anything for assistive tech to trip on.
+		$html .= '<data class="u-photo" value="' . esc_url( (string) $author['photo'] ) . '"></data>';
 	}
 	return $html . '</span>';
 }
@@ -200,10 +203,12 @@ function ensure_entry_properties( string $html, \WP_Post $post, bool $card_roote
 		$extra .= entry_author_html( $post );
 	}
 	if ( $needs_url ) {
-		$extra .= '<a class="u-url" href="' . esc_url( (string) get_permalink( $post ) ) . '" tabindex="-1" aria-hidden="true"></a>';
+		// The parent .pk-entry-props span is already `hidden`, so no
+		// tabindex/aria-hidden is needed on an empty, non-interactive element.
+		$extra .= '<data class="u-url" value="' . esc_url( (string) get_permalink( $post ) ) . '"></data>';
 	}
 	if ( $needs_date ) {
-		$extra .= '<time class="dt-published" datetime="' . esc_attr( (string) get_post_time( 'c', true, $post ) ) . '" aria-hidden="true"></time>';
+		$extra .= '<data class="dt-published" value="' . esc_attr( (string) get_post_time( 'c', true, $post ) ) . '"></data>';
 	}
 	$extra = '<span class="pk-entry-props" hidden>' . $extra . '</span>';
 	if ( $card_rooted ) {
