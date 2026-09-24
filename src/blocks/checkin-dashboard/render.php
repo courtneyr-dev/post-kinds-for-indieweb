@@ -143,7 +143,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 				<article class="checkin-card h-entry">
 					<?php if ( ! empty( $pkiw_checkin['photo'] ) ) : ?>
 					<div class="checkin-card-photo">
-						<img src="<?php echo esc_url( $pkiw_checkin['photo'] ); ?>" alt="<?php echo esc_attr( $pkiw_checkin['venue_name'] ); ?>" class="u-photo" loading="lazy">
+						<img src="<?php echo esc_url( $pkiw_checkin['photo'] ); ?>" alt="<?php echo esc_attr( sprintf( '%1$s, %2$s', ! empty( $pkiw_checkin['venue_name'] ) ? $pkiw_checkin['venue_name'] : __( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' ), date_i18n( get_option( 'date_format' ), strtotime( $pkiw_checkin['date'] ) ) ) ); ?>" class="u-photo" loading="lazy">
 					</div>
 					<?php endif; ?>
 					<div class="checkin-card-content">

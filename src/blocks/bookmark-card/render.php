@@ -71,7 +71,7 @@ ob_start();
 		<?php endif; ?>
 
 		<?php if ( $pkiw_image ) : ?>
-			<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_image ); ?>" alt="<?php echo esc_attr( $pkiw_image_alt ? $pkiw_image_alt : $pkiw_title ); ?>" loading="lazy" /></div>
+			<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_image ); ?>" alt="<?php echo esc_attr( $pkiw_image_alt ? $pkiw_image_alt : sprintf( /* translators: %s: linked page title */ __( 'Preview image for %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_title ) ); ?>" loading="lazy" /></div>
 		<?php endif; ?>
 
 		<?php if ( $pkiw_bookmarked_at ) : ?>

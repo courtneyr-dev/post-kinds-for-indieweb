@@ -121,7 +121,7 @@ ob_start();
 
 		<?php if ( $pkiw_cover ) : ?>
 			<div class="pk-media">
-				<img class="pk-thumb--poster u-photo" src="<?php echo esc_url( $pkiw_cover ); ?>" alt="<?php echo esc_attr( $pkiw_cover_alt ? $pkiw_cover_alt : ( $pkiw_title ? $pkiw_title : get_the_title() ) ); ?>" loading="lazy" />
+				<img class="pk-thumb--poster u-photo" src="<?php echo esc_url( $pkiw_cover ); ?>" alt="<?php echo esc_attr( $pkiw_cover_alt ? $pkiw_cover_alt : sprintf( /* translators: %s: game title */ __( 'Box art for %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_title ? $pkiw_title : get_the_title() ) ); ?>" loading="lazy" />
 			</div>
 		<?php endif; ?>
 

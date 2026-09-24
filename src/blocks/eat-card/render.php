@@ -135,7 +135,7 @@ ob_start();
 		<?php endif; ?>
 
 		<?php if ( $pkiw_photo ) : ?>
-			<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_photo ); ?>" alt="<?php echo esc_attr( $pkiw_photo_alt ? $pkiw_photo_alt : $pkiw_name ); ?>" loading="lazy" /></div>
+			<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_photo ); ?>" alt="<?php echo esc_attr( $pkiw_photo_alt ? $pkiw_photo_alt : sprintf( /* translators: %s: food/drink name */ __( 'Picture of %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_name ) ); ?>" loading="lazy" /></div>
 		<?php endif; ?>
 
 		<?php if ( $pkiw_notes ) : ?>

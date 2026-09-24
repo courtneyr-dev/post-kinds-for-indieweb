@@ -63,7 +63,7 @@ ob_start();
 
 		<?php if ( $pkiw_image ) : ?>
 			<div class="pk-media">
-				<img class="pk-thumb u-photo" src="<?php echo esc_url( $pkiw_image ); ?>" alt="<?php echo esc_attr( $pkiw_image_alt ? $pkiw_image_alt : $pkiw_title ); ?>" loading="lazy" />
+				<img class="pk-thumb u-photo" src="<?php echo esc_url( $pkiw_image ); ?>" alt="<?php echo esc_attr( $pkiw_image_alt ? $pkiw_image_alt : sprintf( /* translators: %s: item title */ __( 'Cover of %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_title ) ); ?>" loading="lazy" />
 			</div>
 		<?php endif; ?>
 
