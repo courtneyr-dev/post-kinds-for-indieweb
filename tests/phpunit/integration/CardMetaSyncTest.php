@@ -28,6 +28,23 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 		$this->assertSame( '517', get_post_meta( $post_id, '_pkiw_read_pages', true ) );
 	}
 
+	public function test_comic_card_attrs_mirror_into_separate_pkiw_meta(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/comic-card {"seriesTitle":"Saga","issueTitle":"Chapter Sixty-Seven","volumeNumber":"4","issueNumber":"67","creatorNames":"Brian K. Vaughan and Fiona Staples","publisher":"Image Comics","coverImage":"https://example.com/saga-67.jpg","readStatus":"finished","rating":5} /-->',
+		] );
+
+		$this->assertSame( 'Saga', get_post_meta( $post_id, '_pkiw_comic_series', true ) );
+		$this->assertSame( 'Chapter Sixty-Seven', get_post_meta( $post_id, '_pkiw_comic_issue_title', true ) );
+		$this->assertSame( '4', get_post_meta( $post_id, '_pkiw_comic_volume', true ) );
+		$this->assertSame( '67', get_post_meta( $post_id, '_pkiw_comic_issue_number', true ) );
+		$this->assertSame( 'Brian K. Vaughan and Fiona Staples', get_post_meta( $post_id, '_pkiw_comic_creators', true ) );
+		$this->assertSame( 'Image Comics', get_post_meta( $post_id, '_pkiw_comic_publisher', true ) );
+		$this->assertSame( 'https://example.com/saga-67.jpg', get_post_meta( $post_id, '_pkiw_comic_cover', true ) );
+		$this->assertSame( 'finished', get_post_meta( $post_id, '_pkiw_comic_read_status', true ) );
+		$this->assertSame( '5', get_post_meta( $post_id, '_pkiw_comic_rating', true ) );
+		$this->assertSame( '', get_post_meta( $post_id, '_pkiw_read_title', true ), 'comic-card must not populate book-read meta' );
+	}
+
 	public function test_checkin_card_attrs_mirror_into_pkiw_meta(): void {
 		$post_id = self::factory()->post->create( [
 			'post_content' => '<!-- wp:post-kinds-indieweb/checkin-card {"venueName":"Reading Terminal Market","venueType":"cafe","address":"1136 Arch St","locality":"Philadelphia","region":"PA","country":"US","latitude":39.95333,"longitude":-75.15928,"locationPrivacy":"public","venueUrl":"https://readingterminalmarket.org","photo":"https://example.com/photo.jpg"} /-->',

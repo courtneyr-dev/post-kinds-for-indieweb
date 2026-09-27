@@ -233,6 +233,39 @@ class Block_Bindings {
 				'compute'  => 'read_progress',
 			],
 
+			// Comic bindings.
+			'comic_series'           => [
+				'label'    => __( 'Comic Series', 'post-kinds-for-indieweb-in-block-themes' ),
+				'meta_key' => 'comic_series',
+				'type'     => 'string',
+			],
+			'comic_issue_title'      => [
+				'label'    => __( 'Comic Issue Title', 'post-kinds-for-indieweb-in-block-themes' ),
+				'meta_key' => 'comic_issue_title',
+				'type'     => 'string',
+			],
+			'comic_issue_number'     => [
+				'label'    => __( 'Comic Issue Number', 'post-kinds-for-indieweb-in-block-themes' ),
+				'meta_key' => 'comic_issue_number',
+				'type'     => 'string',
+			],
+			'comic_creators'         => [
+				'label'    => __( 'Comic Creators', 'post-kinds-for-indieweb-in-block-themes' ),
+				'meta_key' => 'comic_creators',
+				'type'     => 'string',
+			],
+			'comic_cover'            => [
+				'label'    => __( 'Comic Cover', 'post-kinds-for-indieweb-in-block-themes' ),
+				'meta_key' => 'comic_cover',
+				'type'     => 'url',
+			],
+			'comic_read_status'      => [
+				'label'    => __( 'Comic Reading Status', 'post-kinds-for-indieweb-in-block-themes' ),
+				'meta_key' => 'comic_read_status',
+				'type'     => 'string',
+				'format'   => 'read_status',
+			],
+
 			// Event bindings.
 			'event_start'            => [
 				'label'    => __( 'Start Date/Time', 'post-kinds-for-indieweb-in-block-themes' ),

@@ -54,6 +54,7 @@ final class Block_Bindings_Source {
 			'jam'      => 'listen_track',
 			'watch'    => 'watch_title',
 			'read'     => 'read_title',
+			'comics'   => 'comic_series',
 			'_default' => 'cite_name',
 		],
 		'artist'       => [
@@ -68,6 +69,7 @@ final class Block_Bindings_Source {
 			'listen'   => 'listen_rating',
 			'watch'    => 'watch_rating',
 			'read'     => 'read_rating',
+			'comics'   => 'comic_rating',
 			'_default' => 'review_rating',
 		],
 		'url'          => [
@@ -75,6 +77,7 @@ final class Block_Bindings_Source {
 			'jam'      => 'listen_url',
 			'watch'    => 'watch_url',
 			'read'     => 'read_url',
+			'comics'   => 'comic_url',
 			'_default' => 'cite_url',
 		],
 		'cover_image'  => [
@@ -82,6 +85,7 @@ final class Block_Bindings_Source {
 			'jam'      => 'listen_cover',
 			'watch'    => 'watch_poster',
 			'read'     => 'read_cover',
+			'comics'   => 'comic_cover',
 			'_default' => 'cite_photo',
 		],
 		'summary'      => [
@@ -89,18 +93,21 @@ final class Block_Bindings_Source {
 		],
 		'author'       => [
 			'read'     => 'read_author',
+			'comics'   => 'comic_creators',
 			'_default' => 'cite_author',
 		],
 		'isbn'         => [
 			'_default' => 'read_isbn',
 		],
 		'publisher'    => [
+			'comics'   => 'comic_publisher',
 			'_default' => 'read_publisher',
 		],
 		'page_count'   => [
 			'_default' => 'read_pages',
 		],
 		'publish_date' => [
+			'comics'   => 'comic_publish_date',
 			'_default' => 'read_publish_date',
 		],
 		'asin'         => [

@@ -63,6 +63,14 @@
 	color: var(--pkiw-read-card-fg, var(--pkiw-card-fg, inherit));
 }
 
+.wp-block-post-kinds-indieweb-comic-card:not(.has-background) .post-kinds-card {
+	background: var(--pkiw-comic-card-bg, var(--pkiw-card-bg, transparent));
+}
+
+.wp-block-post-kinds-indieweb-comic-card:not(.has-text-color) .post-kinds-card {
+	color: var(--pkiw-comic-card-fg, var(--pkiw-card-fg, inherit));
+}
+
 .wp-block-post-kinds-indieweb-play-card:not(.has-background) .post-kinds-card {
 	background: var(--pkiw-play-card-bg, var(--pkiw-card-bg, transparent));
 }

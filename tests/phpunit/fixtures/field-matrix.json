@@ -228,6 +228,71 @@
             }
         }
     },
+    "post-kinds-indieweb/comic-card": {
+        "render": "dynamic",
+        "attributes": {
+            "seriesTitle": {
+                "type": "string",
+                "sample": "Sample seriesTitle value"
+            },
+            "issueTitle": {
+                "type": "string",
+                "sample": "Sample issueTitle value"
+            },
+            "volumeNumber": {
+                "type": "string",
+                "sample": "Sample volumeNumber value"
+            },
+            "issueNumber": {
+                "type": "string",
+                "sample": "Sample issueNumber value"
+            },
+            "creatorNames": {
+                "type": "string",
+                "sample": "Sample creatorNames value"
+            },
+            "publisher": {
+                "type": "string",
+                "sample": "Sample publisher value"
+            },
+            "publishDate": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "coverImage": {
+                "type": "string",
+                "sample": "https://example.com/sample-coverimage"
+            },
+            "coverImageAlt": {
+                "type": "string",
+                "sample": "Sample coverImageAlt value"
+            },
+            "comicUrl": {
+                "type": "string",
+                "sample": "https://example.com/sample-comicurl"
+            },
+            "readStatus": {
+                "type": "string",
+                "sample": "Sample readStatus value"
+            },
+            "rating": {
+                "type": "number",
+                "sample": 4
+            },
+            "readAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "review": {
+                "type": "string",
+                "sample": "Sample review value"
+            },
+            "layout": {
+                "type": "string",
+                "sample": "horizontal"
+            }
+        }
+    },
     "post-kinds-indieweb/drink-card": {
         "render": "dynamic",
         "attributes": {

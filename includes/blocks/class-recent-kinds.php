@@ -199,6 +199,7 @@ final class Recent_Kinds {
 			'listen' => 'listen_track',
 			'watch'  => 'watch_title',
 			'read'   => 'read_title',
+			'comics' => 'comic_series',
 			'jam'    => 'jam_track',
 			'play'   => 'play_title',
 		];
@@ -225,6 +226,7 @@ final class Recent_Kinds {
 			'listen' => 'listen_cover',
 			'watch'  => 'watch_poster',
 			'read'   => 'read_cover',
+			'comics' => 'comic_cover',
 			'jam'    => 'jam_cover',
 			'play'   => 'play_cover',
 		];

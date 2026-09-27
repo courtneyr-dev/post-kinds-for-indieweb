@@ -48,6 +48,19 @@ export const readIcon = (
 );
 
 /**
+ * Comics icon
+ */
+export const comicsIcon = (
+	<SVG
+		xmlns="http://www.w3.org/2000/svg"
+		viewBox="0 0 24 24"
+		fill="currentColor"
+	>
+		<Path d="M12 2l1.7 4.6 3.5-2.5-1.3 4.2 4.6-.3-3.6 2.7 4 2.2-4.6.7 2.2 4-4.2-2L12 22l-1.7-4-3.5 2.6 1.3-4.2-4.6.3 3.6-2.7-4-2.2 4.6-.7-2.2-4 4.2 2z" />
+	</SVG>
+);
+
+/**
  * Checkin/Location icon
  */
 export const checkinIcon = (

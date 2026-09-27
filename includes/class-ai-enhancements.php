@@ -323,10 +323,10 @@ final class AI_Enhancements {
 		$kind   = Taxonomy::get_post_kind( $post_id );
 		$prefix = Meta_Fields::PREFIX;
 
-		if ( ! in_array( $kind, [ 'read', 'watch', 'listen' ], true ) ) {
+		if ( ! in_array( $kind, [ 'read', 'comics', 'watch', 'listen' ], true ) ) {
 			return new \WP_Error(
 				'pkiw_invalid_kind',
-				__( 'Content summaries are only available for read, watch, and listen posts.', 'post-kinds-for-indieweb-in-block-themes' ),
+				__( 'Content summaries are only available for read, comics, watch, and listen posts.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[ 'status' => 400 ]
 			);
 		}
@@ -455,6 +455,12 @@ final class AI_Enhancements {
 				'title'  => 'read_title',
 				'author' => 'read_author',
 				'status' => 'read_status',
+			],
+			'comics' => [
+				'series'   => 'comic_series',
+				'issue'    => 'comic_issue_number',
+				'creators' => 'comic_creators',
+				'status'   => 'comic_read_status',
 			],
 			'jam'    => [
 				'track'  => 'jam_track',

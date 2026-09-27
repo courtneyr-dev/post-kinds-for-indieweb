@@ -1,0 +1,87 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "post-kinds-indieweb/comic-card",
+    "version": "1.0.0",
+    "title": "Comic Card",
+    "category": "post-kinds-indieweb",
+    "description": "Display a comic issue or collected edition you read.",
+    "keywords": ["comic", "comics", "graphic novel", "issue", "reading"],
+    "textdomain": "post-kinds-for-indieweb-in-block-themes",
+    "attributes": {
+        "seriesTitle": { "type": "string" },
+        "issueTitle": { "type": "string" },
+        "volumeNumber": { "type": "string" },
+        "issueNumber": { "type": "string" },
+        "creatorNames": { "type": "string" },
+        "publisher": { "type": "string" },
+        "publishDate": { "type": "string" },
+        "coverImage": { "type": "string" },
+        "coverImageAlt": { "type": "string" },
+        "comicUrl": { "type": "string" },
+        "readStatus": {
+            "type": "string",
+            "default": "finished"
+        },
+        "rating": {
+            "type": "number",
+            "default": 0
+        },
+        "readAt": { "type": "string" },
+        "review": { "type": "string" },
+        "layout": {
+            "type": "string",
+            "default": "horizontal"
+        }
+    },
+    "supports": {
+        "html": false,
+        "align": ["wide", "full"],
+        "color": {
+            "background": true,
+            "text": true,
+            "gradients": true,
+            "link": true
+        },
+        "spacing": {
+            "margin": true,
+            "padding": true,
+            "blockGap": true
+        },
+        "typography": {
+            "fontSize": true,
+            "lineHeight": true,
+            "__experimentalFontFamily": true,
+            "__experimentalFontWeight": true,
+            "__experimentalFontStyle": true,
+            "__experimentalTextTransform": true,
+            "__experimentalTextDecoration": true,
+            "__experimentalLetterSpacing": true
+        },
+        "__experimentalBorder": {
+            "color": true,
+            "radius": true,
+            "width": true,
+            "style": true,
+            "__experimentalDefaultControls": {
+                "color": true,
+                "radius": true,
+                "width": true,
+                "style": true
+            }
+        },
+        "shadow": true,
+        "dimensions": { "minHeight": true }
+    },
+    "example": {
+        "attributes": {
+            "seriesTitle": "Saga",
+            "issueNumber": "67",
+            "creatorNames": "Brian K. Vaughan and Fiona Staples",
+            "readStatus": "finished",
+            "rating": 5
+        }
+    },
+    "editorStyle": "file:./editor.css",
+    "render": "file:./render.php"
+}

@@ -102,6 +102,12 @@
 		--pkiw-read-artwork-ratio: var(--pkiw-artwork-ratio-book);
 		--pkiw-read-progress-bar: currentcolor;
 
+		/* Comics — issues + collected editions. */
+		--pkiw-comic-card-bg: var(--pkiw-card-bg);
+		--pkiw-comic-card-fg: var(--pkiw-card-fg);
+		--pkiw-comic-card-accent: var(--pkiw-card-accent);
+		--pkiw-comic-artwork-ratio: var(--pkiw-artwork-ratio-book);
+
 		/* Checkin — venue location. */
 		--pkiw-checkin-card-bg: var(--pkiw-card-bg);
 		--pkiw-checkin-card-fg: var(--pkiw-card-fg);
@@ -282,12 +288,12 @@
 	}
 }
 
-   ============================================================
+/* ============================================================
    pk-card PAINT DEFAULTS (two-layer card system).
    Relocated here from src/blocks/shared/pk-card.css so the structural CSS stays
    literal-free (NoColorLeakageTest); this catalog is the sanctioned home for
    default color literals. Themes override any --pk-* on .pk-card.
-   ============================================================
+   ============================================================ */
 :where(.pk-card) {
 	--pk-bg: var(--pkiw-card-page-bg, #fff);
 	--pk-surface: var(--pkiw-card-bg, #fff);

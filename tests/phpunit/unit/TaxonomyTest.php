@@ -52,6 +52,11 @@ class TaxonomyTest extends WP_UnitTestCase {
 		$this->assertCount( 40, $kinds );
 	}
 
+	public function test_read_and_comic_cards_map_to_separate_kinds() {
+		$this->assertSame( 'read', Taxonomy::KIND_CARD_BLOCKS['post-kinds-indieweb/read-card'] );
+		$this->assertSame( 'comics', Taxonomy::KIND_CARD_BLOCKS['post-kinds-indieweb/comic-card'] );
+	}
+
 	/**
 	 * @dataProvider kind_slugs_provider
 	 */

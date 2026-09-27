@@ -1,0 +1,14 @@
+.wp-block-post-kinds-indieweb-comic-card .comic-card-cover-button {
+	display: block;
+	width: fit-content;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	cursor: pointer;
+}
+
+.wp-block-post-kinds-indieweb-comic-card .comic-card-cover-button:hover img,
+.wp-block-post-kinds-indieweb-comic-card .comic-card-cover-button:focus-visible img {
+	outline: 2px solid currentcolor;
+	outline-offset: 2px;
+}

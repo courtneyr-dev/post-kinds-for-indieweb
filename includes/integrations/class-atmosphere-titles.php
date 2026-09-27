@@ -133,6 +133,19 @@ final class Atmosphere_Titles {
 					self::meta( $post, 'read_author' )
 				);
 
+			case 'comics':
+				$series = self::meta( $post, 'comic_series' );
+				$issue  = self::meta( $post, 'comic_issue_number' );
+				if ( '' !== $series && '' !== $issue ) {
+					$series .= ' #' . $issue;
+				}
+				return self::media_phrase(
+					/* translators: %s: comic series and issue. */
+					__( 'Read %s', 'post-kinds-for-indieweb-in-block-themes' ),
+					$series,
+					self::meta( $post, 'comic_creators' )
+				);
+
 			case 'checkin':
 				$venue = self::meta( $post, 'checkin_name' );
 				if ( '' !== $venue && 'private' !== self::meta( $post, 'geo_privacy' ) ) {

@@ -583,4 +583,27 @@ class MetaFieldsTest extends WP_UnitTestCase {
 			$this->assertArrayHasKey( $key, $fields, "Field '{$key}' should exist" );
 		}
 	}
+
+	public function test_comic_meta_fields_exist_separately_from_read_fields() {
+		$fields = $this->meta_fields->get_fields();
+		$expected = [
+			'comic_series',
+			'comic_issue_title',
+			'comic_volume',
+			'comic_issue_number',
+			'comic_creators',
+			'comic_publisher',
+			'comic_publish_date',
+			'comic_cover',
+			'comic_url',
+			'comic_read_status',
+			'comic_rating',
+			'comic_read_at',
+			'comic_review',
+		];
+
+		foreach ( $expected as $field ) {
+			$this->assertArrayHasKey( $field, $fields );
+		}
+	}
 }
