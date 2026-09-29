@@ -237,26 +237,37 @@ class Import_Manager {
 			];
 		}
 
+		// Batches run from WP-Cron with no user, so pick the author now.
+		[ $author_id, $author_source ] = $this->resolve_import_author();
+		if ( 0 === $author_id ) {
+			return [
+				'success' => false,
+				'error'   => 'No user can author imported posts. Set pkiw_default_author to a user who can create posts.',
+			];
+		}
+
 		// Create job.
 		$job_id = wp_generate_uuid4();
 
 		$job = [
-			'id'           => $job_id,
-			'source'       => $source,
-			'status'       => 'pending',
-			'options'      => $options,
-			'progress'     => 0,
-			'total'        => 0,
-			'imported'     => 0,
-			'updated'      => 0,
-			'skipped'      => 0,
-			'failed'       => 0,
-			'errors'       => [],
-			'created_at'   => time(),
-			'updated_at'   => time(),
-			'started_at'   => null,
-			'completed_at' => null,
-			'cursor'       => null,
+			'id'            => $job_id,
+			'source'        => $source,
+			'status'        => 'pending',
+			'options'       => $options,
+			'author_id'     => $author_id,
+			'author_source' => $author_source,
+			'progress'      => 0,
+			'total'         => 0,
+			'imported'      => 0,
+			'updated'       => 0,
+			'skipped'       => 0,
+			'failed'        => 0,
+			'errors'        => [],
+			'created_at'    => time(),
+			'updated_at'    => time(),
+			'started_at'    => null,
+			'completed_at'  => null,
+			'cursor'        => null,
 		];
 
 		$this->save_job( $job_id, $job );
@@ -302,6 +313,24 @@ class Import_Manager {
 		if ( 'pending' === $job['status'] ) {
 			$job['status']     = 'running';
 			$job['started_at'] = time();
+			$this->save_job( $job_id, $job );
+		}
+
+		// Jobs queued before the author was recorded at start pick one now.
+		if ( empty( $job['author_id'] ) ) {
+			[ $job['author_id'], $job['author_source'] ] = $this->resolve_import_author();
+
+			if ( 0 === $job['author_id'] ) {
+				$this->update_job(
+					$job_id,
+					[
+						'status' => 'failed',
+						'errors' => [ 'No user can author imported posts. Set pkiw_default_author to a user who can create posts.' ],
+					]
+				);
+				return;
+			}
+
 			$this->save_job( $job_id, $job );
 		}
 
@@ -596,7 +625,7 @@ class Import_Manager {
 
 				if ( $create_posts ) {
 					// Create a WordPress post.
-					$post_id = $this->create_post_from_item( $item, $source_config, $options, $source );
+					$post_id = $this->create_post_from_item( $item, $source_config, $options, $source, (int) ( $job['author_id'] ?? 0 ) );
 
 					if ( is_wp_error( $post_id ) ) {
 						++$result['failed'];
@@ -1115,22 +1144,86 @@ class Import_Manager {
 	}
 
 	/**
+	 * Pick the user who owns the posts an import job creates.
+	 *
+	 * In order:
+	 * 1. The current user, when they can create import posts (manual runs).
+	 * 2. The pkiw_default_author option (default 1), the setting the webhook
+	 *    handler uses, when it names a user who can create import posts.
+	 * 3. The administrator with the lowest user ID who can create import
+	 *    posts. A deleted or demoted default author shouldn't stop scheduled
+	 *    sync or leave posts with no author, and the earliest administrator
+	 *    is normally the site owner.
+	 *
+	 * @return array{0: int, 1: string} User ID and which rule chose it
+	 *                                  ('current_user', 'default_author',
+	 *                                  'fallback_administrator'), or
+	 *                                  [0, ''] when no user qualifies.
+	 */
+	private function resolve_import_author(): array {
+		$current = get_current_user_id();
+		if ( $current > 0 && $this->can_author_imports( $current ) ) {
+			return [ $current, 'current_user' ];
+		}
+
+		$default = (int) get_option( 'pkiw_default_author', 1 );
+		if ( $default > 0 && $this->can_author_imports( $default ) ) {
+			return [ $default, 'default_author' ];
+		}
+
+		$admins = get_users(
+			[
+				'role'    => 'administrator',
+				'orderby' => 'ID',
+				'order'   => 'ASC',
+				'fields'  => 'ID',
+			]
+		);
+		foreach ( $admins as $admin_id ) {
+			if ( $this->can_author_imports( (int) $admin_id ) ) {
+				return [ (int) $admin_id, 'fallback_administrator' ];
+			}
+		}
+
+		return [ 0, '' ];
+	}
+
+	/**
+	 * Whether a user exists and can create posts of the import post type.
+	 *
+	 * @param int $user_id User ID.
+	 * @return bool
+	 */
+	private function can_author_imports( int $user_id ): bool {
+		$user = get_userdata( $user_id );
+		if ( ! $user ) {
+			return false;
+		}
+
+		$post_type = get_post_type_object( $this->get_import_post_type() );
+		$cap       = $post_type ? $post_type->cap->create_posts : 'edit_posts';
+
+		return user_can( $user, $cap );
+	}
+
+	/**
 	 * Create a WordPress post from an imported item.
 	 *
 	 * @param array<string, mixed> $item          Item data.
 	 * @param array<string, mixed> $source_config Source configuration.
 	 * @param array<string, mixed> $options       Job options (post_status, etc.).
 	 * @param string               $source        Source identifier.
+	 * @param int                  $author_id     Author the job recorded (see resolve_import_author()).
 	 * @return int|\WP_Error Post ID or error.
 	 */
-	private function create_post_from_item( array $item, array $source_config, array $options = [], string $source = '' ) {
+	private function create_post_from_item( array $item, array $source_config, array $options = [], string $source = '', int $author_id = 0 ) {
 		$kind = $source_config['kind'];
 
 		// Build post data. Default to draft for safety - user must explicitly choose to publish.
 		$post_data = [
 			'post_type'   => $this->get_import_post_type(),
 			'post_status' => $options['post_status'] ?? 'draft',
-			'post_author' => get_current_user_id(),
+			'post_author' => $author_id,
 		];
 
 		// Dispatch to per-kind builder. Each builder returns a triple of
