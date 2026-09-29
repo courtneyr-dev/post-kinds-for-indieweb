@@ -25,6 +25,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Webhook_Handler {
 
 	/**
+	 * Option holding the plugin version that last ran the Plex token purge.
+	 */
+	public const TOKEN_PURGE_OPTION = 'pkiw_plex_token_purge_version';
+
+	/**
+	 * Attachment meta recording the Plex artwork path it was downloaded from.
+	 * The path carries no token.
+	 */
+	public const PLEX_THUMB_META = '_pkiw_plex_thumb';
+
+	/**
+	 * Query-string marker of a token-bearing Plex URL.
+	 */
+	private const TOKEN_MARKER = 'X-Plex-Token=';
+
+	/**
 	 * Webhook endpoints.
 	 *
 	 * @var array<string, array<string, mixed>>
@@ -427,7 +443,7 @@ class Webhook_Handler {
 			$item['type']   = 'movie';
 			$item['title']  = $metadata['title'] ?? '';
 			$item['year']   = $metadata['year'] ?? '';
-			$item['poster'] = $this->get_plex_thumb( $metadata['thumb'] ?? '' );
+			$item['poster'] = $this->sideload_plex_thumb( (string) ( $metadata['thumb'] ?? '' ) );
 
 			// Try to get external IDs.
 			foreach ( $metadata['Guid'] ?? [] as $guid ) {
@@ -444,7 +460,7 @@ class Webhook_Handler {
 			$item['show']    = $metadata['grandparentTitle'] ?? '';
 			$item['season']  = $metadata['parentIndex'] ?? 0;
 			$item['episode'] = $metadata['index'] ?? 0;
-			$item['poster']  = $this->get_plex_thumb( $metadata['grandparentThumb'] ?? '' );
+			$item['poster']  = $this->sideload_plex_thumb( (string) ( $metadata['grandparentThumb'] ?? '' ) );
 
 			foreach ( $metadata['Guid'] ?? [] as $guid ) {
 				$id = $guid['id'] ?? '';
@@ -459,7 +475,7 @@ class Webhook_Handler {
 			$item['track']  = $metadata['title'] ?? '';
 			$item['artist'] = $metadata['grandparentTitle'] ?? '';
 			$item['album']  = $metadata['parentTitle'] ?? '';
-			$item['cover']  = $this->get_plex_thumb( $metadata['parentThumb'] ?? '' );
+			$item['cover']  = $this->sideload_plex_thumb( (string) ( $metadata['parentThumb'] ?? '' ) );
 		} else {
 			return [
 				'action'  => 'ignored',
@@ -853,24 +869,253 @@ class Webhook_Handler {
 	}
 
 	/**
-	 * Get Plex thumbnail URL.
+	 * Download Plex artwork into the media library and return its local URL.
 	 *
-	 * @param string $thumb Thumbnail path.
-	 * @return string|null Full URL or null.
+	 * Plex artwork paths need the Plex server token. The token travels only in
+	 * the X-Plex-Token request header, never in a URL, and the stored value is
+	 * the attachment URL, so post meta, the pending queue and rendered images
+	 * never carry it (issue 213). Any failure returns an empty string: no
+	 * poster is better than a URL that leaks the token.
+	 *
+	 * Artwork is reused per Plex path, so re-watching a film or playing another
+	 * track from the same album doesn't add a second copy.
+	 *
+	 * @param string $thumb Plex artwork path from the webhook payload.
+	 * @return string Attachment URL, or '' when unavailable.
 	 */
-	private function get_plex_thumb( string $thumb ): ?string {
-		if ( empty( $thumb ) ) {
-			return null;
+	private function sideload_plex_thumb( string $thumb ): string {
+		$url   = $this->build_plex_thumb_url( $thumb );
+		$token = get_option( 'pkiw_plex_token' );
+
+		if ( '' === $url || ! is_string( $token ) || '' === $token ) {
+			return '';
 		}
 
-		$plex_url   = get_option( 'pkiw_plex_url' );
-		$plex_token = get_option( 'pkiw_plex_token' );
-
-		if ( ! $plex_url || ! $plex_token ) {
-			return null;
+		$existing = get_posts(
+			[
+				'post_type'   => 'attachment',
+				'post_status' => 'inherit',
+				'numberposts' => 1,
+				'fields'      => 'ids',
+				'meta_key'    => self::PLEX_THUMB_META, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value'  => $thumb, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			]
+		);
+		if ( ! empty( $existing ) ) {
+			$existing_url = wp_get_attachment_url( (int) $existing[0] );
+			if ( is_string( $existing_url ) && '' !== $existing_url ) {
+				return $existing_url;
+			}
 		}
 
-		return rtrim( $plex_url, '/' ) . $thumb . '?X-Plex-Token=' . $plex_token;
+		// No redirects: a redirect would carry the token header to wherever
+		// the Plex server points it.
+		$response = wp_safe_remote_get(
+			$url,
+			[
+				'timeout'             => 10,
+				'redirection'         => 0,
+				'limit_response_size' => 10 * MB_IN_BYTES,
+				'headers'             => [
+					'X-Plex-Token' => $token,
+					'Accept'       => 'image/*',
+				],
+			]
+		);
+
+		if ( is_wp_error( $response ) ) {
+			$this->log_webhook( 'plex', 'artwork_failed', 'Plex artwork download failed: ' . $response->get_error_code() );
+			return '';
+		}
+
+		$code = (int) wp_remote_retrieve_response_code( $response );
+		if ( 200 !== $code ) {
+			$this->log_webhook( 'plex', 'artwork_failed', 'Plex artwork download failed: HTTP ' . $code );
+			return '';
+		}
+
+		$content_type = strtolower( trim( explode( ';', (string) wp_remote_retrieve_header( $response, 'content-type' ) )[0] ) );
+		$extensions   = [
+			'image/jpeg' => 'jpg',
+			'image/png'  => 'png',
+			'image/webp' => 'webp',
+			'image/gif'  => 'gif',
+		];
+		$body         = wp_remote_retrieve_body( $response );
+
+		if ( ! isset( $extensions[ $content_type ] ) || '' === $body ) {
+			$this->log_webhook( 'plex', 'artwork_failed', 'Plex artwork download failed: response is not an image' );
+			return '';
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/media.php';
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+
+		$tmp = wp_tempnam( 'pkiw-plex-artwork' );
+		if ( ! $tmp || false === file_put_contents( $tmp, $body ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+			$this->log_webhook( 'plex', 'artwork_failed', 'Plex artwork download failed: temporary file not writable' );
+			return '';
+		}
+
+		$attachment_id = media_handle_sideload(
+			[
+				'name'     => 'plex-artwork-' . substr( md5( $thumb ), 0, 12 ) . '.' . $extensions[ $content_type ],
+				'tmp_name' => $tmp,
+			],
+			0
+		);
+
+		if ( is_wp_error( $attachment_id ) ) {
+			wp_delete_file( $tmp );
+			$this->log_webhook( 'plex', 'artwork_failed', 'Plex artwork download failed: ' . $attachment_id->get_error_code() );
+			return '';
+		}
+
+		update_post_meta( $attachment_id, self::PLEX_THUMB_META, $thumb );
+
+		$local_url = wp_get_attachment_url( $attachment_id );
+
+		return is_string( $local_url ) ? $local_url : '';
+	}
+
+	/**
+	 * Build the Plex server URL for an artwork path, without the token.
+	 *
+	 * The path comes from the webhook payload, so it must stay a plain path on
+	 * the configured server: a value like `@host/x` or `//host/x` would send
+	 * the token header to another host.
+	 *
+	 * @param string $thumb Plex artwork path, such as /library/metadata/1/thumb/2.
+	 * @return string URL, or '' when the server or path is unusable.
+	 */
+	private function build_plex_thumb_url( string $thumb ): string {
+		if ( ! preg_match( '#^(?:/[A-Za-z0-9._~:%-]+)+$#', $thumb ) || preg_match( '#/\.{1,2}(?:/|$)#', $thumb ) ) {
+			return '';
+		}
+
+		$base = get_option( 'pkiw_plex_url' );
+		if ( ! is_string( $base ) || '' === $base ) {
+			return '';
+		}
+
+		$base  = untrailingslashit( $base );
+		$parts = wp_parse_url( $base );
+		if (
+			! is_array( $parts )
+			|| ! in_array( $parts['scheme'] ?? '', [ 'http', 'https' ], true )
+			|| empty( $parts['host'] )
+			|| isset( $parts['user'] )
+			|| isset( $parts['pass'] )
+			|| isset( $parts['query'] )
+			|| isset( $parts['fragment'] )
+		) {
+			return '';
+		}
+
+		$url = $base . $thumb;
+
+		if ( wp_parse_url( $url, PHP_URL_HOST ) !== $parts['host'] || wp_parse_url( $url, PHP_URL_PORT ) !== ( $parts['port'] ?? null ) ) {
+			return '';
+		}
+
+		return $url;
+	}
+
+	/**
+	 * Run the Plex token purge once per plugin version.
+	 *
+	 * WordPress doesn't fire the activation hook on update, so this follows
+	 * the plugin's version-stamp upgrade pattern (see
+	 * Plugin::maybe_flush_rewrite_rules()).
+	 *
+	 * @return void
+	 */
+	public static function maybe_purge_plex_tokens(): void {
+		if ( PKIW_VERSION === get_option( self::TOKEN_PURGE_OPTION ) ) {
+			return;
+		}
+
+		self::purge_plex_tokens();
+		update_option( self::TOKEN_PURGE_OPTION, PKIW_VERSION );
+	}
+
+	/**
+	 * Delete stored values that carry a Plex server token.
+	 *
+	 * Up to 1.8.6 the Plex handler stored artwork as
+	 * `<server><path>?X-Plex-Token=<token>`. Those URLs landed in the poster
+	 * and cover meta, in the Featured_Artwork source marker and the
+	 * sideloaded attachment's `_source_url`, and in the pending queue. The
+	 * values are deleted, not rewritten, and never read back or printed.
+	 *
+	 * @return int Number of meta rows and option entries cleared.
+	 */
+	public static function purge_plex_tokens(): int {
+		global $wpdb;
+
+		$meta_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off upgrade; rows are deleted through the meta API below.
+			$wpdb->prepare(
+				'
+					SELECT
+						pm.meta_id
+					FROM
+						%i AS pm
+					WHERE
+						pm.meta_key IN ( %s, %s, %s, %s )
+						AND pm.meta_value LIKE %s
+				',
+				$wpdb->postmeta,
+				'_pkiw_watch_poster',
+				'_pkiw_listen_cover',
+				Featured_Artwork::SOURCE_META,
+				'_source_url',
+				'%' . $wpdb->esc_like( self::TOKEN_MARKER ) . '%'
+			)
+		);
+
+		$cleared = 0;
+		foreach ( (array) $meta_ids as $meta_id ) {
+			if ( delete_metadata_by_mid( 'post', (int) $meta_id ) ) {
+				++$cleared;
+			}
+		}
+
+		foreach ( [ 'pkiw_pending_scrobbles', 'pkiw_webhook_log' ] as $option ) {
+			$value = get_option( $option );
+			if ( ! is_array( $value ) ) {
+				continue;
+			}
+
+			$count = 0;
+			$value = self::blank_plex_token_strings( $value, $count );
+			if ( $count > 0 ) {
+				update_option( $option, $value, false );
+				$cleared += $count;
+			}
+		}
+
+		return $cleared;
+	}
+
+	/**
+	 * Replace every string that carries a Plex token with ''.
+	 *
+	 * @param array<mixed> $data  Data to clean.
+	 * @param int          $count Incremented per blanked string.
+	 * @return array<mixed> Cleaned data.
+	 */
+	private static function blank_plex_token_strings( array $data, int &$count ): array {
+		foreach ( $data as $key => $value ) {
+			if ( is_array( $value ) ) {
+				$data[ $key ] = self::blank_plex_token_strings( $value, $count );
+			} elseif ( is_string( $value ) && false !== stripos( $value, self::TOKEN_MARKER ) ) {
+				$data[ $key ] = '';
+				++$count;
+			}
+		}
+
+		return $data;
 	}
 
 	/**
