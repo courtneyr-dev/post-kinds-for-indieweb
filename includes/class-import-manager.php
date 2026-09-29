@@ -32,6 +32,14 @@ class Import_Manager {
 	private const JOB_PREFIX = 'pkiw_import_job_';
 
 	/**
+	 * Post meta holding "{source}:{source item ID}" for imports whose kind
+	 * has no title to match on (bookmark, checkin, note).
+	 *
+	 * @var string
+	 */
+	public const IDENTITY_META_KEY = '_pkiw_import_source_id';
+
+	/**
 	 * Supported import sources.
 	 *
 	 * @var array<string, array<string, mixed>>
@@ -552,6 +560,7 @@ class Import_Manager {
 		];
 
 		$options         = $job['options'] ?? [];
+		$source          = (string) ( $job['source'] ?? '' );
 		$create_posts    = $options['create_posts'] ?? true;  // Default to creating posts.
 		$skip_existing   = $options['skip_existing'] ?? true;
 		$update_existing = $options['update_existing'] ?? false; // Update metadata on existing posts.
@@ -559,9 +568,17 @@ class Import_Manager {
 		foreach ( $items as $item ) {
 			try {
 				// Check for existing post.
-				$existing_post_id = $this->find_existing_post( $item, $source_config );
+				$existing_post_id = $this->find_existing_post( $item, $source_config, $source );
 
 				if ( $existing_post_id ) {
+					// A post imported before identities existed matched on its
+					// other fields: give it the identity so later runs match it
+					// exactly and the fallback never picks it for another item.
+					$identity = $this->get_import_identity( $item, $source_config, $source );
+					if ( '' !== $identity && '' === (string) get_post_meta( $existing_post_id, self::IDENTITY_META_KEY, true ) ) {
+						update_post_meta( $existing_post_id, self::IDENTITY_META_KEY, $identity );
+					}
+
 					// Post already exists.
 					if ( $update_existing ) {
 						// Update metadata on the existing post.
@@ -579,7 +596,7 @@ class Import_Manager {
 
 				if ( $create_posts ) {
 					// Create a WordPress post.
-					$post_id = $this->create_post_from_item( $item, $source_config, $options );
+					$post_id = $this->create_post_from_item( $item, $source_config, $options, $source );
 
 					if ( is_wp_error( $post_id ) ) {
 						++$result['failed'];
@@ -698,10 +715,18 @@ class Import_Manager {
 	 *
 	 * @param array<string, mixed> $item          Item data.
 	 * @param array<string, mixed> $source_config Source configuration.
+	 * @param string               $source        Source identifier (the key in $this->sources).
 	 * @return int|null Post ID or null if not found.
 	 */
-	private function find_existing_post( array $item, array $source_config ): ?int {
+	private function find_existing_post( array $item, array $source_config, string $source = '' ): ?int {
 		$kind = $source_config['kind'];
+
+		// Bookmark, checkin and note items have no title to match on: look
+		// them up by the source item ID stored when they were imported.
+		$identity = $this->get_import_identity( $item, $source_config, $source );
+		if ( '' !== $identity ) {
+			return $this->find_post_by_lookups( $this->get_identity_lookups( $identity, $item, $source_config, $source ) );
+		}
 
 		// Build unique identifier based on type.
 		$post_title = '';
@@ -790,6 +815,16 @@ class Import_Manager {
 			$lookups[] = $title_args;
 		}
 
+		return $this->find_post_by_lookups( $lookups );
+	}
+
+	/**
+	 * Run duplicate lookups in every status and return the first match.
+	 *
+	 * @param array<int, array<string, mixed>> $lookups WP_Query args, most exact first.
+	 * @return int|null Post ID or null if nothing matched.
+	 */
+	private function find_post_by_lookups( array $lookups ): ?int {
 		/*
 		 * Search every status. Imports default to draft, and a WP_Query with
 		 * no post_status matches drafts only inside wp-admin, so scheduled
@@ -818,6 +853,160 @@ class Import_Manager {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Build the stable identity of a bookmark, checkin or note item.
+	 *
+	 * The identity is "{source}:{source item ID}": the Readwise book ID for
+	 * articles, tweets and supplementals, the provider check-in ID for
+	 * check-ins. A bookmark with no ID falls back to its canonical URL.
+	 * Other kinds return '' and keep their cite name and title lookups.
+	 *
+	 * @param array<string, mixed> $item          Item data.
+	 * @param array<string, mixed> $source_config Source configuration.
+	 * @param string               $source        Source identifier.
+	 * @return string Identity, or '' when the item has nothing stable to key on.
+	 */
+	private function get_import_identity( array $item, array $source_config, string $source ): string {
+		$kind = $source_config['kind'] ?? '';
+
+		if ( ! in_array( $kind, [ 'bookmark', 'checkin', 'note' ], true ) ) {
+			return '';
+		}
+
+		if ( '' === $source ) {
+			$source = sanitize_key( (string) ( $source_config['name'] ?? '' ) );
+		}
+
+		$id = $this->get_source_item_id( $item );
+		if ( '' !== $id ) {
+			return $source . ':' . $id;
+		}
+
+		$url = (string) ( $item['source_url'] ?? '' );
+		if ( 'bookmark' === $kind && '' !== $url ) {
+			return $source . ':url:' . $url;
+		}
+
+		return '';
+	}
+
+	/**
+	 * Get an item's ID at its source: `id`, or `checkin_id` for check-ins.
+	 *
+	 * @param array<string, mixed> $item Item data.
+	 * @return string ID, or '' when missing (Readwise normalizes a missing ID to 0).
+	 */
+	private function get_source_item_id( array $item ): string {
+		$id = $item['id'] ?? $item['checkin_id'] ?? '';
+
+		if ( ! is_scalar( $id ) || '' === (string) $id || '0' === (string) $id ) {
+			return '';
+		}
+
+		return (string) $id;
+	}
+
+	/**
+	 * Lookups for an item with an identity: the identity itself, then the
+	 * fields a pre-upgrade import wrote, limited to posts with no identity.
+	 *
+	 * Pre-upgrade fallbacks:
+	 * - bookmark: `_pkiw_cite_url` and `_pkiw_imported_from` (this source's name).
+	 * - note: `_pkiw_cite_name` and `_pkiw_imported_from`, plus `_pkiw_cite_url` when the item has a URL.
+	 * - checkin: the check-in ID the check-in sync class stores (`_pkiw_checkin_{source}_id`).
+	 *   Check-ins created by this class before the identity existed stored no
+	 *   provider ID, so nothing reliable matches them.
+	 *
+	 * @param string               $identity      Item identity.
+	 * @param array<string, mixed> $item          Item data.
+	 * @param array<string, mixed> $source_config Source configuration.
+	 * @param string               $source        Source identifier.
+	 * @return array<int, array<string, mixed>> WP_Query args.
+	 */
+	private function get_identity_lookups( string $identity, array $item, array $source_config, string $source ): array {
+		$post_type = $this->get_import_post_type();
+		$base      = [
+			'post_type'      => $post_type,
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+		];
+
+		$lookups = [
+			$base + [
+				'meta_query' => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+					[
+						'key'   => self::IDENTITY_META_KEY,
+						'value' => $identity,
+					],
+				],
+			],
+		];
+
+		$imported_from = [
+			'key'   => '_pkiw_imported_from',
+			'value' => (string) ( $source_config['name'] ?? '' ),
+		];
+		$url           = (string) ( $item['source_url'] ?? '' );
+		$legacy        = [];
+
+		switch ( $source_config['kind'] ) {
+			case 'bookmark':
+				if ( '' !== $url ) {
+					$legacy = [
+						[
+							'key'   => '_pkiw_cite_url',
+							'value' => $url,
+						],
+						$imported_from,
+					];
+				}
+				break;
+
+			case 'note':
+				$title = (string) ( $item['title'] ?? '' );
+				if ( '' !== $title ) {
+					$legacy = [
+						[
+							'key'   => '_pkiw_cite_name',
+							'value' => $title,
+						],
+						$imported_from,
+					];
+					if ( '' !== $url ) {
+						$legacy[] = [
+							'key'   => '_pkiw_cite_url',
+							'value' => $url,
+						];
+					}
+				}
+				break;
+
+			case 'checkin':
+				$id = $this->get_source_item_id( $item );
+				if ( '' !== $id && '' !== $source ) {
+					// The check-in sync classes create 'post' whatever the storage mode.
+					$base['post_type'] = array_values( array_unique( [ $post_type, 'post' ] ) );
+					$legacy            = [
+						[
+							'key'   => '_pkiw_checkin_' . $source . '_id',
+							'value' => $id,
+						],
+					];
+				}
+				break;
+		}
+
+		if ( ! empty( $legacy ) ) {
+			$legacy[]  = [
+				'key'     => self::IDENTITY_META_KEY,
+				'compare' => 'NOT EXISTS',
+			];
+			$lookups[] = $base + [ 'meta_query' => $legacy ]; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+		}
+
+		return $lookups;
 	}
 
 	/**
@@ -931,9 +1120,10 @@ class Import_Manager {
 	 * @param array<string, mixed> $item          Item data.
 	 * @param array<string, mixed> $source_config Source configuration.
 	 * @param array<string, mixed> $options       Job options (post_status, etc.).
+	 * @param string               $source        Source identifier.
 	 * @return int|\WP_Error Post ID or error.
 	 */
-	private function create_post_from_item( array $item, array $source_config, array $options = [] ) {
+	private function create_post_from_item( array $item, array $source_config, array $options = [], string $source = '' ) {
 		$kind = $source_config['kind'];
 
 		// Build post data. Default to draft for safety - user must explicitly choose to publish.
@@ -979,6 +1169,11 @@ class Import_Manager {
 		// Mark as imported.
 		update_post_meta( $post_id, '_pkiw_imported_from', $source_config['name'] );
 		update_post_meta( $post_id, '_pkiw_imported_at', time() );
+
+		$identity = $this->get_import_identity( $item, $source_config, $source );
+		if ( '' !== $identity ) {
+			update_post_meta( $post_id, self::IDENTITY_META_KEY, $identity );
+		}
 
 		return $post_id;
 	}
