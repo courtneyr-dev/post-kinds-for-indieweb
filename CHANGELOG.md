@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Plex artwork is downloaded server-side into the media library with the Plex token sent only as a request header (no redirects followed, path validated against the configured server). Poster and cover meta store the local attachment URL, never a URL carrying `X-Plex-Token`. An upgrade step deletes stored poster, cover, featured-artwork source and `_source_url` values, and pending-queue and webhook-log strings, that contain the token. **If you configured Plex before this release, rotate your Plex token:** earlier versions exposed it in public post meta and rendered images (#213).
+
+### Fixed
+
+- The Webhooks admin log and pending queue show the service name and message; the handler wrote `service` and `data.message` while the page read `source` and `message`, so every row said "Unknown" and raised undefined-index warnings. Older entries with `source` still display (#214).
+- Jellyfin audio scrobbles keep their artist: the handler reads the `Artist` field the Jellyfin Webhook plugin sends, with `Artists[0]` as a fallback (#214).
+
 ## [1.8.6] - 2026-09-24
 
 ### Added
