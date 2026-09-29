@@ -540,9 +540,18 @@ class Webhook_Handler {
 			$item['episode'] = $payload['EpisodeNumber'] ?? 0;
 			$item['tvdb_id'] = $payload['Provider_tvdb'] ?? '';
 		} elseif ( 'Audio' === $item_type ) {
+			// The Jellyfin Webhook plugin sends the first artist as a single
+			// `Artist` string (DataObjectHelpers.AddBaseItemData). `Artists`
+			// is kept as a fallback for custom templates that send the list.
+			$artist = $payload['Artist'] ?? '';
+			if ( ! is_string( $artist ) || '' === $artist ) {
+				$artists = $payload['Artists'] ?? [];
+				$artist  = is_array( $artists ) ? ( $artists[0] ?? '' ) : '';
+			}
+
 			$item['type']   = 'track';
 			$item['track']  = $payload['Name'] ?? '';
-			$item['artist'] = $payload['Artists'][0] ?? '';
+			$item['artist'] = is_string( $artist ) ? $artist : '';
 			$item['album']  = $payload['Album'] ?? '';
 		} else {
 			return [
