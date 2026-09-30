@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace PKIW\Blocks;
 
 use PKIW\Meta_Fields;
+use PKIW\Plugin;
 use PKIW\Taxonomy;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -117,7 +118,8 @@ final class Recent_Kinds {
 		$count      = max( 1, min( 20, absint( $attributes['count'] ) ) );
 		$show_cover = (bool) $attributes['showCover'];
 
-		if ( ! Taxonomy::is_valid_kind( $kind ) ) {
+		$taxonomy = Plugin::get_instance()->get_taxonomy();
+		if ( null === $taxonomy || ! $taxonomy->is_valid_kind( $kind ) ) {
 			$kind = 'listen';
 		}
 
