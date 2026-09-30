@@ -1,0 +1,258 @@
+/**
+ * Post Kinds for IndieWeb — kind archive layouts (issue 233).
+ *
+ * Structure only for the core/post-template block styles registered in
+ * includes/class-kind-archive-layouts.php:
+ *
+ *   .is-style-pkiw-shelf        face-out grid, one linked item per post
+ *   .is-style-pkiw-shelf-spine  spine-out grid, title text set vertically
+ *   .is-style-pkiw-menu         menu lines with section headings + leaders
+ *
+ * Paint comes only from --pkiw-* tokens (defaults in kind-tokens.css) so the
+ * theme owns wood, paper, tape and color. Shelf boards are pseudo-elements:
+ * a row with fewer posts than columns shows empty board, which is neither
+ * focusable nor announced, and no placeholder items exist in the DOM.
+ *
+ * @package PostKindsForIndieWeb
+ */
+
+/* ------------------------------------------------------------------
+ * Shelf (face-out and spine-out)
+ * ------------------------------------------------------------------ */
+
+.wp-block-post-template.is-style-pkiw-shelf,
+.wp-block-post-template.is-style-pkiw-shelf-spine {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(var(--pkiw-shelf-item-min, 9rem), 100%), 1fr));
+	gap: var(--pkiw-shelf-gap-row, 2rem) var(--pkiw-shelf-gap-column, 1rem);
+	margin-inline: 0;
+	padding: 0;
+	list-style: none;
+
+	/* Clips each board's run into empty columns at the shelf's edge. */
+	overflow-x: clip;
+}
+
+.wp-block-post-template.is-style-pkiw-shelf-spine {
+	grid-template-columns: repeat(auto-fill, minmax(var(--pkiw-shelf-spine-min, 3.5rem), 1fr));
+}
+
+.is-style-pkiw-shelf > li,
+.is-style-pkiw-shelf-spine > li {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	min-width: 0;
+	margin: 0;
+	padding-block-end: calc(var(--pkiw-shelf-board-size, 0.375rem) + 0.25rem);
+	background: var(--pkiw-shelf-item-bg, transparent);
+}
+
+/* The board: runs from the item to the shelf's inline end, so the last
+ * item in a row paints the empty positions after it. */
+.is-style-pkiw-shelf > li::after,
+.is-style-pkiw-shelf-spine > li::after {
+	content: "";
+	position: absolute;
+	inset-block-end: 0;
+	inset-inline-start: calc(var(--pkiw-shelf-gap-column, 1rem) / -2);
+	inset-inline-end: -100vw;
+	height: var(--pkiw-shelf-board-size, 0.375rem);
+	background: var(--pkiw-shelf-board-color, currentcolor);
+	opacity: var(--pkiw-shelf-board-opacity, 0.2);
+	pointer-events: none;
+}
+
+.is-style-pkiw-shelf > li > *,
+.is-style-pkiw-shelf-spine > li > * {
+	margin: 0;
+}
+
+.is-style-pkiw-shelf .wp-block-post-featured-image {
+	aspect-ratio: var(--pkiw-shelf-artwork-ratio, 2 / 3);
+	overflow: hidden;
+}
+
+.is-style-pkiw-shelf .wp-block-post-featured-image img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.is-style-pkiw-shelf .wp-block-post-title,
+.is-style-pkiw-shelf-spine .wp-block-post-title {
+	font-size: inherit;
+	overflow-wrap: anywhere;
+}
+
+/* One link per item: the title link's hit area covers the whole item. The
+ * accessible name stays the title text. */
+.is-style-pkiw-shelf .wp-block-post-title a::before,
+.is-style-pkiw-shelf-spine .wp-block-post-title a::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+}
+
+/* Spine-out: artwork is decoration here; the title and date remain real
+ * text, set vertically. */
+.is-style-pkiw-shelf-spine > li {
+	min-height: var(--pkiw-shelf-spine-height, 14rem);
+	align-items: center;
+}
+
+.is-style-pkiw-shelf-spine .wp-block-post-featured-image {
+	display: none;
+}
+
+.is-style-pkiw-shelf-spine .wp-block-post-title,
+.is-style-pkiw-shelf-spine .wp-block-post-date {
+	writing-mode: vertical-rl;
+}
+
+/* ------------------------------------------------------------------
+ * Menu
+ * ------------------------------------------------------------------ */
+
+.wp-block-post-template.is-style-pkiw-menu {
+	display: flex;
+	flex-direction: column;
+	gap: var(--pkiw-menu-line-gap, 1rem);
+	margin-inline: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.is-style-pkiw-menu > li {
+	margin: 0;
+}
+
+.pkiw-menu-entry__section {
+	margin-block: var(--pkiw-menu-section-gap, 2rem) 0.5rem;
+}
+
+.is-style-pkiw-menu > li:first-child .pkiw-menu-entry__section {
+	margin-block-start: 0;
+}
+
+.pkiw-menu-entry__line {
+	display: flex;
+	gap: 0.5em;
+	align-items: baseline;
+	margin: 0;
+}
+
+.pkiw-menu-entry__name {
+	flex: 0 1 auto;
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.pkiw-menu-entry__leader {
+	flex: 1 1 1em;
+	min-width: 1em;
+	border-block-end: var(--pkiw-menu-leader-width, 2px) var(--pkiw-menu-leader-style, dotted) var(--pkiw-menu-leader-color, currentcolor);
+	translate: 0 -0.25em;
+}
+
+.pkiw-menu-entry__rating {
+	flex: none;
+}
+
+.pkiw-menu-entry__meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0 0.75em;
+	margin: 0;
+	opacity: var(--pkiw-state-muted-opacity, 0.7);
+}
+
+.pkiw-menu-entry__notes {
+	margin: 0.25em 0 0;
+}
+
+/* ------------------------------------------------------------------
+ * Focus and motion (after all item rules, lowest to highest specificity)
+ * ------------------------------------------------------------------ */
+
+.is-style-pkiw-shelf > li:has(a:focus-visible),
+.is-style-pkiw-shelf-spine > li:has(a:focus-visible) {
+	outline: 2px solid var(--pkiw-focus-indicator, currentcolor);
+	outline-offset: -2px;
+}
+
+.is-style-pkiw-shelf .wp-block-post-title a:focus-visible,
+.is-style-pkiw-shelf-spine .wp-block-post-title a:focus-visible {
+	outline: 2px solid var(--pkiw-focus-indicator, currentcolor);
+	outline-offset: 2px;
+}
+
+@supports selector(:has(a)) {
+
+	.is-style-pkiw-shelf .wp-block-post-title a:focus-visible,
+	.is-style-pkiw-shelf-spine .wp-block-post-title a:focus-visible {
+		outline: none;
+	}
+}
+
+@media (prefers-reduced-motion: no-preference) {
+
+	.is-style-pkiw-shelf > li,
+	.is-style-pkiw-shelf-spine > li {
+		transition: translate 150ms ease-out;
+	}
+
+	.is-style-pkiw-shelf > li:hover,
+	.is-style-pkiw-shelf-spine > li:hover,
+	.is-style-pkiw-shelf > li:has(a:focus-visible),
+	.is-style-pkiw-shelf-spine > li:has(a:focus-visible) {
+		translate: 0 -0.25rem;
+	}
+}
+
+/* ------------------------------------------------------------------
+ * Reflow: 320 CSS px (1280px at 400% zoom) is a single column with no
+ * horizontal scroll; spine text returns to horizontal.
+ * ------------------------------------------------------------------ */
+
+@media (max-width: 20em) {
+
+	.wp-block-post-template.is-style-pkiw-shelf,
+	.wp-block-post-template.is-style-pkiw-shelf-spine {
+		grid-template-columns: 1fr;
+	}
+
+	.is-style-pkiw-shelf-spine > li {
+		min-height: 0;
+		align-items: stretch;
+	}
+
+	.is-style-pkiw-shelf-spine .wp-block-post-title,
+	.is-style-pkiw-shelf-spine .wp-block-post-date {
+		writing-mode: horizontal-tb;
+	}
+}
+
+/* ------------------------------------------------------------------
+ * Forced colors: boards, leaders and focus use system colors.
+ * ------------------------------------------------------------------ */
+
+@media (forced-colors: active) {
+
+	.is-style-pkiw-shelf > li::after,
+	.is-style-pkiw-shelf-spine > li::after {
+		background: CanvasText;
+		opacity: 1;
+	}
+
+	.pkiw-menu-entry__leader {
+		border-block-end-color: CanvasText;
+	}
+
+	.is-style-pkiw-shelf > li:has(a:focus-visible),
+	.is-style-pkiw-shelf-spine > li:has(a:focus-visible) {
+		outline-color: Highlight;
+	}
+}
