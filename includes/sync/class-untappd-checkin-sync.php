@@ -226,7 +226,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 		}
 
 		// Check for duplicate.
-		if ( $this->find_existing_post( $checkin_id ) ) {
+		if ( null !== $this->find_existing_post( (string) $checkin_id ) ) {
 			return false;
 		}
 
@@ -312,6 +312,27 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 		}
 
 		return $post_id;
+	}
+
+	/**
+	 * Get the Untappd check-in ID, which Untappd calls `checkin_id`.
+	 *
+	 * @param array<string, mixed> $external_checkin External checkin data.
+	 * @return string Check-in ID, or '' when missing.
+	 */
+	protected function get_external_checkin_id( array $external_checkin ): string {
+		return (string) ( $external_checkin['checkin_id'] ?? '' );
+	}
+
+	/**
+	 * Untappd imports store the ID under `_pkiw_untappd_checkin_id` as well
+	 * as the base class key, and posts syndicated to Untappd store it there
+	 * only.
+	 *
+	 * @return array<int, string>
+	 */
+	protected function get_external_id_meta_keys(): array {
+		return [ '_pkiw_untappd_checkin_id', $this->external_id_meta_key ];
 	}
 
 	/**

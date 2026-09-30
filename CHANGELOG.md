@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The Webhooks admin log and pending queue show the service name and message; the handler wrote `service` and `data.message` while the page read `source` and `message`, so every row said "Unknown" and raised undefined-index warnings. Older entries with `source` still display (#214).
 - Jellyfin audio scrobbles keep their artist: the handler reads the `Artist` field the Jellyfin Webhook plugin sends, with `Artists[0]` as a fallback (#214).
+- The Untappd check-in sync no longer stops with a fatal error on a missing `find_existing_post()` method. Check-in syncs look up earlier imports by the provider check-in ID in any status, including drafts and trash (#216).
+- Bookmark, check-in and note imports no longer create duplicates on every scheduled run. Each imported item stores a stable source identity (`_pkiw_import_source_id`), and posts imported before this release are matched on the fields they already have. Foursquare check-ins created by the importer before this release stored no provider ID and may be imported once more (#217).
+- Posts created by scheduled imports have an author: imports use the current user, then the `pkiw_default_author` setting, then the first administrator who can create posts, and the job records which author it used. Existing author-less posts aren't reassigned (#218).
 
 ## [1.8.6] - 2026-09-24
 

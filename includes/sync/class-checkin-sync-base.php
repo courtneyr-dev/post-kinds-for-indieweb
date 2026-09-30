@@ -236,7 +236,7 @@ abstract class Checkin_Sync_Base {
 
 				// Mark as imported from this service (prevent POSSE loop).
 				update_post_meta( $post_id, '_pkiw_imported_from', $this->service_id );
-				update_post_meta( $post_id, $this->external_id_meta_key, $external_checkin['id'] ?? '' );
+				update_post_meta( $post_id, $this->external_id_meta_key, $this->get_external_checkin_id( $external_checkin ) );
 
 				// Add syndication link.
 				if ( ! empty( $external_checkin['url'] ) ) {
@@ -338,24 +338,14 @@ abstract class Checkin_Sync_Base {
 	 * @return bool
 	 */
 	protected function checkin_exists( array $external_checkin ): bool {
-		$external_id = $external_checkin['id'] ?? '';
+		$external_id = $this->get_external_checkin_id( $external_checkin );
 
-		if ( empty( $external_id ) ) {
+		if ( '' === $external_id ) {
 			return false;
 		}
 
 		// Check by external ID.
-		$existing = get_posts(
-			[
-				'post_type'   => 'post',
-				'meta_key'    => $this->external_id_meta_key, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-				'meta_value'  => $external_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
-				'numberposts' => 1,
-				'fields'      => 'ids',
-			]
-		);
-
-		if ( ! empty( $existing ) ) {
+		if ( null !== $this->find_existing_post( $external_id ) ) {
 			return true;
 		}
 
@@ -371,6 +361,7 @@ abstract class Checkin_Sync_Base {
 			$fuzzy_match = get_posts(
 				[
 					'post_type'   => 'post',
+					'post_status' => 'any',
 					'date_query'  => [
 						[
 							'after'     => $start,
@@ -396,6 +387,84 @@ abstract class Checkin_Sync_Base {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Get the provider's check-in ID from an external check-in.
+	 *
+	 * Foursquare check-ins carry it as `id`. Services that name it
+	 * differently override this.
+	 *
+	 * @param array $external_checkin External checkin data.
+	 * @return string Check-in ID, or '' when the check-in has none.
+	 */
+	protected function get_external_checkin_id( array $external_checkin ): string {
+		return (string) ( $external_checkin['id'] ?? '' );
+	}
+
+	/**
+	 * Meta keys that hold this service's check-in ID on an earlier import.
+	 *
+	 * @return array<int, string>
+	 */
+	protected function get_external_id_meta_keys(): array {
+		return [ $this->external_id_meta_key ];
+	}
+
+	/**
+	 * Find the post an earlier sync or import created for a check-in.
+	 *
+	 * Matches this service's check-in ID meta, or the identity
+	 * Import_Manager stores (`_pkiw_import_source_id` = "{service}:{id}"),
+	 * so the two import paths don't duplicate each other.
+	 *
+	 * Searches every live status first, then trash, as
+	 * Import_Manager::find_existing_post() does: syncs run from cron with
+	 * no user outside wp-admin, where a WP_Query without post_status
+	 * matches published posts only, and a trashed import must not come
+	 * back on the next sync.
+	 *
+	 * @param string $external_id Provider check-in ID.
+	 * @return int|null Post ID, or null when there's no earlier import.
+	 */
+	protected function find_existing_post( string $external_id ): ?int {
+		if ( '' === $external_id ) {
+			return null;
+		}
+
+		$meta_query = [ 'relation' => 'OR' ];
+		foreach ( $this->get_external_id_meta_keys() as $meta_key ) {
+			$meta_query[] = [
+				'key'   => $meta_key,
+				'value' => $external_id,
+			];
+		}
+		$meta_query[] = [
+			'key'   => '_pkiw_import_source_id',
+			'value' => $this->service_id . ':' . $external_id,
+		];
+
+		$post_types = array_values( array_filter( [ 'post', 'pkiw_reaction' ], 'post_type_exists' ) );
+
+		foreach ( [ 'any', 'trash' ] as $post_status ) {
+			$query = new \WP_Query(
+				[
+					'post_type'              => $post_types,
+					'post_status'            => $post_status,
+					'posts_per_page'         => 1,
+					'meta_query'             => $meta_query, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+					'fields'                 => 'ids',
+					'no_found_rows'          => true,
+					'update_post_meta_cache' => false,
+				]
+			);
+
+			if ( $query->have_posts() ) {
+				return (int) $query->posts[0];
+			}
+		}
+
+		return null;
 	}
 
 	/**
