@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Kind archive templates ship through the block template list: `taxonomy-kind` (a shelf of linked items for any kind) and `taxonomy-kind-eat` / `taxonomy-kind-drink` (a menu). Each has one `h1` (Query Title), the term description, a Query Loop that inherits the main query, centered Query Pagination with arrows, and a no-results message. A theme's own `taxonomy-kind` or `taxonomy-kind-{kind}` template, or a Site Editor customization, still wins (#233).
+- Core block styles for Post Template: Shelf, face-out (`is-style-pkiw-shelf`), Shelf, spine-out (`is-style-pkiw-shelf-spine`) and Menu (`is-style-pkiw-menu`), plus Kind shelf and Kind menu Query Loop variations in the inserter. `styles/kind-layouts.css` draws shelf boards with pseudo-elements, so empty shelf space adds no DOM, and covers focus-visible, reduced motion, forced colors and a single column at 320 CSS px. Paint comes from new `--pkiw-shelf-*` and `--pkiw-menu-*` tokens (#233).
+- Kind menu entry block (`post-kinds-indieweb/menu-entry`), used inside a Post Template: item name, a decorative leader hidden from assistive technology, "Rated N of 5" as text, venue name gated by `pkiw_get_visible_location_fields()`, date and notes, with the same `p-ate`/`p-drank h-food` microformats the cards emit. Section headings come from the cuisine or drink type at render time; posts without one are listed under "Other" (#230, #233).
+- `pkiw_group_by` query var and `pkiw_archive_group_fields` filter: a kind archive rendered by a template that uses the menu entry is ordered by group (empty last), then date, then ID, so pagination stays native and pages are stable. A Query Loop can opt in with `query.pkiwGroupBy` (#233).
+- `wp postkind card-meta backfill [--batch=<size>]` (#233).
+
+### Changed
+
+- Eat and drink cards now mirror name, cuisine or drink type, brand, rating, notes and the eaten/drunk time into `_pkiw_*` meta on save, including for posts created through Micropub, REST or imports. New meta: `_pkiw_eat_ate_at`, `_pkiw_drink_drank_at`. A drink card with no stored type is filed under its displayed default, coffee. Existing posts are backfilled once by a batched scheduled event that reads post content and never rewrites it (#233).
+- `_pkiw_eat_notes` keeps line breaks (`sanitize_textarea_field`), like `_pkiw_drink_notes`.
+
+### Fixed
+
+- The plugin's `pre_get_block_file_template` handler only answers for `post-kinds-for-indieweb//…` template IDs; it no longer replaces a theme's own file template that shares a slug (such as `taxonomy-venue`) (#233).
+
 ### Security
 
 - Plex artwork is downloaded server-side into the media library with the Plex token sent only as a request header (no redirects followed, path validated against the configured server). Poster and cover meta store the local attachment URL, never a URL carrying `X-Plex-Token`. An upgrade step deletes stored poster, cover, featured-artwork source and `_source_url` values, and pending-queue and webhook-log strings, that contain the token. **If you configured Plex before this release, rotate your Plex token:** earlier versions exposed it in public post meta and rendered images (#213).
