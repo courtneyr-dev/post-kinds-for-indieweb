@@ -284,6 +284,69 @@ class Block_Bindings {
 				'meta_key' => 'review_item_url',
 				'type'     => 'url',
 			],
+
+			// Weather bindings: read-only, computed from the observation
+			// Simple Location stored on the post (Integrations\Simple_Location_Weather).
+			'weather_summary'        => [
+				'label'    => __( 'Weather Summary', 'post-kinds-for-indieweb-in-block-themes' ),
+				'meta_key' => null, // Computed field.
+				'type'     => 'computed',
+				'compute'  => 'weather_summary',
+			],
+			'weather_condition'      => [
+				'label'    => __( 'Weather Condition', 'post-kinds-for-indieweb-in-block-themes' ),
+				'meta_key' => null, // Computed field.
+				'type'     => 'computed',
+				'compute'  => 'weather_condition',
+			],
+			'weather_code'           => [
+				'label'    => __( 'Weather Condition Code', 'post-kinds-for-indieweb-in-block-themes' ),
+				'meta_key' => null, // Computed field.
+				'type'     => 'computed',
+				'compute'  => 'weather_code',
+			],
+			'weather_temperature'    => [
+				'label'    => __( 'Temperature', 'post-kinds-for-indieweb-in-block-themes' ),
+				'meta_key' => null, // Computed field.
+				'type'     => 'computed',
+				'compute'  => 'weather_temperature',
+			],
+			'weather_humidity'       => [
+				'label'    => __( 'Humidity', 'post-kinds-for-indieweb-in-block-themes' ),
+				'meta_key' => null, // Computed field.
+				'type'     => 'computed',
+				'compute'  => 'weather_humidity',
+			],
+			'weather_pressure'       => [
+				'label'    => __( 'Atmospheric Pressure', 'post-kinds-for-indieweb-in-block-themes' ),
+				'meta_key' => null, // Computed field.
+				'type'     => 'computed',
+				'compute'  => 'weather_pressure',
+			],
+			'weather_windspeed'      => [
+				'label'    => __( 'Wind Speed', 'post-kinds-for-indieweb-in-block-themes' ),
+				'meta_key' => null, // Computed field.
+				'type'     => 'computed',
+				'compute'  => 'weather_windspeed',
+			],
+			'weather_winddegree'     => [
+				'label'    => __( 'Wind Direction', 'post-kinds-for-indieweb-in-block-themes' ),
+				'meta_key' => null, // Computed field.
+				'type'     => 'computed',
+				'compute'  => 'weather_winddegree',
+			],
+			'weather_cloudiness'     => [
+				'label'    => __( 'Cloudiness', 'post-kinds-for-indieweb-in-block-themes' ),
+				'meta_key' => null, // Computed field.
+				'type'     => 'computed',
+				'compute'  => 'weather_cloudiness',
+			],
+			'weather_rain'           => [
+				'label'    => __( 'Rainfall', 'post-kinds-for-indieweb-in-block-themes' ),
+				'meta_key' => null, // Computed field.
+				'type'     => 'computed',
+				'compute'  => 'weather_rain',
+			],
 		];
 		// phpcs:enable WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 
@@ -496,6 +559,11 @@ class Block_Bindings {
 				return $this->generate_star_rating( $rating, $best );
 
 			default:
+				// Weather keys: Simple_Location_Weather applies its own
+				// location-privacy gate and returns null when hidden.
+				if ( str_starts_with( $compute_type, 'weather_' ) ) {
+					return Integrations\Simple_Location_Weather::format( substr( $compute_type, 8 ), $post_id );
+				}
 				return null;
 		}
 	}

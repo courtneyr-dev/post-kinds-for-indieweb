@@ -176,6 +176,37 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Weather has no card block. A weather post renders through the generic
+	 * stream card, which roots its own h-entry; with a Simple Location
+	 * observation stored, that entry carries exactly one `weather` value.
+	 * The post's authored text reaches the card only as a tag-stripped
+	 * excerpt, so it can't add a second one.
+	 */
+	public function test_weather_stream_card_parses_one_weather_property(): void {
+		require_once dirname( __DIR__ ) . '/fixtures/simple-location/weather-stub.php';
+		update_option( 'sloc_measurements', 'metric' );
+
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => '',
+				'post_content' => '<!-- wp:paragraph -->' . "\n"
+					. '<p><span class="p-weather">Sunny and warm</span></p>' . "\n"
+					. '<!-- /wp:paragraph -->',
+			]
+		);
+		$this->assertNotWPError( wp_set_object_terms( $post_id, 'weather', 'kind' ) );
+		add_post_meta( $post_id, 'weather_temperature', 26.8 );
+		add_post_meta( $post_id, 'weather_code', 800 );
+		add_post_meta( $post_id, 'geo_public', '1' );
+
+		$html  = \PKIW\render_generic_stream_card( get_post( $post_id ) );
+		$entry = $this->top_level_h_entry( \Mf2\parse( $html ) );
+
+		$this->assertSame( [ 'Clear Sky, 27 °C' ], $entry['properties']['weather'] ?? null );
+	}
+
+	/**
 	 * Render a card block for the given kind/attributes through the full
 	 * dynamic-render pipeline, wrapped in a synthetic `h-entry` the way the
 	 * theme wraps a published post's content.
