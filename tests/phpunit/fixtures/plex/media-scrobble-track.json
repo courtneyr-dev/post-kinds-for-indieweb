@@ -1,0 +1,37 @@
+{
+	"event": "media.scrobble",
+	"user": true,
+	"owner": true,
+	"Account": {
+		"id": 1,
+		"title": "fixture-owner"
+	},
+	"Server": {
+		"title": "Fixture Server",
+		"uuid": "5f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6"
+	},
+	"Player": {
+		"local": true,
+		"title": "Plexamp",
+		"uuid": "fixtureplayeruuid0000001"
+	},
+	"Metadata": {
+		"librarySectionType": "artist",
+		"ratingKey": "90210",
+		"key": "/library/metadata/90210",
+		"parentRatingKey": "90200",
+		"grandparentRatingKey": "90100",
+		"type": "track",
+		"title": "Fixture Track",
+		"grandparentTitle": "Fixture Artist",
+		"parentTitle": "Fixture Album",
+		"index": 3,
+		"parentIndex": 1,
+		"thumb": "/library/metadata/90200/thumb/1726240100",
+		"parentThumb": "/library/metadata/90200/thumb/1726240100",
+		"grandparentThumb": "/library/metadata/90100/thumb/1726240050",
+		"duration": 240000,
+		"addedAt": 1726240000,
+		"updatedAt": 1726240100
+	}
+}
