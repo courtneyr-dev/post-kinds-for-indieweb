@@ -729,6 +729,12 @@ class Meta_Fields {
 				'sanitize'    => 'sanitize_textarea_field',
 				'default'     => '',
 			],
+			'drink_drank_at'          => [
+				'type'        => 'string',
+				'description' => __( 'When the drink was had.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
 			'drink_venue_url'         => [
 				'type'        => 'string',
 				'description' => __( 'URL for the venue website.', 'post-kinds-for-indieweb-in-block-themes' ),
@@ -818,6 +824,12 @@ class Meta_Fields {
 			'eat_notes'               => [
 				'type'        => 'string',
 				'description' => __( 'Notes about the meal.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'sanitize_textarea_field',
+				'default'     => '',
+			],
+			'eat_ate_at'              => [
+				'type'        => 'string',
+				'description' => __( 'When the meal was eaten.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
