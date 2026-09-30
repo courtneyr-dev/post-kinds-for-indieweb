@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Weather posts show the observation Simple Location saved for them. Post Kinds reads Simple Location's stored `weather_*` meta (and a legacy `geo_weather` array) and never fetches, writes, or migrates weather data. Weather-kind stream cards add a `p-weather` line such as "Clear Sky, 27 °C", and new computed `post-kinds-indieweb/kind-meta` binding keys (`weather_summary`, `weather_condition`, `weather_code`, `weather_temperature`, `weather_humidity`, `weather_pressure`, `weather_windspeed`, `weather_winddegree`, `weather_cloudiness`, `weather_rain`) let themes bind core blocks to it. Units follow Simple Location's `sloc_measurements` setting and its own metric-to-imperial conversion. Weather is hidden from visitors who can't edit the post when its location is private: Post Kinds' location privacy hides city-level text, or Simple Location's `geo_public` (or the site default when the post has none) is private. The `pkiw_weather_source_active` filter turns the source off. Simple Location's own inline weather output is unchanged; its `simple_location_display_defaults` filter (`weather => false`) turns that off (#209).
+
 ### Security
 
 - Plex artwork is downloaded server-side into the media library with the Plex token sent only as a request header (no redirects followed, path validated against the configured server). Poster and cover meta store the local attachment URL, never a URL carrying `X-Plex-Token`. An upgrade step deletes stored poster, cover, featured-artwork source and `_source_url` values, and pending-queue and webhook-log strings, that contain the token. **If you configured Plex before this release, rotate your Plex token:** earlier versions exposed it in public post meta and rendered images (#213).

@@ -366,6 +366,13 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 
 	$out .= '</div>';
 
+	// Weather posts have no card block; show the observation Simple
+	// Location stored, as the entry's p-weather. Empty when there's none
+	// or the viewer can't see the post's location.
+	if ( 'weather' === $kind_slug ) {
+		$out .= Integrations\Simple_Location_Weather::render( $post->ID );
+	}
+
 	if ( '' !== $thumb_html ) {
 		// get_the_post_thumbnail() returns core-generated, escaped <img> markup.
 		$out .= '<div class="pk-media pk-media--stream">' . $thumb_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
