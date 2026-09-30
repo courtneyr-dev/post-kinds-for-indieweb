@@ -793,6 +793,9 @@ final class Plugin {
 		// Flush rewrite rules if needed (after storage mode change).
 		add_action( 'init', [ $this, 'maybe_flush_rewrite_rules' ], 999 );
 
+		// Delete stored Plex artwork URLs that carry the Plex token (issue 213).
+		add_action( 'init', [ Webhook_Handler::class, 'maybe_purge_plex_tokens' ] );
+
 		// Register custom blocks.
 		add_action( 'init', [ $this, 'register_blocks' ] );
 

@@ -9,8 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Plex artwork is downloaded server-side into the media library with the Plex token sent only as a request header (no redirects followed, path validated against the configured server). Poster and cover meta store the local attachment URL, never a URL carrying `X-Plex-Token`. An upgrade step deletes stored poster, cover, featured-artwork source and `_source_url` values, and pending-queue and webhook-log strings, that contain the token. **If you configured Plex before this release, rotate your Plex token:** earlier versions exposed it in public post meta and rendered images (#213).
+
 ### Fixed
 
+- The Webhooks admin log and pending queue show the service name and message; the handler wrote `service` and `data.message` while the page read `source` and `message`, so every row said "Unknown" and raised undefined-index warnings. Older entries with `source` still display (#214).
+- Jellyfin audio scrobbles keep their artist: the handler reads the `Artist` field the Jellyfin Webhook plugin sends, with `Artists[0]` as a fallback (#214).
 - The Untappd check-in sync no longer stops with a fatal error on a missing `find_existing_post()` method. Check-in syncs look up earlier imports by the provider check-in ID in any status, including drafts and trash (#216).
 - Bookmark, check-in and note imports no longer create duplicates on every scheduled run. Each imported item stores a stable source identity (`_pkiw_import_source_id`), and posts imported before this release are matched on the fields they already have. Foursquare check-ins created by the importer before this release stored no provider ID and may be imported once more (#217).
 - Posts created by scheduled imports have an author: imports use the current user, then the `pkiw_default_author` setting, then the first administrator who can create posts, and the job records which author it used. Existing author-less posts aren't reassigned (#218).
