@@ -51,6 +51,21 @@ if ( $_pkiw_atmosphere_file && file_exists( $_pkiw_atmosphere_file ) ) {
 	);
 }
 
+// Optionally load the real Simple Location plugin for the weather adapter
+// tests. Point PKIW_TESTS_SIMPLE_LOCATION_FILE at a checkout's
+// simple-location.php. Without it, SimpleLocationWeatherTest loads
+// tests/phpunit/fixtures/simple-location/weather-stub.php, which mirrors the
+// Simple Location functions the adapter reads.
+$_pkiw_simple_location_file = getenv( 'PKIW_TESTS_SIMPLE_LOCATION_FILE' );
+if ( $_pkiw_simple_location_file && file_exists( $_pkiw_simple_location_file ) ) {
+	tests_add_filter(
+		'muplugins_loaded',
+		static function () use ( $_pkiw_simple_location_file ) {
+			require $_pkiw_simple_location_file;
+		}
+	);
+}
+
 tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 
 // Start up the WP testing environment.

@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - The plugin's `pre_get_block_file_template` handler only answers for `post-kinds-for-indieweb//…` template IDs; it no longer replaces a theme's own file template that shares a slug (such as `taxonomy-venue`) (#233).
+- Weather posts show the observation Simple Location saved for them. Post Kinds reads Simple Location's stored `weather_*` meta (and a legacy `geo_weather` array) and never fetches, writes, or migrates weather data. Weather-kind stream cards add a `p-weather` line such as "Clear Sky, 27 °C", and new computed `post-kinds-indieweb/kind-meta` binding keys (`weather_summary`, `weather_condition`, `weather_code`, `weather_temperature`, `weather_humidity`, `weather_pressure`, `weather_windspeed`, `weather_winddegree`, `weather_cloudiness`, `weather_rain`) let themes bind core blocks to it. Units follow Simple Location's `sloc_measurements` setting and its own metric-to-imperial conversion. Weather is hidden from visitors who can't edit the post when its location is private: Post Kinds' location privacy hides city-level text, or Simple Location's `geo_public` (or the site default when the post has none) is private. The `pkiw_weather_source_active` filter turns the source off. Simple Location's own inline weather output is unchanged; its `simple_location_display_defaults` filter (`weather => false`) turns that off (#209).
 
 ### Security
 
@@ -37,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Untappd check-in sync no longer stops with a fatal error on a missing `find_existing_post()` method. Check-in syncs look up earlier imports by the provider check-in ID in any status, including drafts and trash (#216).
 - Bookmark, check-in and note imports no longer create duplicates on every scheduled run. Each imported item stores a stable source identity (`_pkiw_import_source_id`), and posts imported before this release are matched on the fields they already have. Foursquare check-ins created by the importer before this release stored no provider ID and may be imported once more (#217).
 - Posts created by scheduled imports have an author: imports use the current user, then the `pkiw_default_author` setting, then the first administrator who can create posts, and the job records which author it used. Existing author-less posts aren't reassigned (#218).
+- The Recent Kinds block renders again. Its render callback called `Taxonomy::is_valid_kind()` statically, which throws an `Error` on PHP 8, so every page with the block failed to render it. The AI tag-suggestion and review-prompt endpoints had the same bug with `Taxonomy::get_post_kind()` and also passed the kind term where a slug was expected; both now read the slug from the plugin's Taxonomy instance (#283).
 
 ## [1.8.6] - 2026-09-24
 

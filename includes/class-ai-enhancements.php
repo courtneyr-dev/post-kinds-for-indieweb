@@ -257,7 +257,7 @@ final class AI_Enhancements {
 			);
 		}
 
-		$kind    = Taxonomy::get_post_kind( $post_id );
+		$kind    = $this->get_kind_slug( $post_id );
 		$prefix  = Meta_Fields::PREFIX;
 		$context = $this->build_post_context( $post_id, $kind, $prefix );
 
@@ -320,7 +320,7 @@ final class AI_Enhancements {
 			);
 		}
 
-		$kind   = Taxonomy::get_post_kind( $post_id );
+		$kind   = $this->get_kind_slug( $post_id );
 		$prefix = Meta_Fields::PREFIX;
 
 		if ( ! in_array( $kind, [ 'read', 'watch', 'listen' ], true ) ) {
@@ -425,6 +425,21 @@ final class AI_Enhancements {
 		set_transient( $transient_key, 1, self::RATE_LIMIT_WINDOW );
 
 		return true;
+	}
+
+	/**
+	 * Get the slug of a post's kind term.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string Kind slug, or empty string when the post has no kind.
+	 */
+	private function get_kind_slug( int $post_id ): string {
+		$taxonomy = Plugin::get_instance()->get_taxonomy();
+		$term     = null !== $taxonomy ? $taxonomy->get_post_kind( $post_id ) : null;
+
+		return null !== $term ? $term->slug : '';
 	}
 
 	/**
