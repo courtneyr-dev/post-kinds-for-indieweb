@@ -176,6 +176,61 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Issue 233: a kind menu line inside a real Query Loop is one h-entry
+	 * per post (the Post Template <li> root from post_class), carrying the
+	 * permalink as u-url and the same p-ate/p-drank h-food the card emits.
+	 *
+	 * @return array<string, array{string, string, string}>
+	 */
+	public function menu_entry_kinds(): array {
+		return [
+			'eat'   => [ 'eat', '{"name":"Cacio e pepe","cuisine":"Italian","rating":4}', 'ate' ],
+			'drink' => [ 'drink', '{"name":"Imperial stout","drinkType":"beer","rating":5}', 'drank' ],
+		];
+	}
+
+	/**
+	 * @dataProvider menu_entry_kinds
+	 */
+	public function test_menu_entry_parses_as_one_h_entry_with_kind_property( string $kind, string $attrs, string $property ): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:post-kinds-indieweb/' . $kind . '-card ' . $attrs . ' /-->',
+			]
+		);
+		$this->assertNotWPError( wp_set_object_terms( $post_id, $kind, 'kind' ) );
+		$term_id = (int) get_term_by( 'slug', $kind, 'kind' )->term_id;
+
+		$html = do_blocks(
+			'<!-- wp:query {"queryId":9,"query":{"perPage":5,"postType":"post","inherit":false,"taxQuery":{"kind":[' . $term_id . ']}}} -->'
+			. '<div class="wp-block-query"><!-- wp:post-template {"className":"is-style-pkiw-menu"} -->'
+			. '<!-- wp:post-kinds-indieweb/menu-entry /-->'
+			. '<!-- /wp:post-template --></div><!-- /wp:query -->'
+		);
+
+		$entries = array_values(
+			array_filter(
+				\Mf2\parse( $html )['items'] ?? [],
+				static fn( $item ) => in_array( 'h-entry', $item['type'] ?? [], true )
+			)
+		);
+
+		$this->assertCount( 1, $entries, 'Exactly one h-entry root per menu line.' );
+		$this->assertContains( get_permalink( $post_id ), $entries[0]['properties']['url'] ?? [] );
+		$this->assertArrayHasKey( $property, $entries[0]['properties'] );
+		// Same shape the card emits: the u-* string plus the nested h-food.
+		$foods = array_values(
+			array_filter(
+				$entries[0]['properties'][ $property ],
+				static fn( $value ) => is_array( $value ) && in_array( 'h-food', $value['type'] ?? [], true )
+			)
+		);
+		$this->assertCount( 1, $foods );
+		$this->assertSame( [ json_decode( $attrs, true )['name'] ], $foods[0]['properties']['name'] );
+	}
+
+	/**
 	 * Weather has no card block. A weather post renders through the generic
 	 * stream card, which roots its own h-entry; with a Simple Location
 	 * observation stored, that entry carries exactly one `weather` value.
@@ -202,7 +257,6 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 
 		$html  = \PKIW\render_generic_stream_card( get_post( $post_id ) );
 		$entry = $this->top_level_h_entry( \Mf2\parse( $html ) );
-
 		$this->assertSame( [ 'Clear Sky, 27 °C' ], $entry['properties']['weather'] ?? null );
 	}
 

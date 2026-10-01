@@ -279,6 +279,28 @@
 		--pkiw-state-warning: currentcolor;
 		--pkiw-state-error: currentcolor;
 		--pkiw-state-info: currentcolor;
+
+		/* ============================================================
+		 * KIND ARCHIVE LAYOUTS (issue 233, styles/kind-layouts.css)
+		 *   Shelf and menu structure. Sizes carry real values; paint
+		 *   stays neutral so the theme supplies wood, paper, tape.
+		 * ============================================================ */
+
+		--pkiw-shelf-item-min: 9rem;
+		--pkiw-shelf-spine-min: 3.5rem;
+		--pkiw-shelf-spine-height: 14rem;
+		--pkiw-shelf-gap-row: 2rem;
+		--pkiw-shelf-gap-column: 1rem;
+		--pkiw-shelf-artwork-ratio: var(--pkiw-artwork-ratio-poster);
+		--pkiw-shelf-item-bg: transparent;
+		--pkiw-shelf-board-size: 0.375rem;
+		--pkiw-shelf-board-color: currentcolor;
+		--pkiw-shelf-board-opacity: 0.2;
+		--pkiw-menu-leader-style: dotted;
+		--pkiw-menu-leader-width: 2px;
+		--pkiw-menu-leader-color: currentcolor;
+		--pkiw-menu-section-gap: 2rem;
+		--pkiw-menu-line-gap: 1rem;
 	}
 }
 
