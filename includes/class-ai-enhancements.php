@@ -382,8 +382,7 @@ final class AI_Enhancements {
 		}
 
 		try {
-			$client   = wp_ai_client_prompt();
-			$response = $client->generate_text( $prompt );
+			$response = wp_ai_client_prompt( $prompt )->generate_text();
 
 			if ( is_wp_error( $response ) ) {
 				$this->log_error( 'AI request failed', $response->get_error_message() );

@@ -103,4 +103,48 @@ final class AiEnhancementsKindTest extends WP_UnitTestCase {
 		$this->assertWPError( $result );
 		$this->assertSame( 'prompt_prevented', $result->get_error_code() );
 	}
+
+	/**
+	 * Read the text a prompt builder holds.
+	 *
+	 * Core has no getter for a builder's messages, so this reads the wrapped
+	 * PHP AI Client builder's own state.
+	 *
+	 * @param WP_AI_Client_Prompt_Builder $builder Builder core passed to the filter.
+	 */
+	private function prompt_text( WP_AI_Client_Prompt_Builder $builder ): string {
+		$inner    = ( new ReflectionProperty( $builder, 'builder' ) )->getValue( $builder );
+		$messages = ( new ReflectionProperty( $inner, 'messages' ) )->getValue( $inner );
+
+		$text = '';
+		foreach ( $messages as $message ) {
+			foreach ( $message->getParts() as $part ) {
+				$text .= (string) $part->getText();
+			}
+		}
+		return $text;
+	}
+
+	/**
+	 * The prompt a handler builds is the prompt the AI client receives.
+	 *
+	 * ai_request() used to create the builder with no prompt and pass the
+	 * prompt to generate_text(), which takes no arguments. PHP dropped the
+	 * argument, so core rejected every request as an empty prompt.
+	 */
+	public function test_content_summary_sends_its_prompt_to_the_ai_client(): void {
+		$builder = null;
+		$capture = static function ( $prevent, $prompt_builder ) use ( &$builder ) {
+			$builder = $prompt_builder;
+			return $prevent;
+		};
+		add_filter( 'wp_ai_client_prevent_prompt', $capture, 10, 2 );
+
+		AI_Enhancements::get_instance()->handle_content_summary( $this->request( $this->make_post( 'read' ) ) );
+
+		remove_filter( 'wp_ai_client_prevent_prompt', $capture, 10 );
+
+		$this->assertInstanceOf( WP_AI_Client_Prompt_Builder::class, $builder );
+		$this->assertStringStartsWith( 'This is a read post about: ', $this->prompt_text( $builder ) );
+	}
 }
