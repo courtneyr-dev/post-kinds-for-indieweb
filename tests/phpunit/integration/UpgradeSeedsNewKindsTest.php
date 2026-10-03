@@ -153,4 +153,91 @@ final class UpgradeSeedsNewKindsTest extends WP_UnitTestCase {
 
 		$this->assert_all_kinds_present( 'On a fresh install' );
 	}
+
+	/**
+	 * The comics kind covers a comic someone read and a comic they made.
+	 *
+	 * The archive prints this description above every comics post, so a
+	 * description naming only authored strips excludes the comic reads
+	 * listed under it.
+	 */
+	public function test_comics_description_covers_read_and_authored_comics(): void {
+		$description = $this->declared_kinds( new Taxonomy() )['comics']['description'];
+
+		$this->assertSame( 'A comic you read, drew, or published.', $description );
+		$this->assertMatchesRegularExpression( '/\bread\b/', $description, 'A comic read is not covered.' );
+		$this->assertMatchesRegularExpression( '/\bdrew\b/', $description, 'A comic its author drew is not covered.' );
+		$this->assertMatchesRegularExpression( '/\bpublished\b/', $description, 'A published comic is not covered.' );
+	}
+
+	/**
+	 * A stored description still equal to a default this plugin shipped
+	 * earlier was never edited, so it follows the current default.
+	 *
+	 * @dataProvider superseded_comics_descriptions
+	 *
+	 * @param string $shipped A comics description an earlier build seeded.
+	 */
+	public function test_unedited_comics_description_follows_the_current_default( string $shipped ): void {
+		$taxonomy = new Taxonomy();
+		$taxonomy->create_default_terms();
+		$term = get_term_by( 'slug', 'comics', Taxonomy::TAXONOMY );
+		$this->assertInstanceOf( WP_Term::class, $term );
+		wp_update_term( $term->term_id, Taxonomy::TAXONOMY, [ 'description' => $shipped ] );
+		delete_option( Taxonomy::DESCRIPTIONS_OPTION );
+
+		$taxonomy->maybe_refresh_default_descriptions();
+
+		$this->assertSame(
+			'A comic you read, drew, or published.',
+			get_term_by( 'slug', 'comics', Taxonomy::TAXONOMY )->description
+		);
+	}
+
+	/**
+	 * Comics descriptions seeded by earlier builds.
+	 *
+	 * @return array<string, array{string}>
+	 */
+	public function superseded_comics_descriptions(): array {
+		return [
+			'authored only, through 1.8.6' => [ 'A comic strip or panel you drew or published.' ],
+			'first reworded default'       => [ 'A comic you read, or a comic strip or panel you drew or published.' ],
+		];
+	}
+
+	/**
+	 * A description the site wrote itself is never replaced.
+	 */
+	public function test_edited_comics_description_is_kept(): void {
+		$taxonomy = new Taxonomy();
+		$taxonomy->create_default_terms();
+		$term = get_term_by( 'slug', 'comics', Taxonomy::TAXONOMY );
+		wp_update_term( $term->term_id, Taxonomy::TAXONOMY, [ 'description' => 'Strips from my sketchbook.' ] );
+		delete_option( Taxonomy::DESCRIPTIONS_OPTION );
+
+		$taxonomy->maybe_refresh_default_descriptions();
+
+		$this->assertSame( 'Strips from my sketchbook.', get_term_by( 'slug', 'comics', Taxonomy::TAXONOMY )->description );
+	}
+
+	/**
+	 * The refresh runs once per revision, so a description edited back to
+	 * an old default afterwards stays as the site left it.
+	 */
+	public function test_description_refresh_runs_once_per_revision(): void {
+		$taxonomy = new Taxonomy();
+		$taxonomy->create_default_terms();
+		delete_option( Taxonomy::DESCRIPTIONS_OPTION );
+		$taxonomy->maybe_refresh_default_descriptions();
+
+		$term = get_term_by( 'slug', 'comics', Taxonomy::TAXONOMY );
+		wp_update_term( $term->term_id, Taxonomy::TAXONOMY, [ 'description' => 'A comic strip or panel you drew or published.' ] );
+		$taxonomy->maybe_refresh_default_descriptions();
+
+		$this->assertSame(
+			'A comic strip or panel you drew or published.',
+			get_term_by( 'slug', 'comics', Taxonomy::TAXONOMY )->description
+		);
+	}
 }

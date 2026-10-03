@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The `comics` kind's default description covers both uses: "A comic you read, or a comic strip or panel you drew or published." Sites that already have the term keep their stored description (#228).
+- The `comics` kind's default description covers both uses: "A comic you read, drew, or published." A site whose stored description still equals an earlier default gets the new one once; a description the site edited is kept (#228).
 - Eat and drink cards now mirror name, cuisine or drink type, brand, rating, notes and the eaten/drunk time into `_pkiw_*` meta on save, including for posts created through Micropub, REST or imports. New meta: `_pkiw_eat_ate_at`, `_pkiw_drink_drank_at`. A drink card with no stored type is filed under its displayed default, coffee. Existing posts are backfilled once by a batched scheduled event that reads post content and never rewrites it (#233).
 - `_pkiw_eat_notes` keeps line breaks (`sanitize_textarea_field`), like `_pkiw_drink_notes`.
 - **Dependency refresh:** the 16-package `@wordpress` group, including `@wordpress/scripts` 36. CI runs on Node 24, and `package.json` asks for Node 22.22.2+ and npm 11+: scripts 36 needs that Node, and npm 10 rejects the lockfiles Dependabot writes. Unit tests stay on Jest through `wp-scripts test-unit-jest`, because `test-unit-js` now runs Vitest. The visually hidden text rules drop the deprecated `clip` declaration, which `clip-path: inset(50%)` already covers, and rename `word-wrap` to `overflow-wrap` (#194).
