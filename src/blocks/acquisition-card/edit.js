@@ -374,11 +374,11 @@ export default function Edit( { attributes, setAttributes } ) {
 										? __(
 												'Free!',
 												'post-kinds-for-indieweb-in-block-themes'
-										  )
+											)
 										: __(
 												'$0.00',
 												'post-kinds-for-indieweb-in-block-themes'
-										  )
+											)
 								}
 							/>
 						</div>

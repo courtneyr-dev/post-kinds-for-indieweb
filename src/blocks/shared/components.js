@@ -83,11 +83,11 @@ export function StarRating( {
 								? __(
 										'star',
 										'post-kinds-for-indieweb-in-block-themes'
-								  )
+									)
 								: __(
 										'stars',
 										'post-kinds-for-indieweb-in-block-themes'
-								  )
+									)
 						}` }
 						aria-pressed={ rating <= value }
 					>

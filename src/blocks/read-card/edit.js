@@ -478,7 +478,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 								: __(
 										'Set date',
 										'post-kinds-for-indieweb-in-block-themes'
-								  ) }
+									) }
 						</Button>
 						{ showStartPicker && (
 							<Popover
@@ -515,11 +515,11 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 								{ finishedAt
 									? new Date(
 											finishedAt
-									  ).toLocaleDateString()
+										).toLocaleDateString()
 									: __(
 											'Set date',
 											'post-kinds-for-indieweb-in-block-themes'
-									  ) }
+										) }
 							</Button>
 							{ showFinishPicker && (
 								<Popover

@@ -1136,7 +1136,7 @@ function ListenFields() {
 						? __(
 								'No rating',
 								'post-kinds-for-indieweb-in-block-themes'
-						  )
+							)
 						: `${ listenRating } / 5`
 				}
 				__nextHasNoMarginBottom
@@ -2035,7 +2035,7 @@ function ReadFields() {
 						? __(
 								'No rating',
 								'post-kinds-for-indieweb-in-block-themes'
-						  )
+							)
 						: `${ readRating } / 5`
 				}
 				__nextHasNoMarginBottom

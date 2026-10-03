@@ -113,11 +113,11 @@ export default function SyndicationControls( { kind } ) {
 								? __(
 										'Will sync on publish',
 										'post-kinds-for-indieweb-in-block-themes'
-								  )
+									)
 								: __(
 										'Will not sync',
 										'post-kinds-for-indieweb-in-block-themes'
-								  )
+									)
 						}
 						checked={ isEnabled }
 						onChange={ ( value ) =>
