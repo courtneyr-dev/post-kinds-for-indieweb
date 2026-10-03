@@ -229,30 +229,6 @@ parameters:
 			path: includes/blocks/class-recent-kinds.php
 
 		-
-			message: '#^Static call to instance method PKIW\\Taxonomy\:\:is_valid_kind\(\)\.$#'
-			identifier: method.staticCall
-			count: 1
-			path: includes/blocks/class-recent-kinds.php
-
-		-
-			message: '#^Call to function in_array\(\) with arguments WP_Term\|null, array\{''read'', ''watch'', ''listen''\} and true will always evaluate to false\.$#'
-			identifier: function.impossibleType
-			count: 1
-			path: includes/class-ai-enhancements.php
-
-		-
-			message: '#^Parameter \#2 \$kind of method PKIW\\AI_Enhancements\:\:build_post_context\(\) expects string, WP_Term\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: includes/class-ai-enhancements.php
-
-		-
-			message: '#^Static call to instance method PKIW\\Taxonomy\:\:get_post_kind\(\)\.$#'
-			identifier: method.staticCall
-			count: 2
-			path: includes/class-ai-enhancements.php
-
-		-
 			message: '#^@param array\<string, array\<string, string\>\> \$bindings does not accept actual type of parameter\: array\{cite_name\: array\{label\: string, meta_key\: ''cite_name'', type\: ''string''\}, cite_url\: array\{label\: string, meta_key\: ''cite_url'', type\: ''url''\}, cite_author\: array\{label\: string, meta_key\: ''cite_author'', type\: ''string''\}, cite_author_url\: array\{label\: string, meta_key\: ''cite_author_url'', type\: ''url''\}, cite_photo\: array\{label\: string, meta_key\: ''cite_photo'', type\: ''url''\}, cite_summary\: array\{label\: string, meta_key\: ''cite_summary'', type\: ''string''\}, cite_published\: array\{label\: string, meta_key\: ''cite_published'', type\: ''date''\}, rsvp_status\: array\{label\: string, meta_key\: ''rsvp_status'', type\: ''string'', format\: ''rsvp''\}, \.\.\.\}\.$#'
 			identifier: parameter.phpDocType
 			count: 1
@@ -353,9 +329,3 @@ parameters:
 			identifier: method.void
 			count: 1
 			path: includes/sync/class-foursquare-checkin-sync.php
-
-		-
-			message: '#^Call to an undefined method PKIW\\Sync\\Untappd_Checkin_Sync\:\:find_existing_post\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: includes/sync/class-untappd-checkin-sync.php

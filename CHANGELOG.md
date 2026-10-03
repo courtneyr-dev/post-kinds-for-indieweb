@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Comic Card block (`post-kinds-indieweb/comic-card`) for a comic you read: title, creators, series, volume, issue number, publisher, cover with stored alt text, link, reading status, rating, start and end dates, and a note. The card is an `h-cite` with `u-read-of`, so the post's `h-entry` carries `read-of`, and a post that opens with the card gets the `comics` kind. A `comics` post with no card (a strip you drew) renders as before and carries no `read-of`. Only stored fields render. A comic still being read shows "Started" and never an end date, and stored dates print as the calendar day they hold whatever the site timezone. Stored text that isn't a real calendar day (`2026-02-30`, `tomorrow`) prints no date instead of a guessed one, and a rating above 5 reads as 5. Fields mirror into `_pkiw_comic_*` meta on save, exposed in REST, and the `post-kinds/kind-meta` bindings resolve `title`, `author`, `rating`, `url`, `cover_image` and `publisher` from them on comics posts (#228).
+- Kind archive templates ship through the block template list: `taxonomy-kind` (a shelf of linked items for any kind) and `taxonomy-kind-eat` / `taxonomy-kind-drink` (a menu). Each has one `h1` (Query Title), the term description, a Query Loop that inherits the main query, centered Query Pagination with arrows, and a no-results message. A theme's own `taxonomy-kind` or `taxonomy-kind-{kind}` template, or a Site Editor customization, still wins (#233).
+- Core block styles for Post Template: Shelf, face-out (`is-style-pkiw-shelf`), Shelf, spine-out (`is-style-pkiw-shelf-spine`) and Menu (`is-style-pkiw-menu`), plus Kind shelf and Kind menu Query Loop variations in the inserter. `styles/kind-layouts.css` draws shelf boards with pseudo-elements, so empty shelf space adds no DOM, and covers focus-visible, reduced motion, forced colors and a single column at 320 CSS px. Paint comes from new `--pkiw-shelf-*` and `--pkiw-menu-*` tokens (#233).
+- Kind menu entry block (`post-kinds-indieweb/menu-entry`), used inside a Post Template: item name, a decorative leader hidden from assistive technology, "Rated N of 5" as text, venue name gated by `pkiw_get_visible_location_fields()`, date and notes, with the same `p-ate`/`p-drank h-food` microformats the cards emit. Section headings come from the cuisine or drink type at render time; posts without one are listed under "Other" (#230, #233).
+- `pkiw_group_by` query var and `pkiw_archive_group_fields` filter: a kind archive rendered by a template that uses the menu entry is ordered by group (empty last), then date, then ID, so pagination stays native and pages are stable. A Query Loop can opt in with `query.pkiwGroupBy` (#233).
+- `wp postkind card-meta backfill [--batch=<size>]` (#233).
+
+### Changed
+
+- The `comics` kind's default description covers both uses: "A comic you read, or a comic strip or panel you drew or published." Sites that already have the term keep their stored description (#228).
+- Eat and drink cards now mirror name, cuisine or drink type, brand, rating, notes and the eaten/drunk time into `_pkiw_*` meta on save, including for posts created through Micropub, REST or imports. New meta: `_pkiw_eat_ate_at`, `_pkiw_drink_drank_at`. A drink card with no stored type is filed under its displayed default, coffee. Existing posts are backfilled once by a batched scheduled event that reads post content and never rewrites it (#233).
+- `_pkiw_eat_notes` keeps line breaks (`sanitize_textarea_field`), like `_pkiw_drink_notes`.
+
+### Fixed
+
+- A Stream card that a theme adapter rebuilds as the post's own `h-cite` card (a read with body text below its card, say) now leaves the Query Loop item as the `h-entry` root. The root was decided from the card before adapters ran, so the swapped card's `read-of` attached to no entry (#228).
+- The plugin's `pre_get_block_file_template` handler only answers for `post-kinds-for-indieweb//…` template IDs; it no longer replaces a theme's own file template that shares a slug (such as `taxonomy-venue`) (#233).
+- Weather posts show the observation Simple Location saved for them. Post Kinds reads Simple Location's stored `weather_*` meta (and a legacy `geo_weather` array) and never fetches, writes, or migrates weather data. Weather-kind stream cards add a `p-weather` line such as "Clear Sky, 27 °C", and new computed `post-kinds-indieweb/kind-meta` binding keys (`weather_summary`, `weather_condition`, `weather_code`, `weather_temperature`, `weather_humidity`, `weather_pressure`, `weather_windspeed`, `weather_winddegree`, `weather_cloudiness`, `weather_rain`) let themes bind core blocks to it. Units follow Simple Location's `sloc_measurements` setting and its own metric-to-imperial conversion. Weather is hidden from visitors who can't edit the post when its location is private: Post Kinds' location privacy hides city-level text, or Simple Location's `geo_public` (or the site default when the post has none) is private. The `pkiw_weather_source_active` filter turns the source off. Simple Location's own inline weather output is unchanged; its `simple_location_display_defaults` filter (`weather => false`) turns that off (#209).
+
 ### Security
 
 - Plex artwork is downloaded server-side into the media library with the Plex token sent only as a request header (no redirects followed, path validated against the configured server). Poster and cover meta store the local attachment URL, never a URL carrying `X-Plex-Token`. An upgrade step deletes stored poster, cover, featured-artwork source and `_source_url` values, and pending-queue and webhook-log strings, that contain the token. **If you configured Plex before this release, rotate your Plex token:** earlier versions exposed it in public post meta and rendered images (#213).
@@ -17,6 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The Webhooks admin log and pending queue show the service name and message; the handler wrote `service` and `data.message` while the page read `source` and `message`, so every row said "Unknown" and raised undefined-index warnings. Older entries with `source` still display (#214).
 - Jellyfin audio scrobbles keep their artist: the handler reads the `Artist` field the Jellyfin Webhook plugin sends, with `Artists[0]` as a fallback (#214).
+- The Untappd check-in sync no longer stops with a fatal error on a missing `find_existing_post()` method. Check-in syncs look up earlier imports by the provider check-in ID in any status, including drafts and trash (#216).
+- Bookmark, check-in and note imports no longer create duplicates on every scheduled run. Each imported item stores a stable source identity (`_pkiw_import_source_id`), and posts imported before this release are matched on the fields they already have. Foursquare check-ins created by the importer before this release stored no provider ID and may be imported once more (#217).
+- Posts created by scheduled imports have an author: imports use the current user, then the `pkiw_default_author` setting, then the first administrator who can create posts, and the job records which author it used. Existing author-less posts aren't reassigned (#218).
+- The Recent Kinds block renders again. Its render callback called `Taxonomy::is_valid_kind()` statically, which throws an `Error` on PHP 8, so every page with the block failed to render it. The AI tag-suggestion and review-prompt endpoints had the same bug with `Taxonomy::get_post_kind()` and also passed the kind term where a slug was expected; both now read the slug from the plugin's Taxonomy instance (#283).
 
 ## [1.8.6] - 2026-09-24
 

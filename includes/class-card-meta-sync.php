@@ -49,6 +49,22 @@ class Card_Meta_Sync {
 			'finishedAt'  => 'read_finished_at',
 			'review'      => 'read_review',
 		],
+		'post-kinds-indieweb/comic-card'   => [
+			'title'         => 'comic_title',
+			'creators'      => 'comic_creators',
+			'series'        => 'comic_series',
+			'volume'        => 'comic_volume',
+			'issueNumber'   => 'comic_issue',
+			'publisher'     => 'comic_publisher',
+			'coverImage'    => 'comic_cover',
+			'coverImageAlt' => 'comic_cover_alt',
+			'sourceUrl'     => 'comic_url',
+			'readStatus'    => 'comic_status',
+			'rating'        => 'comic_rating',
+			'startedAt'     => 'comic_started_at',
+			'finishedAt'    => 'comic_finished_at',
+			'review'        => 'comic_review',
+		],
 		'post-kinds-indieweb/checkin-card' => [
 			'venueName'       => 'checkin_name',
 			'venueType'       => 'checkin_type',
@@ -73,6 +89,13 @@ class Card_Meta_Sync {
 			'locationCountry'  => 'eat_location_country',
 			'geoLatitude'      => 'eat_geo_latitude',
 			'geoLongitude'     => 'eat_geo_longitude',
+			// Menu fields (issue 230/233): the eat archive groups and lists
+			// posts from these without re-parsing post content.
+			'name'             => 'eat_name',
+			'cuisine'          => 'eat_cuisine',
+			'rating'           => 'eat_rating',
+			'ateAt'            => 'eat_ate_at',
+			'notes'            => 'eat_notes',
 		],
 		'post-kinds-indieweb/drink-card'   => [
 			'venueUrl'         => 'drink_venue_url',
@@ -83,6 +106,13 @@ class Card_Meta_Sync {
 			'locationCountry'  => 'drink_location_country',
 			'geoLatitude'      => 'drink_geo_latitude',
 			'geoLongitude'     => 'drink_geo_longitude',
+			// Menu fields (issue 230/233).
+			'name'             => 'drink_name',
+			'drinkType'        => 'drink_type',
+			'brand'            => 'drink_brewery',
+			'rating'           => 'drink_rating',
+			'drankAt'          => 'drink_drank_at',
+			'notes'            => 'drink_notes',
 		],
 		'post-kinds-indieweb/listen-card'  => [
 			'trackTitle'    => 'listen_track',
@@ -139,6 +169,41 @@ class Card_Meta_Sync {
 	];
 
 	/**
+	 * Defaults from block.json that the card renders when an attribute is absent from
+	 * the serialized comment. Mirrored only when the meta is still empty, so
+	 * the archive files a post under what its card shows without ever
+	 * overwriting a stored value.
+	 *
+	 * @var array<string, array<string, string>>
+	 */
+	public const ATTR_DEFAULTS = [
+		'post-kinds-indieweb/drink-card' => [
+			'drinkType' => 'coffee',
+		],
+		'post-kinds-indieweb/comic-card' => [
+			'readStatus' => 'reading',
+		],
+	];
+
+	/**
+	 * Meta suffixes whose values are multi-line prose.
+	 *
+	 * @var string[]
+	 */
+	private const TEXTAREA_SUFFIXES = [ 'eat_notes', 'drink_notes', 'comic_review' ];
+
+	/**
+	 * Backfill cron hook, completion option and the version it records.
+	 * Bump BACKFILL_VERSION when ATTR_META_MAP gains fields existing posts
+	 * need, and every site re-runs the batched backfill once.
+	 */
+	public const BACKFILL_HOOK    = 'pkiw_card_meta_backfill';
+	public const BACKFILL_OPTION  = 'pkiw_card_meta_backfill';
+	public const BACKFILL_CURSOR  = 'pkiw_card_meta_backfill_cursor';
+	public const BACKFILL_VERSION = '2';
+	public const BACKFILL_BATCH   = 50;
+
+	/**
 	 * Constructor.
 	 *
 	 * Hooked at save_post priority 25, after Taxonomy's kind sync (which
@@ -148,6 +213,8 @@ class Card_Meta_Sync {
 	 */
 	public function __construct() {
 		add_action( 'save_post', [ $this, 'sync' ], 25, 2 );
+		add_action( self::BACKFILL_HOOK, [ self::class, 'run_backfill_event' ] );
+		add_action( 'init', [ self::class, 'maybe_schedule_backfill' ], 20 );
 	}
 
 	/**
@@ -162,12 +229,107 @@ class Card_Meta_Sync {
 			return;
 		}
 
-		$block = self::find_first_mapped_block( parse_blocks( $post->post_content ) );
+		self::sync_content( $post_id, $post->post_content );
+	}
+
+	/**
+	 * Schedule the one-time batched backfill until it has completed for
+	 * the current BACKFILL_VERSION. The cursor lives in an option, so a
+	 * lost cron event is simply rescheduled from where it stopped.
+	 *
+	 * @return void
+	 */
+	public static function maybe_schedule_backfill(): void {
+		if ( self::BACKFILL_VERSION === get_option( self::BACKFILL_OPTION ) ) {
+			return;
+		}
+		if ( false === wp_next_scheduled( self::BACKFILL_HOOK ) ) {
+			wp_schedule_single_event( time() + 60, self::BACKFILL_HOOK );
+		}
+	}
+
+	/**
+	 * Cron handler: run one batch from the stored cursor, then either
+	 * schedule the next batch or record completion.
+	 *
+	 * @return void
+	 */
+	public static function run_backfill_event(): void {
+		$result = self::backfill_batch( (int) get_option( self::BACKFILL_CURSOR, 0 ), self::BACKFILL_BATCH );
+
+		if ( $result['done'] ) {
+			delete_option( self::BACKFILL_CURSOR );
+			update_option( self::BACKFILL_OPTION, self::BACKFILL_VERSION, false );
+			return;
+		}
+
+		update_option( self::BACKFILL_CURSOR, $result['last_id'], false );
+		wp_schedule_single_event( time() + 30, self::BACKFILL_HOOK );
+	}
+
+	/**
+	 * Re-sync card meta for one batch of posts that carry a Post Kinds
+	 * block, in ID order after a cursor. Reads post_content only; never
+	 * writes it, and never fires save_post, so modified dates stay put.
+	 * Idempotent: the same content always produces the same meta.
+	 *
+	 * @param int $after_id Process posts with an ID greater than this.
+	 * @param int $limit    Batch size.
+	 * @return array{processed:int,last_id:int,done:bool}
+	 */
+	public static function backfill_batch( int $after_id = 0, int $limit = self::BACKFILL_BATCH ): array {
+		global $wpdb;
+
+		$limit = max( 1, $limit );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off batched maintenance scan.
+		$ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts} WHERE post_type = 'post' AND ID > %d AND post_content LIKE %s ORDER BY ID ASC LIMIT %d",
+				$after_id,
+				'%' . $wpdb->esc_like( '<!-- wp:post-kinds-indieweb/' ) . '%',
+				$limit
+			)
+		);
+
+		$last_id = $after_id;
+		foreach ( $ids as $id ) {
+			$id   = (int) $id;
+			$post = get_post( $id );
+			if ( $post instanceof \WP_Post ) {
+				self::sync_content( $id, $post->post_content );
+			}
+			$last_id = $id;
+		}
+
+		return [
+			'processed' => count( $ids ),
+			'last_id'   => $last_id,
+			'done'      => count( $ids ) < $limit,
+		];
+	}
+
+	/**
+	 * Mirror the first mapped card block in some post content into meta.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $content Post content.
+	 * @return void
+	 */
+	public static function sync_content( int $post_id, string $content ): void {
+		$block = self::find_first_mapped_block( parse_blocks( $content ) );
 		if ( null !== $block ) {
-			$map = self::ATTR_META_MAP[ $block['blockName'] ];
+			$map      = self::ATTR_META_MAP[ $block['blockName'] ];
+			$defaults = self::ATTR_DEFAULTS[ $block['blockName'] ] ?? [];
 
 			foreach ( $map as $attr => $suffix ) {
 				$value = $block['attrs'][ $attr ] ?? null;
+
+				if ( ( null === $value || '' === $value ) && isset( $defaults[ $attr ] )
+					&& '' === (string) get_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, true ) ) {
+					$value = $defaults[ $attr ];
+				}
+
 				if ( null === $value || '' === $value ) {
 					continue; // Never erase existing meta with an empty attr.
 				}
@@ -190,7 +352,11 @@ class Card_Meta_Sync {
 					}
 				}
 
-				update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, sanitize_text_field( $value ) );
+				$clean = in_array( $suffix, self::TEXTAREA_SUFFIXES, true )
+					? sanitize_textarea_field( $value )
+					: sanitize_text_field( $value );
+
+				update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, $clean );
 			}
 		}
 	}
