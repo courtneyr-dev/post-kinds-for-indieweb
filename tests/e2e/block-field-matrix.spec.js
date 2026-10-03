@@ -33,6 +33,9 @@ function sampleFor( attr, def ) {
 	if ( attr === 'layout' ) {
 		return def.default ?? 'horizontal';
 	}
+	if ( attr === 'readStatus' ) {
+		return 'finished';
+	}
 	if ( type === 'boolean' ) {
 		return true;
 	}
@@ -82,7 +85,11 @@ const RENDER_EXCEPTIONS = {
 	},
 	'post-kinds-indieweb/read-card': {
 		readStatus:
-			'free-string status mapped to a human label (Reading/Finished/…); an unknown value like the fixture sample maps to an empty label and is never echoed raw',
+			'status is mapped to a human label (Reading/Finished/…) and is never echoed raw',
+	},
+	'post-kinds-indieweb/comic-card': {
+		readStatus:
+			'status is mapped to a human label (Currently reading/Finished/…) and is never echoed raw',
 	},
 	'post-kinds-indieweb/mood-card': {
 		moodKey:
