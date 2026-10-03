@@ -51,6 +51,7 @@ import './shared/pk-card.css';
 import './listen-card';
 import './watch-card';
 import './read-card';
+import './comic-card';
 import './checkin-card';
 import './rsvp-card';
 import './event-card';

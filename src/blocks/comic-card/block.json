@@ -1,0 +1,110 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "post-kinds-indieweb/comic-card",
+    "version": "1.0.0",
+    "title": "Comic Card",
+    "category": "post-kinds-indieweb",
+    "description": "Display a comic you're reading or have read with its cover, series, issue and creators.",
+    "keywords": ["comic", "comics", "issue", "series", "graphic novel", "manga"],
+    "textdomain": "post-kinds-for-indieweb-in-block-themes",
+    "attributes": {
+        "title": {
+            "type": "string"
+        },
+        "creators": {
+            "type": "string"
+        },
+        "series": {
+            "type": "string"
+        },
+        "volume": {
+            "type": "string"
+        },
+        "issueNumber": {
+            "type": "string"
+        },
+        "publisher": {
+            "type": "string"
+        },
+        "coverImage": {
+            "type": "string"
+        },
+        "coverImageAlt": {
+            "type": "string"
+        },
+        "sourceUrl": {
+            "type": "string"
+        },
+        "readStatus": {
+            "type": "string",
+            "default": "reading"
+        },
+        "rating": {
+            "type": "number",
+            "default": 0
+        },
+        "startedAt": {
+            "type": "string"
+        },
+        "finishedAt": {
+            "type": "string"
+        },
+        "review": {
+            "type": "string"
+        }
+    },
+    "supports": {
+        "html": false,
+        "align": ["wide", "full"],
+        "color": {
+            "background": true,
+            "text": true,
+            "gradients": true,
+            "link": true
+        },
+        "spacing": {
+            "margin": true,
+            "padding": true,
+            "blockGap": true
+        },
+        "typography": {
+            "fontSize": true,
+            "lineHeight": true,
+            "__experimentalFontFamily": true,
+            "__experimentalFontWeight": true,
+            "__experimentalFontStyle": true,
+            "__experimentalTextTransform": true,
+            "__experimentalTextDecoration": true,
+            "__experimentalLetterSpacing": true
+        },
+        "__experimentalBorder": {
+            "color": true,
+            "radius": true,
+            "width": true,
+            "style": true,
+            "__experimentalDefaultControls": {
+                "color": true,
+                "radius": true,
+                "width": true,
+                "style": true
+            }
+        },
+        "shadow": true,
+        "dimensions": {
+            "minHeight": true
+        }
+    },
+    "example": {
+        "attributes": {
+            "title": "Saga",
+            "creators": "Brian K. Vaughan, Fiona Staples",
+            "series": "Saga",
+            "issueNumber": "7",
+            "readStatus": "finished",
+            "rating": 5
+        }
+    },
+    "editorStyle": "file:./editor.css",
+    "render": "file:./render.php"
+}
