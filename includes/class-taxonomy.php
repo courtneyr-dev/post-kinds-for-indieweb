@@ -47,6 +47,7 @@ class Taxonomy {
 		'post-kinds-indieweb/listen-card'      => 'listen',
 		'post-kinds-indieweb/watch-card'       => 'watch',
 		'post-kinds-indieweb/read-card'        => 'read',
+		'post-kinds-indieweb/comic-card'       => 'comics',
 		'post-kinds-indieweb/play-card'        => 'play',
 		'post-kinds-indieweb/checkin-card'     => 'checkin',
 		'post-kinds-indieweb/rsvp-card'        => 'rsvp',
@@ -234,7 +235,7 @@ class Taxonomy {
 		],
 		'comics'      => [
 			'name'        => 'Comics',
-			'description' => 'A comic strip or panel you drew or published.',
+			'description' => 'A comic you read, or a comic strip or panel you drew or published.',
 		],
 		'collection'  => [
 			'name'        => 'Collection',

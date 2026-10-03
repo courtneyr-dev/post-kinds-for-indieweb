@@ -66,6 +66,10 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 			'post-kinds-indieweb/read-card'         => [
 				'readStatus' => 'free-string status mapped to a human label (Reading/Finished/…); an unknown value like the fixture sample maps to an empty label and is never echoed raw',
 			],
+			'post-kinds-indieweb/comic-card'        => [
+				'readStatus' => 'status mapped to a human label (Currently reading/Finished/…); an unknown value like the fixture sample maps to an empty label and is never echoed raw',
+				'finishedAt' => 'renders only when readStatus is finished or abandoned; the fixture status sample is neither, so no end date is shown (the same sample as startedAt would otherwise match by coincidence)',
+			],
 			'post-kinds-indieweb/wish-card'         => [
 				'wishType' => 'wishlist subtype metadata; not surfaced as visible text in the card',
 				'priority' => 'ordering hint metadata; not surfaced as visible text in the card',

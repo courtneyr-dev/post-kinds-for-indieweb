@@ -441,6 +441,94 @@ class Meta_Fields {
 				'default'     => '',
 			],
 
+			// Comic Fields: a comic someone read (comic-card). A comics post with
+			// no card, a strip its author drew, stores none of these.
+			'comic_title'             => [
+				'type'        => 'string',
+				'description' => __( 'Title of the comic.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'comic_creators'          => [
+				'type'        => 'string',
+				'description' => __( 'Writers and artists of the comic, as authored text.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'comic_series'            => [
+				'type'        => 'string',
+				'description' => __( 'Series the comic belongs to.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'comic_volume'            => [
+				'type'        => 'string',
+				'description' => __( 'Volume of the series.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'comic_issue'             => [
+				'type'        => 'string',
+				'description' => __( 'Issue number within the series or volume.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'comic_publisher'         => [
+				'type'        => 'string',
+				'description' => __( 'Publisher of the comic.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'comic_cover'             => [
+				'type'        => 'string',
+				'description' => __( 'Comic cover image URL.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			],
+			'comic_cover_alt'         => [
+				'type'        => 'string',
+				'description' => __( 'Alt text stored for the comic cover.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'comic_url'               => [
+				'type'        => 'string',
+				'description' => __( 'URL where the comic can be found or read.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			],
+			'comic_status'            => [
+				'type'        => 'string',
+				'description' => __( 'Reading status: to-read, reading, finished, or abandoned. Empty when the post has no comic card.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => [ $this, 'sanitize_comic_status' ],
+				'default'     => '',
+				'enum'        => [ '', 'to-read', 'reading', 'finished', 'abandoned' ],
+			],
+			'comic_rating'            => [
+				'type'        => 'integer',
+				'description' => __( 'Rating for the comic (0-5).', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => [ $this, 'sanitize_rating' ],
+				'default'     => 0,
+			],
+			'comic_started_at'        => [
+				'type'        => 'string',
+				'description' => __( 'Date started reading the comic.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'comic_finished_at'       => [
+				'type'        => 'string',
+				'description' => __( 'Date finished or set aside the comic.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'comic_review'            => [
+				'type'        => 'string',
+				'description' => __( 'Review or notes about the comic.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'wp_kses_post',
+				'default'     => '',
+			],
+
 			// Event Fields.
 			'event_start'             => [
 				'type'        => 'string',
@@ -1465,6 +1553,25 @@ class Meta_Fields {
 		// "haven't started" is more honest than implying a book is being
 		// read just because the status field had garbage in it.
 		return in_array( $value, $valid, true ) ? $value : 'to-read';
+	}
+
+	/**
+	 * Sanitize a comic reading status.
+	 *
+	 * Unlike a book read, a comics post may hold no card at all (a strip its
+	 * author drew), so anything unrecognised is stored as "no status" and
+	 * never as a reading state the author did not choose.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param mixed $value Value to sanitize.
+	 * @return string Sanitized value.
+	 */
+	public function sanitize_comic_status( mixed $value ): string {
+		$valid = [ 'to-read', 'reading', 'finished', 'abandoned' ];
+		$value = sanitize_text_field( (string) $value );
+
+		return in_array( $value, $valid, true ) ? $value : '';
 	}
 
 	/**

@@ -49,6 +49,22 @@ class Card_Meta_Sync {
 			'finishedAt'  => 'read_finished_at',
 			'review'      => 'read_review',
 		],
+		'post-kinds-indieweb/comic-card'   => [
+			'title'         => 'comic_title',
+			'creators'      => 'comic_creators',
+			'series'        => 'comic_series',
+			'volume'        => 'comic_volume',
+			'issueNumber'   => 'comic_issue',
+			'publisher'     => 'comic_publisher',
+			'coverImage'    => 'comic_cover',
+			'coverImageAlt' => 'comic_cover_alt',
+			'sourceUrl'     => 'comic_url',
+			'readStatus'    => 'comic_status',
+			'rating'        => 'comic_rating',
+			'startedAt'     => 'comic_started_at',
+			'finishedAt'    => 'comic_finished_at',
+			'review'        => 'comic_review',
+		],
 		'post-kinds-indieweb/checkin-card' => [
 			'venueName'       => 'checkin_name',
 			'venueType'       => 'checkin_type',
@@ -164,6 +180,9 @@ class Card_Meta_Sync {
 		'post-kinds-indieweb/drink-card' => [
 			'drinkType' => 'coffee',
 		],
+		'post-kinds-indieweb/comic-card' => [
+			'readStatus' => 'reading',
+		],
 	];
 
 	/**
@@ -171,7 +190,7 @@ class Card_Meta_Sync {
 	 *
 	 * @var string[]
 	 */
-	private const TEXTAREA_SUFFIXES = [ 'eat_notes', 'drink_notes' ];
+	private const TEXTAREA_SUFFIXES = [ 'eat_notes', 'drink_notes', 'comic_review' ];
 
 	/**
 	 * Backfill cron hook, completion option and the version it records.

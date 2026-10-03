@@ -861,6 +861,7 @@ final class Plugin {
 			'listen-card',
 			'watch-card',
 			'read-card',
+			'comic-card',
 			'checkin-card',
 			'rsvp-card',
 			'event-card',
