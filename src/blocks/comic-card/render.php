@@ -37,7 +37,7 @@ $pkiw_cover_image = $attributes['coverImage'] ?? '';
 $pkiw_cover_alt   = $attributes['coverImageAlt'] ?? '';
 $pkiw_source_url  = $attributes['sourceUrl'] ?? '';
 $pkiw_read_status = $attributes['readStatus'] ?? 'reading';
-$pkiw_rating      = isset( $attributes['rating'] ) ? (int) $attributes['rating'] : 0;
+$pkiw_rating      = isset( $attributes['rating'] ) ? max( 0, min( 5, (int) $attributes['rating'] ) ) : 0;
 $pkiw_review      = $attributes['review'] ?? '';
 
 $pkiw_status_labels = [

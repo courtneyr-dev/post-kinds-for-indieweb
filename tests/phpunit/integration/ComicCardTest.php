@@ -256,6 +256,74 @@ final class ComicCardTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Stored text that is not a real calendar day.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function not_a_calendar_day(): array {
+		return [
+			'a day the month does not have' => [ '2026-02-30' ],
+			'a relative phrase'              => [ 'tomorrow' ],
+			'zeros'                          => [ '0000-00-00' ],
+			'prose'                          => [ 'last week sometime' ],
+		];
+	}
+
+	/**
+	 * @dataProvider not_a_calendar_day
+	 *
+	 * @param string $stored Stored start date.
+	 */
+	public function test_text_that_is_not_a_calendar_day_renders_no_date( string $stored ): void {
+		$html = $this->render(
+			[
+				'title'      => 'Anzuelo',
+				'readStatus' => 'reading',
+				'startedAt'  => $stored,
+			]
+		);
+
+		$this->assertStringNotContainsString( '<time', $html );
+		$this->assertStringNotContainsString( 'Started', $html );
+	}
+
+	public function test_a_stored_date_with_a_time_keeps_its_calendar_day(): void {
+		$html = $this->render(
+			[
+				'title'      => 'Anzuelo',
+				'readStatus' => 'reading',
+				'startedAt'  => '2026-09-06T23:30:00-04:00',
+			]
+		);
+
+		$this->assertMatchesRegularExpression( '#<time class="pk-comic-started" datetime="2026-09-06">\s*Started: September 6, 2026\s*</time>#', $html );
+	}
+
+	public function test_a_rating_above_five_reads_as_five(): void {
+		$html = $this->render(
+			[
+				'title'  => 'Anzuelo',
+				'rating' => 9,
+			]
+		);
+
+		$this->assertStringContainsString( 'aria-label="Rated 5 of 5"', $html );
+		$this->assertStringContainsString( '<data class="p-rating" value="5" hidden></data>', $html );
+	}
+
+	public function test_a_rating_below_zero_renders_no_rating(): void {
+		$html = $this->render(
+			[
+				'title'  => 'Anzuelo',
+				'rating' => -3,
+			]
+		);
+
+		$this->assertStringNotContainsString( 'pk-stars', $html );
+		$this->assertStringNotContainsString( 'p-rating', $html );
+	}
+
+	/**
 	 * A field left empty, and markup that must not appear for it.
 	 *
 	 * @return array<string, array{0: string[], 1: string[]}>
