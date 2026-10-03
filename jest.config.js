@@ -4,10 +4,14 @@
  * @see https://jestjs.io/docs/configuration
  */
 
-const defaultConfig = require( '@wordpress/scripts/config/jest-unit.config' );
-
 module.exports = {
-	...defaultConfig,
+	preset: '@wordpress/jest-preset-default',
+	transform: {
+		'\\.[jt]sx?$': [
+			'babel-jest',
+			{ presets: [ '@wordpress/babel-preset-default' ] },
+		],
+	},
 	testEnvironment: 'jsdom',
 	roots: [ '<rootDir>/src/', '<rootDir>/tests/js/' ],
 	testMatch: [
@@ -15,7 +19,6 @@ module.exports = {
 		'**/?(*.)+(spec|test).[jt]s?(x)',
 	],
 	moduleNameMapper: {
-		...defaultConfig.moduleNameMapper,
 		'^@/(.*)$': '<rootDir>/src/$1',
 	},
 	setupFilesAfterEnv: [ '<rootDir>/tests/js/setup.js' ],
