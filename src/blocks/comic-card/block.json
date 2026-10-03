@@ -37,8 +37,7 @@
             "type": "string"
         },
         "readStatus": {
-            "type": "string",
-            "default": "reading"
+            "type": "string"
         },
         "rating": {
             "type": "number",

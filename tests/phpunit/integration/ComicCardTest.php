@@ -114,8 +114,49 @@ final class ComicCardTest extends WP_UnitTestCase {
 		foreach ( array_keys( $this->full_attributes() ) as $attribute ) {
 			$this->assertArrayHasKey( $attribute, $type->attributes, "Missing attribute {$attribute}." );
 		}
-		$this->assertSame( 'reading', $type->attributes['readStatus']['default'] );
 		$this->assertSame( 3, $type->api_version );
+	}
+
+	/**
+	 * The editor leaves an attribute that equals its block.json default out
+	 * of the saved comment, and the meta mirror never overwrites a stored
+	 * value with a missing one. A default on readStatus would therefore
+	 * leave the meta at "finished" after an author switched back to
+	 * "reading". With no default, every choice is saved.
+	 */
+	public function test_status_has_no_block_default_so_every_choice_is_saved(): void {
+		$type = WP_Block_Type_Registry::get_instance()->get_registered( self::BLOCK );
+
+		$this->assertArrayNotHasKey( 'default', $type->attributes['readStatus'] );
+	}
+
+	public function test_switching_a_saved_status_back_to_reading_updates_the_meta(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => $this->block_comment(
+					[
+						'title'      => 'Saga',
+						'readStatus' => 'finished',
+					]
+				),
+			]
+		);
+		$this->assertSame( 'finished', get_post_meta( $post_id, Meta_Fields::PREFIX . 'comic_status', true ) );
+
+		wp_update_post(
+			[
+				'ID'           => $post_id,
+				'post_content' => $this->block_comment(
+					[
+						'title'      => 'Saga',
+						'readStatus' => 'reading',
+					]
+				),
+			]
+		);
+
+		$this->assertSame( 'reading', get_post_meta( $post_id, Meta_Fields::PREFIX . 'comic_status', true ) );
 	}
 
 	public function test_comic_card_maps_to_comics_and_read_card_still_maps_to_read(): void {

@@ -104,9 +104,12 @@ export default function Edit( { attributes, setAttributes } ) {
 	const blockProps = useBlockProps( {
 		className: 'post-kinds-card-block',
 	} );
-	const hasEnded = readStatus === 'finished' || readStatus === 'abandoned';
+	// A card with no stored status is being read. block.json sets no default
+	// for it, so whichever status an author picks is saved with the block.
+	const status = readStatus || 'reading';
+	const hasEnded = status === 'finished' || status === 'abandoned';
 	const issue = issueParts( attributes );
-	const dates = dateLines( attributes );
+	const dates = dateLines( { ...attributes, readStatus: status } );
 
 	const handleImageSelect = ( media ) => {
 		setAttributes( {
@@ -276,7 +279,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							'Status',
 							'post-kinds-for-indieweb-in-block-themes'
 						) }
-						value={ readStatus }
+						value={ status }
 						options={ [
 							'to-read',
 							'reading',
@@ -307,7 +310,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						/>
 					</div>
 
-					{ readStatus !== 'to-read' && (
+					{ status !== 'to-read' && (
 						<DayField
 							label={ __(
 								'Started',
@@ -323,7 +326,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					{ hasEnded && (
 						<DayField
 							label={
-								readStatus === 'finished'
+								status === 'finished'
 									? __(
 											'Finished',
 											'post-kinds-for-indieweb-in-block-themes'
@@ -381,9 +384,9 @@ export default function Edit( { attributes, setAttributes } ) {
 
 					<div className="post-kinds-card__content">
 						<span
-							className={ `post-kinds-card__badge post-kinds-card__badge--${ readStatus }` }
+							className={ `post-kinds-card__badge post-kinds-card__badge--${ status }` }
 						>
-							{ statusLabel( readStatus ) }
+							{ statusLabel( status ) }
 						</span>
 
 						<RichText
