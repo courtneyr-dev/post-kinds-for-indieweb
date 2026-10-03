@@ -183,11 +183,11 @@ export default function Edit( { attributes, setAttributes } ) {
 								? __(
 										'star',
 										'post-kinds-for-indieweb-in-block-themes'
-								  )
+									)
 								: __(
 										'stars',
 										'post-kinds-for-indieweb-in-block-themes'
-								  )
+									)
 						}` }
 						tabIndex={ i === 0 ? 0 : -1 }
 					>

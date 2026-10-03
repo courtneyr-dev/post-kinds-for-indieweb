@@ -225,11 +225,11 @@ export default function Edit( { attributes, setAttributes } ) {
 										? __(
 												'Search for a movie…',
 												'post-kinds-for-indieweb-in-block-themes'
-										  )
+											)
 										: __(
 												'Search for a TV show…',
 												'post-kinds-for-indieweb-in-block-themes'
-										  )
+											)
 								}
 								onSelect={ handleSearchSelect }
 							/>
@@ -322,11 +322,11 @@ export default function Edit( { attributes, setAttributes } ) {
 								? __(
 										'Search for a movie…',
 										'post-kinds-for-indieweb-in-block-themes'
-								  )
+									)
 								: __(
 										'Search for a TV show…',
 										'post-kinds-for-indieweb-in-block-themes'
-								  )
+									)
 						}
 						onSelect={ handleSearchSelect }
 					/>
@@ -523,7 +523,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								: __(
 										'Set date/time',
 										'post-kinds-for-indieweb-in-block-themes'
-								  ) }
+									) }
 						</Button>
 						{ showDatePicker && (
 							<Popover
@@ -702,11 +702,11 @@ export default function Edit( { attributes, setAttributes } ) {
 								? __(
 										'Replace cover from TMDB',
 										'post-kinds-for-indieweb-in-block-themes'
-								  )
+									)
 								: __(
 										'Fetch cover from TMDB',
 										'post-kinds-for-indieweb-in-block-themes'
-								  ) }
+									) }
 						</Button>
 					</div>
 

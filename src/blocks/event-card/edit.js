@@ -259,7 +259,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								: __(
 										'Set start time',
 										'post-kinds-for-indieweb-in-block-themes'
-								  ) }
+									) }
 						</Button>
 						{ showStartPicker && (
 							<Popover
@@ -296,7 +296,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								: __(
 										'Set end time',
 										'post-kinds-for-indieweb-in-block-themes'
-								  ) }
+									) }
 						</Button>
 						{ showEndPicker && (
 							<Popover

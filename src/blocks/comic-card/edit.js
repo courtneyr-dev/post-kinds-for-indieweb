@@ -53,7 +53,7 @@ function DayField( { label, value, onChange } ) {
 					: __(
 							'Set date',
 							'post-kinds-for-indieweb-in-block-themes'
-					  ) }
+						) }
 			</Button>
 			{ day && (
 				<Button variant="tertiary" onClick={ () => onChange( '' ) }>
@@ -224,11 +224,11 @@ export default function Edit( { attributes, setAttributes } ) {
 										? __(
 												'Replace cover',
 												'post-kinds-for-indieweb-in-block-themes'
-										  )
+											)
 										: __(
 												'Choose cover',
 												'post-kinds-for-indieweb-in-block-themes'
-										  ) }
+											) }
 								</Button>
 							) }
 						/>
@@ -330,11 +330,11 @@ export default function Edit( { attributes, setAttributes } ) {
 									? __(
 											'Finished',
 											'post-kinds-for-indieweb-in-block-themes'
-									  )
+										)
 									: __(
 											'Set aside',
 											'post-kinds-for-indieweb-in-block-themes'
-									  )
+										)
 							}
 							value={ finishedAt }
 							onChange={ ( value ) =>

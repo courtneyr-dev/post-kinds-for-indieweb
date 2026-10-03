@@ -817,11 +817,11 @@ export default function Edit( { attributes, setAttributes } ) {
 							? __(
 									'Select a nearby venue or search',
 									'post-kinds-for-indieweb-in-block-themes'
-							  )
+								)
 							: __(
 									'Search for a location',
 									'post-kinds-for-indieweb-in-block-themes'
-							  ) }
+								) }
 					</h3>
 
 					{ error && (
@@ -894,7 +894,9 @@ export default function Edit( { attributes, setAttributes } ) {
 														: `${ (
 																result.distance /
 																1000
-														  ).toFixed( 1 ) }km` }
+															).toFixed(
+																1
+															) }km` }
 												</span>
 											) }
 										</button>
@@ -957,9 +959,9 @@ export default function Edit( { attributes, setAttributes } ) {
 																	: `${ (
 																			result.distance /
 																			1000
-																	  ).toFixed(
+																		).toFixed(
 																			1
-																	  ) }km` }
+																		) }km` }
 															</span>
 														) }
 													</button>
@@ -993,11 +995,11 @@ export default function Edit( { attributes, setAttributes } ) {
 								? __(
 										'Detecting…',
 										'post-kinds-for-indieweb-in-block-themes'
-								  )
+									)
 								: __(
 										'Use Current Location',
 										'post-kinds-for-indieweb-in-block-themes'
-								  ) }
+									) }
 						</Button>
 
 						<Button
@@ -1331,11 +1333,11 @@ export default function Edit( { attributes, setAttributes } ) {
 								? __(
 										'Map is hidden when privacy is set to private.',
 										'post-kinds-for-indieweb-in-block-themes'
-								  )
+									)
 								: __(
 										'Display an embedded OpenStreetMap.',
 										'post-kinds-for-indieweb-in-block-themes'
-								  )
+									)
 						}
 						disabled={ locationPrivacy === 'private' }
 						__nextHasNoMarginBottom
@@ -1368,7 +1370,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								: __(
 										'Set time',
 										'post-kinds-for-indieweb-in-block-themes'
-								  ) }
+									) }
 						</Button>
 						{ showDatePicker && (
 							<Popover

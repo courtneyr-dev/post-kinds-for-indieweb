@@ -16,7 +16,9 @@ composer install
 npm install
 ```
 
-Node: `>=18.0.0` required by `package.json` engines; CI uses Node 20.
+Node: `>=22.22.2` and npm `>=11` required by `package.json` engines; CI uses Node 24.
+`@wordpress/scripts` 36 needs Node 22.22.2+, and `npm ci` needs npm 11 to read
+the lockfiles Dependabot writes (npm 10 rejects them as out of sync).
 PHP: `>=8.2` (composer.json `require.php`); CI matrix covers 8.2/8.3/8.4.
 
 ## Build
@@ -97,7 +99,7 @@ uploads to Codecov only from the PHP 8.4 / WP 7.0 leg.
 ## Test — JS (Jest)
 
 ```bash
-npm run test:unit            # wp-scripts test-unit-js --config jest.config.js
+npm run test:unit            # wp-scripts test-unit-jest --config jest.config.js
 npm run test:unit:watch
 npm run test:unit:coverage    # what CI runs, uploads coverage/js/lcov.info to Codecov
 ```
