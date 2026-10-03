@@ -73,6 +73,36 @@ class Taxonomy {
 	public const AUTO_KIND_META_KEY = '_pkiw_kind_auto_assigned';
 
 	/**
+	 * Option recording which revision of the default descriptions a site holds.
+	 *
+	 * @var string
+	 */
+	public const DESCRIPTIONS_OPTION = 'pkiw_kind_descriptions_revision';
+
+	/**
+	 * Bump when SUPERSEDED_DESCRIPTIONS gains an entry, so sites refresh once more.
+	 *
+	 * @var int
+	 */
+	private const DESCRIPTIONS_REVISION = 1;
+
+	/**
+	 * Default descriptions this plugin seeded before and has since reworded, by kind slug.
+	 *
+	 * A stored description that still equals one of these was never edited
+	 * by the site, so it follows the current default. Anything else is the
+	 * site's own wording and stays.
+	 *
+	 * @var array<string, array<string>>
+	 */
+	private const SUPERSEDED_DESCRIPTIONS = [
+		'comics' => [
+			'A comic strip or panel you drew or published.',
+			'A comic you read, or a comic strip or panel you drew or published.',
+		],
+	];
+
+	/**
 	 * Default post types to register taxonomy for.
 	 *
 	 * @var array<string>
@@ -235,7 +265,7 @@ class Taxonomy {
 		],
 		'comics'      => [
 			'name'        => 'Comics',
-			'description' => 'A comic you read, or a comic strip or panel you drew or published.',
+			'description' => 'A comic you read, drew, or published.',
 		],
 		'collection'  => [
 			'name'        => 'Collection',
@@ -265,6 +295,7 @@ class Taxonomy {
 		add_action( 'init', [ $this, 'register_taxonomy' ], 5 );
 		add_action( 'init', [ $this, 'maybe_create_default_terms' ], 10 );
 		add_action( 'init', [ $this, 'ensure_all_terms_exist' ], 11 );
+		add_action( 'init', [ $this, 'maybe_refresh_default_descriptions' ], 12 );
 		add_filter( 'term_link', [ $this, 'filter_term_link' ], 10, 3 );
 		// wp_after_insert_post (not save_post): the REST posts controller
 		// assigns taxonomy terms after wp_insert_post(), so save_post would
@@ -455,6 +486,35 @@ class Taxonomy {
 		}
 
 		update_option( $version_key, PKIW_VERSION );
+	}
+
+	/**
+	 * Refresh reworded default descriptions once per revision.
+	 *
+	 * The seeders only insert missing terms, so a kind whose default
+	 * description changes keeps its old text on every existing site. The
+	 * kind archive prints that text, which left `/kind/comics/` describing
+	 * authored strips above a comic someone read (issue 228).
+	 *
+	 * @return void
+	 */
+	public function maybe_refresh_default_descriptions(): void {
+		if ( (int) get_option( self::DESCRIPTIONS_OPTION, 0 ) >= self::DESCRIPTIONS_REVISION ) {
+			return;
+		}
+
+		foreach ( self::SUPERSEDED_DESCRIPTIONS as $slug => $superseded ) {
+			$term = get_term_by( 'slug', $slug, self::TAXONOMY );
+			if ( ! $term instanceof \WP_Term || ! isset( $this->default_kinds[ $slug ] ) ) {
+				continue;
+			}
+
+			if ( in_array( $term->description, $superseded, true ) ) {
+				wp_update_term( $term->term_id, self::TAXONOMY, [ 'description' => $this->default_kinds[ $slug ]['description'] ] );
+			}
+		}
+
+		update_option( self::DESCRIPTIONS_OPTION, self::DESCRIPTIONS_REVISION );
 	}
 
 	/**
