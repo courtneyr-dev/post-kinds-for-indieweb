@@ -591,6 +591,12 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Post_Surface' ) ) {
 			( new Post_Surface() )->register();
 		}
+
+		// Kind archive layouts: shelf/menu styles, Query variations,
+		// grouped ordering, menu entry block (issue 233).
+		if ( class_exists( __NAMESPACE__ . '\\Kind_Archive_Layouts' ) ) {
+			( new Kind_Archive_Layouts() )->register();
+		}
 	}
 
 	/**
@@ -793,6 +799,9 @@ final class Plugin {
 		// Flush rewrite rules if needed (after storage mode change).
 		add_action( 'init', [ $this, 'maybe_flush_rewrite_rules' ], 999 );
 
+		// Delete stored Plex artwork URLs that carry the Plex token (issue 213).
+		add_action( 'init', [ Webhook_Handler::class, 'maybe_purge_plex_tokens' ] );
+
 		// Register custom blocks.
 		add_action( 'init', [ $this, 'register_blocks' ] );
 
@@ -852,6 +861,7 @@ final class Plugin {
 			'listen-card',
 			'watch-card',
 			'read-card',
+			'comic-card',
 			'checkin-card',
 			'rsvp-card',
 			'event-card',
@@ -1143,9 +1153,26 @@ final class Plugin {
 	private function get_plugin_template_definitions(): array {
 		return [
 			// Venue taxonomy template.
-			'taxonomy-venue' => [
+			'taxonomy-venue'      => [
 				'title'       => __( 'Venue Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Template for displaying venue taxonomy archives.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			// Kind archives (issue 233). Generic shelf for every kind; the
+			// menu layout only where the layout differs.
+			'taxonomy-kind'       => [
+				'title'       => __( 'Kind Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Shelf layout for any post kind archive.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-eat'   => [
+				'title'       => __( 'Eat Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Menu layout for the eat archive, grouped by cuisine.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-drink' => [
+				'title'       => __( 'Drink Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Menu layout for the drink archive, grouped by drink type.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 		];
@@ -1185,10 +1212,21 @@ final class Plugin {
 				continue;
 			}
 
-			// Check if template already exists in results.
+			// A theme file or Site Editor template for this slug wins. For a
+			// term-specific kind template (taxonomy-kind-eat), a theme or user
+			// taxonomy-kind wins too: otherwise the plugin's more specific slug
+			// would outrank the theme's own kind archive in the hierarchy.
+			$blocking = [ $slug ];
+			if ( str_starts_with( $slug, 'taxonomy-kind-' ) ) {
+				$blocking[] = 'taxonomy-kind';
+			}
+
 			$exists = false;
 			foreach ( $query_result as $template ) {
-				if ( $template->slug === $slug ) {
+				if ( 'post-kinds-for-indieweb//' . $template->slug === $template->id ) {
+					continue; // Our own template, added earlier in this loop.
+				}
+				if ( in_array( $template->slug, $blocking, true ) ) {
 					$exists = true;
 					break;
 				}
@@ -1227,9 +1265,13 @@ final class Plugin {
 			return $template;
 		}
 
-		// Extract slug from ID (format: theme//slug).
+		// Extract slug from ID (format: theme//slug). Only answer for the
+		// plugin's own IDs: a theme's file of the same slug must keep loading.
 		$parts = explode( '//', $id );
-		$slug  = end( $parts );
+		if ( 2 !== count( $parts ) || 'post-kinds-for-indieweb' !== $parts[0] ) {
+			return $template;
+		}
+		$slug = $parts[1];
 
 		$template_definitions = $this->get_plugin_template_definitions();
 

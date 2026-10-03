@@ -55,6 +55,54 @@ class CLI_Commands {
 	}
 
 	/**
+	 * Re-mirror card block attributes into _pkiw_* meta for existing posts.
+	 *
+	 * Runs the same batched, idempotent backfill the scheduled event runs
+	 * after an upgrade, all at once. Reads post content; never rewrites it.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <action>
+	 * : Must be 'backfill'.
+	 *
+	 * [--batch=<size>]
+	 * : Posts per batch.
+	 * ---
+	 * default: 50
+	 * ---
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp postkind card-meta backfill
+	 *
+	 * @subcommand card-meta
+	 *
+	 * @param array $args       Positional arguments; expects 'backfill'.
+	 * @param array $assoc_args Associative arguments (batch).
+	 * @return void
+	 */
+	public function card_meta( array $args, array $assoc_args ): void {
+		if ( 'backfill' !== ( $args[0] ?? '' ) ) {
+			WP_CLI::error( 'Usage: wp postkind card-meta backfill [--batch=<size>]' );
+		}
+
+		$batch  = max( 1, (int) ( $assoc_args['batch'] ?? Card_Meta_Sync::BACKFILL_BATCH ) );
+		$cursor = 0;
+		$total  = 0;
+		do {
+			$result = Card_Meta_Sync::backfill_batch( $cursor, $batch );
+			$cursor = $result['last_id'];
+			$total += $result['processed'];
+		} while ( ! $result['done'] );
+
+		update_option( Card_Meta_Sync::BACKFILL_OPTION, Card_Meta_Sync::BACKFILL_VERSION, false );
+		delete_option( Card_Meta_Sync::BACKFILL_CURSOR );
+		wp_clear_scheduled_hook( Card_Meta_Sync::BACKFILL_HOOK );
+
+		WP_CLI::success( sprintf( 'Re-synced card meta for %d post(s).', $total ) );
+	}
+
+	/**
 	 * Apply the configured default category to existing kind-bearing posts.
 	 *
 	 * New kind posts get the default category automatically; this backfills the

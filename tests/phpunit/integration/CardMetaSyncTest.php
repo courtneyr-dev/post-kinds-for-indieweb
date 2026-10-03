@@ -133,4 +133,118 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 		$this->assertSame( '9780316219280', get_post_meta( $post_id, '_pkiw_read_isbn', true ) );
 		$this->assertSame( '0316219282', get_post_meta( $post_id, '_pkiw_read_asin', true ), 'asin must be re-derived from the new isbn' );
 	}
+
+	public function test_eat_card_menu_fields_mirror_into_pkiw_meta(): void {
+		$post_id = self::factory()->post->create( [
+			// Slashed the way the editor's REST save delivers it.
+			'post_content' => wp_slash( '<!-- wp:post-kinds-indieweb/eat-card {"name":"Cacio e pepe","cuisine":"Italian","rating":4,"ateAt":"2026-09-01T19:30","notes":"Peppery.\nWould order again."} /-->' ),
+		] );
+
+		$this->assertSame( 'Cacio e pepe', get_post_meta( $post_id, '_pkiw_eat_name', true ) );
+		$this->assertSame( 'Italian', get_post_meta( $post_id, '_pkiw_eat_cuisine', true ) );
+		$this->assertSame( '4', get_post_meta( $post_id, '_pkiw_eat_rating', true ) );
+		$this->assertSame( '2026-09-01T19:30', get_post_meta( $post_id, '_pkiw_eat_ate_at', true ) );
+		$this->assertSame( "Peppery.\nWould order again.", get_post_meta( $post_id, '_pkiw_eat_notes', true ), 'Notes keep line breaks.' );
+	}
+
+	public function test_drink_card_menu_fields_mirror_into_pkiw_meta(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/drink-card {"name":"Imperial stout","drinkType":"beer","brand":"Tröegs","rating":5,"drankAt":"2026-09-02T21:00","notes":"Roasty."} /-->',
+		] );
+
+		$this->assertSame( 'Imperial stout', get_post_meta( $post_id, '_pkiw_drink_name', true ) );
+		$this->assertSame( 'beer', get_post_meta( $post_id, '_pkiw_drink_type', true ) );
+		$this->assertSame( 'Tröegs', get_post_meta( $post_id, '_pkiw_drink_brewery', true ) );
+		$this->assertSame( '5', get_post_meta( $post_id, '_pkiw_drink_rating', true ) );
+		$this->assertSame( '2026-09-02T21:00', get_post_meta( $post_id, '_pkiw_drink_drank_at', true ) );
+		$this->assertSame( 'Roasty.', get_post_meta( $post_id, '_pkiw_drink_notes', true ) );
+	}
+
+	public function test_drink_type_block_default_is_mirrored_when_attr_omitted(): void {
+		// The card renders drinkType's block.json default ("coffee") when the
+		// attribute is absent from the serialized comment; the menu must file
+		// that post under the same type the card shows.
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/drink-card {"name":"Cortado"} /-->',
+		] );
+
+		$this->assertSame( 'coffee', get_post_meta( $post_id, '_pkiw_drink_type', true ) );
+	}
+
+	public function test_drink_type_default_never_overwrites_existing_meta(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/drink-card {"name":"Oolong"} /-->',
+		] );
+		update_post_meta( $post_id, '_pkiw_drink_type', 'tea' );
+
+		wp_update_post( [ 'ID' => $post_id, 'post_title' => 'resave' ] );
+
+		$this->assertSame( 'tea', get_post_meta( $post_id, '_pkiw_drink_type', true ) );
+	}
+
+	public function test_backfill_restores_menu_meta_in_batches_without_touching_content(): void {
+		$ids = [];
+		foreach ( [ 'Ramen', 'Pho', 'Tacos' ] as $name ) {
+			$ids[ $name ] = self::factory()->post->create( [
+				'post_content' => '<!-- wp:post-kinds-indieweb/eat-card {"name":"' . $name . '","cuisine":"Street"} /-->',
+			] );
+		}
+		$plain = self::factory()->post->create( [ 'post_content' => '<!-- wp:paragraph --><p>No card.</p><!-- /wp:paragraph -->' ] );
+
+		// Simulate posts saved before this sync existed.
+		foreach ( $ids as $id ) {
+			delete_post_meta( $id, '_pkiw_eat_name' );
+			delete_post_meta( $id, '_pkiw_eat_cuisine' );
+		}
+		$before = array_map( static fn( $id ) => get_post( $id )->post_content . '|' . get_post( $id )->post_modified_gmt, $ids );
+
+		$first = \PKIW\Card_Meta_Sync::backfill_batch( 0, 2 );
+		$this->assertSame( 2, $first['processed'] );
+		$this->assertFalse( $first['done'] );
+
+		$cursor = $first['last_id'];
+		$passes = 1;
+		do {
+			$next   = \PKIW\Card_Meta_Sync::backfill_batch( $cursor, 2 );
+			$cursor = $next['last_id'];
+			++$passes;
+		} while ( ! $next['done'] && $passes < 10 );
+
+		$this->assertTrue( $next['done'] );
+		foreach ( $ids as $name => $id ) {
+			$this->assertSame( $name, get_post_meta( $id, '_pkiw_eat_name', true ) );
+			$this->assertSame( 'Street', get_post_meta( $id, '_pkiw_eat_cuisine', true ) );
+		}
+		$this->assertSame( '', get_post_meta( $plain, '_pkiw_eat_name', true ) );
+
+		$after = array_map( static fn( $id ) => get_post( $id )->post_content . '|' . get_post( $id )->post_modified_gmt, $ids );
+		$this->assertSame( $before, $after, 'Backfill never rewrites post content or bumps modified dates.' );
+
+		// Idempotent: a second full run changes nothing.
+		$again = \PKIW\Card_Meta_Sync::backfill_batch( 0, 100 );
+		$this->assertTrue( $again['done'] );
+		foreach ( $ids as $name => $id ) {
+			$this->assertSame( $name, get_post_meta( $id, '_pkiw_eat_name', true ) );
+		}
+	}
+
+	public function test_backfill_schedules_once_and_marks_complete(): void {
+		delete_option( \PKIW\Card_Meta_Sync::BACKFILL_OPTION );
+		wp_clear_scheduled_hook( \PKIW\Card_Meta_Sync::BACKFILL_HOOK );
+
+		\PKIW\Card_Meta_Sync::maybe_schedule_backfill();
+		$this->assertNotFalse( wp_next_scheduled( \PKIW\Card_Meta_Sync::BACKFILL_HOOK ) );
+
+		// A lost event is rescheduled on the next check, not duplicated.
+		\PKIW\Card_Meta_Sync::maybe_schedule_backfill();
+		$this->assertCount( 1, array_filter( _get_cron_array(), static fn( $hooks ) => isset( $hooks[ \PKIW\Card_Meta_Sync::BACKFILL_HOOK ] ) ) );
+
+		wp_clear_scheduled_hook( \PKIW\Card_Meta_Sync::BACKFILL_HOOK );
+		\PKIW\Card_Meta_Sync::run_backfill_event();
+
+		$this->assertSame( \PKIW\Card_Meta_Sync::BACKFILL_VERSION, get_option( \PKIW\Card_Meta_Sync::BACKFILL_OPTION ) );
+
+		\PKIW\Card_Meta_Sync::maybe_schedule_backfill();
+		$this->assertFalse( wp_next_scheduled( \PKIW\Card_Meta_Sync::BACKFILL_HOOK ), 'A completed backfill is not rescheduled.' );
+	}
 }

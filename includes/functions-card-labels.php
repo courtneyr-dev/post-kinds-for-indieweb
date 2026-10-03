@@ -51,3 +51,34 @@ function get_kind_label( string $label, string $kind, string $context = '' ): st
 
 	return is_string( $filtered ) ? $filtered : $label;
 }
+
+/**
+ * A stored card date as a calendar day.
+ *
+ * Reading dates are days, not instants. A value that opens with YYYY-MM-DD
+ * keeps that day whatever the site timezone is: strtotime() reads a bare
+ * date as UTC midnight, and wp_date() then prints the previous day on any
+ * site west of UTC.
+ *
+ * Anything else is not a date. strtotime() would turn "2026-02-30" into
+ * March 2 and "tomorrow" into a day nobody stored, so text that does not
+ * open with a real calendar day returns no date.
+ *
+ * @since 1.9.0
+ *
+ * @param string $raw Stored value.
+ * @return array{0: string, 1: string} Machine date (Y-m-d) and display date, or two empty strings.
+ */
+function card_calendar_date( string $raw ): array {
+	if ( ! preg_match( '/^(\d{4})-(\d{2})-(\d{2})/', trim( $raw ), $matches ) || ! checkdate( (int) $matches[2], (int) $matches[3], (int) $matches[1] ) ) {
+		return [ '', '' ];
+	}
+
+	$timestamp = gmmktime( 12, 0, 0, (int) $matches[2], (int) $matches[3], (int) $matches[1] );
+	$utc       = new \DateTimeZone( 'UTC' );
+
+	return [
+		(string) wp_date( 'Y-m-d', $timestamp, $utc ),
+		(string) wp_date( (string) get_option( 'date_format' ), $timestamp, $utc ),
+	];
+}

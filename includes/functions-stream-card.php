@@ -82,6 +82,17 @@ function ensure_entry_properties_filter( string $html, array $block, $instance )
 		return $html;
 	}
 	$card_rooted = (bool) preg_match( '/<article\b[^>]*\bclass="[^"]*\bpk-card\b[^"]*\bh-entry\b/i', $html );
+
+	// The card an adapter hands back decides the root, not the one the
+	// renderer started with: an adapter that swaps the generic card for the
+	// post's own h-cite card leaves no rooted article, and the Query Loop
+	// <li> has to be the entry or read-of and friends attach to nothing.
+	if ( $card_rooted ) {
+		$GLOBALS['pkiw_stream_card_root_seen'][ $post->ID ] = true;
+	} else {
+		unset( $GLOBALS['pkiw_stream_card_root_seen'][ $post->ID ] );
+	}
+
 	return ensure_entry_properties( $html, $post, $card_rooted );
 }
 add_filter( 'render_block_post-kinds-indieweb/stream-card', __NAMESPACE__ . '\\ensure_entry_properties_filter', 99, 3 );
@@ -365,6 +376,13 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	}
 
 	$out .= '</div>';
+
+	// Weather posts have no card block; show the observation Simple
+	// Location stored, as the entry's p-weather. Empty when there's none
+	// or the viewer can't see the post's location.
+	if ( 'weather' === $kind_slug ) {
+		$out .= Integrations\Simple_Location_Weather::render( $post->ID );
+	}
 
 	if ( '' !== $thumb_html ) {
 		// get_the_post_thumbnail() returns core-generated, escaped <img> markup.

@@ -236,6 +236,67 @@
             }
         }
     },
+    "post-kinds-indieweb/comic-card": {
+        "render": "dynamic",
+        "attributes": {
+            "title": {
+                "type": "string",
+                "sample": "Sample title value"
+            },
+            "creators": {
+                "type": "string",
+                "sample": "Sample creators value"
+            },
+            "series": {
+                "type": "string",
+                "sample": "Sample series value"
+            },
+            "volume": {
+                "type": "string",
+                "sample": "Sample volume value"
+            },
+            "issueNumber": {
+                "type": "string",
+                "sample": "Sample issueNumber value"
+            },
+            "publisher": {
+                "type": "string",
+                "sample": "Sample publisher value"
+            },
+            "coverImage": {
+                "type": "string",
+                "sample": "https://example.com/sample-coverimage"
+            },
+            "coverImageAlt": {
+                "type": "string",
+                "sample": "Sample coverImageAlt value"
+            },
+            "sourceUrl": {
+                "type": "string",
+                "sample": "https://example.com/sample-sourceurl"
+            },
+            "readStatus": {
+                "type": "string",
+                "sample": "Sample readStatus value"
+            },
+            "rating": {
+                "type": "number",
+                "sample": 4
+            },
+            "startedAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "finishedAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "review": {
+                "type": "string",
+                "sample": "Sample review value"
+            }
+        }
+    },
     "post-kinds-indieweb/drink-card": {
         "render": "dynamic",
         "attributes": {

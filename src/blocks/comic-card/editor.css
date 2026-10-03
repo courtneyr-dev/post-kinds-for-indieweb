@@ -1,0 +1,18 @@
+/**
+ * Comic Card Block - Editor Styles
+ *
+ * @package PKIW
+ */
+
+.wp-block-post-kinds-indieweb-comic-card .post-kinds-card__media {
+	cursor: pointer;
+}
+
+.wp-block-post-kinds-indieweb-comic-card .post-kinds-card__media:hover {
+	opacity: 0.8;
+}
+
+.wp-block-post-kinds-indieweb-comic-card .post-kinds-card__issue,
+.wp-block-post-kinds-indieweb-comic-card .post-kinds-card__dates {
+	margin: 0;
+}

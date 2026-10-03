@@ -536,4 +536,74 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertSame( 'Recharged', \PKIW\mood_card_accessible_name( $content ) );
 		$this->assertSame( 'Mood', \PKIW\mood_card_accessible_name( '<!-- wp:post-kinds-indieweb/mood-card {"emoji":"🔋"} /-->' ) );
 	}
+
+	/**
+	 * A stream card for a post whose body holds a card and more.
+	 *
+	 * @return int Post ID.
+	 */
+	private function long_form_read(): int {
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Piranesi',
+				'post_content' => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Piranesi","bookUrl":"https://example.com/piranesi"} /-->'
+					. "\n\n<!-- wp:paragraph -->\n<p>Stayed up for the last hundred pages.</p>\n<!-- /wp:paragraph -->",
+			]
+		);
+		wp_set_object_terms( $post_id, 'read', 'kind' );
+		return $post_id;
+	}
+
+	/**
+	 * The generic card is the entry root, so the Query Loop item is not.
+	 */
+	public function test_generic_card_keeps_the_loop_item_from_being_a_second_entry_root(): void {
+		$post_id = $this->long_form_read();
+		$this->go_to( get_permalink( $post_id ) );
+
+		$card = do_blocks( '<!-- wp:post-kinds-indieweb/stream-card /-->' );
+
+		$this->assertMatchesRegularExpression( '/<article\b[^>]*class="[^"]*\bpk-card\b[^"]*\bh-entry\b/', $card );
+		$this->assertNotContains( 'h-entry', get_post_class( '', $post_id ) );
+	}
+
+	/**
+	 * A theme adapter that swaps the generic card for the post's own h-cite
+	 * card leaves no rooted article, so the Query Loop item is the entry.
+	 */
+	public function test_loop_item_is_the_entry_root_when_an_adapter_swaps_in_an_h_cite_card(): void {
+		$post_id = $this->long_form_read();
+		$this->go_to( get_permalink( $post_id ) );
+		$adapter = static function () use ( $post_id ) {
+			return \PKIW\link_title_to_post(
+				render_block(
+					[
+						'blockName'    => 'post-kinds-indieweb/read-card',
+						'attrs'        => [
+							'bookTitle' => 'Piranesi',
+							'bookUrl'   => 'https://example.com/piranesi',
+						],
+						'innerBlocks'  => [],
+						'innerHTML'    => '',
+						'innerContent' => [],
+					]
+				),
+				get_post( $post_id )
+			);
+		};
+		add_filter( 'render_block_post-kinds-indieweb/stream-card', $adapter, 10 );
+
+		$card = do_blocks( '<!-- wp:post-kinds-indieweb/stream-card /-->' );
+
+		remove_filter( 'render_block_post-kinds-indieweb/stream-card', $adapter, 10 );
+
+		$this->assertStringContainsString( 'pk-card k-read h-cite u-read-of', $card );
+		$this->assertContains( 'h-entry', get_post_class( '', $post_id ) );
+
+		$entry = \Mf2\parse( '<li class="' . esc_attr( implode( ' ', get_post_class( '', $post_id ) ) ) . '">' . $card . '</li>' )['items'][0];
+		$this->assertContains( 'h-entry', $entry['type'] );
+		$this->assertSame( [ 'Piranesi' ], $entry['properties']['read-of'][0]['properties']['name'] );
+		$this->assertSame( [ get_permalink( $post_id ) ], $entry['properties']['url'] );
+	}
 }

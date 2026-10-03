@@ -32,6 +32,14 @@ class Import_Manager {
 	private const JOB_PREFIX = 'pkiw_import_job_';
 
 	/**
+	 * Post meta holding "{source}:{source item ID}" for imports whose kind
+	 * has no title to match on (bookmark, checkin, note).
+	 *
+	 * @var string
+	 */
+	public const IDENTITY_META_KEY = '_pkiw_import_source_id';
+
+	/**
 	 * Supported import sources.
 	 *
 	 * @var array<string, array<string, mixed>>
@@ -229,26 +237,37 @@ class Import_Manager {
 			];
 		}
 
+		// Batches run from WP-Cron with no user, so pick the author now.
+		[ $author_id, $author_source ] = $this->resolve_import_author();
+		if ( 0 === $author_id ) {
+			return [
+				'success' => false,
+				'error'   => 'No user can author imported posts. Set pkiw_default_author to a user who can create posts.',
+			];
+		}
+
 		// Create job.
 		$job_id = wp_generate_uuid4();
 
 		$job = [
-			'id'           => $job_id,
-			'source'       => $source,
-			'status'       => 'pending',
-			'options'      => $options,
-			'progress'     => 0,
-			'total'        => 0,
-			'imported'     => 0,
-			'updated'      => 0,
-			'skipped'      => 0,
-			'failed'       => 0,
-			'errors'       => [],
-			'created_at'   => time(),
-			'updated_at'   => time(),
-			'started_at'   => null,
-			'completed_at' => null,
-			'cursor'       => null,
+			'id'            => $job_id,
+			'source'        => $source,
+			'status'        => 'pending',
+			'options'       => $options,
+			'author_id'     => $author_id,
+			'author_source' => $author_source,
+			'progress'      => 0,
+			'total'         => 0,
+			'imported'      => 0,
+			'updated'       => 0,
+			'skipped'       => 0,
+			'failed'        => 0,
+			'errors'        => [],
+			'created_at'    => time(),
+			'updated_at'    => time(),
+			'started_at'    => null,
+			'completed_at'  => null,
+			'cursor'        => null,
 		];
 
 		$this->save_job( $job_id, $job );
@@ -294,6 +313,24 @@ class Import_Manager {
 		if ( 'pending' === $job['status'] ) {
 			$job['status']     = 'running';
 			$job['started_at'] = time();
+			$this->save_job( $job_id, $job );
+		}
+
+		// Jobs queued before the author was recorded at start pick one now.
+		if ( empty( $job['author_id'] ) ) {
+			[ $job['author_id'], $job['author_source'] ] = $this->resolve_import_author();
+
+			if ( 0 === $job['author_id'] ) {
+				$this->update_job(
+					$job_id,
+					[
+						'status' => 'failed',
+						'errors' => [ 'No user can author imported posts. Set pkiw_default_author to a user who can create posts.' ],
+					]
+				);
+				return;
+			}
+
 			$this->save_job( $job_id, $job );
 		}
 
@@ -552,6 +589,7 @@ class Import_Manager {
 		];
 
 		$options         = $job['options'] ?? [];
+		$source          = (string) ( $job['source'] ?? '' );
 		$create_posts    = $options['create_posts'] ?? true;  // Default to creating posts.
 		$skip_existing   = $options['skip_existing'] ?? true;
 		$update_existing = $options['update_existing'] ?? false; // Update metadata on existing posts.
@@ -559,9 +597,17 @@ class Import_Manager {
 		foreach ( $items as $item ) {
 			try {
 				// Check for existing post.
-				$existing_post_id = $this->find_existing_post( $item, $source_config );
+				$existing_post_id = $this->find_existing_post( $item, $source_config, $source );
 
 				if ( $existing_post_id ) {
+					// A post imported before identities existed matched on its
+					// other fields: give it the identity so later runs match it
+					// exactly and the fallback never picks it for another item.
+					$identity = $this->get_import_identity( $item, $source_config, $source );
+					if ( '' !== $identity && '' === (string) get_post_meta( $existing_post_id, self::IDENTITY_META_KEY, true ) ) {
+						update_post_meta( $existing_post_id, self::IDENTITY_META_KEY, $identity );
+					}
+
 					// Post already exists.
 					if ( $update_existing ) {
 						// Update metadata on the existing post.
@@ -579,7 +625,7 @@ class Import_Manager {
 
 				if ( $create_posts ) {
 					// Create a WordPress post.
-					$post_id = $this->create_post_from_item( $item, $source_config, $options );
+					$post_id = $this->create_post_from_item( $item, $source_config, $options, $source, (int) ( $job['author_id'] ?? 0 ) );
 
 					if ( is_wp_error( $post_id ) ) {
 						++$result['failed'];
@@ -698,10 +744,18 @@ class Import_Manager {
 	 *
 	 * @param array<string, mixed> $item          Item data.
 	 * @param array<string, mixed> $source_config Source configuration.
+	 * @param string               $source        Source identifier (the key in $this->sources).
 	 * @return int|null Post ID or null if not found.
 	 */
-	private function find_existing_post( array $item, array $source_config ): ?int {
+	private function find_existing_post( array $item, array $source_config, string $source = '' ): ?int {
 		$kind = $source_config['kind'];
+
+		// Bookmark, checkin and note items have no title to match on: look
+		// them up by the source item ID stored when they were imported.
+		$identity = $this->get_import_identity( $item, $source_config, $source );
+		if ( '' !== $identity ) {
+			return $this->find_post_by_lookups( $this->get_identity_lookups( $identity, $item, $source_config, $source ) );
+		}
 
 		// Build unique identifier based on type.
 		$post_title = '';
@@ -790,6 +844,16 @@ class Import_Manager {
 			$lookups[] = $title_args;
 		}
 
+		return $this->find_post_by_lookups( $lookups );
+	}
+
+	/**
+	 * Run duplicate lookups in every status and return the first match.
+	 *
+	 * @param array<int, array<string, mixed>> $lookups WP_Query args, most exact first.
+	 * @return int|null Post ID or null if nothing matched.
+	 */
+	private function find_post_by_lookups( array $lookups ): ?int {
 		/*
 		 * Search every status. Imports default to draft, and a WP_Query with
 		 * no post_status matches drafts only inside wp-admin, so scheduled
@@ -818,6 +882,160 @@ class Import_Manager {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Build the stable identity of a bookmark, checkin or note item.
+	 *
+	 * The identity is "{source}:{source item ID}": the Readwise book ID for
+	 * articles, tweets and supplementals, the provider check-in ID for
+	 * check-ins. A bookmark with no ID falls back to its canonical URL.
+	 * Other kinds return '' and keep their cite name and title lookups.
+	 *
+	 * @param array<string, mixed> $item          Item data.
+	 * @param array<string, mixed> $source_config Source configuration.
+	 * @param string               $source        Source identifier.
+	 * @return string Identity, or '' when the item has nothing stable to key on.
+	 */
+	private function get_import_identity( array $item, array $source_config, string $source ): string {
+		$kind = $source_config['kind'] ?? '';
+
+		if ( ! in_array( $kind, [ 'bookmark', 'checkin', 'note' ], true ) ) {
+			return '';
+		}
+
+		if ( '' === $source ) {
+			$source = sanitize_key( (string) ( $source_config['name'] ?? '' ) );
+		}
+
+		$id = $this->get_source_item_id( $item );
+		if ( '' !== $id ) {
+			return $source . ':' . $id;
+		}
+
+		$url = (string) ( $item['source_url'] ?? '' );
+		if ( 'bookmark' === $kind && '' !== $url ) {
+			return $source . ':url:' . $url;
+		}
+
+		return '';
+	}
+
+	/**
+	 * Get an item's ID at its source: `id`, or `checkin_id` for check-ins.
+	 *
+	 * @param array<string, mixed> $item Item data.
+	 * @return string ID, or '' when missing (Readwise normalizes a missing ID to 0).
+	 */
+	private function get_source_item_id( array $item ): string {
+		$id = $item['id'] ?? $item['checkin_id'] ?? '';
+
+		if ( ! is_scalar( $id ) || '' === (string) $id || '0' === (string) $id ) {
+			return '';
+		}
+
+		return (string) $id;
+	}
+
+	/**
+	 * Lookups for an item with an identity: the identity itself, then the
+	 * fields a pre-upgrade import wrote, limited to posts with no identity.
+	 *
+	 * Pre-upgrade fallbacks:
+	 * - bookmark: `_pkiw_cite_url` and `_pkiw_imported_from` (this source's name).
+	 * - note: `_pkiw_cite_name` and `_pkiw_imported_from`, plus `_pkiw_cite_url` when the item has a URL.
+	 * - checkin: the check-in ID the check-in sync class stores (`_pkiw_checkin_{source}_id`).
+	 *   Check-ins created by this class before the identity existed stored no
+	 *   provider ID, so nothing reliable matches them.
+	 *
+	 * @param string               $identity      Item identity.
+	 * @param array<string, mixed> $item          Item data.
+	 * @param array<string, mixed> $source_config Source configuration.
+	 * @param string               $source        Source identifier.
+	 * @return array<int, array<string, mixed>> WP_Query args.
+	 */
+	private function get_identity_lookups( string $identity, array $item, array $source_config, string $source ): array {
+		$post_type = $this->get_import_post_type();
+		$base      = [
+			'post_type'      => $post_type,
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+		];
+
+		$lookups = [
+			$base + [
+				'meta_query' => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+					[
+						'key'   => self::IDENTITY_META_KEY,
+						'value' => $identity,
+					],
+				],
+			],
+		];
+
+		$imported_from = [
+			'key'   => '_pkiw_imported_from',
+			'value' => (string) ( $source_config['name'] ?? '' ),
+		];
+		$url           = (string) ( $item['source_url'] ?? '' );
+		$legacy        = [];
+
+		switch ( $source_config['kind'] ) {
+			case 'bookmark':
+				if ( '' !== $url ) {
+					$legacy = [
+						[
+							'key'   => '_pkiw_cite_url',
+							'value' => $url,
+						],
+						$imported_from,
+					];
+				}
+				break;
+
+			case 'note':
+				$title = (string) ( $item['title'] ?? '' );
+				if ( '' !== $title ) {
+					$legacy = [
+						[
+							'key'   => '_pkiw_cite_name',
+							'value' => $title,
+						],
+						$imported_from,
+					];
+					if ( '' !== $url ) {
+						$legacy[] = [
+							'key'   => '_pkiw_cite_url',
+							'value' => $url,
+						];
+					}
+				}
+				break;
+
+			case 'checkin':
+				$id = $this->get_source_item_id( $item );
+				if ( '' !== $id && '' !== $source ) {
+					// The check-in sync classes create 'post' whatever the storage mode.
+					$base['post_type'] = array_values( array_unique( [ $post_type, 'post' ] ) );
+					$legacy            = [
+						[
+							'key'   => '_pkiw_checkin_' . $source . '_id',
+							'value' => $id,
+						],
+					];
+				}
+				break;
+		}
+
+		if ( ! empty( $legacy ) ) {
+			$legacy[]  = [
+				'key'     => self::IDENTITY_META_KEY,
+				'compare' => 'NOT EXISTS',
+			];
+			$lookups[] = $base + [ 'meta_query' => $legacy ]; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+		}
+
+		return $lookups;
 	}
 
 	/**
@@ -926,21 +1144,86 @@ class Import_Manager {
 	}
 
 	/**
+	 * Pick the user who owns the posts an import job creates.
+	 *
+	 * In order:
+	 * 1. The current user, when they can create import posts (manual runs).
+	 * 2. The pkiw_default_author option (default 1), the setting the webhook
+	 *    handler uses, when it names a user who can create import posts.
+	 * 3. The administrator with the lowest user ID who can create import
+	 *    posts. A deleted or demoted default author shouldn't stop scheduled
+	 *    sync or leave posts with no author, and the earliest administrator
+	 *    is normally the site owner.
+	 *
+	 * @return array{0: int, 1: string} User ID and which rule chose it
+	 *                                  ('current_user', 'default_author',
+	 *                                  'fallback_administrator'), or
+	 *                                  [0, ''] when no user qualifies.
+	 */
+	private function resolve_import_author(): array {
+		$current = get_current_user_id();
+		if ( $current > 0 && $this->can_author_imports( $current ) ) {
+			return [ $current, 'current_user' ];
+		}
+
+		$default = (int) get_option( 'pkiw_default_author', 1 );
+		if ( $default > 0 && $this->can_author_imports( $default ) ) {
+			return [ $default, 'default_author' ];
+		}
+
+		$admins = get_users(
+			[
+				'role'    => 'administrator',
+				'orderby' => 'ID',
+				'order'   => 'ASC',
+				'fields'  => 'ID',
+			]
+		);
+		foreach ( $admins as $admin_id ) {
+			if ( $this->can_author_imports( (int) $admin_id ) ) {
+				return [ (int) $admin_id, 'fallback_administrator' ];
+			}
+		}
+
+		return [ 0, '' ];
+	}
+
+	/**
+	 * Whether a user exists and can create posts of the import post type.
+	 *
+	 * @param int $user_id User ID.
+	 * @return bool
+	 */
+	private function can_author_imports( int $user_id ): bool {
+		$user = get_userdata( $user_id );
+		if ( ! $user ) {
+			return false;
+		}
+
+		$post_type = get_post_type_object( $this->get_import_post_type() );
+		$cap       = $post_type ? $post_type->cap->create_posts : 'edit_posts';
+
+		return user_can( $user, $cap );
+	}
+
+	/**
 	 * Create a WordPress post from an imported item.
 	 *
 	 * @param array<string, mixed> $item          Item data.
 	 * @param array<string, mixed> $source_config Source configuration.
 	 * @param array<string, mixed> $options       Job options (post_status, etc.).
+	 * @param string               $source        Source identifier.
+	 * @param int                  $author_id     Author the job recorded (see resolve_import_author()).
 	 * @return int|\WP_Error Post ID or error.
 	 */
-	private function create_post_from_item( array $item, array $source_config, array $options = [] ) {
+	private function create_post_from_item( array $item, array $source_config, array $options = [], string $source = '', int $author_id = 0 ) {
 		$kind = $source_config['kind'];
 
 		// Build post data. Default to draft for safety - user must explicitly choose to publish.
 		$post_data = [
 			'post_type'   => $this->get_import_post_type(),
 			'post_status' => $options['post_status'] ?? 'draft',
-			'post_author' => get_current_user_id(),
+			'post_author' => $author_id,
 		];
 
 		// Dispatch to per-kind builder. Each builder returns a triple of
@@ -979,6 +1262,11 @@ class Import_Manager {
 		// Mark as imported.
 		update_post_meta( $post_id, '_pkiw_imported_from', $source_config['name'] );
 		update_post_meta( $post_id, '_pkiw_imported_at', time() );
+
+		$identity = $this->get_import_identity( $item, $source_config, $source );
+		if ( '' !== $identity ) {
+			update_post_meta( $post_id, self::IDENTITY_META_KEY, $identity );
+		}
 
 		return $post_id;
 	}

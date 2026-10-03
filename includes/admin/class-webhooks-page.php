@@ -605,7 +605,7 @@ class Webhooks_Page {
 							<td class="column-cb">
 								<input type="checkbox" class="select-scrobble" value="<?php echo esc_attr( $index ); ?>">
 							</td>
-							<td><?php echo esc_html( $this->webhook_configs[ $scrobble['source'] ]['name'] ?? $scrobble['source'] ); ?></td>
+							<td><?php echo esc_html( $this->service_label( $scrobble ) ); ?></td>
 							<td><?php echo esc_html( ucfirst( $scrobble['type'] ?? 'unknown' ) ); ?></td>
 							<td>
 								<strong><?php echo esc_html( $scrobble['title'] ?? 'Unknown' ); ?></strong>
@@ -684,7 +684,7 @@ class Webhooks_Page {
 							}
 							?>
 						</td>
-						<td><?php echo esc_html( $this->webhook_configs[ $entry['source'] ]['name'] ?? $entry['source'] ?? 'Unknown' ); ?></td>
+						<td><?php echo esc_html( $this->service_label( $entry ) ); ?></td>
 						<td>
 							<?php
 							$status       = $entry['status'] ?? 'unknown';
@@ -694,7 +694,7 @@ class Webhooks_Page {
 								<?php echo esc_html( ucfirst( $status ) ); ?>
 							</span>
 						</td>
-						<td><?php echo esc_html( $entry['message'] ?? '' ); ?></td>
+						<td><?php echo esc_html( $this->log_message( $entry ) ); ?></td>
 						<td><?php echo esc_html( $entry['ip'] ?? '' ); ?></td>
 					</tr>
 				<?php endforeach; ?>
@@ -707,6 +707,41 @@ class Webhooks_Page {
 			</button>
 		</p>
 		<?php
+	}
+
+	/**
+	 * Display name of the service behind a log entry or pending scrobble.
+	 *
+	 * Webhook_Handler::log_webhook() writes the slug under `service`, and
+	 * scrobble items carry it under `source`. Both are read so every stored
+	 * row resolves, whichever writer made it.
+	 *
+	 * @param array<string, mixed> $entry Log entry or pending scrobble.
+	 * @return string Service name, the raw slug when unknown, or "Unknown".
+	 */
+	private function service_label( array $entry ): string {
+		$slug = $entry['service'] ?? $entry['source'] ?? '';
+
+		if ( ! is_string( $slug ) || '' === $slug ) {
+			return __( 'Unknown', 'post-kinds-for-indieweb-in-block-themes' );
+		}
+
+		return (string) ( $this->webhook_configs[ $slug ]['name'] ?? $slug );
+	}
+
+	/**
+	 * Message text of a log entry.
+	 *
+	 * Webhook_Handler::log_webhook() nests the message under `data`; older
+	 * entries kept it at the top level.
+	 *
+	 * @param array<string, mixed> $entry Log entry.
+	 * @return string Message, or '' when none is a string.
+	 */
+	private function log_message( array $entry ): string {
+		$message = $entry['message'] ?? $entry['data']['message'] ?? '';
+
+		return is_string( $message ) ? $message : '';
 	}
 
 	/**
