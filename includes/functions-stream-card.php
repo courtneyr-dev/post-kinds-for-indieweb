@@ -335,6 +335,10 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	// mf2 parsers fall back to the implied name / content as intended.
 	$title_class = $has_title ? 'pk-title p-name' : 'pk-title';
 
+	// A recipe's facts come from the recipe plugin when one holds the recipe,
+	// read here as the card renders.
+	$recipe = 'recipe' === $kind_slug ? recipe_facts( $post->ID ) : null;
+
 	$thumbnail_id = has_post_thumbnail( $post ) ? (int) get_post_thumbnail_id( $post ) : 0;
 	$thumb_html   = $thumbnail_id > 0
 		? get_the_post_thumbnail(
@@ -347,6 +351,19 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 			]
 		)
 		: '';
+	if ( '' === $thumb_html && null !== $recipe && $recipe['image_id'] > 0 ) {
+		// No featured image: the recipe's own picture stands in.
+		$thumb_html = wp_get_attachment_image(
+			$recipe['image_id'],
+			'medium',
+			false,
+			[
+				'class'   => 'u-photo',
+				'loading' => 'lazy',
+				'alt'     => stream_card_thumbnail_alt( $post, $recipe['image_id'] ),
+			]
+		);
+	}
 
 	$out = '<article class="pk-card pk-card--stream k-' . esc_attr( $badge_kind ) . ' h-entry">';
 	// Badge SVG is a static, decorative glyph from get_kind_icon_svg().
@@ -375,6 +392,10 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 			. esc_html( $date_display ) . '</time></p>';
 	}
 
+	if ( null !== $recipe ) {
+		$out .= recipe_stream_card_facts( $recipe );
+	}
+
 	$out .= '</div>';
 
 	// Weather posts have no card block; show the observation Simple
@@ -401,6 +422,27 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	$out .= '</div></article>';
 
 	return $out;
+}
+
+/**
+ * A recipe card's course and total time, each printed only when known.
+ *
+ * @since 1.9.0
+ *
+ * @param array{total_minutes: int, duration: string, courses: array<int, array{name: string, slug: string}>} $recipe Facts from recipe_facts().
+ * @return string Markup, or '' when neither is known.
+ */
+function recipe_stream_card_facts( array $recipe ): string {
+	$parts = [];
+
+	if ( $recipe['courses'] ) {
+		$parts[] = '<span class="pk-recipe-course">' . esc_html( implode( ', ', wp_list_pluck( $recipe['courses'], 'name' ) ) ) . '</span>';
+	}
+	if ( $recipe['total_minutes'] > 0 ) {
+		$parts[] = '<time class="pk-recipe-time" datetime="' . esc_attr( $recipe['duration'] ) . '">' . esc_html( recipe_time_label( $recipe['total_minutes'] ) ) . '</time>';
+	}
+
+	return $parts ? '<p class="pk-sub pk-recipe-facts">' . implode( ' ', $parts ) . '</p>' : '';
 }
 
 /**

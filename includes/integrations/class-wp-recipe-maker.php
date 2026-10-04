@@ -54,26 +54,39 @@ class WP_Recipe_Maker {
 	 * @return void
 	 */
 	private function detect_wprm(): void {
-		// Check if WPRM is active via its main class.
-		if ( class_exists( 'WPRM_Recipe_Manager' ) ) {
-			$this->wprm_active = true;
-			return;
-		}
+		$this->wprm_active = self::is_supported_plugin_active();
+	}
 
-		// Check if WPRM post type exists.
-		if ( post_type_exists( 'wprm_recipe' ) ) {
-			$this->wprm_active = true;
-			return;
-		}
+	/**
+	 * Whether a supported recipe plugin is running.
+	 *
+	 * WP Recipe Maker is the one supported plugin. When it runs it owns recipe
+	 * data and the recipe card; Post Kinds reads from it and copies nothing.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return bool
+	 */
+	public static function is_supported_plugin_active(): bool {
+		$active = class_exists( 'WPRM_Recipe_Manager' ) || post_type_exists( 'wprm_recipe' );
 
-		// Check active plugins.
-		$active_plugins = get_option( 'active_plugins', [] );
-		foreach ( $active_plugins as $plugin ) {
-			if ( strpos( $plugin, 'wp-recipe-maker' ) !== false ) {
-				$this->wprm_active = true;
-				return;
+		if ( ! $active ) {
+			foreach ( (array) get_option( 'active_plugins', [] ) as $plugin ) {
+				if ( false !== strpos( (string) $plugin, 'wp-recipe-maker' ) ) {
+					$active = true;
+					break;
+				}
 			}
 		}
+
+		/**
+		 * Filters whether a supported recipe plugin is treated as running.
+		 *
+		 * @since 1.9.0
+		 *
+		 * @param bool $active True when WP Recipe Maker is detected.
+		 */
+		return (bool) apply_filters( 'pkiw_recipe_plugin_active', $active );
 	}
 
 	/**
@@ -84,9 +97,6 @@ class WP_Recipe_Maker {
 	private function register_hooks(): void {
 		// Auto-set recipe kind when saving a post with a WPRM recipe.
 		add_action( 'save_post', [ $this, 'maybe_set_recipe_kind' ], 20, 2 );
-
-		// Add recipe data to post meta when WPRM recipe is detected.
-		add_action( 'save_post', [ $this, 'sync_recipe_meta' ], 25, 2 );
 
 		// Add editor script to suggest recipe kind.
 		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_editor_assets' ] );
@@ -140,51 +150,19 @@ class WP_Recipe_Maker {
 	}
 
 	/**
-	 * Sync recipe metadata from WPRM to our meta fields.
+	 * Formerly copied a recipe's servings and total time into Post Kinds meta on save.
+	 *
+	 * WP Recipe Maker owns recipe data, so nothing is copied any more. Values
+	 * this method stored earlier are left in place.
+	 *
+	 * @deprecated 1.9.0 Read recipe values at render time with \PKIW\recipe_facts().
 	 *
 	 * @param int      $post_id Post ID.
 	 * @param \WP_Post $post    Post object.
 	 * @return void
 	 */
-	public function sync_recipe_meta( int $post_id, \WP_Post $post ): void {
-		// Skip autosaves and revisions.
-		if ( wp_is_post_autosave( $post_id ) || wp_is_post_revision( $post_id ) ) {
-			return;
-		}
-
-		// Only handle regular posts.
-		if ( 'post' !== $post->post_type ) {
-			return;
-		}
-
-		// Check if post has a WPRM recipe.
-		$recipe_ids = $this->get_recipe_ids_in_post( $post_id );
-		if ( empty( $recipe_ids ) ) {
-			return;
-		}
-
-		// Get the first recipe (primary recipe).
-		$recipe_id = $recipe_ids[0];
-		$recipe    = $this->get_wprm_recipe( $recipe_id );
-
-		if ( ! $recipe ) {
-			return;
-		}
-
-		// Sync basic recipe data to our meta fields.
-		$prefix = '_pkiw_';
-
-		// Recipe yield/servings.
-		$servings = $this->get_recipe_servings( $recipe );
-		if ( $servings ) {
-			update_post_meta( $post_id, $prefix . 'recipe_yield', $servings );
-		}
-
-		// Recipe duration (total time).
-		$duration = $this->get_recipe_duration( $recipe );
-		if ( $duration ) {
-			update_post_meta( $post_id, $prefix . 'recipe_duration', $duration );
-		}
+	public function sync_recipe_meta( int $post_id, \WP_Post $post ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- kept for callers of the old signature.
+		_deprecated_function( __METHOD__, '1.9.0', '\\PKIW\\recipe_facts()' );
 	}
 
 	/**
@@ -221,6 +199,18 @@ class WP_Recipe_Maker {
 	 * @return array<int> Recipe IDs.
 	 */
 	public function get_recipe_ids_in_post( int $post_id ): array {
+		return self::recipe_ids_in_post( $post_id );
+	}
+
+	/**
+	 * Recipe IDs embedded in a post, without needing the integration instance.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array<int> Recipe IDs.
+	 */
+	public static function recipe_ids_in_post( int $post_id ): array {
 		$post = get_post( $post_id );
 		if ( ! $post ) {
 			return [];
@@ -240,7 +230,7 @@ class WP_Recipe_Maker {
 		// Method 2: Check for WPRM blocks (Gutenberg).
 		if ( function_exists( 'parse_blocks' ) ) {
 			$blocks     = parse_blocks( $post->post_content );
-			$recipe_ids = array_merge( $recipe_ids, $this->find_recipe_blocks( $blocks ) );
+			$recipe_ids = array_merge( $recipe_ids, self::find_recipe_blocks( $blocks ) );
 		}
 
 		// Method 3: Check WPRM's own tracking (if available).
@@ -265,7 +255,7 @@ class WP_Recipe_Maker {
 	 * @param array<array<string, mixed>> $blocks Parsed blocks.
 	 * @return array<int> Recipe IDs found.
 	 */
-	private function find_recipe_blocks( array $blocks ): array {
+	private static function find_recipe_blocks( array $blocks ): array {
 		$recipe_ids = [];
 
 		foreach ( $blocks as $block ) {
@@ -278,7 +268,7 @@ class WP_Recipe_Maker {
 
 			// Check inner blocks recursively.
 			if ( ! empty( $block['innerBlocks'] ) ) {
-				$recipe_ids = array_merge( $recipe_ids, $this->find_recipe_blocks( $block['innerBlocks'] ) );
+				$recipe_ids = array_merge( $recipe_ids, self::find_recipe_blocks( $block['innerBlocks'] ) );
 			}
 		}
 
@@ -291,7 +281,7 @@ class WP_Recipe_Maker {
 	 * @param int $recipe_id Recipe post ID.
 	 * @return array<string, mixed>|null Recipe data or null.
 	 */
-	private function get_wprm_recipe( int $recipe_id ): ?array {
+	private static function get_wprm_recipe( int $recipe_id ): ?array {
 		$recipe_post = get_post( $recipe_id );
 
 		if ( ! $recipe_post || 'wprm_recipe' !== $recipe_post->post_type ) {
@@ -311,6 +301,8 @@ class WP_Recipe_Maker {
 					'cook_time'     => $recipe->cook_time(),
 					'total_time'    => $recipe->total_time(),
 					'image_id'      => $recipe->image_id(),
+					'summary'       => method_exists( $recipe, 'summary' ) ? wp_strip_all_tags( (string) $recipe->summary() ) : '',
+					'courses'       => self::recipe_courses( $recipe_id ),
 				];
 			}
 		}
@@ -325,59 +317,107 @@ class WP_Recipe_Maker {
 			'cook_time'     => get_post_meta( $recipe_id, 'wprm_cook_time', true ),
 			'total_time'    => get_post_meta( $recipe_id, 'wprm_total_time', true ),
 			'image_id'      => get_post_thumbnail_id( $recipe_id ),
+			'summary'       => '',
+			'courses'       => self::recipe_courses( $recipe_id ),
 		];
 	}
 
 	/**
-	 * Get recipe servings string.
+	 * A recipe's courses, by name.
 	 *
-	 * @param array<string, mixed> $recipe Recipe data.
-	 * @return string Servings string (e.g., "4 servings").
+	 * WP Recipe Maker keeps courses as `wprm_course` terms on the recipe
+	 * post, not on the post that embeds the recipe.
+	 *
+	 * @param int $recipe_id Recipe post ID.
+	 * @return array<int, array{name: string, slug: string}>
 	 */
-	private function get_recipe_servings( array $recipe ): string {
-		$servings = $recipe['servings'] ?? '';
-		$unit     = $recipe['servings_unit'] ?? 'servings';
-
-		if ( empty( $servings ) ) {
-			return '';
+	private static function recipe_courses( int $recipe_id ): array {
+		if ( ! taxonomy_exists( 'wprm_course' ) ) {
+			return [];
 		}
 
-		return trim( $servings . ' ' . $unit );
+		$terms = get_the_terms( $recipe_id, 'wprm_course' );
+		if ( ! is_array( $terms ) ) {
+			return [];
+		}
+
+		$courses = [];
+		foreach ( $terms as $term ) {
+			$courses[] = [
+				'name' => $term->name,
+				'slug' => $term->slug,
+			];
+		}
+		usort( $courses, static fn( array $a, array $b ): int => strcasecmp( $a['name'], $b['name'] ) );
+
+		return $courses;
 	}
 
 	/**
-	 * Get recipe duration in ISO 8601 format.
+	 * The recipe a post embeds, read from WP Recipe Maker when called.
 	 *
-	 * @param array<string, mixed> $recipe Recipe data.
-	 * @return string ISO 8601 duration (e.g., "PT1H30M").
+	 * @since 1.9.0
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array<string, mixed>|null Recipe values, or null when the plugin isn't running or the post holds no recipe.
 	 */
-	private function get_recipe_duration( array $recipe ): string {
-		$total_time = (int) ( $recipe['total_time'] ?? 0 );
-
-		if ( $total_time <= 0 ) {
-			// Calculate from prep + cook time.
-			$prep_time  = (int) ( $recipe['prep_time'] ?? 0 );
-			$cook_time  = (int) ( $recipe['cook_time'] ?? 0 );
-			$total_time = $prep_time + $cook_time;
+	public static function get_post_recipe( int $post_id ): ?array {
+		if ( ! self::is_supported_plugin_active() ) {
+			return null;
 		}
 
-		if ( $total_time <= 0 ) {
-			return '';
+		foreach ( self::recipe_ids_in_post( $post_id ) as $recipe_id ) {
+			$recipe = self::get_wprm_recipe( (int) $recipe_id );
+			if ( null !== $recipe ) {
+				return $recipe;
+			}
 		}
 
-		// Convert minutes to ISO 8601 duration.
-		$hours   = floor( $total_time / 60 );
-		$minutes = $total_time % 60;
+		return null;
+	}
 
-		$duration = 'PT';
-		if ( $hours > 0 ) {
-			$duration .= $hours . 'H';
-		}
-		if ( $minutes > 0 ) {
-			$duration .= $minutes . 'M';
+	/**
+	 * Posts whose recipe is filed under a course.
+	 *
+	 * Goes from the course to its recipes, then to each recipe's parent
+	 * post, because the course taxonomy lives on the recipe post type.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string $course_slug `wprm_course` term slug.
+	 * @return array<int> Post IDs.
+	 */
+	public static function post_ids_in_course( string $course_slug ): array {
+		if ( '' === $course_slug || ! taxonomy_exists( 'wprm_course' ) ) {
+			return [];
 		}
 
-		return $duration;
+		$recipe_ids = get_posts(
+			[
+				'post_type'      => 'wprm_recipe',
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+				'tax_query'      => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- the course filter is a taxonomy lookup.
+					[
+						'taxonomy' => 'wprm_course',
+						'field'    => 'slug',
+						'terms'    => $course_slug,
+					],
+				],
+			]
+		);
+
+		$post_ids = [];
+		foreach ( $recipe_ids as $recipe_id ) {
+			$parent = (int) get_post_meta( (int) $recipe_id, 'wprm_parent_post_id', true );
+			if ( $parent > 0 ) {
+				$post_ids[] = $parent;
+			}
+		}
+
+		return array_values( array_unique( $post_ids ) );
 	}
 
 	/**

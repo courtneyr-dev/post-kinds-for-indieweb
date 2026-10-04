@@ -597,6 +597,11 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Kind_Archive_Layouts' ) ) {
 			( new Kind_Archive_Layouts() )->register();
 		}
+
+		// Recipe archive: course filter, stable title order, plural heading (issue 229).
+		if ( class_exists( __NAMESPACE__ . '\\Recipe_Archive' ) ) {
+			( new Recipe_Archive() )->register();
+		}
 	}
 
 	/**

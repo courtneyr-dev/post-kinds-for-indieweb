@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Kind menu entry block (`post-kinds-indieweb/menu-entry`), used inside a Post Template: item name, a decorative leader hidden from assistive technology, "Rated N of 5" as text, venue name gated by `pkiw_get_visible_location_fields()`, date and notes, with the same `p-ate`/`p-drank h-food` microformats the cards emit. Section headings come from the cuisine or drink type at render time; posts without one are listed under "Other" (#230, #233).
 - `pkiw_group_by` query var and `pkiw_archive_group_fields` filter: a kind archive rendered by a template that uses the menu entry is ordered by group (empty last), then date, then ID, so pagination stays native and pages are stable. A Query Loop can opt in with `query.pkiwGroupBy` (#233).
 - `wp postkind card-meta backfill [--batch=<size>]` (#233).
+- Recipe facts read when a page renders: `PKIW\recipe_facts()` returns a recipe post's picture, total time, yield and courses, `PKIW\recipe_time_label()` formats the time, and `PKIW\recipe_archive_courses()` lists the courses in use with their archive links. The Stream card for a recipe post prints its course and total time, and uses the recipe's picture when the post has no featured image (#229).
+- Course filter and A-Z order on the recipe archive, as ordinary WordPress queries: `/kind/recipe/?pkiw_recipe_course=soup` and `/kind/recipe/?orderby=title&order=asc`. Both stay in the URL, so pagination keeps them. With WP Recipe Maker a course is a `wprm_course` term, resolved through each recipe's parent post. With no recipe plugin, courses are the post's categories; the `pkiw_recipe_course_taxonomy` filter picks another taxonomy (#229).
+- `pkiw_recipe_plugin_active` filter over the WP Recipe Maker detection (#229).
 
 ### Changed
 
@@ -24,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Eat and drink cards now mirror name, cuisine or drink type, brand, rating, notes and the eaten/drunk time into `_pkiw_*` meta on save, including for posts created through Micropub, REST or imports. New meta: `_pkiw_eat_ate_at`, `_pkiw_drink_drank_at`. A drink card with no stored type is filed under its displayed default, coffee. Existing posts are backfilled once by a batched scheduled event that reads post content and never rewrites it (#233).
 - `_pkiw_eat_notes` keeps line breaks (`sanitize_textarea_field`), like `_pkiw_drink_notes`.
 - **Dependency refresh:** the 16-package `@wordpress` group, including `@wordpress/scripts` 36. CI runs on Node 24, and `package.json` asks for Node 22.22.2+ and npm 11+: scripts 36 needs that Node, and npm 10 rejects the lockfiles Dependabot writes. Unit tests stay on Jest through `wp-scripts test-unit-jest`, because `test-unit-js` now runs Vitest. The visually hidden text rules drop the deprecated `clip` declaration, which `clip-path: inset(50%)` already covers, and rename `word-wrap` to `overflow-wrap` (#194).
+- WP Recipe Maker owns recipe data. Saving a post no longer copies servings and total time into `_pkiw_recipe_yield` and `_pkiw_recipe_duration`, and no longer overwrites values already there. Values stored earlier stay where they are; when a post embeds a recipe, the recipe plugin's values are the ones shown. The two fields remain for sites with no recipe plugin and for a recipe post with no recipe card. `WP_Recipe_Maker::sync_recipe_meta()` is deprecated and does nothing (#229).
+- The recipe kind archive is headed "Recipes". The term's name and slug are unchanged, and a term the site renamed keeps its own name (#229).
 
 ### Fixed
 
