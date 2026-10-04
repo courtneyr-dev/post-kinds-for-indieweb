@@ -223,7 +223,7 @@ final class KindArchiveGroupingTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'wp-block-post-template', $html, 'The list keeps the Post Template wrapper classes.' );
 		$this->assertSame( 5, substr_count( $html, 'class="wp-block-post ' ), 'Each line keeps its post classes.' );
 		$this->assertStringContainsString( 'aria-hidden="true"', $html, 'Leader is hidden from assistive technology.' );
-		$this->assertSame( 3, substr_count( $html, '<section class="pkiw-menu-section"><h2 ' ), 'A section has no name of its own, so it adds no landmark; its heading carries the structure.' );
+		$this->assertSame( 3, substr_count( $html, '<section class="pkiw-menu-section" data-pkiw-sections="3"><h2 ' ), 'Each section says how many the page holds. It has no name of its own, so it adds no landmark; its heading carries the structure.' );
 	}
 
 	public function test_a_section_restarts_with_its_heading_on_the_next_page(): void {
@@ -476,6 +476,20 @@ final class KindArchiveGroupingTest extends WP_UnitTestCase {
 
 		$this->assertSame( [ [ 'h2:Thai', [ 'Khao soi' ] ] ], $page_one, 'A section stops at the end of its page.' );
 		$this->assertSame( [ [ 'h2:Thai', [ 'Pad see ew' ] ] ], $page_two );
+	}
+
+	public function test_a_section_says_how_many_sections_its_page_holds_in_the_editor_too(): void {
+		$p = $this->fixtures();
+
+		// One page of five lines: Italian, Thai and Other.
+		$this->assertStringContainsString( '<section class="pkiw-menu-section" data-pkiw-sections="3">', $this->editor_render( $p['italian_new'] ) );
+		$this->assertStringContainsString( '<section class="pkiw-menu-section" data-pkiw-sections="3">', $this->editor_render( $p['none'] ) );
+
+		// Three lines a page: Italian and Thai on page one, Thai and Other on page two.
+		$this->assertStringContainsString( 'data-pkiw-sections="2"', $this->editor_render( $p['thai_b'], [ 'linesPerPage' => 3 ] ) );
+		$this->assertStringContainsString( 'data-pkiw-sections="2"', $this->editor_render( $p['thai_a'], [ 'linesPerPage' => 3 ] ) );
+		// Two lines a page: Italian fills page one alone.
+		$this->assertStringContainsString( 'data-pkiw-sections="1"', $this->editor_render( $p['italian_new'], [ 'linesPerPage' => 2 ] ) );
 	}
 
 	public function test_the_editor_follows_the_menu_entry_settings(): void {
