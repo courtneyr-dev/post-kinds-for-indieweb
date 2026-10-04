@@ -1,0 +1,186 @@
+/**
+ * The Site Editor preview of a kind archive template (assets/js/kind-template-preview.js).
+ *
+ * The script is a plain file that reads WordPress globals, so each test hands
+ * it a small stand-in for `window.wp` and inspects the element it returns.
+ */
+
+const SCRIPT = '../../../assets/js/kind-template-preview.js';
+
+/**
+ * Load the script against a stand-in editor and return its BlockEdit wrapper.
+ *
+ * @param {Object} state What the stand-in core store answers with.
+ * @return {Function} The component the script wraps BlockEdit in.
+ */
+function load( state ) {
+	const addFilter = jest.fn();
+	const stores = {
+		core: {
+			getEntityRecords: ( kind, name, query ) => {
+				state.termQueries.push( [ kind, name, query ] );
+				return state.terms;
+			},
+		},
+	};
+	window.wp = {
+		hooks: { addFilter },
+		compose: { createHigherOrderComponent: ( wrap ) => wrap },
+		data: { useSelect: ( map ) => map( ( name ) => stores[ name ] ) },
+		element: {
+			createElement: ( type, props, ...children ) => ( {
+				type,
+				props,
+				children,
+			} ),
+			useMemo: ( make ) => make(),
+		},
+	};
+	window.pkiwKindTemplatePreview = state.settings;
+	jest.isolateModules( () => {
+		require( SCRIPT );
+	} );
+	expect( addFilter ).toHaveBeenCalledTimes( 1 );
+	expect( addFilter.mock.calls[ 0 ][ 0 ] ).toBe( 'editor.BlockEdit' );
+	return addFilter.mock.calls[ 0 ][ 2 ]( 'BlockEdit' );
+}
+
+// Core sets an inheriting Query Loop's perPage to the site's setting in the editor.
+const inheriting = {
+	perPage: 10,
+	postType: 'post',
+	order: 'desc',
+	orderBy: 'date',
+	inherit: true,
+};
+
+function editorState( overrides = {} ) {
+	return {
+		terms: [ { id: 7 } ],
+		termQueries: [],
+		settings: { perPage: {} },
+		...overrides,
+	};
+}
+
+function postTemplate( context = {} ) {
+	return {
+		name: 'core/post-template',
+		clientId: 'post-template-1',
+		context: {
+			queryId: 229,
+			templateSlug: 'taxonomy-kind-recipe',
+			query: inheriting,
+			...context,
+		},
+	};
+}
+
+describe( 'kind template preview', () => {
+	afterEach( () => {
+		delete window.wp;
+		delete window.pkiwKindTemplatePreview;
+	} );
+
+	it( "previews a kind's archive template with that kind's posts", () => {
+		const state = editorState();
+		const props = postTemplate();
+		const element = load( state )( props );
+
+		expect( element.type ).toBe( 'BlockEdit' );
+		expect( element.props ).toEqual( {
+			...props,
+			context: {
+				queryId: 229,
+				templateSlug: 'taxonomy-kind-recipe',
+				query: {
+					perPage: 10,
+					postType: 'post',
+					order: 'desc',
+					orderBy: 'date',
+					inherit: false,
+					taxQuery: { kind: [ 7 ], include: { kind: [ 7 ] } },
+				},
+			},
+		} );
+		expect( state.termQueries[ 0 ] ).toEqual( [
+			'taxonomy',
+			'kind',
+			{ slug: 'recipe', per_page: 1, _fields: 'id' },
+		] );
+	} );
+
+	it( 'shows as many posts as the site says that archive shows per page', () => {
+		const state = editorState( {
+			settings: { perPage: { recipe: 4, comics: 12 } },
+		} );
+		const element = load( state )( postTemplate() );
+
+		expect( element.props.context.query.perPage ).toBe( 4 );
+	} );
+
+	it( 'leaves the Query Loop’s own query object as it was', () => {
+		load( editorState() )( postTemplate() );
+
+		expect( inheriting ).toEqual( {
+			perPage: 10,
+			postType: 'post',
+			order: 'desc',
+			orderBy: 'date',
+			inherit: true,
+		} );
+	} );
+
+	it.each( [
+		[
+			'the template is the general kind archive',
+			{ templateSlug: 'taxonomy-kind' },
+		],
+		[
+			'the template belongs to another taxonomy',
+			{ templateSlug: 'taxonomy-venue-cafe' },
+		],
+		[ 'a post is being edited', { templateSlug: undefined } ],
+		[
+			'the Query Loop sets its own query',
+			{ query: { ...inheriting, inherit: false } },
+		],
+		[
+			'the Post Template has no Query Loop above it',
+			{ query: undefined },
+		],
+	] )( 'leaves the block alone when %s', ( label, context ) => {
+		const state = editorState();
+		const props = postTemplate( context );
+		const element = load( state )( props );
+
+		expect( element ).toEqual( { type: 'BlockEdit', props, children: [] } );
+		expect( state.termQueries ).toEqual( [] );
+	} );
+
+	it.each( [
+		[ "the kind's term hasn't loaded", null ],
+		[ 'no kind has that slug', [] ],
+	] )( 'leaves the block alone when %s', ( label, terms ) => {
+		const props = postTemplate();
+		const element = load( editorState( { terms } ) )( props );
+
+		expect( element ).toEqual( { type: 'BlockEdit', props, children: [] } );
+	} );
+
+	it( 'leaves every other block alone and asks the store nothing for it', () => {
+		const state = editorState();
+		const props = {
+			name: 'core/query-pagination',
+			clientId: 'pager-1',
+			context: {
+				templateSlug: 'taxonomy-kind-recipe',
+				query: inheriting,
+			},
+		};
+		const element = load( state )( props );
+
+		expect( element ).toEqual( { type: 'BlockEdit', props, children: [] } );
+		expect( state.termQueries ).toEqual( [] );
+	} );
+} );

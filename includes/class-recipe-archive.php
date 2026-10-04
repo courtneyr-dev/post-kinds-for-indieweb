@@ -48,6 +48,20 @@ final class Recipe_Archive {
 	private const DEFAULT_TERM_NAME = 'Recipe';
 
 	/**
+	 * Block that links the archive's courses.
+	 *
+	 * @var string
+	 */
+	public const COURSES_BLOCK = 'post-kinds-indieweb/recipe-courses';
+
+	/**
+	 * Whether a block-renderer request is in progress: the editor previewing a block.
+	 *
+	 * @var bool
+	 */
+	private static bool $block_preview = false;
+
+	/**
 	 * Register hooks.
 	 *
 	 * @return void
@@ -56,6 +70,150 @@ final class Recipe_Archive {
 		add_filter( 'query_vars', [ $this, 'add_query_var' ] );
 		add_action( 'pre_get_posts', [ $this, 'filter_main_query' ] );
 		add_filter( 'get_the_archive_title', [ $this, 'archive_title' ], 10, 2 );
+		add_filter( 'rest_request_before_callbacks', [ $this, 'track_block_preview' ], 10, 3 );
+		add_filter( 'rest_request_after_callbacks', [ $this, 'track_block_preview' ], 10, 3 );
+		if ( did_action( 'init' ) ) {
+			$this->register_courses_block();
+		} else {
+			add_action( 'init', [ $this, 'register_courses_block' ] );
+		}
+	}
+
+	/**
+	 * Register the Recipe courses block.
+	 *
+	 * Server-rendered, so the Site Editor prints the links the archive
+	 * prints. A theme places it in its recipe archive template and styles
+	 * it; the block ships a plain row of links.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function register_courses_block(): void {
+		wp_register_script(
+			'pkiw-recipe-courses-editor',
+			\PKIW_URL . 'assets/js/recipe-courses-editor.js',
+			[ 'wp-blocks', 'wp-element', 'wp-i18n', 'wp-block-editor', 'wp-components', 'wp-server-side-render' ],
+			\PKIW_VERSION,
+			true
+		);
+		wp_set_script_translations( 'pkiw-recipe-courses-editor', 'post-kinds-for-indieweb-in-block-themes' );
+
+		if ( \WP_Block_Type_Registry::get_instance()->is_registered( self::COURSES_BLOCK ) ) {
+			return;
+		}
+
+		/**
+		 * Block type arguments. No block.json, so apiVersion 3 is declared here.
+		 *
+		 * @var array<string, mixed> $args
+		 */
+		$args = [
+			'api_version'     => 3,
+			'title'           => __( 'Recipe courses', 'post-kinds-for-indieweb-in-block-themes' ),
+			'render_callback' => [ self::class, 'render_courses_block' ],
+			'supports'        => [
+				'html'     => false,
+				'reusable' => false,
+			],
+			'editor_script'   => 'pkiw-recipe-courses-editor',
+		];
+		register_block_type( self::COURSES_BLOCK, $args );
+
+		if ( wp_style_is( 'pkiw-kind-layouts', 'registered' ) ) {
+			wp_enqueue_block_style( self::COURSES_BLOCK, [ 'handle' => 'pkiw-kind-layouts' ] );
+		}
+	}
+
+	/**
+	 * Note when the editor asks the server to render a block.
+	 *
+	 * Hooked before and after a REST route's callback. The Recipe courses
+	 * block reads this to show the archive as it opens, with "All" current.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param mixed            $response Response so far, passed through.
+	 * @param mixed            $handler  Route handler.
+	 * @param \WP_REST_Request $request  Request.
+	 * @return mixed
+	 */
+	public function track_block_preview( $response, $handler, $request ) {
+		if ( $request instanceof \WP_REST_Request && str_starts_with( $request->get_route(), '/wp/v2/block-renderer/' ) ) {
+			self::$block_preview = 'rest_request_before_callbacks' === current_filter();
+		}
+
+		return $response;
+	}
+
+	/**
+	 * Render the Recipe courses block: All, each course in use, and the A-Z order.
+	 *
+	 * Every link is the recipe archive's own URL with a native query, so
+	 * the pager keeps the choice. The link for the page being shown gets
+	 * `aria-current="page"`; away from the archive none does.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return string
+	 */
+	public static function render_courses_block(): string {
+		$term = get_term_by( 'slug', self::KIND, Taxonomy::TAXONOMY );
+		if ( ! $term instanceof \WP_Term ) {
+			return '';
+		}
+		$base = get_term_link( $term );
+		if ( is_wp_error( $base ) ) {
+			return '';
+		}
+
+		$on_archive = is_tax( Taxonomy::TAXONOMY, self::KIND );
+		$course     = $on_archive ? sanitize_title( (string) get_query_var( self::QUERY_VAR ) ) : '';
+		$orderby    = $on_archive ? get_query_var( 'orderby' ) : '';
+		$by_title   = '' === $course && ( 'title' === $orderby || ( is_array( $orderby ) && isset( $orderby['title'] ) ) );
+
+		$items = [
+			[
+				'label'   => __( 'All', 'post-kinds-for-indieweb-in-block-themes' ),
+				'url'     => $base,
+				'current' => ( $on_archive || self::$block_preview ) && '' === $course && ! $by_title,
+			],
+		];
+		foreach ( recipe_archive_courses() as $entry ) {
+			$items[] = [
+				'label'   => $entry['name'],
+				'url'     => $entry['url'],
+				'current' => $on_archive && $entry['current'],
+			];
+		}
+		$items[] = [
+			'label'   => __( 'A–Z index', 'post-kinds-for-indieweb-in-block-themes' ),
+			'url'     => add_query_arg(
+				[
+					'orderby' => 'title',
+					'order'   => 'asc',
+				],
+				$base
+			),
+			'current' => $by_title,
+		];
+
+		$links = '';
+		foreach ( $items as $item ) {
+			$links .= sprintf(
+				'<li class="pk-recipe-courses__item"><a class="pk-recipe-courses__link" href="%1$s"%2$s>%3$s</a></li>',
+				esc_url( $item['url'] ),
+				$item['current'] ? ' aria-current="page"' : '',
+				esc_html( $item['label'] )
+			);
+		}
+
+		return sprintf(
+			'<nav %1$s><ul class="pk-recipe-courses__list">%2$s</ul></nav>',
+			get_block_wrapper_attributes( [ 'aria-label' => __( 'Recipe courses', 'post-kinds-for-indieweb-in-block-themes' ) ] ),
+			$links
+		);
 	}
 
 	/**
