@@ -233,6 +233,101 @@ final class KindArchiveGroupingTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Trapizzino', $this->render_entry( $id ) );
 	}
 
+	/**
+	 * Post IDs the REST posts route returns for a request, as an editor.
+	 *
+	 * @param array<string, mixed> $params Query parameters.
+	 * @return int[]
+	 */
+	private function rest_post_ids( array $params ): array {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		$request = new WP_REST_Request( 'GET', '/wp/v2/posts' );
+		foreach ( $params as $key => $value ) {
+			$request->set_param( $key, $value );
+		}
+		$response = rest_get_server()->dispatch( $request );
+		$this->assertSame( 200, $response->get_status(), wp_json_encode( $response->get_data() ) );
+
+		return array_map( 'intval', wp_list_pluck( $response->get_data(), 'id' ) );
+	}
+
+	public function test_the_editor_can_ask_the_rest_route_for_a_kind_in_menu_order(): void {
+		$p    = $this->fixtures();
+		$kind = get_term_by( 'slug', 'eat', 'kind' );
+
+		$ids = $this->rest_post_ids(
+			[
+				'kind'     => [ $kind->term_id ],
+				'orderby'  => 'pkiw_group',
+				'per_page' => 10,
+			]
+		);
+
+		$this->assertSame( [ $p['italian_new'], $p['italian_old'], $p['thai_b'], $p['thai_a'], $p['none'] ], $ids );
+	}
+
+	public function test_menu_order_without_one_menu_kind_falls_back_to_date_order(): void {
+		$p = $this->fixtures();
+
+		$ids = $this->rest_post_ids(
+			[
+				'orderby'  => 'pkiw_group',
+				'per_page' => 10,
+			]
+		);
+
+		$this->assertSame( $p['none'], $ids[0], 'Newest first when the request names no menu kind.' );
+	}
+
+	/**
+	 * The section heading the editor's render of one menu line prints, or ''.
+	 */
+	private function editor_heading( int $post_id ): string {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		// The editor renders each line in a request of its own, so nothing is remembered from the line before.
+		do_action( 'pkiw_menu_entry_reset' );
+		$request = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/post-kinds-indieweb/menu-entry' );
+		$request->set_param( 'context', 'edit' );
+		$request->set_param( 'post_id', $post_id );
+		$response = rest_get_server()->dispatch( $request );
+		$this->assertSame( 200, $response->get_status(), wp_json_encode( $response->get_data() ) );
+
+		return 1 === preg_match( '#<h2 class="pkiw-menu-entry__section">([^<]+)</h2>#', (string) $response->get_data()['rendered'], $m ) ? $m[1] : '';
+	}
+
+	public function test_the_editor_heads_a_section_once_as_the_front_end_does(): void {
+		$p = $this->fixtures();
+
+		$this->assertSame(
+			[
+				'italian_new' => 'Italian',
+				'italian_old' => '',
+				'thai_b'      => 'Thai',
+				'thai_a'      => '',
+				'none'        => 'Other',
+			],
+			[
+				'italian_new' => $this->editor_heading( $p['italian_new'] ),
+				'italian_old' => $this->editor_heading( $p['italian_old'] ),
+				'thai_b'      => $this->editor_heading( $p['thai_b'] ),
+				'thai_a'      => $this->editor_heading( $p['thai_a'] ),
+				'none'        => $this->editor_heading( $p['none'] ),
+			]
+		);
+	}
+
+	public function test_the_editor_heads_the_first_line_of_each_page(): void {
+		$p     = $this->fixtures();
+		$sizes = static fn( int $per_page, string $slug ): int => 'eat' === $slug ? 3 : $per_page;
+		add_filter( 'pkiw_kind_archive_preview_per_page', $sizes, 10, 2 );
+
+		// Page 2 opens with the second Thai line: the front end heads it again there.
+		$heading = $this->editor_heading( $p['thai_a'] );
+		remove_filter( 'pkiw_kind_archive_preview_per_page', $sizes, 10 );
+
+		$this->assertSame( 'Thai', $heading );
+	}
+
 	public function test_a_menu_line_is_an_h_entry_with_its_date_and_author(): void {
 		$author = self::factory()->user->create(
 			[

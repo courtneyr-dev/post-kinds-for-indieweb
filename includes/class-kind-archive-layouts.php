@@ -70,6 +70,20 @@ final class Kind_Archive_Layouts {
 	private array $template_cache = [];
 
 	/**
+	 * Whether a block-renderer request is in progress: the editor previewing a block.
+	 *
+	 * @var bool
+	 */
+	private static bool $block_preview = false;
+
+	/**
+	 * Post IDs of a menu kind in menu order, remembered for one editor render.
+	 *
+	 * @var array<string, int[]>
+	 */
+	private static array $preview_order = [];
+
+	/**
 	 * Wire hooks.
 	 *
 	 * @return void
@@ -88,6 +102,105 @@ final class Kind_Archive_Layouts {
 		add_action( 'pkiw_menu_entry_reset', [ self::class, 'reset_sections' ] );
 		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_template_preview' ] );
 		add_action( 'parse_request', [ $this, 'forget_templates' ] );
+		add_filter( 'rest_request_before_callbacks', [ $this, 'track_block_preview' ], 10, 3 );
+		add_filter( 'rest_request_after_callbacks', [ $this, 'track_block_preview' ], 10, 3 );
+		if ( taxonomy_exists( Taxonomy::TAXONOMY ) ) {
+			$this->register_rest_menu_order();
+		} else {
+			add_action( 'init', [ $this, 'register_rest_menu_order' ], 11 );
+		}
+	}
+
+	/**
+	 * Hook the menu order into the REST route of each post type that takes a kind.
+	 *
+	 * Runs once the kind taxonomy exists (it registers on `init` at 5),
+	 * which it may not when register() runs, and before core builds its
+	 * REST routes.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function register_rest_menu_order(): void {
+		$taxonomy = get_taxonomy( Taxonomy::TAXONOMY );
+		foreach ( $taxonomy ? $taxonomy->object_type : [] as $post_type ) {
+			add_filter( "rest_{$post_type}_collection_params", [ $this, 'rest_collection_params' ] );
+			add_filter( "rest_{$post_type}_query", [ $this, 'rest_menu_order' ], 10, 2 );
+		}
+	}
+
+	/**
+	 * Note when the editor asks the server to render a block.
+	 *
+	 * The editor renders each menu line in a request of its own, so the
+	 * line can't tell from the one before it whether it starts a section.
+	 * section_heading() reads this and works it out from the menu's order.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param mixed            $response Response so far, passed through.
+	 * @param mixed            $handler  Route handler.
+	 * @param \WP_REST_Request $request  Request.
+	 * @return mixed
+	 */
+	public function track_block_preview( $response, $handler, $request ) {
+		if ( $request instanceof \WP_REST_Request && str_starts_with( $request->get_route(), '/wp/v2/block-renderer/' ) ) {
+			self::$block_preview = 'rest_request_before_callbacks' === current_filter();
+			self::$preview_order = [];
+		}
+
+		return $response;
+	}
+
+	/**
+	 * Let the REST posts routes order a menu kind the way its archive does.
+	 *
+	 * `orderby=pkiw_group` with one menu kind in the request returns that
+	 * kind's posts by group, then date, then ID. The Site Editor's preview
+	 * of a menu template asks for it (assets/js/kind-template-preview.js).
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param array<string, mixed> $params Collection parameters.
+	 * @return array<string, mixed>
+	 */
+	public function rest_collection_params( $params ) {
+		if ( isset( $params['orderby']['enum'] ) && is_array( $params['orderby']['enum'] ) ) {
+			$params['orderby']['enum'][] = 'pkiw_group';
+		}
+
+		return $params;
+	}
+
+	/**
+	 * Turn `orderby=pkiw_group` into the grouped order for the request's kind.
+	 *
+	 * With no kind, several kinds, or a kind that has no group field, the
+	 * posts come back newest first.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param array<string, mixed> $args    Query arguments.
+	 * @param \WP_REST_Request     $request Request.
+	 * @return array<string, mixed>
+	 */
+	public function rest_menu_order( $args, $request ) {
+		if ( 'pkiw_group' !== $request['orderby'] ) {
+			return $args;
+		}
+
+		$args['orderby'] = 'date';
+		$args['order']   = 'DESC';
+
+		$term_ids = array_values( array_filter( array_map( 'intval', (array) $request[ Taxonomy::TAXONOMY ] ) ) );
+		$term     = 1 === count( $term_ids ) ? get_term( $term_ids[0], Taxonomy::TAXONOMY ) : null;
+		$fields   = self::group_fields();
+		if ( $term instanceof \WP_Term && isset( $fields[ $term->slug ] ) ) {
+			$args['pkiw_group_by'] = $fields[ $term->slug ];
+		}
+
+		return $args;
 	}
 
 	/**
@@ -126,7 +239,12 @@ final class Kind_Archive_Layouts {
 		);
 		wp_add_inline_script(
 			'pkiw-kind-template-preview',
-			'window.pkiwKindTemplatePreview = ' . wp_json_encode( [ 'perPage' => (object) self::preview_page_sizes() ] ) . ';',
+			'window.pkiwKindTemplatePreview = ' . wp_json_encode(
+				[
+					'perPage' => (object) self::preview_page_sizes(),
+					'grouped' => array_keys( self::group_fields() ),
+				]
+			) . ';',
 			'before'
 		);
 	}
@@ -956,6 +1074,62 @@ final class Kind_Archive_Layouts {
 	}
 
 	/**
+	 * Whether a menu line starts a section, for a line rendered on its own.
+	 *
+	 * Reads the kind's posts in menu order and looks at the line before:
+	 * a line starts a section when it opens a page or its group differs.
+	 * The page size is the one the editor preview uses.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int    $post_id   Post ID.
+	 * @param string $kind      Kind slug.
+	 * @param string $field     Group meta key.
+	 * @param string $group_key This line's group, lower-cased.
+	 * @return bool
+	 */
+	private static function starts_section_in_preview( int $post_id, string $kind, string $field, string $group_key ): bool {
+		if ( ! isset( self::$preview_order[ $kind ] ) ) {
+			$taxonomy                     = get_taxonomy( Taxonomy::TAXONOMY );
+			self::$preview_order[ $kind ] = array_map(
+				'intval',
+				get_posts(
+					[
+						'post_type'        => $taxonomy ? $taxonomy->object_type : 'post',
+						'post_status'      => 'publish',
+						'posts_per_page'   => -1,
+						'fields'           => 'ids',
+						'no_found_rows'    => true,
+						'suppress_filters' => false,
+						'pkiw_group_by'    => $field,
+						'tax_query'        => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- the menu is a kind's posts.
+							[
+								'taxonomy' => Taxonomy::TAXONOMY,
+								'field'    => 'slug',
+								'terms'    => $kind,
+							],
+						],
+					]
+				)
+			);
+		}
+
+		$index = array_search( $post_id, self::$preview_order[ $kind ], true );
+		if ( false === $index ) {
+			return true;
+		}
+
+		$per_page = self::preview_page_sizes()[ $kind ] ?? (int) get_option( 'posts_per_page' );
+		if ( 0 === $index || ( $per_page > 0 && 0 === $index % $per_page ) ) {
+			return true;
+		}
+
+		$before = mb_strtolower( trim( (string) get_post_meta( self::$preview_order[ $kind ][ $index - 1 ], $field, true ) ) );
+
+		return $before !== $group_key;
+	}
+
+	/**
 	 * Section heading for a loop item when its group differs from the
 	 * previous item's in the same query; empty otherwise.
 	 *
@@ -973,7 +1147,9 @@ final class Kind_Archive_Layouts {
 
 		$raw       = trim( (string) get_post_meta( $post_id, $fields[ $kind ], true ) );
 		$group_key = mb_strtolower( $raw );
-		$is_new    = ! array_key_exists( $query_key, self::$last_group ) || self::$last_group[ $query_key ] !== $group_key;
+		$is_new    = self::$block_preview
+			? self::starts_section_in_preview( $post_id, $kind, $fields[ $kind ], $group_key )
+			: ( ! array_key_exists( $query_key, self::$last_group ) || self::$last_group[ $query_key ] !== $group_key );
 
 		self::$last_group[ $query_key ] = $group_key;
 

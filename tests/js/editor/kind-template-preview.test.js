@@ -119,6 +119,19 @@ describe( 'kind template preview', () => {
 		expect( element.props.context.query.perPage ).toBe( 4 );
 	} );
 
+	it( 'asks for a menu kind in menu order, and for any other kind in the loop’s own order', () => {
+		const settings = { perPage: {}, grouped: [ 'eat', 'drink' ] };
+		const menu = load( editorState( { settings } ) )(
+			postTemplate( { templateSlug: 'taxonomy-kind-eat' } )
+		);
+		const shelf = load( editorState( { settings } ) )(
+			postTemplate( { templateSlug: 'taxonomy-kind-listen' } )
+		);
+
+		expect( menu.props.context.query.orderBy ).toBe( 'pkiw_group' );
+		expect( shelf.props.context.query.orderBy ).toBe( 'date' );
+	} );
+
 	it( 'leaves the Query Loop’s own query object as it was', () => {
 		load( editorState() )( postTemplate() );
 

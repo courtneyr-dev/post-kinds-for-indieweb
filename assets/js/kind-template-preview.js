@@ -8,6 +8,8 @@
  * a query for that kind's posts. Core also resets an inheriting loop's page
  * size to the site's setting, so the size comes from the
  * `pkiw_kind_archive_preview_per_page` filter when a site sets one for the kind.
+ * A menu kind (eat, drink) is asked for in menu order, `orderby=pkiw_group`,
+ * which the plugin adds to the REST posts routes.
  *
  * Core works out a block's context before this filter runs and passes it down
  * as a prop, so the preview replaces that prop. Nothing is saved: the block's
@@ -27,6 +29,7 @@
 	const PREFIX = 'taxonomy-kind-';
 	const settings = window.pkiwKindTemplatePreview || {};
 	const perPage = settings.perPage || {};
+	const grouped = settings.grouped || [];
 
 	function kindFromTemplateSlug( slug ) {
 		return 'string' === typeof slug && 0 === slug.indexOf( PREFIX )
@@ -77,6 +80,10 @@
 								{ inherit: false, taxQuery: terms },
 								perPage[ kind ]
 									? { perPage: perPage[ kind ] }
+									: {},
+								// A menu kind comes back in menu order: group, date, ID.
+								-1 !== grouped.indexOf( kind )
+									? { orderBy: 'pkiw_group' }
 									: {}
 							),
 						} );

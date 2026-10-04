@@ -253,7 +253,7 @@ final class RecipeCoursesBlockTest extends WP_UnitTestCase {
 
 		do_action( 'enqueue_block_editor_assets' );
 		$inline = implode( '', (array) wp_scripts()->get_data( 'pkiw-kind-template-preview', 'before' ) );
-		$this->assertStringContainsString( 'window.pkiwKindTemplatePreview = {"perPage":{"recipe":4}};', $inline );
+		$this->assertStringContainsString( 'window.pkiwKindTemplatePreview = {"perPage":{"recipe":4},"grouped":["eat","drink"]};', $inline );
 	}
 
 	public function test_with_no_page_size_set_the_preview_keeps_the_editors_own(): void {
@@ -261,6 +261,6 @@ final class RecipeCoursesBlockTest extends WP_UnitTestCase {
 
 		do_action( 'enqueue_block_editor_assets' );
 		$inline = implode( '', (array) wp_scripts()->get_data( 'pkiw-kind-template-preview', 'before' ) );
-		$this->assertStringContainsString( 'window.pkiwKindTemplatePreview = {"perPage":{}};', $inline );
+		$this->assertStringContainsString( 'window.pkiwKindTemplatePreview = {"perPage":{},"grouped":["eat","drink"]};', $inline );
 	}
 }
