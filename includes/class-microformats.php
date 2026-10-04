@@ -689,12 +689,48 @@ class Microformats {
 			}
 		}
 
+		// Roots other than h-entry name their picture: a block theme prints
+		// the featured image outside this wrapper, so the entry has none.
+		// An h-entry is left alone, because post type discovery reads a
+		// photo property there as "this is a photo post".
+		if ( ! in_array( 'h-entry', $root_classes, true ) && in_array( 'u-photo', $properties, true ) && ! str_contains( $content, 'u-photo' ) ) {
+			$photo = $this->singular_photo_url( $post_id, $kind );
+			if ( '' !== $photo ) {
+				$entry_meta .= sprintf(
+					'<data class="u-photo" value="%s" hidden></data>',
+					esc_url( $photo )
+				);
+			}
+		}
+
 		return sprintf(
 			'<div class="%s">%s%s</div>',
 			esc_attr( implode( ' ', $classes ) ),
 			$content,
 			$entry_meta
 		);
+	}
+
+	/**
+	 * The picture a singular entry names as its photo.
+	 *
+	 * The featured image, or for a recipe with none, the picture of the
+	 * recipe the post embeds.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $kind    Kind slug.
+	 * @return string Image URL, or an empty string.
+	 */
+	private function singular_photo_url( int $post_id, string $kind ): string {
+		$image_id = (int) get_post_thumbnail_id( $post_id );
+
+		if ( ! $image_id && 'recipe' === $kind && function_exists( __NAMESPACE__ . '\\recipe_facts' ) ) {
+			$image_id = (int) recipe_facts( $post_id )['image_id'];
+		}
+
+		return $image_id ? (string) wp_get_attachment_image_url( $image_id, 'large' ) : '';
 	}
 
 	/**
