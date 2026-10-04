@@ -129,12 +129,40 @@
 	margin: 0;
 }
 
-.pkiw-menu-entry__section {
-	margin-block: var(--pkiw-menu-section-gap, 2rem) 0.5rem;
+/* A grouped menu is a stack of sections: a heading, then that group's
+   lines. The gap between sections is the list's own gap. */
+.wp-block-post-template.is-style-pkiw-menu:has(.pkiw-menu-section) {
+	gap: var(--pkiw-menu-section-gap, 2rem);
 }
 
-.is-style-pkiw-menu > li:first-child .pkiw-menu-entry__section {
-	margin-block-start: 0;
+.pkiw-menu-section__heading {
+	margin-block: 0 0.5rem;
+}
+
+.pkiw-menu-section__items {
+	display: flex;
+	flex-direction: column;
+	gap: var(--pkiw-menu-line-gap, 1rem);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.pkiw-menu-section__items > li {
+	margin: 0;
+}
+
+/* The editor previews each line on its own: the line that opens a section
+   holds the whole section, and the lines it already shows step aside. */
+.is-style-pkiw-menu > li:has(.pkiw-menu-entry--continued) {
+	display: none;
+}
+
+.pkiw-menu-entry__title {
+	flex: 0 1 auto;
+	min-width: 0;
+	margin: 0;
+	font: inherit;
 }
 
 .pkiw-menu-entry__line {

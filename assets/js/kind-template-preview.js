@@ -6,10 +6,12 @@
  * and post format templates, and for no other taxonomy. A template named
  * taxonomy-kind-<slug> is that kind's archive, so this hands its Post Template
  * a query for that kind's posts. Core also resets an inheriting loop's page
- * size to the site's setting, so the size comes from the
+ * size to the site's setting, so the size comes from the menu entry's "Lines
+ * per page" when it is set, and otherwise from the
  * `pkiw_kind_archive_preview_per_page` filter when a site sets one for the kind.
  * A menu kind (eat, drink) is asked for in menu order, `orderby=pkiw_group`,
- * which the plugin adds to the REST posts routes.
+ * which the plugin adds to the REST posts routes; the menu entry's section
+ * order and empty-group setting pick the variant of that order.
  *
  * Core works out a block's context before this filter runs and passes it down
  * as a prop, so the preview replaces that prop. Nothing is saved: the block's
@@ -30,6 +32,31 @@
 	const settings = window.pkiwKindTemplatePreview || {};
 	const perPage = settings.perPage || {};
 	const grouped = settings.grouped || [];
+
+	const MENU_ENTRY = 'post-kinds-indieweb/menu-entry';
+
+	// The first menu entry among a block's inner blocks, at any depth.
+	function findMenuEntry( blocks ) {
+		for ( const block of blocks || [] ) {
+			if ( MENU_ENTRY === block.name ) {
+				return block;
+			}
+			const found = findMenuEntry( block.innerBlocks );
+			if ( found ) {
+				return found;
+			}
+		}
+		return null;
+	}
+
+	// The REST `orderby` value for a menu's section order and empty-group setting.
+	function menuOrder( attributes ) {
+		return (
+			'pkiw_group' +
+			( 'desc' === attributes.sectionOrder ? '_desc' : '' ) +
+			( 'first' === attributes.emptyGroup ? '_empty_first' : '' )
+		);
+	}
 
 	function kindFromTemplateSlug( slug ) {
 		return 'string' === typeof slug && 0 === slug.indexOf( PREFIX )
@@ -63,6 +90,29 @@
 					},
 					[ kind ]
 				);
+				// The menu's settings live on the menu entry inside this Post Template.
+				const clientId = props.clientId;
+				const menu = wp.data.useSelect(
+					function ( select ) {
+						const editor = kind
+							? select( 'core/block-editor' )
+							: null;
+						const entry =
+							editor && editor.getBlocks
+								? findMenuEntry( editor.getBlocks( clientId ) )
+								: null;
+						return entry ? entry.attributes : null;
+					},
+					[ kind, clientId ]
+				);
+				const lines =
+					( menu && menu.linesPerPage > 0 && menu.linesPerPage ) ||
+					perPage[ kind ] ||
+					0;
+				const order =
+					-1 !== grouped.indexOf( kind )
+						? menuOrder( menu || {} )
+						: '';
 				const preview = wp.element.useMemo(
 					function () {
 						if ( ! termId ) {
@@ -78,17 +128,13 @@
 								{},
 								query,
 								{ inherit: false, taxQuery: terms },
-								perPage[ kind ]
-									? { perPage: perPage[ kind ] }
-									: {},
+								lines ? { perPage: lines } : {},
 								// A menu kind comes back in menu order: group, date, ID.
-								-1 !== grouped.indexOf( kind )
-									? { orderBy: 'pkiw_group' }
-									: {}
+								order ? { orderBy: order } : {}
 							),
 						} );
 					},
-					[ context, query, kind, termId ]
+					[ context, query, termId, lines, order ]
 				);
 
 				return el(

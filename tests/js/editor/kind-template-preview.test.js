@@ -22,6 +22,12 @@ function load( state ) {
 				return state.terms;
 			},
 		},
+		'core/block-editor': {
+			getBlocks: ( clientId ) => {
+				state.blockQueries.push( clientId );
+				return state.blocks;
+			},
+		},
 	};
 	window.wp = {
 		hooks: { addFilter },
@@ -58,6 +64,8 @@ function editorState( overrides = {} ) {
 	return {
 		terms: [ { id: 7 } ],
 		termQueries: [],
+		blocks: [],
+		blockQueries: [],
 		settings: { perPage: {} },
 		...overrides,
 	};
@@ -131,6 +139,63 @@ describe( 'kind template preview', () => {
 		expect( menu.props.context.query.orderBy ).toBe( 'pkiw_group' );
 		expect( shelf.props.context.query.orderBy ).toBe( 'date' );
 	} );
+
+	// A menu entry as the editor holds it, inside a group inside the Post Template.
+	const menuEntry = ( attributes ) => [
+		{
+			name: 'core/group',
+			attributes: {},
+			innerBlocks: [
+				{
+					name: 'post-kinds-indieweb/menu-entry',
+					attributes,
+					innerBlocks: [],
+				},
+			],
+		},
+	];
+
+	it( 'shows the lines per page the menu entry sets, ahead of the site’s number', () => {
+		const settings = { perPage: { eat: 6 }, grouped: [ 'eat' ] };
+		const eat = { templateSlug: 'taxonomy-kind-eat' };
+		const state = editorState( {
+			settings,
+			blocks: menuEntry( { linesPerPage: 4 } ),
+		} );
+		const set = load( state )( postTemplate( eat ) );
+		const unset = load(
+			editorState( {
+				settings,
+				blocks: menuEntry( { linesPerPage: 0 } ),
+			} )
+		)( postTemplate( eat ) );
+
+		expect( set.props.context.query.perPage ).toBe( 4 );
+		expect( unset.props.context.query.perPage ).toBe( 6 );
+		expect( state.blockQueries ).toEqual( [ 'post-template-1' ] );
+	} );
+
+	it.each( [
+		[ {}, 'pkiw_group' ],
+		[ { sectionOrder: 'desc' }, 'pkiw_group_desc' ],
+		[ { emptyGroup: 'first' }, 'pkiw_group_empty_first' ],
+		[
+			{ sectionOrder: 'desc', emptyGroup: 'first' },
+			'pkiw_group_desc_empty_first',
+		],
+	] )(
+		'asks for the menu order that matches the menu entry’s settings %j',
+		( attributes, orderBy ) => {
+			const element = load(
+				editorState( {
+					settings: { perPage: {}, grouped: [ 'eat' ] },
+					blocks: menuEntry( attributes ),
+				} )
+			)( postTemplate( { templateSlug: 'taxonomy-kind-eat' } ) );
+
+			expect( element.props.context.query.orderBy ).toBe( orderBy );
+		}
+	);
 
 	it( 'leaves the Query Loop’s own query object as it was', () => {
 		load( editorState() )( postTemplate() );
