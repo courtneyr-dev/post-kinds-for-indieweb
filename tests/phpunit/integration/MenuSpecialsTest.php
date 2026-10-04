@@ -211,9 +211,22 @@ final class MenuSpecialsTest extends WP_UnitTestCase {
 		$with = $this->render();
 		$this->assertMatchesRegularExpression( '/<img[^>]*class="pkiw-menu-specials__photo"[^>]*src="https:\/\/example\.com\/ramen\.jpg"[^>]*alt="A bowl of ramen with an egg"/', $with );
 
+		$this->assertStringNotContainsString( 'pkiw-menu-specials__item--no-photo', $with );
+
 		$without = $this->render( [ 'showPhotos' => false ] );
 		$this->assertStringNotContainsString( '<img', $without );
 		$this->assertStringContainsString( 'Tonkotsu Ramen', $without );
+		$this->assertStringNotContainsString( 'pkiw-menu-specials__item--no-photo', $without, 'With photos off no special is missing one.' );
+	}
+
+	public function test_a_special_with_no_photo_says_so_when_photos_are_on(): void {
+		$this->entry( 'eat', '2026-03-01 10:00:00', [ 'name' => 'Plain Toast' ] );
+		$this->go_to( get_term_link( 'eat', 'kind' ) );
+
+		$html = $this->render();
+
+		$this->assertStringContainsString( '<li class="pkiw-menu-specials__item pkiw-menu-specials__item--no-photo">', $html );
+		$this->assertStringNotContainsString( '<img', $html, 'The plugin prints no stand-in picture; the class lets a theme draw one.' );
 	}
 
 	public function test_the_featured_image_is_the_photo_when_a_post_has_one(): void {

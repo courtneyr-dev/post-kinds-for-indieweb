@@ -56,11 +56,25 @@ final class Kind_Archive_Layouts {
 	public const MENU_SPECIALS = 'post-kinds-indieweb/menu-specials';
 
 	/**
-	 * Last group key rendered per query, for deriving section headings.
+	 * REST `orderby` values for a kind in menu order: section direction,
+	 * then where posts with no group go.
 	 *
-	 * @var array<string, string>
+	 * @since 1.9.0
+	 * @var array<string, array{0:string,1:string}>
 	 */
-	private static array $last_group = [];
+	public const REST_MENU_ORDERS = [
+		'pkiw_group'                  => [ 'ASC', 'last' ],
+		'pkiw_group_desc'             => [ 'DESC', 'last' ],
+		'pkiw_group_empty_first'      => [ 'ASC', 'first' ],
+		'pkiw_group_desc_empty_first' => [ 'DESC', 'first' ],
+	];
+
+	/**
+	 * Core's own render callback for the Post Template block.
+	 *
+	 * @var callable|null
+	 */
+	private static $core_post_template = null;
 
 	/**
 	 * Resolved-template content per kind term ID for this request.
@@ -75,6 +89,13 @@ final class Kind_Archive_Layouts {
 	 * @var bool
 	 */
 	private static bool $block_preview = false;
+
+	/**
+	 * Whether the Post Template is rendering menu lines into sections.
+	 *
+	 * @var bool
+	 */
+	private static bool $sectioning = false;
 
 	/**
 	 * Post IDs of a menu kind in menu order, remembered for one editor render.
@@ -98,8 +119,11 @@ final class Kind_Archive_Layouts {
 		add_action( 'pre_get_posts', [ $this, 'maybe_group_main_query' ] );
 		add_filter( 'posts_orderby', [ $this, 'group_orderby' ], 10, 2 );
 		add_filter( 'query_loop_block_query_vars', [ $this, 'query_block_group_by' ], 10, 2 );
-		add_filter( 'render_block_data', [ $this, 'reset_on_post_template' ] );
-		add_action( 'pkiw_menu_entry_reset', [ self::class, 'reset_sections' ] );
+		if ( did_action( 'init' ) && ! doing_action( 'init' ) ) {
+			$this->section_post_template();
+		} else {
+			add_action( 'init', [ $this, 'section_post_template' ], 20 );
+		}
 		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_template_preview' ] );
 		add_action( 'parse_request', [ $this, 'forget_templates' ] );
 		add_filter( 'rest_request_before_callbacks', [ $this, 'track_block_preview' ], 10, 3 );
@@ -135,7 +159,7 @@ final class Kind_Archive_Layouts {
 	 *
 	 * The editor renders each menu line in a request of its own, so the
 	 * line can't tell from the one before it whether it starts a section.
-	 * section_heading() reads this and works it out from the menu's order.
+	 * render_menu_entry() reads this and works it out from the menu's order.
 	 *
 	 * @since 1.9.0
 	 *
@@ -167,7 +191,7 @@ final class Kind_Archive_Layouts {
 	 */
 	public function rest_collection_params( $params ) {
 		if ( isset( $params['orderby']['enum'] ) && is_array( $params['orderby']['enum'] ) ) {
-			$params['orderby']['enum'][] = 'pkiw_group';
+			array_push( $params['orderby']['enum'], ...array_keys( self::REST_MENU_ORDERS ) );
 		}
 
 		return $params;
@@ -186,7 +210,8 @@ final class Kind_Archive_Layouts {
 	 * @return array<string, mixed>
 	 */
 	public function rest_menu_order( $args, $request ) {
-		if ( 'pkiw_group' !== $request['orderby'] ) {
+		$menu_order = self::REST_MENU_ORDERS[ (string) $request['orderby'] ] ?? null;
+		if ( null === $menu_order ) {
 			return $args;
 		}
 
@@ -197,7 +222,9 @@ final class Kind_Archive_Layouts {
 		$term     = 1 === count( $term_ids ) ? get_term( $term_ids[0], Taxonomy::TAXONOMY ) : null;
 		$fields   = self::group_fields();
 		if ( $term instanceof \WP_Term && isset( $fields[ $term->slug ] ) ) {
-			$args['pkiw_group_by'] = $fields[ $term->slug ];
+			$args['pkiw_group_by']    = $fields[ $term->slug ];
+			$args['pkiw_group_order'] = $menu_order[0];
+			$args['pkiw_group_empty'] = $menu_order[1];
 		}
 
 		return $args;
@@ -366,6 +393,24 @@ final class Kind_Archive_Layouts {
 					'headingLevel' => [
 						'type'    => 'integer',
 						'default' => 2,
+					],
+					'linesPerPage' => [
+						'type'    => 'integer',
+						'default' => 0,
+					],
+					'sectionOrder' => [
+						'type'    => 'string',
+						'enum'    => [ 'asc', 'desc' ],
+						'default' => 'asc',
+					],
+					'emptyGroup'   => [
+						'type'    => 'string',
+						'enum'    => [ 'last', 'first' ],
+						'default' => 'last',
+					],
+					'emptyLabel'   => [
+						'type'    => 'string',
+						'default' => '',
 					],
 				],
 				'supports'        => [
@@ -540,11 +585,13 @@ final class Kind_Archive_Layouts {
 		}
 		$meta .= sprintf( '<time class="pkiw-menu-specials__date" datetime="%s">%s</time>', esc_attr( $iso ), esc_html( $display ) );
 
-		$out = '<li class="pkiw-menu-specials__item">';
-		if ( $show_photos ) {
-			$out .= self::menu_special_photo( $post, $kind );
-		}
-		$out .= sprintf(
+		// With photos on, a special that has none says so, and a theme can draw its placeholder there.
+		$photo = $show_photos ? self::menu_special_photo( $post, $kind ) : '';
+		$out   = $show_photos && '' === $photo
+			? '<li class="pkiw-menu-specials__item pkiw-menu-specials__item--no-photo">'
+			: '<li class="pkiw-menu-specials__item">';
+		$out  .= $photo;
+		$out  .= sprintf(
 			'<div class="pkiw-menu-specials__body"><h%1$d class="pkiw-menu-specials__name"><a class="pkiw-menu-specials__link" href="%2$s">%3$s</a></h%1$d>',
 			$level,
 			esc_url( (string) get_permalink( $post ) ),
@@ -748,10 +795,56 @@ final class Kind_Archive_Layouts {
 			]
 		);
 
-		$fields = self::group_fields();
-		if ( isset( $fields[ $term->slug ] ) && str_contains( $content, 'wp:' . self::MENU_ENTRY ) ) {
-			$query->set( 'pkiw_group_by', $fields[ $term->slug ] );
+		if ( ! str_contains( $content, 'wp:' . self::MENU_ENTRY ) ) {
+			return;
 		}
+
+		// The menu entry in the template carries the menu's settings.
+		$settings = self::menu_settings( self::menu_entry_attrs( $content ) );
+		if ( $settings['per_page'] > 0 ) {
+			$query->set( 'posts_per_page', $settings['per_page'] );
+		}
+
+		$fields = self::group_fields();
+		if ( isset( $fields[ $term->slug ] ) ) {
+			$query->set( 'pkiw_group_by', $fields[ $term->slug ] );
+			$query->set( 'pkiw_group_order', $settings['order'] );
+			$query->set( 'pkiw_group_empty', $settings['empty'] );
+		}
+	}
+
+	/**
+	 * Attributes of the first menu entry block in a template's content.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string $content Template content, patterns included.
+	 * @return array<string, mixed>
+	 */
+	private static function menu_entry_attrs( string $content ): array {
+		if ( 1 !== preg_match( '/<!--\s*wp:post-kinds-indieweb\/menu-entry\s+(\{.*?\})\s*\/?-->/s', $content, $found ) ) {
+			return [];
+		}
+		$attrs = json_decode( $found[1], true );
+
+		return is_array( $attrs ) ? $attrs : [];
+	}
+
+	/**
+	 * A menu's settings, read from its menu entry block's attributes.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param array<string, mixed> $attrs Menu entry attributes.
+	 * @return array{per_page:int,order:string,empty:string,label:string}
+	 */
+	private static function menu_settings( array $attrs ): array {
+		return [
+			'per_page' => max( 0, min( 100, (int) ( $attrs['linesPerPage'] ?? 0 ) ) ),
+			'order'    => 'desc' === ( $attrs['sectionOrder'] ?? 'asc' ) ? 'DESC' : 'ASC',
+			'empty'    => 'first' === ( $attrs['emptyGroup'] ?? 'last' ) ? 'first' : 'last',
+			'label'    => sanitize_text_field( (string) ( $attrs['emptyLabel'] ?? '' ) ),
+		];
 	}
 
 	/**
@@ -825,7 +918,9 @@ final class Kind_Archive_Layouts {
 	 * Apply group ordering when `pkiw_group_by` names a known group field.
 	 *
 	 * ORDER BY: posts with an empty group last, group (case-insensitive)
-	 * ascending, then post_date DESC, ID DESC. A correlated subquery keeps
+	 * ascending, then post_date DESC, ID DESC. `pkiw_group_order` set to
+	 * DESC reverses the groups and `pkiw_group_empty` set to "first" puts
+	 * the posts with no group ahead of them. A correlated subquery keeps
 	 * one row per post, so pagination counts are unaffected.
 	 *
 	 * @param string    $orderby ORDER BY clause.
@@ -847,7 +942,10 @@ final class Kind_Archive_Layouts {
 			$key
 		);
 
-		return "({$value} = '') ASC, LOWER({$value}) ASC, {$wpdb->posts}.post_date DESC, {$wpdb->posts}.ID DESC";
+		$groups = 'DESC' === strtoupper( (string) $query->get( 'pkiw_group_order' ) ) ? 'DESC' : 'ASC';
+		$empty  = 'first' === $query->get( 'pkiw_group_empty' ) ? 'DESC' : 'ASC';
+
+		return "({$value} = '') {$empty}, LOWER({$value}) {$groups}, {$wpdb->posts}.post_date DESC, {$wpdb->posts}.ID DESC";
 	}
 
 	/**
@@ -862,44 +960,28 @@ final class Kind_Archive_Layouts {
 		$kind   = (string) ( $block->context['query']['pkiwGroupBy'] ?? '' );
 		$fields = self::group_fields();
 		if ( '' !== $kind && isset( $fields[ $kind ] ) ) {
-			$query_vars['pkiw_group_by'] = $fields[ $kind ];
+			$entry    = $block instanceof \WP_Block ? self::find_block( (array) ( $block->parsed_block['innerBlocks'] ?? [] ), self::MENU_ENTRY ) : null;
+			$settings = self::menu_settings( (array) ( $entry['attrs'] ?? [] ) );
+
+			$query_vars['pkiw_group_by']    = $fields[ $kind ];
+			$query_vars['pkiw_group_order'] = $settings['order'];
+			$query_vars['pkiw_group_empty'] = $settings['empty'];
 		}
 		return $query_vars;
 	}
 
 	/**
-	 * Start heading tracking fresh for each Post Template render.
-	 *
-	 * @param array<string, mixed> $parsed_block Parsed block.
-	 * @return array<string, mixed>
-	 */
-	public function reset_on_post_template( $parsed_block ) {
-		if ( 'core/post-template' === ( $parsed_block['blockName'] ?? '' ) ) {
-			self::reset_sections();
-		}
-		return $parsed_block;
-	}
-
-	/**
-	 * Forget the last rendered group for every query.
-	 *
-	 * @return void
-	 */
-	public static function reset_sections(): void {
-		self::$last_group = [];
-	}
-
-	/**
 	 * Section heading label for a stored group value.
 	 *
-	 * @param string $kind  Kind slug.
-	 * @param string $value Stored group value.
+	 * @param string $kind        Kind slug.
+	 * @param string $value       Stored group value.
+	 * @param string $empty_label Label for posts with no group; "Other" when empty.
 	 * @return string
 	 */
-	public static function group_label( string $kind, string $value ): string {
+	public static function group_label( string $kind, string $value, string $empty_label = '' ): string {
 		$value = trim( $value );
 		if ( '' === $value ) {
-			return __( 'Other', 'post-kinds-for-indieweb-in-block-themes' );
+			return '' !== trim( $empty_label ) ? trim( $empty_label ) : __( 'Other', 'post-kinds-for-indieweb-in-block-themes' );
 		}
 
 		if ( 'drink' === $kind ) {
@@ -927,6 +1009,11 @@ final class Kind_Archive_Layouts {
 	/**
 	 * Render one menu line for the loop post.
 	 *
+	 * The editor previews each line in a request of its own. There a line
+	 * that opens a section renders the whole section, and the lines after
+	 * it in that section render a hidden marker, so the canvas holds the
+	 * same section containers the front end prints.
+	 *
 	 * @param array<string, mixed> $attributes Block attributes.
 	 * @param string               $content    Unused.
 	 * @param \WP_Block|null       $block      Block instance.
@@ -939,8 +1026,59 @@ final class Kind_Archive_Layouts {
 			return '';
 		}
 
-		$kinds   = wp_get_object_terms( $post_id, Taxonomy::TAXONOMY, [ 'fields' => 'slugs' ] );
-		$kind    = ( ! is_wp_error( $kinds ) && ! empty( $kinds ) ) ? (string) $kinds[0] : '';
+		$kind   = self::post_kind( $post_id );
+		$fields = self::group_fields();
+		if ( ! self::$block_preview || ! isset( $fields[ $kind ] ) || ! ( $attributes['showSections'] ?? true ) ) {
+			return self::menu_entry_html( $post, $kind, $attributes, self::$sectioning );
+		}
+
+		$settings = self::menu_settings( $attributes );
+		$run      = self::preview_run( $post_id, $kind, $fields[ $kind ], $settings );
+		if ( [] === $run ) {
+			return '<div class="pkiw-menu-entry pkiw-menu-entry--continued" hidden></div>';
+		}
+
+		$items = [];
+		foreach ( $run as $id ) {
+			$line = get_post( $id );
+			if ( $line instanceof \WP_Post ) {
+				$items[] = '<li>' . self::menu_entry_html( $line, $kind, $attributes, true ) . '</li>';
+			}
+		}
+
+		return self::render_section( $kind, (string) get_post_meta( $post_id, $fields[ $kind ], true ), $items, (int) ( $attributes['headingLevel'] ?? 2 ), $settings['label'] );
+	}
+
+	/**
+	 * A post's kind slug.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string
+	 */
+	private static function post_kind( int $post_id ): string {
+		$kinds = wp_get_object_terms( $post_id, Taxonomy::TAXONOMY, [ 'fields' => 'slugs' ] );
+
+		return ( ! is_wp_error( $kinds ) && ! empty( $kinds ) ) ? (string) $kinds[0] : '';
+	}
+
+	/**
+	 * One menu line: the dish or drink as a heading link, a leader, the
+	 * rating, then venue, date and note.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param \WP_Post             $post       Post.
+	 * @param string               $kind       Kind slug.
+	 * @param array<string, mixed> $attributes Block attributes.
+	 * @param bool                 $in_section Whether a section heading stands above the line.
+	 * @return string
+	 */
+	private static function menu_entry_html( \WP_Post $post, string $kind, array $attributes, bool $in_section ): string {
+		$post_id = (int) $post->ID;
+		// A line's name is a heading one level under its section's.
+		$level   = max( 2, min( 6, (int) ( $attributes['headingLevel'] ?? 2 ) + ( $in_section ? 1 : 0 ) ) );
 		$visible = Meta_Fields::get_visible_location_fields( $post_id );
 		$f       = self::menu_fields( $post_id, $kind, $visible );
 
@@ -971,19 +1109,14 @@ final class Kind_Archive_Layouts {
 			$display = (string) get_the_date( '', $post );
 		}
 
-		$heading = ( $attributes['showSections'] ?? true )
-			? self::section_heading( $post_id, $kind, (string) ( $block->context['queryId'] ?? 0 ), (int) ( $attributes['headingLevel'] ?? 2 ) )
-			: '';
-
 		$root_class = $property ? 'pkiw-menu-entry__item p-' . $property . ' h-food' : 'pkiw-menu-entry__item';
 
 		ob_start();
 		?>
 <div class="pkiw-menu-entry">
-		<?php echo $heading; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped when built. ?>
 	<div class="<?php echo esc_attr( $root_class ); ?>">
-		<p class="pkiw-menu-entry__line">
-			<a class="pkiw-menu-entry__name p-name" href="<?php echo esc_url( get_permalink( $post ) ); ?>"><?php echo esc_html( $name ); ?></a>
+		<div class="pkiw-menu-entry__line">
+			<h<?php echo (int) $level; ?> class="pkiw-menu-entry__title"><a class="pkiw-menu-entry__name p-name" href="<?php echo esc_url( get_permalink( $post ) ); ?>"><?php echo esc_html( $name ); ?></a></h<?php echo (int) $level; ?>>
 			<span class="pkiw-menu-entry__leader" aria-hidden="true"></span>
 			<?php if ( $rating > 0 ) : ?>
 				<span class="pkiw-menu-entry__rating">
@@ -994,7 +1127,7 @@ final class Kind_Archive_Layouts {
 				</span>
 				<data class="p-rating" value="<?php echo esc_attr( (string) $rating ); ?>" hidden></data>
 			<?php endif; ?>
-		</p>
+		</div>
 		<p class="pkiw-menu-entry__meta">
 			<?php // A meal names its restaurant before the town; a drink names its brand first. ?>
 			<?php if ( $show_venue && 'eat' === $kind ) : ?>
@@ -1027,6 +1160,198 @@ final class Kind_Archive_Layouts {
 </div>
 		<?php
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Swap core's Post Template render callback for one that can print a
+	 * grouped menu as section containers.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function section_post_template(): void {
+		$type = \WP_Block_Type_Registry::get_instance()->get_registered( 'core/post-template' );
+		if ( ! $type || ! is_callable( $type->render_callback ) || [ self::class, 'render_post_template' ] === $type->render_callback ) {
+			return;
+		}
+
+		self::$core_post_template = $type->render_callback;
+		$type->render_callback    = [ self::class, 'render_post_template' ];
+	}
+
+	/**
+	 * Render a Post Template. A grouped menu prints one section per group:
+	 * a heading and the list of that group's lines on this page. Anything
+	 * else renders as core renders it.
+	 *
+	 * The posts are the ones the query already holds, so the inherited main
+	 * query and core's pagination are untouched and no second query runs.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param array<string, mixed> $attributes Block attributes.
+	 * @param string               $content    Block content.
+	 * @param \WP_Block            $block      Block instance.
+	 * @return string
+	 */
+	public static function render_post_template( $attributes, $content, $block ) {
+		$plan = $block instanceof \WP_Block ? self::section_plan( $block ) : null;
+		if ( null === $plan ) {
+			return is_callable( self::$core_post_template ) ? (string) call_user_func( self::$core_post_template, $attributes, $content, $block ) : '';
+		}
+
+		$query    = $plan['query'];
+		$enhanced = ! empty( $block->context['enhancedPagination'] );
+		$sections = [];
+		$last     = null;
+
+		self::$sectioning = true;
+		while ( $query->have_posts() ) {
+			$query->the_post();
+			$post_id   = (int) get_the_ID();
+			$post_type = (string) get_post_type();
+			$raw       = trim( (string) get_post_meta( $post_id, $plan['field'], true ) );
+			$key       = mb_strtolower( $raw );
+
+			// As core renders a Post Template item: the inner blocks, with this post as their context.
+			$instance              = $block->parsed_block;
+			$instance['blockName'] = 'core/null';
+			$context               = static function ( $context ) use ( $post_id, $post_type ) {
+				$context['postType'] = $post_type;
+				$context['postId']   = $post_id;
+				return $context;
+			};
+			add_filter( 'render_block_context', $context, 1 );
+			$inner = ( new \WP_Block( $instance ) )->render( [ 'dynamic' => false ] );
+			remove_filter( 'render_block_context', $context, 1 );
+
+			if ( $key !== $last ) {
+				$sections[] = [
+					'raw'   => $raw,
+					'items' => [],
+				];
+				$last       = $key;
+			}
+			$sections[ array_key_last( $sections ) ]['items'][] = sprintf(
+				'<li%1$s class="%2$s">%3$s</li>',
+				$enhanced ? ' data-wp-key="post-template-item-' . $post_id . '"' : '',
+				esc_attr( implode( ' ', get_post_class( 'wp-block-post' ) ) ),
+				$inner
+			);
+		}
+		self::$sectioning = false;
+		wp_reset_postdata();
+
+		$html = '';
+		foreach ( $sections as $section ) {
+			$html .= self::render_section( $plan['kind'], $section['raw'], $section['items'], $plan['level'], $plan['label'] );
+		}
+
+		return sprintf( '<div %1$s>%2$s</div>', get_block_wrapper_attributes( [ 'class' => 'pkiw-menu--sectioned' ] ), $html );
+	}
+
+	/**
+	 * What a Post Template needs to print sections, or null when it isn't
+	 * a grouped menu: its query, the group field, the kind, the heading
+	 * level and the label for posts with no group.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param \WP_Block $block Post Template block.
+	 * @return array{query:\WP_Query,field:string,kind:string,level:int,label:string}|null
+	 */
+	private static function section_plan( \WP_Block $block ): ?array {
+		$entry = self::find_block( (array) ( $block->parsed_block['innerBlocks'] ?? [] ), self::MENU_ENTRY );
+		if ( null === $entry || false === ( $entry['attrs']['showSections'] ?? true ) ) {
+			return null;
+		}
+
+		$fields = self::group_fields();
+		if ( ! empty( $block->context['query']['inherit'] ) ) {
+			global $wp_query;
+			if ( ! $wp_query instanceof \WP_Query ) {
+				return null;
+			}
+			// As core does: inside the main loop, work on a copy from its start.
+			$query = $wp_query;
+			if ( in_the_loop() ) {
+				$query = clone $wp_query;
+				$query->rewind_posts();
+			}
+		} else {
+			if ( ! isset( $fields[ (string) ( $block->context['query']['pkiwGroupBy'] ?? '' ) ] ) ) {
+				return null;
+			}
+			$page_key = isset( $block->context['queryId'] ) ? 'query-' . $block->context['queryId'] . '-page' : 'query-page';
+			$page     = empty( $_GET[ $page_key ] ) ? 1 : (int) $_GET[ $page_key ]; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Core's own page parameter for a Query Loop, read as core reads it.
+			$query    = new \WP_Query( build_query_vars_from_query_block( $block, $page ) );
+		}
+
+		$field = (string) $query->get( 'pkiw_group_by' );
+		$kind  = array_search( $field, $fields, true );
+		if ( '' === $field || false === $kind || ! $query->have_posts() ) {
+			return null;
+		}
+
+		$attrs = (array) ( $entry['attrs'] ?? [] );
+
+		return [
+			'query' => $query,
+			'field' => $field,
+			'kind'  => (string) $kind,
+			'level' => (int) ( $attrs['headingLevel'] ?? 2 ),
+			'label' => self::menu_settings( $attrs )['label'],
+		];
+	}
+
+	/**
+	 * The first block of a given name in a parsed block list, at any depth.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
+	 * @param string                           $name   Block name.
+	 * @return array<string, mixed>|null
+	 */
+	private static function find_block( array $blocks, string $name ): ?array {
+		foreach ( $blocks as $parsed ) {
+			if ( ( $parsed['blockName'] ?? '' ) === $name ) {
+				return $parsed;
+			}
+			$found = self::find_block( (array) ( $parsed['innerBlocks'] ?? [] ), $name );
+			if ( null !== $found ) {
+				return $found;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * One menu section: its heading and the list of its lines.
+	 *
+	 * The section has no accessible name of its own, so it adds no landmark;
+	 * its heading carries the structure.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string   $kind        Kind slug.
+	 * @param string   $raw         Stored group value.
+	 * @param string[] $items       The section's lines, each an `li`.
+	 * @param int      $level       Heading level (clamped 2-4).
+	 * @param string   $empty_label Label for posts with no group.
+	 * @return string
+	 */
+	private static function render_section( string $kind, string $raw, array $items, int $level, string $empty_label ): string {
+		$level = max( 2, min( 4, $level ) );
+
+		return sprintf(
+			'<section class="pkiw-menu-section"><h%1$d class="pkiw-menu-section__heading pkiw-menu-entry__section">%2$s</h%1$d><ul class="pkiw-menu-section__items">%3$s</ul></section>',
+			$level,
+			esc_html( self::group_label( $kind, $raw, $empty_label ) ),
+			implode( '', $items )
+		);
 	}
 
 	/**
@@ -1074,24 +1399,26 @@ final class Kind_Archive_Layouts {
 	}
 
 	/**
-	 * Whether a menu line starts a section, for a line rendered on its own.
+	 * The lines of the section a menu line opens, for a line the editor
+	 * renders on its own; empty when the line continues a section.
 	 *
-	 * Reads the kind's posts in menu order and looks at the line before:
-	 * a line starts a section when it opens a page or its group differs.
-	 * The page size is the one the editor preview uses.
+	 * Reads the kind's posts in menu order. A line opens a section when it
+	 * opens a page or its group differs from the line before, and the
+	 * section runs to the next group or the end of the page.
 	 *
 	 * @since 1.9.0
 	 *
-	 * @param int    $post_id   Post ID.
-	 * @param string $kind      Kind slug.
-	 * @param string $field     Group meta key.
-	 * @param string $group_key This line's group, lower-cased.
-	 * @return bool
+	 * @param int                                                        $post_id  Post ID.
+	 * @param string                                                     $kind     Kind slug.
+	 * @param string                                                     $field    Group meta key.
+	 * @param array{per_page:int,order:string,empty:string,label:string} $settings Menu settings.
+	 * @return int[]
 	 */
-	private static function starts_section_in_preview( int $post_id, string $kind, string $field, string $group_key ): bool {
-		if ( ! isset( self::$preview_order[ $kind ] ) ) {
-			$taxonomy                     = get_taxonomy( Taxonomy::TAXONOMY );
-			self::$preview_order[ $kind ] = array_map(
+	private static function preview_run( int $post_id, string $kind, string $field, array $settings ): array {
+		$cache = $kind . '|' . $settings['order'] . '|' . $settings['empty'];
+		if ( ! isset( self::$preview_order[ $cache ] ) ) {
+			$taxonomy                      = get_taxonomy( Taxonomy::TAXONOMY );
+			self::$preview_order[ $cache ] = array_map(
 				'intval',
 				get_posts(
 					[
@@ -1102,6 +1429,8 @@ final class Kind_Archive_Layouts {
 						'no_found_rows'    => true,
 						'suppress_filters' => false,
 						'pkiw_group_by'    => $field,
+						'pkiw_group_order' => $settings['order'],
+						'pkiw_group_empty' => $settings['empty'],
 						'tax_query'        => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- the menu is a kind's posts.
 							[
 								'taxonomy' => Taxonomy::TAXONOMY,
@@ -1114,54 +1443,29 @@ final class Kind_Archive_Layouts {
 			);
 		}
 
-		$index = array_search( $post_id, self::$preview_order[ $kind ], true );
+		$order = self::$preview_order[ $cache ];
+		$index = array_search( $post_id, $order, true );
 		if ( false === $index ) {
-			return true;
+			return [ $post_id ];
 		}
 
-		$per_page = self::preview_page_sizes()[ $kind ] ?? (int) get_option( 'posts_per_page' );
-		if ( 0 === $index || ( $per_page > 0 && 0 === $index % $per_page ) ) {
-			return true;
+		$group    = static fn( int $id ): string => mb_strtolower( trim( (string) get_post_meta( $id, $field, true ) ) );
+		$per_page = $settings['per_page'] > 0 ? $settings['per_page'] : ( self::preview_page_sizes()[ $kind ] ?? (int) get_option( 'posts_per_page' ) );
+		$first    = $per_page > 0 ? $index - ( $index % $per_page ) : 0;
+		$end      = $per_page > 0 ? min( count( $order ), $first + $per_page ) : count( $order );
+		$key      = $group( $post_id );
+		if ( $index > $first && $key === $group( $order[ $index - 1 ] ) ) {
+			return [];
 		}
 
-		$before = mb_strtolower( trim( (string) get_post_meta( self::$preview_order[ $kind ][ $index - 1 ], $field, true ) ) );
-
-		return $before !== $group_key;
-	}
-
-	/**
-	 * Section heading for a loop item when its group differs from the
-	 * previous item's in the same query; empty otherwise.
-	 *
-	 * @param int    $post_id   Post ID.
-	 * @param string $kind      Kind slug.
-	 * @param string $query_key Query ID from block context.
-	 * @param int    $level     Requested heading level (clamped 2-4).
-	 * @return string
-	 */
-	private static function section_heading( int $post_id, string $kind, string $query_key, int $level ): string {
-		$fields = self::group_fields();
-		if ( ! isset( $fields[ $kind ] ) ) {
-			return '';
+		$run = [ $post_id ];
+		foreach ( array_slice( $order, $index + 1, $end - $index - 1 ) as $next ) {
+			if ( $key !== $group( $next ) ) {
+				break;
+			}
+			$run[] = $next;
 		}
 
-		$raw       = trim( (string) get_post_meta( $post_id, $fields[ $kind ], true ) );
-		$group_key = mb_strtolower( $raw );
-		$is_new    = self::$block_preview
-			? self::starts_section_in_preview( $post_id, $kind, $fields[ $kind ], $group_key )
-			: ( ! array_key_exists( $query_key, self::$last_group ) || self::$last_group[ $query_key ] !== $group_key );
-
-		self::$last_group[ $query_key ] = $group_key;
-
-		if ( ! $is_new ) {
-			return '';
-		}
-
-		$level = max( 2, min( 4, $level ) );
-		return sprintf(
-			'<h%1$d class="pkiw-menu-entry__section">%2$s</h%1$d>',
-			$level,
-			esc_html( self::group_label( $kind, $raw ) )
-		);
+		return $run;
 	}
 }

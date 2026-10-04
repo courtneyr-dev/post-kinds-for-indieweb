@@ -178,16 +178,166 @@ final class KindArchiveGroupingTest extends WP_UnitTestCase {
 		$this->assertSame( $p['none'], (int) $wp_query->posts[0]->ID, 'Theme archive keeps plain date order.' );
 	}
 
-	public function test_menu_archive_renders_each_section_heading_once_in_order(): void {
+	/**
+	 * Each section of a rendered menu: its heading and the names of its lines, in document order.
+	 *
+	 * @return array<int, array{0:string,1:string[]}>
+	 */
+	private function sections( string $html ): array {
+		$dom = new DOMDocument();
+		libxml_use_internal_errors( true );
+		$dom->loadHTML( '<?xml encoding="utf-8"?><div>' . $html . '</div>' );
+		libxml_clear_errors();
+		$xpath = new DOMXPath( $dom );
+		$out   = [];
+		foreach ( $xpath->query( '//section[contains(concat(" ", @class, " "), " pkiw-menu-section ")]' ) as $section ) {
+			$names = [];
+			foreach ( $xpath->query( './ul[contains(@class, "pkiw-menu-section__items")]/li//a[contains(@class, "pkiw-menu-entry__name")]', $section ) as $a ) {
+				$names[] = trim( $a->textContent );
+			}
+			$heading = $xpath->query( './*[contains(@class, "pkiw-menu-section__heading")]', $section )->item( 0 );
+			$out[]   = [ $heading ? $heading->nodeName . ':' . trim( $heading->textContent ) : '', $names ];
+		}
+
+		return $out;
+	}
+
+	public function test_menu_archive_holds_each_group_in_its_own_section(): void {
 		$this->fixtures();
 		$this->go_to( get_term_link( 'eat', 'kind' ) );
 
 		$html = $this->render_template( 'eat' );
 
-		preg_match_all( '#<h2 class="pkiw-menu-entry__section">([^<]+)</h2>#', $html, $m );
-		$this->assertSame( [ 'Italian', 'Thai', 'Other' ], $m[1] );
-		$this->assertStringContainsString( 'Carbonara', $html );
+		$this->assertSame(
+			[
+				[ 'h2:Italian', [ 'Carbonara', 'Cacio e pepe' ] ],
+				[ 'h2:Thai', [ 'Khao soi', 'Pad see ew' ] ],
+				[ 'h2:Other', [ 'Toast' ] ],
+			],
+			$this->sections( $html ),
+			'Every line sits inside the section its heading opens.'
+		);
+		$this->assertSame( 3, substr_count( $html, 'pkiw-menu-section__heading' ), 'One heading per section, none inside a line.' );
+		$this->assertSame( 5, substr_count( $html, '<h3 class="pkiw-menu-entry__title">' ), 'A line names its dish in a heading under the section heading.' );
+		$this->assertStringContainsString( 'pkiw-menu--sectioned', $html );
+		$this->assertStringContainsString( 'wp-block-post-template', $html, 'The list keeps the Post Template wrapper classes.' );
+		$this->assertSame( 5, substr_count( $html, 'class="wp-block-post ' ), 'Each line keeps its post classes.' );
 		$this->assertStringContainsString( 'aria-hidden="true"', $html, 'Leader is hidden from assistive technology.' );
+		$this->assertSame( 3, substr_count( $html, '<section class="pkiw-menu-section"><h2 ' ), 'A section has no name of its own, so it adds no landmark; its heading carries the structure.' );
+	}
+
+	public function test_a_section_restarts_with_its_heading_on_the_next_page(): void {
+		$this->fixtures();
+		$size = static function ( WP_Query $query ): void {
+			if ( $query->is_main_query() ) {
+				$query->set( 'posts_per_page', 3 );
+			}
+		};
+		add_action( 'pre_get_posts', $size, 20 );
+		$this->go_to( add_query_arg( 'paged', 2, get_term_link( 'eat', 'kind' ) ) );
+		remove_action( 'pre_get_posts', $size, 20 );
+
+		$this->assertSame(
+			[
+				[ 'h2:Thai', [ 'Pad see ew' ] ],
+				[ 'h2:Other', [ 'Toast' ] ],
+			],
+			$this->sections( $this->render_template( 'eat' ) ),
+			'Page two opens the Thai section again, with its heading.'
+		);
+	}
+
+	/**
+	 * Serve the eat archive from a template whose menu entry carries the given attributes.
+	 *
+	 * @param array<string, mixed> $attrs Menu entry attributes.
+	 */
+	private function sections_with( array $attrs ): array {
+		$content = '<!-- wp:query {"queryId":9,"query":{"inherit":true}} --><div class="wp-block-query"><!-- wp:post-template {"className":"is-style-pkiw-menu"} --><!-- wp:post-kinds-indieweb/menu-entry ' . wp_json_encode( $attrs ) . ' /--><!-- /wp:post-template --></div><!-- /wp:query -->';
+		$swap    = static function ( $templates ) use ( $content ) {
+			foreach ( $templates as $template ) {
+				if ( 'taxonomy-kind-eat' === $template->slug ) {
+					$template->content = $content;
+				}
+			}
+			return $templates;
+		};
+		add_filter( 'get_block_templates', $swap );
+		$this->go_to( get_term_link( 'eat', 'kind' ) );
+		$html = $this->render_template( 'eat' );
+		remove_filter( 'get_block_templates', $swap );
+
+		return $this->sections( $html );
+	}
+
+	public function test_section_order_and_the_empty_group_follow_the_menu_entry_settings(): void {
+		$this->fixtures();
+
+		$this->assertSame(
+			[ 'h2:Thai', 'h2:Italian', 'h2:Other' ],
+			array_column( $this->sections_with( [ 'sectionOrder' => 'desc' ] ), 0 ),
+			'Z to A reverses the sections and leaves the posts with no cuisine last.'
+		);
+		$this->assertSame(
+			[ 'h2:Kitchen sink', 'h2:Italian', 'h2:Thai' ],
+			array_column(
+				$this->sections_with(
+					[
+						'emptyGroup' => 'first',
+						'emptyLabel' => 'Kitchen sink',
+					]
+				),
+				0
+			),
+			'Posts with no cuisine can lead, under a heading the editor names.'
+		);
+	}
+
+	public function test_lines_per_page_and_heading_level_follow_the_menu_entry_settings(): void {
+		$this->fixtures();
+
+		$sections = $this->sections_with(
+			[
+				'linesPerPage' => 2,
+				'headingLevel' => 3,
+			]
+		);
+
+		$this->assertSame( [ [ 'h3:Italian', [ 'Carbonara', 'Cacio e pepe' ] ] ], $sections, 'Two lines a page, headed at the level the entry asks for.' );
+		global $wp_query;
+		$this->assertSame( 3, (int) $wp_query->max_num_pages, 'Core pagination counts pages of two.' );
+	}
+
+	public function test_a_menu_without_section_headings_renders_as_core_renders_it(): void {
+		$this->fixtures();
+
+		$content = '<!-- wp:query {"queryId":9,"query":{"inherit":true}} --><div class="wp-block-query"><!-- wp:post-template {"className":"is-style-pkiw-menu"} --><!-- wp:post-kinds-indieweb/menu-entry {"showSections":false} /--><!-- /wp:post-template --></div><!-- /wp:query -->';
+		$swap    = static function ( $templates ) use ( $content ) {
+			foreach ( $templates as $template ) {
+				if ( 'taxonomy-kind-eat' === $template->slug ) {
+					$template->content = $content;
+				}
+			}
+			return $templates;
+		};
+		add_filter( 'get_block_templates', $swap );
+		$this->go_to( get_term_link( 'eat', 'kind' ) );
+		$html = $this->render_template( 'eat' );
+		remove_filter( 'get_block_templates', $swap );
+
+		$this->assertStringNotContainsString( 'pkiw-menu-section', $html );
+		$this->assertMatchesRegularExpression( '#<ul[^>]*class="[^"]*wp-block-post-template#', $html, 'Core prints its own list.' );
+		$this->assertSame( 5, substr_count( $html, '<h2 class="pkiw-menu-entry__title">' ), 'With no section above it a line is headed at the entry\'s own level.' );
+	}
+
+	public function test_a_post_template_without_a_menu_entry_is_left_to_core(): void {
+		$this->fixtures();
+		$this->go_to( get_term_link( 'eat', 'kind' ) );
+
+		$html = do_blocks( '<!-- wp:query {"queryId":4,"query":{"inherit":true}} --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-title /--><!-- /wp:post-template --></div><!-- /wp:query -->' );
+
+		$this->assertStringNotContainsString( 'pkiw-menu-section', $html );
+		$this->assertSame( 5, substr_count( $html, '<li class="wp-block-post ' ) );
 	}
 
 	public function test_menu_entry_rating_is_text(): void {
@@ -280,52 +430,88 @@ final class KindArchiveGroupingTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * The section heading the editor's render of one menu line prints, or ''.
+	 * The editor's render of one menu line, with the menu entry attributes it sends.
+	 *
+	 * @param int                  $post_id Post ID.
+	 * @param array<string, mixed> $attrs   Menu entry attributes.
 	 */
-	private function editor_heading( int $post_id ): string {
+	private function editor_render( int $post_id, array $attrs = [] ): string {
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
-		// The editor renders each line in a request of its own, so nothing is remembered from the line before.
-		do_action( 'pkiw_menu_entry_reset' );
 		$request = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/post-kinds-indieweb/menu-entry' );
 		$request->set_param( 'context', 'edit' );
 		$request->set_param( 'post_id', $post_id );
+		if ( $attrs ) {
+			$request->set_param( 'attributes', $attrs );
+		}
 		$response = rest_get_server()->dispatch( $request );
 		$this->assertSame( 200, $response->get_status(), wp_json_encode( $response->get_data() ) );
 
-		return 1 === preg_match( '#<h2 class="pkiw-menu-entry__section">([^<]+)</h2>#', (string) $response->get_data()['rendered'], $m ) ? $m[1] : '';
+		return (string) $response->get_data()['rendered'];
 	}
 
-	public function test_the_editor_heads_a_section_once_as_the_front_end_does(): void {
+	public function test_the_editor_renders_a_section_from_the_line_that_opens_it(): void {
 		$p = $this->fixtures();
 
-		$this->assertSame(
-			[
-				'italian_new' => 'Italian',
-				'italian_old' => '',
-				'thai_b'      => 'Thai',
-				'thai_a'      => '',
-				'none'        => 'Other',
-			],
-			[
-				'italian_new' => $this->editor_heading( $p['italian_new'] ),
-				'italian_old' => $this->editor_heading( $p['italian_old'] ),
-				'thai_b'      => $this->editor_heading( $p['thai_b'] ),
-				'thai_a'      => $this->editor_heading( $p['thai_a'] ),
-				'none'        => $this->editor_heading( $p['none'] ),
-			]
-		);
+		$this->assertSame( [ [ 'h2:Italian', [ 'Carbonara', 'Cacio e pepe' ] ] ], $this->sections( $this->editor_render( $p['italian_new'] ) ) );
+		$this->assertSame( [ [ 'h2:Thai', [ 'Khao soi', 'Pad see ew' ] ] ], $this->sections( $this->editor_render( $p['thai_b'] ) ) );
+		$this->assertSame( [ [ 'h2:Other', [ 'Toast' ] ] ], $this->sections( $this->editor_render( $p['none'] ) ) );
+
+		foreach ( [ 'italian_old', 'thai_a' ] as $continued ) {
+			$html = $this->editor_render( $p[ $continued ] );
+			$this->assertStringContainsString( 'pkiw-menu-entry--continued', $html, "{$continued} is already inside the section the line before it opened." );
+			$this->assertStringNotContainsString( 'pkiw-menu-entry__name', $html );
+			$this->assertNotSame( '', trim( $html ), 'The editor shows a placeholder for an empty render, so the marker is an element.' );
+		}
 	}
 
-	public function test_the_editor_heads_the_first_line_of_each_page(): void {
+	public function test_the_editor_opens_a_section_again_on_the_first_line_of_a_page(): void {
 		$p     = $this->fixtures();
 		$sizes = static fn( int $per_page, string $slug ): int => 'eat' === $slug ? 3 : $per_page;
 		add_filter( 'pkiw_kind_archive_preview_per_page', $sizes, 10, 2 );
 
-		// Page 2 opens with the second Thai line: the front end heads it again there.
-		$heading = $this->editor_heading( $p['thai_a'] );
+		// Page 1 ends with the first Thai line; page 2 opens with the second, as the front end does.
+		$page_one = $this->sections( $this->editor_render( $p['thai_b'] ) );
+		$page_two = $this->sections( $this->editor_render( $p['thai_a'] ) );
 		remove_filter( 'pkiw_kind_archive_preview_per_page', $sizes, 10 );
 
-		$this->assertSame( 'Thai', $heading );
+		$this->assertSame( [ [ 'h2:Thai', [ 'Khao soi' ] ] ], $page_one, 'A section stops at the end of its page.' );
+		$this->assertSame( [ [ 'h2:Thai', [ 'Pad see ew' ] ] ], $page_two );
+	}
+
+	public function test_the_editor_follows_the_menu_entry_settings(): void {
+		$p = $this->fixtures();
+
+		// Lines per page 2: Italian fills page one, so both Thai lines open page two together.
+		$this->assertSame( [ [ 'h2:Thai', [ 'Khao soi', 'Pad see ew' ] ] ], $this->sections( $this->editor_render( $p['thai_b'], [ 'linesPerPage' => 2 ] ) ) );
+		$this->assertSame(
+			[ [ 'h3:No cuisine yet', [ 'Toast' ] ] ],
+			$this->sections(
+				$this->editor_render(
+					$p['none'],
+					[
+						'emptyLabel'   => 'No cuisine yet',
+						'headingLevel' => 3,
+					]
+				)
+			)
+		);
+		$this->assertStringNotContainsString( 'pkiw-menu-section', $this->editor_render( $p['thai_a'], [ 'showSections' => false ] ), 'With section headings off every line renders on its own.' );
+	}
+
+	public function test_the_rest_route_orders_a_menu_by_each_named_order(): void {
+		$p    = $this->fixtures();
+		$term = get_term_by( 'slug', 'eat', 'kind' );
+		$ids  = fn( string $orderby ): array => $this->rest_post_ids(
+			[
+				'kind'     => [ $term->term_id ],
+				'orderby'  => $orderby,
+				'per_page' => 10,
+			]
+		);
+
+		$this->assertSame( [ $p['thai_b'], $p['thai_a'], $p['italian_new'], $p['italian_old'], $p['none'] ], $ids( 'pkiw_group_desc' ) );
+		$this->assertSame( [ $p['none'], $p['italian_new'], $p['italian_old'], $p['thai_b'], $p['thai_a'] ], $ids( 'pkiw_group_empty_first' ) );
+		$this->assertSame( [ $p['none'], $p['thai_b'], $p['thai_a'], $p['italian_new'], $p['italian_old'] ], $ids( 'pkiw_group_desc_empty_first' ) );
 	}
 
 	public function test_a_menu_line_is_an_h_entry_with_its_date_and_author(): void {
@@ -396,7 +582,10 @@ final class KindArchiveGroupingTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'Imperial stout', $html );
 		$this->assertStringContainsString( 'Tröegs', $html );
-		$this->assertStringContainsString( '>Beer</h2>', $html );
+		$this->assertStringNotContainsString( 'pkiw-menu-section', $html, 'A line on its own prints no section.' );
+
+		$this->go_to( get_term_link( 'drink', 'kind' ) );
+		$this->assertSame( [ [ 'h2:Beer', [ 'Imperial stout' ] ] ], $this->sections( $this->render_template( 'drink' ) ), 'The drink menu heads the section with the drink type\'s label.' );
 	}
 
 	/**
@@ -405,7 +594,6 @@ final class KindArchiveGroupingTest extends WP_UnitTestCase {
 	 * @param int $post_id Post ID.
 	 */
 	private function render_entry( int $post_id ): string {
-		do_action( 'pkiw_menu_entry_reset' );
 		$block = new WP_Block(
 			[
 				'blockName'    => 'post-kinds-indieweb/menu-entry',
