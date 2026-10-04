@@ -81,6 +81,74 @@ final class Kind_Archive_Layouts {
 		add_filter( 'query_loop_block_query_vars', [ $this, 'query_block_group_by' ], 10, 2 );
 		add_filter( 'render_block_data', [ $this, 'reset_on_post_template' ] );
 		add_action( 'pkiw_menu_entry_reset', [ self::class, 'reset_sections' ] );
+		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_template_preview' ] );
+	}
+
+	/**
+	 * Load the script that previews a kind's archive template with that kind's posts.
+	 *
+	 * Core previews an inherited Query Loop with the site's latest posts
+	 * unless the template is a category, tag, post type or post format
+	 * archive. `taxonomy-kind-<slug>` gets the same treatment here.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function enqueue_template_preview(): void {
+		wp_enqueue_script(
+			'pkiw-kind-template-preview',
+			\PKIW_URL . 'assets/js/kind-template-preview.js',
+			[ 'wp-hooks', 'wp-compose', 'wp-data', 'wp-core-data', 'wp-element' ],
+			\PKIW_VERSION,
+			true
+		);
+		wp_add_inline_script(
+			'pkiw-kind-template-preview',
+			'window.pkiwKindTemplatePreview = ' . wp_json_encode( [ 'perPage' => (object) self::preview_page_sizes() ] ) . ';',
+			'before'
+		);
+	}
+
+	/**
+	 * Page sizes the editor preview uses, by kind slug.
+	 *
+	 * Core sets an inheriting Query Loop's page size to the site's
+	 * setting in the editor. A site whose kind archive shows a different
+	 * number per page says so through the filter, and the preview matches.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return array<string, int> Sizes above zero, keyed by kind slug.
+	 */
+	public static function preview_page_sizes(): array {
+		$terms = get_terms(
+			[
+				'taxonomy'   => Taxonomy::TAXONOMY,
+				'hide_empty' => false,
+				'fields'     => 'slugs',
+			]
+		);
+		$sizes = [];
+		foreach ( is_array( $terms ) ? $terms : [] as $slug ) {
+			/**
+			 * Filters how many posts the editor previews on a kind's archive template.
+			 *
+			 * Return the number the kind's archive shows per page on the
+			 * front end. Zero keeps the editor's own page size.
+			 *
+			 * @since 1.9.0
+			 *
+			 * @param int    $per_page Posts per page. Default 0.
+			 * @param string $slug     Kind slug.
+			 */
+			$size = (int) apply_filters( 'pkiw_kind_archive_preview_per_page', 0, (string) $slug );
+			if ( $size > 0 ) {
+				$sizes[ (string) $slug ] = $size;
+			}
+		}
+
+		return $sizes;
 	}
 
 	/**

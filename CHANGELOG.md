@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Course filter and A-Z order on the recipe archive, as ordinary WordPress queries: `/kind/recipe/?pkiw_recipe_course=soup` and `/kind/recipe/?orderby=title&order=asc`. Both stay in the URL, so pagination keeps them. With WP Recipe Maker a course is a `wprm_course` term, resolved through each recipe's parent post. With no recipe plugin, courses are the post's categories; the `pkiw_recipe_course_taxonomy` filter picks another taxonomy (#229).
 - `pkiw_recipe_plugin_active` filter over the WP Recipe Maker detection (#229).
 
+- Recipe courses block (`post-kinds-indieweb/recipe-courses`): a labelled `nav` of links to the recipe archive, "All", each course in use and "A–Z index", with `aria-current="page"` on the one being shown. It's server-rendered, so the Site Editor prints the same links as the front end. A theme places it in its recipe archive template (#229).
+- The Site Editor previews a `taxonomy-kind-<slug>` template with that kind's posts. Core previews an inherited Query Loop with the site's latest posts for every taxonomy except categories, tags and post formats. `pkiw_kind_archive_preview_per_page` tells the preview how many posts a kind's archive shows per page (#229, #233).
+
 ### Changed
 
 - The `comics` kind's default description covers both uses: "A comic you read, drew, or published." A site whose stored description still equals an earlier default gets the new one once; a description the site edited is kept (#228).
@@ -32,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The Stream card sends its own attributes to the editor's server render, so its heading level and any block style apply in the canvas as they do on the front end. It sent none before (#229, #233).
 - A recipe post's own page names its picture. The `h-recipe` at the permalink now carries `u-photo`: the featured image, or with none, the picture of the WP Recipe Maker recipe the post embeds. A block theme prints the featured image outside the content, so the entry had no photo. Kinds rooted as `h-entry` are unchanged, because a photo property there marks a photo post (#229).
 - A Stream card that a theme adapter rebuilds as the post's own `h-cite` card (a read with body text below its card, say) now leaves the Query Loop item as the `h-entry` root. The root was decided from the card before adapters ran, so the swapped card's `read-of` attached to no entry (#228).
 - The plugin's `pre_get_block_file_template` handler only answers for `post-kinds-for-indieweb//…` template IDs; it no longer replaces a theme's own file template that shares a slug (such as `taxonomy-venue`) (#233).
