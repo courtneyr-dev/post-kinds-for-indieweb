@@ -124,7 +124,11 @@ test.describe( 'kind archive layouts', () => {
 			line.locator( '.pkiw-menu-entry__leader' )
 		).toHaveAttribute( 'aria-hidden', 'true' );
 
-		await expect( page.getByText( `Toast ${ RUN }` ) ).toBeVisible();
+		await expect(
+			page.locator( '.pkiw-menu-entry', {
+				hasText: `Toast ${ RUN }`,
+			} )
+		).toBeVisible();
 		await expect( page.getByText( `Hidden ${ RUN }` ) ).toHaveCount( 0 );
 	} );
 

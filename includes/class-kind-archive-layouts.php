@@ -51,6 +51,11 @@ final class Kind_Archive_Layouts {
 	public const MENU_ENTRY = 'post-kinds-indieweb/menu-entry';
 
 	/**
+	 * Recent Specials block name.
+	 */
+	public const MENU_SPECIALS = 'post-kinds-indieweb/menu-specials';
+
+	/**
 	 * Last group key rendered per query, for deriving section headings.
 	 *
 	 * @var array<string, string>
@@ -63,6 +68,20 @@ final class Kind_Archive_Layouts {
 	 * @var array<int, string|null>
 	 */
 	private array $template_cache = [];
+
+	/**
+	 * Whether a block-renderer request is in progress: the editor previewing a block.
+	 *
+	 * @var bool
+	 */
+	private static bool $block_preview = false;
+
+	/**
+	 * Post IDs of a menu kind in menu order, remembered for one editor render.
+	 *
+	 * @var array<string, int[]>
+	 */
+	private static array $preview_order = [];
 
 	/**
 	 * Wire hooks.
@@ -82,6 +101,121 @@ final class Kind_Archive_Layouts {
 		add_filter( 'render_block_data', [ $this, 'reset_on_post_template' ] );
 		add_action( 'pkiw_menu_entry_reset', [ self::class, 'reset_sections' ] );
 		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_template_preview' ] );
+		add_action( 'parse_request', [ $this, 'forget_templates' ] );
+		add_filter( 'rest_request_before_callbacks', [ $this, 'track_block_preview' ], 10, 3 );
+		add_filter( 'rest_request_after_callbacks', [ $this, 'track_block_preview' ], 10, 3 );
+		if ( taxonomy_exists( Taxonomy::TAXONOMY ) ) {
+			$this->register_rest_menu_order();
+		} else {
+			add_action( 'init', [ $this, 'register_rest_menu_order' ], 11 );
+		}
+	}
+
+	/**
+	 * Hook the menu order into the REST route of each post type that takes a kind.
+	 *
+	 * Runs once the kind taxonomy exists (it registers on `init` at 5),
+	 * which it may not when register() runs, and before core builds its
+	 * REST routes.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function register_rest_menu_order(): void {
+		$taxonomy = get_taxonomy( Taxonomy::TAXONOMY );
+		foreach ( $taxonomy ? $taxonomy->object_type : [] as $post_type ) {
+			add_filter( "rest_{$post_type}_collection_params", [ $this, 'rest_collection_params' ] );
+			add_filter( "rest_{$post_type}_query", [ $this, 'rest_menu_order' ], 10, 2 );
+		}
+	}
+
+	/**
+	 * Note when the editor asks the server to render a block.
+	 *
+	 * The editor renders each menu line in a request of its own, so the
+	 * line can't tell from the one before it whether it starts a section.
+	 * section_heading() reads this and works it out from the menu's order.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param mixed            $response Response so far, passed through.
+	 * @param mixed            $handler  Route handler.
+	 * @param \WP_REST_Request $request  Request.
+	 * @return mixed
+	 */
+	public function track_block_preview( $response, $handler, $request ) {
+		if ( $request instanceof \WP_REST_Request && str_starts_with( $request->get_route(), '/wp/v2/block-renderer/' ) ) {
+			self::$block_preview = 'rest_request_before_callbacks' === current_filter();
+			self::$preview_order = [];
+		}
+
+		return $response;
+	}
+
+	/**
+	 * Let the REST posts routes order a menu kind the way its archive does.
+	 *
+	 * `orderby=pkiw_group` with one menu kind in the request returns that
+	 * kind's posts by group, then date, then ID. The Site Editor's preview
+	 * of a menu template asks for it (assets/js/kind-template-preview.js).
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param array<string, mixed> $params Collection parameters.
+	 * @return array<string, mixed>
+	 */
+	public function rest_collection_params( $params ) {
+		if ( isset( $params['orderby']['enum'] ) && is_array( $params['orderby']['enum'] ) ) {
+			$params['orderby']['enum'][] = 'pkiw_group';
+		}
+
+		return $params;
+	}
+
+	/**
+	 * Turn `orderby=pkiw_group` into the grouped order for the request's kind.
+	 *
+	 * With no kind, several kinds, or a kind that has no group field, the
+	 * posts come back newest first.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param array<string, mixed> $args    Query arguments.
+	 * @param \WP_REST_Request     $request Request.
+	 * @return array<string, mixed>
+	 */
+	public function rest_menu_order( $args, $request ) {
+		if ( 'pkiw_group' !== $request['orderby'] ) {
+			return $args;
+		}
+
+		$args['orderby'] = 'date';
+		$args['order']   = 'DESC';
+
+		$term_ids = array_values( array_filter( array_map( 'intval', (array) $request[ Taxonomy::TAXONOMY ] ) ) );
+		$term     = 1 === count( $term_ids ) ? get_term( $term_ids[0], Taxonomy::TAXONOMY ) : null;
+		$fields   = self::group_fields();
+		if ( $term instanceof \WP_Term && isset( $fields[ $term->slug ] ) ) {
+			$args['pkiw_group_by'] = $fields[ $term->slug ];
+		}
+
+		return $args;
+	}
+
+	/**
+	 * Forget which template each kind archive resolved to.
+	 *
+	 * The lookup is remembered for one request. A long-running process
+	 * that serves several (a test run, a worker) starts each one fresh, so
+	 * a theme switch or an edited template is read on the next request.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function forget_templates(): void {
+		$this->template_cache = [];
 	}
 
 	/**
@@ -105,7 +239,12 @@ final class Kind_Archive_Layouts {
 		);
 		wp_add_inline_script(
 			'pkiw-kind-template-preview',
-			'window.pkiwKindTemplatePreview = ' . wp_json_encode( [ 'perPage' => (object) self::preview_page_sizes() ] ) . ';',
+			'window.pkiwKindTemplatePreview = ' . wp_json_encode(
+				[
+					'perPage' => (object) self::preview_page_sizes(),
+					'grouped' => array_keys( self::group_fields() ),
+				]
+			) . ';',
 			'before'
 		);
 	}
@@ -239,6 +378,225 @@ final class Kind_Archive_Layouts {
 			];
 			register_block_type( self::MENU_ENTRY, $args );
 		}
+
+		wp_register_script(
+			'pkiw-menu-specials-editor',
+			\PKIW_URL . 'assets/js/menu-specials-editor.js',
+			[ 'wp-blocks', 'wp-element', 'wp-i18n', 'wp-block-editor', 'wp-components', 'wp-server-side-render' ],
+			\PKIW_VERSION,
+			true
+		);
+		wp_set_script_translations( 'pkiw-menu-specials-editor', 'post-kinds-for-indieweb-in-block-themes' );
+		if ( ! \WP_Block_Type_Registry::get_instance()->is_registered( self::MENU_SPECIALS ) ) {
+			/**
+			 * Block type arguments. No block.json, so apiVersion 3 is declared here.
+			 *
+			 * @var array<string, mixed> $args
+			 */
+			$args = [
+				'api_version'     => 3,
+				'title'           => __( 'Recent Specials', 'post-kinds-for-indieweb-in-block-themes' ),
+				'render_callback' => [ self::class, 'render_menu_specials' ],
+				'attributes'      => [
+					'kind'         => [
+						'type'    => 'string',
+						'default' => '',
+					],
+					'count'        => [
+						'type'    => 'integer',
+						'default' => 2,
+					],
+					'showPhotos'   => [
+						'type'    => 'boolean',
+						'default' => true,
+					],
+					'headingLevel' => [
+						'type'    => 'integer',
+						'default' => 2,
+					],
+				],
+				'supports'        => [
+					'html'     => false,
+					'reusable' => false,
+				],
+				'editor_script'   => 'pkiw-menu-specials-editor',
+				'style'           => 'pkiw-kind-layouts',
+			];
+			register_block_type( self::MENU_SPECIALS, $args );
+		}
+	}
+
+	/**
+	 * Render Recent Specials: the newest posts of a menu kind, above the menu.
+	 *
+	 * The kind comes from the `kind` attribute, or from the kind archive
+	 * being shown. Each special links to its post and prints the note, the
+	 * venue under the location privacy rule, the date and a text rating.
+	 * It carries no microformats root: the menu line below is the post's
+	 * entry on the page. Past the first page the block prints nothing.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param array<string, mixed> $attributes Block attributes.
+	 * @return string
+	 */
+	public static function render_menu_specials( array $attributes = [] ): string {
+		$kind = sanitize_key( (string) ( $attributes['kind'] ?? '' ) );
+		if ( '' === $kind && is_tax( Taxonomy::TAXONOMY ) ) {
+			$term = get_queried_object();
+			$kind = $term instanceof \WP_Term ? $term->slug : '';
+		}
+		if ( ! isset( self::group_fields()[ $kind ] ) || is_paged() ) {
+			return '';
+		}
+
+		$taxonomy = get_taxonomy( Taxonomy::TAXONOMY );
+		$posts    = get_posts(
+			[
+				'post_type'      => $taxonomy ? $taxonomy->object_type : 'post',
+				'post_status'    => 'publish',
+				'posts_per_page' => max( 1, min( 6, (int) ( $attributes['count'] ?? 2 ) ) ),
+				'orderby'        => [
+					'date' => 'DESC',
+					'ID'   => 'DESC',
+				],
+				'no_found_rows'  => true,
+				'tax_query'      => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- the specials are the kind's newest posts.
+					[
+						'taxonomy' => Taxonomy::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => $kind,
+					],
+				],
+			]
+		);
+		if ( ! $posts ) {
+			return '';
+		}
+
+		$level       = max( 2, min( 5, (int) ( $attributes['headingLevel'] ?? 2 ) ) );
+		$show_photos = (bool) ( $attributes['showPhotos'] ?? true );
+		$items       = '';
+		foreach ( $posts as $post ) {
+			$items .= self::menu_special( $post, $kind, $level + 1, $show_photos );
+		}
+
+		$heading_id = wp_unique_id( 'pkiw-menu-specials-' );
+
+		return sprintf(
+			'<section %1$s><h%2$d id="%3$s" class="pkiw-menu-specials__heading">%4$s</h%2$d><ul class="pkiw-menu-specials__list">%5$s</ul></section>',
+			get_block_wrapper_attributes(
+				[
+					'class'           => 'pkiw-menu-specials',
+					'aria-labelledby' => $heading_id,
+				]
+			),
+			$level,
+			esc_attr( $heading_id ),
+			esc_html__( 'Recent Specials', 'post-kinds-for-indieweb-in-block-themes' ),
+			$items
+		);
+	}
+
+	/**
+	 * One Recent Specials item.
+	 *
+	 * @param \WP_Post $post        Post.
+	 * @param string   $kind        Kind slug.
+	 * @param int      $level       Heading level for the item's name.
+	 * @param bool     $show_photos Whether to print the photo.
+	 * @return string
+	 */
+	private static function menu_special( \WP_Post $post, string $kind, int $level, bool $show_photos ): string {
+		$visible = Meta_Fields::get_visible_location_fields( $post->ID );
+		$f       = self::menu_fields( $post->ID, $kind, $visible );
+		$name    = '' !== $f['name'] ? $f['name'] : get_the_title( $post );
+		$rating  = max( 0, min( 5, $f['rating'] ) );
+
+		$ts = $f['when'] ? strtotime( $f['when'] ) : false;
+		if ( $ts ) {
+			$iso     = gmdate( 'c', $ts );
+			$display = wp_date( (string) get_option( 'date_format' ), $ts );
+		} else {
+			$iso     = (string) get_the_date( 'c', $post );
+			$display = (string) get_the_date( '', $post );
+		}
+
+		// Venue identity is the "name" tier, as on the menu line. A meal
+		// names its restaurant before the town; a drink names its brand
+		// first, and a venue with the brand's name isn't said twice.
+		$subs  = $f['subs'];
+		$venue = ( '' !== $f['venue'] && ! empty( $visible['name'] ) ) ? $f['venue'] : '';
+		if ( '' !== $venue && ! in_array( mb_strtolower( $venue ), array_map( 'mb_strtolower', $subs ), true ) ) {
+			if ( 'eat' === $kind ) {
+				array_unshift( $subs, $venue );
+			} else {
+				$subs[] = $venue;
+			}
+		}
+		$meta = '';
+		foreach ( $subs as $sub ) {
+			$meta .= '<span class="pkiw-menu-specials__sub">' . esc_html( $sub ) . '</span> ';
+		}
+		$meta .= sprintf( '<time class="pkiw-menu-specials__date" datetime="%s">%s</time>', esc_attr( $iso ), esc_html( $display ) );
+
+		$out = '<li class="pkiw-menu-specials__item">';
+		if ( $show_photos ) {
+			$out .= self::menu_special_photo( $post, $kind );
+		}
+		$out .= sprintf(
+			'<div class="pkiw-menu-specials__body"><h%1$d class="pkiw-menu-specials__name"><a class="pkiw-menu-specials__link" href="%2$s">%3$s</a></h%1$d>',
+			$level,
+			esc_url( (string) get_permalink( $post ) ),
+			esc_html( $name )
+		);
+		if ( '' !== $f['notes'] ) {
+			$out .= '<p class="pkiw-menu-specials__notes">' . esc_html( $f['notes'] ) . '</p>';
+		}
+		$out .= '<p class="pkiw-menu-specials__meta">' . $meta . '</p>';
+		if ( $rating > 0 ) {
+			/* translators: %d: rating out of five. */
+			$out .= '<p class="pkiw-menu-specials__rating">' . esc_html( sprintf( __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $rating ) ) . '</p>';
+		}
+
+		return $out . '</div></li>';
+	}
+
+	/**
+	 * A special's photo: the featured image, or the picture stored on its card.
+	 *
+	 * @param \WP_Post $post Post.
+	 * @param string   $kind Kind slug.
+	 * @return string Image markup, or an empty string.
+	 */
+	private static function menu_special_photo( \WP_Post $post, string $kind ): string {
+		if ( has_post_thumbnail( $post ) ) {
+			return get_the_post_thumbnail( $post, 'medium_large', [ 'class' => 'pkiw-menu-specials__photo' ] );
+		}
+
+		// The card keeps its picture and alt text in its own attributes;
+		// a post made without the card may hold a URL in meta.
+		$url = '';
+		$alt = '';
+		foreach ( parse_blocks( $post->post_content ) as $block ) {
+			if ( 'post-kinds-indieweb/' . $kind . '-card' === $block['blockName'] ) {
+				$url = trim( (string) ( $block['attrs']['photo'] ?? '' ) );
+				$alt = (string) ( $block['attrs']['photoAlt'] ?? '' );
+				break;
+			}
+		}
+		if ( '' === $url ) {
+			$url = trim( (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . $kind . '_photo', true ) );
+		}
+		if ( '' === $url ) {
+			return '';
+		}
+
+		return sprintf(
+			'<img class="pkiw-menu-specials__photo" src="%s" alt="%s" loading="lazy" decoding="async" />',
+			esc_url( $url ),
+			esc_attr( $alt )
+		);
 	}
 
 	/**
@@ -431,10 +789,36 @@ final class Kind_Archive_Layouts {
 			static fn( $a, $b ) => ( $priority[ $a->slug ] ?? 99 ) <=> ( $priority[ $b->slug ] ?? 99 )
 		);
 
-		$content                                = isset( $templates[0] ) ? (string) $templates[0]->content : null;
+		$content                                = isset( $templates[0] ) ? self::with_patterns( (string) $templates[0]->content ) : null;
 		$this->template_cache[ $term->term_id ] = $content;
 
 		return $content;
+	}
+
+	/**
+	 * Append the content of each pattern a template references.
+	 *
+	 * A theme often places its Query Loop through a pattern, so its
+	 * template holds a `wp:pattern` reference and none of the loop's
+	 * blocks. The layout checks above read the result.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string $content Template content.
+	 * @return string
+	 */
+	private static function with_patterns( string $content ): string {
+		return (string) preg_replace_callback(
+			'/<!--\s*wp:pattern\s+(\{.*?\})\s*\/-->/',
+			static function ( array $reference ): string {
+				$attrs   = json_decode( $reference[1], true );
+				$slug    = is_array( $attrs ) ? (string) ( $attrs['slug'] ?? '' ) : '';
+				$pattern = '' !== $slug ? \WP_Block_Patterns_Registry::get_instance()->get_registered( $slug ) : null;
+
+				return $reference[0] . ( is_array( $pattern ) ? (string) ( $pattern['content'] ?? '' ) : '' );
+			},
+			$content
+		);
 	}
 
 	/**
@@ -575,7 +959,8 @@ final class Kind_Archive_Layouts {
 
 		// Venue identity is the "name" tier: private posts show none to
 		// visitors. Street, coordinates and venue URL never print here.
-		$show_venue = '' !== $venue && ! empty( $visible['name'] );
+		// A venue with the brand's name is said once.
+		$show_venue = '' !== $venue && ! empty( $visible['name'] ) && ! in_array( mb_strtolower( $venue ), array_map( 'mb_strtolower', $subs ), true );
 
 		$ts = $when ? strtotime( $when ) : false;
 		if ( $ts ) {
@@ -611,10 +996,14 @@ final class Kind_Archive_Layouts {
 			<?php endif; ?>
 		</p>
 		<p class="pkiw-menu-entry__meta">
+			<?php // A meal names its restaurant before the town; a drink names its brand first. ?>
+			<?php if ( $show_venue && 'eat' === $kind ) : ?>
+				<span class="pkiw-menu-entry__sub p-location h-card"><span class="p-name"><?php echo esc_html( $venue ); ?></span></span>
+			<?php endif; ?>
 			<?php foreach ( $subs as $sub ) : ?>
 				<span class="pkiw-menu-entry__sub"><?php echo esc_html( $sub ); ?></span>
 			<?php endforeach; ?>
-			<?php if ( $show_venue ) : ?>
+			<?php if ( $show_venue && 'eat' !== $kind ) : ?>
 				<span class="pkiw-menu-entry__sub p-location h-card"><span class="p-name"><?php echo esc_html( $venue ); ?></span></span>
 			<?php endif; ?>
 			<time class="pkiw-menu-entry__date dt-published" datetime="<?php echo esc_attr( $iso ); ?>"><?php echo esc_html( $display ); ?></time>
@@ -624,6 +1013,14 @@ final class Kind_Archive_Layouts {
 		<?php endif; ?>
 	</div>
 	<data class="u-url" value="<?php echo esc_url( get_permalink( $post ) ); ?>" hidden></data>
+		<?php // The entry's own date and author. The visible date sits inside the food item and belongs to it. ?>
+	<data class="dt-published" value="<?php echo esc_attr( (string) get_the_date( 'c', $post ) ); ?>" hidden></data>
+		<?php
+		$author_html = function_exists( __NAMESPACE__ . '\\entry_author_html' ) ? entry_author_html( $post ) : '';
+		if ( '' !== $author_html ) :
+			?>
+	<span hidden><?php echo $author_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in entry_author_html(). ?></span>
+		<?php endif; ?>
 		<?php if ( $property ) : ?>
 		<data class="u-<?php echo esc_attr( $property ); ?>" value="<?php echo esc_attr( $name ); ?>" hidden></data>
 		<?php endif; ?>
@@ -677,6 +1074,62 @@ final class Kind_Archive_Layouts {
 	}
 
 	/**
+	 * Whether a menu line starts a section, for a line rendered on its own.
+	 *
+	 * Reads the kind's posts in menu order and looks at the line before:
+	 * a line starts a section when it opens a page or its group differs.
+	 * The page size is the one the editor preview uses.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int    $post_id   Post ID.
+	 * @param string $kind      Kind slug.
+	 * @param string $field     Group meta key.
+	 * @param string $group_key This line's group, lower-cased.
+	 * @return bool
+	 */
+	private static function starts_section_in_preview( int $post_id, string $kind, string $field, string $group_key ): bool {
+		if ( ! isset( self::$preview_order[ $kind ] ) ) {
+			$taxonomy                     = get_taxonomy( Taxonomy::TAXONOMY );
+			self::$preview_order[ $kind ] = array_map(
+				'intval',
+				get_posts(
+					[
+						'post_type'        => $taxonomy ? $taxonomy->object_type : 'post',
+						'post_status'      => 'publish',
+						'posts_per_page'   => -1,
+						'fields'           => 'ids',
+						'no_found_rows'    => true,
+						'suppress_filters' => false,
+						'pkiw_group_by'    => $field,
+						'tax_query'        => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- the menu is a kind's posts.
+							[
+								'taxonomy' => Taxonomy::TAXONOMY,
+								'field'    => 'slug',
+								'terms'    => $kind,
+							],
+						],
+					]
+				)
+			);
+		}
+
+		$index = array_search( $post_id, self::$preview_order[ $kind ], true );
+		if ( false === $index ) {
+			return true;
+		}
+
+		$per_page = self::preview_page_sizes()[ $kind ] ?? (int) get_option( 'posts_per_page' );
+		if ( 0 === $index || ( $per_page > 0 && 0 === $index % $per_page ) ) {
+			return true;
+		}
+
+		$before = mb_strtolower( trim( (string) get_post_meta( self::$preview_order[ $kind ][ $index - 1 ], $field, true ) ) );
+
+		return $before !== $group_key;
+	}
+
+	/**
 	 * Section heading for a loop item when its group differs from the
 	 * previous item's in the same query; empty otherwise.
 	 *
@@ -694,7 +1147,9 @@ final class Kind_Archive_Layouts {
 
 		$raw       = trim( (string) get_post_meta( $post_id, $fields[ $kind ], true ) );
 		$group_key = mb_strtolower( $raw );
-		$is_new    = ! array_key_exists( $query_key, self::$last_group ) || self::$last_group[ $query_key ] !== $group_key;
+		$is_new    = self::$block_preview
+			? self::starts_section_in_preview( $post_id, $kind, $fields[ $kind ], $group_key )
+			: ( ! array_key_exists( $query_key, self::$last_group ) || self::$last_group[ $query_key ] !== $group_key );
 
 		self::$last_group[ $query_key ] = $group_key;
 
