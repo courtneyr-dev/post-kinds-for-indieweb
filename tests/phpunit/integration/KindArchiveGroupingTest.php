@@ -233,6 +233,34 @@ final class KindArchiveGroupingTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Trapizzino', $this->render_entry( $id ) );
 	}
 
+	public function test_a_menu_line_is_an_h_entry_with_its_date_and_author(): void {
+		$author = self::factory()->user->create(
+			[
+				'role'         => 'author',
+				'display_name' => 'Menu Author',
+			]
+		);
+		$id     = $this->eat( 'Tacos', '2026-03-01 10:00:00', [ 'name' => 'Mushroom Tacos', 'rating' => 4 ] );
+		wp_update_post(
+			[
+				'ID'          => $id,
+				'post_author' => $author,
+			]
+		);
+
+		// The Post Template's list item is the h-entry; the block prints what goes inside it.
+		$html   = '<li class="h-entry">' . $this->render_entry( $id ) . '</li>';
+		$parsed = \Mf2\parse( $html, home_url( '/' ) );
+		$entry  = $parsed['items'][0] ?? [];
+
+		$this->assertSame( [ 'h-entry' ], $entry['type'] ?? [] );
+		$this->assertSame( [ get_permalink( $id ) ], $entry['properties']['url'] ?? [] );
+		$this->assertSame( [ get_the_date( 'c', $id ) ], $entry['properties']['published'] ?? [], 'The entry carries its own publish date, not only the meal\'s.' );
+		$this->assertSame( [ 'Menu Author' ], $entry['properties']['author'][0]['properties']['name'] ?? [] );
+		$this->assertArrayHasKey( 'ate', $entry['properties'] );
+		$this->assertArrayNotHasKey( 'name', $entry['properties'], 'An eat entry stays title-less, as on its single.' );
+	}
+
 	public function test_eat_menu_line_names_the_restaurant_before_the_town(): void {
 		$id = $this->eat( 'Tacos', '2026-03-01 10:00:00', [ 'name' => 'Mushroom Tacos', 'restaurant' => 'Mercado', 'locationLocality' => 'Reading' ] );
 		update_post_meta( $id, '_pkiw_geo_privacy', 'public' );

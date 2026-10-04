@@ -895,6 +895,14 @@ final class Kind_Archive_Layouts {
 		<?php endif; ?>
 	</div>
 	<data class="u-url" value="<?php echo esc_url( get_permalink( $post ) ); ?>" hidden></data>
+		<?php // The entry's own date and author. The visible date sits inside the food item and belongs to it. ?>
+	<data class="dt-published" value="<?php echo esc_attr( (string) get_the_date( 'c', $post ) ); ?>" hidden></data>
+		<?php
+		$author_html = function_exists( __NAMESPACE__ . '\\entry_author_html' ) ? entry_author_html( $post ) : '';
+		if ( '' !== $author_html ) :
+			?>
+	<span hidden><?php echo $author_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in entry_author_html(). ?></span>
+		<?php endif; ?>
 		<?php if ( $property ) : ?>
 		<data class="u-<?php echo esc_attr( $property ); ?>" value="<?php echo esc_attr( $name ); ?>" hidden></data>
 		<?php endif; ?>
