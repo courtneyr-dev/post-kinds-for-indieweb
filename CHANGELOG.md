@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Recipe courses block (`post-kinds-indieweb/recipe-courses`): a labelled `nav` of links to the recipe archive, "All", each course in use and "A–Z index", with `aria-current="page"` on the one being shown. It's server-rendered, so the Site Editor prints the same links as the front end. A theme places it in its recipe archive template (#229).
 - The Site Editor previews a `taxonomy-kind-<slug>` template with that kind's posts. Core previews an inherited Query Loop with the site's latest posts for every taxonomy except categories, tags and post formats. `pkiw_kind_archive_preview_per_page` tells the preview how many posts a kind's archive shows per page (#229, #233).
 
+- Recent Specials block (`post-kinds-indieweb/menu-specials`) for the top of the eat and drink menus: the newest posts of the kind (two by default, one to six), each with its linked name, note, venue under the location privacy rule, date, "Rated N of 5" and an optional photo. It prints on the first page only and carries no microformats root, so the menu line stays the post's entry. The plugin's `taxonomy-kind-eat` and `taxonomy-kind-drink` templates place it above the menu (#230).
+
 ### Changed
 
 - The `comics` kind's default description covers both uses: "A comic you read, drew, or published." A site whose stored description still equals an earlier default gets the new one once; a description the site edited is kept (#228).
@@ -35,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A kind archive whose theme template places its Query Loop through a pattern is grouped like one that holds the blocks itself. The check read the template's own content and saw only the pattern reference (#230).
+- The template a kind archive resolves to is remembered for one request, not for the life of the process, so a theme switch or an edited template is read on the next request (#230).
+- A menu line names a venue once when it matches the brand (#230).
 - The Stream card sends its own attributes to the editor's server render, so its heading level and any block style apply in the canvas as they do on the front end. It sent none before (#229, #233).
 - A Stream card that a theme adapter rebuilds as the post's own `h-cite` card (a read with body text below its card, say) now leaves the Query Loop item as the `h-entry` root. The root was decided from the card before adapters ran, so the swapped card's `read-of` attached to no entry (#228).
 - The plugin's `pre_get_block_file_template` handler only answers for `post-kinds-for-indieweb//…` template IDs; it no longer replaces a theme's own file template that shares a slug (such as `taxonomy-venue`) (#233).

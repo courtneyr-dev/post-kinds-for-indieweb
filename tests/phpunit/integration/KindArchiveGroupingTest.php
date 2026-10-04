@@ -125,6 +125,48 @@ final class KindArchiveGroupingTest extends WP_UnitTestCase {
 		$this->assertSame( $p['none'], (int) end( $wp_query->posts )->ID );
 	}
 
+	public function test_main_query_groups_when_the_template_places_the_menu_through_a_pattern(): void {
+		register_block_pattern(
+			'pkiw-test/menu-loop',
+			[
+				'title'   => 'Menu loop',
+				'content' => '<!-- wp:query {"query":{"inherit":true}} --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-kinds-indieweb/menu-entry /--><!-- /wp:post-template --></div><!-- /wp:query -->',
+			]
+		);
+		$template_id = self::factory()->post->create(
+			[
+				'post_type'    => 'wp_template',
+				'post_status'  => 'publish',
+				'post_name'    => 'taxonomy-kind-eat',
+				'post_title'   => 'Eat archive',
+				'post_content' => '<!-- wp:pattern {"slug":"pkiw-test/menu-loop"} /-->',
+			]
+		);
+		wp_set_post_terms( $template_id, get_stylesheet(), 'wp_theme' );
+		$p = $this->fixtures();
+
+		$this->go_to( get_term_link( 'eat', 'kind' ) );
+
+		global $wp_query;
+		unregister_block_pattern( 'pkiw-test/menu-loop' );
+		$this->assertSame( '_pkiw_eat_cuisine', $wp_query->get( 'pkiw_group_by' ) );
+		$this->assertSame( $p['italian_new'], (int) $wp_query->posts[0]->ID );
+		$this->assertSame( $p['none'], (int) end( $wp_query->posts )->ID );
+	}
+
+	public function test_the_template_is_looked_up_again_for_each_request(): void {
+		$p = $this->fixtures();
+
+		$this->go_to( get_term_link( 'eat', 'kind' ) );
+		$this->assertSame( '_pkiw_eat_cuisine', $GLOBALS['wp_query']->get( 'pkiw_group_by' ), 'The plugin menu template groups.' );
+
+		switch_theme( 'pkiw-kind-theme' );
+		$this->go_to( get_term_link( 'eat', 'kind' ) );
+
+		$this->assertSame( '', (string) $GLOBALS['wp_query']->get( 'pkiw_group_by' ), 'A theme template that takes over on the next request is read, not the remembered one.' );
+		$this->assertSame( $p['none'], (int) $GLOBALS['wp_query']->posts[0]->ID );
+	}
+
 	public function test_main_query_untouched_when_theme_template_wins(): void {
 		switch_theme( 'pkiw-kind-theme' );
 		$p = $this->fixtures();
@@ -189,6 +231,21 @@ final class KindArchiveGroupingTest extends WP_UnitTestCase {
 
 		wp_set_current_user( 0 );
 		$this->assertStringContainsString( 'Trapizzino', $this->render_entry( $id ) );
+	}
+
+	public function test_menu_line_names_a_venue_that_matches_the_brand_once(): void {
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Latte',
+				'post_content' => '<!-- wp:post-kinds-indieweb/drink-card {"name":"Honey Lavender Latte","drinkType":"coffee","brand":"Commonplace Coffee","locationName":"commonplace coffee"} /-->',
+			]
+		);
+		wp_set_object_terms( $id, 'drink', 'kind' );
+
+		$html = $this->render_entry( $id );
+
+		$this->assertSame( 1, substr_count( strtolower( $html ), 'commonplace coffee' ) );
 	}
 
 	public function test_drink_entry_shows_brand_and_groups_by_drink_type(): void {

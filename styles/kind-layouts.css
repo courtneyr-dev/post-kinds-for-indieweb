@@ -239,6 +239,44 @@
  * Forced colors: boards, leaders and focus use system colors.
  * ------------------------------------------------------------------ */
 
+/* Recent Specials: the newest entries above a menu, side by side where
+   there is room. Themes restyle it. */
+.pkiw-menu-specials__list {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+	gap: 1.5em;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.pkiw-menu-specials__item {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1em;
+	align-items: flex-start;
+}
+
+.pkiw-menu-specials__photo {
+	flex: 0 1 8rem;
+	width: 8rem;
+	height: auto;
+	aspect-ratio: 4 / 3;
+	object-fit: cover;
+}
+
+.pkiw-menu-specials__body {
+	flex: 1 1 10rem;
+	min-width: 0;
+}
+
+.pkiw-menu-specials__name,
+.pkiw-menu-specials__notes,
+.pkiw-menu-specials__meta,
+.pkiw-menu-specials__rating {
+	margin-block: 0 0.35em;
+}
+
 /* Recipe courses: a plain wrapping row of links. Themes restyle it. */
 .pk-recipe-courses__list {
 	display: flex;

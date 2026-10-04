@@ -119,3 +119,25 @@ describe( 'recipe courses in the editor', () => {
 		expect( render.props.attributes ).toEqual( attributes );
 	} );
 } );
+
+describe( 'recent specials in the editor', () => {
+	const NAME = 'post-kinds-indieweb/menu-specials';
+	const FILE = '../../../assets/js/menu-specials-editor.js';
+
+	it( 'registers the block for the server to render', () => {
+		const settings = register( FILE )[ NAME ];
+
+		expect( settings.apiVersion ).toBe( 3 );
+		expect( settings.save() ).toBeNull();
+	} );
+
+	it( 'prints the server’s specials with the block’s attributes, and keeps the links from navigating', () => {
+		const { edit } = register( FILE )[ NAME ];
+		const attributes = { kind: 'eat', count: 3, showPhotos: false };
+		const disabled = find( edit( { attributes } ), 'Disabled' );
+		const render = find( disabled, 'ServerSideRender' );
+
+		expect( render.props.block ).toBe( NAME );
+		expect( render.props.attributes ).toEqual( attributes );
+	} );
+} );
