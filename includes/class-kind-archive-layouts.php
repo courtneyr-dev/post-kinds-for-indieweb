@@ -91,6 +91,13 @@ final class Kind_Archive_Layouts {
 	private static bool $block_preview = false;
 
 	/**
+	 * How many sections the page of the last previewed menu line holds.
+	 *
+	 * @var int
+	 */
+	private static int $preview_sections = 0;
+
+	/**
 	 * Whether the Post Template is rendering menu lines into sections.
 	 *
 	 * @var bool
@@ -1046,7 +1053,7 @@ final class Kind_Archive_Layouts {
 			}
 		}
 
-		return self::render_section( $kind, (string) get_post_meta( $post_id, $fields[ $kind ], true ), $items, (int) ( $attributes['headingLevel'] ?? 2 ), $settings['label'] );
+		return self::render_section( $kind, (string) get_post_meta( $post_id, $fields[ $kind ], true ), $items, (int) ( $attributes['headingLevel'] ?? 2 ), $settings['label'], self::$preview_sections );
 	}
 
 	/**
@@ -1245,7 +1252,7 @@ final class Kind_Archive_Layouts {
 
 		$html = '';
 		foreach ( $sections as $section ) {
-			$html .= self::render_section( $plan['kind'], $section['raw'], $section['items'], $plan['level'], $plan['label'] );
+			$html .= self::render_section( $plan['kind'], $section['raw'], $section['items'], $plan['level'], $plan['label'], count( $sections ) );
 		}
 
 		return sprintf( '<div %1$s>%2$s</div>', get_block_wrapper_attributes( [ 'class' => 'pkiw-menu--sectioned' ] ), $html );
@@ -1341,16 +1348,19 @@ final class Kind_Archive_Layouts {
 	 * @param string[] $items       The section's lines, each an `li`.
 	 * @param int      $level       Heading level (clamped 2-4).
 	 * @param string   $empty_label Label for posts with no group.
+	 * @param int      $count       How many sections this page of the menu holds, so a
+	 *                              theme can lay out as many columns as there are sections.
 	 * @return string
 	 */
-	private static function render_section( string $kind, string $raw, array $items, int $level, string $empty_label ): string {
+	private static function render_section( string $kind, string $raw, array $items, int $level, string $empty_label, int $count ): string {
 		$level = max( 2, min( 4, $level ) );
 
 		return sprintf(
-			'<section class="pkiw-menu-section"><h%1$d class="pkiw-menu-section__heading pkiw-menu-entry__section">%2$s</h%1$d><ul class="pkiw-menu-section__items">%3$s</ul></section>',
+			'<section class="pkiw-menu-section" data-pkiw-sections="%4$d"><h%1$d class="pkiw-menu-section__heading pkiw-menu-entry__section">%2$s</h%1$d><ul class="pkiw-menu-section__items">%3$s</ul></section>',
 			$level,
 			esc_html( self::group_label( $kind, $raw, $empty_label ) ),
-			implode( '', $items )
+			implode( '', $items ),
+			max( 1, $count )
 		);
 	}
 
@@ -1446,6 +1456,7 @@ final class Kind_Archive_Layouts {
 		$order = self::$preview_order[ $cache ];
 		$index = array_search( $post_id, $order, true );
 		if ( false === $index ) {
+			self::$preview_sections = 1;
 			return [ $post_id ];
 		}
 
@@ -1456,6 +1467,15 @@ final class Kind_Archive_Layouts {
 		$key      = $group( $post_id );
 		if ( $index > $first && $key === $group( $order[ $index - 1 ] ) ) {
 			return [];
+		}
+
+		// The page's sections: one for each change of group across its lines.
+		$page                   = array_map( $group, array_slice( $order, $first, $end - $first ) );
+		self::$preview_sections = 0;
+		foreach ( $page as $at => $name ) {
+			if ( 0 === $at || $name !== $page[ $at - 1 ] ) {
+				++self::$preview_sections;
+			}
 		}
 
 		$run = [ $post_id ];
