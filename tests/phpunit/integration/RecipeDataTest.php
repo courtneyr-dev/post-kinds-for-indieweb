@@ -571,4 +571,81 @@ final class RecipeDataTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'pk-recipe-facts', $html );
 		$this->assertStringNotContainsString( 'pk-recipe-time', $html );
 	}
+
+	/**
+	 * The h-recipe a parser reads from a recipe post's own content at its permalink.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function single_h_recipe( int $post_id, ?string $content = null ): ?array {
+		$this->go_to( get_permalink( $post_id ) );
+		$this->assertTrue( is_singular() );
+
+		$html   = apply_filters( 'the_content', $content ?? get_post_field( 'post_content', $post_id ) );
+		$parsed = \Mf2\parse( $html, get_permalink( $post_id ) );
+		foreach ( $parsed['items'] ?? [] as $item ) {
+			if ( in_array( 'h-recipe', $item['type'] ?? [], true ) ) {
+				return $item;
+			}
+		}
+
+		return null;
+	}
+
+	public function test_the_single_h_recipe_names_the_featured_image_as_its_photo(): void {
+		$post_id = $this->recipe_post();
+		$picture = $this->picture();
+		set_post_thumbnail( $post_id, $picture );
+
+		$entry = $this->single_h_recipe( $post_id );
+
+		$this->assertNotNull( $entry, 'The single carries no h-recipe.' );
+		$this->assertSame( [ wp_get_attachment_image_url( $picture, 'large' ) ], $entry['properties']['photo'] ?? [] );
+	}
+
+	public function test_the_single_h_recipe_takes_its_photo_from_the_recipe_when_the_post_has_no_featured_image(): void {
+		$recipe_id = $this->recipe();
+		$post_id   = $this->recipe_post( $recipe_id );
+		$this->assertFalse( has_post_thumbnail( $post_id ) );
+
+		$entry = $this->single_h_recipe( $post_id );
+
+		$this->assertNotNull( $entry, 'The single carries no h-recipe.' );
+		$this->assertSame(
+			[ wp_get_attachment_image_url( get_post_thumbnail_id( $recipe_id ), 'large' ) ],
+			$entry['properties']['photo'] ?? []
+		);
+	}
+
+	public function test_the_single_h_recipe_prefers_the_featured_image_to_the_recipe_picture(): void {
+		$recipe_id = $this->recipe();
+		$post_id   = $this->recipe_post( $recipe_id );
+		$featured  = self::factory()->attachment->create_object( 'featured.png', 0, [ 'post_mime_type' => 'image/png' ] );
+		set_post_thumbnail( $post_id, $featured );
+
+		$entry = $this->single_h_recipe( $post_id );
+
+		$this->assertNotNull( $entry, 'The single carries no h-recipe.' );
+		$this->assertSame( [ wp_get_attachment_image_url( $featured, 'large' ) ], $entry['properties']['photo'] ?? [] );
+	}
+
+	public function test_the_single_h_recipe_has_no_photo_when_neither_the_post_nor_the_recipe_has_a_picture(): void {
+		$post_id = $this->recipe_post( $this->recipe( [ 'picture' => false ] ) );
+
+		$entry = $this->single_h_recipe( $post_id );
+
+		$this->assertNotNull( $entry, 'The single carries no h-recipe.' );
+		$this->assertArrayNotHasKey( 'photo', $entry['properties'] );
+	}
+
+	public function test_the_single_h_recipe_keeps_the_photo_its_content_already_marks(): void {
+		$post_id = $this->recipe_post();
+		set_post_thumbnail( $post_id, $this->picture() );
+		$content = '<p>Sample.</p><img class="u-photo" src="https://example.com/in-content.jpg">';
+
+		$entry = $this->single_h_recipe( $post_id, $content );
+
+		$this->assertNotNull( $entry, 'The single carries no h-recipe.' );
+		$this->assertSame( [ 'https://example.com/in-content.jpg' ], $entry['properties']['photo'] ?? [] );
+	}
 }

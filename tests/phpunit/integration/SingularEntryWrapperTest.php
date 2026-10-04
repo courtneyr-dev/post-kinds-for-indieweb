@@ -126,6 +126,32 @@ final class SingularEntryWrapperTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * An h-entry gets no photo from the featured image: post type discovery
+	 * reads a photo property on an h-entry as "this is a photo post".
+	 */
+	public function test_h_entry_kind_gets_no_photo_from_the_featured_image(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Watched something',
+				'post_content' => '<!-- wp:paragraph --><p>Good.</p><!-- /wp:paragraph -->',
+			]
+		);
+		$this->assertNotWPError( wp_set_object_terms( $post_id, 'watch', 'kind' ) );
+		set_post_thumbnail( $post_id, self::factory()->attachment->create_object( 'poster.png', 0, [ 'post_mime_type' => 'image/png' ] ) );
+
+		$this->go_to( get_permalink( $post_id ) );
+		$this->assertTrue( is_singular() );
+
+		$content = apply_filters( 'the_content', get_post_field( 'post_content', $post_id ) );
+		$parsed  = \Mf2\parse( $content, get_permalink( $post_id ) );
+		$entry   = $this->find_entry_with_property( $parsed['items'] ?? [], 'url' );
+
+		$this->assertNotNull( $entry, 'Filtered content did not carry an h-entry.' );
+		$this->assertArrayNotHasKey( 'photo', $entry['properties'] );
+	}
+
+	/**
 	 * A theme that wraps the post via post_class() must not get a second h-entry.
 	 */
 	public function test_no_double_wrap_when_theme_applies_post_class(): void {
