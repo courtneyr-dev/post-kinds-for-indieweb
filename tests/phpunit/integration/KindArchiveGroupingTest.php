@@ -233,6 +233,17 @@ final class KindArchiveGroupingTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Trapizzino', $this->render_entry( $id ) );
 	}
 
+	public function test_eat_menu_line_names_the_restaurant_before_the_town(): void {
+		$id = $this->eat( 'Tacos', '2026-03-01 10:00:00', [ 'name' => 'Mushroom Tacos', 'restaurant' => 'Mercado', 'locationLocality' => 'Reading' ] );
+		update_post_meta( $id, '_pkiw_geo_privacy', 'public' );
+
+		$html = $this->render_entry( $id );
+
+		$this->assertNotFalse( strpos( $html, 'Mercado' ) );
+		$this->assertNotFalse( strpos( $html, 'Reading' ) );
+		$this->assertLessThan( strpos( $html, 'Reading' ), strpos( $html, 'Mercado' ) );
+	}
+
 	public function test_menu_line_names_a_venue_that_matches_the_brand_once(): void {
 		$id = self::factory()->post->create(
 			[

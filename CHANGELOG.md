@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A kind archive whose theme template places its Query Loop through a pattern is grouped like one that holds the blocks itself. The check read the template's own content and saw only the pattern reference (#230).
 - The template a kind archive resolves to is remembered for one request, not for the life of the process, so a theme switch or an edited template is read on the next request (#230).
-- A menu line names a venue once when it matches the brand (#230).
+- A menu line names a venue once when it matches the brand, and an eat line names the restaurant before the town (#230).
 - The Stream card sends its own attributes to the editor's server render, so its heading level and any block style apply in the canvas as they do on the front end. It sent none before (#229, #233).
 - A Stream card that a theme adapter rebuilds as the post's own `h-cite` card (a read with body text below its card, say) now leaves the Query Loop item as the `h-entry` root. The root was decided from the card before adapters ran, so the swapped card's `read-of` attached to no entry (#228).
 - The plugin's `pre_get_block_file_template` handler only answers for `post-kinds-for-indieweb//…` template IDs; it no longer replaces a theme's own file template that shares a slug (such as `taxonomy-venue`) (#233).

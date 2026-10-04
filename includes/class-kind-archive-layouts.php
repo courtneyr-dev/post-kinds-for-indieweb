@@ -878,10 +878,14 @@ final class Kind_Archive_Layouts {
 			<?php endif; ?>
 		</p>
 		<p class="pkiw-menu-entry__meta">
+			<?php // A meal names its restaurant before the town; a drink names its brand first. ?>
+			<?php if ( $show_venue && 'eat' === $kind ) : ?>
+				<span class="pkiw-menu-entry__sub p-location h-card"><span class="p-name"><?php echo esc_html( $venue ); ?></span></span>
+			<?php endif; ?>
 			<?php foreach ( $subs as $sub ) : ?>
 				<span class="pkiw-menu-entry__sub"><?php echo esc_html( $sub ); ?></span>
 			<?php endforeach; ?>
-			<?php if ( $show_venue ) : ?>
+			<?php if ( $show_venue && 'eat' !== $kind ) : ?>
 				<span class="pkiw-menu-entry__sub p-location h-card"><span class="p-name"><?php echo esc_html( $venue ); ?></span></span>
 			<?php endif; ?>
 			<time class="pkiw-menu-entry__date dt-published" datetime="<?php echo esc_attr( $iso ); ?>"><?php echo esc_html( $display ); ?></time>
