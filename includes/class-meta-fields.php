@@ -1229,6 +1229,24 @@ class Meta_Fields {
 	 * @return array{name:bool,locality:bool,region:bool,country:bool,street:bool,postal_code:bool,coordinates:bool,map:bool,url:bool,osm_id:bool,venue_id:bool}
 	 */
 	public static function get_visible_location_fields( int $post_id ): array {
+		if ( $post_id > 0 && current_user_can( 'edit_post', $post_id ) ) {
+			return array_fill_keys( array_keys( self::get_public_location_fields( 0 ) ), true );
+		}
+
+		return self::get_public_location_fields( $post_id );
+	}
+
+	/**
+	 * Which location fields a visitor who can't edit the post may see.
+	 *
+	 * The same rule as get_visible_location_fields(), without the editor
+	 * override. Use it for output that leaves the request it was built in: feeds, federated
+	 * records, and titles.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array{name:bool,locality:bool,region:bool,country:bool,street:bool,postal_code:bool,coordinates:bool,map:bool,url:bool,osm_id:bool,venue_id:bool}
+	 */
+	public static function get_public_location_fields( int $post_id ): array {
 		$all_visible  = [
 			'name'        => true,
 			'locality'    => true,
@@ -1246,10 +1264,6 @@ class Meta_Fields {
 
 		if ( $post_id <= 0 ) {
 			return $none_visible;
-		}
-
-		if ( current_user_can( 'edit_post', $post_id ) ) {
-			return $all_visible;
 		}
 
 		$privacy    = (string) get_post_meta( $post_id, self::PREFIX . 'geo_privacy', true );

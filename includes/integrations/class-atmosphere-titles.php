@@ -135,7 +135,7 @@ final class Atmosphere_Titles {
 
 			case 'checkin':
 				$venue = self::meta( $post, 'checkin_name' );
-				if ( '' !== $venue && 'private' !== self::meta( $post, 'geo_privacy' ) ) {
+				if ( '' !== $venue && Meta_Fields::get_public_location_fields( $post->ID )['name'] ) {
 					/* translators: %s: venue name. */
 					return sprintf( __( 'Checked in at %s', 'post-kinds-for-indieweb-in-block-themes' ), $venue );
 				}

@@ -1,0 +1,234 @@
+<?php
+/**
+ * A title generated from location data follows the location's privacy.
+ *
+ * Importers write "Checked in at <venue>" into post_title. On a post whose
+ * venue name is hidden, that title printed the venue in the h1, the
+ * document title, feeds and every link to the post (issue 224).
+ *
+ * @package PKIW
+ */
+
+declare(strict_types=1);
+
+use PKIW\Meta_Fields;
+use PKIW\Title_Privacy;
+
+/**
+ * @group integration
+ */
+final class TitlePrivacyTest extends WP_UnitTestCase {
+
+	private const VENUE = 'Sentinel Venue Zyx9';
+
+	public function set_up(): void {
+		parent::set_up();
+		( new Meta_Fields() )->register_meta_fields();
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * A published check-in.
+	 *
+	 * @param string               $title   Post title.
+	 * @param string               $privacy _pkiw_geo_privacy value.
+	 * @param array<string, mixed> $meta    Extra meta.
+	 */
+	private function checkin( string $title, string $privacy, array $meta = [] ): int {
+		$post_id = self::factory()->post->create(
+			[
+				'post_status' => 'publish',
+				'post_title'  => $title,
+				'post_date'   => '2026-09-12 14:30:00',
+			]
+		);
+		wp_set_object_terms( $post_id, 'checkin', 'kind' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_name', self::VENUE );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', $privacy );
+		foreach ( $meta as $key => $value ) {
+			update_post_meta( $post_id, $key, $value );
+		}
+
+		return $post_id;
+	}
+
+	private function generated( string $privacy, array $meta = [] ): int {
+		$post_id = $this->checkin( 'Checked in at ' . self::VENUE, $privacy, $meta );
+		Title_Privacy::mark_location_title( $post_id );
+
+		return $post_id;
+	}
+
+	public function test_generated_title_on_a_private_post_names_no_venue(): void {
+		$post_id = $this->generated( 'private' );
+
+		$this->assertSame( 'Check-in, September 12, 2026', get_the_title( $post_id ) );
+		$this->assertSame( 'Check-in, September 12, 2026', pkiw_get_safe_title( $post_id ) );
+		$this->assertSame( 'Checked in at ' . self::VENUE, get_post_field( 'post_title', $post_id ), 'stored title must stay intact' );
+	}
+
+	public function test_generated_title_hidden_when_simple_location_hides_the_post(): void {
+		$post_id = $this->generated( 'public', [ 'geo_public' => '0' ] );
+
+		$this->assertStringNotContainsString( self::VENUE, get_the_title( $post_id ) );
+	}
+
+	/**
+	 * @dataProvider visible_tiers
+	 */
+	public function test_generated_title_stays_while_the_venue_name_is_visible( string $privacy ): void {
+		$post_id = $this->generated( $privacy );
+
+		$this->assertSame( 'Checked in at ' . self::VENUE, get_the_title( $post_id ) );
+	}
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public function visible_tiers(): array {
+		return [
+			'public'      => [ 'public' ],
+			'approximate' => [ 'approximate' ],
+		];
+	}
+
+	public function test_author_title_stays_on_a_private_post(): void {
+		$post_id = $this->checkin( 'Evening walk', 'private' );
+
+		$this->assertSame( 'Evening walk', get_the_title( $post_id ) );
+		$this->assertSame( 'Evening walk', pkiw_get_safe_title( $post_id ) );
+	}
+
+	/**
+	 * Posts imported before the marker existed.
+	 *
+	 * @dataProvider legacy_titles
+	 */
+	public function test_legacy_generated_title_is_recognized_by_its_form( string $title, array $meta ): void {
+		$post_id = $this->checkin( $title, 'private', $meta );
+
+		$this->assertSame( 'Check-in, September 12, 2026', get_the_title( $post_id ) );
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: array<string, string>}>
+	 */
+	public function legacy_titles(): array {
+		return [
+			'importer form'        => [ 'Checked in at ' . self::VENUE, [] ],
+			'different case'       => [ 'checked in at ' . strtolower( self::VENUE ), [] ],
+			'venue name alone'     => [ self::VENUE, [] ],
+			'legacy venue key'     => [ 'Checked in at Old Key Venue', [ '_pkiw_checkin_venue' => 'Old Key Venue' ] ],
+			'unknown venue'        => [ 'Checked in at Unknown Venue', [] ],
+		];
+	}
+
+	public function test_editor_sees_the_safe_title_on_the_front_end_too(): void {
+		$post_id = $this->generated( 'private' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$this->assertSame( 'Check-in, September 12, 2026', get_the_title( $post_id ), 'Feeds and federation run in the publishing editor\'s request.' );
+	}
+
+	public function test_admin_screens_keep_the_stored_title(): void {
+		$post_id = $this->generated( 'private' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		set_current_screen( 'edit-post' );
+
+		$this->assertSame( 'Checked in at ' . self::VENUE, get_the_title( $post_id ) );
+
+		set_current_screen( 'front' );
+	}
+
+	public function test_document_title_and_feed_title_name_no_venue(): void {
+		$post_id = $this->generated( 'private' );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$this->assertStringNotContainsString( self::VENUE, wp_get_document_title() );
+		$this->assertStringContainsString( 'Check-in, September 12, 2026', wp_get_document_title() );
+
+		$GLOBALS['post'] = get_post( $post_id );
+		$this->assertStringNotContainsString( self::VENUE, get_the_title_rss() );
+	}
+
+	public function test_rest_rendered_title_names_no_venue(): void {
+		$post_id = $this->generated( 'private' );
+
+		$data = rest_get_server()->dispatch( new WP_REST_Request( 'GET', '/wp/v2/posts/' . $post_id ) )->get_data();
+
+		$this->assertSame( 'Check-in, September 12, 2026', $data['title']['rendered'] );
+	}
+
+	public function test_retitling_a_post_by_hand_clears_the_marker(): void {
+		$post_id = $this->generated( 'private' );
+
+		wp_update_post(
+			[
+				'ID'         => $post_id,
+				'post_title' => 'Evening walk',
+			]
+		);
+
+		$this->assertSame( '', get_post_meta( $post_id, Title_Privacy::META_KEY, true ) );
+		$this->assertSame( 'Evening walk', get_the_title( $post_id ) );
+	}
+
+	public function test_saving_without_a_title_change_keeps_the_marker(): void {
+		$post_id = $this->generated( 'private' );
+
+		wp_update_post(
+			[
+				'ID'           => $post_id,
+				'post_content' => 'A note.',
+			]
+		);
+
+		$this->assertSame( Title_Privacy::SOURCE_LOCATION, get_post_meta( $post_id, Title_Privacy::META_KEY, true ) );
+	}
+
+	public function test_foursquare_import_marks_its_title(): void {
+		$sync   = ( new ReflectionClass( \PKIW\Sync\Foursquare_Checkin_Sync::class ) )->newInstanceWithoutConstructor();
+		$method = new ReflectionMethod( $sync, 'import_checkin' );
+		$method->setAccessible( true );
+
+		$post_id = $method->invoke(
+			$sync,
+			[
+				'id'        => 'sentinel-4sq-1',
+				'createdAt' => 1789223400,
+				'venue'     => [
+					'id'       => 'v1',
+					'name'     => self::VENUE,
+					'location' => [ 'city' => 'Sentinelville' ],
+				],
+			]
+		);
+
+		$this->assertIsInt( $post_id );
+		$this->assertSame( Title_Privacy::SOURCE_LOCATION, get_post_meta( $post_id, Title_Privacy::META_KEY, true ) );
+	}
+
+	public function test_import_manager_marks_a_checkin_title(): void {
+		$manager = ( new ReflectionClass( \PKIW\Import_Manager::class ) )->newInstanceWithoutConstructor();
+		$method  = new ReflectionMethod( $manager, 'create_post_from_item' );
+		$method->setAccessible( true );
+
+		$post_id = $method->invoke(
+			$manager,
+			[
+				'venue_name' => self::VENUE,
+				'timestamp'  => 1789223400,
+			],
+			[
+				'name' => 'Sentinel Source',
+				'kind' => 'checkin',
+			],
+			[],
+			'sentinel',
+			self::factory()->user->create( [ 'role' => 'editor' ] )
+		);
+
+		$this->assertIsInt( $post_id );
+		$this->assertSame( Title_Privacy::SOURCE_LOCATION, get_post_meta( $post_id, Title_Privacy::META_KEY, true ) );
+	}
+}

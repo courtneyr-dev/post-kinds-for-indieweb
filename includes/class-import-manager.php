@@ -1259,6 +1259,11 @@ class Import_Manager {
 			}
 		}
 
+		// build_checkin_payload() titles the post "Checked in at <venue>".
+		if ( 'checkin' === $kind ) {
+			Title_Privacy::mark_location_title( (int) $post_id );
+		}
+
 		// Mark as imported.
 		update_post_meta( $post_id, '_pkiw_imported_from', $source_config['name'] );
 		update_post_meta( $post_id, '_pkiw_imported_at', time() );
