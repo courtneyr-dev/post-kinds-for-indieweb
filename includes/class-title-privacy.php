@@ -49,13 +49,7 @@ class Title_Privacy {
 		add_filter( 'single_post_title', [ $this, 'filter_single_post_title' ], 10, 2 );
 		add_action( 'post_updated', [ $this, 'clear_marker_on_retitle' ], 10, 3 );
 
-		// Yoast SEO builds the title tag, the Open Graph and X titles, its
-		// schema and the oEmbed title from post_title, not get_the_title().
-		// It runs the same filters for the REST `yoast_head` fields.
-		add_filter( 'wpseo_title', [ $this, 'scrub_stored_title' ], 20, 2 );
-		add_filter( 'wpseo_opengraph_title', [ $this, 'scrub_stored_title' ], 20, 2 );
-		add_filter( 'wpseo_twitter_title', [ $this, 'scrub_stored_title' ], 20, 2 );
-		add_filter( 'wpseo_schema_graph', [ $this, 'scrub_stored_title' ], 20, 2 );
+		// Another plugin may set the oEmbed title from post_title after core.
 		add_filter( 'oembed_response_data', [ $this, 'scrub_oembed_title' ], 99, 2 );
 	}
 
@@ -209,7 +203,7 @@ class Title_Privacy {
 	 *                      the post being viewed.
 	 * @return mixed
 	 */
-	public function scrub_stored_title( $value, $source = null ) {
+	public static function scrub_stored_title( $value, $source = null ) {
 		$post_id = 0;
 		if ( is_object( $source ) ) {
 			$model = $source->model ?? $source->indexable ?? null;

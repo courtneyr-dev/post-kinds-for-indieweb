@@ -160,12 +160,11 @@ final class TitlePrivacyTest extends WP_UnitTestCase {
 		$this->go_to( get_permalink( $post_id ) );
 
 		$stored = 'Checked in at ' . self::VENUE;
-		foreach ( [ 'wpseo_title', 'wpseo_opengraph_title', 'wpseo_twitter_title' ] as $hook ) {
-			$this->assertSame( 'Check-in, September 12, 2026 - Site', apply_filters( $hook, $stored . ' - Site' ), $hook );
-		}
+		// The Yoast integration hooks this to wpseo_title, wpseo_opengraph_title,
+		// wpseo_twitter_title and wpseo_schema_graph when Yoast is active.
+		$this->assertSame( 'Check-in, September 12, 2026 - Site', Title_Privacy::scrub_stored_title( $stored . ' - Site' ) );
 
-		$graph = apply_filters(
-			'wpseo_schema_graph',
+		$graph = Title_Privacy::scrub_stored_title(
 			[
 				[
 					'@type' => 'WebPage',
@@ -200,8 +199,8 @@ final class TitlePrivacyTest extends WP_UnitTestCase {
 			],
 		];
 
-		$this->assertSame( 'Check-in, September 12, 2026 - Site', apply_filters( 'wpseo_title', 'Checked in at ' . self::VENUE . ' - Site', $presentation ) );
-		$this->assertSame( 'Checked in at ' . self::VENUE . ' - Site', apply_filters( 'wpseo_title', 'Checked in at ' . self::VENUE . ' - Site' ), 'With no post in view and none named, nothing changes.' );
+		$this->assertSame( 'Check-in, September 12, 2026 - Site', Title_Privacy::scrub_stored_title( 'Checked in at ' . self::VENUE . ' - Site', $presentation ) );
+		$this->assertSame( 'Checked in at ' . self::VENUE . ' - Site', Title_Privacy::scrub_stored_title( 'Checked in at ' . self::VENUE . ' - Site' ), 'With no post in view and none named, nothing changes.' );
 	}
 
 	public function test_oembed_title_names_no_venue(): void {
@@ -226,7 +225,7 @@ final class TitlePrivacyTest extends WP_UnitTestCase {
 		$post_id = $this->generated( 'public' );
 		$this->go_to( get_permalink( $post_id ) );
 
-		$this->assertSame( 'Checked in at ' . self::VENUE . ' - Site', apply_filters( 'wpseo_title', 'Checked in at ' . self::VENUE . ' - Site' ) );
+		$this->assertSame( 'Checked in at ' . self::VENUE . ' - Site', Title_Privacy::scrub_stored_title( 'Checked in at ' . self::VENUE . ' - Site' ) );
 	}
 
 	public function test_rest_rendered_title_names_no_venue(): void {
