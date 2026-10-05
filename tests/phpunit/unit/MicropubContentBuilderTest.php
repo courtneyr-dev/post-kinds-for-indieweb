@@ -1129,6 +1129,36 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertSame( array( 'drink' ), $this->kind_slugs( $post_id ) );
 	}
 
+	public function test_apply_gives_a_drink_no_type(): void {
+		// Micropub carries no drink type, so the post stores none and its
+		// card prints the generic label.
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_content' => 'a pour',
+			)
+		);
+
+		Micropub_Content_Builder::apply(
+			array(
+				'h'        => 'entry',
+				'drink-of' => 'House pour',
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$content = (string) get_post_field( 'post_content', $post_id );
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/drink-card', $content );
+		$this->assertStringNotContainsString( 'drinkType', $content );
+		$this->assertSame( '', get_post_meta( $post_id, '_pkiw_drink_type', true ), 'A Micropub drink stores no type.' );
+
+		$this->go_to( get_permalink( $post_id ) );
+		$html = do_blocks( $content );
+		$this->assertStringContainsString( '<span>Drink</span>', $html, 'A Micropub drink prints the generic label.' );
+		$this->assertStringNotContainsString( 'Coffee', $html );
+	}
+
 	// --- Response kinds: like / repost / bookmark / reply --------------------
 
 	public function test_detect_kind_like_recognized(): void {

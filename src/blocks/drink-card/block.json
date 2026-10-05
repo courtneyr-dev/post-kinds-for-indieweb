@@ -14,8 +14,7 @@
 			"type": "string"
 		},
 		"drinkType": {
-			"type": "string",
-			"default": "coffee"
+			"type": "string"
 		},
 		"brand": {
 			"type": "string"

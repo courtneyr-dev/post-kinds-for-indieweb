@@ -129,6 +129,14 @@ export default function Edit( { attributes, setAttributes } ) {
 		const terms = select( 'core/editor' ).getEditedPostAttribute( 'kind' );
 		return terms && terms.length > 0 ? terms[ 0 ] : null;
 	}, [] );
+	const storedDrinkType = useSelect(
+		( select ) =>
+			select( 'core/editor' ).getEditedPostAttribute( 'meta' )
+				?._pkiw_drink_type,
+		[]
+	);
+	const effectiveDrinkType =
+		drinkType !== undefined ? drinkType : storedDrinkType || '';
 
 	// When block is inserted, set the post kind to "drink" if not already set
 	useEffect( () => {
@@ -217,7 +225,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		setAttributes( { photo: '', photoAlt: '' } );
 	};
 
-	const typeInfo = getDrinkTypeInfo( drinkType );
+	const typeInfo = getDrinkTypeInfo( effectiveDrinkType );
 
 	// Build select options for sidebar
 	const drinkTypeOptions = DRINK_TYPES.map( ( type ) => ( {
@@ -254,7 +262,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							'Type',
 							'post-kinds-for-indieweb-in-block-themes'
 						) }
-						value={ drinkType || '' }
+						value={ effectiveDrinkType }
 						options={ drinkTypeOptions }
 						onChange={ ( value ) =>
 							setAttributes( { drinkType: value } )
@@ -468,7 +476,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						<div className="post-kinds-card__type-row">
 							<select
 								className="post-kinds-card__type-select"
-								value={ drinkType || '' }
+								value={ effectiveDrinkType }
 								onChange={ ( e ) =>
 									setAttributes( {
 										drinkType: e.target.value,

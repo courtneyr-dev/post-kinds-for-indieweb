@@ -36,7 +36,7 @@ $pkiw_drink_labels = [
 ];
 
 $pkiw_name              = $attributes['name'] ?? '';
-$pkiw_drink_type        = $attributes['drinkType'] ?? 'other';
+$pkiw_drink_type        = $attributes['drinkType'] ?? '';
 $pkiw_brand             = $attributes['brand'] ?? '';
 $pkiw_photo             = $attributes['photo'] ?? '';
 $pkiw_photo_alt         = $attributes['photoAlt'] ?? '';
@@ -52,13 +52,21 @@ $pkiw_location_country  = $attributes['locationCountry'] ?? '';
 $pkiw_geo_lat           = isset( $attributes['geoLatitude'] ) ? (float) $attributes['geoLatitude'] : 0.0;
 $pkiw_geo_lon           = isset( $attributes['geoLongitude'] ) ? (float) $attributes['geoLongitude'] : 0.0;
 
+$pkiw_post_id = $block->context['postId'] ?? get_the_ID();
+
+if ( ! is_string( $pkiw_drink_type ) || '' === $pkiw_drink_type ) {
+	$pkiw_drink_type = (string) get_post_meta( (int) $pkiw_post_id, Meta_Fields::PREFIX . 'drink_type', true );
+}
+if ( '' === $pkiw_drink_type ) {
+	$pkiw_drink_type = 'other';
+}
+
 $pkiw_badge_label = $pkiw_drink_labels[ $pkiw_drink_type ] ?? $pkiw_drink_type;
 
 // R-03: the post's geo_privacy meta (and edit_post capability) decide what's
 // visible — see Meta_Fields::get_visible_location_fields(). Approximate keeps
 // name/locality/region/country; street address, coordinates and the venue
 // URL are precise-tier and stay hidden until public or editor.
-$pkiw_post_id      = $block->context['postId'] ?? get_the_ID();
 $pkiw_visible      = Meta_Fields::get_visible_location_fields( (int) $pkiw_post_id );
 $pkiw_show_address = ! empty( $pkiw_visible['street'] ) && $pkiw_location_address;
 $pkiw_show_coords  = ! empty( $pkiw_visible['coordinates'] ) && ( 0.0 !== $pkiw_geo_lat || 0.0 !== $pkiw_geo_lon );
