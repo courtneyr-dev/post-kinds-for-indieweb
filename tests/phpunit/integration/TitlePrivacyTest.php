@@ -151,6 +151,83 @@ final class TitlePrivacyTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( self::VENUE, get_the_title_rss() );
 	}
 
+	/**
+	 * Yoast SEO reads post_title for the title tag, the social titles and
+	 * its schema graph.
+	 */
+	public function test_yoast_titles_and_schema_for_the_viewed_post_name_no_venue(): void {
+		$post_id = $this->generated( 'private' );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$stored = 'Checked in at ' . self::VENUE;
+		// The Yoast integration hooks this to wpseo_title, wpseo_opengraph_title,
+		// wpseo_twitter_title and wpseo_schema_graph when Yoast is active.
+		$this->assertSame( 'Check-in, September 12, 2026 - Site', Title_Privacy::scrub_stored_title( $stored . ' - Site' ) );
+
+		$graph = Title_Privacy::scrub_stored_title(
+			[
+				[
+					'@type' => 'WebPage',
+					'name'  => $stored . ' - Site',
+				],
+				[
+					'@type'           => 'BreadcrumbList',
+					'itemListElement' => [
+						[
+							'name' => $stored,
+						],
+					],
+				],
+			]
+		);
+		$this->assertStringNotContainsString( self::VENUE, (string) wp_json_encode( $graph ) );
+		$this->assertSame( 'Check-in, September 12, 2026', $graph[1]['itemListElement'][0]['name'] );
+	}
+
+	/**
+	 * Yoast builds the same head for the REST `yoast_head` fields, where no
+	 * post is being viewed; it passes its presentation along.
+	 */
+	public function test_yoast_title_built_outside_the_post_page_names_no_venue(): void {
+		$post_id = $this->generated( 'private' );
+		$this->go_to( home_url( '/' ) );
+
+		$presentation = (object) [
+			'model' => (object) [
+				'object_type' => 'post',
+				'object_id'   => $post_id,
+			],
+		];
+
+		$this->assertSame( 'Check-in, September 12, 2026 - Site', Title_Privacy::scrub_stored_title( 'Checked in at ' . self::VENUE . ' - Site', $presentation ) );
+		$this->assertSame( 'Checked in at ' . self::VENUE . ' - Site', Title_Privacy::scrub_stored_title( 'Checked in at ' . self::VENUE . ' - Site' ), 'With no post in view and none named, nothing changes.' );
+	}
+
+	public function test_oembed_title_names_no_venue(): void {
+		$post_id = $this->generated( 'private' );
+		// Another plugin may put the stored title back after core fills it in.
+		add_filter(
+			'oembed_response_data',
+			static function ( $data, $post ) {
+				$data['title'] = $post->post_title;
+				return $data;
+			},
+			20,
+			2
+		);
+
+		$data = get_oembed_response_data( $post_id, 600 );
+
+		$this->assertSame( 'Check-in, September 12, 2026', $data['title'] );
+	}
+
+	public function test_yoast_title_untouched_while_the_venue_is_visible(): void {
+		$post_id = $this->generated( 'public' );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$this->assertSame( 'Checked in at ' . self::VENUE . ' - Site', Title_Privacy::scrub_stored_title( 'Checked in at ' . self::VENUE . ' - Site' ) );
+	}
+
 	public function test_rest_rendered_title_names_no_venue(): void {
 		$post_id = $this->generated( 'private' );
 
