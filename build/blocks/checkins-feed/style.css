@@ -163,3 +163,166 @@
 [hidden] {
 	display: none !important;
 }
+
+/**
+ * Archive mode: this page of the surrounding query as a map and a list.
+ * Structure and target sizes only; a theme supplies the paper and ink.
+ */
+
+.pkiw-checkin-archive {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: var(--pkiw-card-gap, 1rem);
+}
+
+@media (min-width: 782px) {
+
+	.pkiw-checkin-archive:has(.pkiw-checkin-archive__map) {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		align-items: stretch;
+	}
+}
+
+.pkiw-checkin-archive__map {
+	min-height: 20rem;
+	background: var(--pkiw-checkin-map-bg, transparent);
+	border: 1px solid var(--pkiw-checkins-feed-border, currentColor);
+}
+
+.pkiw-checkin-archive__map[hidden] {
+	display: none;
+}
+
+.pkiw-checkin-archive__summary {
+	margin: 0 0 0.5rem;
+	font-weight: 700;
+}
+
+.pkiw-checkin-archive__entries {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.pkiw-checkin-archive__entry {
+	display: grid;
+	grid-template-columns: 2.75rem minmax(0, 1fr);
+	column-gap: 0.75rem;
+	align-items: start;
+	padding: 0.75rem 0;
+	border-top: 1px dashed var(--pkiw-checkins-feed-border, currentColor);
+}
+
+.pkiw-checkin-archive__body {
+	grid-column: 2;
+	min-width: 0;
+}
+
+.pkiw-checkin-archive__title {
+	margin: 0;
+	font-size: 1.125rem;
+	overflow-wrap: anywhere;
+}
+
+.pkiw-checkin-archive__place {
+	margin: 0;
+}
+
+.pkiw-checkin-archive__date {
+	display: block;
+}
+
+.pkiw-checkin-archive__entry.is-active {
+	outline: 2px solid var(--pkiw-card-accent, currentColor);
+	outline-offset: 2px;
+}
+
+/* 44 by 44 CSS pixel targets: list numbers, pins, zoom buttons. */
+.pkiw-checkin-archive__num,
+.pkiw-pin {
+	display: grid;
+	place-items: center;
+	box-sizing: border-box;
+	width: 2.75rem;
+	height: 2.75rem;
+	border: 2px solid var(--pkiw-card-fg, currentColor);
+	border-radius: 50%;
+	background: var(--pkiw-card-bg, Canvas);
+	color: var(--pkiw-card-fg, CanvasText);
+	font: inherit;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.pkiw-checkin-archive__num {
+	grid-column: 1;
+	padding: 0;
+}
+
+button.pkiw-checkin-archive__num {
+	cursor: pointer;
+}
+
+.pkiw-pin.is-active {
+	border-width: 4px;
+}
+
+.pkiw-pin--cluster {
+	border-style: double;
+	border-width: 6px;
+}
+
+.pkiw-pin__more {
+	position: absolute;
+	inset-block-start: -0.5rem;
+	inset-inline-end: -0.75rem;
+	padding: 0.125rem 0.375rem;
+	border: 2px solid var(--pkiw-card-fg, currentColor);
+	border-radius: 1rem;
+	background: var(--pkiw-card-bg, Canvas);
+	font-size: 0.75rem;
+}
+
+/* The pin's accessible name; the number is decorative. */
+.pkiw-pin__label {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+.pkiw-checkin-archive__num:focus-visible,
+.pkiw-pin:focus-visible,
+.pkiw-checkin-archive__map:focus-visible,
+.pkiw-checkin-archive__map .leaflet-control a:focus-visible {
+	outline: 3px solid var(--pkiw-card-accent, currentColor);
+	outline-offset: 2px;
+}
+
+.pkiw-checkin-archive__map .leaflet-control-zoom a {
+	display: grid;
+	place-items: center;
+	width: 2.75rem;
+	height: 2.75rem;
+	line-height: 1;
+}
+
+@media (forced-colors: active) {
+
+	.pkiw-checkin-archive__num,
+	.pkiw-pin,
+	.pkiw-pin__more {
+		border-color: ButtonText;
+		background: ButtonFace;
+		color: ButtonText;
+		forced-color-adjust: none;
+	}
+
+	.pkiw-checkin-archive__num:focus-visible,
+	.pkiw-pin:focus-visible,
+	.pkiw-checkin-archive__entry.is-active {
+		outline-color: Highlight;
+	}
+}

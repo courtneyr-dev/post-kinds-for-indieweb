@@ -169,7 +169,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 		<?php if ( $pkiw_show_map ) : ?>
 		<!-- Map View -->
 		<div class="checkin-view-map <?php echo 'map' === $pkiw_layout ? 'active' : ''; ?>">
-			<div id="checkin-frontend-map" class="checkin-map" role="region" aria-label="<?php esc_attr_e( 'Check-in map', 'post-kinds-for-indieweb-in-block-themes' ); ?>" data-checkins="
+			<div id="checkin-frontend-map" class="checkin-map" role="region" aria-label="<?php esc_attr_e( 'Check-in map', 'post-kinds-for-indieweb-in-block-themes' ); ?>" data-tile-url="<?php echo esc_attr( \PKIW\Checkin_Map::tile_layer()['url'] ); ?>" data-attribution="<?php echo esc_attr( \PKIW\Checkin_Map::tile_layer()['attribution'] ); ?>" data-checkins="
 			<?php
 			echo esc_attr(
 				wp_json_encode(

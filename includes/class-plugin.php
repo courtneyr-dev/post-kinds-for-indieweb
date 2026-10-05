@@ -1177,6 +1177,11 @@ final class Plugin {
 				'description' => __( 'Menu layout for the eat archive, grouped by cuisine.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
+			'taxonomy-kind-checkin' => [
+				'title'       => __( 'Check-in Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Map and list of the check-ins on each archive page.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
 			'taxonomy-kind-drink' => [
 				'title'       => __( 'Drink Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Menu layout for the drink archive, grouped by drink type.', 'post-kinds-for-indieweb-in-block-themes' ),

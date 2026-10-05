@@ -198,6 +198,10 @@
     "post-kinds-indieweb/checkins-feed": {
         "render": "dynamic",
         "attributes": {
+            "inherit": {
+                "type": "boolean",
+                "sample": true
+            },
             "count": {
                 "type": "number",
                 "sample": 4
