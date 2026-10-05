@@ -9,8 +9,8 @@ declare(strict_types=1);
 
 /**
  * The card prints the block attribute when it names a type, else the post's
- * stored `_pkiw_drink_type`, else the generic "Drink". A stored type comes
- * from the author or from imported data, never from the block.
+ * stored `_pkiw_drink_type`, else no type at all. A stored type comes from
+ * the author or from imported data, never from the block.
  *
  * @group integration
  */
@@ -44,7 +44,7 @@ final class DrinkCardTypeTest extends WP_UnitTestCase {
 		libxml_use_internal_errors( true );
 		$dom->loadHTML( '<?xml encoding="utf-8"?><div>' . $html . '</div>' );
 		libxml_clear_errors();
-		$label = ( new DOMXPath( $dom ) )->query( '(//article[contains(concat(" ", @class, " "), " k-drink ")]//p[contains(concat(" ", @class, " "), " pk-sub ")])[1]/span[1]' )->item( 0 );
+		$label = ( new DOMXPath( $dom ) )->query( '(//article[contains(concat(" ", @class, " "), " k-drink ")]//p[contains(concat(" ", @class, " "), " pk-sub ")])[1]/span[not(@class)]' )->item( 0 );
 
 		return $label ? trim( $label->textContent ) : '';
 	}
@@ -56,11 +56,27 @@ final class DrinkCardTypeTest extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'default', $type->attributes['drinkType'], 'The registered drink card gives drinkType no default.' );
 	}
 
-	public function test_a_drink_with_no_type_reads_drink(): void {
+	public function test_a_drink_with_no_type_prints_no_type(): void {
 		$post_id = $this->drink( [ 'name' => 'House pour' ] );
 
-		$this->assertSame( 'Drink', $this->type_label( $post_id ), 'A drink with no type prints the generic label.' );
+		$this->assertSame( '', $this->type_label( $post_id ), 'A drink with no type prints no type.' );
 		$this->assertSame( '', get_post_meta( $post_id, '_pkiw_drink_type', true ), 'No type is stored for a drink saved without one.' );
+
+		$html = do_blocks( (string) get_post_field( 'post_content', $post_id ) );
+		$this->assertStringNotContainsString( 'Coffee', $html );
+		$this->assertStringNotContainsString( 'pk-sub', $html, 'With no type and no brand the card prints no line under the name.' );
+	}
+
+	public function test_a_drink_with_a_brand_and_no_type_prints_the_brand_alone(): void {
+		$post_id = $this->drink( [ 'name' => 'House pour', 'brand' => 'Corner Cafe' ] );
+		$this->go_to( get_permalink( $post_id ) );
+		$html = (string) preg_replace( '/\s+/', ' ', do_blocks( (string) get_post_field( 'post_content', $post_id ) ) );
+
+		$this->assertSame( '', $this->type_label( $post_id ) );
+		$this->assertStringContainsString( 'Corner Cafe', $html );
+		$this->assertStringNotContainsString( '<span></span>', $html, 'No empty type is printed.' );
+		$this->assertStringNotContainsString( '&mdash;', $html, 'No dash stands before a brand with no type.' );
+		$this->assertStringNotContainsString( '—', $html );
 	}
 
 	/**
@@ -116,7 +132,7 @@ final class DrinkCardTypeTest extends WP_UnitTestCase {
 		$unset = $this->drink( [ 'name' => 'House pour', 'drinkType' => '' ] );
 
 		$this->assertSame( 'Wine', $this->type_label( $stored ), 'An empty attribute falls back to the stored type.' );
-		$this->assertSame( 'Drink', $this->type_label( $unset ), 'An empty attribute with nothing stored prints the generic label.' );
+		$this->assertSame( '', $this->type_label( $unset ), 'An empty attribute with nothing stored prints no type.' );
 	}
 
 	public function test_a_drink_saved_under_the_old_default_stays_coffee_after_a_resave(): void {

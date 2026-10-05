@@ -1131,7 +1131,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 
 	public function test_apply_gives_a_drink_no_type(): void {
 		// Micropub carries no drink type, so the post stores none and its
-		// card prints the generic label.
+		// card prints none.
 		$post_id = self::factory()->post->create(
 			array(
 				'post_type'    => 'post',
@@ -1155,7 +1155,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 
 		$this->go_to( get_permalink( $post_id ) );
 		$html = do_blocks( $content );
-		$this->assertStringContainsString( '<span>Drink</span>', $html, 'A Micropub drink prints the generic label.' );
+		$this->assertStringNotContainsString( 'pk-sub', $html, 'A Micropub drink with no type prints no type.' );
 		$this->assertStringNotContainsString( 'Coffee', $html );
 	}
 

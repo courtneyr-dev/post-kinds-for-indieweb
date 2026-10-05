@@ -57,10 +57,8 @@ $pkiw_post_id = $block->context['postId'] ?? get_the_ID();
 if ( ! is_string( $pkiw_drink_type ) || '' === $pkiw_drink_type ) {
 	$pkiw_drink_type = (string) get_post_meta( (int) $pkiw_post_id, Meta_Fields::PREFIX . 'drink_type', true );
 }
-if ( '' === $pkiw_drink_type ) {
-	$pkiw_drink_type = 'other';
-}
 
+// A drink with no type prints no type: the line under its name is the brand alone.
 $pkiw_badge_label = $pkiw_drink_labels[ $pkiw_drink_type ] ?? $pkiw_drink_type;
 
 // R-03: the post's geo_privacy meta (and edit_post capability) decide what's
@@ -102,7 +100,9 @@ ob_start();
 
 			<?php if ( $pkiw_brand || $pkiw_badge_label ) : ?>
 				<p class="pk-sub">
-					<span><?php echo esc_html( $pkiw_badge_label ); ?></span>
+					<?php if ( $pkiw_badge_label ) : ?>
+						<span><?php echo esc_html( $pkiw_badge_label ); ?></span>
+					<?php endif; ?>
 					<?php
 					if ( $pkiw_badge_label && $pkiw_brand ) :
 						?>
