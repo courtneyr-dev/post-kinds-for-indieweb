@@ -60,7 +60,7 @@
 	},
 	"devDependencies": {
 		"@axe-core/playwright": "^4.13.0",
-		"@babel/core": "^7.29.7",
+		"@babel/core": "^8.0.6",
 		"@lhci/cli": "^0.15.1",
 		"@playwright/test": "^1.63.0",
 		"@testing-library/jest-dom": "^7.0.1",
@@ -69,11 +69,11 @@
 		"@wordpress/env": "^11.16.0",
 		"@wordpress/jest-preset-default": "^14.2.0",
 		"@wordpress/scripts": "^36.0.0",
-		"babel-jest": "^30.5.0",
+		"babel-jest": "^30.5.2",
 		"husky": "^9.0.0",
-		"jest": "^30.5.0",
-		"jest-environment-jsdom": "^30.5.0",
-		"lint-staged": "^17.5.1"
+		"jest": "^30.5.2",
+		"jest-environment-jsdom": "^30.5.2",
+		"lint-staged": "^17.6.0"
 	},
 	"scripts": {
 		"build": "wp-scripts build && node bin/sync-block-assets.mjs",
