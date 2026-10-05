@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The Check-in Dashboard map loads its library. The page and the `checkin-dashboard` block enqueue Leaflet 1.9.4 and Leaflet.markercluster 1.4.1 from `assets/vendor/`, but `.gitignore`'s unanchored `vendor/` kept those files out of the repo, so each request for them returned 404 and the map script never ran. The files now ship with their licenses (source: [Leaflet](https://github.com/Leaflet/Leaflet/tree/v1.9.4), [Leaflet.markercluster](https://github.com/Leaflet/Leaflet.markercluster/tree/v1.4.1)), the ignore rule is `/vendor/`, and a test fails when the PHP enqueues an `assets/` file that isn't in the tree. The admin pages no longer enqueue Select2, which was never in the repo and which no script called (#308).
 - A kind archive whose theme template places its Query Loop through a pattern is grouped like one that holds the blocks itself. The check read the template's own content and saw only the pattern reference (#230).
 - The template a kind archive resolves to is remembered for one request, not for the life of the process, so a theme switch or an edited template is read on the next request (#230).
 - A menu line names a venue once when it matches the brand, and an eat line names the restaurant before the town (#230).

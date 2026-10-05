@@ -171,4 +171,51 @@ class DistributionManifestTest extends WP_UnitTestCase {
 			);
 		}
 	}
+
+	/**
+	 * Every `assets/` file the PHP enqueues exists in the tree.
+	 *
+	 * The Check-in Dashboard enqueued Leaflet from `assets/vendor/` for
+	 * months while `.gitignore`'s unanchored `vendor/` kept the files out of
+	 * the repo, so every install served 404s for the map library (#308).
+	 */
+	public function test_enqueued_asset_files_exist(): void {
+		$root  = $this->repo_root();
+		$found = [];
+
+		foreach ( [ 'includes', 'src/blocks', 'build/blocks' ] as $dir ) {
+			$iterator = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $root . '/' . $dir, \FilesystemIterator::SKIP_DOTS ) );
+
+			foreach ( $iterator as $file ) {
+				if ( 'php' !== $file->getExtension() ) {
+					continue;
+				}
+
+				preg_match_all( "/PKIW_URL \\. '(assets\\/[^']+\\.(?:js|css))'/", (string) file_get_contents( $file->getPathname() ), $matches );
+
+				foreach ( $matches[1] as $asset ) {
+					$found[ $asset ] = $file->getPathname();
+				}
+			}
+		}
+
+		// Guard the guard.
+		$this->assertArrayHasKey( 'assets/vendor/leaflet/leaflet.js', $found, 'The scan no longer finds the Leaflet enqueue.' );
+
+		foreach ( $found as $asset => $source ) {
+			$this->assertFileExists( $root . '/' . $asset, "$source enqueues $asset, which is not in the tree" );
+		}
+	}
+
+	/**
+	 * `.gitignore` ignores Composer's root `vendor/` only.
+	 *
+	 * An unanchored `vendor/` also matches `assets/vendor/`.
+	 */
+	public function test_gitignore_anchors_vendor_to_the_root(): void {
+		$lines = array_map( 'trim', (array) file( $this->repo_root() . '/.gitignore', FILE_IGNORE_NEW_LINES ) );
+
+		$this->assertNotContains( 'vendor/', $lines, 'An unanchored vendor/ rule ignores assets/vendor/ too.' );
+		$this->assertContains( '/vendor/', $lines );
+	}
 }
