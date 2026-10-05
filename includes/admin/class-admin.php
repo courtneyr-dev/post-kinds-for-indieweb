@@ -346,23 +346,6 @@ class Admin {
 		if ( isset( $this->page_hooks['quick_post'] ) && $hook_suffix === $this->page_hooks['quick_post'] ) {
 			wp_enqueue_media();
 		}
-
-		// Select2 for enhanced dropdowns.
-		if ( $is_our_page ) {
-			wp_enqueue_style(
-				'select2',
-				PKIW_URL . 'assets/vendor/select2/select2.min.css',
-				[],
-				'4.1.0'
-			);
-			wp_enqueue_script(
-				'select2',
-				PKIW_URL . 'assets/vendor/select2/select2.min.js',
-				[ 'jquery' ],
-				'4.1.0',
-				true
-			);
-		}
 	}
 
 	/**

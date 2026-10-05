@@ -10,6 +10,11 @@ const wpScriptsConfig = require( '@wordpress/scripts/config/eslint.config.cjs' )
 module.exports = [
 	...wpScriptsConfig,
 
+	// Third-party builds, shipped as published.
+	{
+		ignores: [ 'assets/vendor/**' ],
+	},
+
 	// Jest globals for the shared test setup. The default config only maps
 	// the test-unit preset onto *.test.js and __tests__ files, which misses
 	// tests/js/setup.js.
