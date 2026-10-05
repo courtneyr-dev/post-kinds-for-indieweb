@@ -48,6 +48,15 @@ class Title_Privacy {
 		add_filter( 'the_title', [ $this, 'filter_the_title' ], 10, 2 );
 		add_filter( 'single_post_title', [ $this, 'filter_single_post_title' ], 10, 2 );
 		add_action( 'post_updated', [ $this, 'clear_marker_on_retitle' ], 10, 3 );
+
+		// Yoast SEO builds the title tag, the Open Graph and X titles, its
+		// schema and the oEmbed title from post_title, not get_the_title().
+		// It runs the same filters for the REST `yoast_head` fields.
+		add_filter( 'wpseo_title', [ $this, 'scrub_stored_title' ], 20, 2 );
+		add_filter( 'wpseo_opengraph_title', [ $this, 'scrub_stored_title' ], 20, 2 );
+		add_filter( 'wpseo_twitter_title', [ $this, 'scrub_stored_title' ], 20, 2 );
+		add_filter( 'wpseo_schema_graph', [ $this, 'scrub_stored_title' ], 20, 2 );
+		add_filter( 'oembed_response_data', [ $this, 'scrub_oembed_title' ], 99, 2 );
 	}
 
 	/**
@@ -188,6 +197,59 @@ class Title_Privacy {
 	 */
 	public function filter_single_post_title( $title, $post = null ) {
 		return $post instanceof \WP_Post && self::names_hidden_location( $post ) ? self::fallback_title( $post ) : $title;
+	}
+
+	/**
+	 * Replace a post's stored title with the safe one inside text, or
+	 * inside every string of an array, that another plugin built.
+	 *
+	 * @param mixed $value  A string, or an array of strings and arrays.
+	 * @param mixed $source What the other plugin built it for: Yoast passes
+	 *                      its presentation or schema context. Without one,
+	 *                      the post being viewed.
+	 * @return mixed
+	 */
+	public function scrub_stored_title( $value, $source = null ) {
+		$post_id = 0;
+		if ( is_object( $source ) ) {
+			$model = $source->model ?? $source->indexable ?? null;
+			if ( is_object( $model ) && 'post' === ( $model->object_type ?? 'post' ) ) {
+				$post_id = (int) ( $model->object_id ?? 0 );
+			}
+		}
+
+		$post = $post_id > 0 ? get_post( $post_id ) : ( is_singular() ? get_queried_object() : null );
+		if ( ! $post instanceof \WP_Post || ! self::names_hidden_location( $post ) ) {
+			return $value;
+		}
+
+		$stored = (string) $post->post_title;
+		$needle = array_unique( [ $stored, esc_html( $stored ), wptexturize( $stored ) ] );
+		$safe   = self::fallback_title( $post );
+
+		$scrub = static function ( $item ) use ( &$scrub, $needle, $safe ) {
+			if ( is_string( $item ) ) {
+				return str_ireplace( $needle, $safe, $item );
+			}
+			return is_array( $item ) ? array_map( $scrub, $item ) : $item;
+		};
+
+		return $scrub( $value );
+	}
+
+	/**
+	 * The oEmbed title another plugin may have set from post_title.
+	 *
+	 * @param array<string, mixed> $data oEmbed response data.
+	 * @param \WP_Post|null        $post Post.
+	 * @return array<string, mixed>
+	 */
+	public function scrub_oembed_title( $data, $post = null ) {
+		if ( is_array( $data ) && $post instanceof \WP_Post && self::names_hidden_location( $post ) ) {
+			$data['title'] = self::fallback_title( $post );
+		}
+
+		return $data;
 	}
 
 	/**
