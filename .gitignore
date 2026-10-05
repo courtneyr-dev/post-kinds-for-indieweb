@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
-vendor/
+# Composer's directory only. Unanchored, this also ignored assets/vendor/.
+/vendor/
 
 # Build artifacts
 # build/ - Intentionally tracked for WordPress plugin distribution
