@@ -418,7 +418,7 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	 * _pkiw_geo_privacy is a default, not an author choice, and is ignored
 	 * for venue posts, so the full location shows.
 	 */
-	public function test_get_checkin_location_approximate_venue_shows_everything(): void {
+	public function test_get_checkin_location_approximate_keeps_name_and_place(): void {
 		$post_id = $this->create_checkin_post();
 		update_post_meta( $post_id, '_pkiw_geo_privacy', 'approximate' );
 		update_post_meta( $post_id, '_pkiw_checkin_venue', 'Sentinel Place' );
@@ -436,9 +436,9 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 		$this->assertSame( 'Sentinel City', $location['city'] );
 		$this->assertSame( 'Sentinel Region', $location['region'] );
 		$this->assertSame( 'Sentinel Country', $location['country'] );
-		$this->assertSame( 'Sentinel Street', $location['address'] );
-		$this->assertSame( '1.111', $location['latitude'] );
-		$this->assertSame( '2.222', $location['longitude'] );
+		$this->assertArrayNotHasKey( 'address', $location );
+		$this->assertArrayNotHasKey( 'latitude', $location );
+		$this->assertArrayNotHasKey( 'longitude', $location );
 	}
 
 	/**
@@ -447,7 +447,7 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	 */
 	public function test_get_checkin_location_geo_public_protected_hides_coordinates_only(): void {
 		$post_id = $this->create_checkin_post();
-		update_post_meta( $post_id, '_pkiw_geo_privacy', 'approximate' );
+		update_post_meta( $post_id, '_pkiw_geo_privacy', 'public' );
 		update_post_meta( $post_id, 'geo_public', '2' );
 		update_post_meta( $post_id, '_pkiw_checkin_venue', 'Sentinel Place' );
 		update_post_meta( $post_id, '_pkiw_checkin_address', 'Sentinel Street' );

@@ -551,10 +551,10 @@ class BlockBindingsTest extends WP_UnitTestCase {
 	 *
 	 * @param string $key Binding key.
 	 */
-	public function test_location_binding_shown_for_visitor_when_approximate_venue( string $key ) {
+	public function test_precise_location_binding_hidden_for_visitor_when_approximate( string $key ) {
 		$post_id = $this->location_post( 'approximate' );
 		wp_set_current_user( 0 );
-		$this->assertNotNull( $this->block_bindings->get_binding_value( [ 'key' => $key ], $this->create_mock_block( $post_id ), 'content' ) );
+		$this->assertNull( $this->block_bindings->get_binding_value( [ 'key' => $key ], $this->create_mock_block( $post_id ), 'content' ) );
 	}
 
 	/**
@@ -602,10 +602,10 @@ class BlockBindingsTest extends WP_UnitTestCase {
 	 * A check-in is a venue post: an approximate/unset _pkiw_geo_privacy is
 	 * ignored, so the full address (including the street) still shows.
 	 */
-	public function test_full_address_includes_street_when_approximate_venue() {
+	public function test_full_address_drops_street_when_approximate() {
 		$post_id = $this->location_post( 'approximate' );
 		wp_set_current_user( 0 );
-		$this->assertSame( '1 Test Street, Testville', $this->block_bindings->get_binding_value( [ 'key' => 'checkin_full_address' ], $this->create_mock_block( $post_id ), 'content' ) );
+		$this->assertSame( 'Testville', $this->block_bindings->get_binding_value( [ 'key' => 'checkin_full_address' ], $this->create_mock_block( $post_id ), 'content' ) );
 	}
 
 	/**

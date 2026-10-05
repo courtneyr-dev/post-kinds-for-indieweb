@@ -1207,24 +1207,23 @@ class Meta_Fields {
 	 * Location / IndieBlocks keys), the /checkins routes, the dashboard,
 	 * and the theme all call this.
 	 *
-	 * Two regimes, chosen by has_venue():
+	 * One rule for every post, venue posts included (issue 224):
 	 *
-	 * - Venue posts (a check-in, or any post with venue-identity data):
-	 *   full location unless explicitly marked private (`_pkiw_geo_privacy`
-	 *   'private' or Simple Location `geo_public` '0'), or Simple Location
-	 *   `geo_public` '2' (Protected — an explicit text-only choice), which
-	 *   hides coordinates/map/osm_id/venue_id but keeps everything else,
-	 *   including street/postal_code/url. An unset or 'approximate'
-	 *   `_pkiw_geo_privacy` is a default, not an author choice, and is
-	 *   ignored for venue posts.
-	 * - Non-venue posts (geotagged notes, photos, articles — location data
-	 *   with no identifiable venue): the Post Kinds tier and Simple
-	 *   Location's geo_public are combined per field, the stricter of the
-	 *   two winning. geo_public '0' is nothing (handled above); '2'
-	 *   (Protected) narrows to text only; an empty/unset/unrecognized
-	 *   geo_public means Simple Location was never used on this post and
-	 *   must not restrict anything — the Post Kinds tier alone decides,
-	 *   same as '1' (explicit public).
+	 * - `_pkiw_geo_privacy` 'private' or Simple Location `geo_public` '0':
+	 *   nothing.
+	 * - 'public': everything.
+	 * - 'approximate', which is also what an unset value means: the venue
+	 *   name, locality, region and country. No street, postal code,
+	 *   coordinates, map, venue URL or venue ids.
+	 * - Simple Location `geo_public` '2' (Protected) narrows the result to
+	 *   text: no coordinates, map or ids. The stricter of the two systems
+	 *   wins per field. An empty or unrecognized `geo_public` means Simple
+	 *   Location was never used on the post and restricts nothing, same as
+	 *   '1' (explicit public).
+	 *
+	 * Until issue 224 a venue post (a check-in, or a post with a restaurant or
+	 * venue name) showed everything unless it was private, so an
+	 * approximate check-in printed its street, coordinates and map.
 	 *
 	 * @param int $post_id Post ID.
 	 * @return array{name:bool,locality:bool,region:bool,country:bool,street:bool,postal_code:bool,coordinates:bool,map:bool,url:bool,osm_id:bool,venue_id:bool}
@@ -1276,14 +1275,10 @@ class Meta_Fields {
 			'venue_id'    => false,
 		];
 
-		if ( self::has_venue( $post_id ) ) {
-			return '2' === $geo_public ? $text_only_visible : $all_visible;
-		}
-
-		// Non-venue posts: the Post Kinds tier ('approximate'/unset falls
-		// back to 'approximate' — sanitize_geo_privacy() and the field's
-		// own registration both do the same) combined with Simple
-		// Location's geo_public, the stricter of the two wins per field.
+		// The Post Kinds tier ('approximate' or unset falls back to
+		// 'approximate', as sanitize_geo_privacy() and the field's own
+		// registration do) combined with Simple Location's geo_public; the
+		// stricter of the two wins per field.
 		$pkiw_tier = 'public' === $privacy
 			? $all_visible
 			: [
