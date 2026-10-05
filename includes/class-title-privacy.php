@@ -199,16 +199,21 @@ class Title_Privacy {
 	 *
 	 * @param mixed $value  A string, or an array of strings and arrays.
 	 * @param mixed $source What the other plugin built it for: Yoast passes
-	 *                      its presentation or schema context. Without one,
-	 *                      the post being viewed.
+	 *                      its presentation or schema context, whose model
+	 *                      names an object type and id. Without a type, the
+	 *                      post being viewed.
 	 * @return mixed
 	 */
 	public static function scrub_stored_title( $value, $source = null ) {
 		$post_id = 0;
 		if ( is_object( $source ) ) {
 			$model = $source->model ?? $source->indexable ?? null;
-			if ( is_object( $model ) && 'post' === ( $model->object_type ?? 'post' ) ) {
+			$type  = is_object( $model ) ? ( $model->object_type ?? null ) : null;
+			if ( 'post' === $type ) {
 				$post_id = (int) ( $model->object_id ?? 0 );
+			} elseif ( null !== $type ) {
+				// Built for a term, a user or an archive: no post title in it.
+				return $value;
 			}
 		}
 

@@ -21,6 +21,11 @@ final class TitlePrivacyTest extends WP_UnitTestCase {
 
 	private const VENUE = 'Sentinel Venue Zyx9';
 
+	/**
+	 * What a hidden generated title prints as, for a post dated 2026-09-12.
+	 */
+	private const SAFE_TITLE = 'Check-in, September 12, 2026';
+
 	public function set_up(): void {
 		parent::set_up();
 		( new Meta_Fields() )->register_meta_fields();
@@ -62,8 +67,8 @@ final class TitlePrivacyTest extends WP_UnitTestCase {
 	public function test_generated_title_on_a_private_post_names_no_venue(): void {
 		$post_id = $this->generated( 'private' );
 
-		$this->assertSame( 'Check-in, September 12, 2026', get_the_title( $post_id ) );
-		$this->assertSame( 'Check-in, September 12, 2026', pkiw_get_safe_title( $post_id ) );
+		$this->assertSame( self::SAFE_TITLE, get_the_title( $post_id ) );
+		$this->assertSame( self::SAFE_TITLE, pkiw_get_safe_title( $post_id ) );
 		$this->assertSame( 'Checked in at ' . self::VENUE, get_post_field( 'post_title', $post_id ), 'stored title must stay intact' );
 	}
 
@@ -107,7 +112,7 @@ final class TitlePrivacyTest extends WP_UnitTestCase {
 	public function test_legacy_generated_title_is_recognized_by_its_form( string $title, array $meta ): void {
 		$post_id = $this->checkin( $title, 'private', $meta );
 
-		$this->assertSame( 'Check-in, September 12, 2026', get_the_title( $post_id ) );
+		$this->assertSame( self::SAFE_TITLE, get_the_title( $post_id ) );
 	}
 
 	/**
@@ -127,7 +132,7 @@ final class TitlePrivacyTest extends WP_UnitTestCase {
 		$post_id = $this->generated( 'private' );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 
-		$this->assertSame( 'Check-in, September 12, 2026', get_the_title( $post_id ), 'Feeds and federation run in the publishing editor\'s request.' );
+		$this->assertSame( self::SAFE_TITLE, get_the_title( $post_id ), 'Feeds and federation run in the publishing editor\'s request.' );
 	}
 
 	public function test_admin_screens_keep_the_stored_title(): void {
@@ -145,7 +150,7 @@ final class TitlePrivacyTest extends WP_UnitTestCase {
 		$this->go_to( get_permalink( $post_id ) );
 
 		$this->assertStringNotContainsString( self::VENUE, wp_get_document_title() );
-		$this->assertStringContainsString( 'Check-in, September 12, 2026', wp_get_document_title() );
+		$this->assertStringContainsString( self::SAFE_TITLE, wp_get_document_title() );
 
 		$GLOBALS['post'] = get_post( $post_id );
 		$this->assertStringNotContainsString( self::VENUE, get_the_title_rss() );
@@ -162,7 +167,7 @@ final class TitlePrivacyTest extends WP_UnitTestCase {
 		$stored = 'Checked in at ' . self::VENUE;
 		// The Yoast integration hooks this to wpseo_title, wpseo_opengraph_title,
 		// wpseo_twitter_title and wpseo_schema_graph when Yoast is active.
-		$this->assertSame( 'Check-in, September 12, 2026 - Site', Title_Privacy::scrub_stored_title( $stored . ' - Site' ) );
+		$this->assertSame( self::SAFE_TITLE . ' - Site', Title_Privacy::scrub_stored_title( $stored . ' - Site' ) );
 
 		$graph = Title_Privacy::scrub_stored_title(
 			[
@@ -181,7 +186,7 @@ final class TitlePrivacyTest extends WP_UnitTestCase {
 			]
 		);
 		$this->assertStringNotContainsString( self::VENUE, (string) wp_json_encode( $graph ) );
-		$this->assertSame( 'Check-in, September 12, 2026', $graph[1]['itemListElement'][0]['name'] );
+		$this->assertSame( self::SAFE_TITLE, $graph[1]['itemListElement'][0]['name'] );
 	}
 
 	/**
@@ -199,8 +204,33 @@ final class TitlePrivacyTest extends WP_UnitTestCase {
 			],
 		];
 
-		$this->assertSame( 'Check-in, September 12, 2026 - Site', Title_Privacy::scrub_stored_title( 'Checked in at ' . self::VENUE . ' - Site', $presentation ) );
+		$this->assertSame( self::SAFE_TITLE . ' - Site', Title_Privacy::scrub_stored_title( 'Checked in at ' . self::VENUE . ' - Site', $presentation ) );
 		$this->assertSame( 'Checked in at ' . self::VENUE . ' - Site', Title_Privacy::scrub_stored_title( 'Checked in at ' . self::VENUE . ' - Site' ), 'With no post in view and none named, nothing changes.' );
+	}
+
+	/**
+	 * A context Yoast built for a term, user or archive is left alone, even
+	 * when its object id matches a post with a hidden generated title.
+	 */
+	public function test_yoast_context_for_another_object_type_is_left_alone(): void {
+		$post_id = $this->generated( 'private' );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$stored = 'Checked in at ' . self::VENUE . ' - Site';
+		$term   = (object) [
+			'model' => (object) [
+				'object_type' => 'term',
+				'object_id'   => $post_id,
+			],
+		];
+		$untyped = (object) [
+			'model' => (object) [
+				'object_id' => $post_id,
+			],
+		];
+
+		$this->assertSame( $stored, Title_Privacy::scrub_stored_title( $stored, $term ) );
+		$this->assertSame( self::SAFE_TITLE . ' - Site', Title_Privacy::scrub_stored_title( $stored, $untyped ), 'No type: the post being viewed decides.' );
 	}
 
 	public function test_oembed_title_names_no_venue(): void {
@@ -218,7 +248,7 @@ final class TitlePrivacyTest extends WP_UnitTestCase {
 
 		$data = get_oembed_response_data( $post_id, 600 );
 
-		$this->assertSame( 'Check-in, September 12, 2026', $data['title'] );
+		$this->assertSame( self::SAFE_TITLE, $data['title'] );
 	}
 
 	public function test_yoast_title_untouched_while_the_venue_is_visible(): void {
@@ -233,7 +263,7 @@ final class TitlePrivacyTest extends WP_UnitTestCase {
 
 		$data = rest_get_server()->dispatch( new WP_REST_Request( 'GET', '/wp/v2/posts/' . $post_id ) )->get_data();
 
-		$this->assertSame( 'Check-in, September 12, 2026', $data['title']['rendered'] );
+		$this->assertSame( self::SAFE_TITLE, $data['title']['rendered'] );
 	}
 
 	public function test_retitling_a_post_by_hand_clears_the_marker(): void {

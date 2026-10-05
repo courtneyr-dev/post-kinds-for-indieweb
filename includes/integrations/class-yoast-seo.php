@@ -63,7 +63,8 @@ class Yoast_SEO {
 		// Yoast builds the title tag, the Open Graph and X titles, its schema
 		// and the REST `yoast_head` fields from post_title, not from
 		// get_the_title(), so a title generated from a hidden venue needs
-		// the swap here too. Priority 20: after the image above.
+		// the swap here too. Priority 20: after filter_schema_graph() at 11
+		// adds its image node, so the swap sees the finished graph.
 		foreach ( [ 'wpseo_title', 'wpseo_opengraph_title', 'wpseo_twitter_title', 'wpseo_schema_graph' ] as $hook ) {
 			add_filter( $hook, [ \PKIW\Title_Privacy::class, 'scrub_stored_title' ], 20, 2 );
 		}
