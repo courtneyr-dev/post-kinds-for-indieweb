@@ -136,9 +136,19 @@ class Checkin_Map {
 				$lng = (float) $meta( 'geo_longitude' );
 			}
 
+			// An untitled check-in still needs link text.
+			$title = trim( get_the_title( $post ) );
+			if ( '' === $title ) {
+				$title = sprintf(
+					/* translators: %s: the post's date */
+					__( 'Check-in, %s', 'post-kinds-for-indieweb-in-block-themes' ),
+					(string) get_the_date( '', $post )
+				);
+			}
+
 			$entries[] = [
 				'id'       => $post->ID,
-				'title'    => get_the_title( $post ),
+				'title'    => $title,
 				'url'      => (string) get_permalink( $post ),
 				'date_iso' => (string) get_the_date( 'c', $post ),
 				'date'     => (string) get_the_date( '', $post ),

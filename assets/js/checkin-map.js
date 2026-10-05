@@ -98,6 +98,19 @@
 			el.insertBefore( controls, el.firstChild );
 		}
 
+		// The view comes first: the cluster layer reads the map's zoom when it
+		// is added.
+		if ( 1 === pins.length ) {
+			map.setView( [ pins[ 0 ].lat, pins[ 0 ].lng ], 15, {
+				animate: false,
+			} );
+		} else {
+			map.fitBounds(
+				L.latLngBounds( pins.map( ( p ) => [ p.lat, p.lng ] ) ),
+				{ padding: [ 48, 48 ], animate: false, maxZoom: 16 }
+			);
+		}
+
 		const group = L.markerClusterGroup( {
 			showCoverageOnHover: false,
 			spiderfyOnMaxZoom: false,
@@ -149,14 +162,23 @@
 			} );
 			marker.pkiwCount = pin.ids.length;
 
-			// Leaflet fires click for Enter on a focused marker.
-			marker.on( 'click', () => {
+			const goToEntry = () => {
 				markEntries( pin.ids );
 				markPin( marker );
 				const first = entryEl( pin.ids[ 0 ] );
 				const link = first && first.querySelector( 'a' );
 				if ( link ) {
 					link.focus();
+				}
+			};
+
+			// A pin is a button: a click, Enter or Space activates it.
+			marker.on( 'click', goToEntry );
+			marker.on( 'keypress', ( event ) => {
+				const key = event.originalEvent && event.originalEvent.key;
+				if ( 'Enter' === key || ' ' === key ) {
+					event.originalEvent.preventDefault();
+					goToEntry();
 				}
 			} );
 
@@ -168,17 +190,6 @@
 		} );
 
 		map.addLayer( group );
-
-		if ( 1 === pins.length ) {
-			map.setView( [ pins[ 0 ].lat, pins[ 0 ].lng ], 15, {
-				animate: false,
-			} );
-		} else {
-			map.fitBounds(
-				L.latLngBounds( pins.map( ( p ) => [ p.lat, p.lng ] ) ),
-				{ padding: [ 48, 48 ], animate: false, maxZoom: 16 }
-			);
-		}
 
 		// Each list number becomes the control that moves the map to its pin.
 		root.querySelectorAll(

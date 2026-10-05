@@ -155,6 +155,20 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 		$this->assertSame( 3, substr_count( $html, 'class="pkiw-checkin-archive__entry h-entry' ) );
 	}
 
+	public function test_untitled_checkin_gets_link_text(): void {
+		$post = $this->checkin( 'pubone', 'public', 40.111111, -75.111111 );
+		wp_update_post(
+			[
+				'ID'         => $post->ID,
+				'post_title' => '',
+			]
+		);
+
+		$entries = Checkin_Map::entries( [ get_post( $post->ID ) ] );
+
+		$this->assertSame( 'Check-in, September 12, 2026', $entries[0]['title'] );
+	}
+
 	public function test_summary_counts_the_page_and_the_mapped_entries(): void {
 		$this->assertSame( '6 check-ins · 4 mapped', Checkin_Map::summary( 6, 4 ) );
 		$this->assertSame( '3 check-ins · 1 mapped', Checkin_Map::summary( 3, 1 ) );
