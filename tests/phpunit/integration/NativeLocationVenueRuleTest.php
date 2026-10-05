@@ -116,7 +116,7 @@ final class NativeLocationVenueRuleTest extends WP_UnitTestCase {
 		];
 	}
 
-	// ─── 1. Check-in, pkiw approximate/unset, geo_public 1/unset: full ───
+	// ─── 1. Check-in, pkiw approximate/unset, geo_public 1/unset: venue name and place ───
 
 	/**
 	 * @return array<string, array{0: string, 1: string}>
@@ -133,7 +133,7 @@ final class NativeLocationVenueRuleTest extends WP_UnitTestCase {
 	/**
 	 * @dataProvider checkin_full_combos
 	 */
-	public function test_checkin_shows_full_location( string $pkiw_privacy, string $geo_public ): void {
+	public function test_approximate_checkin_shows_name_and_place_only( string $pkiw_privacy, string $geo_public ): void {
 		$native = $this->full_native_fields();
 		$native['geo_public'] = $geo_public;
 		$pkiw_meta = [];
@@ -144,14 +144,14 @@ final class NativeLocationVenueRuleTest extends WP_UnitTestCase {
 
 		$data = $this->rest_get( $post_id );
 
-		$this->assertSame( self::LATITUDE, $data['meta']['geo_latitude'] );
-		$this->assertSame( self::LONGITUDE, $data['meta']['geo_longitude'] );
-		$this->assertSame( self::STREET, $data['meta']['geo_address'] );
 		$this->assertSame( self::VENUE, $data['meta']['geo_venue'] );
 		$this->assertSame( self::LOCALITY, $data['meta']['geo_locality'] );
-		$this->assertSame( self::POSTAL, $data['meta']['geo_postal_code'] );
-		$this->assertSame( self::LATITUDE, $data['indieblocks_location']['geo_latitude'] );
-		$this->assertSame( self::STREET, $data['indieblocks_location']['geo_address'] );
+		$this->assertSame( '', $data['meta']['geo_latitude'] );
+		$this->assertSame( '', $data['meta']['geo_longitude'] );
+		$this->assertSame( '', $data['meta']['geo_address'] );
+		$this->assertSame( '', $data['meta']['geo_postal_code'] );
+		$this->assertSame( '', $data['indieblocks_location']['geo_latitude'] );
+		$this->assertSame( '', $data['indieblocks_location']['geo_address'] );
 	}
 
 	// ─── 2. Check-in, pkiw private: nothing ───
@@ -190,7 +190,7 @@ final class NativeLocationVenueRuleTest extends WP_UnitTestCase {
 	public function test_checkin_geo_public_protected_keeps_text_hides_coordinates(): void {
 		$native                = $this->full_native_fields();
 		$native['geo_public'] = '2';
-		$post_id                = $this->create_post( $native, [ 'geo_privacy' => 'approximate' ], 'checkin' );
+		$post_id                = $this->create_post( $native, [ 'geo_privacy' => 'public' ], 'checkin' );
 
 		$data = $this->rest_get( $post_id );
 
@@ -205,9 +205,9 @@ final class NativeLocationVenueRuleTest extends WP_UnitTestCase {
 		$this->assertSame( self::STREET, $data['indieblocks_location']['geo_address'] );
 	}
 
-	// ─── 5. Eat post with a restaurant, pkiw approximate: full ───
+	// ─── 5. Eat post with a restaurant, pkiw approximate: restaurant, no street or coordinates ───
 
-	public function test_eat_with_restaurant_approximate_shows_full_location(): void {
+	public function test_eat_with_restaurant_approximate_keeps_restaurant_only(): void {
 		$native  = $this->full_native_fields();
 		$post_id = $this->create_post(
 			$native,
@@ -219,8 +219,8 @@ final class NativeLocationVenueRuleTest extends WP_UnitTestCase {
 
 		$data = $this->rest_get( $post_id );
 
-		$this->assertSame( self::LATITUDE, $data['meta']['geo_latitude'] );
-		$this->assertSame( self::STREET, $data['meta']['geo_address'] );
+		$this->assertSame( '', $data['meta']['geo_latitude'] );
+		$this->assertSame( '', $data['meta']['geo_address'] );
 		$this->assertSame( self::RESTAURANT, $data['meta']['_pkiw_eat_restaurant'] );
 	}
 
@@ -244,17 +244,17 @@ final class NativeLocationVenueRuleTest extends WP_UnitTestCase {
 		$this->assertSame( '', $data['meta']['_pkiw_drink_location_name'] );
 	}
 
-	// ─── 7. Note with a venue name (native geo_venue only), pkiw approximate: full ───
+	// ─── 7. Note with a venue name (native geo_venue only), pkiw approximate: venue name, no street or coordinates ───
 
-	public function test_note_with_native_venue_name_approximate_shows_full_location(): void {
+	public function test_note_with_native_venue_name_approximate_keeps_name_only(): void {
 		$native  = $this->full_native_fields();
 		$post_id = $this->create_post( $native, [ 'geo_privacy' => 'approximate' ] );
 
 		$data = $this->rest_get( $post_id );
 
 		$this->assertSame( self::VENUE, $data['meta']['geo_venue'] );
-		$this->assertSame( self::STREET, $data['meta']['geo_address'] );
-		$this->assertSame( self::LATITUDE, $data['meta']['geo_latitude'] );
+		$this->assertSame( '', $data['meta']['geo_address'] );
+		$this->assertSame( '', $data['meta']['geo_latitude'] );
 	}
 
 	// ─── 8. Note with only coordinates (+ place text, no venue name), pkiw

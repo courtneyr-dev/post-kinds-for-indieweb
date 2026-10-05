@@ -19,6 +19,7 @@
 .gitattributes
 .gitkeep
 .lintstagedrc.json
+.stylelintignore
 .phpcs.xml.dist
 .phpcs.cache
 .phpunit.result.cache

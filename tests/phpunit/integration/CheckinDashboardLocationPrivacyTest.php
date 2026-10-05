@@ -78,12 +78,10 @@ final class CheckinDashboardLocationPrivacyTest extends WP_UnitTestCase {
 	 */
 	public function visibility_matrix(): array {
 		return [
-			// A check-in is a venue post (Meta_Fields::has_venue()); an
-			// unset/'approximate' _pkiw_geo_privacy is a default, not an
-			// author choice, and is ignored for venue posts, so it shows
-			// the same as 'public'.
+			// Approximate keeps the venue name and place and drops the
+			// street and coordinates (issue 224).
 			'public, anonymous'      => [ 'public', 'anonymous', true, true, true ],
-			'approximate, anonymous' => [ 'approximate', 'anonymous', true, true, true ],
+			'approximate, anonymous' => [ 'approximate', 'anonymous', true, false, false ],
 			'private, anonymous'     => [ 'private', 'anonymous', false, false, false ],
 			'public, editor'         => [ 'public', 'editor', true, true, true ],
 			'approximate, editor'    => [ 'approximate', 'editor', true, true, true ],

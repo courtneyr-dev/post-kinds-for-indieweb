@@ -56,11 +56,16 @@ $pkiw_post_id = $block->context['postId'] ?? get_the_ID();
 $pkiw_visible = Meta_Fields::get_visible_location_fields( (int) $pkiw_post_id );
 
 $pkiw_show_location = ! empty( $pkiw_visible['name'] );
-$pkiw_has_coords    = null !== $pkiw_latitude && null !== $pkiw_longitude;
-$pkiw_show_coords   = ! empty( $pkiw_visible['coordinates'] ) && $pkiw_has_coords;
-$pkiw_show_address  = ! empty( $pkiw_visible['street'] ) && $pkiw_address;
-$pkiw_show_url      = ! empty( $pkiw_visible['url'] ) && $pkiw_venue_url;
-$pkiw_show_map_emb  = $pkiw_show_map && $pkiw_has_coords && ! empty( $pkiw_visible['map'] );
+
+// A hidden location and a card with no location print the same markup, so a
+// visitor can't tell that a private check-in holds one.
+$pkiw_has_place    = $pkiw_show_location
+	&& '' !== trim( $pkiw_venue_name . $pkiw_locality . $pkiw_region . $pkiw_country );
+$pkiw_has_coords   = null !== $pkiw_latitude && null !== $pkiw_longitude;
+$pkiw_show_coords  = ! empty( $pkiw_visible['coordinates'] ) && $pkiw_has_coords;
+$pkiw_show_address = ! empty( $pkiw_visible['street'] ) && $pkiw_address;
+$pkiw_show_url     = ! empty( $pkiw_visible['url'] ) && $pkiw_venue_url;
+$pkiw_show_map_emb = $pkiw_show_map && $pkiw_has_coords && ! empty( $pkiw_visible['map'] );
 
 // Map URL — only ever built for the fully-visible (public/editor) case;
 // approximate and private get no map at all, coarsened or otherwise.
@@ -113,12 +118,7 @@ ob_start();
 	<div class="pk-body">
 		<span class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' ), 'checkin', 'checkin-card' ) ); ?></span>
 
-		<?php if ( ! $pkiw_show_location ) : ?>
-			<p class="pk-note">
-				<svg class="pk-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-				<?php esc_html_e( 'Location saved privately', 'post-kinds-for-indieweb-in-block-themes' ); ?>
-			</p>
-
+		<?php if ( ! $pkiw_has_place ) : ?>
 			<?php if ( $pkiw_photo ) : ?>
 				<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_photo ); ?>" alt="<?php echo esc_attr( $pkiw_photo_alt ? $pkiw_photo_alt : $pkiw_photo_alt_private ); ?>" loading="lazy" /></div>
 			<?php endif; ?>

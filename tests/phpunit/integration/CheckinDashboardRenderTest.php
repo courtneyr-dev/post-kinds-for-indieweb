@@ -68,7 +68,7 @@ final class CheckinDashboardRenderTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'No check-ins yet.', $html, 'a kind=checkin post must not leave the dashboard empty' );
 	}
 
-	public function test_coordinates_reach_map_for_public_and_default_privacy(): void {
+	public function test_coordinates_reach_map_for_public_privacy_only(): void {
 		$this->create_checkin(
 			[
 				'_pkiw_checkin_name' => 'Public Venue',
@@ -77,10 +77,8 @@ final class CheckinDashboardRenderTest extends WP_UnitTestCase {
 				'_pkiw_geo_privacy'   => 'public',
 			]
 		);
-		// A check-in is a venue post (Meta_Fields::has_venue()); an unset
-		// _pkiw_geo_privacy (the plugin-wide default, "approximate") is a
-		// default, not an author choice, and is ignored for venue posts —
-		// this one shows the same as the explicit 'public' check-in above.
+		// An unset _pkiw_geo_privacy means approximate: the venue name
+		// renders and the coordinates stay out of the map data.
 		$this->create_checkin(
 			[
 				'_pkiw_checkin_name' => 'Default Privacy Venue',
@@ -92,7 +90,8 @@ final class CheckinDashboardRenderTest extends WP_UnitTestCase {
 		$html = $this->render_dashboard();
 
 		$this->assertStringContainsString( '12.345678', $html, 'public check-in coordinates must reach the map data' );
-		$this->assertStringContainsString( '23.456789', $html, 'a venue check-in with an unset (default) privacy still shows coordinates' );
+		$this->assertStringNotContainsString( '23.456789', $html, 'a check-in with an unset (approximate) privacy keeps its coordinates out of the map data' );
+		$this->assertStringContainsString( 'Default Privacy Venue', $html );
 	}
 
 	public function test_coordinates_hidden_when_geo_public_restricts_them(): void {
