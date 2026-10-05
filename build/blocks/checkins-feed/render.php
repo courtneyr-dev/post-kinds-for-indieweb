@@ -19,6 +19,23 @@ use function PKIW\get_checkins_at_venue;
 use function PKIW\get_checkin_location;
 use function PKIW\format_location;
 
+// Archive mode: this page of the surrounding query as a list and a map.
+if ( ! empty( $attributes['inherit'] ) ) {
+	global $wp_query;
+
+	$pkiw_inherited = ( $block->context['query']['inherit'] ?? true ) && $wp_query instanceof WP_Query ? $wp_query->posts : [];
+
+	$pkiw_archive = \PKIW\Checkin_Map::render_archive(
+		is_array( $pkiw_inherited ) ? $pkiw_inherited : [],
+		get_block_wrapper_attributes( [ 'class' => 'pkiw-checkin-archive' ] ),
+		(int) ( $attributes['headingLevel'] ?? 2 )
+	);
+
+	// render_archive() escapes each value it prints.
+	echo $pkiw_archive; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	return;
+}
+
 // Extract attributes with defaults.
 $pkiw_count        = absint( $attributes['count'] ?? 10 );
 $pkiw_show_map     = ! empty( $attributes['showMap'] );

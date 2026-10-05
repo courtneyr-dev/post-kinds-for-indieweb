@@ -790,6 +790,21 @@ final class Kind_Archive_Layouts {
 		}
 
 		$content = $this->resolved_template_content( $term );
+
+		// A Check-ins Feed that inherits the archive sets the page size.
+		$checkins_per_page = null === $content ? 0 : Checkin_Map::template_per_page( $content );
+		if ( $checkins_per_page > 0 ) {
+			$query->set( 'posts_per_page', $checkins_per_page );
+			$query->set(
+				'orderby',
+				[
+					'date' => 'DESC',
+					'ID'   => 'DESC',
+				]
+			);
+			return;
+		}
+
 		if ( null === $content || ! preg_match( '/is-style-pkiw-(?:shelf|shelf-spine|menu)|wp:post-kinds-indieweb\/menu-entry/', $content ) ) {
 			return;
 		}

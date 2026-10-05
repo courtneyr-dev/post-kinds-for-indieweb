@@ -290,6 +290,9 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 		// Set post kind.
 		wp_set_object_terms( $post_id, 'checkin', 'kind' );
 
+		// The title is the place name, address or coordinates.
+		\PKIW\Title_Privacy::mark_location_title( (int) $post_id );
+
 		// Save meta.
 		update_post_meta( $post_id, '_pkiw_kind', 'checkin' );
 		update_post_meta( $post_id, '_pkiw_imported_from', 'owntracks' );
@@ -442,6 +445,9 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 
 		// Set post kind.
 		wp_set_object_terms( $post_id, 'checkin', 'kind' );
+
+		// The title is the place name, address or coordinates.
+		\PKIW\Title_Privacy::mark_location_title( (int) $post_id );
 
 		// Save meta.
 		update_post_meta( $post_id, '_pkiw_kind', 'checkin' );

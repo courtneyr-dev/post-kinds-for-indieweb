@@ -114,6 +114,38 @@ final class KindArchiveGroupingTest extends WP_UnitTestCase {
 		$this->assertSame( $p['none'], (int) $query->posts[0], 'Unknown key falls back to plain date order.' );
 	}
 
+	public function test_checkin_archive_pages_by_24_and_the_map_follows_the_page(): void {
+		$ids = [];
+		for ( $i = 1; $i <= 26; $i++ ) {
+			$id = self::factory()->post->create(
+				[
+					'post_status' => 'publish',
+					'post_title'  => "Check-in {$i}",
+					'post_date'   => sprintf( '2026-08-%02d 10:00:00', $i ),
+				]
+			);
+			wp_set_object_terms( $id, 'checkin', 'kind' );
+			update_post_meta( $id, '_pkiw_geo_privacy', 'public' );
+			update_post_meta( $id, '_pkiw_geo_latitude', (string) ( 40 + $i / 100 ) );
+			update_post_meta( $id, '_pkiw_geo_longitude', (string) ( -75 - $i / 100 ) );
+			$ids[ $i ] = $id;
+		}
+
+		// go_to() replaces the global query object, so read it after each request.
+		$this->go_to( get_term_link( 'checkin', 'kind' ) );
+		$wp_query = $GLOBALS['wp_query'];
+		$this->assertCount( 24, $wp_query->posts );
+		$this->assertSame( $ids[26], (int) $wp_query->posts[0]->ID, 'Newest first.' );
+		$this->assertSame( 2, (int) $wp_query->max_num_pages );
+
+		$this->go_to( add_query_arg( 'paged', 2, get_term_link( 'checkin', 'kind' ) ) );
+		$wp_query = $GLOBALS['wp_query'];
+		$this->assertCount( 2, $wp_query->posts );
+
+		$pins = \PKIW\Checkin_Map::pins( \PKIW\Checkin_Map::entries( $wp_query->posts ) );
+		$this->assertSame( [ [ $ids[2] ], [ $ids[1] ] ], array_column( $pins, 'ids' ), 'Page two maps check-ins 25 and 26 only.' );
+	}
+
 	public function test_main_query_groups_when_resolved_template_uses_menu_entry(): void {
 		$p = $this->fixtures();
 

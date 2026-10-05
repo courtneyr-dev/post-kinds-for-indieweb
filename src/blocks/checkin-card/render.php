@@ -178,7 +178,9 @@ ob_start();
 				<p class="pk-sub p-location h-card">
 					<?php
 					// Each part is already escaped above.
-					echo implode( ', ', $pkiw_address_parts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					// The separator is an element so a theme that sets the street
+					// on a line of its own can drop the comma after it.
+					echo implode( '<span class="pk-sub-sep">, </span>', $pkiw_address_parts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 					?>
 
 					<?php if ( $pkiw_show_coords ) : ?>

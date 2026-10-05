@@ -101,10 +101,17 @@
 		const map = L.map( mapContainer ).setView( [ 40, -95 ], 4 );
 
 		// Add tile layer
-		L.tileLayer( 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			attribution:
-				'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-		} ).addTo( map );
+		// The server prints the tile settings, so the pkiw_map_tile_url and
+		// pkiw_map_tile_attribution filters reach every map.
+		L.tileLayer(
+			mapContainer.dataset.tileUrl ||
+				'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+			{
+				attribution:
+					mapContainer.dataset.attribution ||
+					'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+			}
+		).addTo( map );
 
 		// Create markers
 		const markers =

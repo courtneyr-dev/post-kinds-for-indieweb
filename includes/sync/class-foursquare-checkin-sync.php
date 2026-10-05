@@ -482,6 +482,9 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 		// Set kind taxonomy.
 		wp_set_object_terms( $post_id, 'checkin', Taxonomy::TAXONOMY );
 
+		// The title names the venue, so it follows the location's privacy.
+		\PKIW\Title_Privacy::mark_location_title( (int) $post_id );
+
 		// Set meta fields.
 		$prefix = Meta_Fields::PREFIX;
 

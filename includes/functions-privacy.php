@@ -30,3 +30,17 @@ if ( ! function_exists( 'pkiw_get_visible_location_fields' ) ) {
 		return \PKIW\Meta_Fields::get_visible_location_fields( $post_id );
 	}
 }
+
+if ( ! function_exists( 'pkiw_get_safe_title' ) ) {
+	/**
+	 * The title to print for a post: the stored title, or "Check-in, <date>"
+	 * when the stored title was generated from a location that is hidden.
+	 * The same value the `the_title` filter returns outside wp-admin.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string
+	 */
+	function pkiw_get_safe_title( int $post_id ): string {
+		return \PKIW\Title_Privacy::safe_title( $post_id );
+	}
+}
