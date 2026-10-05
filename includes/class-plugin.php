@@ -489,6 +489,8 @@ final class Plugin {
 			$this->microformats = new Microformats();
 		}
 
+		new Title_Privacy();
+
 		// REST API component.
 		if ( class_exists( __NAMESPACE__ . '\\REST_API' ) ) {
 			$this->rest_api = new REST_API();
