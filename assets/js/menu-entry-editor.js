@@ -176,7 +176,7 @@
 										'post-kinds-for-indieweb-in-block-themes'
 									),
 									help: __(
-										'Empty uses “Other”.',
+										'Empty uses “Other”, or “Drink” on the drink menu.',
 										'post-kinds-for-indieweb-in-block-themes'
 									),
 									value: props.attributes.emptyLabel,

@@ -603,6 +603,139 @@ final class KindArchiveGroupingTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Create a published drink post.
+	 *
+	 * @param string               $title Title.
+	 * @param string               $date  Post date.
+	 * @param array<string, mixed> $attrs Drink card attributes.
+	 */
+	private function drink( string $title, string $date, array $attrs = [] ): int {
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => $title,
+				'post_date'    => $date,
+				'post_content' => '<!-- wp:post-kinds-indieweb/drink-card ' . wp_json_encode( $attrs ) . ' /-->',
+			]
+		);
+		wp_set_object_terms( $id, 'drink', 'kind' );
+		return $id;
+	}
+
+	public function test_the_empty_group_is_labelled_drink_for_drinks_and_other_elsewhere(): void {
+		$this->assertSame( 'Drink', \PKIW\Kind_Archive_Layouts::group_label( 'drink', '' ), 'A drink with no type files under "Drink".' );
+		$this->assertSame( 'Drink', \PKIW\Kind_Archive_Layouts::group_label( 'drink', '  ' ) );
+		$this->assertSame( 'Other', \PKIW\Kind_Archive_Layouts::group_label( 'eat', '' ), 'A meal with no cuisine keeps "Other".' );
+		$this->assertSame( 'Other', \PKIW\Kind_Archive_Layouts::group_label( 'recipe', '' ) );
+		$this->assertSame( 'On tap', \PKIW\Kind_Archive_Layouts::group_label( 'drink', '', ' On tap ' ), 'A heading the editor names wins.' );
+		$this->assertSame( 'Other', \PKIW\Kind_Archive_Layouts::group_label( 'drink', 'other' ), 'A drink stored as "other" keeps "Other".' );
+		$this->assertSame( 'Coffee', \PKIW\Kind_Archive_Layouts::group_label( 'drink', 'coffee' ) );
+	}
+
+	public function test_drink_menu_files_a_drink_with_no_type_under_drink(): void {
+		$this->drink( 'Stout', '2026-02-01 10:00:00', [ 'name' => 'Imperial stout', 'drinkType' => 'beer' ] );
+		$this->drink( 'Punch', '2026-02-02 10:00:00', [ 'name' => 'Mystery punch', 'drinkType' => 'other' ] );
+		$this->drink( 'House pour', '2026-02-03 10:00:00', [ 'name' => 'House pour' ] );
+		$legacy = $this->drink( 'Cortado', '2026-02-04 10:00:00', [ 'name' => 'Cortado' ] );
+		// Saved while the card still had a default: "coffee" in meta, no drinkType in the comment.
+		update_post_meta( $legacy, '_pkiw_drink_type', 'coffee' );
+
+		$this->go_to( get_term_link( 'drink', 'kind' ) );
+
+		$this->assertSame(
+			[
+				[ 'h2:Beer', [ 'Imperial stout' ] ],
+				[ 'h2:Coffee', [ 'Cortado' ] ],
+				[ 'h2:Other', [ 'Mystery punch' ] ],
+				[ 'h2:Drink', [ 'House pour' ] ],
+			],
+			$this->sections( $this->render_template( 'drink' ) ),
+			'A drink with no type gets its own "Drink" section, after the typed ones; stored types keep their sections.'
+		);
+	}
+
+	public function test_the_editor_heads_a_drink_with_no_type_as_the_front_end_does(): void {
+		$unset = $this->drink( 'House pour', '2026-02-03 10:00:00', [ 'name' => 'House pour' ] );
+
+		$this->assertSame( [ [ 'h2:Drink', [ 'House pour' ] ] ], $this->sections( $this->editor_render( $unset ) ) );
+		$this->assertSame(
+			[ [ 'h2:On tap', [ 'House pour' ] ] ],
+			$this->sections( $this->editor_render( $unset, [ 'emptyLabel' => 'On tap' ] ) ),
+			'A heading the editor names wins in the preview too.'
+		);
+	}
+
+	public function test_a_drink_created_over_rest_with_no_type_stores_none_and_sorts_into_the_empty_group(): void {
+		// The test case unregisters meta between tests.
+		( new \PKIW\Meta_Fields() )->register_meta_fields();
+		$beer = $this->drink( 'Stout', '2026-02-01 10:00:00', [ 'name' => 'Imperial stout', 'drinkType' => 'beer' ] );
+		$wine = $this->drink( 'Rioja', '2026-02-02 10:00:00', [ 'name' => 'Rioja', 'drinkType' => 'wine' ] );
+		$kind = get_term_by( 'slug', 'drink', 'kind' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/posts' );
+		$request->set_param( 'title', 'House pour' );
+		$request->set_param( 'status', 'publish' );
+		$request->set_param( 'date', '2026-02-03T10:00:00' );
+		$request->set_param( 'kind', [ $kind->term_id ] );
+		$request->set_param( 'content', '<!-- wp:post-kinds-indieweb/drink-card {"name":"House pour"} /-->' );
+		$response = rest_get_server()->dispatch( $request );
+		$this->assertSame( 201, $response->get_status(), wp_json_encode( $response->get_data() ) );
+		$created = $response->get_data();
+		$unset   = (int) $created['id'];
+
+		$this->assertSame( '', $created['meta']['_pkiw_drink_type'], 'The REST response reports no drink type.' );
+		$this->assertSame( '', get_post_meta( $unset, '_pkiw_drink_type', true ) );
+
+		$ids = fn( string $orderby ): array => $this->rest_post_ids(
+			[
+				'kind'     => [ $kind->term_id ],
+				'orderby'  => $orderby,
+				'per_page' => 10,
+			]
+		);
+
+		$this->assertSame( [ $beer, $wine, $unset ], $ids( 'pkiw_group' ), 'The drink with no type sits in the empty group, after the typed ones.' );
+		$this->assertSame( [ $unset, $beer, $wine ], $ids( 'pkiw_group_empty_first' ), 'The empty group can lead.' );
+	}
+
+	public function test_a_quick_post_drink_keeps_the_type_it_was_given_or_none(): void {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		$quick_post = new \PKIW\Admin\Quick_Post( new \PKIW\Admin\Admin( \PKIW\Plugin::get_instance() ) );
+		$create     = new ReflectionMethod( $quick_post, 'create_reaction_post' );
+
+		$unset = $create->invoke(
+			$quick_post,
+			'drink',
+			[
+				'drink_name'  => 'House pour',
+				'post_status' => 'publish',
+			]
+		);
+		$tea   = $create->invoke(
+			$quick_post,
+			'drink',
+			[
+				'drink_name'  => 'Oolong',
+				'drink_type'  => 'tea',
+				'post_status' => 'publish',
+			]
+		);
+
+		$this->assertSame( '', get_post_meta( $unset, '_pkiw_drink_type', true ), 'Quick Post stores no type when none is picked.' );
+		$this->assertSame( 'tea', get_post_meta( $tea, '_pkiw_drink_type', true ), 'Quick Post stores the type it is given.' );
+
+		$this->go_to( get_term_link( 'drink', 'kind' ) );
+		$this->assertSame(
+			[
+				[ 'h2:Tea', [ 'Oolong' ] ],
+				[ 'h2:Drink', [ 'House pour' ] ],
+			],
+			$this->sections( $this->render_template( 'drink' ) )
+		);
+	}
+
+	/**
 	 * Render one menu entry for a post as the first item of a fresh loop.
 	 *
 	 * @param int $post_id Post ID.

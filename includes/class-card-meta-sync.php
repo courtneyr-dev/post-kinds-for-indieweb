@@ -177,9 +177,6 @@ class Card_Meta_Sync {
 	 * @var array<string, array<string, string>>
 	 */
 	public const ATTR_DEFAULTS = [
-		'post-kinds-indieweb/drink-card' => [
-			'drinkType' => 'coffee',
-		],
 		'post-kinds-indieweb/comic-card' => [
 			'readStatus' => 'reading',
 		],

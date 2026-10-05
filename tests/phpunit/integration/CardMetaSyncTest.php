@@ -160,15 +160,14 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 		$this->assertSame( 'Roasty.', get_post_meta( $post_id, '_pkiw_drink_notes', true ) );
 	}
 
-	public function test_drink_type_block_default_is_mirrored_when_attr_omitted(): void {
-		// The card renders drinkType's block.json default ("coffee") when the
-		// attribute is absent from the serialized comment; the menu must file
-		// that post under the same type the card shows.
+	public function test_drink_type_stays_unset_when_attr_omitted(): void {
+		// The drink type has no default: a card saved without one leaves the
+		// meta empty, so the menu files the post under its generic section.
 		$post_id = self::factory()->post->create( [
 			'post_content' => '<!-- wp:post-kinds-indieweb/drink-card {"name":"Cortado"} /-->',
 		] );
 
-		$this->assertSame( 'coffee', get_post_meta( $post_id, '_pkiw_drink_type', true ) );
+		$this->assertSame( '', get_post_meta( $post_id, '_pkiw_drink_type', true ), 'A drink saved without a type is given none.' );
 	}
 
 	public function test_drink_type_default_never_overwrites_existing_meta(): void {
@@ -180,6 +179,23 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 		wp_update_post( [ 'ID' => $post_id, 'post_title' => 'resave' ] );
 
 		$this->assertSame( 'tea', get_post_meta( $post_id, '_pkiw_drink_type', true ) );
+	}
+
+	public function test_backfill_gives_no_drink_a_type_and_keeps_a_stored_one(): void {
+		$unset  = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/drink-card {"name":"House pour"} /-->',
+		] );
+		$stored = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/drink-card {"name":"Cortado"} /-->',
+		] );
+		// A post saved while the card still had a default: no drinkType in
+		// its comment, "coffee" in its meta.
+		update_post_meta( $stored, '_pkiw_drink_type', 'coffee' );
+
+		\PKIW\Card_Meta_Sync::backfill_batch( 0, 100 );
+
+		$this->assertSame( '', get_post_meta( $unset, '_pkiw_drink_type', true ), 'The backfill writes no type for a drink that has none.' );
+		$this->assertSame( 'coffee', get_post_meta( $stored, '_pkiw_drink_type', true ), 'The backfill leaves a stored type as it is.' );
 	}
 
 	public function test_backfill_restores_menu_meta_in_batches_without_touching_content(): void {

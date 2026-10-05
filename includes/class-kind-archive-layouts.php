@@ -982,13 +982,17 @@ final class Kind_Archive_Layouts {
 	 *
 	 * @param string $kind        Kind slug.
 	 * @param string $value       Stored group value.
-	 * @param string $empty_label Label for posts with no group; "Other" when empty.
+	 * @param string $empty_label Label for posts with no group; when empty, "Drink" for drinks and "Other" for every other kind.
 	 * @return string
 	 */
 	public static function group_label( string $kind, string $value, string $empty_label = '' ): string {
 		$value = trim( $value );
 		if ( '' === $value ) {
-			return '' !== trim( $empty_label ) ? trim( $empty_label ) : __( 'Other', 'post-kinds-for-indieweb-in-block-themes' );
+			if ( '' !== trim( $empty_label ) ) {
+				return trim( $empty_label );
+			}
+
+			return 'drink' === $kind ? __( 'Drink', 'post-kinds-for-indieweb-in-block-themes' ) : __( 'Other', 'post-kinds-for-indieweb-in-block-themes' );
 		}
 
 		if ( 'drink' === $kind ) {
