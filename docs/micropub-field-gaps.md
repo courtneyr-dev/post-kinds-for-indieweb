@@ -109,19 +109,35 @@ hint, or with `pkiw-kind: read`, the same entry builds a read card.
 | `volume` | `mp-volume` | vendor extension |
 | `issueNumber` | `mp-issue-number` | vendor extension |
 | `publisher` | `mp-publisher` | vendor extension, the name proposed for read above |
-| `coverImage` | `photo` | first value only |
-| `coverImageAlt` | `mp-photo-alt` | first value only |
+| `coverImage` | `mp-cover-image`, else `photo` | see the cover order below |
+| `coverImageAlt` | `mp-cover-image-alt`, else the cover photo's alt | a JSON photo object's `alt`, else `mp-photo-alt` |
 | `readStatus` | `read-status` | |
 | `rating` | `rating` | |
 | `startedAt` | `mp-started-at` | no default from `published` |
 | `finishedAt` | `mp-finished-at` | no default from `published` |
 | `review` | `content` | |
 
-The first `photo` is the cover and is not repeated below the card. The
-builder drops every copy of the cover URL (the Micropub plugin can repeat
-sideloaded URLs) and appends the remaining photos with their `mp-photo-alt`
-values still aligned. Every comic-card attribute maps, so `wire_matrix()`
-lists no gaps for comics.
+The cover is `mp-cover-image` with `mp-cover-image-alt`, the properties
+proposed for the read card's cover above. The Micropub plugin doesn't
+sideload `mp-cover-image`, so the card uses the URL as sent. Without
+`mp-cover-image`, the cover is the first `photo`. A `photo` value is a URL
+or a JSON photo object (`{"value": "<url>", "alt": "<text>"}`); its alt is
+the object's `alt`, else the aligned `mp-photo-alt` entry.
+
+The Micropub plugin sideloads every `photo` after the post is inserted and
+appends each local attachment URL to the property, so N photos reach the
+builder as N originals followed by N local copies. When `photo` has that
+shape (an even count, every value in the second half resolves to an
+attachment, and each one equals its original or follows a remote one),
+value i and value i + N are one image with the original's alt. For one
+photo, `[remote URL, local uploads URL]` is one image. The cover is then
+the first image's local copy, not the remote original. Any other shape
+keeps every value as its own image.
+
+The cover isn't repeated below the card: the builder drops every value of
+the image that holds the cover URL, plus any other copy of that URL, and
+appends the remaining photos with their alts aligned. Every comic-card
+attribute maps, so `wire_matrix()` lists no gaps for comics.
 
 ## play
 
