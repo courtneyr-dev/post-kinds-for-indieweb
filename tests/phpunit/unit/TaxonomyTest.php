@@ -358,4 +358,149 @@ class TaxonomyTest extends WP_UnitTestCase {
 
 		$this->assertSame( [], $this->kind_slugs( $post_id ) );
 	}
+
+	// --- presentation classification on save ---------------------------------
+
+	private const WPTV_EMBED = '<!-- wp:embed {"url":"https://wordpress.tv/2021/07/22/hari-shanker-hauwa-abashiya-courtney-robertson-help-shape-content-on-learn-wordpress/","type":"video","providerNameSlug":"wordpress-tv-embed","responsive":true} -->
+<figure class="wp-block-embed is-type-video is-provider-wordpress-tv-embed wp-block-embed-wordpress-tv-embed"><div class="wp-block-embed__wrapper">
+https://wordpress.tv/2021/07/22/hari-shanker-hauwa-abashiya-courtney-robertson-help-shape-content-on-learn-wordpress/
+</div></figure>
+<!-- /wp:embed -->';
+
+	private const DECK_EMBED = '<!-- wp:embed {"url":"https://speakerdeck.com/courtneyr/blocks-for-everyone","type":"rich","providerNameSlug":"speaker-deck","responsive":true} -->
+<figure class="wp-block-embed is-type-rich is-provider-speaker-deck wp-block-embed-speaker-deck"><div class="wp-block-embed__wrapper">
+https://speakerdeck.com/courtneyr/blocks-for-everyone
+</div></figure>
+<!-- /wp:embed -->';
+
+	private const YOUTUBE_EMBED = '<!-- wp:embed {"url":"https://www.youtube.com/watch?v=Zr1m5aYk0aQ","type":"video","providerNameSlug":"youtube","responsive":true} -->
+<figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube"><div class="wp-block-embed__wrapper">
+https://www.youtube.com/watch?v=Zr1m5aYk0aQ
+</div></figure>
+<!-- /wp:embed -->';
+
+	private const LISTEN_CARD = '<!-- wp:post-kinds-indieweb/listen-card {"trackTitle":"Episode 12: Community"} /-->';
+
+	public function test_save_classifies_wordpress_tv_talk_without_a_kind() {
+		$this->ensure_kind_terms( 'presentation' );
+
+		$post_id = self::factory()->post->create( [ 'post_content' => self::WPTV_EMBED ] );
+
+		$this->assertSame( [ 'presentation' ], $this->kind_slugs( $post_id ) );
+		$this->assertSame( 'presentation', get_post_meta( $post_id, Taxonomy::AUTO_KIND_META_KEY, true ) );
+	}
+
+	public function test_save_classifies_deck_over_note_default() {
+		$this->ensure_kind_terms( 'presentation', 'note' );
+
+		$post_id = self::factory()->post->create( [ 'post_content' => 'plain' ] );
+		wp_set_post_terms( $post_id, [ 'note' ], Taxonomy::TAXONOMY );
+
+		wp_update_post(
+			[
+				'ID'           => $post_id,
+				'post_content' => self::DECK_EMBED,
+			]
+		);
+
+		$this->assertSame( [ 'presentation' ], $this->kind_slugs( $post_id ) );
+	}
+
+	public function test_save_keeps_manually_chosen_article_with_a_deck() {
+		$this->ensure_kind_terms( 'presentation', 'article' );
+
+		$post_id = self::factory()->post->create( [ 'post_content' => 'plain' ] );
+		wp_set_post_terms( $post_id, [ 'article' ], Taxonomy::TAXONOMY );
+
+		wp_update_post(
+			[
+				'ID'           => $post_id,
+				'post_content' => self::DECK_EMBED,
+			]
+		);
+
+		$this->assertSame( [ 'article' ], $this->kind_slugs( $post_id ) );
+		$this->assertSame( '', (string) get_post_meta( $post_id, Taxonomy::AUTO_KIND_META_KEY, true ) );
+	}
+
+	public function test_save_keeps_manually_chosen_listen_with_a_deck() {
+		$this->ensure_kind_terms( 'presentation', 'listen' );
+
+		$post_id = self::factory()->post->create( [ 'post_content' => 'plain' ] );
+		wp_set_post_terms( $post_id, [ 'listen' ], Taxonomy::TAXONOMY );
+
+		wp_update_post(
+			[
+				'ID'           => $post_id,
+				'post_content' => self::DECK_EMBED,
+			]
+		);
+
+		$this->assertSame( [ 'listen' ], $this->kind_slugs( $post_id ) );
+	}
+
+	public function test_save_listen_card_with_a_deck_is_a_presentation_and_stays_one() {
+		$this->ensure_kind_terms( 'presentation', 'listen' );
+
+		$post_id = self::factory()->post->create( [ 'post_content' => self::LISTEN_CARD . "\n\n" . self::DECK_EMBED ] );
+
+		$this->assertSame( [ 'presentation' ], $this->kind_slugs( $post_id ) );
+		$this->assertSame( 'presentation', get_post_meta( $post_id, Taxonomy::AUTO_KIND_META_KEY, true ) );
+
+		// A second save must not flip it back to listen.
+		wp_update_post(
+			[
+				'ID'         => $post_id,
+				'post_title' => 'Edited',
+			]
+		);
+
+		$this->assertSame( [ 'presentation' ], $this->kind_slugs( $post_id ) );
+	}
+
+	public function test_save_listen_card_with_youtube_stays_listen() {
+		$this->ensure_kind_terms( 'presentation', 'listen' );
+
+		$post_id = self::factory()->post->create( [ 'post_content' => self::LISTEN_CARD . "\n\n" . self::YOUTUBE_EMBED ] );
+
+		$this->assertSame( [ 'listen' ], $this->kind_slugs( $post_id ) );
+	}
+
+	public function test_save_youtube_only_assigns_no_kind() {
+		$this->ensure_kind_terms( 'presentation' );
+
+		$post_id = self::factory()->post->create( [ 'post_content' => self::YOUTUBE_EMBED ] );
+
+		$this->assertSame( [], $this->kind_slugs( $post_id ) );
+	}
+
+	public function test_save_other_card_keeps_winning_over_a_deck() {
+		$this->ensure_kind_terms( 'presentation', 'eat' );
+
+		$post_id = self::factory()->post->create(
+			[ 'post_content' => '<!-- wp:post-kinds-indieweb/eat-card {"name":"Conference lunch"} /-->' . "\n\n" . self::DECK_EMBED ]
+		);
+
+		$this->assertSame( [ 'eat' ], $this->kind_slugs( $post_id ) );
+	}
+
+	public function test_auto_kind_status_reports_the_guard() {
+		$this->ensure_kind_terms( 'presentation', 'note', 'article', 'eat' );
+
+		$none = self::factory()->post->create( [ 'post_content' => 'plain' ] );
+
+		$note = self::factory()->post->create( [ 'post_content' => 'plain' ] );
+		wp_set_post_terms( $note, [ 'note' ], Taxonomy::TAXONOMY );
+
+		$picked = self::factory()->post->create( [ 'post_content' => 'plain' ] );
+		wp_set_post_terms( $picked, [ 'article' ], Taxonomy::TAXONOMY );
+
+		$auto = self::factory()->post->create( [ 'post_content' => '<!-- wp:post-kinds-indieweb/eat-card /-->' ] );
+
+		$this->assertSame( 'eligible', $this->taxonomy->auto_kind_status( $none, 'presentation' ) );
+		$this->assertSame( 'eligible', $this->taxonomy->auto_kind_status( $note, 'presentation' ) );
+		$this->assertSame( 'protected', $this->taxonomy->auto_kind_status( $picked, 'presentation' ) );
+		$this->assertSame( 'eligible', $this->taxonomy->auto_kind_status( $auto, 'presentation' ), 'a kind this plugin set may change' );
+		$this->assertSame( 'same', $this->taxonomy->auto_kind_status( $auto, 'eat' ) );
+	}
 }
