@@ -630,7 +630,7 @@ final class Plugin {
 			$this->atmosphere_integration->register();
 		}
 
-		// Simple Location weather: hide SL's inline weather on weather posts (#209).
+		// Simple Location weather: hide SL's inline weather on weather posts (issue 209).
 		if ( class_exists( __NAMESPACE__ . '\\Integrations\\Simple_Location_Weather' ) ) {
 			Integrations\Simple_Location_Weather::register();
 		}
