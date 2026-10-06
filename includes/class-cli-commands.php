@@ -160,13 +160,15 @@ class CLI_Commands {
 	/**
 	 * Give existing talk and deck posts the presentation kind.
 	 *
-	 * Applies the rule a save applies: a deck embed (Speaker Deck, SlideShare,
-	 * Google Slides, Notist), a WordPress.tv recording or authored presentation
-	 * fields. A YouTube, VideoPress, Vimeo or Dailymotion embed alone never
-	 * counts, and a podcast appearance with a video stays Listen. Only posts
-	 * with no kind, the default `note`, or a kind this plugin set change; a
-	 * kind a person picked is listed as protected. Sets the kind term only,
-	 * so modified dates, revisions and syndication stay untouched.
+	 * Applies the rule a save applies: a deck (a Speaker Deck, SlideShare,
+	 * Google Slides, Notist or Canva embed, or a `[slideshare]` shortcode), a
+	 * WordPress.tv recording or authored presentation fields. A YouTube,
+	 * VideoPress, Vimeo or Dailymotion embed alone never counts, and a
+	 * listen-card or listen-kind post is never claimed without one of those.
+	 * Only posts with no kind, the default `note`, or a kind matching their
+	 * `_pkiw_kind_auto_assigned` marker change; any other kind is protected.
+	 * Each candidate's line names its kind and marker. Sets the kind term
+	 * only, so modified dates, revisions and syndication stay untouched.
 	 *
 	 * ## OPTIONS
 	 *

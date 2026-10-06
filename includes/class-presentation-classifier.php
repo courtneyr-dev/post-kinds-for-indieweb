@@ -37,12 +37,12 @@ final class Presentation_Classifier {
 	 * Embed block provider slugs that embed a slide deck.
 	 *
 	 * `slideshare` covers blocks saved before WordPress 6.6 dropped the
-	 * provider; `notist` is the slug the editor derives from Notist's
-	 * oEmbed provider name.
+	 * provider; `notist` and `canva` are the slugs the editor derives from
+	 * those services' oEmbed provider names.
 	 *
 	 * @var list<string>
 	 */
-	public const DECK_EMBED_SLUGS = [ 'speaker-deck', 'slideshare', 'notist' ];
+	public const DECK_EMBED_SLUGS = [ 'speaker-deck', 'slideshare', 'notist', 'canva' ];
 
 	/**
 	 * Embed block provider slugs that embed a recorded talk.
@@ -105,7 +105,8 @@ final class Presentation_Classifier {
 	 *
 	 * Walks the parsed blocks (inner blocks too, so a wrapper can't hide an
 	 * embed), then the raw markup, so classic content and Custom HTML
-	 * blocks count. Links to deck hosts are never signals.
+	 * blocks count, then `[slideshare]` shortcodes. Links to deck hosts are
+	 * never signals.
 	 *
 	 * @param \WP_Post $post Post to read.
 	 * @return array{deck: list<string>, talk_recording: list<string>, recording: list<string>, presentation_meta: bool, listen: bool}
@@ -124,6 +125,7 @@ final class Presentation_Classifier {
 			self::collect_block_signals( parse_blocks( $content ), $signals );
 		}
 		self::collect_markup_signals( $content, $signals );
+		self::collect_shortcode_signals( $content, $signals );
 
 		foreach ( [ 'deck', 'talk_recording', 'recording' ] as $key ) {
 			$signals[ $key ] = array_values( array_unique( $signals[ $key ] ) );
@@ -170,7 +172,7 @@ final class Presentation_Classifier {
 	 *
 	 * @param Taxonomy $taxonomy Taxonomy instance that holds the guard.
 	 * @param bool     $dry_run  Report without writing.
-	 * @return array{scanned: int, would_change: int, changed: int, protected: int, unchanged: int, failed: int, rows: list<array{post_id: int, title: string, kind: string, status: string, signals: array{deck: list<string>, talk_recording: list<string>, recording: list<string>, presentation_meta: bool, listen: bool}}>}
+	 * @return array{scanned: int, would_change: int, changed: int, protected: int, unchanged: int, failed: int, rows: list<array{post_id: int, title: string, kind: string, auto_marker: string, status: string, signals: array{deck: list<string>, talk_recording: list<string>, recording: list<string>, presentation_meta: bool, listen: bool}}>}
 	 */
 	public static function backfill( Taxonomy $taxonomy, bool $dry_run = true ): array {
 		$report = [
@@ -214,6 +216,7 @@ final class Presentation_Classifier {
 				}
 
 				$current = $taxonomy->get_post_kind( $post->ID );
+				$marker  = get_post_meta( $post->ID, Taxonomy::AUTO_KIND_META_KEY, true );
 				$status  = $taxonomy->auto_kind_status( $post->ID, self::KIND );
 
 				if ( 'eligible' === $status ) {
@@ -233,11 +236,12 @@ final class Presentation_Classifier {
 				}
 
 				$report['rows'][] = [
-					'post_id' => $post->ID,
-					'title'   => $post->post_title,
-					'kind'    => $current instanceof \WP_Term ? $current->slug : '',
-					'status'  => $status,
-					'signals' => self::signals( $post ),
+					'post_id'     => $post->ID,
+					'title'       => $post->post_title,
+					'kind'        => $current instanceof \WP_Term ? $current->slug : '',
+					'auto_marker' => is_string( $marker ) ? $marker : '',
+					'status'      => $status,
+					'signals'     => self::signals( $post ),
 				];
 			}
 
@@ -248,22 +252,30 @@ final class Presentation_Classifier {
 	}
 
 	/**
-	 * One line of backfill output: the post, the outcome and its signals.
+	 * One line of backfill output: the post, the outcome, why, and its signals.
 	 *
-	 * @param array{post_id: int, title: string, kind: string, status: string, signals: array{deck: list<string>, talk_recording: list<string>, recording: list<string>, presentation_meta: bool, listen: bool}} $row Backfill row.
+	 * Every line names the current kind and the auto-assigned marker, the two
+	 * values the guard compares, because the marker differs per environment.
+	 *
+	 * @param array{post_id: int, title: string, kind: string, auto_marker: string, status: string, signals: array{deck: list<string>, talk_recording: list<string>, recording: list<string>, presentation_meta: bool, listen: bool}} $row Backfill row.
 	 * @return string
 	 */
 	public static function backfill_line( array $row ): string {
-		$from     = '' === $row['kind'] ? 'no kind' : $row['kind'];
 		$outcomes = [
-			'eligible'  => sprintf( 'would change (%s -> %s)', $from, self::KIND ),
-			'changed'   => sprintf( 'changed (%s -> %s)', $from, self::KIND ),
-			'failed'    => sprintf( 'failed (%s -> %s)', $from, self::KIND ),
-			'protected' => sprintf( 'protected (%s, not auto-assigned)', $from ),
+			'eligible'  => 'would change to ' . self::KIND,
+			'changed'   => 'changed to ' . self::KIND,
+			'failed'    => 'failed to change to ' . self::KIND,
+			'protected' => 'protected',
 			'same'      => 'already ' . self::KIND,
 		];
 
-		$parts = [];
+		$parts = [
+			sprintf(
+				'kind %s, auto marker %s',
+				'' === $row['kind'] ? 'none' : $row['kind'],
+				'' === $row['auto_marker'] ? 'none' : $row['auto_marker']
+			),
+		];
 		foreach ( [ 'deck', 'talk_recording', 'recording' ] as $key ) {
 			if ( [] !== $row['signals'][ $key ] ) {
 				$parts[] = $key . ': ' . implode( ', ', $row['signals'][ $key ] );
@@ -343,7 +355,9 @@ final class Presentation_Classifier {
 	 * Collect deck and talk-recording embeds from raw markup.
 	 *
 	 * Reads iframe src, object data, embed src and param value, plus
-	 * Notist's `data-notist` embed. Anchor hrefs are never read.
+	 * Notist's `data-notist` embed. WP_HTML_Tag_Processor::get_attribute()
+	 * decodes character references, so Canva's `https:&#x2F;&#x2F;…` src
+	 * reads as a URL without a second decode. Anchor hrefs are never read.
 	 *
 	 * @param string               $content Post content.
 	 * @param array<string, mixed> $signals Signals, updated in place.
@@ -385,6 +399,30 @@ final class Presentation_Classifier {
 	}
 
 	/**
+	 * Collect `[slideshare id=...]` shortcodes as decks.
+	 *
+	 * Found in core/shortcode blocks and in paragraphs of older posts. The
+	 * site needn't register the shortcode: the id still names a SlideShare
+	 * deck, reported as its embed_code URL. `[[slideshare]]` is escaped
+	 * text and doesn't count.
+	 *
+	 * @param string               $content Post content.
+	 * @param array<string, mixed> $signals Signals, updated in place.
+	 * @return void
+	 */
+	private static function collect_shortcode_signals( string $content, array &$signals ): void {
+		if ( false === stripos( $content, '[slideshare' ) ) {
+			return;
+		}
+
+		if ( preg_match_all( '/(?<!\[)\[slideshare\s[^\]]*?\bid=["\']?(\d+)/i', $content, $matches ) ) {
+			foreach ( $matches[1] as $id ) {
+				$signals['deck'][] = 'https://www.slideshare.net/slideshow/embed_code/' . $id;
+			}
+		}
+	}
+
+	/**
 	 * Whether an embedded URL is a slide-deck player.
 	 *
 	 * @param string $url Absolute URL.
@@ -398,6 +436,7 @@ final class Presentation_Classifier {
 		[ $host, $path ] = $parts;
 
 		return ( self::host_is( $host, 'speakerdeck.com' ) && str_starts_with( $path, '/player/' ) )
+			|| ( self::host_is( $host, 'canva.com' ) && str_starts_with( $path, '/design/' ) && str_ends_with( rtrim( $path, '/' ), '/view' ) )
 			|| ( self::host_is( $host, 'slideshare.net' ) && str_starts_with( $path, '/slideshow/embed_code/' ) )
 			|| self::host_is( $host, 'slidesharecdn.com' )
 			|| ( 'docs.google.com' === $host && str_starts_with( $path, '/presentation/' ) )

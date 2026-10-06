@@ -651,9 +651,10 @@ class Taxonomy {
 	 *
 	 * The first kind card decides. A post with no card, or whose first card
 	 * is a listen card, becomes a presentation when Presentation_Classifier
-	 * finds a deck, a talk recording or authored presentation fields, so a
-	 * podcast appearance with only a YouTube video stays Listen. Other cards
-	 * are an explicit statement of kind and keep winning over a deck.
+	 * finds a deck, a talk recording or authored presentation fields; a
+	 * recording embed such as YouTube never counts, so a listen-card post
+	 * with only a video resolves to listen. Other cards are an explicit
+	 * statement of kind and keep winning over a deck.
 	 *
 	 * @param \WP_Post $post Post object.
 	 * @return string|null Kind slug, or null when nothing implies a kind.
@@ -731,6 +732,12 @@ class Taxonomy {
 	 * auto_kind_status() keeps a kind a person picked. The block editor
 	 * sends explicit panel picks with the REST request, and those are
 	 * applied before this hook fires.
+	 *
+	 * When the content stops implying a kind, the stored term stays: a post
+	 * with no card that loses its deck keeps `presentation`, the way a post
+	 * that loses its card keeps that card's kind. A listen-card post that
+	 * loses its deck goes back to `listen`, because the card still implies
+	 * a kind and the auto marker shows the sync set `presentation`.
 	 *
 	 * @param int      $post_id Post ID.
 	 * @param \WP_Post $post    Post object.
