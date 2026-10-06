@@ -1612,6 +1612,205 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertSame( '', (string) get_post_meta( $post_id, Meta_Fields::PREFIX . 'comic_title', true ) );
 	}
 
+	/**
+	 * Create an image attachment and return its uploads URL, the URL
+	 * Micropub's sideload appends to `photo`.
+	 *
+	 * @param string $file File name under the uploads folder.
+	 * @return string
+	 */
+	private function local_upload_url( string $file ): string {
+		$id  = self::factory()->attachment->create_object( '2026/10/' . $file, 0, array( 'post_mime_type' => 'image/jpeg' ) );
+		$url = (string) wp_get_attachment_url( $id );
+		$this->assertSame( $id, attachment_url_to_postid( $url ), "{$file} resolves to its attachment" );
+		return $url;
+	}
+
+	/**
+	 * Source and alt of every core/image block, in document order.
+	 *
+	 * @param string $content Block markup.
+	 * @return array<int, array{src: string, alt: string}>
+	 */
+	private function images( string $content ): array {
+		$images = array();
+		$walk   = static function ( array $blocks ) use ( &$walk, &$images ): void {
+			foreach ( $blocks as $block ) {
+				if ( 'core/image' === $block['blockName'] ) {
+					preg_match( '/src="([^"]*)"/', $block['innerHTML'], $src );
+					preg_match( '/alt="([^"]*)"/', $block['innerHTML'], $alt );
+					$images[] = array(
+						'src' => html_entity_decode( $src[1] ?? '' ),
+						'alt' => html_entity_decode( $alt[1] ?? '' ),
+					);
+				}
+				$walk( $block['innerBlocks'] ?? array() );
+			}
+		};
+		$walk( parse_blocks( $content ) );
+		return $images;
+	}
+
+	/** Uses the sideloaded copy of a remote cover and repeats neither URL below the card. */
+	public function test_a_sideloaded_cover_is_the_local_copy_and_no_image_repeats_it(): void {
+		$local      = $this->local_upload_url( 'saga-7-cover.jpg' );
+		$properties = $this->comic_properties();
+		// Micropub appends the sideloaded copy after the remote original.
+		$properties['photo'] = array( 'https://example.test/saga-7.jpg', $local );
+		$content             = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+		$attrs               = $this->first_attrs( $content, 'post-kinds-indieweb/comic-card' );
+
+		$this->assertSame( $local, $attrs['coverImage'] ?? null );
+		$this->assertSame( 'A horned parent holds a swaddled baby.', $attrs['coverImageAlt'] ?? null );
+		$this->assertSame( array(), $this->images( $content ), 'neither copy of the cover follows the card' );
+		$this->assertStringNotContainsString( 'https://example.test/saga-7.jpg', $content );
+	}
+
+	/** Pairs each sideloaded copy with its original, so the panel keeps its alt and the cover stays on the card. */
+	public function test_a_sideloaded_cover_and_panel_keep_their_alts(): void {
+		$cover                      = $this->local_upload_url( 'saga-7-cover.jpg' );
+		$panel                      = $this->local_upload_url( 'saga-7-panel.jpg' );
+		$properties                 = $this->comic_properties();
+		$properties['photo']        = array( 'https://example.test/saga-7.jpg', 'https://example.test/panel.jpg', $cover, $panel );
+		$properties['mp-photo-alt'] = array( 'Cover alt', 'Panel alt' );
+		$content                    = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+		$attrs                      = $this->first_attrs( $content, 'post-kinds-indieweb/comic-card' );
+		$images                     = $this->images( $content );
+
+		$this->assertSame( $cover, $attrs['coverImage'] ?? null );
+		$this->assertSame( 'Cover alt', $attrs['coverImageAlt'] ?? null );
+		$this->assertContains( $panel, array_column( $images, 'src' ) );
+		foreach ( $images as $image ) {
+			$this->assertNotContains( $image['src'], array( $cover, 'https://example.test/saga-7.jpg' ), 'no image repeats the cover' );
+			$this->assertSame( 'Panel alt', $image['alt'], "{$image['src']} keeps the panel's alt" );
+		}
+	}
+
+	/** Keeps two different local photos apart: the first is the cover, the second follows the card. */
+	public function test_two_local_photos_are_a_cover_and_a_panel(): void {
+		$cover                      = $this->local_upload_url( 'cover-a.jpg' );
+		$panel                      = $this->local_upload_url( 'panel-b.jpg' );
+		$properties                 = $this->comic_properties();
+		$properties['photo']        = array( $cover, $panel );
+		$properties['mp-photo-alt'] = array( 'Cover alt', 'Panel alt' );
+		$content                    = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+
+		$this->assertSame( $cover, $this->first_attrs( $content, 'post-kinds-indieweb/comic-card' )['coverImage'] ?? null );
+		$this->assertSame(
+			array(
+				array(
+					'src' => $panel,
+					'alt' => 'Panel alt',
+				),
+			),
+			$this->images( $content )
+		);
+	}
+
+	/** Takes the cover from mp-cover-image and still renders a different photo below the card. */
+	public function test_mp_cover_image_is_the_cover_and_the_photo_still_renders(): void {
+		$properties                       = $this->comic_properties();
+		$properties['mp-cover-image']     = array( 'https://example.test/covers/saga-7-variant.jpg' );
+		$properties['mp-cover-image-alt'] = array( 'Variant cover alt' );
+		$properties['photo']              = array( 'https://example.test/panel.jpg' );
+		$properties['mp-photo-alt']       = array( 'Panel alt' );
+		$content                          = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+		$attrs                            = $this->first_attrs( $content, 'post-kinds-indieweb/comic-card' );
+
+		$this->assertSame( 'https://example.test/covers/saga-7-variant.jpg', $attrs['coverImage'] ?? null );
+		$this->assertSame( 'Variant cover alt', $attrs['coverImageAlt'] ?? null );
+		$this->assertSame(
+			array(
+				array(
+					'src' => 'https://example.test/panel.jpg',
+					'alt' => 'Panel alt',
+				),
+			),
+			$this->images( $content )
+		);
+	}
+
+	/** Reads a JSON photo object's value as the cover and its alt as the cover alt. */
+	public function test_a_json_photo_object_supplies_the_cover_and_its_alt(): void {
+		$properties = $this->comic_properties();
+		unset( $properties['mp-photo-alt'] );
+		$properties['photo'] = array(
+			array(
+				'value' => 'https://example.test/saga-7.jpg',
+				'alt'   => 'Object alt',
+			),
+		);
+		$content             = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+		$attrs               = $this->first_attrs( $content, 'post-kinds-indieweb/comic-card' );
+
+		$this->assertSame( 'https://example.test/saga-7.jpg', $attrs['coverImage'] ?? null );
+		$this->assertSame( 'Object alt', $attrs['coverImageAlt'] ?? null );
+		$this->assertSame( array(), $this->images( $content ) );
+	}
+
+	/** Pairs a sideloaded copy with the JSON photo object it came from. */
+	public function test_a_sideloaded_json_photo_object_is_the_local_copy(): void {
+		$local      = $this->local_upload_url( 'saga-7-object.jpg' );
+		$properties = $this->comic_properties();
+		unset( $properties['mp-photo-alt'] );
+		$properties['photo'] = array(
+			array(
+				'value' => 'https://example.test/saga-7.jpg',
+				'alt'   => 'Object alt',
+			),
+			$local,
+		);
+		$content             = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+		$attrs               = $this->first_attrs( $content, 'post-kinds-indieweb/comic-card' );
+
+		$this->assertSame( $local, $attrs['coverImage'] ?? null );
+		$this->assertSame( 'Object alt', $attrs['coverImageAlt'] ?? null );
+		$this->assertSame( array(), $this->images( $content ) );
+	}
+
+	/** Builds a comic card before insert when the comic request has no content. */
+	public function test_fill_empty_content_supplies_a_comic_card(): void {
+		$content = Micropub_Content_Builder::fill_empty_content(
+			'',
+			array(
+				'properties' => array(
+					'read-of'   => array( 'https://example.test/comics/saga-7' ),
+					'name'      => array( 'Saga #7' ),
+					'pkiw-kind' => array( 'comics' ),
+				),
+			)
+		);
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/comic-card', $content );
+		$this->assertStringNotContainsString( 'wp:post-kinds-indieweb/read-card', $content );
+	}
+
+	/** Falls back to a read post when the site has no comics term. */
+	public function test_apply_builds_a_read_post_when_the_site_has_no_comics_term(): void {
+		$comics = get_term_by( 'slug', 'comics', 'kind' );
+		$this->assertInstanceOf( \WP_Term::class, $comics );
+		wp_delete_term( $comics->term_id, 'kind' );
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_content' => 'Lying Cat steals every page.',
+			)
+		);
+
+		Micropub_Content_Builder::apply(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => $this->comic_properties(),
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$content = (string) get_post_field( 'post_content', $post_id );
+		$this->assertSame( array( 'read' ), $this->kind_slugs( $post_id ) );
+		$this->assertSame( 'read', Taxonomy::get_first_block_kind( $content ) );
+		$this->assertStringNotContainsString( 'wp:post-kinds-indieweb/comic-card', $content );
+	}
+
 	// --- Wire matrix: every kind's Micropub properties -> card attrs --------
 
 	/**
