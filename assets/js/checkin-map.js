@@ -6,7 +6,8 @@
  *
  * A map marked data-pkiw-consent="required" (the
  * pkiw_checkin_map_requires_consent filter) loads no tiles until a
- * `pkiw:map-consent` event on document, or window.pkiwMapConsent === true.
+ * `pkiw:map-consent` event on document, at any time after this script
+ * loads, or window.pkiwMapConsent === true.
  *
  * Keyboard: zoom buttons come before the pins in tab order. Enter on a pin
  * moves focus to its list entry. Each list number becomes a button that
@@ -310,6 +311,19 @@
 		} );
 	}
 
+	// A consent tool can answer before the page finishes loading, so the
+	// listener goes on now. Maps found waiting draw when it fires.
+	let consented = false;
+	const waiting = [];
+	document.addEventListener(
+		'pkiw:map-consent',
+		() => {
+			consented = true;
+			waiting.splice( 0 ).forEach( ( el ) => initMap( el ) );
+		},
+		{ once: true }
+	);
+
 	function init() {
 		if ( typeof L === 'undefined' || ! L.markerClusterGroup ) {
 			return;
@@ -319,13 +333,10 @@
 			.forEach( ( el ) => {
 				if (
 					'required' === el.dataset.pkiwConsent &&
-					true !== window.pkiwMapConsent
+					true !== window.pkiwMapConsent &&
+					! consented
 				) {
-					document.addEventListener(
-						'pkiw:map-consent',
-						() => initMap( el ),
-						{ once: true }
-					);
+					waiting.push( el );
 					return;
 				}
 				initMap( el );
