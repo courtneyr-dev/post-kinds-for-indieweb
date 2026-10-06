@@ -4,6 +4,10 @@
  * Draws the pins the server printed on `.pkiw-checkin-archive__map` and
  * links each pin to its list entry. The list works without this script.
  *
+ * A map marked data-pkiw-consent="required" (the
+ * pkiw_checkin_map_requires_consent filter) loads no tiles until a
+ * `pkiw:map-consent` event on document, or window.pkiwMapConsent === true.
+ *
  * Keyboard: zoom buttons come before the pins in tab order. Enter on a pin
  * moves focus to its list entry. Each list number becomes a button that
  * centers the map on its pin, so nothing needs a drag. Nearby pins merge
@@ -229,7 +233,20 @@
 		}
 		document
 			.querySelectorAll( '.pkiw-checkin-archive__map[data-pins]' )
-			.forEach( initMap );
+			.forEach( ( el ) => {
+				if (
+					'required' === el.dataset.pkiwConsent &&
+					true !== window.pkiwMapConsent
+				) {
+					document.addEventListener(
+						'pkiw:map-consent',
+						() => initMap( el ),
+						{ once: true }
+					);
+					return;
+				}
+				initMap( el );
+			} );
 	}
 
 	if ( document.readyState === 'loading' ) {

@@ -58,6 +58,35 @@ Results are cached for a day, misses included, so a page is not re-fetched on ev
 
 Only the resolved record's address is stored, in the `_pkiw_standard_site_uri` post meta key, and only when the record verifies against the page it was found on.
 
+**Check-in archive map tiles.** The check-in archive (`/kind/checkin/`, or any Check-ins Feed block that inherits its Query Loop's query) draws a map in the visitor's browser. Leaflet and its clustering script ship with the plugin and load only on a page with at least one pin. The map tiles are images from the OpenStreetMap tile service, `tile.openstreetmap.org`, which sees each visitor's IP address and the page's address.
+
+- `pkiw_map_tile_url` and `pkiw_map_tile_attribution` point the map at another tile provider or your own tile cache. They also set the Check-in Dashboard block's map.
+- A Content-Security-Policy has to allow the tile host in `img-src`: `https://tile.openstreetmap.org` by default.
+- To hold the map until a visitor consents, return `true` from `pkiw_checkin_map_requires_consent`. The map container then carries `data-pkiw-consent="required"` and stays hidden, with no tile requests, until your consent tool dispatches a `pkiw:map-consent` event on `document`, or sets `window.pkiwMapConsent = true` before the map script starts. Do both: the flag covers consent given before the script runs, the event covers consent given after. The list of check-ins prints in full while the map waits. A map already drawn stays until the next page load if consent is withdrawn. This covers the archive map; the Check-in Dashboard block's map doesn't read the filter.
+
+```php
+add_filter( 'pkiw_checkin_map_requires_consent', '__return_true' );
+```
+
+With the [WP Consent API](https://wordpress.org/plugins/wp-consent-api/), in a script that loads after it (use the category your consent tool files third-party content under):
+
+```js
+function pkiwAllowMap() {
+	window.pkiwMapConsent = true;
+	document.dispatchEvent( new Event( 'pkiw:map-consent' ) );
+}
+
+if ( typeof wp_has_consent === 'function' && wp_has_consent( 'marketing' ) ) {
+	pkiwAllowMap();
+}
+
+document.addEventListener( 'wp_listen_for_consent_change', ( event ) => {
+	if ( 'allow' === event.detail.marketing ) {
+		pkiwAllowMap();
+	}
+} );
+```
+
 **POSSE syndication (outbound publishing).** The plugin sends your activity to Last.fm, Trakt, or Foursquare **only when you enable the matching toggle** (Scrobble to Last.fm, Sync to Trakt, Sync to Foursquare). All three default to off.
 
 **Webhooks (inbound).** Plex, Jellyfin, Trakt, ListenBrainz, and generic webhooks push data *to* your site; deliveries are verified with an HMAC-SHA256 signature against your webhook secret.
