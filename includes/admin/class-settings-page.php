@@ -573,17 +573,6 @@ class Settings_Page {
 		);
 
 		add_settings_field(
-			'checkin_coordinate_handling',
-			__( 'Coordinate Handling', 'post-kinds-for-indieweb-in-block-themes' ),
-			[ $this, 'render_coordinate_handling_field' ],
-			'pkiw_checkin',
-			'pkiw_checkin_section',
-			[
-				'id' => 'checkin_coordinate_handling',
-			]
-		);
-
-		add_settings_field(
 			'checkin_venue_source',
 			__( 'Venue Search Source', 'post-kinds-for-indieweb-in-block-themes' ),
 			[ $this, 'render_select_field' ],
@@ -836,6 +825,7 @@ class Settings_Page {
 	 */
 	public function render_checkin_section(): void {
 		echo '<p>' . esc_html__( 'Configure settings for location checkin posts.', 'post-kinds-for-indieweb-in-block-themes' ) . '</p>';
+		echo '<p class="description">' . esc_html__( 'What visitors see of a check-in\'s location, coordinates included, follows each post\'s Location Privacy setting in the block editor: Public (exact location), Approximate or Private (hidden).', 'post-kinds-for-indieweb-in-block-themes' ) . '</p>';
 	}
 
 	/**
@@ -1862,60 +1852,6 @@ CSS;
 		echo '<p class="description" style="margin-top: 16px; padding: 12px; background: #f0f0f1; border-left: 4px solid #2271b1;">';
 		esc_html_e( 'This setting determines the default for new checkins. You can override it per-post in the block editor.', 'post-kinds-for-indieweb-in-block-themes' );
 		echo '</p>';
-	}
-
-	/**
-	 * Render coordinate handling field with detailed explanations.
-	 *
-	 * @param array<string, mixed> $args Field arguments.
-	 * @return void
-	 */
-	public function render_coordinate_handling_field( array $args ): void {
-		$settings = get_option( 'pkiw_settings', $this->admin->get_default_settings() );
-		$value    = $settings[ $args['id'] ] ?? 'store_hide';
-
-		$options = [
-			'store_hide' => [
-				'label' => __( 'Store but hide coordinates', 'post-kinds-for-indieweb-in-block-themes' ),
-				'desc'  => __( 'Exact coordinates are saved in the database (for your records, maps, or future use) but never shown publicly. This lets you keep a precise location history while protecting privacy.', 'post-kinds-for-indieweb-in-block-themes' ),
-			],
-			'round'      => [
-				'label' => __( 'Round coordinates (reduce precision)', 'post-kinds-for-indieweb-in-block-themes' ),
-				'desc'  => __( 'Coordinates are rounded to ~1km precision before storing. This provides approximate mapping while making it impossible to pinpoint exact locations. Good if you want some geographic context without precision.', 'post-kinds-for-indieweb-in-block-themes' ),
-			],
-			'discard'    => [
-				'label' => __( 'Discard coordinates entirely', 'post-kinds-for-indieweb-in-block-themes' ),
-				'desc'  => __( 'Coordinates are never saved. Only venue name and address text are stored. Use this for maximum privacy, but note that coordinates cannot be recovered later.', 'post-kinds-for-indieweb-in-block-themes' ),
-			],
-			'store_show' => [
-				'label' => __( 'Store and show coordinates', 'post-kinds-for-indieweb-in-block-themes' ),
-				'desc'  => __( 'Exact coordinates are saved and displayed publicly (when privacy is set to Public). Enables precise mapping and IndieWeb geo microformats.', 'post-kinds-for-indieweb-in-block-themes' ),
-			],
-		];
-
-		echo '<fieldset>';
-		foreach ( $options as $option_value => $option_data ) {
-			printf(
-				'<label style="display: block; margin-bottom: 12px;">
-                    <input type="radio" name="pkiw_settings[%s]" value="%s"%s>
-                    <strong>%s</strong>
-                    <p class="description" style="margin-left: 24px; margin-top: 4px;">%s</p>
-                </label>',
-				esc_attr( $args['id'] ),
-				esc_attr( $option_value ),
-				checked( $value, $option_value, false ),
-				esc_html( $option_data['label'] ),
-				esc_html( $option_data['desc'] )
-			);
-		}
-		echo '</fieldset>';
-
-		echo '<div style="margin-top: 16px; padding: 12px; background: #fff8e5; border-left: 4px solid #dba617;">';
-		echo '<strong>' . esc_html__( 'Why does this matter?', 'post-kinds-for-indieweb-in-block-themes' ) . '</strong>';
-		echo '<p class="description" style="margin-top: 8px;">';
-		esc_html_e( 'Precise coordinates can reveal patterns about where you live, work, or spend time. Even if you hide your home address, checking in at nearby cafes regularly can expose your neighborhood. Consider your threat model when choosing.', 'post-kinds-for-indieweb-in-block-themes' );
-		echo '</p>';
-		echo '</div>';
 	}
 
 	/**
