@@ -34,7 +34,7 @@ class PresentationBackfillTest extends WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 
-		foreach ( [ 'presentation', 'note', 'article' ] as $slug ) {
+		foreach ( [ 'presentation', 'note', 'article', 'watch', 'eat' ] as $slug ) {
 			if ( ! term_exists( $slug, Taxonomy::TAXONOMY ) ) {
 				wp_insert_term( $slug, Taxonomy::TAXONOMY );
 			}
@@ -65,6 +65,8 @@ class PresentationBackfillTest extends WP_UnitTestCase {
 		$this->ids['note'] = $this->legacy_post( 'Deck on a note', $speakerdeck, 'note' );
 		// Already classified.
 		$this->ids['done'] = $this->legacy_post( 'Already a presentation', $speakerdeck, 'presentation', true );
+		// A person re-kinded a post the card sync had set to eat; the stale marker stays.
+		$this->ids['stale'] = $this->legacy_post( 'Talk recap', $wptv_embed, 'watch', false, 'eat' );
 	}
 
 	public function tear_down(): void {
@@ -75,7 +77,7 @@ class PresentationBackfillTest extends WP_UnitTestCase {
 	/**
 	 * A post with the given content and kind, as an older install left it.
 	 */
-	private function legacy_post( string $title, string $content, ?string $kind, bool $auto = false ): int {
+	private function legacy_post( string $title, string $content, ?string $kind, bool $auto = false, string $marker = '' ): int {
 		global $wpdb;
 
 		$post_id = self::factory()->post->create(
@@ -93,6 +95,9 @@ class PresentationBackfillTest extends WP_UnitTestCase {
 		}
 		if ( $auto && null !== $kind ) {
 			update_post_meta( $post_id, Taxonomy::AUTO_KIND_META_KEY, $kind );
+		}
+		if ( '' !== $marker ) {
+			update_post_meta( $post_id, Taxonomy::AUTO_KIND_META_KEY, $marker );
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- test fixture.
@@ -134,13 +139,13 @@ class PresentationBackfillTest extends WP_UnitTestCase {
 
 		$this->assertSame( 2, $report['would_change'] );
 		$this->assertSame( 0, $report['changed'] );
-		$this->assertSame( 1, $report['protected'] );
+		$this->assertSame( 2, $report['protected'] );
 		$this->assertSame( 1, $report['unchanged'] );
-		$this->assertGreaterThanOrEqual( 5, $report['scanned'] );
+		$this->assertGreaterThanOrEqual( 6, $report['scanned'] );
 
 		$rows = $this->rows_by_id( $report );
 		$this->assertSame(
-			[ $this->ids['talk'], $this->ids['article'], $this->ids['note'], $this->ids['done'] ],
+			[ $this->ids['talk'], $this->ids['article'], $this->ids['note'], $this->ids['done'], $this->ids['stale'] ],
 			array_keys( $rows ),
 			'candidates in ID order; the YouTube-only post is not one'
 		);
@@ -148,6 +153,7 @@ class PresentationBackfillTest extends WP_UnitTestCase {
 		$this->assertSame( 'protected', $rows[ $this->ids['article'] ]['status'] );
 		$this->assertSame( 'eligible', $rows[ $this->ids['note'] ]['status'] );
 		$this->assertSame( 'same', $rows[ $this->ids['done'] ]['status'] );
+		$this->assertSame( 'protected', $rows[ $this->ids['stale'] ]['status'] );
 		$this->assertSame( [ self::WPTV_URL ], $rows[ $this->ids['talk'] ]['signals']['talk_recording'] );
 
 		$this->assertSame( [], $this->kind_slugs( $this->ids['talk'] ) );
@@ -162,7 +168,7 @@ class PresentationBackfillTest extends WP_UnitTestCase {
 
 		$this->assertSame(
 			sprintf(
-				'#%d "Help Shape Content on Learn WordPress": would change (no kind -> presentation); talk_recording: %s',
+				'#%d "Help Shape Content on Learn WordPress": would change to presentation; kind none, auto marker none; talk_recording: %s',
 				$this->ids['talk'],
 				self::WPTV_URL
 			),
@@ -170,18 +176,27 @@ class PresentationBackfillTest extends WP_UnitTestCase {
 		);
 		$this->assertSame(
 			sprintf(
-				'#%d "Your Ultimate WordPress Website Checklist": protected (article, not auto-assigned); deck: %s',
+				'#%d "Your Ultimate WordPress Website Checklist": protected; kind article, auto marker none; deck: %s',
 				$this->ids['article'],
 				self::SLIDESHARE_URL
 			),
 			Presentation_Classifier::backfill_line( $rows[ $this->ids['article'] ] )
 		);
+		$this->assertSame(
+			sprintf(
+				'#%d "Talk recap": protected; kind watch, auto marker eat; talk_recording: %s',
+				$this->ids['stale'],
+				self::WPTV_URL
+			),
+			Presentation_Classifier::backfill_line( $rows[ $this->ids['stale'] ] ),
+			'the marker is printed because it differs per environment'
+		);
 		$this->assertStringStartsWith(
-			sprintf( '#%d "Deck on a note": would change (note -> presentation); deck: ', $this->ids['note'] ),
+			sprintf( '#%d "Deck on a note": would change to presentation; kind note, auto marker none; deck: ', $this->ids['note'] ),
 			Presentation_Classifier::backfill_line( $rows[ $this->ids['note'] ] )
 		);
 		$this->assertStringStartsWith(
-			sprintf( '#%d "Already a presentation": already presentation; deck: ', $this->ids['done'] ),
+			sprintf( '#%d "Already a presentation": already presentation; kind presentation, auto marker presentation; deck: ', $this->ids['done'] ),
 			Presentation_Classifier::backfill_line( $rows[ $this->ids['done'] ] )
 		);
 	}
@@ -191,17 +206,18 @@ class PresentationBackfillTest extends WP_UnitTestCase {
 
 		$this->assertSame( 2, $report['changed'] );
 		$this->assertSame( 0, $report['would_change'] );
-		$this->assertSame( 1, $report['protected'] );
+		$this->assertSame( 2, $report['protected'] );
 
 		$this->assertSame( [ 'presentation' ], $this->kind_slugs( $this->ids['talk'] ) );
 		$this->assertSame( 'presentation', get_post_meta( $this->ids['talk'], Taxonomy::AUTO_KIND_META_KEY, true ) );
 		$this->assertSame( [ 'presentation' ], $this->kind_slugs( $this->ids['note'] ) );
 		$this->assertSame( [ 'article' ], $this->kind_slugs( $this->ids['article'] ) );
+		$this->assertSame( [ 'watch' ], $this->kind_slugs( $this->ids['stale'] ) );
 		$this->assertSame( [], $this->kind_slugs( $this->ids['youtube'] ) );
 
 		$rows = $this->rows_by_id( $report );
 		$this->assertSame( 'changed', $rows[ $this->ids['talk'] ]['status'] );
-		$this->assertStringContainsString( ': changed (no kind -> presentation);', Presentation_Classifier::backfill_line( $rows[ $this->ids['talk'] ] ) );
+		$this->assertStringContainsString( ': changed to presentation; kind none, auto marker none;', Presentation_Classifier::backfill_line( $rows[ $this->ids['talk'] ] ) );
 
 		// Only the term moved: no post update, so no new modified date or revision.
 		clean_post_cache( $this->ids['talk'] );
@@ -215,7 +231,7 @@ class PresentationBackfillTest extends WP_UnitTestCase {
 
 		$this->assertSame( 0, $report['changed'] );
 		$this->assertSame( 3, $report['unchanged'] );
-		$this->assertSame( 1, $report['protected'] );
+		$this->assertSame( 2, $report['protected'] );
 	}
 
 	public function test_missing_presentation_term_writes_nothing(): void {

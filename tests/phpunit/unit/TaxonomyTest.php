@@ -458,6 +458,43 @@ https://www.youtube.com/watch?v=Zr1m5aYk0aQ
 		$this->assertSame( [ 'presentation' ], $this->kind_slugs( $post_id ) );
 	}
 
+	public function test_listen_card_post_that_loses_its_deck_returns_to_listen() {
+		// The auto marker shows the sync set presentation, and the listen
+		// card is still first, so the card's kind comes back.
+		$this->ensure_kind_terms( 'presentation', 'listen' );
+
+		$post_id = self::factory()->post->create( [ 'post_content' => self::LISTEN_CARD . "\n\n" . self::DECK_EMBED ] );
+		$this->assertSame( [ 'presentation' ], $this->kind_slugs( $post_id ) );
+
+		wp_update_post(
+			[
+				'ID'           => $post_id,
+				'post_content' => self::LISTEN_CARD,
+			]
+		);
+
+		$this->assertSame( [ 'listen' ], $this->kind_slugs( $post_id ) );
+		$this->assertSame( 'listen', get_post_meta( $post_id, Taxonomy::AUTO_KIND_META_KEY, true ) );
+	}
+
+	public function test_card_less_post_that_loses_its_deck_keeps_presentation() {
+		// Nothing in the content implies a kind any more, so the sync leaves
+		// the stored term alone, as it does when a card is removed.
+		$this->ensure_kind_terms( 'presentation' );
+
+		$post_id = self::factory()->post->create( [ 'post_content' => self::DECK_EMBED ] );
+		$this->assertSame( [ 'presentation' ], $this->kind_slugs( $post_id ) );
+
+		wp_update_post(
+			[
+				'ID'           => $post_id,
+				'post_content' => '<!-- wp:paragraph --><p>Slides coming soon.</p><!-- /wp:paragraph -->',
+			]
+		);
+
+		$this->assertSame( [ 'presentation' ], $this->kind_slugs( $post_id ) );
+	}
+
 	public function test_save_listen_card_with_youtube_stays_listen() {
 		$this->ensure_kind_terms( 'presentation', 'listen' );
 

@@ -190,6 +190,61 @@ class PresentationClassifierTest extends WP_UnitTestCase {
 		$this->assertTrue( Presentation_Classifier::is_presentation( $legacy ) );
 	}
 
+	public function test_canva_embed_with_entity_encoded_src_is_a_deck(): void {
+		// Post 8581: Canva's embed snippet stores the src with &#x2F; for each slash.
+		$post = $this->post(
+			self::html_block(
+				'<div style="position: relative; width: 100%; height: 0; padding-top: 56.2500%; padding-bottom: 0; box-shadow: 0 2px 8px 0 rgba(63,69,81,0.16); margin-top: 1.6em; margin-bottom: 0.9em; overflow: hidden; border-radius: 8px; will-change: transform;">' . "\n"
+				. '  <iframe loading="lazy" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; border: none; padding: 0;margin: 0;"' . "\n"
+				. '    src="https:&#x2F;&#x2F;www.canva.com&#x2F;design&#x2F;DAFhsyOf9EM&#x2F;view?embed" allowfullscreen="allowfullscreen" allow="fullscreen">' . "\n"
+				. '  </iframe>' . "\n</div>\n"
+				. '<a href="https:&#x2F;&#x2F;www.canva.com&#x2F;design&#x2F;DAFhsyOf9EM&#x2F;view?utm_content=DAFhsyOf9EM&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link" target="_blank" rel="noopener">LearnWP</a> by Courtney Robertson'
+			)
+		);
+
+		$this->assertSame( [ 'https://www.canva.com/design/DAFhsyOf9EM/view?embed' ], Presentation_Classifier::signals( $post )['deck'] );
+		$this->assertTrue( Presentation_Classifier::is_presentation( $post ) );
+	}
+
+	public function test_canva_embed_block_is_a_deck_and_canva_edit_iframe_is_not(): void {
+		$block = $this->post( self::embed_block( 'https://www.canva.com/design/DAFhsyOf9EM/view', 'canva', 'rich' ) );
+		$edit  = $this->post( self::html_block( '<iframe src="https://www.canva.com/design/DAFhsyOf9EM/edit"></iframe>' ) );
+
+		$this->assertSame( [ 'https://www.canva.com/design/DAFhsyOf9EM/view' ], Presentation_Classifier::signals( $block )['deck'] );
+		$this->assertTrue( Presentation_Classifier::is_presentation( $block ) );
+		$this->assertSame( [], Presentation_Classifier::signals( $edit )['deck'] );
+		$this->assertFalse( Presentation_Classifier::is_presentation( $edit ) );
+	}
+
+	public function test_slideshare_shortcode_block_is_a_deck(): void {
+		// Post 4129: a core/shortcode block the site never registered a handler for.
+		$post = $this->post(
+			"<!-- wp:paragraph -->\n<p>Here's <a href=\"http://www.slideshare.net/courane01/your-ultimate-website-checklist\" target=\"blank\">the notes of the talk</a>:</p>\n<!-- /wp:paragraph -->"
+			. "<!-- wp:shortcode {\"metadata\":{\"gk_ref\":\"blk_15db9aece\"}} -->\n[slideshare id=31623205&amp;doc=websitechecklist-140225091106-phpapp01]\n<!-- /wp:shortcode -->"
+		);
+
+		$this->assertSame( [ 'https://www.slideshare.net/slideshow/embed_code/31623205' ], Presentation_Classifier::signals( $post )['deck'] );
+		$this->assertTrue( Presentation_Classifier::is_presentation( $post ) );
+	}
+
+	public function test_slideshare_shortcode_in_a_paragraph_is_a_deck(): void {
+		// Post 1610: the shortcode sits in the paragraph after the link.
+		$post = $this->post(
+			"<!-- wp:paragraph -->\n<p>See my <a title=\"What is Mobile Marketing\" href=\"http://www.slideshare.net/courane01/what-is-mobile-marketing-7900735\">Slideshare</a> for more ideas.\n\n[slideshare id=7900735&amp;doc=ipadtemplate-110509165819-phpapp02]</p>\n<!-- /wp:paragraph -->"
+		);
+
+		$this->assertSame( [ 'https://www.slideshare.net/slideshow/embed_code/7900735' ], Presentation_Classifier::signals( $post )['deck'] );
+		$this->assertTrue( Presentation_Classifier::is_presentation( $post ) );
+	}
+
+	public function test_escaped_slideshare_shortcode_is_not_a_deck(): void {
+		// [[slideshare ...]] prints the shortcode as text; it embeds nothing.
+		$post = $this->post( '<p>Write [[slideshare id=7900735]] to embed a deck.</p>' );
+
+		$this->assertSame( [], Presentation_Classifier::signals( $post )['deck'] );
+		$this->assertFalse( Presentation_Classifier::is_presentation( $post ) );
+	}
+
 	public function test_speaker_deck_embed_nested_in_a_group_is_a_deck(): void {
 		$post = $this->post(
 			"<!-- wp:group -->\n<div class=\"wp-block-group\"><!-- wp:paragraph -->\n<p>Slides from the talk:</p>\n<!-- /wp:paragraph -->\n\n"
@@ -204,7 +259,7 @@ class PresentationClassifierTest extends WP_UnitTestCase {
 	// --- links and unsupported hosts never signal ---------------------------
 
 	public function test_slideshare_link_only_is_not_a_presentation(): void {
-		// Post 1610.
+		// Post 1610's link, without the shortcode that follows it there.
 		$post = $this->post( '<p>Of course, there are many more options too.&nbsp; See my <a title="What is Mobile Marketing" href="http://www.slideshare.net/courane01/what-is-mobile-marketing-7900735">Slideshare</a> for more ideas.</p>' );
 
 		$this->assertSame( [], Presentation_Classifier::signals( $post )['deck'] );
