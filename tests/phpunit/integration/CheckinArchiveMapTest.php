@@ -255,7 +255,8 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '<ul class="pkiw-checkin-archive__entries h-feed" role="list">', $html );
 		$this->assertMatchesRegularExpression( '/<h2 class="pkiw-checkin-archive__title p-name"><a class="u-url" href="[^"]+">Title third</', $html );
 		$this->assertStringContainsString( 'class="pkiw-checkin-archive__map"', $html );
-		$this->assertStringContainsString( '2 check-ins · 1 mapped', $html );
+		// An editor sees every pin, approximate ones too, as on the front end.
+		$this->assertStringContainsString( '2 check-ins · 2 mapped', $html );
 		$this->assertLessThan( strpos( $html, 'Title second' ), strpos( $html, 'Title third' ) );
 		$this->assertStringNotContainsString( 'Title first', $html, 'The count attribute sets the page size, as on the archive.' );
 		$this->assertStringNotContainsString( 'checkins-feed__item', $html );
