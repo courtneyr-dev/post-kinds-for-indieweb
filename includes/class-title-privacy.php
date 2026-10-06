@@ -110,11 +110,29 @@ class Title_Privacy {
 	 * @return array<string, mixed>
 	 */
 	public function filter_derived_slug( $data, $postarr ) {
-		if ( ! is_array( $data ) || '' === (string) ( $data['post_name'] ?? '' ) || '' !== (string) ( $postarr['post_name'] ?? '' ) ) {
+		if ( ! is_array( $data ) || '' === (string) ( $data['post_name'] ?? '' ) ) {
 			return $data;
 		}
 
 		$post_id = (int) ( $postarr['ID'] ?? 0 );
+		$stored  = $post_id > 0 ? get_post( $post_id ) : null;
+
+		// wp_insert_post() keeps the stored slug on an update that passes
+		// none, and derives one from the title when the result is empty().
+		if ( isset( $postarr['post_name'] ) ) {
+			$requested = $postarr['post_name'];
+		} else {
+			$requested = $stored instanceof \WP_Post ? $stored->post_name : '';
+		}
+
+		if ( ! empty( $requested ) ) {
+			// An author's slug, or a trash suffix, replaces one derived earlier in this request.
+			if ( $stored instanceof \WP_Post && $data['post_name'] !== $stored->post_name ) {
+				unset( self::$derived_slugs[ self::slug_key( $post_id ) ] );
+			}
+			return $data;
+		}
+
 		if ( $post_id <= 0 ) {
 			// No post yet, so no location meta to decide by. sync_slug_after_insert() picks it up.
 			self::$pending_slugs[ $data['post_type'] . '|' . $data['post_name'] ] = true;
@@ -123,7 +141,6 @@ class Title_Privacy {
 
 		self::$derived_slugs[ self::slug_key( $post_id ) ] = true;
 
-		$stored = get_post( $post_id );
 		if ( ! $stored instanceof \WP_Post || wp_unslash( (string) $data['post_title'] ) !== $stored->post_title ) {
 			// A new title clears the marker after this filter runs; sync_slug_after_insert() decides then.
 			return $data;
@@ -190,7 +207,7 @@ class Title_Privacy {
 		}
 
 		$post = get_post( $post_id );
-		if ( ! $post instanceof \WP_Post || '' === $post->post_name || ! self::names_hidden_location( $post ) ) {
+		if ( ! $post instanceof \WP_Post || '' === $post->post_name || 'trash' === $post->post_status || ! self::names_hidden_location( $post ) ) {
 			return;
 		}
 
