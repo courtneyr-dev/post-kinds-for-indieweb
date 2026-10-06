@@ -21,6 +21,10 @@ function stubLeaflet() {
 		fitBounds: jest.fn(),
 		addLayer: jest.fn(),
 		getZoom: () => 10,
+		getMaxZoom: () => 19,
+		getPane: () => document.createElement( 'div' ),
+		on: jest.fn(),
+		once: jest.fn(),
 	};
 	window.L = {
 		map: jest.fn( () => map ),
@@ -35,6 +39,9 @@ function stubLeaflet() {
 		markerClusterGroup: jest.fn( () => ( {
 			addLayer: jest.fn(),
 			zoomToShowLayer: jest.fn(),
+			on: jest.fn(),
+			once: jest.fn(),
+			getVisibleParent: ( marker ) => marker,
 		} ) ),
 	};
 	return window.L;
