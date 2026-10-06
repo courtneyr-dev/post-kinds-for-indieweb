@@ -266,4 +266,15 @@ describe( 'pin tab order', () => {
 		expect( paneOrder( stub ) ).toEqual( [ 1, 2, 3, 4, 5 ] );
 		expect( document.activeElement ).toBe( third );
 	} );
+
+	it( 'is restored after a cluster animation ends', () => {
+		printArchive();
+		const stub = stubLeaflet();
+		loadScript();
+
+		stub.pane.prepend( stub.markers[ 4 ].getElement() );
+		stub.fireGroup( 'animationend' );
+
+		expect( paneOrder( stub ) ).toEqual( [ 1, 2, 3, 4, 5 ] );
+	} );
 } );

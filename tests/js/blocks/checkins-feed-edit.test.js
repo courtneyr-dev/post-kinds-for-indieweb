@@ -12,11 +12,14 @@ import Edit from '../../../src/blocks/checkins-feed/edit';
 
 jest.mock( '@wordpress/server-side-render', () => ( {
 	__esModule: true,
-	default: ( { block, attributes } ) => (
+	default: ( { block, attributes, skipBlockSupportAttributes } ) => (
 		<div
 			data-testid="server-side-render"
 			data-block={ block }
 			data-attributes={ JSON.stringify( attributes ) }
+			data-skip-block-support-attributes={ String(
+				!! skipBlockSupportAttributes
+			) }
 		/>
 	),
 } ) );
@@ -34,7 +37,9 @@ jest.mock( '@wordpress/components', () => ( {
 	SelectControl: () => null,
 	Spinner: () => null,
 	Placeholder: ( { label } ) => <div>{ label }</div>,
-	Disabled: ( { children } ) => children,
+	Disabled: ( { children } ) => (
+		<div data-testid="disabled">{ children }</div>
+	),
 } ) );
 
 const CHECKINS = [
@@ -87,6 +92,10 @@ describe( 'Check-ins Feed editor in archive mode', () => {
 		expect( JSON.parse( preview.dataset.attributes ) ).toEqual(
 			attributes
 		);
+		// The wrapper carries the block supports, so the server output
+		// leaves them off, and the preview's links don't navigate.
+		expect( preview.dataset.skipBlockSupportAttributes ).toBe( 'true' );
+		expect( preview.closest( '[data-testid="disabled"]' ) ).not.toBeNull();
 		expect(
 			container.querySelector( 'article.checkins-feed__item' )
 		).toBeNull();
