@@ -1052,7 +1052,6 @@ class Meta_Fields {
 		add_filter( 'rest_prepare_post', [ $this, 'redact_location_meta' ], 20, 3 );
 		// CPT import storage registers the same meta on the reaction post type.
 		add_filter( 'rest_prepare_' . Post_Type::POST_TYPE, [ $this, 'redact_location_meta' ], 20, 3 );
-		add_action( 'added_post_meta', [ $this, 'clear_brand_source_on_rebrand' ], 10, 3 );
 		add_action( 'updated_post_meta', [ $this, 'clear_brand_source_on_rebrand' ], 10, 3 );
 	}
 
@@ -1366,7 +1365,9 @@ class Meta_Fields {
 	 * brand the author edits after it was filled from venue data is theirs
 	 * and prints. update_metadata() fires no hook when the value is
 	 * unchanged, so Card_Meta_Sync's resave of the same brand keeps the
-	 * marker.
+	 * marker. Only updated_post_meta runs this: the first add of the brand
+	 * can come after the marker, as when a writer marks the post through
+	 * meta_input and Card_Meta_Sync stores the brand at save_post.
 	 *
 	 * @param int    $meta_id  Meta ID.
 	 * @param int    $post_id  Post ID.
