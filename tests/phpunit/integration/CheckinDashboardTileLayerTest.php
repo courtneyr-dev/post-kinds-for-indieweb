@@ -20,13 +20,27 @@ final class CheckinDashboardTileLayerTest extends WP_UnitTestCase {
 
 	private const SCREEN = 'pkiw_page_post-kinds-indieweb-checkins';
 
+	/**
+	 * The registries the plugin filled at init, put back after each test so
+	 * later tests still find its registered scripts and styles.
+	 *
+	 * @var array{scripts: WP_Scripts|null, styles: WP_Styles|null}
+	 */
+	private array $registries;
+
 	public function set_up(): void {
 		parent::set_up();
+		$this->registries = [
+			'scripts' => $GLOBALS['wp_scripts'] ?? null,
+			'styles'  => $GLOBALS['wp_styles'] ?? null,
+		];
 		$GLOBALS['wp_scripts'] = new WP_Scripts();
+		$GLOBALS['wp_styles']  = new WP_Styles();
 	}
 
 	public function tear_down(): void {
-		$GLOBALS['wp_scripts'] = null;
+		$GLOBALS['wp_scripts'] = $this->registries['scripts'];
+		$GLOBALS['wp_styles']  = $this->registries['styles'];
 		parent::tear_down();
 	}
 
