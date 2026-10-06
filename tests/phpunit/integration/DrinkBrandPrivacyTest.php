@@ -375,6 +375,26 @@ final class DrinkBrandPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( $typed, $this->menu_line( $id ) );
 	}
 
+	public function test_a_marker_recorded_before_the_first_card_sync_survives(): void {
+		// meta_input lands before save_post, where Card_Meta_Sync first stores the brand.
+		$id = wp_insert_post(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Spicy Margarita',
+				'post_content' => $this->card( self::VENUE ),
+				'meta_input'   => [
+					'_pkiw_geo_privacy'        => 'private',
+					'_pkiw_drink_brand_source' => 'location',
+				],
+			]
+		);
+
+		$this->assertSame( self::VENUE, get_post_meta( $id, '_pkiw_drink_brewery', true ), 'The card sync stored the brand.' );
+		$this->assertSame( 'location', get_post_meta( $id, '_pkiw_drink_brand_source', true ), 'Storing the brand for the first time keeps the marker.' );
+		$this->assertStringNotContainsString( self::VENUE, $this->render_card( $id ) );
+		$this->assertSame( '', $this->rest_meta( $id )['_pkiw_drink_brewery'] );
+	}
+
 	public function test_mark_location_brand_records_the_location_source(): void {
 		$id = $this->drink( 'private', false );
 
