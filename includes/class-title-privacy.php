@@ -130,6 +130,10 @@ class Title_Privacy {
 			if ( $stored instanceof \WP_Post && $data['post_name'] !== $stored->post_name ) {
 				unset( self::$derived_slugs[ self::slug_key( $post_id ) ] );
 			}
+			// An insert that failed at the database left its pending key; this slug is the author's.
+			if ( $post_id <= 0 ) {
+				unset( self::$pending_slugs[ $data['post_type'] . '|' . $data['post_name'] ] );
+			}
 			return $data;
 		}
 
@@ -227,16 +231,14 @@ class Title_Privacy {
 		global $wpdb;
 
 		// Written in place, as wp_insert_post() fills a missing slug, so the
-		// save hooks don't run a second time mid-insert.
-		$wpdb->update( $wpdb->posts, $fields, [ 'ID' => $post_id ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- clean_post_cache() follows.
-		clean_post_cache( $post_id );
-
-		// A link made from the old slug in this request (a ping, a syndicated
-		// copy) redirects, as wp_check_for_changed_slugs() would arrange.
-		if ( 'publish' === $post->post_status && ! is_post_type_hierarchical( $post->post_type )
-			&& ! in_array( $post->post_name, (array) get_post_meta( $post_id, '_wp_old_slug', false ), true ) ) {
-			add_post_meta( $post_id, '_wp_old_slug', $post->post_name );
+		// save hooks don't run a second time mid-insert. The venue slug isn't
+		// kept in _wp_old_slug: a redirect from it would confirm a guessed
+		// venue URL, and it existed only during this request.
+		$written = $wpdb->update( $wpdb->posts, $fields, [ 'ID' => $post_id ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- clean_post_cache() follows.
+		if ( false === $written ) {
+			return;
 		}
+		clean_post_cache( $post_id );
 
 		/**
 		 * Fires after a slug WordPress derived from a hidden generated title
