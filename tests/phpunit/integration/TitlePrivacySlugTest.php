@@ -110,6 +110,53 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 		$this->assertIsInt( $post_id );
 		$this->assertSame( 'publish', get_post_status( $post_id ) );
 		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
+		$this->assertSame( [ self::VENUE_SLUG ], get_post_meta( $post_id, '_wp_old_slug' ) );
+	}
+
+	/**
+	 * Marker and privacy written by wp_insert_post() itself, before the
+	 * slug-deriving insert finishes.
+	 */
+	public function test_marked_before_insert_gets_the_safe_slug(): void {
+		$post_id = wp_insert_post(
+			[
+				'post_status'   => 'publish',
+				'post_title'    => 'Checked in at ' . self::VENUE,
+				'post_date'     => '2026-09-12 14:30:00',
+				'post_date_gmt' => '2026-09-12 14:30:00',
+				'meta_input'    => [
+					Title_Privacy::META_KEY                 => Title_Privacy::SOURCE_LOCATION,
+					Meta_Fields::PREFIX . 'checkin_name' => self::VENUE,
+					Meta_Fields::PREFIX . 'geo_privacy'  => 'private',
+				],
+			]
+		);
+
+		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
+		$this->assertSame( [], get_post_meta( $post_id, '_wp_old_slug' ), 'No venue slug was ever written, so none redirects.' );
+	}
+
+	/**
+	 * Inserted published, then privacy, then the marker: the order an
+	 * importer that marks last would use.
+	 */
+	public function test_marked_after_insert_gets_the_safe_slug_and_redirects_the_old_one(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'   => 'publish',
+				'post_title'    => 'Checked in at ' . self::VENUE,
+				'post_date'     => '2026-09-12 14:30:00',
+				'post_date_gmt' => '2026-09-12 14:30:00',
+			]
+		);
+		$this->assertSame( self::VENUE_SLUG, $this->slug( $post_id ), 'WordPress derives the venue slug at insert.' );
+
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_name', self::VENUE );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
+		Title_Privacy::mark_location_title( $post_id );
+
+		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
+		$this->assertSame( [ self::VENUE_SLUG ], get_post_meta( $post_id, '_wp_old_slug' ) );
 	}
 
 	public function test_two_private_check_ins_on_one_day_get_distinct_slugs(): void {
