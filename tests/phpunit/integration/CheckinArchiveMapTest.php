@@ -257,7 +257,9 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 
 		// What the Site Editor's ServerSideRender asks for: no main query runs.
-		$request = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/post-kinds-indieweb/checkins-feed' );
+		// rest_api_loaded() sets rest_route for the editor's HTTP request.
+		$GLOBALS['wp']->query_vars['rest_route'] = '/wp/v2/block-renderer/post-kinds-indieweb/checkins-feed';
+		$request                                 = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/post-kinds-indieweb/checkins-feed' );
 		$request->set_param( 'context', 'edit' );
 		$request->set_param(
 			'attributes',
@@ -279,6 +281,26 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 		$this->assertLessThan( strpos( $html, 'Title second' ), strpos( $html, 'Title third' ) );
 		$this->assertStringNotContainsString( 'Title first', $html, 'The count attribute sets the page size, as on the archive.' );
 		$this->assertStringNotContainsString( 'checkins-feed__item', $html );
+	}
+
+	public function test_rest_content_of_a_page_with_an_inheriting_feed_gets_no_stand_in(): void {
+		$this->checkin( 'first', 'public', 40.111111, -75.111111 );
+		$page_id = self::factory()->post->create(
+			[
+				'post_type'    => 'page',
+				'post_status'  => 'publish',
+				'post_content' => "<!-- wp:paragraph --><p>Above the feed</p><!-- /wp:paragraph -->\n\n<!-- wp:post-kinds-indieweb/checkins-feed {\"inherit\":true,\"count\":24} /-->",
+			]
+		);
+
+		$GLOBALS['wp']->query_vars['rest_route'] = '/wp/v2/pages/' . $page_id;
+		$response                                = rest_do_request( new WP_REST_Request( 'GET', '/wp/v2/pages/' . $page_id ) );
+
+		$this->assertSame( 200, $response->get_status() );
+		$html = (string) $response->get_data()['content']['rendered'];
+
+		$this->assertStringContainsString( '>Above the feed</p>', $html );
+		$this->assertStringNotContainsString( 'Title first', $html, 'Only the block renderer stands in the newest check-ins.' );
 	}
 
 	public function test_editor_sees_pins_for_private_checkins(): void {
