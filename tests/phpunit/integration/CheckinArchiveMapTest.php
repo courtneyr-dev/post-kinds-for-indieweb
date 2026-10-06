@@ -207,6 +207,25 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'tile.openstreetmap.org', $html );
 	}
 
+	public function test_map_loads_without_waiting_for_consent_by_default(): void {
+		$html = $this->render( [ $this->checkin( 'pubone', 'public', 40.111111, -75.111111 ) ] );
+
+		$this->assertStringContainsString( 'class="pkiw-checkin-archive__map"', $html );
+		$this->assertStringNotContainsString( 'data-pkiw-consent', $html );
+	}
+
+	public function test_consent_filter_marks_the_map_and_keeps_the_list(): void {
+		add_filter( 'pkiw_checkin_map_requires_consent', '__return_true' );
+
+		$post = $this->checkin( 'pubone', 'public', 40.111111, -75.111111 );
+		$html = $this->render( [ $post ] );
+
+		$this->assertMatchesRegularExpression( '/<div\s+class="pkiw-checkin-archive__map"[^>]*\sdata-pkiw-consent="required"[^>]*\shidden\s*>/s', $html );
+		$this->assertSame( 1, substr_count( $html, 'data-pkiw-consent' ), 'Only the map waits; the list does not.' );
+		$this->assertStringContainsString( 'href="' . esc_url( get_permalink( $post ) ) . '"', $html );
+		$this->assertStringContainsString( 'data-label="Show Title pubone on map"', $html );
+	}
+
 	public function test_each_entry_parses_as_an_h_entry(): void {
 		$posts  = [
 			$this->checkin( 'pubone', 'public', 40.111111, -75.111111 ),
