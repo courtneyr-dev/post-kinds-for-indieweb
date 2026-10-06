@@ -199,19 +199,42 @@ class Title_Privacy {
 			return;
 		}
 
+		// wp_insert_post() set a new post's guid to its permalink, built from
+		// the slug being replaced. Feeds and REST print the guid.
+		$fields = [ 'post_name' => $slug ];
+		$guid   = (string) preg_replace( '#(?<=[/=])' . preg_quote( $post->post_name, '#' ) . '(?=[/?&\#]|$)#', $slug, $post->guid );
+		if ( $guid !== $post->guid ) {
+			$fields['guid'] = $guid;
+		}
+
 		global $wpdb;
 
 		// Written in place, as wp_insert_post() fills a missing slug, so the
 		// save hooks don't run a second time mid-insert.
-		$wpdb->update( $wpdb->posts, [ 'post_name' => $slug ], [ 'ID' => $post_id ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- clean_post_cache() follows.
+		$wpdb->update( $wpdb->posts, $fields, [ 'ID' => $post_id ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- clean_post_cache() follows.
 		clean_post_cache( $post_id );
 
 		// A link made from the old slug in this request (a ping, a syndicated
 		// copy) redirects, as wp_check_for_changed_slugs() would arrange.
 		if ( 'publish' === $post->post_status && ! is_post_type_hierarchical( $post->post_type )
-			&& ! in_array( $post->post_name, (array) get_post_meta( $post_id, '_wp_old_slug' ), true ) ) {
+			&& ! in_array( $post->post_name, (array) get_post_meta( $post_id, '_wp_old_slug', false ), true ) ) {
 			add_post_meta( $post_id, '_wp_old_slug', $post->post_name );
 		}
+
+		/**
+		 * Fires after a slug WordPress derived from a hidden generated title
+		 * is replaced in place, without the save hooks running again.
+		 *
+		 * Code that stored the post's permalink when it was saved, such as
+		 * Yoast SEO's indexable, rebuilds it here.
+		 *
+		 * @since 1.9.0
+		 *
+		 * @param int    $post_id  Post ID.
+		 * @param string $old_slug The slug derived from the stored title.
+		 * @param string $new_slug The slug derived from "Check-in, <date>".
+		 */
+		do_action( 'pkiw_derived_slug_replaced', $post_id, $post->post_name, $slug );
 	}
 
 	/**
