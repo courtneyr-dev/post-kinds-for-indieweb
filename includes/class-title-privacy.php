@@ -6,7 +6,8 @@
  * When the venue name is hidden, that title would still print it in the
  * h1, the document title, feeds, REST and every link to the post. This
  * class records which titles were generated and swaps a hidden one for
- * "Check-in, <date>" wherever WordPress prints a title.
+ * "Check-in, <date>" wherever WordPress prints a title. A slug WordPress
+ * derives from such a title is built from "Check-in, <date>" too.
  *
  * @package PKIW
  * @since 1.9.0
@@ -42,6 +43,32 @@ class Title_Privacy {
 	private const PLACEHOLDER_VENUES = [ 'Unknown Venue', 'Unknown venue' ];
 
 	/**
+	 * Post meta that decides whether a generated title is hidden.
+	 */
+	private const DECIDING_META = [
+		Meta_Fields::PREFIX . 'geo_privacy',
+		Meta_Fields::PREFIX . 'checkin_name',
+		Meta_Fields::PREFIX . 'checkin_venue',
+		'geo_public',
+		self::META_KEY,
+	];
+
+	/**
+	 * Posts whose slug WordPress derived from the title in this request,
+	 * keyed "<blog id>:<post id>".
+	 *
+	 * @var array<string, true>
+	 */
+	private static array $derived_slugs = [];
+
+	/**
+	 * Slugs derived for posts not inserted yet, keyed "<post type>|<slug>".
+	 *
+	 * @var array<string, true>
+	 */
+	private static array $pending_slugs = [];
+
+	/**
 	 * Hooks.
 	 */
 	public function __construct() {
@@ -51,6 +78,12 @@ class Title_Privacy {
 
 		// Another plugin may set the oEmbed title from post_title after core.
 		add_filter( 'oembed_response_data', [ $this, 'scrub_oembed_title' ], 99, 2 );
+
+		// A slug WordPress derives from a hidden generated title uses the safe title.
+		add_filter( 'wp_insert_post_data', [ $this, 'filter_derived_slug' ], 10, 2 );
+		add_action( 'wp_insert_post', [ $this, 'sync_slug_after_insert' ], 10, 3 );
+		add_action( 'added_post_meta', [ $this, 'sync_slug_on_meta' ], 10, 3 );
+		add_action( 'updated_post_meta', [ $this, 'sync_slug_on_meta' ], 10, 3 );
 	}
 
 	/**
@@ -244,6 +277,136 @@ class Title_Privacy {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Derive the slug from the safe title when WordPress derives one.
+	 *
+	 * WordPress builds a slug from post_title when a post leaves draft
+	 * without one. A slug the caller passed, or one the post already has,
+	 * is never touched, so a published link doesn't change.
+	 *
+	 * @param array<string, mixed> $data    Slashed post data about to be written.
+	 * @param array<string, mixed> $postarr Sanitized post data passed in.
+	 * @return array<string, mixed>
+	 */
+	public function filter_derived_slug( $data, $postarr ) {
+		if ( ! is_array( $data ) || '' === (string) ( $data['post_name'] ?? '' ) || '' !== (string) ( $postarr['post_name'] ?? '' ) ) {
+			return $data;
+		}
+
+		$post_id = (int) ( $postarr['ID'] ?? 0 );
+		if ( $post_id <= 0 ) {
+			// No post yet, so no location meta to decide by. sync_slug_after_insert() picks it up.
+			self::$pending_slugs[ $data['post_type'] . '|' . $data['post_name'] ] = true;
+			return $data;
+		}
+
+		self::$derived_slugs[ self::slug_key( $post_id ) ] = true;
+
+		$stored = get_post( $post_id );
+		if ( ! $stored instanceof \WP_Post || wp_unslash( (string) $data['post_title'] ) !== $stored->post_title ) {
+			// A new title clears the marker after this filter runs; sync_slug_after_insert() decides then.
+			return $data;
+		}
+
+		// Publishing a draft can move its date, and the safe title names the date.
+		$post            = clone $stored;
+		$post->post_date = (string) $data['post_date'];
+
+		if ( self::names_hidden_location( $post ) ) {
+			$data['post_name'] = self::safe_slug( $post, (string) $data['post_status'] );
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Recheck a slug derived in this insert once the post and its meta exist.
+	 *
+	 * The importers insert a published post, so WordPress derives its slug,
+	 * before they write its location, privacy and title marker.
+	 *
+	 * @param int      $post_id Post ID.
+	 * @param \WP_Post $post    Post.
+	 * @param bool     $update  Whether an existing post was updated.
+	 */
+	public function sync_slug_after_insert( $post_id, $post, $update ): void {
+		$post_id = (int) $post_id;
+
+		if ( ! $update && $post instanceof \WP_Post ) {
+			$pending = $post->post_type . '|' . $post->post_name;
+			if ( isset( self::$pending_slugs[ $pending ] ) ) {
+				unset( self::$pending_slugs[ $pending ] );
+				self::$derived_slugs[ self::slug_key( $post_id ) ] = true;
+			}
+		}
+
+		self::sync_slug( $post_id );
+	}
+
+	/**
+	 * Recheck a slug derived in this request when its privacy, venue or
+	 * title marker is written.
+	 *
+	 * @param int    $meta_id   Meta ID.
+	 * @param int    $object_id Post ID.
+	 * @param string $meta_key  Meta key.
+	 */
+	public function sync_slug_on_meta( $meta_id, $object_id, $meta_key ): void {
+		if ( in_array( $meta_key, self::DECIDING_META, true ) ) {
+			self::sync_slug( (int) $object_id );
+		}
+	}
+
+	/**
+	 * Swap a slug WordPress derived in this request for the safe one when
+	 * the post's generated title is hidden.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	private static function sync_slug( int $post_id ): void {
+		if ( ! isset( self::$derived_slugs[ self::slug_key( $post_id ) ] ) ) {
+			return;
+		}
+
+		$post = get_post( $post_id );
+		if ( ! $post instanceof \WP_Post || '' === $post->post_name || ! self::names_hidden_location( $post ) ) {
+			return;
+		}
+
+		$slug = self::safe_slug( $post, $post->post_status );
+		if ( '' === $slug || $slug === $post->post_name ) {
+			return;
+		}
+
+		global $wpdb;
+
+		// Written in place, as wp_insert_post() fills a missing slug: the old
+		// slug was derived earlier in this request, and recording it would redirect
+		// from the venue name.
+		$wpdb->update( $wpdb->posts, [ 'post_name' => $slug ], [ 'ID' => $post_id ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- clean_post_cache() follows.
+		clean_post_cache( $post_id );
+	}
+
+	/**
+	 * A unique slug built from the safe title.
+	 *
+	 * @param \WP_Post $post   Post.
+	 * @param string   $status The status the post is saved with.
+	 */
+	private static function safe_slug( \WP_Post $post, string $status ): string {
+		return wp_unique_post_slug( sanitize_title( self::fallback_title( $post ) ), $post->ID, $status, $post->post_type, (int) $post->post_parent );
+	}
+
+	/**
+	 * Key for a post in this request, so a switched multisite blog's post
+	 * with the same ID isn't mistaken for it.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	private static function slug_key( int $post_id ): string {
+		return get_current_blog_id() . ':' . $post_id;
 	}
 
 	/**
