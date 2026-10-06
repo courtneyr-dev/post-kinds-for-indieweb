@@ -91,6 +91,7 @@ const mapEl = () => document.getElementById( 'pkiw-checkin-map-1' );
 const listNumber = () => document.querySelector( '.pkiw-checkin-archive__num' );
 
 afterEach( () => {
+	jest.restoreAllMocks();
 	delete window.L;
 	delete window.pkiwMapConsent;
 	document.body.innerHTML = '';
@@ -137,6 +138,23 @@ describe( 'check-in archive map with a consent tool', () => {
 		printArchive( true );
 		window.pkiwMapConsent = true;
 		loadScript();
+
+		expect( L.map ).toHaveBeenCalledTimes( 1 );
+		expect( mapEl().hidden ).toBe( false );
+	} );
+
+	it( 'draws when consent fires before the page finished loading', () => {
+		const L = stubLeaflet();
+		printArchive( true );
+		const readyState = jest
+			.spyOn( document, 'readyState', 'get' )
+			.mockReturnValue( 'loading' );
+		loadScript();
+
+		// A consent tool answers without setting window.pkiwMapConsent.
+		document.dispatchEvent( new Event( 'pkiw:map-consent' ) );
+		readyState.mockReturnValue( 'interactive' );
+		document.dispatchEvent( new Event( 'DOMContentLoaded' ) );
 
 		expect( L.map ).toHaveBeenCalledTimes( 1 );
 		expect( mapEl().hidden ).toBe( false );
