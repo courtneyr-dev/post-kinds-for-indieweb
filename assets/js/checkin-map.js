@@ -131,6 +131,7 @@
 		} );
 
 		const markerByEntry = {};
+		const markers = [];
 
 		function entryEl( id ) {
 			return document.getElementById( 'pkiw-checkin-entry-' + id );
@@ -165,6 +166,8 @@
 				riseOnHover: true,
 			} );
 			marker.pkiwCount = pin.ids.length;
+			marker.pkiwNumber = pin.numbers[ 0 ];
+			markers.push( marker );
 
 			const goToEntry = () => {
 				markEntries( pin.ids );
@@ -194,6 +197,86 @@
 		} );
 
 		map.addLayer( group );
+
+		markers.sort( ( a, b ) => a.pkiwNumber - b.pkiwNumber );
+
+		// Pins take focus in list order. markercluster adds their elements
+		// in its own order, so they go back in order after every redraw. A
+		// cluster sits where its first check-in in the list would.
+		function orderPins() {
+			const pane = map.getPane( 'markerPane' );
+			const icons = [];
+			markers.forEach( ( marker ) => {
+				const visible = group.getVisibleParent( marker );
+				const icon = visible && visible.getElement();
+				if (
+					icon &&
+					icon.parentNode === pane &&
+					! icons.includes( icon )
+				) {
+					icons.push( icon );
+				}
+			} );
+
+			const current = Array.prototype.filter.call(
+				pane.children,
+				( child ) => icons.includes( child )
+			);
+			if ( current.every( ( icon, i ) => icon === icons[ i ] ) ) {
+				return;
+			}
+
+			// Moving the focused element drops its focus; give it back.
+			const doc = el.ownerDocument;
+			const focused = doc.activeElement;
+			icons.forEach( ( icon ) => pane.appendChild( icon ) );
+			if ( focused !== doc.activeElement && icons.includes( focused ) ) {
+				focused.focus( { preventScroll: true } );
+			}
+		}
+
+		map.on( 'moveend', orderPins );
+		group.on( 'animationend', orderPins );
+		orderPins();
+
+		// The pin takes focus, or the cluster now holding it, or the map
+		// region when neither is drawn.
+		function focusPin( marker ) {
+			const visible = group.getVisibleParent( marker );
+			const icon = visible && visible.getElement();
+			( icon && icon.isConnected ? icon : el ).focus();
+		}
+
+		// leaflet.markercluster 1.4.1 zooms a cluster on click only. Enter
+		// and Space zoom in too, or spread the cluster at the maximum zoom.
+		// The cluster's element goes away, so focus moves to its first
+		// check-in in the list.
+		group.on( 'clusterkeypress', ( event ) => {
+			const key = event.originalEvent && event.originalEvent.key;
+			if ( 'Enter' !== key && ' ' !== key ) {
+				return;
+			}
+			event.originalEvent.preventDefault();
+
+			const cluster = event.layer;
+			const first = cluster
+				.getAllChildMarkers()
+				.reduce( ( a, b ) => ( b.pkiwNumber < a.pkiwNumber ? b : a ) );
+
+			if ( map.getZoom() >= map.getMaxZoom() ) {
+				const icon = first.getElement();
+				if ( icon && icon.isConnected ) {
+					icon.focus();
+					return;
+				}
+				group.once( 'spiderfied', () => focusPin( first ) );
+				cluster.spiderfy();
+				return;
+			}
+
+			map.once( 'moveend', () => focusPin( first ) );
+			cluster.zoomToBounds( { padding: [ 48, 48 ] } );
+		} );
 
 		// Each list number becomes the control that moves the map to its pin.
 		root.querySelectorAll(
