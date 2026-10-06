@@ -299,7 +299,7 @@ final class Micropub_Content_Builder {
 	 * @return string|null Block markup ready for post_content, or null to skip.
 	 */
 	private static function build_block_content( array $properties ): ?string {
-		$kind = self::detect_kind( $properties );
+		$kind = self::card_kind( $properties );
 		if ( null === $kind ) {
 			return null;
 		}
@@ -313,7 +313,9 @@ final class Micropub_Content_Builder {
 		// (issue #38: a Checkin with a photo dropped the image entirely).
 		// Append the image/gallery markup after the kind's card.
 		if ( 'photo' !== $kind && self::has_property( $properties, 'photo' ) ) {
-			$photo_markup = self::photo_card( $properties );
+			// A comic's first photo is its cover and already sits on the card.
+			$photo_props  = 'comics' === $kind ? self::without_photo( $properties, self::flatten_scalar( $properties, 'photo' ) ) : $properties;
+			$photo_markup = self::photo_card( $photo_props );
 			if ( '' !== $photo_markup ) {
 				$card_markup .= "\n\n\t" . $photo_markup;
 			}
@@ -322,6 +324,40 @@ final class Micropub_Content_Builder {
 		$body = self::flatten_scalar( $properties, 'content' );
 
 		return self::wrap_h_entry( $card_markup, $body );
+	}
+
+	/**
+	 * Kinds a `pkiw-kind` hint may narrow the inferred kind to, keyed by the
+	 * inferred kind. Only shapes that are property-identical belong here: a
+	 * comic read is a `read-of` entry, so `comics` may refine `read`. A hint
+	 * outside this map sets the kind term (assign_kind_term()) but never
+	 * changes the card, so `jam` on a `listen-of` entry still builds a
+	 * listen card.
+	 *
+	 * @var array<string, string[]>
+	 */
+	private const HINT_REFINEMENTS = [
+		'read' => [ 'comics' ],
+	];
+
+	/**
+	 * The kind whose card the builder writes: detect_kind(), narrowed by a
+	 * valid `pkiw-kind` hint listed in HINT_REFINEMENTS.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return string|null Kind slug, or null when no kind matches.
+	 */
+	private static function card_kind( array $properties ): ?string {
+		$kind = self::detect_kind( $properties );
+		if ( null === $kind ) {
+			return null;
+		}
+		$hint = self::explicit_kind( $properties );
+		if ( null === $hint || ! in_array( $hint, self::HINT_REFINEMENTS[ $kind ] ?? [], true ) ) {
+			return $kind;
+		}
+		$taxonomy = Plugin::get_instance()->get_taxonomy();
+		return ( null !== $taxonomy && $taxonomy->is_valid_kind( $hint ) ) ? $hint : $kind;
 	}
 
 	/**
@@ -417,6 +453,8 @@ final class Micropub_Content_Builder {
 				return self::watch_card( $properties );
 			case 'read':
 				return self::read_card( $properties );
+			case 'comics':
+				return self::comic_card( $properties );
 			case 'play':
 				return self::play_card( $properties );
 			case 'rsvp':
@@ -624,6 +662,64 @@ final class Micropub_Content_Builder {
 			]
 		);
 		return self::self_closing_block( 'post-kinds-indieweb/read-card', $attrs );
+	}
+
+	/**
+	 * Build a Comic Card block from the h-entry property bag.
+	 *
+	 * A comic read is a `read-of` entry with the `pkiw-kind: comics` hint.
+	 * The first `photo` is the cover and its `mp-photo-alt` the stored alt.
+	 * Series, volume, issue number, publisher and dates arrive as vendor
+	 * properties (docs/micropub-field-gaps.md).
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return string Block-comment markup for the comic-card block.
+	 */
+	private static function comic_card( array $properties ): string {
+		$alts  = self::flatten_string_array( $properties, 'mp-photo-alt' );
+		$attrs = self::filter_empty(
+			[
+				'sourceUrl'     => self::flatten_scalar( $properties, 'read-of' ),
+				'title'         => self::flatten_scalar( $properties, 'name' ),
+				'creators'      => implode( ', ', array_filter( self::flatten_string_array( $properties, 'author' ) ) ),
+				'series'        => self::flatten_scalar( $properties, 'mp-series' ),
+				'volume'        => self::flatten_scalar( $properties, 'mp-volume' ),
+				'issueNumber'   => self::flatten_scalar( $properties, 'mp-issue-number' ),
+				'publisher'     => self::flatten_scalar( $properties, 'mp-publisher' ),
+				'coverImage'    => self::flatten_scalar( $properties, 'photo' ),
+				'coverImageAlt' => $alts[0] ?? '',
+				'readStatus'    => self::flatten_scalar( $properties, 'read-status' ),
+				'rating'        => self::flatten_numeric( $properties, 'rating' ),
+				'startedAt'     => self::flatten_scalar( $properties, 'mp-started-at' ),
+				'finishedAt'    => self::flatten_scalar( $properties, 'mp-finished-at' ),
+				'review'        => self::flatten_scalar( $properties, 'content' ),
+			]
+		);
+		return self::self_closing_block( 'post-kinds-indieweb/comic-card', $attrs );
+	}
+
+	/**
+	 * Drop every copy of one photo URL, keeping `mp-photo-alt` aligned.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @param string               $url        Photo URL to drop.
+	 * @return array<string, mixed> The bag without that photo.
+	 */
+	private static function without_photo( array $properties, string $url ): array {
+		$photos = self::flatten_string_array( $properties, 'photo' );
+		$alts   = self::flatten_string_array( $properties, 'mp-photo-alt' );
+		$keep_p = [];
+		$keep_a = [];
+		foreach ( $photos as $i => $photo ) {
+			if ( $photo === $url ) {
+				continue;
+			}
+			$keep_p[] = $photo;
+			$keep_a[] = $alts[ $i ] ?? '';
+		}
+		$properties['photo']        = $keep_p;
+		$properties['mp-photo-alt'] = $keep_a;
+		return $properties;
 	}
 
 	/**

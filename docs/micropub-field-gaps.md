@@ -95,6 +95,34 @@ property today** (`—` = nothing maps) | **proposed property for Outpost**
 | `openlibraryId` | — | `mp-openlibrary-id` |
 | `startedAt` / `finishedAt` | — | `mp-started-at` / `mp-finished-at` (distinct from the h-entry's own `published`, since `readStatus` transitions happen across multiple Micropub updates) |
 
+## comics
+
+A comic read is a `read-of` entry sent with `pkiw-kind: comics`. Without the
+hint, or with `pkiw-kind: read`, the same entry builds a read card.
+
+| Card attribute | Micropub property | Notes |
+|---|---|---|
+| `sourceUrl` | `read-of` | |
+| `title` | `name` | |
+| `creators` | `author` | repeated values are joined with `, ` |
+| `series` | `mp-series` | vendor extension |
+| `volume` | `mp-volume` | vendor extension |
+| `issueNumber` | `mp-issue-number` | vendor extension |
+| `publisher` | `mp-publisher` | vendor extension, the name proposed for read above |
+| `coverImage` | `photo` | first value only |
+| `coverImageAlt` | `mp-photo-alt` | first value only |
+| `readStatus` | `read-status` | |
+| `rating` | `rating` | |
+| `startedAt` | `mp-started-at` | no default from `published` |
+| `finishedAt` | `mp-finished-at` | no default from `published` |
+| `review` | `content` | |
+
+The first `photo` is the cover and is not repeated below the card. The
+builder drops every copy of the cover URL (the Micropub plugin can repeat
+sideloaded URLs) and appends the remaining photos with their `mp-photo-alt`
+values still aligned. Every comic-card attribute maps, so `wire_matrix()`
+lists no gaps for comics.
+
 ## play
 
 | Card attribute | Micropub property today | Proposed property for Outpost |
@@ -172,9 +200,12 @@ one-line `core/paragraph` carrying the canonical microformats2 class:
 Clients can also send an explicit **`pkiw-kind`** vendor property (mirrors
 `pkiw-promote`). A valid kind slug there overrides property inference — the
 only way to reach kinds whose property shape is ambiguous (issue vs. reply,
-quote with content only). Invalid values fall back to inference. Like the
-follow/weather trio, none of these are card blocks, so they're outside the
-wire-matrix completeness assertion.
+quote with content only). Invalid values fall back to inference. A valid
+hint always sets the kind term, but it changes the card only when
+`Micropub_Content_Builder::HINT_REFINEMENTS` lists it for the inferred kind.
+Today that's `comics` on a `read-of` entry, so `jam` on a `listen-of` still
+builds a listen card. Like the follow/weather trio, the paragraph-only kinds
+are outside the wire-matrix completeness assertion.
 
 ## Follow-on work
 
