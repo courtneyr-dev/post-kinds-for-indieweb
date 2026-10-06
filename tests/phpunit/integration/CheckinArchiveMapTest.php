@@ -230,6 +230,37 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 		$this->assertSame( 0, Checkin_Map::template_per_page( '<!-- wp:paragraph --><p>x</p><!-- /wp:paragraph -->' ) );
 	}
 
+	public function test_editor_preview_of_an_inheriting_feed_prints_the_archive(): void {
+		// Same post date for all three, so the ID breaks the tie as on the archive.
+		$this->checkin( 'first', 'public', 40.111111, -75.111111 );
+		$this->checkin( 'second', 'approximate', 41.222222, -76.222222 );
+		$this->checkin( 'third', 'public', 43.444444, -78.444444 );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		// What the Site Editor's ServerSideRender asks for: no main query runs.
+		$request = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/post-kinds-indieweb/checkins-feed' );
+		$request->set_param( 'context', 'edit' );
+		$request->set_param(
+			'attributes',
+			[
+				'inherit' => true,
+				'count'   => 2,
+			]
+		);
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$html = (string) $response->get_data()['rendered'];
+
+		$this->assertStringContainsString( '<ul class="pkiw-checkin-archive__entries h-feed" role="list">', $html );
+		$this->assertMatchesRegularExpression( '/<h2 class="pkiw-checkin-archive__title p-name"><a class="u-url" href="[^"]+">Title third</', $html );
+		$this->assertStringContainsString( 'class="pkiw-checkin-archive__map"', $html );
+		$this->assertStringContainsString( '2 check-ins · 1 mapped', $html );
+		$this->assertLessThan( strpos( $html, 'Title second' ), strpos( $html, 'Title third' ) );
+		$this->assertStringNotContainsString( 'Title first', $html, 'The count attribute sets the page size, as on the archive.' );
+		$this->assertStringNotContainsString( 'checkins-feed__item', $html );
+	}
+
 	public function test_editor_sees_pins_for_private_checkins(): void {
 		$post = $this->checkin( 'secret', 'private', 42.333333, -77.333333 );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
