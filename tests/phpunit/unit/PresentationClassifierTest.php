@@ -32,6 +32,14 @@ class PresentationClassifierTest extends WP_UnitTestCase {
 				wp_insert_term( $slug, Taxonomy::TAXONOMY );
 			}
 		}
+		// Embeds in raw markup survive only for users with unfiltered_html,
+		// as on the site; with no user, kses strips <iframe> and <object>.
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+	}
+
+	public function tear_down(): void {
+		wp_set_current_user( 0 );
+		parent::tear_down();
 	}
 
 	/**

@@ -40,6 +40,9 @@ class PresentationBackfillTest extends WP_UnitTestCase {
 			}
 		}
 
+		// Raw <iframe> embeds survive only for users with unfiltered_html.
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
 		$taxonomy = Plugin::get_instance()->get_taxonomy();
 		$this->assertInstanceOf( Taxonomy::class, $taxonomy );
 		$this->taxonomy = $taxonomy;
@@ -62,6 +65,11 @@ class PresentationBackfillTest extends WP_UnitTestCase {
 		$this->ids['note'] = $this->legacy_post( 'Deck on a note', $speakerdeck, 'note' );
 		// Already classified.
 		$this->ids['done'] = $this->legacy_post( 'Already a presentation', $speakerdeck, 'presentation', true );
+	}
+
+	public function tear_down(): void {
+		wp_set_current_user( 0 );
+		parent::tear_down();
 	}
 
 	/**
@@ -158,7 +166,7 @@ class PresentationBackfillTest extends WP_UnitTestCase {
 				$this->ids['talk'],
 				self::WPTV_URL
 			),
-			Presentation_Classifier::backfill_line( $rows[ $this->ids['talk'] ], true )
+			Presentation_Classifier::backfill_line( $rows[ $this->ids['talk'] ] )
 		);
 		$this->assertSame(
 			sprintf(
@@ -166,15 +174,15 @@ class PresentationBackfillTest extends WP_UnitTestCase {
 				$this->ids['article'],
 				self::SLIDESHARE_URL
 			),
-			Presentation_Classifier::backfill_line( $rows[ $this->ids['article'] ], true )
+			Presentation_Classifier::backfill_line( $rows[ $this->ids['article'] ] )
 		);
 		$this->assertStringStartsWith(
 			sprintf( '#%d "Deck on a note": would change (note -> presentation); deck: ', $this->ids['note'] ),
-			Presentation_Classifier::backfill_line( $rows[ $this->ids['note'] ], true )
+			Presentation_Classifier::backfill_line( $rows[ $this->ids['note'] ] )
 		);
 		$this->assertStringStartsWith(
 			sprintf( '#%d "Already a presentation": already presentation; deck: ', $this->ids['done'] ),
-			Presentation_Classifier::backfill_line( $rows[ $this->ids['done'] ], true )
+			Presentation_Classifier::backfill_line( $rows[ $this->ids['done'] ] )
 		);
 	}
 
@@ -193,7 +201,7 @@ class PresentationBackfillTest extends WP_UnitTestCase {
 
 		$rows = $this->rows_by_id( $report );
 		$this->assertSame( 'changed', $rows[ $this->ids['talk'] ]['status'] );
-		$this->assertStringContainsString( ': changed (no kind -> presentation);', Presentation_Classifier::backfill_line( $rows[ $this->ids['talk'] ], false ) );
+		$this->assertStringContainsString( ': changed (no kind -> presentation);', Presentation_Classifier::backfill_line( $rows[ $this->ids['talk'] ] ) );
 
 		// Only the term moved: no post update, so no new modified date or revision.
 		clean_post_cache( $this->ids['talk'] );
