@@ -1768,6 +1768,110 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertSame( array(), $this->images( $content ) );
 	}
 
+	/** Pairs a local photo sent under another scheme with its copy, since Micropub reuses the attachment it names. */
+	public function test_a_local_photo_sent_under_another_scheme_is_one_cover_with_its_copy(): void {
+		$local = $this->local_upload_url( 'saga-7-scheme.jpg' );
+		$sent  = str_replace( 'http://', 'https://', $local );
+		$this->assertSame( attachment_url_to_postid( $local ), attachment_url_to_postid( $sent ), 'both URLs name one attachment' );
+		$properties          = $this->comic_properties();
+		$properties['photo'] = array( $sent, $local );
+		$content             = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+
+		$this->assertSame( $local, $this->first_attrs( $content, 'post-kinds-indieweb/comic-card' )['coverImage'] ?? null );
+		$this->assertSame( array(), $this->images( $content ) );
+	}
+
+	/** Skips an empty photo value: the next photo is the cover and the rest still follow the card. */
+	public function test_a_leading_empty_photo_value_is_skipped(): void {
+		$properties                 = $this->comic_properties();
+		$properties['photo']        = array( '', 'https://example.test/saga-7.jpg', 'https://example.test/panel.jpg' );
+		$properties['mp-photo-alt'] = array( '', 'Cover alt', 'Panel alt' );
+		$content                    = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+		$attrs                      = $this->first_attrs( $content, 'post-kinds-indieweb/comic-card' );
+
+		$this->assertSame( 'https://example.test/saga-7.jpg', $attrs['coverImage'] ?? null );
+		$this->assertSame( 'Cover alt', $attrs['coverImageAlt'] ?? null );
+		$this->assertSame(
+			array(
+				array(
+					'src' => 'https://example.test/panel.jpg',
+					'alt' => 'Panel alt',
+				),
+			),
+			$this->images( $content )
+		);
+	}
+
+	/** Reads a photo sent as one string, not a list. */
+	public function test_a_scalar_photo_is_the_cover(): void {
+		$properties          = $this->comic_properties();
+		$properties['photo'] = 'https://example.test/saga-7.jpg';
+		$content             = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+		$attrs               = $this->first_attrs( $content, 'post-kinds-indieweb/comic-card' );
+
+		$this->assertSame( 'https://example.test/saga-7.jpg', $attrs['coverImage'] ?? null );
+		$this->assertSame( 'A horned parent holds a swaddled baby.', $attrs['coverImageAlt'] ?? null );
+		$this->assertSame( array(), $this->images( $content ) );
+	}
+
+	/** Reads a JSON photo object sent without the surrounding list. */
+	public function test_a_bare_json_photo_object_is_the_cover(): void {
+		$properties = $this->comic_properties();
+		unset( $properties['mp-photo-alt'] );
+		$properties['photo'] = array(
+			'value' => 'https://example.test/saga-7.jpg',
+			'alt'   => 'Object alt',
+		);
+		$content             = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+		$attrs               = $this->first_attrs( $content, 'post-kinds-indieweb/comic-card' );
+
+		$this->assertSame( 'https://example.test/saga-7.jpg', $attrs['coverImage'] ?? null );
+		$this->assertSame( 'Object alt', $attrs['coverImageAlt'] ?? null );
+		$this->assertSame( array(), $this->images( $content ) );
+	}
+
+	/** Keeps mp-cover-image as sent and repeats neither its photo copy nor the sideloaded one. */
+	public function test_mp_cover_image_also_sent_as_a_sideloaded_photo_is_not_repeated(): void {
+		$local                        = $this->local_upload_url( 'saga-7-variant.jpg' );
+		$properties                   = $this->comic_properties();
+		$properties['mp-cover-image'] = array( 'https://example.test/saga-7.jpg' );
+		$properties['photo']          = array( 'https://example.test/saga-7.jpg', $local );
+		$content                      = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+
+		$this->assertSame( 'https://example.test/saga-7.jpg', $this->first_attrs( $content, 'post-kinds-indieweb/comic-card' )['coverImage'] ?? null );
+		$this->assertSame( array(), $this->images( $content ) );
+	}
+
+	/** Saves the sideloaded copy as the comic's cover meta when apply() gets the enriched photo list. */
+	public function test_apply_saves_the_local_copy_as_the_comic_cover(): void {
+		( new Meta_Fields() )->register_meta_fields();
+		$local      = $this->local_upload_url( 'saga-7-apply.jpg' );
+		$properties = $this->comic_properties();
+		// The shape after_micropub receives: the sent URL, then Micropub's local copy.
+		$properties['photo'] = array( 'https://example.test/saga-7.jpg', $local );
+		$post_id             = self::factory()->post->create(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_content' => 'Lying Cat steals every page.',
+			)
+		);
+
+		Micropub_Content_Builder::apply(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => $properties,
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$content = (string) get_post_field( 'post_content', $post_id );
+		$this->assertSame( array( 'comics' ), $this->kind_slugs( $post_id ) );
+		$this->assertSame( $local, (string) get_post_meta( $post_id, Meta_Fields::PREFIX . 'comic_cover', true ) );
+		$this->assertSame( 'A horned parent holds a swaddled baby.', (string) get_post_meta( $post_id, Meta_Fields::PREFIX . 'comic_cover_alt', true ) );
+		$this->assertSame( array(), $this->images( $content ) );
+	}
+
 	/** Builds a comic card before insert when the comic request has no content. */
 	public function test_fill_empty_content_supplies_a_comic_card(): void {
 		$content = Micropub_Content_Builder::fill_empty_content(
