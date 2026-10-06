@@ -32,6 +32,12 @@ final class DrinkBrandPrivacyTest extends WP_UnitTestCase {
 	private const VENUE     = 'Cedar and Salt Zq4';
 	private const ELSEWHERE = 'Elsewhere Lounge Zq5';
 
+	/**
+	 * A brand apart from the venue name. Where the venue prints, a check for
+	 * the venue's name can't tell whether the brand printed beside it.
+	 */
+	private const BRAND = 'Saltworks Distilling Zq7';
+
 	public function set_up(): void {
 		parent::set_up();
 		// The test framework wipes registered meta between tests.
@@ -45,19 +51,21 @@ final class DrinkBrandPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * A published drink whose brand and venue share a name.
+	 * A published drink at the venue. Its brand shares the venue's name
+	 * unless $brand names another.
 	 *
 	 * @param string      $privacy        `_pkiw_geo_privacy` value.
 	 * @param bool        $location_brand Whether the brand is marked as filled from venue data.
 	 * @param string|null $geo_public     Simple Location `geo_public` value, if any.
+	 * @param string      $brand          Brand.
 	 * @return int Post ID.
 	 */
-	private function drink( string $privacy, bool $location_brand, ?string $geo_public = null ): int {
+	private function drink( string $privacy, bool $location_brand, ?string $geo_public = null, string $brand = self::VENUE ): int {
 		$id = self::factory()->post->create(
 			[
 				'post_status'  => 'publish',
 				'post_title'   => 'Spicy Margarita',
-				'post_content' => $this->card( self::VENUE ),
+				'post_content' => $this->card( self::VENUE, $brand ),
 			]
 		);
 		wp_set_object_terms( $id, 'drink', 'kind' );
@@ -232,6 +240,38 @@ final class DrinkBrandPrivacyTest extends WP_UnitTestCase {
 				'innerContent' => [],
 			]
 		);
+	}
+
+	/**
+	 * One post's item in Recent Specials on the drink menu.
+	 *
+	 * @param int $id Post ID.
+	 */
+	private function special_item( int $id ): string {
+		$href = 'href="' . esc_url( (string) get_permalink( $id ) ) . '"';
+		foreach ( explode( '<li class="pkiw-menu-specials__item', $this->specials() ) as $item ) {
+			if ( str_contains( $item, $href ) ) {
+				return $item;
+			}
+		}
+
+		$this->fail( sprintf( 'Post %d never appeared in Recent Specials.', $id ) );
+	}
+
+	/**
+	 * Assert the brand prints on the card's `h-food` author, in REST meta,
+	 * and in its own span on the menu line and in Recent Specials. The menu
+	 * checks match the brand's span, so a venue printed beside it can't
+	 * pass for it.
+	 *
+	 * @param int    $id    Post ID.
+	 * @param string $brand Brand.
+	 */
+	private function assert_brand_shown( int $id, string $brand ): void {
+		$this->assertStringContainsString( '<span class="p-author h-card"><span class="p-name">' . $brand . '</span></span>', $this->render_card( $id ) );
+		$this->assertSame( $brand, $this->rest_meta( $id )['_pkiw_drink_brewery'] );
+		$this->assertStringContainsString( '<span class="pkiw-menu-entry__sub">' . $brand . '</span>', $this->menu_line( $id ), 'The menu line prints the brand.' );
+		$this->assertStringContainsString( '<span class="pkiw-menu-specials__sub">' . $brand . '</span>', $this->special_item( $id ), 'Recent Specials prints the brand.' );
 	}
 
 	/**
@@ -421,35 +461,31 @@ final class DrinkBrandPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( self::VENUE, $this->render_card( $typed ), 'A typed brand stays printed.' );
 		$this->assertSame( self::VENUE, $this->rest_meta( $typed )['_pkiw_drink_brewery'] );
 		$this->assertStringContainsString( self::VENUE, $this->menu_line( $typed ) );
+
+		// Both drinks are in Recent Specials, so check each one's own item.
+		$this->assertStringNotContainsString( self::VENUE, $this->special_item( $marked ), 'Recent Specials keeps a renamed venue\'s marked brand hidden.' );
+		$this->assertStringContainsString( '<span class="pkiw-menu-specials__sub">' . self::VENUE . '</span>', $this->special_item( $typed ), 'Recent Specials prints a typed brand.' );
 	}
 
 	public function test_an_approximate_drink_keeps_a_location_derived_brand(): void {
-		$id = $this->drink( 'approximate', true );
+		$id = $this->drink( 'approximate', true, brand: self::BRAND );
 
-		$this->assertStringContainsString( '<span class="p-author h-card"><span class="p-name">' . self::VENUE . '</span></span>', $this->render_card( $id ) );
-		$this->assertSame( self::VENUE, $this->rest_meta( $id )['_pkiw_drink_brewery'] );
-		$this->assertStringContainsString( self::VENUE, $this->feed_content( $id ) );
-		$this->assertStringContainsString( self::VENUE, $this->menu_line( $id ) );
-		$this->assertStringContainsString( self::VENUE, $this->specials() );
+		$this->assert_brand_shown( $id, self::BRAND );
+		$this->assertStringContainsString( self::BRAND, $this->feed_content( $id ) );
 	}
 
 	public function test_a_public_drink_keeps_a_location_derived_brand(): void {
-		$id = $this->drink( 'public', true );
+		$id = $this->drink( 'public', true, brand: self::BRAND );
 
-		$this->assertStringContainsString( '<span class="p-author h-card"><span class="p-name">' . self::VENUE . '</span></span>', $this->render_card( $id ) );
-		$this->assertSame( self::VENUE, $this->rest_meta( $id )['_pkiw_drink_brewery'] );
-		$this->assertStringContainsString( self::VENUE, $this->feed_content( $id ) );
-		$this->assertStringContainsString( self::VENUE, $this->menu_line( $id ) );
-		$this->assertStringContainsString( self::VENUE, $this->specials() );
+		$this->assert_brand_shown( $id, self::BRAND );
+		$this->assertStringContainsString( self::BRAND, $this->feed_content( $id ) );
 	}
 
 	public function test_an_editor_sees_a_location_derived_brand(): void {
-		$id = $this->drink( 'private', true );
+		$id = $this->drink( 'private', true, brand: self::BRAND );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 
-		$this->assertStringContainsString( '<span class="p-author h-card"><span class="p-name">' . self::VENUE . '</span></span>', $this->render_card( $id ) );
-		$this->assertSame( self::VENUE, $this->rest_meta( $id )['_pkiw_drink_brewery'] );
-		$this->assertStringContainsString( self::VENUE, $this->menu_line( $id ) );
+		$this->assert_brand_shown( $id, self::BRAND );
 	}
 
 	public function test_retyping_the_brand_in_the_card_clears_the_marker(): void {
