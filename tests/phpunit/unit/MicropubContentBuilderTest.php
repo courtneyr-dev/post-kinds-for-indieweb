@@ -15,6 +15,8 @@ namespace PKIW\Tests\Unit;
 use ReflectionMethod;
 use WP_UnitTestCase;
 use PKIW\Micropub_Content_Builder;
+use PKIW\Meta_Fields;
+use PKIW\Taxonomy;
 
 /**
  * @covers \PKIW\Micropub_Content_Builder
@@ -30,7 +32,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 	 */
 	public function set_up(): void {
 		parent::set_up();
-		foreach ( array( 'note', 'checkin', 'eat', 'drink', 'like', 'rsvp', 'jam', 'favorite', 'wish', 'exercise', 'event', 'video', 'quote', 'issue', 'listen' ) as $slug ) {
+		foreach ( array( 'note', 'checkin', 'eat', 'drink', 'like', 'rsvp', 'jam', 'favorite', 'wish', 'exercise', 'event', 'video', 'quote', 'issue', 'listen', 'comics', 'read' ) as $slug ) {
 			if ( ! term_exists( $slug, 'kind' ) ) {
 				wp_insert_term( ucfirst( $slug ), 'kind', array( 'slug' => $slug ) );
 			}
@@ -1347,6 +1349,269 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'wp:post-kinds-indieweb/reply-card', $content );
 	}
 
+	// --- comics: read-of with the comics hint (issue 295) --------------------
+
+	/**
+	 * A comic read, the shape Outpost sends with the comics hint.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function comic_properties(): array {
+		return array(
+			'read-of'         => array( 'https://example.test/comics/saga-7' ),
+			'name'            => array( 'Saga #7' ),
+			'author'          => array( 'Brian K. Vaughan', 'Fiona Staples' ),
+			'mp-series'       => array( 'Saga' ),
+			'mp-volume'       => array( '2' ),
+			'mp-issue-number' => array( '7' ),
+			'mp-publisher'    => array( 'Image Comics' ),
+			'photo'           => array( 'https://example.test/saga-7.jpg' ),
+			'mp-photo-alt'    => array( 'A horned parent holds a swaddled baby.' ),
+			'read-status'     => array( 'finished' ),
+			'rating'          => array( '4' ),
+			'mp-started-at'   => array( '2026-08-30' ),
+			'mp-finished-at'  => array( '2026-09-02' ),
+			'content'         => array( 'Lying Cat steals every page.' ),
+			'pkiw-kind'       => array( 'comics' ),
+		);
+	}
+
+	/**
+	 * Block names in document order, descending into wrapper groups.
+	 *
+	 * @param string $content Block markup.
+	 * @return string[]
+	 */
+	private function block_names( string $content ): array {
+		$names = array();
+		$walk  = static function ( array $blocks ) use ( &$walk, &$names ): void {
+			foreach ( $blocks as $block ) {
+				if ( null === $block['blockName'] ) {
+					continue;
+				}
+				if ( 'core/group' !== $block['blockName'] ) {
+					$names[] = $block['blockName'];
+				}
+				$walk( $block['innerBlocks'] ?? array() );
+			}
+		};
+		$walk( parse_blocks( $content ) );
+		return $names;
+	}
+
+	/**
+	 * Attributes of the first block with this name.
+	 *
+	 * @param string $content Block markup.
+	 * @param string $name    Block name.
+	 * @return array<string, mixed>|null
+	 */
+	private function first_attrs( string $content, string $name ): ?array {
+		$found = null;
+		$walk  = static function ( array $blocks ) use ( &$walk, &$found, $name ): void {
+			foreach ( $blocks as $block ) {
+				if ( null !== $found ) {
+					return;
+				}
+				if ( $name === $block['blockName'] ) {
+					$found = $block['attrs'];
+					return;
+				}
+				$walk( $block['innerBlocks'] ?? array() );
+			}
+		};
+		$walk( parse_blocks( $content ) );
+		return $found;
+	}
+
+	/** Builds a comic card when a read-of entry carries the comics hint. */
+	public function test_comics_hint_on_read_of_builds_a_comic_card(): void {
+		$content = (string) $this->invoke_private( 'build_block_content', array( $this->comic_properties() ) );
+		$names   = $this->block_names( $content );
+
+		$this->assertSame( 'post-kinds-indieweb/comic-card', $names[0] ?? null );
+		$this->assertNotContains( 'post-kinds-indieweb/read-card', $names );
+	}
+
+	/** Keeps the read card when a read-of entry has no explicit hint. */
+	public function test_read_of_without_the_hint_still_builds_a_read_card(): void {
+		$properties = $this->comic_properties();
+		unset( $properties['pkiw-kind'] );
+		$names = $this->block_names( (string) $this->invoke_private( 'build_block_content', array( $properties ) ) );
+
+		$this->assertSame( 'post-kinds-indieweb/read-card', $names[0] ?? null );
+		$this->assertNotContains( 'post-kinds-indieweb/comic-card', $names );
+	}
+
+	/** Keeps the read card when a read-of entry carries the read hint. */
+	public function test_read_hint_on_read_of_builds_a_read_card(): void {
+		$properties              = $this->comic_properties();
+		$properties['pkiw-kind'] = array( 'read' );
+		$names                   = $this->block_names( (string) $this->invoke_private( 'build_block_content', array( $properties ) ) );
+
+		$this->assertSame( 'post-kinds-indieweb/read-card', $names[0] ?? null );
+	}
+
+	/** Builds no comic card when the comics hint appears without read-of. */
+	public function test_comics_hint_without_read_of_builds_no_comic_card(): void {
+		$names = $this->block_names(
+			(string) $this->invoke_private(
+				'build_block_content',
+				array(
+					array(
+						'photo'     => array( 'https://example.test/strip.png' ),
+						'pkiw-kind' => array( 'comics' ),
+						'content'   => array( 'My strip' ),
+					),
+				)
+			)
+		);
+
+		$this->assertNotContains( 'post-kinds-indieweb/comic-card', $names );
+		$this->assertContains( 'core/image', $names );
+	}
+
+	/** Keeps the inferred card when the hint is outside the refinement map. */
+	public function test_a_hint_outside_the_refinements_keeps_the_inferred_card(): void {
+		$names = $this->block_names(
+			(string) $this->invoke_private(
+				'build_block_content',
+				array(
+					array(
+						'listen-of' => array( 'https://example.test/track/9' ),
+						'pkiw-kind' => array( 'jam' ),
+					),
+				)
+			)
+		);
+
+		$this->assertSame( array( 'post-kinds-indieweb/listen-card' ), $names );
+	}
+
+	/** Maps every supplied comic property to its comic-card attribute. */
+	public function test_comic_card_maps_every_field_it_is_sent(): void {
+		$attrs = $this->first_attrs(
+			(string) $this->invoke_private( 'comic_card', array( $this->comic_properties() ) ),
+			'post-kinds-indieweb/comic-card'
+		);
+
+		$this->assertSame(
+			array(
+				'sourceUrl'     => 'https://example.test/comics/saga-7',
+				'title'         => 'Saga #7',
+				'creators'      => 'Brian K. Vaughan, Fiona Staples',
+				'series'        => 'Saga',
+				'volume'        => '2',
+				'issueNumber'   => '7',
+				'publisher'     => 'Image Comics',
+				'coverImage'    => 'https://example.test/saga-7.jpg',
+				'coverImageAlt' => 'A horned parent holds a swaddled baby.',
+				'readStatus'    => 'finished',
+				'rating'        => 4,
+				'startedAt'     => '2026-08-30',
+				'finishedAt'    => '2026-09-02',
+				'review'        => 'Lying Cat steals every page.',
+			),
+			$attrs
+		);
+	}
+
+	/** Omits every copy of the cover URL from photos appended below the card. */
+	public function test_a_comic_cover_photo_is_not_repeated_below_the_card(): void {
+		$properties                 = $this->comic_properties();
+		$properties['photo']        = array( 'https://example.test/saga-7.jpg', 'https://example.test/saga-7.jpg', 'https://example.test/panel.jpg' );
+		$properties['mp-photo-alt'] = array( 'Cover alt', '', 'Panel alt' );
+		$content                    = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+
+		$this->assertSame( 'Cover alt', $this->first_attrs( $content, 'post-kinds-indieweb/comic-card' )['coverImageAlt'] ?? null );
+		$this->assertSame( 1, substr_count( $content, '<!-- wp:image' ), 'only the panel photo follows the card' );
+		$this->assertStringContainsString( 'https://example.test/panel.jpg', $content );
+		$this->assertSame( 1, substr_count( $content, 'https://example.test/saga-7.jpg' ), 'the cover appears once, on the card' );
+	}
+
+	/** Creates a comics post with comic-card markup and comic metadata. */
+	public function test_apply_creates_a_comics_post_with_a_comic_card_and_comic_meta(): void {
+		( new Meta_Fields() )->register_meta_fields();
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_content' => 'Lying Cat steals every page.',
+			)
+		);
+
+		Micropub_Content_Builder::apply(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => $this->comic_properties(),
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$content = (string) get_post_field( 'post_content', $post_id );
+		$this->assertSame( array( 'comics' ), $this->kind_slugs( $post_id ) );
+		$this->assertSame( 'comics', Taxonomy::get_first_block_kind( $content ) );
+
+		$expected = array(
+			'comic_title'       => 'Saga #7',
+			'comic_creators'    => 'Brian K. Vaughan, Fiona Staples',
+			'comic_series'      => 'Saga',
+			'comic_volume'      => '2',
+			'comic_issue'       => '7',
+			'comic_publisher'   => 'Image Comics',
+			'comic_cover'       => 'https://example.test/saga-7.jpg',
+			'comic_cover_alt'   => 'A horned parent holds a swaddled baby.',
+			'comic_url'         => 'https://example.test/comics/saga-7',
+			'comic_status'      => 'finished',
+			'comic_rating'      => '4',
+			'comic_started_at'  => '2026-08-30',
+			'comic_finished_at' => '2026-09-02',
+			'comic_review'      => 'Lying Cat steals every page.',
+		);
+		foreach ( $expected as $suffix => $value ) {
+			$this->assertSame( $value, (string) get_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, true ), "Meta {$suffix}." );
+		}
+		$this->assertSame( '', (string) get_post_meta( $post_id, Meta_Fields::PREFIX . 'read_title', true ) );
+
+		// The entry parses with read-of, as an editor-made comic read does.
+		$parsed = \Mf2\parse( '<div class="h-entry">' . do_blocks( $content ) . '</div>' );
+		$entry  = null;
+		foreach ( $parsed['items'] as $item ) {
+			if ( in_array( 'h-entry', $item['type'], true ) ) {
+				$entry = $item;
+				break;
+			}
+		}
+		$this->assertNotNull( $entry );
+		$this->assertArrayHasKey( 'read-of', $entry['properties'] );
+	}
+
+	/** Creates a read post from the same request when the hint is absent. */
+	public function test_apply_without_the_hint_creates_a_read_post(): void {
+		$properties = $this->comic_properties();
+		unset( $properties['pkiw-kind'] );
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_content' => 'Lying Cat steals every page.',
+			)
+		);
+
+		Micropub_Content_Builder::apply(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => $properties,
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$content = (string) get_post_field( 'post_content', $post_id );
+		$this->assertSame( array( 'read' ), $this->kind_slugs( $post_id ) );
+		$this->assertSame( 'read', Taxonomy::get_first_block_kind( $content ) );
+		$this->assertSame( '', (string) get_post_meta( $post_id, Meta_Fields::PREFIX . 'comic_title', true ) );
+	}
+
 	// --- Wire matrix: every kind's Micropub properties -> card attrs --------
 
 	/**
@@ -1465,6 +1730,43 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 					'review'     => 'Sample review',
 				),
 				array( 'isbn', 'publisher', 'publishDate', 'pageCount', 'currentPage', 'coverImage', 'coverImageAlt', 'openlibraryId', 'startedAt', 'finishedAt' ),
+			),
+			'comics'  => array(
+				array(
+					'read-of'         => array( 'https://example.test/comics/saga-7' ),
+					'name'            => array( 'Sample comic' ),
+					'author'          => array( 'Sample creator' ),
+					'mp-series'       => array( 'Sample series' ),
+					'mp-volume'       => array( '2' ),
+					'mp-issue-number' => array( '7' ),
+					'mp-publisher'    => array( 'Sample publisher' ),
+					'photo'           => array( 'https://example.test/cover.jpg' ),
+					'mp-photo-alt'    => array( 'Sample cover alt' ),
+					'read-status'     => array( 'reading' ),
+					'rating'          => array( '4' ),
+					'mp-started-at'   => array( '2026-07-04' ),
+					'mp-finished-at'  => array( '2026-07-05' ),
+					'content'         => array( 'Sample review' ),
+					'pkiw-kind'       => array( 'comics' ),
+				),
+				'post-kinds-indieweb/comic-card',
+				array(
+					'sourceUrl'     => 'https://example.test/comics/saga-7',
+					'title'         => 'Sample comic',
+					'creators'      => 'Sample creator',
+					'series'        => 'Sample series',
+					'volume'        => '2',
+					'issueNumber'   => '7',
+					'publisher'     => 'Sample publisher',
+					'coverImage'    => 'https://example.test/cover.jpg',
+					'coverImageAlt' => 'Sample cover alt',
+					'readStatus'    => 'reading',
+					'rating'        => 4,
+					'startedAt'     => '2026-07-04',
+					'finishedAt'    => '2026-07-05',
+					'review'        => 'Sample review',
+				),
+				array(),
 			),
 			'play'    => array(
 				array(
