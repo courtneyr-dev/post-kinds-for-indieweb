@@ -85,17 +85,18 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * The importers insert a published post first and write its location,
-	 * privacy and title marker afterwards, so the slug exists before the
-	 * privacy does.
+	 * A Foursquare check-in imported with a private default, the way the
+	 * sync does it: insert published, then kind, marker and meta.
+	 *
+	 * @return mixed The import's return value.
 	 */
-	public function test_import_with_a_private_default_writes_no_venue_into_the_slug(): void {
+	private function import_private_checkin() {
 		update_option( 'pkiw_settings', [ 'checkin_default_privacy' => 'private' ] );
 
 		$sync   = ( new ReflectionClass( \PKIW\Sync\Foursquare_Checkin_Sync::class ) )->newInstanceWithoutConstructor();
 		$method = new ReflectionMethod( $sync, 'import_checkin' );
 
-		$post_id = $method->invoke(
+		return $method->invoke(
 			$sync,
 			[
 				'id'        => 'sentinel-4sq-slug',
@@ -107,11 +108,125 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 				],
 			]
 		);
+	}
+
+	/**
+	 * A private check-in with a generated title, published in an earlier
+	 * request with the venue slug.
+	 */
+	private function published_earlier_with_venue_slug(): int {
+		global $wpdb;
+
+		$post_id = $this->generated_draft( 'private' );
+		$wpdb->update(
+			$wpdb->posts,
+			[
+				'post_status' => 'publish',
+				'post_name'   => self::VENUE_SLUG,
+			],
+			[ 'ID' => $post_id ]
+		);
+		clean_post_cache( $post_id );
+
+		return $post_id;
+	}
+
+	/**
+	 * The importers insert a published post first and write its location,
+	 * privacy and title marker afterwards, so the slug exists before the
+	 * privacy does.
+	 */
+	public function test_import_with_a_private_default_writes_no_venue_into_the_slug(): void {
+		$post_id = $this->import_private_checkin();
 
 		$this->assertIsInt( $post_id );
 		$this->assertSame( 'publish', get_post_status( $post_id ) );
 		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
 		$this->assertSame( [ self::VENUE_SLUG ], get_post_meta( $post_id, '_wp_old_slug' ) );
+	}
+
+	/**
+	 * WordPress sets a new post's guid to its permalink before the importer
+	 * writes privacy, and the RSS guid, Atom id and REST guid print it.
+	 * Plain permalinks hide this: their guid is ?p=<id>.
+	 */
+	public function test_import_with_pretty_permalinks_writes_no_venue_into_the_guid(): void {
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
+
+		$post_id = $this->import_private_checkin();
+		clean_post_cache( $post_id );
+
+		$this->assertSame( home_url( '/2026/09/12/' . self::SAFE_SLUG . '/' ), get_the_guid( $post_id ) );
+	}
+
+	public function test_marked_before_insert_with_pretty_permalinks_writes_no_venue_into_the_guid(): void {
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
+
+		$post_id = wp_insert_post(
+			[
+				'post_status'   => 'publish',
+				'post_title'    => 'Checked in at ' . self::VENUE,
+				'post_date'     => '2026-09-12 14:30:00',
+				'post_date_gmt' => '2026-09-12 14:30:00',
+				'meta_input'    => [
+					Title_Privacy::META_KEY                 => Title_Privacy::SOURCE_LOCATION,
+					Meta_Fields::PREFIX . 'checkin_name' => self::VENUE,
+					Meta_Fields::PREFIX . 'geo_privacy'  => 'private',
+				],
+			]
+		);
+		clean_post_cache( $post_id );
+
+		$this->assertSame( home_url( '/2026/09/12/' . self::SAFE_SLUG . '/' ), get_the_guid( $post_id ) );
+	}
+
+	/**
+	 * REST writes meta after it inserts the post, as the importers do.
+	 */
+	public function test_rest_create_published_with_private_meta_writes_no_venue_into_the_guid(): void {
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/posts' );
+		$request->set_body_params(
+			[
+				'title'  => 'Checked in at ' . self::VENUE,
+				'status' => 'publish',
+				'date'   => '2026-09-12T14:30:00',
+				'meta'   => [
+					Meta_Fields::PREFIX . 'checkin_name' => self::VENUE,
+					Meta_Fields::PREFIX . 'geo_privacy'  => 'private',
+				],
+			]
+		);
+		$response = rest_do_request( $request );
+		$this->assertSame( 201, $response->get_status() );
+
+		$post_id = (int) $response->get_data()['id'];
+		clean_post_cache( $post_id );
+
+		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
+		$this->assertStringNotContainsString( 'sentinel-venue-zyx9', get_the_guid( $post_id ) );
+	}
+
+	/**
+	 * Plugins that store a post's permalink at save time (Yoast SEO's
+	 * indexables) need to hear about a slug rewritten after the save.
+	 */
+	public function test_a_replaced_slug_is_announced(): void {
+		$heard = [];
+		add_action(
+			'pkiw_derived_slug_replaced',
+			static function ( ...$args ) use ( &$heard ) {
+				$heard[] = $args;
+			},
+			10,
+			3
+		);
+
+		$post_id = $this->import_private_checkin();
+
+		$this->assertSame( [ [ $post_id, self::VENUE_SLUG, self::SAFE_SLUG ] ], $heard );
 	}
 
 	/**
@@ -249,5 +364,79 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 		);
 
 		$this->assertSame( self::VENUE_SLUG, $this->slug( $post_id ) );
+	}
+
+	/**
+	 * wp_update_post() passes the stored slug along; wp_insert_post() with
+	 * an ID and no post_name keeps the stored slug without passing it.
+	 */
+	public function test_a_published_slug_survives_a_direct_insert_update(): void {
+		$post_id = $this->published_earlier_with_venue_slug();
+
+		wp_insert_post(
+			[
+				'ID'           => $post_id,
+				'post_title'   => 'Checked in at ' . self::VENUE,
+				'post_content' => 'A note.',
+				'post_status'  => 'publish',
+				'post_date'    => '2026-09-12 14:30:00',
+			]
+		);
+
+		$this->assertSame( self::VENUE_SLUG, $this->slug( $post_id ) );
+		$this->assertSame( [], get_post_meta( $post_id, '_wp_old_slug' ) );
+	}
+
+	/**
+	 * WordPress treats a post_name of "0" as missing and derives the slug
+	 * from the title, so the rule does too.
+	 */
+	public function test_a_zero_post_name_gets_the_safe_slug(): void {
+		$post_id = wp_insert_post(
+			[
+				'post_status'   => 'publish',
+				'post_name'     => '0',
+				'post_title'    => 'Checked in at ' . self::VENUE,
+				'post_date'     => '2026-09-12 14:30:00',
+				'post_date_gmt' => '2026-09-12 14:30:00',
+				'meta_input'    => [
+					Title_Privacy::META_KEY                 => Title_Privacy::SOURCE_LOCATION,
+					Meta_Fields::PREFIX . 'checkin_name' => self::VENUE,
+					Meta_Fields::PREFIX . 'geo_privacy'  => 'private',
+				],
+			]
+		);
+
+		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
+	}
+
+	/**
+	 * Two saves in one request (a script, a batch endpoint): the slug
+	 * WordPress derived is replaced by the author's before privacy changes.
+	 */
+	public function test_an_author_slug_set_later_in_the_same_request_stays(): void {
+		$post_id = $this->generated_draft( 'public' );
+		$this->publish( $post_id );
+		$this->assertSame( self::VENUE_SLUG, $this->slug( $post_id ), 'precondition: public keeps the venue slug' );
+
+		wp_update_post(
+			[
+				'ID'        => $post_id,
+				'post_name' => 'my-own-slug',
+			]
+		);
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
+
+		$this->assertSame( 'my-own-slug', $this->slug( $post_id ) );
+	}
+
+	public function test_a_trashed_post_keeps_its_trash_suffix(): void {
+		$post_id = $this->generated_draft( 'public' );
+		$this->publish( $post_id );
+		wp_trash_post( $post_id );
+
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
+
+		$this->assertSame( self::VENUE_SLUG . '__trashed', $this->slug( $post_id ) );
 	}
 }
