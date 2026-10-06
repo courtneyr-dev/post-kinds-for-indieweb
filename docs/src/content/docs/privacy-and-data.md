@@ -72,18 +72,18 @@ With the [WP Consent API](https://wordpress.org/plugins/wp-consent-api/), in a s
 
 ```js
 function pkiwAllowMap() {
-	window.pkiwMapConsent = true;
-	document.dispatchEvent( new Event( 'pkiw:map-consent' ) );
+    window.pkiwMapConsent = true;
+    document.dispatchEvent( new Event( 'pkiw:map-consent' ) );
 }
 
 if ( typeof wp_has_consent === 'function' && wp_has_consent( 'marketing' ) ) {
-	pkiwAllowMap();
+    pkiwAllowMap();
 }
 
 document.addEventListener( 'wp_listen_for_consent_change', ( event ) => {
-	if ( 'allow' === event.detail.marketing ) {
-		pkiwAllowMap();
-	}
+    if ( 'allow' === event.detail.marketing ) {
+        pkiwAllowMap();
+    }
 } );
 ```
 
