@@ -146,17 +146,16 @@ final class Presentation_Classifier {
 	 */
 	public static function is_presentation( \WP_Post $post ): bool {
 		$signals = self::signals( $post );
-		$talk    = [] !== $signals['deck'] || [] !== $signals['talk_recording'] || $signals['presentation_meta'];
 
-		// Podcast rule, kept apart from the general rule below so widening
-		// that rule can't pull podcast appearances out of Listen: a listen
-		// card or kind becomes a presentation only through a deck, a talk
-		// recording or authored presentation fields.
+		// Podcast rule: a listen card or kind becomes a presentation only
+		// through a deck, a talk recording or authored presentation fields.
+		// It spells out its own expression on purpose, so a change to the
+		// general rule below doesn't reach listen posts.
 		if ( $signals['listen'] ) {
-			return $talk;
+			return [] !== $signals['deck'] || [] !== $signals['talk_recording'] || $signals['presentation_meta'];
 		}
 
-		return $talk;
+		return [] !== $signals['deck'] || [] !== $signals['talk_recording'] || $signals['presentation_meta'];
 	}
 
 	/**
