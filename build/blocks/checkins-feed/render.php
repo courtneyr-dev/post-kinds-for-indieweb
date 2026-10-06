@@ -27,7 +27,9 @@ if ( ! empty( $attributes['inherit'] ) ) {
 
 	// The editor previews through the REST block renderer, where no main
 	// query runs. Stand in with the archive's first page, in its order.
-	if ( wp_is_rest_endpoint() ) {
+	// Other REST renders, a page's content.rendered, keep their own query.
+	global $wp;
+	if ( wp_is_rest_endpoint() && str_starts_with( (string) ( $wp->query_vars['rest_route'] ?? '' ), '/wp/v2/block-renderer/' ) ) {
 		$pkiw_inherited = get_checkins(
 			[
 				'posts_per_page' => max( 1, min( 100, absint( $attributes['count'] ?? \PKIW\Checkin_Map::DEFAULT_PER_PAGE ) ) ),
