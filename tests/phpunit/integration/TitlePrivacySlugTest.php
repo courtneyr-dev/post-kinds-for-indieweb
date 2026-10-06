@@ -142,7 +142,54 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 		$this->assertIsInt( $post_id );
 		$this->assertSame( 'publish', get_post_status( $post_id ) );
 		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
-		$this->assertSame( [ self::VENUE_SLUG ], get_post_meta( $post_id, '_wp_old_slug' ) );
+		$this->assertSame( [], get_post_meta( $post_id, '_wp_old_slug' ), 'The venue slug existed only during the insert, so nothing redirects from it.' );
+	}
+
+	/**
+	 * A redirect from the venue slug would confirm a guessed venue: a
+	 * request for /<date>/checked-in-at-<venue>/ would land on the private
+	 * check-in.
+	 */
+	public function test_a_guessed_venue_url_does_not_redirect_to_the_private_check_in(): void {
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
+		$this->import_private_checkin();
+
+		$redirect = null;
+		add_filter(
+			'old_slug_redirect_url',
+			static function ( $link ) use ( &$redirect ) {
+				$redirect = $link;
+				return false;
+			}
+		);
+
+		$this->go_to( home_url( '/2026/09/12/' . self::VENUE_SLUG . '/' ) );
+		$this->assertTrue( is_404() );
+
+		wp_old_slug_redirect();
+
+		$this->assertNull( $redirect );
+	}
+
+	/**
+	 * The block editor publishes a draft and saves its meta in one REST
+	 * request, so the slug is derived while privacy still says public.
+	 */
+	public function test_rest_publish_that_makes_the_location_private_keeps_no_venue_slug(): void {
+		$post_id = $this->generated_draft( 'public' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/posts/' . $post_id );
+		$request->set_body_params(
+			[
+				'status' => 'publish',
+				'meta'   => [ Meta_Fields::PREFIX . 'geo_privacy' => 'private' ],
+			]
+		);
+		$this->assertSame( 200, rest_do_request( $request )->get_status() );
+
+		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
+		$this->assertSame( [], get_post_meta( $post_id, '_wp_old_slug' ) );
 	}
 
 	/**
@@ -249,14 +296,14 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 		);
 
 		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
-		$this->assertSame( [ self::VENUE_SLUG ], get_post_meta( $post_id, '_wp_old_slug' ), 'The row is written with the venue slug before meta_input runs.' );
+		$this->assertSame( [], get_post_meta( $post_id, '_wp_old_slug' ), 'The row is written with the venue slug before meta_input runs, but nothing redirects from it.' );
 	}
 
 	/**
 	 * Inserted published, then privacy, then the marker: the order an
 	 * importer that marks last would use.
 	 */
-	public function test_marked_after_insert_gets_the_safe_slug_and_redirects_the_old_one(): void {
+	public function test_marked_after_insert_gets_the_safe_slug_and_no_redirect(): void {
 		$post_id = self::factory()->post->create(
 			[
 				'post_status'   => 'publish',
@@ -272,7 +319,7 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 		Title_Privacy::mark_location_title( $post_id );
 
 		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
-		$this->assertSame( [ self::VENUE_SLUG ], get_post_meta( $post_id, '_wp_old_slug' ) );
+		$this->assertSame( [], get_post_meta( $post_id, '_wp_old_slug' ) );
 	}
 
 	public function test_two_private_check_ins_on_one_day_get_distinct_slugs(): void {
@@ -428,6 +475,91 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
 
 		$this->assertSame( 'my-own-slug', $this->slug( $post_id ) );
+	}
+
+	/**
+	 * An insert that fails at the database never reaches the wp_insert_post
+	 * action, so the slug it derived is never claimed. A later insert whose
+	 * author set that same slug isn't derived.
+	 */
+	public function test_an_author_slug_after_a_failed_insert_stays(): void {
+		global $wpdb;
+
+		$fail_next_insert = static function ( $query ) use ( $wpdb ) {
+			if ( 0 === strpos( (string) $query, "INSERT INTO `{$wpdb->posts}`" ) ) {
+				return 'INSERT INTO `pkiw_missing_table` (x) VALUES (1)';
+			}
+			return $query;
+		};
+		add_filter( 'query', $fail_next_insert );
+		$suppress = $wpdb->suppress_errors( true );
+		$failed   = wp_insert_post(
+			[
+				'post_status' => 'publish',
+				'post_title'  => 'Checked in at ' . self::VENUE,
+			]
+		);
+		$wpdb->suppress_errors( $suppress );
+		remove_filter( 'query', $fail_next_insert );
+		$this->assertSame( 0, $failed, 'precondition: the first insert fails' );
+
+		$post_id = wp_insert_post(
+			[
+				'post_status'   => 'publish',
+				'post_name'     => self::VENUE_SLUG,
+				'post_title'    => 'Checked in at ' . self::VENUE,
+				'post_date'     => '2026-09-12 14:30:00',
+				'post_date_gmt' => '2026-09-12 14:30:00',
+			]
+		);
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_name', self::VENUE );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
+		Title_Privacy::mark_location_title( $post_id );
+
+		$this->assertSame( self::VENUE_SLUG, $this->slug( $post_id ) );
+	}
+
+	/**
+	 * When the slug can't be written, nothing says it was replaced.
+	 */
+	public function test_a_failed_slug_write_announces_nothing(): void {
+		global $wpdb;
+
+		$heard = [];
+		add_action(
+			'pkiw_derived_slug_replaced',
+			static function ( ...$args ) use ( &$heard ) {
+				$heard[] = $args;
+			},
+			10,
+			3
+		);
+
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'   => 'publish',
+				'post_title'    => 'Checked in at ' . self::VENUE,
+				'post_date'     => '2026-09-12 14:30:00',
+				'post_date_gmt' => '2026-09-12 14:30:00',
+			]
+		);
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_name', self::VENUE );
+
+		$fail_slug_update = static function ( $query ) use ( $wpdb ) {
+			if ( 0 === strpos( (string) $query, "UPDATE `{$wpdb->posts}` SET `post_name`" ) ) {
+				return 'UPDATE `pkiw_missing_table` SET x = 1';
+			}
+			return $query;
+		};
+		add_filter( 'query', $fail_slug_update );
+		$suppress = $wpdb->suppress_errors( true );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
+		$wpdb->suppress_errors( $suppress );
+		remove_filter( 'query', $fail_slug_update );
+
+		$this->assertSame( self::VENUE_SLUG, $this->slug( $post_id ), 'precondition: the write failed' );
+		$this->assertSame( [], $heard );
+		$this->assertSame( [], get_post_meta( $post_id, '_wp_old_slug' ) );
 	}
 
 	public function test_a_trashed_post_keeps_its_trash_suffix(): void {
