@@ -80,6 +80,7 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 		$this->publish( $post_id );
 
 		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
+		$this->assertSame( [], get_post_meta( $post_id, '_wp_old_slug' ), 'The venue slug is never written, so nothing redirects from it.' );
 		$this->assertSame( 'Checked in at ' . self::VENUE, get_post_field( 'post_title', $post_id ), 'stored title must stay intact' );
 	}
 
@@ -114,8 +115,8 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Marker and privacy written by wp_insert_post() itself, before the
-	 * slug-deriving insert finishes.
+	 * Marker and privacy written by wp_insert_post() itself through
+	 * meta_input, after the row and its derived slug are written.
 	 */
 	public function test_marked_before_insert_gets_the_safe_slug(): void {
 		$post_id = wp_insert_post(
@@ -133,7 +134,7 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 		);
 
 		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
-		$this->assertSame( [], get_post_meta( $post_id, '_wp_old_slug' ), 'No venue slug was ever written, so none redirects.' );
+		$this->assertSame( [ self::VENUE_SLUG ], get_post_meta( $post_id, '_wp_old_slug' ), 'The row is written with the venue slug before meta_input runs.' );
 	}
 
 	/**
