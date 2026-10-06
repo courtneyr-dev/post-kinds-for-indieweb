@@ -311,14 +311,17 @@ final class Micropub_Content_Builder {
 
 		// Kinds other than pure photo posts can still carry attached photos
 		// (issue #38: a Checkin with a photo dropped the image entirely).
-		// Append the image/gallery markup after the kind's card.
-		if ( 'photo' !== $kind && self::has_property( $properties, 'photo' ) ) {
-			// A comic's cover already sits on the card.
-			$photo_props  = 'comics' === $kind ? self::without_comic_cover( $properties ) : $properties;
-			$photo_markup = self::photo_card( $photo_props );
-			if ( '' !== $photo_markup ) {
-				$card_markup .= "\n\n\t" . $photo_markup;
-			}
+		// Append the image/gallery markup after the kind's card. A comic's
+		// cover already sits on the card, and photo_card() skips empty
+		// values, so a comic needs no has_property() check on photo[0].
+		$photo_markup = '';
+		if ( 'comics' === $kind ) {
+			$photo_markup = self::photo_card( self::without_comic_cover( $properties ) );
+		} elseif ( 'photo' !== $kind && self::has_property( $properties, 'photo' ) ) {
+			$photo_markup = self::photo_card( $properties );
+		}
+		if ( '' !== $photo_markup ) {
+			$card_markup .= "\n\n\t" . $photo_markup;
 		}
 
 		$body = self::flatten_scalar( $properties, 'content' );
@@ -703,14 +706,15 @@ final class Micropub_Content_Builder {
 	 *
 	 * `mp-cover-image` and `mp-cover-image-alt` win, the cover properties
 	 * docs/micropub-field-gaps.md proposes for the read card. Without them
-	 * the cover is the first `photo` image, read through photo_values(), so
-	 * a photo Micropub sideloaded gives its local copy instead of the
-	 * remote original.
+	 * the cover is the first `photo` image with a URL, read through
+	 * photo_values(), so a photo Micropub sideloaded gives its local copy
+	 * instead of the remote original.
 	 *
-	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @param array<string, mixed>                                         $properties h-entry properties bag.
+	 * @param array<int, array{url: string, alt: string, image: int}>|null $values     photo_values() of the bag, when the caller has them.
 	 * @return array{url: string, alt: string} Cover URL and alt, empty when there's no cover.
 	 */
-	private static function comic_cover( array $properties ): array {
+	private static function comic_cover( array $properties, ?array $values = null ): array {
 		$url = self::flatten_scalar( $properties, 'mp-cover-image' );
 		if ( '' !== $url ) {
 			return [
@@ -722,15 +726,18 @@ final class Micropub_Content_Builder {
 			'url' => '',
 			'alt' => '',
 		];
-		// A sideloaded copy follows its original, so the first image's
+		// A sideloaded copy follows its original, so the cover image's
 		// last value is its local copy when it has one.
-		foreach ( self::photo_values( $properties ) as $value ) {
-			if ( 0 === $value['image'] ) {
-				$cover = [
-					'url' => $value['url'],
-					'alt' => $value['alt'],
-				];
+		$image = null;
+		foreach ( $values ?? self::photo_values( $properties ) as $value ) {
+			if ( '' === $value['url'] || ( null !== $image && $value['image'] !== $image ) ) {
+				continue;
 			}
+			$image = $value['image'];
+			$cover = [
+				'url' => $value['url'],
+				'alt' => $value['alt'],
+			];
 		}
 		return $cover;
 	}
@@ -747,8 +754,8 @@ final class Micropub_Content_Builder {
 	 * @return array<string, mixed> The bag without the cover.
 	 */
 	private static function without_comic_cover( array $properties ): array {
-		$cover   = self::comic_cover( $properties )['url'];
 		$values  = self::photo_values( $properties );
+		$cover   = self::comic_cover( $properties, $values )['url'];
 		$covered = [];
 		foreach ( $values as $value ) {
 			if ( $value['url'] === $cover ) {
@@ -777,11 +784,13 @@ final class Micropub_Content_Builder {
 	 *
 	 * The Micropub plugin sideloads each photo after insert and appends
 	 * the local attachment URLs to `photo`, so N photos arrive as N
-	 * originals followed by N local copies. When `photo` has that shape
-	 * (an even count, each value in the second half resolves to an
-	 * attachment and either equals its original or follows a remote one),
-	 * value i and value i + N are one image and share the original's alt.
-	 * Otherwise every value is its own image.
+	 * originals followed by N local copies. Its sideload reuses the
+	 * attachment an original already resolves to, and downloads one that
+	 * doesn't. So when `photo` has that shape (an even count, each value
+	 * in the second half resolves to an attachment, and its original
+	 * resolves to the same attachment or to none), value i and value
+	 * i + N are one image and share the original's alt. Otherwise every
+	 * value is its own image.
 	 *
 	 * @param array<string, mixed> $properties h-entry properties bag.
 	 * @return array<int, array{url: string, alt: string, image: int}> Values in request order.
@@ -808,9 +817,9 @@ final class Micropub_Content_Builder {
 			return $values;
 		}
 		for ( $i = 0; $i < $half; $i++ ) {
-			$original = $values[ $i ]['url'];
-			$copy     = $values[ $i + $half ]['url'];
-			if ( 0 === self::attachment_id( $copy ) || ( $original !== $copy && 0 !== self::attachment_id( $original ) ) ) {
+			$copy     = self::attachment_id( $values[ $i + $half ]['url'] );
+			$original = self::attachment_id( $values[ $i ]['url'] );
+			if ( 0 === $copy || ( 0 !== $original && $original !== $copy ) ) {
 				return $values;
 			}
 		}

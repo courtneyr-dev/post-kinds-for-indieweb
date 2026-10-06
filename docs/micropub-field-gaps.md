@@ -120,19 +120,24 @@ hint, or with `pkiw-kind: read`, the same entry builds a read card.
 The cover is `mp-cover-image` with `mp-cover-image-alt`, the properties
 proposed for the read card's cover above. The Micropub plugin doesn't
 sideload `mp-cover-image`, so the card uses the URL as sent. Without
-`mp-cover-image`, the cover is the first `photo`. A `photo` value is a URL
-or a JSON photo object (`{"value": "<url>", "alt": "<text>"}`); its alt is
-the object's `alt`, else the aligned `mp-photo-alt` entry.
+`mp-cover-image`, the cover is the first `photo` with a URL; empty values
+are skipped. A `photo` value is a URL or a JSON photo object
+(`{"value": "<url>", "alt": "<text>"}`); its alt is the object's `alt`,
+else the aligned `mp-photo-alt` entry.
 
 The Micropub plugin sideloads every `photo` after the post is inserted and
 appends each local attachment URL to the property, so N photos reach the
-builder as N originals followed by N local copies. When `photo` has that
-shape (an even count, every value in the second half resolves to an
-attachment, and each one equals its original or follows a remote one),
-value i and value i + N are one image with the original's alt. For one
-photo, `[remote URL, local uploads URL]` is one image. The cover is then
-the first image's local copy, not the remote original. Any other shape
-keeps every value as its own image.
+builder as N originals followed by N local copies. Its sideload reuses the
+attachment an original URL already resolves to and downloads one that
+doesn't. When `photo` has that shape (an even count, every value in the
+second half resolves to an attachment, and its original resolves to the
+same attachment or to none), value i and value i + N are one image with
+the original's alt. For one photo, `[remote URL, local uploads URL]` is
+one image. The cover is then the first image's local copy, not the remote
+original. Any other shape keeps every value as its own image. That
+includes a list a client sends with a remote URL and its local copy
+already in it, such as `[remote cover, panel, local cover]`: nothing ties
+the two cover URLs together, so the local one follows the card.
 
 The cover isn't repeated below the card: the builder drops every value of
 the image that holds the cover URL, plus any other copy of that URL, and
