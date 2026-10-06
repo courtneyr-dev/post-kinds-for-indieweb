@@ -10,7 +10,13 @@ import path from 'node:path';
 
 const srcRoot = path.resolve( 'src/blocks' );
 const buildRoot = path.resolve( 'build/blocks' );
-const files = [ 'block.json', 'render.php', 'style.css', 'editor.css' ];
+const files = [
+	'block.json',
+	'render.php',
+	'style.css',
+	'editor.css',
+	'view.js',
+];
 
 let copied = 0;
 for ( const entry of readdirSync( srcRoot, { withFileTypes: true } ) ) {
