@@ -7,6 +7,7 @@
 
 declare(strict_types=1);
 
+use PKIW\Abilities\Core_Abilities;
 use PKIW\Kind_Archive_Layouts;
 use PKIW\Meta_Fields;
 
@@ -17,8 +18,10 @@ use PKIW\Meta_Fields;
  * `0`, shown otherwise. A brand with no marker was typed by the author and
  * prints whatever the privacy, even when it matches the venue name.
  *
- * Covers the card and its `h-food` author, the feed's `content:encoded`,
- * REST `content.rendered` and meta, the menu line and Recent Specials. An
+ * Covers the card and its `h-food` author, the Stream card, the feed's
+ * `content:encoded` and whole RSS2 and Atom documents, REST
+ * `content.rendered` and meta, the `post-kinds/get-post-meta` ability, the
+ * menu line and Recent Specials. An
  * author who edits a marked brand makes it theirs, so the edit clears the
  * marker.
  *
@@ -172,6 +175,26 @@ final class DrinkBrandPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A whole feed document, as core's feed template prints it.
+	 *
+	 * @param string $type `rss2` or `atom`.
+	 */
+	private function feed_document( string $type ): string {
+		$this->go_to( '/?feed=' . $type );
+		$this->assertTrue( is_feed(), 'Feed context did not take.' );
+
+		ob_start();
+		try {
+			// The template sends headers after PHPUnit's output, as core's feed tests do.
+			@require ABSPATH . WPINC . '/feed-' . $type . '.php'; // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		} finally {
+			$out = (string) ob_get_clean();
+		}
+
+		return $out;
+	}
+
+	/**
 	 * The menu line for a post.
 	 *
 	 * @param int $id Post ID.
@@ -238,8 +261,11 @@ final class DrinkBrandPrivacyTest extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'author', $food['properties'] );
 	}
 
-	public function test_the_feed_content_omits_a_location_derived_brand_on_a_private_drink(): void {
-		$content = $this->feed_content( $this->drink( 'private', true ) );
+	/**
+	 * @dataProvider private_locations
+	 */
+	public function test_the_feed_content_omits_a_location_derived_brand_on_a_private_drink( string $privacy, ?string $geo_public ): void {
+		$content = $this->feed_content( $this->drink( $privacy, true, $geo_public ) );
 
 		$this->assertStringContainsString( 'Spicy Margarita', $content, 'The card itself is in the feed.' );
 		$this->assertStringNotContainsString( self::VENUE, $content );
@@ -267,8 +293,11 @@ final class DrinkBrandPrivacyTest extends WP_UnitTestCase {
 		$this->assertSame( '', $redacted['_pkiw_drink_brewery'] );
 	}
 
-	public function test_menu_line_and_recent_specials_omit_a_location_derived_brand(): void {
-		$id = $this->drink( 'private', true );
+	/**
+	 * @dataProvider private_locations
+	 */
+	public function test_menu_line_and_recent_specials_omit_a_location_derived_brand( string $privacy, ?string $geo_public ): void {
+		$id = $this->drink( $privacy, true, $geo_public );
 
 		$line = $this->menu_line( $id );
 		$this->assertStringContainsString( 'Spicy Margarita', $line, 'The menu line itself renders.' );
@@ -277,6 +306,81 @@ final class DrinkBrandPrivacyTest extends WP_UnitTestCase {
 		$specials = $this->specials();
 		$this->assertStringContainsString( 'Spicy Margarita', $specials, 'The special itself renders.' );
 		$this->assertStringNotContainsString( self::VENUE, $specials );
+	}
+
+	/**
+	 * Both feed templates core ships.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function feed_types(): array {
+		return [
+			'rss2' => [ 'rss2' ],
+			'atom' => [ 'atom' ],
+		];
+	}
+
+	/**
+	 * @dataProvider feed_types
+	 */
+	public function test_a_whole_feed_document_omits_a_location_derived_brand_on_a_private_drink( string $type ): void {
+		$id = $this->drink( 'private', true );
+
+		$doc = $this->feed_document( $type );
+		$this->assertStringContainsString( 'p-drank h-food', $doc, 'The card is in the feed item.' );
+		$this->assertStringNotContainsString( self::VENUE, $doc );
+
+		delete_post_meta( $id, '_pkiw_drink_brand_source' );
+		$this->assertStringContainsString( self::VENUE, $this->feed_document( $type ), 'Without the marker the same feed prints the brand.' );
+	}
+
+	/**
+	 * Both ways to call the ability: every field, or named keys.
+	 *
+	 * @return array<string, array{0: array<string, mixed>}>
+	 */
+	public function ability_inputs(): array {
+		return [
+			'all keys'  => [ [] ],
+			'meta_keys' => [ [ 'meta_keys' => [ 'drink_brewery' ] ] ],
+		];
+	}
+
+	/**
+	 * @dataProvider ability_inputs
+	 *
+	 * @param array<string, mixed> $input Extra ability input.
+	 */
+	public function test_the_get_post_meta_ability_blanks_a_location_derived_brand_for_a_subscriber( array $input ): void {
+		$id = $this->drink( 'private', true );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'subscriber' ] ) );
+
+		$result = Core_Abilities::instance()->execute_get_post_meta( [ 'post_id' => $id ] + $input );
+		$this->assertIsArray( $result );
+		$this->assertArrayHasKey( 'drink_brewery', $result['meta'] );
+		$this->assertSame( '', $result['meta']['drink_brewery'] );
+
+		delete_post_meta( $id, '_pkiw_drink_brand_source' );
+		$result = Core_Abilities::instance()->execute_get_post_meta( [ 'post_id' => $id ] + $input );
+		$this->assertIsArray( $result );
+		$this->assertSame( self::VENUE, $result['meta']['drink_brewery'], 'Without the marker the ability returns the brand.' );
+	}
+
+	public function test_the_stream_card_omits_a_location_derived_brand_on_a_private_drink(): void {
+		$id = $this->drink( 'private', true );
+		$this->go_to( home_url( '/' ) );
+		$GLOBALS['post'] = get_post( $id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		// A card-only post goes through do_blocks() in the Stream.
+		$html = \PKIW\render_stream_card();
+		$this->assertStringContainsString( 'Spicy Margarita', $html, 'The Stream card itself renders.' );
+		$this->assertStringNotContainsString( self::VENUE, $html );
+		$food = $this->h_food( $html );
+		$this->assertNotNull( $food, 'Expected a parsed h-food.' );
+		$this->assertArrayNotHasKey( 'author', $food['properties'] );
+
+		delete_post_meta( $id, '_pkiw_drink_brand_source' );
+		$this->assertStringContainsString( self::VENUE, \PKIW\render_stream_card(), 'Without the marker the Stream card prints the brand.' );
 	}
 
 	public function test_a_typed_brand_still_prints_on_a_private_drink(): void {
@@ -334,7 +438,9 @@ final class DrinkBrandPrivacyTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( '<span class="p-author h-card"><span class="p-name">' . self::VENUE . '</span></span>', $this->render_card( $id ) );
 		$this->assertSame( self::VENUE, $this->rest_meta( $id )['_pkiw_drink_brewery'] );
+		$this->assertStringContainsString( self::VENUE, $this->feed_content( $id ) );
 		$this->assertStringContainsString( self::VENUE, $this->menu_line( $id ) );
+		$this->assertStringContainsString( self::VENUE, $this->specials() );
 	}
 
 	public function test_an_editor_sees_a_location_derived_brand(): void {
