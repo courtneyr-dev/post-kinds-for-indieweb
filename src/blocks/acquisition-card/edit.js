@@ -14,7 +14,12 @@ import {
 	MediaUpload,
 	MediaUploadCheck,
 } from '@wordpress/block-editor';
-import { PanelBody, TextControl, SelectControl } from '@wordpress/components';
+import {
+	PanelBody,
+	TextControl,
+	SelectControl,
+	ToggleControl,
+} from '@wordpress/components';
 import { useEffect } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
 
@@ -76,6 +81,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		title,
 		acquisitionType,
 		cost,
+		showCostPublicly,
 		where,
 		whereUrl,
 		photo,
@@ -207,6 +213,20 @@ export default function Edit( { attributes, setAttributes } ) {
 							'$0.00',
 							'post-kinds-for-indieweb-in-block-themes'
 						) }
+					/>
+					<ToggleControl
+						label={ __(
+							'Show cost publicly',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
+						help={ __(
+							'Off by default: cost stays visible only to you.',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
+						checked={ !! showCostPublicly }
+						onChange={ ( value ) =>
+							setAttributes( { showCostPublicly: value } )
+						}
 					/>
 					<TextControl
 						label={ __(

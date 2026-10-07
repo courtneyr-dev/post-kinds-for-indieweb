@@ -20,6 +20,10 @@
 		"cost": {
 			"type": "string"
 		},
+		"showCostPublicly": {
+			"type": "boolean",
+			"default": false
+		},
 		"where": {
 			"type": "string"
 		},
