@@ -144,22 +144,25 @@ function url_host( string $url ): string {
  * Keep `_pkiw_cite_host` in step with `_pkiw_cite_url`.
  *
  * Runs on every write of the cite URL, whoever writes it: the card sync,
- * Micropub, Quick Post, an import or REST.
+ * Micropub, Quick Post, an import or REST. Reads the stored rows rather
+ * than the hook's value, so the host names the URL get_post_meta()
+ * returns after any write, including a delete of one row of several or a
+ * write made inside another meta hook.
  *
  * @since 1.9.0
  *
  * @param int|int[] $meta_id   Meta ID (an array of IDs on delete). Unused.
  * @param int       $object_id Post ID.
  * @param string    $meta_key  Meta key.
- * @param mixed     $value     Meta value.
  * @return void
  */
-function sync_cite_host( $meta_id, int $object_id, string $meta_key, $value ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed -- Hook signature.
+function sync_cite_host( $meta_id, int $object_id, string $meta_key ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed -- Hook signature.
 	if ( Meta_Fields::PREFIX . 'cite_url' !== $meta_key ) {
 		return;
 	}
 
-	$host = doing_action( 'deleted_post_meta' ) ? '' : url_host( is_string( $value ) ? $value : '' );
+	$url  = get_metadata_raw( 'post', $object_id, $meta_key, true );
+	$host = url_host( is_string( $url ) ? $url : '' );
 
 	if ( '' === $host ) {
 		delete_post_meta( $object_id, CITE_HOST_META );
@@ -168,6 +171,6 @@ function sync_cite_host( $meta_id, int $object_id, string $meta_key, $value ): v
 
 	update_post_meta( $object_id, CITE_HOST_META, $host );
 }
-add_action( 'added_post_meta', __NAMESPACE__ . '\\sync_cite_host', 10, 4 );
-add_action( 'updated_post_meta', __NAMESPACE__ . '\\sync_cite_host', 10, 4 );
-add_action( 'deleted_post_meta', __NAMESPACE__ . '\\sync_cite_host', 10, 4 );
+add_action( 'added_post_meta', __NAMESPACE__ . '\\sync_cite_host', 10, 3 );
+add_action( 'updated_post_meta', __NAMESPACE__ . '\\sync_cite_host', 10, 3 );
+add_action( 'deleted_post_meta', __NAMESPACE__ . '\\sync_cite_host', 10, 3 );
