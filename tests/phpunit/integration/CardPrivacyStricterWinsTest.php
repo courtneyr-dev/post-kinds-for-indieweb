@@ -371,6 +371,31 @@ final class CardPrivacyStricterWinsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * (b) The create-post ability writes its meta after the insert's hooks
+	 * have run, and still can't loosen past the card.
+	 *
+	 * @dataProvider settings
+	 *
+	 * @param string $setting `checkin` or `rsvp`.
+	 */
+	public function test_the_create_post_ability_cannot_loosen_past_the_card( string $setting ): void {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$result = Core_Abilities::instance()->execute_create_post(
+			[
+				'kind'    => $setting,
+				'title'   => 'Sentinel ability post',
+				'content' => $this->card( $setting, 'private' ),
+				'status'  => 'publish',
+				substr( self::KEYS[ $setting ], strlen( Meta_Fields::PREFIX ) ) => 'public',
+			]
+		);
+
+		$this->assertIsArray( $result );
+		$this->assertSame( 'private', $this->stored( $result['post_id'], $setting ) );
+	}
+
+	/**
 	 * (c) Both controls public store public.
 	 *
 	 * @dataProvider settings
