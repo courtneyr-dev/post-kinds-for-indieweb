@@ -94,3 +94,79 @@ function card_wall_clock( string $raw, string $format = '' ): array {
 
 	return [ '', '' ];
 }
+
+/**
+ * Calculate full, half, and empty star counts for a rating.
+ *
+ * @since 1.9.0
+ *
+ * @param float $rating Stored rating.
+ * @param int   $best   Best possible rating.
+ * @return array{value: float, best: int, full: int, half: bool, empty: int} Normalized rating and star counts.
+ */
+function card_star_counts( float $rating, int $best = 5 ): array {
+	$best  = $best < 1 ? 5 : $best;
+	$value = max( 0.0, min( (float) $best, $rating ) );
+	$full  = (int) floor( $value );
+	$half  = ( $value - $full ) >= 0.5;
+	$empty = max( 0, $best - $full - ( $half ? 1 : 0 ) );
+
+	return compact( 'value', 'best', 'full', 'half', 'empty' );
+}
+
+/**
+ * Build the accessible label for a card rating.
+ *
+ * @since 1.9.0
+ *
+ * @param float $rating Stored rating.
+ * @param int   $best   Best possible rating.
+ * @return string Rating label, or an empty string for no rating.
+ */
+function card_rating_label( float $rating, int $best = 5 ): string {
+	$counts = card_star_counts( $rating, $best );
+	if ( $counts['value'] <= 0 ) {
+		return '';
+	}
+
+	if ( floor( $counts['value'] ) === $counts['value'] ) {
+		$number = number_format_i18n( $counts['value'], 0 );
+	} else {
+		$number = rtrim( rtrim( number_format_i18n( $counts['value'], 2 ), '0' ), '.,' );
+	}
+
+	return sprintf(
+		/* translators: 1: rating, 2: best possible rating */
+		__( 'Rated %1$s of %2$s', 'post-kinds-for-indieweb-in-block-themes' ),
+		$number,
+		number_format_i18n( $counts['best'], 0 )
+	);
+}
+
+/**
+ * Render a card rating as accessible SVG stars and hidden machine data.
+ *
+ * @since 1.9.0
+ *
+ * @param mixed $rating Stored rating.
+ * @param int   $best   Best possible rating.
+ * @return string Rating HTML, or an empty string for no rating.
+ */
+function card_rating_html( $rating, int $best = 5 ): string {
+	$counts = card_star_counts( (float) $rating, $best );
+	if ( $counts['value'] <= 0 ) {
+		return '';
+	}
+
+	$path    = 'M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17l-6.9 3.5 1.6-6.8L1.4 9.1l7-.6z';
+	$full    = '<svg class="" viewBox="0 0 24 24" fill="currentColor" focusable="false"><path d="' . $path . '"/></svg>';
+	$empty   = '<svg class="off" viewBox="0 0 24 24" fill="currentColor" focusable="false"><path d="' . $path . '"/></svg>';
+	$half    = '<svg class="half" viewBox="0 0 24 24" fill="currentColor" focusable="false"><path class="off" d="' . $path . '"/><path d="' . $path . '" style="clip-path:inset(0 50% 0 0)"/></svg>';
+	$machine = rtrim( rtrim( number_format( $counts['value'], 2, '.', '' ), '0' ), '.' );
+
+	return '<div class="pk-stars" role="img" aria-label="' . esc_attr( card_rating_label( $counts['value'], $counts['best'] ) ) . '">'
+		. str_repeat( $full, $counts['full'] )
+		. ( $counts['half'] ? $half : '' )
+		. str_repeat( $empty, $counts['empty'] )
+		. '</div><data class="p-rating" value="' . esc_attr( $machine ) . '" hidden></data>';
+}

@@ -31,7 +31,7 @@ $pkiw_cover_image    = $attributes['coverImage'] ?? '';
 $pkiw_cover_alt      = $attributes['coverImageAlt'] ?? '';
 $pkiw_listen_url     = $attributes['listenUrl'] ?? '';
 $pkiw_musicbrainz_id = $attributes['musicbrainzId'] ?? '';
-$pkiw_rating         = (int) ( $attributes['rating'] ?? 0 );
+$pkiw_rating         = (float) ( $attributes['rating'] ?? 0 );
 $pkiw_listened_at    = $attributes['listenedAt'] ?? '';
 
 $pkiw_embed                                    = $pkiw_listen_url ? get_cached_embed_html( $pkiw_listen_url ) : false;
@@ -82,14 +82,7 @@ ob_start();
 			<?php endif; ?>
 		</div>
 
-		<?php if ( $pkiw_rating > 0 ) : ?>
-			<div class="pk-stars" role="img" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">
-				<?php for ( $pkiw_i = 1; $pkiw_i <= 5; $pkiw_i++ ) : ?>
-					<svg class="<?php echo $pkiw_i <= $pkiw_rating ? '' : 'off'; ?>" viewBox="0 0 24 24" fill="currentColor" focusable="false"><path d="M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17l-6.9 3.5 1.6-6.8L1.4 9.1l7-.6z"/></svg>
-				<?php endfor; ?>
-			</div>
-			<data class="p-rating" value="<?php echo esc_attr( $pkiw_rating ); ?>" hidden></data>
-		<?php endif; ?>
+		<?php echo \PKIW\card_rating_html( $pkiw_rating ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
 		<?php if ( $pkiw_embed ) : ?>
 			<div class="pk-embed pk-embed--audio"><?php echo $pkiw_embed; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>

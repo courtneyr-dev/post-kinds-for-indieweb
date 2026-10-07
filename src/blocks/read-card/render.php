@@ -33,7 +33,7 @@ $pkiw_cover_alt      = $attributes['coverImageAlt'] ?? '';
 $pkiw_book_url       = $attributes['bookUrl'] ?? '';
 $pkiw_openlibrary_id = $attributes['openlibraryId'] ?? '';
 $pkiw_read_status    = $attributes['readStatus'] ?? 'to-read';
-$pkiw_rating         = isset( $attributes['rating'] ) ? (int) $attributes['rating'] : 0;
+$pkiw_rating         = (float) ( $attributes['rating'] ?? 0 );
 $pkiw_started_at     = $attributes['startedAt'] ?? '';
 $pkiw_finished_at    = $attributes['finishedAt'] ?? '';
 $pkiw_review         = $attributes['review'] ?? '';
@@ -135,14 +135,7 @@ ob_start();
 			</div>
 		<?php endif; ?>
 
-		<?php if ( $pkiw_rating > 0 ) : ?>
-			<div class="pk-stars" role="img" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">
-				<?php for ( $pkiw_i = 1; $pkiw_i <= 5; $pkiw_i++ ) : ?>
-					<svg class="<?php echo $pkiw_i <= $pkiw_rating ? '' : 'off'; ?>" viewBox="0 0 24 24" fill="currentColor" focusable="false"><path d="M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17l-6.9 3.5 1.6-6.8L1.4 9.1l7-.6z"/></svg>
-				<?php endfor; ?>
-			</div>
-			<data class="p-rating" value="<?php echo esc_attr( $pkiw_rating ); ?>" hidden></data>
-		<?php endif; ?>
+		<?php echo \PKIW\card_rating_html( $pkiw_rating ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
 		<?php if ( $pkiw_cover_image ) : ?>
 			<div class="pk-media">
