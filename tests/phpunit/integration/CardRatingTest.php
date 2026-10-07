@@ -53,6 +53,27 @@ final class CardRatingTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The star row is inline-flex, so it runs right to left on an RTL
+	 * site and the half star's filled side has to face the full stars.
+	 */
+	public function test_half_star_fills_the_side_facing_the_full_stars(): void {
+		global $wp_locale;
+
+		$this->assertStringContainsString( 'clip-path:inset(0 50% 0 0)', \PKIW\card_rating_html( 3.5 ) );
+
+		$direction                = $wp_locale->text_direction;
+		$wp_locale->text_direction = 'rtl';
+		try {
+			$html = \PKIW\card_rating_html( 3.5 );
+		} finally {
+			$wp_locale->text_direction = $direction;
+		}
+
+		$this->assertStringContainsString( 'clip-path:inset(0 0 0 50%)', $html );
+		$this->assertStringNotContainsString( 'clip-path:inset(0 50% 0 0)', $html );
+	}
+
+	/**
 	 * @dataProvider rating_cards
 	 *
 	 * @param array<string, mixed> $attributes Base attributes.
