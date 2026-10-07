@@ -67,6 +67,35 @@ class Yoast_SEO {
 		foreach ( [ 'wpseo_title', 'wpseo_opengraph_title', 'wpseo_twitter_title', 'wpseo_schema_graph' ] as $hook ) {
 			add_filter( $hook, [ \PKIW\Title_Privacy::class, 'scrub_stored_title' ], 20, 2 );
 		}
+
+		// Yoast stores the permalink in the post's indexable on wp_insert_post,
+		// which the importers fire before they write privacy, and its
+		// canonical, og:url, schema and sitemap read the stored one.
+		add_action( 'pkiw_derived_slug_replaced', [ $this, 'rebuild_post_indexable' ] );
+	}
+
+	/**
+	 * Rebuild a post's Yoast indexable after Title_Privacy replaced its slug.
+	 *
+	 * Runs Yoast's own post watcher, the code its wp_insert_post hook runs.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return void
+	 */
+	public function rebuild_post_indexable( $post_id ): void {
+		if ( ! function_exists( 'YoastSEO' ) ) {
+			return;
+		}
+
+		try {
+			$watcher = YoastSEO()->classes->get( 'Yoast\\WP\\SEO\\Integrations\\Watchers\\Indexable_Post_Watcher' );
+			if ( is_object( $watcher ) && method_exists( $watcher, 'build_indexable' ) ) {
+				$watcher->build_indexable( (int) $post_id );
+			}
+		} catch ( \Throwable ) {
+			// A Yoast version without this service rebuilds on the post's next save.
+			return;
+		}
 	}
 
 	/**
