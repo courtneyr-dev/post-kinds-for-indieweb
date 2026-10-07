@@ -561,7 +561,7 @@ class Card_Meta_Sync {
 	 */
 	private static function attr_value( int $post_id, array $block, string $attr, string $suffix, bool $on_save ) {
 		if ( isset( self::PROVIDER_ATTRS[ $block['blockName'] ][ $attr ] ) ) {
-			return self::provider_id( $block, $attr );
+			return self::provider_id( $post_id, $block, $attr );
 		}
 
 		$value = $block['attrs'][ $attr ] ?? null;
@@ -605,7 +605,7 @@ class Card_Meta_Sync {
 
 		$named = [];
 		foreach ( $groups as $provider => $group ) {
-			if ( '' !== self::provider_id( $block, $provider ) ) {
+			if ( '' !== self::provider_id( $post_id, $block, $provider ) ) {
 				$named[ $group ] = true;
 			}
 		}
@@ -619,23 +619,38 @@ class Card_Meta_Sync {
 	}
 
 	/**
-	 * A card's provider ID as sync_attr() would store it, or '' when the
-	 * card leaves it out, holds a non-string, or holds a string the
-	 * sanitizer empties. block.json types the IDs as strings, so "   ",
-	 * "<b></b>", 0, true and false count as left out: they write nothing
-	 * over a stored ID and name no provider.
+	 * A card's provider ID as sync_attr() passes it to update_post_meta(),
+	 * or '' when the card leaves it out, holds a non-string, or holds a
+	 * string whose stored row would be empty. A key sanitizer that returns
+	 * a number still stores a row, so it still names the provider. block.json types the IDs as
+	 * strings, so "   ", "<b></b>", "\", "<b>\</b>", 0, true and false count
+	 * as left out: they write nothing over a stored ID and name no provider.
 	 *
+	 * @param int                  $post_id  Post ID.
 	 * @param array<string, mixed> $block    Parsed card block.
 	 * @param string               $provider Provider ID attribute.
 	 * @return string
 	 */
-	private static function provider_id( array $block, string $provider ): string {
+	private static function provider_id( int $post_id, array $block, string $provider ): string {
 		$value = $block['attrs'][ $provider ] ?? '';
 		if ( ! is_string( $value ) ) {
 			return '';
 		}
 
-		return self::clean_value( self::ATTR_META_MAP[ $block['blockName'] ][ $provider ] ?? '', $value );
+		$suffix = self::ATTR_META_MAP[ $block['blockName'] ][ $provider ] ?? '';
+		$value  = self::clean_value( $suffix, $value );
+
+		// The row sync_attr() would store: it cleans the value again, and
+		// update_metadata() unslashes it and runs the key's registered
+		// sanitizer, so "\" stores as ''.
+		$stored = sanitize_meta(
+			Meta_Fields::PREFIX . $suffix,
+			wp_unslash( self::clean_value( $suffix, $value ) ),
+			'post',
+			get_object_subtype( 'post', $post_id )
+		);
+
+		return is_scalar( $stored ) && '' !== trim( (string) $stored ) ? $value : '';
 	}
 
 	/**
