@@ -8,6 +8,7 @@
 declare(strict_types=1);
 
 use PKIW\Abilities\Core_Abilities;
+use PKIW\Integrations\Atmosphere_Titles;
 use PKIW\Meta_Fields;
 
 /**
@@ -20,7 +21,10 @@ use PKIW\Meta_Fields;
  * `content:encoded` and whole RSS2 and Atom documents, REST
  * `content.rendered` and `_pkiw_acquisition_price`, the
  * `post-kinds/get-post-meta` ability, and the theme helper
- * Meta_Fields::acquisition_cost_visible().
+ * Meta_Fields::acquisition_cost_visible(). Readers of raw post_content get
+ * the card as the editor stored it, static HTML included: the text
+ * ActivityPub builds a summary from, the ATmosphere title of an untitled
+ * post, and WP_Query and REST search.
  *
  * @group integration
  */
@@ -70,17 +74,46 @@ final class AcquisitionCostPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The card as the block editor stored it before issue 239: the block
+	 * comment plus the static HTML save.js printed, cost included. Live
+	 * acquisitions hold this markup.
+	 *
+	 * @param bool $show_cost Whether the card's "Show cost publicly" toggle is on.
+	 */
+	private function saved_card( bool $show_cost ): string {
+		$attrs = [
+			'title' => self::TITLE,
+			'cost'  => self::COST,
+			'where' => self::WHERE,
+		];
+		if ( $show_cost ) {
+			$attrs['showCostPublicly'] = true;
+		}
+
+		return '<!-- wp:post-kinds-indieweb/acquisition-card ' . serialize_block_attributes( $attrs ) . ' -->'
+			. '<div class="wp-block-post-kinds-indieweb-acquisition-card acquisition-card layout-horizontal"><div class="post-kinds-card h-cite"><div class="post-kinds-card__content">'
+			. '<span class="post-kinds-card__badge">Purchase</span><h3 class="post-kinds-card__title p-name">' . self::TITLE . '</h3>'
+			. '<p class="post-kinds-card__subtitle">' . self::COST . '</p>'
+			. '<p class="post-kinds-card__meta p-location">from ' . self::WHERE . '</p></div>'
+			. '<data class="u-acquired" value="' . self::TITLE . '" hidden></data></div></div>'
+			. '<!-- /wp:post-kinds-indieweb/acquisition-card -->';
+	}
+
+	/**
 	 * A published acquisition with a card, plus the price meta Quick Post writes.
 	 *
-	 * @param bool $show_cost Whether the card's toggle is on.
+	 * @param bool   $show_cost Whether the card's toggle is on.
+	 * @param bool   $saved     Whether the card is stored editor markup (saved_card()) rather than a bare comment.
+	 * @param string $title     Post title.
 	 * @return int Post ID.
 	 */
-	private function acquisition( bool $show_cost ): int {
+	private function acquisition( bool $show_cost, bool $saved = false, string $title = self::TITLE ): int {
 		$id = self::factory()->post->create(
 			[
 				'post_status'  => 'publish',
-				'post_title'   => self::TITLE,
-				'post_content' => $this->card( $show_cost ),
+				'post_title'   => $title,
+				'post_excerpt' => '',
+				'post_content' => $saved ? $this->saved_card( $show_cost ) : $this->card( $show_cost ),
 			]
 		);
 		wp_set_object_terms( $id, 'acquisition', 'kind' );
@@ -149,6 +182,53 @@ final class AcquisitionCostPrivacyTest extends WP_UnitTestCase {
 		}
 
 		return $out;
+	}
+
+	/**
+	 * The text ActivityPub's generate_post_summary() starts from for a post
+	 * with no excerpt: post_content through sanitize_post_field()'s display
+	 * filters, shortcodes and tags stripped, entities decoded (ActivityPub
+	 * 9.3.1 includes/functions-post.php:363-378). An Article's summary and
+	 * preview come from it.
+	 *
+	 * @param int $id Post ID.
+	 */
+	private function activitypub_summary_source( int $id ): string {
+		$post    = get_post( $id );
+		$content = sanitize_post_field( 'post_content', $post->post_content, $post->ID );
+
+		return html_entity_decode( wp_strip_all_tags( strip_shortcodes( $content ) ), ENT_QUOTES, 'UTF-8' );
+	}
+
+	/**
+	 * IDs a front-end search returns.
+	 *
+	 * @param string $search Search string.
+	 * @return int[]
+	 */
+	private function search_ids( string $search ): array {
+		$query = new WP_Query(
+			[
+				's'              => $search,
+				'post_status'    => 'publish',
+				'fields'         => 'ids',
+				'posts_per_page' => -1,
+			]
+		);
+
+		return array_map( 'intval', $query->posts );
+	}
+
+	/**
+	 * Both ways a card sits in post_content.
+	 *
+	 * @return array<string, array{0: bool}>
+	 */
+	public function card_markup(): array {
+		return [
+			'bare comment'  => [ false ],
+			'editor markup' => [ true ],
+		];
 	}
 
 	public function test_the_card_hides_cost_by_default(): void {
@@ -342,5 +422,106 @@ final class AcquisitionCostPrivacyTest extends WP_UnitTestCase {
 		$data = $this->rest_post( $this->acquisition( true ) );
 
 		$this->assertArrayNotHasKey( self::TOGGLE_KEY, $data['meta'] );
+	}
+
+	public function test_stored_editor_markup_stays_out_of_the_card_feed_and_rest(): void {
+		$id = $this->acquisition( false, true );
+
+		$this->assertStringNotContainsString( self::COST_TEXT, $this->render_card( $id ) );
+		$this->assertStringNotContainsString( self::COST_TEXT, $this->feed_content( $id ) );
+
+		$rendered = $this->rest_post( $id )['content']['rendered'];
+		$this->assertStringContainsString( self::TITLE, $rendered );
+		$this->assertStringNotContainsString( self::COST_TEXT, $rendered );
+	}
+
+	public function test_the_activitypub_summary_source_hides_cost_by_default(): void {
+		$text = $this->activitypub_summary_source( $this->acquisition( false, true ) );
+
+		$this->assertStringContainsString( self::TITLE, $text, 'The card text is still there.' );
+		$this->assertStringContainsString( self::WHERE, $text );
+		$this->assertStringNotContainsString( self::COST_TEXT, $text );
+	}
+
+	public function test_the_activitypub_summary_source_hides_cost_from_an_authors_request(): void {
+		// ActivityPub can transform the post in the publishing request.
+		$id = $this->acquisition( false, true );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$this->assertStringNotContainsString( self::COST_TEXT, $this->activitypub_summary_source( $id ) );
+	}
+
+	public function test_the_activitypub_summary_source_shows_cost_with_the_toggle(): void {
+		$this->assertStringContainsString( self::COST_TEXT, $this->activitypub_summary_source( $this->acquisition( true, true ) ) );
+	}
+
+	public function test_display_content_keeps_the_stored_cost_attribute(): void {
+		// Something that reads display content and writes it back must not lose cost.
+		$id      = $this->acquisition( false, true );
+		$display = sanitize_post_field( 'post_content', get_post( $id )->post_content, $id );
+
+		$this->assertStringContainsString( '"cost":"' . self::COST . '"', $display );
+		$this->assertStringContainsString( '<p class="post-kinds-card__subtitle">' . self::COST . '</p>', get_post( $id )->post_content, 'Stored content is untouched.' );
+		$this->assertStringContainsString( self::COST_TEXT, get_post_field( 'post_content', $id, 'edit' ), 'The edit context keeps it.' );
+	}
+
+	public function test_the_atmosphere_title_of_an_untitled_card_carries_no_cost(): void {
+		$id    = $this->acquisition( false, true, '' );
+		$title = Atmosphere_Titles::derive( get_post( $id ) );
+
+		$this->assertStringContainsString( 'Walnut', $title, 'The title comes from the card text.' );
+		$this->assertStringNotContainsString( self::COST_TEXT, $title );
+	}
+
+	/**
+	 * @dataProvider card_markup
+	 *
+	 * @param bool $saved Whether the card is stored editor markup.
+	 */
+	public function test_search_cannot_find_a_private_cost( bool $saved ): void {
+		$id = $this->acquisition( false, $saved );
+
+		$this->assertContains( $id, $this->search_ids( 'Zq9' ), 'Search finds the post by its title.' );
+		$this->assertContains( $id, $this->search_ids( 'Corner Hardware' ), 'Search finds the post by the card text.' );
+		foreach ( [ '149.99', '$149.99', 'Zq9 $14', 'Zq9 $149', 'Zq9 149.9' ] as $search ) {
+			$this->assertNotContains( $id, $this->search_ids( $search ), "Search for '$search' matched the private cost." );
+		}
+	}
+
+	/**
+	 * @dataProvider card_markup
+	 *
+	 * @param bool $saved Whether the card is stored editor markup.
+	 */
+	public function test_an_excluded_search_term_cannot_probe_a_private_cost( bool $saved ): void {
+		$id = $this->acquisition( false, $saved );
+
+		$this->assertContains( $id, $this->search_ids( 'Zq9 -148' ) );
+		$this->assertContains( $id, $this->search_ids( 'Zq9 -149' ), 'Excluding the cost must not drop the post.' );
+		$this->assertNotContains( $id, $this->search_ids( 'Zq9 -Corner' ), 'Exclusion still works on visible text.' );
+	}
+
+	public function test_rest_search_cannot_find_a_private_cost(): void {
+		$id = $this->acquisition( false, true );
+
+		$GLOBALS['wp_rest_server'] = null;
+		$request                   = new WP_REST_Request( 'GET', '/wp/v2/search' );
+		$request->set_param( 'search', '149.99' );
+		$this->assertNotContains( $id, array_map( 'intval', wp_list_pluck( (array) rest_do_request( $request )->get_data(), 'id' ) ) );
+
+		$request = new WP_REST_Request( 'GET', '/wp/v2/posts' );
+		$request->set_param( 'search', '149.99' );
+		$this->assertNotContains( $id, array_map( 'intval', wp_list_pluck( (array) rest_do_request( $request )->get_data(), 'id' ) ) );
+	}
+
+	public function test_an_editor_can_search_by_cost(): void {
+		$id = $this->acquisition( false, true );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$this->assertContains( $id, $this->search_ids( '149.99' ) );
+	}
+
+	public function test_search_finds_a_public_cost(): void {
+		$this->assertContains( $this->acquisition( true, true ), $this->search_ids( '149.99' ) );
 	}
 }
