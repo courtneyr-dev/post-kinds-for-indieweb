@@ -85,10 +85,26 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Stream relinking keeps the post URL on the outer entry and the cited
-	 * URL on the nested h-cite.
+	 * The eight kind cards, plus a like whose cited URL carries a query
+	 * string with an ampersand.
 	 *
-	 * @dataProvider kind_cards
+	 * @return array<string, array{0: string, 1: string, 2: string}>
+	 */
+	public function stream_cite_cards(): array {
+		return array_merge(
+			$this->kind_cards(),
+			[
+				'like with query' => [ 'like', 'like-of', 'https://example.com/targets/like?a=1&b=2' ],
+			]
+		);
+	}
+
+	/**
+	 * Stream relinking keeps the post URL on the outer entry and the cited
+	 * URL on the nested h-cite. The canonical property holds one value,
+	 * the cited URL, and never the permalink.
+	 *
+	 * @dataProvider stream_cite_cards
 	 */
 	public function test_stream_cite_cards_keep_the_canonical_target(
 		string $kind,
@@ -116,7 +132,10 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 
 		$this->assertContains( $permalink, $properties['url'] ?? [] );
 		$this->assertArrayHasKey( $canonical_property, $properties );
-		$this->assertPropertyContainsTarget( $properties[ $canonical_property ], $target_url );
+		$this->assertCount( 1, $properties[ $canonical_property ] );
+		$target_urls = $this->property_urls( $properties[ $canonical_property ] );
+		$this->assertNotContains( $permalink, $target_urls );
+		$this->assertSame( [ $target_url ], $target_urls );
 		$this->assertSame( 1, substr_count( $html, 'href="' . esc_url( $permalink ) . '"' ) );
 
 		// Listen, watch and read cards keep their visible action links to the
@@ -579,6 +598,33 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 		}
 
 		return $this->find_item_with_property( $nested_items, $property );
+	}
+
+	/**
+	 * Every URL a parsed property carries: plain values, and the url
+	 * values of nested items.
+	 *
+	 * @param array<int, mixed> $values Parsed property values.
+	 * @return array<int, string>
+	 */
+	private function property_urls( array $values ): array {
+		$urls = [];
+		foreach ( $values as $value ) {
+			if ( is_string( $value ) ) {
+				$urls[] = $value;
+				continue;
+			}
+
+			if ( ! is_array( $value ) ) {
+				continue;
+			}
+
+			foreach ( $value['properties']['url'] ?? [] as $url ) {
+				$urls[] = is_array( $url ) ? (string) ( $url['value'] ?? '' ) : (string) $url;
+			}
+		}
+
+		return $urls;
 	}
 
 	/**
