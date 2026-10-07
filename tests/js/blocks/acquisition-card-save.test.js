@@ -79,6 +79,8 @@ describe( 'acquisition card save markup', () => {
 	test( 'parses a card stored with its cost and drops the cost on the next save', () => {
 		const [ block ] = parse( STORED );
 
+		// The parser reports a deprecation match with console.info().
+		expect( console ).toHaveInformed();
 		expect( block.name ).toBe( NAME );
 		expect( block.isValid ).toBe( true );
 		expect( block.attributes.cost ).toBe( '$149.99' );
