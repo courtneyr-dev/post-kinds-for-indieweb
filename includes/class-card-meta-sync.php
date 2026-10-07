@@ -226,13 +226,15 @@ class Card_Meta_Sync {
 
 	/**
 	 * Backfill cron hook, completion option and the version it records.
-	 * Bump BACKFILL_VERSION when ATTR_META_MAP gains fields existing posts
-	 * need, and every site re-runs the batched backfill once.
+	 * Bump BACKFILL_VERSION when sync_content() writes meta existing posts
+	 * need, and every site re-runs the batched backfill once. Version 3
+	 * re-syncs a card behind an RSVP card, which version 2 skipped while
+	 * the RSVP card sat in ATTR_META_MAP.
 	 */
 	public const BACKFILL_HOOK    = 'pkiw_card_meta_backfill';
 	public const BACKFILL_OPTION  = 'pkiw_card_meta_backfill';
 	public const BACKFILL_CURSOR  = 'pkiw_card_meta_backfill_cursor';
-	public const BACKFILL_VERSION = '2';
+	public const BACKFILL_VERSION = '3';
 	public const BACKFILL_BATCH   = 50;
 
 	/**
