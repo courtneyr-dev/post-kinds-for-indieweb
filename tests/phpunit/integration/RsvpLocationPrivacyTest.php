@@ -1065,6 +1065,74 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( self::LOCATION, (string) wp_json_encode( $record ) );
 	}
 
+	/**
+	 * ATmosphere's post crons that publish a publishable post.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function atmosphere_post_crons(): array {
+		return [
+			'publish'          => [ 'atmosphere_publish_post' ],
+			'update'           => [ 'atmosphere_update_post' ],
+			'delete reconcile' => [ 'atmosphere_delete_post' ],
+		];
+	}
+
+	/**
+	 * The textContent ATmosphere's Document transformer builds inside one of
+	 * its post crons, which start with no global post. ATmosphere's own
+	 * callback, which writes to the PDS, is swapped for one that builds the
+	 * document as Publisher does.
+	 *
+	 * @param string $hook Cron hook.
+	 * @param int    $id   Post ID.
+	 */
+	private function atmosphere_cron_text_content( string $hook, int $id ): string {
+		if ( ! class_exists( '\Atmosphere\Transformer\Document' ) ) {
+			$this->markTestSkipped( 'Set PKIW_TESTS_ATMOSPHERE_FILE to build ATmosphere records.' );
+		}
+
+		remove_all_actions( $hook, 10 );
+		$text = '';
+		add_action(
+			$hook,
+			static function ( int $post_id ) use ( &$text ): void {
+				$record = ( new \Atmosphere\Transformer\Document( get_post( $post_id ) ) )->transform();
+				$text   = (string) ( $record['textContent'] ?? '' );
+			}
+		);
+		unset( $GLOBALS['post'] );
+		do_action( $hook, $id ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+
+		return $text;
+	}
+
+	/**
+	 * Inside ATmosphere's post crons each card renders for the post being
+	 * published, so a plain Event or Note post keeps its Event Card location
+	 * in textContent, and an RSVP's follows its setting.
+	 *
+	 * @dataProvider atmosphere_post_crons
+	 * @group atmosphere
+	 *
+	 * @param string $hook Cron hook.
+	 */
+	public function test_atmosphere_post_crons_render_each_event_card_for_its_post( string $hook ): void {
+		foreach ( [ 'event', 'note' ] as $kind ) {
+			$id = $this->post_with( $this->event_card(), [ $kind ] );
+			$this->assertStringContainsString( self::LOCATION, $this->atmosphere_cron_text_content( $hook, $id ), "A plain {$kind} post." );
+			$this->assertFalse( isset( $GLOBALS['post'] ), 'The cron leaves no global post behind.' );
+		}
+
+		$rsvp = $this->post_with( $this->card( 'yes', 'future' ) . "\n\n" . $this->event_card(), [ 'rsvp' ] );
+		$text = $this->atmosphere_cron_text_content( $hook, $rsvp );
+		$this->assertStringContainsString( self::EVENT, $text, 'textContent holds the cards.' );
+		$this->assertStringNotContainsString( self::LOCATION, $text, 'A private RSVP.' );
+
+		$this->make_public( $rsvp );
+		$this->assertStringContainsString( self::LOCATION, $this->atmosphere_cron_text_content( $hook, $rsvp ), 'A public RSVP.' );
+	}
+
 	public function test_an_event_card_on_a_private_rsvp_prints_no_calendar_location(): void {
 		$venue = 'Calendar Hall Rv51';
 		add_filter(
