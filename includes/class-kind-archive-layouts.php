@@ -105,6 +105,7 @@ final class Kind_Archive_Layouts {
 		}
 		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_template_preview' ] );
 		add_action( 'enqueue_block_editor_assets', [ self::class, 'add_archive_sections_groups' ] );
+		add_action( 'enqueue_block_assets', [ Checkin_Map::class, 'enqueue_editor_assets' ] );
 		add_action( 'parse_request', [ $this, 'forget_templates' ] );
 		add_action( 'parse_request', [ Grouped_Archive::class, 'forget_heading_ids' ] );
 		add_filter( 'rest_request_before_callbacks', [ Grouped_Archive::class, 'track_block_preview' ], 10, 3 );

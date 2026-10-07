@@ -27,6 +27,7 @@ function load( state ) {
 				state.blockQueries.push( clientId );
 				return state.blocks;
 			},
+			getSettings: () => ( { postsPerPage: state.postsPerPage } ),
 		},
 	};
 	window.wp = {
@@ -40,6 +41,8 @@ function load( state ) {
 				children,
 			} ),
 			useMemo: ( make ) => make(),
+			useCallback: ( callback ) => callback,
+			useRef: ( value ) => ( { current: value } ),
 		},
 	};
 	window.pkiwKindTemplatePreview = state.settings;
@@ -421,6 +424,14 @@ describe( 'kind template preview', () => {
 		expect( element ).toEqual( { type: 'BlockEdit', props, children: [] } );
 	} );
 
+	it( 'shows the site’s posts per page when nothing else sets the size', () => {
+		const element = load( editorState( { postsPerPage: 10 } ) )(
+			postTemplate( { query: { ...inheriting, perPage: 24 } } )
+		);
+
+		expect( element.props.context.query.perPage ).toBe( 10 );
+	} );
+
 	it( 'leaves every other block alone and asks the store nothing for it', () => {
 		const state = editorState();
 		const props = {
@@ -435,5 +446,129 @@ describe( 'kind template preview', () => {
 
 		expect( element ).toEqual( { type: 'BlockEdit', props, children: [] } );
 		expect( state.termQueries ).toEqual( [] );
+	} );
+} );
+
+describe( 'Query Loop on a kind template', () => {
+	afterEach( () => {
+		delete window.wp;
+		delete window.pkiwKindTemplatePreview;
+		delete window.pkiwGroupedEntries;
+	} );
+
+	// The Query Loop as the check-in archive pattern stores it.
+	const stored = {
+		perPage: 24,
+		pages: 0,
+		offset: 0,
+		postType: 'post',
+		order: 'desc',
+		orderBy: 'date',
+		author: '',
+		search: '',
+		exclude: [],
+		sticky: '',
+		inherit: true,
+	};
+
+	function queryLoop( templateSlug, query = stored ) {
+		return {
+			name: 'core/query',
+			clientId: 'query-1',
+			attributes: { queryId: 224, query },
+			setAttributes: jest.fn(),
+			context: { templateSlug },
+		};
+	}
+
+	// Apply what the wrapped setAttributes passed on, the way the block
+	// editor does: a function gets the block's current attributes.
+	function applied( props ) {
+		expect( props.setAttributes ).toHaveBeenCalledTimes( 1 );
+		const next = props.setAttributes.mock.calls[ 0 ][ 0 ];
+		return 'function' === typeof next ? next( props.attributes ) : next;
+	}
+
+	it( 'writes nothing when core syncs the page size and excludeCurrent on load', () => {
+		const props = queryLoop( 'taxonomy-kind-checkin' );
+		const element = load( editorState( { postsPerPage: 10 } ) )( props );
+
+		// Core's Query Loop edit, on mount, for an inheriting loop.
+		element.props.setAttributes( ( previous ) => ( {
+			query: { ...previous.query, perPage: 10, excludeCurrent: null },
+		} ) );
+
+		const result = applied( props );
+		expect( result.query ).toBe( props.attributes.query );
+		expect( stored.perPage ).toBe( 24 );
+	} );
+
+	it( 'writes nothing when the sync comes as an object', () => {
+		const props = queryLoop( 'taxonomy-kind-checkin' );
+		const element = load( editorState() )( props );
+
+		element.props.setAttributes( {
+			query: { ...stored, perPage: 10 },
+		} );
+
+		expect( applied( props ).query ).toBe( props.attributes.query );
+	} );
+
+	it( 'keeps a stored excludeCurrent and a missing page size as they are', () => {
+		const query = { inherit: true, excludeCurrent: false };
+		const props = queryLoop( 'taxonomy-kind-listen', query );
+		const element = load( editorState() )( props );
+
+		element.props.setAttributes( ( previous ) => ( {
+			query: { ...previous.query, perPage: 10, excludeCurrent: null },
+		} ) );
+
+		expect( applied( props ).query ).toBe( query );
+	} );
+
+	it( 'passes on a change to anything else and keeps the stored page size', () => {
+		const props = queryLoop( 'taxonomy-kind-checkin' );
+		const element = load( editorState() )( props );
+
+		element.props.setAttributes( ( previous ) => ( {
+			query: { ...previous.query, perPage: 10, author: '3' },
+		} ) );
+
+		expect( applied( props ).query ).toEqual( { ...stored, author: '3' } );
+	} );
+
+	it( 'passes on a loop that stops inheriting, page size and all', () => {
+		const props = queryLoop( 'taxonomy-kind-checkin' );
+		const element = load( editorState() )( props );
+
+		element.props.setAttributes( {
+			query: { ...stored, inherit: false, perPage: 10 },
+		} );
+
+		expect( applied( props ).query ).toEqual( {
+			...stored,
+			inherit: false,
+			perPage: 10,
+		} );
+	} );
+
+	it( 'passes on attributes other than the query', () => {
+		const props = queryLoop( 'taxonomy-kind-checkin' );
+		const element = load( editorState() )( props );
+
+		element.props.setAttributes( { queryId: 7 } );
+
+		expect( applied( props ) ).toEqual( { queryId: 7 } );
+	} );
+
+	it.each( [
+		[ 'the general kind archive', 'taxonomy-kind' ],
+		[ 'another archive', 'archive' ],
+		[ 'a post being edited', undefined ],
+	] )( 'leaves the Query Loop alone on %s', ( label, templateSlug ) => {
+		const props = queryLoop( templateSlug );
+		const element = load( editorState() )( props );
+
+		expect( element ).toEqual( { type: 'BlockEdit', props, children: [] } );
 	} );
 } );

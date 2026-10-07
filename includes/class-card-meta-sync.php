@@ -164,9 +164,6 @@ class Card_Meta_Sync {
 			'bggId'       => 'play_bgg_id',
 			'rawgId'      => 'play_rawg_id',
 		],
-		'post-kinds-indieweb/rsvp-card'    => [
-			'locationVisibility' => 'rsvp_location_privacy',
-		],
 		// Other card blocks join this map in follow-on work; the class is
 		// deliberately map-driven so each is one entry, no new code.
 	];
@@ -203,18 +200,20 @@ class Card_Meta_Sync {
 	];
 
 	/**
-	 * Privacy settings whose block.json default is written on every save
-	 * when the card leaves the attribute out. The editor drops an attribute
-	 * that equals its default from the block comment, so a card switched
-	 * back to private would otherwise keep an older 'public' in meta. Each
-	 * is read from the first card of its own type, even when a card of
-	 * another kind comes first.
+	 * Privacy settings, as attribute => [ meta suffix, block.json default ],
+	 * whose default is written on every save when the card leaves the
+	 * attribute out. The editor drops an attribute that equals its default
+	 * from the block comment, so a card switched back to private would
+	 * otherwise keep an older 'public' in meta. Each is read from the first
+	 * card of its own type, even when a card of another kind comes first.
+	 * These cards stay out of ATTR_META_MAP, so a card that only holds a
+	 * privacy setting never stops a later card's fields from syncing.
 	 *
-	 * @var array<string, array<string, string>>
+	 * @var array<string, array<string, array{0: string, 1: string}>>
 	 */
 	public const ATTR_PRIVATE_DEFAULTS = [
 		'post-kinds-indieweb/rsvp-card' => [
-			'locationVisibility' => 'private',
+			'locationVisibility' => [ 'rsvp_location_privacy', 'private' ],
 		],
 	];
 
@@ -227,13 +226,15 @@ class Card_Meta_Sync {
 
 	/**
 	 * Backfill cron hook, completion option and the version it records.
-	 * Bump BACKFILL_VERSION when ATTR_META_MAP gains fields existing posts
-	 * need, and every site re-runs the batched backfill once.
+	 * Bump BACKFILL_VERSION when sync_content() writes meta existing posts
+	 * need, and every site re-runs the batched backfill once. Version 3
+	 * re-syncs a card behind an RSVP card, which version 2 skipped while
+	 * the RSVP card sat in ATTR_META_MAP.
 	 */
 	public const BACKFILL_HOOK    = 'pkiw_card_meta_backfill';
 	public const BACKFILL_OPTION  = 'pkiw_card_meta_backfill';
 	public const BACKFILL_CURSOR  = 'pkiw_card_meta_backfill_cursor';
-	public const BACKFILL_VERSION = '2';
+	public const BACKFILL_VERSION = '3';
 	public const BACKFILL_BATCH   = 50;
 
 	/**
@@ -357,10 +358,6 @@ class Card_Meta_Sync {
 			$defaults = self::ATTR_DEFAULTS[ $block['blockName'] ] ?? [];
 
 			foreach ( $map as $attr => $suffix ) {
-				if ( isset( self::ATTR_PRIVATE_DEFAULTS[ $block['blockName'] ][ $attr ] ) ) {
-					continue; // Synced below, from the first card of its own type.
-				}
-
 				$value = $block['attrs'][ $attr ] ?? null;
 
 				// get_metadata_raw(): a key registered with a default reads as
@@ -419,9 +416,9 @@ class Card_Meta_Sync {
 				continue;
 			}
 
-			foreach ( $privacy as $attr => $default ) {
+			foreach ( $privacy as $attr => [ $suffix, $default ] ) {
 				$value = (string) ( $card['attrs'][ $attr ] ?? '' );
-				update_post_meta( $post_id, Meta_Fields::PREFIX . self::ATTR_META_MAP[ $name ][ $attr ], sanitize_text_field( '' === $value ? $default : $value ) );
+				update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, sanitize_text_field( '' === $value ? $default : $value ) );
 			}
 		}
 
