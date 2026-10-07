@@ -13,7 +13,8 @@
  * card saved before issue 239 holds its cost as text. That excerpt, and
  * only that span, is rebuilt without a private cost in the document
  * description, the Bluesky link card's description and the Bluesky post
- * text.
+ * text. The document's content is rebuilt too when the cost changes what
+ * ATmosphere's parser makes of post_content, as Markpub's does.
  *
  * Deliberately not mapped, and why:
  * - `links`: the lexicon's links union has no interoperable members yet;
@@ -33,6 +34,8 @@ declare(strict_types=1);
 
 namespace PKIW\Integrations;
 
+use Atmosphere\Content_Parser\Content_Parser;
+use Atmosphere\Content_Parser\Registry;
 use PKIW\Meta_Fields;
 use PKIW\Taxonomy;
 
@@ -95,6 +98,8 @@ class Atmosphere_Document_Map {
 			}
 		}
 
+		$record = self::content_without_private_cost( $record, $post );
+
 		if ( empty( $record['title'] ) ) {
 			$derived = Atmosphere_Titles::derive( $post );
 
@@ -106,6 +111,45 @@ class Atmosphere_Document_Map {
 		$kind = $this->kind_slug( $post );
 		if ( null !== $kind ) {
 			$record = $this->append_kind_tag( $record, $post, $kind );
+		}
+
+		return $record;
+	}
+
+	/**
+	 * $record with its content parsed again from post_content without
+	 * private cost, when the cost changes what the parser makes of it.
+	 * ATmosphere's Markpub parser turns a block it doesn't know into
+	 * markdown from the block's saved HTML (content-parser/class-markpub.php:321-328
+	 * in checkout bf8e267), so a card saved before issue 239 hands it the
+	 * cost. The HTML parser reads the rendered page, and Leaflet and Pckt
+	 * skip the card, so their output doesn't change and their content stays
+	 * as it is. Content whose parser isn't registered, or that holds nothing
+	 * once the cost is out, goes.
+	 *
+	 * @param array<string, mixed> $record The document record.
+	 * @param \WP_Post             $post   The post.
+	 * @return array<string, mixed>
+	 */
+	private static function content_without_private_cost( array $record, \WP_Post $post ): array {
+		$type = is_array( $record['content'] ?? null ) ? ( $record['content']['$type'] ?? null ) : null;
+		if ( ! is_string( $type ) ) {
+			return $record;
+		}
+
+		$content  = (string) $post->post_content;
+		$stripped = Meta_Fields::strip_private_cost( $content, (int) $post->ID );
+		if ( $stripped === $content ) {
+			return $record;
+		}
+
+		$parsers = class_exists( Registry::class ) ? Registry::all() : [];
+		$parser  = $parsers[ $type ] ?? null;
+		$clean   = $parser instanceof Content_Parser ? $parser->parse( $stripped, $post ) : null;
+		if ( ! is_array( $clean ) || ( $clean['$type'] ?? null ) !== $type ) {
+			unset( $record['content'] );
+		} elseif ( $clean !== $parser->parse( $content, $post ) ) {
+			$record['content'] = $clean;
 		}
 
 		return $record;

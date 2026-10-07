@@ -45,6 +45,8 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	]
 );
 
+[ $pkiw_jammed_iso, $pkiw_jammed_display ] = \PKIW\card_calendar_date( (string) $pkiw_jammed_at );
+
 ob_start();
 ?>
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
@@ -94,11 +96,11 @@ ob_start();
 				<a class="pk-link" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 9-14 9z"/></svg><?php esc_html_e( 'Jam', 'post-kinds-for-indieweb-in-block-themes' ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 			<?php endif; ?>
 			<?php
-			if ( $pkiw_url && $pkiw_jammed_at ) :
+			if ( $pkiw_url && $pkiw_jammed_iso ) :
 				?>
 				<span class="pk-dot"></span><?php endif; ?>
-			<?php if ( $pkiw_jammed_at ) : ?>
-				<time class="dt-published" datetime="<?php echo esc_attr( gmdate( 'c', (int) strtotime( $pkiw_jammed_at ) ) ); ?>"><?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) strtotime( $pkiw_jammed_at ) ) ); ?></time>
+			<?php if ( $pkiw_jammed_iso ) : ?>
+				<time class="dt-published" datetime="<?php echo esc_attr( $pkiw_jammed_iso ); ?>"><?php echo esc_html( $pkiw_jammed_display ); ?></time>
 			<?php endif; ?>
 		</div>
 	</div>

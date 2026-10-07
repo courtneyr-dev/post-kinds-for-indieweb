@@ -68,9 +68,6 @@ export default function Edit( { attributes, setAttributes } ) {
 	// Sync block attributes to post meta
 	useEffect( () => {
 		const metaUpdates = {};
-		if ( title !== undefined ) {
-			metaUpdates._pkiw_jam_title = title || '';
-		}
 		if ( artist !== undefined ) {
 			metaUpdates._pkiw_jam_artist = artist || '';
 		}
@@ -87,7 +84,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		if ( Object.keys( metaUpdates ).length > 0 ) {
 			editPost( { meta: metaUpdates } );
 		}
-	}, [ title, artist, album, cover, url, editPost ] );
+	}, [ artist, album, cover, url, editPost ] );
 
 	const handleSearchSelect = ( item ) => {
 		// MusicBrainz returns 'track', other APIs may return 'title' or 'name'

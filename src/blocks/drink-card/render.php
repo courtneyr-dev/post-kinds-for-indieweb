@@ -40,7 +40,7 @@ $pkiw_drink_type        = $attributes['drinkType'] ?? '';
 $pkiw_brand             = $attributes['brand'] ?? '';
 $pkiw_photo             = $attributes['photo'] ?? '';
 $pkiw_photo_alt         = $attributes['photoAlt'] ?? '';
-$pkiw_rating            = isset( $attributes['rating'] ) ? (int) $attributes['rating'] : 0;
+$pkiw_rating            = (float) ( $attributes['rating'] ?? 0 );
 $pkiw_drank_at          = $attributes['drankAt'] ?? '';
 $pkiw_notes             = $attributes['notes'] ?? '';
 $pkiw_venue_url         = $attributes['venueUrl'] ?? '';
@@ -81,15 +81,7 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	]
 );
 
-$pkiw_drank_iso     = '';
-$pkiw_drank_display = '';
-if ( $pkiw_drank_at ) {
-	$pkiw_ts = strtotime( $pkiw_drank_at );
-	if ( $pkiw_ts ) {
-		$pkiw_drank_iso     = gmdate( 'c', $pkiw_ts );
-		$pkiw_drank_display = wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $pkiw_ts );
-	}
-}
+[ $pkiw_drank_iso, $pkiw_drank_display ] = \PKIW\card_wall_clock( (string) $pkiw_drank_at );
 
 ob_start();
 ?>
@@ -147,14 +139,7 @@ ob_start();
 			<?php endif; ?>
 		</div>
 
-		<?php if ( $pkiw_rating > 0 ) : ?>
-			<div class="pk-stars" role="img" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">
-				<?php for ( $pkiw_i = 1; $pkiw_i <= 5; $pkiw_i++ ) : ?>
-					<svg class="<?php echo $pkiw_i <= $pkiw_rating ? '' : 'off'; ?>" viewBox="0 0 24 24" fill="currentColor" focusable="false"><path d="M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17l-6.9 3.5 1.6-6.8L1.4 9.1l7-.6z"/></svg>
-				<?php endfor; ?>
-			</div>
-			<data class="p-rating" value="<?php echo esc_attr( $pkiw_rating ); ?>" hidden></data>
-		<?php endif; ?>
+		<?php echo \PKIW\card_rating_html( $pkiw_rating ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
 		<?php if ( $pkiw_photo ) : ?>
 			<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_photo ); ?>" alt="<?php echo esc_attr( $pkiw_photo_alt ? $pkiw_photo_alt : sprintf( /* translators: %s: food/drink name */ __( 'Picture of %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_name ) ); ?>" loading="lazy" /></div>

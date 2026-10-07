@@ -170,9 +170,10 @@ class Card_Meta_Sync {
 
 	/**
 	 * Defaults from block.json that the card renders when an attribute is absent from
-	 * the serialized comment. Mirrored only when the meta is still empty, so
-	 * the archive files a post under what its card shows without ever
-	 * overwriting a stored value.
+	 * the serialized comment. Mirrored only when no non-empty row is stored
+	 * (checked with get_metadata_raw(), which a registered default can't
+	 * mask), so the archive files a post under what its card shows without
+	 * ever overwriting a stored value.
 	 *
 	 * @var array<string, array<string, string>>
 	 */
@@ -357,8 +358,10 @@ class Card_Meta_Sync {
 			foreach ( $map as $attr => $suffix ) {
 				$value = $block['attrs'][ $attr ] ?? null;
 
+				// get_metadata_raw(): a key registered with a default reads as
+				// that default through get_post_meta() when no row exists.
 				if ( ( null === $value || '' === $value ) && isset( $defaults[ $attr ] )
-					&& '' === (string) get_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, true ) ) {
+					&& '' === (string) get_metadata_raw( 'post', $post_id, Meta_Fields::PREFIX . $suffix, true ) ) {
 					$value = $defaults[ $attr ];
 				}
 

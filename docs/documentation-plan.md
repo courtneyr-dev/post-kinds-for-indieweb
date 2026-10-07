@@ -41,7 +41,7 @@ GitHub Pages from `/docs` on the `main` branch, plain Markdown with the Primer J
 - [x] Settings tabs and fields verified against `includes/admin/class-settings-page.php` and `class-admin.php` (tab names, field labels, defaults from `get_default_settings()`).
 - [x] Admin menu structure verified against `class-admin.php` (Reactions → Settings, API Connections, Import, Webhooks, Quick Post, Syndication, Check-ins; capability per page).
 - [x] Conflict/recommendation notices quoted from `includes/class-plugin.php`.
-- [x] Privacy behavior (location privacy enforcement, coordinate handling options, outbound hosts, uninstall cleanup) verified against `class-microformats.php`, `class-settings-page.php`, `includes/apis/`, and `uninstall.php`.
+- [x] Privacy behavior (location privacy enforcement of venue, address and coordinates, outbound hosts, uninstall cleanup) verified against `class-microformats.php`, `class-settings-page.php`, `includes/apis/`, and `uninstall.php`.
 - [x] Accessibility evidence limited to repo facts (axe/Playwright suite, Lighthouse 0.9 gate, changelog fixes, Able Player); no WCAG conformance claim.
 - [x] Internal links relative; screenshots referenced only where files exist; nav footers on every page.
 - [ ] Screenshots marked "manual needed" captured.

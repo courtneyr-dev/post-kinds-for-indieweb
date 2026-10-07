@@ -880,4 +880,98 @@ final class AcquisitionCostPrivacyTest extends WP_UnitTestCase {
 		$this->assertNotContains( $id, $this->search_ids( 'Zq9 149.99' ) );
 		$this->assertContains( $id, $this->search_ids( 'Zq9 Corner' ), 'Search still finds the visible text.' );
 	}
+
+	/**
+	 * ATmosphere's content formats, by the NSID its `atmosphere_content_format`
+	 * option names (content-parser/class-*.php, checkout bf8e267).
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function atmosphere_content_formats(): array {
+		return [
+			'Markpub' => [ 'at.markpub.markdown' ],
+			'HTML'    => [ 'org.wordpress.html' ],
+			'Leaflet' => [ 'pub.leaflet.content' ],
+			'Pckt'    => [ 'blog.pckt.content' ],
+		];
+	}
+
+	/**
+	 * @group atmosphere
+	 * @dataProvider atmosphere_content_formats
+	 *
+	 * @param string $format Content format NSID.
+	 */
+	public function test_the_atmosphere_document_record_carries_no_cost_in_any_format( string $format ): void {
+		$record = $this->atmosphere_document( $this->stored_acquisition( self::TITLE, self::COST, $this->words( 3 ) ), $format );
+
+		$this->assertSame( $format, $record['content']['$type'] ?? null, 'ATmosphere picked the format.' );
+		$this->assertStringContainsString( 'word word word', (string) wp_json_encode( $record['content'] ) );
+		$this->assertStringNotContainsString( self::COST_TEXT, (string) wp_json_encode( $record ) );
+	}
+
+	/**
+	 * @group atmosphere
+	 */
+	public function test_the_atmosphere_markpub_content_keeps_the_rest_of_the_card(): void {
+		// Markpub turns the card's saved HTML into markdown; only the cost goes.
+		$markdown = $this->atmosphere_document( $this->stored_acquisition( self::TITLE, self::COST ), 'at.markpub.markdown' )['content']['text']['markdown'];
+
+		$this->assertStringContainsString( self::WHERE, $markdown );
+		$this->assertStringContainsString( self::TITLE, $markdown );
+		$this->assertStringNotContainsString( self::COST_TEXT, $markdown );
+	}
+
+	/**
+	 * @group atmosphere
+	 */
+	public function test_a_card_with_only_a_cost_leaves_no_markpub_content(): void {
+		// The card's saved HTML holds nothing but the cost paragraph.
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => self::TITLE,
+				'post_excerpt' => '',
+				'post_content' => '<!-- wp:post-kinds-indieweb/acquisition-card ' . serialize_block_attributes( [ 'cost' => self::COST ] ) . ' -->'
+					. '<div class="wp-block-post-kinds-indieweb-acquisition-card acquisition-card"><div class="post-kinds-card h-cite"><div class="post-kinds-card__content">'
+					. '<p class="post-kinds-card__subtitle">' . self::COST . '</p></div></div></div>'
+					. '<!-- /wp:post-kinds-indieweb/acquisition-card -->',
+			]
+		);
+		wp_set_object_terms( $id, 'acquisition', 'kind' );
+
+		$record = $this->atmosphere_document( $id, 'at.markpub.markdown' );
+
+		$this->assertArrayNotHasKey( 'content', $record );
+		$this->assertStringNotContainsString( self::COST_TEXT, (string) wp_json_encode( $record ) );
+	}
+
+	/**
+	 * @group atmosphere
+	 */
+	public function test_the_atmosphere_markpub_content_keeps_a_public_cost(): void {
+		$markdown = $this->atmosphere_document( $this->acquisition( true, true ), 'at.markpub.markdown' )['content']['text']['markdown'];
+
+		$this->assertStringContainsString( self::COST_TEXT, $markdown );
+	}
+
+	/**
+	 * The site.standard.document record ATmosphere's Document transformer
+	 * builds for $id with $format as the site's content format, through
+	 * PKIW's record filters.
+	 *
+	 * @param int    $id     Post ID.
+	 * @param string $format Content format NSID.
+	 * @return array<string, mixed>
+	 */
+	private function atmosphere_document( int $id, string $format ): array {
+		if ( ! class_exists( '\Atmosphere\Transformer\Document' ) ) {
+			$this->markTestSkipped( 'Set PKIW_TESTS_ATMOSPHERE_FILE to build ATmosphere records.' );
+		}
+
+		update_option( 'atmosphere_content_format', $format );
+		$this->register_atmosphere_filters();
+
+		return ( new \Atmosphere\Transformer\Document( get_post( $id ) ) )->transform();
+	}
 }

@@ -93,15 +93,7 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 );
 
 // Format checkin time.
-$pkiw_checkin_iso     = '';
-$pkiw_checkin_display = '';
-if ( $pkiw_checkin_at ) {
-	$pkiw_ts = strtotime( $pkiw_checkin_at );
-	if ( $pkiw_ts ) {
-		$pkiw_checkin_iso     = gmdate( 'c', $pkiw_ts );
-		$pkiw_checkin_display = wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $pkiw_ts );
-	}
-}
+[ $pkiw_checkin_iso, $pkiw_checkin_display ] = \PKIW\card_wall_clock( (string) $pkiw_checkin_at );
 
 // Fallback alt text for the checkin photo when no photoAlt is saved.
 // Private/approximate checkins hide the venue name, so that branch falls

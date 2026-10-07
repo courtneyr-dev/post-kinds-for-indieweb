@@ -43,7 +43,7 @@ The same flow works for movies (Watch Card), books (Read Card), places (Checkin 
 
 1. **Add API keys for richer search.** MusicBrainz and Open Library work without keys, but movie/TV search (TMDB), games (RAWG, BoardGameGeek), and others need keys. Go to **Reactions → API Connections**, where each service links to its sign-up page and has a "Test connection" style check. See [Settings](/post-kinds-for-indieweb/settings/#api-connections-page-reactions--api-connections).
 2. **Review the General tab.** **Reactions → Settings** controls the default category for kind posts, default post status, microformats, syndication, and post-format syncing. See [Settings](/post-kinds-for-indieweb/settings/).
-3. **Set your check-in privacy default.** If you plan to post check-ins, decide up front how much location detail to publish. The Checkin tab offers public / approximate / private defaults and coordinate handling. See [Privacy and data](/post-kinds-for-indieweb/privacy-and-data/).
+3. **Set your check-in privacy default.** If you plan to post check-ins, decide up front how much location detail to publish. The Checkin tab offers public / approximate / private defaults; after that, what visitors see of a check-in's location, coordinates included, follows each post's Location Privacy setting in the block editor. See [Privacy and data](/post-kinds-for-indieweb/privacy-and-data/).
 4. **Import your history.** **Reactions → Import** pulls in listening, watching, and reading history from connected services; large imports run in the background. See [Common tasks](/post-kinds-for-indieweb/common-tasks/).
 
 ## Common first-run confusion points

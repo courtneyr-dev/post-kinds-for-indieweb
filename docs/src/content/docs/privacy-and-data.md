@@ -8,7 +8,7 @@ What the plugin stores, what it sends to other services, and what appears in you
 ## What the plugin stores on your site
 
 - **Posts and post meta.** All content lives in regular WordPress posts and post meta (meta keys prefixed `_postkind_`). The plugin creates no custom database tables.
-- **Check-in location data.** Check-ins store venue details, latitude/longitude, and a per-post `geo_privacy` value (public / approximate / private). Depending on the Coordinate Handling setting, coordinates can also be rounded to ~1 km before storing or discarded entirely.
+- **Check-in location data.** Check-ins store venue details, latitude/longitude, and a per-post `geo_privacy` value (public / approximate / private). No setting rounds or discards coordinates before storing them; what visitors see follows the post's privacy level, described below.
 - **Options.** Settings, import history/state, webhook secrets and logs, and API credentials are stored in the WordPress options table. Credentials include API keys and OAuth access/refresh tokens (Trakt, Simkl, Foursquare, Last.fm session key). **Keys and tokens are stored as plugin options in the database; this documentation makes no encryption claim** (the plugin readme's "encrypted where possible" wording is flagged for maintainer review below).
 - **Transients** for cached API responses (clearable from Settings → Tools).
 - **Taxonomies.** The plugin adds the `kind` taxonomy (with 36 terms) and a `venue` taxonomy with term meta (Foursquare/OpenStreetMap ids, coordinates). It can also register a `reaction` post type if the import storage mode is switched from its default.
@@ -26,7 +26,7 @@ Each check-in has a privacy level (per post, with a site default under Settings 
 
 ![Three published check-ins showing how each privacy level redacts location detail](../../assets/screenshots/frontend-checkin-privacy-levels.png)
 
-Separately, **Coordinate Handling** governs storage itself: store-and-show, store-but-hide, round to ~1 km, or discard coordinates entirely (discarded coordinates can't be recovered later).
+What visitors see of a check-in's location, coordinates included, follows each post's Location Privacy setting in the block editor: Public (exact location), Approximate or Private (hidden). No separate setting rounds, hides or discards coordinates.
 
 ## RSVP event location
 

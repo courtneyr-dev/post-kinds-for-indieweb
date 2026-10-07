@@ -10,6 +10,7 @@ declare(strict_types=1);
 use PKIW\Abilities\Core_Abilities;
 use PKIW\Block_Bindings;
 use PKIW\Meta_Fields;
+use PKIW\Micropub_Content_Builder;
 
 /**
  * Courtney's answer A on #251: the RSVP card's free-text `eventLocation`
@@ -734,6 +735,156 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 
 		$this->assertSame( self::LOCATION, $this->rest_post( $id )['meta']['_pkiw_event_location'], 'An event post announces its own location.' );
 		$this->assertSame( self::LOCATION, $this->event_location_binding( $id ) );
+	}
+
+	public function test_a_plain_event_post_keeps_its_location_in_the_ability_and_the_binding(): void {
+		$id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_object_terms( $id, 'event', 'kind' );
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+
+		$this->go_to( get_permalink( $id ) );
+		$this->assertSame( self::LOCATION, $this->event_location_binding( $id ) );
+
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'subscriber' ] ) );
+		$this->assertSame( self::LOCATION, Core_Abilities::instance()->execute_get_post_meta( [ 'post_id' => $id ] )['meta']['event_location'] );
+	}
+
+	/**
+	 * Kind terms on an RSVP whose author set it to Event.
+	 *
+	 * @return array<string, array{0: string[]}>
+	 */
+	public function rsvp_set_to_event_terms(): array {
+		return [
+			'event'          => [ [ 'event' ] ],
+			'rsvp and event' => [ [ 'rsvp', 'event' ] ],
+		];
+	}
+
+	/**
+	 * An Event post with a private RSVP card and a location typed in the
+	 * Event sidebar is an RSVP, so the Event exemption doesn't apply.
+	 *
+	 * @dataProvider rsvp_set_to_event_terms
+	 *
+	 * @param string[] $terms Kind terms on the post.
+	 */
+	public function test_a_private_rsvp_card_on_an_event_post_keeps_the_location_from_visitors( array $terms ): void {
+		$id = $this->rsvp( 'yes', 'future' );
+		wp_set_object_terms( $id, $terms, 'kind' );
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+		$this->assertSame( 'private', get_metadata_raw( 'post', $id, '_pkiw_rsvp_location_privacy', true ), 'The card stored its setting.' );
+
+		$this->assert_no_location_for_visitors( $id );
+		$this->assert_location_for_editors( $id );
+
+		$this->make_public( $id );
+		wp_set_current_user( 0 );
+		$this->assertSame( self::LOCATION, $this->rest_post( $id )['meta']['_pkiw_event_location'], 'A public RSVP returns its location.' );
+	}
+
+	/**
+	 * RSVP status rows a post keeps without an RSVP card: the editor
+	 * sidebar's, and the one Quick Post and the RSVP meta box store.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function rsvp_status_keys(): array {
+		return [
+			'editor sidebar'          => [ '_pkiw_rsvp_status' ],
+			'Quick Post and meta box' => [ '_pkiw_rsvp_value' ],
+		];
+	}
+
+	/**
+	 * A Quick Post or meta-box RSVP set to Event has no card, only its
+	 * status row, and that row makes it an RSVP.
+	 *
+	 * @dataProvider rsvp_status_keys
+	 *
+	 * @param string $key RSVP status meta key.
+	 */
+	public function test_an_rsvp_status_row_on_an_event_post_keeps_the_location_from_visitors( string $key ): void {
+		$id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_object_terms( $id, 'event', 'kind' );
+		update_post_meta( $id, $key, 'yes' );
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+
+		$this->assert_no_location_for_visitors( $id );
+		$this->assert_location_for_editors( $id );
+	}
+
+	/**
+	 * Only the Event kind is exempt, so a Quick Post RSVP set to Note keeps
+	 * its location private too.
+	 */
+	public function test_an_rsvp_set_to_another_kind_keeps_the_location_from_visitors(): void {
+		$id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_object_terms( $id, 'note', 'kind' );
+		update_post_meta( $id, '_pkiw_rsvp_value', 'yes' );
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+
+		$this->assert_no_location_for_visitors( $id );
+		$this->assert_location_for_editors( $id );
+	}
+
+	public function test_a_micropub_rsvp_hinted_as_an_event_keeps_the_location_from_visitors(): void {
+		// The hint needs the term, and an earlier class can commit its deletion.
+		if ( ! term_exists( 'event', 'kind' ) ) {
+			wp_insert_term( 'Event', 'kind', [ 'slug' => 'event' ] );
+		}
+		$id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		Micropub_Content_Builder::apply(
+			[
+				'h'           => 'entry',
+				'rsvp'        => 'yes',
+				'in-reply-to' => self::EVENT_URL,
+				'pkiw-kind'   => 'event',
+			],
+			[ 'ID' => $id ]
+		);
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+
+		$this->assertTrue( has_term( 'event', 'kind', $id ), 'The hint set the kind.' );
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/rsvp-card', (string) get_post_field( 'post_content', $id ) );
+
+		$this->assert_no_location_for_visitors( $id );
+		$this->assert_location_for_editors( $id );
+	}
+
+	/**
+	 * Assert someone who can't edit the post gets no event location from REST
+	 * meta, `content.rendered`, the get-post-meta ability or the binding.
+	 *
+	 * @param int $id Post ID.
+	 */
+	private function assert_no_location_for_visitors( int $id ): void {
+		wp_set_current_user( 0 );
+		$post = $this->rest_post( $id );
+		$this->assertSame( '', $post['meta']['_pkiw_event_location'], 'REST meta.' );
+		$this->assertStringNotContainsString( self::LOCATION, $post['content']['rendered'], 'REST content.rendered.' );
+
+		$this->go_to( get_permalink( $id ) );
+		$this->assertSame( '', $this->event_location_binding( $id ), 'The event_location binding.' );
+
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'subscriber' ] ) );
+		$result = Core_Abilities::instance()->execute_get_post_meta( [ 'post_id' => $id ] );
+		$this->assertIsArray( $result );
+		$this->assertSame( '', $result['meta']['event_location'], 'The get-post-meta ability.' );
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * Assert an editor still reads the stored event location from REST meta
+	 * and the get-post-meta ability.
+	 *
+	 * @param int $id Post ID.
+	 */
+	private function assert_location_for_editors( int $id ): void {
+		$this->as_editor();
+		$this->assertSame( self::LOCATION, $this->rest_post( $id )['meta']['_pkiw_event_location'], 'The editor reads REST meta.' );
+		$this->assertSame( self::LOCATION, Core_Abilities::instance()->execute_get_post_meta( [ 'post_id' => $id ] )['meta']['event_location'], 'The editor reads the ability.' );
+		wp_set_current_user( 0 );
 	}
 
 	/**

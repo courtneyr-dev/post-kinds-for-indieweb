@@ -343,7 +343,10 @@ require_once PKIW_PATH . 'includes/functions-privacy.php';
 require_once PKIW_PATH . 'includes/functions-embeds.php';
 require_once PKIW_PATH . 'includes/functions-card-icons.php';
 require_once PKIW_PATH . 'includes/functions-card-labels.php';
+require_once PKIW_PATH . 'includes/functions-card-render.php';
+require_once PKIW_PATH . 'includes/functions-host.php';
 require_once PKIW_PATH . 'includes/functions-recipe.php';
+require_once PKIW_PATH . 'includes/functions-kind-facts.php';
 require_once PKIW_PATH . 'includes/functions-stream-card.php';
 require_once PKIW_PATH . 'includes/functions-feed-mood.php';
 
