@@ -98,6 +98,25 @@ final class RecipeCoursesBlockTest extends WP_UnitTestCase {
 		return $links;
 	}
 
+	/**
+	 * Asserts the last editor enqueue told the preview these page sizes, with
+	 * the eat and drink menus among the grouped kinds. Other kinds join the
+	 * grouped list when they register a grouped source, so the list isn't pinned.
+	 *
+	 * @param string $per_page The perPage JSON the preview should get.
+	 */
+	private function assert_preview_settings( string $per_page ): void {
+		$inline = implode( '', (array) wp_scripts()->get_data( 'pkiw-kind-template-preview', 'before' ) );
+		preg_match_all( '/window\.pkiwKindTemplatePreview = (\{.*?\});/', $inline, $found );
+		$this->assertNotEmpty( $found[1], 'The preview script gets its settings inline.' );
+
+		$json = (string) end( $found[1] );
+		$this->assertStringStartsWith( '{"perPage":' . $per_page . ',"grouped":[', $json );
+		$grouped = json_decode( $json, true )['grouped'];
+		$this->assertContains( 'eat', $grouped );
+		$this->assertContains( 'drink', $grouped );
+	}
+
 	public function test_the_block_is_registered_with_an_editor_script(): void {
 		$block = WP_Block_Type_Registry::get_instance()->get_registered( Recipe_Archive::COURSES_BLOCK );
 
@@ -252,15 +271,13 @@ final class RecipeCoursesBlockTest extends WP_UnitTestCase {
 		$this->assertSame( [ 'recipe' => 4 ], \PKIW\Kind_Archive_Layouts::preview_page_sizes() );
 
 		do_action( 'enqueue_block_editor_assets' );
-		$inline = implode( '', (array) wp_scripts()->get_data( 'pkiw-kind-template-preview', 'before' ) );
-		$this->assertStringContainsString( 'window.pkiwKindTemplatePreview = {"perPage":{"recipe":4},"grouped":["eat","drink"]};', $inline );
+		$this->assert_preview_settings( '{"recipe":4}' );
 	}
 
 	public function test_with_no_page_size_set_the_preview_keeps_the_editors_own(): void {
 		$this->assertSame( [], \PKIW\Kind_Archive_Layouts::preview_page_sizes() );
 
 		do_action( 'enqueue_block_editor_assets' );
-		$inline = implode( '', (array) wp_scripts()->get_data( 'pkiw-kind-template-preview', 'before' ) );
-		$this->assertStringContainsString( 'window.pkiwKindTemplatePreview = {"perPage":{},"grouped":["eat","drink"]};', $inline );
+		$this->assert_preview_settings( '{}' );
 	}
 }
