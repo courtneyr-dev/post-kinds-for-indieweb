@@ -44,6 +44,7 @@ final class HostNormalizeTest extends WP_UnitTestCase {
 			'port is not a number'    => [ 'example.com:garbage', '' ],
 			'mixed script, punycode'  => [ 'xn--pple-43d.com', 'xn--pple-43d.com' ],
 			'mixed script, unicode'   => [ 'аpple.com', 'xn--pple-43d.com' ],
+			'label too long'          => [ str_repeat( 'ü', 70 ) . '.example', '' ],
 			'surrounding space'       => [ '  example.com ', 'example.com' ],
 			'space inside'            => [ 'exa mple.com', '' ],
 			'percent-encoded junk'    => [ 'not%20a%20url', '' ],
