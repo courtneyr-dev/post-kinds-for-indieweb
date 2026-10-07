@@ -16,6 +16,16 @@ declare(strict_types=1);
  */
 final class CheckinDashboardRenderTest extends WP_UnitTestCase {
 
+	public function set_up(): void {
+		parent::set_up();
+		update_option( 'timezone_string', 'America/Chicago' );
+	}
+
+	public function tear_down(): void {
+		update_option( 'timezone_string', '' );
+		parent::tear_down();
+	}
+
 	/**
 	 * Create a published check-in post with the given _pkiw_* meta.
 	 *
@@ -49,6 +59,22 @@ final class CheckinDashboardRenderTest extends WP_UnitTestCase {
 	 */
 	private function render_dashboard(): string {
 		return do_blocks( '<!-- wp:post-kinds-indieweb/checkin-dashboard /-->' );
+	}
+
+	public function test_dashboard_keeps_the_local_post_date_and_time(): void {
+		$this->create_checkin(
+			[
+				'_pkiw_checkin_name' => 'Example Cafe',
+				'_pkiw_geo_privacy'  => 'public',
+			],
+			'2026-09-24 22:30:00'
+		);
+
+		$html = $this->render_dashboard();
+
+		$this->assertStringContainsString( 'September 24, 2026', $html );
+		$this->assertStringContainsString( 'Sep 24, 10:30 pm', $html );
+		$this->assertStringNotContainsString( 'September 25, 2026', $html );
 	}
 
 	public function test_dashboard_lists_checkins_by_kind_taxonomy_and_pkiw_meta(): void {
