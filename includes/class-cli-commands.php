@@ -158,6 +158,81 @@ class CLI_Commands {
 	}
 
 	/**
+	 * Give existing talk and deck posts the presentation kind.
+	 *
+	 * Applies the rule a save applies: a deck (a Speaker Deck, SlideShare,
+	 * Google Slides, Notist or Canva embed, or a `[slideshare]` shortcode), a
+	 * WordPress.tv recording or authored presentation fields. A YouTube,
+	 * VideoPress, Vimeo or Dailymotion embed alone never counts, and a
+	 * listen-card or listen-kind post is never claimed without one of those.
+	 * Only posts with no kind, the default `note`, or a kind matching their
+	 * `_pkiw_kind_auto_assigned` marker change; any other kind is protected.
+	 * Each candidate's line names its kind and marker. Sets the kind term
+	 * only, so modified dates, revisions and syndication stay untouched.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <action>
+	 * : Must be 'backfill'.
+	 *
+	 * [--dry-run]
+	 * : List each candidate and its signals without writing anything.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp postkind presentation backfill --dry-run
+	 *     wp postkind presentation backfill
+	 *
+	 * @param array $args       Positional arguments; expects 'backfill'.
+	 * @param array $assoc_args Associative arguments (dry-run).
+	 * @return void
+	 */
+	public function presentation( array $args, array $assoc_args ): void {
+		if ( 'backfill' !== ( $args[0] ?? '' ) ) {
+			WP_CLI::error( 'Usage: wp postkind presentation backfill [--dry-run]' );
+		}
+
+		$taxonomy = Plugin::get_instance()->get_taxonomy();
+		if ( ! $taxonomy instanceof Taxonomy ) {
+			WP_CLI::error( 'The kind taxonomy is not loaded.' );
+		}
+		if ( ! $taxonomy->is_valid_kind( Presentation_Classifier::KIND ) ) {
+			WP_CLI::error( 'The presentation kind term does not exist.' );
+		}
+
+		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$report  = Presentation_Classifier::backfill( $taxonomy, $dry_run );
+
+		foreach ( $report['rows'] as $row ) {
+			WP_CLI::log( Presentation_Classifier::backfill_line( $row ) );
+		}
+
+		if ( $dry_run ) {
+			WP_CLI::success(
+				sprintf(
+					'Dry run: %d post(s) scanned, %d would change, %d protected, %d already presentation.',
+					$report['scanned'],
+					$report['would_change'],
+					$report['protected'],
+					$report['unchanged']
+				)
+			);
+			return;
+		}
+
+		WP_CLI::success(
+			sprintf(
+				'%d post(s) scanned, %d changed, %d protected, %d already presentation, %d failed.',
+				$report['scanned'],
+				$report['changed'],
+				$report['protected'],
+				$report['unchanged'],
+				$report['failed']
+			)
+		);
+	}
+
+	/**
 	 * Set featured images from kind artwork for existing posts.
 	 *
 	 * New saves handle this automatically; this backfills posts created
