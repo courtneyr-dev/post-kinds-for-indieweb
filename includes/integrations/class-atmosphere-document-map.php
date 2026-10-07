@@ -8,7 +8,10 @@
  * title for intentionally untitled kinds, and the kind slug as a tag so a
  * listen, review, or check-in stays discoverable as such. Fields
  * ATmosphere already maps from native WordPress data (description,
- * textContent, coverImage, path, timestamps) are never replaced.
+ * textContent, coverImage, path, timestamps) are never replaced, with one
+ * cut: ATmosphere's excerpt reads raw post_content, so a private
+ * acquisition cost (issue 239) comes out of the document description, the
+ * Bluesky link card's description and the Bluesky post text.
  *
  * Deliberately not mapped, and why:
  * - `links`: the lexicon's links union has no interoperable members yet;
@@ -28,6 +31,7 @@ declare(strict_types=1);
 
 namespace PKIW\Integrations;
 
+use PKIW\Meta_Fields;
 use PKIW\Taxonomy;
 
 // Prevent direct access.
@@ -51,6 +55,8 @@ class Atmosphere_Document_Map {
 	 */
 	public function register(): void {
 		add_filter( 'atmosphere_transform_document', [ $this, 'enrich' ], 10, 2 );
+		add_filter( 'atmosphere_post_embed', [ $this, 'embed_without_private_cost' ], 10, 2 );
+		add_filter( 'atmosphere_transform_bsky_post', [ $this, 'bsky_post_without_private_cost' ], 10, 2 );
 	}
 
 	/**
@@ -62,6 +68,8 @@ class Atmosphere_Document_Map {
 	 */
 	public function unregister(): void {
 		remove_filter( 'atmosphere_transform_document', [ $this, 'enrich' ], 10 );
+		remove_filter( 'atmosphere_post_embed', [ $this, 'embed_without_private_cost' ], 10 );
+		remove_filter( 'atmosphere_transform_bsky_post', [ $this, 'bsky_post_without_private_cost' ], 10 );
 	}
 
 	/**
@@ -76,6 +84,10 @@ class Atmosphere_Document_Map {
 	public function enrich( $record, $post ): array {
 		if ( ! is_array( $record ) || ! $post instanceof \WP_Post ) {
 			return is_array( $record ) ? $record : [];
+		}
+
+		if ( isset( $record['description'] ) && is_string( $record['description'] ) ) {
+			$record['description'] = self::without_private_cost( $record['description'], [], $post )[0];
 		}
 
 		if ( empty( $record['title'] ) ) {
@@ -138,6 +150,102 @@ class Atmosphere_Document_Map {
 		}
 
 		return $record;
+	}
+
+	/**
+	 * Take private acquisition cost out of a Bluesky link card. ATmosphere
+	 * builds the card's description from raw post_content.
+	 *
+	 * @param mixed $embed The embed record, or null.
+	 * @param mixed $post  The post being transformed.
+	 * @return mixed
+	 */
+	public function embed_without_private_cost( $embed, $post ) {
+		if ( ! is_array( $embed ) || ! $post instanceof \WP_Post || ! is_string( $embed['external']['description'] ?? null ) ) {
+			return $embed;
+		}
+
+		$embed['external']['description'] = self::without_private_cost( $embed['external']['description'], [], $post )[0];
+
+		return $embed;
+	}
+
+	/**
+	 * Take private acquisition cost out of a Bluesky post's text, which
+	 * ATmosphere builds from the title, a raw post_content excerpt and the
+	 * permalink. Facets after a removed cost move back with the text.
+	 *
+	 * @param mixed $record The app.bsky.feed.post record.
+	 * @param mixed $post   The post being transformed.
+	 * @return mixed
+	 */
+	public function bsky_post_without_private_cost( $record, $post ) {
+		if ( ! is_array( $record ) || ! $post instanceof \WP_Post || ! is_string( $record['text'] ?? null ) ) {
+			return $record;
+		}
+
+		$facets = isset( $record['facets'] ) && is_array( $record['facets'] ) ? $record['facets'] : [];
+
+		[ $record['text'], $facets ] = self::without_private_cost( $record['text'], $facets, $post );
+		if ( isset( $record['facets'] ) ) {
+			$record['facets'] = $facets;
+		}
+
+		return $record;
+	}
+
+	/**
+	 * Remove each private acquisition cost on $post from $text. When a cost
+	 * stands between two spaces, one space goes with it. Facet byte ranges
+	 * after a removal shift back; a facet over the removed bytes is dropped.
+	 *
+	 * @param string                   $text   Text derived from the post.
+	 * @param array<int|string, mixed> $facets Bluesky facets indexed into $text by UTF-8 byte.
+	 * @param \WP_Post                 $post   The post.
+	 * @return array{0: string, 1: array<int|string, mixed>}
+	 */
+	private static function without_private_cost( string $text, array $facets, \WP_Post $post ): array {
+		foreach ( Meta_Fields::private_costs( (string) $post->post_content, (int) $post->ID ) as $cost ) {
+			$at = strpos( $text, $cost );
+			while ( false !== $at ) {
+				$length = strlen( $cost );
+				if ( $at > 0 && ' ' === $text[ $at - 1 ] && ' ' === substr( $text, $at + $length, 1 ) ) {
+					++$length;
+				}
+
+				$text   = substr_replace( $text, '', $at, $length );
+				$facets = self::shift_facets( $facets, $at, $length );
+				$at     = strpos( $text, $cost, $at );
+			}
+		}
+
+		return [ $text, $facets ];
+	}
+
+	/**
+	 * Facets after $length bytes were removed from the text at $at.
+	 *
+	 * @param array<int|string, mixed> $facets Bluesky facets.
+	 * @param int                      $at     Byte offset of the removal.
+	 * @param int                      $length Bytes removed.
+	 * @return array<int|string, mixed>
+	 */
+	private static function shift_facets( array $facets, int $at, int $length ): array {
+		$kept = [];
+		foreach ( $facets as $facet ) {
+			$start = is_array( $facet ) ? ( $facet['index']['byteStart'] ?? null ) : null;
+			$end   = is_array( $facet ) ? ( $facet['index']['byteEnd'] ?? null ) : null;
+
+			if ( ! is_int( $start ) || ! is_int( $end ) || $end <= $at ) {
+				$kept[] = $facet;
+			} elseif ( $start >= $at + $length ) {
+				$facet['index']['byteStart'] = $start - $length;
+				$facet['index']['byteEnd']   = $end - $length;
+				$kept[]                      = $facet;
+			}
+		}
+
+		return $kept;
 	}
 
 	/**
