@@ -48,6 +48,8 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	]
 );
 
+[ $pkiw_acquired_iso, $pkiw_acquired_display ] = \PKIW\card_calendar_date( (string) $pkiw_acquired_at );
+
 ob_start();
 ?>
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
@@ -92,9 +94,9 @@ ob_start();
 			<p class="pk-note p-content"><?php echo esc_html( $pkiw_notes ); ?></p>
 		<?php endif; ?>
 
-		<?php if ( $pkiw_acquired_at ) : ?>
+		<?php if ( $pkiw_acquired_iso ) : ?>
 			<div class="pk-meta">
-				<time class="dt-published" datetime="<?php echo esc_attr( gmdate( 'c', (int) strtotime( $pkiw_acquired_at ) ) ); ?>"><?php echo esc_html( wp_date( get_option( 'date_format' ), (int) strtotime( $pkiw_acquired_at ) ) ); ?></time>
+				<time class="dt-published" datetime="<?php echo esc_attr( $pkiw_acquired_iso ); ?>"><?php echo esc_html( $pkiw_acquired_display ); ?></time>
 			</div>
 		<?php endif; ?>
 	</div>

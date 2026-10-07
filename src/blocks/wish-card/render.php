@@ -38,6 +38,8 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	]
 );
 
+[ $pkiw_wished_iso, $pkiw_wished_display ] = \PKIW\card_calendar_date( (string) $pkiw_wished_at );
+
 ob_start();
 ?>
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
@@ -71,9 +73,9 @@ ob_start();
 			<p class="pk-note p-content"><?php echo esc_html( $pkiw_reason ); ?></p>
 		<?php endif; ?>
 
-		<?php if ( $pkiw_wished_at ) : ?>
+		<?php if ( $pkiw_wished_iso ) : ?>
 			<div class="pk-meta">
-				<time class="dt-published" datetime="<?php echo esc_attr( gmdate( 'c', (int) strtotime( $pkiw_wished_at ) ) ); ?>"><?php echo esc_html( wp_date( get_option( 'date_format' ), (int) strtotime( $pkiw_wished_at ) ) ); ?></time>
+				<time class="dt-published" datetime="<?php echo esc_attr( $pkiw_wished_iso ); ?>"><?php echo esc_html( $pkiw_wished_display ); ?></time>
 			</div>
 		<?php endif; ?>
 	</div>

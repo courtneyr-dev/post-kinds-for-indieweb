@@ -74,6 +74,8 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	]
 );
 
+[ $pkiw_watched_iso, $pkiw_watched_display ] = \PKIW\card_wall_clock( (string) $pkiw_watched_at );
+
 ob_start();
 ?>
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
@@ -152,11 +154,11 @@ ob_start();
 				<a class="pk-link" href="<?php echo esc_url( $pkiw_tmdb_url ); ?>" target="_blank" rel="noopener noreferrer">TMDB<?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 			<?php endif; ?>
 			<?php
-			if ( ( $pkiw_imdb_url || $pkiw_tmdb_url ) && $pkiw_watched_at ) :
+			if ( ( $pkiw_imdb_url || $pkiw_tmdb_url ) && $pkiw_watched_iso ) :
 				?>
 				<span class="pk-dot"></span><?php endif; ?>
-			<?php if ( $pkiw_watched_at ) : ?>
-				<time class="dt-published" datetime="<?php echo esc_attr( gmdate( 'c', strtotime( $pkiw_watched_at ) ) ); ?>"><?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $pkiw_watched_at ) ) ); ?></time>
+			<?php if ( $pkiw_watched_iso ) : ?>
+				<time class="dt-published" datetime="<?php echo esc_attr( $pkiw_watched_iso ); ?>"><?php echo esc_html( $pkiw_watched_display ); ?></time>
 			<?php endif; ?>
 		</div>
 	</div>

@@ -55,43 +55,23 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 );
 
 // Format event date range.
-$pkiw_event_start_iso  = '';
-$pkiw_event_end_iso    = '';
-$pkiw_event_range_disp = '';
-if ( $pkiw_event_start ) {
-	$pkiw_start_ts = strtotime( $pkiw_event_start );
-	if ( $pkiw_start_ts ) {
-		$pkiw_event_start_iso = gmdate( 'c', $pkiw_start_ts );
-		$pkiw_date_fmt        = get_option( 'date_format' );
-		$pkiw_time_fmt        = get_option( 'time_format' );
-		$pkiw_start_disp      = wp_date( $pkiw_date_fmt . ' ' . $pkiw_time_fmt, $pkiw_start_ts );
-		$pkiw_end_ts          = $pkiw_event_end ? strtotime( $pkiw_event_end ) : 0;
-
-		if ( $pkiw_end_ts ) {
-			$pkiw_event_end_iso = gmdate( 'c', $pkiw_end_ts );
-			if ( gmdate( 'Y-m-d', $pkiw_start_ts ) === gmdate( 'Y-m-d', $pkiw_end_ts ) ) {
-				$pkiw_end_disp         = wp_date( $pkiw_time_fmt, $pkiw_end_ts );
-				$pkiw_event_range_disp = $pkiw_start_disp . ' – ' . $pkiw_end_disp;
-			} else {
-				$pkiw_end_disp         = wp_date( $pkiw_date_fmt . ' ' . $pkiw_time_fmt, $pkiw_end_ts );
-				$pkiw_event_range_disp = $pkiw_start_disp . ' – ' . $pkiw_end_disp;
-			}
-		} else {
-			$pkiw_event_range_disp = $pkiw_start_disp;
+[ $pkiw_event_start_iso, $pkiw_start_disp ] = \PKIW\card_wall_clock( (string) $pkiw_event_start );
+[ $pkiw_event_end_iso, $pkiw_end_disp ]     = \PKIW\card_wall_clock( (string) $pkiw_event_end );
+$pkiw_event_range_disp                      = '';
+if ( $pkiw_event_start_iso ) {
+	$pkiw_event_range_disp = $pkiw_start_disp;
+	$pkiw_start_date       = \PKIW\card_datetime( (string) $pkiw_event_start );
+	$pkiw_end_date         = \PKIW\card_datetime( (string) $pkiw_event_end );
+	if ( $pkiw_event_end_iso ) {
+		if ( $pkiw_start_date && $pkiw_end_date && $pkiw_start_date->format( 'Y-m-d' ) === $pkiw_end_date->format( 'Y-m-d' ) ) {
+			$pkiw_end_disp = (string) wp_date( (string) get_option( 'time_format' ), $pkiw_end_date->getTimestamp(), wp_timezone() );
 		}
+		$pkiw_event_range_disp .= ' – ' . $pkiw_end_disp;
 	}
 }
 
 // Format RSVP timestamp.
-$pkiw_rsvp_iso     = '';
-$pkiw_rsvp_display = '';
-if ( $pkiw_rsvp_at ) {
-	$pkiw_ts = strtotime( $pkiw_rsvp_at );
-	if ( $pkiw_ts ) {
-		$pkiw_rsvp_iso     = gmdate( 'c', $pkiw_ts );
-		$pkiw_rsvp_display = wp_date( get_option( 'date_format' ), $pkiw_ts );
-	}
-}
+[ $pkiw_rsvp_iso, $pkiw_rsvp_display ] = \PKIW\card_wall_clock( (string) $pkiw_rsvp_at, (string) get_option( 'date_format' ) );
 
 ob_start();
 ?>

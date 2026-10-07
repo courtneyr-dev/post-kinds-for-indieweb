@@ -41,6 +41,8 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	]
 );
 
+[ $pkiw_bookmarked_iso, $pkiw_bookmarked_display ] = \PKIW\card_calendar_date( (string) $pkiw_bookmarked_at );
+
 ob_start();
 ?>
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
@@ -74,9 +76,9 @@ ob_start();
 			<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_image ); ?>" alt="<?php echo esc_attr( $pkiw_image_alt ? $pkiw_image_alt : sprintf( /* translators: %s: linked page title */ __( 'Preview image for %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_title ) ); ?>" loading="lazy" /></div>
 		<?php endif; ?>
 
-		<?php if ( $pkiw_bookmarked_at ) : ?>
+		<?php if ( $pkiw_bookmarked_iso ) : ?>
 			<div class="pk-meta">
-				<time class="dt-published" datetime="<?php echo esc_attr( gmdate( 'c', strtotime( $pkiw_bookmarked_at ) ) ); ?>"><?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $pkiw_bookmarked_at ) ) ); ?></time>
+				<time class="dt-published" datetime="<?php echo esc_attr( $pkiw_bookmarked_iso ); ?>"><?php echo esc_html( $pkiw_bookmarked_display ); ?></time>
 			</div>
 		<?php endif; ?>
 	</div>

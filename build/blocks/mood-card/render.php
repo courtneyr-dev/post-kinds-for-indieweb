@@ -30,15 +30,7 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	]
 );
 
-$pkiw_mood_iso     = '';
-$pkiw_mood_display = '';
-if ( $pkiw_mood_at ) {
-	$pkiw_ts = strtotime( $pkiw_mood_at );
-	if ( $pkiw_ts ) {
-		$pkiw_mood_iso     = gmdate( 'c', $pkiw_ts );
-		$pkiw_mood_display = wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $pkiw_ts );
-	}
-}
+[ $pkiw_mood_iso, $pkiw_mood_display ] = \PKIW\card_wall_clock( (string) $pkiw_mood_at );
 
 ob_start();
 ?>

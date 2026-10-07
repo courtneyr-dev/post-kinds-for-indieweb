@@ -81,15 +81,7 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	]
 );
 
-$pkiw_drank_iso     = '';
-$pkiw_drank_display = '';
-if ( $pkiw_drank_at ) {
-	$pkiw_ts = strtotime( $pkiw_drank_at );
-	if ( $pkiw_ts ) {
-		$pkiw_drank_iso     = gmdate( 'c', $pkiw_ts );
-		$pkiw_drank_display = wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $pkiw_ts );
-	}
-}
+[ $pkiw_drank_iso, $pkiw_drank_display ] = \PKIW\card_wall_clock( (string) $pkiw_drank_at );
 
 ob_start();
 ?>

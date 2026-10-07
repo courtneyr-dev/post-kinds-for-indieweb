@@ -57,24 +57,8 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 );
 
 // Format dates.
-$pkiw_started_iso     = '';
-$pkiw_started_display = '';
-if ( $pkiw_started_at ) {
-	$pkiw_ts = strtotime( $pkiw_started_at );
-	if ( $pkiw_ts ) {
-		$pkiw_started_iso     = gmdate( 'c', $pkiw_ts );
-		$pkiw_started_display = wp_date( get_option( 'date_format' ), $pkiw_ts );
-	}
-}
-$pkiw_finished_iso     = '';
-$pkiw_finished_display = '';
-if ( $pkiw_finished_at ) {
-	$pkiw_ts = strtotime( $pkiw_finished_at );
-	if ( $pkiw_ts ) {
-		$pkiw_finished_iso     = gmdate( 'c', $pkiw_ts );
-		$pkiw_finished_display = wp_date( get_option( 'date_format' ), $pkiw_ts );
-	}
-}
+[ $pkiw_started_iso, $pkiw_started_display ]   = \PKIW\card_calendar_date( (string) $pkiw_started_at );
+[ $pkiw_finished_iso, $pkiw_finished_display ] = \PKIW\card_calendar_date( (string) $pkiw_finished_at );
 
 ob_start();
 ?>

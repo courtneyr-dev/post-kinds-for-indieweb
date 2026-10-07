@@ -59,15 +59,7 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 );
 
 // Format ateAt timestamp.
-$pkiw_ate_iso     = '';
-$pkiw_ate_display = '';
-if ( $pkiw_ate_at ) {
-	$pkiw_ts = strtotime( $pkiw_ate_at );
-	if ( $pkiw_ts ) {
-		$pkiw_ate_iso     = gmdate( 'c', $pkiw_ts );
-		$pkiw_ate_display = wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $pkiw_ts );
-	}
-}
+[ $pkiw_ate_iso, $pkiw_ate_display ] = \PKIW\card_wall_clock( (string) $pkiw_ate_at );
 
 ob_start();
 ?>

@@ -34,7 +34,9 @@ $pkiw_musicbrainz_id = $attributes['musicbrainzId'] ?? '';
 $pkiw_rating         = (int) ( $attributes['rating'] ?? 0 );
 $pkiw_listened_at    = $attributes['listenedAt'] ?? '';
 
-$pkiw_embed = $pkiw_listen_url ? get_cached_embed_html( $pkiw_listen_url ) : false;
+$pkiw_embed                                    = $pkiw_listen_url ? get_cached_embed_html( $pkiw_listen_url ) : false;
+$pkiw_release_year                             = preg_match( '/^(\d{4})/', (string) $pkiw_release_date, $pkiw_release_matches ) ? $pkiw_release_matches[1] : '';
+[ $pkiw_listened_iso, $pkiw_listened_display ] = \PKIW\card_wall_clock( (string) $pkiw_listened_at, (string) get_option( 'date_format' ) );
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
@@ -72,9 +74,9 @@ ob_start();
 					<?php if ( $pkiw_album_title ) : ?>
 						<em><?php echo esc_html( $pkiw_album_title ); ?></em>
 						<?php
-						if ( $pkiw_release_date ) :
+						if ( $pkiw_release_year ) :
 							?>
-							(<?php echo esc_html( gmdate( 'Y', (int) strtotime( $pkiw_release_date ) ) ); ?>)<?php endif; ?>
+							(<?php echo esc_html( $pkiw_release_year ); ?>)<?php endif; ?>
 					<?php endif; ?>
 				</p>
 			<?php endif; ?>
@@ -100,11 +102,11 @@ ob_start();
 				<a class="pk-link" href="<?php echo esc_url( $pkiw_listen_url ); ?>" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 9-14 9z"/></svg><?php esc_html_e( 'Listen', 'post-kinds-for-indieweb-in-block-themes' ); ?><?php echo \PKIW\pkiw_new_tab_hint(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 			<?php endif; ?>
 			<?php
-			if ( $pkiw_listen_url && $pkiw_listened_at ) :
+			if ( $pkiw_listen_url && $pkiw_listened_iso ) :
 				?>
 				<span class="pk-dot"></span><?php endif; ?>
-			<?php if ( $pkiw_listened_at ) : ?>
-				<time class="dt-published" datetime="<?php echo esc_attr( gmdate( 'c', (int) strtotime( $pkiw_listened_at ) ) ); ?>"><?php echo esc_html( wp_date( get_option( 'date_format' ), (int) strtotime( $pkiw_listened_at ) ) ); ?></time>
+			<?php if ( $pkiw_listened_iso ) : ?>
+				<time class="dt-published" datetime="<?php echo esc_attr( $pkiw_listened_iso ); ?>"><?php echo esc_html( $pkiw_listened_display ); ?></time>
 			<?php endif; ?>
 		</div>
 	</div>

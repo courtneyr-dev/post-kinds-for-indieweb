@@ -53,15 +53,7 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	]
 );
 
-$pkiw_played_iso     = '';
-$pkiw_played_display = '';
-if ( $pkiw_played_at ) {
-	$pkiw_ts = strtotime( $pkiw_played_at );
-	if ( $pkiw_ts ) {
-		$pkiw_played_iso     = gmdate( 'c', $pkiw_ts );
-		$pkiw_played_display = wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $pkiw_ts );
-	}
-}
+[ $pkiw_played_iso, $pkiw_played_display ] = \PKIW\card_calendar_date( (string) $pkiw_played_at );
 
 ob_start();
 ?>
