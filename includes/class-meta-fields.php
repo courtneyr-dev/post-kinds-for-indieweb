@@ -1047,7 +1047,7 @@ class Meta_Fields {
 	 */
 	private function register_hooks(): void {
 		add_action( 'init', [ $this, 'register_meta_fields' ] );
-		// #239: acquisition cost leaves REST unless the post shows it publicly.
+		// Issue 239: acquisition cost leaves REST unless the post shows it publicly.
 		add_filter( 'rest_prepare_post', [ $this, 'redact_cost_meta' ], 20, 3 );
 		add_filter( 'rest_prepare_' . Post_Type::POST_TYPE, [ $this, 'redact_cost_meta' ], 20, 3 );
 		// R-03: location detail leaves the REST response unless the post's
@@ -1449,7 +1449,7 @@ class Meta_Fields {
 	private const COST_KEYS = [ 'acquisition_price' ];
 
 	/**
-	 * Whether an acquisition's cost may print publicly (#239).
+	 * Whether an acquisition's cost may print publicly (issue 239).
 	 *
 	 * Cost is private by default and public only when the post's acquisition
 	 * card has "Show cost publicly" on. There's no editor override: the card,

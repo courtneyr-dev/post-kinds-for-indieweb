@@ -87,6 +87,9 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 				'restaurantUrl'   => 'privacy-aware by design: the restaurant link renders only when the post\'s geo_privacy resolves to public (or the viewer can edit_post); the url tier of Meta_Fields::get_visible_location_fields()',
 				'locationAddress' => 'privacy-aware by design: renders only when geo_privacy is public, same gate as restaurantUrl (the street tier)',
 			],
+			'post-kinds-indieweb/acquisition-card'  => [
+				'cost' => 'private by default (issue 239): prints only when showCostPublicly is on and Card_Meta_Sync has written _pkiw_acquisition_cost_public for the post, which needs a saved post holding the card; this matrix renders a bare comment against a post with no card. AcquisitionCostPrivacyTest covers both states',
+			],
 			'post-kinds-indieweb/drink-card'        => [
 				'venueUrl'        => 'privacy-aware by design: the venue link renders only when the post\'s geo_privacy resolves to public (or the viewer can edit_post); the url tier of Meta_Fields::get_visible_location_fields()',
 				'locationAddress' => 'privacy-aware by design: renders only when geo_privacy is public, same gate as venueUrl (the street tier)',
