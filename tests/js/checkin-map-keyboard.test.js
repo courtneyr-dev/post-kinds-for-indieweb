@@ -18,7 +18,9 @@ const SCRIPT = '../../assets/js/checkin-map.js';
  */
 function stubLeaflet( layout = () => new Map() ) {
 	const handlers = { map: {}, group: {} };
+	const mapPane = document.createElement( 'div' );
 	const pane = document.createElement( 'div' );
+	mapPane.appendChild( pane );
 	const markers = [];
 	const state = { zoom: 10, maxZoom: 19, parents: new Map() };
 
@@ -45,7 +47,7 @@ function stubLeaflet( layout = () => new Map() ) {
 		fitBounds: jest.fn(),
 		getZoom: () => state.zoom,
 		getMaxZoom: () => state.maxZoom,
-		getPane: () => pane,
+		getPane: ( name ) => ( 'mapPane' === name ? mapPane : pane ),
 		on: listen( handlers.map, false ),
 		once: listen( handlers.map, true ),
 		addLayer: jest.fn( () => {
@@ -61,7 +63,7 @@ function stubLeaflet( layout = () => new Map() ) {
 
 	window.L = {
 		map: jest.fn( ( el ) => {
-			el.appendChild( pane );
+			el.appendChild( mapPane );
 			return map;
 		} ),
 		tileLayer: jest.fn( () => ( { addTo: jest.fn() } ) ),
@@ -82,6 +84,7 @@ function stubLeaflet( layout = () => new Map() ) {
 	};
 
 	return {
+		mapPane,
 		pane,
 		markers,
 		state,
@@ -343,6 +346,25 @@ describe( 'pin tab order', () => {
 
 		expect( paneOrder( stub ) ).toEqual( [ 1, 2, 3, 4, 5 ] );
 		expect( document.activeElement ).toBe( third );
+	} );
+
+	it( 'waits for a cluster animation to end', () => {
+		printArchive();
+		const stub = stubLeaflet();
+		loadScript();
+
+		// markercluster marks the map pane while pins move in or out of a
+		// cluster. Re-appending a pin then would cut its transition short.
+		stub.mapPane.classList.add( 'leaflet-cluster-anim' );
+		stub.pane.prepend( stub.markers[ 4 ].getElement() );
+		stub.fireMap( 'moveend' );
+
+		expect( paneOrder( stub ) ).toEqual( [ 5, 1, 2, 3, 4 ] );
+
+		stub.mapPane.classList.remove( 'leaflet-cluster-anim' );
+		stub.fireGroup( 'animationend' );
+
+		expect( paneOrder( stub ) ).toEqual( [ 1, 2, 3, 4, 5 ] );
 	} );
 
 	it( 'is restored after a cluster animation ends', () => {
