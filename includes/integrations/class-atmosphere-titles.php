@@ -368,7 +368,7 @@ final class Atmosphere_Titles {
 
 	/**
 	 * A short summary from the post content, without a private
-	 * acquisition cost (issue 239).
+	 * acquisition cost (issue 239) or RSVP location (issue 251).
 	 *
 	 * @since 1.6.0
 	 *
@@ -376,7 +376,7 @@ final class Atmosphere_Titles {
 	 * @return string
 	 */
 	private static function content_summary( \WP_Post $post ): string {
-		$text = wp_strip_all_tags( Meta_Fields::strip_private_cost( (string) $post->post_content, (int) $post->ID ) );
+		$text = wp_strip_all_tags( Meta_Fields::strip_private_card_text( (string) $post->post_content, (int) $post->ID ) );
 
 		return trim( wp_trim_words( $text, 10, '…' ) );
 	}

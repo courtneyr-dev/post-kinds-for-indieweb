@@ -44,6 +44,15 @@ namespace Atmosphere {
 	function settings_url(): string {
 		return '';
 	}
+
+	/**
+	 * Whether posts cross-post automatically on publish.
+	 *
+	 * @return bool
+	 */
+	function is_auto_publish_enabled(): bool {
+		return false;
+	}
 }
 
 namespace Atmosphere\Transformer {
@@ -60,8 +69,9 @@ namespace Atmosphere\Transformer {
 	 * Bluesky post transformer (stub).
 	 */
 	class Post {
-		public const META_TID = '_atmosphere_bsky_tid';
-		public const META_URI = '_atmosphere_bsky_uri';
+		public const META_TID            = '_atmosphere_bsky_tid';
+		public const META_URI            = '_atmosphere_bsky_uri';
+		public const META_THREAD_RECORDS = '_atmosphere_bsky_thread_records';
 	}
 }
 

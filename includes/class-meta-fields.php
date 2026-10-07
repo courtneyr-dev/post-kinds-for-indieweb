@@ -1462,19 +1462,49 @@ class Meta_Fields {
 	}
 
 	/**
-	 * Whether a post has the `rsvp` term, an RSVP card or a stored RSVP
-	 * row: the card's `_pkiw_rsvp_location_privacy`, the editor sidebar's
+	 * Whether an Event Card may print its location, its own or a calendar
+	 * plugin's, on a post (issue 251). On an RSVP (is_rsvp()) it gets the
+	 * answer `_pkiw_event_location` gets, event_location_visible(). Any
+	 * other post prints it: the Event Card isn't a kind card and never sets
+	 * the Event kind, so a Note or a post with no kind keeps its Event Card
+	 * location. A card with no post prints none, as with
+	 * rsvp_location_visible(), because the_content filtered with no global
+	 * post (ATmosphere's publish cron, WP-CLI) can't say whether it's on an
+	 * RSVP.
+	 *
+	 * @param int $post_id Post ID, or 0 outside a post.
+	 * @return bool
+	 */
+	public static function event_card_location_visible( int $post_id ): bool {
+		if ( $post_id <= 0 ) {
+			return false;
+		}
+		if ( ! self::is_rsvp( $post_id ) ) {
+			return true;
+		}
+
+		return self::event_location_visible( $post_id );
+	}
+
+	/**
+	 * Whether a post has the `rsvp` term, an RSVP card or a stored RSVP row:
+	 * the card's `_pkiw_rsvp_location_privacy`, the editor sidebar's
 	 * `_pkiw_rsvp_status` or the `_pkiw_rsvp_value` Quick Post and the RSVP
 	 * meta box write. The card counts on its own, because a card saved
-	 * before the privacy setting existed has no row. Reads raw rows, because
-	 * get_post_meta() returns the registered 'private' default for a post
-	 * with no privacy row.
+	 * before the privacy row existed has no row and nothing backfills one,
+	 * and a card in a synced pattern never gets one (has_rsvp_card()).
+	 * Reads raw rows, because get_post_meta() returns the registered
+	 * 'private' default for a post with no privacy row.
 	 *
 	 * @param int $post_id Post ID.
 	 * @return bool
 	 */
 	private static function is_rsvp( int $post_id ): bool {
-		if ( has_term( 'rsvp', Taxonomy::TAXONOMY, $post_id ) || has_block( 'post-kinds-indieweb/rsvp-card', $post_id ) ) {
+		if ( has_term( 'rsvp', Taxonomy::TAXONOMY, $post_id ) ) {
+			return true;
+		}
+
+		if ( self::has_rsvp_card( (string) get_post_field( 'post_content', $post_id ) ) ) {
 			return true;
 		}
 
@@ -1485,6 +1515,69 @@ class Meta_Fields {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Whether content holds an RSVP card, itself or through the synced
+	 * patterns (`core/block` refs) it places, however deep. Card_Meta_Sync
+	 * and has_block() read only the post's own blocks, so a card in a
+	 * pattern leaves no RSVP row. A ref counts only when core would render
+	 * it to a visitor: render_block_core_block() renders a wp_block that is
+	 * published with no password and prints nothing for any other, so a
+	 * card in a draft, pending, private, trashed or password-protected
+	 * pattern, or behind one, isn't on the post. Each pattern is read once,
+	 * so refs that place each other end the walk, as they end core's render.
+	 *
+	 * @param string $content Block content.
+	 * @return bool
+	 */
+	private static function has_rsvp_card( string $content ): bool {
+		$seen    = [];
+		$pending = [ $content ];
+		while ( [] !== $pending ) {
+			$content = array_pop( $pending );
+			if ( has_block( 'post-kinds-indieweb/rsvp-card', $content ) ) {
+				return true;
+			}
+			if ( ! has_block( 'core/block', $content ) ) {
+				continue;
+			}
+
+			foreach ( self::pattern_refs( parse_blocks( $content ) ) as $ref ) {
+				if ( isset( $seen[ $ref ] ) ) {
+					continue;
+				}
+				$seen[ $ref ] = true;
+				$pattern      = get_post( $ref );
+				if ( $pattern instanceof \WP_Post && 'wp_block' === $pattern->post_type
+					&& 'publish' === $pattern->post_status && empty( $pattern->post_password ) ) {
+					$pending[] = $pattern->post_content;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * The `ref` of every `core/block` in parsed blocks, nested ones included.
+	 *
+	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
+	 * @return int[]
+	 */
+	private static function pattern_refs( array $blocks ): array {
+		$refs = [];
+		foreach ( $blocks as $block ) {
+			$ref = (int) ( $block['attrs']['ref'] ?? 0 );
+			if ( 'core/block' === ( $block['blockName'] ?? '' ) && $ref > 0 ) {
+				$refs[] = $ref;
+			}
+			if ( ! empty( $block['innerBlocks'] ) ) {
+				$refs = array_merge( $refs, self::pattern_refs( $block['innerBlocks'] ) );
+			}
+		}
+
+		return $refs;
 	}
 
 	/**
@@ -1767,6 +1860,71 @@ class Meta_Fields {
 	}
 
 	/**
+	 * An RSVP card in post_content, in ACQUISITION_CARD_PATTERN's shape.
+	 */
+	private const RSVP_CARD_PATTERN = '#(?P<head><!--\s+wp:post-kinds-indieweb/rsvp-card\s+)(?P<attrs>\{(?:(?:[^}]+|\}+(?=\})|(?!\}\s+/?-->).)*+)?\}\s+)?(?P<tail>/-->|-->(?P<inner>.*?)<!--\s+/wp:post-kinds-indieweb/rsvp-card\s+-->)#s';
+
+	/**
+	 * The location an RSVP card's save.js printed before #32 (ee3d5c1): the
+	 * `p-location` span, with the pin icon span ahead of it when there is
+	 * one. Every version of that save.js used this span.
+	 */
+	private const LEGACY_RSVP_LOCATION_PATTERN = '#(?:<span\b[^>]*>\s*\xF0\x9F\x93\x8D\s*</span>\s*)?<span\b[^>]*\bclass="(?:[^"]*\s)?p-location(?:\s[^"]*)?"[^>]*>.*?</span>#s';
+
+	/**
+	 * $content with each private RSVP location taken out of the static HTML
+	 * an RSVP card saved before #32 holds (issue 251). render.php ignores
+	 * that HTML, but readers of raw post_content, such as ATmosphere's
+	 * excerpt and Markpub parser, get it. A card's location is private
+	 * unless its `locationVisibility` is 'public' and rsvp_location_visible()
+	 * says so, as render.php decides. A bare block comment is left alone.
+	 *
+	 * @param string $content Post content.
+	 * @param int    $post_id Post the content belongs to.
+	 * @return string
+	 */
+	public static function strip_private_rsvp_location( string $content, int $post_id ): string {
+		if ( ! str_contains( $content, 'wp:post-kinds-indieweb/rsvp-card' ) || ! str_contains( $content, 'p-location' ) ) {
+			return $content;
+		}
+
+		$post_public = self::rsvp_location_visible( $post_id );
+		$stripped    = preg_replace_callback(
+			self::RSVP_CARD_PATTERN,
+			static function ( array $card ) use ( $post_public ): string {
+				$decoded = json_decode( (string) $card['attrs'], true );
+				if ( null === $card['inner'] || ( $post_public && is_array( $decoded ) && 'public' === ( $decoded['locationVisibility'] ?? null ) ) ) {
+					return $card[0];
+				}
+
+				$inner = (string) preg_replace( self::LEGACY_RSVP_LOCATION_PATTERN, '', $card['inner'] );
+
+				return $card['head'] . $card['attrs'] . '-->' . $inner . substr( (string) $card['tail'], 3 + strlen( $card['inner'] ) );
+			},
+			$content,
+			-1,
+			$count,
+			PREG_UNMATCHED_AS_NULL
+		);
+
+		return is_string( $stripped ) ? $stripped : $content;
+	}
+
+	/**
+	 * $content without the private text that cards saved as static HTML
+	 * hold: acquisition cost (strip_private_cost()) and an RSVP's event
+	 * location (strip_private_rsvp_location()). For readers of raw
+	 * post_content that never render the blocks.
+	 *
+	 * @param string $content Post content.
+	 * @param int    $post_id Post the content belongs to.
+	 * @return string
+	 */
+	public static function strip_private_card_text( string $content, int $post_id ): string {
+		return self::strip_private_rsvp_location( self::strip_private_cost( $content, $post_id ), $post_id );
+	}
+
+	/**
 	 * One acquisition card's `cost` attribute as plain text.
 	 *
 	 * @param string|null $attrs The card's block comment attributes, JSON.
@@ -1792,7 +1950,9 @@ class Meta_Fields {
 	}
 
 	/**
-	 * Display-context post_content without private acquisition cost.
+	 * Display-context post_content without the private text cards saved as
+	 * static HTML hold: acquisition cost and, from an RSVP card saved before
+	 * #32, its event location (strip_private_card_text(), issue 251).
 	 *
 	 * Core's sanitize_post_field() runs the `post_content` filter for
 	 * display reads, such as get_post_field( 'post_content', $post ) and
@@ -1800,8 +1960,8 @@ class Meta_Fields {
 	 * summary and preview from post_content and has no filter of its own
 	 * (ActivityPub 9.3.1 includes/functions-post.php:363). The edit, db and
 	 * raw contexts skip this filter, so the block editor, saves and exports
-	 * get stored content. Only the static subtitle goes; the card keeps its
-	 * cost attribute. There's no editor override, for the reason
+	 * get stored content. Only the static HTML goes; each card keeps its
+	 * block attributes. There's no editor override, for the reason
 	 * acquisition_cost_visible() gives.
 	 *
 	 * @param mixed $value   Post content.
@@ -1809,7 +1969,7 @@ class Meta_Fields {
 	 * @return mixed
 	 */
 	public static function display_content_without_private_cost( $value, $post_id = 0 ) {
-		return is_string( $value ) ? self::strip_private_cost( $value, (int) $post_id ) : $value;
+		return is_string( $value ) ? self::strip_private_card_text( $value, (int) $post_id ) : $value;
 	}
 
 	/**
