@@ -1441,6 +1441,51 @@ class Meta_Fields {
 	}
 
 	/**
+	 * Whether `_pkiw_event_location` may go to someone who can't edit the
+	 * post (issue 251). An event post announces its own location, so it
+	 * shows, unless the post is really an RSVP (is_rsvp()): an RSVP set to
+	 * Event keeps its RSVP rows. Every other post shows it only when
+	 * rsvp_location_visible() says so.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	public static function event_location_visible( int $post_id ): bool {
+		if ( $post_id <= 0 ) {
+			return false;
+		}
+		if ( has_term( 'event', Taxonomy::TAXONOMY, $post_id ) && ! self::is_rsvp( $post_id ) ) {
+			return true;
+		}
+
+		return self::rsvp_location_visible( $post_id );
+	}
+
+	/**
+	 * Whether a post has the `rsvp` term or a stored RSVP row: the card's
+	 * `_pkiw_rsvp_location_privacy`, the editor sidebar's `_pkiw_rsvp_status`
+	 * or the `_pkiw_rsvp_value` Quick Post and the RSVP meta box write.
+	 * Reads raw rows, because get_post_meta() returns the registered
+	 * 'private' default for a post with no privacy row.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	private static function is_rsvp( int $post_id ): bool {
+		if ( has_term( 'rsvp', Taxonomy::TAXONOMY, $post_id ) ) {
+			return true;
+		}
+
+		foreach ( [ 'rsvp_location_privacy', 'rsvp_status', 'rsvp_value' ] as $suffix ) {
+			if ( metadata_exists( 'post', $post_id, self::PREFIX . $suffix ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * Zero/blank out this plugin's own `_pkiw_*` location fields the
 	 * post's current visibility tier hides, leaving every other key in
 	 * $meta untouched. This is the LOCATION_KEY_TIERS walk shared by
@@ -1457,8 +1502,8 @@ class Meta_Fields {
 
 		// An RSVP's event location goes only to its editors unless it's public (issue 251).
 		$event_location = self::PREFIX . 'event_location';
-		if ( array_key_exists( $event_location, $meta ) && has_term( 'rsvp', Taxonomy::TAXONOMY, $post_id )
-			&& ! current_user_can( 'edit_post', $post_id ) && ! self::rsvp_location_visible( $post_id ) ) {
+		if ( array_key_exists( $event_location, $meta ) && ! current_user_can( 'edit_post', $post_id )
+			&& ! self::event_location_visible( $post_id ) ) {
 			$meta[ $event_location ] = '';
 		}
 
