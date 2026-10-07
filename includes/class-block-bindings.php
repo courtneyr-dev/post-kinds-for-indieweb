@@ -432,7 +432,7 @@ class Block_Bindings {
 			return null;
 		}
 
-		// An RSVP's event location prints only when it's public (#251).
+		// An RSVP's event location prints only when it's public (issue 251).
 		if ( 'event_location' === $key && has_term( 'rsvp', Taxonomy::TAXONOMY, (int) $post_id ) && ! Meta_Fields::rsvp_location_visible( (int) $post_id ) ) {
 			return null;
 		}

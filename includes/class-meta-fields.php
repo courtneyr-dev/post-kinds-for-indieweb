@@ -1409,7 +1409,7 @@ class Meta_Fields {
 
 	/**
 	 * Whether an RSVP's event location may print for a visitor who can't
-	 * edit the post (#251).
+	 * edit the post (issue 251).
 	 *
 	 * Only when `_pkiw_rsvp_location_privacy` is 'public'. An unset value is
 	 * private, so RSVPs saved before the setting existed keep their location
@@ -1430,7 +1430,7 @@ class Meta_Fields {
 	}
 
 	/**
-	 * Whether the current request may print an RSVP's event location (#251).
+	 * Whether the current request may print an RSVP's event location (issue 251).
 	 *
 	 * A public location prints for everyone. Someone who can edit the post
 	 * also sees a private one, but only on a front-end page. Feeds, REST,
@@ -1481,7 +1481,7 @@ class Meta_Fields {
 	public static function redact_location_array( array $meta, int $post_id ): array {
 		$visible = self::get_visible_location_fields( $post_id );
 
-		// An RSVP's event location goes only to its editors unless it's public (#251).
+		// An RSVP's event location goes only to its editors unless it's public (issue 251).
 		$event_location = self::PREFIX . 'event_location';
 		if ( array_key_exists( $event_location, $meta ) && has_term( 'rsvp', Taxonomy::TAXONOMY, $post_id )
 			&& ! current_user_can( 'edit_post', $post_id ) && ! self::rsvp_location_public( $post_id ) ) {
