@@ -43,6 +43,8 @@ namespace PKIW\Integrations;
 
 use Atmosphere\Content_Parser\Content_Parser;
 use Atmosphere\Content_Parser\Registry;
+use Atmosphere\Transformer\Document;
+use Atmosphere\Transformer\Post as Post_Record;
 use PKIW\Meta_Fields;
 use PKIW\Taxonomy;
 
@@ -73,6 +75,21 @@ class Atmosphere_Document_Map {
 	private array $previous_posts = [];
 
 	/**
+	 * Meta that hides an RSVP's location: its own setting, and the post's
+	 * location privacy, which rsvp_location_visible() lets win.
+	 *
+	 * @var string[]
+	 */
+	private const PRIVACY_META_KEYS = [ '_pkiw_rsvp_location_privacy', '_pkiw_geo_privacy' ];
+
+	/**
+	 * Meta-change hooks queue_update_on_privacy_change() runs on.
+	 *
+	 * @var string[]
+	 */
+	private const META_HOOKS = [ 'added_post_meta', 'updated_post_meta', 'deleted_post_meta' ];
+
+	/**
 	 * Register the record filter.
 	 *
 	 * @since 1.6.0
@@ -86,6 +103,9 @@ class Atmosphere_Document_Map {
 		foreach ( self::POST_CRONS as $hook ) {
 			add_action( $hook, [ $this, 'use_cron_post' ], 9 );
 			add_action( $hook, [ $this, 'restore_cron_post' ], 11 );
+		}
+		foreach ( self::META_HOOKS as $hook ) {
+			add_action( $hook, [ $this, 'queue_update_on_privacy_change' ], 10, 3 );
 		}
 	}
 
@@ -103,6 +123,43 @@ class Atmosphere_Document_Map {
 		foreach ( self::POST_CRONS as $hook ) {
 			remove_action( $hook, [ $this, 'use_cron_post' ], 9 );
 			remove_action( $hook, [ $this, 'restore_cron_post' ], 11 );
+		}
+		foreach ( self::META_HOOKS as $hook ) {
+			remove_action( $hook, [ $this, 'queue_update_on_privacy_change' ], 10 );
+		}
+	}
+
+	/**
+	 * Queue ATmosphere's update for a shared post when meta that hides an
+	 * RSVP's location changes (issue 251). ATmosphere queues one on a
+	 * status transition and, for meta, only on its own share keys
+	 * (Atmosphere::on_share_meta_changed()), so a write with no save, such
+	 * as the update-post-meta ability's, left the record with the location.
+	 * This takes the gates and the cron on_share_meta_changed() uses:
+	 * connected, auto-publish on, and atmosphere_update_post once for the
+	 * post. Only a post with records ATmosphere published, by the keys its
+	 * has_post_records() reads, queues one, because the update would share
+	 * a post it never shared.
+	 *
+	 * @param int|int[] $meta_id  Meta row ID or IDs; unused.
+	 * @param int       $post_id  Post the meta belongs to.
+	 * @param string    $meta_key Meta key that changed.
+	 * @return void
+	 */
+	public function queue_update_on_privacy_change( $meta_id, $post_id, $meta_key ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed
+		if ( ! in_array( $meta_key, self::PRIVACY_META_KEYS, true ) || ! function_exists( '\Atmosphere\is_auto_publish_enabled' )
+			|| ! \Atmosphere\is_connected() || ! \Atmosphere\is_auto_publish_enabled() ) {
+			return;
+		}
+
+		$post_id = (int) $post_id;
+		$shared  = false;
+		foreach ( [ Post_Record::META_TID, Post_Record::META_URI, Post_Record::META_THREAD_RECORDS, Document::META_URI ] as $key ) {
+			$shared = $shared || ! empty( get_post_meta( $post_id, $key, true ) );
+		}
+
+		if ( $shared && ! wp_next_scheduled( 'atmosphere_update_post', [ $post_id ] ) ) {
+			wp_schedule_single_event( time(), 'atmosphere_update_post', [ $post_id ] );
 		}
 	}
 
