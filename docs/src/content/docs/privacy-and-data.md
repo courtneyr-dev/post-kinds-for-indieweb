@@ -1,9 +1,9 @@
 ---
 title: Privacy and data
-description: "What Post Kinds stores, which external media and tracking services it contacts, and what appears in your public markup — verified against 1.0.0."
+description: "What Post Kinds stores, which external media and tracking services it contacts, and what appears in your public markup — verified against 1.0.0, the check-in map against 1.9.0."
 ---
 
-What the plugin stores, what it sends to other services, and what appears in your site's public markup. Everything here is verified against the plugin code as of version 1.0.0; open questions are listed at the end.
+What the plugin stores, what it sends to other services, and what appears in your site's public markup. Everything here is verified against the plugin code as of version 1.0.0, apart from the check-in map's tiles and consent hook, which describe 1.9.0; open questions are listed at the end.
 
 ## What the plugin stores on your site
 
@@ -84,6 +84,31 @@ The third host is the part worth understanding: it is not a fixed service. It is
 Results are cached for a day, misses included, so a page is not re-fetched on every save. Nothing is contacted for a card with no URL, and a page that turns out not to be on AT Protocol costs one request, not three.
 
 Only the resolved record's address is stored, in the `_pkiw_standard_site_uri` post meta key, and only when the record verifies against the page it was found on.
+
+**Holding the archive map until consent.** To hold the check-in archive map until a visitor consents, return `true` from `pkiw_checkin_map_requires_consent`. The map container then carries `data-pkiw-consent="required"` and stays hidden, with no tile requests, until your consent tool dispatches a `pkiw:map-consent` event on `document`, or sets `window.pkiwMapConsent = true` before the map script starts. Do both: the flag covers consent given before the script runs, the event covers consent given after, including before the page finishes loading. The list of check-ins prints in full while the map waits. A map already drawn stays until the next page load if consent is withdrawn. This covers the archive map; the Check-in Dashboard block's map doesn't read the filter.
+
+```php
+add_filter( 'pkiw_checkin_map_requires_consent', '__return_true' );
+```
+
+With the [WP Consent API](https://wordpress.org/plugins/wp-consent-api/), in a script that loads after it (use the category your consent tool files third-party content under):
+
+```js
+function pkiwAllowMap() {
+    window.pkiwMapConsent = true;
+    document.dispatchEvent( new Event( 'pkiw:map-consent' ) );
+}
+
+if ( typeof wp_has_consent === 'function' && wp_has_consent( 'marketing' ) ) {
+    pkiwAllowMap();
+}
+
+document.addEventListener( 'wp_listen_for_consent_change', ( event ) => {
+    if ( 'allow' === event.detail.marketing ) {
+        pkiwAllowMap();
+    }
+} );
+```
 
 **POSSE syndication (outbound publishing).** The plugin sends your activity to Last.fm, Trakt, or Foursquare **only when you enable the matching toggle** (Scrobble to Last.fm, Sync to Trakt, Sync to Foursquare). All three default to off.
 

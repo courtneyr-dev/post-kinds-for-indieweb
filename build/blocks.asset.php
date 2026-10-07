@@ -11,7 +11,8 @@
 		'wp-editor',
 		'wp-element',
 		'wp-i18n',
-		'wp-primitives'
+		'wp-primitives',
+		'wp-server-side-render'
 	),
-	'version' => '82a30a49b3cefcf5ae74'
+	'version' => 'ded603c8a0268f07a13b'
 );

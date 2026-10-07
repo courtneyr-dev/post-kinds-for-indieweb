@@ -185,6 +185,20 @@ final class Kind_Archive_Layouts {
 	}
 
 	/**
+	 * Whether the block renderer route is running: the editor previewing a block.
+	 *
+	 * Reads the route being dispatched, so a rest_do_request() from PHP
+	 * counts as well as the editor's HTTP request.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return bool
+	 */
+	public static function is_block_preview(): bool {
+		return self::$block_preview;
+	}
+
+	/**
 	 * Let the REST posts routes order a menu kind the way its archive does.
 	 *
 	 * `orderby=pkiw_group` with one menu kind in the request returns that
