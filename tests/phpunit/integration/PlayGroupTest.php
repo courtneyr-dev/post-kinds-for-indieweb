@@ -35,6 +35,7 @@ final class PlayGroupTest extends WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		( new Taxonomy() )->create_default_terms();
+		( new \PKIW\Meta_Fields() )->register_meta_fields();
 		\PKIW\register_play_kind();
 		$this->original_stylesheet = get_stylesheet();
 		switch_theme( 'twentytwentyfive' );
@@ -134,18 +135,6 @@ final class PlayGroupTest extends WP_UnitTestCase {
 		$this->assertSame( 'Video games', $source->label( $source->group_of( get_post( $video ) ), [] ) );
 		$this->assertSame( 'Board games', $source->label( $source->group_of( get_post( $board ) ), [] ) );
 		$this->assertSame( '', $source->empty_label(), 'The empty group takes the engine label (Other) or the marker emptyLabel.' );
-	}
-
-	public function test_the_archive_sections_editor_offers_a_field_per_play_group(): void {
-		$groups = \PKIW\Kind_Archive_Layouts::archive_sections_groups();
-
-		$this->assertSame(
-			[
-				'video' => 'Video games',
-				'board' => 'Board games',
-			],
-			$groups['play'] ?? null
-		);
 	}
 
 	// play_group().

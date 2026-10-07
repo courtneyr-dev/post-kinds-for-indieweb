@@ -22,6 +22,9 @@ final class PlayFactsTest extends WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		( new Taxonomy() )->create_default_terms();
+		// The test framework drops registered meta between tests, and with
+		// it each key's default.
+		( new \PKIW\Meta_Fields() )->register_meta_fields();
 		\PKIW\register_play_kind();
 		add_filter( 'pre_http_request', '__return_empty_array' );
 	}
@@ -143,6 +146,8 @@ final class PlayFactsTest extends WP_UnitTestCase {
 		$facts = \PKIW\kind_facts( $id );
 
 		$this->assertSame( 'Lantern Drift', $facts['title'] );
+		$this->assertSame( 'playing', $facts['status'], 'No status row reads as the registered default, as the card does.' );
+		$this->assertSame( 'Playing', $facts['status_label'] );
 		$this->assertSame( '900012', $facts['rawg_id'] );
 		$this->assertSame( 'video', $facts['group'] );
 		$this->assertSame( [ '', '' ], $facts['played_at'], 'No card, no played day.' );
@@ -277,7 +282,8 @@ final class PlayFactsTest extends WP_UnitTestCase {
 	public function test_an_unknown_stored_status_passes_through_raw(): void {
 		global $wpdb;
 		$id = $this->play( [ 'title' => 'Garden Circuit' ] );
-		$wpdb->update( $wpdb->postmeta, [ 'meta_value' => 'paused' ], [ 'post_id' => $id, 'meta_key' => '_pkiw_play_status' ] ); // phpcs:ignore WordPress.DB.SlowDBQuery
+		delete_post_meta( $id, '_pkiw_play_status' );
+		$wpdb->insert( $wpdb->postmeta, [ 'post_id' => $id, 'meta_key' => '_pkiw_play_status', 'meta_value' => 'paused' ] ); // phpcs:ignore WordPress.DB.SlowDBQuery
 		wp_cache_delete( $id, 'post_meta' );
 
 		$facts = \PKIW\kind_facts( $id );
