@@ -1408,62 +1408,26 @@ class Meta_Fields {
 	}
 
 	/**
-	 * Whether an RSVP's event location may print for a visitor who can't
-	 * edit the post (issue 251).
+	 * Whether an RSVP's event location may print (issue 251).
 	 *
-	 * Only when `_pkiw_rsvp_location_privacy` is 'public'. An unset value is
-	 * private, so RSVPs saved before the setting existed keep their location
-	 * to themselves. An explicit private location under the shared rule
-	 * (`_pkiw_geo_privacy` 'private' or Simple Location `geo_public` '0')
-	 * still wins. Use it for output that leaves the request: feeds and
-	 * federated records.
-	 *
-	 * @param int $post_id Post ID.
-	 * @return bool
-	 */
-	public static function rsvp_location_public( int $post_id ): bool {
-		if ( $post_id <= 0 || 'public' !== get_post_meta( $post_id, self::PREFIX . 'rsvp_location_privacy', true ) ) {
-			return false;
-		}
-
-		return self::get_public_location_fields( $post_id )['name'];
-	}
-
-	/**
-	 * Whether the current request may print an RSVP's event location (issue 251).
-	 *
-	 * A public location prints for everyone. Someone who can edit the post
-	 * also sees a private one, but only on a front-end page. Feeds, REST,
-	 * cron and admin requests get the visitor answer, because feed readers,
-	 * ActivityPub and ATmosphere copy what those requests render, and a post
-	 * is federated from the request that publishes it.
+	 * Only when `_pkiw_rsvp_location_privacy` is 'public', for every request
+	 * and every viewer. An unset value is private, so RSVPs saved before the
+	 * setting existed keep their location to themselves. An explicit private
+	 * location under the shared rule (`_pkiw_geo_privacy` 'private' or
+	 * Simple Location `geo_public` '0') still wins. Editors get no front-end
+	 * exception, because a plugin that caches rendered content (Markdown
+	 * Alternate's md_alt_cache_{ID}) can serve their render to visitors; they
+	 * see the location in the block editor and in REST meta.
 	 *
 	 * @param int $post_id Post ID.
 	 * @return bool
 	 */
 	public static function rsvp_location_visible( int $post_id ): bool {
-		if ( self::rsvp_location_public( $post_id ) ) {
-			return true;
-		}
-
-		return $post_id > 0 && current_user_can( 'edit_post', $post_id ) && self::is_front_end_view();
-	}
-
-	/**
-	 * Whether this request renders a front-end page for the person viewing
-	 * it: a single post, archive, home or search page that isn't a feed.
-	 * REST and cron requests never run the main query, so it stays empty.
-	 *
-	 * @return bool
-	 */
-	private static function is_front_end_view(): bool {
-		global $wp_query;
-
-		if ( is_admin() || wp_doing_cron() || wp_is_serving_rest_request() || ! $wp_query instanceof \WP_Query || $wp_query->is_feed() ) {
+		if ( $post_id <= 0 || 'public' !== get_post_meta( $post_id, self::PREFIX . 'rsvp_location_privacy', true ) ) {
 			return false;
 		}
 
-		return $wp_query->is_singular() || $wp_query->is_archive() || $wp_query->is_home() || $wp_query->is_search();
+		return self::get_public_location_fields( $post_id )['name'];
 	}
 
 	/**
@@ -1484,7 +1448,7 @@ class Meta_Fields {
 		// An RSVP's event location goes only to its editors unless it's public (issue 251).
 		$event_location = self::PREFIX . 'event_location';
 		if ( array_key_exists( $event_location, $meta ) && has_term( 'rsvp', Taxonomy::TAXONOMY, $post_id )
-			&& ! current_user_can( 'edit_post', $post_id ) && ! self::rsvp_location_public( $post_id ) ) {
+			&& ! current_user_can( 'edit_post', $post_id ) && ! self::rsvp_location_visible( $post_id ) ) {
 			$meta[ $event_location ] = '';
 		}
 

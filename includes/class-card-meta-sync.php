@@ -189,7 +189,9 @@ class Card_Meta_Sync {
 	 * Privacy settings whose block.json default is written on every save
 	 * when the card leaves the attribute out. The editor drops an attribute
 	 * that equals its default from the block comment, so a card switched
-	 * back to private would otherwise keep an older 'public' in meta.
+	 * back to private would otherwise keep an older 'public' in meta. Each
+	 * is read from the first card of its own type, even when a card of
+	 * another kind comes first.
 	 *
 	 * @var array<string, array<string, string>>
 	 */
@@ -331,18 +333,18 @@ class Card_Meta_Sync {
 	 * @return void
 	 */
 	public static function sync_content( int $post_id, string $content ): void {
-		$block = self::find_first_mapped_block( parse_blocks( $content ) );
+		$blocks = parse_blocks( $content );
+		$block  = self::find_first_mapped_block( $blocks );
 		if ( null !== $block ) {
 			$map      = self::ATTR_META_MAP[ $block['blockName'] ];
 			$defaults = self::ATTR_DEFAULTS[ $block['blockName'] ] ?? [];
-			$private  = self::ATTR_PRIVATE_DEFAULTS[ $block['blockName'] ] ?? [];
 
 			foreach ( $map as $attr => $suffix ) {
-				$value = $block['attrs'][ $attr ] ?? null;
-
-				if ( ( null === $value || '' === $value ) && isset( $private[ $attr ] ) ) {
-					$value = $private[ $attr ];
+				if ( isset( self::ATTR_PRIVATE_DEFAULTS[ $block['blockName'] ][ $attr ] ) ) {
+					continue; // Synced below, from the first card of its own type.
 				}
+
+				$value = $block['attrs'][ $attr ] ?? null;
 
 				if ( ( null === $value || '' === $value ) && isset( $defaults[ $attr ] )
 					&& '' === (string) get_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, true ) ) {
@@ -378,6 +380,20 @@ class Card_Meta_Sync {
 				update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, $clean );
 			}
 		}
+
+		// A read card ahead of an RSVP card must not leave the RSVP's
+		// location public after its toggle goes off (issue 251).
+		foreach ( self::ATTR_PRIVATE_DEFAULTS as $name => $privacy ) {
+			$card = self::find_first_mapped_block( $blocks, $name );
+			if ( null === $card ) {
+				continue;
+			}
+
+			foreach ( $privacy as $attr => $default ) {
+				$value = (string) ( $card['attrs'][ $attr ] ?? '' );
+				update_post_meta( $post_id, Meta_Fields::PREFIX . self::ATTR_META_MAP[ $name ][ $attr ], sanitize_text_field( '' === $value ? $default : $value ) );
+			}
+		}
 	}
 
 	/**
@@ -389,15 +405,17 @@ class Card_Meta_Sync {
 	 * mirroring the kind-sync semantics.
 	 *
 	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
+	 * @param string                           $name   Only match this block name; empty matches any mapped block.
 	 * @return array<string, mixed>|null The first mapped block, or null.
 	 */
-	private static function find_first_mapped_block( array $blocks ): ?array {
+	private static function find_first_mapped_block( array $blocks, string $name = '' ): ?array {
 		foreach ( $blocks as $block ) {
-			if ( isset( self::ATTR_META_MAP[ $block['blockName'] ?? '' ] ) ) {
+			$block_name = $block['blockName'] ?? '';
+			if ( '' === $name ? isset( self::ATTR_META_MAP[ $block_name ] ) : $name === $block_name ) {
 				return $block;
 			}
 			if ( ! empty( $block['innerBlocks'] ) ) {
-				$found = self::find_first_mapped_block( $block['innerBlocks'] );
+				$found = self::find_first_mapped_block( $block['innerBlocks'], $name );
 				if ( null !== $found ) {
 					return $found;
 				}

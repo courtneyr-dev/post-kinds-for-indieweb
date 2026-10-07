@@ -106,8 +106,8 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 			'post-kinds-indieweb/rsvp-card'         => [
 				'eventStart'         => 'rendered as a <time> only after strtotime() parses it; the non-date sample fails the parse gate by design',
 				'eventEnd'           => 'rendered as a dt-end <data> only after strtotime() parses it, same gate as eventStart',
-				'eventLocation'      => 'privacy-aware by design (#251): prints only when the post\'s _pkiw_rsvp_location_privacy is public, or for its editor on a front-end page (Meta_Fields::rsvp_location_visible()); the test post has none, which is private',
-				'locationVisibility' => 'block.json enum (private/public); core drops the invalid sample pre-render, and the render reads the post\'s own _pkiw_rsvp_location_privacy meta rather than this attribute, so the value is never echoed',
+				'eventLocation'      => 'privacy-aware by design (#251): prints only when this card\'s locationVisibility and the post\'s _pkiw_rsvp_location_privacy (Meta_Fields::rsvp_location_visible()) are both public; the test card and post have neither, which is private',
+				'locationVisibility' => 'block.json enum (private/public); core drops the invalid sample pre-render, and the render only compares the value with \'public\', so it is never echoed',
 			],
 			'post-kinds-indieweb/event-card'        => [
 				'eventStart'      => 'rendered as a dt-start <time> only after strtotime() parses it; the non-date sample fails the parse gate by design (same gate as rsvp-card)',
