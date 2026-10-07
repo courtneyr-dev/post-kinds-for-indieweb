@@ -151,6 +151,17 @@ final class UntitledNameTest extends WP_UnitTestCase {
 		$this->assertSame( 'Note, September 12, 2026', \PKIW\untitled_name( get_post( $post_id ) ) );
 	}
 
+	/**
+	 * X8 step 2 covers the weather reading and a note or question's
+	 * thought. A post with no kind term prints as "Note" but has no
+	 * content name, so its words don't name it.
+	 */
+	public function test_unkinded_post_with_words_takes_the_fallback(): void {
+		$post_id = wp_insert_post( [ 'post_title' => '', 'post_content' => '<!-- wp:paragraph --><p>Legacy post body.</p><!-- /wp:paragraph -->', 'post_date' => '2026-09-12 12:00:00', 'post_status' => 'publish' ], true );
+		$this->assertNotWPError( $post_id );
+		$this->assertSame( 'Note, September 12, 2026', \PKIW\untitled_name( get_post( $post_id ) ) );
+	}
+
 	private function make_post( string $kind, string $content = '', string $excerpt = '', string $password = '' ): WP_Post {
 		if ( ! term_exists( $kind, 'kind' ) ) {
 			$name = 'checkin' === $kind ? 'Check-in' : ucfirst( $kind );
