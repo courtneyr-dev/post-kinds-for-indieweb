@@ -1444,7 +1444,7 @@ class Meta_Fields {
 	 * Whether `_pkiw_event_location` may go to someone who can't edit the
 	 * post (issue 251). An event post announces its own location, so it
 	 * shows, unless the post is really an RSVP (is_rsvp()): an RSVP set to
-	 * Event keeps its RSVP rows. Every other post shows it only when
+	 * Event keeps its RSVP card or rows. Every other post shows it only when
 	 * rsvp_location_visible() says so.
 	 *
 	 * @param int $post_id Post ID.
@@ -1462,17 +1462,19 @@ class Meta_Fields {
 	}
 
 	/**
-	 * Whether a post has the `rsvp` term or a stored RSVP row: the card's
-	 * `_pkiw_rsvp_location_privacy`, the editor sidebar's `_pkiw_rsvp_status`
-	 * or the `_pkiw_rsvp_value` Quick Post and the RSVP meta box write.
-	 * Reads raw rows, because get_post_meta() returns the registered
-	 * 'private' default for a post with no privacy row.
+	 * Whether a post has the `rsvp` term, an RSVP card or a stored RSVP
+	 * row: the card's `_pkiw_rsvp_location_privacy`, the editor sidebar's
+	 * `_pkiw_rsvp_status` or the `_pkiw_rsvp_value` Quick Post and the RSVP
+	 * meta box write. The card counts on its own, because a card saved
+	 * before the privacy setting existed has no row. Reads raw rows, because
+	 * get_post_meta() returns the registered 'private' default for a post
+	 * with no privacy row.
 	 *
 	 * @param int $post_id Post ID.
 	 * @return bool
 	 */
 	private static function is_rsvp( int $post_id ): bool {
-		if ( has_term( 'rsvp', Taxonomy::TAXONOMY, $post_id ) ) {
+		if ( has_term( 'rsvp', Taxonomy::TAXONOMY, $post_id ) || has_block( 'post-kinds-indieweb/rsvp-card', $post_id ) ) {
 			return true;
 		}
 
