@@ -284,6 +284,21 @@ class Checkin_Map {
 			self::enqueue_assets();
 		}
 
+		/**
+		 * Filters whether the check-in archive map waits for consent.
+		 *
+		 * When true, the map container carries data-pkiw-consent="required"
+		 * and the map script loads no tiles until the page dispatches a
+		 * `pkiw:map-consent` event on `document`, or sets
+		 * `window.pkiwMapConsent = true` before the script runs. The list
+		 * prints in full either way.
+		 *
+		 * @since 1.9.0
+		 *
+		 * @param bool $requires_consent Default false: the map draws on page load.
+		 */
+		$requires_consent = $has_map && (bool) apply_filters( 'pkiw_checkin_map_requires_consent', false );
+
 		ob_start();
 		?>
 		<div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
@@ -300,6 +315,9 @@ class Checkin_Map {
 					data-attribution="<?php echo esc_attr( $tiles['attribution'] ); ?>"
 					data-max-zoom="<?php echo esc_attr( (string) $tiles['maxZoom'] ); ?>"
 					data-cluster-label="<?php /* translators: %d: number of check-ins */ esc_attr_e( '%d check-ins in this area. Zoom in.', 'post-kinds-for-indieweb-in-block-themes' ); ?>"
+					<?php if ( $requires_consent ) : ?>
+						data-pkiw-consent="required"
+					<?php endif; ?>
 					hidden
 				></div>
 			<?php endif; ?>

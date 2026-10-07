@@ -123,6 +123,13 @@ class Meta_Fields {
 				'default'     => '',
 				'enum'        => [ '', 'yes', 'no', 'maybe', 'interested' ],
 			],
+			'rsvp_location_privacy'   => [
+				'type'        => 'string',
+				'description' => __( 'Who sees the RSVP\'s event location: private (people who can edit the post) or public.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => [ $this, 'sanitize_rsvp_location_privacy' ],
+				'default'     => 'private',
+				'enum'        => [ 'private', 'public' ],
+			],
 
 			// Check-in Fields.
 			'checkin_name'            => [
@@ -1091,8 +1098,11 @@ class Meta_Fields {
 	 * this plugin (grepped); the Foursquare place ID carried in the
 	 * checkin card's `foursquareId` attribute is the closest analog to a
 	 * generic venue identifier distinct from the OpenStreetMap id, so the
-	 * checkin card gates it on the 'venue_id' tier. No key maps here
-	 * because no such value is persisted to post meta today.
+	 * checkin card gates it on the 'venue_id' tier. The Foursquare importers
+	 * persist the venue ID to `_pkiw_checkin_venue_id`, and
+	 * `_pkiw_checkin_foursquare_id` holds the check-in ID. Neither is
+	 * registered meta, so neither reaches REST or the abilities, and no key
+	 * maps here.
 	 *
 	 * @var array<string, string>
 	 */
@@ -1401,6 +1411,29 @@ class Meta_Fields {
 	}
 
 	/**
+	 * Whether an RSVP's event location may print (issue 251).
+	 *
+	 * Only when `_pkiw_rsvp_location_privacy` is 'public', for every request
+	 * and every viewer. An unset value is private, so RSVPs saved before the
+	 * setting existed keep their location to themselves. An explicit private
+	 * location under the shared rule (`_pkiw_geo_privacy` 'private' or
+	 * Simple Location `geo_public` '0') still wins. Editors get no front-end
+	 * exception, because a plugin that caches rendered content (Markdown
+	 * Alternate's md_alt_cache_{ID}) can serve their render to visitors; they
+	 * see the location in the block editor and in REST meta.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	public static function rsvp_location_visible( int $post_id ): bool {
+		if ( $post_id <= 0 || 'public' !== get_post_meta( $post_id, self::PREFIX . 'rsvp_location_privacy', true ) ) {
+			return false;
+		}
+
+		return self::get_public_location_fields( $post_id )['name'];
+	}
+
+	/**
 	 * Zero/blank out this plugin's own `_pkiw_*` location fields the
 	 * post's current visibility tier hides, leaving every other key in
 	 * $meta untouched. This is the LOCATION_KEY_TIERS walk shared by
@@ -1414,6 +1447,13 @@ class Meta_Fields {
 	 */
 	public static function redact_location_array( array $meta, int $post_id ): array {
 		$visible = self::get_visible_location_fields( $post_id );
+
+		// An RSVP's event location goes only to its editors unless it's public (issue 251).
+		$event_location = self::PREFIX . 'event_location';
+		if ( array_key_exists( $event_location, $meta ) && has_term( 'rsvp', Taxonomy::TAXONOMY, $post_id )
+			&& ! current_user_can( 'edit_post', $post_id ) && ! self::rsvp_location_visible( $post_id ) ) {
+			$meta[ $event_location ] = '';
+		}
 
 		foreach ( self::LOCATION_KEY_TIERS as $key => $tier ) {
 			if ( ! empty( $visible[ $tier ] ) ) {
@@ -1600,6 +1640,16 @@ class Meta_Fields {
 		$value = sanitize_text_field( (string) $value );
 
 		return in_array( $value, $valid, true ) ? $value : '';
+	}
+
+	/**
+	 * Sanitize an RSVP's location privacy: 'public', or 'private' for anything else.
+	 *
+	 * @param mixed $value Value to sanitize.
+	 * @return string Sanitized value.
+	 */
+	public function sanitize_rsvp_location_privacy( mixed $value ): string {
+		return 'public' === $value ? 'public' : 'private';
 	}
 
 	/**

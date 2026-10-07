@@ -299,7 +299,7 @@ final class Micropub_Content_Builder {
 	 * @return string|null Block markup ready for post_content, or null to skip.
 	 */
 	private static function build_block_content( array $properties ): ?string {
-		$kind = self::detect_kind( $properties );
+		$kind = self::card_kind( $properties );
 		if ( null === $kind ) {
 			return null;
 		}
@@ -311,17 +311,56 @@ final class Micropub_Content_Builder {
 
 		// Kinds other than pure photo posts can still carry attached photos
 		// (issue #38: a Checkin with a photo dropped the image entirely).
-		// Append the image/gallery markup after the kind's card.
-		if ( 'photo' !== $kind && self::has_property( $properties, 'photo' ) ) {
+		// Append the image/gallery markup after the kind's card. A comic's
+		// cover already sits on the card, and photo_card() skips empty
+		// values, so a comic needs no has_property() check on photo[0].
+		$photo_markup = '';
+		if ( 'comics' === $kind ) {
+			$photo_markup = self::photo_card( self::without_comic_cover( $properties ) );
+		} elseif ( 'photo' !== $kind && self::has_property( $properties, 'photo' ) ) {
 			$photo_markup = self::photo_card( $properties );
-			if ( '' !== $photo_markup ) {
-				$card_markup .= "\n\n\t" . $photo_markup;
-			}
+		}
+		if ( '' !== $photo_markup ) {
+			$card_markup .= "\n\n\t" . $photo_markup;
 		}
 
 		$body = self::flatten_scalar( $properties, 'content' );
 
 		return self::wrap_h_entry( $card_markup, $body );
+	}
+
+	/**
+	 * Kinds a `pkiw-kind` hint may narrow the inferred kind to, keyed by the
+	 * inferred kind. Only shapes that are property-identical belong here: a
+	 * comic read is a `read-of` entry, so `comics` may refine `read`. A hint
+	 * outside this map sets the kind term (assign_kind_term()) but never
+	 * changes the card, so `jam` on a `listen-of` entry still builds a
+	 * listen card.
+	 *
+	 * @var array<string, string[]>
+	 */
+	private const HINT_REFINEMENTS = [
+		'read' => [ 'comics' ],
+	];
+
+	/**
+	 * The kind whose card the builder writes: detect_kind(), narrowed by a
+	 * valid `pkiw-kind` hint listed in HINT_REFINEMENTS.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return string|null Kind slug, or null when no kind matches.
+	 */
+	private static function card_kind( array $properties ): ?string {
+		$kind = self::detect_kind( $properties );
+		if ( null === $kind ) {
+			return null;
+		}
+		$hint = self::explicit_kind( $properties );
+		if ( null === $hint || ! in_array( $hint, self::HINT_REFINEMENTS[ $kind ] ?? [], true ) ) {
+			return $kind;
+		}
+		$taxonomy = Plugin::get_instance()->get_taxonomy();
+		return ( null !== $taxonomy && $taxonomy->is_valid_kind( $hint ) ) ? $hint : $kind;
 	}
 
 	/**
@@ -417,6 +456,8 @@ final class Micropub_Content_Builder {
 				return self::watch_card( $properties );
 			case 'read':
 				return self::read_card( $properties );
+			case 'comics':
+				return self::comic_card( $properties );
 			case 'play':
 				return self::play_card( $properties );
 			case 'rsvp':
@@ -624,6 +665,182 @@ final class Micropub_Content_Builder {
 			]
 		);
 		return self::self_closing_block( 'post-kinds-indieweb/read-card', $attrs );
+	}
+
+	/**
+	 * Build a Comic Card block from the h-entry property bag.
+	 *
+	 * A comic read is a `read-of` entry with the `pkiw-kind: comics` hint.
+	 * The cover comes from comic_cover(). Series, volume, issue number,
+	 * publisher and dates arrive as vendor properties
+	 * (docs/micropub-field-gaps.md).
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return string Block-comment markup for the comic-card block.
+	 */
+	private static function comic_card( array $properties ): string {
+		$cover = self::comic_cover( $properties );
+		$attrs = self::filter_empty(
+			[
+				'sourceUrl'     => self::flatten_scalar( $properties, 'read-of' ),
+				'title'         => self::flatten_scalar( $properties, 'name' ),
+				'creators'      => implode( ', ', array_filter( self::flatten_string_array( $properties, 'author' ) ) ),
+				'series'        => self::flatten_scalar( $properties, 'mp-series' ),
+				'volume'        => self::flatten_scalar( $properties, 'mp-volume' ),
+				'issueNumber'   => self::flatten_scalar( $properties, 'mp-issue-number' ),
+				'publisher'     => self::flatten_scalar( $properties, 'mp-publisher' ),
+				'coverImage'    => $cover['url'],
+				'coverImageAlt' => $cover['alt'],
+				'readStatus'    => self::flatten_scalar( $properties, 'read-status' ),
+				'rating'        => self::flatten_numeric( $properties, 'rating' ),
+				'startedAt'     => self::flatten_scalar( $properties, 'mp-started-at' ),
+				'finishedAt'    => self::flatten_scalar( $properties, 'mp-finished-at' ),
+				'review'        => self::flatten_scalar( $properties, 'content' ),
+			]
+		);
+		return self::self_closing_block( 'post-kinds-indieweb/comic-card', $attrs );
+	}
+
+	/**
+	 * The comic's cover URL and alt.
+	 *
+	 * `mp-cover-image` and `mp-cover-image-alt` win, the cover properties
+	 * docs/micropub-field-gaps.md proposes for the read card. Without them
+	 * the cover is the first `photo` image with a URL, read through
+	 * photo_values(), so a photo Micropub sideloaded gives its local copy
+	 * instead of the remote original.
+	 *
+	 * @param array<string, mixed>                                         $properties h-entry properties bag.
+	 * @param array<int, array{url: string, alt: string, image: int}>|null $values     photo_values() of the bag, when the caller has them.
+	 * @return array{url: string, alt: string} Cover URL and alt, empty when there's no cover.
+	 */
+	private static function comic_cover( array $properties, ?array $values = null ): array {
+		$url = self::flatten_scalar( $properties, 'mp-cover-image' );
+		if ( '' !== $url ) {
+			return [
+				'url' => $url,
+				'alt' => self::flatten_scalar( $properties, 'mp-cover-image-alt' ),
+			];
+		}
+		$cover = [
+			'url' => '',
+			'alt' => '',
+		];
+		// A sideloaded copy follows its original, so the cover image's
+		// last value is its local copy when it has one.
+		$image = null;
+		foreach ( $values ?? self::photo_values( $properties ) as $value ) {
+			if ( '' === $value['url'] || ( null !== $image && $value['image'] !== $image ) ) {
+				continue;
+			}
+			$image = $value['image'];
+			$cover = [
+				'url' => $value['url'],
+				'alt' => $value['alt'],
+			];
+		}
+		return $cover;
+	}
+
+	/**
+	 * Drop the comic's cover from `photo`, keeping `mp-photo-alt` aligned.
+	 *
+	 * Every value of an image that holds the cover URL goes, so neither
+	 * the remote original nor its sideloaded copy repeats the cover below
+	 * the card. The remaining values are written back as URL strings, each
+	 * with its image's alt.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return array<string, mixed> The bag without the cover.
+	 */
+	private static function without_comic_cover( array $properties ): array {
+		$values  = self::photo_values( $properties );
+		$cover   = self::comic_cover( $properties, $values )['url'];
+		$covered = [];
+		foreach ( $values as $value ) {
+			if ( $value['url'] === $cover ) {
+				$covered[ $value['image'] ] = true;
+			}
+		}
+		$photos = [];
+		$alts   = [];
+		foreach ( $values as $value ) {
+			if ( isset( $covered[ $value['image'] ] ) ) {
+				continue;
+			}
+			$photos[] = $value['url'];
+			$alts[]   = $value['alt'];
+		}
+		$properties['photo']        = $photos;
+		$properties['mp-photo-alt'] = $alts;
+		return $properties;
+	}
+
+	/**
+	 * Read `photo` as a list of values, each tied to the image it shows.
+	 *
+	 * A value is a URL string or a JSON photo object (`{value, alt}`). Its
+	 * alt is the object's `alt`, else the aligned `mp-photo-alt` entry.
+	 *
+	 * The Micropub plugin sideloads each photo after insert and appends
+	 * the local attachment URLs to `photo`, so N photos arrive as N
+	 * originals followed by N local copies. Its sideload reuses the
+	 * attachment an original already resolves to, and downloads one that
+	 * doesn't. So when `photo` has that shape (an even count, each value
+	 * in the second half resolves to an attachment, and its original
+	 * resolves to the same attachment or to none), value i and value
+	 * i + N are one image and share the original's alt. Otherwise every
+	 * value is its own image.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return array<int, array{url: string, alt: string, image: int}> Values in request order.
+	 */
+	private static function photo_values( array $properties ): array {
+		$raw = $properties['photo'] ?? [];
+		if ( ! is_array( $raw ) || isset( $raw['value'] ) ) {
+			$raw = [ $raw ];
+		}
+		$alts   = self::flatten_string_array( $properties, 'mp-photo-alt' );
+		$values = [];
+		foreach ( array_values( $raw ) as $i => $photo ) {
+			$url      = is_array( $photo ) ? ( $photo['value'] ?? '' ) : $photo;
+			$alt      = is_array( $photo ) ? ( $photo['alt'] ?? '' ) : '';
+			$values[] = [
+				'url'   => is_string( $url ) ? $url : '',
+				'alt'   => is_string( $alt ) && '' !== $alt ? $alt : ( $alts[ $i ] ?? '' ),
+				'image' => $i,
+			];
+		}
+
+		$half = intdiv( count( $values ), 2 );
+		if ( 0 === $half || count( $values ) !== 2 * $half ) {
+			return $values;
+		}
+		for ( $i = 0; $i < $half; $i++ ) {
+			$copy     = self::attachment_id( $values[ $i + $half ]['url'] );
+			$original = self::attachment_id( $values[ $i ]['url'] );
+			if ( 0 === $copy || ( 0 !== $original && $original !== $copy ) ) {
+				return $values;
+			}
+		}
+		for ( $i = 0; $i < $half; $i++ ) {
+			$values[ $i + $half ]['image'] = $i;
+			$values[ $i + $half ]['alt']   = $values[ $i ]['alt'];
+		}
+		return $values;
+	}
+
+	/**
+	 * The attachment ID a URL resolves to.
+	 *
+	 * @param string $url Image URL.
+	 * @return int Attachment ID, or 0 when the URL isn't a local attachment.
+	 */
+	private static function attachment_id( string $url ): int {
+		if ( '' === $url || ! function_exists( 'attachment_url_to_postid' ) ) {
+			return 0;
+		}
+		return (int) attachment_url_to_postid( $url );
 	}
 
 	/**
