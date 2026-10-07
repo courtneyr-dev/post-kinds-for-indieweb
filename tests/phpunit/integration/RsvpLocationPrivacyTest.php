@@ -907,6 +907,142 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Event Card markup that stores the event location.
+	 *
+	 * @param array<string, mixed> $attrs Attributes that replace the defaults.
+	 */
+	private function event_card( array $attrs = [] ): string {
+		$attrs += [
+			'eventName'     => self::EVENT,
+			'eventUrl'      => self::EVENT_URL,
+			'eventStart'    => $this->start( 'future' ),
+			'eventLocation' => self::LOCATION,
+		];
+
+		return '<!-- wp:post-kinds-indieweb/event-card ' . wp_json_encode( $attrs ) . ' /-->';
+	}
+
+	/**
+	 * A published post with a kind and the given content.
+	 *
+	 * @param string   $content Post content.
+	 * @param string[] $terms   Kind terms.
+	 * @return int Post ID.
+	 */
+	private function post_with( string $content, array $terms ): int {
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => $content,
+			]
+		);
+		wp_set_object_terms( $id, $terms, 'kind' );
+
+		return $id;
+	}
+
+	/**
+	 * The post's content as a visitor's single view renders it.
+	 *
+	 * @param int $id Post ID.
+	 */
+	private function the_content( int $id ): string {
+		$this->go_to( get_permalink( $id ) );
+		$GLOBALS['post'] = get_post( $id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		setup_postdata( $GLOBALS['post'] );
+		$content = apply_filters( 'the_content', (string) get_post_field( 'post_content', $id ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		wp_reset_postdata();
+
+		return $content;
+	}
+
+	/**
+	 * An Event Card on an RSVP follows the RSVP's setting: it printed
+	 * `eventLocation` with no check, so a private RSVP's location reached
+	 * content, mf2, REST, the feed and federated copies.
+	 */
+	public function test_an_event_card_on_a_private_rsvp_prints_no_location(): void {
+		$id = $this->post_with( $this->card( 'yes', 'future' ) . "\n\n" . $this->event_card(), [ 'rsvp' ] );
+		$this->assertSame( 'private', get_metadata_raw( 'post', $id, '_pkiw_rsvp_location_privacy', true ) );
+
+		$html = $this->the_content( $id );
+		$this->assertStringContainsString( 'k-event', $html, 'The Event Card renders.' );
+		$this->assertStringNotContainsString( self::LOCATION, $html, 'Content.' );
+		$this->assertStringNotContainsString( 'p-location', $html );
+		$this->assertStringNotContainsString( self::LOCATION, (string) wp_json_encode( \Mf2\parse( $html ) ), 'Parsed mf2.' );
+		$this->assertStringNotContainsString( self::LOCATION, $this->rest_post( $id )['content']['rendered'], 'REST content.rendered.' );
+		$this->assertStringNotContainsString( self::LOCATION, $this->feed_content( $id ), 'Feed content.' );
+
+		// Federated copies are built in the editor's publish request.
+		$this->as_editor();
+		$this->go_to( get_permalink( $id ) );
+		$GLOBALS['wp_the_query'] = new WP_Query();
+		$GLOBALS['wp_query']     = $GLOBALS['wp_the_query']; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$GLOBALS['post']         = get_post( $id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		setup_postdata( $GLOBALS['post'] );
+		$federated = apply_filters( 'the_content', (string) get_post_field( 'post_content', $id ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		wp_reset_postdata();
+		$this->assertStringNotContainsString( self::LOCATION, $federated, 'Content rendered for federation.' );
+		wp_set_current_user( 0 );
+
+		$this->make_public( $id );
+		$this->assertStringContainsString( self::LOCATION, $this->the_content( $id ), 'A public RSVP prints the Event Card location.' );
+	}
+
+	public function test_an_event_card_on_a_private_rsvp_prints_no_calendar_location(): void {
+		$venue = 'Calendar Hall Rv51';
+		add_filter(
+			'pkiw_pre_calendar_event',
+			static function ( $pre, string $source, int $event_id ) use ( $venue ) {
+				return 'the-events-calendar' === $source && 251 === $event_id ? [ 'location' => $venue ] : $pre;
+			},
+			10,
+			3
+		);
+		$card = $this->event_card(
+			[
+				'eventLocation'   => '',
+				'calendarSource'  => 'the-events-calendar',
+				'calendarEventId' => 251,
+			]
+		);
+		$id   = $this->post_with( $this->card( 'yes', 'future' ) . "\n\n" . $card, [ 'rsvp' ] );
+
+		$this->assertStringNotContainsString( $venue, $this->the_content( $id ) );
+
+		$this->make_public( $id );
+		$this->assertStringContainsString( $venue, $this->the_content( $id ), 'A public RSVP prints the calendar location.' );
+	}
+
+	/**
+	 * Kind terms on a post that holds an Event Card and isn't an RSVP.
+	 *
+	 * @return array<string, array{0: string[]}>
+	 */
+	public function event_card_kinds(): array {
+		return [
+			'event' => [ [ 'event' ] ],
+			'note'  => [ [ 'note' ] ],
+			'none'  => [ [] ],
+		];
+	}
+
+	/**
+	 * The Event Card isn't a kind card, so it never sets the Event kind,
+	 * and a post with no RSVP keeps its location whatever its kind.
+	 *
+	 * @dataProvider event_card_kinds
+	 *
+	 * @param string[] $terms Kind terms on the post.
+	 */
+	public function test_an_event_card_on_a_post_that_is_not_an_rsvp_prints_its_location( array $terms ): void {
+		$id = $this->post_with( $this->event_card(), $terms );
+
+		$this->assertStringContainsString( '<span class="p-location">' . self::LOCATION . '</span>', $this->the_content( $id ) );
+		$this->assertStringContainsString( self::LOCATION, $this->rest_post( $id )['content']['rendered'], 'REST content.rendered.' );
+	}
+
+	/**
 	 * Assert someone who can't edit the post gets no event location from REST
 	 * meta, `content.rendered`, the get-post-meta ability or the binding.
 	 *
