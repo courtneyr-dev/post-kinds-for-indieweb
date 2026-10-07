@@ -782,6 +782,131 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A published synced pattern (wp_block).
+	 *
+	 * @param string $content Pattern content.
+	 * @return int Pattern post ID.
+	 */
+	private function pattern( string $content ): int {
+		return self::factory()->post->create(
+			[
+				'post_type'    => 'wp_block',
+				'post_status'  => 'publish',
+				'post_title'   => 'Quillfeather pattern Rv51',
+				'post_content' => $content,
+			]
+		);
+	}
+
+	/**
+	 * Markup that places a synced pattern.
+	 *
+	 * @param int $pattern_id Pattern post ID.
+	 */
+	private function ref( int $pattern_id ): string {
+		return '<!-- wp:block {"ref":' . $pattern_id . '} /-->';
+	}
+
+	/**
+	 * An RSVP card wrapped in this many synced patterns.
+	 *
+	 * @param int $depth Number of patterns between the post and the card.
+	 */
+	private function card_in_patterns( int $depth ): string {
+		$content = $this->card( 'yes', 'future' );
+		for ( $i = 0; $i < $depth; $i++ ) {
+			$content = $this->ref( $this->pattern( $content ) );
+		}
+
+		return $content;
+	}
+
+	/**
+	 * How many synced patterns sit between the post and its RSVP card.
+	 *
+	 * @return array<string, array{0: int}>
+	 */
+	public function synced_pattern_depths(): array {
+		return [
+			'one ref'       => [ 1 ],
+			'two refs deep' => [ 2 ],
+		];
+	}
+
+	/**
+	 * An Event post whose only RSVP card sits in a synced pattern has no
+	 * RSVP row, because Card_Meta_Sync reads the post's own blocks, and
+	 * has_block() reads only the post's own content. The pattern's card
+	 * still makes it an RSVP.
+	 *
+	 * @dataProvider synced_pattern_depths
+	 *
+	 * @param int $depth Number of patterns between the post and the card.
+	 */
+	public function test_an_rsvp_card_in_a_synced_pattern_keeps_the_location_from_visitors( int $depth ): void {
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => $this->card_in_patterns( $depth ),
+			]
+		);
+		wp_set_object_terms( $id, 'event', 'kind' );
+		foreach ( [ '_pkiw_rsvp_location_privacy', '_pkiw_rsvp_status', '_pkiw_rsvp_value' ] as $key ) {
+			$this->assertFalse( metadata_exists( 'post', $id, $key ), "No {$key} row." );
+		}
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+
+		$this->assertStringContainsString( self::EVENT, $this->rest_post( $id )['content']['rendered'], 'The pattern renders its card.' );
+		$this->assert_no_location_for_visitors( $id );
+		$this->assert_location_for_editors( $id );
+		$this->assertFalse( Meta_Fields::event_location_visible( $id ) );
+	}
+
+	/**
+	 * Nesting past the depth cap counts as an RSVP, so a card buried deeper
+	 * than the walk goes still keeps its location.
+	 */
+	public function test_an_rsvp_card_past_the_synced_pattern_depth_cap_keeps_the_location_from_visitors(): void {
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => $this->card_in_patterns( 12 ),
+			]
+		);
+		wp_set_object_terms( $id, 'event', 'kind' );
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+
+		$this->assert_no_location_for_visitors( $id );
+		$this->assertFalse( Meta_Fields::event_location_visible( $id ) );
+	}
+
+	/**
+	 * Two synced patterns that place each other end the walk, and an Event
+	 * post with no RSVP card among them keeps its location.
+	 */
+	public function test_a_plain_event_post_whose_synced_patterns_ref_each_other_keeps_its_location(): void {
+		$first  = $this->pattern( '' );
+		$second = $this->pattern( $this->ref( $first ) );
+		wp_update_post(
+			[
+				'ID'           => $first,
+				'post_content' => wp_slash( $this->ref( $second ) ),
+			]
+		);
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => $this->ref( $first ),
+			]
+		);
+		wp_set_object_terms( $id, 'event', 'kind' );
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+
+		$this->assertTrue( Meta_Fields::event_location_visible( $id ) );
+		$this->assertSame( self::LOCATION, $this->rest_post( $id )['meta']['_pkiw_event_location'] );
+	}
+
+	/**
 	 * Assert someone who can't edit the post gets no event location from REST
 	 * meta, `content.rendered`, the get-post-meta ability or the binding.
 	 *
