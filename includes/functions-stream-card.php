@@ -385,7 +385,8 @@ function stream_card_kind_cite( \WP_Post $post ): string {
  *
  * Each part is a property class and its value or values. `p-author`
  * prints as a nested h-card with that name; every other class prints as
- * data, with `u-*` values escaped as URLs. Empty values are dropped.
+ * data, with `u-*` values escaped as URLs. A value that is empty, or
+ * that esc_url() empties, is dropped.
  *
  * @since 1.9.0
  *
@@ -405,8 +406,13 @@ function hidden_cite_html( string $property, array $parts ): string {
 				$inner .= '<span class="p-author h-card"><data class="p-name" value="' . esc_attr( $value ) . '"></data></span>';
 				continue;
 			}
+			// esc_url() empties a disallowed protocol, and php-mf2 reads an
+			// empty u-* value as the page URL, so skip what escaping empties.
 			$escaped = str_starts_with( $class, 'u-' ) ? esc_url( $value ) : esc_attr( $value );
-			$inner  .= '<data class="' . esc_attr( $class ) . '" value="' . $escaped . '"></data>';
+			if ( '' === $escaped ) {
+				continue;
+			}
+			$inner .= '<data class="' . esc_attr( $class ) . '" value="' . $escaped . '"></data>';
 		}
 	}
 
