@@ -154,6 +154,9 @@ function card_rating_label( float $rating, int $best = 5 ): string {
 /**
  * Render a card rating as accessible SVG stars and hidden machine data.
  *
+ * A rating above $best prints $best in the label and in p-rating, so the
+ * parsed value matches the stars. The stored value doesn't change.
+ *
  * @since 1.9.0
  *
  * @param mixed $rating Stored rating.
