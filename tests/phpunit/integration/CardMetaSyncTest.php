@@ -331,4 +331,23 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 		\PKIW\Card_Meta_Sync::maybe_schedule_backfill();
 		$this->assertFalse( wp_next_scheduled( \PKIW\Card_Meta_Sync::BACKFILL_HOOK ), 'A completed backfill is not rescheduled.' );
 	}
+
+	public function test_a_site_that_finished_backfill_2_resyncs_a_card_behind_an_rsvp_card(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/rsvp-card {"eventName":"Quill Meetup"} /-->' . "\n\n" . '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Quill Primer"} /-->',
+		] );
+		// Saved while the RSVP card sat in ATTR_META_MAP, so the read card never synced.
+		delete_post_meta( $post_id, '_pkiw_read_title' );
+		update_option( \PKIW\Card_Meta_Sync::BACKFILL_OPTION, '2', false );
+		delete_option( \PKIW\Card_Meta_Sync::BACKFILL_CURSOR );
+		wp_clear_scheduled_hook( \PKIW\Card_Meta_Sync::BACKFILL_HOOK );
+
+		\PKIW\Card_Meta_Sync::maybe_schedule_backfill();
+		$this->assertNotFalse( wp_next_scheduled( \PKIW\Card_Meta_Sync::BACKFILL_HOOK ), 'A site that finished backfill 2 runs it again.' );
+
+		wp_clear_scheduled_hook( \PKIW\Card_Meta_Sync::BACKFILL_HOOK );
+		\PKIW\Card_Meta_Sync::run_backfill_event();
+
+		$this->assertSame( 'Quill Primer', get_post_meta( $post_id, '_pkiw_read_title', true ) );
+	}
 }

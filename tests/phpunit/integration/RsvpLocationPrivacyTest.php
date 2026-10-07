@@ -27,9 +27,10 @@ use PKIW\Micropub_Content_Builder;
  * `post-kinds/get-post-meta` ability and the `event_location` binding.
  * Logged-in editors get the same front end as visitors, because a plugin that
  * caches rendered content can serve their render to everyone; they see the
- * location in the block editor and in REST meta. Each card follows its own
- * toggle, and the first RSVP card sets the post. Existing RSVPs have no
- * stored visibility, so they count as private and keep their stored text.
+ * location in the block editor and in REST meta. A card prints its location
+ * only when its own toggle and the first RSVP card's toggle are both on.
+ * Existing RSVPs have no stored visibility, so they count as private and keep
+ * their stored text.
  *
  * @group integration
  */
@@ -464,6 +465,18 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		$this->assertSame( '', $this->rest_post( $id )['meta']['_pkiw_event_location'], 'REST meta follows the RSVP card.' );
 	}
 
+	public function test_an_rsvp_card_ahead_of_a_read_card_leaves_the_read_card_syncing(): void {
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => $this->card( 'yes', 'future' ) . "\n\n" . '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Quill Primer Rv51"} /-->',
+			]
+		);
+
+		$this->assertSame( 'Quill Primer Rv51', get_post_meta( $id, '_pkiw_read_title', true ), 'The read card syncs as it did before the RSVP card had a setting.' );
+		$this->assertSame( 'private', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+	}
+
 	/**
 	 * Front-end views a logged-in editor can load.
 	 *
@@ -692,6 +705,46 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		$this->make_public( $id );
 		wp_set_current_user( 0 );
 		$this->assertSame( self::LOCATION, $this->rest_post( $id )['meta']['_pkiw_event_location'], 'A public RSVP returns its location.' );
+	}
+
+	/**
+	 * An RSVP card saved before #328 has no `_pkiw_rsvp_location_privacy`
+	 * row, and a site that already ran the card meta backfill never wrote
+	 * one. Set to Event, the card still makes the post an RSVP.
+	 */
+	public function test_an_rsvp_card_with_no_stored_setting_on_an_event_post_keeps_the_location_from_visitors(): void {
+		$id = $this->rsvp( 'yes', 'future' );
+		wp_set_object_terms( $id, 'event', 'kind' );
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+		delete_post_meta( $id, '_pkiw_rsvp_location_privacy' );
+		$this->assertFalse( metadata_exists( 'post', $id, '_pkiw_rsvp_location_privacy' ), 'No stored setting.' );
+
+		$this->assert_no_location_for_visitors( $id );
+		$this->assert_location_for_editors( $id );
+	}
+
+	/**
+	 * Deleting the RSVP card leaves its stored setting, so an Event post
+	 * that held one keeps following it, as the Privacy and data page says.
+	 */
+	public function test_an_event_post_whose_rsvp_card_was_deleted_keeps_following_its_setting(): void {
+		$notes = '<!-- wp:paragraph --><p>Meetup notes.</p><!-- /wp:paragraph -->';
+
+		$id = $this->rsvp( 'yes', 'future' );
+		wp_update_post( [ 'ID' => $id, 'post_content' => $notes ] );
+		wp_set_object_terms( $id, 'event', 'kind' );
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+		$this->assertSame( 'private', get_metadata_raw( 'post', $id, '_pkiw_rsvp_location_privacy', true ), 'The setting outlives the card.' );
+
+		$this->assert_no_location_for_visitors( $id );
+		$this->assert_location_for_editors( $id );
+
+		$public = $this->rsvp( 'yes', 'future', 'public' );
+		wp_update_post( [ 'ID' => $public, 'post_content' => $notes ] );
+		wp_set_object_terms( $public, 'event', 'kind' );
+		update_post_meta( $public, '_pkiw_event_location', self::LOCATION );
+		wp_set_current_user( 0 );
+		$this->assertSame( self::LOCATION, $this->rest_post( $public )['meta']['_pkiw_event_location'], 'A card left public keeps the location public.' );
 	}
 
 	/**

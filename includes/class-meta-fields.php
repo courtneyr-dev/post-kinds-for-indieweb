@@ -1444,7 +1444,7 @@ class Meta_Fields {
 	 * Whether `_pkiw_event_location` may go to someone who can't edit the
 	 * post (issue 251). An event post announces its own location, so it
 	 * shows, unless the post is really an RSVP (is_rsvp()): an RSVP set to
-	 * Event keeps its RSVP rows. Every other post shows it only when
+	 * Event keeps its RSVP card or rows. Every other post shows it only when
 	 * rsvp_location_visible() says so.
 	 *
 	 * @param int $post_id Post ID.

@@ -257,6 +257,33 @@ class Checkin_Map {
 	}
 
 	/**
+	 * Load Leaflet and the archive map script into the block editor.
+	 *
+	 * The editor previews the Check-ins Feed through the REST block
+	 * renderer, and what that request enqueues never reaches the editor
+	 * canvas. Core prints what enqueue_block_assets enqueues into the
+	 * canvas iframe, so the map assets go in here, and the flag tells the
+	 * script to draw each map the preview adds after the page loaded.
+	 * The front end keeps loading them only with a pin.
+	 *
+	 * @since 1.9.0
+	 */
+	public static function enqueue_editor_assets(): void {
+		if ( ! is_admin() ) {
+			return;
+		}
+
+		self::enqueue_assets();
+
+		// The editor page and its canvas both fire the hook.
+		$flag   = 'window.pkiwCheckinMapWatch = true;';
+		$before = wp_scripts()->get_data( 'pkiw-checkin-map', 'before' );
+		if ( ! is_array( $before ) || ! in_array( $flag, $before, true ) ) {
+			wp_add_inline_script( 'pkiw-checkin-map', $flag, 'before' );
+		}
+	}
+
+	/**
 	 * The archive: a map of the page's public check-ins and the full list.
 	 *
 	 * The list is complete without JavaScript. The map element stays

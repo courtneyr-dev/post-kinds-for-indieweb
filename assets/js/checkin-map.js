@@ -9,6 +9,10 @@
  * `pkiw:map-consent` event on document, at any time after this script
  * loads, or window.pkiwMapConsent === true.
  *
+ * In the block editor (window.pkiwCheckinMapWatch === true) the script also
+ * draws each map the Check-ins Feed preview adds after load, by the same
+ * consent rule.
+ *
  * Keyboard: zoom buttons come before the pins in tab order. Enter on a pin
  * moves focus to its list entry. Each list number becomes a button that
  * centers the map on its pin, so nothing needs a drag. Nearby pins merge
@@ -326,6 +330,8 @@
 		} );
 	}
 
+	const MAP = '.pkiw-checkin-archive__map[data-pins]';
+
 	// A consent tool can answer before the page finishes loading, so the
 	// listener goes on now. Maps found waiting draw when it fires.
 	let consented = false;
@@ -334,28 +340,69 @@
 		'pkiw:map-consent',
 		() => {
 			consented = true;
-			waiting.splice( 0 ).forEach( ( el ) => initMap( el ) );
+			// A reloaded editor preview leaves its old map detached.
+			waiting
+				.splice( 0 )
+				.filter( ( el ) => el.isConnected )
+				.forEach( ( el ) => initMap( el ) );
 		},
 		{ once: true }
 	);
 
-	function init() {
-		if ( typeof L === 'undefined' || ! L.markerClusterGroup ) {
+	// Each map element is drawn, or waits for consent, once.
+	const seen = new WeakSet();
+
+	function draw( el ) {
+		if ( seen.has( el ) ) {
 			return;
 		}
-		document
-			.querySelectorAll( '.pkiw-checkin-archive__map[data-pins]' )
-			.forEach( ( el ) => {
-				if (
-					'required' === el.dataset.pkiwConsent &&
-					true !== window.pkiwMapConsent &&
-					! consented
-				) {
-					waiting.push( el );
-					return;
-				}
-				initMap( el );
-			} );
+		seen.add( el );
+		if (
+			'required' === el.dataset.pkiwConsent &&
+			true !== window.pkiwMapConsent &&
+			! consented
+		) {
+			waiting.push( el );
+			return;
+		}
+		initMap( el );
+	}
+
+	function hasLeaflet() {
+		return typeof L !== 'undefined' && !! L.markerClusterGroup;
+	}
+
+	function init() {
+		if ( ! hasLeaflet() ) {
+			return;
+		}
+		document.querySelectorAll( MAP ).forEach( draw );
+	}
+
+	// The block editor previews the archive through the block renderer, so
+	// its markup reaches the canvas after this script ran, and again each
+	// time the preview reloads. The editor enqueue sets the flag; the
+	// front end prints its maps before the script and needs no watching.
+	if ( true === window.pkiwCheckinMapWatch && window.MutationObserver ) {
+		new window.MutationObserver( ( records ) => {
+			if ( document.readyState === 'loading' || ! hasLeaflet() ) {
+				return;
+			}
+			records.forEach( ( record ) =>
+				record.addedNodes.forEach( ( node ) => {
+					if ( 1 !== node.nodeType ) {
+						return;
+					}
+					if ( node.matches( MAP ) ) {
+						draw( node );
+					}
+					node.querySelectorAll( MAP ).forEach( draw );
+				} )
+			);
+		} ).observe( document.documentElement, {
+			childList: true,
+			subtree: true,
+		} );
 	}
 
 	if ( document.readyState === 'loading' ) {
