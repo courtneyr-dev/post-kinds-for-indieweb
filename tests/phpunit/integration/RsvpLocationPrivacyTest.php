@@ -1468,6 +1468,73 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * One block rendered as a loop renders it: the block context names
+	 * $context, as a Query Loop's Post Template names its post through
+	 * render_block_context, while the global post is $global.
+	 *
+	 * @param string $markup  Markup of one block.
+	 * @param int    $context Post ID the block context names.
+	 * @param int    $global  Post ID set as the global post.
+	 */
+	private function render_with_post_context( string $markup, int $context, int $global ): string {
+		$this->go_to( get_permalink( $global ) );
+		$GLOBALS['post'] = get_post( $global ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		setup_postdata( $GLOBALS['post'] );
+		$filter = static function ( array $block_context ) use ( $context ): array {
+			$block_context['postType'] = 'post';
+			$block_context['postId']   = $context;
+
+			return $block_context;
+		};
+		add_filter( 'render_block_context', $filter, 1 );
+		try {
+			$html = render_block( parse_blocks( $markup )[0] );
+		} finally {
+			remove_filter( 'render_block_context', $filter, 1 );
+			wp_reset_postdata();
+		}
+
+		return $html;
+	}
+
+	/**
+	 * An Event Card decides by the post its block context names. It read
+	 * `$block->context['postId']` but declared no usesContext, so core never
+	 * filled it and get_the_ID() decided: a private RSVP's card printed its
+	 * location under a public Event post's global, and a public Event post's
+	 * card lost it under a private RSVP's.
+	 */
+	public function test_an_event_card_decides_by_the_post_in_its_block_context(): void {
+		$rsvp  = $this->post_with( $this->card( 'yes', 'future' ) . "\n\n" . $this->event_card(), [ 'rsvp' ] );
+		$event = $this->post_with( $this->event_card(), [ 'event' ] );
+
+		$html = $this->render_with_post_context( $this->event_card(), $rsvp, $event );
+		$this->assertStringContainsString( 'k-event', $html, 'The Event Card renders.' );
+		$this->assertStringNotContainsString( self::LOCATION, $html, 'A private RSVP under an Event post\'s global.' );
+
+		$this->assertStringContainsString( self::LOCATION, $this->render_with_post_context( $this->event_card(), $event, $rsvp ), 'An Event post under a private RSVP\'s global.' );
+	}
+
+	/**
+	 * An RSVP card decides by the post its block context names too, which
+	 * render.php read with no usesContext either. A card set to public on
+	 * an RSVP whose first card is private prints no location under a public
+	 * RSVP's global.
+	 */
+	public function test_an_rsvp_card_decides_by_the_post_in_its_block_context(): void {
+		$private = $this->post_with( $this->card( 'yes', 'future', 'private' ) . "\n\n" . $this->card( 'yes', 'future', 'public' ), [ 'rsvp' ] );
+		$public  = $this->rsvp( 'yes', 'future', 'public' );
+		$this->assertSame( 'private', get_post_meta( $private, '_pkiw_rsvp_location_privacy', true ) );
+		$this->assertSame( 'public', get_post_meta( $public, '_pkiw_rsvp_location_privacy', true ) );
+
+		$html = $this->render_with_post_context( $this->card( 'yes', 'future', 'public' ), $private, $public );
+		$this->assertStringContainsString( self::EVENT, $html, 'The RSVP card renders.' );
+		$this->assertStringNotContainsString( self::LOCATION, $html, 'A private RSVP under a public RSVP\'s global.' );
+
+		$this->assertStringContainsString( self::LOCATION, $this->render_with_post_context( $this->card( 'yes', 'future', 'public' ), $public, $private ), 'A public RSVP under a private RSVP\'s global.' );
+	}
+
+	/**
 	 * Assert someone who can't edit the post gets no event location from REST
 	 * meta, `content.rendered`, the get-post-meta ability or the binding.
 	 *
