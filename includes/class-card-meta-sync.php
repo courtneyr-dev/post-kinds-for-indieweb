@@ -424,6 +424,10 @@ class Card_Meta_Sync {
 				update_post_meta( $post_id, Meta_Fields::PREFIX . self::ATTR_META_MAP[ $name ][ $attr ], sanitize_text_field( '' === $value ? $default : $value ) );
 			}
 		}
+
+		// An unchanged cover fires no meta hook, so a post stored before
+		// the cover map existed gets its map here, on save or backfill.
+		refresh_cover_attachments( $post_id );
 	}
 
 	/**
