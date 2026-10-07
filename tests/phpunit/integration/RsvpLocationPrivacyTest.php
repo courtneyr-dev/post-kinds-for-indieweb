@@ -995,6 +995,63 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Synced patterns core renders as an empty string to a visitor
+	 * (render_block_core_block(), wp-includes/blocks/block.php): any status
+	 * but publish, or a password.
+	 *
+	 * @return array<string, array{0: array<string, string>}>
+	 */
+	public function patterns_core_does_not_render(): array {
+		return [
+			'draft'    => [ [ 'post_status' => 'draft' ] ],
+			'pending'  => [ [ 'post_status' => 'pending' ] ],
+			'private'  => [ [ 'post_status' => 'private' ] ],
+			'trash'    => [ [ 'post_status' => 'trash' ] ],
+			'password' => [
+				[
+					'post_status'   => 'publish',
+					'post_password' => 'quill',
+				],
+			],
+		];
+	}
+
+	/**
+	 * An RSVP card in a synced pattern core won't render doesn't make an
+	 * Event post an RSVP. A visitor gets no card, so the post is a plain
+	 * Event post and keeps its location, whether it places that pattern
+	 * itself or through a published one.
+	 *
+	 * @dataProvider patterns_core_does_not_render
+	 *
+	 * @param array<string, string> $pattern Status and password of the pattern holding the card.
+	 */
+	public function test_an_rsvp_card_in_a_pattern_core_does_not_render_leaves_an_event_post_its_location( array $pattern ): void {
+		$hidden = self::factory()->post->create(
+			$pattern + [
+				'post_type'    => 'wp_block',
+				'post_title'   => 'Hidden pattern Rv51',
+				'post_content' => $this->card( 'yes', 'future' ),
+			]
+		);
+		$this->assertSame( $pattern['post_status'], get_post_status( $hidden ) );
+
+		$placements = [
+			'placed by the post'         => $this->ref( $hidden ),
+			'behind a published pattern' => $this->ref( $this->pattern( $this->ref( $hidden ) ) ),
+		];
+		foreach ( $placements as $label => $content ) {
+			$id = $this->post_with( $content, [ 'event' ] );
+			update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+			wp_set_current_user( 0 );
+
+			$this->assertStringNotContainsString( self::EVENT, $this->rest_post( $id )['content']['rendered'], "{$label}: core renders no card." );
+			$this->assertTrue( Meta_Fields::event_location_visible( $id ), $label );
+			$this->assertSame( self::LOCATION, $this->rest_post( $id )['meta']['_pkiw_event_location'], "{$label}: REST meta for a visitor." );
+		}
+	}
+
+	/**
 	 * Event Card markup that stores the event location.
 	 *
 	 * @param array<string, mixed> $attrs Attributes that replace the defaults.
