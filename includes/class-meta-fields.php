@@ -1418,13 +1418,6 @@ class Meta_Fields {
 	}
 
 	/**
-	 * How many synced patterns deep has_rsvp_card() looks for an RSVP card.
-	 *
-	 * @var int
-	 */
-	private const SYNCED_PATTERN_MAX_DEPTH = 10;
-
-	/**
 	 * Whether an RSVP's event location may print (issue 251).
 	 *
 	 * Only when `_pkiw_rsvp_location_privacy` is 'public', for every request
@@ -1511,8 +1504,7 @@ class Meta_Fields {
 			return true;
 		}
 
-		$seen = [];
-		if ( self::has_rsvp_card( (string) get_post_field( 'post_content', $post_id ), $seen, 0 ) ) {
+		if ( self::has_rsvp_card( (string) get_post_field( 'post_content', $post_id ) ) ) {
 			return true;
 		}
 
@@ -1528,37 +1520,35 @@ class Meta_Fields {
 	/**
 	 * Whether content holds an RSVP card, itself or through the synced
 	 * patterns (`core/block` refs) it places, followed into each referenced
-	 * wp_block whatever its status. Card_Meta_Sync and has_block() read only
-	 * the post's own blocks, so a card in a pattern leaves no RSVP row. A
-	 * pattern already walked is skipped. Nesting deeper than
-	 * SYNCED_PATTERN_MAX_DEPTH counts as an RSVP, because core renders
-	 * patterns at any depth and the location fails closed.
+	 * wp_block whatever its status and however deep. Card_Meta_Sync and
+	 * has_block() read only the post's own blocks, so a card in a pattern
+	 * leaves no RSVP row. Each pattern is read once, so refs that place each
+	 * other end the walk, as they end core's render of `core/block`.
 	 *
-	 * @param string           $content Block content.
-	 * @param array<int, true> $seen    Pattern IDs already walked.
-	 * @param int              $depth   Patterns between the post and $content.
+	 * @param string $content Block content.
 	 * @return bool
 	 */
-	private static function has_rsvp_card( string $content, array &$seen, int $depth ): bool {
-		if ( has_block( 'post-kinds-indieweb/rsvp-card', $content ) ) {
-			return true;
-		}
-		if ( ! has_block( 'core/block', $content ) ) {
-			return false;
-		}
-		if ( $depth >= self::SYNCED_PATTERN_MAX_DEPTH ) {
-			return true;
-		}
-
-		foreach ( self::pattern_refs( parse_blocks( $content ) ) as $ref ) {
-			if ( isset( $seen[ $ref ] ) ) {
+	private static function has_rsvp_card( string $content ): bool {
+		$seen    = [];
+		$pending = [ $content ];
+		while ( [] !== $pending ) {
+			$content = array_pop( $pending );
+			if ( has_block( 'post-kinds-indieweb/rsvp-card', $content ) ) {
+				return true;
+			}
+			if ( ! has_block( 'core/block', $content ) ) {
 				continue;
 			}
-			$seen[ $ref ] = true;
-			$pattern      = get_post( $ref );
-			if ( $pattern instanceof \WP_Post && 'wp_block' === $pattern->post_type
-				&& self::has_rsvp_card( $pattern->post_content, $seen, $depth + 1 ) ) {
-				return true;
+
+			foreach ( self::pattern_refs( parse_blocks( $content ) ) as $ref ) {
+				if ( isset( $seen[ $ref ] ) ) {
+					continue;
+				}
+				$seen[ $ref ] = true;
+				$pattern      = get_post( $ref );
+				if ( $pattern instanceof \WP_Post && 'wp_block' === $pattern->post_type ) {
+					$pending[] = $pattern->post_content;
+				}
 			}
 		}
 

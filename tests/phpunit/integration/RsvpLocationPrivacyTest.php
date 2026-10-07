@@ -863,10 +863,10 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Nesting past the depth cap counts as an RSVP, so a card buried deeper
-	 * than the walk goes still keeps its location.
+	 * The walk has no depth cap, so a card twelve synced patterns deep
+	 * still makes the post an RSVP.
 	 */
-	public function test_an_rsvp_card_past_the_synced_pattern_depth_cap_keeps_the_location_from_visitors(): void {
+	public function test_an_rsvp_card_twelve_synced_patterns_deep_keeps_the_location_from_visitors(): void {
 		$id = self::factory()->post->create(
 			[
 				'post_status'  => 'publish',
