@@ -286,14 +286,14 @@ function untitled_name( \WP_Post $post, bool $from_content = true ): string {
 	}
 
 	if ( $from_content && 'weather' === $kind ) {
-		$weather = implode(
-			', ',
-			array_filter(
-				[
-					Integrations\Simple_Location_Weather::format( 'summary', $post->ID ),
-					Integrations\Simple_Location_Weather::format( 'temperature', $post->ID ),
-				]
-			)
+		// render() builds the same "summary, temperature" text as the
+		// Stream's p-weather line. format() would mark the weather as
+		// printed, which drops Simple Location's own weather line from the
+		// post's next the_content pass even when this name is never shown.
+		$weather = html_entity_decode(
+			wp_strip_all_tags( Integrations\Simple_Location_Weather::render( $post->ID ) ),
+			ENT_QUOTES | ENT_HTML5,
+			'UTF-8'
 		);
 		if ( '' !== $weather ) {
 			return $weather;
