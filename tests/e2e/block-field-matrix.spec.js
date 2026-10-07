@@ -135,6 +135,8 @@ const RENDER_EXCEPTIONS = {
 			'rendered as a <time> only after strtotime() parses it; the non-date sample fails the parse gate by design',
 		eventEnd:
 			'rendered as a dt-end <data> only after strtotime() parses it, same gate as eventStart',
+		eventLocation:
+			"privacy-aware by design (#251): prints only when the card's locationVisibility and the post's _pkiw_rsvp_location_privacy are both public, for logged-in editors too; the sample leaves both private. Matches the BlockFieldRenderTest.php exception for the same attribute.",
 	},
 	'post-kinds-indieweb/event-card': {
 		eventStart:
