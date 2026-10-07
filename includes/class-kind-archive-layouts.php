@@ -816,8 +816,9 @@ final class Kind_Archive_Layouts {
 	 * PKIW layout or a grouping entry block: then order date DESC, ID DESC
 	 * (stable pages). When an entry block sits in the Post Template of the
 	 * Query Loop that inherits the archive, its settings set the page size
-	 * and, when the kind is grouped, the grouping (Grouped_Archive). A
-	 * theme's own kind template or an explicit ?orderby= is left alone.
+	 * and, when the kind is grouped, the grouping (Grouped_Archive). The
+	 * kind's feed keeps the date order only. A theme's own kind template or
+	 * an explicit ?orderby= is left alone.
 	 *
 	 * @param \WP_Query $query Query.
 	 * @return void
@@ -862,6 +863,13 @@ final class Kind_Archive_Layouts {
 				'ID'   => 'DESC',
 			]
 		);
+
+		// A kind feed is this main query with `feed` set. Feed readers expect
+		// newest first and the site's posts_per_rss, so it takes neither the
+		// grouping nor the archive's page size.
+		if ( $query->is_feed() ) {
+			return;
+		}
 
 		// The entry block in the archive's loop carries the settings.
 		$plan = Grouped_Archive::main_query_plan( $query, $term->slug, $content );
