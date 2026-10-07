@@ -959,6 +959,22 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A sanitize_text_field filter that isn't idempotent turns 'A' into
+	 * '%41', which the next pass strips. A BGG ID of 'A' stores as '', so it
+	 * names no provider and the stored RAWG ID stays.
+	 */
+	public function test_a_provider_id_names_a_provider_only_by_the_row_a_filtered_sanitizer_stores(): void {
+		$encode_a = static fn( string $filtered ): string => 'A' === $filtered ? '%41' : $filtered;
+		$post_id  = $this->play_with_stored_ids( [ '_pkiw_play_rawg_id' => '3498' ] );
+		add_filter( 'sanitize_text_field', $encode_a );
+
+		$this->rest_update( $post_id, $this->play_card_markup( [ 'title' => 'Chess', 'bggId' => 'A' ], false ) );
+		remove_filter( 'sanitize_text_field', $encode_a );
+
+		$this->assert_provider_ids( $post_id, [ '_pkiw_play_rawg_id' => '3498', '_pkiw_play_bgg_id' => null ] );
+	}
+
+	/**
 	 * #340 shipped version 3 on main, so W1 needs its own number.
 	 */
 	public function test_w1_bumps_the_backfill_version_once_to_4(): void {
