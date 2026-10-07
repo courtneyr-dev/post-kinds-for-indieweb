@@ -1156,6 +1156,156 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * An RSVP card as save.js stored it before the card went dynamic in #32
+	 * (ee3d5c1, 2026-05-03): the block comment pair around static HTML with
+	 * the location in `<span class="p-location">`. render.php ignores that
+	 * HTML, but anything reading raw post_content gets it.
+	 *
+	 * @param string|null $visibility `locationVisibility` attribute, or null to leave it out.
+	 */
+	private function legacy_card( ?string $visibility = null ): string {
+		$attrs = [
+			'eventName'     => self::EVENT,
+			'eventUrl'      => self::EVENT_URL,
+			'eventStart'    => '2026-11-07T19:00',
+			'eventLocation' => self::LOCATION,
+			'rsvpStatus'    => 'yes',
+		];
+		if ( null !== $visibility ) {
+			$attrs['locationVisibility'] = $visibility;
+		}
+
+		return '<!-- wp:post-kinds-indieweb/rsvp-card ' . serialize_block_attributes( $attrs ) . ' -->'
+			. '<div class="wp-block-post-kinds-indieweb-rsvp-card rsvp-card layout-horizontal rsvp-yes"><div class="post-kinds-card h-entry"><div class="post-kinds-card__content">'
+			. '<span class="post-kinds-card__badge post-kinds-card__badge--yes"><span class="post-kinds-card__badge-icon" aria-hidden="true">✅</span><data class="p-rsvp" value="yes">Going</data></span>'
+			. '<div class="post-kinds-card__event p-in-reply-to h-event"><h3 class="post-kinds-card__title"><a href="' . self::EVENT_URL . '" class="p-name u-url" target="_blank" rel="noopener noreferrer">' . self::EVENT . '</a></h3>'
+			. '<div class="post-kinds-card__meta-row"><span class="post-kinds-card__meta-icon" aria-hidden="true">📅</span><time class="dt-start" datetime="2026-11-08T00:00:00.000Z">Sat, Nov 7, 7:00 PM</time></div>'
+			. '<div class="post-kinds-card__meta-row"><span class="post-kinds-card__meta-icon" aria-hidden="true">📍</span><span class="p-location">' . self::LOCATION . '</span></div>'
+			. '</div></div><data class="u-in-reply-to" value="' . self::EVENT_URL . '" hidden></data></div></div>'
+			. '<!-- /wp:post-kinds-indieweb/rsvp-card -->';
+	}
+
+	/**
+	 * A published RSVP whose card is a pre-#32 static card, followed by a
+	 * paragraph, for the ATmosphere transformers, which skip the test when
+	 * ATmosphere isn't loaded.
+	 *
+	 * @param string|null $visibility `locationVisibility` attribute, or null to leave it out.
+	 * @return int Post ID.
+	 */
+	private function legacy_rsvp_for_atmosphere( ?string $visibility = null ): int {
+		if ( ! class_exists( '\Atmosphere\Transformer\Document' ) ) {
+			$this->markTestSkipped( 'Set PKIW_TESTS_ATMOSPHERE_FILE to build ATmosphere records.' );
+		}
+
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'RSVP to Quillfeather',
+				'post_excerpt' => '',
+				'post_content' => $this->legacy_card( $visibility ) . "\n\n<!-- wp:paragraph -->\n<p>See you in the back room.</p>\n<!-- /wp:paragraph -->",
+			]
+		);
+		wp_set_object_terms( $id, 'rsvp', 'kind' );
+		unset( $GLOBALS['post'] );
+
+		return $id;
+	}
+
+	/**
+	 * The site.standard.document record ATmosphere builds for $id with
+	 * $format as the site's content format.
+	 *
+	 * @param int    $id     Post ID.
+	 * @param string $format Content format NSID.
+	 * @return array<string, mixed>
+	 */
+	private function atmosphere_document( int $id, string $format ): array {
+		update_option( 'atmosphere_content_format', $format );
+
+		return ( new \Atmosphere\Transformer\Document( get_post( $id ) ) )->transform();
+	}
+
+	/**
+	 * ATmosphere's content formats, by the NSID its `atmosphere_content_format`
+	 * option names (content-parser/class-*.php, checkout bf8e267).
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function atmosphere_content_formats(): array {
+		return [
+			'Markpub' => [ 'at.markpub.markdown' ],
+			'HTML'    => [ 'org.wordpress.html' ],
+			'Leaflet' => [ 'pub.leaflet.content' ],
+			'Pckt'    => [ 'blog.pckt.content' ],
+		];
+	}
+
+	/**
+	 * A private RSVP whose card predates #32 keeps its location out of the
+	 * whole document record, whatever the content format. Markpub turns a
+	 * block it doesn't know into markdown from the block's saved HTML, and
+	 * the description is ATmosphere's excerpt of raw post_content.
+	 *
+	 * @dataProvider atmosphere_content_formats
+	 * @group atmosphere
+	 *
+	 * @param string $format Content format NSID.
+	 */
+	public function test_the_atmosphere_document_of_a_legacy_rsvp_card_omits_a_private_location_in_any_format( string $format ): void {
+		$id = $this->legacy_rsvp_for_atmosphere();
+		$this->assertSame( 'private', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+
+		$record = $this->atmosphere_document( $id, $format );
+
+		$this->assertSame( $format, $record['content']['$type'] ?? null, 'ATmosphere picked the format.' );
+		$this->assertStringContainsString( 'back room', (string) wp_json_encode( $record['content'] ), 'The paragraph is in the content.' );
+		$this->assertStringNotContainsString( self::LOCATION, (string) wp_json_encode( $record ) );
+	}
+
+	/**
+	 * Only the location leaves the legacy card's Markpub content.
+	 *
+	 * @group atmosphere
+	 */
+	public function test_the_atmosphere_markpub_content_keeps_the_rest_of_a_legacy_rsvp_card(): void {
+		$markdown = $this->atmosphere_document( $this->legacy_rsvp_for_atmosphere(), 'at.markpub.markdown' )['content']['text']['markdown'];
+
+		$this->assertStringContainsString( self::EVENT, $markdown );
+		$this->assertStringContainsString( 'Going', $markdown );
+		$this->assertStringNotContainsString( self::LOCATION, $markdown );
+	}
+
+	/**
+	 * A legacy card the author made public, with a public RSVP, keeps its
+	 * location, as render.php prints it.
+	 *
+	 * @group atmosphere
+	 */
+	public function test_the_atmosphere_markpub_content_keeps_a_public_legacy_rsvp_location(): void {
+		$id = $this->legacy_rsvp_for_atmosphere( 'public' );
+		$this->assertSame( 'public', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+
+		$markdown = $this->atmosphere_document( $id, 'at.markpub.markdown' )['content']['text']['markdown'];
+
+		$this->assertStringContainsString( self::LOCATION, $markdown );
+	}
+
+	/**
+	 * The Bluesky post's text and link card description are ATmosphere's
+	 * excerpts of raw post_content, so they read the legacy card's HTML too.
+	 *
+	 * @group atmosphere
+	 */
+	public function test_the_bluesky_post_of_a_legacy_rsvp_card_omits_a_private_location(): void {
+		$id     = $this->legacy_rsvp_for_atmosphere();
+		$record = ( new \Atmosphere\Transformer\Post( get_post( $id ) ) )->transform();
+
+		$this->assertStringContainsString( self::EVENT, (string) wp_json_encode( $record ), 'The record holds the excerpt.' );
+		$this->assertStringNotContainsString( self::LOCATION, (string) wp_json_encode( $record ) );
+	}
+
+	/**
 	 * ATmosphere's post crons that publish a publishable post.
 	 *
 	 * @return array<string, array{0: string}>
