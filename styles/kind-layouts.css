@@ -8,11 +8,6 @@
  *   .is-style-pkiw-shelf-spine  spine-out grid, title text set vertically
  *   .is-style-pkiw-menu         menu lines with section headings + leaders
  *
- * A grouped loop (the archive-sections or menu entry block) prints its
- * Post Template as a stack of sections, each a heading and a
- * ul.pkiw-group__items list, so every shelf item rule has a sectioned twin
- * on `.pkiw-group__items > li`.
- *
  * Paint comes only from --pkiw-* tokens (defaults in kind-tokens.css) so the
  * theme owns wood, paper, tape and color. Shelf boards are pseudo-elements:
  * a row with fewer posts than columns shows empty board, which is neither
@@ -26,9 +21,7 @@
  * ------------------------------------------------------------------ */
 
 .wp-block-post-template.is-style-pkiw-shelf,
-.wp-block-post-template.is-style-pkiw-shelf-spine,
-.is-style-pkiw-shelf .pkiw-group__items,
-.is-style-pkiw-shelf-spine .pkiw-group__items {
+.wp-block-post-template.is-style-pkiw-shelf-spine {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(min(var(--pkiw-shelf-item-min, 9rem), 100%), 1fr));
 	gap: var(--pkiw-shelf-gap-row, 2rem) var(--pkiw-shelf-gap-column, 1rem);
@@ -40,40 +33,12 @@
 	overflow-x: clip;
 }
 
-.wp-block-post-template.is-style-pkiw-shelf-spine,
-.is-style-pkiw-shelf-spine .pkiw-group__items {
+.wp-block-post-template.is-style-pkiw-shelf-spine {
 	grid-template-columns: repeat(auto-fill, minmax(var(--pkiw-shelf-spine-min, 3.5rem), 1fr));
 }
 
-/* Grouped: the Post Template stacks its sections, and each section's list
- * is the shelf. */
-.wp-block-post-template.is-style-pkiw-shelf.pkiw-grouped,
-.wp-block-post-template.is-style-pkiw-shelf-spine.pkiw-grouped {
-	display: flex;
-	flex-direction: column;
-	gap: var(--pkiw-shelf-section-gap, 2rem);
-}
-
-.is-style-pkiw-shelf .pkiw-group,
-.is-style-pkiw-shelf-spine .pkiw-group {
-	min-width: 0;
-	margin: 0;
-}
-
-.is-style-pkiw-shelf .pkiw-group__heading,
-.is-style-pkiw-shelf-spine .pkiw-group__heading {
-	margin-block: 0 var(--pkiw-shelf-heading-gap, 1rem);
-}
-
-.is-style-pkiw-shelf .pkiw-group__items,
-.is-style-pkiw-shelf-spine .pkiw-group__items {
-	margin-block: 0;
-}
-
 .is-style-pkiw-shelf > li,
-.is-style-pkiw-shelf-spine > li,
-.is-style-pkiw-shelf .pkiw-group__items > li,
-.is-style-pkiw-shelf-spine .pkiw-group__items > li {
+.is-style-pkiw-shelf-spine > li {
 	position: relative;
 	display: flex;
 	flex-direction: column;
@@ -87,9 +52,7 @@
 /* The board: runs from the item to the shelf's inline end, so the last
  * item in a row paints the empty positions after it. */
 .is-style-pkiw-shelf > li::after,
-.is-style-pkiw-shelf-spine > li::after,
-.is-style-pkiw-shelf .pkiw-group__items > li::after,
-.is-style-pkiw-shelf-spine .pkiw-group__items > li::after {
+.is-style-pkiw-shelf-spine > li::after {
 	content: "";
 	position: absolute;
 	inset-block-end: 0;
@@ -102,9 +65,7 @@
 }
 
 .is-style-pkiw-shelf > li > *,
-.is-style-pkiw-shelf-spine > li > *,
-.is-style-pkiw-shelf .pkiw-group__items > li > *,
-.is-style-pkiw-shelf-spine .pkiw-group__items > li > * {
+.is-style-pkiw-shelf-spine > li > * {
 	margin: 0;
 }
 
@@ -137,8 +98,7 @@
 
 /* Spine-out: artwork is decoration here; the title and date remain real
  * text, set vertically. */
-.is-style-pkiw-shelf-spine > li,
-.is-style-pkiw-shelf-spine .pkiw-group__items > li {
+.is-style-pkiw-shelf-spine > li {
 	min-height: var(--pkiw-shelf-spine-height, 14rem);
 	align-items: center;
 }
@@ -246,9 +206,7 @@
  * ------------------------------------------------------------------ */
 
 .is-style-pkiw-shelf > li:has(a:focus-visible),
-.is-style-pkiw-shelf-spine > li:has(a:focus-visible),
-.is-style-pkiw-shelf .pkiw-group__items > li:has(a:focus-visible),
-.is-style-pkiw-shelf-spine .pkiw-group__items > li:has(a:focus-visible) {
+.is-style-pkiw-shelf-spine > li:has(a:focus-visible) {
 	outline: 2px solid var(--pkiw-focus-indicator, currentcolor);
 	outline-offset: -2px;
 }
@@ -270,20 +228,14 @@
 @media (prefers-reduced-motion: no-preference) {
 
 	.is-style-pkiw-shelf > li,
-	.is-style-pkiw-shelf-spine > li,
-	.is-style-pkiw-shelf .pkiw-group__items > li,
-	.is-style-pkiw-shelf-spine .pkiw-group__items > li {
+	.is-style-pkiw-shelf-spine > li {
 		transition: translate 150ms ease-out;
 	}
 
 	.is-style-pkiw-shelf > li:hover,
 	.is-style-pkiw-shelf-spine > li:hover,
 	.is-style-pkiw-shelf > li:has(a:focus-visible),
-	.is-style-pkiw-shelf-spine > li:has(a:focus-visible),
-	.is-style-pkiw-shelf .pkiw-group__items > li:hover,
-	.is-style-pkiw-shelf-spine .pkiw-group__items > li:hover,
-	.is-style-pkiw-shelf .pkiw-group__items > li:has(a:focus-visible),
-	.is-style-pkiw-shelf-spine .pkiw-group__items > li:has(a:focus-visible) {
+	.is-style-pkiw-shelf-spine > li:has(a:focus-visible) {
 		translate: 0 -0.25rem;
 	}
 }
@@ -296,14 +248,11 @@
 @media (max-width: 20em) {
 
 	.wp-block-post-template.is-style-pkiw-shelf,
-	.wp-block-post-template.is-style-pkiw-shelf-spine,
-	.is-style-pkiw-shelf .pkiw-group__items,
-	.is-style-pkiw-shelf-spine .pkiw-group__items {
+	.wp-block-post-template.is-style-pkiw-shelf-spine {
 		grid-template-columns: 1fr;
 	}
 
-	.is-style-pkiw-shelf-spine > li,
-	.is-style-pkiw-shelf-spine .pkiw-group__items > li {
+	.is-style-pkiw-shelf-spine > li {
 		min-height: 0;
 		align-items: stretch;
 	}
@@ -373,9 +322,7 @@
 @media (forced-colors: active) {
 
 	.is-style-pkiw-shelf > li::after,
-	.is-style-pkiw-shelf-spine > li::after,
-	.is-style-pkiw-shelf .pkiw-group__items > li::after,
-	.is-style-pkiw-shelf-spine .pkiw-group__items > li::after {
+	.is-style-pkiw-shelf-spine > li::after {
 		background: CanvasText;
 		opacity: 1;
 	}
@@ -385,9 +332,7 @@
 	}
 
 	.is-style-pkiw-shelf > li:has(a:focus-visible),
-	.is-style-pkiw-shelf-spine > li:has(a:focus-visible),
-	.is-style-pkiw-shelf .pkiw-group__items > li:has(a:focus-visible),
-	.is-style-pkiw-shelf-spine .pkiw-group__items > li:has(a:focus-visible) {
+	.is-style-pkiw-shelf-spine > li:has(a:focus-visible) {
 		outline-color: Highlight;
 	}
 }
