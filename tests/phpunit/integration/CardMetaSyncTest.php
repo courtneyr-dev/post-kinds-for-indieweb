@@ -167,7 +167,7 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 			'post_content' => '<!-- wp:post-kinds-indieweb/drink-card {"name":"Cortado"} /-->',
 		] );
 
-		$this->assertSame( '', get_post_meta( $post_id, '_pkiw_drink_type', true ), 'A drink saved without a type is given none.' );
+		$this->assertNull( get_metadata_raw( 'post', $post_id, '_pkiw_drink_type', true ), 'A drink saved without a type is given none.' );
 	}
 
 	public function test_drink_type_default_never_overwrites_existing_meta(): void {
@@ -179,6 +179,74 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 		wp_update_post( [ 'ID' => $post_id, 'post_title' => 'resave' ] );
 
 		$this->assertSame( 'tea', get_post_meta( $post_id, '_pkiw_drink_type', true ) );
+	}
+
+	/**
+	 * Register a meta key the way Meta_Fields does, with a registered default.
+	 *
+	 * get_post_meta() returns a registered default for a post with no row, so
+	 * these tests read stored rows with get_metadata_raw().
+	 *
+	 * @param string $key     Full meta key.
+	 * @param string $default Registered default.
+	 */
+	private function register_with_default( string $key, string $default ): void {
+		( new \PKIW\Meta_Fields() )->register_meta_fields();
+		unregister_post_meta( 'post', $key );
+		register_post_meta(
+			'post',
+			$key,
+			[
+				'type'    => 'string',
+				'single'  => true,
+				'default' => $default,
+			]
+		);
+	}
+
+	public function test_a_card_default_writes_a_row_for_a_rowless_key(): void {
+		( new \PKIW\Meta_Fields() )->register_meta_fields();
+
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/comic-card {"title":"Saga"} /-->',
+		] );
+
+		$this->assertSame( 'reading', get_metadata_raw( 'post', $post_id, '_pkiw_comic_status', true ) );
+	}
+
+	public function test_a_card_default_writes_a_row_even_when_the_key_registers_a_default(): void {
+		// Issue 234: _pkiw_read_status registers 'reading', so get_post_meta()
+		// never returned '' and a card default never reached the database.
+		$this->register_with_default( '_pkiw_comic_status', 'reading' );
+
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/comic-card {"title":"Saga"} /-->',
+		] );
+
+		$this->assertSame( 'reading', get_metadata_raw( 'post', $post_id, '_pkiw_comic_status', true ) );
+	}
+
+	public function test_a_card_default_never_replaces_a_stored_row_behind_a_registered_default(): void {
+		$this->register_with_default( '_pkiw_comic_status', 'reading' );
+		$content = '<!-- wp:post-kinds-indieweb/comic-card {"title":"Saga"} /-->';
+		$post_id = self::factory()->post->create( [ 'post_content' => $content ] );
+		update_post_meta( $post_id, '_pkiw_comic_status', 'finished' );
+
+		\PKIW\Card_Meta_Sync::sync_content( $post_id, $content );
+
+		$this->assertSame( 'finished', get_metadata_raw( 'post', $post_id, '_pkiw_comic_status', true ) );
+	}
+
+	public function test_backfill_writes_the_card_default_row_behind_a_registered_default(): void {
+		$this->register_with_default( '_pkiw_comic_status', 'reading' );
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/comic-card {"title":"Saga"} /-->',
+		] );
+		delete_post_meta( $post_id, '_pkiw_comic_status' );
+
+		\PKIW\Card_Meta_Sync::backfill_batch( 0, 100 );
+
+		$this->assertSame( 'reading', get_metadata_raw( 'post', $post_id, '_pkiw_comic_status', true ) );
 	}
 
 	public function test_backfill_gives_no_drink_a_type_and_keeps_a_stored_one(): void {
@@ -194,7 +262,7 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 
 		\PKIW\Card_Meta_Sync::backfill_batch( 0, 100 );
 
-		$this->assertSame( '', get_post_meta( $unset, '_pkiw_drink_type', true ), 'The backfill writes no type for a drink that has none.' );
+		$this->assertNull( get_metadata_raw( 'post', $unset, '_pkiw_drink_type', true ), 'The backfill writes no type for a drink that has none.' );
 		$this->assertSame( 'coffee', get_post_meta( $stored, '_pkiw_drink_type', true ), 'The backfill leaves a stored type as it is.' );
 	}
 
