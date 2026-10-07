@@ -21,8 +21,9 @@ use PKIW\Micropub_Content_Builder;
  *
  * Covers the card and its microformats, the Stream card, the feed's
  * `content:encoded` and whole RSS2 and Atom documents, content rendered for
- * federation in the publishing editor's request (ActivityPub and ATmosphere
- * copy the post's rendered content), REST `content.rendered` and meta, the
+ * federation in the publishing editor's request (ActivityPub copies the
+ * post's rendered content), ATmosphere's document and Bluesky text built in
+ * its crons with no global post, REST `content.rendered` and meta, the
  * `post-kinds/get-post-meta` ability and the `event_location` binding.
  * Logged-in editors get the same front end as visitors, because a plugin that
  * caches rendered content can serve their render to everyone; they see the
@@ -993,7 +994,9 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	/**
 	 * An Event Card on an RSVP follows the RSVP's setting: it printed
 	 * `eventLocation` with no check, so a private RSVP's location reached
-	 * content, mf2, REST, the feed and federated copies.
+	 * content, mf2, REST, the feed and content rendered in the editor's
+	 * publish request. Each render here has a global post; the ATmosphere
+	 * tests below build records with none.
 	 */
 	public function test_an_event_card_on_a_private_rsvp_prints_no_location(): void {
 		$id = $this->post_with( $this->card( 'yes', 'future' ) . "\n\n" . $this->event_card(), [ 'rsvp' ] );
