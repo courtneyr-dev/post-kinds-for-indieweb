@@ -725,6 +725,10 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	public function test_a_micropub_rsvp_hinted_as_an_event_keeps_the_location_from_visitors(): void {
+		// The hint needs the term, and an earlier class can commit its deletion.
+		if ( ! term_exists( 'event', 'kind' ) ) {
+			wp_insert_term( 'Event', 'kind', [ 'slug' => 'event' ] );
+		}
 		$id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
 		Micropub_Content_Builder::apply(
 			[
