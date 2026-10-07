@@ -1543,6 +1543,27 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A meta write with no save that makes the post's location private,
+	 * PKIW's own `_pkiw_geo_privacy` or Simple Location's `geo_public`,
+	 * queues ATmosphere's update for a shared RSVP. rsvp_location_visible()
+	 * reads both.
+	 *
+	 * @dataProvider private_locations
+	 * @group atmosphere
+	 *
+	 * @param string $key   Meta key.
+	 * @param string $value Value that makes the location private.
+	 */
+	public function test_a_meta_write_that_makes_a_shared_rsvp_location_private_queues_an_atmosphere_update( string $key, string $value ): void {
+		$id = $this->shared_public_rsvp();
+
+		update_post_meta( $id, $key, $value );
+
+		$this->assertFalse( Meta_Fields::rsvp_location_visible( $id ), 'The location is private.' );
+		$this->assertNotFalse( wp_next_scheduled( 'atmosphere_update_post', [ $id ] ), 'ATmosphere\'s update is queued.' );
+	}
+
+	/**
 	 * An RSVP ATmosphere never shared queues nothing when its setting
 	 * changes, because ATmosphere's update would share it for the first
 	 * time.
