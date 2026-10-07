@@ -991,10 +991,11 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * #340 shipped version 3 on main, so W1 needs its own number.
+	 * #340 shipped version 3 on main and #349 took 4 without the #358
+	 * privacy hold, so the pass with the hold needs its own number.
 	 */
-	public function test_w1_bumps_the_backfill_version_once_to_4(): void {
-		$this->assertSame( '4', \PKIW\Card_Meta_Sync::BACKFILL_VERSION );
+	public function test_the_backfill_version_is_5_with_the_privacy_hold(): void {
+		$this->assertSame( '5', \PKIW\Card_Meta_Sync::BACKFILL_VERSION );
 	}
 
 	/**
