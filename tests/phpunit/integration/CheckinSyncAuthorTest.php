@@ -109,6 +109,26 @@ final class CheckinSyncAuthorTest extends ApiTestCase {
 	}
 
 	/**
+	 * With no user who can create posts, each sync skips the check-in and
+	 * logs why, so the run shows more than an error count.
+	 *
+	 * @dataProvider service_provider
+	 *
+	 * @param string $service Sync class.
+	 */
+	public function test_import_with_no_author_skips_and_logs_why( string $service ): void {
+		add_filter(
+			'user_has_cap',
+			static fn( array $allcaps ): array => [ 'edit_posts' => false ] + $allcaps
+		);
+
+		$sync = $this->recording_sync( $service );
+
+		$this->assertSame( 0, $sync->import_checkins( 50 )['imported'] );
+		$this->assertContains( 'No user can author imported posts', $sync->logged );
+	}
+
+	/**
 	 * Both check-in sync classes that create posts from fetched check-ins.
 	 *
 	 * @return array<string, array{0: string}>
@@ -118,6 +138,38 @@ final class CheckinSyncAuthorTest extends ApiTestCase {
 			'foursquare' => [ Foursquare_Checkin_Sync::class ],
 			'untappd'    => [ Untappd_Checkin_Sync::class ],
 		];
+	}
+
+	/**
+	 * A sync instance that keeps its log messages.
+	 *
+	 * @param string $service Sync class.
+	 * @return Foursquare_Checkin_Sync|Untappd_Checkin_Sync
+	 */
+	private function recording_sync( string $service ): object {
+		if ( Untappd_Checkin_Sync::class === $service ) {
+			return new class() extends Untappd_Checkin_Sync {
+				/**
+				 * @var string[]
+				 */
+				public array $logged = [];
+
+				protected function log( string $message, array $context = [] ): void {
+					$this->logged[] = $message;
+				}
+			};
+		}
+
+		return new class() extends Foursquare_Checkin_Sync {
+			/**
+			 * @var string[]
+			 */
+			public array $logged = [];
+
+			protected function log( string $message, array $context = [] ): void {
+				$this->logged[] = $message;
+			}
+		};
 	}
 
 	/**
