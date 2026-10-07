@@ -283,6 +283,22 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'checkins-feed__item', $html );
 	}
 
+	public function test_block_renderer_dispatched_inside_php_previews_the_archive(): void {
+		$this->checkin( 'first', 'public', 40.111111, -75.111111 );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		// WP-CLI or an abilities adapter calls rest_do_request() with no HTTP
+		// request, so rest_api_loaded() never set rest_route.
+		unset( $GLOBALS['wp']->query_vars['rest_route'] );
+		$request = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/post-kinds-indieweb/checkins-feed' );
+		$request->set_param( 'context', 'edit' );
+		$request->set_param( 'attributes', [ 'inherit' => true ] );
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertStringContainsString( 'Title first', (string) $response->get_data()['rendered'] );
+	}
+
 	public function test_rest_content_of_a_page_with_an_inheriting_feed_gets_no_stand_in(): void {
 		$this->checkin( 'first', 'public', 40.111111, -75.111111 );
 		$page_id = self::factory()->post->create(
