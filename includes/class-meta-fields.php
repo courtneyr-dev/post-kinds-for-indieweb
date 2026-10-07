@@ -1418,6 +1418,13 @@ class Meta_Fields {
 	}
 
 	/**
+	 * How many synced patterns deep has_rsvp_card() looks for an RSVP card.
+	 *
+	 * @var int
+	 */
+	private const SYNCED_PATTERN_MAX_DEPTH = 10;
+
+	/**
 	 * Whether an RSVP's event location may print (issue 251).
 	 *
 	 * Only when `_pkiw_rsvp_location_privacy` is 'public', for every request
@@ -1466,7 +1473,8 @@ class Meta_Fields {
 	 * the card's `_pkiw_rsvp_location_privacy`, the editor sidebar's
 	 * `_pkiw_rsvp_status` or the `_pkiw_rsvp_value` Quick Post and the RSVP
 	 * meta box write. The card counts on its own, because a card saved
-	 * before the privacy row existed has no row and nothing backfills one.
+	 * before the privacy row existed has no row and nothing backfills one,
+	 * and a card in a synced pattern never gets one (has_rsvp_card()).
 	 * Reads raw rows, because get_post_meta() returns the registered
 	 * 'private' default for a post with no privacy row.
 	 *
@@ -1474,7 +1482,12 @@ class Meta_Fields {
 	 * @return bool
 	 */
 	private static function is_rsvp( int $post_id ): bool {
-		if ( has_term( 'rsvp', Taxonomy::TAXONOMY, $post_id ) || has_block( 'post-kinds-indieweb/rsvp-card', $post_id ) ) {
+		if ( has_term( 'rsvp', Taxonomy::TAXONOMY, $post_id ) ) {
+			return true;
+		}
+
+		$seen = [];
+		if ( self::has_rsvp_card( (string) get_post_field( 'post_content', $post_id ), $seen, 0 ) ) {
 			return true;
 		}
 
@@ -1485,6 +1498,67 @@ class Meta_Fields {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Whether content holds an RSVP card, itself or through the synced
+	 * patterns (`core/block` refs) it places, followed into each referenced
+	 * wp_block whatever its status. Card_Meta_Sync and has_block() read only
+	 * the post's own blocks, so a card in a pattern leaves no RSVP row. A
+	 * pattern already walked is skipped. Nesting deeper than
+	 * SYNCED_PATTERN_MAX_DEPTH counts as an RSVP, because core renders
+	 * patterns at any depth and the location fails closed.
+	 *
+	 * @param string           $content Block content.
+	 * @param array<int, true> $seen    Pattern IDs already walked.
+	 * @param int              $depth   Patterns between the post and $content.
+	 * @return bool
+	 */
+	private static function has_rsvp_card( string $content, array &$seen, int $depth ): bool {
+		if ( has_block( 'post-kinds-indieweb/rsvp-card', $content ) ) {
+			return true;
+		}
+		if ( ! has_block( 'core/block', $content ) ) {
+			return false;
+		}
+		if ( $depth >= self::SYNCED_PATTERN_MAX_DEPTH ) {
+			return true;
+		}
+
+		foreach ( self::pattern_refs( parse_blocks( $content ) ) as $ref ) {
+			if ( isset( $seen[ $ref ] ) ) {
+				continue;
+			}
+			$seen[ $ref ] = true;
+			$pattern      = get_post( $ref );
+			if ( $pattern instanceof \WP_Post && 'wp_block' === $pattern->post_type
+				&& self::has_rsvp_card( $pattern->post_content, $seen, $depth + 1 ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * The `ref` of every `core/block` in parsed blocks, nested ones included.
+	 *
+	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
+	 * @return int[]
+	 */
+	private static function pattern_refs( array $blocks ): array {
+		$refs = [];
+		foreach ( $blocks as $block ) {
+			$ref = (int) ( $block['attrs']['ref'] ?? 0 );
+			if ( 'core/block' === ( $block['blockName'] ?? '' ) && $ref > 0 ) {
+				$refs[] = $ref;
+			}
+			if ( ! empty( $block['innerBlocks'] ) ) {
+				$refs = array_merge( $refs, self::pattern_refs( $block['innerBlocks'] ) );
+			}
+		}
+
+		return $refs;
 	}
 
 	/**
