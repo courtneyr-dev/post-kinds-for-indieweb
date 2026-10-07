@@ -8,6 +8,7 @@
 declare(strict_types=1);
 
 use PKIW\Abilities\Core_Abilities;
+use PKIW\Integrations\Atmosphere_Document_Map;
 use PKIW\Integrations\Atmosphere_Titles;
 use PKIW\Meta_Fields;
 
@@ -198,6 +199,29 @@ final class AcquisitionCostPrivacyTest extends WP_UnitTestCase {
 		$content = sanitize_post_field( 'post_content', $post->post_content, $post->ID );
 
 		return html_entity_decode( wp_strip_all_tags( strip_shortcodes( $content ) ), ENT_QUOTES, 'UTF-8' );
+	}
+
+	/**
+	 * ATmosphere's plain-text excerpt for a post with no excerpt: raw
+	 * post_content, entities decoded, tags stripped, trimmed to $words
+	 * (ATmosphere transformer/class-base.php:228-234 and functions.php:216,
+	 * checkout bf8e267). It becomes the document description, the
+	 * link-card description and the Bluesky post text.
+	 *
+	 * @param int $id    Post ID.
+	 * @param int $words Word limit.
+	 */
+	private function atmosphere_excerpt( int $id, int $words ): string {
+		$text = wp_strip_all_tags( html_entity_decode( get_post( $id )->post_content, ENT_QUOTES, 'UTF-8' ) );
+
+		return wp_trim_words( trim( (string) preg_replace( '/\s+/u', ' ', $text ) ), $words, '...' );
+	}
+
+	/**
+	 * PKIW's ATmosphere record filters, as the integration registers them.
+	 */
+	private function register_atmosphere_filters(): void {
+		( new Atmosphere_Document_Map() )->register();
 	}
 
 	/**
@@ -523,5 +547,85 @@ final class AcquisitionCostPrivacyTest extends WP_UnitTestCase {
 
 	public function test_search_finds_a_public_cost(): void {
 		$this->assertContains( $this->acquisition( true, true ), $this->search_ids( '149.99' ) );
+	}
+
+	public function test_the_atmosphere_document_description_carries_no_cost(): void {
+		$id      = $this->acquisition( false, true );
+		$excerpt = $this->atmosphere_excerpt( $id, 55 );
+		$this->assertStringContainsString( self::COST_TEXT, $excerpt, 'ATmosphere\'s own excerpt holds the cost.' );
+		$this->register_atmosphere_filters();
+
+		$record = apply_filters( 'atmosphere_transform_document', [ 'description' => $excerpt ], get_post( $id ) );
+
+		$this->assertStringContainsString( self::WHERE, $record['description'] );
+		$this->assertStringNotContainsString( self::COST_TEXT, $record['description'] );
+	}
+
+	public function test_the_atmosphere_link_card_carries_no_cost(): void {
+		$id = $this->acquisition( false, true );
+		$this->register_atmosphere_filters();
+
+		$embed = apply_filters(
+			'atmosphere_post_embed',
+			[
+				'$type'    => 'app.bsky.embed.external',
+				'external' => [
+					'uri'         => get_permalink( $id ),
+					'title'       => self::TITLE,
+					'description' => $this->atmosphere_excerpt( $id, 55 ),
+				],
+			],
+			get_post( $id ),
+			'link-card'
+		);
+
+		$this->assertStringContainsString( self::WHERE, $embed['external']['description'] );
+		$this->assertStringNotContainsString( self::COST_TEXT, $embed['external']['description'] );
+	}
+
+	public function test_the_atmosphere_post_text_carries_no_cost_and_keeps_its_link(): void {
+		$id        = $this->acquisition( false, true );
+		$permalink = get_permalink( $id );
+		$text      = self::TITLE . "\n\n" . $this->atmosphere_excerpt( $id, 30 ) . "\n\n" . $permalink;
+		$start     = strpos( $text, $permalink );
+		$this->register_atmosphere_filters();
+
+		$record = apply_filters(
+			'atmosphere_transform_bsky_post',
+			[
+				'$type'  => 'app.bsky.feed.post',
+				'text'   => $text,
+				'facets' => [
+					[
+						'index'    => [
+							'byteStart' => $start,
+							'byteEnd'   => $start + strlen( $permalink ),
+						],
+						'features' => [
+							[
+								'$type' => 'app.bsky.richtext.facet#link',
+								'uri'   => $permalink,
+							],
+						],
+					],
+				],
+			],
+			get_post( $id ),
+			[ 'strategy' => 'link-card' ]
+		);
+
+		$this->assertStringNotContainsString( self::COST_TEXT, $record['text'] );
+		$this->assertStringContainsString( self::WHERE, $record['text'] );
+		$index = $record['facets'][0]['index'];
+		$this->assertSame( $permalink, substr( $record['text'], $index['byteStart'], $index['byteEnd'] - $index['byteStart'] ), 'The link facet still points at the permalink.' );
+	}
+
+	public function test_the_atmosphere_records_keep_a_public_cost(): void {
+		$id      = $this->acquisition( true, true );
+		$excerpt = $this->atmosphere_excerpt( $id, 55 );
+		$this->register_atmosphere_filters();
+
+		$record = apply_filters( 'atmosphere_transform_document', [ 'description' => $excerpt ], get_post( $id ) );
+		$this->assertSame( $excerpt, $record['description'] );
 	}
 }
