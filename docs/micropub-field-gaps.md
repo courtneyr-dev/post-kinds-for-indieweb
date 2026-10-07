@@ -95,6 +95,55 @@ property today** (`—` = nothing maps) | **proposed property for Outpost**
 | `openlibraryId` | — | `mp-openlibrary-id` |
 | `startedAt` / `finishedAt` | — | `mp-started-at` / `mp-finished-at` (distinct from the h-entry's own `published`, since `readStatus` transitions happen across multiple Micropub updates) |
 
+## comics
+
+A comic read is a `read-of` entry sent with `pkiw-kind: comics`. Without the
+hint, or with `pkiw-kind: read`, the same entry builds a read card.
+
+| Card attribute | Micropub property | Notes |
+|---|---|---|
+| `sourceUrl` | `read-of` | |
+| `title` | `name` | |
+| `creators` | `author` | repeated values are joined with `, ` |
+| `series` | `mp-series` | vendor extension |
+| `volume` | `mp-volume` | vendor extension |
+| `issueNumber` | `mp-issue-number` | vendor extension |
+| `publisher` | `mp-publisher` | vendor extension, the name proposed for read above |
+| `coverImage` | `mp-cover-image`, else `photo` | see the cover order below |
+| `coverImageAlt` | `mp-cover-image-alt`, else the cover photo's alt | a JSON photo object's `alt`, else `mp-photo-alt` |
+| `readStatus` | `read-status` | |
+| `rating` | `rating` | |
+| `startedAt` | `mp-started-at` | no default from `published` |
+| `finishedAt` | `mp-finished-at` | no default from `published` |
+| `review` | `content` | |
+
+The cover is `mp-cover-image` with `mp-cover-image-alt`, the properties
+proposed for the read card's cover above. The Micropub plugin doesn't
+sideload `mp-cover-image`, so the card uses the URL as sent. Without
+`mp-cover-image`, the cover is the first `photo` with a URL; empty values
+are skipped. A `photo` value is a URL or a JSON photo object
+(`{"value": "<url>", "alt": "<text>"}`); its alt is the object's `alt`,
+else the aligned `mp-photo-alt` entry.
+
+The Micropub plugin sideloads every `photo` after the post is inserted and
+appends each local attachment URL to the property, so N photos reach the
+builder as N originals followed by N local copies. Its sideload reuses the
+attachment an original URL already resolves to and downloads one that
+doesn't. When `photo` has that shape (an even count, every value in the
+second half resolves to an attachment, and its original resolves to the
+same attachment or to none), value i and value i + N are one image with
+the original's alt. For one photo, `[remote URL, local uploads URL]` is
+one image. The cover is then the first image's local copy, not the remote
+original. Any other shape keeps every value as its own image. That
+includes a list a client sends with a remote URL and its local copy
+already in it, such as `[remote cover, panel, local cover]`: nothing ties
+the two cover URLs together, so the local one follows the card.
+
+The cover isn't repeated below the card: the builder drops every value of
+the image that holds the cover URL, plus any other copy of that URL, and
+appends the remaining photos with their alts aligned. Every comic-card
+attribute maps, so `wire_matrix()` lists no gaps for comics.
+
 ## play
 
 | Card attribute | Micropub property today | Proposed property for Outpost |
@@ -172,9 +221,12 @@ one-line `core/paragraph` carrying the canonical microformats2 class:
 Clients can also send an explicit **`pkiw-kind`** vendor property (mirrors
 `pkiw-promote`). A valid kind slug there overrides property inference — the
 only way to reach kinds whose property shape is ambiguous (issue vs. reply,
-quote with content only). Invalid values fall back to inference. Like the
-follow/weather trio, none of these are card blocks, so they're outside the
-wire-matrix completeness assertion.
+quote with content only). Invalid values fall back to inference. A valid
+hint always sets the kind term, but it changes the card only when
+`Micropub_Content_Builder::HINT_REFINEMENTS` lists it for the inferred kind.
+Today that's `comics` on a `read-of` entry, so `jam` on a `listen-of` still
+builds a listen card. Like the follow/weather trio, the paragraph-only kinds
+are outside the wire-matrix completeness assertion.
 
 ## Follow-on work
 
