@@ -48,23 +48,14 @@ export default function Edit( { attributes, setAttributes } ) {
 	// Sync block attributes to post meta
 	useEffect( () => {
 		const metaUpdates = {};
-		if ( title !== undefined ) {
-			metaUpdates._pkiw_favorite_title = title || '';
-		}
 		if ( url !== undefined ) {
 			metaUpdates._pkiw_favorite_url = url || '';
-		}
-		if ( author !== undefined ) {
-			metaUpdates._pkiw_favorite_author = author || '';
-		}
-		if ( image !== undefined ) {
-			metaUpdates._pkiw_favorite_image = image || '';
 		}
 
 		if ( Object.keys( metaUpdates ).length > 0 ) {
 			editPost( { meta: metaUpdates } );
 		}
-	}, [ title, url, author, image ] );
+	}, [ url ] );
 
 	const handleImageSelect = ( media ) => {
 		setAttributes( {

@@ -109,21 +109,6 @@ export default function Edit( { attributes, setAttributes } ) {
 	// Sync block attributes to post meta
 	useEffect( () => {
 		const metaUpdates = {};
-		if ( title !== undefined ) {
-			metaUpdates._pkiw_acquisition_title = title || '';
-		}
-		if ( acquisitionType !== undefined ) {
-			metaUpdates._pkiw_acquisition_type = acquisitionType || '';
-		}
-		if ( cost !== undefined ) {
-			metaUpdates._pkiw_acquisition_cost = cost || '';
-		}
-		if ( where !== undefined ) {
-			metaUpdates._pkiw_acquisition_where = where || '';
-		}
-		if ( whereUrl !== undefined ) {
-			metaUpdates._pkiw_acquisition_where_url = whereUrl || '';
-		}
 		if ( photo !== undefined ) {
 			metaUpdates._pkiw_acquisition_photo = photo || '';
 		}
@@ -131,7 +116,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		if ( Object.keys( metaUpdates ).length > 0 ) {
 			editPost( { meta: metaUpdates } );
 		}
-	}, [ title, acquisitionType, cost, where, whereUrl, photo ] );
+	}, [ photo ] );
 
 	const handleImageSelect = ( media ) => {
 		setAttributes( {
