@@ -621,7 +621,8 @@ class Card_Meta_Sync {
 	/**
 	 * A card's provider ID as sync_attr() passes it to update_post_meta(),
 	 * or '' when the card leaves it out, holds a non-string, or holds a
-	 * string whose stored row would be empty. block.json types the IDs as
+	 * string whose stored row would be empty. A key sanitizer that returns
+	 * a number still stores a row, so it still names the provider. block.json types the IDs as
 	 * strings, so "   ", "<b></b>", "\", "<b>\</b>", 0, true and false count
 	 * as left out: they write nothing over a stored ID and name no provider.
 	 *
@@ -649,7 +650,7 @@ class Card_Meta_Sync {
 			get_object_subtype( 'post', $post_id )
 		);
 
-		return is_string( $stored ) && '' !== trim( $stored ) ? $value : '';
+		return is_scalar( $stored ) && '' !== trim( (string) $stored ) ? $value : '';
 	}
 
 	/**
