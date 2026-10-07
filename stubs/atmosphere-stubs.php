@@ -64,3 +64,28 @@ namespace Atmosphere\Transformer {
 		public const META_URI = '_atmosphere_bsky_uri';
 	}
 }
+
+namespace Atmosphere\Content_Parser {
+	/**
+	 * Content parser for a site.standard.document content format (stub).
+	 */
+	interface Content_Parser {
+		public function parse( string $content, \WP_Post $post ): ?array;
+
+		public function get_type(): string;
+	}
+
+	/**
+	 * Registered content parsers (stub).
+	 */
+	class Registry {
+		/**
+		 * All registered parsers, keyed by NSID.
+		 *
+		 * @return array<string, Content_Parser>
+		 */
+		public static function all(): array {
+			return [];
+		}
+	}
+}
