@@ -728,7 +728,7 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 	 * Play cards over stored provider IDs. bggId files a play as board,
 	 * rawgId and steamId as video. A card clears a stored ID only when it
 	 * names an ID from the other group and none from the stored ID's own,
-	 * and only a non-blank string names an ID.
+	 * and only a string that sanitizes to a non-empty ID names one.
 	 *
 	 * @return array<string, array{0: array<string, mixed>, 1: array<string, string>, 2: array<string, ?string>}>
 	 */
@@ -778,6 +778,16 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 				[ 'title' => 'Chess', 'rawgId' => false ],
 				[ '_pkiw_play_rawg_id' => '3498' ],
 				[ '_pkiw_play_rawg_id' => '3498' ],
+			],
+			'a BGG ID of bare tags names no provider'           => [
+				[ 'title' => 'Chess', 'bggId' => '<b></b>' ],
+				[ '_pkiw_play_rawg_id' => '3498' ],
+				[ '_pkiw_play_rawg_id' => '3498', '_pkiw_play_bgg_id' => null ],
+			],
+			'a RAWG ID of stripped octets keeps the stored IDs' => [
+				[ 'title' => 'Catan', 'rawgId' => '%41%42' ],
+				[ '_pkiw_play_bgg_id' => '13', '_pkiw_play_rawg_id' => '3498' ],
+				[ '_pkiw_play_bgg_id' => '13', '_pkiw_play_rawg_id' => '3498' ],
 			],
 		];
 	}
