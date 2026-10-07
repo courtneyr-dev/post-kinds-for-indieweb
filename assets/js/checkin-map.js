@@ -236,8 +236,13 @@
 			}
 		}
 
+		// Under reduced motion markercluster spreads and folds a cluster with
+		// no animationend and no moveend. These run before the keyboard
+		// handler's own 'spiderfied' listener below.
 		map.on( 'moveend', orderPins );
 		group.on( 'animationend', orderPins );
+		group.on( 'spiderfied', orderPins );
+		group.on( 'unspiderfied', orderPins );
 		orderPins();
 
 		// The pin takes focus, or the cluster now holding it, or the map
