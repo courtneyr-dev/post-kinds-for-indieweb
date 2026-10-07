@@ -145,12 +145,37 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 		switch_theme( 'pkiw-kind-theme' );
 		$this->assertSame( 'pkiw-kind-theme', get_stylesheet() );
 
-		foreach ( [ 'listen', 'eat', 'drink' ] as $kind ) {
+		foreach ( [ 'listen', 'eat', 'drink', 'play', 'read' ] as $kind ) {
 			$template = resolve_block_template( 'taxonomy', $this->hierarchy( $kind ), '' );
 
 			$this->assertSame( 'pkiw-kind-theme//taxonomy-kind', $template->id, "Theme template must win for {$kind}." );
 			$this->assertStringContainsString( 'theme-owned-kind-archive', $template->content );
 		}
+	}
+
+	/**
+	 * @return array<string, array{string}>
+	 */
+	public function w1_archive_slugs(): array {
+		return [
+			'play archive' => [ 'taxonomy-kind-play' ],
+			'read archive' => [ 'taxonomy-kind-read' ],
+		];
+	}
+
+	/**
+	 * The W1 kind lanes add the template files; the definitions are here
+	 * first, and a definition serves only once its file exists.
+	 *
+	 * @dataProvider w1_archive_slugs
+	 */
+	public function test_the_play_and_read_archives_have_template_definitions( string $slug ): void {
+		$definitions = ( new ReflectionMethod( \PKIW\Plugin::class, 'get_plugin_template_definitions' ) )->invoke( \PKIW\Plugin::get_instance() );
+
+		$this->assertArrayHasKey( $slug, $definitions );
+		$this->assertNotSame( '', trim( (string) $definitions[ $slug ]['title'] ) );
+		$this->assertNotSame( '', trim( (string) $definitions[ $slug ]['description'] ) );
+		$this->assertSame( [], $definitions[ $slug ]['post_types'] );
 	}
 
 	public function test_site_editor_customization_wins_over_plugin_template(): void {

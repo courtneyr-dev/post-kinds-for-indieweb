@@ -21,8 +21,9 @@ use PKIW\Micropub_Content_Builder;
  *
  * Covers the card and its microformats, the Stream card, the feed's
  * `content:encoded` and whole RSS2 and Atom documents, content rendered for
- * federation in the publishing editor's request (ActivityPub and ATmosphere
- * copy the post's rendered content), REST `content.rendered` and meta, the
+ * federation in the publishing editor's request (ActivityPub copies the
+ * post's rendered content), ATmosphere's document and Bluesky text built in
+ * its crons with no global post, REST `content.rendered` and meta, the
  * `post-kinds/get-post-meta` ability and the `event_location` binding.
  * Logged-in editors get the same front end as visitors, because a plugin that
  * caches rendered content can serve their render to everyone; they see the
@@ -50,6 +51,21 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		'remote'     => 'Attending Remotely',
 	];
 
+	/**
+	 * Where start() reads the time. A test can swap in a clock it controls.
+	 *
+	 * @var callable(): int
+	 */
+	private $clock = 'time';
+
+	/**
+	 * The time start() read first in this test. Every card a test builds
+	 * uses it, so the stored card and the expected card share one minute.
+	 *
+	 * @var int|null
+	 */
+	private ?int $now = null;
+
 	public function set_up(): void {
 		parent::set_up();
 		// The test framework wipes registered meta between tests.
@@ -72,7 +88,9 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	private function start( string $when ): string {
 		$offset = 'past' === $when ? -30 * DAY_IN_SECONDS : 30 * DAY_IN_SECONDS;
 
-		return gmdate( 'Y-m-d\TH:i', time() + $offset );
+		$this->now ??= ( $this->clock )();
+
+		return gmdate( 'Y-m-d\TH:i', $this->now + $offset );
 	}
 
 	/**
@@ -122,7 +140,10 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Turn on the RSVP card's "Show event location publicly" toggle and save.
+	 * Turn on the RSVP card's "Show event location publicly" toggle and the
+	 * post's stored setting, and save. The card stored 'private' when the
+	 * post was created, and the stricter of the two wins (#358), so both
+	 * have to loosen.
 	 *
 	 * @param int $id Post ID.
 	 */
@@ -137,6 +158,7 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 			[
 				'ID'           => $id,
 				'post_content' => wp_slash( serialize_blocks( $blocks ) ),
+				'meta_input'   => [ '_pkiw_rsvp_location_privacy' => 'public' ],
 			]
 		);
 
@@ -330,6 +352,25 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 			'A hidden location prints the same markup as an RSVP with no location.'
 		);
 		$this->assertFalse( Meta_Fields::rsvp_location_visible( $id ) );
+	}
+
+	/**
+	 * The card rsvp() stores and the markup card() builds to compare with it
+	 * each go through start(). A clock that crosses a minute between the two
+	 * gave them different event starts.
+	 */
+	public function test_the_stored_card_and_the_expected_card_share_one_event_start_across_a_minute(): void {
+		// The last second of the current minute, then one second later per read.
+		$tick        = ( intdiv( time(), MINUTE_IN_SECONDS ) + 1 ) * MINUTE_IN_SECONDS - 1;
+		$this->clock = static function () use ( &$tick ): int {
+			return $tick++;
+		};
+
+		$id       = $this->rsvp( 'no', 'future' );
+		$stored   = parse_blocks( (string) get_post_field( 'post_content', $id ) )[0]['attrs']['eventStart'];
+		$expected = parse_blocks( $this->card( 'no', 'future' ) )[0]['attrs']['eventStart'];
+
+		$this->assertSame( $expected, $stored );
 	}
 
 	/**
@@ -813,6 +854,1029 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 
 		$this->assert_no_location_for_visitors( $id );
 		$this->assert_location_for_editors( $id );
+	}
+
+	/**
+	 * An RSVP saved before the card wrote its privacy row, then set to
+	 * Event, has only its card. No backfill writes the row, so the card
+	 * itself makes it an RSVP.
+	 */
+	public function test_an_rsvp_card_saved_before_the_privacy_row_keeps_the_location_from_visitors(): void {
+		$id = $this->rsvp( 'yes', 'future' );
+		wp_set_object_terms( $id, 'event', 'kind' );
+		foreach ( [ '_pkiw_rsvp_location_privacy', '_pkiw_rsvp_status', '_pkiw_rsvp_value' ] as $key ) {
+			delete_post_meta( $id, $key );
+			$this->assertFalse( metadata_exists( 'post', $id, $key ), "No {$key} row." );
+		}
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+
+		$this->assertFalse( Meta_Fields::event_location_visible( $id ) );
+		$this->assert_no_location_for_visitors( $id );
+		$this->assert_location_for_editors( $id );
+	}
+
+	/**
+	 * A published synced pattern (wp_block).
+	 *
+	 * @param string $content Pattern content.
+	 * @return int Pattern post ID.
+	 */
+	private function pattern( string $content ): int {
+		return self::factory()->post->create(
+			[
+				'post_type'    => 'wp_block',
+				'post_status'  => 'publish',
+				'post_title'   => 'Quillfeather pattern Rv51',
+				'post_content' => $content,
+			]
+		);
+	}
+
+	/**
+	 * Markup that places a synced pattern.
+	 *
+	 * @param int $pattern_id Pattern post ID.
+	 */
+	private function ref( int $pattern_id ): string {
+		return '<!-- wp:block {"ref":' . $pattern_id . '} /-->';
+	}
+
+	/**
+	 * An RSVP card wrapped in this many synced patterns.
+	 *
+	 * @param int $depth Number of patterns between the post and the card.
+	 */
+	private function card_in_patterns( int $depth ): string {
+		$content = $this->card( 'yes', 'future' );
+		for ( $i = 0; $i < $depth; $i++ ) {
+			$content = $this->ref( $this->pattern( $content ) );
+		}
+
+		return $content;
+	}
+
+	/**
+	 * How many synced patterns sit between the post and its RSVP card.
+	 *
+	 * @return array<string, array{0: int}>
+	 */
+	public function synced_pattern_depths(): array {
+		return [
+			'one ref'       => [ 1 ],
+			'two refs deep' => [ 2 ],
+		];
+	}
+
+	/**
+	 * An Event post whose only RSVP card sits in a synced pattern has no
+	 * RSVP row, because Card_Meta_Sync reads the post's own blocks, and
+	 * has_block() reads only the post's own content. The pattern's card
+	 * still makes it an RSVP.
+	 *
+	 * @dataProvider synced_pattern_depths
+	 *
+	 * @param int $depth Number of patterns between the post and the card.
+	 */
+	public function test_an_rsvp_card_in_a_synced_pattern_keeps_the_location_from_visitors( int $depth ): void {
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => $this->card_in_patterns( $depth ),
+			]
+		);
+		wp_set_object_terms( $id, 'event', 'kind' );
+		foreach ( [ '_pkiw_rsvp_location_privacy', '_pkiw_rsvp_status', '_pkiw_rsvp_value' ] as $key ) {
+			$this->assertFalse( metadata_exists( 'post', $id, $key ), "No {$key} row." );
+		}
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+
+		$this->assertStringContainsString( self::EVENT, $this->rest_post( $id )['content']['rendered'], 'The pattern renders its card.' );
+		$this->assert_no_location_for_visitors( $id );
+		$this->assert_location_for_editors( $id );
+		$this->assertFalse( Meta_Fields::event_location_visible( $id ) );
+	}
+
+	/**
+	 * The walk has no depth cap, so a card twelve synced patterns deep
+	 * still makes the post an RSVP.
+	 */
+	public function test_an_rsvp_card_twelve_synced_patterns_deep_keeps_the_location_from_visitors(): void {
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => $this->card_in_patterns( 12 ),
+			]
+		);
+		wp_set_object_terms( $id, 'event', 'kind' );
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+
+		$this->assert_no_location_for_visitors( $id );
+		$this->assertFalse( Meta_Fields::event_location_visible( $id ) );
+	}
+
+	/**
+	 * Two synced patterns that place each other end the walk, and an Event
+	 * post with no RSVP card among them keeps its location.
+	 */
+	public function test_a_plain_event_post_whose_synced_patterns_ref_each_other_keeps_its_location(): void {
+		$first  = $this->pattern( '' );
+		$second = $this->pattern( $this->ref( $first ) );
+		wp_update_post(
+			[
+				'ID'           => $first,
+				'post_content' => wp_slash( $this->ref( $second ) ),
+			]
+		);
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => $this->ref( $first ),
+			]
+		);
+		wp_set_object_terms( $id, 'event', 'kind' );
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+
+		$this->assertTrue( Meta_Fields::event_location_visible( $id ) );
+		$this->assertSame( self::LOCATION, $this->rest_post( $id )['meta']['_pkiw_event_location'] );
+	}
+
+	/**
+	 * Chains of synced patterns longer than the walk's old depth cap (10).
+	 *
+	 * @return array<string, array{0: int}>
+	 */
+	public function long_pattern_chains(): array {
+		return [
+			'eleven patterns'      => [ 11 ],
+			'twenty-five patterns' => [ 25 ],
+		];
+	}
+
+	/**
+	 * A plain Event post behind a chain of synced patterns with no RSVP card
+	 * in it keeps its location, however long the chain. The walk answered
+	 * "RSVP" for any ref past depth 10.
+	 *
+	 * @dataProvider long_pattern_chains
+	 *
+	 * @param int $length Patterns in the chain.
+	 */
+	public function test_a_plain_event_post_behind_a_long_chain_of_cardless_synced_patterns_keeps_its_location( int $length ): void {
+		$content = '<!-- wp:paragraph --><p>Doors at seven.</p><!-- /wp:paragraph -->';
+		for ( $i = 0; $i < $length; $i++ ) {
+			$content = $this->ref( $this->pattern( $content ) );
+		}
+		$id = $this->post_with( $content, [ 'event' ] );
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+
+		$this->assertTrue( Meta_Fields::event_location_visible( $id ) );
+		wp_set_current_user( 0 );
+		$this->assertSame( self::LOCATION, $this->rest_post( $id )['meta']['_pkiw_event_location'], 'REST meta for a visitor.' );
+	}
+
+	/**
+	 * Synced patterns core renders as an empty string to a visitor
+	 * (render_block_core_block(), wp-includes/blocks/block.php): any status
+	 * but publish, or a password.
+	 *
+	 * @return array<string, array{0: array<string, string>}>
+	 */
+	public function patterns_core_does_not_render(): array {
+		return [
+			'draft'    => [ [ 'post_status' => 'draft' ] ],
+			'pending'  => [ [ 'post_status' => 'pending' ] ],
+			'private'  => [ [ 'post_status' => 'private' ] ],
+			'trash'    => [ [ 'post_status' => 'trash' ] ],
+			'password' => [
+				[
+					'post_status'   => 'publish',
+					'post_password' => 'quill',
+				],
+			],
+		];
+	}
+
+	/**
+	 * An RSVP card in a synced pattern core won't render doesn't make an
+	 * Event post an RSVP. A visitor gets no card, so the post is a plain
+	 * Event post and keeps its location, whether it places that pattern
+	 * itself or through a published one.
+	 *
+	 * @dataProvider patterns_core_does_not_render
+	 *
+	 * @param array<string, string> $pattern Status and password of the pattern holding the card.
+	 */
+	public function test_an_rsvp_card_in_a_pattern_core_does_not_render_leaves_an_event_post_its_location( array $pattern ): void {
+		$hidden = self::factory()->post->create(
+			$pattern + [
+				'post_type'    => 'wp_block',
+				'post_title'   => 'Hidden pattern Rv51',
+				'post_content' => $this->card( 'yes', 'future' ),
+			]
+		);
+		$this->assertSame( $pattern['post_status'], get_post_status( $hidden ) );
+
+		$placements = [
+			'placed by the post'         => $this->ref( $hidden ),
+			'behind a published pattern' => $this->ref( $this->pattern( $this->ref( $hidden ) ) ),
+		];
+		foreach ( $placements as $label => $content ) {
+			$id = $this->post_with( $content, [ 'event' ] );
+			update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+			wp_set_current_user( 0 );
+
+			$this->assertStringNotContainsString( self::EVENT, $this->rest_post( $id )['content']['rendered'], "{$label}: core renders no card." );
+			$this->assertTrue( Meta_Fields::event_location_visible( $id ), $label );
+			$this->assertSame( self::LOCATION, $this->rest_post( $id )['meta']['_pkiw_event_location'], "{$label}: REST meta for a visitor." );
+		}
+	}
+
+	/**
+	 * Event Card markup that stores the event location.
+	 *
+	 * @param array<string, mixed> $attrs Attributes that replace the defaults.
+	 */
+	private function event_card( array $attrs = [] ): string {
+		$attrs += [
+			'eventName'     => self::EVENT,
+			'eventUrl'      => self::EVENT_URL,
+			'eventStart'    => $this->start( 'future' ),
+			'eventLocation' => self::LOCATION,
+		];
+
+		return '<!-- wp:post-kinds-indieweb/event-card ' . wp_json_encode( $attrs ) . ' /-->';
+	}
+
+	/**
+	 * A published post with a kind and the given content.
+	 *
+	 * @param string   $content Post content.
+	 * @param string[] $terms   Kind terms.
+	 * @return int Post ID.
+	 */
+	private function post_with( string $content, array $terms ): int {
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => $content,
+			]
+		);
+		wp_set_object_terms( $id, $terms, 'kind' );
+
+		return $id;
+	}
+
+	/**
+	 * The post's content as a visitor's single view renders it.
+	 *
+	 * @param int $id Post ID.
+	 */
+	private function the_content( int $id ): string {
+		$this->go_to( get_permalink( $id ) );
+		$GLOBALS['post'] = get_post( $id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		setup_postdata( $GLOBALS['post'] );
+		$content = apply_filters( 'the_content', (string) get_post_field( 'post_content', $id ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		wp_reset_postdata();
+
+		return $content;
+	}
+
+	/**
+	 * An Event Card on an RSVP follows the RSVP's setting: it printed
+	 * `eventLocation` with no check, so a private RSVP's location reached
+	 * content, mf2, REST, the feed and content rendered in the editor's
+	 * publish request. Each render here has a global post; the ATmosphere
+	 * tests below build records with none.
+	 */
+	public function test_an_event_card_on_a_private_rsvp_prints_no_location(): void {
+		$id = $this->post_with( $this->card( 'yes', 'future' ) . "\n\n" . $this->event_card(), [ 'rsvp' ] );
+		$this->assertSame( 'private', get_metadata_raw( 'post', $id, '_pkiw_rsvp_location_privacy', true ) );
+
+		$html = $this->the_content( $id );
+		$this->assertStringContainsString( 'k-event', $html, 'The Event Card renders.' );
+		$this->assertStringNotContainsString( self::LOCATION, $html, 'Content.' );
+		$this->assertStringNotContainsString( 'p-location', $html );
+		$this->assertStringNotContainsString( self::LOCATION, (string) wp_json_encode( \Mf2\parse( $html ) ), 'Parsed mf2.' );
+		$this->assertStringNotContainsString( self::LOCATION, $this->rest_post( $id )['content']['rendered'], 'REST content.rendered.' );
+		$this->assertStringNotContainsString( self::LOCATION, $this->feed_content( $id ), 'Feed content.' );
+
+		// Federated copies are built in the editor's publish request.
+		$this->as_editor();
+		$this->go_to( get_permalink( $id ) );
+		$GLOBALS['wp_the_query'] = new WP_Query();
+		$GLOBALS['wp_query']     = $GLOBALS['wp_the_query']; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$GLOBALS['post']         = get_post( $id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		setup_postdata( $GLOBALS['post'] );
+		$federated = apply_filters( 'the_content', (string) get_post_field( 'post_content', $id ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		wp_reset_postdata();
+		$this->assertStringNotContainsString( self::LOCATION, $federated, 'Content rendered for federation.' );
+		wp_set_current_user( 0 );
+
+		$this->make_public( $id );
+		$this->assertStringContainsString( self::LOCATION, $this->the_content( $id ), 'A public RSVP prints the Event Card location.' );
+	}
+
+	/**
+	 * The post's content filtered with no global post, as ATmosphere's
+	 * publish and update crons filter it for the document's textContent and
+	 * the Bluesky post text.
+	 *
+	 * @param int $id Post ID.
+	 */
+	private function the_content_with_no_post( int $id ): string {
+		unset( $GLOBALS['post'] );
+
+		return apply_filters( 'the_content', (string) get_post_field( 'post_content', $id ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+	}
+
+	/**
+	 * An Event Card that can't name its post prints no location. With no
+	 * global post get_the_ID() is false, the card got post ID 0, and
+	 * event_card_location_visible( 0 ) let a private RSVP's location print.
+	 */
+	public function test_an_event_card_rendered_with_no_global_post_prints_no_location(): void {
+		$id = $this->post_with( $this->card( 'yes', 'future' ) . "\n\n" . $this->event_card(), [ 'rsvp' ] );
+
+		$html = $this->the_content_with_no_post( $id );
+		$this->assertStringContainsString( 'k-event', $html, 'The Event Card renders.' );
+		$this->assertStringNotContainsString( self::LOCATION, $html );
+		$this->assertStringNotContainsString( 'p-location', $html );
+		$this->assertFalse( Meta_Fields::event_card_location_visible( 0 ) );
+	}
+
+	/**
+	 * A private RSVP with an Event Card, for the ATmosphere transformers,
+	 * which skip the test when ATmosphere isn't loaded.
+	 */
+	private function private_rsvp_with_an_event_card_for_atmosphere(): int {
+		if ( ! class_exists( '\Atmosphere\Transformer\Document' ) ) {
+			$this->markTestSkipped( 'Set PKIW_TESTS_ATMOSPHERE_FILE to build ATmosphere records.' );
+		}
+
+		$id = $this->post_with( $this->card( 'yes', 'future' ) . "\n\n" . $this->event_card(), [ 'rsvp' ] );
+		$this->assertSame( 'private', get_metadata_raw( 'post', $id, '_pkiw_rsvp_location_privacy', true ) );
+		unset( $GLOBALS['post'] );
+
+		return $id;
+	}
+
+	/**
+	 * ATmosphere's Document transformer filters the_content for textContent
+	 * with no global post (Transformer\Base::render_post_content_html()), and
+	 * its publish cron sets none.
+	 *
+	 * @group atmosphere
+	 */
+	public function test_the_atmosphere_document_built_with_no_global_post_omits_a_private_location(): void {
+		$id     = $this->private_rsvp_with_an_event_card_for_atmosphere();
+		$record = ( new \Atmosphere\Transformer\Document( get_post( $id ) ) )->transform();
+
+		$this->assertStringContainsString( self::EVENT, (string) ( $record['textContent'] ?? '' ), 'textContent holds the cards.' );
+		$this->assertStringNotContainsString( self::LOCATION, (string) $record['textContent'], 'textContent.' );
+		$this->assertStringNotContainsString( self::LOCATION, (string) wp_json_encode( $record ), 'The whole record.' );
+	}
+
+	/**
+	 * A short-form Bluesky post's text comes from the same no-global-post
+	 * render (Transformer\Post::build_short_form_text()).
+	 *
+	 * @group atmosphere
+	 */
+	public function test_the_bluesky_short_form_text_built_with_no_global_post_omits_a_private_location(): void {
+		$id = $this->private_rsvp_with_an_event_card_for_atmosphere();
+		add_filter( 'atmosphere_is_short_form_post', '__return_true' );
+		$record = ( new \Atmosphere\Transformer\Post( get_post( $id ) ) )->transform();
+		remove_filter( 'atmosphere_is_short_form_post', '__return_true' );
+
+		$this->assertStringContainsString( self::EVENT, (string) ( $record['text'] ?? '' ), 'The post text holds the cards.' );
+		$this->assertStringNotContainsString( self::LOCATION, (string) wp_json_encode( $record ) );
+	}
+
+	/**
+	 * An RSVP card as save.js stored it before the card went dynamic in #32
+	 * (ee3d5c1, 2026-05-03): the block comment pair around static HTML with
+	 * the location in `<span class="p-location">`. render.php ignores that
+	 * HTML, but anything reading raw post_content gets it.
+	 *
+	 * @param string|null $visibility `locationVisibility` attribute, or null to leave it out.
+	 */
+	private function legacy_card( ?string $visibility = null ): string {
+		$attrs = [
+			'eventName'     => self::EVENT,
+			'eventUrl'      => self::EVENT_URL,
+			'eventStart'    => '2026-11-07T19:00',
+			'eventLocation' => self::LOCATION,
+			'rsvpStatus'    => 'yes',
+		];
+		if ( null !== $visibility ) {
+			$attrs['locationVisibility'] = $visibility;
+		}
+
+		return '<!-- wp:post-kinds-indieweb/rsvp-card ' . serialize_block_attributes( $attrs ) . ' -->'
+			. '<div class="wp-block-post-kinds-indieweb-rsvp-card rsvp-card layout-horizontal rsvp-yes"><div class="post-kinds-card h-entry"><div class="post-kinds-card__content">'
+			. '<span class="post-kinds-card__badge post-kinds-card__badge--yes"><span class="post-kinds-card__badge-icon" aria-hidden="true">✅</span><data class="p-rsvp" value="yes">Going</data></span>'
+			. '<div class="post-kinds-card__event p-in-reply-to h-event"><h3 class="post-kinds-card__title"><a href="' . self::EVENT_URL . '" class="p-name u-url" target="_blank" rel="noopener noreferrer">' . self::EVENT . '</a></h3>'
+			. '<div class="post-kinds-card__meta-row"><span class="post-kinds-card__meta-icon" aria-hidden="true">📅</span><time class="dt-start" datetime="2026-11-08T00:00:00.000Z">Sat, Nov 7, 7:00 PM</time></div>'
+			. '<div class="post-kinds-card__meta-row"><span class="post-kinds-card__meta-icon" aria-hidden="true">📍</span><span class="p-location">' . self::LOCATION . '</span></div>'
+			. '</div></div><data class="u-in-reply-to" value="' . self::EVENT_URL . '" hidden></data></div></div>'
+			. '<!-- /wp:post-kinds-indieweb/rsvp-card -->';
+	}
+
+	/**
+	 * A published RSVP whose card is a pre-#32 static card, followed by a
+	 * paragraph, for the ATmosphere transformers, which skip the test when
+	 * ATmosphere isn't loaded.
+	 *
+	 * @param string|null $visibility `locationVisibility` attribute, or null to leave it out.
+	 * @return int Post ID.
+	 */
+	private function legacy_rsvp_for_atmosphere( ?string $visibility = null ): int {
+		if ( ! class_exists( '\Atmosphere\Transformer\Document' ) ) {
+			$this->markTestSkipped( 'Set PKIW_TESTS_ATMOSPHERE_FILE to build ATmosphere records.' );
+		}
+
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'RSVP to Quillfeather',
+				'post_excerpt' => '',
+				'post_content' => $this->legacy_card( $visibility ) . "\n\n<!-- wp:paragraph -->\n<p>See you in the back room.</p>\n<!-- /wp:paragraph -->",
+			]
+		);
+		wp_set_object_terms( $id, 'rsvp', 'kind' );
+		unset( $GLOBALS['post'] );
+
+		return $id;
+	}
+
+	/**
+	 * The site.standard.document record ATmosphere builds for $id with
+	 * $format as the site's content format.
+	 *
+	 * @param int    $id     Post ID.
+	 * @param string $format Content format NSID.
+	 * @return array<string, mixed>
+	 */
+	private function atmosphere_document( int $id, string $format ): array {
+		update_option( 'atmosphere_content_format', $format );
+
+		return ( new \Atmosphere\Transformer\Document( get_post( $id ) ) )->transform();
+	}
+
+	/**
+	 * ATmosphere's content formats, by the NSID its `atmosphere_content_format`
+	 * option names (content-parser/class-*.php, checkout bf8e267).
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function atmosphere_content_formats(): array {
+		return [
+			'Markpub' => [ 'at.markpub.markdown' ],
+			'HTML'    => [ 'org.wordpress.html' ],
+			'Leaflet' => [ 'pub.leaflet.content' ],
+			'Pckt'    => [ 'blog.pckt.content' ],
+		];
+	}
+
+	/**
+	 * A private RSVP whose card predates #32 keeps its location out of the
+	 * whole document record, whatever the content format. Markpub turns a
+	 * block it doesn't know into markdown from the block's saved HTML, and
+	 * the description is ATmosphere's excerpt of raw post_content.
+	 *
+	 * @dataProvider atmosphere_content_formats
+	 * @group atmosphere
+	 *
+	 * @param string $format Content format NSID.
+	 */
+	public function test_the_atmosphere_document_of_a_legacy_rsvp_card_omits_a_private_location_in_any_format( string $format ): void {
+		$id = $this->legacy_rsvp_for_atmosphere();
+		$this->assertSame( 'private', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+
+		$record = $this->atmosphere_document( $id, $format );
+
+		$this->assertSame( $format, $record['content']['$type'] ?? null, 'ATmosphere picked the format.' );
+		$this->assertStringContainsString( 'back room', (string) wp_json_encode( $record['content'] ), 'The paragraph is in the content.' );
+		$this->assertStringNotContainsString( self::LOCATION, (string) wp_json_encode( $record ) );
+	}
+
+	/**
+	 * Only the location leaves the legacy card's Markpub content.
+	 *
+	 * @group atmosphere
+	 */
+	public function test_the_atmosphere_markpub_content_keeps_the_rest_of_a_legacy_rsvp_card(): void {
+		$markdown = $this->atmosphere_document( $this->legacy_rsvp_for_atmosphere(), 'at.markpub.markdown' )['content']['text']['markdown'];
+
+		$this->assertStringContainsString( self::EVENT, $markdown );
+		$this->assertStringContainsString( 'Going', $markdown );
+		$this->assertStringNotContainsString( self::LOCATION, $markdown );
+	}
+
+	/**
+	 * A legacy card the author made public, with a public RSVP, keeps its
+	 * location, as render.php prints it.
+	 *
+	 * @group atmosphere
+	 */
+	public function test_the_atmosphere_markpub_content_keeps_a_public_legacy_rsvp_location(): void {
+		$id = $this->legacy_rsvp_for_atmosphere( 'public' );
+		$this->assertSame( 'public', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+
+		$markdown = $this->atmosphere_document( $id, 'at.markpub.markdown' )['content']['text']['markdown'];
+
+		$this->assertStringContainsString( self::LOCATION, $markdown );
+	}
+
+	/**
+	 * The kinds an untitled legacy RSVP may have when ATmosphere derives
+	 * its title: no cite name, so the RSVP phrase is empty, and no kind
+	 * phrase for the others.
+	 *
+	 * @return array<string, array{0: string[]}>
+	 */
+	public function untitled_legacy_rsvp_kinds(): array {
+		return [
+			'rsvp'    => [ [ 'rsvp' ] ],
+			'note'    => [ [ 'note' ] ],
+			'no kind' => [ [] ],
+		];
+	}
+
+	/**
+	 * An untitled post's document title falls back to the first ten words
+	 * of raw post_content (Atmosphere_Titles::content_summary()), which hold
+	 * the legacy card's location.
+	 *
+	 * @dataProvider untitled_legacy_rsvp_kinds
+	 * @group atmosphere
+	 *
+	 * @param string[] $terms Kind terms.
+	 */
+	public function test_the_atmosphere_title_of_an_untitled_legacy_rsvp_omits_a_private_location( array $terms ): void {
+		$id = $this->legacy_rsvp_for_atmosphere();
+		wp_update_post(
+			[
+				'ID'         => $id,
+				'post_title' => '',
+			]
+		);
+		wp_set_object_terms( $id, $terms, 'kind' );
+
+		$title = (string) ( $this->atmosphere_document( $id, 'org.wordpress.html' )['title'] ?? '' );
+
+		$this->assertStringContainsString( self::EVENT, $title, 'The title comes from the card.' );
+		$this->assertStringNotContainsString( 'Back room', $title );
+	}
+
+	/**
+	 * The Bluesky post's text and link card description are ATmosphere's
+	 * excerpts of raw post_content, so they read the legacy card's HTML too.
+	 *
+	 * @group atmosphere
+	 */
+	public function test_the_bluesky_post_of_a_legacy_rsvp_card_omits_a_private_location(): void {
+		$id     = $this->legacy_rsvp_for_atmosphere();
+		$record = ( new \Atmosphere\Transformer\Post( get_post( $id ) ) )->transform();
+
+		$this->assertStringContainsString( self::EVENT, (string) wp_json_encode( $record ), 'The record holds the excerpt.' );
+		$this->assertStringNotContainsString( self::LOCATION, (string) wp_json_encode( $record ) );
+	}
+
+	/**
+	 * A published RSVP whose card is a pre-#32 static card.
+	 *
+	 * @param string|null $visibility `locationVisibility` attribute, or null to leave it out.
+	 * @return int Post ID.
+	 */
+	private function legacy_rsvp( ?string $visibility = null ): int {
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_excerpt' => '',
+				'post_content' => $this->legacy_card( $visibility ),
+			]
+		);
+		wp_set_object_terms( $id, 'rsvp', 'kind' );
+
+		return $id;
+	}
+
+	/**
+	 * The text ActivityPub's generate_post_summary() starts from for a post
+	 * with no excerpt: post_content through sanitize_post_field()'s display
+	 * filters, shortcodes and tags stripped, entities decoded, as
+	 * AcquisitionCostPrivacyTest builds it. Stripping tags drops the block
+	 * comment, so the card's `eventLocation` attribute isn't in it.
+	 *
+	 * @param int $id Post ID.
+	 */
+	private function activitypub_summary_source( int $id ): string {
+		$post    = get_post( $id );
+		$content = sanitize_post_field( 'post_content', $post->post_content, $post->ID );
+
+		return html_entity_decode( wp_strip_all_tags( strip_shortcodes( $content ) ), ENT_QUOTES, 'UTF-8' );
+	}
+
+	/**
+	 * Display-context post_content, which ActivityPub's summary reads, holds
+	 * no private location from a legacy RSVP card's static HTML, for a
+	 * visitor's request or the author's, since the summary leaves the site
+	 * either way.
+	 */
+	public function test_the_activitypub_summary_source_of_a_legacy_rsvp_card_omits_a_private_location(): void {
+		$id = $this->legacy_rsvp();
+		$this->assertSame( 'private', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+
+		$text = $this->activitypub_summary_source( $id );
+		$this->assertStringContainsString( self::EVENT, $text, 'The rest of the card stays.' );
+		$this->assertStringNotContainsString( self::LOCATION, $text, 'A visitor\'s request.' );
+
+		$this->as_editor();
+		$this->assertStringNotContainsString( self::LOCATION, $this->activitypub_summary_source( $id ), 'The author\'s request.' );
+	}
+
+	/**
+	 * The raw and edit contexts skip the filter, so the block editor, saves
+	 * and exports keep the stored card.
+	 */
+	public function test_raw_and_edit_post_content_keep_a_legacy_rsvp_cards_location(): void {
+		$id = $this->legacy_rsvp();
+
+		$this->assertStringContainsString( self::LOCATION, (string) get_post_field( 'post_content', $id, 'raw' ) );
+		$this->assertStringContainsString( self::LOCATION, (string) get_post_field( 'post_content', $id, 'edit' ) );
+	}
+
+	/**
+	 * A legacy card the author made public, with a public RSVP, keeps its
+	 * location in ActivityPub's summary source.
+	 */
+	public function test_the_activitypub_summary_source_keeps_a_public_legacy_rsvp_location(): void {
+		$id = $this->legacy_rsvp( 'public' );
+		$this->assertSame( 'public', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+
+		$this->assertStringContainsString( self::LOCATION, $this->activitypub_summary_source( $id ) );
+	}
+
+	/**
+	 * ATmosphere's post crons that publish a publishable post.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function atmosphere_post_crons(): array {
+		return [
+			'publish'          => [ 'atmosphere_publish_post' ],
+			'update'           => [ 'atmosphere_update_post' ],
+			'delete reconcile' => [ 'atmosphere_delete_post' ],
+		];
+	}
+
+	/**
+	 * The textContent ATmosphere's Document transformer builds inside one of
+	 * its post crons, which start with no global post. ATmosphere's own
+	 * callback, which writes to the PDS, is swapped for one that builds the
+	 * document as Publisher does.
+	 *
+	 * @param string $hook Cron hook.
+	 * @param int    $id   Post ID.
+	 */
+	private function atmosphere_cron_text_content( string $hook, int $id ): string {
+		if ( ! class_exists( '\Atmosphere\Transformer\Document' ) ) {
+			$this->markTestSkipped( 'Set PKIW_TESTS_ATMOSPHERE_FILE to build ATmosphere records.' );
+		}
+
+		remove_all_actions( $hook, 10 );
+		$text = '';
+		add_action(
+			$hook,
+			static function ( int $post_id ) use ( &$text ): void {
+				$record = ( new \Atmosphere\Transformer\Document( get_post( $post_id ) ) )->transform();
+				$text   = (string) ( $record['textContent'] ?? '' );
+			}
+		);
+		unset( $GLOBALS['post'] );
+		do_action( $hook, $id ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+
+		return $text;
+	}
+
+	/**
+	 * Inside ATmosphere's post crons each card renders for the post being
+	 * published, so a plain Event or Note post keeps its Event Card location
+	 * in textContent, and an RSVP's follows its setting.
+	 *
+	 * @dataProvider atmosphere_post_crons
+	 * @group atmosphere
+	 *
+	 * @param string $hook Cron hook.
+	 */
+	public function test_atmosphere_post_crons_render_each_event_card_for_its_post( string $hook ): void {
+		foreach ( [ 'event', 'note' ] as $kind ) {
+			$id = $this->post_with( $this->event_card(), [ $kind ] );
+			$this->assertStringContainsString( self::LOCATION, $this->atmosphere_cron_text_content( $hook, $id ), "A plain {$kind} post." );
+			$this->assertFalse( isset( $GLOBALS['post'] ), 'The cron leaves no global post behind.' );
+		}
+
+		$rsvp = $this->post_with( $this->card( 'yes', 'future' ) . "\n\n" . $this->event_card(), [ 'rsvp' ] );
+		$text = $this->atmosphere_cron_text_content( $hook, $rsvp );
+		$this->assertStringContainsString( self::EVENT, $text, 'textContent holds the cards.' );
+		$this->assertStringNotContainsString( self::LOCATION, $text, 'A private RSVP.' );
+
+		$this->make_public( $rsvp );
+		$this->assertStringContainsString( self::LOCATION, $this->atmosphere_cron_text_content( $hook, $rsvp ), 'A public RSVP.' );
+	}
+
+	/**
+	 * A public RSVP ATmosphere has shared, on a site connected with
+	 * auto-publish on, with no ATmosphere cron queued for it.
+	 *
+	 * @return int Post ID.
+	 */
+	private function shared_public_rsvp(): int {
+		if ( ! defined( 'ATMOSPHERE_VERSION' ) ) {
+			$this->markTestSkipped( 'Set PKIW_TESTS_ATMOSPHERE_FILE to run ATmosphere\'s scheduling.' );
+		}
+
+		update_option( 'atmosphere_identity', [ 'did' => 'did:plc:pkiwtest251' ] );
+		update_option( 'atmosphere_did', 'did:plc:pkiwtest251' );
+		update_option( 'atmosphere_connection', [ 'access_token' => 'test-token' ] );
+		add_filter( 'atmosphere_should_auto_publish', '__return_true' );
+		$this->assertTrue( \Atmosphere\is_connected(), 'ATmosphere is connected.' );
+
+		$id = $this->rsvp( 'yes', 'future', 'public' );
+		update_post_meta( $id, \Atmosphere\Transformer\Post::META_TID, '3pkiwtest251' );
+		foreach ( [ 'atmosphere_publish_post', 'atmosphere_update_post', 'atmosphere_delete_post' ] as $hook ) {
+			wp_clear_scheduled_hook( $hook, [ $id ] );
+		}
+		$this->assertTrue( \Atmosphere\is_post_publishable( get_post( $id ) ), 'ATmosphere shares the RSVP.' );
+		$this->assertSame( 'public', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+
+		return $id;
+	}
+
+	/**
+	 * Settings that hide an RSVP's location, as the update-post-meta ability
+	 * takes them: its own setting, and the post's location privacy, which
+	 * rsvp_location_visible() lets win.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function rsvp_location_privacy_keys(): array {
+		return [
+			'RSVP location setting' => [ 'rsvp_location_privacy' ],
+			'location privacy'      => [ 'geo_privacy' ],
+		];
+	}
+
+	/**
+	 * Switching only a setting that hides a shared RSVP's location, through
+	 * the update-post-meta ability, queues ATmosphere's update, so the
+	 * record is rebuilt without the location. ATmosphere queues an update on
+	 * a status transition and on its own share meta only, and the ability
+	 * writes the row with update_post_meta() and no save.
+	 *
+	 * @dataProvider rsvp_location_privacy_keys
+	 * @group atmosphere
+	 *
+	 * @param string $key Meta field key without the _pkiw_ prefix.
+	 */
+	public function test_making_a_shared_rsvp_location_private_through_the_ability_queues_an_atmosphere_update( string $key ): void {
+		$id = $this->shared_public_rsvp();
+		$this->as_editor();
+
+		$result = Core_Abilities::instance()->execute_update_post_meta(
+			[
+				'post_id'    => $id,
+				'meta_key'   => $key, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value' => 'private', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			]
+		);
+
+		$this->assertIsArray( $result );
+		$this->assertFalse( Meta_Fields::rsvp_location_visible( $id ), 'The location is private.' );
+		$this->assertNotFalse( wp_next_scheduled( 'atmosphere_update_post', [ $id ] ), 'ATmosphere\'s update is queued.' );
+	}
+
+	/**
+	 * A meta write with no save that makes the post's location private,
+	 * PKIW's own `_pkiw_geo_privacy` or Simple Location's `geo_public`,
+	 * queues ATmosphere's update for a shared RSVP. rsvp_location_visible()
+	 * reads both.
+	 *
+	 * @dataProvider private_locations
+	 * @group atmosphere
+	 *
+	 * @param string $key   Meta key.
+	 * @param string $value Value that makes the location private.
+	 */
+	public function test_a_meta_write_that_makes_a_shared_rsvp_location_private_queues_an_atmosphere_update( string $key, string $value ): void {
+		$id = $this->shared_public_rsvp();
+
+		update_post_meta( $id, $key, $value );
+
+		$this->assertFalse( Meta_Fields::rsvp_location_visible( $id ), 'The location is private.' );
+		$this->assertNotFalse( wp_next_scheduled( 'atmosphere_update_post', [ $id ] ), 'ATmosphere\'s update is queued.' );
+	}
+
+	/**
+	 * An RSVP ATmosphere never shared queues nothing when its setting
+	 * changes, because ATmosphere's update would share it for the first
+	 * time.
+	 *
+	 * @group atmosphere
+	 */
+	public function test_an_rsvp_atmosphere_never_shared_queues_nothing_when_its_location_goes_private(): void {
+		$id = $this->shared_public_rsvp();
+		delete_post_meta( $id, \Atmosphere\Transformer\Post::META_TID );
+		$this->as_editor();
+
+		Core_Abilities::instance()->execute_update_post_meta(
+			[
+				'post_id'    => $id,
+				'meta_key'   => 'rsvp_location_privacy', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value' => 'private', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			]
+		);
+
+		$this->assertSame( 'private', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+		$this->assertFalse( wp_next_scheduled( 'atmosphere_update_post', [ $id ] ) );
+		$this->assertFalse( wp_next_scheduled( 'atmosphere_publish_post', [ $id ] ) );
+	}
+
+	/**
+	 * The same switch through REST meta goes through wp_update_post(), whose
+	 * publish-to-publish transition queues ATmosphere's update, and the
+	 * update runs after the meta write.
+	 *
+	 * @group atmosphere
+	 */
+	public function test_making_a_shared_rsvp_location_private_through_rest_queues_an_atmosphere_update(): void {
+		$id = $this->shared_public_rsvp();
+		$this->as_editor();
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/posts/' . $id );
+		$request->set_body_params( [ 'meta' => [ '_pkiw_rsvp_location_privacy' => 'private' ] ] );
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 'private', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+		$this->assertNotFalse( wp_next_scheduled( 'atmosphere_update_post', [ $id ] ), 'ATmosphere\'s update is queued.' );
+	}
+
+	/**
+	 * The acquisition cost toggle isn't a field either path can write: the
+	 * ability takes only Meta_Fields' registered fields, and REST meta
+	 * leaves an unregistered key alone. It follows the card's "Show cost
+	 * publicly" through Card_Meta_Sync at save_post, inside the save that
+	 * queues ATmosphere's update.
+	 *
+	 * @group atmosphere
+	 */
+	public function test_the_acquisition_cost_toggle_changes_only_with_its_card(): void {
+		$this->as_editor();
+		$attrs = [
+			'title'            => 'Brass lamp Rv51',
+			'acquisitionType'  => 'purchase',
+			'cost'             => '$149.99',
+			'showCostPublicly' => true,
+		];
+		$id    = $this->post_with( '<!-- wp:post-kinds-indieweb/acquisition-card ' . wp_json_encode( $attrs ) . ' /-->', [ 'acquisition' ] );
+		$this->assertSame( '1', get_post_meta( $id, Meta_Fields::COST_PUBLIC_KEY, true ), 'The card set the toggle.' );
+
+		$result = Core_Abilities::instance()->execute_update_post_meta(
+			[
+				'post_id'    => $id,
+				'meta_key'   => 'acquisition_cost_public', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value' => '', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			]
+		);
+		$this->assertWPError( $result );
+		$this->assertSame( 'invalid_meta_key', $result->get_error_code() );
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/posts/' . $id );
+		$request->set_body_params( [ 'meta' => [ Meta_Fields::COST_PUBLIC_KEY => '' ] ] );
+		$this->assertSame( 200, rest_do_request( $request )->get_status() );
+		$this->assertSame( '1', get_post_meta( $id, Meta_Fields::COST_PUBLIC_KEY, true ), 'REST leaves the toggle alone.' );
+	}
+
+	public function test_an_event_card_on_a_private_rsvp_prints_no_calendar_location(): void {
+		$venue = 'Calendar Hall Rv51';
+		add_filter(
+			'pkiw_pre_calendar_event',
+			static function ( $pre, string $source, int $event_id ) use ( $venue ) {
+				return 'the-events-calendar' === $source && 251 === $event_id ? [ 'location' => $venue ] : $pre;
+			},
+			10,
+			3
+		);
+		$card = $this->event_card(
+			[
+				'eventLocation'   => '',
+				'calendarSource'  => 'the-events-calendar',
+				'calendarEventId' => 251,
+			]
+		);
+		$id   = $this->post_with( $this->card( 'yes', 'future' ) . "\n\n" . $card, [ 'rsvp' ] );
+
+		$this->assertStringNotContainsString( $venue, $this->the_content( $id ) );
+
+		$this->make_public( $id );
+		$this->assertStringContainsString( $venue, $this->the_content( $id ), 'A public RSVP prints the calendar location.' );
+	}
+
+	/**
+	 * Kind terms on a post that holds an Event Card and isn't an RSVP.
+	 *
+	 * @return array<string, array{0: string[]}>
+	 */
+	public function event_card_kinds(): array {
+		return [
+			'event' => [ [ 'event' ] ],
+			'note'  => [ [ 'note' ] ],
+			'none'  => [ [] ],
+		];
+	}
+
+	/**
+	 * The Event Card isn't a kind card, so it never sets the Event kind,
+	 * and a post with no RSVP keeps its location whatever its kind.
+	 *
+	 * @dataProvider event_card_kinds
+	 *
+	 * @param string[] $terms Kind terms on the post.
+	 */
+	public function test_an_event_card_on_a_post_that_is_not_an_rsvp_prints_its_location( array $terms ): void {
+		$id = $this->post_with( $this->event_card(), $terms );
+
+		$this->assertStringContainsString( '<span class="p-location">' . self::LOCATION . '</span>', $this->the_content( $id ) );
+		$this->assertStringContainsString( self::LOCATION, $this->rest_post( $id )['content']['rendered'], 'REST content.rendered.' );
+	}
+
+	/**
+	 * One block rendered as a loop renders it: the block context names
+	 * $context, as a Query Loop's Post Template names its post through
+	 * render_block_context, while the global post is $global.
+	 *
+	 * @param string $markup  Markup of one block.
+	 * @param int    $context Post ID the block context names.
+	 * @param int    $global  Post ID set as the global post.
+	 */
+	private function render_with_post_context( string $markup, int $context, int $global ): string {
+		$this->go_to( get_permalink( $global ) );
+		$GLOBALS['post'] = get_post( $global ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		setup_postdata( $GLOBALS['post'] );
+		$filter = static function ( array $block_context ) use ( $context ): array {
+			$block_context['postType'] = 'post';
+			$block_context['postId']   = $context;
+
+			return $block_context;
+		};
+		add_filter( 'render_block_context', $filter, 1 );
+		try {
+			$html = render_block( parse_blocks( $markup )[0] );
+		} finally {
+			remove_filter( 'render_block_context', $filter, 1 );
+			wp_reset_postdata();
+		}
+
+		return $html;
+	}
+
+	/**
+	 * An Event Card decides by the post its block context names. It read
+	 * `$block->context['postId']` but declared no usesContext, so core never
+	 * filled it and get_the_ID() decided: a private RSVP's card printed its
+	 * location under a public Event post's global, and a public Event post's
+	 * card lost it under a private RSVP's.
+	 */
+	public function test_an_event_card_decides_by_the_post_in_its_block_context(): void {
+		$rsvp  = $this->post_with( $this->card( 'yes', 'future' ) . "\n\n" . $this->event_card(), [ 'rsvp' ] );
+		$event = $this->post_with( $this->event_card(), [ 'event' ] );
+
+		$html = $this->render_with_post_context( $this->event_card(), $rsvp, $event );
+		$this->assertStringContainsString( 'k-event', $html, 'The Event Card renders.' );
+		$this->assertStringNotContainsString( self::LOCATION, $html, 'A private RSVP under an Event post\'s global.' );
+
+		$this->assertStringContainsString( self::LOCATION, $this->render_with_post_context( $this->event_card(), $event, $rsvp ), 'An Event post under a private RSVP\'s global.' );
+	}
+
+	/**
+	 * An RSVP card decides by the post its block context names too, which
+	 * render.php read with no usesContext either. A card set to public on
+	 * an RSVP whose first card is private prints no location under a public
+	 * RSVP's global.
+	 */
+	public function test_an_rsvp_card_decides_by_the_post_in_its_block_context(): void {
+		$private = $this->post_with( $this->card( 'yes', 'future', 'private' ) . "\n\n" . $this->card( 'yes', 'future', 'public' ), [ 'rsvp' ] );
+		$public  = $this->rsvp( 'yes', 'future', 'public' );
+		$this->assertSame( 'private', get_post_meta( $private, '_pkiw_rsvp_location_privacy', true ) );
+		$this->assertSame( 'public', get_post_meta( $public, '_pkiw_rsvp_location_privacy', true ) );
+
+		$html = $this->render_with_post_context( $this->card( 'yes', 'future', 'public' ), $private, $public );
+		$this->assertStringContainsString( self::EVENT, $html, 'The RSVP card renders.' );
+		$this->assertStringNotContainsString( self::LOCATION, $html, 'A private RSVP under a public RSVP\'s global.' );
+
+		$this->assertStringContainsString( self::LOCATION, $this->render_with_post_context( $this->card( 'yes', 'future', 'public' ), $public, $private ), 'A public RSVP under a private RSVP\'s global.' );
 	}
 
 	/**

@@ -69,11 +69,12 @@ final class CheckinDashboardTileLayerTest extends WP_UnitTestCase {
 
 	public function test_the_screen_follows_the_tile_filters(): void {
 		add_filter( 'pkiw_map_tile_url', static fn() => 'https://tiles.example.test/{z}/{x}/{y}.png' );
-		add_filter( 'pkiw_map_tile_attribution', static fn() => '<a href="https://tiles.example.test/">Example tiles</a><script>x</script>' );
+		// No text inside a disallowed <script>: WP 7.0's kses keeps it and trunk's (r64233) drops it.
+		add_filter( 'pkiw_map_tile_attribution', static fn() => '<a href="https://tiles.example.test/" onclick="steal()">Example tiles</a><img src="x" onerror="steal()">' );
 
 		$data = $this->localized();
 
 		$this->assertSame( 'https://tiles.example.test/{z}/{x}/{y}.png', $data['tileUrl'] ?? null );
-		$this->assertSame( '<a href="https://tiles.example.test/">Example tiles</a>x', $data['tileAttribution'] ?? null );
+		$this->assertSame( '<a href="https://tiles.example.test/">Example tiles</a>', $data['tileAttribution'] ?? null );
 	}
 }
