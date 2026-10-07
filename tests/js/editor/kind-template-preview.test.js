@@ -245,6 +245,39 @@ describe( 'kind template preview', () => {
 		expect( element.props.context.query.orderBy ).toBe( 'pkiw_group' );
 	} );
 
+	it( 'skips an entry inside a Query Loop nested in the Post Template', () => {
+		const settings = { perPage: { eat: 6 }, grouped: [ 'eat' ] };
+		const eat = { templateSlug: 'taxonomy-kind-eat' };
+		const nested = {
+			name: 'core/query',
+			attributes: { query: { inherit: false } },
+			innerBlocks: [
+				{
+					name: 'core/post-template',
+					attributes: {},
+					innerBlocks: menuEntry( {
+						linesPerPage: 2,
+						sectionOrder: 'desc',
+					} ),
+				},
+			],
+		};
+		const alone = load( editorState( { settings, blocks: [ nested ] } ) )(
+			postTemplate( eat )
+		);
+		const after = load(
+			editorState( {
+				settings,
+				blocks: [ nested, ...menuEntry( { linesPerPage: 4 } ) ],
+			} )
+		)( postTemplate( eat ) );
+
+		expect( alone.props.context.query.perPage ).toBe( 6 );
+		expect( alone.props.context.query.orderBy ).toBe( 'pkiw_group' );
+		expect( after.props.context.query.perPage ).toBe( 4 );
+		expect( after.props.context.query.orderBy ).toBe( 'pkiw_group' );
+	} );
+
 	it( 'asks for an entry that fixes a date bucket newest first, not in grouped order', () => {
 		const element = load(
 			editorState( {

@@ -598,6 +598,49 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 		$this->assertSame( '', (string) $wp_query->get( 'pkiw_group_source' ) );
 	}
 
+	public function test_an_entry_in_a_loop_nested_in_the_archive_items_belongs_to_that_loop(): void {
+		$this->shelf();
+		$nested = '<!-- wp:query {"queryId":6,"query":{"perPage":1,"postType":"post","inherit":false}} --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:' . self::MARKER . ' {"linesPerPage":2,"showSections":false} /--><!-- /wp:post-template --></div><!-- /wp:query -->';
+		$archive = static fn( string $items ): string => '<!-- wp:query {"queryId":7,"query":{"inherit":true}} --><div class="wp-block-query"><!-- wp:post-template -->' . $items . '<!-- /wp:post-template --></div><!-- /wp:query -->';
+
+		$this->serve( 'shelfkind', $archive( '<!-- wp:post-title /-->' . $nested ) );
+		global $wp_query;
+		$this->assertSame( 20, (int) $wp_query->get( 'posts_per_page' ), 'An entry in a loop inside each item doesn\'t size the archive.' );
+		$this->assertSame( '', (string) $wp_query->get( 'pkiw_group_source' ) );
+
+		// go_to() unsets the global, so read the new request's query.
+		$html = $this->serve( 'shelfkind', $archive( $nested . '<!-- wp:' . self::LINE . ' {"linesPerPage":4} /-->' ) );
+		$this->assertSame( 4, (int) $GLOBALS['wp_query']->get( 'posts_per_page' ), 'The archive\'s own entry sets its page size, after a nested one.' );
+		$this->assertSame(
+			[
+				[ 'h2:Currently reading', [ 'Dune', 'Beloved' ] ],
+				[ 'h2:To read', [ 'Emma' ] ],
+				[ 'h2:Finished', [ 'Ulysses' ] ],
+			],
+			$this->sections( $html ),
+			'The nested entry\'s showSections false doesn\'t turn the archive\'s sections off.'
+		);
+	}
+
+	public function test_an_entry_fixed_to_a_source_id_follows_what_is_registered_under_it(): void {
+		$this->shelf();
+		$plan = function (): string {
+			$this->serve( 'shelfkind', $this->loop( self::MONTHS ) );
+			global $wp_query;
+
+			return (string) $wp_query->get( 'pkiw_group_source' );
+		};
+		$this->assertSame( 'test_month', $plan() );
+
+		Grouped_Archive::register_source( new Meta_Source( 'test_month', [ '_pkiw_test_status' ] ) );
+		$this->assertSame( [ 'fixed' => false ], Grouped_Archive::editor_entries()[ self::MONTHS ], 'A source that replaced the date source under its id fixes nothing.' );
+		$this->assertSame( 'test_status', $plan(), 'The entry falls back to the kind\'s source.' );
+
+		Grouped_Archive::unregister_source( 'test_month' );
+		$this->assertSame( [ 'fixed' => false ], Grouped_Archive::editor_entries()[ self::MONTHS ], 'An unregistered source fixes nothing.' );
+		$this->assertSame( 'test_status', $plan() );
+	}
+
 	// Meta sources.
 
 	public function test_explicit_order_files_statuses_in_order_with_the_empty_group_last_or_first(): void {
@@ -751,6 +794,21 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 		);
 	}
 
+	public function test_terms_of_a_taxonomy_visitors_cannot_view_never_head_a_section(): void {
+		register_taxonomy( 'pkiw_test_private', 'post', [ 'public' => false ] );
+		Grouped_Archive::register_source( new Term_Source( 'test_private', 'pkiw_test_private' ), 'privkind' );
+		$this->make( 'privkind', 'Post A', '2026-01-03 10:00:00', [], [ 'pkiw_test_private' => [ 'Secret project' ] ] );
+		$this->make( 'privkind', 'Post B', '2026-01-02 10:00:00', [], [ 'pkiw_test_private' => [ 'Another secret' ] ] );
+		$this->make( 'privkind', 'Post C', '2026-01-01 10:00:00' );
+
+		$html = $this->serve( 'privkind', $this->loop( self::MARKER ) );
+		Grouped_Archive::unregister_source( 'test_private' );
+		unregister_taxonomy( 'pkiw_test_private' );
+
+		$this->assertSame( [ [ 'h2:Other', [ 'Post A', 'Post B', 'Post C' ] ] ], $this->sections( $html ), 'Every post files in the empty group, newest first.' );
+		$this->assertStringNotContainsString( 'secret', strtolower( $html ) );
+	}
+
 	// Dates.
 
 	public function test_month_buckets_follow_the_site_timezone(): void {
@@ -807,6 +865,68 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 		update_option( 'start_of_week', 1 );
 		$this->assertSame( 'September 28 – October 4, 2026', $week->label( new Archive_Group( '2026-09-28', '2026-09-28' ), [] ) );
 		$this->assertSame( 'December 28, 2026 – January 3, 2027', $week->label( new Archive_Group( '2026-12-28', '2026-12-28' ), [] ) );
+	}
+
+	public function test_a_week_that_spans_new_year_holds_a_post_from_either_side(): void {
+		update_option( 'timezone_string', 'America/Chicago' );
+		$week = Grouped_Archive::source( 'test_week' );
+		$eve  = get_post( $this->make( 'weekkind', 'New Year night', '2026-01-01 23:30:00' ) );
+		$tue  = get_post( $this->make( 'weekkind', 'Tuesday before', '2025-12-30 10:00:00' ) );
+
+		foreach ( [ 1 => '2025-12-29', 0 => '2025-12-28', 6 => '2025-12-27' ] as $start => $key ) {
+			update_option( 'start_of_week', $start );
+			$this->assertSame( $key, $week->group_of( $eve )->key(), "11:30 pm on January 1 in Chicago, weeks starting on day {$start}." );
+			$this->assertSame( $key, $week->group_of( $tue )->key(), "December 30 shares that week, start day {$start}." );
+		}
+
+		update_option( 'start_of_week', 1 );
+		$this->assertSame(
+			[ [ 'h2:December 29, 2025 – January 4, 2026', [ 'New Year night', 'Tuesday before' ] ] ],
+			$this->sections( $this->serve( 'weekkind', $this->loop( self::MARKER ) ) )
+		);
+	}
+
+	public function test_grouping_works_beside_a_meta_query_and_a_second_tax_clause(): void {
+		$p     = $this->shelf();
+		$args  = [
+			'post_type'      => 'post',
+			'posts_per_page' => 3,
+			'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+				'relation' => 'OR',
+				[
+					'key'     => '_pkiw_test_status',
+					'compare' => 'EXISTS',
+				],
+				[
+					'key'   => '_pkiw_test_series',
+					'value' => 'Earthsea',
+				],
+			],
+			'tax_query'      => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+				'relation' => 'AND',
+				[
+					'taxonomy' => 'kind',
+					'field'    => 'slug',
+					'terms'    => 'shelfkind',
+				],
+				[
+					'taxonomy' => 'category',
+					'field'    => 'term_id',
+					'terms'    => (int) get_option( 'default_category' ),
+				],
+			],
+		];
+		$plain = new WP_Query( $args );
+		$ids   = [];
+		for ( $page = 1; $page <= 3; $page++ ) {
+			$grouped = new WP_Query( $args + [ 'pkiw_group_source' => 'test_status', 'paged' => $page ] );
+			$this->assertSame( $plain->found_posts, $grouped->found_posts );
+			$this->assertSame( $plain->max_num_pages, $grouped->max_num_pages );
+			$ids = array_merge( $ids, array_map( 'intval', wp_list_pluck( $grouped->posts, 'ID' ) ) );
+		}
+
+		$this->assertSame( 8, $plain->found_posts, 'Every shelf post but Persuasion has a status row.' );
+		$this->assertSame( [ $p['dune'], $p['beloved'], $p['emma'], $p['ulysses'], $p['kindred'], $p['middlemarch'], $p['walden'], $p['ada'] ], $ids, 'Three pages of three hold each post once, in grouped order.' );
 	}
 
 	// Labels.
