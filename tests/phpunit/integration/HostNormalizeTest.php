@@ -173,6 +173,40 @@ final class HostNormalizeTest extends WP_UnitTestCase {
 		$this->assertNull( get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
 	}
 
+	public function test_the_host_names_the_cite_url_a_reader_gets_when_there_are_two_rows(): void {
+		$post_id = self::factory()->post->create();
+		add_post_meta( $post_id, Meta_Fields::PREFIX . 'cite_url', 'https://a.example/' );
+		add_post_meta( $post_id, Meta_Fields::PREFIX . 'cite_url', 'https://b.example/' );
+
+		// get_post_meta( ..., true ) reads the first row.
+		$this->assertSame( 'a.example', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+
+		delete_post_meta( $post_id, Meta_Fields::PREFIX . 'cite_url', 'https://a.example/' );
+
+		$this->assertSame( 'https://b.example/', get_post_meta( $post_id, Meta_Fields::PREFIX . 'cite_url', true ) );
+		$this->assertSame( 'b.example', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+	}
+
+	public function test_a_cite_url_written_inside_another_keys_delete_hook_gets_its_host(): void {
+		$post_id = self::factory()->post->create();
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'cite_url', 'https://first.example/' );
+		add_action(
+			'deleted_post_meta',
+			static function ( $meta_ids, $object_id, $meta_key ) {
+				if ( 'some_other_key' === $meta_key ) {
+					update_post_meta( $object_id, Meta_Fields::PREFIX . 'cite_url', 'https://second.example/' );
+				}
+			},
+			10,
+			3
+		);
+		add_post_meta( $post_id, 'some_other_key', 'x' );
+
+		delete_post_meta( $post_id, 'some_other_key' );
+
+		$this->assertSame( 'second.example', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+	}
+
 	public function test_atmosphere_reaction_title_names_the_normalized_host(): void {
 		$post_id = self::factory()->post->create(
 			[
