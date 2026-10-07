@@ -144,7 +144,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 				<article class="checkin-card h-entry">
 					<?php if ( ! empty( $pkiw_checkin['photo'] ) ) : ?>
 					<div class="checkin-card-photo">
-						<img src="<?php echo esc_url( $pkiw_checkin['photo'] ); ?>" alt="<?php echo esc_attr( sprintf( '%1$s, %2$s', ! empty( $pkiw_checkin['venue_name'] ) ? $pkiw_checkin['venue_name'] : __( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' ), date_i18n( get_option( 'date_format' ), strtotime( $pkiw_checkin['date'] ) ) ) ); ?>" class="u-photo" loading="lazy">
+						<img src="<?php echo esc_url( $pkiw_checkin['photo'] ); ?>" alt="<?php echo esc_attr( sprintf( '%1$s, %2$s', ! empty( $pkiw_checkin['venue_name'] ) ? $pkiw_checkin['venue_name'] : __( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' ), \PKIW\card_wall_clock( $pkiw_checkin['date'], (string) get_option( 'date_format' ) )[1] ) ); ?>" class="u-photo" loading="lazy">
 					</div>
 					<?php endif; ?>
 					<div class="checkin-card-content">
@@ -157,7 +157,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 						<p class="checkin-card-address p-location"><?php echo esc_html( $pkiw_checkin['address'] ); ?></p>
 						<?php endif; ?>
 						<time class="checkin-card-date dt-published" datetime="<?php echo esc_attr( $pkiw_checkin['date'] ); ?>">
-							<?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $pkiw_checkin['date'] ) ) ); ?>
+							<?php echo esc_html( \PKIW\card_wall_clock( $pkiw_checkin['date'], (string) get_option( 'date_format' ) )[1] ); ?>
 						</time>
 					</div>
 				</article>
@@ -194,7 +194,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 			// Group by month.
 			$pkiw_grouped = [];
 			foreach ( $pkiw_checkins as $pkiw_checkin ) {
-				$pkiw_month_key = date_i18n( 'F Y', strtotime( $pkiw_checkin['date'] ) );
+				$pkiw_month_key = \PKIW\card_wall_clock( $pkiw_checkin['date'], 'F Y' )[1];
 				if ( ! isset( $pkiw_grouped[ $pkiw_month_key ] ) ) {
 					$pkiw_grouped[ $pkiw_month_key ] = [];
 				}
@@ -216,7 +216,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 							<span class="timeline-address p-location"><?php echo esc_html( $pkiw_checkin['address'] ); ?></span>
 							<?php endif; ?>
 							<time class="timeline-date dt-published" datetime="<?php echo esc_attr( $pkiw_checkin['date'] ); ?>">
-								<?php echo esc_html( date_i18n( 'M j, g:i a', strtotime( $pkiw_checkin['date'] ) ) ); ?>
+								<?php echo esc_html( \PKIW\card_wall_clock( $pkiw_checkin['date'], 'M j, g:i a' )[1] ); ?>
 							</time>
 						</div>
 					</div>

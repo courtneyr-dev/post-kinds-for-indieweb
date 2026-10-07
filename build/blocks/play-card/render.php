@@ -35,7 +35,7 @@ $pkiw_cover        = $attributes['cover'] ?? '';
 $pkiw_cover_alt    = $attributes['coverAlt'] ?? '';
 $pkiw_status       = $attributes['status'] ?? '';
 $pkiw_hours_played = isset( $attributes['hoursPlayed'] ) ? (float) $attributes['hoursPlayed'] : 0.0;
-$pkiw_rating       = isset( $attributes['rating'] ) ? (int) $attributes['rating'] : 0;
+$pkiw_rating       = (float) ( $attributes['rating'] ?? 0 );
 $pkiw_played_at    = $attributes['playedAt'] ?? '';
 $pkiw_review       = $attributes['review'] ?? '';
 $pkiw_game_url     = $attributes['gameUrl'] ?? '';
@@ -53,15 +53,7 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	]
 );
 
-$pkiw_played_iso     = '';
-$pkiw_played_display = '';
-if ( $pkiw_played_at ) {
-	$pkiw_ts = strtotime( $pkiw_played_at );
-	if ( $pkiw_ts ) {
-		$pkiw_played_iso     = gmdate( 'c', $pkiw_ts );
-		$pkiw_played_display = wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $pkiw_ts );
-	}
-}
+[ $pkiw_played_iso, $pkiw_played_display ] = \PKIW\card_calendar_date( (string) $pkiw_played_at );
 
 ob_start();
 ?>
@@ -110,14 +102,7 @@ ob_start();
 			<?php endif; ?>
 		</div>
 
-		<?php if ( $pkiw_rating > 0 ) : ?>
-			<div class="pk-stars" role="img" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: rating out of five. */ __( 'Rated %d of 5', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_rating ) ); ?>">
-				<?php for ( $pkiw_i = 1; $pkiw_i <= 5; $pkiw_i++ ) : ?>
-					<svg class="<?php echo $pkiw_i <= $pkiw_rating ? '' : 'off'; ?>" viewBox="0 0 24 24" fill="currentColor" focusable="false"><path d="M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17l-6.9 3.5 1.6-6.8L1.4 9.1l7-.6z"/></svg>
-				<?php endfor; ?>
-			</div>
-			<data class="p-rating" value="<?php echo esc_attr( $pkiw_rating ); ?>" hidden></data>
-		<?php endif; ?>
+		<?php echo \PKIW\card_rating_html( $pkiw_rating ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
 		<?php if ( $pkiw_cover ) : ?>
 			<div class="pk-media">

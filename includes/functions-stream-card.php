@@ -329,7 +329,7 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	$title     = trim( get_the_title( $post ) );
 	$has_title = '' !== $title;
 	if ( ! $has_title ) {
-		$title = $kind_label;
+		$title = untitled_name( $post, false );
 	}
 	// A synthetic title is navigation, not the entry's name — no p-name, so
 	// mf2 parsers fall back to the implied name / content as intended.
@@ -382,8 +382,20 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 		}
 	}
 
+	$title_html = esc_html( $title );
+	if ( ! $has_title ) {
+		// The card prints the date on its own line, so the "<Kind>, <date>"
+		// name shows the kind and keeps the date in the link name (S7).
+		$fallback = untitled_fallback_name( $post );
+		if ( $title === $fallback['name'] && '' !== $fallback['kind'] && str_starts_with( $title, $fallback['kind'] ) ) {
+			$title_html = esc_html( $fallback['kind'] )
+				. '<span class="pk-sr-only">' . esc_html( substr( $title, strlen( $fallback['kind'] ) ) ) . '</span>';
+		}
+	}
+
 	$out .= '<div class="pk-caption">';
-	$out .= '<h' . $heading_level . ' class="' . esc_attr( $title_class ) . '"><a class="u-url" href="' . $permalink . '">' . esc_html( $title ) . '</a></h' . $heading_level . '>';
+	// $title_html is escaped above.
+	$out .= '<h' . $heading_level . ' class="' . esc_attr( $title_class ) . '"><a class="u-url" href="' . $permalink . '">' . $title_html . '</a></h' . $heading_level . '>';
 
 	$date_display = get_the_date( '', $post );
 	if ( '' !== $date_display ) {
@@ -732,8 +744,9 @@ function get_post_kind_slug( \WP_Post $post ): string {
  *
  * On the Stream a card title should click through to the post, not to the
  * watched/listened URL. Repoints the `.pk-title` anchor at the post (same
- * tab), or wraps a plain-text title in one. The card's hidden `u-*-of` data
- * still carries the external URL for microformats.
+ * tab), or wraps a plain-text title in one. For an h-cite card, the original
+ * URL and its u-* classes move to hidden data immediately before the title,
+ * keeping the citation target separate from the post's own URL.
  *
  * @param string   $html Rendered card HTML.
  * @param \WP_Post $post Post the card represents.
@@ -745,30 +758,64 @@ function link_title_to_post( string $html, \WP_Post $post ): string {
 		return $html;
 	}
 
+	$is_h_cite = static function ( int $heading_offset ) use ( $html ): bool {
+		$before = substr( $html, 0, $heading_offset );
+		if ( ! preg_match_all( '#<article\b[^>]*\bclass=(?:"([^"]*)"|\'([^\']*)\')[^>]*>#i', $before, $articles, PREG_SET_ORDER ) ) {
+			return false;
+		}
+
+		$article = end( $articles );
+		$classes = (string) ( $article[1] ?? '' );
+		if ( '' === $classes ) {
+			$classes = (string) ( $article[2] ?? '' );
+		}
+		$class_tokens = preg_split( '/\s+/', trim( $classes ) );
+
+		return in_array( 'h-cite', false !== $class_tokens ? $class_tokens : [], true );
+	};
+
 	// Title already linked → repoint the anchor at the post.
-	$relinked = preg_replace_callback(
-		'#(<h[1-6] class="pk-title[^"]*">\s*)<a\b[^>]*>#s',
-		static function ( $matches ) use ( $permalink ) {
-			return $matches[1] . '<a class="u-url" href="' . $permalink . '">';
-		},
-		$html,
-		1,
-		$count
-	);
-	if ( null !== $relinked && $count > 0 ) {
-		return $relinked;
+	if ( preg_match( '#(<h[1-6] class="pk-title[^"]*">\s*)(<a\b[^>]*>)#s', $html, $linked, PREG_OFFSET_CAPTURE ) ) {
+		$heading_offset = (int) $linked[1][1];
+		$cite           = $is_h_cite( $heading_offset );
+		$anchor         = $cite ? '<a href="' . $permalink . '">' : '<a class="u-url" href="' . $permalink . '">';
+		$data           = '';
+		$original_href  = '';
+
+		if ( $cite ) {
+			$processor = new \WP_HTML_Tag_Processor( $linked[2][0] );
+			if ( $processor->next_tag( [ 'tag_name' => 'a' ] ) ) {
+				$original_href = esc_url( (string) $processor->get_attribute( 'href' ) );
+				$class_tokens  = preg_split( '/\s+/', trim( (string) $processor->get_attribute( 'class' ) ) );
+				$class_tokens  = false !== $class_tokens ? $class_tokens : [];
+				$url_classes   = array_values(
+					array_filter(
+						$class_tokens,
+						static fn( string $class_token ): bool => str_starts_with( $class_token, 'u-' )
+					)
+				);
+
+				if ( '' !== $original_href && $permalink !== $original_href && $url_classes ) {
+					$data = '<data class="' . esc_attr( implode( ' ', $url_classes ) ) . '" value="' . $original_href . '" hidden></data>';
+				}
+			}
+		}
+
+		$replacement = $data . $linked[1][0] . $anchor;
+
+		return substr_replace( $html, $replacement, (int) $linked[0][1], strlen( $linked[0][0] ) );
 	}
 
 	// Plain-text title → wrap it in a link to the post.
-	$wrapped = preg_replace_callback(
-		'#(<h[1-6] class="pk-title[^"]*">)(\s*)([^<]+?)(\s*)(</h[1-6]>)#s',
-		static function ( $matches ) use ( $permalink ) {
-			return $matches[1] . $matches[2] . '<a class="u-url" href="' . $permalink . '">' . $matches[3] . '</a>' . $matches[4] . $matches[5];
-		},
-		$html,
-		1
-	);
-	return null !== $wrapped ? $wrapped : $html;
+	if ( preg_match( '#(<h[1-6] class="pk-title[^"]*">)(\s*)([^<]+?)(\s*)(</h[1-6]>)#s', $html, $plain, PREG_OFFSET_CAPTURE ) ) {
+		$cite        = $is_h_cite( (int) $plain[1][1] );
+		$anchor      = $cite ? '<a href="' . $permalink . '">' : '<a class="u-url" href="' . $permalink . '">';
+		$replacement = $plain[1][0] . $plain[2][0] . $anchor . $plain[3][0] . '</a>' . $plain[4][0] . $plain[5][0];
+
+		return substr_replace( $html, $replacement, (int) $plain[0][1], strlen( $plain[0][0] ) );
+	}
+
+	return $html;
 }
 
 /**
