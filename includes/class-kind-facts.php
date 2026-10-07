@@ -162,7 +162,9 @@ final class Kind_Facts {
 	/**
 	 * Blank the location facts the post's public tier hides.
 	 *
-	 * A fact named with an unknown tier is hidden.
+	 * A hidden fact becomes '' for text, [] for a list and null for a
+	 * number, never 0, which is a real coordinate. A fact named with an
+	 * unknown tier is hidden.
 	 *
 	 * @param array<string, mixed>  $facts    Facts.
 	 * @param array<string, string> $location Fact key => tier.
@@ -182,7 +184,7 @@ final class Kind_Facts {
 			if ( is_array( $facts[ $key ] ) ) {
 				$facts[ $key ] = [];
 			} elseif ( is_int( $facts[ $key ] ) || is_float( $facts[ $key ] ) ) {
-				$facts[ $key ] = 0;
+				$facts[ $key ] = null;
 			} else {
 				$facts[ $key ] = '';
 			}
