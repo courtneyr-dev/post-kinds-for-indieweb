@@ -530,11 +530,20 @@ class Card_Meta_Sync {
 			}
 		}
 
-		$clean = in_array( $suffix, self::TEXTAREA_SUFFIXES, true )
+		update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, self::clean_value( $suffix, $value ) );
+	}
+
+	/**
+	 * A card attribute's value as its meta row stores it.
+	 *
+	 * @param string $suffix Meta suffix the attribute maps to.
+	 * @param string $value  Attribute value.
+	 * @return string
+	 */
+	private static function clean_value( string $suffix, string $value ): string {
+		return in_array( $suffix, self::TEXTAREA_SUFFIXES, true )
 			? sanitize_textarea_field( $value )
 			: sanitize_text_field( $value );
-
-		update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, $clean );
 	}
 
 	/**
@@ -610,10 +619,11 @@ class Card_Meta_Sync {
 	}
 
 	/**
-	 * A card's provider ID, or '' when the card leaves it out or holds
-	 * anything but a non-blank string. block.json types the IDs as strings,
-	 * so "   ", 0, true and false count as left out: they write nothing over
-	 * a stored ID and name no provider.
+	 * A card's provider ID as sync_attr() would store it, or '' when the
+	 * card leaves it out, holds a non-string, or holds a string the
+	 * sanitizer empties. block.json types the IDs as strings, so "   ",
+	 * "<b></b>", 0, true and false count as left out: they write nothing
+	 * over a stored ID and name no provider.
 	 *
 	 * @param array<string, mixed> $block    Parsed card block.
 	 * @param string               $provider Provider ID attribute.
@@ -621,7 +631,11 @@ class Card_Meta_Sync {
 	 */
 	private static function provider_id( array $block, string $provider ): string {
 		$value = $block['attrs'][ $provider ] ?? '';
-		return is_string( $value ) && '' !== trim( $value ) ? $value : '';
+		if ( ! is_string( $value ) ) {
+			return '';
+		}
+
+		return self::clean_value( self::ATTR_META_MAP[ $block['blockName'] ][ $provider ] ?? '', $value );
 	}
 
 	/**
