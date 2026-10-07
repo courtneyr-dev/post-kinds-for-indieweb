@@ -108,7 +108,8 @@ function preview( html ) {
 const settle = () => new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
 
 const mapEl = ( id ) => document.getElementById( id );
-const listNumber = ( root ) => root.querySelector( '.pkiw-checkin-archive__num' );
+const listNumber = ( root ) =>
+	root.querySelector( '.pkiw-checkin-archive__num' );
 
 afterEach( () => {
 	observers.splice( 0 ).forEach( ( observer ) => observer.disconnect() );
@@ -153,7 +154,9 @@ describe( 'check-in archive map in the editor canvas', () => {
 		await settle();
 
 		expect( L.map ).toHaveBeenCalledTimes( 2 );
-		expect( L.map.mock.calls[ 1 ][ 0 ] ).toBe( mapEl( 'pkiw-checkin-map-8' ) );
+		expect( L.map.mock.calls[ 1 ][ 0 ] ).toBe(
+			mapEl( 'pkiw-checkin-map-8' )
+		);
 		expect( mapEl( 'pkiw-checkin-map-8' ).hidden ).toBe( false );
 	} );
 
@@ -192,6 +195,23 @@ describe( 'check-in archive map in the editor canvas', () => {
 
 		expect( L.map ).toHaveBeenCalledTimes( 1 );
 		expect( mapEl( 'pkiw-checkin-map-7' ).hidden ).toBe( false );
+	} );
+
+	it( 'skips a waiting map the reloaded preview removed', async () => {
+		const L = stubLeaflet();
+		window.pkiwCheckinMapWatch = true;
+		loadScript();
+
+		const container = preview( archive( 'pkiw-checkin-map-7', true ) );
+		await settle();
+		container.innerHTML = archive( 'pkiw-checkin-map-8', true );
+		await settle();
+		document.dispatchEvent( new Event( 'pkiw:map-consent' ) );
+
+		expect( L.map ).toHaveBeenCalledTimes( 1 );
+		expect( L.map.mock.calls[ 0 ][ 0 ] ).toBe(
+			mapEl( 'pkiw-checkin-map-8' )
+		);
 	} );
 
 	it( 'draws a map the preview adds after consent was given', async () => {
