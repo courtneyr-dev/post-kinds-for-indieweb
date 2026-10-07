@@ -183,6 +183,22 @@ class Card_Meta_Sync {
 	];
 
 	/**
+	 * Boolean card attributes the card always decides: on writes '1', off or
+	 * absent deletes the row. ATTR_META_MAP never erases meta with an empty
+	 * attr, and the block comment drops an attribute that equals its
+	 * block.json default, so switching a toggle off would otherwise leave
+	 * it on. Each toggle follows the first block of its own type, even when
+	 * another kind's card comes first.
+	 *
+	 * @var array<string, array<string, string>>
+	 */
+	public const ATTR_TOGGLES = [
+		'post-kinds-indieweb/acquisition-card' => [
+			'showCostPublicly' => 'acquisition_cost_public',
+		],
+	];
+
+	/**
 	 * Meta suffixes whose values are multi-line prose.
 	 *
 	 * @var string[]
@@ -314,7 +330,8 @@ class Card_Meta_Sync {
 	 * @return void
 	 */
 	public static function sync_content( int $post_id, string $content ): void {
-		$block = self::find_first_mapped_block( parse_blocks( $content ) );
+		$blocks = parse_blocks( $content );
+		$block  = self::find_first_mapped_block( $blocks );
 		if ( null !== $block ) {
 			$map      = self::ATTR_META_MAP[ $block['blockName'] ];
 			$defaults = self::ATTR_DEFAULTS[ $block['blockName'] ] ?? [];
@@ -356,26 +373,39 @@ class Card_Meta_Sync {
 				update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, $clean );
 			}
 		}
+
+		foreach ( self::ATTR_TOGGLES as $block_name => $toggles ) {
+			$card = self::find_first_mapped_block( $blocks, [ $block_name => $toggles ] );
+			foreach ( $toggles as $attr => $suffix ) {
+				if ( null !== $card && true === ( $card['attrs'][ $attr ] ?? null ) ) {
+					update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, '1' );
+				} else {
+					delete_post_meta( $post_id, Meta_Fields::PREFIX . $suffix );
+				}
+			}
+		}
 	}
 
 	/**
-	 * Depth-first search for the first card block present in
-	 * ATTR_META_MAP. Recursion matters: Micropub-generated content
-	 * wraps its card inside an h-entry core/group, and editors can
+	 * Depth-first search for the first card block present in $map
+	 * (ATTR_META_MAP by default). Recursion matters: Micropub-generated
+	 * content wraps its card inside an h-entry core/group, and editors can
 	 * nest cards in groups/columns too — a top-level-only walk never
 	 * sees those cards at all. First match in document order wins,
 	 * mirroring the kind-sync semantics.
 	 *
 	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
+	 * @param array<string, mixed>|null        $map    Block names to find, as keys.
 	 * @return array<string, mixed>|null The first mapped block, or null.
 	 */
-	private static function find_first_mapped_block( array $blocks ): ?array {
+	private static function find_first_mapped_block( array $blocks, ?array $map = null ): ?array {
+		$map ??= self::ATTR_META_MAP;
 		foreach ( $blocks as $block ) {
-			if ( isset( self::ATTR_META_MAP[ $block['blockName'] ?? '' ] ) ) {
+			if ( isset( $map[ $block['blockName'] ?? '' ] ) ) {
 				return $block;
 			}
 			if ( ! empty( $block['innerBlocks'] ) ) {
-				$found = self::find_first_mapped_block( $block['innerBlocks'] );
+				$found = self::find_first_mapped_block( $block['innerBlocks'], $map );
 				if ( null !== $found ) {
 					return $found;
 				}

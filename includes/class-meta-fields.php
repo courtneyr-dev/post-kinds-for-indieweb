@@ -1047,6 +1047,9 @@ class Meta_Fields {
 	 */
 	private function register_hooks(): void {
 		add_action( 'init', [ $this, 'register_meta_fields' ] );
+		// #239: acquisition cost leaves REST unless the post shows it publicly.
+		add_filter( 'rest_prepare_post', [ $this, 'redact_cost_meta' ], 20, 3 );
+		add_filter( 'rest_prepare_' . Post_Type::POST_TYPE, [ $this, 'redact_cost_meta' ], 20, 3 );
 		// R-03: location detail leaves the REST response unless the post's
 		// location privacy is public or the requester can edit the post.
 		add_filter( 'rest_prepare_post', [ $this, 'redact_location_meta' ], 20, 3 );
@@ -1427,6 +1430,89 @@ class Meta_Fields {
 		if ( $changed ) {
 			$response->set_data( $data );
 		}
+		return $response;
+	}
+
+	/**
+	 * Post meta holding an acquisition's "Show cost publicly" toggle: '1'
+	 * when on, no row when off. Card_Meta_Sync is its only writer. Left
+	 * unregistered, like `_pkiw_title_source`, so the block editor never
+	 * sends a stale copy back over the card's value on save.
+	 */
+	public const COST_PUBLIC_KEY = '_pkiw_acquisition_cost_public';
+
+	/**
+	 * Meta keys (without prefix) that hold an acquisition's cost.
+	 *
+	 * @var string[]
+	 */
+	private const COST_KEYS = [ 'acquisition_price' ];
+
+	/**
+	 * Whether an acquisition's cost may print publicly (#239).
+	 *
+	 * Cost is private by default and public only when the post's acquisition
+	 * card has "Show cost publicly" on. There's no editor override: the card,
+	 * feeds, ActivityPub and ATmosphere all build from one render, which can
+	 * run in the author's own request. Editors see cost in the block editor
+	 * and in REST. Themes call this before printing cost anywhere.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	public static function acquisition_cost_visible( int $post_id ): bool {
+		return $post_id > 0 && '1' === (string) get_post_meta( $post_id, self::COST_PUBLIC_KEY, true );
+	}
+
+	/**
+	 * Blank this plugin's cost meta in $meta unless the requester may see it:
+	 * they can edit the post, or acquisition_cost_visible() says public.
+	 * Shared by redact_cost_meta() (REST) and the post-kinds/get-post-meta
+	 * ability.
+	 *
+	 * @param array<string, mixed> $meta    Meta values keyed by the full `_pkiw_`-prefixed field name.
+	 * @param int                  $post_id Post the meta belongs to.
+	 * @return array<string, mixed>
+	 */
+	public static function redact_cost_array( array $meta, int $post_id ): array {
+		if ( current_user_can( 'edit_post', $post_id ) || self::acquisition_cost_visible( $post_id ) ) {
+			return $meta;
+		}
+
+		foreach ( self::COST_KEYS as $key ) {
+			if ( array_key_exists( self::PREFIX . $key, $meta ) ) {
+				$meta[ self::PREFIX . $key ] = '';
+			}
+		}
+
+		return $meta;
+	}
+
+	/**
+	 * Strip acquisition cost from REST responses when it isn't public and the
+	 * requester can't edit the post. Stored data is untouched.
+	 *
+	 * @param \WP_REST_Response $response Response.
+	 * @param \WP_Post          $post     Post.
+	 * @param \WP_REST_Request  $request  Request.
+	 * @return \WP_REST_Response
+	 */
+	public function redact_cost_meta( $response, $post, $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		if ( ! $response instanceof \WP_REST_Response || ! $post instanceof \WP_Post ) {
+			return $response;
+		}
+
+		$data = $response->get_data();
+		if ( empty( $data['meta'] ) || ! is_array( $data['meta'] ) ) {
+			return $response;
+		}
+
+		$redacted = self::redact_cost_array( $data['meta'], (int) $post->ID );
+		if ( $redacted !== $data['meta'] ) {
+			$data['meta'] = $redacted;
+			$response->set_data( $data );
+		}
+
 		return $response;
 	}
 
