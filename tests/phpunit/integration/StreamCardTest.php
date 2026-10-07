@@ -282,6 +282,58 @@ final class StreamCardTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @return array<string, array{0: string, 1: string, 2: string}>
+	 */
+	public function citations_with_a_script_url(): array {
+		return [
+			'play game url' => [ 'play', '_pkiw_play_title', '_pkiw_play_game_url' ],
+			'read url'      => [ 'read', '_pkiw_read_title', '_pkiw_read_url' ],
+		];
+	}
+
+	/**
+	 * esc_url() empties a javascript: URL. The citation leaves that u-url
+	 * out instead of printing value="", which php-mf2 resolves to the page
+	 * URL. The registered sanitizer empties the URL on update_post_meta(),
+	 * so the row goes straight to the table, as an import or an older
+	 * version could have left it.
+	 *
+	 * @dataProvider citations_with_a_script_url
+	 */
+	public function test_a_citation_leaves_out_a_url_that_esc_url_empties( string $kind, string $title_key, string $url_key ): void {
+		global $wpdb;
+		$this->ensure_play_reader();
+		$this->ensure_kind_term( $kind );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Notes with a script link',
+				'post_content' => '<!-- wp:paragraph --><p>Some notes.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, $kind, 'kind' );
+		update_post_meta( $post_id, $title_key, 'Tide Pool Commons' );
+		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Skips the registered sanitizer on purpose.
+			$wpdb->postmeta,
+			[
+				'post_id'    => $post_id,
+				'meta_key'   => $url_key, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_query_meta_key
+				'meta_value' => 'javascript:alert(1)', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_query_meta_value
+			]
+		);
+		wp_cache_delete( $post_id, 'post_meta' );
+		$this->assertSame( 'javascript:alert(1)', get_metadata_raw( 'post', $post_id, $url_key, true ), 'The script URL is stored as is.' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+		$cite = $this->parsed_entry( $html )['properties'][ $kind . '-of' ][0];
+
+		$this->assertSame( [ 'Tide Pool Commons' ], $cite['properties']['name'] );
+		$this->assertSame( [], $cite['properties']['url'] ?? [], 'php-mf2 reads no URL for the citation.' );
+		$this->assertStringNotContainsString( '<data class="u-url" value="">', $html );
+	}
+
+	/**
 	 * A play or read whose facts come back empty prints no citation.
 	 *
 	 * @dataProvider kinds_with_a_citation
