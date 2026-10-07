@@ -415,7 +415,34 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'pk-title', $html );
 		// The synthetic title is navigation, not the entry name.
 		$this->assertStringNotContainsString( 'p-name', $html );
-		$this->assertStringContainsString( '>Weather, ' . get_the_date( '', $post_id ) . '</a>', $html );
+		$this->assertStringContainsString( '>Weather<span class="pk-sr-only">, ' . get_the_date( '', $post_id ) . '</span></a>', $html );
+	}
+
+	/**
+	 * S7: one visible date per Stream card. The "<Kind>, <date>" name
+	 * keeps its date in the link name only, since the card prints the
+	 * date below the title.
+	 */
+	public function test_untitled_stream_card_prints_its_date_once(): void {
+		$this->ensure_kind_term( 'weather' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => '',
+				'post_content' => '<!-- wp:paragraph --><p>Post excerpt.</p><!-- /wp:paragraph -->',
+				'post_date'    => '2026-10-06 09:00:00',
+			]
+		);
+		wp_set_object_terms( $post_id, 'weather', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertSame( 1, preg_match( '#<h2 class="pk-title"><a class="u-url" href="[^"]+">(.*?)</a></h2>#s', $html, $link ) );
+		$this->assertSame( 'Weather, October 6, 2026', wp_strip_all_tags( $link[1] ) );
+
+		$visible = wp_strip_all_tags( (string) preg_replace( '#<span class="pk-sr-only">.*?</span>#s', '', $html ) );
+		$this->assertSame( 1, substr_count( $visible, 'October 6, 2026' ) );
+		$this->assertStringContainsString( '<time class="dt-published"', $html );
 	}
 
 	public function test_untitled_long_form_like_uses_card_name_without_p_name(): void {
@@ -451,7 +478,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 
 		$html = \PKIW\render_stream_card();
 
-		$this->assertStringContainsString( '>Note, September 12, 2026</a>', $html );
+		$this->assertStringContainsString( '>Note<span class="pk-sr-only">, September 12, 2026</span></a>', $html );
 		$this->assertSame( 1, substr_count( $html, 'A fictional thought printed once.' ) );
 	}
 
