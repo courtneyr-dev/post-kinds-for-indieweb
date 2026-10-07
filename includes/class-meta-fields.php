@@ -1050,6 +1050,10 @@ class Meta_Fields {
 		// Issue 239: acquisition cost leaves REST unless the post shows it publicly.
 		add_filter( 'rest_prepare_post', [ $this, 'redact_cost_meta' ], 20, 3 );
 		add_filter( 'rest_prepare_' . Post_Type::POST_TYPE, [ $this, 'redact_cost_meta' ], 20, 3 );
+		// Code that reads post_content before render.php runs: display reads
+		// (ActivityPub's summary) and search.
+		add_filter( 'post_content', [ self::class, 'display_content_without_private_cost' ], 10, 2 );
+		add_filter( 'posts_search', [ self::class, 'search_without_private_cost' ], 10, 2 );
 		// R-03: location detail leaves the REST response unless the post's
 		// location privacy is public or the requester can edit the post.
 		add_filter( 'rest_prepare_post', [ $this, 'redact_location_meta' ], 20, 3 );
@@ -1514,6 +1518,290 @@ class Meta_Fields {
 		}
 
 		return $response;
+	}
+
+	/**
+	 * An acquisition card in post_content: a bare block comment, or the
+	 * comment pair around the static HTML save.js stored. The attrs part
+	 * is core's pattern from WP_Block_Parser::next_token().
+	 */
+	private const ACQUISITION_CARD_PATTERN = '#(?P<head><!--\s+wp:post-kinds-indieweb/acquisition-card\s+)(?P<attrs>\{(?:(?:[^}]+|\}+(?=\})|(?!\}\s+/?-->).)*+)?\}\s+)?(?P<tail>/-->|-->(?P<inner>.*?)<!--\s+/wp:post-kinds-indieweb/acquisition-card\s+-->)#s';
+
+	/**
+	 * The columns WP_Query search can match.
+	 *
+	 * @var string[]
+	 */
+	private const SEARCH_COLUMNS = [ 'post_title', 'post_excerpt', 'post_content' ];
+
+	/**
+	 * Whether one acquisition card's cost is private, by the rule render.php
+	 * follows: public only when the card's showCostPublicly is on and the
+	 * post shows cost.
+	 *
+	 * @param string|null $attrs       The card's block comment attributes, JSON.
+	 * @param bool        $post_public acquisition_cost_visible() for the post.
+	 * @return bool
+	 */
+	private static function card_cost_is_private( ?string $attrs, bool $post_public ): bool {
+		$decoded = json_decode( (string) $attrs, true );
+
+		return ! ( $post_public && is_array( $decoded ) && true === ( $decoded['showCostPublicly'] ?? null ) );
+	}
+
+	/**
+	 * $content with each private acquisition cost taken out (issue 239).
+	 *
+	 * For every card whose cost is private this drops the
+	 * `<p class="post-kinds-card__subtitle">` that save.js printed cost
+	 * into before issue 239. With $attributes it also blanks the `cost`
+	 * attribute in the card's block comment, which search needs. Display
+	 * callers leave the attribute alone, so anything that writes their
+	 * result back keeps the stored cost.
+	 *
+	 * @param string $content    Post content.
+	 * @param int    $post_id    Post the content belongs to.
+	 * @param bool   $attributes Whether to blank the comment's `cost` attribute too.
+	 * @return string
+	 */
+	public static function strip_private_cost( string $content, int $post_id, bool $attributes = false ): string {
+		if ( ! str_contains( $content, 'wp:post-kinds-indieweb/acquisition-card' ) ) {
+			return $content;
+		}
+
+		$post_public = self::acquisition_cost_visible( $post_id );
+		$stripped    = preg_replace_callback(
+			self::ACQUISITION_CARD_PATTERN,
+			static function ( array $card ) use ( $post_public, $attributes ): string {
+				if ( ! self::card_cost_is_private( $card['attrs'], $post_public ) ) {
+					return $card[0];
+				}
+
+				$attrs = (string) $card['attrs'];
+				if ( $attributes ) {
+					$attrs = (string) preg_replace( '/"cost":"(?:[^"\\\\]|\\\\.)*"/', '"cost":""', $attrs );
+				}
+
+				$tail = (string) $card['tail'];
+				if ( null !== $card['inner'] ) {
+					$inner = (string) preg_replace( '#<p class="post-kinds-card__subtitle">.*?</p>#s', '', $card['inner'] );
+					$tail  = '-->' . $inner . substr( $tail, 3 + strlen( $card['inner'] ) );
+				}
+
+				return $card['head'] . $attrs . $tail;
+			},
+			$content,
+			-1,
+			$count,
+			PREG_UNMATCHED_AS_NULL
+		);
+
+		return is_string( $stripped ) ? $stripped : $content;
+	}
+
+	/**
+	 * The private costs in $content: each acquisition card's `cost` that
+	 * strip_private_cost() would take out, whitespace collapsed. Text an
+	 * integration already derived from raw post_content loses these.
+	 *
+	 * @param string $content Post content.
+	 * @param int    $post_id Post the content belongs to.
+	 * @return string[]
+	 */
+	public static function private_costs( string $content, int $post_id ): array {
+		if ( ! str_contains( $content, 'wp:post-kinds-indieweb/acquisition-card' ) ) {
+			return [];
+		}
+
+		$post_public = self::acquisition_cost_visible( $post_id );
+		$costs       = [];
+		preg_match_all( self::ACQUISITION_CARD_PATTERN, $content, $cards, PREG_SET_ORDER | PREG_UNMATCHED_AS_NULL );
+		foreach ( $cards as $card ) {
+			if ( ! self::card_cost_is_private( $card['attrs'], $post_public ) ) {
+				continue;
+			}
+
+			$attrs = json_decode( (string) $card['attrs'], true );
+			$cost  = is_array( $attrs ) && is_string( $attrs['cost'] ?? null ) ? $attrs['cost'] : '';
+			$cost  = trim( (string) preg_replace( '/\s+/u', ' ', $cost ) );
+			if ( '' !== $cost ) {
+				$costs[] = $cost;
+			}
+		}
+
+		return array_values( array_unique( $costs ) );
+	}
+
+	/**
+	 * Display-context post_content without private acquisition cost.
+	 *
+	 * Core's sanitize_post_field() runs the `post_content` filter for
+	 * display reads, such as get_post_field( 'post_content', $post ) and
+	 * ActivityPub's generate_post_summary(), which builds an Article's
+	 * summary and preview from post_content and has no filter of its own
+	 * (ActivityPub 9.3.1 includes/functions-post.php:363). The edit, db and
+	 * raw contexts skip this filter, so the block editor, saves and exports
+	 * get stored content. Only the static subtitle goes; the card keeps its
+	 * cost attribute. There's no editor override, for the reason
+	 * acquisition_cost_visible() gives.
+	 *
+	 * @param mixed $value   Post content.
+	 * @param mixed $post_id Post ID.
+	 * @return mixed
+	 */
+	public static function display_content_without_private_cost( $value, $post_id = 0 ) {
+		return is_string( $value ) ? self::strip_private_cost( $value, (int) $post_id ) : $value;
+	}
+
+	/**
+	 * Keep private acquisition cost from deciding search results.
+	 *
+	 * WP_Query matches each search term against post_content, which holds
+	 * cost in the card's block comment and, for cards saved before issue
+	 * 239, in its static HTML. A visitor could read a private cost one
+	 * digit at a time ('Zq9 $14' hits, 'Zq9 $13' misses), or with an
+	 * excluded term. For each acquisition post the requester can't edit
+	 * whose content matches a term, this reruns core's term rules against
+	 * the content with private cost taken out. A post that matched only
+	 * through cost leaves the results, and a post that an excluded term
+	 * dropped only through cost comes back. REST search runs on WP_Query,
+	 * so it follows.
+	 *
+	 * @param mixed $search Search SQL from WP_Query::parse_search().
+	 * @param mixed $query  The query.
+	 * @return mixed
+	 */
+	public static function search_without_private_cost( $search, $query ) {
+		global $wpdb;
+
+		if ( ! is_string( $search ) || '' === $search || ! $query instanceof \WP_Query || $query->get( 'exact' ) ) {
+			return $search;
+		}
+
+		$columns = $query->get( 'search_columns' );
+		$columns = empty( $columns ) ? self::SEARCH_COLUMNS : (array) $columns;
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core filter, read the way WP_Query::parse_search() reads it.
+		$columns = array_values( array_intersect( (array) apply_filters( 'post_search_columns', $columns, $query->get( 's' ), $query ), self::SEARCH_COLUMNS ) );
+		if ( [] === $columns ) {
+			$columns = self::SEARCH_COLUMNS;
+		}
+		if ( ! in_array( 'post_content', $columns, true ) ) {
+			return $search;
+		}
+
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core filter, read the way WP_Query::parse_search() reads it.
+		$prefix = apply_filters( 'wp_query_search_exclusion_prefix', '-' );
+		$terms  = [];
+		$likes  = [];
+		foreach ( (array) $query->get( 'search_terms' ) as $term ) {
+			$term     = (string) $term;
+			$excluded = $prefix && str_starts_with( $term, (string) $prefix );
+			$term     = $excluded ? substr( $term, 1 ) : $term;
+			$terms[]  = [ $term, $excluded ];
+			$likes[]  = '%' . $wpdb->esc_like( $term ) . '%';
+		}
+		if ( [] === $terms ) {
+			return $search;
+		}
+
+		$term_clauses = implode( "\n\t\t\t\t\t\t\tOR ", array_fill( 0, count( $likes ), 'post_content LIKE %s' ) );
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Per-search lookup; $term_clauses holds only %s placeholders, filled from $likes.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'
+					SELECT
+						ID,
+						post_title,
+						post_excerpt,
+						post_content,
+						post_password
+					FROM
+						%i
+					WHERE
+						post_type <> %s
+						AND post_content LIKE %s
+						AND (
+							' . $term_clauses . '
+						)
+				',
+				array_merge(
+					[
+						$wpdb->posts,
+						'revision',
+						'%' . $wpdb->esc_like( 'wp:post-kinds-indieweb/acquisition-card' ) . '%',
+					],
+					$likes
+				)
+			)
+		);
+		// phpcs:enable
+
+		$include = [];
+		$exclude = [];
+		foreach ( (array) $rows as $row ) {
+			$id      = (int) $row->ID;
+			$content = (string) $row->post_content;
+			$safe    = self::strip_private_cost( $content, $id, true );
+			if ( $safe === $content || current_user_can( 'edit_post', $id ) ) {
+				continue;
+			}
+
+			$fields = array_intersect_key(
+				[
+					'post_title'   => (string) $row->post_title,
+					'post_excerpt' => (string) $row->post_excerpt,
+					'post_content' => $content,
+				],
+				array_flip( $columns )
+			);
+
+			$before                 = self::search_matches( $terms, $fields );
+			$fields['post_content'] = $safe;
+			$after                  = self::search_matches( $terms, $fields );
+
+			if ( $before === $after ) {
+				continue;
+			}
+			if ( ! $after ) {
+				$exclude[] = $id;
+			} elseif ( '' === (string) $row->post_password || is_user_logged_in() ) {
+				$include[] = $id;
+			}
+		}
+
+		if ( [] !== $exclude ) {
+			$search .= " AND {$wpdb->posts}.ID NOT IN (" . implode( ',', $exclude ) . ')';
+		}
+		if ( [] !== $include ) {
+			$search = " AND ( ( 1 = 1{$search} ) OR {$wpdb->posts}.ID IN (" . implode( ',', $include ) . ') )';
+		}
+
+		return $search;
+	}
+
+	/**
+	 * Whether text passes a search the way WP_Query's LIKE clauses decide
+	 * it: each term in at least one field, and no excluded term in any.
+	 *
+	 * @param array<int, array{0: string, 1: bool}> $terms  Each term and whether it's excluded.
+	 * @param array<string, string>                 $fields Searched text by column.
+	 * @return bool
+	 */
+	private static function search_matches( array $terms, array $fields ): bool {
+		foreach ( $terms as [ $term, $excluded ] ) {
+			$found = false;
+			foreach ( $fields as $text ) {
+				if ( false !== mb_stripos( $text, $term ) ) {
+					$found = true;
+					break;
+				}
+			}
+			if ( $found === $excluded ) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**
