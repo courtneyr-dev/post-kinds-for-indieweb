@@ -20,7 +20,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * meta on save, so Block Bindings (and templates) can consume what the
  * card knows. Card attrs win when non-empty; existing meta survives
  * empty attrs (completion and manual edits are never erased), except the
- * provider IDs in PROVIDER_ATTRS, which follow the card.
+ * provider IDs in PROVIDER_ATTRS, which a card that names another
+ * provider's ID clears.
  *
  * @since 1.2.0
  */
@@ -204,11 +205,11 @@ class Card_Meta_Sync {
 	];
 
 	/**
-	 * Provider IDs the card decides. An ID the card leaves out or blank is
-	 * deleted from meta, so a play switched from RAWG or Steam to BGG
-	 * leaves the video group. Every other attribute keeps the never-erase
-	 * rule, and a post with no such card keeps the IDs Quick Post or the
-	 * sidebar stored.
+	 * Provider IDs the card decides. When the card names one of them, an ID
+	 * it leaves out or blank is deleted from meta, so a play switched from
+	 * RAWG or Steam to BGG leaves the video group. A card that names none,
+	 * like a post with no such card, keeps the IDs Quick Post or the
+	 * sidebar stored. Every other attribute keeps the never-erase rule.
 	 *
 	 * @var array<string, string[]>
 	 */
@@ -280,7 +281,7 @@ class Card_Meta_Sync {
 	 * number again. Version 3 (#340) re-syncs a card behind an RSVP card,
 	 * which version 2 skipped while the RSVP card sat in ATTR_META_MAP.
 	 * Version 4 fills the read-card status default and clears the play-card
-	 * provider IDs a card no longer has.
+	 * provider IDs a card switched to another provider no longer has.
 	 */
 	public const BACKFILL_HOOK    = 'pkiw_card_meta_backfill';
 	public const BACKFILL_OPTION  = 'pkiw_card_meta_backfill';
@@ -485,8 +486,8 @@ class Card_Meta_Sync {
 
 	/**
 	 * Mirror one card attribute into its meta key. Card attrs win when
-	 * non-empty; an empty attr never erases meta, except a provider ID the
-	 * card no longer has.
+	 * non-empty; an empty attr never erases meta, except a provider ID a
+	 * card that names another provider's ID no longer has.
 	 *
 	 * @param int                  $post_id Post ID.
 	 * @param array<string, mixed> $block   Parsed card block.
@@ -499,7 +500,7 @@ class Card_Meta_Sync {
 		$value = self::attr_value( $post_id, $block, $attr, $suffix, $on_save );
 
 		if ( null === $value || '' === $value ) {
-			self::clear_provider_id( $post_id, $block['blockName'], $attr, $suffix );
+			self::clear_provider_id( $post_id, $block, $attr, $suffix );
 			return;
 		}
 
@@ -561,23 +562,44 @@ class Card_Meta_Sync {
 	}
 
 	/**
-	 * Delete a provider ID the card left out or blank, so the post leaves the
-	 * archive group that ID put it in. Any other attribute is left alone.
+	 * Delete a provider ID the card left out or blank when the card names
+	 * another provider's ID, so a play switched from RAWG to BGG leaves the
+	 * video group. A card that names no provider ID leaves every stored one
+	 * alone: Quick Post and the sidebar store them with no card. Any other
+	 * attribute is left alone.
 	 *
-	 * @param int    $post_id    Post ID.
-	 * @param string $block_name Card block name.
-	 * @param string $attr       Attribute name.
-	 * @param string $suffix     Meta suffix the attribute maps to.
+	 * @param int                  $post_id Post ID.
+	 * @param array<string, mixed> $block   Parsed card block.
+	 * @param string               $attr    Attribute name.
+	 * @param string               $suffix  Meta suffix the attribute maps to.
 	 * @return void
 	 */
-	private static function clear_provider_id( int $post_id, string $block_name, string $attr, string $suffix ): void {
-		if ( ! in_array( $attr, self::PROVIDER_ATTRS[ $block_name ] ?? [], true ) ) {
+	private static function clear_provider_id( int $post_id, array $block, string $attr, string $suffix ): void {
+		$providers = self::PROVIDER_ATTRS[ $block['blockName'] ] ?? [];
+		if ( ! in_array( $attr, $providers, true ) || ! self::names_a_provider_id( $block, $providers ) ) {
 			return;
 		}
 
 		if ( '' !== trim( (string) get_metadata_raw( 'post', $post_id, Meta_Fields::PREFIX . $suffix, true ) ) ) {
 			delete_post_meta( $post_id, Meta_Fields::PREFIX . $suffix );
 		}
+	}
+
+	/**
+	 * Whether the card holds a non-blank value for any of its provider IDs.
+	 *
+	 * @param array<string, mixed> $block     Parsed card block.
+	 * @param string[]             $providers The card's provider ID attributes.
+	 * @return bool
+	 */
+	private static function names_a_provider_id( array $block, array $providers ): bool {
+		foreach ( $providers as $provider ) {
+			$value = $block['attrs'][ $provider ] ?? '';
+			if ( is_scalar( $value ) && '' !== trim( (string) $value ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
