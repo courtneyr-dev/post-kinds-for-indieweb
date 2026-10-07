@@ -357,6 +357,72 @@ final class StaffPicksTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'secret', $html );
 	}
 
+	/**
+	 * REST stores a password of two spaces as is, and post_password_required()
+	 * counts it. A PAD SPACE collation compares it equal to ''.
+	 */
+	public function test_a_whitespace_password_keeps_a_play_off_the_list(): void {
+		$locked = $this->play(
+			'Space Locked',
+			[
+				'bgg_id' => '77',
+				'rating' => 5,
+			],
+			'2026-03-01 10:00:00',
+			[ 'post_password' => '  ' ]
+		);
+		$this->board( 'Meadow Tiles', '900102', 1, '2026-01-01 10:00:00' );
+		$this->assertSame( '  ', get_post( $locked )->post_password );
+		$this->assertTrue( post_password_required( $locked ) );
+
+		$html = $this->render( [ 'count' => 6 ] );
+
+		$this->assertSame( [ 'Meadow Tiles' ], $this->titles( $html ) );
+		$this->assertStringNotContainsString( 'Space Locked', $html );
+		$this->assertStringNotContainsString( 'Rated 5 of 5', $html );
+	}
+
+	/**
+	 * The pkiw_kind_post_types filter can put the kind taxonomy on a post
+	 * type visitors can't view. Its published plays stay out, and with no
+	 * viewable type left the block prints nothing rather than reading posts.
+	 */
+	public function test_a_play_in_a_post_type_visitors_cant_view_is_left_out(): void {
+		$type = 'pkiw_secret_log';
+		register_post_type( $type, [ 'public' => false ] );
+		register_taxonomy_for_object_type( 'kind', $type );
+
+		try {
+			$secret = $this->play(
+				'Secret Log Entry',
+				[
+					'bgg_id' => '30',
+					'rating' => 5,
+				],
+				'2026-03-01 10:00:00',
+				[ 'post_type' => $type ]
+			);
+			$this->board( 'Open Table', '31', 1, '2026-01-01 10:00:00' );
+			$this->assertSame( 'publish', get_post_status( $secret ) );
+			$this->assertFalse( is_post_publicly_viewable( $secret ) );
+
+			$html = $this->render( [ 'count' => 6 ] );
+
+			$this->assertSame( [ 'Open Table' ], $this->titles( $html ) );
+			$this->assertStringNotContainsString( 'Secret Log Entry', $html );
+			$this->assertStringNotContainsString( 'Rated 5 of 5', $html );
+
+			unregister_taxonomy_for_object_type( 'kind', 'post' );
+			$this->assertSame( [ $type ], array_values( get_taxonomy( 'kind' )->object_type ) );
+
+			$this->assertSame( '', $this->render( [ 'count' => 6 ] ), 'No viewable type: no fallback to post.' );
+		} finally {
+			register_taxonomy_for_object_type( 'kind', 'post' );
+			unregister_taxonomy_for_object_type( 'kind', $type );
+			unregister_post_type( $type );
+		}
+	}
+
 	public function test_a_stored_rating_above_five_sorts_and_prints_as_five(): void {
 		$this->board( 'Eight Stored', '3001', 8, '2026-01-01 10:00:00' );
 		$this->board( 'Five Newer', '3002', 5, '2026-02-01 10:00:00' );
