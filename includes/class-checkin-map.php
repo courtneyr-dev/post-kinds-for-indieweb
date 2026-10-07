@@ -108,7 +108,7 @@ class Checkin_Map {
 	 * One list entry per post, holding only what the viewer may see.
 	 *
 	 * @param \WP_Post[] $posts Posts, in list order.
-	 * @return array<int, array{id: int, title: string, url: string, date_iso: string, date: string, name: string, place: array<string, string>, lat: float|null, lng: float|null, number: int}>
+	 * @return array<int, array{id: int, title: string, synthetic: bool, url: string, date_iso: string, date: string, name: string, place: array<string, string>, lat: float|null, lng: float|null, number: int}>
 	 */
 	public static function entries( array $posts ): array {
 		$entries = [];
@@ -136,23 +136,26 @@ class Checkin_Map {
 				$lng = (float) $meta( 'geo_longitude' );
 			}
 
-			// An untitled check-in still needs link text.
-			$title = trim( get_the_title( $post ) );
-			if ( '' === $title ) {
+			// An untitled check-in still needs link text. That name is
+			// synthetic, so the list prints it without p-name (X8).
+			$title     = trim( get_the_title( $post ) );
+			$synthetic = '' === $title;
+			if ( $synthetic ) {
 				$title = untitled_name( $post );
 			}
 
 			$entries[] = [
 				'id'       => $post->ID,
-				'title'    => $title,
-				'url'      => (string) get_permalink( $post ),
-				'date_iso' => (string) get_the_date( 'c', $post ),
-				'date'     => (string) get_the_date( '', $post ),
-				'name'     => $visible['name'] ? $meta( 'checkin_name' ) : '',
-				'place'    => $place,
-				'lat'      => $lat,
-				'lng'      => $lng,
-				'number'   => null === $lat ? 0 : ++$number,
+				'title'     => $title,
+				'synthetic' => $synthetic,
+				'url'       => (string) get_permalink( $post ),
+				'date_iso'  => (string) get_the_date( 'c', $post ),
+				'date'      => (string) get_the_date( '', $post ),
+				'name'      => $visible['name'] ? $meta( 'checkin_name' ) : '',
+				'place'     => $place,
+				'lat'       => $lat,
+				'lng'       => $lng,
+				'number'    => null === $lat ? 0 : ++$number,
 			];
 		}
 
@@ -318,7 +321,7 @@ class Checkin_Map {
 
 							<div class="pkiw-checkin-archive__body">
 								<?php // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $tag is h2 to h6. ?>
-								<<?php echo $tag; ?> class="pkiw-checkin-archive__title p-name"><a class="u-url" href="<?php echo esc_url( $entry['url'] ); ?>"><?php echo esc_html( $entry['title'] ); ?></a></<?php echo $tag; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+								<<?php echo $tag; ?> class="pkiw-checkin-archive__title<?php echo $entry['synthetic'] ? '' : ' p-name'; ?>"><a class="u-url" href="<?php echo esc_url( $entry['url'] ); ?>"><?php echo esc_html( $entry['title'] ); ?></a></<?php echo $tag; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 
 								<?php if ( '' !== $entry['name'] || $entry['place'] ) : ?>
 									<p class="pkiw-checkin-archive__place p-location h-card">
