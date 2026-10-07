@@ -1,0 +1,7 @@
+# Replaces the @wordpress/scripts default ignore file, so its entries stay.
+build
+vendor
+wordpress
+
+# The private Astro docs site, never published to npm.
+docs
