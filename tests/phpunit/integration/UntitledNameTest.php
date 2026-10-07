@@ -75,6 +75,26 @@ final class UntitledNameTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Reading the name prints nothing, so it must not mark the post's
+	 * weather as shown: that flag turns off Simple Location's own weather
+	 * line in the post's later the_content pass.
+	 */
+	public function test_weather_name_leaves_weather_unmarked(): void {
+		require_once dirname( __DIR__ ) . '/fixtures/simple-location/weather-stub.php';
+		update_option( 'sloc_measurements', 'metric' );
+		$post = $this->make_post( 'weather' );
+		add_post_meta( $post->ID, 'weather_summary', 'Sun & "cloud"' );
+		add_post_meta( $post->ID, 'weather_temperature', 26.8 );
+		add_post_meta( $post->ID, 'geo_public', '1' );
+
+		$bound = new ReflectionProperty( \PKIW\Integrations\Simple_Location_Weather::class, 'bound' );
+		$bound->setValue( null, [] );
+
+		$this->assertSame( 'Sun & "cloud", 27 °C', \PKIW\untitled_name( $post ) );
+		$this->assertArrayNotHasKey( $post->ID, $bound->getValue() );
+	}
+
+	/**
 	 * @dataProvider fallback_posts
 	 */
 	public function test_fallback_names( string $kind, string $expected ): void {
