@@ -10,11 +10,13 @@
  * ATmosphere already maps from native WordPress data (description,
  * textContent, coverImage, path, timestamps) are never replaced, with one
  * cut: ATmosphere's excerpt reads raw post_content, where an acquisition
- * card saved before issue 239 holds its cost as text. That excerpt, and
- * only that span, is rebuilt without a private cost in the document
+ * card saved before issue 239 holds its cost as text and an RSVP card
+ * saved before #32 holds its event location (issue 251). That excerpt,
+ * and only that span, is rebuilt without the private text in the document
  * description, the Bluesky link card's description and the Bluesky post
- * text. The document's content is rebuilt too when the cost changes what
- * ATmosphere's parser makes of post_content, as Markpub's does.
+ * text. The document's content is rebuilt too when the private text
+ * changes what ATmosphere's parser makes of post_content, as Markpub's
+ * does.
  *
  * ATmosphere's post crons run with the post they publish as the global
  * post, as a front-end render and ATmosphere's own content parser have
@@ -160,7 +162,7 @@ class Atmosphere_Document_Map {
 			}
 		}
 
-		$record = self::content_without_private_cost( $record, $post );
+		$record = self::content_without_private_text( $record, $post );
 
 		if ( empty( $record['title'] ) ) {
 			$derived = Atmosphere_Titles::derive( $post );
@@ -180,27 +182,29 @@ class Atmosphere_Document_Map {
 
 	/**
 	 * $record with its content parsed again from post_content without
-	 * private cost, when the cost changes what the parser makes of it.
-	 * ATmosphere's Markpub parser turns a block it doesn't know into
-	 * markdown from the block's saved HTML (content-parser/class-markpub.php:321-328
-	 * in checkout bf8e267), so a card saved before issue 239 hands it the
-	 * cost. The HTML parser reads the rendered page, and Leaflet and Pckt
-	 * skip the card, so their output doesn't change and their content stays
-	 * as it is. Content whose parser isn't registered, or that holds nothing
-	 * once the cost is out, goes.
+	 * private card text (Meta_Fields::strip_private_card_text()), when that
+	 * text changes what the parser makes of it. ATmosphere's Markpub parser
+	 * turns a block it doesn't know into markdown from the block's saved
+	 * HTML (content-parser/class-markpub.php:321-328 in checkout bf8e267),
+	 * so an acquisition card saved before issue 239 hands it the cost and an
+	 * RSVP card saved before #32 its location. The HTML parser reads the
+	 * rendered page, and Leaflet and Pckt skip the cards, so their output
+	 * doesn't change and their content stays as it is. Content whose parser
+	 * isn't registered, or that holds nothing once the private text is out,
+	 * goes.
 	 *
 	 * @param array<string, mixed> $record The document record.
 	 * @param \WP_Post             $post   The post.
 	 * @return array<string, mixed>
 	 */
-	private static function content_without_private_cost( array $record, \WP_Post $post ): array {
+	private static function content_without_private_text( array $record, \WP_Post $post ): array {
 		$type = is_array( $record['content'] ?? null ) ? ( $record['content']['$type'] ?? null ) : null;
 		if ( ! is_string( $type ) ) {
 			return $record;
 		}
 
 		$content  = (string) $post->post_content;
-		$stripped = Meta_Fields::strip_private_cost( $content, (int) $post->ID );
+		$stripped = Meta_Fields::strip_private_card_text( $content, (int) $post->ID );
 		if ( $stripped === $content ) {
 			return $record;
 		}
@@ -281,8 +285,8 @@ class Atmosphere_Document_Map {
 	private const BLUESKY_MAX_GRAPHEMES = 300;
 
 	/**
-	 * Take private acquisition cost out of a Bluesky link card, whose
-	 * description is ATmosphere's 55-word excerpt.
+	 * Take private acquisition cost and RSVP location out of a Bluesky link
+	 * card, whose description is ATmosphere's 55-word excerpt.
 	 *
 	 * @param mixed $embed The embed record, or null.
 	 * @param mixed $post  The post being transformed.
@@ -302,9 +306,10 @@ class Atmosphere_Document_Map {
 	}
 
 	/**
-	 * Take private acquisition cost out of a Bluesky post's text, which
-	 * ATmosphere joins with blank lines from the title, its 30-word excerpt
-	 * (cut short with '...' when the post runs past 300 graphemes) and the
+	 * Take private acquisition cost and RSVP location out of a Bluesky
+	 * post's text, which ATmosphere joins with blank lines from the title,
+	 * its 30-word excerpt (cut short with '...' when the post runs past 300
+	 * graphemes) and the
 	 * permalink. Only the excerpt changes, and the post gets no longer than
 	 * the limit allows. Facets before the change keep their byte ranges,
 	 * facets after it move with the text, and a facet inside it is dropped.
@@ -349,9 +354,10 @@ class Atmosphere_Document_Map {
 
 	/**
 	 * The excerpts ATmosphere builds from $post's raw post_content, each
-	 * paired with the one it would build with private cost stripped. Empty
-	 * when ATmosphere uses the post's own excerpt, or when no card's static
-	 * markup holds a private cost, which leaves a bare block comment alone.
+	 * paired with the one it would build with private card text stripped.
+	 * Empty when ATmosphere uses the post's own excerpt, or when no card's
+	 * static markup holds a private cost or location, which leaves a bare
+	 * block comment alone.
 	 *
 	 * @param \WP_Post $post The post.
 	 * @return array<int, array{0: string, 1: string}> Raw and clean excerpt pairs.
@@ -362,7 +368,7 @@ class Atmosphere_Document_Map {
 		}
 
 		$content  = (string) $post->post_content;
-		$stripped = Meta_Fields::strip_private_cost( $content, (int) $post->ID );
+		$stripped = Meta_Fields::strip_private_card_text( $content, (int) $post->ID );
 		if ( $stripped === $content ) {
 			return [];
 		}

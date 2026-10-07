@@ -1856,6 +1856,71 @@ class Meta_Fields {
 	}
 
 	/**
+	 * An RSVP card in post_content, in ACQUISITION_CARD_PATTERN's shape.
+	 */
+	private const RSVP_CARD_PATTERN = '#(?P<head><!--\s+wp:post-kinds-indieweb/rsvp-card\s+)(?P<attrs>\{(?:(?:[^}]+|\}+(?=\})|(?!\}\s+/?-->).)*+)?\}\s+)?(?P<tail>/-->|-->(?P<inner>.*?)<!--\s+/wp:post-kinds-indieweb/rsvp-card\s+-->)#s';
+
+	/**
+	 * The location an RSVP card's save.js printed before #32 (ee3d5c1): the
+	 * `p-location` span, with the pin icon span ahead of it when there is
+	 * one. Every version of that save.js used this span.
+	 */
+	private const LEGACY_RSVP_LOCATION_PATTERN = '#(?:<span\b[^>]*>\s*\xF0\x9F\x93\x8D\s*</span>\s*)?<span\b[^>]*\bclass="(?:[^"]*\s)?p-location(?:\s[^"]*)?"[^>]*>.*?</span>#s';
+
+	/**
+	 * $content with each private RSVP location taken out of the static HTML
+	 * an RSVP card saved before #32 holds (issue 251). render.php ignores
+	 * that HTML, but readers of raw post_content, such as ATmosphere's
+	 * excerpt and Markpub parser, get it. A card's location is private
+	 * unless its `locationVisibility` is 'public' and rsvp_location_visible()
+	 * says so, as render.php decides. A bare block comment is left alone.
+	 *
+	 * @param string $content Post content.
+	 * @param int    $post_id Post the content belongs to.
+	 * @return string
+	 */
+	public static function strip_private_rsvp_location( string $content, int $post_id ): string {
+		if ( ! str_contains( $content, 'wp:post-kinds-indieweb/rsvp-card' ) || ! str_contains( $content, 'p-location' ) ) {
+			return $content;
+		}
+
+		$post_public = self::rsvp_location_visible( $post_id );
+		$stripped    = preg_replace_callback(
+			self::RSVP_CARD_PATTERN,
+			static function ( array $card ) use ( $post_public ): string {
+				$decoded = json_decode( (string) $card['attrs'], true );
+				if ( null === $card['inner'] || ( $post_public && is_array( $decoded ) && 'public' === ( $decoded['locationVisibility'] ?? null ) ) ) {
+					return $card[0];
+				}
+
+				$inner = (string) preg_replace( self::LEGACY_RSVP_LOCATION_PATTERN, '', $card['inner'] );
+
+				return $card['head'] . $card['attrs'] . '-->' . $inner . substr( (string) $card['tail'], 3 + strlen( $card['inner'] ) );
+			},
+			$content,
+			-1,
+			$count,
+			PREG_UNMATCHED_AS_NULL
+		);
+
+		return is_string( $stripped ) ? $stripped : $content;
+	}
+
+	/**
+	 * $content without the private text that cards saved as static HTML
+	 * hold: acquisition cost (strip_private_cost()) and an RSVP's event
+	 * location (strip_private_rsvp_location()). For readers of raw
+	 * post_content that never render the blocks.
+	 *
+	 * @param string $content Post content.
+	 * @param int    $post_id Post the content belongs to.
+	 * @return string
+	 */
+	public static function strip_private_card_text( string $content, int $post_id ): string {
+		return self::strip_private_rsvp_location( self::strip_private_cost( $content, $post_id ), $post_id );
+	}
+
+	/**
 	 * One acquisition card's `cost` attribute as plain text.
 	 *
 	 * @param string|null $attrs The card's block comment attributes, JSON.
