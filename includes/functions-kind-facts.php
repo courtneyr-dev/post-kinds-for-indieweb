@@ -18,6 +18,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Meta key mapping each cover URL a post stores to its media library image.
+ *
+ * Cover URL => attachment ID, 0 when no library image has that file. Only
+ * covers in this site's uploads are listed; no other cover has a local
+ * copy to look up. Rewritten whenever cover meta changes and on every card
+ * sync, so kind_picture() reads the ID from the post's meta cache instead
+ * of searching attachment file paths, which no index covers.
+ *
+ * @since 1.9.0
+ */
+const COVER_ATTACHMENTS_META = '_pkiw_cover_attachments';
+
+/**
  * The public facts for a kind post.
  *
  * @since 1.9.0
@@ -197,7 +210,10 @@ function kind_picture( int $post_id ): array {
  */
 function cover_local_copy( int $post_id, string $url ): int {
 	if ( is_upload_url( $url ) ) {
-		$attachment_id = attachment_url_to_postid( $url );
+		$attachments   = get_post_meta( $post_id, COVER_ATTACHMENTS_META, true );
+		$attachment_id = is_array( $attachments ) && isset( $attachments[ $url ] )
+			? (int) $attachments[ $url ]
+			: upload_attachment_id( $url );
 		if ( $attachment_id > 0 && wp_attachment_is_image( $attachment_id ) ) {
 			return $attachment_id;
 		}
@@ -212,6 +228,102 @@ function cover_local_copy( int $post_id, string $url ): int {
 
 	return 0;
 }
+
+/**
+ * The attachment whose file an upload URL names, or 0.
+ *
+ * Core's attachment_url_to_postid(), cached in the object cache until any
+ * post or post meta changes, which is when core moves the posts
+ * last_changed time. Without a persistent object cache that saves repeat
+ * lookups within one request only.
+ *
+ * @since 1.9.0
+ *
+ * @param string $url URL in this site's uploads.
+ * @return int Attachment ID, or 0.
+ */
+function upload_attachment_id( string $url ): int {
+	$key   = md5( $url ) . ':' . wp_cache_get_last_changed( 'posts' );
+	$found = false;
+	$id    = wp_cache_get( $key, 'pkiw_upload_attachment', false, $found );
+	if ( $found ) {
+		return (int) $id;
+	}
+
+	$id = attachment_url_to_postid( $url );
+	wp_cache_set( $key, $id, 'pkiw_upload_attachment' );
+
+	return $id;
+}
+
+/**
+ * The meta keys that hold a cover URL.
+ *
+ * @since 1.9.0
+ *
+ * @return string[]
+ */
+function cover_meta_keys(): array {
+	$keys = [];
+	foreach ( kind_picture_sources() as $source ) {
+		$keys[ Meta_Fields::PREFIX . $source['url'] ] = true;
+	}
+
+	return array_keys( $keys );
+}
+
+/**
+ * Rewrite `_pkiw_cover_attachments` from the cover URLs a post stores.
+ *
+ * Reads the stored rows rather than a hook's value, so the map matches
+ * what get_post_meta() returns after any write, including a delete of one
+ * row of several or a write made inside another meta hook.
+ *
+ * @since 1.9.0
+ *
+ * @param int $post_id Post ID.
+ * @return void
+ */
+function refresh_cover_attachments( int $post_id ): void {
+	$attachments = [];
+	foreach ( cover_meta_keys() as $key ) {
+		$stored = get_metadata_raw( 'post', $post_id, $key, true );
+		$url    = is_string( $stored ) ? web_url( $stored ) : '';
+		if ( '' !== $url && is_upload_url( $url ) && ! isset( $attachments[ $url ] ) ) {
+			$attachments[ $url ] = upload_attachment_id( $url );
+		}
+	}
+
+	if ( [] !== $attachments ) {
+		update_post_meta( $post_id, COVER_ATTACHMENTS_META, $attachments );
+	} elseif ( null !== get_metadata_raw( 'post', $post_id, COVER_ATTACHMENTS_META, true ) ) {
+		delete_post_meta( $post_id, COVER_ATTACHMENTS_META );
+	}
+}
+
+/**
+ * Keep `_pkiw_cover_attachments` in step with the cover meta.
+ *
+ * Runs on every write of a cover URL, whoever writes it: the card sync,
+ * Micropub, Quick Post, an import or REST.
+ *
+ * @since 1.9.0
+ *
+ * @param int|int[] $meta_id   Meta ID (an array of IDs on delete). Unused.
+ * @param int       $object_id Post ID.
+ * @param string    $meta_key  Meta key.
+ * @return void
+ */
+function sync_cover_attachments( $meta_id, int $object_id, string $meta_key ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed -- Hook signature.
+	if ( ! str_starts_with( $meta_key, Meta_Fields::PREFIX ) || ! in_array( $meta_key, cover_meta_keys(), true ) ) {
+		return;
+	}
+
+	refresh_cover_attachments( $object_id );
+}
+add_action( 'added_post_meta', __NAMESPACE__ . '\\sync_cover_attachments', 10, 3 );
+add_action( 'updated_post_meta', __NAMESPACE__ . '\\sync_cover_attachments', 10, 3 );
+add_action( 'deleted_post_meta', __NAMESPACE__ . '\\sync_cover_attachments', 10, 3 );
 
 /**
  * An absolute http(s) URL with a host, else ''.
