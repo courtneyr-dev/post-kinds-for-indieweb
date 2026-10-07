@@ -338,6 +338,47 @@ final class ReadArchiveTest extends WP_UnitTestCase {
 		);
 	}
 
+	public function test_a_protected_read_sorts_by_its_post_title_with_no_author_whatever_it_hides(): void {
+		wp_set_current_user( 0 );
+		$alice   = $this->read( 'Copper Atlas', '2026-08-30 10:00:00', 'finished', 'Alice Ames' );
+		$carol   = $this->read( 'Harbor Weather', '2026-08-29 10:00:00', 'reading', 'Carol Cole' );
+		$erin    = $this->read( 'Small Hours', '2026-08-28 10:00:00', 'to-read', 'Erin Eck' );
+		$moss    = $this->read( 'Moss and Ink', '2026-08-27 10:00:00', 'finished' );
+		$margins = $this->read( 'Untitled Margins', '2026-08-26 10:00:00', 'reading' );
+		$locked  = $this->read( 'Locked Post', '2026-08-25 10:00:00', 'finished', 'Bob Baker' );
+		wp_update_post(
+			[
+				'ID'            => $locked,
+				'post_password' => 'hunter2',
+			]
+		);
+		$this->assertTrue( post_password_required( $locked ), 'An anonymous visitor has no password cookie.' );
+
+		$url = add_query_arg( Read_Archive::QUERY_VAR, 'author', $this->archive_url() );
+		foreach (
+			[
+				[ 'Bob Baker', 'Aardvark Secrets' ],
+				[ 'Dan Dorn', 'Zephyr Notes' ],
+				[ 'Zoe Zane', 'Middle Book' ],
+				[ null, 'Zephyr Notes' ],
+				[ null, 'Aardvark Secrets' ],
+			] as [ $author, $book ]
+		) {
+			delete_post_meta( $locked, '_pkiw_read_author' );
+			if ( null !== $author ) {
+				add_post_meta( $locked, '_pkiw_read_author', $author );
+			}
+			update_post_meta( $locked, '_pkiw_read_title', $book );
+
+			$this->serve( $url );
+			$this->assertSame(
+				[ $alice, $carol, $erin, $locked, $moss, $margins ],
+				array_map( 'intval', wp_list_pluck( $GLOBALS['wp_query']->posts, 'ID' ) ),
+				sprintf( "Author '%s' and book '%s' stay hidden: 'Locked Post' sorts with the no-author reads, by post title.", (string) $author, $book )
+			);
+		}
+	}
+
 	public function test_the_a_to_z_view_keeps_twelve_per_page_the_count_and_the_var_in_the_pager(): void {
 		$this->fourteen();
 		$url = add_query_arg( Read_Archive::QUERY_VAR, 'author', $this->archive_url() );
