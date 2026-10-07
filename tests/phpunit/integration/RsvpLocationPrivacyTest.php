@@ -22,8 +22,11 @@ use PKIW\Meta_Fields;
  * `content:encoded` and whole RSS2 and Atom documents, content rendered for
  * federation in the publishing editor's request (ActivityPub and ATmosphere
  * copy the post's rendered content), REST `content.rendered` and meta, the
- * `post-kinds/get-post-meta` ability and the `event_location` binding. An
- * editor still sees the location on a front-end page. Existing RSVPs have no
+ * `post-kinds/get-post-meta` ability and the `event_location` binding.
+ * Logged-in editors get the same front end as visitors, because a plugin that
+ * caches rendered content can serve their render to everyone; they see the
+ * location in the block editor and in REST meta. Each card follows its own
+ * toggle, and the first RSVP card sets the post. Existing RSVPs have no
  * stored visibility, so they count as private and keep their stored text.
  *
  * @group integration
@@ -117,12 +120,25 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Make a post's stored location visibility public, as the card's toggle does on save.
+	 * Turn on the RSVP card's "Show event location publicly" toggle and save.
 	 *
 	 * @param int $id Post ID.
 	 */
 	private function make_public( int $id ): void {
-		update_post_meta( $id, '_pkiw_rsvp_location_privacy', 'public' );
+		$blocks = parse_blocks( (string) get_post_field( 'post_content', $id ) );
+		foreach ( $blocks as $i => $block ) {
+			if ( 'post-kinds-indieweb/rsvp-card' === $block['blockName'] ) {
+				$blocks[ $i ]['attrs']['locationVisibility'] = 'public';
+			}
+		}
+		wp_update_post(
+			[
+				'ID'           => $id,
+				'post_content' => wp_slash( serialize_blocks( $blocks ) ),
+			]
+		);
+
+		$this->assertSame( 'public', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ), 'The card synced its visibility.' );
 	}
 
 	/**
@@ -327,7 +343,6 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		$this->assertNotNull( $event, 'Expected a parsed h-event.' );
 		$this->assertSame( self::LOCATION, $event['properties']['location'][0] );
 		$this->assertTrue( Meta_Fields::rsvp_location_visible( $id ) );
-		$this->assertTrue( Meta_Fields::rsvp_location_public( $id ) );
 	}
 
 	public function test_an_explicitly_private_rsvp_prints_no_location(): void {
@@ -341,7 +356,6 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		// An RSVP saved before #251 has no stored visibility at all.
 		delete_post_meta( $id, '_pkiw_rsvp_location_privacy' );
 
-		$this->assertFalse( Meta_Fields::rsvp_location_public( $id ) );
 		$this->assertFalse( Meta_Fields::rsvp_location_visible( $id ) );
 		$this->assert_identity_without_location( $this->render_card( $id ), 'yes' );
 		$this->assertStringContainsString( self::LOCATION, (string) get_post_field( 'post_content', $id ), 'The stored location text stays.' );
@@ -390,17 +404,103 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		$id = $this->rsvp( 'yes', 'future', 'public' );
 		update_post_meta( $id, $key, $value );
 
-		$this->assertFalse( Meta_Fields::rsvp_location_public( $id ) );
+		$this->assertFalse( Meta_Fields::rsvp_location_visible( $id ) );
 		$this->assert_identity_without_location( $this->render_card( $id ), 'yes' );
 	}
 
-	public function test_an_editor_sees_a_private_location_on_the_front_end(): void {
+	public function test_a_card_left_private_prints_no_location_when_the_post_says_public(): void {
+		$id = $this->rsvp( 'interested', 'past' );
+		// A REST or Micropub client can write the post's setting without touching the card.
+		update_post_meta( $id, '_pkiw_rsvp_location_privacy', 'public' );
+
+		$this->assert_identity_without_location( $this->render_card( $id ), 'interested' );
+	}
+
+	public function test_a_second_rsvp_card_left_private_prints_no_location(): void {
+		$other = 'Front hall, 1 Quill Lane Rv51';
+		$first = '<!-- wp:post-kinds-indieweb/rsvp-card ' . wp_json_encode(
+			[
+				'eventName'          => 'Inkwell Social Rv51',
+				'eventUrl'           => 'https://events.example/inkwell-rv51',
+				'eventLocation'      => $other,
+				'rsvpStatus'         => 'yes',
+				'locationVisibility' => 'public',
+			]
+		) . ' /-->';
+		$id    = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => $first . "\n\n" . $this->card( 'yes', 'future' ),
+			]
+		);
+		wp_set_object_terms( $id, 'rsvp', 'kind' );
+
+		$this->assertSame( 'public', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ), 'The first RSVP card sets the post.' );
+		$html = $this->render_card( $id );
+		$this->assertStringContainsString( '<span class="p-location">' . $other . '</span>', $html, 'The public card prints its location.' );
+		$this->assertStringContainsString( self::EVENT, $html, 'The second card renders.' );
+		$this->assertStringNotContainsString( self::LOCATION, $html, 'The card left private prints none.' );
+	}
+
+	public function test_a_card_of_another_kind_ahead_of_the_rsvp_card_cannot_keep_it_public(): void {
+		$id = $this->rsvp( 'yes', 'future', 'public' );
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+		$this->assertSame( 'public', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+
+		// A read card added ahead of the RSVP card, and the RSVP card switched back off.
+		wp_update_post(
+			[
+				'ID'           => $id,
+				'post_content' => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Quill Primer Rv51"} /-->' . "\n\n" . $this->card( 'yes', 'future' ),
+			]
+		);
+		wp_set_object_terms( $id, 'rsvp', 'kind' );
+
+		$this->assertSame( 'private', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+		$this->assertFalse( Meta_Fields::rsvp_location_visible( $id ) );
+		$this->assertStringNotContainsString( self::LOCATION, $this->render_card( $id ) );
+		$this->assertSame( '', $this->rest_post( $id )['meta']['_pkiw_event_location'], 'REST meta follows the RSVP card.' );
+	}
+
+	/**
+	 * Front-end views a logged-in editor can load.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function front_end_views(): array {
+		return [
+			'single post' => [ 'single' ],
+			'home'        => [ 'home' ],
+			'search'      => [ 'search' ],
+		];
+	}
+
+	/**
+	 * A plugin that caches rendered content, such as Markdown Alternate's
+	 * md_alt_cache_{ID} transient, can serve an editor's front-end render
+	 * to visitors, so the editor gets the visitor answer there too.
+	 *
+	 * @dataProvider front_end_views
+	 */
+	public function test_an_editor_on_the_front_end_sees_no_private_location( string $view ): void {
 		$id = $this->rsvp( 'maybe', 'future' );
 		$this->as_editor();
 
-		$this->assertStringContainsString( '<span class="p-location">' . self::LOCATION . '</span>', $this->render_card( $id ) );
-		$this->assertTrue( Meta_Fields::rsvp_location_visible( $id ) );
-		$this->assertFalse( Meta_Fields::rsvp_location_public( $id ), 'The visitor answer has no editor override.' );
+		$urls = [
+			'single' => get_permalink( $id ),
+			'home'   => home_url( '/' ),
+			'search' => home_url( '/?s=Quillfeather' ),
+		];
+		$this->go_to( $urls[ $view ] );
+		$GLOBALS['post'] = get_post( $id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		setup_postdata( $GLOBALS['post'] );
+		$content = apply_filters( 'the_content', (string) get_post_field( 'post_content', $id ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		wp_reset_postdata();
+
+		$this->assertStringContainsString( self::EVENT, $content, 'The card itself renders.' );
+		$this->assertStringNotContainsString( self::LOCATION, $content );
+		$this->assertStringNotContainsString( 'p-location', $content );
+		$this->assertFalse( Meta_Fields::rsvp_location_visible( $id ) );
 	}
 
 	public function test_the_feed_content_omits_a_private_location(): void {
@@ -458,6 +558,7 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'p-location', $html );
 
 		$this->make_public( $id );
+		$GLOBALS['post'] = get_post( $id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 		$this->assertStringContainsString( self::LOCATION, \PKIW\render_stream_card(), 'A public RSVP prints its location in the Stream card.' );
 	}
 
@@ -487,7 +588,7 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	public function test_content_rendered_for_federation_omits_a_private_location_for_the_editor( string $context ): void {
 		$id = $this->rsvp( 'yes', 'future' );
 		$this->as_editor();
-		$this->assertStringContainsString( self::LOCATION, $this->render_card( $id ), 'The editor sees it on the front end.' );
+		$this->go_to( get_permalink( $id ) );
 
 		if ( 'request' === $context ) {
 			$GLOBALS['wp_the_query'] = new WP_Query();
@@ -583,9 +684,23 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
 		$this->go_to( get_permalink( $id ) );
 
-		$this->assertNull( $this->event_location_binding( $id ) );
+		$this->assertSame( '', $this->event_location_binding( $id ) );
 
 		$this->make_public( $id );
 		$this->assertSame( self::LOCATION, $this->event_location_binding( $id ) );
+	}
+
+	public function test_a_bound_paragraph_on_a_private_rsvp_drops_saved_text_that_names_the_location(): void {
+		$id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_object_terms( $id, 'rsvp', 'kind' );
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+		// Core keeps a bound block's saved HTML when the source returns null.
+		$paragraph = '<!-- wp:paragraph {"metadata":{"bindings":{"content":{"source":"' . Block_Bindings::SOURCE_NAME . '","args":{"key":"event_location"}}}}} --><p>' . self::LOCATION . '</p><!-- /wp:paragraph -->';
+		$this->go_to( get_permalink( $id ) );
+
+		$this->assertStringNotContainsString( self::LOCATION, do_blocks( $paragraph ) );
+
+		update_post_meta( $id, '_pkiw_rsvp_location_privacy', 'public' );
+		$this->assertStringContainsString( self::LOCATION, do_blocks( $paragraph ), 'A public RSVP prints the bound location.' );
 	}
 }
