@@ -402,7 +402,7 @@ describe( 'Query Loop on a kind template', () => {
 		inherit: true,
 	};
 
-	function queryLoop( templateSlug = 'taxonomy-kind-checkin', query = stored ) {
+	function queryLoop( templateSlug, query = stored ) {
 		return {
 			name: 'core/query',
 			clientId: 'query-1',
@@ -421,7 +421,7 @@ describe( 'Query Loop on a kind template', () => {
 	}
 
 	it( 'writes nothing when core syncs the page size and excludeCurrent on load', () => {
-		const props = queryLoop();
+		const props = queryLoop( 'taxonomy-kind-checkin' );
 		const element = load( editorState( { postsPerPage: 10 } ) )( props );
 
 		// Core's Query Loop edit, on mount, for an inheriting loop.
@@ -435,7 +435,7 @@ describe( 'Query Loop on a kind template', () => {
 	} );
 
 	it( 'writes nothing when the sync comes as an object', () => {
-		const props = queryLoop();
+		const props = queryLoop( 'taxonomy-kind-checkin' );
 		const element = load( editorState() )( props );
 
 		element.props.setAttributes( {
@@ -458,7 +458,7 @@ describe( 'Query Loop on a kind template', () => {
 	} );
 
 	it( 'passes on a change to anything else and keeps the stored page size', () => {
-		const props = queryLoop();
+		const props = queryLoop( 'taxonomy-kind-checkin' );
 		const element = load( editorState() )( props );
 
 		element.props.setAttributes( ( previous ) => ( {
@@ -469,7 +469,7 @@ describe( 'Query Loop on a kind template', () => {
 	} );
 
 	it( 'passes on a loop that stops inheriting, page size and all', () => {
-		const props = queryLoop();
+		const props = queryLoop( 'taxonomy-kind-checkin' );
 		const element = load( editorState() )( props );
 
 		element.props.setAttributes( {
@@ -484,7 +484,7 @@ describe( 'Query Loop on a kind template', () => {
 	} );
 
 	it( 'passes on attributes other than the query', () => {
-		const props = queryLoop();
+		const props = queryLoop( 'taxonomy-kind-checkin' );
 		const element = load( editorState() )( props );
 
 		element.props.setAttributes( { queryId: 7 } );
