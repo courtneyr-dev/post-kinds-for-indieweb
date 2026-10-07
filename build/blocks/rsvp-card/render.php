@@ -36,6 +36,13 @@ $pkiw_event_image_alt   = $attributes['eventImageAlt'] ?? '';
 $pkiw_rel               = $attributes['rel'] ?? '';
 $pkiw_layout            = $attributes['layout'] ?? 'horizontal';
 
+// #251: the event location prints only when this RSVP's location is public
+// (its editors also see it on a front-end page). A hidden location prints
+// the same markup as an RSVP with no location.
+if ( ! \PKIW\Meta_Fields::rsvp_location_visible( (int) ( $block->context['postId'] ?? get_the_ID() ) ) ) {
+	$pkiw_event_location = '';
+}
+
 $pkiw_status_labels = [
 	'yes'        => __( 'Going', 'post-kinds-for-indieweb-in-block-themes' ),
 	'no'         => __( 'Not Going', 'post-kinds-for-indieweb-in-block-themes' ),

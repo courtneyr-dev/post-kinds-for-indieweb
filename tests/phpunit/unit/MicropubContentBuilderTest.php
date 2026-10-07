@@ -1492,7 +1492,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 					'rsvpStatus' => 'yes',
 					'rsvpNote'   => 'Sample note',
 				),
-				array( 'eventName', 'eventStart', 'eventEnd', 'eventLocation', 'eventDescription', 'rsvpAt', 'eventImage', 'eventImageAlt', 'rel' ),
+				array( 'eventName', 'eventStart', 'eventEnd', 'eventLocation', 'locationVisibility', 'eventDescription', 'rsvpAt', 'eventImage', 'eventImageAlt', 'rel' ),
 			),
 			'like'    => array(
 				array(

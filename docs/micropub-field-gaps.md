@@ -115,6 +115,7 @@ property today** (`—` = nothing maps) | **proposed property for Outpost**
 | `eventName` | — | mf2 nests the event as an h-cite/h-event object under `in-reply-to`; use its `name` |
 | `eventStart` / `eventEnd` | — | the same nested h-event's `start`/`end` |
 | `eventLocation` | — | the same nested h-event's `location` |
+| `locationVisibility` | — | `mp-location-visibility` (`private`/`public`, vendor extension); leaving it out keeps the card's private default (#251) |
 | `eventDescription` | — | the same nested h-event's `summary`/`content` |
 | `rsvpAt` | — | `published` |
 | `eventImage` / `eventImageAlt` | — | the nested h-event's `photo` |

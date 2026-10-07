@@ -164,6 +164,9 @@ class Card_Meta_Sync {
 			'bggId'       => 'play_bgg_id',
 			'rawgId'      => 'play_rawg_id',
 		],
+		'post-kinds-indieweb/rsvp-card'    => [
+			'locationVisibility' => 'rsvp_location_privacy',
+		],
 		// Other card blocks join this map in follow-on work; the class is
 		// deliberately map-driven so each is one entry, no new code.
 	];
@@ -179,6 +182,20 @@ class Card_Meta_Sync {
 	public const ATTR_DEFAULTS = [
 		'post-kinds-indieweb/comic-card' => [
 			'readStatus' => 'reading',
+		],
+	];
+
+	/**
+	 * Privacy settings whose block.json default is written on every save
+	 * when the card leaves the attribute out. The editor drops an attribute
+	 * that equals its default from the block comment, so a card switched
+	 * back to private would otherwise keep an older 'public' in meta.
+	 *
+	 * @var array<string, array<string, string>>
+	 */
+	public const ATTR_PRIVATE_DEFAULTS = [
+		'post-kinds-indieweb/rsvp-card' => [
+			'locationVisibility' => 'private',
 		],
 	];
 
@@ -318,9 +335,14 @@ class Card_Meta_Sync {
 		if ( null !== $block ) {
 			$map      = self::ATTR_META_MAP[ $block['blockName'] ];
 			$defaults = self::ATTR_DEFAULTS[ $block['blockName'] ] ?? [];
+			$private  = self::ATTR_PRIVATE_DEFAULTS[ $block['blockName'] ] ?? [];
 
 			foreach ( $map as $attr => $suffix ) {
 				$value = $block['attrs'][ $attr ] ?? null;
+
+				if ( ( null === $value || '' === $value ) && isset( $private[ $attr ] ) ) {
+					$value = $private[ $attr ];
+				}
 
 				if ( ( null === $value || '' === $value ) && isset( $defaults[ $attr ] )
 					&& '' === (string) get_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, true ) ) {

@@ -71,6 +71,10 @@ const ROUND_TRIP_EXCEPTIONS = {
 	'post-kinds-indieweb/play-card': {
 		status: 'block.json enum (playing/completed/abandoned/backlog/wishlist); "Sample status value" is not a member, so core coerces it back to the schema default (playing) on save. Matches the BlockFieldRenderTest.php exception for the same attribute.',
 	},
+	'post-kinds-indieweb/rsvp-card': {
+		locationVisibility:
+			'block.json enum (private/public); "Sample locationVisibility value" is not a member, so core coerces it back to the schema default (private) on save. Matches the BlockFieldRenderTest.php exception for the same attribute.',
+	},
 };
 
 // Attributes whose sample never appears verbatim in the front-end render,

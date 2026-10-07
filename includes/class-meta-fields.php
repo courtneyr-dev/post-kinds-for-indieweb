@@ -123,6 +123,13 @@ class Meta_Fields {
 				'default'     => '',
 				'enum'        => [ '', 'yes', 'no', 'maybe', 'interested' ],
 			],
+			'rsvp_location_privacy'   => [
+				'type'        => 'string',
+				'description' => __( 'Who sees the RSVP\'s event location: private (people who can edit the post) or public.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => [ $this, 'sanitize_rsvp_location_privacy' ],
+				'default'     => 'private',
+				'enum'        => [ 'private', 'public' ],
+			],
 
 			// Check-in Fields.
 			'checkin_name'            => [
@@ -1338,6 +1345,65 @@ class Meta_Fields {
 	}
 
 	/**
+	 * Whether an RSVP's event location may print for a visitor who can't
+	 * edit the post (#251).
+	 *
+	 * Only when `_pkiw_rsvp_location_privacy` is 'public'. An unset value is
+	 * private, so RSVPs saved before the setting existed keep their location
+	 * to themselves. An explicit private location under the shared rule
+	 * (`_pkiw_geo_privacy` 'private' or Simple Location `geo_public` '0')
+	 * still wins. Use it for output that leaves the request: feeds and
+	 * federated records.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	public static function rsvp_location_public( int $post_id ): bool {
+		if ( $post_id <= 0 || 'public' !== get_post_meta( $post_id, self::PREFIX . 'rsvp_location_privacy', true ) ) {
+			return false;
+		}
+
+		return self::get_public_location_fields( $post_id )['name'];
+	}
+
+	/**
+	 * Whether the current request may print an RSVP's event location (#251).
+	 *
+	 * A public location prints for everyone. Someone who can edit the post
+	 * also sees a private one, but only on a front-end page. Feeds, REST,
+	 * cron and admin requests get the visitor answer, because feed readers,
+	 * ActivityPub and ATmosphere copy what those requests render, and a post
+	 * is federated from the request that publishes it.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	public static function rsvp_location_visible( int $post_id ): bool {
+		if ( self::rsvp_location_public( $post_id ) ) {
+			return true;
+		}
+
+		return $post_id > 0 && current_user_can( 'edit_post', $post_id ) && self::is_front_end_view();
+	}
+
+	/**
+	 * Whether this request renders a front-end page for the person viewing
+	 * it: a single post, archive, home or search page that isn't a feed.
+	 * REST and cron requests never run the main query, so it stays empty.
+	 *
+	 * @return bool
+	 */
+	private static function is_front_end_view(): bool {
+		global $wp_query;
+
+		if ( is_admin() || wp_doing_cron() || wp_is_serving_rest_request() || ! $wp_query instanceof \WP_Query || $wp_query->is_feed() ) {
+			return false;
+		}
+
+		return $wp_query->is_singular() || $wp_query->is_archive() || $wp_query->is_home() || $wp_query->is_search();
+	}
+
+	/**
 	 * Zero/blank out this plugin's own `_pkiw_*` location fields the
 	 * post's current visibility tier hides, leaving every other key in
 	 * $meta untouched. This is the LOCATION_KEY_TIERS walk shared by
@@ -1351,6 +1417,13 @@ class Meta_Fields {
 	 */
 	public static function redact_location_array( array $meta, int $post_id ): array {
 		$visible = self::get_visible_location_fields( $post_id );
+
+		// An RSVP's event location goes only to its editors unless it's public (#251).
+		$event_location = self::PREFIX . 'event_location';
+		if ( array_key_exists( $event_location, $meta ) && has_term( 'rsvp', Taxonomy::TAXONOMY, $post_id )
+			&& ! current_user_can( 'edit_post', $post_id ) && ! self::rsvp_location_public( $post_id ) ) {
+			$meta[ $event_location ] = '';
+		}
 
 		foreach ( self::LOCATION_KEY_TIERS as $key => $tier ) {
 			if ( ! empty( $visible[ $tier ] ) ) {
@@ -1533,6 +1606,16 @@ class Meta_Fields {
 		$value = sanitize_text_field( (string) $value );
 
 		return in_array( $value, $valid, true ) ? $value : '';
+	}
+
+	/**
+	 * Sanitize an RSVP's location privacy: 'public', or 'private' for anything else.
+	 *
+	 * @param mixed $value Value to sanitize.
+	 * @return string Sanitized value.
+	 */
+	public function sanitize_rsvp_location_privacy( mixed $value ): string {
+		return 'public' === $value ? 'public' : 'private';
 	}
 
 	/**
