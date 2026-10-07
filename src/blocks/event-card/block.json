@@ -8,6 +8,7 @@
     "description": "Announce an event with date, time, location, and details — optionally sourced from The Events Calendar or My Calendar.",
     "keywords": ["event", "calendar", "meetup", "happening", "h-event"],
     "textdomain": "post-kinds-for-indieweb-in-block-themes",
+    "usesContext": ["postId"],
     "attributes": {
         "eventName": {
             "type": "string"
