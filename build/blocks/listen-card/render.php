@@ -38,6 +38,31 @@ $pkiw_embed                                    = $pkiw_listen_url ? get_cached_e
 $pkiw_release_year                             = preg_match( '/^(\d{4})/', (string) $pkiw_release_date, $pkiw_release_matches ) ? $pkiw_release_matches[1] : '';
 [ $pkiw_listened_iso, $pkiw_listened_display ] = \PKIW\card_wall_clock( (string) $pkiw_listened_at, (string) get_option( 'date_format' ) );
 
+$pkiw_cover_html = '';
+if ( ! $pkiw_embed && $pkiw_cover_image ) {
+	$pkiw_cover_alt_text = $pkiw_cover_alt ? $pkiw_cover_alt : $pkiw_track_title . ' — ' . $pkiw_artist_name;
+	// A cover in this site's uploads prints as its media library image, so it
+	// gets core's srcset, sizes, width and height. At full size its src, and
+	// so the u-photo, is the library image's current file, as in
+	// kind_picture(). Any other URL is a hotlink and prints as stored.
+	$pkiw_cover_id = \PKIW\is_upload_url( (string) $pkiw_cover_image ) ? \PKIW\cover_local_copy( (int) get_the_ID(), (string) $pkiw_cover_image ) : 0;
+	if ( $pkiw_cover_id > 0 ) {
+		$pkiw_cover_html = wp_get_attachment_image(
+			$pkiw_cover_id,
+			'full',
+			false,
+			[
+				'class'   => 'u-photo',
+				'alt'     => $pkiw_cover_alt_text,
+				'loading' => 'lazy',
+			]
+		);
+	}
+	if ( '' === $pkiw_cover_html ) {
+		$pkiw_cover_html = '<img class="u-photo" src="' . esc_url( $pkiw_cover_image ) . '" alt="' . esc_attr( $pkiw_cover_alt_text ) . '" loading="lazy" />';
+	}
+}
+
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
 		'class' => 'pk-card k-listen h-cite u-listen-of',
@@ -86,8 +111,8 @@ ob_start();
 
 		<?php if ( $pkiw_embed ) : ?>
 			<div class="pk-embed pk-embed--audio"><?php echo $pkiw_embed; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
-		<?php elseif ( $pkiw_cover_image ) : ?>
-			<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_cover_image ); ?>" alt="<?php echo esc_attr( $pkiw_cover_alt ? $pkiw_cover_alt : $pkiw_track_title . ' — ' . $pkiw_artist_name ); ?>" loading="lazy" /></div>
+		<?php elseif ( '' !== $pkiw_cover_html ) : ?>
+			<div class="pk-embed pk-embed--photo"><?php echo $pkiw_cover_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_get_attachment_image() output, or an <img> escaped above. ?></div>
 		<?php endif; ?>
 
 		<div class="pk-meta">
