@@ -25,12 +25,16 @@ use WP_UnitTestCase;
 final class EventCardRenderTest extends WP_UnitTestCase {
 
 	/**
-	 * Render the event-card block with the given attributes.
+	 * Render the event-card block with the given attributes on a published
+	 * post's single view, because a card with no post to name prints no
+	 * location (issue 251).
 	 *
 	 * @param array<string, mixed> $attributes Block attributes.
 	 * @return string Rendered HTML.
 	 */
 	private function render_event_card( array $attributes ): string {
+		$this->go_to( get_permalink( self::factory()->post->create() ) );
+
 		return render_block(
 			[
 				'blockName'    => 'post-kinds-indieweb/event-card',

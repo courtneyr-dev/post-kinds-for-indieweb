@@ -989,6 +989,82 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( self::LOCATION, $this->the_content( $id ), 'A public RSVP prints the Event Card location.' );
 	}
 
+	/**
+	 * The post's content filtered with no global post, as ATmosphere's
+	 * publish and update crons filter it for the document's textContent and
+	 * the Bluesky post text.
+	 *
+	 * @param int $id Post ID.
+	 */
+	private function the_content_with_no_post( int $id ): string {
+		unset( $GLOBALS['post'] );
+
+		return apply_filters( 'the_content', (string) get_post_field( 'post_content', $id ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+	}
+
+	/**
+	 * An Event Card that can't name its post prints no location. With no
+	 * global post get_the_ID() is false, the card got post ID 0, and
+	 * event_card_location_visible( 0 ) let a private RSVP's location print.
+	 */
+	public function test_an_event_card_rendered_with_no_global_post_prints_no_location(): void {
+		$id = $this->post_with( $this->card( 'yes', 'future' ) . "\n\n" . $this->event_card(), [ 'rsvp' ] );
+
+		$html = $this->the_content_with_no_post( $id );
+		$this->assertStringContainsString( 'k-event', $html, 'The Event Card renders.' );
+		$this->assertStringNotContainsString( self::LOCATION, $html );
+		$this->assertStringNotContainsString( 'p-location', $html );
+		$this->assertFalse( Meta_Fields::event_card_location_visible( 0 ) );
+	}
+
+	/**
+	 * A private RSVP with an Event Card, for the ATmosphere transformers,
+	 * which skip the test when ATmosphere isn't loaded.
+	 */
+	private function private_rsvp_with_an_event_card_for_atmosphere(): int {
+		if ( ! class_exists( '\Atmosphere\Transformer\Document' ) ) {
+			$this->markTestSkipped( 'Set PKIW_TESTS_ATMOSPHERE_FILE to build ATmosphere records.' );
+		}
+
+		$id = $this->post_with( $this->card( 'yes', 'future' ) . "\n\n" . $this->event_card(), [ 'rsvp' ] );
+		$this->assertSame( 'private', get_metadata_raw( 'post', $id, '_pkiw_rsvp_location_privacy', true ) );
+		unset( $GLOBALS['post'] );
+
+		return $id;
+	}
+
+	/**
+	 * ATmosphere's Document transformer filters the_content for textContent
+	 * with no global post (Transformer\Base::render_post_content_html()), and
+	 * its publish cron sets none.
+	 *
+	 * @group atmosphere
+	 */
+	public function test_the_atmosphere_document_built_with_no_global_post_omits_a_private_location(): void {
+		$id     = $this->private_rsvp_with_an_event_card_for_atmosphere();
+		$record = ( new \Atmosphere\Transformer\Document( get_post( $id ) ) )->transform();
+
+		$this->assertStringContainsString( self::EVENT, (string) ( $record['textContent'] ?? '' ), 'textContent holds the cards.' );
+		$this->assertStringNotContainsString( self::LOCATION, (string) $record['textContent'], 'textContent.' );
+		$this->assertStringNotContainsString( self::LOCATION, (string) wp_json_encode( $record ), 'The whole record.' );
+	}
+
+	/**
+	 * A short-form Bluesky post's text comes from the same no-global-post
+	 * render (Transformer\Post::build_short_form_text()).
+	 *
+	 * @group atmosphere
+	 */
+	public function test_the_bluesky_short_form_text_built_with_no_global_post_omits_a_private_location(): void {
+		$id = $this->private_rsvp_with_an_event_card_for_atmosphere();
+		add_filter( 'atmosphere_is_short_form_post', '__return_true' );
+		$record = ( new \Atmosphere\Transformer\Post( get_post( $id ) ) )->transform();
+		remove_filter( 'atmosphere_is_short_form_post', '__return_true' );
+
+		$this->assertStringContainsString( self::EVENT, (string) ( $record['text'] ?? '' ), 'The post text holds the cards.' );
+		$this->assertStringNotContainsString( self::LOCATION, (string) wp_json_encode( $record ) );
+	}
+
 	public function test_an_event_card_on_a_private_rsvp_prints_no_calendar_location(): void {
 		$venue = 'Calendar Hall Rv51';
 		add_filter(
