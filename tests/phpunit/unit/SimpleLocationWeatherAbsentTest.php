@@ -11,6 +11,7 @@ namespace PKIW\Tests\Unit;
 
 use PKIW\Block_Bindings;
 use PKIW\Integrations\Simple_Location_Weather;
+use PKIW\Micropub_Content_Builder;
 use WP_Block;
 use WP_UnitTestCase;
 
@@ -61,15 +62,22 @@ final class SimpleLocationWeatherAbsentTest extends WP_UnitTestCase {
 			$this->markTestSkipped( 'Simple Location functions are already defined (real plugin or fixture loaded); absence cannot be tested in this process.' );
 		}
 
+		$content = Micropub_Content_Builder::fill_empty_content(
+			'',
+			[ 'properties' => [ 'weather' => [ 'Sunny and warm' ] ] ]
+		);
+		$this->assertSame( [ 'Sunny and warm' ], self::class_texts( $content, 'p-weather' ) );
+
 		$post_id = self::factory()->post->create(
 			[
 				'post_status'  => 'publish',
 				'post_title'   => '',
 				'post_excerpt' => '',
-				'post_content' => "<!-- wp:paragraph -->\n<p><span class=\"p-weather\">Sunny and warm</span></p>\n<!-- /wp:paragraph -->",
+				'post_content' => $content,
 			]
 		);
-		wp_set_object_terms( $post_id, 'weather', 'kind' );
+		$this->assertNotWPError( wp_set_object_terms( $post_id, 'weather', 'kind' ) );
+		$this->assertTrue( has_term( 'weather', 'kind', $post_id ) );
 		add_post_meta( $post_id, 'weather_temperature', 20 );
 		add_post_meta( $post_id, 'geo_public', '1' );
 
@@ -91,7 +99,7 @@ final class SimpleLocationWeatherAbsentTest extends WP_UnitTestCase {
 				$errors[] = $errstr . ' at ' . $errfile . ':' . $errline;
 				return true;
 			},
-			E_NOTICE | E_WARNING | E_USER_NOTICE | E_USER_WARNING
+			E_NOTICE | E_WARNING | E_DEPRECATED | E_USER_NOTICE | E_USER_WARNING | E_USER_DEPRECATED
 		);
 		try {
 			$html = apply_filters( 'the_content', get_post_field( 'post_content', $post_id ) );
@@ -102,10 +110,31 @@ final class SimpleLocationWeatherAbsentTest extends WP_UnitTestCase {
 		}
 
 		$this->assertSame( [], $errors );
-		$this->assertStringContainsString( '<span class="p-weather">Sunny and warm</span>', $html );
-		$this->assertSame( 1, substr_count( $html, 'p-weather' ) );
+		$this->assertSame( [ 'Sunny and warm' ], self::class_texts( $html, 'p-weather' ) );
 		$this->assertSame( [ 'weather' => true ], $defaults );
-		$this->assertStringContainsString( '<p class="pk-excerpt p-summary">Sunny and warm</p>', $card );
-		$this->assertStringNotContainsString( 'p-weather', $card );
+		$this->assertSame( [ 'Sunny and warm' ], self::class_texts( $card, 'pk-excerpt' ) );
+		$this->assertSame( [], self::class_texts( $card, 'p-weather' ) );
+	}
+
+	/**
+	 * Text of every element whose class list holds $class, in document order.
+	 *
+	 * @param string $html  Markup fragment.
+	 * @param string $class One class token.
+	 * @return string[]
+	 */
+	private static function class_texts( string $html, string $class ): array {
+		$internal = libxml_use_internal_errors( true );
+		$doc      = new \DOMDocument();
+		$doc->loadHTML( '<?xml encoding="utf-8"?><div>' . $html . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD );
+		libxml_clear_errors();
+		libxml_use_internal_errors( $internal );
+
+		$texts = [];
+		$nodes = ( new \DOMXPath( $doc ) )->query( '//*[contains(concat(" ", normalize-space(@class), " "), " ' . $class . ' ")]' );
+		foreach ( $nodes as $node ) {
+			$texts[] = trim( $node->textContent );
+		}
+		return $texts;
 	}
 }
