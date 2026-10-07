@@ -17,6 +17,7 @@ import {
 	TextControl,
 	TextareaControl,
 	SelectControl,
+	ToggleControl,
 	Button,
 	DateTimePicker,
 	Popover,
@@ -41,6 +42,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		eventStart,
 		eventEnd,
 		eventLocation,
+		locationVisibility,
 		eventDescription,
 		rsvpStatus,
 		rsvpNote,
@@ -258,6 +260,24 @@ export default function Edit( { attributes, setAttributes } ) {
 						value={ eventLocation || '' }
 						onChange={ ( value ) =>
 							setAttributes( { eventLocation: value } )
+						}
+					/>
+					<ToggleControl
+						label={ __(
+							'Show event location publicly',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
+						help={ __(
+							'Off by default: the location stays visible only to you.',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
+						checked={ 'public' === locationVisibility }
+						onChange={ ( value ) =>
+							setAttributes( {
+								locationVisibility: value
+									? 'public'
+									: 'private',
+							} )
 						}
 					/>
 					<TextareaControl
