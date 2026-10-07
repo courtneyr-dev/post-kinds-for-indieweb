@@ -1472,15 +1472,21 @@ class Meta_Fields {
 	 * Whether an Event Card may print its location, its own or a calendar
 	 * plugin's, on a post (issue 251). On an RSVP (is_rsvp()) it gets the
 	 * answer `_pkiw_event_location` gets, event_location_visible(). Any
-	 * other post prints it, and so does a card with no post: the Event Card
-	 * isn't a kind card and never sets the Event kind, so a Note or a post
-	 * with no kind keeps its Event Card location.
+	 * other post prints it: the Event Card isn't a kind card and never sets
+	 * the Event kind, so a Note or a post with no kind keeps its Event Card
+	 * location. A card with no post prints none, as with
+	 * rsvp_location_visible(), because the_content filtered with no global
+	 * post (ATmosphere's publish cron, WP-CLI) can't say whether it's on an
+	 * RSVP.
 	 *
 	 * @param int $post_id Post ID, or 0 outside a post.
 	 * @return bool
 	 */
 	public static function event_card_location_visible( int $post_id ): bool {
-		if ( $post_id <= 0 || ! self::is_rsvp( $post_id ) ) {
+		if ( $post_id <= 0 ) {
+			return false;
+		}
+		if ( ! self::is_rsvp( $post_id ) ) {
 			return true;
 		}
 
