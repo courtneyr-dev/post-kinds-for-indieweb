@@ -25,9 +25,12 @@ use PKIW\Meta_Fields;
  * `post-kinds/get-post-meta` ability and the `event_location` binding.
  * Logged-in editors get the same front end as visitors, because a plugin that
  * caches rendered content can serve their render to everyone; they see the
- * location in the block editor and in REST meta. Each card follows its own
- * toggle, and the first RSVP card sets the post. Existing RSVPs have no
- * stored visibility, so they count as private and keep their stored text.
+ * location in the block editor and in REST meta. A card prints its location
+ * only when its own toggle and the first RSVP card's toggle are both on. REST
+ * meta, the ability and the binding blank a private location under every
+ * kind but `event`, so an RSVP card behind another card, or an RSVP whose
+ * kind changed, stays private. Existing RSVPs have no stored visibility, so
+ * they count as private and keep their stored text.
  *
  * @group integration
  */
@@ -462,6 +465,77 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		$this->assertSame( '', $this->rest_post( $id )['meta']['_pkiw_event_location'], 'REST meta follows the RSVP card.' );
 	}
 
+	public function test_an_rsvp_card_ahead_of_a_read_card_leaves_the_read_card_syncing(): void {
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => $this->card( 'yes', 'future' ) . "\n\n" . '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Quill Primer Rv51"} /-->',
+			]
+		);
+
+		$this->assertSame( 'Quill Primer Rv51', get_post_meta( $id, '_pkiw_read_title', true ), 'The read card syncs as it did before the RSVP card had a setting.' );
+		$this->assertSame( 'private', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+	}
+
+	/**
+	 * Posts that hold a private RSVP location without the `rsvp` kind term:
+	 * a read card ahead of the RSVP card, so the kind follows the read card,
+	 * and an RSVP whose kind the author changed or cleared.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function posts_outside_the_rsvp_kind(): array {
+		return [
+			'read card ahead of the RSVP card' => [ 'read card first' ],
+			'kind changed to note'             => [ 'note' ],
+			'kind changed to article'          => [ 'article' ],
+			'no kind'                          => [ '' ],
+		];
+	}
+
+	/**
+	 * @dataProvider posts_outside_the_rsvp_kind
+	 */
+	public function test_a_private_rsvp_location_stays_hidden_outside_the_rsvp_kind( string $shape ): void {
+		if ( 'read card first' === $shape ) {
+			$id = self::factory()->post->create(
+				[
+					'post_status'  => 'publish',
+					'post_content' => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Quill Primer Rv51"} /-->' . "\n\n" . $this->card( 'yes', 'future' ),
+				]
+			);
+		} else {
+			$id = $this->rsvp( 'yes', 'future' );
+			wp_set_object_terms( $id, '' === $shape ? [] : $shape, 'kind' );
+		}
+		// Quick Post, the RSVP meta box and REST store the location in meta.
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+		$this->assertFalse( has_term( 'rsvp', 'kind', $id ), 'The post is outside the rsvp kind.' );
+		$this->go_to( get_permalink( $id ) );
+
+		$this->assertSame( '', $this->rest_post( $id )['meta']['_pkiw_event_location'], 'REST meta, visitor.' );
+		$this->assertSame( '', $this->event_location_binding( $id ), 'The event_location binding.' );
+
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'subscriber' ] ) );
+		$result = Core_Abilities::instance()->execute_get_post_meta(
+			[
+				'post_id'   => $id,
+				'meta_keys' => [ 'event_location' ],
+			]
+		);
+		$this->assertIsArray( $result );
+		$this->assertSame( '', $result['meta']['event_location'], 'The get-post-meta ability, subscriber.' );
+
+		$this->as_editor();
+		$this->assertSame( self::LOCATION, $this->rest_post( $id )['meta']['_pkiw_event_location'], 'The editor reads the stored meta.' );
+		$this->assertSame( self::LOCATION, get_post_meta( $id, '_pkiw_event_location', true ), 'Stored data stays intact.' );
+
+		wp_set_current_user( 0 );
+		$this->make_public( $id );
+		$this->assertSame( self::LOCATION, $this->rest_post( $id )['meta']['_pkiw_event_location'], 'A public RSVP returns its location.' );
+		$this->assertSame( self::LOCATION, $this->event_location_binding( $id ), 'A public RSVP binds its location.' );
+	}
+
 	/**
 	 * Front-end views a logged-in editor can load.
 	 *
@@ -599,14 +673,28 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 			set_current_screen( 'edit-post' );
 		}
 
+		$content = $this->content_of( $id );
+		$this->assertStringContainsString( self::EVENT, $content, 'The card itself renders.' );
+		$this->assertStringNotContainsString( self::LOCATION, $content );
+		$this->assertFalse( Meta_Fields::rsvp_location_visible( $id ) );
+
+		$this->make_public( $id );
+		$this->assertStringContainsString( '<span class="p-location">' . self::LOCATION . '</span>', $this->content_of( $id ), 'A public RSVP prints its location in federated content.' );
+	}
+
+	/**
+	 * A post's content as a federation transformer builds it: the post set
+	 * up as the global post and its content passed through `the_content`.
+	 *
+	 * @param int $id Post ID.
+	 */
+	private function content_of( int $id ): string {
 		$GLOBALS['post'] = get_post( $id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 		setup_postdata( $GLOBALS['post'] );
 		$content = apply_filters( 'the_content', (string) get_post_field( 'post_content', $id ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		wp_reset_postdata();
 
-		$this->assertStringContainsString( self::EVENT, $content, 'The card itself renders.' );
-		$this->assertStringNotContainsString( self::LOCATION, $content );
-		$this->assertFalse( Meta_Fields::rsvp_location_visible( $id ) );
+		return $content;
 	}
 
 	public function test_rest_hides_a_private_location_from_a_visitor(): void {
@@ -638,12 +726,14 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( self::LOCATION, $post['content']['rendered'], 'Rendered content leaves the request, so it gets the visitor answer.' );
 	}
 
-	public function test_an_event_kind_post_keeps_its_event_location_in_rest(): void {
+	public function test_an_event_kind_post_keeps_its_event_location_in_rest_and_its_binding(): void {
 		$id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
 		wp_set_object_terms( $id, 'event', 'kind' );
 		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+		$this->go_to( get_permalink( $id ) );
 
-		$this->assertSame( self::LOCATION, $this->rest_post( $id )['meta']['_pkiw_event_location'], 'The gate covers RSVPs only.' );
+		$this->assertSame( self::LOCATION, $this->rest_post( $id )['meta']['_pkiw_event_location'], 'An event post announces its own location.' );
+		$this->assertSame( self::LOCATION, $this->event_location_binding( $id ) );
 	}
 
 	/**
