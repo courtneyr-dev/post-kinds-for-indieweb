@@ -51,6 +51,41 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '<a class="u-url" href="' . esc_url( (string) get_permalink( $post_id ) ) . '">Enola</a>', $out );
 	}
 
+	public function test_link_title_to_post_preserves_like_target_as_hidden_cite_data(): void {
+		$post_id   = self::factory()->post->create( [ 'post_title' => 'A liked page' ] );
+		$permalink = esc_url( (string) get_permalink( $post_id ) );
+		$target    = 'https://example.com/liked';
+		$html      = '<article class="pk-card k-like h-cite u-like-of"><div><h3 class="pk-title p-name"><a class="u-url" href="' . $target . '">A liked page</a></h3></div></article>';
+
+		$out = \PKIW\link_title_to_post( $html, get_post( $post_id ) );
+
+		$this->assertStringContainsString( '<a href="' . $permalink . '">A liked page</a>', $out );
+		$this->assertStringNotContainsString( 'class="u-url" href="' . $permalink . '"', $out );
+		$this->assertMatchesRegularExpression( '#<data class="u-url" value="' . preg_quote( $target, '#' ) . '" hidden></data><h3#', $out );
+		$this->assertStringNotContainsString( 'href="' . $target . '"', $out );
+	}
+
+	public function test_link_title_to_post_preserves_all_wish_url_classes(): void {
+		$post_id = self::factory()->post->create( [ 'post_title' => 'A wished-for item' ] );
+		$target  = 'https://example.org/wish';
+		$html    = '<div><article class="pk-card k-wish h-cite"><div><h2 class="pk-title p-name"><a class="u-url u-wish-of" href="' . $target . '">A wished-for item</a></h2></div></article></div>';
+
+		$out = \PKIW\link_title_to_post( $html, get_post( $post_id ) );
+
+		$this->assertStringContainsString( '<data class="u-url u-wish-of" value="' . $target . '" hidden></data><h2', $out );
+	}
+
+	public function test_link_title_to_post_keeps_non_cite_card_behavior(): void {
+		$post_id   = self::factory()->post->create( [ 'post_title' => 'Example Cafe' ] );
+		$permalink = esc_url( (string) get_permalink( $post_id ) );
+		$html      = '<article class="pk-card k-checkin h-entry"><h2 class="pk-title p-name"><a class="u-url" href="https://example.com/cafe">Example Cafe</a></h2></article>';
+
+		$out = \PKIW\link_title_to_post( $html, get_post( $post_id ) );
+
+		$this->assertStringContainsString( '<a class="u-url" href="' . $permalink . '">Example Cafe</a>', $out );
+		$this->assertStringNotContainsString( '<data ', $out );
+	}
+
 	/**
 	 * A body of only card blocks is a micro-post.
 	 */
