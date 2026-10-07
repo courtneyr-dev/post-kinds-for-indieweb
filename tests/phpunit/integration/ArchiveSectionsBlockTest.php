@@ -251,6 +251,35 @@ final class ArchiveSectionsBlockTest extends WP_UnitTestCase {
 		$this->assertSame( '', $block->render() );
 	}
 
+	public function test_the_editor_gets_each_kind_s_group_keys_from_the_filter(): void {
+		$groups = static fn(): array => [
+			'play'      => [
+				'Video' => 'Video games',
+				' '     => 'Blank key',
+				'board' => '<b>Board games</b>',
+			],
+			'Bad Kind!' => 'not a list',
+		];
+		add_filter( 'pkiw_archive_sections_groups', $groups );
+		$out = \PKIW\Kind_Archive_Layouts::archive_sections_groups();
+		\PKIW\Kind_Archive_Layouts::add_archive_sections_groups();
+		remove_filter( 'pkiw_archive_sections_groups', $groups );
+
+		$this->assertSame(
+			[
+				'play' => [
+					'video' => 'Video games',
+					'board' => 'Board games',
+				],
+			],
+			$out,
+			'Keys are lowercase group keys, labels are plain text, and anything that isn\'t a kind\'s list is dropped.'
+		);
+		$inline = implode( "\n", (array) wp_scripts()->get_data( 'pkiw-archive-sections-editor', 'before' ) );
+		$this->assertStringContainsString( 'window.pkiwArchiveSections = {"groups":{"play":{"video":"Video games","board":"Board games"}}};', $inline );
+		$this->assertSame( [], \PKIW\Kind_Archive_Layouts::archive_sections_groups(), 'With no filter, no kind lists groups.' );
+	}
+
 	// Page size.
 
 	public function test_lines_per_page_sizes_the_inheriting_main_query(): void {
