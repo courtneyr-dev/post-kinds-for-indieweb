@@ -20,8 +20,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * meta on save, so Block Bindings (and templates) can consume what the
  * card knows. Card attrs win when non-empty; existing meta survives
  * empty attrs (completion and manual edits are never erased), except the
- * provider IDs in PROVIDER_ATTRS, which a card that names another
- * provider's ID clears.
+ * provider IDs in PROVIDER_ATTRS, which a card that switches the play to
+ * the other provider group clears.
  *
  * @since 1.2.0
  */
@@ -205,16 +205,24 @@ class Card_Meta_Sync {
 	];
 
 	/**
-	 * Provider IDs the card decides. When the card names one of them, an ID
-	 * it leaves out or blank is deleted from meta, so a play switched from
-	 * RAWG or Steam to BGG leaves the video group. A card that names none,
-	 * like a post with no such card, keeps the IDs Quick Post or the
-	 * sidebar stored. Every other attribute keeps the never-erase rule.
+	 * Provider IDs the card decides, as attribute => archive group: a BGG
+	 * ID files a play as board, a RAWG or Steam ID as video. A card that
+	 * names an ID from one group and none from the other switched the play
+	 * to that group, so a stored ID of the other group is deleted, and a
+	 * play switched from RAWG or Steam to BGG leaves the video group. IDs
+	 * of one group sit side by side: a RAWG card keeps the Steam ID the
+	 * sidebar stored. A card that names none, like a post with no such
+	 * card, keeps the IDs Quick Post or the sidebar stored. Every other
+	 * attribute keeps the never-erase rule.
 	 *
-	 * @var array<string, string[]>
+	 * @var array<string, array<string, string>>
 	 */
 	public const PROVIDER_ATTRS = [
-		'post-kinds-indieweb/play-card' => [ 'bggId', 'rawgId', 'steamId' ],
+		'post-kinds-indieweb/play-card' => [
+			'bggId'   => 'board',
+			'rawgId'  => 'video',
+			'steamId' => 'video',
+		],
 	];
 
 	/**
@@ -228,7 +236,7 @@ class Card_Meta_Sync {
 	 */
 	public const AFTER_INSERT_ATTRS = [
 		'post-kinds-indieweb/read-card' => [ 'readStatus' ],
-		'post-kinds-indieweb/play-card' => self::PROVIDER_ATTRS['post-kinds-indieweb/play-card'],
+		'post-kinds-indieweb/play-card' => [ 'bggId', 'rawgId', 'steamId' ],
 	];
 
 	/**
@@ -281,7 +289,7 @@ class Card_Meta_Sync {
 	 * number again. Version 3 (PR 340) re-syncs a card behind an RSVP card,
 	 * which version 2 skipped while the RSVP card sat in ATTR_META_MAP.
 	 * Version 4 fills the read-card status default and clears the play-card
-	 * provider IDs a card switched to another provider no longer has.
+	 * provider IDs of the group a card switched away from.
 	 */
 	public const BACKFILL_HOOK    = 'pkiw_card_meta_backfill';
 	public const BACKFILL_OPTION  = 'pkiw_card_meta_backfill';
@@ -486,8 +494,8 @@ class Card_Meta_Sync {
 
 	/**
 	 * Mirror one card attribute into its meta key. Card attrs win when
-	 * non-empty; an empty attr never erases meta, except a provider ID a
-	 * card that names another provider's ID no longer has.
+	 * non-empty; an empty attr never erases meta, except a provider ID of
+	 * the group the card switched away from.
 	 *
 	 * @param int                  $post_id Post ID.
 	 * @param array<string, mixed> $block   Parsed card block.
@@ -562,11 +570,12 @@ class Card_Meta_Sync {
 	}
 
 	/**
-	 * Delete a provider ID the card left out or blank when the card names
-	 * another provider's ID, so a play switched from RAWG to BGG leaves the
-	 * video group. A card that names no provider ID leaves every stored one
-	 * alone: Quick Post and the sidebar store them with no card. Any other
-	 * attribute is left alone.
+	 * Delete a provider ID the card left out or blank when the card names an
+	 * ID from the other group and none from this ID's own, so a play
+	 * switched from RAWG to BGG leaves the video group while a RAWG card
+	 * keeps a stored Steam ID. A card that names no provider ID leaves
+	 * every stored one alone: Quick Post and the sidebar store them with no
+	 * card. Any other attribute is left alone.
 	 *
 	 * @param int                  $post_id Post ID.
 	 * @param array<string, mixed> $block   Parsed card block.
@@ -575,8 +584,18 @@ class Card_Meta_Sync {
 	 * @return void
 	 */
 	private static function clear_provider_id( int $post_id, array $block, string $attr, string $suffix ): void {
-		$providers = self::PROVIDER_ATTRS[ $block['blockName'] ] ?? [];
-		if ( ! in_array( $attr, $providers, true ) || ! self::names_a_provider_id( $block, $providers ) ) {
+		$groups = self::PROVIDER_ATTRS[ $block['blockName'] ] ?? [];
+		if ( ! isset( $groups[ $attr ] ) ) {
+			return;
+		}
+
+		$named = [];
+		foreach ( $groups as $provider => $group ) {
+			if ( self::names_provider_id( $block, $provider ) ) {
+				$named[ $group ] = true;
+			}
+		}
+		if ( [] === $named || isset( $named[ $groups[ $attr ] ] ) ) {
 			return;
 		}
 
@@ -586,20 +605,15 @@ class Card_Meta_Sync {
 	}
 
 	/**
-	 * Whether the card holds a non-blank value for any of its provider IDs.
+	 * Whether the card holds a non-blank value for one provider ID.
 	 *
-	 * @param array<string, mixed> $block     Parsed card block.
-	 * @param string[]             $providers The card's provider ID attributes.
+	 * @param array<string, mixed> $block    Parsed card block.
+	 * @param string               $provider Provider ID attribute.
 	 * @return bool
 	 */
-	private static function names_a_provider_id( array $block, array $providers ): bool {
-		foreach ( $providers as $provider ) {
-			$value = $block['attrs'][ $provider ] ?? '';
-			if ( is_scalar( $value ) && '' !== trim( (string) $value ) ) {
-				return true;
-			}
-		}
-		return false;
+	private static function names_provider_id( array $block, string $provider ): bool {
+		$value = $block['attrs'][ $provider ] ?? '';
+		return is_scalar( $value ) && '' !== trim( (string) $value );
 	}
 
 	/**
