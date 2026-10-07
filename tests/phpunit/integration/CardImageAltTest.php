@@ -67,7 +67,7 @@ final class CardImageAltTest extends WP_UnitTestCase {
 
 		$img = new WP_HTML_Tag_Processor( $html );
 		$this->assertTrue( $img->next_tag( 'img' ) );
-		$this->assertSame( $url, $img->get_attribute( 'src' ), 'At full size the src is the stored cover URL.' );
+		$this->assertSame( $url, $img->get_attribute( 'src' ), 'At full size the src is the library image\'s current file.' );
 		$this->assertSame( 'u-photo', $img->get_attribute( 'class' ) );
 		$this->assertSame( 'A fictional sleeve', $img->get_attribute( 'alt' ) );
 		$this->assertSame( 'lazy', $img->get_attribute( 'loading' ) );
@@ -78,6 +78,53 @@ final class CardImageAltTest extends WP_UnitTestCase {
 
 		$parsed = \Mf2\parse( '<div class="h-entry">' . $html . '</div>' );
 		$this->assertStringContainsString( '"photo":[{"value":"' . $url . '","alt":"A fictional sleeve"}]', (string) wp_json_encode( $parsed, JSON_UNESCAPED_SLASHES ) );
+	}
+
+	public function test_a_listen_post_finds_its_library_cover_in_the_post_cover_map(): void {
+		$image_id = self::factory()->attachment->create_upload_object( DIR_TESTDATA . '/images/canola.jpg' );
+		$url      = wp_get_attachment_url( $image_id );
+		$post_id  = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => sprintf(
+					'<!-- wp:post-kinds-indieweb/listen-card %s /-->',
+					wp_json_encode(
+						[
+							'trackTitle'    => 'Fictional Song',
+							'artistName'    => 'Fictional Band',
+							'coverImage'    => $url,
+							'coverImageAlt' => 'A fictional sleeve',
+						],
+						JSON_UNESCAPED_SLASHES
+					)
+				),
+			]
+		);
+		$this->assertSame( [ $url => $image_id ], get_metadata_raw( 'post', $post_id, \PKIW\COVER_ATTACHMENTS_META, true ) );
+
+		$file_searches = [];
+		add_filter(
+			'query',
+			static function ( $sql ) use ( &$file_searches ) {
+				if ( str_contains( $sql, "meta_key = '_wp_attached_file' AND meta_value =" ) ) {
+					$file_searches[] = $sql;
+				}
+				return $sql;
+			}
+		);
+		$this->go_to( get_permalink( $post_id ) );
+		$this->assertTrue( have_posts() );
+		the_post();
+		$html = apply_filters( 'the_content', get_the_content() );
+
+		$this->assertSame( [], $file_searches, 'The card reads the attachment ID from the post\'s cover map, so it searches no file paths.' );
+		$img = new WP_HTML_Tag_Processor( $html );
+		$this->assertTrue( $img->next_tag( [ 'class_name' => 'u-photo' ] ) );
+		$this->assertSame( $url, $img->get_attribute( 'src' ) );
+		$this->assertSame( 'A fictional sleeve', $img->get_attribute( 'alt' ) );
+		$this->assertStringContainsString( wp_get_attachment_image_url( $image_id, 'medium' ) . ' ', (string) $img->get_attribute( 'srcset' ) );
+		$this->assertSame( '640', $img->get_attribute( 'width' ) );
+		$this->assertSame( '480', $img->get_attribute( 'height' ) );
 	}
 
 	/**
