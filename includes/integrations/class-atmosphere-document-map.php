@@ -16,6 +16,11 @@
  * text. The document's content is rebuilt too when the cost changes what
  * ATmosphere's parser makes of post_content, as Markpub's does.
  *
+ * ATmosphere's post crons run with the post they publish as the global
+ * post, as a front-end render and ATmosphere's own content parser have
+ * it. Its textContent and Bluesky text filter the_content with no global
+ * post, so a card that reads get_the_ID() can't tell which post it's on.
+ *
  * Deliberately not mapped, and why:
  * - `links`: the lexicon's links union has no interoperable members yet;
  *   a private shape would only look complete. Kind subject URLs already
@@ -52,6 +57,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Atmosphere_Document_Map {
 
 	/**
+	 * ATmosphere's cron hooks whose callbacks publish or update a post.
+	 *
+	 * @var string[]
+	 */
+	private const POST_CRONS = [ 'atmosphere_publish_post', 'atmosphere_update_post', 'atmosphere_delete_post' ];
+
+	/**
+	 * Global posts use_cron_post() replaced, most recent last.
+	 *
+	 * @var array<int, \WP_Post|null>
+	 */
+	private array $previous_posts = [];
+
+	/**
 	 * Register the record filter.
 	 *
 	 * @since 1.6.0
@@ -62,6 +81,10 @@ class Atmosphere_Document_Map {
 		add_filter( 'atmosphere_transform_document', [ $this, 'enrich' ], 10, 2 );
 		add_filter( 'atmosphere_post_embed', [ $this, 'embed_without_private_cost' ], 10, 2 );
 		add_filter( 'atmosphere_transform_bsky_post', [ $this, 'bsky_post_without_private_cost' ], 10, 2 );
+		foreach ( self::POST_CRONS as $hook ) {
+			add_action( $hook, [ $this, 'use_cron_post' ], 9 );
+			add_action( $hook, [ $this, 'restore_cron_post' ], 11 );
+		}
 	}
 
 	/**
@@ -75,6 +98,45 @@ class Atmosphere_Document_Map {
 		remove_filter( 'atmosphere_transform_document', [ $this, 'enrich' ], 10 );
 		remove_filter( 'atmosphere_post_embed', [ $this, 'embed_without_private_cost' ], 10 );
 		remove_filter( 'atmosphere_transform_bsky_post', [ $this, 'bsky_post_without_private_cost' ], 10 );
+		foreach ( self::POST_CRONS as $hook ) {
+			remove_action( $hook, [ $this, 'use_cron_post' ], 9 );
+			remove_action( $hook, [ $this, 'restore_cron_post' ], 11 );
+		}
+	}
+
+	/**
+	 * Make the post an ATmosphere cron publishes the global post while
+	 * ATmosphere's callback runs at priority 10 (issue 251). With none set,
+	 * get_the_ID() gave the Event Card 0, so a plain Event post lost its
+	 * location from textContent and the Bluesky text.
+	 *
+	 * @param int $post_id Post the cron publishes.
+	 * @return void
+	 */
+	public function use_cron_post( $post_id ): void {
+		$this->previous_posts[] = $GLOBALS['post'] ?? null;
+		$post                   = get_post( (int) $post_id );
+		if ( $post instanceof \WP_Post ) {
+			$GLOBALS['post'] = $post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Restored by restore_cron_post().
+		}
+	}
+
+	/**
+	 * Put back the global post use_cron_post() replaced.
+	 *
+	 * @return void
+	 */
+	public function restore_cron_post(): void {
+		if ( [] === $this->previous_posts ) {
+			return;
+		}
+
+		$previous = array_pop( $this->previous_posts );
+		if ( $previous instanceof \WP_Post ) {
+			$GLOBALS['post'] = $previous; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Restores the previous global post.
+		} else {
+			unset( $GLOBALS['post'] );
+		}
 	}
 
 	/**
