@@ -164,6 +164,36 @@ function splitCluster( stub, pin, children ) {
 	);
 }
 
+/**
+ * Spread a cluster without animation, as markercluster's
+ * MarkerClusterNonAnimated does under reduced motion: the cluster's element
+ * stays, faded, and its children's elements are appended to the pane in
+ * markercluster's order. No `moveend` or `animationend` follows.
+ *
+ * @param {Object}   stub     Result of stubLeaflet().
+ * @param {Object[]} children The cluster's markers.
+ */
+function spreadCluster( stub, children ) {
+	children.forEach( ( marker ) => {
+		stub.state.parents.delete( marker );
+		stub.pane.appendChild( marker.getElement() );
+	} );
+}
+
+/**
+ * Fold a spread cluster back up: its children's elements go.
+ *
+ * @param {Object}   stub     Result of stubLeaflet().
+ * @param {Object}   pin      The cluster.
+ * @param {Object[]} children Its markers.
+ */
+function foldCluster( stub, pin, children ) {
+	children.forEach( ( marker ) => {
+		marker.getElement().remove();
+		stub.state.parents.set( marker, pin );
+	} );
+}
+
 afterEach( () => {
 	delete window.L;
 	document.body.innerHTML = '';
@@ -241,6 +271,54 @@ describe( 'a cluster pin and the keyboard', () => {
 	it( 'puts the cluster where its first check-in sits in the tab order', () => {
 		expect( stub.pane.firstElementChild ).toBe( clusterPin.getElement() );
 		expect( paneOrder( stub ).slice( 1 ) ).toEqual( [ 2, 4, 5 ] );
+	} );
+} );
+
+describe( 'a cluster spread with no animation (reduced motion)', () => {
+	let stub;
+	let clusterPin;
+	let children;
+
+	beforeEach( () => {
+		printArchive();
+		stub = stubLeaflet( ( markers ) => {
+			// Check-ins 4 and 2 share a cluster, in markercluster's order.
+			children = [ markers[ 3 ], markers[ 1 ] ];
+			clusterPin = cluster( children );
+			return new Map(
+				children.map( ( marker ) => [ marker, clusterPin ] )
+			);
+		} );
+		loadScript();
+		stub.state.zoom = 19;
+		clusterPin.getElement().focus();
+	} );
+
+	it( 'puts its pins in list order and focuses its first one', () => {
+		expect( paneOrder( stub ) ).toEqual( [ 1, 0, 3, 5 ] );
+
+		stub.fireGroup( 'clusterkeypress', {
+			layer: clusterPin,
+			originalEvent: { key: 'Enter', preventDefault: jest.fn() },
+		} );
+		spreadCluster( stub, children );
+		stub.fireGroup( 'spiderfied' );
+
+		// The faded cluster stays in the pane; every pin follows the list.
+		expect( paneOrder( stub ) ).toEqual( [ 0, 1, 2, 3, 4, 5 ] );
+		expect( document.activeElement ).toBe( stub.markers[ 1 ].getElement() );
+	} );
+
+	it( 'puts the cluster back at its first check-in when it folds up', () => {
+		clusterPin.spiderfy();
+		spreadCluster( stub, children );
+		stub.fireGroup( 'spiderfied' );
+		expect( paneOrder( stub ) ).toEqual( [ 0, 1, 2, 3, 4, 5 ] );
+
+		foldCluster( stub, clusterPin, children );
+		stub.fireGroup( 'unspiderfied' );
+
+		expect( paneOrder( stub ) ).toEqual( [ 1, 0, 3, 5 ] );
 	} );
 } );
 
