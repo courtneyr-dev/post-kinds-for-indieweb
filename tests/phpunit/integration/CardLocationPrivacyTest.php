@@ -76,17 +76,20 @@ final class CardLocationPrivacyTest extends WP_UnitTestCase {
 			'<!-- wp:post-kinds-indieweb/checkin-card %s /-->',
 			wp_json_encode(
 				[
-					'venueName'    => self::VENUE_NAME,
-					'address'      => self::STREET,
-					'locality'     => self::LOCALITY,
-					'region'       => self::REGION,
-					'country'      => self::COUNTRY,
-					'postalCode'   => self::POSTAL_CODE,
-					'latitude'     => self::LATITUDE,
-					'longitude'    => self::LONGITUDE,
-					'venueUrl'     => self::VENUE_URL,
-					'osmId'        => self::OSM_ID,
-					'foursquareId' => self::FOURSQUARE_ID,
+					'venueName'       => self::VENUE_NAME,
+					'address'         => self::STREET,
+					'locality'        => self::LOCALITY,
+					'region'          => self::REGION,
+					'country'         => self::COUNTRY,
+					'postalCode'      => self::POSTAL_CODE,
+					'latitude'        => self::LATITUDE,
+					'longitude'       => self::LONGITUDE,
+					'venueUrl'        => self::VENUE_URL,
+					'osmId'           => self::OSM_ID,
+					'foursquareId'    => self::FOURSQUARE_ID,
+					// Public, so the row render_card() forces decides: a
+					// card stricter than the row would hold it (#358).
+					'locationPrivacy' => 'public',
 				]
 			)
 		);

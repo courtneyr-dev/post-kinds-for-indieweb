@@ -663,6 +663,8 @@ export default function Edit( { attributes, setAttributes } ) {
 			}
 		}
 		setAttributes( { locationPrivacy: newPrivacy } );
+		// The card sets the post's stored setting too, so the save can loosen both (issue 358).
+		updateKindMeta( 'geo_privacy', newPrivacy );
 	};
 
 	/**
