@@ -28,6 +28,10 @@ Each check-in has a privacy level (per post, with a site default under Settings 
 
 Separately, **Coordinate Handling** governs storage itself: store-and-show, store-but-hide, round to ~1 km, or discard coordinates entirely (discarded coordinates can't be recovered later).
 
+## RSVP event location
+
+An RSVP's event location stays private unless you turn on **Show event location publicly** in the RSVP card's Event Details panel. It's off by default, for every RSVP status and for past and upcoming events, and RSVPs saved before this setting existed count as private. While it's off, the location is left out of the public page, the Stream, feeds, ActivityPub and ATmosphere copies, and the REST API for anyone who can't edit the post, and the card prints the same markup as an RSVP with no location. The event name, date, your response and the link to the event page still appear. You still see the location when you view the post while logged in. If the post's own location privacy is Private (`_pkiw_geo_privacy`, or Simple Location's visibility set to private), the location stays hidden even with the toggle on.
+
 ## What the plugin sends to external services
 
 **Lookups, imports, and scrobble ingestion.** When you search for media, import history, or auto-fetch metadata, the plugin makes outbound requests to the relevant service. Services present in the plugin's code:
