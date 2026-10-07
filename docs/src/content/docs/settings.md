@@ -69,10 +69,13 @@ Note: earlier versions showed an **Enabled Reaction Types** checkbox grid here. 
 | --- | --- | --- |
 | Auto-Sync Checkins | Automatically imports check-ins from Foursquare/Swarm. | Off |
 | Default Location Privacy | Default privacy level for new check-ins: **Public (exact location)** shows full address, venue name, and precise coordinates; **Approximate** shows the exact location on check-ins and posts with a venue, the same as Public, and only the place name, city, region and country on geotagged posts without a venue; **Private (hidden)** stores the location but never displays it publicly — for home, work, or other private places. | Public |
-| Coordinate Handling | What happens to latitude/longitude: **Store but hide coordinates** (saved but never shown publicly), **Round coordinates** (rounded to about 1 km precision before storing), **Discard coordinates entirely** (only venue name and address text are stored; coordinates can't be recovered later), or **Store and show coordinates** (saved and displayed publicly when privacy is Public; enables precise mapping and geo microformats). | Store but hide coordinates |
 | Venue Search Source | Which service powers venue search in the editor: OpenStreetMap (Nominatim), Foursquare (requires API key), or Both (Foursquare first, OSM fallback). | — |
 | Sync to Foursquare | Posts check-ins to Foursquare when publishing. Requires a Foursquare OAuth connection. The screen describes it as a POSSE approach — Publish on your Own Site, Syndicate Elsewhere. | Off |
 | Foursquare Connection | Connect/disconnect button for the Foursquare OAuth link used by import and sync. | Not connected |
+
+What visitors see of a check-in's location, coordinates included, follows each post's Location Privacy setting in the block editor: Public (exact location), Approximate or Private (hidden).
+
+Note: earlier versions showed a **Coordinate Handling** setting here. It was removed on 2026-10-06 because nothing at runtime read it — no option changed how coordinates were stored or shown.
 
 See [Privacy and data](/post-kinds-for-indieweb/privacy-and-data/) for how privacy levels affect your site's public markup.
 
