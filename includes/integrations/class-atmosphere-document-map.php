@@ -23,16 +23,6 @@
  * it. Its textContent and Bluesky text filter the_content with no global
  * post, so a card that reads get_the_ID() can't tell which post it's on.
  *
- * Deliberately not mapped, and why:
- * - `links`: the lexicon's links union has no interoperable members yet;
- *   a private shape would only look complete. Kind subject URLs already
- *   ride in the rendered card content.
- * - `description`: ATmosphere's excerpt mapping stands. Cited-page
- *   summaries (`_pkiw_cite_summary`) are third-party text and do not
- *   belong in a first-party record field.
- * - `contributors`: requires verified author DIDs, which WordPress users
- *   do not have.
- *
  * @package PKIW
  * @since   1.6.0
  */
@@ -55,6 +45,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Document-record enrichment.
+ *
+ * Deliberately not mapped, and why:
+ * - `links`: the lexicon's links union has no interoperable members yet;
+ *   a private shape would only look complete. Kind subject URLs already
+ *   ride in the rendered card content.
+ * - `description`: ATmosphere's excerpt mapping stands. Cited-page
+ *   summaries (`_pkiw_cite_summary`) are third-party text and do not
+ *   belong in a first-party record field.
+ * - `contributors`: requires verified author DIDs, which WordPress users
+ *   do not have.
  *
  * @since 1.6.0
  */
