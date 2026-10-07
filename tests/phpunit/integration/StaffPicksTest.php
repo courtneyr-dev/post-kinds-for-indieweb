@@ -263,6 +263,8 @@ final class StaffPicksTest extends WP_UnitTestCase {
 	 * rating, so only the kind term keeps them out.
 	 */
 	public function test_non_play_posts_with_stray_play_rows_are_left_out(): void {
+		// The play term exists, so only its scope keeps the strays out.
+		$this->board( 'Harbor Lights', '9990003', 0 );
 		$kinds = [ 'watch', 'watch', 'watch', 'article', 'article', 'article', 'article', 'read', 'mood', 'checkin', 'photo', 'photo', 'photo', 'photo', 'quote', 'quote', 'comics', 'trip' ];
 		$this->assertCount( 18, $kinds );
 		foreach ( $kinds as $i => $kind ) {
@@ -512,7 +514,9 @@ final class StaffPicksTest extends WP_UnitTestCase {
 		$html = $this->render();
 		$this->assertSame( 1, preg_match( '/<h2 id="([^"]+)" class="pkiw-staff-picks__heading">Staff Picks<\/h2>/', $html, $heading ) );
 		$this->assertMatchesRegularExpression( '/^<section [^>]*aria-labelledby="' . preg_quote( $heading[1], '/' ) . '"/', $html );
-		$this->assertStringContainsString( 'class="wp-block-post-kinds-indieweb-staff-picks pkiw-staff-picks"', $html );
+		$classes = explode( ' ', (string) $this->xpath( $html )->query( '//section' )->item( 0 )->getAttribute( 'class' ) );
+		$this->assertContains( 'pkiw-staff-picks', $classes );
+		$this->assertContains( 'wp-block-post-kinds-indieweb-staff-picks', $classes );
 		$this->assertStringContainsString( '<h3 class="pkiw-staff-picks__title">', $html );
 
 		$deeper = $this->render( [ 'headingLevel' => 3 ] );
