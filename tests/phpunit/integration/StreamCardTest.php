@@ -463,6 +463,32 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'p-name', $html );
 	}
 
+	/**
+	 * Micropub stores a nameless reply's title as its URL. The Stream
+	 * prints the host, never the path or query, which can carry tokens
+	 * (#253, X8).
+	 */
+	public function test_untitled_long_form_reply_with_url_title_prints_only_the_host(): void {
+		$this->ensure_kind_term( 'reply' );
+		$url     = 'https://example.com/notes/2026/10/private-thread?token=abc123';
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => '',
+				'post_content' => '<!-- wp:post-kinds-indieweb/reply-card {"title":"' . $url . '","url":"' . $url . '"} /-->'
+					. '<!-- wp:paragraph --><p>A fictional reply.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'reply', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertSame( 1, preg_match( '#<h2 class="pk-title"><a class="u-url" href="[^"]+">(.*?)</a></h2>#s', $html, $link ) );
+		$this->assertSame( 'example.com', $link[1] );
+		$this->assertStringNotContainsString( 'private-thread', $html );
+		$this->assertStringNotContainsString( 'token=abc123', $html );
+	}
+
 	public function test_untitled_long_form_note_uses_fallback_and_prints_excerpt_once(): void {
 		$this->ensure_kind_term( 'note' );
 		$post_id = self::factory()->post->create(

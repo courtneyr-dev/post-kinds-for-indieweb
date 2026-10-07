@@ -22,6 +22,34 @@ final class UntitledNameTest extends WP_UnitTestCase {
 		$this->assertSame( 'example.com', \PKIW\untitled_name( $post ) );
 	}
 
+	/**
+	 * Micropub stores title = url when a like, repost, bookmark or reply
+	 * has no name. A URL isn't a name: lists and the Stream print the
+	 * host, never the path or query (#253, X8).
+	 */
+	public function test_reply_card_title_equal_to_url_falls_back_to_host(): void {
+		$url  = 'https://www.example.com/notes/2026/10/private-thread?token=abc123';
+		$post = $this->make_post( 'reply', '<!-- wp:post-kinds-indieweb/reply-card {"title":"' . $url . '","url":"' . $url . '"} /-->' );
+		$this->assertSame( 'example.com', \PKIW\untitled_name( $post ) );
+	}
+
+	public function test_card_title_that_is_another_url_falls_back_to_card_host(): void {
+		$post = $this->make_post( 'like', '<!-- wp:post-kinds-indieweb/like-card {"title":"http://example.org/other?ref=feed","url":"https://example.com/a"} /-->' );
+		$this->assertSame( 'example.com', \PKIW\untitled_name( $post ) );
+	}
+
+	public function test_cite_name_meta_that_is_a_url_falls_back_to_cite_url_host(): void {
+		$post = $this->make_post( 'reply' );
+		update_post_meta( $post->ID, '_pkiw_cite_name', 'https://example.net/thread?token=abc123' );
+		update_post_meta( $post->ID, '_pkiw_cite_url', 'https://example.net/thread?token=abc123' );
+		$this->assertSame( 'example.net', \PKIW\untitled_name( $post ) );
+	}
+
+	public function test_card_title_that_mentions_a_url_stays_the_name(): void {
+		$post = $this->make_post( 'bookmark', '<!-- wp:post-kinds-indieweb/bookmark-card {"title":"Notes on https://example.org","url":"https://example.org/notes"} /-->' );
+		$this->assertSame( 'Notes on https://example.org', \PKIW\untitled_name( $post ) );
+	}
+
 	public function test_reply_uses_cite_name_meta(): void {
 		$post = $this->make_post( 'reply' );
 		update_post_meta( $post->ID, '_pkiw_cite_name', 'Fictional reply target' );
