@@ -232,6 +232,75 @@ describe( 'kind template preview', () => {
 		);
 	} );
 
+	// The play archive's Post Template: the stream card, then the archive-sections marker.
+	const playTemplate = ( attributes ) => [
+		{
+			name: 'post-kinds-indieweb/stream-card',
+			attributes: { headingLevel: 3 },
+			innerBlocks: [],
+		},
+		{
+			name: 'post-kinds-indieweb/archive-sections',
+			attributes,
+			innerBlocks: [],
+		},
+	];
+	const registeredEntries = {
+		'post-kinds-indieweb/menu-entry': { fixed: false },
+		'post-kinds-indieweb/archive-sections': { fixed: false },
+	};
+
+	it( 'finds the archive-sections marker through pkiwGroupedEntries and pages by its linesPerPage', () => {
+		const state = editorState( {
+			settings: { perPage: { play: 6 }, grouped: [ 'eat', 'play' ] },
+			entries: registeredEntries,
+			blocks: playTemplate( { linesPerPage: 12 } ),
+		} );
+		const element = load( state )(
+			postTemplate( { templateSlug: 'taxonomy-kind-play' } )
+		);
+
+		expect( element.props.context.query ).toEqual( {
+			perPage: 12,
+			postType: 'post',
+			order: 'desc',
+			orderBy: 'pkiw_group',
+			inherit: false,
+			taxQuery: { kind: [ 7 ], include: { kind: [ 7 ] } },
+		} );
+		expect( state.termQueries[ 0 ][ 2 ].slug ).toBe( 'play' );
+	} );
+
+	it( 'falls back to the site’s play page size when the marker sets none', () => {
+		const element = load(
+			editorState( {
+				settings: { perPage: { play: 6 }, grouped: [ 'play' ] },
+				entries: registeredEntries,
+				blocks: playTemplate( {} ),
+			} )
+		)( postTemplate( { templateSlug: 'taxonomy-kind-play' } ) );
+
+		expect( element.props.context.query.perPage ).toBe( 6 );
+	} );
+
+	it( 'asks for the read shelves in the order the marker sets', () => {
+		const element = load(
+			editorState( {
+				settings: { perPage: {}, grouped: [ 'read' ] },
+				entries: registeredEntries,
+				blocks: playTemplate( {
+					linesPerPage: 12,
+					emptyGroup: 'first',
+				} ),
+			} )
+		)( postTemplate( { templateSlug: 'taxonomy-kind-read' } ) );
+
+		expect( element.props.context.query.perPage ).toBe( 12 );
+		expect( element.props.context.query.orderBy ).toBe(
+			'pkiw_group_empty_first'
+		);
+	} );
+
 	it( 'ignores a block the entry list doesn’t name', () => {
 		const element = load(
 			editorState( {
