@@ -166,7 +166,9 @@ final class Grouped_Archive {
 	 *   blocks print the item and the block prints nothing on the front end).
 	 *   Default ENTRY_MARKER.
 	 * - source: a registered date source id the block always groups by.
-	 *   Sources that order by a value attach to kinds instead.
+	 *   Sources that order by a value attach to kinds instead. If the id is
+	 *   later unregistered or replaced by another kind of source, the block
+	 *   groups by its kind's source.
 	 * - expose_key: print `data-pkiw-group` on each section. Default false.
 	 * - classes: wrapper, section, heading, items and placeholder classes.
 	 *
@@ -326,7 +328,12 @@ final class Grouped_Archive {
 	 * @return array<string, array{fixed:bool}>
 	 */
 	public static function editor_entries(): array {
-		return array_map( static fn( array $entry ): array => [ 'fixed' => null !== $entry['source'] ], self::$entries );
+		$entries = [];
+		foreach ( array_keys( self::$entries ) as $name ) {
+			$entries[ $name ] = [ 'fixed' => null !== self::entry_source( $name ) ];
+		}
+
+		return $entries;
 	}
 
 	/**
@@ -350,7 +357,8 @@ final class Grouped_Archive {
 	 *
 	 * Looks for the first registered entry block inside the Post Template of
 	 * a Query Loop that inherits the main query. An entry anywhere else (a
-	 * sidebar, a loop with its own query) doesn't configure the archive.
+	 * sidebar, a loop with its own query, a loop nested inside each item)
+	 * doesn't configure the archive.
 	 *
 	 * @param \WP_Query $query            Main query.
 	 * @param string    $kind             Kind slug.
@@ -775,13 +783,18 @@ final class Grouped_Archive {
 	/**
 	 * The date source an entry block fixes, or null.
 	 *
+	 * Looked up on each call: when the id has since been unregistered, or
+	 * names a source that isn't a date source, the entry fixes nothing and
+	 * groups by its kind's source.
+	 *
 	 * @param string $block_name Block name.
-	 * @return Group_Source|null
+	 * @return Date_Source|null
 	 */
-	private static function entry_source( string $block_name ): ?Group_Source {
-		$id = self::$entries[ $block_name ]['source'] ?? null;
+	private static function entry_source( string $block_name ): ?Date_Source {
+		$id     = self::$entries[ $block_name ]['source'] ?? null;
+		$source = null !== $id ? self::source( $id ) : null;
 
-		return null !== $id ? self::source( $id ) : null;
+		return $source instanceof Date_Source ? $source : null;
 	}
 
 	/**
@@ -986,17 +999,19 @@ final class Grouped_Archive {
 	}
 
 	/**
-	 * The first registered entry block in a parsed block list, at any depth.
+	 * The first registered entry block in a parsed block list, at any depth
+	 * short of a nested Query Loop, whose blocks belong to that loop.
 	 *
 	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
 	 * @return array<string, mixed>|null
 	 */
 	private static function find_entry( array $blocks ): ?array {
 		foreach ( $blocks as $parsed ) {
-			if ( isset( self::$entries[ (string) ( $parsed['blockName'] ?? '' ) ] ) ) {
+			$name = (string) ( $parsed['blockName'] ?? '' );
+			if ( isset( self::$entries[ $name ] ) ) {
 				return $parsed;
 			}
-			$found = self::find_entry( (array) ( $parsed['innerBlocks'] ?? [] ) );
+			$found = 'core/query' !== $name ? self::find_entry( (array) ( $parsed['innerBlocks'] ?? [] ) ) : null;
 			if ( null !== $found ) {
 				return $found;
 			}
@@ -1006,7 +1021,8 @@ final class Grouped_Archive {
 	}
 
 	/**
-	 * The first block of a given name in a parsed block list, at any depth.
+	 * The first block of a given name in a parsed block list, at any depth
+	 * short of a nested Query Loop.
 	 *
 	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
 	 * @param string                           $name   Block name.
@@ -1014,10 +1030,11 @@ final class Grouped_Archive {
 	 */
 	private static function find_named( array $blocks, string $name ): ?array {
 		foreach ( $blocks as $parsed ) {
-			if ( ( $parsed['blockName'] ?? '' ) === $name ) {
+			$block = (string) ( $parsed['blockName'] ?? '' );
+			if ( $block === $name ) {
 				return $parsed;
 			}
-			$found = self::find_named( (array) ( $parsed['innerBlocks'] ?? [] ), $name );
+			$found = 'core/query' !== $block ? self::find_named( (array) ( $parsed['innerBlocks'] ?? [] ), $name ) : null;
 			if ( null !== $found ) {
 				return $found;
 			}

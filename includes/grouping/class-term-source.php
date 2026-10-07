@@ -19,7 +19,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * when it names exactly one (`?tag=<slug>`), otherwise the first by name (case
  * folded, then term id), with an optional term filed after all others under
  * its own name (the default category). The heading is the term name as
- * stored. Two terms with the same name stay separate sections.
+ * stored. Two terms with the same name stay separate sections. A taxonomy
+ * visitors can't view (`is_taxonomy_viewable()` false, or not registered)
+ * files every post in the empty group, so its term names never print.
  */
 final class Term_Source implements Group_Source {
 
@@ -61,9 +63,12 @@ final class Term_Source implements Group_Source {
 	 * ORDER BY parts.
 	 *
 	 * @param \WP_Query $query Query.
-	 * @return array{value:string, last?:string, tiebreak:string}
+	 * @return array{value:string, last?:string, tiebreak?:string}
 	 */
 	public function sql( \WP_Query $query ): array {
+		if ( ! is_taxonomy_viewable( $this->taxonomy ) ) {
+			return [ 'value' => "''" ];
+		}
 		$last  = $this->last_term_id();
 		$id    = 'COALESCE(' . $this->pick( 'pkiw_t.term_id', $query, $last ) . ', 0)';
 		$parts = [
@@ -107,7 +112,7 @@ final class Term_Source implements Group_Source {
 	 * @return Archive_Group
 	 */
 	public function group_of( \WP_Post $post, ?\WP_Query $query = null ): Archive_Group {
-		$terms = get_the_terms( $post, $this->taxonomy );
+		$terms = is_taxonomy_viewable( $this->taxonomy ) ? get_the_terms( $post, $this->taxonomy ) : false;
 		if ( ! is_array( $terms ) || [] === $terms ) {
 			return new Archive_Group( '', '', '' );
 		}

@@ -45,13 +45,15 @@
 			: MENU_ENTRY === name;
 	}
 
-	// The first entry block among a block's inner blocks, at any depth.
+	// The first entry block among a block's inner blocks, at any depth short
+	// of a nested Query Loop, whose blocks belong to that loop.
 	function findEntry( blocks ) {
 		for ( const block of blocks || [] ) {
 			if ( isEntry( block.name ) ) {
 				return block;
 			}
-			const found = findEntry( block.innerBlocks );
+			const found =
+				'core/query' !== block.name && findEntry( block.innerBlocks );
 			if ( found ) {
 				return found;
 			}
