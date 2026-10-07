@@ -1619,12 +1619,15 @@ class Meta_Fields {
 	/**
 	 * $content with each private acquisition cost taken out (issue 239).
 	 *
-	 * For every card whose cost is private this drops the
-	 * `<p class="post-kinds-card__subtitle">` that save.js printed cost
-	 * into before issue 239. With $attributes it also blanks the `cost`
-	 * attribute in the card's block comment, which search needs. Display
-	 * callers leave the attribute alone, so anything that writes their
-	 * result back keeps the stored cost.
+	 * For every card whose cost is private this drops the paragraph that
+	 * save.js printed cost into before issue 239: any `<p>` in the card's
+	 * static HTML whose text is the card's cost, which covers
+	 * `post-kinds-card__subtitle` and the earlier `acquisition-cost` and
+	 * `reactions-card__subtitle`, and the subtitle itself whatever it
+	 * holds. With $attributes it also blanks the `cost` attribute in the
+	 * card's block comment, which search needs. Display callers leave the
+	 * attribute alone, so anything that writes their result back keeps the
+	 * stored cost.
 	 *
 	 * @param string $content    Post content.
 	 * @param int    $post_id    Post the content belongs to.
@@ -1651,7 +1654,17 @@ class Meta_Fields {
 
 				$tail = (string) $card['tail'];
 				if ( null !== $card['inner'] ) {
-					$inner = (string) preg_replace( '#<p class="post-kinds-card__subtitle">.*?</p>#s', '', $card['inner'] );
+					$cost  = self::card_cost( $card['attrs'] );
+					$inner = (string) preg_replace_callback(
+						'#<p\b[^>]*>(.*?)</p>#s',
+						static function ( array $paragraph ) use ( $cost ): string {
+							$is_cost = str_starts_with( $paragraph[0], '<p class="post-kinds-card__subtitle">' )
+								|| ( '' !== $cost && self::plain_text( $paragraph[1] ) === $cost );
+
+							return $is_cost ? '' : $paragraph[0];
+						},
+						$card['inner']
+					);
 					$tail  = '-->' . $inner . substr( $tail, 3 + strlen( $card['inner'] ) );
 				}
 
@@ -1667,36 +1680,28 @@ class Meta_Fields {
 	}
 
 	/**
-	 * The private costs in $content: each acquisition card's `cost` that
-	 * strip_private_cost() would take out, whitespace collapsed. Text an
-	 * integration already derived from raw post_content loses these.
+	 * One acquisition card's `cost` attribute as plain text.
 	 *
-	 * @param string $content Post content.
-	 * @param int    $post_id Post the content belongs to.
-	 * @return string[]
+	 * @param string|null $attrs The card's block comment attributes, JSON.
+	 * @return string
 	 */
-	public static function private_costs( string $content, int $post_id ): array {
-		if ( ! str_contains( $content, 'wp:post-kinds-indieweb/acquisition-card' ) ) {
-			return [];
-		}
+	private static function card_cost( ?string $attrs ): string {
+		$decoded = json_decode( (string) $attrs, true );
 
-		$post_public = self::acquisition_cost_visible( $post_id );
-		$costs       = [];
-		preg_match_all( self::ACQUISITION_CARD_PATTERN, $content, $cards, PREG_SET_ORDER | PREG_UNMATCHED_AS_NULL );
-		foreach ( $cards as $card ) {
-			if ( ! self::card_cost_is_private( $card['attrs'], $post_public ) ) {
-				continue;
-			}
+		return is_array( $decoded ) && is_string( $decoded['cost'] ?? null ) ? self::plain_text( $decoded['cost'] ) : '';
+	}
 
-			$attrs = json_decode( (string) $card['attrs'], true );
-			$cost  = is_array( $attrs ) && is_string( $attrs['cost'] ?? null ) ? $attrs['cost'] : '';
-			$cost  = trim( (string) preg_replace( '/\s+/u', ' ', $cost ) );
-			if ( '' !== $cost ) {
-				$costs[] = $cost;
-			}
-		}
+	/**
+	 * Markup as the text a reader sees: tags stripped, entities decoded,
+	 * whitespace collapsed and trimmed.
+	 *
+	 * @param string $html Markup.
+	 * @return string
+	 */
+	private static function plain_text( string $html ): string {
+		$text = html_entity_decode( wp_strip_all_tags( $html ), ENT_QUOTES, 'UTF-8' );
 
-		return array_values( array_unique( $costs ) );
+		return trim( (string) preg_replace( '/\s+/u', ' ', $text ) );
 	}
 
 	/**
