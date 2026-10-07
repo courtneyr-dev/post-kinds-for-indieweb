@@ -309,7 +309,9 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 			]
 		);
 
-		$GLOBALS['wp']->query_vars['rest_route'] = '/wp/v2/pages/' . $page_id;
+		// An outer block-renderer request that fetches the page from PHP: the
+		// route being dispatched decides, not the HTTP request's rest_route.
+		$GLOBALS['wp']->query_vars['rest_route'] = '/wp/v2/block-renderer/post-kinds-indieweb/checkins-feed';
 		$response                                = rest_do_request( new WP_REST_Request( 'GET', '/wp/v2/pages/' . $page_id ) );
 
 		$this->assertSame( 200, $response->get_status() );
