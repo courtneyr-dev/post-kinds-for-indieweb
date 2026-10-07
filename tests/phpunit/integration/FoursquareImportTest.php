@@ -113,6 +113,30 @@ final class FoursquareImportTest extends ApiTestCase {
 	}
 
 	/**
+	 * Before this fix the importer never wrote `private`, so a published
+	 * import with a private default is a new path. Its slug, guid and
+	 * printed title leave the venue out; a public one keeps it.
+	 *
+	 * @dataProvider published_privacy_provider
+	 *
+	 * @param string $privacy     checkin_default_privacy.
+	 * @param bool   $names_venue Whether the venue may appear.
+	 */
+	public function test_a_published_import_names_the_venue_only_when_public( string $privacy, bool $names_venue ): void {
+		$this->set_permalink_structure( '/%postname%/' );
+		update_option( 'pkiw_settings', [ 'checkin_default_privacy' => $privacy ] );
+
+		$post = $this->import_manager_post( 'publish' );
+
+		$this->assertSame( 'publish', $post->post_status );
+		$this->assertSame( $privacy, get_post_meta( $post->ID, '_pkiw_geo_privacy', true ) );
+		$this->assertNotSame( '', $post->post_name );
+		$this->assertSame( $names_venue, str_contains( $post->post_name, 'blue-bottle' ), $post->post_name );
+		$this->assertSame( $names_venue, str_contains( $post->guid, 'blue-bottle' ), $post->guid );
+		$this->assertSame( $names_venue, str_contains( get_the_title( $post ), 'Blue Bottle' ), get_the_title( $post ) );
+	}
+
+	/**
 	 * The body is the shout, so a venue the privacy setting hides doesn't
 	 * sit in post_content where Title_Privacy can't reach it.
 	 *
@@ -229,6 +253,18 @@ final class FoursquareImportTest extends ApiTestCase {
 			'setting unset' => [ [], 'approximate' ],
 			'private'       => [ [ 'checkin_default_privacy' => 'private' ], 'private' ],
 			'public'        => [ [ 'checkin_default_privacy' => 'public' ], 'public' ],
+		];
+	}
+
+	/**
+	 * Privacy defaults for a published import, and whether the venue shows.
+	 *
+	 * @return array<string, array{0: string, 1: bool}>
+	 */
+	public function published_privacy_provider(): array {
+		return [
+			'private' => [ 'private', false ],
+			'public'  => [ 'public', true ],
 		];
 	}
 
