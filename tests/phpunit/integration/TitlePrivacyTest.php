@@ -270,15 +270,17 @@ final class TitlePrivacyTest extends WP_UnitTestCase {
 
 		$post_id = $method->invoke(
 			$sync,
-			[
-				'id'        => 'sentinel-4sq-1',
-				'createdAt' => 1789223400,
-				'venue'     => [
-					'id'       => 'v1',
-					'name'     => self::VENUE,
-					'location' => [ 'city' => 'Sentinelville' ],
-				],
-			]
+			\PKIW\Sync\Foursquare_Checkin_Sync::normalize_checkin(
+				[
+					'id'        => 'sentinel-4sq-1',
+					'createdAt' => 1789223400,
+					'venue'     => [
+						'id'       => 'v1',
+						'name'     => self::VENUE,
+						'location' => [ 'city' => 'Sentinelville' ],
+					],
+				]
+			)
 		);
 
 		$this->assertIsInt( $post_id );

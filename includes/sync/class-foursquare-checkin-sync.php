@@ -446,30 +446,50 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 	/**
 	 * Import a checkin from Foursquare (PESOS).
 	 *
-	 * @param array $external_checkin External checkin data.
+	 * The check-in ID goes to `_pkiw_checkin_foursquare_id`, written by
+	 * Checkin_Sync_Base::import_checkins(), and the venue ID to
+	 * `_pkiw_checkin_venue_id`. Until #284 this method wrote the venue ID to
+	 * the check-in ID key and the base class overwrote it in the same
+	 * request, so the key has held a check-in ID at rest on every post
+	 * since 1662ff8 and needs no upgrade step. Imports from before 3da920d
+	 * sit under `_reactions_` and `_postkind_` keys, which
+	 * find_existing_post() never reads. The overwritten venue IDs can't be
+	 * recovered without a GET checkins/{id} per post.
+	 *
+	 * @param array $external_checkin Check-in from fetch_recent_checkins(), normalized.
 	 * @return int|false Post ID or false on failure.
 	 */
 	protected function import_checkin( array $external_checkin ) {
-		$venue = $external_checkin['venue'] ?? [];
+		$venue_name = (string) ( $external_checkin['venue_name'] ?? '' );
+		$venue_id   = (string) ( $external_checkin['venue_id'] ?? '' );
 
-		if ( empty( $venue ) ) {
+		if ( '' === $venue_name && '' === $venue_id ) {
 			return false;
 		}
 
-		$location = $venue['location'] ?? [];
+		[ $author_id ] = \PKIW\Import_Manager::resolve_author_for_post_type( 'post' );
+		if ( 0 === $author_id ) {
+			$this->log( 'No user can author imported posts', [ 'checkin' => $external_checkin['id'] ?? '' ] );
+			return false;
+		}
 
 		// Prepare post data.
 		$post_data = [
 			'post_type'    => 'post',
 			'post_status'  => 'publish',
-			'post_date'    => gmdate( 'Y-m-d H:i:s', $external_checkin['createdAt'] ?? time() ),
-			'post_content' => $external_checkin['shout'] ?? '',
+			'post_author'  => $author_id,
+			'post_content' => (string) ( $external_checkin['shout'] ?? '' ),
 			'post_title'   => sprintf(
 				/* translators: %s: venue name */
 				__( 'Checked in at %s', 'post-kinds-for-indieweb-in-block-themes' ),
-				$venue['name'] ?? __( 'Unknown venue', 'post-kinds-for-indieweb-in-block-themes' )
+				'' !== $venue_name ? $venue_name : __( 'Unknown venue', 'post-kinds-for-indieweb-in-block-themes' )
 			),
 		];
+
+		if ( isset( $external_checkin['timestamp'] ) ) {
+			$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', (int) $external_checkin['timestamp'] );
+			$post_data['post_date']     = get_date_from_gmt( $post_data['post_date_gmt'] );
+		}
 
 		// Create post.
 		$post_id = wp_insert_post( $post_data, true );
@@ -488,20 +508,20 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 		// Set meta fields.
 		$prefix = Meta_Fields::PREFIX;
 
-		update_post_meta( $post_id, $prefix . 'checkin_name', $venue['name'] ?? '' );
-		update_post_meta( $post_id, $prefix . 'checkin_address', $location['address'] ?? '' );
-		update_post_meta( $post_id, $prefix . 'checkin_locality', $location['city'] ?? '' );
-		update_post_meta( $post_id, $prefix . 'checkin_region', $location['state'] ?? '' );
-		update_post_meta( $post_id, $prefix . 'checkin_country', $location['country'] ?? '' );
-		update_post_meta( $post_id, $prefix . 'checkin_postal_code', $location['postalCode'] ?? '' );
+		update_post_meta( $post_id, $prefix . 'checkin_name', $venue_name );
+		update_post_meta( $post_id, $prefix . 'checkin_address', $external_checkin['address'] ?? '' );
+		update_post_meta( $post_id, $prefix . 'checkin_locality', $external_checkin['locality'] ?? '' );
+		update_post_meta( $post_id, $prefix . 'checkin_region', $external_checkin['region'] ?? '' );
+		update_post_meta( $post_id, $prefix . 'checkin_country', $external_checkin['country'] ?? '' );
+		update_post_meta( $post_id, $prefix . 'checkin_postal_code', $external_checkin['postal_code'] ?? '' );
 
-		if ( ! empty( $location['lat'] ) && ! empty( $location['lng'] ) ) {
-			update_post_meta( $post_id, $prefix . 'geo_latitude', $location['lat'] );
-			update_post_meta( $post_id, $prefix . 'geo_longitude', $location['lng'] );
+		if ( ! empty( $external_checkin['latitude'] ) && ! empty( $external_checkin['longitude'] ) ) {
+			update_post_meta( $post_id, $prefix . 'geo_latitude', $external_checkin['latitude'] );
+			update_post_meta( $post_id, $prefix . 'geo_longitude', $external_checkin['longitude'] );
 		}
 
-		// Store Foursquare venue ID for future POSSE matching.
-		update_post_meta( $post_id, $prefix . 'checkin_foursquare_id', $venue['id'] ?? '' );
+		// Store the Foursquare venue ID for future POSSE matching.
+		update_post_meta( $post_id, $prefix . 'checkin_venue_id', $venue_id );
 
 		// Apply default privacy setting.
 		$settings        = get_option( 'pkiw_settings', [] );
@@ -512,10 +532,51 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 	}
 
 	/**
+	 * Flatten a users/self/checkins item into the keys every importer reads.
+	 *
+	 * Import_Manager::build_checkin_payload(), the Import page preview and
+	 * import_checkin() all read these keys, so the paths can't drift.
+	 *
+	 * @param array<string, mixed> $checkin Raw Foursquare v2 check-in.
+	 * @return array{id: string, timestamp: int|null, shout: string, url: string, venue_id: string, venue_name: string, address: string, locality: string, region: string, country: string, postal_code: string, latitude: float|null, longitude: float|null}
+	 */
+	public static function normalize_checkin( array $checkin ): array {
+		$venue    = is_array( $checkin['venue'] ?? null ) ? $checkin['venue'] : [];
+		$location = is_array( $venue['location'] ?? null ) ? $venue['location'] : [];
+
+		return [
+			'id'          => self::text_at( $checkin, 'id' ),
+			'timestamp'   => is_numeric( $checkin['createdAt'] ?? null ) ? (int) $checkin['createdAt'] : null,
+			'shout'       => self::text_at( $checkin, 'shout' ),
+			'url'         => self::text_at( $checkin, 'url' ),
+			'venue_id'    => self::text_at( $venue, 'id' ),
+			'venue_name'  => self::text_at( $venue, 'name' ),
+			'address'     => self::text_at( $location, 'address' ),
+			'locality'    => self::text_at( $location, 'city' ),
+			'region'      => self::text_at( $location, 'state' ),
+			'country'     => self::text_at( $location, 'country' ),
+			'postal_code' => self::text_at( $location, 'postalCode' ),
+			'latitude'    => is_numeric( $location['lat'] ?? null ) ? (float) $location['lat'] : null,
+			'longitude'   => is_numeric( $location['lng'] ?? null ) ? (float) $location['lng'] : null,
+		];
+	}
+
+	/**
+	 * A text value from an API array, or '' when it's missing or not scalar.
+	 *
+	 * @param array<string, mixed> $from Array.
+	 * @param string               $key  Key.
+	 * @return string
+	 */
+	private static function text_at( array $from, string $key ): string {
+		return is_scalar( $from[ $key ] ?? null ) ? (string) $from[ $key ] : '';
+	}
+
+	/**
 	 * Fetch recent checkins from Foursquare.
 	 *
 	 * @param int $limit Max checkins to fetch.
-	 * @return array Array of checkin data.
+	 * @return array<int, array<string, mixed>> Check-ins, each through normalize_checkin().
 	 */
 	public function fetch_recent_checkins( int $limit = 50 ): array {
 		if ( ! $this->is_connected() ) {
@@ -531,8 +592,10 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 				]
 			);
 
-			if ( ! empty( $response['response']['checkins']['items'] ) ) {
-				return $response['response']['checkins']['items'];
+			if ( ! empty( $response['response']['checkins']['items'] ) && is_array( $response['response']['checkins']['items'] ) ) {
+				$items = array_filter( $response['response']['checkins']['items'], 'is_array' );
+
+				return array_values( array_map( [ self::class, 'normalize_checkin' ], $items ) );
 			}
 		} catch ( \Exception $e ) {
 			$this->log( 'Failed to fetch checkins', [ 'error' => $e->getMessage() ] );

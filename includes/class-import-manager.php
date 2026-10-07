@@ -1161,13 +1161,27 @@ class Import_Manager {
 	 *                                  [0, ''] when no user qualifies.
 	 */
 	private function resolve_import_author(): array {
+		return self::resolve_author_for_post_type( $this->get_import_post_type() );
+	}
+
+	/**
+	 * Pick the author for imported posts of a post type, by the rules
+	 * resolve_import_author() lists.
+	 *
+	 * The check-in sync classes call this for the 'post' they create, so a
+	 * sync from WP-Cron doesn't make posts with no author.
+	 *
+	 * @param string $post_type Post type the import creates.
+	 * @return array{0: int, 1: string} User ID and rule, or [0, ''].
+	 */
+	public static function resolve_author_for_post_type( string $post_type ): array {
 		$current = get_current_user_id();
-		if ( $current > 0 && $this->can_author_imports( $current ) ) {
+		if ( $current > 0 && self::can_author_posts( $current, $post_type ) ) {
 			return [ $current, 'current_user' ];
 		}
 
 		$default = (int) get_option( 'pkiw_default_author', 1 );
-		if ( $default > 0 && $this->can_author_imports( $default ) ) {
+		if ( $default > 0 && self::can_author_posts( $default, $post_type ) ) {
 			return [ $default, 'default_author' ];
 		}
 
@@ -1180,7 +1194,7 @@ class Import_Manager {
 			]
 		);
 		foreach ( $admins as $admin_id ) {
-			if ( $this->can_author_imports( (int) $admin_id ) ) {
+			if ( self::can_author_posts( (int) $admin_id, $post_type ) ) {
 				return [ (int) $admin_id, 'fallback_administrator' ];
 			}
 		}
@@ -1189,19 +1203,20 @@ class Import_Manager {
 	}
 
 	/**
-	 * Whether a user exists and can create posts of the import post type.
+	 * Whether a user exists and can create posts of a post type.
 	 *
-	 * @param int $user_id User ID.
+	 * @param int    $user_id   User ID.
+	 * @param string $post_type Post type.
 	 * @return bool
 	 */
-	private function can_author_imports( int $user_id ): bool {
+	private static function can_author_posts( int $user_id, string $post_type ): bool {
 		$user = get_userdata( $user_id );
 		if ( ! $user ) {
 			return false;
 		}
 
-		$post_type = get_post_type_object( $this->get_import_post_type() );
-		$cap       = $post_type ? $post_type->cap->create_posts : 'edit_posts';
+		$type_object = get_post_type_object( $post_type );
+		$cap         = $type_object ? $type_object->cap->create_posts : 'edit_posts';
 
 		return user_can( $user, $cap );
 	}
@@ -1567,29 +1582,40 @@ class Import_Manager {
 	 * @return array{0: array<string, mixed>, 1: array<string, mixed>, 2: string}
 	 */
 	private function build_checkin_payload( array $item ): array {
-		$venue   = $item['venue_name'] ?? 'Unknown Venue';
+		$venue   = (string) ( $item['venue_name'] ?? '' );
+		$venue   = '' !== $venue ? $venue : 'Unknown Venue';
 		$address = $item['address'] ?? '';
+		$shout   = (string) ( $item['shout'] ?? '' );
 
+		// The body is the shout. A sentence naming the venue would stay in
+		// post_content when the location is hidden, where Title_Privacy's
+		// safe title doesn't reach; the title carries the venue instead.
 		$post_data = [
 			'post_title'   => sprintf( 'Checked in at %s', $venue ),
-			'post_content' => sprintf(
-				'<!-- wp:paragraph --><p>Checked in at %s.</p><!-- /wp:paragraph -->',
-				esc_html( $venue )
-			),
+			'post_content' => '' !== $shout
+				? sprintf( '<!-- wp:paragraph --><p>%s</p><!-- /wp:paragraph -->', esc_html( $shout ) )
+				: '',
 		];
 
-		// `timestamp` from Foursquare/OwnTracks is a unix timestamp.
+		// `timestamp` from Foursquare_Checkin_Sync::normalize_checkin() is a unix timestamp.
 		if ( isset( $item['timestamp'] ) ) {
-			$post_data['post_date']     = gmdate( 'Y-m-d H:i:s', $item['timestamp'] );
-			$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', $item['timestamp'] );
+			$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', (int) $item['timestamp'] );
+			$post_data['post_date']     = get_date_from_gmt( $post_data['post_date_gmt'] );
 		}
+
+		$settings = get_option( 'pkiw_settings', [] );
 
 		$meta = [
 			// Checkin-specific fields for Post Kind editor.
-			'_pkiw_checkin_name'    => $venue,
-			'_pkiw_checkin_address' => $address,
-			'_pkiw_geo_latitude'    => $item['latitude'] ?? '',
-			'_pkiw_geo_longitude'   => $item['longitude'] ?? '',
+			'_pkiw_checkin_name'      => $venue,
+			'_pkiw_checkin_address'   => $address,
+			'_pkiw_checkin_locality'  => $item['locality'] ?? '',
+			'_pkiw_checkin_region'    => $item['region'] ?? '',
+			'_pkiw_checkin_country'   => $item['country'] ?? '',
+			'_pkiw_geo_latitude'      => $item['latitude'] ?? '',
+			'_pkiw_geo_longitude'     => $item['longitude'] ?? '',
+			// The check-in privacy default, as Foursquare_Checkin_Sync applies it.
+			'_pkiw_geo_privacy'       => $settings['checkin_default_privacy'] ?? 'approximate',
 			// Legacy/internal fields.
 			'_pkiw_checkin_venue'     => $venue,
 			'_pkiw_checkin_latitude'  => $item['latitude'] ?? '',

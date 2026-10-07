@@ -323,12 +323,23 @@ abstract class Checkin_Sync_Base {
 	/**
 	 * Check if post was imported from this service.
 	 *
+	 * A sync import stores the service ID in `_pkiw_imported_from`.
+	 * Import_Manager stores its source name there ("Foursquare / Swarm")
+	 * and "{service}:{id}" in `_pkiw_import_source_id`, which
+	 * find_existing_post() already treats as the same check-in.
+	 *
 	 * @param int $post_id Post ID.
 	 * @return bool
 	 */
 	protected function was_imported_from_service( int $post_id ): bool {
 		$imported_from = get_post_meta( $post_id, '_pkiw_imported_from', true );
-		return $this->service_id === $imported_from;
+		if ( $this->service_id === $imported_from ) {
+			return true;
+		}
+
+		$identity = (string) get_post_meta( $post_id, '_pkiw_import_source_id', true );
+
+		return str_starts_with( $identity, $this->service_id . ':' );
 	}
 
 	/**
@@ -349,14 +360,30 @@ abstract class Checkin_Sync_Base {
 			return true;
 		}
 
-		// Also check by timestamp + venue (fuzzy match).
-		if ( ! empty( $external_checkin['created_at'] ) && ! empty( $external_checkin['venue']['name'] ) ) {
-			$timestamp = strtotime( $external_checkin['created_at'] );
-			$venue     = $external_checkin['venue']['name'];
+		// Also check by timestamp + venue (fuzzy match), on the normalized
+		// keys fetch_recent_checkins() returns. A post that names its own
+		// check-in, such as a second beer at the same bar, is a different one.
+		if ( ! empty( $external_checkin['timestamp'] ) && ! empty( $external_checkin['venue_name'] ) ) {
+			$timestamp = (int) $external_checkin['timestamp'];
+			$venue     = (string) $external_checkin['venue_name'];
 
 			// Look for posts within 5 minutes with same venue.
 			$start = gmdate( 'Y-m-d H:i:s', $timestamp - 300 );
 			$end   = gmdate( 'Y-m-d H:i:s', $timestamp + 300 );
+
+			$meta_query = [
+				[
+					'key'     => Meta_Fields::PREFIX . 'checkin_name',
+					'value'   => $venue,
+					'compare' => '=',
+				],
+			];
+			foreach ( array_merge( $this->get_external_id_meta_keys(), [ '_pkiw_import_source_id' ] ) as $meta_key ) {
+				$meta_query[] = [
+					'key'     => $meta_key,
+					'compare' => 'NOT EXISTS',
+				];
+			}
 
 			$fuzzy_match = get_posts(
 				[
@@ -364,18 +391,13 @@ abstract class Checkin_Sync_Base {
 					'post_status' => 'any',
 					'date_query'  => [
 						[
+							'column'    => 'post_date_gmt',
 							'after'     => $start,
 							'before'    => $end,
 							'inclusive' => true,
 						],
 					],
-					'meta_query'  => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-						[
-							'key'     => Meta_Fields::PREFIX . 'checkin_name',
-							'value'   => $venue,
-							'compare' => '=',
-						],
-					],
+					'meta_query'  => $meta_query, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 					'numberposts' => 1,
 					'fields'      => 'ids',
 				]
@@ -488,10 +510,10 @@ abstract class Checkin_Sync_Base {
 			'created_at' => get_the_date( 'c', $post_id ),
 		];
 
-		// Get Foursquare venue ID if available.
-		$fsq_id = get_post_meta( $post_id, $prefix . 'checkin_foursquare_id', true );
-		if ( $fsq_id ) {
-			$data['foursquare_id'] = $fsq_id;
+		// Foursquare venue ID, if known. `_pkiw_checkin_foursquare_id` holds a check-in ID.
+		$fsq_venue_id = get_post_meta( $post_id, $prefix . 'checkin_venue_id', true );
+		if ( $fsq_venue_id ) {
+			$data['foursquare_id'] = $fsq_venue_id;
 		}
 
 		// Get OSM ID if available.
