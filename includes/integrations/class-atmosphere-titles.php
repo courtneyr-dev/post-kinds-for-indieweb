@@ -367,7 +367,8 @@ final class Atmosphere_Titles {
 	}
 
 	/**
-	 * A short summary from the post content.
+	 * A short summary from the post content, without a private
+	 * acquisition cost (issue 239).
 	 *
 	 * @since 1.6.0
 	 *
@@ -375,7 +376,7 @@ final class Atmosphere_Titles {
 	 * @return string
 	 */
 	private static function content_summary( \WP_Post $post ): string {
-		$text = wp_strip_all_tags( (string) $post->post_content );
+		$text = wp_strip_all_tags( Meta_Fields::strip_private_cost( (string) $post->post_content, (int) $post->ID ) );
 
 		return trim( wp_trim_words( $text, 10, '…' ) );
 	}

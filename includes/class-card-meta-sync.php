@@ -187,6 +187,22 @@ class Card_Meta_Sync {
 	];
 
 	/**
+	 * Boolean card attributes the card always decides: on writes '1', off or
+	 * absent deletes the row. ATTR_META_MAP never erases meta with an empty
+	 * attr, and the block comment drops an attribute that equals its
+	 * block.json default, so switching a toggle off would otherwise leave
+	 * it on. Each toggle follows the first block of its own type, even when
+	 * another kind's card comes first.
+	 *
+	 * @var array<string, array<string, string>>
+	 */
+	public const ATTR_TOGGLES = [
+		'post-kinds-indieweb/acquisition-card' => [
+			'showCostPublicly' => 'acquisition_cost_public',
+		],
+	];
+
+	/**
 	 * Privacy settings whose block.json default is written on every save
 	 * when the card leaves the attribute out. The editor drops an attribute
 	 * that equals its default from the block comment, so a card switched
@@ -381,6 +397,17 @@ class Card_Meta_Sync {
 					: sanitize_text_field( $value );
 
 				update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, $clean );
+			}
+		}
+
+		foreach ( self::ATTR_TOGGLES as $name => $toggles ) {
+			$card = self::find_first_mapped_block( $blocks, $name );
+			foreach ( $toggles as $attr => $suffix ) {
+				if ( null !== $card && true === ( $card['attrs'][ $attr ] ?? null ) ) {
+					update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, '1' );
+				} else {
+					delete_post_meta( $post_id, Meta_Fields::PREFIX . $suffix );
+				}
 			}
 		}
 
