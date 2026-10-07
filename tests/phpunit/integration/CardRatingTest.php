@@ -53,6 +53,19 @@ final class CardRatingTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A rating above best prints best in the label and in p-rating, so the
+	 * parsed value never disagrees with the stars. The comic card has
+	 * clamped both since #228.
+	 */
+	public function test_a_rating_above_best_prints_best_in_p_rating_too(): void {
+		$html = \PKIW\card_rating_html( 9 );
+
+		$this->assertStringContainsString( 'aria-label="Rated 5 of 5"', $html );
+		$this->assertStringContainsString( '<data class="p-rating" value="5" hidden></data>', $html );
+		$this->assertStringContainsString( '<data class="p-rating" value="10" hidden></data>', \PKIW\card_rating_html( 12, 10 ) );
+	}
+
+	/**
 	 * The star row is inline-flex, so it runs right to left on an RTL
 	 * site and the half star's filled side has to face the full stars.
 	 */
