@@ -1519,11 +1519,14 @@ class Meta_Fields {
 
 	/**
 	 * Whether content holds an RSVP card, itself or through the synced
-	 * patterns (`core/block` refs) it places, followed into each referenced
-	 * wp_block whatever its status and however deep. Card_Meta_Sync and
-	 * has_block() read only the post's own blocks, so a card in a pattern
-	 * leaves no RSVP row. Each pattern is read once, so refs that place each
-	 * other end the walk, as they end core's render of `core/block`.
+	 * patterns (`core/block` refs) it places, however deep. Card_Meta_Sync
+	 * and has_block() read only the post's own blocks, so a card in a
+	 * pattern leaves no RSVP row. A ref counts only when core would render
+	 * it to a visitor: render_block_core_block() renders a wp_block that is
+	 * published with no password and prints nothing for any other, so a
+	 * card in a draft, pending, private, trashed or password-protected
+	 * pattern, or behind one, isn't on the post. Each pattern is read once,
+	 * so refs that place each other end the walk, as they end core's render.
 	 *
 	 * @param string $content Block content.
 	 * @return bool
@@ -1546,7 +1549,8 @@ class Meta_Fields {
 				}
 				$seen[ $ref ] = true;
 				$pattern      = get_post( $ref );
-				if ( $pattern instanceof \WP_Post && 'wp_block' === $pattern->post_type ) {
+				if ( $pattern instanceof \WP_Post && 'wp_block' === $pattern->post_type
+					&& 'publish' === $pattern->post_status && empty( $pattern->post_password ) ) {
 					$pending[] = $pattern->post_content;
 				}
 			}
