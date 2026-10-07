@@ -1462,9 +1462,11 @@ class Meta_Fields {
 	}
 
 	/**
-	 * Whether a post has the `rsvp` term or a stored RSVP row: the card's
-	 * `_pkiw_rsvp_location_privacy`, the editor sidebar's `_pkiw_rsvp_status`
-	 * or the `_pkiw_rsvp_value` Quick Post and the RSVP meta box write.
+	 * Whether a post has the `rsvp` term, an RSVP card or a stored RSVP row:
+	 * the card's `_pkiw_rsvp_location_privacy`, the editor sidebar's
+	 * `_pkiw_rsvp_status` or the `_pkiw_rsvp_value` Quick Post and the RSVP
+	 * meta box write. The card counts on its own, because a card saved
+	 * before the privacy row existed has no row and nothing backfills one.
 	 * Reads raw rows, because get_post_meta() returns the registered
 	 * 'private' default for a post with no privacy row.
 	 *
@@ -1472,7 +1474,7 @@ class Meta_Fields {
 	 * @return bool
 	 */
 	private static function is_rsvp( int $post_id ): bool {
-		if ( has_term( 'rsvp', Taxonomy::TAXONOMY, $post_id ) ) {
+		if ( has_term( 'rsvp', Taxonomy::TAXONOMY, $post_id ) || has_block( 'post-kinds-indieweb/rsvp-card', $post_id ) ) {
 			return true;
 		}
 
