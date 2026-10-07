@@ -57,6 +57,7 @@ final class KindFactsTest extends WP_UnitTestCase {
 				'locality' => 'Chicago',
 				'street'   => '1354 W Wabansia Ave',
 				'lat'      => 41.913,
+				'osm_id'   => 4821,
 				'map'      => [ 41.913, -87.662 ],
 			],
 			[
@@ -64,6 +65,7 @@ final class KindFactsTest extends WP_UnitTestCase {
 				'locality' => 'locality',
 				'street'   => 'street',
 				'lat'      => 'coordinates',
+				'osm_id'   => 'osm_id',
 				'map'      => 'map',
 			]
 		);
@@ -113,7 +115,8 @@ final class KindFactsTest extends WP_UnitTestCase {
 		$this->assertSame( 'The Hideout', $facts['venue'] );
 		$this->assertSame( 'Chicago', $facts['locality'] );
 		$this->assertSame( '', $facts['street'] );
-		$this->assertSame( 0, $facts['lat'] );
+		$this->assertNull( $facts['lat'], 'A hidden number is null: 0 is a real coordinate.' );
+		$this->assertNull( $facts['osm_id'] );
 		$this->assertSame( [], $facts['map'] );
 	}
 
@@ -139,6 +142,7 @@ final class KindFactsTest extends WP_UnitTestCase {
 		$this->assertSame( '', $facts['venue'] );
 		$this->assertSame( '', $facts['locality'] );
 		$this->assertSame( '', $facts['street'] );
+		$this->assertNull( $facts['lat'] );
 	}
 
 	public function test_an_editor_gets_the_public_facts_too(): void {
