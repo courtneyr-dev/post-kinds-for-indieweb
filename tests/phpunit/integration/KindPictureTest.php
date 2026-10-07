@@ -7,6 +7,7 @@
 
 declare(strict_types=1);
 
+use PKIW\Card_Meta_Sync;
 use PKIW\Featured_Artwork;
 use PKIW\Meta_Fields;
 use PKIW\Taxonomy;
@@ -27,10 +28,19 @@ final class KindPictureTest extends WP_UnitTestCase {
 	 */
 	private array $requests = [];
 
+	/**
+	 * Queries that search attachment file paths: attachment_url_to_postid()'s
+	 * lookup, which no index covers.
+	 *
+	 * @var string[]
+	 */
+	private array $file_searches = [];
+
 	public function set_up(): void {
 		parent::set_up();
 		( new Taxonomy() )->create_default_terms();
-		$this->requests = [];
+		$this->requests      = [];
+		$this->file_searches = [];
 		add_filter(
 			'pre_http_request',
 			function ( $pre, $args, $url ) {
@@ -39,6 +49,15 @@ final class KindPictureTest extends WP_UnitTestCase {
 			},
 			10,
 			3
+		);
+		add_filter(
+			'query',
+			function ( $sql ) {
+				if ( str_contains( $sql, "meta_key = '_wp_attached_file' AND meta_value =" ) ) {
+					$this->file_searches[] = $sql;
+				}
+				return $sql;
+			}
 		);
 	}
 
@@ -196,5 +215,93 @@ final class KindPictureTest extends WP_UnitTestCase {
 		$post_id = $this->kind_post( 'read', [ 'read_cover' => 'https://covers.example.org/b/id/1-L.jpg' ], [ 'post_password' => 'secret' ] );
 
 		$this->assertSame( '', \PKIW\kind_picture( $post_id )['source'] );
+	}
+
+	public function test_a_page_of_upload_covers_searches_no_attachment_files(): void {
+		$posts = [];
+		foreach ( [ 'acquisition' => 'acquisition_photo', 'wish' => 'wish_photo', 'eat' => 'eat_photo' ] as $kind => $suffix ) {
+			$image_id          = $this->image();
+			$posts[ $image_id ] = $this->kind_post( $kind, [ $suffix => wp_get_attachment_url( $image_id ) ] );
+		}
+		// Prime post, term and meta caches the way an archive's main query does.
+		new WP_Query(
+			[
+				'post__in'       => array_values( $posts ),
+				'posts_per_page' => 3,
+			]
+		);
+		$this->file_searches = [];
+
+		foreach ( $posts as $image_id => $post_id ) {
+			$this->assertSame( $image_id, \PKIW\kind_picture( $post_id )['attachment_id'] );
+		}
+		$this->assertSame( [], $this->file_searches );
+	}
+
+	public function test_the_cover_map_follows_the_cover_meta(): void {
+		$image_id = $this->image();
+		$url      = wp_get_attachment_url( $image_id );
+		$missing  = wp_get_upload_dir()['baseurl'] . '/2026/10/not-in-the-library.jpg';
+		$key      = Meta_Fields::PREFIX . 'wish_photo';
+		$post_id  = $this->kind_post( 'wish', [ 'wish_photo' => $url ] );
+
+		$this->assertSame( [ $url => $image_id ], get_metadata_raw( 'post', $post_id, \PKIW\COVER_ATTACHMENTS_META, true ) );
+
+		update_post_meta( $post_id, $key, $missing );
+		$this->assertSame( [ $missing => 0 ], get_metadata_raw( 'post', $post_id, \PKIW\COVER_ATTACHMENTS_META, true ) );
+
+		update_post_meta( $post_id, $key, 'https://shop.example.com/lamp.jpg' );
+		$this->assertNull( get_metadata_raw( 'post', $post_id, \PKIW\COVER_ATTACHMENTS_META, true ) );
+
+		update_post_meta( $post_id, $key, $url );
+		delete_post_meta( $post_id, $key );
+		$this->assertNull( get_metadata_raw( 'post', $post_id, \PKIW\COVER_ATTACHMENTS_META, true ) );
+	}
+
+	public function test_a_cover_stored_before_the_map_is_searched_once_a_request(): void {
+		$image_id = $this->image( 'Bowl of ramen' );
+		$post_id  = $this->kind_post( 'eat', [ 'eat_photo' => wp_get_attachment_url( $image_id ) ] );
+		delete_post_meta( $post_id, \PKIW\COVER_ATTACHMENTS_META ); // As a post saved before the map existed.
+		$this->file_searches = [];
+
+		\PKIW\kind_picture( $post_id );
+		\PKIW\kind_picture( $post_id );
+		$picture = \PKIW\kind_picture( $post_id );
+
+		$this->assertSame( $image_id, $picture['attachment_id'] );
+		$this->assertSame( 'Bowl of ramen', $picture['alt'] );
+		$this->assertCount( 1, $this->file_searches );
+	}
+
+	public function test_a_library_image_added_after_a_search_is_found(): void {
+		$post_id = $this->kind_post( 'drink', [ 'drink_photo' => wp_get_upload_dir()['baseurl'] . '/2026/10/stout.jpg' ] );
+		delete_post_meta( $post_id, \PKIW\COVER_ATTACHMENTS_META ); // As a post saved before the map existed.
+		$this->assertSame( 0, \PKIW\kind_picture( $post_id )['attachment_id'] );
+
+		$image_id = self::factory()->attachment->create_object(
+			[
+				'file'           => '2026/10/stout.jpg',
+				'post_mime_type' => 'image/jpeg',
+			]
+		);
+
+		$this->assertSame( $image_id, \PKIW\kind_picture( $post_id )['attachment_id'] );
+	}
+
+	public function test_the_card_backfill_fills_the_map_for_a_cover_stored_before_it(): void {
+		$image_id = $this->image();
+		$url      = wp_get_attachment_url( $image_id );
+		$post_id  = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Dune","coverImage":"' . $url . '"} /-->',
+			]
+		);
+		$this->assertSame( $url, get_post_meta( $post_id, Meta_Fields::PREFIX . 'read_cover', true ) );
+		delete_post_meta( $post_id, \PKIW\COVER_ATTACHMENTS_META ); // As a post saved before the map existed.
+
+		Card_Meta_Sync::backfill_batch( $post_id - 1 );
+
+		$this->assertSame( [ $url => $image_id ], get_metadata_raw( 'post', $post_id, \PKIW\COVER_ATTACHMENTS_META, true ) );
 	}
 }
