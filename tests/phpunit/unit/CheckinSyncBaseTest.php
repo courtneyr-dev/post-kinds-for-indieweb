@@ -296,6 +296,150 @@ class CheckinSyncBaseTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Import_Manager marks its imports with "{source}:{id}" and a source
+	 * name, not the service ID, in `_pkiw_imported_from`.
+	 *
+	 * @dataProvider import_identity_provider
+	 *
+	 * @param string $identity `_pkiw_import_source_id` value.
+	 * @param bool   $expected Whether the post came from this service.
+	 */
+	public function test_was_imported_from_service_reads_the_import_manager_identity( string $identity, bool $expected ): void {
+		$post_id = self::factory()->post->create();
+		update_post_meta( $post_id, '_pkiw_imported_from', 'Test Service / App' );
+		update_post_meta( $post_id, '_pkiw_import_source_id', $identity );
+
+		$this->assertSame( $expected, $this->sync->test_was_imported_from_service( $post_id ) );
+	}
+
+	/**
+	 * Identities and whether they belong to the `testservice` stub.
+	 *
+	 * @return array<string, array{0: string, 1: bool}>
+	 */
+	public function import_identity_provider(): array {
+		return [
+			'this service'            => [ 'testservice:x', true ],
+			'another service'         => [ 'otherservice:x', false ],
+			'a longer service prefix' => [ 'testservicefoo:x', false ],
+			'no separator'            => [ 'testservice', false ],
+		];
+	}
+
+	/**
+	 * The loop guard stops an Import_Manager check-in at any publish.
+	 */
+	public function test_maybe_syndicate_skips_an_import_manager_checkin(): void {
+		$post_id = $this->create_checkin_post();
+		$post    = get_post( $post_id );
+
+		update_option( 'pkiw_settings', [
+			'checkin_sync_to_testservice' => true,
+		] );
+		update_post_meta( $post_id, '_pkiw_imported_from', 'Test Service / App' );
+		update_post_meta( $post_id, '_pkiw_import_source_id', 'testservice:x' );
+
+		$this->sync->syndication_result = [ 'id' => 'ext-1' ];
+		$this->sync->maybe_syndicate_checkin( 'publish', 'draft', $post );
+		$this->sync->maybe_syndicate_checkin( 'publish', 'publish', $post );
+
+		$this->assertEmpty( $this->sync->syndicate_calls );
+	}
+
+	/**
+	 * A check-in written on the site within five minutes at the same venue
+	 * is the same check-in, matched on the normalized `timestamp` and
+	 * `venue_name` keys and the post's GMT date.
+	 */
+	public function test_checkin_exists_matches_a_site_checkin_at_the_same_venue_and_time(): void {
+		update_option( 'timezone_string', 'America/New_York' );
+		$this->create_site_checkin( 1789243200 + 120, 'Blue Bottle Coffee' );
+
+		$this->assertTrue(
+			$this->sync->test_checkin_exists(
+				[
+					'id'         => 'new-id',
+					'timestamp'  => 1789243200,
+					'venue_name' => 'Blue Bottle Coffee',
+				]
+			)
+		);
+	}
+
+	/**
+	 * A post more than five minutes away isn't a match.
+	 */
+	public function test_checkin_exists_ignores_a_site_checkin_outside_the_window(): void {
+		$this->create_site_checkin( 1789243200 + 900, 'Blue Bottle Coffee' );
+
+		$this->assertFalse(
+			$this->sync->test_checkin_exists(
+				[
+					'id'         => 'new-id',
+					'timestamp'  => 1789243200,
+					'venue_name' => 'Blue Bottle Coffee',
+				]
+			)
+		);
+	}
+
+	/**
+	 * An earlier import of a different check-in at the same venue, such as
+	 * a second beer at the same bar, isn't a duplicate of this one.
+	 *
+	 * @dataProvider other_checkin_meta_provider
+	 *
+	 * @param string $key   Meta key the earlier import carries.
+	 * @param string $value Its value.
+	 */
+	public function test_checkin_exists_ignores_another_known_checkin_at_the_same_venue( string $key, string $value ): void {
+		$post_id = $this->create_site_checkin( 1789243200 + 120, 'Blue Bottle Coffee' );
+		update_post_meta( $post_id, $key, $value );
+
+		$this->assertFalse(
+			$this->sync->test_checkin_exists(
+				[
+					'id'         => 'new-id',
+					'timestamp'  => 1789243200,
+					'venue_name' => 'Blue Bottle Coffee',
+				]
+			)
+		);
+	}
+
+	/**
+	 * Meta that names an earlier post's own check-in.
+	 *
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public function other_checkin_meta_provider(): array {
+		return [
+			'sync check-in ID'        => [ '_pkiw_checkin_testservice_id', 'other-id' ],
+			'Import_Manager identity' => [ '_pkiw_import_source_id', 'testservice:other-id' ],
+		];
+	}
+
+	/**
+	 * A check-in post written on the site at a GMT time.
+	 *
+	 * @param int    $timestamp Unix time.
+	 * @param string $venue     Venue name.
+	 * @return int Post ID.
+	 */
+	private function create_site_checkin( int $timestamp, string $venue ): int {
+		$gmt     = gmdate( 'Y-m-d H:i:s', $timestamp );
+		$post_id = self::factory()->post->create(
+			[
+				'post_date'     => get_date_from_gmt( $gmt ),
+				'post_date_gmt' => $gmt,
+			]
+		);
+		update_post_meta( $post_id, '_pkiw_checkin_name', $venue );
+
+		return $post_id;
+	}
+
+	/**
 	 * Test checkin_exists returns false with empty ID.
 	 */
 	public function test_checkin_exists_false_empty_id(): void {
@@ -341,15 +485,27 @@ class CheckinSyncBaseTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test get_checkin_data includes foursquare ID when present.
+	 * The Foursquare venue ID for POSSE comes from `_pkiw_checkin_venue_id`.
 	 */
-	public function test_get_checkin_data_includes_foursquare_id(): void {
+	public function test_get_checkin_data_reads_the_venue_id(): void {
 		$post_id = self::factory()->post->create();
-		update_post_meta( $post_id, '_pkiw_checkin_foursquare_id', 'fsq-789' );
+		update_post_meta( $post_id, '_pkiw_checkin_venue_id', 'v1' );
 
 		$data = $this->sync->test_get_checkin_data_from_post( $post_id );
 
-		$this->assertSame( 'fsq-789', $data['foursquare_id'] );
+		$this->assertSame( 'v1', $data['foursquare_id'] );
+	}
+
+	/**
+	 * `_pkiw_checkin_foursquare_id` holds a check-in ID, never sent as a venue.
+	 */
+	public function test_get_checkin_data_does_not_send_the_checkin_id_as_a_venue(): void {
+		$post_id = self::factory()->post->create();
+		update_post_meta( $post_id, '_pkiw_checkin_foursquare_id', 'fsq-checkin-789' );
+
+		$data = $this->sync->test_get_checkin_data_from_post( $post_id );
+
+		$this->assertArrayNotHasKey( 'foursquare_id', $data );
 	}
 
 	/**
