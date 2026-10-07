@@ -52,7 +52,7 @@ final class CardImageAltTest extends WP_UnitTestCase {
 		$this->assertSame( 'Box art for Fictional Quest', $this->image_alt( $html ) );
 	}
 
-	public function test_a_listen_cover_in_the_media_library_keeps_core_srcset_and_its_stored_url(): void {
+	public function test_a_free_standing_listen_cover_in_the_media_library_keeps_core_srcset(): void {
 		$image_id = self::factory()->attachment->create_upload_object( DIR_TESTDATA . '/images/canola.jpg' );
 		$url      = wp_get_attachment_url( $image_id );
 		$html     = $this->render_card(
@@ -67,7 +67,7 @@ final class CardImageAltTest extends WP_UnitTestCase {
 
 		$img = new WP_HTML_Tag_Processor( $html );
 		$this->assertTrue( $img->next_tag( 'img' ) );
-		$this->assertSame( $url, $img->get_attribute( 'src' ), 'At full size the src is the library image\'s current file.' );
+		$this->assertSame( $url, $img->get_attribute( 'src' ), 'With no edit since upload, the library image\'s current file is the stored URL.' );
 		$this->assertSame( 'u-photo', $img->get_attribute( 'class' ) );
 		$this->assertSame( 'A fictional sleeve', $img->get_attribute( 'alt' ) );
 		$this->assertSame( 'lazy', $img->get_attribute( 'loading' ) );
@@ -125,6 +125,47 @@ final class CardImageAltTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( wp_get_attachment_image_url( $image_id, 'medium' ) . ' ', (string) $img->get_attribute( 'srcset' ) );
 		$this->assertSame( '640', $img->get_attribute( 'width' ) );
 		$this->assertSame( '480', $img->get_attribute( 'height' ) );
+	}
+
+	public function test_a_listen_post_cover_prints_the_library_images_current_file_after_an_edit(): void {
+		$image_id = self::factory()->attachment->create_upload_object( DIR_TESTDATA . '/images/canola.jpg' );
+		$url      = wp_get_attachment_url( $image_id );
+		$post_id  = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => sprintf(
+					'<!-- wp:post-kinds-indieweb/listen-card %s /-->',
+					wp_json_encode(
+						[
+							'trackTitle' => 'Fictional Song',
+							'artistName' => 'Fictional Band',
+							'coverImage' => $url,
+						],
+						JSON_UNESCAPED_SLASHES
+					)
+				),
+			]
+		);
+		$this->assertSame( [ $url => $image_id ], get_metadata_raw( 'post', $post_id, \PKIW\COVER_ATTACHMENTS_META, true ) );
+
+		// A Media Library edit of the full image saves it under a new name.
+		$edited = preg_replace( '/\.jpg$/', '-e1700000000.jpg', (string) get_attached_file( $image_id ) );
+		update_attached_file( $image_id, $edited );
+		$edited_url = wp_get_attachment_url( $image_id );
+		$this->assertNotSame( $url, $edited_url );
+
+		$this->go_to( get_permalink( $post_id ) );
+		$this->assertTrue( have_posts() );
+		the_post();
+		$html = apply_filters( 'the_content', get_the_content() );
+
+		$img = new WP_HTML_Tag_Processor( $html );
+		$this->assertTrue( $img->next_tag( [ 'class_name' => 'u-photo' ] ) );
+		$this->assertSame( $edited_url, $img->get_attribute( 'src' ), 'The src is the library image\'s current file, not the cover URL stored in the block.' );
+		$this->assertSame( '640', $img->get_attribute( 'width' ) );
+
+		$parsed = \Mf2\parse( '<div class="h-entry">' . $html . '</div>' );
+		$this->assertStringContainsString( '"photo":[{"value":"' . $edited_url . '"', (string) wp_json_encode( $parsed, JSON_UNESCAPED_SLASHES ) );
 	}
 
 	/**
