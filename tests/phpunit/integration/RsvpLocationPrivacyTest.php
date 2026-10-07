@@ -1471,6 +1471,158 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( self::LOCATION, $this->atmosphere_cron_text_content( $hook, $rsvp ), 'A public RSVP.' );
 	}
 
+	/**
+	 * A public RSVP ATmosphere has shared, on a site connected with
+	 * auto-publish on, with no ATmosphere cron queued for it.
+	 *
+	 * @return int Post ID.
+	 */
+	private function shared_public_rsvp(): int {
+		if ( ! defined( 'ATMOSPHERE_VERSION' ) ) {
+			$this->markTestSkipped( 'Set PKIW_TESTS_ATMOSPHERE_FILE to run ATmosphere\'s scheduling.' );
+		}
+
+		update_option( 'atmosphere_identity', [ 'did' => 'did:plc:pkiwtest251' ] );
+		update_option( 'atmosphere_did', 'did:plc:pkiwtest251' );
+		update_option( 'atmosphere_connection', [ 'access_token' => 'test-token' ] );
+		add_filter( 'atmosphere_should_auto_publish', '__return_true' );
+		$this->assertTrue( \Atmosphere\is_connected(), 'ATmosphere is connected.' );
+
+		$id = $this->rsvp( 'yes', 'future', 'public' );
+		update_post_meta( $id, \Atmosphere\Transformer\Post::META_TID, '3pkiwtest251' );
+		foreach ( [ 'atmosphere_publish_post', 'atmosphere_update_post', 'atmosphere_delete_post' ] as $hook ) {
+			wp_clear_scheduled_hook( $hook, [ $id ] );
+		}
+		$this->assertTrue( \Atmosphere\is_post_publishable( get_post( $id ) ), 'ATmosphere shares the RSVP.' );
+		$this->assertSame( 'public', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+
+		return $id;
+	}
+
+	/**
+	 * Settings that hide an RSVP's location, as the update-post-meta ability
+	 * takes them: its own setting, and the post's location privacy, which
+	 * rsvp_location_visible() lets win.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function rsvp_location_privacy_keys(): array {
+		return [
+			'RSVP location setting' => [ 'rsvp_location_privacy' ],
+			'location privacy'      => [ 'geo_privacy' ],
+		];
+	}
+
+	/**
+	 * Switching only a setting that hides a shared RSVP's location, through
+	 * the update-post-meta ability, queues ATmosphere's update, so the
+	 * record is rebuilt without the location. ATmosphere queues an update on
+	 * a status transition and on its own share meta only, and the ability
+	 * writes the row with update_post_meta() and no save.
+	 *
+	 * @dataProvider rsvp_location_privacy_keys
+	 * @group atmosphere
+	 *
+	 * @param string $key Meta field key without the _pkiw_ prefix.
+	 */
+	public function test_making_a_shared_rsvp_location_private_through_the_ability_queues_an_atmosphere_update( string $key ): void {
+		$id = $this->shared_public_rsvp();
+		$this->as_editor();
+
+		$result = Core_Abilities::instance()->execute_update_post_meta(
+			[
+				'post_id'    => $id,
+				'meta_key'   => $key, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value' => 'private', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			]
+		);
+
+		$this->assertIsArray( $result );
+		$this->assertFalse( Meta_Fields::rsvp_location_visible( $id ), 'The location is private.' );
+		$this->assertNotFalse( wp_next_scheduled( 'atmosphere_update_post', [ $id ] ), 'ATmosphere\'s update is queued.' );
+	}
+
+	/**
+	 * An RSVP ATmosphere never shared queues nothing when its setting
+	 * changes, because ATmosphere's update would share it for the first
+	 * time.
+	 *
+	 * @group atmosphere
+	 */
+	public function test_an_rsvp_atmosphere_never_shared_queues_nothing_when_its_location_goes_private(): void {
+		$id = $this->shared_public_rsvp();
+		delete_post_meta( $id, \Atmosphere\Transformer\Post::META_TID );
+		$this->as_editor();
+
+		Core_Abilities::instance()->execute_update_post_meta(
+			[
+				'post_id'    => $id,
+				'meta_key'   => 'rsvp_location_privacy', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value' => 'private', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			]
+		);
+
+		$this->assertSame( 'private', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+		$this->assertFalse( wp_next_scheduled( 'atmosphere_update_post', [ $id ] ) );
+		$this->assertFalse( wp_next_scheduled( 'atmosphere_publish_post', [ $id ] ) );
+	}
+
+	/**
+	 * The same switch through REST meta goes through wp_update_post(), whose
+	 * publish-to-publish transition queues ATmosphere's update, and the
+	 * update runs after the meta write.
+	 *
+	 * @group atmosphere
+	 */
+	public function test_making_a_shared_rsvp_location_private_through_rest_queues_an_atmosphere_update(): void {
+		$id = $this->shared_public_rsvp();
+		$this->as_editor();
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/posts/' . $id );
+		$request->set_body_params( [ 'meta' => [ '_pkiw_rsvp_location_privacy' => 'private' ] ] );
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 'private', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+		$this->assertNotFalse( wp_next_scheduled( 'atmosphere_update_post', [ $id ] ), 'ATmosphere\'s update is queued.' );
+	}
+
+	/**
+	 * The acquisition cost toggle isn't a field either path can write: the
+	 * ability takes only Meta_Fields' registered fields, and REST meta
+	 * leaves an unregistered key alone. It follows the card's "Show cost
+	 * publicly" through Card_Meta_Sync at save_post, inside the save that
+	 * queues ATmosphere's update.
+	 *
+	 * @group atmosphere
+	 */
+	public function test_the_acquisition_cost_toggle_changes_only_with_its_card(): void {
+		$this->as_editor();
+		$attrs = [
+			'title'            => 'Brass lamp Rv51',
+			'acquisitionType'  => 'purchase',
+			'cost'             => '$149.99',
+			'showCostPublicly' => true,
+		];
+		$id    = $this->post_with( '<!-- wp:post-kinds-indieweb/acquisition-card ' . wp_json_encode( $attrs ) . ' /-->', [ 'acquisition' ] );
+		$this->assertSame( '1', get_post_meta( $id, Meta_Fields::COST_PUBLIC_KEY, true ), 'The card set the toggle.' );
+
+		$result = Core_Abilities::instance()->execute_update_post_meta(
+			[
+				'post_id'    => $id,
+				'meta_key'   => 'acquisition_cost_public', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value' => '', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			]
+		);
+		$this->assertWPError( $result );
+		$this->assertSame( 'invalid_meta_key', $result->get_error_code() );
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/posts/' . $id );
+		$request->set_body_params( [ 'meta' => [ Meta_Fields::COST_PUBLIC_KEY => '' ] ] );
+		$this->assertSame( 200, rest_do_request( $request )->get_status() );
+		$this->assertSame( '1', get_post_meta( $id, Meta_Fields::COST_PUBLIC_KEY, true ), 'REST leaves the toggle alone.' );
+	}
+
 	public function test_an_event_card_on_a_private_rsvp_prints_no_calendar_location(): void {
 		$venue = 'Calendar Hall Rv51';
 		add_filter(
