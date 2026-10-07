@@ -725,6 +725,147 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Play cards over stored provider IDs. bggId files a play as board,
+	 * rawgId and steamId as video. A card clears a stored ID only when it
+	 * names an ID from the other group and none from the stored ID's own,
+	 * and only a non-blank string names an ID.
+	 *
+	 * @return array<string, array{0: array<string, mixed>, 1: array<string, string>, 2: array<string, ?string>}>
+	 */
+	public function provider_id_cards(): array {
+		return [
+			'a RAWG card keeps a stored Steam ID'               => [
+				[ 'title' => 'Dota 2', 'rawgId' => '3498' ],
+				[ '_pkiw_play_steam_id' => '570' ],
+				[ '_pkiw_play_rawg_id' => '3498', '_pkiw_play_steam_id' => '570' ],
+			],
+			'a Steam card keeps a stored RAWG ID'               => [
+				[ 'title' => 'Dota 2', 'steamId' => '570' ],
+				[ '_pkiw_play_rawg_id' => '3498' ],
+				[ '_pkiw_play_rawg_id' => '3498', '_pkiw_play_steam_id' => '570' ],
+			],
+			'a card naming BGG and RAWG keeps a stored Steam ID' => [
+				[ 'title' => 'Catan', 'bggId' => '13', 'rawgId' => '3498' ],
+				[ '_pkiw_play_steam_id' => '570' ],
+				[ '_pkiw_play_bgg_id' => '13', '_pkiw_play_rawg_id' => '3498', '_pkiw_play_steam_id' => '570' ],
+			],
+			'a RAWG card clears a stored BGG ID'                => [
+				[ 'title' => 'Catan', 'rawgId' => '3498' ],
+				[ '_pkiw_play_bgg_id' => '13' ],
+				[ '_pkiw_play_bgg_id' => null, '_pkiw_play_rawg_id' => '3498' ],
+			],
+			'a whitespace RAWG ID keeps the stored one'         => [
+				[ 'title' => 'Chess', 'rawgId' => '   ' ],
+				[ '_pkiw_play_rawg_id' => '3498' ],
+				[ '_pkiw_play_rawg_id' => '3498' ],
+			],
+			'a whitespace BGG ID keeps the stored IDs'          => [
+				[ 'title' => 'Chess', 'bggId' => ' ' ],
+				[ '_pkiw_play_bgg_id' => '9990099', '_pkiw_play_rawg_id' => '3498' ],
+				[ '_pkiw_play_bgg_id' => '9990099', '_pkiw_play_rawg_id' => '3498' ],
+			],
+			'a BGG ID of 0 names no provider'                   => [
+				[ 'title' => 'Chess', 'bggId' => 0 ],
+				[ '_pkiw_play_rawg_id' => '3498' ],
+				[ '_pkiw_play_rawg_id' => '3498', '_pkiw_play_bgg_id' => null ],
+			],
+			'a RAWG ID of true names no provider'               => [
+				[ 'title' => 'Chess', 'rawgId' => true ],
+				[ '_pkiw_play_steam_id' => '900006' ],
+				[ '_pkiw_play_steam_id' => '900006', '_pkiw_play_rawg_id' => null ],
+			],
+			'a RAWG ID of false keeps the stored one'           => [
+				[ 'title' => 'Chess', 'rawgId' => false ],
+				[ '_pkiw_play_rawg_id' => '3498' ],
+				[ '_pkiw_play_rawg_id' => '3498' ],
+			],
+		];
+	}
+
+	/**
+	 * A post with provider IDs stored and no card, as the sidebar or Quick
+	 * Post leaves it.
+	 *
+	 * @param array<string, string> $stored Meta key => provider ID.
+	 * @return int Post ID.
+	 */
+	private function play_with_stored_ids( array $stored ): int {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:paragraph --><p>Game night.</p><!-- /wp:paragraph -->',
+		] );
+		foreach ( $stored as $key => $id ) {
+			update_post_meta( $post_id, $key, $id );
+		}
+
+		return $post_id;
+	}
+
+	/**
+	 * @param int                   $post_id  Post ID.
+	 * @param array<string, ?string> $expected Meta key => raw row, null for none.
+	 */
+	private function assert_provider_ids( int $post_id, array $expected ): void {
+		foreach ( $expected as $key => $value ) {
+			$this->assertSame( $value, get_metadata_raw( 'post', $post_id, $key, true ), $key );
+		}
+	}
+
+	/**
+	 * A REST save that adds the card, with no request meta.
+	 *
+	 * @dataProvider provider_id_cards
+	 *
+	 * @param array<string, mixed>   $attrs    Play-card attributes.
+	 * @param array<string, string>  $stored   Provider IDs stored before the save.
+	 * @param array<string, ?string> $expected Raw rows after it.
+	 */
+	public function test_a_play_card_settles_stored_provider_ids_on_save( array $attrs, array $stored, array $expected ): void {
+		$post_id = $this->play_with_stored_ids( $stored );
+
+		$this->rest_update( $post_id, '<!-- wp:post-kinds-indieweb/play-card ' . wp_json_encode( $attrs ) . ' /-->' );
+
+		$this->assert_provider_ids( $post_id, $expected );
+	}
+
+	/**
+	 * The same save with the stored IDs sent back as request meta, as the
+	 * editor sends what it loaded, so the after-insert pass decides.
+	 *
+	 * @dataProvider provider_id_cards
+	 *
+	 * @param array<string, mixed>   $attrs    Play-card attributes.
+	 * @param array<string, string>  $stored   Provider IDs stored before the save and sent as request meta.
+	 * @param array<string, ?string> $expected Raw rows after it.
+	 */
+	public function test_a_play_card_settles_provider_ids_from_request_meta( array $attrs, array $stored, array $expected ): void {
+		$post_id = $this->play_with_stored_ids( $stored );
+
+		$this->rest_update( $post_id, '<!-- wp:post-kinds-indieweb/play-card ' . wp_json_encode( $attrs ) . ' /-->', $stored );
+
+		$this->assert_provider_ids( $post_id, $expected );
+	}
+
+	/**
+	 * The backfill applies the same rule to a card already in post_content.
+	 *
+	 * @dataProvider provider_id_cards
+	 *
+	 * @param array<string, mixed>   $attrs    Play-card attributes.
+	 * @param array<string, string>  $stored   Provider IDs stored before the backfill.
+	 * @param array<string, ?string> $expected Raw rows after it.
+	 */
+	public function test_the_backfill_settles_provider_ids_by_the_same_rule( array $attrs, array $stored, array $expected ): void {
+		global $wpdb;
+		$post_id = $this->play_with_stored_ids( $stored );
+		$wpdb->update( $wpdb->posts, [ 'post_content' => '<!-- wp:post-kinds-indieweb/play-card ' . wp_json_encode( $attrs ) . ' /-->' ], [ 'ID' => $post_id ] );
+		clean_post_cache( $post_id );
+
+		\PKIW\Card_Meta_Sync::backfill_batch( 0, 100 );
+
+		$this->assert_provider_ids( $post_id, $expected );
+	}
+
+	/**
 	 * #340 shipped version 3 on main, so W1 needs its own number.
 	 */
 	public function test_w1_bumps_the_backfill_version_once_to_4(): void {
