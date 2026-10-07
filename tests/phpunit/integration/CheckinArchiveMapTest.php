@@ -36,6 +36,15 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Make is_admin() false, whatever screen an earlier test left.
+	 */
+	private function on_front_end(): void {
+		require_once ABSPATH . 'wp-admin/includes/class-wp-screen.php';
+		require_once ABSPATH . 'wp-admin/includes/screen.php';
+		set_current_screen( 'front' );
+	}
+
+	/**
 	 * Forget map assets an earlier test in the process enqueued.
 	 */
 	private function dequeue_map_assets(): void {
@@ -411,13 +420,17 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 	}
 
 	public function test_front_end_block_assets_load_no_map_until_a_map_renders(): void {
+		$this->on_front_end();
 		$this->dequeue_map_assets();
 
 		do_action( 'enqueue_block_assets' );
 
-		$this->assertFalse( wp_script_is( 'pkiw-checkin-map', 'enqueued' ) );
-		$this->assertFalse( wp_script_is( 'leaflet', 'enqueued' ) );
-		$this->assertFalse( wp_style_is( 'leaflet', 'enqueued' ) );
+		// The queues themselves: an admin style that depends on Leaflet,
+		// enqueued by an earlier test, makes wp_style_is() report Leaflet.
+		$this->assertNotContains( 'pkiw-checkin-map', wp_scripts()->queue );
+		$this->assertNotContains( 'leaflet', wp_scripts()->queue );
+		$this->assertNotContains( 'leaflet', wp_styles()->queue );
+		$this->assertNotContains( 'leaflet-markercluster', wp_styles()->queue );
 	}
 
 	public function test_archive_template_ships_and_carries_the_page_contract(): void {
