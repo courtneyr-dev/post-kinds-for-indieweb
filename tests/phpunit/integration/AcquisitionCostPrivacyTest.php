@@ -79,12 +79,17 @@ final class AcquisitionCostPrivacyTest extends WP_UnitTestCase {
 	 * comment plus the static HTML save.js printed, cost included. Live
 	 * acquisitions hold this markup.
 	 *
-	 * @param bool $show_cost Whether the card's "Show cost publicly" toggle is on.
+	 * @param bool   $show_cost  Whether the card's "Show cost publicly" toggle is on.
+	 * @param string $title      Card title.
+	 * @param string $cost       Card cost.
+	 * @param string $cost_class Class of the paragraph save.js printed cost
+	 *                           into: post-kinds-card__subtitle, or before
+	 *                           v1.1.0 acquisition-cost, then reactions-card__subtitle.
 	 */
-	private function saved_card( bool $show_cost ): string {
+	private function saved_card( bool $show_cost, string $title = self::TITLE, string $cost = self::COST, string $cost_class = 'post-kinds-card__subtitle' ): string {
 		$attrs = [
-			'title' => self::TITLE,
-			'cost'  => self::COST,
+			'title' => $title,
+			'cost'  => $cost,
 			'where' => self::WHERE,
 		];
 		if ( $show_cost ) {
@@ -93,10 +98,10 @@ final class AcquisitionCostPrivacyTest extends WP_UnitTestCase {
 
 		return '<!-- wp:post-kinds-indieweb/acquisition-card ' . serialize_block_attributes( $attrs ) . ' -->'
 			. '<div class="wp-block-post-kinds-indieweb-acquisition-card acquisition-card layout-horizontal"><div class="post-kinds-card h-cite"><div class="post-kinds-card__content">'
-			. '<span class="post-kinds-card__badge">Purchase</span><h3 class="post-kinds-card__title p-name">' . self::TITLE . '</h3>'
-			. '<p class="post-kinds-card__subtitle">' . self::COST . '</p>'
+			. '<span class="post-kinds-card__badge">Purchase</span><h3 class="post-kinds-card__title p-name">' . $title . '</h3>'
+			. '<p class="' . $cost_class . '">' . $cost . '</p>'
 			. '<p class="post-kinds-card__meta p-location">from ' . self::WHERE . '</p></div>'
-			. '<data class="u-acquired" value="' . self::TITLE . '" hidden></data></div></div>'
+			. '<data class="u-acquired" value="' . $title . '" hidden></data></div></div>'
 			. '<!-- /wp:post-kinds-indieweb/acquisition-card -->';
 	}
 
@@ -121,6 +126,46 @@ final class AcquisitionCostPrivacyTest extends WP_UnitTestCase {
 		update_post_meta( $id, self::PRICE_KEY, self::COST );
 
 		return $id;
+	}
+
+	/**
+	 * A published acquisition whose card is stored editor markup with a
+	 * private cost, under pretty permalinks so the URL holds the title.
+	 *
+	 * @param string               $title      Post and card title.
+	 * @param string               $cost       Card cost.
+	 * @param string               $before     Content before the card.
+	 * @param string               $cost_class See saved_card().
+	 * @param array<string, mixed> $post       Post field overrides.
+	 * @return int Post ID.
+	 */
+	private function stored_acquisition( string $title, string $cost, string $before = '', string $cost_class = 'post-kinds-card__subtitle', array $post = [] ): int {
+		$this->set_permalink_structure( '/%year%/%monthnum%/%postname%/' );
+		$id = self::factory()->post->create(
+			array_merge(
+				[
+					'post_status'  => 'publish',
+					'post_title'   => $title,
+					'post_excerpt' => '',
+					'post_date'    => '2026-10-05 10:00:00',
+					'post_content' => $before . $this->saved_card( false, $title, $cost, $cost_class ),
+				],
+				$post
+			)
+		);
+		wp_set_object_terms( $id, 'acquisition', 'kind' );
+
+		return $id;
+	}
+
+	/**
+	 * A paragraph block of $count words, then the blank line the block
+	 * serializer puts between blocks.
+	 *
+	 * @param int $count Words.
+	 */
+	private function words( int $count ): string {
+		return '<!-- wp:paragraph --><p>' . trim( str_repeat( 'word ', $count ) ) . "</p><!-- /wp:paragraph -->\n\n";
 	}
 
 	/**
@@ -222,6 +267,56 @@ final class AcquisitionCostPrivacyTest extends WP_UnitTestCase {
 	 */
 	private function register_atmosphere_filters(): void {
 		( new Atmosphere_Document_Map() )->register();
+	}
+
+	/**
+	 * A Bluesky post record with a link facet over its trailing permalink,
+	 * through PKIW's filter.
+	 *
+	 * @param int    $id        Post ID.
+	 * @param string $text      Record text, ending with the permalink.
+	 * @param string $permalink The permalink.
+	 * @return array<string, mixed>
+	 */
+	private function filtered_bsky_post( int $id, string $text, string $permalink ): array {
+		$start = strrpos( $text, $permalink );
+		$this->register_atmosphere_filters();
+
+		return apply_filters(
+			'atmosphere_transform_bsky_post',
+			[
+				'$type'  => 'app.bsky.feed.post',
+				'text'   => $text,
+				'facets' => [
+					[
+						'index'    => [
+							'byteStart' => $start,
+							'byteEnd'   => $start + strlen( $permalink ),
+						],
+						'features' => [
+							[
+								'$type' => 'app.bsky.richtext.facet#link',
+								'uri'   => $permalink,
+							],
+						],
+					],
+				],
+			],
+			get_post( $id ),
+			[ 'strategy' => 'link-card' ]
+		);
+	}
+
+	/**
+	 * Assert the record's only facet still covers the permalink.
+	 *
+	 * @param array<string, mixed> $record    Bluesky post record.
+	 * @param string               $permalink The permalink.
+	 */
+	private function assert_link_facet( array $record, string $permalink ): void {
+		$this->assertCount( 1, $record['facets'], 'The link facet survives.' );
+		$index = $record['facets'][0]['index'];
+		$this->assertSame( $permalink, substr( $record['text'], $index['byteStart'], $index['byteEnd'] - $index['byteStart'] ), 'The link facet still points at the permalink.' );
 	}
 
 	/**
@@ -627,5 +722,162 @@ final class AcquisitionCostPrivacyTest extends WP_UnitTestCase {
 
 		$record = apply_filters( 'atmosphere_transform_document', [ 'description' => $excerpt ], get_post( $id ) );
 		$this->assertSame( $excerpt, $record['description'] );
+	}
+
+	public function test_a_cost_in_the_title_and_permalink_stays_there(): void {
+		// A short private cost also appears in the title and the URL. Only
+		// the excerpt ATmosphere took from post_content loses it.
+		$id        = $this->stored_acquisition( 'Top 20 lamps', '20' );
+		$permalink = get_permalink( $id );
+		$this->assertStringContainsString( '/top-20-lamps/', $permalink );
+		$clean = 'PurchaseTop 20 lampsfrom ' . self::WHERE;
+		$this->assertSame( 'PurchaseTop 20 lamps20from ' . self::WHERE, $this->atmosphere_excerpt( $id, 30 ), 'ATmosphere\'s own excerpt holds the cost.' );
+
+		$record = $this->filtered_bsky_post( $id, "Top 20 lamps\n\n" . $this->atmosphere_excerpt( $id, 30 ) . "\n\n" . $permalink, $permalink );
+		$this->assertSame( "Top 20 lamps\n\n" . $clean . "\n\n" . $permalink, $record['text'] );
+		$this->assert_link_facet( $record, $permalink );
+
+		$document = apply_filters( 'atmosphere_transform_document', [ 'title' => 'Top 20 lamps', 'description' => $this->atmosphere_excerpt( $id, 55 ) ], get_post( $id ) );
+		$this->assertSame( 'Top 20 lamps', $document['title'] );
+		$this->assertSame( $clean, $document['description'] );
+
+		$external = [
+			'uri'         => $permalink,
+			'title'       => 'Top 20 lamps',
+			'description' => $this->atmosphere_excerpt( $id, 55 ),
+		];
+		$embed    = apply_filters( 'atmosphere_post_embed', [ 'external' => $external ], get_post( $id ), 'link-card' );
+		$this->assertSame( [ 'external' => array_merge( $external, [ 'description' => $clean ] ) ], $embed );
+	}
+
+	public function test_atmosphere_text_from_a_bare_card_is_left_alone(): void {
+		// The bare block comment puts no cost in ATmosphere's excerpt.
+		$this->set_permalink_structure( '/%year%/%monthnum%/%postname%/' );
+		$id        = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Top 20 lamps',
+				'post_content' => '<!-- wp:post-kinds-indieweb/acquisition-card ' . wp_json_encode(
+					[
+						'title' => 'Top 20 lamps',
+						'cost'  => '20',
+						'where' => self::WHERE,
+					]
+				) . ' /-->',
+			]
+		);
+		$permalink = get_permalink( $id );
+		$text      = "Top 20 lamps\n\n" . $permalink;
+
+		$record = $this->filtered_bsky_post( $id, $text, $permalink );
+
+		$this->assertSame( $text, $record['text'] );
+		$this->assert_link_facet( $record, $permalink );
+	}
+
+	public function test_atmosphere_text_from_the_authors_excerpt_is_left_alone(): void {
+		// ATmosphere uses a written excerpt as it is, without post_content.
+		$excerpt   = 'Top 20 picks under 20 dollars';
+		$id        = $this->stored_acquisition( 'Top 20 lamps', '20', '', 'post-kinds-card__subtitle', [ 'post_excerpt' => $excerpt ] );
+		$permalink = get_permalink( $id );
+		$text      = "Top 20 lamps\n\n" . $excerpt . "\n\n" . $permalink;
+
+		$this->assertSame( $text, $this->filtered_bsky_post( $id, $text, $permalink )['text'] );
+		$document = apply_filters( 'atmosphere_transform_document', [ 'description' => $excerpt ], get_post( $id ) );
+		$this->assertSame( $excerpt, $document['description'] );
+	}
+
+	/**
+	 * ATmosphere's word limits: 55 for the document description, 30 for
+	 * the Bluesky post text.
+	 *
+	 * @return array<string, array{0: int}>
+	 */
+	public function excerpt_word_limits(): array {
+		return [
+			'document description' => [ 55 ],
+			'Bluesky post text'    => [ 30 ],
+		];
+	}
+
+	/**
+	 * @dataProvider excerpt_word_limits
+	 *
+	 * @param int $limit Words in ATmosphere's excerpt.
+	 */
+	public function test_a_cost_cut_by_the_word_limit_leaves_no_part_behind( int $limit ): void {
+		// The excerpt's last word ends inside the two-word cost '149 USD'.
+		$id      = $this->stored_acquisition( 'Lamp', '149 USD', $this->words( $limit - 1 ) );
+		$excerpt = $this->atmosphere_excerpt( $id, $limit );
+		$this->assertStringEndsWith( 'PurchaseLamp149...', $excerpt, 'The cut lands inside the cost.' );
+
+		if ( 55 === $limit ) {
+			$this->register_atmosphere_filters();
+			$text = apply_filters( 'atmosphere_transform_document', [ 'description' => $excerpt ], get_post( $id ) )['description'];
+		} else {
+			$permalink = get_permalink( $id );
+			$record    = $this->filtered_bsky_post( $id, "Lamp\n\n" . $excerpt . "\n\n" . $permalink, $permalink );
+			$text      = $record['text'];
+			$this->assert_link_facet( $record, $permalink );
+		}
+
+		$this->assertStringNotContainsString( '149', $text );
+		$this->assertStringContainsString( 'PurchaseLampfrom', $text );
+	}
+
+	public function test_a_post_text_cut_to_fit_bluesky_carries_no_cost(): void {
+		// A long title leaves room for part of the excerpt, which ATmosphere
+		// cuts short with '...' to keep the post within 300 characters.
+		$title     = trim( str_repeat( 'Walnut desk lamp, ', 13 ) );
+		$id        = $this->stored_acquisition(
+			'Lamp',
+			self::COST,
+			'',
+			'post-kinds-card__subtitle',
+			[
+				'post_title' => $title,
+				'post_name'  => 'lamp',
+			]
+		);
+		$permalink = get_permalink( $id );
+		$this->assertStringStartsWith( 'PurchaseLamp$149.99from Corner', $this->atmosphere_excerpt( $id, 30 ) );
+		// ATmosphere's truncate_text() cut, at the last space in the budget.
+		$text = $title . "\n\nPurchaseLamp$149.99from...\n\n" . $permalink;
+		$this->assertLessThanOrEqual( 300, mb_strlen( $text ) );
+
+		$record = $this->filtered_bsky_post( $id, $text, $permalink );
+
+		$this->assertStringNotContainsString( self::COST_TEXT, $record['text'] );
+		$this->assertStringStartsWith( $title . "\n\nPurchaseLampfrom Corner", $record['text'] );
+		$this->assertLessThanOrEqual( mb_strlen( $text ), mb_strlen( $record['text'] ), 'The text gets no longer.' );
+		$this->assert_link_facet( $record, $permalink );
+	}
+
+	/**
+	 * The paragraph classes save.js printed cost into before
+	 * post-kinds-card__subtitle (7f569ee, then 65c799a to 478db24).
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function older_cost_classes(): array {
+		return [
+			'acquisition-cost'         => [ 'acquisition-cost' ],
+			'reactions-card__subtitle' => [ 'reactions-card__subtitle' ],
+		];
+	}
+
+	/**
+	 * @dataProvider older_cost_classes
+	 *
+	 * @param string $cost_class Class of the cost paragraph.
+	 */
+	public function test_older_cost_markup_stays_out_of_raw_content_readers( string $cost_class ): void {
+		$id = $this->stored_acquisition( self::TITLE, self::COST, '', $cost_class );
+
+		$summary = $this->activitypub_summary_source( $id );
+		$this->assertStringContainsString( self::WHERE, $summary );
+		$this->assertStringNotContainsString( self::COST_TEXT, $summary );
+		$this->assertNotContains( $id, $this->search_ids( 'Zq9 149.99' ) );
+		$this->assertContains( $id, $this->search_ids( 'Zq9 Corner' ), 'Search still finds the visible text.' );
 	}
 }
