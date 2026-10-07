@@ -25,6 +25,288 @@ final class StreamCardTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Whether this test registered the stand-in play facts reader.
+	 *
+	 * @var bool
+	 */
+	private bool $registered_play_reader = false;
+
+	public function tear_down(): void {
+		if ( $this->registered_play_reader ) {
+			$registered = new ReflectionProperty( \PKIW\Kind_Facts::class, 'registered' );
+			$registered->setAccessible( true );
+			$readers = $registered->getValue();
+			unset( $readers['play'] );
+			$registered->setValue( null, $readers );
+			$this->registered_play_reader = false;
+		}
+		parent::tear_down();
+	}
+
+	/**
+	 * W1-PPLAY registers the play facts reader. Until it merges, a reader
+	 * with the same keys (#237 PL5) stands in, and only when none exists.
+	 */
+	private function ensure_play_reader(): void {
+		if ( null !== \PKIW\Kind_Facts::reader( 'play' ) ) {
+			return;
+		}
+		\PKIW\Kind_Facts::register(
+			'play',
+			static function ( int $post_id ): array {
+				$facts = [];
+				foreach ( [ 'title', 'game_url', 'bgg_id', 'rawg_id', 'steam_id' ] as $key ) {
+					$facts[ $key ] = (string) get_post_meta( $post_id, '_pkiw_play_' . $key, true );
+				}
+				return $facts;
+			}
+		);
+		$this->registered_play_reader = true;
+	}
+
+	/**
+	 * A published post of a kind, rendered through the stream-card block.
+	 *
+	 * @param string               $kind Kind slug.
+	 * @param array<string, mixed> $args Post arguments.
+	 * @return array{0: int, 1: string} Post ID and the Stream card HTML.
+	 */
+	private function stream_card_for( string $kind, array $args ): array {
+		$this->ensure_kind_term( $kind );
+		$post_id = self::factory()->post->create( array_merge( [ 'post_status' => 'publish' ], $args ) );
+		wp_set_object_terms( $post_id, $kind, 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		return [ $post_id, \PKIW\render_stream_card() ];
+	}
+
+	/**
+	 * The h-entry the Stream card parses to.
+	 *
+	 * @param string $html Stream card HTML.
+	 * @return array<string, mixed>
+	 */
+	private function parsed_entry( string $html ): array {
+		$items = \Mf2\parse( $html, 'https://example.org/' )['items'];
+		$this->assertCount( 1, $items );
+		$this->assertContains( 'h-entry', $items[0]['type'] );
+
+		return $items[0];
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: array<string, mixed>}>
+	 */
+	public function protected_card_posts(): array {
+		return [
+			'play' => [
+				'play',
+				[
+					'title'       => 'Locked Box',
+					'platform'    => 'Board Game',
+					'status'      => 'completed',
+					'hoursPlayed' => 2,
+					'rating'      => 5,
+					'review'      => 'Secret review text.',
+					'cover'       => 'https://example.test/covers/locked-box.jpg',
+					'gameUrl'     => 'https://example.test/games/locked-box',
+					'officialUrl' => 'https://example.test/official/locked-box',
+					'purchaseUrl' => 'https://example.test/buy/locked-box',
+					'bggId'       => '9990018',
+				],
+			],
+			'read' => [
+				'read',
+				[
+					'bookTitle'  => 'Locked Box',
+					'authorName' => 'A. Fictional',
+					'coverImage' => 'https://example.test/covers/locked-book.jpg',
+					'bookUrl'    => 'https://example.test/books/locked-box',
+					'readStatus' => 'finished',
+					'rating'     => 5,
+					'review'     => 'Secret review text.',
+				],
+			],
+		];
+	}
+
+	/**
+	 * A password-protected card-only post shows its title link and nothing
+	 * from the card: no review, links, rating, cover or excerpt (#232 check
+	 * gap 3, #237 check gap 2).
+	 *
+	 * @dataProvider protected_card_posts
+	 *
+	 * @param array<string, mixed> $attrs Card attributes.
+	 */
+	public function test_a_protected_card_only_post_shows_only_its_title_link( string $kind, array $attrs ): void {
+		$this->ensure_play_reader();
+		[ $post_id, $html ] = $this->stream_card_for(
+			$kind,
+			[
+				'post_title'    => 'Locked Box',
+				'post_password' => 'secret',
+				'post_content'  => '<!-- wp:post-kinds-indieweb/' . $kind . '-card ' . wp_json_encode( $attrs ) . ' /-->',
+			]
+		);
+
+		$this->assertTrue( post_password_required( $post_id ) );
+		$this->assertStringNotContainsString( 'k-' . $kind . ' h-cite', $html, 'No card markup.' );
+		$this->assertStringNotContainsString( 'Secret review text.', $html );
+		$this->assertStringNotContainsString( 'example.test', $html, 'No cover, game, book, official or buy link.' );
+		$this->assertStringNotContainsString( 'pk-stars', $html );
+		$this->assertStringNotContainsString( 'p-rating', $html );
+		$this->assertStringNotContainsString( 'A. Fictional', $html );
+		$this->assertStringNotContainsString( 'pk-excerpt', $html );
+		$this->assertStringNotContainsString( '<img', $html );
+
+		// The entry's hidden author and date stay; nothing else prints.
+		$visible = (string) preg_replace( '#<span class="pk-entry-props" hidden>.*?</span>$#s', '', str_replace( '</article>', '', $html ) );
+		$this->assertSame( 1, preg_match_all( '#<a\b[^>]*href="([^"]*)"#', $visible, $links ) );
+		$this->assertSame( get_permalink( $post_id ), $links[1][0] );
+		$this->assertSame( get_the_title( $post_id ), trim( wp_strip_all_tags( $visible ) ) );
+	}
+
+	/**
+	 * A protected long-form play prints no hidden citation either.
+	 */
+	public function test_a_protected_long_form_play_prints_no_citation(): void {
+		$this->ensure_play_reader();
+		[ , $html ] = $this->stream_card_for(
+			'play',
+			[
+				'post_title'    => 'Locked Box',
+				'post_password' => 'secret',
+				'post_content'  => '<!-- wp:post-kinds-indieweb/play-card {"title":"Locked Box","bggId":"9990018"} /-->'
+					. '<!-- wp:paragraph --><p>Secret session notes.</p><!-- /wp:paragraph -->',
+			]
+		);
+
+		$this->assertStringNotContainsString( 'Secret session notes.', $html );
+		$this->assertStringNotContainsString( 'h-cite', $html );
+		$this->assertStringNotContainsString( 'boardgamegeek', $html );
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: string, 2: string}>
+	 */
+	public function play_provider_uids(): array {
+		return [
+			'bgg'   => [ 'bggId', '9990019', 'https://boardgamegeek.com/boardgame/9990019' ],
+			'rawg'  => [ 'rawgId', '900010', 'https://rawg.io/games/900010' ],
+			'steam' => [ 'steamId', '900002', 'https://store.steampowered.com/app/900002' ],
+		];
+	}
+
+	/**
+	 * A play whose body holds a card and a paragraph renders the generic
+	 * card, which still carries the play-of citation with the game's name
+	 * and uid (#232 check gap 4, #237 check gap 0).
+	 *
+	 * @dataProvider play_provider_uids
+	 */
+	public function test_a_long_form_play_carries_a_play_of_citation_with_name_and_uid( string $attr, string $id, string $uid ): void {
+		$this->ensure_play_reader();
+		[ , $html ] = $this->stream_card_for(
+			'play',
+			[
+				'post_title'   => 'Game night notes',
+				'post_content' => '<!-- wp:post-kinds-indieweb/play-card {"title":"Tide Pool Commons","gameUrl":"https://example.test/games/tide-pool-commons","' . $attr . '":"' . $id . '"} /-->'
+					. '<!-- wp:paragraph --><p>We played twice.</p><!-- /wp:paragraph -->',
+			]
+		);
+
+		$this->assertStringContainsString( 'pk-card--stream', $html );
+		$cite = $this->parsed_entry( $html )['properties']['play-of'][0];
+		$this->assertSame( [ 'h-cite' ], $cite['type'] );
+		$this->assertSame( [ 'Tide Pool Commons' ], $cite['properties']['name'] );
+		$this->assertSame( [ $uid ], $cite['properties']['uid'] );
+		$this->assertSame( [ 'https://example.test/games/tide-pool-commons' ], $cite['properties']['url'] );
+		$this->assertSame( 'https://example.test/games/tide-pool-commons', $cite['value'] );
+	}
+
+	/**
+	 * A read with no card (the meta-only shape, like read 37874) carries a
+	 * read-of citation with the book's name and author (#234 check gap 2).
+	 */
+	public function test_a_meta_only_read_carries_a_read_of_citation_with_name_and_author(): void {
+		$this->ensure_kind_term( 'read' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Started a new book',
+				'post_content' => '<!-- wp:paragraph --><p>Twenty pages in.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'read', 'kind' );
+		update_post_meta( $post_id, '_pkiw_read_title', 'The Quiet Orchard' );
+		update_post_meta( $post_id, '_pkiw_read_author', 'A. Fictional' );
+		update_post_meta( $post_id, '_pkiw_read_url', 'https://example.test/books/the-quiet-orchard' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$cite = $this->parsed_entry( \PKIW\render_stream_card() )['properties']['read-of'][0];
+
+		$this->assertSame( [ 'h-cite' ], $cite['type'] );
+		$this->assertSame( [ 'The Quiet Orchard' ], $cite['properties']['name'] );
+		$this->assertSame( [ 'h-card' ], $cite['properties']['author'][0]['type'] );
+		$this->assertSame( [ 'A. Fictional' ], $cite['properties']['author'][0]['properties']['name'] );
+		$this->assertSame( [ 'https://example.test/books/the-quiet-orchard' ], $cite['properties']['url'] );
+	}
+
+	/**
+	 * A play or read whose facts come back empty prints no citation.
+	 *
+	 * @dataProvider kinds_with_a_citation
+	 */
+	public function test_a_post_with_empty_facts_prints_no_citation( string $kind ): void {
+		$this->ensure_play_reader();
+		[ , $html ] = $this->stream_card_for(
+			$kind,
+			[
+				'post_title'   => 'Untracked',
+				'post_content' => '<!-- wp:paragraph --><p>No card and no stored facts.</p><!-- /wp:paragraph -->',
+			]
+		);
+
+		$entry = $this->parsed_entry( $html );
+		$this->assertArrayNotHasKey( $kind . '-of', $entry['properties'] );
+		$this->assertStringNotContainsString( 'h-cite', $html );
+	}
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public function kinds_with_a_citation(): array {
+		return [
+			'play' => [ 'play' ],
+			'read' => [ 'read' ],
+		];
+	}
+
+	/**
+	 * Other kinds join the citation map through its filter (W2 adds reply,
+	 * like and bookmark this way).
+	 */
+	public function test_the_citation_map_takes_new_kinds_through_its_filter(): void {
+		$add = static function ( array $map ): array {
+			$map['like'] = static fn( array $facts, \WP_Post $post ): string => '<span class="h-cite u-like-of" hidden><data class="p-name" value="' . esc_attr( $post->post_title ) . ' target"></data></span>';
+			return $map;
+		};
+		add_filter( 'pkiw_stream_card_kind_cite', $add );
+
+		[ , $html ] = $this->stream_card_for(
+			'like',
+			[
+				'post_title'   => 'Liked',
+				'post_content' => '<!-- wp:paragraph --><p>A note about it.</p><!-- /wp:paragraph -->',
+			]
+		);
+		remove_filter( 'pkiw_stream_card_kind_cite', $add );
+
+		$this->assertSame( [ 'Liked target' ], $this->parsed_entry( $html )['properties']['like-of'][0]['properties']['name'] );
+	}
+
+	/**
 	 * A linked card title is repointed at the post permalink.
 	 */
 	public function test_link_title_to_post_repoints_anchor(): void {

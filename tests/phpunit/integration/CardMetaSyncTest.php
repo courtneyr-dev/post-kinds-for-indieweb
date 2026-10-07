@@ -312,6 +312,252 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 		}
 	}
 
+	/**
+	 * Whether this test registered the stand-in play source.
+	 *
+	 * @var bool
+	 */
+	private bool $registered_play_source = false;
+
+	public function tear_down(): void {
+		if ( $this->registered_play_source ) {
+			\PKIW\Grouped_Archive::unregister_source( 'w1-p0c-play' );
+			$this->registered_play_source = false;
+		}
+		parent::tear_down();
+	}
+
+	/**
+	 * A play's archive group key, by the rule the archive uses.
+	 *
+	 * W1-PPLAY registers the play source. Until it merges, the same cases
+	 * (#237 decision:43) stand in, and only when no play source exists.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string 'video', 'board' or ''.
+	 */
+	private function play_group_key( int $post_id ): string {
+		if ( null === \PKIW\Grouped_Archive::group_of_post( 'play', $post_id ) ) {
+			\PKIW\Grouped_Archive::register_source(
+				new \PKIW\Grouping\Cases_Source(
+					'w1-p0c-play',
+					[
+						'video' => [ '_pkiw_play_rawg_id', '_pkiw_play_steam_id' ],
+						'board' => [ '_pkiw_play_bgg_id' ],
+					],
+					[ 'video', 'board' ]
+				),
+				'play'
+			);
+			$this->registered_play_source = true;
+		}
+
+		return \PKIW\Grouped_Archive::group_of_post( 'play', $post_id )->key();
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: string, 2: string}>
+	 */
+	public function video_provider_switches(): array {
+		return [
+			'rawg to bgg'  => [ 'rawgId', '_pkiw_play_rawg_id', '900008' ],
+			'steam to bgg' => [ 'steamId', '_pkiw_play_steam_id', '900006' ],
+		];
+	}
+
+	/**
+	 * A play-card switched from a video provider to BGG files under board,
+	 * so the stale video ID can't keep it in the video group (#237 PL3).
+	 *
+	 * @dataProvider video_provider_switches
+	 */
+	public function test_switching_a_play_card_to_bgg_clears_the_video_id_and_files_it_as_board( string $attr, string $key, string $id ): void {
+		$this->ensure_kind_term( 'play' );
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/play-card {"title":"Tidepool Express","' . $attr . '":"' . $id . '"} /-->',
+		] );
+		wp_set_object_terms( $post_id, 'play', 'kind' );
+		$this->assertSame( $id, get_metadata_raw( 'post', $post_id, $key, true ) );
+		$this->assertSame( 'video', $this->play_group_key( $post_id ) );
+
+		wp_update_post( [
+			'ID'           => $post_id,
+			'post_content' => '<!-- wp:post-kinds-indieweb/play-card {"title":"Tidepool Express","bggId":"900108"} /-->',
+		] );
+
+		$this->assertNull( get_metadata_raw( 'post', $post_id, $key, true ), 'The video ID the card dropped is gone.' );
+		$this->assertSame( '900108', get_metadata_raw( 'post', $post_id, '_pkiw_play_bgg_id', true ) );
+		$this->assertSame( 'board', $this->play_group_key( $post_id ) );
+	}
+
+	/**
+	 * Only the provider IDs follow the card. Every other play field keeps
+	 * its meta when the card leaves it blank or out.
+	 */
+	public function test_a_play_card_never_erases_meta_other_than_its_provider_ids(): void {
+		$first = [
+			'title'       => 'Forest Paths',
+			'platform'    => 'Board Game',
+			'status'      => 'completed',
+			'hoursPlayed' => 2.5,
+			'cover'       => 'https://example.test/covers/forest-paths.jpg',
+			'rating'      => 5,
+			'review'      => 'A calm route-building game.',
+			'gameUrl'     => 'https://example.test/games/forest-paths',
+			'officialUrl' => 'https://example.test/official/forest-paths',
+			'purchaseUrl' => 'https://example.test/buy/forest-paths',
+			'bggId'       => '9990001',
+		];
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/play-card ' . wp_json_encode( $first ) . ' /-->',
+		] );
+		$before = [];
+		foreach ( \PKIW\Card_Meta_Sync::ATTR_META_MAP['post-kinds-indieweb/play-card'] as $suffix ) {
+			$before[ $suffix ] = get_metadata_raw( 'post', $post_id, '_pkiw_' . $suffix, true );
+		}
+
+		wp_update_post( [
+			'ID'           => $post_id,
+			'post_content' => '<!-- wp:post-kinds-indieweb/play-card {"title":"","platform":"","cover":"","bggId":"9990001"} /-->',
+		] );
+
+		foreach ( $before as $suffix => $value ) {
+			$this->assertSame( $value, get_metadata_raw( 'post', $post_id, '_pkiw_' . $suffix, true ), "_pkiw_{$suffix} keeps its meta." );
+		}
+		$this->assertSame( 'Forest Paths', $before['play_title'] );
+	}
+
+	/**
+	 * Quick Post and the sidebar store provider IDs with no card. A save
+	 * with no play-card leaves them alone.
+	 */
+	public function test_a_meta_only_play_keeps_its_provider_ids_on_save(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:paragraph --><p>Rainy day charades.</p><!-- /wp:paragraph -->',
+		] );
+		update_post_meta( $post_id, '_pkiw_play_rawg_id', '900012' );
+		update_post_meta( $post_id, '_pkiw_play_bgg_id', '9990099' );
+
+		wp_update_post( [ 'ID' => $post_id, 'post_title' => 'Lantern Drift' ] );
+
+		$this->assertSame( '900012', get_metadata_raw( 'post', $post_id, '_pkiw_play_rawg_id', true ) );
+		$this->assertSame( '9990099', get_metadata_raw( 'post', $post_id, '_pkiw_play_bgg_id', true ) );
+	}
+
+	/**
+	 * The backfill runs the same sync, so a stale provider ID on a stored
+	 * play-card goes when it runs. The X15 diff has to list these deletes.
+	 */
+	public function test_the_backfill_clears_a_provider_id_the_card_no_longer_has(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/play-card {"title":"Tidepool Express","bggId":"900108"} /-->',
+		] );
+		update_post_meta( $post_id, '_pkiw_play_rawg_id', '900008' );
+
+		\PKIW\Card_Meta_Sync::backfill_batch( 0, 100 );
+
+		$this->assertNull( get_metadata_raw( 'post', $post_id, '_pkiw_play_rawg_id', true ) );
+		$this->assertSame( '900108', get_metadata_raw( 'post', $post_id, '_pkiw_play_bgg_id', true ) );
+	}
+
+	/**
+	 * The editor drops readStatus when it equals the block.json default, so
+	 * a To Read card switched back to Currently Reading saves with no
+	 * readStatus. The save writes 'reading' over the stored 'to-read' (#234).
+	 */
+	public function test_a_save_with_read_status_omitted_writes_reading_over_a_stored_status(): void {
+		$this->register_with_default( '_pkiw_read_status', 'reading' );
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"The Quiet Orchard","readStatus":"to-read"} /-->',
+		] );
+		$this->assertSame( 'to-read', get_metadata_raw( 'post', $post_id, '_pkiw_read_status', true ) );
+
+		wp_update_post( [
+			'ID'           => $post_id,
+			'post_content' => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"The Quiet Orchard"} /-->',
+		] );
+
+		$this->assertSame( 'reading', get_metadata_raw( 'post', $post_id, '_pkiw_read_status', true ) );
+	}
+
+	/**
+	 * The backfill stays fill-only: a rowless read gets 'reading', and a
+	 * stored finished or abandoned status never changes, even on a card
+	 * that leaves readStatus out.
+	 */
+	public function test_the_backfill_fills_a_rowless_read_and_keeps_finished_and_abandoned(): void {
+		$this->register_with_default( '_pkiw_read_status', 'reading' );
+		$content   = '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Piranesi"} /-->';
+		$rowless   = self::factory()->post->create( [ 'post_content' => $content ] );
+		$finished  = self::factory()->post->create( [ 'post_content' => $content ] );
+		$abandoned = self::factory()->post->create( [ 'post_content' => $content ] );
+		delete_post_meta( $rowless, '_pkiw_read_status' );
+		update_post_meta( $finished, '_pkiw_read_status', 'finished' );
+		update_post_meta( $abandoned, '_pkiw_read_status', 'abandoned' );
+		$this->assertNull( get_metadata_raw( 'post', $rowless, '_pkiw_read_status', true ) );
+
+		\PKIW\Card_Meta_Sync::backfill_batch( 0, 100 );
+
+		$this->assertSame( 'reading', get_metadata_raw( 'post', $rowless, '_pkiw_read_status', true ) );
+		$this->assertSame( 'finished', get_metadata_raw( 'post', $finished, '_pkiw_read_status', true ) );
+		$this->assertSame( 'abandoned', get_metadata_raw( 'post', $abandoned, '_pkiw_read_status', true ) );
+	}
+
+	/**
+	 * The comic card keeps its fill-only default on save in W1. It has the
+	 * same latent bug as the read card, filed as a follow-up.
+	 */
+	public function test_the_comic_card_status_stays_fill_only_on_save(): void {
+		$this->register_with_default( '_pkiw_comic_status', 'reading' );
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/comic-card {"title":"Saga","readStatus":"finished"} /-->',
+		] );
+
+		wp_update_post( [
+			'ID'           => $post_id,
+			'post_content' => '<!-- wp:post-kinds-indieweb/comic-card {"title":"Saga"} /-->',
+		] );
+
+		$this->assertSame( 'finished', get_metadata_raw( 'post', $post_id, '_pkiw_comic_status', true ) );
+	}
+
+	/**
+	 * The REST controller writes request meta after save_post. A card that
+	 * says finished still wins over request meta that says reading (#234
+	 * risk 1).
+	 */
+	public function test_a_rest_save_keeps_the_card_status_over_request_meta(): void {
+		( new \PKIW\Meta_Fields() )->register_meta_fields();
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/posts' );
+		$request->set_body_params( [
+			'title'   => 'Piranesi',
+			'status'  => 'publish',
+			'content' => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Piranesi","readStatus":"finished"} /-->',
+			'meta'    => [ '_pkiw_read_status' => 'reading' ],
+		] );
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertSame( 201, $response->get_status() );
+		$this->assertSame( 'finished', get_metadata_raw( 'post', $response->get_data()['id'], '_pkiw_read_status', true ) );
+	}
+
+	public function test_w1_bumps_the_backfill_version_once_to_3(): void {
+		$this->assertSame( '3', \PKIW\Card_Meta_Sync::BACKFILL_VERSION );
+	}
+
+	/**
+	 * Make sure a `kind` term exists so it can be assigned to a post.
+	 *
+	 * @param string $slug Kind slug.
+	 */
+	private function ensure_kind_term( string $slug ): void {
+		if ( ! term_exists( $slug, 'kind' ) ) {
+			wp_insert_term( ucfirst( $slug ), 'kind', [ 'slug' => $slug ] );
+		}
+	}
+
 	public function test_backfill_schedules_once_and_marks_complete(): void {
 		delete_option( \PKIW\Card_Meta_Sync::BACKFILL_OPTION );
 		wp_clear_scheduled_hook( \PKIW\Card_Meta_Sync::BACKFILL_HOOK );
