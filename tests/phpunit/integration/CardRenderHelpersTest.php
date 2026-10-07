@@ -59,6 +59,33 @@ final class CardRenderHelpersTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * #244: a departure or arrival stored with its own offset prints that
+	 * endpoint's wall clock and is never converted to the site zone.
+	 */
+	public function test_card_datetime_can_keep_the_stored_offset(): void {
+		$date = \PKIW\card_datetime( '2026-09-25T08:15:00-04:00', true );
+
+		$this->assertInstanceOf( DateTimeImmutable::class, $date );
+		$this->assertSame( '2026-09-25T08:15:00-04:00', $date->format( 'c' ) );
+	}
+
+	public function test_card_wall_clock_can_keep_the_stored_offset(): void {
+		$this->assertSame(
+			[ '2026-09-25T08:15:00-04:00', 'September 25, 2026 8:15 am' ],
+			\PKIW\card_wall_clock( '2026-09-25T08:15:00-04:00', '', true )
+		);
+		$this->assertSame(
+			[ '2026-09-25T02:00:00+00:00', 'September 25, 2026 2:00 am' ],
+			\PKIW\card_wall_clock( '2026-09-25T02:00:00Z', '', true )
+		);
+		// A naive value has no offset to keep and still reads as site time.
+		$this->assertSame(
+			[ '2026-09-24T18:00:00-05:00', 'September 24, 2026 6:00 pm' ],
+			\PKIW\card_wall_clock( '2026-09-24T18:00:00', '', true )
+		);
+	}
+
+	/**
 	 * @dataProvider invalid_values
 	 */
 	public function test_card_wall_clock_rejects_invalid_values( string $raw ): void {
