@@ -76,11 +76,12 @@ class Atmosphere_Document_Map {
 
 	/**
 	 * Meta that hides an RSVP's location: its own setting, and the post's
-	 * location privacy, which rsvp_location_visible() lets win.
+	 * location privacy, PKIW's or Simple Location's, which
+	 * rsvp_location_visible() lets win.
 	 *
 	 * @var string[]
 	 */
-	private const PRIVACY_META_KEYS = [ '_pkiw_rsvp_location_privacy', '_pkiw_geo_privacy' ];
+	private const PRIVACY_META_KEYS = [ '_pkiw_rsvp_location_privacy', '_pkiw_geo_privacy', 'geo_public' ];
 
 	/**
 	 * Meta-change hooks queue_update_on_privacy_change() runs on.
