@@ -112,5 +112,25 @@
 		"prepare": "husky",
 		"check": "npm run lint && npm run test:unit && npm run audit",
 		"screenshots:docs": "node scripts/capture-docs-screenshots.js"
+	},
+	"overrides": {
+		"@lhci/cli": {
+			"tmp": "0.2.7",
+			"uuid": "11.1.1"
+		},
+		"copy-webpack-plugin": {
+			"serialize-javascript": "7.1.2"
+		},
+		"markdownlint-cli": {
+			"js-yaml": "5.4.2",
+			"smol-toml": "1.9.0"
+		},
+		"micromark-extension-math": {
+			"katex": "0.18.9"
+		},
+		"postcss-selector-parser": "7.1.6",
+		"sockjs": {
+			"uuid": "11.1.1"
+		}
 	}
 }

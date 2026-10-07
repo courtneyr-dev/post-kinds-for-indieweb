@@ -51,6 +51,21 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		'remote'     => 'Attending Remotely',
 	];
 
+	/**
+	 * Where start() reads the time. A test can swap in a clock it controls.
+	 *
+	 * @var callable(): int
+	 */
+	private $clock = 'time';
+
+	/**
+	 * The time start() read first in this test. Every card a test builds
+	 * uses it, so the stored card and the expected card share one minute.
+	 *
+	 * @var int|null
+	 */
+	private ?int $now = null;
+
 	public function set_up(): void {
 		parent::set_up();
 		// The test framework wipes registered meta between tests.
@@ -73,7 +88,9 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	private function start( string $when ): string {
 		$offset = 'past' === $when ? -30 * DAY_IN_SECONDS : 30 * DAY_IN_SECONDS;
 
-		return gmdate( 'Y-m-d\TH:i', time() + $offset );
+		$this->now ??= ( $this->clock )();
+
+		return gmdate( 'Y-m-d\TH:i', $this->now + $offset );
 	}
 
 	/**
@@ -335,6 +352,25 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 			'A hidden location prints the same markup as an RSVP with no location.'
 		);
 		$this->assertFalse( Meta_Fields::rsvp_location_visible( $id ) );
+	}
+
+	/**
+	 * The card rsvp() stores and the markup card() builds to compare with it
+	 * each go through start(). A clock that crosses a minute between the two
+	 * gave them different event starts.
+	 */
+	public function test_the_stored_card_and_the_expected_card_share_one_event_start_across_a_minute(): void {
+		// The last second of the current minute, then one second later per read.
+		$tick        = ( intdiv( time(), MINUTE_IN_SECONDS ) + 1 ) * MINUTE_IN_SECONDS - 1;
+		$this->clock = static function () use ( &$tick ): int {
+			return $tick++;
+		};
+
+		$id       = $this->rsvp( 'no', 'future' );
+		$stored   = parse_blocks( (string) get_post_field( 'post_content', $id ) )[0]['attrs']['eventStart'];
+		$expected = parse_blocks( $this->card( 'no', 'future' ) )[0]['attrs']['eventStart'];
+
+		$this->assertSame( $expected, $stored );
 	}
 
 	/**
