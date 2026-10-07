@@ -223,6 +223,8 @@ class Card_Meta_Sync {
 	 * wp_insert_post() meta_input, WP-CLI or another plugin (issue 358).
 	 * Every write keeps the stricter of the card's value and the row, so a
 	 * card can't loosen a stricter stored value and loosening needs both.
+	 * In the block editor the card's control sets the row too, so a save
+	 * after a change there sends both and loosens both.
 	 * 'values' runs loosest to strictest. 'default' is the block.json
 	 * default, the card's value when its comment leaves the attribute out,
 	 * and how any value outside 'values' reads, as Meta_Fields reads it.
