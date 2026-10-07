@@ -1404,6 +1404,81 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A published RSVP whose card is a pre-#32 static card.
+	 *
+	 * @param string|null $visibility `locationVisibility` attribute, or null to leave it out.
+	 * @return int Post ID.
+	 */
+	private function legacy_rsvp( ?string $visibility = null ): int {
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_excerpt' => '',
+				'post_content' => $this->legacy_card( $visibility ),
+			]
+		);
+		wp_set_object_terms( $id, 'rsvp', 'kind' );
+
+		return $id;
+	}
+
+	/**
+	 * The text ActivityPub's generate_post_summary() starts from for a post
+	 * with no excerpt: post_content through sanitize_post_field()'s display
+	 * filters, shortcodes and tags stripped, entities decoded, as
+	 * AcquisitionCostPrivacyTest builds it. Stripping tags drops the block
+	 * comment, so the card's `eventLocation` attribute isn't in it.
+	 *
+	 * @param int $id Post ID.
+	 */
+	private function activitypub_summary_source( int $id ): string {
+		$post    = get_post( $id );
+		$content = sanitize_post_field( 'post_content', $post->post_content, $post->ID );
+
+		return html_entity_decode( wp_strip_all_tags( strip_shortcodes( $content ) ), ENT_QUOTES, 'UTF-8' );
+	}
+
+	/**
+	 * Display-context post_content, which ActivityPub's summary reads, holds
+	 * no private location from a legacy RSVP card's static HTML, for a
+	 * visitor's request or the author's, since the summary leaves the site
+	 * either way.
+	 */
+	public function test_the_activitypub_summary_source_of_a_legacy_rsvp_card_omits_a_private_location(): void {
+		$id = $this->legacy_rsvp();
+		$this->assertSame( 'private', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+
+		$text = $this->activitypub_summary_source( $id );
+		$this->assertStringContainsString( self::EVENT, $text, 'The rest of the card stays.' );
+		$this->assertStringNotContainsString( self::LOCATION, $text, 'A visitor\'s request.' );
+
+		$this->as_editor();
+		$this->assertStringNotContainsString( self::LOCATION, $this->activitypub_summary_source( $id ), 'The author\'s request.' );
+	}
+
+	/**
+	 * The raw and edit contexts skip the filter, so the block editor, saves
+	 * and exports keep the stored card.
+	 */
+	public function test_raw_and_edit_post_content_keep_a_legacy_rsvp_cards_location(): void {
+		$id = $this->legacy_rsvp();
+
+		$this->assertStringContainsString( self::LOCATION, (string) get_post_field( 'post_content', $id, 'raw' ) );
+		$this->assertStringContainsString( self::LOCATION, (string) get_post_field( 'post_content', $id, 'edit' ) );
+	}
+
+	/**
+	 * A legacy card the author made public, with a public RSVP, keeps its
+	 * location in ActivityPub's summary source.
+	 */
+	public function test_the_activitypub_summary_source_keeps_a_public_legacy_rsvp_location(): void {
+		$id = $this->legacy_rsvp( 'public' );
+		$this->assertSame( 'public', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
+
+		$this->assertStringContainsString( self::LOCATION, $this->activitypub_summary_source( $id ) );
+	}
+
+	/**
 	 * ATmosphere's post crons that publish a publishable post.
 	 *
 	 * @return array<string, array{0: string}>
