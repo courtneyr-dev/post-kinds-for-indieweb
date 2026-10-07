@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * spaces the same way in SQL and PHP, and a post with no row is in the empty
  * group whatever default the key registers.
  *
- * The legacy form is the #230 menu path: its SQL is byte-identical to the
+ * The legacy form is the issue 230 menu path: its SQL is byte-identical to the
  * shipped clause (untrimmed), and its labels come from
  * Kind_Archive_Layouts::group_label().
  */
@@ -59,7 +59,7 @@ final class Meta_Source implements Group_Source {
 	private string $kind = '';
 
 	/**
-	 * Whether this is the #230 legacy form.
+	 * Whether this is the issue 230 legacy form.
 	 *
 	 * @var bool
 	 */
@@ -90,7 +90,7 @@ final class Meta_Source implements Group_Source {
 	}
 
 	/**
-	 * The #230 menu source for a kind's group field. Request-local; never registered.
+	 * The issue 230 menu source for a kind's group field. Request-local; never registered.
 	 *
 	 * @param string $meta_key Meta key from Kind_Archive_Layouts::group_fields(); not empty.
 	 * @param string $kind     Kind slug.

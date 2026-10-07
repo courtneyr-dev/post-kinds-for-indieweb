@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Label modes: verbatim (hosts, tags, authors, series), title (first letter
- * upper, the #230 rule) and a plugin label map (statuses, types).
+ * upper, the issue 230 rule) and a plugin label map (statuses, types).
  */
 final class Label_Mode {
 
@@ -64,7 +64,7 @@ final class Label_Mode {
 	}
 
 	/**
-	 * Upper-case the first letter, as the #230 menus do.
+	 * Upper-case the first letter, as the issue 230 menus do.
 	 *
 	 * @return self
 	 */

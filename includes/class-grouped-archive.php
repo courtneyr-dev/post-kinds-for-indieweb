@@ -11,7 +11,7 @@
  * counts are untouched, and sections are printed from the posts the query
  * already holds.
  *
- * The #230 eat and drink menus run through here on their legacy path: a meta
+ * The issue 230 eat and drink menus run through here on their legacy path: a meta
  * key from `pkiw_archive_group_fields`, the shipped ORDER BY clause and the
  * shipped labels and markup.
  *
