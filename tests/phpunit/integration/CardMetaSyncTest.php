@@ -975,6 +975,22 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A key sanitizer that returns an int still stores a row: WordPress
+	 * writes 13 as '13'. So a BGG ID it turns into 13 names BGG and
+	 * clears the RAWG ID, the same as a plain '13'.
+	 */
+	public function test_a_provider_id_a_sanitizer_returns_as_an_int_still_names_its_provider(): void {
+		$to_int  = static fn(): int => 13;
+		$post_id = $this->play_with_stored_ids( [ '_pkiw_play_rawg_id' => '3498' ] );
+		add_filter( 'sanitize_post_meta__pkiw_play_bgg_id_for_post', $to_int, 20 );
+
+		$this->rest_update( $post_id, $this->play_card_markup( [ 'title' => 'Chess', 'bggId' => '13' ], false ) );
+		remove_filter( 'sanitize_post_meta__pkiw_play_bgg_id_for_post', $to_int, 20 );
+
+		$this->assert_provider_ids( $post_id, [ '_pkiw_play_rawg_id' => null, '_pkiw_play_bgg_id' => '13' ] );
+	}
+
+	/**
 	 * #340 shipped version 3 on main, so W1 needs its own number.
 	 */
 	public function test_w1_bumps_the_backfill_version_once_to_4(): void {
