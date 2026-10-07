@@ -75,6 +75,33 @@ final class CheckinDashboardRenderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'September 24, 2026', $html );
 		$this->assertStringContainsString( 'Sep 24, 10:30 pm', $html );
 		$this->assertStringNotContainsString( 'September 25, 2026', $html );
+
+		// The grid card and the timeline item each parse as an h-entry
+		// published at the same local instant the visible text names.
+		$entries = $this->h_entries( \Mf2\parse( $html )['items'] ?? [] );
+		$this->assertCount( 2, $entries );
+		foreach ( $entries as $entry ) {
+			$this->assertSame( [ '2026-09-24T22:30:00-05:00' ], $entry['properties']['published'] ?? [] );
+			$this->assertSame( [ 'Example Cafe' ], array_map( 'trim', $entry['properties']['name'] ?? [] ) );
+		}
+	}
+
+	/**
+	 * Collect every h-entry in a parsed mf2 tree.
+	 *
+	 * @param array<int, array<string, mixed>> $items Parsed items.
+	 * @return array<int, array<string, mixed>> h-entry items.
+	 */
+	private function h_entries( array $items ): array {
+		$found = [];
+		foreach ( $items as $item ) {
+			if ( in_array( 'h-entry', (array) ( $item['type'] ?? [] ), true ) ) {
+				$found[] = $item;
+			}
+			$found = array_merge( $found, $this->h_entries( (array) ( $item['children'] ?? [] ) ) );
+		}
+
+		return $found;
 	}
 
 	public function test_dashboard_lists_checkins_by_kind_taxonomy_and_pkiw_meta(): void {
