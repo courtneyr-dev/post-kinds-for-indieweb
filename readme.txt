@@ -152,7 +152,7 @@ Each check-in has a location privacy level: public (full address and coordinates
 
 = What data leaves my site? =
 
-Media lookups and imports contact the services you use them with (MusicBrainz, TMDB, Open Library, and so on — see the Privacy Policy section below). Syndication sends posts to Last.fm, Trakt, or Foursquare only when you enable those toggles. Nothing else is sent.
+Media lookups and imports contact the services you use them with (MusicBrainz, TMDB, Open Library, and so on — see the Privacy Policy section below). Syndication sends posts to Last.fm, Trakt, or Foursquare only when you enable those toggles. On pages that show a check-in map, visitors' browsers load the map tiles or the embedded map from OpenStreetMap. The External services section below lists every service, what it receives, and when.
 
 = Does this work with classic themes or the Classic Editor? =
 
@@ -313,7 +313,7 @@ Fixes /firehose 404s and missing kind archives on updated sites — both self-he
 
 == External services ==
 
-This plugin integrates with external services for media metadata lookups, history imports, scrobbling, and syndication. Every connection is optional: nothing is contacted until you enable a service, save its credentials, use its lookup, or paste one of its links. What follows lists each service, what is sent and when, and its terms and privacy policy.
+This plugin integrates with external services for media metadata lookups, history imports, scrobbling, syndication, and maps. Your server contacts a service only after you enable it, save its credentials, use its lookup, or paste one of its links. Maps work differently: on pages that show a check-in map, each visitor's browser requests OpenStreetMap tiles or an embedded map with no setup (see Geocoding and maps). What follows lists each service, what is sent and when, and its terms and privacy policy.
 
 = Media lookup services (used when you search from the editor, Quick Post, or the Media Lookup block) =
 
@@ -346,7 +346,7 @@ When you connect an account, the plugin stores your token and, on import, schedu
 
 * **Nominatim (OpenStreetMap Foundation)** — converts a check-in's coordinates or place text into an address (and back). Sends the location you're checking in to and the contact email you configure, only when you create or edit a check-in that needs geocoding. [Usage policy](https://operations.osmfoundation.org/policies/nominatim/), [Privacy](https://wiki.osmfoundation.org/wiki/Privacy_Policy).
 * **OpenStreetMap embeds** — when a published check-in shows a map, the visitor's browser loads an embedded map from openstreetmap.org containing that check-in's coordinates. Site visitors' browsers connect to OpenStreetMap when viewing those posts. [Terms](https://wiki.osmfoundation.org/wiki/Terms_of_Use), [Privacy](https://wiki.osmfoundation.org/wiki/Privacy_Policy).
-* **OpenStreetMap map tiles (tile.openstreetmap.org)** — the check-in archive map and the Check-in Dashboard block's map are drawn from OpenStreetMap Foundation tiles. Each visitor's browser requests the tile images from tile.openstreetmap.org, sending the visitor's IP address, user agent, the referrer your site's referrer policy allows, and the tile coordinates of the map area on screen. The archive map loads tiles only when a check-in on the page has a pin: a visitor gets pins for check-ins whose location is public, and a signed-in user who can edit a check-in gets its pin whatever its privacy. The Check-in Dashboard block loads tiles whenever its Map view is showing and it lists at least one published check-in, even when none is public and the map has no pins. The Reactions → Check-ins admin screen loads them in the signed-in user's browser when they open its Map view. The `pkiw_map_tile_url` and `pkiw_map_tile_attribution` filters point all three maps at another tile provider or your own tile cache. [Tile usage policy](https://operations.osmfoundation.org/policies/tiles/), [Privacy](https://osmfoundation.org/wiki/Privacy_Policy).
+* **OpenStreetMap map tiles (tile.openstreetmap.org)** — the check-in archive map and the Check-in Dashboard block's map are drawn from OpenStreetMap Foundation tiles. Each visitor's browser requests the tile images from tile.openstreetmap.org, sending the visitor's IP address, user agent, the referrer your site's referrer policy allows, and the tile coordinates of the map area on screen. The archive map loads tiles only when a check-in on the page has a pin: a visitor gets pins for check-ins whose location is public, and a signed-in user who can edit a check-in gets its pin whatever its privacy. The Check-in Dashboard block loads tiles when its Map view is showing and one of the check-ins it lists has coordinates that viewer may see, by the same visitor and editor rule. With none, it draws no map and requests no tiles. The Reactions → Check-ins admin screen loads them in the signed-in user's browser when they open its Map view. The `pkiw_map_tile_url` and `pkiw_map_tile_attribution` filters point all three maps at another tile provider or your own tile cache. [Tile usage policy](https://operations.osmfoundation.org/policies/tiles/), [Privacy](https://osmfoundation.org/wiki/Privacy_Policy).
 
 = Link identification =
 
