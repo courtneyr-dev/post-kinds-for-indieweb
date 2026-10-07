@@ -13,9 +13,11 @@ import {
 	SelectControl,
 	Spinner,
 	Placeholder,
+	Disabled,
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
+import ServerSideRender from '@wordpress/server-side-render';
 
 /**
  * Edit component for the Check-ins Feed block.
@@ -26,6 +28,78 @@ import apiFetch from '@wordpress/api-fetch';
  * @return {JSX.Element} Block edit component.
  */
 export default function Edit( { attributes, setAttributes } ) {
+	if ( attributes.inherit ) {
+		return (
+			<ArchiveEdit
+				attributes={ attributes }
+				setAttributes={ setAttributes }
+			/>
+		);
+	}
+
+	return (
+		<FeedEdit attributes={ attributes } setAttributes={ setAttributes } />
+	);
+}
+
+/**
+ * Archive mode: the server's list and map region for the template's query,
+ * the markup the front end prints.
+ *
+ * @param {Object}                       props               Block props.
+ * @param {Object}                       props.attributes    Block attributes.
+ * @param {(attributes: Object) => void} props.setAttributes Function to update attributes.
+ * @return {JSX.Element} Block edit component.
+ */
+function ArchiveEdit( { attributes, setAttributes } ) {
+	const blockProps = useBlockProps();
+
+	return (
+		<>
+			<InspectorControls>
+				<PanelBody
+					title={ __(
+						'Archive Settings',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
+				>
+					<RangeControl
+						label={ __(
+							'Check-ins per page',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
+						value={ attributes.count }
+						onChange={ ( value ) =>
+							setAttributes( { count: value } )
+						}
+						min={ 1 }
+						max={ 50 }
+					/>
+				</PanelBody>
+			</InspectorControls>
+
+			<div { ...blockProps }>
+				<Disabled>
+					<ServerSideRender
+						block="post-kinds-indieweb/checkins-feed"
+						attributes={ attributes }
+						skipBlockSupportAttributes
+					/>
+				</Disabled>
+			</div>
+		</>
+	);
+}
+
+/**
+ * Standalone feed: a REST preview of the newest check-ins.
+ *
+ * @param {Object}                       props               Block props.
+ * @param {Object}                       props.attributes    Block attributes.
+ * @param {(attributes: Object) => void} props.setAttributes Function to update attributes.
+ * @return {JSX.Element} Block edit component.
+ */
+function FeedEdit( { attributes, setAttributes } ) {
 	const {
 		count,
 		showMap,

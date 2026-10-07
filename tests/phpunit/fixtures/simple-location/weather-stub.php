@@ -12,7 +12,10 @@
  * - Sloc_Weather_Data::get_object_weatherdata includes/class-weather-data.php:300
  *   (calls migrate_weather() at :339)
  * - Sloc_Weather_Data::migrate_weather        includes/class-weather-data.php:363
+ * - Sloc_Weather_Data::get_the_weather        includes/class-weather-data.php:429
  * - weather_condition_codes()/_icons()        includes/trait-weather-info.php:342/:440
+ * - Weather_Provider::get_icon()               includes/trait-weather-info.php:69
+ * - Weather_Provider::markup_value()           includes/class-weather-provider.php:225
  * - Weather_Provider::metric_to_imperial()    includes/class-weather-provider.php:639
  * - unit conversions                          trait-weather-info.php:19/:39,
  *                                             class-sloc-provider.php:373/:415/:488
@@ -35,6 +38,39 @@ if ( ! class_exists( 'Weather_Provider' ) ) {
 	 * Unit conversions from Simple Location's Weather_Provider.
 	 */
 	abstract class Weather_Provider {
+
+		public static function get_icon( $icon, $summary = '' ) {
+			return sprintf( '<span class="sloc-weather-icon %1$s" aria-hidden="true" title="%2$s"></span>', esc_attr( $icon ), esc_attr( $summary ) );
+		}
+
+		public static function markup_value( $property, $value, $args = array() ) {
+			$defaults      = array(
+				'container' => 'li',
+				'units'     => get_query_var( 'sloc_units', get_option( 'sloc_measurements' ) ),
+				'round'     => false,
+			);
+			$args          = wp_parse_args( $args, $defaults );
+			$args['units'] = ( 'imperial' === $args['units'] );
+
+			if ( is_numeric( $value ) ) {
+				if ( is_numeric( $args['round'] ) ) {
+					$value = round( $value, $args['round'] );
+				} elseif ( true === $args['round'] ) {
+					$value = round( $value );
+				} else {
+					$value = round( $value, 2 );
+				}
+			}
+
+			$unit = $args['units'] ? '°F' : '°C';
+			return sprintf(
+				'<%1$s class="sloc-%2$s p-%2$s h-measure"><data class="p-type" value="Temperature"></data><data class="p-num" value="%3$s">%3$s</data><data class="p-unit" value="%4$s">%4$s</data></%1$s>',
+				$args['container'],
+				$property,
+				$value,
+				$unit
+			);
+		}
 
 		public static function celsius_to_fahrenheit( $temp ) {
 			return round( ( $temp * 9 / 5 ) + 32, 2 );
@@ -226,6 +262,54 @@ if ( ! class_exists( 'Sloc_Weather_Data' ) ) {
 				default:
 					return '';
 			}
+		}
+
+		public static function get_the_weather( $type, $id, $args = null ) {
+			$weather  = self::get_object_weatherdata( $type, $id );
+			$defaults = array(
+				'style'         => 'simple',
+				'description'   => 'Weather: ',
+				'wrapper-class' => array( 'sloc-weather' ),
+				'wrapper-type'  => 'p',
+			);
+			$args     = wp_parse_args( $args, $defaults );
+			if ( ! is_array( $weather ) || empty( $weather ) ) {
+				return '';
+			}
+
+			if ( isset( $weather['code'] ) ) {
+				$weather['icon']    = self::weather_condition_icons( $weather['code'] );
+				$weather['summary'] = self::weather_condition_codes( $weather['code'] );
+			}
+			if ( empty( $weather['icon'] ) ) {
+				$weather['icon'] = 'wi-thermometer';
+			}
+
+			$class    = implode( ' ', $args['wrapper-class'] );
+			$return   = array( PHP_EOL );
+			$return[] = Weather_Provider::get_icon( $weather['icon'], $weather['summary'] ?? '' );
+			if ( 'graphic' !== $args['style'] ) {
+				if ( isset( $weather['temperature'] ) ) {
+					$units = get_query_var( 'sloc_units', get_option( 'sloc_measurements' ) );
+					if ( 'imperial' === $units ) {
+						$weather = Weather_Provider::metric_to_imperial( $weather );
+					}
+					$return[] = Weather_Provider::markup_value(
+						'temperature',
+						$weather['temperature'],
+						array(
+							'container' => 'span',
+							'round'     => true,
+							'units'     => $units,
+						)
+					) . PHP_EOL;
+				}
+				if ( ! empty( $weather['summary'] ) ) {
+					$return[] = sprintf( '<span class="p-weather">%1$s</span>', $weather['summary'] );
+				}
+			}
+
+			return sprintf( '<%1$s class="%2$s">%3$s</%1$s>', $args['wrapper-type'], esc_attr( $class ), implode( PHP_EOL, array_filter( $return ) ) );
 		}
 	}
 }

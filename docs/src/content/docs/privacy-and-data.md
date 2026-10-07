@@ -1,9 +1,9 @@
 ---
 title: Privacy and data
-description: "What Post Kinds stores, which external media and tracking services it contacts, and what appears in your public markup — verified against 1.0.0."
+description: "What Post Kinds stores, which external media and tracking services it contacts, and what appears in your public markup — verified against 1.0.0, the check-in map against 1.9.0."
 ---
 
-What the plugin stores, what it sends to other services, and what appears in your site's public markup. Everything here is verified against the plugin code as of version 1.0.0; open questions are listed at the end.
+What the plugin stores, what it sends to other services, and what appears in your site's public markup. Everything here is verified against the plugin code as of version 1.0.0, apart from the check-in map's tiles and consent hook, which describe 1.9.0; open questions are listed at the end.
 
 ## What the plugin stores on your site
 
@@ -44,6 +44,29 @@ Separately, **Coordinate Handling** governs storage itself: store-and-show, stor
 
 These requests carry your search terms or media identifiers (and your API credentials for that service). The plugin readme states API calls retrieve only public metadata and that the plugin includes no analytics or tracking.
 
+**Map tiles.** The check-in archive map and the Check-in Dashboard block's map load their tiles in each visitor's browser, from `tile.openstreetmap.org` unless you change it. The Reactions → Check-ins admin screen uses the same tiles in the signed-in user's browser. The OpenStreetMap Foundation's tile server receives the visitor's IP address, user agent, the referrer your site's referrer policy allows, and the tile coordinates of the area on screen. Each map requests tiles under its own condition:
+
+- **Archive map:** only when a check-in on the page has a pin. A visitor gets pins for check-ins whose location is public. A signed-in user who can edit a check-in gets its pin whatever its privacy, so an editor's browser requests tiles on a page of private check-ins.
+- **Check-in Dashboard block:** when its Map view is showing (the block's layout is Map, or the visitor picks Map) and one of the check-ins it lists has coordinates that viewer may see: a public check-in for a visitor, any check-in with coordinates for a user who can edit it. With none, the block draws no map and requests no tiles.
+- **Reactions → Check-ins screen:** when the signed-in user opens its Map view.
+
+Leaflet and MarkerCluster load from the plugin's own `assets/vendor` folder, not a CDN. See the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/) and the [OSMF privacy policy](https://osmfoundation.org/wiki/Privacy_Policy), and name the service in your own privacy policy, or move all three maps to another provider with two filters:
+
+- `pkiw_map_tile_url`: the Leaflet tile URL template. Default `https://tile.openstreetmap.org/{z}/{x}/{y}.png`.
+- `pkiw_map_tile_attribution`: the attribution HTML, which stays visible on the map. Only links (`<a>` with `href` and `rel`) survive. Default `&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors`.
+
+```php
+add_filter( 'pkiw_map_tile_url', fn() => 'https://tiles.example.com/{z}/{x}/{y}.png' );
+add_filter( 'pkiw_map_tile_attribution', fn() => '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, tiles by Example' );
+```
+
+**Content-Security-Policy hosts.** If your site sends a `Content-Security-Policy` header, the maps need these hosts:
+
+| Directive | Host | Used by |
+|---|---|---|
+| `img-src` | `https://tile.openstreetmap.org` (or the host in your `pkiw_map_tile_url`) | Check-in archive map and Check-in Dashboard block map on the front end, and the Reactions → Check-ins screen in wp-admin |
+| `frame-src` | `https://www.openstreetmap.org` | The map embedded in a check-in card: on the front end when its location is public or the viewer can edit the post, in the editor unless it's private |
+
 **Standard.site record lookups.** When you press **Check this URL** in a card block's sidebar, or a few seconds after you publish a post whose card cites a URL, the plugin follows a chain of up to three requests:
 
 1. **The cited page itself**, to read its `site.standard.document` tag. An ordinary request for a URL you already linked to.
@@ -57,6 +80,31 @@ The third host is the part worth understanding: it is not a fixed service. It is
 Results are cached for a day, misses included, so a page is not re-fetched on every save. Nothing is contacted for a card with no URL, and a page that turns out not to be on AT Protocol costs one request, not three.
 
 Only the resolved record's address is stored, in the `_pkiw_standard_site_uri` post meta key, and only when the record verifies against the page it was found on.
+
+**Holding the archive map until consent.** To hold the check-in archive map until a visitor consents, return `true` from `pkiw_checkin_map_requires_consent`. The map container then carries `data-pkiw-consent="required"` and stays hidden, with no tile requests, until your consent tool dispatches a `pkiw:map-consent` event on `document`, or sets `window.pkiwMapConsent = true` before the map script starts. Do both: the flag covers consent given before the script runs, the event covers consent given after, including before the page finishes loading. The list of check-ins prints in full while the map waits. A map already drawn stays until the next page load if consent is withdrawn. This covers the archive map; the Check-in Dashboard block's map doesn't read the filter.
+
+```php
+add_filter( 'pkiw_checkin_map_requires_consent', '__return_true' );
+```
+
+With the [WP Consent API](https://wordpress.org/plugins/wp-consent-api/), in a script that loads after it (use the category your consent tool files third-party content under):
+
+```js
+function pkiwAllowMap() {
+    window.pkiwMapConsent = true;
+    document.dispatchEvent( new Event( 'pkiw:map-consent' ) );
+}
+
+if ( typeof wp_has_consent === 'function' && wp_has_consent( 'marketing' ) ) {
+    pkiwAllowMap();
+}
+
+document.addEventListener( 'wp_listen_for_consent_change', ( event ) => {
+    if ( 'allow' === event.detail.marketing ) {
+        pkiwAllowMap();
+    }
+} );
+```
 
 **POSSE syndication (outbound publishing).** The plugin sends your activity to Last.fm, Trakt, or Foursquare **only when you enable the matching toggle** (Scrobble to Last.fm, Sync to Trakt, Sync to Foursquare). All three default to off.
 
