@@ -41,6 +41,8 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	]
 );
 
+[ $pkiw_reposted_iso, $pkiw_reposted_display ] = \PKIW\card_wall_clock( (string) $pkiw_reposted_at );
+
 ob_start();
 ?>
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
@@ -71,12 +73,12 @@ ob_start();
 		<?php endif; ?>
 
 		<?php if ( $pkiw_image ) : ?>
-			<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_image ); ?>" alt="<?php echo esc_attr( $pkiw_image_alt ? $pkiw_image_alt : sprintf( /* translators: %s: linked page title */ __( 'Preview image for %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_title ) ); ?>" loading="lazy" /></div>
+			<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_image ); ?>" alt="<?php echo esc_attr( $pkiw_image_alt ); ?>" loading="lazy" /></div>
 		<?php endif; ?>
 
-		<?php if ( $pkiw_reposted_at ) : ?>
+		<?php if ( $pkiw_reposted_iso ) : ?>
 			<div class="pk-meta">
-				<time class="dt-published" datetime="<?php echo esc_attr( gmdate( 'c', strtotime( $pkiw_reposted_at ) ) ); ?>"><?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $pkiw_reposted_at ) ) ); ?></time>
+				<time class="dt-published" datetime="<?php echo esc_attr( $pkiw_reposted_iso ); ?>"><?php echo esc_html( $pkiw_reposted_display ); ?></time>
 			</div>
 		<?php endif; ?>
 	</div>

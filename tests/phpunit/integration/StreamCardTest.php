@@ -51,6 +51,41 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '<a class="u-url" href="' . esc_url( (string) get_permalink( $post_id ) ) . '">Enola</a>', $out );
 	}
 
+	public function test_link_title_to_post_preserves_like_target_as_hidden_cite_data(): void {
+		$post_id   = self::factory()->post->create( [ 'post_title' => 'A liked page' ] );
+		$permalink = esc_url( (string) get_permalink( $post_id ) );
+		$target    = 'https://example.com/liked';
+		$html      = '<article class="pk-card k-like h-cite u-like-of"><div><h3 class="pk-title p-name"><a class="u-url" href="' . $target . '">A liked page</a></h3></div></article>';
+
+		$out = \PKIW\link_title_to_post( $html, get_post( $post_id ) );
+
+		$this->assertStringContainsString( '<a href="' . $permalink . '">A liked page</a>', $out );
+		$this->assertStringNotContainsString( 'class="u-url" href="' . $permalink . '"', $out );
+		$this->assertMatchesRegularExpression( '#<data class="u-url" value="' . preg_quote( $target, '#' ) . '" hidden></data><h3#', $out );
+		$this->assertStringNotContainsString( 'href="' . $target . '"', $out );
+	}
+
+	public function test_link_title_to_post_preserves_all_wish_url_classes(): void {
+		$post_id = self::factory()->post->create( [ 'post_title' => 'A wished-for item' ] );
+		$target  = 'https://example.org/wish';
+		$html    = '<div><article class="pk-card k-wish h-cite"><div><h2 class="pk-title p-name"><a class="u-url u-wish-of" href="' . $target . '">A wished-for item</a></h2></div></article></div>';
+
+		$out = \PKIW\link_title_to_post( $html, get_post( $post_id ) );
+
+		$this->assertStringContainsString( '<data class="u-url u-wish-of" value="' . $target . '" hidden></data><h2', $out );
+	}
+
+	public function test_link_title_to_post_keeps_non_cite_card_behavior(): void {
+		$post_id   = self::factory()->post->create( [ 'post_title' => 'Example Cafe' ] );
+		$permalink = esc_url( (string) get_permalink( $post_id ) );
+		$html      = '<article class="pk-card k-checkin h-entry"><h2 class="pk-title p-name"><a class="u-url" href="https://example.com/cafe">Example Cafe</a></h2></article>';
+
+		$out = \PKIW\link_title_to_post( $html, get_post( $post_id ) );
+
+		$this->assertStringContainsString( '<a class="u-url" href="' . $permalink . '">Example Cafe</a>', $out );
+		$this->assertStringNotContainsString( '<data ', $out );
+	}
+
 	/**
 	 * A body of only card blocks is a micro-post.
 	 */
@@ -380,7 +415,97 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'pk-title', $html );
 		// The synthetic title is navigation, not the entry name.
 		$this->assertStringNotContainsString( 'p-name', $html );
-		$this->assertStringContainsString( '>Weather</a>', $html );
+		$this->assertStringContainsString( '>Weather<span class="pk-sr-only">, ' . get_the_date( '', $post_id ) . '</span></a>', $html );
+	}
+
+	/**
+	 * S7: one visible date per Stream card. The "<Kind>, <date>" name
+	 * keeps its date in the link name only, since the card prints the
+	 * date below the title.
+	 */
+	public function test_untitled_stream_card_prints_its_date_once(): void {
+		$this->ensure_kind_term( 'weather' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => '',
+				'post_content' => '<!-- wp:paragraph --><p>Post excerpt.</p><!-- /wp:paragraph -->',
+				'post_date'    => '2026-10-06 09:00:00',
+			]
+		);
+		wp_set_object_terms( $post_id, 'weather', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertSame( 1, preg_match( '#<h2 class="pk-title"><a class="u-url" href="[^"]+">(.*?)</a></h2>#s', $html, $link ) );
+		$this->assertSame( 'Weather, October 6, 2026', wp_strip_all_tags( $link[1] ) );
+
+		$visible = wp_strip_all_tags( (string) preg_replace( '#<span class="pk-sr-only">.*?</span>#s', '', $html ) );
+		$this->assertSame( 1, substr_count( $visible, 'October 6, 2026' ) );
+		$this->assertStringContainsString( '<time class="dt-published"', $html );
+	}
+
+	public function test_untitled_long_form_like_uses_card_name_without_p_name(): void {
+		$this->ensure_kind_term( 'like' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => '',
+				'post_content' => '<!-- wp:post-kinds-indieweb/like-card {"title":"A post on example.org","url":"https://example.org/a"} /-->'
+					. '<!-- wp:paragraph --><p>A separate paragraph.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'like', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( '>A post on example.org</a>', $html );
+		$this->assertStringNotContainsString( 'p-name', $html );
+	}
+
+	/**
+	 * Micropub stores a nameless reply's title as its URL. The Stream
+	 * prints the host, never the path or query, which can carry tokens
+	 * (#253, X8).
+	 */
+	public function test_untitled_long_form_reply_with_url_title_prints_only_the_host(): void {
+		$this->ensure_kind_term( 'reply' );
+		$url     = 'https://example.com/notes/2026/10/private-thread?token=abc123';
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => '',
+				'post_content' => '<!-- wp:post-kinds-indieweb/reply-card {"title":"' . $url . '","url":"' . $url . '"} /-->'
+					. '<!-- wp:paragraph --><p>A fictional reply.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'reply', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertSame( 1, preg_match( '#<h2 class="pk-title"><a class="u-url" href="[^"]+">(.*?)</a></h2>#s', $html, $link ) );
+		$this->assertSame( 'example.com', $link[1] );
+		$this->assertStringNotContainsString( 'private-thread', $html );
+		$this->assertStringNotContainsString( 'token=abc123', $html );
+	}
+
+	public function test_untitled_long_form_note_uses_fallback_and_prints_excerpt_once(): void {
+		$this->ensure_kind_term( 'note' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => '',
+				'post_content' => '<!-- wp:paragraph --><p>A fictional thought printed once.</p><!-- /wp:paragraph -->',
+				'post_excerpt' => 'A fictional thought printed once.',
+				'post_date'    => '2026-09-12 12:00:00',
+			]
+		);
+		wp_set_object_terms( $post_id, 'note', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( '>Note<span class="pk-sr-only">, September 12, 2026</span></a>', $html );
+		$this->assertSame( 1, substr_count( $html, 'A fictional thought printed once.' ) );
 	}
 
 	/**

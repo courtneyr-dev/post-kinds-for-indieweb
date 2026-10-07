@@ -167,6 +167,31 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 		$entries = Checkin_Map::entries( [ get_post( $post->ID ) ] );
 
 		$this->assertSame( 'Check-in, September 12, 2026', $entries[0]['title'] );
+		$this->assertTrue( $entries[0]['synthetic'] );
+	}
+
+	/**
+	 * X8: a synthetic name is link text, not the entry's p-name.
+	 */
+	public function test_untitled_checkin_heading_has_no_p_name(): void {
+		$untitled = $this->checkin( 'pubone', 'public', 40.111111, -75.111111 );
+		wp_update_post(
+			[
+				'ID'         => $untitled->ID,
+				'post_title' => '',
+			]
+		);
+		$titled = $this->checkin( 'pubtwo', 'public', 41.222222, -76.222222 );
+
+		$html   = $this->render( [ get_post( $untitled->ID ), $titled ] );
+		$parsed = \Mf2\parse( $html, home_url( '/' ) );
+		$items  = $parsed['items'][0]['children'] ?? [];
+
+		$this->assertCount( 2, $items );
+		$this->assertStringContainsString( '<a class="u-url" href="' . esc_url( get_permalink( $untitled ) ) . '">Check-in, September 12, 2026</a>', $html );
+		$this->assertArrayNotHasKey( 'name', $items[0]['properties'] );
+		$this->assertSame( [ 'Title pubtwo' ], $items[1]['properties']['name'] );
+		$this->assertFalse( Checkin_Map::entries( [ $titled ] )[0]['synthetic'] );
 	}
 
 	public function test_summary_counts_the_page_and_the_mapped_entries(): void {

@@ -516,7 +516,7 @@ final class ComicCardTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'pk-card k-comics h-cite u-read-of', $card );
 		$this->assertMatchesRegularExpression(
-			'#<h3 class="pk-title p-name">\s*<a class="u-url" href="' . preg_quote( esc_url( (string) get_permalink( $post_id ) ), '#' ) . '">Saga</a>#',
+			'#<data class="u-url" value="https://example.com/comics/saga-7" hidden></data><h3 class="pk-title p-name">\s*<a href="' . preg_quote( esc_url( (string) get_permalink( $post_id ) ), '#' ) . '">Saga</a>#',
 			$card
 		);
 	}

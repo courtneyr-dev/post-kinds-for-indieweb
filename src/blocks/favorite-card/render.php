@@ -38,6 +38,8 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	]
 );
 
+[ $pkiw_favorited_iso, $pkiw_favorited_display ] = \PKIW\card_calendar_date( (string) $pkiw_favorited_at );
+
 ob_start();
 ?>
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
@@ -63,7 +65,7 @@ ob_start();
 
 		<?php if ( $pkiw_image ) : ?>
 			<div class="pk-media">
-				<img class="pk-thumb u-photo" src="<?php echo esc_url( $pkiw_image ); ?>" alt="<?php echo esc_attr( $pkiw_image_alt ? $pkiw_image_alt : sprintf( /* translators: %s: linked page title */ __( 'Preview image for %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_title ) ); ?>" loading="lazy" />
+				<img class="pk-thumb u-photo" src="<?php echo esc_url( $pkiw_image ); ?>" alt="<?php echo esc_attr( $pkiw_image_alt ); ?>" loading="lazy" />
 			</div>
 		<?php endif; ?>
 
@@ -71,9 +73,9 @@ ob_start();
 			<p class="pk-note p-content"><?php echo esc_html( $pkiw_description ); ?></p>
 		<?php endif; ?>
 
-		<?php if ( $pkiw_favorited_at ) : ?>
+		<?php if ( $pkiw_favorited_iso ) : ?>
 			<div class="pk-meta">
-				<time class="dt-published" datetime="<?php echo esc_attr( gmdate( 'c', (int) strtotime( $pkiw_favorited_at ) ) ); ?>"><?php echo esc_html( wp_date( get_option( 'date_format' ), (int) strtotime( $pkiw_favorited_at ) ) ); ?></time>
+				<time class="dt-published" datetime="<?php echo esc_attr( $pkiw_favorited_iso ); ?>"><?php echo esc_html( $pkiw_favorited_display ); ?></time>
 			</div>
 		<?php endif; ?>
 	</div>
