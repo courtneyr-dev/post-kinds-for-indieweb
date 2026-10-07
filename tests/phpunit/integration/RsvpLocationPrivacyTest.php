@@ -724,6 +724,20 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		$this->assert_location_for_editors( $id );
 	}
 
+	/**
+	 * Only the Event kind is exempt, so a Quick Post RSVP set to Note keeps
+	 * its location private too.
+	 */
+	public function test_an_rsvp_set_to_another_kind_keeps_the_location_from_visitors(): void {
+		$id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_object_terms( $id, 'note', 'kind' );
+		update_post_meta( $id, '_pkiw_rsvp_value', 'yes' );
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+
+		$this->assert_no_location_for_visitors( $id );
+		$this->assert_location_for_editors( $id );
+	}
+
 	public function test_a_micropub_rsvp_hinted_as_an_event_keeps_the_location_from_visitors(): void {
 		// The hint needs the term, and an earlier class can commit its deletion.
 		if ( ! term_exists( 'event', 'kind' ) ) {
