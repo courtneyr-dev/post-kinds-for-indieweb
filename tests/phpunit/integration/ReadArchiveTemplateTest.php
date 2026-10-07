@@ -65,7 +65,11 @@ final class ReadArchiveTemplateTest extends WP_UnitTestCase {
 		wp_clean_themes_cache();
 		switch_theme( 'twentytwentyfive' );
 		( new Taxonomy() )->create_default_terms();
+		// Pretty permalinks, as the site runs: /kind/read/page/2/. The kind
+		// taxonomy registered before the structure was set, so add its permastruct.
 		$this->set_permalink_structure( '/%postname%/' );
+		get_taxonomy( Taxonomy::TAXONOMY )->add_rewrite_rules();
+		flush_rewrite_rules( false );
 	}
 
 	public function tear_down(): void {
@@ -78,6 +82,7 @@ final class ReadArchiveTemplateTest extends WP_UnitTestCase {
 		}
 		search_theme_directories( true );
 		wp_clean_themes_cache();
+		$this->set_permalink_structure( '' );
 		parent::tear_down();
 	}
 

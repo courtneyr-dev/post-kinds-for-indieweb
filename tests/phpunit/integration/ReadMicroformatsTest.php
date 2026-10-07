@@ -46,7 +46,11 @@ final class ReadMicroformatsTest extends WP_UnitTestCase {
 		$this->original_stylesheet = get_stylesheet();
 		switch_theme( 'twentytwentyfive' );
 		( new Taxonomy() )->create_default_terms();
+		// Pretty permalinks, as the site runs: /kind/read/page/2/. The kind
+		// taxonomy registered before the structure was set, so add its permastruct.
 		$this->set_permalink_structure( '/%postname%/' );
+		get_taxonomy( Taxonomy::TAXONOMY )->add_rewrite_rules();
+		flush_rewrite_rules( false );
 		$this->no_lookup = static fn() => new class() {
 			/**
 			 * Complete nothing.
@@ -68,6 +72,7 @@ final class ReadMicroformatsTest extends WP_UnitTestCase {
 		remove_filter( 'pkiw_set_featured_from_artwork', '__return_false' );
 		wp_set_current_user( 0 );
 		switch_theme( $this->original_stylesheet );
+		$this->set_permalink_structure( '' );
 		parent::tear_down();
 	}
 

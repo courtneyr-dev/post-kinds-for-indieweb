@@ -603,12 +603,7 @@ class Block_Bindings {
 				return $labels[ $value ] ?? (string) $value;
 
 			case 'read_status':
-				$labels = [
-					'to-read'   => __( 'To Read', 'post-kinds-for-indieweb-in-block-themes' ),
-					'reading'   => __( 'Currently Reading', 'post-kinds-for-indieweb-in-block-themes' ),
-					'finished'  => __( 'Finished', 'post-kinds-for-indieweb-in-block-themes' ),
-					'abandoned' => __( 'Abandoned', 'post-kinds-for-indieweb-in-block-themes' ),
-				];
+				$labels = read_status_labels();
 				return $labels[ $value ] ?? (string) $value;
 
 			default:

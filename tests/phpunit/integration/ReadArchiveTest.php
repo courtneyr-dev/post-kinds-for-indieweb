@@ -36,11 +36,16 @@ final class ReadArchiveTest extends WP_UnitTestCase {
 		switch_theme( 'twentytwentyfive' );
 		( new Taxonomy() )->create_default_terms();
 		update_option( 'posts_per_page', 20 );
+		// Pretty permalinks, as the site runs: /kind/read/page/2/. The kind
+		// taxonomy registered before the structure was set, so add its permastruct.
 		$this->set_permalink_structure( '/%postname%/' );
+		get_taxonomy( Taxonomy::TAXONOMY )->add_rewrite_rules();
+		flush_rewrite_rules( false );
 	}
 
 	public function tear_down(): void {
 		switch_theme( $this->original_stylesheet );
+		$this->set_permalink_structure( '' );
 		parent::tear_down();
 	}
 
@@ -74,7 +79,7 @@ final class ReadArchiveTest extends WP_UnitTestCase {
 
 	private function archive_url(): string {
 		$url = get_term_link( 'read', Taxonomy::TAXONOMY );
-		$this->assertIsString( $url );
+		$this->assertSame( 'http://example.org/kind/read/', $url );
 
 		return $url;
 	}
@@ -263,7 +268,8 @@ final class ReadArchiveTest extends WP_UnitTestCase {
 		$this->assertSame( [ 'The Long Detour' ], $first[3]['titles'] );
 
 		$second = $this->shelves( $this->serve( $this->archive_url() . 'page/2/' ) );
-		$this->assertSame( 14, $wp_query->found_posts, 'Grouping leaves the count alone.' );
+		$this->assertSame( 14, $GLOBALS['wp_query']->found_posts, 'Grouping leaves the count alone.' );
+		$this->assertSame( 2, $GLOBALS['wp_query']->post_count );
 		$this->assertSame( [ 'h2:Abandoned', 'h2:Other' ], array_column( $second, 'heading' ), 'No heading for a shelf with no reads on the page; Abandoned continues, so it opens page 2 again.' );
 		$this->assertSame( [ [ 'Rain Almanac' ], [ 'Untitled Margins' ] ], array_column( $second, 'titles' ) );
 	}
@@ -349,8 +355,8 @@ final class ReadArchiveTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'page/2/?' . Read_Archive::QUERY_VAR . '=author', $next->getAttribute( 'href' ), 'The template\'s pager keeps the var.' );
 
 		$this->serve( add_query_arg( Read_Archive::QUERY_VAR, 'author', $this->archive_url() . 'page/2/' ) );
-		$this->assertSame( 2, $wp_query->post_count );
-		$this->assertSame( 14, $wp_query->found_posts );
+		$this->assertSame( 2, $GLOBALS['wp_query']->post_count );
+		$this->assertSame( 14, $GLOBALS['wp_query']->found_posts );
 	}
 
 	public function test_an_explicit_orderby_or_another_kind_leaves_the_a_to_z_clause_out(): void {
@@ -363,7 +369,8 @@ final class ReadArchiveTest extends WP_UnitTestCase {
 		$eat = get_term_link( 'eat', Taxonomy::TAXONOMY );
 		$this->assertIsString( $eat );
 		$this->go_to( add_query_arg( Read_Archive::QUERY_VAR, 'author', $eat ) );
-		$this->assertStringNotContainsString( '_pkiw_read_author', $wp_query->request );
+		$this->assertTrue( is_tax( Taxonomy::TAXONOMY, 'eat' ) );
+		$this->assertStringNotContainsString( '_pkiw_read_author', $GLOBALS['wp_query']->request );
 	}
 
 	// The feed.
@@ -371,11 +378,11 @@ final class ReadArchiveTest extends WP_UnitTestCase {
 	public function test_the_feed_stays_newest_first_in_both_views(): void {
 		$ids  = $this->fourteen();
 		$feed = get_term_feed_link( get_term_by( 'slug', 'read', Taxonomy::TAXONOMY )->term_id, Taxonomy::TAXONOMY );
-		$this->assertIsString( $feed );
-		global $wp_query;
+		$this->assertSame( 'http://example.org/kind/read/feed/', $feed );
 
 		foreach ( [ $feed, add_query_arg( Read_Archive::QUERY_VAR, 'author', $feed ) ] as $url ) {
 			$this->go_to( $url );
+			$wp_query = $GLOBALS['wp_query'];
 			$this->assertTrue( is_feed(), $url );
 			$this->assertSame( array_slice( array_values( $ids ), 0, count( $wp_query->posts ) ), wp_list_pluck( $wp_query->posts, 'ID' ), "{$url} lists the newest read first." );
 			$this->assertStringNotContainsString( '_pkiw_read_author', $wp_query->request, $url );

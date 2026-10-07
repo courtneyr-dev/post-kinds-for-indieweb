@@ -24,17 +24,22 @@ final class ReadOrderBlockTest extends WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		( new Taxonomy() )->create_default_terms();
+		// Pretty permalinks, as the site runs: /kind/read/page/2/. The kind
+		// taxonomy registered before the structure was set, so add its permastruct.
 		$this->set_permalink_structure( '/%postname%/' );
+		get_taxonomy( Taxonomy::TAXONOMY )->add_rewrite_rules();
+		flush_rewrite_rules( false );
 	}
 
 	public function tear_down(): void {
 		wp_set_current_user( 0 );
+		$this->set_permalink_structure( '' );
 		parent::tear_down();
 	}
 
 	private function archive_url(): string {
 		$url = get_term_link( 'read', Taxonomy::TAXONOMY );
-		$this->assertIsString( $url );
+		$this->assertSame( 'http://example.org/kind/read/', $url );
 
 		return $url;
 	}

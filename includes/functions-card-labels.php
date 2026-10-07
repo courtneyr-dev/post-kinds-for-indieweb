@@ -82,3 +82,24 @@ function card_calendar_date( string $raw ): array {
 		(string) wp_date( (string) get_option( 'date_format' ), $timestamp, $utc ),
 	];
 }
+
+/**
+ * Display labels for the four read statuses, in shelf order.
+ *
+ * The read archive's shelf headings, the read card's status line and the
+ * read_status block binding all print a status through this map, so a book
+ * reads the same on every surface. Keys are the stored `_pkiw_read_status`
+ * values.
+ *
+ * @since 1.9.0
+ *
+ * @return array<string, string> Status => translated label.
+ */
+function read_status_labels(): array {
+	return [
+		'reading'   => __( 'Currently Reading', 'post-kinds-for-indieweb-in-block-themes' ),
+		'to-read'   => __( 'To Read', 'post-kinds-for-indieweb-in-block-themes' ),
+		'finished'  => __( 'Finished', 'post-kinds-for-indieweb-in-block-themes' ),
+		'abandoned' => __( 'Abandoned', 'post-kinds-for-indieweb-in-block-themes' ),
+	];
+}
