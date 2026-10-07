@@ -540,7 +540,8 @@ class Card_Meta_Sync {
 	/**
 	 * A card attribute's value, with its block's defaults applied when the
 	 * card leaves it out or blank: a SAVE_DEFAULTS value on the save path,
-	 * else an ATTR_DEFAULTS value when no non-empty row is stored.
+	 * else an ATTR_DEFAULTS value when no non-empty row is stored. A
+	 * provider ID goes through provider_id().
 	 *
 	 * @param int                  $post_id Post ID.
 	 * @param array<string, mixed> $block   Parsed card block.
@@ -550,6 +551,10 @@ class Card_Meta_Sync {
 	 * @return mixed The value, or null or '' when there's none.
 	 */
 	private static function attr_value( int $post_id, array $block, string $attr, string $suffix, bool $on_save ) {
+		if ( isset( self::PROVIDER_ATTRS[ $block['blockName'] ][ $attr ] ) ) {
+			return self::provider_id( $block, $attr );
+		}
+
 		$value = $block['attrs'][ $attr ] ?? null;
 		if ( null !== $value && '' !== $value ) {
 			return $value;
@@ -591,7 +596,7 @@ class Card_Meta_Sync {
 
 		$named = [];
 		foreach ( $groups as $provider => $group ) {
-			if ( self::names_provider_id( $block, $provider ) ) {
+			if ( '' !== self::provider_id( $block, $provider ) ) {
 				$named[ $group ] = true;
 			}
 		}
@@ -605,15 +610,18 @@ class Card_Meta_Sync {
 	}
 
 	/**
-	 * Whether the card holds a non-blank value for one provider ID.
+	 * A card's provider ID, or '' when the card leaves it out or holds
+	 * anything but a non-blank string. block.json types the IDs as strings,
+	 * so "   ", 0, true and false count as left out: they write nothing over
+	 * a stored ID and name no provider.
 	 *
 	 * @param array<string, mixed> $block    Parsed card block.
 	 * @param string               $provider Provider ID attribute.
-	 * @return bool
+	 * @return string
 	 */
-	private static function names_provider_id( array $block, string $provider ): bool {
+	private static function provider_id( array $block, string $provider ): string {
 		$value = $block['attrs'][ $provider ] ?? '';
-		return is_scalar( $value ) && '' !== trim( (string) $value );
+		return is_string( $value ) && '' !== trim( $value ) ? $value : '';
 	}
 
 	/**
