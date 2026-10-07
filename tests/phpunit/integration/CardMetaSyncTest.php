@@ -789,7 +789,66 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 				[ '_pkiw_play_bgg_id' => '13', '_pkiw_play_rawg_id' => '3498' ],
 				[ '_pkiw_play_bgg_id' => '13', '_pkiw_play_rawg_id' => '3498' ],
 			],
+			'a BGG ID of a lone backslash names no provider'    => [
+				[ 'title' => 'Chess', 'bggId' => '\\' ],
+				[ '_pkiw_play_rawg_id' => '3498' ],
+				[ '_pkiw_play_rawg_id' => '3498', '_pkiw_play_bgg_id' => null ],
+			],
+			'a BGG ID of a backslash and a space names no provider' => [
+				[ 'title' => 'Chess', 'bggId' => '\\ ' ],
+				[ '_pkiw_play_rawg_id' => '3498' ],
+				[ '_pkiw_play_rawg_id' => '3498', '_pkiw_play_bgg_id' => null ],
+			],
+			'a RAWG ID of a tagged backslash keeps the stored BGG ID' => [
+				[ 'title' => 'Catan', 'rawgId' => '<b>\\</b>' ],
+				[ '_pkiw_play_bgg_id' => '13' ],
+				[ '_pkiw_play_bgg_id' => '13', '_pkiw_play_rawg_id' => null ],
+			],
+			'a Steam ID of a lone backslash keeps the stored BGG ID' => [
+				[ 'title' => 'Catan', 'steamId' => '\\' ],
+				[ '_pkiw_play_bgg_id' => '13' ],
+				[ '_pkiw_play_bgg_id' => '13', '_pkiw_play_steam_id' => null ],
+			],
+			'a BGG ID of two backslashes names BGG by the one it stores' => [
+				[ 'title' => 'Chess', 'bggId' => '\\\\' ],
+				[ '_pkiw_play_rawg_id' => '3498' ],
+				[ '_pkiw_play_bgg_id' => '\\', '_pkiw_play_rawg_id' => null ],
+			],
+			'a Steam ID of bare tags keeps the stored BGG ID'   => [
+				[ 'title' => 'Catan', 'steamId' => '<i></i>' ],
+				[ '_pkiw_play_bgg_id' => '13' ],
+				[ '_pkiw_play_bgg_id' => '13', '_pkiw_play_steam_id' => null ],
+			],
+			'a BGG ID beside a stripped RAWG ID clears the video IDs' => [
+				[ 'title' => 'Catan', 'bggId' => '13', 'rawgId' => '%41' ],
+				[ '_pkiw_play_rawg_id' => '3498', '_pkiw_play_steam_id' => '570' ],
+				[ '_pkiw_play_bgg_id' => '13', '_pkiw_play_rawg_id' => null, '_pkiw_play_steam_id' => null ],
+			],
+			'a RAWG ID beside a bare-tag BGG ID clears the stored BGG ID' => [
+				[ 'title' => 'Catan', 'bggId' => '<b></b>', 'rawgId' => '3498' ],
+				[ '_pkiw_play_bgg_id' => '13' ],
+				[ '_pkiw_play_bgg_id' => null, '_pkiw_play_rawg_id' => '3498' ],
+			],
+			'a card in a group with a bare-tag BGG ID keeps the stored RAWG ID' => [
+				[ 'title' => 'Chess', 'bggId' => '<b></b>' ],
+				[ '_pkiw_play_rawg_id' => '3498' ],
+				[ '_pkiw_play_rawg_id' => '3498', '_pkiw_play_bgg_id' => null ],
+				true,
+			],
 		];
+	}
+
+	/**
+	 * A play card's markup, alone or inside a core/group as Micropub wraps it.
+	 *
+	 * @param array<string, mixed> $attrs  Play-card attributes.
+	 * @param bool                 $nested Whether a core/group wraps the card.
+	 * @return string
+	 */
+	private function play_card_markup( array $attrs, bool $nested ): string {
+		$card = '<!-- wp:post-kinds-indieweb/play-card ' . wp_json_encode( $attrs ) . ' /-->';
+
+		return $nested ? '<!-- wp:group --><div class="wp-block-group">' . $card . '</div><!-- /wp:group -->' : $card;
 	}
 
 	/**
@@ -828,11 +887,33 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 	 * @param array<string, mixed>   $attrs    Play-card attributes.
 	 * @param array<string, string>  $stored   Provider IDs stored before the save.
 	 * @param array<string, ?string> $expected Raw rows after it.
+	 * @param bool                   $nested   Whether a core/group wraps the card.
 	 */
-	public function test_a_play_card_settles_stored_provider_ids_on_save( array $attrs, array $stored, array $expected ): void {
+	public function test_a_play_card_settles_stored_provider_ids_on_save( array $attrs, array $stored, array $expected, bool $nested = false ): void {
 		$post_id = $this->play_with_stored_ids( $stored );
 
-		$this->rest_update( $post_id, '<!-- wp:post-kinds-indieweb/play-card ' . wp_json_encode( $attrs ) . ' /-->' );
+		$this->rest_update( $post_id, $this->play_card_markup( $attrs, $nested ) );
+
+		$this->assert_provider_ids( $post_id, $expected );
+	}
+
+	/**
+	 * The save_post pass alone, with no wp_after_insert_post pass after it.
+	 *
+	 * @dataProvider provider_id_cards
+	 *
+	 * @param array<string, mixed>   $attrs    Play-card attributes.
+	 * @param array<string, string>  $stored   Provider IDs stored before save_post.
+	 * @param array<string, ?string> $expected Raw rows after it.
+	 * @param bool                   $nested   Whether a core/group wraps the card.
+	 */
+	public function test_the_save_post_pass_alone_settles_provider_ids( array $attrs, array $stored, array $expected, bool $nested = false ): void {
+		global $wpdb;
+		$post_id = $this->play_with_stored_ids( $stored );
+		$wpdb->update( $wpdb->posts, [ 'post_content' => $this->play_card_markup( $attrs, $nested ) ], [ 'ID' => $post_id ] );
+		clean_post_cache( $post_id );
+
+		do_action( 'save_post', $post_id, get_post( $post_id ), true );
 
 		$this->assert_provider_ids( $post_id, $expected );
 	}
@@ -846,11 +927,12 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 	 * @param array<string, mixed>   $attrs    Play-card attributes.
 	 * @param array<string, string>  $stored   Provider IDs stored before the save and sent as request meta.
 	 * @param array<string, ?string> $expected Raw rows after it.
+	 * @param bool                   $nested   Whether a core/group wraps the card.
 	 */
-	public function test_a_play_card_settles_provider_ids_from_request_meta( array $attrs, array $stored, array $expected ): void {
+	public function test_a_play_card_settles_provider_ids_from_request_meta( array $attrs, array $stored, array $expected, bool $nested = false ): void {
 		$post_id = $this->play_with_stored_ids( $stored );
 
-		$this->rest_update( $post_id, '<!-- wp:post-kinds-indieweb/play-card ' . wp_json_encode( $attrs ) . ' /-->', $stored );
+		$this->rest_update( $post_id, $this->play_card_markup( $attrs, $nested ), $stored );
 
 		$this->assert_provider_ids( $post_id, $expected );
 	}
@@ -863,11 +945,12 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 	 * @param array<string, mixed>   $attrs    Play-card attributes.
 	 * @param array<string, string>  $stored   Provider IDs stored before the backfill.
 	 * @param array<string, ?string> $expected Raw rows after it.
+	 * @param bool                   $nested   Whether a core/group wraps the card.
 	 */
-	public function test_the_backfill_settles_provider_ids_by_the_same_rule( array $attrs, array $stored, array $expected ): void {
+	public function test_the_backfill_settles_provider_ids_by_the_same_rule( array $attrs, array $stored, array $expected, bool $nested = false ): void {
 		global $wpdb;
 		$post_id = $this->play_with_stored_ids( $stored );
-		$wpdb->update( $wpdb->posts, [ 'post_content' => '<!-- wp:post-kinds-indieweb/play-card ' . wp_json_encode( $attrs ) . ' /-->' ], [ 'ID' => $post_id ] );
+		$wpdb->update( $wpdb->posts, [ 'post_content' => $this->play_card_markup( $attrs, $nested ) ], [ 'ID' => $post_id ] );
 		clean_post_cache( $post_id );
 
 		\PKIW\Card_Meta_Sync::backfill_batch( 0, 100 );
