@@ -367,7 +367,11 @@ abstract class Checkin_Sync_Base {
 			$timestamp = (int) $external_checkin['timestamp'];
 			$venue     = (string) $external_checkin['venue_name'];
 
-			// Look for posts within 5 minutes with same venue.
+			// Look for posts within 5 minutes with same venue. A draft with a
+			// floating date (post_date_gmt 0000-00-00 00:00:00) never matches.
+			// wp_update_post() resets its post_date to the time of each save,
+			// so that date says when it was edited, not when the check-in
+			// happened, and matching on it would skip the wrong imports.
 			$start = gmdate( 'Y-m-d H:i:s', $timestamp - 300 );
 			$end   = gmdate( 'Y-m-d H:i:s', $timestamp + 300 );
 
