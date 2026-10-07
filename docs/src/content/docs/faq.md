@@ -47,7 +47,7 @@ Only if you turn that on. Syndication ([POSSE](https://indieweb.org/POSSE)) to L
 
 ## Can I hide where I am on check-ins?
 
-Yes. Each check-in has a privacy level — public, approximate (city only), or private (stored but never displayed) — and a site-wide default. On top of that, coordinate handling can hide, round, or discard coordinates. See [Settings](/post-kinds-for-indieweb/settings/#checkin-tab).
+Yes. Each check-in has a privacy level — public, approximate (city only), or private (stored but never displayed) — and a site-wide default. What visitors see of a check-in's location, coordinates included, follows each post's Location Privacy setting in the block editor. See [Settings](/post-kinds-for-indieweb/settings/#checkin-tab).
 
 ## Can I import my existing history?
 
