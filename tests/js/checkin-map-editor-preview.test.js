@@ -178,6 +178,22 @@ describe( 'check-in archive map in the editor canvas', () => {
 		expect( L.map ).toHaveBeenCalledTimes( 1 );
 	} );
 
+	it( 'leaves a drawn map alone when the editor moves its preview', async () => {
+		const L = stubLeaflet();
+		window.pkiwCheckinMapWatch = true;
+		loadScript();
+
+		const container = preview( archive( 'pkiw-checkin-map-7' ) );
+		await settle();
+
+		// Moving the block re-inserts the drawn map, so the observer reports
+		// it again; Leaflet throws on a second L.map for one container.
+		document.body.insertBefore( container, document.body.firstChild );
+		await settle();
+
+		expect( L.map ).toHaveBeenCalledTimes( 1 );
+	} );
+
 	it( 'waits for consent on a map the preview adds, as on the front end', async () => {
 		const L = stubLeaflet();
 		window.pkiwCheckinMapWatch = true;
