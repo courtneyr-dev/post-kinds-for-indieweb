@@ -286,11 +286,19 @@
 			// Create map
 			this.map = L.map( 'checkin-map' ).setView( [ 40, -95 ], 4 );
 
-			// Add tile layer (OpenStreetMap)
-			L.tileLayer( 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				attribution:
-					'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-			} ).addTo( this.map );
+			// The server prints Checkin_Map::tile_layer(), so the
+			// pkiw_map_tile_url and pkiw_map_tile_attribution filters apply.
+			const tiles = window.pkiwCheckinDashboard || {};
+			L.tileLayer(
+				tiles.tileUrl ||
+					'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+				{
+					attribution:
+						tiles.tileAttribution ||
+						'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+					maxZoom: 19,
+				}
+			).addTo( this.map );
 
 			// Create marker cluster group
 			if ( typeof L.markerClusterGroup !== 'undefined' ) {

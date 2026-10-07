@@ -1426,7 +1426,7 @@ final class Kind_Archive_Layouts {
 		} elseif ( 'drink' === $kind ) {
 			$out['property'] = 'drank';
 			$out['venue']    = $meta( 'drink_location_name' );
-			if ( $meta( 'drink_brewery' ) ) {
+			if ( $meta( 'drink_brewery' ) && Meta_Fields::drink_brand_visible( $post_id ) ) {
 				$out['subs'][] = $meta( 'drink_brewery' );
 			}
 		} else {
