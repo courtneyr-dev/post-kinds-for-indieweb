@@ -415,7 +415,44 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'pk-title', $html );
 		// The synthetic title is navigation, not the entry name.
 		$this->assertStringNotContainsString( 'p-name', $html );
-		$this->assertStringContainsString( '>Weather</a>', $html );
+		$this->assertStringContainsString( '>Weather, ' . get_the_date( '', $post_id ) . '</a>', $html );
+	}
+
+	public function test_untitled_long_form_like_uses_card_name_without_p_name(): void {
+		$this->ensure_kind_term( 'like' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => '',
+				'post_content' => '<!-- wp:post-kinds-indieweb/like-card {"title":"A post on example.org","url":"https://example.org/a"} /-->'
+					. '<!-- wp:paragraph --><p>A separate paragraph.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'like', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( '>A post on example.org</a>', $html );
+		$this->assertStringNotContainsString( 'p-name', $html );
+	}
+
+	public function test_untitled_long_form_note_uses_fallback_and_prints_excerpt_once(): void {
+		$this->ensure_kind_term( 'note' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => '',
+				'post_content' => '<!-- wp:paragraph --><p>A fictional thought printed once.</p><!-- /wp:paragraph -->',
+				'post_excerpt' => 'A fictional thought printed once.',
+				'post_date'    => '2026-09-12 12:00:00',
+			]
+		);
+		wp_set_object_terms( $post_id, 'note', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( '>Note, September 12, 2026</a>', $html );
+		$this->assertSame( 1, substr_count( $html, 'A fictional thought printed once.' ) );
 	}
 
 	/**
