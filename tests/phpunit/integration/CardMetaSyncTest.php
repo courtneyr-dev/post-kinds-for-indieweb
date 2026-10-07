@@ -543,6 +543,105 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 		$this->assertSame( 'finished', get_metadata_raw( 'post', $response->get_data()['id'], '_pkiw_read_status', true ) );
 	}
 
+	/**
+	 * Create a post through the REST posts route as an administrator.
+	 *
+	 * @param string               $content Post content.
+	 * @param array<string, mixed> $meta    Request meta.
+	 * @return int The new post's ID.
+	 */
+	private function rest_create( string $content, array $meta ): int {
+		( new \PKIW\Meta_Fields() )->register_meta_fields();
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/posts' );
+		$request->set_body_params( [
+			'title'   => 'Saved over REST',
+			'status'  => 'publish',
+			'content' => $content,
+			'meta'    => $meta,
+		] );
+		$response = rest_get_server()->dispatch( $request );
+		$this->assertSame( 201, $response->get_status() );
+
+		return (int) $response->get_data()['id'];
+	}
+
+	/**
+	 * A REST save whose meta sets a stricter location privacy than the
+	 * check-in card keeps the request's value, as it did before the
+	 * wp_after_insert_post pass, and a visitor gets no location.
+	 */
+	public function test_a_rest_save_keeps_a_stricter_location_privacy_from_request_meta(): void {
+		$card    = [
+			'venueName'       => 'Sentinel Pier Qx7',
+			'address'         => '41 Sentinel Wharf Rd',
+			'locality'        => 'Port Qx7',
+			'latitude'        => 12.345678,
+			'longitude'       => -76.543219,
+			'locationPrivacy' => 'public',
+		];
+		$post_id = $this->rest_create(
+			'<!-- wp:post-kinds-indieweb/checkin-card ' . wp_json_encode( $card ) . ' /-->',
+			[ '_pkiw_geo_privacy' => 'private' ]
+		);
+
+		$this->assertSame( 'private', get_metadata_raw( 'post', $post_id, '_pkiw_geo_privacy', true ) );
+
+		wp_set_current_user( 0 );
+		$GLOBALS['wp_rest_server'] = null;
+		$data = rest_get_server()->dispatch( new WP_REST_Request( 'GET', '/wp/v2/posts/' . $post_id ) )->get_data();
+		$this->go_to( get_permalink( $post_id ) );
+		$html = do_blocks( (string) get_post_field( 'post_content', $post_id ) );
+
+		foreach ( [ 'Sentinel Pier Qx7', '41 Sentinel Wharf Rd', 'Port Qx7', '12.345678', '-76.543219' ] as $needle ) {
+			$this->assertStringNotContainsString( $needle, (string) wp_json_encode( $data['meta'] ), "REST meta shows {$needle}." );
+			$this->assertStringNotContainsString( $needle, $data['content']['rendered'], "REST content.rendered shows {$needle}." );
+			$this->assertStringNotContainsString( $needle, $html, "The rendered card shows {$needle}." );
+		}
+	}
+
+	/**
+	 * The wp_after_insert_post pass rewrites the read-card status and the
+	 * play-card provider IDs only. Any other key the request's meta set
+	 * keeps the request's value.
+	 */
+	public function test_a_rest_save_keeps_other_request_meta_over_the_card(): void {
+		$post_id = $this->rest_create(
+			'<!-- wp:post-kinds-indieweb/checkin-card {"venueName":"Card Venue"} /-->',
+			[ '_pkiw_checkin_name' => 'Sidebar Venue' ]
+		);
+
+		$this->assertSame( 'Sidebar Venue', get_metadata_raw( 'post', $post_id, '_pkiw_checkin_name', true ) );
+	}
+
+	/**
+	 * A read card left at Currently Reading saves with no readStatus. Stale
+	 * request meta that says to-read still loses to the card's default.
+	 */
+	public function test_a_rest_save_writes_the_read_status_default_over_request_meta(): void {
+		$post_id = $this->rest_create(
+			'<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"The Quiet Orchard"} /-->',
+			[ '_pkiw_read_status' => 'to-read' ]
+		);
+
+		$this->assertSame( 'reading', get_metadata_raw( 'post', $post_id, '_pkiw_read_status', true ) );
+	}
+
+	/**
+	 * The editor sends the meta it loaded, so a REST save can carry a
+	 * provider ID the card just dropped. The card still decides it.
+	 */
+	public function test_a_rest_save_drops_a_provider_id_the_card_left_out_of_request_meta(): void {
+		$post_id = $this->rest_create(
+			'<!-- wp:post-kinds-indieweb/play-card {"title":"Tidepool Express","bggId":"900108"} /-->',
+			[ '_pkiw_play_rawg_id' => '900008' ]
+		);
+
+		$this->assertNull( get_metadata_raw( 'post', $post_id, '_pkiw_play_rawg_id', true ) );
+		$this->assertSame( '900108', get_metadata_raw( 'post', $post_id, '_pkiw_play_bgg_id', true ) );
+	}
+
 	public function test_w1_bumps_the_backfill_version_once_to_3(): void {
 		$this->assertSame( '3', \PKIW\Card_Meta_Sync::BACKFILL_VERSION );
 	}
