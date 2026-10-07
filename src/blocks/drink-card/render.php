@@ -70,6 +70,11 @@ $pkiw_show_address = ! empty( $pkiw_visible['street'] ) && $pkiw_location_addres
 $pkiw_show_coords  = ! empty( $pkiw_visible['coordinates'] ) && ( 0.0 !== $pkiw_geo_lat || 0.0 !== $pkiw_geo_lon );
 $pkiw_show_url     = ! empty( $pkiw_visible['url'] ) && $pkiw_venue_url;
 
+// A brand filled from venue data names the venue and hides with it; a typed brand always prints.
+if ( ! Meta_Fields::drink_brand_visible( (int) $pkiw_post_id ) ) {
+	$pkiw_brand = '';
+}
+
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
 		'class' => 'pk-card k-drink p-drank h-food',

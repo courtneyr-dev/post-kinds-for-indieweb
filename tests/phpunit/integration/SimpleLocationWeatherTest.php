@@ -23,6 +23,12 @@ use PKIW\Integrations\Simple_Location_Weather;
 final class SimpleLocationWeatherTest extends WP_UnitTestCase {
 
 	/**
+	 * Weather content as Micropub writes it: an authored p-weather
+	 * paragraph (class-micropub-content-builder.php:932-938).
+	 */
+	private const AUTHORED_WEATHER = '<p><span class="p-weather">Sunny and warm</span></p>';
+
+	/**
 	 * Meta writes to weather keys seen during a test.
 	 *
 	 * @var array<int, string>
@@ -35,6 +41,7 @@ final class SimpleLocationWeatherTest extends WP_UnitTestCase {
 	public static function set_up_before_class(): void {
 		parent::set_up_before_class();
 		require_once dirname( __DIR__ ) . '/fixtures/simple-location/weather-stub.php';
+		require_once dirname( __DIR__ ) . '/fixtures/simple-location/location-stub.php';
 	}
 
 	/**
@@ -140,6 +147,253 @@ final class SimpleLocationWeatherTest extends WP_UnitTestCase {
 	 */
 	private function as_editor(): void {
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+	}
+
+	/**
+	 * Add Simple Location's content filter when the fixture is in use.
+	 */
+	private function hook_simple_location_content(): void {
+		if ( false === has_filter( 'the_content', [ 'Geo_Data', 'location_content' ] ) ) {
+			add_filter( 'the_content', [ 'Geo_Data', 'location_content' ], 12 );
+		}
+	}
+
+	/**
+	 * Visit a post and ensure the loop global matches it.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	private function visit_post( int $post_id ): void {
+		$this->go_to( get_permalink( $post_id ) );
+		if ( $post_id !== get_the_ID() ) {
+			$GLOBALS['post'] = get_post( $post_id );
+			setup_postdata( $GLOBALS['post'] );
+		}
+	}
+
+	/**
+	 * Store enough public geodata for Simple Location to append its line.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	private function add_location( int $post_id ): void {
+		add_post_meta( $post_id, 'geo_latitude', '40.7128' );
+		add_post_meta( $post_id, 'geo_longitude', '-74.0060' );
+		add_post_meta( $post_id, 'geo_address', 'New York, NY' );
+	}
+
+	/**
+	 * Run the_content and return the display defaults Simple Location
+	 * would read at priority 12.
+	 *
+	 * @param string $content Content to filter.
+	 * @return array<string, mixed>|null
+	 */
+	private function display_defaults_in_content( string $content ): ?array {
+		$recorded = null;
+		add_filter(
+			'the_content',
+			static function ( $filtered ) use ( &$recorded ) {
+				$recorded = apply_filters(
+					'simple_location_display_defaults',
+					[
+						'weather' => true,
+						'icon'    => true,
+					]
+				);
+				return $filtered;
+			},
+			12
+		);
+
+		apply_filters( 'the_content', $content );
+
+		return $recorded;
+	}
+
+	/**
+	 * A weather post whose content carries its authored p-weather turns off
+	 * only Simple Location's weather display default.
+	 */
+	public function test_authored_weather_turns_off_simple_location_weather_default(): void {
+		$post_id = $this->make_post( [ 'temperature' => 26.8 ], '1' );
+		$this->visit_post( $post_id );
+
+		$defaults = $this->display_defaults_in_content( self::AUTHORED_WEATHER );
+
+		$this->assertIsArray( $defaults );
+		$this->assertFalse( $defaults['weather'] );
+		$this->assertTrue( $defaults['icon'] );
+	}
+
+	/**
+	 * With authored weather in the content, Simple Location's line keeps
+	 * the location and drops its weather.
+	 */
+	public function test_weather_post_with_authored_weather_drops_simple_location_weather(): void {
+		$post_id = $this->make_post(
+			[
+				'code'        => 800,
+				'temperature' => 26.8,
+			],
+			'1'
+		);
+		$this->add_location( $post_id );
+		$this->hook_simple_location_content();
+		$this->visit_post( $post_id );
+
+		$html = apply_filters( 'the_content', self::AUTHORED_WEATHER );
+
+		$this->assertStringContainsString( 'sloc-display', $html );
+		$this->assertStringContainsString( 'New York, NY', $html );
+		$this->assertStringNotContainsString( 'sloc-weather', $html );
+	}
+
+	/**
+	 * A weather post made in the editor, with no weather of its own in the
+	 * content, keeps Simple Location's weather: it's the only reading.
+	 */
+	public function test_weather_post_without_own_weather_keeps_simple_location_weather(): void {
+		$post_id = $this->make_post(
+			[
+				'code'        => 800,
+				'temperature' => 26.8,
+			],
+			'1'
+		);
+		$this->add_location( $post_id );
+		$this->hook_simple_location_content();
+		$this->visit_post( $post_id );
+
+		$html = apply_filters( 'the_content', '<p>Out for a walk.</p>' );
+
+		$this->assertStringContainsString( 'sloc-weather', $html );
+		$this->assertSame( 1, substr_count( $html, 'p-weather' ) );
+	}
+
+	/**
+	 * A kind-meta weather binding that printed the post's weather earlier
+	 * in the request counts as the post's own weather.
+	 */
+	public function test_weather_binding_turns_off_simple_location_weather(): void {
+		$post_id = $this->make_post(
+			[
+				'code'        => 800,
+				'temperature' => 26.8,
+			],
+			'1'
+		);
+		$this->add_location( $post_id );
+		$this->hook_simple_location_content();
+		$this->visit_post( $post_id );
+		$this->assertSame( '27 °C', $this->binding( 'weather_temperature', $post_id ) );
+
+		$html = apply_filters( 'the_content', '<p>Out for a walk.</p>' );
+
+		$this->assertStringContainsString( 'sloc-display', $html );
+		$this->assertStringNotContainsString( 'sloc-weather', $html );
+	}
+
+	/**
+	 * Non-weather kinds keep Simple Location's weather, authored weather
+	 * or not.
+	 */
+	public function test_other_kinds_keep_simple_location_inline_weather(): void {
+		$post_id = $this->make_post(
+			[
+				'code'        => 800,
+				'temperature' => 26.8,
+			],
+			'1',
+			'note'
+		);
+		$this->add_location( $post_id );
+		$this->hook_simple_location_content();
+		$this->visit_post( $post_id );
+
+		$html = apply_filters( 'the_content', self::AUTHORED_WEATHER );
+
+		$this->assertStringContainsString( 'sloc-weather', $html );
+	}
+
+	/**
+	 * Calls outside the_content keep Simple Location's defaults untouched.
+	 */
+	public function test_display_defaults_untouched_outside_the_content(): void {
+		$post_id = $this->make_post( [ 'temperature' => 26.8 ], '1' );
+		$this->visit_post( $post_id );
+		apply_filters( 'the_content', self::AUTHORED_WEATHER );
+
+		$defaults = apply_filters( 'simple_location_display_defaults', [ 'weather' => true ] );
+
+		$this->assertTrue( $defaults['weather'] );
+	}
+
+	/**
+	 * An inactive Post Kinds source leaves Simple Location as the reading.
+	 */
+	public function test_inline_weather_kept_when_weather_source_inactive(): void {
+		$post_id = $this->make_post( [ 'temperature' => 26.8 ], '1' );
+		$this->visit_post( $post_id );
+		add_filter( 'pkiw_weather_source_active', '__return_false' );
+
+		$defaults = $this->display_defaults_in_content( self::AUTHORED_WEATHER );
+
+		$this->assertIsArray( $defaults );
+		$this->assertTrue( $defaults['weather'] );
+	}
+
+	/**
+	 * Suppressing duplicate output doesn't mutate stored weather rows.
+	 */
+	public function test_suppression_writes_no_weather_meta(): void {
+		$post_id = $this->make_post(
+			[
+				'code'        => 800,
+				'temperature' => 26.8,
+			],
+			'1'
+		);
+		$this->add_location( $post_id );
+		$this->hook_simple_location_content();
+		$this->visit_post( $post_id );
+		$before               = $this->weather_rows( $post_id );
+		$this->weather_writes = [];
+
+		$html = apply_filters( 'the_content', self::AUTHORED_WEATHER );
+
+		$this->assertStringNotContainsString( 'sloc-weather', $html );
+		$this->assertSame( $before, $this->weather_rows( $post_id ) );
+		$this->assertSame( [], $this->weather_writes );
+	}
+
+	/**
+	 * The adapter's site-default visibility matches Simple Location itself.
+	 */
+	public function test_site_default_visibility_matches_simple_location(): void {
+		if ( ! class_exists( 'Geo_Data' ) || ! method_exists( 'Geo_Data', 'get_default_visibility' ) ) {
+			$this->markTestSkipped( 'The real Simple Location Geo_Data API is unavailable.' );
+		}
+
+		$reflection = new ReflectionClass( 'Geo_Data' );
+		if ( str_contains( (string) $reflection->getFileName(), 'fixtures/simple-location' ) ) {
+			$this->markTestSkipped( 'Parity guard runs only against the real Simple Location plugin.' );
+		}
+
+		$post_id = $this->make_post( [ 'temperature' => 18 ], null );
+		foreach ( [ '0', '1', '2', 'private', 'public', 'protected', 'none', null ] as $value ) {
+			if ( null === $value ) {
+				delete_option( 'geo_public' );
+				$label = 'deleted';
+			} else {
+				update_option( 'geo_public', $value );
+				$label = $value;
+			}
+
+			$expected = in_array( Geo_Data::get_default_visibility(), [ 'public', 'protected' ], true );
+			$actual   = null !== Simple_Location_Weather::get_observation( $post_id );
+			$this->assertSame( $expected, $actual, 'Site geo_public value: ' . $label );
+		}
 	}
 
 	/**

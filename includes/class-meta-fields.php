@@ -1059,6 +1059,7 @@ class Meta_Fields {
 		add_filter( 'rest_prepare_post', [ $this, 'redact_location_meta' ], 20, 3 );
 		// CPT import storage registers the same meta on the reaction post type.
 		add_filter( 'rest_prepare_' . Post_Type::POST_TYPE, [ $this, 'redact_location_meta' ], 20, 3 );
+		add_action( 'updated_post_meta', [ $this, 'clear_brand_source_on_rebrand' ], 10, 3 );
 	}
 
 	/**
@@ -1345,6 +1346,68 @@ class Meta_Fields {
 	}
 
 	/**
+	 * Post meta naming where a drink's brand came from. Left unregistered,
+	 * like `_pkiw_title_source`, so REST doesn't publish it.
+	 */
+	public const BRAND_SOURCE_KEY = '_pkiw_drink_brand_source';
+
+	/**
+	 * Brand source value: the brand was filled from venue or Simple Location data.
+	 */
+	public const BRAND_SOURCE_LOCATION = 'location';
+
+	/**
+	 * Record that a drink's brand was filled from venue or Simple Location
+	 * data. Any writer that copies a venue name into the brand calls this
+	 * right after it saves the brand.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public static function mark_location_brand( int $post_id ): void {
+		update_post_meta( $post_id, self::BRAND_SOURCE_KEY, self::BRAND_SOURCE_LOCATION );
+	}
+
+	/**
+	 * Clear the brand source marker when the stored brand changes, so a
+	 * brand the author edits after it was filled from venue data is theirs
+	 * and prints. update_metadata() fires no hook when the value is
+	 * unchanged, so Card_Meta_Sync's resave of the same brand keeps the
+	 * marker. Only updated_post_meta runs this: the first add of the brand
+	 * can come after the marker, as when a writer marks the post through
+	 * meta_input and Card_Meta_Sync stores the brand at save_post.
+	 *
+	 * @param int    $meta_id  Meta ID.
+	 * @param int    $post_id  Post ID.
+	 * @param string $meta_key Meta key.
+	 */
+	public function clear_brand_source_on_rebrand( $meta_id, $post_id, $meta_key ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed
+		if ( self::PREFIX . 'drink_brewery' === $meta_key ) {
+			delete_post_meta( (int) $post_id, self::BRAND_SOURCE_KEY );
+		}
+	}
+
+	/**
+	 * Whether the current user may see a drink's brand.
+	 *
+	 * A brand with no recorded source was typed by the author and always
+	 * shows. One marked by mark_location_brand() names the venue, so it
+	 * follows the venue name's tier of get_visible_location_fields(): hidden
+	 * from visitors when `_pkiw_geo_privacy` is 'private' or Simple Location
+	 * `geo_public` is '0'. The marker decides, never a comparison of the
+	 * brand with the venue name.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	public static function drink_brand_visible( int $post_id ): bool {
+		if ( self::BRAND_SOURCE_LOCATION !== get_post_meta( $post_id, self::BRAND_SOURCE_KEY, true ) ) {
+			return true;
+		}
+
+		return self::get_visible_location_fields( $post_id )['name'];
+	}
+
+	/**
 	 * Zero/blank out this plugin's own `_pkiw_*` location fields the
 	 * post's current visibility tier hides, leaving every other key in
 	 * $meta untouched. This is the LOCATION_KEY_TIERS walk shared by
@@ -1367,6 +1430,10 @@ class Meta_Fields {
 			if ( array_key_exists( $full, $meta ) ) {
 				$meta[ $full ] = is_numeric( $meta[ $full ] ) ? 0 : '';
 			}
+		}
+
+		if ( array_key_exists( self::PREFIX . 'drink_brewery', $meta ) && ! self::drink_brand_visible( $post_id ) ) {
+			$meta[ self::PREFIX . 'drink_brewery' ] = '';
 		}
 
 		return $meta;

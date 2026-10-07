@@ -25,6 +25,21 @@ if ( ! empty( $attributes['inherit'] ) ) {
 
 	$pkiw_inherited = ( $block->context['query']['inherit'] ?? true ) && $wp_query instanceof WP_Query ? $wp_query->posts : [];
 
+	// The editor previews through the REST block renderer, where no main
+	// query runs. Stand in with the archive's first page, in its order.
+	// Other REST renders, a page's content.rendered, keep their own query.
+	if ( \PKIW\Kind_Archive_Layouts::is_block_preview() ) {
+		$pkiw_inherited = get_checkins(
+			[
+				'posts_per_page' => max( 1, min( 100, absint( $attributes['count'] ?? \PKIW\Checkin_Map::DEFAULT_PER_PAGE ) ) ),
+				'orderby'        => [
+					'date' => 'DESC',
+					'ID'   => 'DESC',
+				],
+			]
+		)->posts;
+	}
+
 	$pkiw_archive = \PKIW\Checkin_Map::render_archive(
 		is_array( $pkiw_inherited ) ? $pkiw_inherited : [],
 		get_block_wrapper_attributes( [ 'class' => 'pkiw-checkin-archive' ] ),

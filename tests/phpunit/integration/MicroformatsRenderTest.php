@@ -261,6 +261,110 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A weather single keeps the authored weather as its only weather
+	 * property: Simple Location's location line stays, without its own
+	 * nested p-weather.
+	 */
+	public function test_weather_single_content_parses_one_weather_property(): void {
+		require_once dirname( __DIR__ ) . '/fixtures/simple-location/weather-stub.php';
+		require_once dirname( __DIR__ ) . '/fixtures/simple-location/location-stub.php';
+		update_option( 'sloc_measurements', 'metric' );
+
+		$content = '<!-- wp:paragraph -->' . "\n"
+			. '<p><span class="p-weather">Sunny and warm</span></p>' . "\n"
+			. '<!-- /wp:paragraph -->';
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => '',
+				'post_content' => $content,
+			]
+		);
+		$this->assertNotWPError( wp_set_object_terms( $post_id, 'weather', 'kind' ) );
+		add_post_meta( $post_id, 'weather_temperature', 26.8 );
+		add_post_meta( $post_id, 'weather_code', 800 );
+		add_post_meta( $post_id, 'geo_public', '1' );
+		add_post_meta( $post_id, 'geo_latitude', '40.7128' );
+		add_post_meta( $post_id, 'geo_longitude', '-74.0060' );
+		add_post_meta( $post_id, 'geo_address', 'New York, NY' );
+		$this->hook_simple_location_content();
+		$this->go_to( get_permalink( $post_id ) );
+
+		// On a single, the_content wraps the post in Post Kinds' own h-entry
+		// (Microformats::wrap_singular_content() at priority 100), after
+		// Simple Location appends its line at 12. Parse that as served.
+		$html = apply_filters( 'the_content', $content );
+		$this->assertStringContainsString( 'pkiw-singular-entry', $html );
+		$entry = $this->top_level_h_entry( \Mf2\parse( $html ) );
+
+		$this->assertSame( [ 'Sunny and warm' ], $entry['properties']['weather'] ?? null );
+		$this->assertArrayHasKey( 'location', $entry['properties'], 'Simple Location\'s p-location line should stay.' );
+		$this->assertNull( $this->find_nested_item_with_property( $entry, 'weather' ), 'The nested Simple Location h-adr must not carry a weather property.' );
+		$this->assertStringNotContainsString( 'sloc-weather', $html );
+	}
+
+	/**
+	 * A weather post made in the editor has no authored weather, but its
+	 * Stream card prints Post Kinds' weather line, so the card's excerpt
+	 * doesn't repeat Simple Location's weather.
+	 */
+	public function test_weather_stream_card_summary_has_no_simple_location_weather(): void {
+		require_once dirname( __DIR__ ) . '/fixtures/simple-location/weather-stub.php';
+		require_once dirname( __DIR__ ) . '/fixtures/simple-location/location-stub.php';
+		update_option( 'sloc_measurements', 'metric' );
+
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => '',
+				'post_excerpt' => '',
+				'post_content' => '<!-- wp:paragraph --><p>Out for a walk.</p><!-- /wp:paragraph -->',
+			]
+		);
+		$this->assertNotWPError( wp_set_object_terms( $post_id, 'weather', 'kind' ) );
+		add_post_meta( $post_id, 'weather_temperature', 26.8 );
+		add_post_meta( $post_id, 'weather_code', 800 );
+		add_post_meta( $post_id, 'geo_public', '1' );
+		add_post_meta( $post_id, 'geo_latitude', '40.7128' );
+		add_post_meta( $post_id, 'geo_longitude', '-74.0060' );
+		add_post_meta( $post_id, 'geo_address', 'New York, NY' );
+		$this->hook_simple_location_content();
+		$this->go_to( get_permalink( $post_id ) );
+
+		// Through the block, as a Query Loop renders it: the excerpt's
+		// the_content pass runs inside the Stream card's render callback.
+		$html = render_block(
+			[
+				'blockName'    => 'post-kinds-indieweb/stream-card',
+				'attrs'        => [],
+				'innerBlocks'  => [],
+				'innerHTML'    => '',
+				'innerContent' => [],
+			]
+		);
+		$this->assertStringContainsString( '<p class="pk-weather p-weather">Clear Sky, 27 °C</p>', $html );
+		$this->assertSame( 1, substr_count( $html, 'Clear Sky' ) );
+
+		$dom = new DOMDocument();
+		libxml_use_internal_errors( true );
+		$dom->loadHTML( '<?xml encoding="utf-8"?><div>' . $html . '</div>' );
+		libxml_clear_errors();
+		$summary = ( new DOMXPath( $dom ) )->query( '//p[contains(concat(" ", @class, " "), " pk-excerpt ")]' )->item( 0 );
+		$this->assertInstanceOf( DOMElement::class, $summary );
+		$this->assertStringNotContainsString( 'Clear Sky', $summary->textContent );
+		$this->assertStringNotContainsString( '°', $summary->textContent );
+	}
+
+	/**
+	 * Add Simple Location's content filter when the fixture is in use.
+	 */
+	private function hook_simple_location_content(): void {
+		if ( false === has_filter( 'the_content', [ 'Geo_Data', 'location_content' ] ) ) {
+			add_filter( 'the_content', [ 'Geo_Data', 'location_content' ], 12 );
+		}
+	}
+
+	/**
 	 * Render a card block for the given kind/attributes through the full
 	 * dynamic-render pipeline, wrapped in a synthetic `h-entry` the way the
 	 * theme wraps a published post's content.
@@ -405,6 +509,34 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Search only the nested items below one parsed microformats2 item.
+	 *
+	 * @param array<string, mixed> $item     Parsed parent item.
+	 * @param string               $property Property name to find.
+	 * @return array<string, mixed>|null The first nested match, or null.
+	 */
+	private function find_nested_item_with_property( array $item, string $property ): ?array {
+		$nested_items = [];
+		foreach ( $item['properties'] ?? [] as $values ) {
+			if ( ! is_array( $values ) ) {
+				continue;
+			}
+			foreach ( $values as $value ) {
+				if ( is_array( $value ) && isset( $value['type'] ) ) {
+					$nested_items[] = $value;
+				}
+			}
+		}
+		foreach ( $item['children'] ?? [] as $child ) {
+			if ( is_array( $child ) ) {
+				$nested_items[] = $child;
+			}
+		}
+
+		return $this->find_item_with_property( $nested_items, $property );
 	}
 
 	/**
