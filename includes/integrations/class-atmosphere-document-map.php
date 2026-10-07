@@ -8,7 +8,12 @@
  * title for intentionally untitled kinds, and the kind slug as a tag so a
  * listen, review, or check-in stays discoverable as such. Fields
  * ATmosphere already maps from native WordPress data (description,
- * textContent, coverImage, path, timestamps) are never replaced.
+ * textContent, coverImage, path, timestamps) are never replaced, with one
+ * cut: ATmosphere's excerpt reads raw post_content, where an acquisition
+ * card saved before issue 239 holds its cost as text. That excerpt, and
+ * only that span, is rebuilt without a private cost in the document
+ * description, the Bluesky link card's description and the Bluesky post
+ * text.
  *
  * Deliberately not mapped, and why:
  * - `links`: the lexicon's links union has no interoperable members yet;
@@ -28,6 +33,7 @@ declare(strict_types=1);
 
 namespace PKIW\Integrations;
 
+use PKIW\Meta_Fields;
 use PKIW\Taxonomy;
 
 // Prevent direct access.
@@ -51,6 +57,8 @@ class Atmosphere_Document_Map {
 	 */
 	public function register(): void {
 		add_filter( 'atmosphere_transform_document', [ $this, 'enrich' ], 10, 2 );
+		add_filter( 'atmosphere_post_embed', [ $this, 'embed_without_private_cost' ], 10, 2 );
+		add_filter( 'atmosphere_transform_bsky_post', [ $this, 'bsky_post_without_private_cost' ], 10, 2 );
 	}
 
 	/**
@@ -62,6 +70,8 @@ class Atmosphere_Document_Map {
 	 */
 	public function unregister(): void {
 		remove_filter( 'atmosphere_transform_document', [ $this, 'enrich' ], 10 );
+		remove_filter( 'atmosphere_post_embed', [ $this, 'embed_without_private_cost' ], 10 );
+		remove_filter( 'atmosphere_transform_bsky_post', [ $this, 'bsky_post_without_private_cost' ], 10 );
 	}
 
 	/**
@@ -76,6 +86,13 @@ class Atmosphere_Document_Map {
 	public function enrich( $record, $post ): array {
 		if ( ! is_array( $record ) || ! $post instanceof \WP_Post ) {
 			return is_array( $record ) ? $record : [];
+		}
+
+		if ( isset( $record['description'] ) && is_string( $record['description'] ) ) {
+			$record['description'] = self::clean_excerpt( $record['description'], self::excerpt_pairs( $post ) ) ?? $record['description'];
+			if ( '' === $record['description'] ) {
+				unset( $record['description'] );
+			}
 		}
 
 		if ( empty( $record['title'] ) ) {
@@ -138,6 +155,263 @@ class Atmosphere_Document_Map {
 		}
 
 		return $record;
+	}
+
+	/**
+	 * ATmosphere's excerpt word counts: 30 for the Bluesky post text, 55 for
+	 * the document description and the link card (transformer/class-post.php:798
+	 * and :1325, class-document.php:129 in checkout bf8e267).
+	 */
+	private const EXCERPT_WORDS = [ 30, 55 ];
+
+	/**
+	 * What wp_trim_words() and ATmosphere's truncate_text() end a cut with.
+	 */
+	private const MORE = '...';
+
+	/**
+	 * ATmosphere's Bluesky post length limit, in graphemes.
+	 */
+	private const BLUESKY_MAX_GRAPHEMES = 300;
+
+	/**
+	 * Take private acquisition cost out of a Bluesky link card, whose
+	 * description is ATmosphere's 55-word excerpt.
+	 *
+	 * @param mixed $embed The embed record, or null.
+	 * @param mixed $post  The post being transformed.
+	 * @return mixed
+	 */
+	public function embed_without_private_cost( $embed, $post ) {
+		if ( ! is_array( $embed ) || ! $post instanceof \WP_Post || ! is_string( $embed['external']['description'] ?? null ) ) {
+			return $embed;
+		}
+
+		$clean = self::clean_excerpt( $embed['external']['description'], self::excerpt_pairs( $post ) );
+		if ( null !== $clean ) {
+			$embed['external']['description'] = $clean;
+		}
+
+		return $embed;
+	}
+
+	/**
+	 * Take private acquisition cost out of a Bluesky post's text, which
+	 * ATmosphere joins with blank lines from the title, its 30-word excerpt
+	 * (cut short with '...' when the post runs past 300 graphemes) and the
+	 * permalink. Only the excerpt changes, and the post gets no longer than
+	 * the limit allows. Facets before the change keep their byte ranges,
+	 * facets after it move with the text, and a facet inside it is dropped.
+	 *
+	 * @param mixed $record The app.bsky.feed.post record.
+	 * @param mixed $post   The post being transformed.
+	 * @return mixed
+	 */
+	public function bsky_post_without_private_cost( $record, $post ) {
+		if ( ! is_array( $record ) || ! $post instanceof \WP_Post || ! is_string( $record['text'] ?? null ) ) {
+			return $record;
+		}
+
+		$pairs = self::excerpt_pairs( $post );
+		if ( [] === $pairs ) {
+			return $record;
+		}
+
+		$text  = $record['text'];
+		$title = self::plain_text( (string) get_the_title( $post ) );
+		$room  = max( 0, self::BLUESKY_MAX_GRAPHEMES - self::length( $text ) );
+		$at    = 0;
+		foreach ( explode( "\n\n", $text ) as $i => $segment ) {
+			$clean = 0 === $i && '' !== $title && $segment === $title ? null : self::clean_excerpt( $segment, $pairs );
+			if ( null === $clean ) {
+				$at += strlen( $segment ) + 2;
+				continue;
+			}
+
+			$clean          = self::fit( $clean, self::length( $segment ) + $room );
+			$record['text'] = substr_replace( $text, $clean, $at, strlen( $segment ) );
+			if ( isset( $record['facets'] ) && is_array( $record['facets'] ) ) {
+				[ $prefix, $suffix ] = self::common_ends( $segment, $clean );
+				$record['facets']    = self::shift_facets( $record['facets'], $at + $prefix, strlen( $segment ) - $prefix - $suffix, strlen( $clean ) - $prefix - $suffix );
+			}
+
+			return $record;
+		}
+
+		return $record;
+	}
+
+	/**
+	 * The excerpts ATmosphere builds from $post's raw post_content, each
+	 * paired with the one it would build with private cost stripped. Empty
+	 * when ATmosphere uses the post's own excerpt, or when no card's static
+	 * markup holds a private cost, which leaves a bare block comment alone.
+	 *
+	 * @param \WP_Post $post The post.
+	 * @return array<int, array{0: string, 1: string}> Raw and clean excerpt pairs.
+	 */
+	private static function excerpt_pairs( \WP_Post $post ): array {
+		if ( ! empty( $post->post_excerpt ) ) {
+			return [];
+		}
+
+		$content  = (string) $post->post_content;
+		$stripped = Meta_Fields::strip_private_cost( $content, (int) $post->ID );
+		if ( $stripped === $content ) {
+			return [];
+		}
+
+		$pairs = [];
+		foreach ( self::EXCERPT_WORDS as $words ) {
+			$raw   = wp_trim_words( self::plain_text( $content ), $words, self::MORE );
+			$clean = wp_trim_words( self::plain_text( $stripped ), $words, self::MORE );
+			if ( $raw !== $clean ) {
+				$pairs[] = [ $raw, $clean ];
+			}
+		}
+
+		return $pairs;
+	}
+
+	/**
+	 * The clean excerpt for $text when $text is one of ATmosphere's raw
+	 * excerpts, whole or cut short with '...'; null when it isn't. A cut
+	 * that stops before the cost comes back unchanged.
+	 *
+	 * @param string                                  $text  Text ATmosphere built.
+	 * @param array<int, array{0: string, 1: string}> $pairs From excerpt_pairs().
+	 * @return string|null
+	 */
+	private static function clean_excerpt( string $text, array $pairs ): ?string {
+		foreach ( $pairs as [ $raw, $clean ] ) {
+			if ( $text === $raw ) {
+				return $clean;
+			}
+		}
+
+		if ( ! str_ends_with( $text, self::MORE ) ) {
+			return null;
+		}
+
+		$kept = substr( $text, 0, -strlen( self::MORE ) );
+		foreach ( $pairs as [ $raw, $clean ] ) {
+			if ( str_starts_with( $raw, $kept ) ) {
+				return str_starts_with( $clean, $kept ) ? $text : $clean;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Text the way ATmosphere's sanitize_text() makes it: entities decoded,
+	 * tags stripped, whitespace collapsed and trimmed.
+	 *
+	 * @param string $text Text.
+	 * @return string
+	 */
+	private static function plain_text( string $text ): string {
+		$text      = wp_strip_all_tags( html_entity_decode( $text, ENT_QUOTES, 'UTF-8' ) );
+		$collapsed = preg_replace( '/\s+/u', ' ', $text );
+
+		return trim( is_string( $collapsed ) ? $collapsed : $text );
+	}
+
+	/**
+	 * $text cut to $graphemes, at the last space that fits, with '...'.
+	 *
+	 * @param string $text      Text.
+	 * @param int    $graphemes Length limit.
+	 * @return string
+	 */
+	private static function fit( string $text, int $graphemes ): string {
+		if ( self::length( $text ) <= $graphemes ) {
+			return $text;
+		}
+
+		$cut   = self::head( $text, max( 0, $graphemes - strlen( self::MORE ) ) );
+		$space = strrpos( $cut, ' ' );
+		if ( false !== $space && $space > 0 ) {
+			$cut = substr( $cut, 0, $space );
+		}
+
+		return $cut . self::MORE;
+	}
+
+	/**
+	 * Grapheme count, as ATmosphere counts the Bluesky limit.
+	 *
+	 * @param string $text Text.
+	 * @return int
+	 */
+	private static function length( string $text ): int {
+		$length = function_exists( 'grapheme_strlen' ) ? grapheme_strlen( $text ) : false;
+
+		return is_int( $length ) ? $length : mb_strlen( $text );
+	}
+
+	/**
+	 * The first $graphemes graphemes of $text.
+	 *
+	 * @param string $text      Text.
+	 * @param int    $graphemes Graphemes to keep.
+	 * @return string
+	 */
+	private static function head( string $text, int $graphemes ): string {
+		$head = function_exists( 'grapheme_substr' ) ? grapheme_substr( $text, 0, $graphemes ) : false;
+
+		return is_string( $head ) ? $head : mb_substr( $text, 0, $graphemes );
+	}
+
+	/**
+	 * Bytes $before and $after share at the start and, after that, at the end.
+	 *
+	 * @param string $before Old text.
+	 * @param string $after  New text.
+	 * @return array{0: int, 1: int}
+	 */
+	private static function common_ends( string $before, string $after ): array {
+		$before_end = strlen( $before ) - 1;
+		$after_end  = strlen( $after ) - 1;
+		$max        = min( $before_end, $after_end ) + 1;
+		$prefix     = 0;
+		while ( $prefix < $max && $before[ $prefix ] === $after[ $prefix ] ) {
+			++$prefix;
+		}
+
+		$suffix = 0;
+		while ( $suffix < $max - $prefix && $before[ $before_end - $suffix ] === $after[ $after_end - $suffix ] ) {
+			++$suffix;
+		}
+
+		return [ $prefix, $suffix ];
+	}
+
+	/**
+	 * Facets after $removed bytes at $at became $added bytes.
+	 *
+	 * @param array<int|string, mixed> $facets  Bluesky facets indexed into the text by UTF-8 byte.
+	 * @param int                      $at      Byte offset of the change.
+	 * @param int                      $removed Bytes replaced.
+	 * @param int                      $added   Bytes put in their place.
+	 * @return array<int|string, mixed>
+	 */
+	private static function shift_facets( array $facets, int $at, int $removed, int $added ): array {
+		$kept = [];
+		foreach ( $facets as $facet ) {
+			$start = is_array( $facet ) ? ( $facet['index']['byteStart'] ?? null ) : null;
+			$end   = is_array( $facet ) ? ( $facet['index']['byteEnd'] ?? null ) : null;
+
+			if ( ! is_int( $start ) || ! is_int( $end ) || $end <= $at ) {
+				$kept[] = $facet;
+			} elseif ( $start >= $at + $removed ) {
+				$facet['index']['byteStart'] = $start + $added - $removed;
+				$facet['index']['byteEnd']   = $end + $added - $removed;
+				$kept[]                      = $facet;
+			}
+		}
+
+		return $kept;
 	}
 
 	/**
