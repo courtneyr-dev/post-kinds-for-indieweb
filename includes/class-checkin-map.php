@@ -139,11 +139,7 @@ class Checkin_Map {
 			// An untitled check-in still needs link text.
 			$title = trim( get_the_title( $post ) );
 			if ( '' === $title ) {
-				$title = sprintf(
-					/* translators: %s: the post's date */
-					__( 'Check-in, %s', 'post-kinds-for-indieweb-in-block-themes' ),
-					(string) get_the_date( '', $post )
-				);
+				$title = untitled_name( $post );
 			}
 
 			$entries[] = [

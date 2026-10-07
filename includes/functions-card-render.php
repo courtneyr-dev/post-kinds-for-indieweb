@@ -170,3 +170,128 @@ function card_rating_html( $rating, int $best = 5 ): string {
 		. str_repeat( $empty, $counts['empty'] )
 		. '</div><data class="p-rating" value="' . esc_attr( $machine ) . '" hidden></data>';
 }
+
+/**
+ * Extract a normalized host for an untitled citation.
+ *
+ * A shared URL normalizer is planned in P9 and should replace this helper.
+ *
+ * @since 1.9.0
+ *
+ * @param string $url Citation URL.
+ * @return string Lowercase host without a leading www., or an empty string.
+ */
+function card_url_host( string $url ): string {
+	$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+
+	return str_starts_with( $host, 'www.' ) ? substr( $host, 4 ) : $host;
+}
+
+// phpcs:disable Generic.Metrics.CyclomaticComplexity.TooHigh -- The order is the public naming contract.
+/**
+ * Name a title-less post for lists and Stream cards.
+ *
+ * Citation identity wins for response kinds, followed by visible kind
+ * content when requested, then the kind label and publication date.
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post         Untitled post.
+ * @param bool     $from_content Whether kind content may supply the name.
+ * @return string Non-empty display name.
+ */
+function untitled_name( \WP_Post $post, bool $from_content = true ): string {
+	$kind     = get_post_kind_slug( $post );
+	$fallback = static function () use ( $post, $kind ): string {
+		$kind_label = stream_card_kind_label( $post );
+		// A kind term created from its slug alone is named "checkin"; print
+		// the label the plugin seeds for that term instead.
+		if ( 'checkin' === $kind && 'checkin' === strtolower( $kind_label ) ) {
+			$kind_label = __( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' );
+		}
+
+		return sprintf(
+			/* translators: 1: kind name, 2: post date */
+			__( '%1$s, %2$s', 'post-kinds-for-indieweb-in-block-themes' ),
+			$kind_label,
+			(string) get_the_date( '', $post )
+		);
+	};
+
+	if ( post_password_required( $post ) ) {
+		return $fallback();
+	}
+
+	$cite_kinds = [ 'like', 'reply', 'repost', 'bookmark', 'favorite', 'quote', 'follow' ];
+	if ( in_array( $kind, $cite_kinds, true ) ) {
+		$block_name = 'post-kinds-indieweb/' . $kind . '-card';
+		foreach ( flatten_blocks( parse_blocks( (string) $post->post_content ) ) as $block ) {
+			if ( ( $block['blockName'] ?? '' ) !== $block_name ) {
+				continue;
+			}
+
+			$title = trim( (string) ( $block['attrs']['title'] ?? '' ) );
+			if ( '' !== $title ) {
+				return $title;
+			}
+
+			$host = card_url_host( (string) ( $block['attrs']['url'] ?? '' ) );
+			if ( '' !== $host ) {
+				return $host;
+			}
+			break;
+		}
+
+		if ( 'favorite' === $kind ) {
+			$favorite_name = trim( (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . 'favorite_name', true ) );
+			if ( '' !== $favorite_name ) {
+				return $favorite_name;
+			}
+		}
+
+		$cite_name = trim( (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . 'cite_name', true ) );
+		if ( '' !== $cite_name ) {
+			return $cite_name;
+		}
+
+		$cite_host = card_url_host( (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . 'cite_url', true ) );
+		if ( '' !== $cite_host ) {
+			return $cite_host;
+		}
+
+		if ( 'favorite' === $kind ) {
+			$favorite_host = card_url_host( (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . 'favorite_url', true ) );
+			if ( '' !== $favorite_host ) {
+				return $favorite_host;
+			}
+		}
+	}
+
+	if ( $from_content && 'weather' === $kind ) {
+		$weather = implode(
+			', ',
+			array_filter(
+				[
+					Integrations\Simple_Location_Weather::format( 'summary', $post->ID ),
+					Integrations\Simple_Location_Weather::format( 'temperature', $post->ID ),
+				]
+			)
+		);
+		if ( '' !== $weather ) {
+			return $weather;
+		}
+	}
+
+	if ( $from_content && in_array( $kind, [ '', 'note', 'question' ], true ) ) {
+		$thought = '' !== trim( (string) $post->post_excerpt )
+			? (string) $post->post_excerpt
+			: excerpt_remove_blocks( strip_shortcodes( (string) $post->post_content ) );
+		$thought = trim( (string) preg_replace( '/\s+/', ' ', wp_strip_all_tags( $thought ) ) );
+		if ( '' !== $thought ) {
+			return wp_trim_words( $thought, 25, '…' );
+		}
+	}
+
+	return $fallback();
+}
+// phpcs:enable Generic.Metrics.CyclomaticComplexity.TooHigh

@@ -329,7 +329,7 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	$title     = trim( get_the_title( $post ) );
 	$has_title = '' !== $title;
 	if ( ! $has_title ) {
-		$title = $kind_label;
+		$title = untitled_name( $post, false );
 	}
 	// A synthetic title is navigation, not the entry's name — no p-name, so
 	// mf2 parsers fall back to the implied name / content as intended.
