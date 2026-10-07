@@ -188,6 +188,36 @@ function card_url_host( string $url ): string {
 }
 
 /**
+ * Whether a stored citation name is a URL rather than a name.
+ *
+ * Micropub stores title = url when a response arrives without a name. A
+ * URL isn't a name, and its path or query can carry tokens, so callers
+ * fall through to the host instead.
+ *
+ * @since 1.9.0
+ *
+ * @param string $name Stored name.
+ * @param string $url  The citation URL stored beside it.
+ * @return bool True when the name equals the URL or is an absolute http(s) URL.
+ */
+function card_name_is_url( string $name, string $url = '' ): bool {
+	$name = trim( $name );
+	if ( '' === $name ) {
+		return false;
+	}
+	if ( trim( $url ) === $name ) {
+		return true;
+	}
+	if ( preg_match( '/\s/', $name ) ) {
+		return false;
+	}
+
+	$scheme = strtolower( (string) wp_parse_url( $name, PHP_URL_SCHEME ) );
+
+	return in_array( $scheme, [ 'http', 'https' ], true ) && '' !== (string) wp_parse_url( $name, PHP_URL_HOST );
+}
+
+/**
  * The "<Kind>, <date>" name for a title-less post, with its parts.
  *
  * The last step of untitled_name(). A card that prints the date on its
@@ -224,7 +254,8 @@ function untitled_fallback_name( \WP_Post $post ): array {
  * Name a title-less post for lists and Stream cards.
  *
  * Citation identity wins for response kinds, followed by visible kind
- * content when requested, then the kind label and publication date.
+ * content when requested, then the kind label and publication date. A
+ * citation name that is a URL counts as no name, so its host prints.
  *
  * @since 1.9.0
  *
@@ -248,37 +279,40 @@ function untitled_name( \WP_Post $post, bool $from_content = true ): string {
 				continue;
 			}
 
-			$title = trim( (string) ( $block['attrs']['title'] ?? '' ) );
-			if ( '' !== $title ) {
+			$card_url = (string) ( $block['attrs']['url'] ?? '' );
+			$title    = trim( (string) ( $block['attrs']['title'] ?? '' ) );
+			if ( '' !== $title && ! card_name_is_url( $title, $card_url ) ) {
 				return $title;
 			}
 
-			$host = card_url_host( (string) ( $block['attrs']['url'] ?? '' ) );
+			$host = card_url_host( $card_url );
 			if ( '' !== $host ) {
 				return $host;
 			}
 			break;
 		}
 
+		$favorite_url = (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . 'favorite_url', true );
 		if ( 'favorite' === $kind ) {
 			$favorite_name = trim( (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . 'favorite_name', true ) );
-			if ( '' !== $favorite_name ) {
+			if ( '' !== $favorite_name && ! card_name_is_url( $favorite_name, $favorite_url ) ) {
 				return $favorite_name;
 			}
 		}
 
+		$cite_url  = (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . 'cite_url', true );
 		$cite_name = trim( (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . 'cite_name', true ) );
-		if ( '' !== $cite_name ) {
+		if ( '' !== $cite_name && ! card_name_is_url( $cite_name, $cite_url ) ) {
 			return $cite_name;
 		}
 
-		$cite_host = card_url_host( (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . 'cite_url', true ) );
+		$cite_host = card_url_host( $cite_url );
 		if ( '' !== $cite_host ) {
 			return $cite_host;
 		}
 
 		if ( 'favorite' === $kind ) {
-			$favorite_host = card_url_host( (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . 'favorite_url', true ) );
+			$favorite_host = card_url_host( $favorite_url );
 			if ( '' !== $favorite_host ) {
 				return $favorite_host;
 			}
