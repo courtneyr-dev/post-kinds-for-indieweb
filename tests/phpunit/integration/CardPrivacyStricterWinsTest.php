@@ -14,11 +14,12 @@ use PKIW\Meta_Fields;
 /**
  * Courtney's decision on #358. A check-in card's `locationPrivacy` and an
  * RSVP card's `locationVisibility` share one stored row each with a second
- * control: REST meta, the update-post-meta ability and wp_insert_post()
- * meta_input. The card sync on save, the wp_after_insert_post pass and the
- * card meta backfill keep the stricter of the card's value and the stored
- * row, so a card can't loosen a stricter stored value and loosening takes
- * both controls. A post with no card keeps whatever was stored.
+ * control: REST meta, the update-post-meta ability, wp_insert_post()
+ * meta_input, WP-CLI or another plugin's update_post_meta(). The card sync
+ * on save, the card meta backfill and every write or delete of the row keep
+ * the stricter of the card's value and the stored row, so a card can't
+ * loosen a stricter stored value and loosening takes both controls. A post
+ * with no card keeps whatever was stored.
  *
  * Every value under test is a sentinel string, so a leak is unambiguous.
  *
@@ -155,6 +156,17 @@ final class CardPrivacyStricterWinsTest extends WP_UnitTestCase {
 	 * @param array<string, mixed> $body Body params.
 	 */
 	private function rest_save( int $id, array $body ): void {
+		$response = $this->rest_post( $id, $body );
+		$this->assertSame( 200, $response->get_status(), (string) wp_json_encode( $response->get_data() ) );
+	}
+
+	/**
+	 * Send an update to the REST posts route as an editor, whatever it returns.
+	 *
+	 * @param int                  $id   Post ID.
+	 * @param array<string, mixed> $body Body params.
+	 */
+	private function rest_post( int $id, array $body ): WP_REST_Response {
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 		$GLOBALS['wp_rest_server'] = null;
 
@@ -163,7 +175,8 @@ final class CardPrivacyStricterWinsTest extends WP_UnitTestCase {
 		$response = rest_do_request( $request );
 
 		wp_set_current_user( 0 );
-		$this->assertSame( 200, $response->get_status(), (string) wp_json_encode( $response->get_data() ) );
+
+		return $response;
 	}
 
 	/**
@@ -593,5 +606,144 @@ final class CardPrivacyStricterWinsTest extends WP_UnitTestCase {
 		);
 
 		$this->assertSame( 'public', $this->stored( $id, $setting ) );
+	}
+
+	/**
+	 * REST meta null deletes the row, and a missing check-in row reads as
+	 * Approximate. A Private card puts its setting back.
+	 */
+	public function test_a_rest_meta_delete_under_a_private_checkin_card_stores_private(): void {
+		$id = $this->create( 'checkin', 'private' );
+		$this->assertSame( 'private', $this->stored( $id, 'checkin' ) );
+
+		$this->rest_save( $id, [ 'meta' => [ '_pkiw_geo_privacy' => null ] ] );
+
+		$this->assertSame( 'private', $this->stored( $id, 'checkin' ) );
+		$this->assert_hidden_from_visitors( $id, 'checkin' );
+	}
+
+	/**
+	 * A deleted row stays deleted when the missing row already reads as
+	 * strict as the card: a check-in reads as Approximate, an RSVP as
+	 * private. Under a looser card, writing the card's value back would let
+	 * a delete loosen the location.
+	 *
+	 * @dataProvider settings
+	 *
+	 * @param string $setting `checkin` or `rsvp`.
+	 */
+	public function test_a_rest_meta_delete_under_a_looser_card_leaves_the_row_missing( string $setting ): void {
+		$id = $this->create( $setting, 'public' );
+		$this->store( $id, $setting, 'private' );
+
+		$this->rest_save( $id, [ 'meta' => [ self::KEYS[ $setting ] => null ] ] );
+
+		$this->assertNull( $this->stored( $id, $setting ) );
+		$data = $this->visitor_rest( $id );
+		if ( 'checkin' === $setting ) {
+			$this->assertSame( '', $data['meta']['_pkiw_checkin_address'], 'Approximate hides the street.' );
+			$this->assertSame( self::VENUE, $data['meta']['_pkiw_checkin_name'], 'Approximate keeps the venue name.' );
+		} else {
+			$this->assert_hidden_from_visitors( $id, $setting );
+		}
+	}
+
+	/**
+	 * A REST request that writes the row and then fails on a later meta key
+	 * returns before wp_after_insert_post. The write is held as it lands.
+	 *
+	 * @dataProvider settings
+	 *
+	 * @param string $setting `checkin` or `rsvp`.
+	 */
+	public function test_a_rest_request_that_fails_after_writing_the_setting_keeps_the_card_setting( string $setting ): void {
+		// Registered after Meta_Fields' keys, so REST handles it after the privacy row.
+		register_post_meta(
+			'post',
+			'_pkiw_test_denied_358',
+			[
+				'show_in_rest'  => true,
+				'single'        => true,
+				'type'          => 'string',
+				'auth_callback' => '__return_false',
+			]
+		);
+		$id = $this->create( $setting, 'private' );
+
+		$response = $this->rest_post(
+			$id,
+			[
+				'meta' => [
+					self::KEYS[ $setting ]  => 'public',
+					'_pkiw_test_denied_358' => 'x',
+				],
+			]
+		);
+
+		$this->assertSame( 403, $response->get_status() );
+		$this->assertSame( 'private', $this->stored( $id, $setting ) );
+		$this->assert_hidden_from_visitors( $id, $setting );
+	}
+
+	/**
+	 * `wp post meta update` and another plugin's update_post_meta() write the
+	 * row with no save. The write is held to the card at once.
+	 *
+	 * @dataProvider settings
+	 *
+	 * @param string $setting `checkin` or `rsvp`.
+	 */
+	public function test_a_direct_meta_write_cannot_loosen_past_the_card( string $setting ): void {
+		$id = $this->create( $setting, 'private' );
+
+		update_post_meta( $id, self::KEYS[ $setting ], 'public' );
+
+		$this->assertSame( 'private', $this->stored( $id, $setting ) );
+		$this->assert_hidden_from_visitors( $id, $setting );
+	}
+
+	/**
+	 * Loosening in two steps works card first: the card save keeps the
+	 * stricter row, then a write to the row loosens it to the card.
+	 *
+	 * @dataProvider settings
+	 *
+	 * @param string $setting `checkin` or `rsvp`.
+	 */
+	public function test_loosening_the_card_and_then_the_setting_stores_public( string $setting ): void {
+		$id = $this->create( $setting, 'private' );
+
+		wp_update_post(
+			[
+				'ID'           => $id,
+				'post_content' => wp_slash( $this->card( $setting, 'public' ) ),
+			]
+		);
+		$this->assertSame( 'private', $this->stored( $id, $setting ), 'The card alone keeps the row.' );
+
+		update_post_meta( $id, self::KEYS[ $setting ], 'public' );
+
+		$this->assertSame( 'public', $this->stored( $id, $setting ) );
+		$this->assert_shown_to_visitors( $id, $setting );
+	}
+
+	/**
+	 * Deleting the post deletes its rows. The card's setting isn't written
+	 * back for a post that's going away.
+	 *
+	 * @dataProvider settings
+	 *
+	 * @param string $setting `checkin` or `rsvp`.
+	 */
+	public function test_deleting_the_post_leaves_no_setting_behind( string $setting ): void {
+		global $wpdb;
+
+		$id = $this->create( $setting, 'private' );
+
+		wp_delete_post( $id, true );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Reads past the meta cache on purpose.
+		$rows = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE post_id = %d", $id ) );
+		$this->assertSame( '0', $rows );
 	}
 }
