@@ -150,10 +150,13 @@ final class Read_Archive {
 	 * Order the A to Z view: author, then book title, then newest first.
 	 *
 	 * Reads with no author sort last. A read with no book title sorts by its
-	 * post title. Values are the first stored row of each key, trimmed and
-	 * compared case-insensitively. Each is a scalar subquery used only in
-	 * ORDER BY, so the query keeps one row per post and the counts stay put.
-	 * A feed, an explicit `?orderby=` and any other query are left alone.
+	 * post title. A password-protected read sorts as one with no author, by
+	 * its post title: the archive shows only its title link, so its place
+	 * mustn't give away the author or book title it hides. Values are the
+	 * first stored row of each key, trimmed and compared case-insensitively.
+	 * Each is a scalar subquery used only in ORDER BY, so the query keeps one
+	 * row per post and the counts stay put. A feed, an explicit `?orderby=`
+	 * and any other query are left alone.
 	 *
 	 * @internal Hooked to `posts_orderby`.
 	 *
@@ -174,8 +177,9 @@ final class Read_Archive {
 			"(SELECT pkiw_r.meta_value FROM {$wpdb->postmeta} pkiw_r WHERE pkiw_r.post_id = {$wpdb->posts}.ID AND pkiw_r.meta_key = %s ORDER BY pkiw_r.meta_id ASC LIMIT 1)",
 			Meta_Fields::PREFIX . $suffix
 		) . "), '')";
-		$author = 'COALESCE(' . $first( 'read_author' ) . ", '')";
-		$title  = 'COALESCE(' . $first( 'read_title' ) . ", {$wpdb->posts}.post_title)";
+		$hidden = "{$wpdb->posts}.post_password <> ''";
+		$author = "(CASE WHEN {$hidden} THEN '' ELSE COALESCE(" . $first( 'read_author' ) . ", '') END)";
+		$title  = "(CASE WHEN {$hidden} THEN {$wpdb->posts}.post_title ELSE COALESCE(" . $first( 'read_title' ) . ", {$wpdb->posts}.post_title) END)";
 
 		return "({$author} = '') ASC, LOWER({$author}) ASC, LOWER({$title}) ASC, {$wpdb->posts}.post_date DESC, {$wpdb->posts}.ID DESC";
 	}
