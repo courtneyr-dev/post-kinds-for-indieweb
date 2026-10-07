@@ -18,14 +18,16 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Parse a stored card datetime.
  *
  * Naive values are wall-clock times in the site timezone. Values carrying
- * an offset are instants and are converted to the site timezone.
+ * an offset are instants and are converted to the site timezone, unless
+ * $keep_offset asks for the stored offset (a trip endpoint's local time).
  *
  * @since 1.9.0
  *
- * @param string $raw Stored value.
+ * @param string $raw         Stored value.
+ * @param bool   $keep_offset Whether a stored offset stays instead of the site timezone.
  * @return \DateTimeImmutable|null Parsed datetime, or null for invalid input.
  */
-function card_datetime( string $raw ): ?\DateTimeImmutable {
+function card_datetime( string $raw, bool $keep_offset = false ): ?\DateTimeImmutable {
 	$raw = trim( $raw );
 	if ( ! preg_match( '/^(\d{4})-(\d{2})-(\d{2})[Tt ](\d{2}):(\d{2})(?::(\d{2})(\.\d+)?)?([Zz]|[+-](?:[01]\d|2[0-3]):?[0-5]\d)?$/', $raw, $matches ) ) {
 		return null;
@@ -60,6 +62,10 @@ function card_datetime( string $raw ): ?\DateTimeImmutable {
 		return null;
 	}
 
+	if ( $keep_offset && '' !== $offset ) {
+		return $date;
+	}
+
 	return $date->setTimezone( wp_timezone() );
 }
 
@@ -67,16 +73,18 @@ function card_datetime( string $raw ): ?\DateTimeImmutable {
  * Format a stored card wall-clock value.
  *
  * Datetimes retain the stored local time unless they carry an explicit
- * offset. Date-only values retain their calendar day.
+ * offset, which converts to the site timezone or, with $keep_offset,
+ * prints in that offset. Date-only values retain their calendar day.
  *
  * @since 1.9.0
  *
- * @param string $raw    Stored value.
- * @param string $format Optional display format.
+ * @param string $raw         Stored value.
+ * @param string $format      Optional display format.
+ * @param bool   $keep_offset Whether a stored offset stays instead of the site timezone.
  * @return array{0: string, 1: string} Machine value and display value, or two empty strings.
  */
-function card_wall_clock( string $raw, string $format = '' ): array {
-	$date = card_datetime( $raw );
+function card_wall_clock( string $raw, string $format = '', bool $keep_offset = false ): array {
+	$date = card_datetime( $raw, $keep_offset );
 	if ( $date instanceof \DateTimeImmutable ) {
 		$display_format = '' !== $format
 			? $format
@@ -84,7 +92,7 @@ function card_wall_clock( string $raw, string $format = '' ): array {
 
 		return [
 			$date->format( 'c' ),
-			(string) wp_date( $display_format, $date->getTimestamp(), wp_timezone() ),
+			(string) wp_date( $display_format, $date->getTimestamp(), $date->getTimezone() ),
 		];
 	}
 
