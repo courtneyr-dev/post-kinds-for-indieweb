@@ -723,6 +723,30 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Deleting the RSVP card leaves its stored setting, so an Event post
+	 * that held one keeps following it, as the Privacy and data page says.
+	 */
+	public function test_an_event_post_whose_rsvp_card_was_deleted_keeps_following_its_setting(): void {
+		$notes = '<!-- wp:paragraph --><p>Meetup notes.</p><!-- /wp:paragraph -->';
+
+		$id = $this->rsvp( 'yes', 'future' );
+		wp_update_post( [ 'ID' => $id, 'post_content' => $notes ] );
+		wp_set_object_terms( $id, 'event', 'kind' );
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+		$this->assertSame( 'private', get_metadata_raw( 'post', $id, '_pkiw_rsvp_location_privacy', true ), 'The setting outlives the card.' );
+
+		$this->assert_no_location_for_visitors( $id );
+		$this->assert_location_for_editors( $id );
+
+		$public = $this->rsvp( 'yes', 'future', 'public' );
+		wp_update_post( [ 'ID' => $public, 'post_content' => $notes ] );
+		wp_set_object_terms( $public, 'event', 'kind' );
+		update_post_meta( $public, '_pkiw_event_location', self::LOCATION );
+		wp_set_current_user( 0 );
+		$this->assertSame( self::LOCATION, $this->rest_post( $public )['meta']['_pkiw_event_location'], 'A card left public keeps the location public.' );
+	}
+
+	/**
 	 * RSVP status rows a post keeps without an RSVP card: the editor
 	 * sidebar's, and the one Quick Post and the RSVP meta box store.
 	 *
