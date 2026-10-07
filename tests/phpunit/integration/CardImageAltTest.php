@@ -52,6 +52,71 @@ final class CardImageAltTest extends WP_UnitTestCase {
 		$this->assertSame( 'Box art for Fictional Quest', $this->image_alt( $html ) );
 	}
 
+	public function test_a_listen_cover_in_the_media_library_keeps_core_srcset_and_its_stored_url(): void {
+		$image_id = self::factory()->attachment->create_upload_object( DIR_TESTDATA . '/images/canola.jpg' );
+		$url      = wp_get_attachment_url( $image_id );
+		$html     = $this->render_card(
+			'listen',
+			[
+				'trackTitle'    => 'Fictional Song',
+				'artistName'    => 'Fictional Band',
+				'coverImage'    => $url,
+				'coverImageAlt' => 'A fictional sleeve',
+			]
+		);
+
+		$img = new WP_HTML_Tag_Processor( $html );
+		$this->assertTrue( $img->next_tag( 'img' ) );
+		$this->assertSame( $url, $img->get_attribute( 'src' ), 'At full size the src is the stored cover URL.' );
+		$this->assertSame( 'u-photo', $img->get_attribute( 'class' ) );
+		$this->assertSame( 'A fictional sleeve', $img->get_attribute( 'alt' ) );
+		$this->assertSame( 'lazy', $img->get_attribute( 'loading' ) );
+		$this->assertStringContainsString( wp_get_attachment_image_url( $image_id, 'medium' ) . ' ', (string) $img->get_attribute( 'srcset' ) );
+		$this->assertNotEmpty( $img->get_attribute( 'sizes' ) );
+		$this->assertSame( '640', $img->get_attribute( 'width' ) );
+		$this->assertSame( '480', $img->get_attribute( 'height' ) );
+
+		$parsed = \Mf2\parse( '<div class="h-entry">' . $html . '</div>' );
+		$this->assertStringContainsString( '"photo":[{"value":"' . $url . '","alt":"A fictional sleeve"}]', (string) wp_json_encode( $parsed, JSON_UNESCAPED_SLASHES ) );
+	}
+
+	/**
+	 * @dataProvider stored_listen_cover_urls
+	 *
+	 * @param string $url Cover URL with no media library image behind it; a
+	 *                    path starting with / is in this site's uploads.
+	 */
+	public function test_a_listen_cover_with_no_library_image_prints_as_stored( string $url ): void {
+		if ( str_starts_with( $url, '/' ) ) {
+			$url = wp_get_upload_dir()['baseurl'] . $url;
+		}
+		$html = $this->render_card(
+			'listen',
+			[
+				'trackTitle' => 'Fictional Song',
+				'artistName' => 'Fictional Band',
+				'coverImage' => $url,
+			]
+		);
+
+		$img = new WP_HTML_Tag_Processor( $html );
+		$this->assertTrue( $img->next_tag( 'img' ) );
+		$this->assertSame( $url, $img->get_attribute( 'src' ) );
+		$this->assertNull( $img->get_attribute( 'srcset' ) );
+		$this->assertSame( 'Fictional Song — Fictional Band', $img->get_attribute( 'alt' ) );
+		$this->assertSame( 'lazy', $img->get_attribute( 'loading' ) );
+	}
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public function stored_listen_cover_urls(): array {
+		return [
+			'hotlink from another host' => [ 'https://example.com/sleeve.jpg' ],
+			'upload not in the library' => [ '/2026/10/not-in-the-library.jpg' ],
+		];
+	}
+
 	/**
 	 * @param array<string, string> $attributes Block attributes.
 	 */
