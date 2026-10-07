@@ -574,12 +574,11 @@ class Standard_Site {
 	private static function same_url( string $a, string $b ): bool {
 		$normalize = static function ( string $url ): string {
 			$parts = wp_parse_url( $url );
-			if ( ! is_array( $parts ) || empty( $parts['host'] ) ) {
+			$host  = url_host( $url );
+			if ( ! is_array( $parts ) || '' === $host ) {
 				return '';
 			}
 
-			$host = strtolower( $parts['host'] );
-			$host = preg_replace( '/^www\./', '', $host );
 			$path = untrailingslashit( $parts['path'] ?? '' );
 
 			// Scheme is deliberately excluded: a record may say https while

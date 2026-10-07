@@ -122,29 +122,20 @@ export default function Edit( { attributes, setAttributes } ) {
 	// Sync block attributes to post meta
 	useEffect( () => {
 		const metaUpdates = {};
-		if ( title !== undefined ) {
-			metaUpdates._pkiw_wish_title = title || '';
-		}
 		if ( wishType !== undefined ) {
 			metaUpdates._pkiw_wish_type = wishType || '';
 		}
 		if ( url !== undefined ) {
 			metaUpdates._pkiw_wish_url = url || '';
 		}
-		if ( price !== undefined ) {
-			metaUpdates._pkiw_wish_price = price || '';
-		}
 		if ( priority !== undefined ) {
 			metaUpdates._pkiw_wish_priority = priority || '';
-		}
-		if ( image !== undefined ) {
-			metaUpdates._pkiw_wish_image = image || '';
 		}
 
 		if ( Object.keys( metaUpdates ).length > 0 ) {
 			editPost( { meta: metaUpdates } );
 		}
-	}, [ title, wishType, url, price, priority, image ] );
+	}, [ wishType, url, priority ] );
 
 	const handleImageSelect = ( media ) => {
 		setAttributes( {

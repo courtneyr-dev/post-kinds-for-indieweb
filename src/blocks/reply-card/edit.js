@@ -45,27 +45,6 @@ export default function Edit( { attributes, setAttributes } ) {
 		}
 	}, [] );
 
-	// Sync block attributes to post meta
-	useEffect( () => {
-		const metaUpdates = {};
-		if ( title !== undefined ) {
-			metaUpdates._pkiw_reply_title = title || '';
-		}
-		if ( url !== undefined ) {
-			metaUpdates._pkiw_reply_url = url || '';
-		}
-		if ( author !== undefined ) {
-			metaUpdates._pkiw_reply_author = author || '';
-		}
-		if ( image !== undefined ) {
-			metaUpdates._pkiw_reply_image = image || '';
-		}
-
-		if ( Object.keys( metaUpdates ).length > 0 ) {
-			editPost( { meta: metaUpdates } );
-		}
-	}, [ title, url, author, image ] );
-
 	const handleImageSelect = ( media ) => {
 		setAttributes( {
 			image: media.url,
