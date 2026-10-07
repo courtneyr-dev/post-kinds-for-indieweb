@@ -432,10 +432,11 @@ class Block_Bindings {
 			return null;
 		}
 
-		// An RSVP's event location prints only when it's public (issue 251).
-		// Empty, not null: core keeps a block's saved HTML for a null value,
-		// and that text can be the location typed in before it was bound.
-		if ( 'event_location' === $key && has_term( 'rsvp', Taxonomy::TAXONOMY, (int) $post_id ) && ! Meta_Fields::rsvp_location_visible( (int) $post_id ) ) {
+		// An RSVP's event location prints only when it's public, whatever the
+		// post's kind (issue 251). Empty, not null: core keeps a block's saved
+		// HTML for a null value, and that text can be the location typed in
+		// before it was bound.
+		if ( 'event_location' === $key && ! Meta_Fields::event_location_visible( (int) $post_id ) ) {
 			return '';
 		}
 
