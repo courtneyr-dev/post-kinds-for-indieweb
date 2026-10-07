@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace PKIW\Abilities;
 
 use PKIW\Abilities_Manager;
+use PKIW\Card_Meta_Sync;
 use PKIW\Meta_Fields;
 use PKIW\Taxonomy;
 
@@ -567,6 +568,7 @@ final class Core_Abilities {
 			}
 			update_post_meta( $post_id, Meta_Fields::PREFIX . $key, $value );
 		}
+		Card_Meta_Sync::keep_stricter_privacy( $post_id );
 
 		$edit_url = get_edit_post_link( $post_id, 'raw' );
 		$view_url = get_permalink( $post_id );
@@ -701,6 +703,7 @@ final class Core_Abilities {
 
 		$full_key = Meta_Fields::PREFIX . $meta_key;
 		update_post_meta( $post_id, $full_key, $meta_value );
+		Card_Meta_Sync::keep_stricter_privacy( $post_id );
 
 		return [
 			'success'  => true,

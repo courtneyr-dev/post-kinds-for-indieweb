@@ -123,7 +123,10 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Turn on the RSVP card's "Show event location publicly" toggle and save.
+	 * Turn on the RSVP card's "Show event location publicly" toggle and the
+	 * post's stored setting, and save. The card stored 'private' when the
+	 * post was created, and the stricter of the two wins (#358), so both
+	 * have to loosen.
 	 *
 	 * @param int $id Post ID.
 	 */
@@ -138,6 +141,7 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 			[
 				'ID'           => $id,
 				'post_content' => wp_slash( serialize_blocks( $blocks ) ),
+				'meta_input'   => [ '_pkiw_rsvp_location_privacy' => 'public' ],
 			]
 		);
 

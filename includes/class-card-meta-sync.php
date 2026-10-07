@@ -218,6 +218,36 @@ class Card_Meta_Sync {
 	];
 
 	/**
+	 * Card privacy settings whose stored row a second control writes too:
+	 * REST meta, the update-post-meta and create-post abilities, and
+	 * wp_insert_post() meta_input (issue 358). Every write keeps the
+	 * stricter of the card's value and the row stored before it, so a card
+	 * can't loosen a stricter stored value and loosening needs both.
+	 * 'values' runs loosest to strictest. 'default' is the block.json
+	 * default, the card's value when its comment leaves the attribute out,
+	 * and how any value outside 'values' reads, as Meta_Fields reads it.
+	 * The check-in setting follows the first mapped card, as ATTR_META_MAP
+	 * does; the RSVP setting follows the first RSVP card. Cost visibility
+	 * isn't here: Meta_Fields::COST_PUBLIC_KEY has no writer but the card.
+	 *
+	 * @var array<string, array{attr: string, suffix: string, default: string, values: string[]}>
+	 */
+	public const STRICTER_PRIVACY = [
+		'post-kinds-indieweb/checkin-card' => [
+			'attr'    => 'locationPrivacy',
+			'suffix'  => 'geo_privacy',
+			'default' => 'approximate',
+			'values'  => [ 'public', 'approximate', 'private' ],
+		],
+		'post-kinds-indieweb/rsvp-card'    => [
+			'attr'    => 'locationVisibility',
+			'suffix'  => 'rsvp_location_privacy',
+			'default' => 'private',
+			'values'  => [ 'public', 'private' ],
+		],
+	];
+
+	/**
 	 * Meta suffixes whose values are multi-line prose.
 	 *
 	 * @var string[]
@@ -249,6 +279,7 @@ class Card_Meta_Sync {
 		add_action( 'save_post', [ $this, 'sync' ], 25, 2 );
 		add_action( self::BACKFILL_HOOK, [ self::class, 'run_backfill_event' ] );
 		add_action( 'init', [ self::class, 'maybe_schedule_backfill' ], 20 );
+		add_action( 'wp_after_insert_post', [ self::class, 'keep_stricter_privacy' ], 5 );
 	}
 
 	/**
@@ -352,6 +383,7 @@ class Card_Meta_Sync {
 	 */
 	public static function sync_content( int $post_id, string $content ): void {
 		$blocks = parse_blocks( $content );
+		$stored = self::stored_privacy( $post_id );
 		$block  = self::find_first_mapped_block( $blocks );
 		if ( null !== $block ) {
 			$map      = self::ATTR_META_MAP[ $block['blockName'] ];
@@ -422,6 +454,9 @@ class Card_Meta_Sync {
 			}
 		}
 
+		// The writes above never leave a privacy row looser than it was (issue 358).
+		self::apply_stricter_privacy( $post_id, $blocks, $stored );
+
 		// An unchanged cover fires no meta hook, so a post stored before
 		// the cover map existed gets its map here, on save or backfill.
 		refresh_cover_attachments( $post_id );
@@ -453,5 +488,92 @@ class Card_Meta_Sync {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Keep the stricter of each STRICTER_PRIVACY card setting and its row
+	 * after a write the card sync didn't make: REST meta, meta_input or an
+	 * ability (issue 358). Hooked to wp_after_insert_post at 5, which the
+	 * REST controller fires once it has written the request's meta, so
+	 * callbacks at 10 read the settled row. Posts only, as sync() is.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return void
+	 */
+	public static function keep_stricter_privacy( int $post_id ): void {
+		if ( 'post' !== get_post_type( $post_id ) ) {
+			return;
+		}
+
+		$stored = self::stored_privacy( $post_id );
+		if ( [] === array_filter( $stored, static fn( $row ): bool => null !== $row ) ) {
+			return;
+		}
+
+		self::apply_stricter_privacy( $post_id, parse_blocks( (string) get_post_field( 'post_content', $post_id ) ), $stored );
+	}
+
+	/**
+	 * Each STRICTER_PRIVACY row as stored now. get_metadata_raw() gives
+	 * null for a missing row, where get_post_meta() gives the registered
+	 * default.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array<string, mixed> Rows keyed by meta suffix.
+	 */
+	private static function stored_privacy( int $post_id ): array {
+		$stored = [];
+		foreach ( self::STRICTER_PRIVACY as $setting ) {
+			$stored[ $setting['suffix'] ] = get_metadata_raw( 'post', $post_id, Meta_Fields::PREFIX . $setting['suffix'], true );
+		}
+
+		return $stored;
+	}
+
+	/**
+	 * Write the stricter of a card's privacy setting and the row stored
+	 * before, for each setting whose card the post has. Where no row was
+	 * stored, the card's own write stands, so a new card decides alone.
+	 *
+	 * @param int                              $post_id Post ID.
+	 * @param array<int, array<string, mixed>> $blocks  Parsed blocks.
+	 * @param array<string, mixed>             $stored  Rows from stored_privacy().
+	 * @return void
+	 */
+	private static function apply_stricter_privacy( int $post_id, array $blocks, array $stored ): void {
+		foreach ( self::STRICTER_PRIVACY as $name => $setting ) {
+			$row  = $stored[ $setting['suffix'] ] ?? null;
+			$card = isset( self::ATTR_META_MAP[ $name ] )
+				? self::find_first_mapped_block( $blocks )
+				: self::find_first_mapped_block( $blocks, $name );
+			if ( null === $row || null === $card || $name !== $card['blockName'] ) {
+				continue;
+			}
+
+			$keep = self::stricter( $setting, $card['attrs'][ $setting['attr'] ] ?? null, $row );
+			$key  = Meta_Fields::PREFIX . $setting['suffix'];
+			if ( get_metadata_raw( 'post', $post_id, $key, true ) !== $keep ) {
+				update_post_meta( $post_id, $key, $keep );
+			}
+		}
+	}
+
+	/**
+	 * The stricter of two values of one setting. A value outside the
+	 * setting's list, an absent attribute included, counts as its default.
+	 *
+	 * @param array{attr: string, suffix: string, default: string, values: string[]} $setting A STRICTER_PRIVACY entry.
+	 * @param mixed                                                                  $card    The card's attribute value.
+	 * @param mixed                                                                  $row     The stored row.
+	 * @return string
+	 */
+	private static function stricter( array $setting, $card, $row ): string {
+		$rank = static fn( $value ): int => (int) array_search(
+			in_array( $value, $setting['values'], true ) ? $value : $setting['default'],
+			$setting['values'],
+			true
+		);
+
+		return $setting['values'][ max( $rank( $card ), $rank( $row ) ) ];
 	}
 }
