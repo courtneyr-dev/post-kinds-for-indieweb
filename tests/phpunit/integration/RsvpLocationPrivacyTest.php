@@ -1292,6 +1292,47 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The kinds an untitled legacy RSVP may have when ATmosphere derives
+	 * its title: no cite name, so the RSVP phrase is empty, and no kind
+	 * phrase for the others.
+	 *
+	 * @return array<string, array{0: string[]}>
+	 */
+	public function untitled_legacy_rsvp_kinds(): array {
+		return [
+			'rsvp'    => [ [ 'rsvp' ] ],
+			'note'    => [ [ 'note' ] ],
+			'no kind' => [ [] ],
+		];
+	}
+
+	/**
+	 * An untitled post's document title falls back to the first ten words
+	 * of raw post_content (Atmosphere_Titles::content_summary()), which hold
+	 * the legacy card's location.
+	 *
+	 * @dataProvider untitled_legacy_rsvp_kinds
+	 * @group atmosphere
+	 *
+	 * @param string[] $terms Kind terms.
+	 */
+	public function test_the_atmosphere_title_of_an_untitled_legacy_rsvp_omits_a_private_location( array $terms ): void {
+		$id = $this->legacy_rsvp_for_atmosphere();
+		wp_update_post(
+			[
+				'ID'         => $id,
+				'post_title' => '',
+			]
+		);
+		wp_set_object_terms( $id, $terms, 'kind' );
+
+		$title = (string) ( $this->atmosphere_document( $id, 'org.wordpress.html' )['title'] ?? '' );
+
+		$this->assertStringContainsString( self::EVENT, $title, 'The title comes from the card.' );
+		$this->assertStringNotContainsString( 'Back room', $title );
+	}
+
+	/**
 	 * The Bluesky post's text and link card description are ATmosphere's
 	 * excerpts of raw post_content, so they read the legacy card's HTML too.
 	 *
