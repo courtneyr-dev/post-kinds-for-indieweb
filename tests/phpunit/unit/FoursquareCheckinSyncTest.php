@@ -162,6 +162,73 @@ class FoursquareCheckinSyncTest extends ApiTestCase {
 	}
 
 	/**
+	 * Every caller gets the same keys: Import_Manager, the Import page
+	 * preview and the sync's own import.
+	 */
+	public function test_fetch_recent_checkins_normalizes_each_item(): void {
+		$this->mock_http_response( 'api.foursquare.com', [
+			'response' => [
+				'checkins' => [
+					'items' => [
+						[
+							'id'        => 'ci-1',
+							'createdAt' => 1700000000,
+							'shout'     => 'Hi.',
+							'venue'     => [
+								'id'       => 'v-1',
+								'name'     => 'Test Cafe',
+								'location' => [
+									'address'    => '1 Main St',
+									'city'       => 'Oakland',
+									'state'      => 'CA',
+									'country'    => 'United States',
+									'postalCode' => '94607',
+									'lat'        => 37.8,
+									'lng'        => -122.27,
+								],
+							],
+						],
+					],
+				],
+			],
+		] );
+
+		$checkins = $this->sync->fetch_recent_checkins( 10 );
+
+		$this->assertSame(
+			[
+				'id'          => 'ci-1',
+				'timestamp'   => 1700000000,
+				'shout'       => 'Hi.',
+				'url'         => '',
+				'venue_id'    => 'v-1',
+				'venue_name'  => 'Test Cafe',
+				'address'     => '1 Main St',
+				'locality'    => 'Oakland',
+				'region'      => 'CA',
+				'country'     => 'United States',
+				'postal_code' => '94607',
+				'latitude'    => 37.8,
+				'longitude'   => -122.27,
+			],
+			$checkins[0]
+		);
+	}
+
+	/**
+	 * A check-in with no venue or date normalizes to empty values, not errors.
+	 */
+	public function test_normalize_checkin_without_a_venue(): void {
+		$item = Foursquare_Checkin_Sync::normalize_checkin( [ 'id' => 'ci-2' ] );
+
+		$this->assertSame( 'ci-2', $item['id'] );
+		$this->assertSame( '', $item['venue_name'] );
+		$this->assertSame( '', $item['venue_id'] );
+		$this->assertNull( $item['timestamp'] );
+		$this->assertNull( $item['latitude'] );
+	}
+
+	/**
 	 * Test fetch_recent_checkins returns empty when disconnected.
 	 */
 	public function test_fetch_recent_checkins_disconnected(): void {

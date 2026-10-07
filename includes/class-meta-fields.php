@@ -1098,8 +1098,11 @@ class Meta_Fields {
 	 * this plugin (grepped); the Foursquare place ID carried in the
 	 * checkin card's `foursquareId` attribute is the closest analog to a
 	 * generic venue identifier distinct from the OpenStreetMap id, so the
-	 * checkin card gates it on the 'venue_id' tier. No key maps here
-	 * because no such value is persisted to post meta today.
+	 * checkin card gates it on the 'venue_id' tier. The Foursquare importers
+	 * persist the venue ID to `_pkiw_checkin_venue_id`, and
+	 * `_pkiw_checkin_foursquare_id` holds the check-in ID. Neither is
+	 * registered meta, so neither reaches REST or the abilities, and no key
+	 * maps here.
 	 *
 	 * @var array<string, string>
 	 */

@@ -98,15 +98,17 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 
 		return $method->invoke(
 			$sync,
-			[
-				'id'        => 'sentinel-4sq-slug',
-				'createdAt' => strtotime( '2026-09-12 14:30:00 UTC' ),
-				'venue'     => [
-					'id'       => 'v1',
-					'name'     => self::VENUE,
-					'location' => [ 'city' => 'Sentinelville' ],
-				],
-			]
+			\PKIW\Sync\Foursquare_Checkin_Sync::normalize_checkin(
+				[
+					'id'        => 'sentinel-4sq-slug',
+					'createdAt' => strtotime( '2026-09-12 14:30:00 UTC' ),
+					'venue'     => [
+						'id'       => 'v1',
+						'name'     => self::VENUE,
+						'location' => [ 'city' => 'Sentinelville' ],
+					],
+				]
+			)
 		);
 	}
 

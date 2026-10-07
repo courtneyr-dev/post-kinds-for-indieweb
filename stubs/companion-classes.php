@@ -46,6 +46,12 @@ namespace PKIW {
 		public function cancel( string $job_id ): mixed {
 			return null;
 		}
+		/**
+		 * @return array{0: int, 1: string}
+		 */
+		public static function resolve_author_for_post_type( string $post_type ): array {
+			return [ 0, '' ];
+		}
 	}
 
 	class External_APIs {
