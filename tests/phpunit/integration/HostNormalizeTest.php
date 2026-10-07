@@ -39,6 +39,9 @@ final class HostNormalizeTest extends WP_UnitTestCase {
 			'ipv4'                    => [ '192.0.2.10', '192.0.2.10' ],
 			'ipv6'                    => [ '[2001:DB8::1]', '[2001:db8::1]' ],
 			'surrounding space'       => [ '  example.com ', 'example.com' ],
+			'space inside'            => [ 'exa mple.com', '' ],
+			'percent-encoded junk'    => [ 'not%20a%20url', '' ],
+			'empty label'             => [ 'example..com', '' ],
 			'empty'                   => [ '', '' ],
 		];
 	}

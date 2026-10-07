@@ -1462,11 +1462,8 @@ class REST_API {
 	 */
 	private function parse_watch_url( string $url ): ?array {
 		$parsed = wp_parse_url( $url );
-		$host   = $parsed['host'] ?? '';
+		$host   = normalize_host( (string) ( $parsed['host'] ?? '' ) );
 		$path   = $parsed['path'] ?? '';
-
-		// Normalize host (remove www.).
-		$host = preg_replace( '/^www\./', '', $host );
 
 		// IMDB: imdb.com/title/tt1234567.
 		if ( 'imdb.com' === $host || 'm.imdb.com' === $host ) {
@@ -3071,7 +3068,7 @@ class REST_API {
 			$provider_name = '';
 			$parsed        = wp_parse_url( $provider );
 			if ( isset( $parsed['host'] ) ) {
-				$provider_name = preg_replace( '/^(www\.)?/', '', $parsed['host'] );
+				$provider_name = normalize_host( $parsed['host'] );
 				$provider_name = ucfirst( str_replace( '.com', '', $provider_name ) );
 			}
 

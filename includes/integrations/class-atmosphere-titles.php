@@ -363,9 +363,7 @@ final class Atmosphere_Titles {
 			return $name;
 		}
 
-		$host = (string) wp_parse_url( self::meta( $post, 'cite_url' ), PHP_URL_HOST );
-
-		return preg_replace( '/^www\./', '', $host ) ?? $host;
+		return \PKIW\url_host( self::meta( $post, 'cite_url' ) );
 	}
 
 	/**
