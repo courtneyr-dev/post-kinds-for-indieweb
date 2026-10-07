@@ -180,6 +180,60 @@ final class CardPrivacyStricterWinsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The meta object the block editor loads for a post (edit context), which
+	 * it sends back whole with every save once any kind meta was edited.
+	 *
+	 * @param int                  $id      Post ID.
+	 * @param array<string, mixed> $changes Meta the session edited, such as a card control's dispatch.
+	 * @return array<string, mixed>
+	 */
+	private function editor_meta( int $id, array $changes = [] ): array {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		$GLOBALS['wp_rest_server'] = null;
+
+		$request = new WP_REST_Request( 'GET', '/wp/v2/posts/' . $id );
+		$request->set_param( 'context', 'edit' );
+		$data = (array) rest_do_request( $request )->get_data();
+
+		wp_set_current_user( 0 );
+		$this->assertArrayHasKey( 'meta', $data );
+		$this->assertArrayHasKey( self::KEYS['checkin'], $data['meta'] );
+		$this->assertArrayHasKey( self::KEYS['rsvp'], $data['meta'] );
+
+		return array_merge( (array) $data['meta'], $changes );
+	}
+
+	/**
+	 * Save the post as the block editor does: the card's markup and the
+	 * loaded meta object, with whatever the session changed in it. A check-in
+	 * card also writes its venue fields to meta as it mounts.
+	 *
+	 * @param int                  $id      Post ID.
+	 * @param string               $setting `checkin` or `rsvp`.
+	 * @param string|null          $privacy The card's privacy attribute, or null to leave it out.
+	 * @param array<string, mixed> $changes Meta the session edited.
+	 */
+	private function editor_save( int $id, string $setting, ?string $privacy, array $changes = [] ): void {
+		if ( 'checkin' === $setting ) {
+			$changes += [
+				'_pkiw_checkin_name'     => self::VENUE,
+				'_pkiw_checkin_address'  => self::STREET,
+				'_pkiw_checkin_locality' => 'Sentinelville Sw',
+				'_pkiw_geo_latitude'     => self::LATITUDE,
+				'_pkiw_geo_longitude'    => self::LONGITUDE,
+			];
+		}
+
+		$this->rest_save(
+			$id,
+			[
+				'content' => $this->card( $setting, $privacy ),
+				'meta'    => $this->editor_meta( $id, $changes ),
+			]
+		);
+	}
+
+	/**
 	 * The post as the REST posts route returns it to a visitor.
 	 *
 	 * @param int $id Post ID.
@@ -724,6 +778,146 @@ final class CardPrivacyStricterWinsTest extends WP_UnitTestCase {
 		update_post_meta( $id, self::KEYS[ $setting ], 'public' );
 
 		$this->assertSame( 'public', $this->stored( $id, $setting ) );
+		$this->assert_shown_to_visitors( $id, $setting );
+	}
+
+	/**
+	 * A published post with no card and no stored setting yet, as a new post
+	 * is before its first save with a card, plus the RSVP event location row.
+	 *
+	 * @param string $setting `checkin` or `rsvp`.
+	 * @return int Post ID.
+	 */
+	private function blank( string $setting ): int {
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Sentinel new ' . $setting,
+				'post_content' => '<!-- wp:paragraph --><p>Card to come.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $id, $setting, 'kind' );
+		if ( 'rsvp' === $setting ) {
+			update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+		}
+		$this->assertNull( $this->stored( $id, $setting ) );
+
+		return $id;
+	}
+
+	/**
+	 * The setting as Meta_Fields reads it: a missing row reads as the
+	 * registered default, Approximate for a check-in and private for an RSVP.
+	 *
+	 * @param int    $id      Post ID.
+	 * @param string $setting `checkin` or `rsvp`.
+	 */
+	private function reads( int $id, string $setting ): string {
+		return (string) get_post_meta( $id, self::KEYS[ $setting ], true );
+	}
+
+	/**
+	 * Card sets both (Courtney, 2026-10-07). Changing the card's control in
+	 * the block editor also sets the row in the meta the editor saves, so
+	 * one change to the card loosens both.
+	 *
+	 * @dataProvider settings
+	 *
+	 * @param string $setting `checkin` or `rsvp`.
+	 */
+	public function test_an_editor_save_after_the_card_control_changes_loosens_both( string $setting ): void {
+		$id = $this->create( $setting, 'private' );
+		$this->assertSame( 'private', $this->stored( $id, $setting ) );
+
+		$this->editor_save( $id, $setting, 'public', [ self::KEYS[ $setting ] => 'public' ] );
+
+		$this->assertSame( 'public', $this->stored( $id, $setting ) );
+		$this->assert_shown_to_visitors( $id, $setting );
+	}
+
+	/**
+	 * An editor save that leaves the card's control alone sends the loaded
+	 * row back, and a row stricter than the card stays. Touching the control
+	 * afterwards loosens both.
+	 *
+	 * @dataProvider settings
+	 *
+	 * @param string $setting `checkin` or `rsvp`.
+	 */
+	public function test_an_editor_save_that_leaves_the_control_alone_keeps_a_stricter_row( string $setting ): void {
+		$id = $this->create( $setting, 'public' );
+		$this->store( $id, $setting, 'private' );
+
+		$this->editor_save( $id, $setting, 'public' );
+		$this->assertSame( 'private', $this->stored( $id, $setting ), 'The echoed row holds against the looser card.' );
+		$this->assert_hidden_from_visitors( $id, $setting );
+
+		$this->editor_save( $id, $setting, 'public', [ self::KEYS[ $setting ] => 'public' ] );
+		$this->assertSame( 'public', $this->stored( $id, $setting ), 'The control change loosens both.' );
+		$this->assert_shown_to_visitors( $id, $setting );
+	}
+
+	/**
+	 * A check-in saved Public before the card set the row: the editor echoed
+	 * the registered default and the row stored Approximate. It stays
+	 * Approximate until the author touches the control.
+	 */
+	public function test_an_old_editor_echo_keeps_approximate_until_the_control_is_touched(): void {
+		$id = $this->create( 'checkin', 'public' );
+		$this->store( $id, 'checkin', 'approximate' );
+
+		$this->editor_save( $id, 'checkin', 'public' );
+		$this->assertSame( 'approximate', $this->stored( $id, 'checkin' ) );
+		$data = $this->visitor_rest( $id );
+		$this->assertSame( '', $data['meta']['_pkiw_checkin_address'], 'Approximate hides the street.' );
+		$this->assertSame( self::VENUE, $data['meta']['_pkiw_checkin_name'], 'Approximate keeps the venue name.' );
+
+		$this->editor_save( $id, 'checkin', 'public', [ '_pkiw_geo_privacy' => 'public' ] );
+		$this->assertSame( 'public', $this->stored( $id, 'checkin' ) );
+		$this->assert_shown_to_visitors( $id, 'checkin' );
+	}
+
+	/**
+	 * A new check-in set Public on the card stores Public on its first editor
+	 * save and keeps it on the next, which echoes the row back.
+	 */
+	public function test_a_new_checkin_set_public_on_the_card_stays_public_across_saves(): void {
+		$id = $this->blank( 'checkin' );
+
+		$this->editor_save( $id, 'checkin', 'public', [ '_pkiw_geo_privacy' => 'public' ] );
+		$this->assertSame( 'public', $this->stored( $id, 'checkin' ), 'First save.' );
+
+		$this->editor_save( $id, 'checkin', 'public' );
+		$this->assertSame( 'public', $this->stored( $id, 'checkin' ), 'Second save.' );
+		$this->assert_shown_to_visitors( $id, 'checkin' );
+	}
+
+	/**
+	 * Each card's control moves the row on every editor save: untouched,
+	 * then public, then strict again, then public again.
+	 *
+	 * @dataProvider settings
+	 *
+	 * @param string $setting `checkin` or `rsvp`.
+	 */
+	public function test_the_card_control_moves_the_row_across_editor_saves( string $setting ): void {
+		$id     = $this->blank( $setting );
+		$key    = self::KEYS[ $setting ];
+		$strict = 'checkin' === $setting ? 'private' : null; // An RSVP toggle off drops the attribute.
+
+		$this->editor_save( $id, $setting, null );
+		$this->assertSame( 'checkin' === $setting ? 'approximate' : 'private', $this->reads( $id, $setting ), 'Save 1, control untouched.' );
+
+		$this->editor_save( $id, $setting, 'public', [ $key => 'public' ] );
+		$this->assertSame( 'public', $this->stored( $id, $setting ), 'Save 2, public.' );
+		$this->assert_shown_to_visitors( $id, $setting );
+
+		$this->editor_save( $id, $setting, $strict, [ $key => 'private' ] );
+		$this->assertSame( 'private', $this->stored( $id, $setting ), 'Save 3, private.' );
+		$this->assert_hidden_from_visitors( $id, $setting );
+
+		$this->editor_save( $id, $setting, 'public', [ $key => 'public' ] );
+		$this->assertSame( 'public', $this->stored( $id, $setting ), 'Save 4, public again.' );
 		$this->assert_shown_to_visitors( $id, $setting );
 	}
 
