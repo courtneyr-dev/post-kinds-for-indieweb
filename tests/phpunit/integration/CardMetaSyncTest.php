@@ -643,6 +643,88 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Update a post through the REST posts route as an administrator.
+	 *
+	 * @param int                  $post_id Post ID.
+	 * @param string               $content Post content.
+	 * @param array<string, mixed> $meta    Request meta; none when empty.
+	 */
+	private function rest_update( int $post_id, string $content, array $meta = [] ): void {
+		( new \PKIW\Meta_Fields() )->register_meta_fields();
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		$params = [ 'content' => $content ];
+		if ( [] !== $meta ) {
+			$params['meta'] = $meta;
+		}
+		$request = new WP_REST_Request( 'POST', '/wp/v2/posts/' . $post_id );
+		$request->set_body_params( $params );
+
+		$this->assertSame( 200, rest_get_server()->dispatch( $request )->get_status() );
+	}
+
+	/**
+	 * A Quick Post play: a paragraph and a RAWG ID, no card.
+	 *
+	 * @return int Post ID.
+	 */
+	private function quick_post_play(): int {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:paragraph --><p>Lunch-break game.</p><!-- /wp:paragraph -->',
+		] );
+		update_post_meta( $post_id, '_pkiw_play_rawg_id', '3498' );
+
+		return $post_id;
+	}
+
+	/**
+	 * A play card that names no provider ID leaves the one Quick Post stored.
+	 * Only a card that names another provider clears it.
+	 */
+	public function test_a_play_card_with_no_provider_id_keeps_a_quick_post_provider_id_on_save(): void {
+		$post_id = $this->quick_post_play();
+
+		$this->rest_update( $post_id, '<!-- wp:post-kinds-indieweb/play-card {"title":"Chess"} /-->' );
+
+		$this->assertSame( '3498', get_metadata_raw( 'post', $post_id, '_pkiw_play_rawg_id', true ) );
+	}
+
+	/**
+	 * The editor sends the meta it loaded, so the REST controller writes the
+	 * RAWG ID back after save_post. The after-insert pass keeps it, on this
+	 * save and the next, while the card names no provider ID.
+	 */
+	public function test_the_after_insert_pass_keeps_a_provider_id_a_card_with_none_leaves_alone(): void {
+		$post_id = $this->quick_post_play();
+		$card    = '<!-- wp:post-kinds-indieweb/play-card {"title":"Chess"} /-->';
+
+		$this->rest_update( $post_id, $card, [ '_pkiw_play_rawg_id' => '3498' ] );
+		$this->assertSame( '3498', get_metadata_raw( 'post', $post_id, '_pkiw_play_rawg_id', true ), 'The save that adds the card keeps it.' );
+
+		$this->rest_update( $post_id, $card, [ '_pkiw_play_rawg_id' => '3498' ] );
+		$this->assertSame( '3498', get_metadata_raw( 'post', $post_id, '_pkiw_play_rawg_id', true ), 'The next save keeps it.' );
+	}
+
+	/**
+	 * The backfill runs the same rule: a stored play card that names no
+	 * provider ID keeps every provider ID the post has.
+	 */
+	public function test_the_backfill_keeps_provider_ids_under_a_card_that_names_none(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/play-card {"title":"Chess"} /-->',
+		] );
+		update_post_meta( $post_id, '_pkiw_play_rawg_id', '3498' );
+		update_post_meta( $post_id, '_pkiw_play_steam_id', '900006' );
+		update_post_meta( $post_id, '_pkiw_play_bgg_id', '9990099' );
+
+		\PKIW\Card_Meta_Sync::backfill_batch( 0, 100 );
+
+		$this->assertSame( '3498', get_metadata_raw( 'post', $post_id, '_pkiw_play_rawg_id', true ) );
+		$this->assertSame( '900006', get_metadata_raw( 'post', $post_id, '_pkiw_play_steam_id', true ) );
+		$this->assertSame( '9990099', get_metadata_raw( 'post', $post_id, '_pkiw_play_bgg_id', true ) );
+	}
+
+	/**
 	 * #340 shipped version 3 on main, so W1 needs its own number.
 	 */
 	public function test_w1_bumps_the_backfill_version_once_to_4(): void {
