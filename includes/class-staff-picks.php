@@ -18,8 +18,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * The Staff Picks block (issue 232).
  *
- * Lists the best-rated board game plays: published play posts with no
- * password, a BGG ID and no RAWG or Steam ID (a play with both files
+ * Lists the best-rated board game plays: published play posts of a
+ * viewable post type with no password, a BGG ID and no RAWG or Steam ID (a play with both files
  * under video), rated above 0. Ranked by rating, where a stored rating
  * above 5 counts as 5, then newest, then highest ID, with one pick per
  * game. Each pick prints its box, a title link and "Rated N of 5", and
@@ -190,10 +190,11 @@ final class Staff_Picks {
 			return [];
 		}
 
+		// Only types visitors can view: publish alone doesn't make a post public.
 		$taxonomy = get_taxonomy( Taxonomy::TAXONOMY );
-		$types    = $taxonomy ? array_values( array_map( 'strval', (array) $taxonomy->object_type ) ) : [];
+		$types    = $taxonomy ? array_values( array_filter( array_map( 'strval', (array) $taxonomy->object_type ), 'is_post_type_viewable' ) ) : [];
 		if ( [] === $types ) {
-			$types = [ 'post' ];
+			return [];
 		}
 
 		$prefix = Meta_Fields::PREFIX . self::KIND . '_';
@@ -212,7 +213,7 @@ final class Staff_Picks {
 				INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = p.ID AND tr.term_taxonomy_id = %d
 				WHERE p.post_type IN (" . implode( ', ', array_fill( 0, count( $types ), '%s' ) ) . ")
 					AND p.post_status = 'publish'
-					AND p.post_password = ''
+					AND LENGTH( p.post_password ) = 0
 					AND NOT EXISTS ( SELECT 1 FROM {$wpdb->postmeta} v WHERE v.post_id = p.ID AND v.meta_key IN ( %s, %s ) AND TRIM( v.meta_value ) <> '' )
 			) AS picks
 			WHERE picks.bgg_id IS NOT NULL AND picks.rating > 0
