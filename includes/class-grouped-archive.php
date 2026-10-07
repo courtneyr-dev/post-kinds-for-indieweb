@@ -267,6 +267,15 @@ final class Grouped_Archive {
 	}
 
 	/**
+	 * Whether the block renderer route is running: the editor previewing a block.
+	 *
+	 * @return bool
+	 */
+	public static function is_block_preview(): bool {
+		return self::$block_preview;
+	}
+
+	/**
 	 * Whether items are being rendered into sections right now.
 	 *
 	 * @return bool

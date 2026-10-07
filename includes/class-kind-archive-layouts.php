@@ -127,6 +127,21 @@ final class Kind_Archive_Layouts {
 	}
 
 	/**
+	 * Whether the block renderer route is running: the editor previewing a block.
+	 *
+	 * Reads the route being dispatched, so a rest_do_request() from PHP
+	 * counts as well as the editor's HTTP request. Grouped_Archive keeps
+	 * the flag.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return bool
+	 */
+	public static function is_block_preview(): bool {
+		return Grouped_Archive::is_block_preview();
+	}
+
+	/**
 	 * Forget which template each kind archive resolved to.
 	 *
 	 * The lookup is remembered for one request. A long-running process

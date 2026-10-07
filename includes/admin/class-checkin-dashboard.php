@@ -111,14 +111,20 @@ class Checkin_Dashboard {
 			true
 		);
 
+		// The same tile layer as every other map, so pkiw_map_tile_url and
+		// pkiw_map_tile_attribution reach this screen.
+		$tiles = \PKIW\Checkin_Map::tile_layer();
+
 		wp_localize_script(
 			'pkiw-checkin-dashboard',
 			'pkiwCheckinDashboard',
 			[
-				'restUrl' => rest_url( 'post-kinds-indieweb/v1/' ),
-				'nonce'   => wp_create_nonce( 'wp_rest' ),
-				'siteUrl' => home_url(),
-				'i18n'    => [
+				'restUrl'         => rest_url( 'post-kinds-indieweb/v1/' ),
+				'nonce'           => wp_create_nonce( 'wp_rest' ),
+				'siteUrl'         => home_url(),
+				'tileUrl'         => $tiles['url'],
+				'tileAttribution' => $tiles['attribution'],
+				'i18n'            => [
 					'loading'       => __( 'Loading check-ins...', 'post-kinds-for-indieweb-in-block-themes' ),
 					'noCheckins'    => __( 'No check-ins found.', 'post-kinds-for-indieweb-in-block-themes' ),
 					'viewOnMap'     => __( 'View on map', 'post-kinds-for-indieweb-in-block-themes' ),
