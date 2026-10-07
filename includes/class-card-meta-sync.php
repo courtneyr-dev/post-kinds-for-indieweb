@@ -278,7 +278,7 @@ class Card_Meta_Sync {
 	 * need, and every site re-runs the batched backfill once. One bump per
 	 * release covers every change in it, unless an earlier bump already
 	 * reached main: a site that finished that version never runs the same
-	 * number again. Version 3 (#340) re-syncs a card behind an RSVP card,
+	 * number again. Version 3 (PR 340) re-syncs a card behind an RSVP card,
 	 * which version 2 skipped while the RSVP card sat in ATTR_META_MAP.
 	 * Version 4 fills the read-card status default and clears the play-card
 	 * provider IDs a card switched to another provider no longer has.
