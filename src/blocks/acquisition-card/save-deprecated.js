@@ -1,5 +1,9 @@
 /**
- * Acquisition Card Block - Save Component
+ * Acquisition Card Block - Deprecated Save Component
+ *
+ * The save from before issue 239, which printed cost whatever the card's
+ * "Show cost publicly" toggle said. Kept so cards stored with it still
+ * validate; the editor moves them to the current save.
  *
  * @package
  */
@@ -23,7 +27,6 @@ export default function Save( { attributes } ) {
 		title,
 		acquisitionType,
 		cost,
-		showCostPublicly,
 		where,
 		whereUrl,
 		photo,
@@ -71,7 +74,7 @@ export default function Save( { attributes } ) {
 						</h3>
 					) }
 
-					{ cost && showCostPublicly && (
+					{ cost && (
 						<p className="post-kinds-card__subtitle">{ cost }</p>
 					) }
 

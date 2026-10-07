@@ -43,6 +43,9 @@ function load( state ) {
 		},
 	};
 	window.pkiwKindTemplatePreview = state.settings;
+	if ( state.entries ) {
+		window.pkiwGroupedEntries = state.entries;
+	}
 	jest.isolateModules( () => {
 		require( SCRIPT );
 	} );
@@ -88,6 +91,7 @@ describe( 'kind template preview', () => {
 	afterEach( () => {
 		delete window.wp;
 		delete window.pkiwKindTemplatePreview;
+		delete window.pkiwGroupedEntries;
 	} );
 
 	it( "previews a kind's archive template with that kind's posts", () => {
@@ -196,6 +200,108 @@ describe( 'kind template preview', () => {
 			expect( element.props.context.query.orderBy ).toBe( orderBy );
 		}
 	);
+
+	// An entry block other than the menu entry, as a kind's template holds it.
+	const shelfEntry = ( attributes ) => [
+		{
+			name: 'pkiw-test/shelf-entry',
+			attributes,
+			innerBlocks: [],
+		},
+	];
+
+	it( 'reads the settings of any registered entry block', () => {
+		const element = load(
+			editorState( {
+				settings: { perPage: { read: 12 }, grouped: [ 'read' ] },
+				entries: {
+					'post-kinds-indieweb/menu-entry': { fixed: false },
+					'pkiw-test/shelf-entry': { fixed: false },
+				},
+				blocks: shelfEntry( {
+					linesPerPage: 3,
+					sectionOrder: 'desc',
+					emptyGroup: 'first',
+				} ),
+			} )
+		)( postTemplate( { templateSlug: 'taxonomy-kind-read' } ) );
+
+		expect( element.props.context.query.perPage ).toBe( 3 );
+		expect( element.props.context.query.orderBy ).toBe(
+			'pkiw_group_desc_empty_first'
+		);
+	} );
+
+	it( 'ignores a block the entry list doesn’t name', () => {
+		const element = load(
+			editorState( {
+				settings: { perPage: { read: 12 }, grouped: [ 'read' ] },
+				entries: { 'post-kinds-indieweb/menu-entry': { fixed: false } },
+				blocks: shelfEntry( { linesPerPage: 3, sectionOrder: 'desc' } ),
+			} )
+		)( postTemplate( { templateSlug: 'taxonomy-kind-read' } ) );
+
+		expect( element.props.context.query.perPage ).toBe( 12 );
+		expect( element.props.context.query.orderBy ).toBe( 'pkiw_group' );
+	} );
+
+	it( 'skips an entry inside a Query Loop nested in the Post Template', () => {
+		const settings = { perPage: { eat: 6 }, grouped: [ 'eat' ] };
+		const eat = { templateSlug: 'taxonomy-kind-eat' };
+		const nested = {
+			name: 'core/query',
+			attributes: { query: { inherit: false } },
+			innerBlocks: [
+				{
+					name: 'core/post-template',
+					attributes: {},
+					innerBlocks: menuEntry( {
+						linesPerPage: 2,
+						sectionOrder: 'desc',
+					} ),
+				},
+			],
+		};
+		const alone = load( editorState( { settings, blocks: [ nested ] } ) )(
+			postTemplate( eat )
+		);
+		const after = load(
+			editorState( {
+				settings,
+				blocks: [ nested, ...menuEntry( { linesPerPage: 4 } ) ],
+			} )
+		)( postTemplate( eat ) );
+
+		expect( alone.props.context.query.perPage ).toBe( 6 );
+		expect( alone.props.context.query.orderBy ).toBe( 'pkiw_group' );
+		expect( after.props.context.query.perPage ).toBe( 4 );
+		expect( after.props.context.query.orderBy ).toBe( 'pkiw_group' );
+	} );
+
+	it( 'asks for an entry that fixes a date bucket newest first, not in grouped order', () => {
+		const element = load(
+			editorState( {
+				settings: { perPage: {}, grouped: [ 'repost' ] },
+				entries: { 'pkiw-test/month-entry': { fixed: true } },
+				blocks: [
+					{
+						name: 'pkiw-test/month-entry',
+						attributes: { linesPerPage: 9, sectionOrder: 'desc' },
+						innerBlocks: [],
+					},
+				],
+			} )
+		)(
+			postTemplate( {
+				templateSlug: 'taxonomy-kind-repost',
+				query: { ...inheriting, orderBy: 'title', order: 'asc' },
+			} )
+		);
+
+		expect( element.props.context.query.orderBy ).toBe( 'date' );
+		expect( element.props.context.query.order ).toBe( 'desc' );
+		expect( element.props.context.query.perPage ).toBe( 9 );
+	} );
 
 	it( 'leaves the Query Loop’s own query object as it was', () => {
 		load( editorState() )( postTemplate() );

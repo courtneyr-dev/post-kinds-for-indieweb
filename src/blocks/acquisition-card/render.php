@@ -31,6 +31,11 @@ $pkiw_photo_alt   = $attributes['photoAlt'] ?? '';
 $pkiw_notes       = $attributes['notes'] ?? '';
 $pkiw_acquired_at = $attributes['acquiredAt'] ?? '';
 
+// #239: cost is private unless this card and the post's synced toggle both say public.
+if ( empty( $attributes['showCostPublicly'] ) || ! \PKIW\Meta_Fields::acquisition_cost_visible( (int) ( $block->context['postId'] ?? get_the_ID() ) ) ) {
+	$pkiw_cost = '';
+}
+
 $pkiw_type_labels = [
 	'purchase' => __( 'Purchase', 'post-kinds-for-indieweb-in-block-themes' ),
 	'gift'     => __( 'Gift', 'post-kinds-for-indieweb-in-block-themes' ),

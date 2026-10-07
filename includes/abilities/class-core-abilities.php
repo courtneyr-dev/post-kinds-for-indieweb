@@ -772,6 +772,7 @@ final class Core_Abilities {
 			$prefixed[ Meta_Fields::PREFIX . $short_key ] = $value;
 		}
 		$prefixed = Meta_Fields::redact_location_array( $prefixed, $post_id );
+		$prefixed = Meta_Fields::redact_cost_array( $prefixed, $post_id );
 		foreach ( $prefixed as $full_key => $value ) {
 			$meta[ substr( $full_key, strlen( Meta_Fields::PREFIX ) ) ] = $value;
 		}
