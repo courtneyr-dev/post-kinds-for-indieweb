@@ -164,6 +164,9 @@ class Card_Meta_Sync {
 			'bggId'       => 'play_bgg_id',
 			'rawgId'      => 'play_rawg_id',
 		],
+		'post-kinds-indieweb/rsvp-card'    => [
+			'locationVisibility' => 'rsvp_location_privacy',
+		],
 		// Other card blocks join this map in follow-on work; the class is
 		// deliberately map-driven so each is one entry, no new code.
 	];
@@ -195,6 +198,22 @@ class Card_Meta_Sync {
 	public const ATTR_TOGGLES = [
 		'post-kinds-indieweb/acquisition-card' => [
 			'showCostPublicly' => 'acquisition_cost_public',
+		],
+	];
+
+	/**
+	 * Privacy settings whose block.json default is written on every save
+	 * when the card leaves the attribute out. The editor drops an attribute
+	 * that equals its default from the block comment, so a card switched
+	 * back to private would otherwise keep an older 'public' in meta. Each
+	 * is read from the first card of its own type, even when a card of
+	 * another kind comes first.
+	 *
+	 * @var array<string, array<string, string>>
+	 */
+	public const ATTR_PRIVATE_DEFAULTS = [
+		'post-kinds-indieweb/rsvp-card' => [
+			'locationVisibility' => 'private',
 		],
 	];
 
@@ -337,6 +356,10 @@ class Card_Meta_Sync {
 			$defaults = self::ATTR_DEFAULTS[ $block['blockName'] ] ?? [];
 
 			foreach ( $map as $attr => $suffix ) {
+				if ( isset( self::ATTR_PRIVATE_DEFAULTS[ $block['blockName'] ][ $attr ] ) ) {
+					continue; // Synced below, from the first card of its own type.
+				}
+
 				$value = $block['attrs'][ $attr ] ?? null;
 
 				if ( ( null === $value || '' === $value ) && isset( $defaults[ $attr ] )
@@ -374,8 +397,8 @@ class Card_Meta_Sync {
 			}
 		}
 
-		foreach ( self::ATTR_TOGGLES as $block_name => $toggles ) {
-			$card = self::find_first_mapped_block( $blocks, [ $block_name => $toggles ] );
+		foreach ( self::ATTR_TOGGLES as $name => $toggles ) {
+			$card = self::find_first_mapped_block( $blocks, $name );
 			foreach ( $toggles as $attr => $suffix ) {
 				if ( null !== $card && true === ( $card['attrs'][ $attr ] ?? null ) ) {
 					update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, '1' );
@@ -384,28 +407,42 @@ class Card_Meta_Sync {
 				}
 			}
 		}
+
+		// A read card ahead of an RSVP card must not leave the RSVP's
+		// location public after its toggle goes off (issue 251).
+		foreach ( self::ATTR_PRIVATE_DEFAULTS as $name => $privacy ) {
+			$card = self::find_first_mapped_block( $blocks, $name );
+			if ( null === $card ) {
+				continue;
+			}
+
+			foreach ( $privacy as $attr => $default ) {
+				$value = (string) ( $card['attrs'][ $attr ] ?? '' );
+				update_post_meta( $post_id, Meta_Fields::PREFIX . self::ATTR_META_MAP[ $name ][ $attr ], sanitize_text_field( '' === $value ? $default : $value ) );
+			}
+		}
 	}
 
 	/**
-	 * Depth-first search for the first card block present in $map
-	 * (ATTR_META_MAP by default). Recursion matters: Micropub-generated
-	 * content wraps its card inside an h-entry core/group, and editors can
+	 * Depth-first search for the first card block present in
+	 * ATTR_META_MAP. Recursion matters: Micropub-generated content
+	 * wraps its card inside an h-entry core/group, and editors can
 	 * nest cards in groups/columns too — a top-level-only walk never
 	 * sees those cards at all. First match in document order wins,
 	 * mirroring the kind-sync semantics.
 	 *
 	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
-	 * @param array<string, mixed>|null        $map    Block names to find, as keys.
+	 * @param string                           $name   Only match this block name; empty matches any mapped block.
 	 * @return array<string, mixed>|null The first mapped block, or null.
 	 */
-	private static function find_first_mapped_block( array $blocks, ?array $map = null ): ?array {
-		$map ??= self::ATTR_META_MAP;
+	private static function find_first_mapped_block( array $blocks, string $name = '' ): ?array {
 		foreach ( $blocks as $block ) {
-			if ( isset( $map[ $block['blockName'] ?? '' ] ) ) {
+			$block_name = $block['blockName'] ?? '';
+			if ( '' === $name ? isset( self::ATTR_META_MAP[ $block_name ] ) : $name === $block_name ) {
 				return $block;
 			}
 			if ( ! empty( $block['innerBlocks'] ) ) {
-				$found = self::find_first_mapped_block( $block['innerBlocks'], $map );
+				$found = self::find_first_mapped_block( $block['innerBlocks'], $name );
 				if ( null !== $found ) {
 					return $found;
 				}

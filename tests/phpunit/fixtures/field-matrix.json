@@ -993,6 +993,10 @@
                 "type": "string",
                 "sample": "Sample eventLocation value"
             },
+            "locationVisibility": {
+                "type": "string",
+                "sample": "Sample locationVisibility value"
+            },
             "eventDescription": {
                 "type": "string",
                 "sample": "Sample eventDescription value"
