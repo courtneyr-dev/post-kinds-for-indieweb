@@ -275,15 +275,17 @@ class Card_Meta_Sync {
 	 * Backfill cron hook, completion option and the version it records.
 	 * Bump BACKFILL_VERSION when sync_content() writes meta existing posts
 	 * need, and every site re-runs the batched backfill once. One bump per
-	 * release covers every change in it. Version 3 re-syncs a card behind an
-	 * RSVP card, which version 2 skipped while the RSVP card sat in
-	 * ATTR_META_MAP, and fills the read-card status default and clears the
-	 * play-card provider IDs a card no longer has.
+	 * release covers every change in it, unless an earlier bump already
+	 * reached main: a site that finished that version never runs the same
+	 * number again. Version 3 (#340) re-syncs a card behind an RSVP card,
+	 * which version 2 skipped while the RSVP card sat in ATTR_META_MAP.
+	 * Version 4 fills the read-card status default and clears the play-card
+	 * provider IDs a card no longer has.
 	 */
 	public const BACKFILL_HOOK    = 'pkiw_card_meta_backfill';
 	public const BACKFILL_OPTION  = 'pkiw_card_meta_backfill';
 	public const BACKFILL_CURSOR  = 'pkiw_card_meta_backfill_cursor';
-	public const BACKFILL_VERSION = '3';
+	public const BACKFILL_VERSION = '4';
 	public const BACKFILL_BATCH   = 50;
 
 	/**
