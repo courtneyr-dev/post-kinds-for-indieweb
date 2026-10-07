@@ -236,6 +236,35 @@ final class StaffPicksTest extends WP_UnitTestCase {
 		$this->assertSame( [ 'Meadow Tiles' ], $this->titles( $this->render() ) );
 	}
 
+	/**
+	 * The issue 232 inventory found 18 posts with blank provider rows. A
+	 * blank or whitespace-only BGG row isn't a BGG ID.
+	 */
+	public function test_a_blank_or_whitespace_bgg_row_keeps_a_play_off_the_list(): void {
+		global $wpdb;
+
+		foreach ( [
+			'Blank BGG'  => '',
+			'Spaced BGG' => '   ',
+		] as $title => $bgg ) {
+			$id = $this->play( $title, [ 'rating' => 4 ] );
+			// A raw row: the registered sanitizer would trim it on the way in.
+			$wpdb->insert(
+				$wpdb->postmeta,
+				[
+					'post_id'    => $id,
+					'meta_key'   => '_pkiw_play_bgg_id', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+					'meta_value' => $bgg, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				]
+			);
+			wp_cache_delete( $id, 'post_meta' );
+			$this->assertSame( [ $bgg ], get_post_meta( $id, '_pkiw_play_bgg_id' ) );
+		}
+		$this->board( 'Real BGG', '77', 3 );
+
+		$this->assertSame( [ 'Real BGG' ], $this->titles( $this->render( [ 'count' => 6 ] ) ) );
+	}
+
 	public function test_a_blank_or_whitespace_rawg_or_steam_row_keeps_a_play_on_the_board(): void {
 		global $wpdb;
 
