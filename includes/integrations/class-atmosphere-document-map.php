@@ -10,21 +10,18 @@
  * ATmosphere already maps from native WordPress data (description,
  * textContent, coverImage, path, timestamps) are never replaced, with one
  * cut: ATmosphere's excerpt reads raw post_content, where an acquisition
- * card saved before issue 239 holds its cost as text. That excerpt, and
- * only that span, is rebuilt without a private cost in the document
+ * card saved before issue 239 holds its cost as text and an RSVP card
+ * saved before #32 holds its event location (issue 251). That excerpt,
+ * and only that span, is rebuilt without the private text in the document
  * description, the Bluesky link card's description and the Bluesky post
- * text. The document's content is rebuilt too when the cost changes what
- * ATmosphere's parser makes of post_content, as Markpub's does.
+ * text. The document's content is rebuilt too when the private text
+ * changes what ATmosphere's parser makes of post_content, as Markpub's
+ * does.
  *
- * Deliberately not mapped, and why:
- * - `links`: the lexicon's links union has no interoperable members yet;
- *   a private shape would only look complete. Kind subject URLs already
- *   ride in the rendered card content.
- * - `description`: ATmosphere's excerpt mapping stands. Cited-page
- *   summaries (`_pkiw_cite_summary`) are third-party text and do not
- *   belong in a first-party record field.
- * - `contributors`: requires verified author DIDs, which WordPress users
- *   do not have.
+ * ATmosphere's post crons run with the post they publish as the global
+ * post, as a front-end render and ATmosphere's own content parser have
+ * it. Its textContent and Bluesky text filter the_content with no global
+ * post, so a card that reads get_the_ID() can't tell which post it's on.
  *
  * @package PKIW
  * @since   1.6.0
@@ -36,6 +33,8 @@ namespace PKIW\Integrations;
 
 use Atmosphere\Content_Parser\Content_Parser;
 use Atmosphere\Content_Parser\Registry;
+use Atmosphere\Transformer\Document;
+use Atmosphere\Transformer\Post as Post_Record;
 use PKIW\Meta_Fields;
 use PKIW\Taxonomy;
 
@@ -47,9 +46,49 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Document-record enrichment.
  *
+ * Deliberately not mapped, and why:
+ * - `links`: the lexicon's links union has no interoperable members yet;
+ *   a private shape would only look complete. Kind subject URLs already
+ *   ride in the rendered card content.
+ * - `description`: ATmosphere's excerpt mapping stands. Cited-page
+ *   summaries (`_pkiw_cite_summary`) are third-party text and do not
+ *   belong in a first-party record field.
+ * - `contributors`: requires verified author DIDs, which WordPress users
+ *   do not have.
+ *
  * @since 1.6.0
  */
 class Atmosphere_Document_Map {
+
+	/**
+	 * ATmosphere's cron hooks whose callbacks publish or update a post.
+	 *
+	 * @var string[]
+	 */
+	private const POST_CRONS = [ 'atmosphere_publish_post', 'atmosphere_update_post', 'atmosphere_delete_post' ];
+
+	/**
+	 * Global posts use_cron_post() replaced, most recent last.
+	 *
+	 * @var array<int, \WP_Post|null>
+	 */
+	private array $previous_posts = [];
+
+	/**
+	 * Meta that hides an RSVP's location: its own setting, and the post's
+	 * location privacy, PKIW's or Simple Location's, which
+	 * rsvp_location_visible() lets win.
+	 *
+	 * @var string[]
+	 */
+	private const PRIVACY_META_KEYS = [ '_pkiw_rsvp_location_privacy', '_pkiw_geo_privacy', 'geo_public' ];
+
+	/**
+	 * Meta-change hooks queue_update_on_privacy_change() runs on.
+	 *
+	 * @var string[]
+	 */
+	private const META_HOOKS = [ 'added_post_meta', 'updated_post_meta', 'deleted_post_meta' ];
 
 	/**
 	 * Register the record filter.
@@ -62,6 +101,13 @@ class Atmosphere_Document_Map {
 		add_filter( 'atmosphere_transform_document', [ $this, 'enrich' ], 10, 2 );
 		add_filter( 'atmosphere_post_embed', [ $this, 'embed_without_private_cost' ], 10, 2 );
 		add_filter( 'atmosphere_transform_bsky_post', [ $this, 'bsky_post_without_private_cost' ], 10, 2 );
+		foreach ( self::POST_CRONS as $hook ) {
+			add_action( $hook, [ $this, 'use_cron_post' ], 9 );
+			add_action( $hook, [ $this, 'restore_cron_post' ], 11 );
+		}
+		foreach ( self::META_HOOKS as $hook ) {
+			add_action( $hook, [ $this, 'queue_update_on_privacy_change' ], 10, 3 );
+		}
 	}
 
 	/**
@@ -75,6 +121,82 @@ class Atmosphere_Document_Map {
 		remove_filter( 'atmosphere_transform_document', [ $this, 'enrich' ], 10 );
 		remove_filter( 'atmosphere_post_embed', [ $this, 'embed_without_private_cost' ], 10 );
 		remove_filter( 'atmosphere_transform_bsky_post', [ $this, 'bsky_post_without_private_cost' ], 10 );
+		foreach ( self::POST_CRONS as $hook ) {
+			remove_action( $hook, [ $this, 'use_cron_post' ], 9 );
+			remove_action( $hook, [ $this, 'restore_cron_post' ], 11 );
+		}
+		foreach ( self::META_HOOKS as $hook ) {
+			remove_action( $hook, [ $this, 'queue_update_on_privacy_change' ], 10 );
+		}
+	}
+
+	/**
+	 * Queue ATmosphere's update for a shared post when meta that hides an
+	 * RSVP's location changes (issue 251). ATmosphere queues one on a
+	 * status transition and, for meta, only on its own share keys
+	 * (Atmosphere::on_share_meta_changed()), so a write with no save, such
+	 * as the update-post-meta ability's, left the record with the location.
+	 * This takes the gates and the cron on_share_meta_changed() uses:
+	 * connected, auto-publish on, and atmosphere_update_post once for the
+	 * post. Only a post with records ATmosphere published, by the keys its
+	 * has_post_records() reads, queues one, because the update would share
+	 * a post it never shared.
+	 *
+	 * @param int|int[] $meta_id  Meta row ID or IDs; unused.
+	 * @param int       $post_id  Post the meta belongs to.
+	 * @param string    $meta_key Meta key that changed.
+	 * @return void
+	 */
+	public function queue_update_on_privacy_change( $meta_id, $post_id, $meta_key ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed
+		if ( ! in_array( $meta_key, self::PRIVACY_META_KEYS, true ) || ! function_exists( '\Atmosphere\is_auto_publish_enabled' )
+			|| ! \Atmosphere\is_connected() || ! \Atmosphere\is_auto_publish_enabled() ) {
+			return;
+		}
+
+		$post_id = (int) $post_id;
+		$shared  = false;
+		foreach ( [ Post_Record::META_TID, Post_Record::META_URI, Post_Record::META_THREAD_RECORDS, Document::META_URI ] as $key ) {
+			$shared = $shared || ! empty( get_post_meta( $post_id, $key, true ) );
+		}
+
+		if ( $shared && ! wp_next_scheduled( 'atmosphere_update_post', [ $post_id ] ) ) {
+			wp_schedule_single_event( time(), 'atmosphere_update_post', [ $post_id ] );
+		}
+	}
+
+	/**
+	 * Make the post an ATmosphere cron publishes the global post while
+	 * ATmosphere's callback runs at priority 10 (issue 251). With none set,
+	 * get_the_ID() gave the Event Card 0, so a plain Event post lost its
+	 * location from textContent and the Bluesky text.
+	 *
+	 * @param int $post_id Post the cron publishes.
+	 * @return void
+	 */
+	public function use_cron_post( $post_id ): void {
+		$this->previous_posts[] = $GLOBALS['post'] ?? null;
+		$post                   = get_post( (int) $post_id );
+		if ( $post instanceof \WP_Post ) {
+			$GLOBALS['post'] = $post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Restored by restore_cron_post().
+		}
+	}
+
+	/**
+	 * Put back the global post use_cron_post() replaced.
+	 *
+	 * @return void
+	 */
+	public function restore_cron_post(): void {
+		if ( [] === $this->previous_posts ) {
+			return;
+		}
+
+		$previous = array_pop( $this->previous_posts );
+		if ( $previous instanceof \WP_Post ) {
+			$GLOBALS['post'] = $previous; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Restores the previous global post.
+		} else {
+			unset( $GLOBALS['post'] );
+		}
 	}
 
 	/**
@@ -98,7 +220,7 @@ class Atmosphere_Document_Map {
 			}
 		}
 
-		$record = self::content_without_private_cost( $record, $post );
+		$record = self::content_without_private_text( $record, $post );
 
 		if ( empty( $record['title'] ) ) {
 			$derived = Atmosphere_Titles::derive( $post );
@@ -118,27 +240,29 @@ class Atmosphere_Document_Map {
 
 	/**
 	 * $record with its content parsed again from post_content without
-	 * private cost, when the cost changes what the parser makes of it.
-	 * ATmosphere's Markpub parser turns a block it doesn't know into
-	 * markdown from the block's saved HTML (content-parser/class-markpub.php:321-328
-	 * in checkout bf8e267), so a card saved before issue 239 hands it the
-	 * cost. The HTML parser reads the rendered page, and Leaflet and Pckt
-	 * skip the card, so their output doesn't change and their content stays
-	 * as it is. Content whose parser isn't registered, or that holds nothing
-	 * once the cost is out, goes.
+	 * private card text (Meta_Fields::strip_private_card_text()), when that
+	 * text changes what the parser makes of it. ATmosphere's Markpub parser
+	 * turns a block it doesn't know into markdown from the block's saved
+	 * HTML (content-parser/class-markpub.php:321-328 in checkout bf8e267),
+	 * so an acquisition card saved before issue 239 hands it the cost and an
+	 * RSVP card saved before #32 its location. The HTML parser reads the
+	 * rendered page, and Leaflet and Pckt skip the cards, so their output
+	 * doesn't change and their content stays as it is. Content whose parser
+	 * isn't registered, or that holds nothing once the private text is out,
+	 * goes.
 	 *
 	 * @param array<string, mixed> $record The document record.
 	 * @param \WP_Post             $post   The post.
 	 * @return array<string, mixed>
 	 */
-	private static function content_without_private_cost( array $record, \WP_Post $post ): array {
+	private static function content_without_private_text( array $record, \WP_Post $post ): array {
 		$type = is_array( $record['content'] ?? null ) ? ( $record['content']['$type'] ?? null ) : null;
 		if ( ! is_string( $type ) ) {
 			return $record;
 		}
 
 		$content  = (string) $post->post_content;
-		$stripped = Meta_Fields::strip_private_cost( $content, (int) $post->ID );
+		$stripped = Meta_Fields::strip_private_card_text( $content, (int) $post->ID );
 		if ( $stripped === $content ) {
 			return $record;
 		}
@@ -219,8 +343,8 @@ class Atmosphere_Document_Map {
 	private const BLUESKY_MAX_GRAPHEMES = 300;
 
 	/**
-	 * Take private acquisition cost out of a Bluesky link card, whose
-	 * description is ATmosphere's 55-word excerpt.
+	 * Take private acquisition cost and RSVP location out of a Bluesky link
+	 * card, whose description is ATmosphere's 55-word excerpt.
 	 *
 	 * @param mixed $embed The embed record, or null.
 	 * @param mixed $post  The post being transformed.
@@ -240,9 +364,10 @@ class Atmosphere_Document_Map {
 	}
 
 	/**
-	 * Take private acquisition cost out of a Bluesky post's text, which
-	 * ATmosphere joins with blank lines from the title, its 30-word excerpt
-	 * (cut short with '...' when the post runs past 300 graphemes) and the
+	 * Take private acquisition cost and RSVP location out of a Bluesky
+	 * post's text, which ATmosphere joins with blank lines from the title,
+	 * its 30-word excerpt (cut short with '...' when the post runs past 300
+	 * graphemes) and the
 	 * permalink. Only the excerpt changes, and the post gets no longer than
 	 * the limit allows. Facets before the change keep their byte ranges,
 	 * facets after it move with the text, and a facet inside it is dropped.
@@ -287,9 +412,10 @@ class Atmosphere_Document_Map {
 
 	/**
 	 * The excerpts ATmosphere builds from $post's raw post_content, each
-	 * paired with the one it would build with private cost stripped. Empty
-	 * when ATmosphere uses the post's own excerpt, or when no card's static
-	 * markup holds a private cost, which leaves a bare block comment alone.
+	 * paired with the one it would build with private card text stripped.
+	 * Empty when ATmosphere uses the post's own excerpt, or when no card's
+	 * static markup holds a private cost or location, which leaves a bare
+	 * block comment alone.
 	 *
 	 * @param \WP_Post $post The post.
 	 * @return array<int, array{0: string, 1: string}> Raw and clean excerpt pairs.
@@ -300,7 +426,7 @@ class Atmosphere_Document_Map {
 		}
 
 		$content  = (string) $post->post_content;
-		$stripped = Meta_Fields::strip_private_cost( $content, (int) $post->ID );
+		$stripped = Meta_Fields::strip_private_card_text( $content, (int) $post->ID );
 		if ( $stripped === $content ) {
 			return [];
 		}

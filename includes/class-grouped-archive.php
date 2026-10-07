@@ -77,9 +77,16 @@ final class Grouped_Archive {
 	/**
 	 * Registered entry blocks by block name.
 	 *
-	 * @var array<string, array{shape:string, source:?string, expose_key:bool, classes:array<string, string>}>
+	 * @var array<string, array{shape:string, source:?string, expose_key:bool, heading_ids:bool, classes:array<string, string>}>
 	 */
 	private static array $entries = [];
+
+	/**
+	 * Section heading ids printed in this request, so each is unique on the page.
+	 *
+	 * @var array<string, true>
+	 */
+	private static array $heading_ids = [];
 
 	/**
 	 * Core's own render callback for the Post Template block.
@@ -170,6 +177,8 @@ final class Grouped_Archive {
 	 *   later unregistered or replaced by another kind of source, the block
 	 *   groups by its kind's source.
 	 * - expose_key: print `data-pkiw-group` on each section. Default false.
+	 * - heading_ids: give each section heading an id, `pkiw-group-<slug>`,
+	 *   unique on the page. Default false.
 	 * - classes: wrapper, section, heading, items and placeholder classes.
 	 *
 	 * @param string               $block_name Block name, `namespace/name`.
@@ -197,10 +206,11 @@ final class Grouped_Archive {
 		}
 
 		self::$entries[ $block_name ] = [
-			'shape'      => $shape,
-			'source'     => $source,
-			'expose_key' => ! empty( $args['expose_key'] ),
-			'classes'    => $classes,
+			'shape'       => $shape,
+			'source'      => $source,
+			'expose_key'  => ! empty( $args['expose_key'] ),
+			'heading_ids' => ! empty( $args['heading_ids'] ),
+			'classes'     => $classes,
 		];
 	}
 
@@ -421,7 +431,7 @@ final class Grouped_Archive {
 
 		$group = $source->group_of( $post );
 		if ( ! $line ) {
-			return self::heading( $entry['classes']['heading'], $settings['level'], self::label( $source, $group, $settings ) );
+			return self::heading( $entry['classes']['heading'], $settings['level'], self::label( $source, $group, $settings ), $entry['heading_ids'] ? self::heading_id( $group ) : '' );
 		}
 
 		$items = [];
@@ -639,6 +649,7 @@ final class Grouped_Archive {
 			$kind                = $request->get_param( 'pkiw_kind' );
 			self::$preview_kind  = self::$block_preview && is_string( $kind ) ? sanitize_key( $kind ) : '';
 			self::$preview_order = [];
+			self::$heading_ids   = [];
 		}
 
 		return $response;
@@ -903,7 +914,7 @@ final class Grouped_Archive {
 			esc_attr( $classes['section'] ),
 			max( 1, $count ),
 			null !== $entry && $entry['expose_key'] ? ' data-pkiw-group="' . esc_attr( $group->slug() ) . '"' : '',
-			self::heading( $classes['heading'], (int) ( $settings['level'] ?? 2 ), self::label( $source, $group, $settings ) ),
+			self::heading( $classes['heading'], (int) ( $settings['level'] ?? 2 ), self::label( $source, $group, $settings ), null !== $entry && $entry['heading_ids'] ? self::heading_id( $group ) : '' ),
 			esc_attr( $classes['items'] ),
 			implode( '', $items )
 		);
@@ -915,12 +926,58 @@ final class Grouped_Archive {
 	 * @param string $classes Heading classes.
 	 * @param int    $level   Heading level.
 	 * @param string $label   Heading text.
+	 * @param string $id      Heading id, or '' for none.
 	 * @return string
 	 */
-	private static function heading( string $classes, int $level, string $label ): string {
+	private static function heading( string $classes, int $level, string $label, string $id = '' ): string {
 		$level = max( 2, min( 4, $level ) );
 
-		return sprintf( '<h%1$d class="%2$s">%3$s</h%1$d>', $level, esc_attr( $classes ), esc_html( $label ) );
+		return sprintf(
+			'<h%1$d%2$s class="%3$s">%4$s</h%1$d>',
+			$level,
+			'' !== $id ? ' id="' . esc_attr( $id ) . '"' : '',
+			esc_attr( $classes ),
+			esc_html( $label )
+		);
+	}
+
+	/**
+	 * An id for a group's section heading, unique among those this request printed.
+	 *
+	 * `pkiw-group-<slug>`, the slug cut to id-safe characters; the empty
+	 * group is `empty`, and a slug with nothing id-safe left is `group`. A second section of the same group on the page (a
+	 * second grouped loop) takes `-2`, then `-3`. Each request starts over,
+	 * and so does each editor preview request: the editor shows one heading
+	 * per group on its page.
+	 *
+	 * @param Archive_Group $group Group.
+	 * @return string
+	 */
+	private static function heading_id( Archive_Group $group ): string {
+		// An encoded slug (a non-Latin term, say) keeps its hex digits, so it stays distinct.
+		$slug = strtolower( (string) preg_replace( '/[^A-Za-z0-9_-]/', '', str_replace( '%', '', $group->slug() ) ) );
+		if ( '' === $slug ) {
+			$slug = $group->is_empty() ? 'empty' : 'group';
+		}
+		$base = 'pkiw-group-' . $slug;
+		$id   = $base;
+		for ( $n = 2; isset( self::$heading_ids[ $id ] ); $n++ ) {
+			$id = $base . '-' . $n;
+		}
+		self::$heading_ids[ $id ] = true;
+
+		return $id;
+	}
+
+	/**
+	 * Forget the heading ids printed so far: a new request is a new page.
+	 *
+	 * @internal Hooked to `parse_request`.
+	 *
+	 * @return void
+	 */
+	public static function forget_heading_ids(): void {
+		self::$heading_ids = [];
 	}
 
 	/**

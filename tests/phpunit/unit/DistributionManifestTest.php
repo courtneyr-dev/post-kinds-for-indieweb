@@ -261,4 +261,43 @@ class DistributionManifestTest extends WP_UnitTestCase {
 		$this->assertNotContains( 'vendor/', $lines, 'An unanchored vendor/ rule ignores assets/vendor/ too.' );
 		$this->assertContains( '/vendor/', $lines );
 	}
+
+	/**
+	 * Every PHP file under includes/ guards direct access within the first
+	 * 50 lines after `<?php`.
+	 *
+	 * Plugin Check's AST pass looks only at top-level statements, and in a
+	 * file with an unbraced `namespace` the guard sits inside the namespace
+	 * node. Plugin Check then falls back to a regex over the first 50
+	 * lines (Direct_File_Access_Check::has_direct_access_protection_regex())
+	 * and reports missing_direct_file_access_protection when the guard is
+	 * further down. This runs the same regex.
+	 */
+	public function test_includes_files_guard_direct_access_within_plugin_checks_window(): void {
+		$root    = $this->repo_root();
+		$files   = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $root . '/includes', \FilesystemIterator::SKIP_DOTS ) );
+		$checked = 0;
+		$missing = [];
+
+		foreach ( $files as $file ) {
+			if ( 'php' !== $file->getExtension() ) {
+				continue;
+			}
+
+			++$checked;
+			$contents  = (string) preg_replace( '/^<\?php\s*/i', '', (string) file_get_contents( $file->getPathname() ) );
+			$beginning = implode( "\n", array_slice( explode( "\n", $contents ), 0, 50 ) );
+			$code      = (string) preg_replace( '#/\*.*?\*/#s', '', $beginning );
+			$code      = (string) preg_replace( '#//.*$#m', '', $code );
+			$guarded   = preg_match( "/defined\s*\(\s*['\"](?:ABSPATH|WPINC)['\"]\s*\)\s*(?:\|\||or)\s*(?:exit|die)/i", $code )
+				|| preg_match( "/if\s*\(\s*!\s*defined\s*\(\s*['\"](?:ABSPATH|WPINC)['\"]\s*\)\s*\)\s*(?:\{|exit|die)/i", $code );
+
+			if ( ! $guarded ) {
+				$missing[] = substr( $file->getPathname(), strlen( $root ) + 1 );
+			}
+		}
+
+		$this->assertGreaterThan( 0, $checked, 'Found no PHP file under includes/, so the scan is broken.' );
+		$this->assertSame( [], $missing, "No direct-access guard in Plugin Check's first 50 lines:\n  " . implode( "\n  ", $missing ) );
+	}
 }

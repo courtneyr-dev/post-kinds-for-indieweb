@@ -61,6 +61,12 @@ if ( '' !== $pkiw_calendar_source && $pkiw_calendar_id > 0 && class_exists( '\\P
 	}
 }
 
+// Issue 251: on an RSVP, the location, the block's or the calendar's, prints
+// only when the RSVP's location is public.
+if ( ! \PKIW\Meta_Fields::event_card_location_visible( (int) ( $block->context['postId'] ?? get_the_ID() ) ) ) {
+	$pkiw_event_location = '';
+}
+
 // Always include noopener noreferrer for security.
 $pkiw_link_rel = $pkiw_rel ? 'noopener noreferrer ' . $pkiw_rel : 'noopener noreferrer';
 
