@@ -321,7 +321,7 @@ class Card_Meta_Sync {
 	 * number again. Version 3 (PR 340) re-syncs a card behind an RSVP card,
 	 * which version 2 skipped while the RSVP card sat in ATTR_META_MAP.
 	 * Version 4 fills the read-card status default and clears the play-card
-	 * provider IDs of the group a card switched away from. Version 5 (#358)
+	 * provider IDs of the group a card switched away from. Version 5 (issue 358)
 	 * runs the same pass with the stricter-wins privacy hold, which version
 	 * 4 on main ran without.
 	 */
