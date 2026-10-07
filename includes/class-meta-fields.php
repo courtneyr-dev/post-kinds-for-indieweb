@@ -1434,6 +1434,20 @@ class Meta_Fields {
 	}
 
 	/**
+	 * Whether `_pkiw_event_location` may go to someone who can't edit the
+	 * post (issue 251): on an event post, which announces its own location,
+	 * or when rsvp_location_visible() says so. Not keyed on the `rsvp` term,
+	 * because a private RSVP card can sit behind a card of another kind and
+	 * an author can change an RSVP's kind, so any other post fails closed.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	public static function event_location_visible( int $post_id ): bool {
+		return has_term( 'event', Taxonomy::TAXONOMY, $post_id ) || self::rsvp_location_visible( $post_id );
+	}
+
+	/**
 	 * Zero/blank out this plugin's own `_pkiw_*` location fields the
 	 * post's current visibility tier hides, leaving every other key in
 	 * $meta untouched. This is the LOCATION_KEY_TIERS walk shared by
@@ -1450,8 +1464,8 @@ class Meta_Fields {
 
 		// An RSVP's event location goes only to its editors unless it's public (issue 251).
 		$event_location = self::PREFIX . 'event_location';
-		if ( array_key_exists( $event_location, $meta ) && has_term( 'rsvp', Taxonomy::TAXONOMY, $post_id )
-			&& ! current_user_can( 'edit_post', $post_id ) && ! self::rsvp_location_visible( $post_id ) ) {
+		if ( array_key_exists( $event_location, $meta ) && ! current_user_can( 'edit_post', $post_id )
+			&& ! self::event_location_visible( $post_id ) ) {
 			$meta[ $event_location ] = '';
 		}
 
