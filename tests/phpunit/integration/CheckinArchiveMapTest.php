@@ -21,6 +21,39 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 		wp_set_current_user( 0 );
 	}
 
+	public function tear_down(): void {
+		$GLOBALS['current_screen'] = null;
+		parent::tear_down();
+	}
+
+	/**
+	 * Make is_admin() true, as on the Site Editor screen.
+	 */
+	private function in_site_editor(): void {
+		require_once ABSPATH . 'wp-admin/includes/class-wp-screen.php';
+		require_once ABSPATH . 'wp-admin/includes/screen.php';
+		set_current_screen( 'site-editor' );
+	}
+
+	/**
+	 * Make is_admin() false, whatever screen an earlier test left.
+	 */
+	private function on_front_end(): void {
+		require_once ABSPATH . 'wp-admin/includes/class-wp-screen.php';
+		require_once ABSPATH . 'wp-admin/includes/screen.php';
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Forget map assets an earlier test in the process enqueued.
+	 */
+	private function dequeue_map_assets(): void {
+		foreach ( [ 'pkiw-checkin-map', 'leaflet-markercluster', 'leaflet' ] as $handle ) {
+			wp_dequeue_script( $handle );
+			wp_dequeue_style( $handle );
+		}
+	}
+
 	/**
 	 * A published check-in with sentinel location data.
 	 *
@@ -351,6 +384,53 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 
 		$this->assertCount( 1, Checkin_Map::pins( Checkin_Map::entries( [ $post ] ) ) );
+	}
+
+	public function test_editor_canvas_gets_leaflet_and_the_watching_map_script(): void {
+		$this->in_site_editor();
+
+		// What core prints into the editor canvas iframe.
+		$assets  = _wp_get_iframed_editor_assets();
+		$scripts = $assets['scripts'];
+		$styles  = $assets['styles'];
+
+		$this->assertStringContainsString( 'assets/vendor/leaflet/leaflet.js', $scripts );
+		$this->assertStringContainsString( 'assets/vendor/leaflet-markercluster/leaflet.markercluster.js', $scripts );
+		$this->assertStringContainsString( 'assets/js/checkin-map.js', $scripts );
+		$this->assertStringContainsString( 'assets/vendor/leaflet/leaflet.css', $styles );
+		$this->assertStringContainsString( 'assets/vendor/leaflet-markercluster/MarkerCluster.css', $styles );
+
+		// The preview's markup arrives after load, so the script watches for it.
+		$flag = 'window.pkiwCheckinMapWatch = true;';
+		$this->assertSame( 1, substr_count( $scripts, $flag ) );
+		$this->assertLessThan( strpos( $scripts, 'assets/js/checkin-map.js' ), strpos( $scripts, $flag ) );
+	}
+
+	public function test_editor_page_and_canvas_print_the_watch_flag_once(): void {
+		$this->in_site_editor();
+		$this->dequeue_map_assets();
+
+		// The editor page fires enqueue_block_assets, then core collects the canvas assets.
+		do_action( 'enqueue_block_assets' );
+		$this->assertTrue( wp_script_is( 'pkiw-checkin-map', 'enqueued' ) );
+		$this->assertTrue( wp_style_is( 'leaflet', 'enqueued' ) );
+		$scripts = _wp_get_iframed_editor_assets()['scripts'];
+
+		$this->assertSame( 1, substr_count( $scripts, 'window.pkiwCheckinMapWatch = true;' ) );
+	}
+
+	public function test_front_end_block_assets_load_no_map_until_a_map_renders(): void {
+		$this->on_front_end();
+		$this->dequeue_map_assets();
+
+		do_action( 'enqueue_block_assets' );
+
+		// The queues themselves: an admin style that depends on Leaflet,
+		// enqueued by an earlier test, makes wp_style_is() report Leaflet.
+		$this->assertNotContains( 'pkiw-checkin-map', wp_scripts()->queue );
+		$this->assertNotContains( 'leaflet', wp_scripts()->queue );
+		$this->assertNotContains( 'leaflet', wp_styles()->queue );
+		$this->assertNotContains( 'leaflet-markercluster', wp_styles()->queue );
 	}
 
 	public function test_archive_template_ships_and_carries_the_page_contract(): void {
