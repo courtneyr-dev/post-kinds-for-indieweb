@@ -208,6 +208,49 @@ class DistributionManifestTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Every `file:` asset a built `block.json` names exists in `build/`.
+	 *
+	 * Blocks register from `build/blocks/`, and the zip ships no `src/`.
+	 * The Check-in Dashboard named `"viewScript": "file:./view.js"`, which
+	 * only `src/` held, so core registered the handle with no source and the
+	 * dashboard's view buttons and map never ran (#313).
+	 */
+	public function test_block_json_file_assets_exist_in_build(): void {
+		$root    = $this->repo_root();
+		$fields  = [ 'script', 'viewScript', 'editorScript', 'style', 'viewStyle', 'editorStyle', 'render', 'scriptModule', 'viewScriptModule' ];
+		$checked = 0;
+		$missing = [];
+
+		foreach ( (array) glob( $root . '/build/blocks/*/block.json' ) as $json ) {
+			$metadata = json_decode( (string) file_get_contents( $json ), true );
+
+			foreach ( $fields as $field ) {
+				foreach ( (array) ( $metadata[ $field ] ?? [] ) as $value ) {
+					if ( ! is_string( $value ) || ! str_starts_with( $value, 'file:' ) ) {
+						continue;
+					}
+
+					++$checked;
+					$asset = dirname( $json ) . '/' . preg_replace( '#^\./#', '', substr( $value, 5 ) );
+
+					if ( ! file_exists( $asset ) ) {
+						$missing[] = substr( $asset, strlen( $root ) + 1 ) . " ($field in " . basename( dirname( $json ) ) . '/block.json)';
+					}
+				}
+			}
+		}
+
+		// Guard the guard.
+		$this->assertGreaterThan( 0, $checked, 'Found no file: references in build/blocks/*/block.json — the scan is broken.' );
+
+		$this->assertSame(
+			[],
+			$missing,
+			"build/blocks/*/block.json names files build/ doesn't ship:\n  " . implode( "\n  ", $missing )
+		);
+	}
+
+	/**
 	 * `.gitignore` ignores Composer's root `vendor/` only.
 	 *
 	 * An unanchored `vendor/` also matches `assets/vendor/`.
