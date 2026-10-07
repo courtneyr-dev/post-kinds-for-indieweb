@@ -219,10 +219,10 @@ class Card_Meta_Sync {
 
 	/**
 	 * Card privacy settings whose stored row a second control writes too:
-	 * REST meta, the update-post-meta and create-post abilities, and
-	 * wp_insert_post() meta_input (issue 358). Every write keeps the
-	 * stricter of the card's value and the row stored before it, so a card
-	 * can't loosen a stricter stored value and loosening needs both.
+	 * REST meta, the update-post-meta and create-post abilities,
+	 * wp_insert_post() meta_input, WP-CLI or another plugin (issue 358).
+	 * Every write keeps the stricter of the card's value and the row, so a
+	 * card can't loosen a stricter stored value and loosening needs both.
 	 * 'values' runs loosest to strictest. 'default' is the block.json
 	 * default, the card's value when its comment leaves the attribute out,
 	 * and how any value outside 'values' reads, as Meta_Fields reads it.
@@ -279,7 +279,11 @@ class Card_Meta_Sync {
 		add_action( 'save_post', [ $this, 'sync' ], 25, 2 );
 		add_action( self::BACKFILL_HOOK, [ self::class, 'run_backfill_event' ] );
 		add_action( 'init', [ self::class, 'maybe_schedule_backfill' ], 20 );
-		add_action( 'wp_after_insert_post', [ self::class, 'keep_stricter_privacy' ], 5 );
+		foreach ( [ 'added_post_meta', 'updated_post_meta', 'deleted_post_meta' ] as $hook ) {
+			add_action( $hook, [ self::class, 'keep_stricter_privacy' ], 5, 3 );
+		}
+		add_action( 'before_delete_post', [ self::class, 'mark_deleting' ] );
+		add_action( 'deleted_post', [ self::class, 'unmark_deleting' ] );
 	}
 
 	/**
@@ -491,26 +495,85 @@ class Card_Meta_Sync {
 	}
 
 	/**
-	 * Keep the stricter of each STRICTER_PRIVACY card setting and its row
-	 * after a write the card sync didn't make: REST meta, meta_input or an
-	 * ability (issue 358). Hooked to wp_after_insert_post at 5, which the
-	 * REST controller fires once it has written the request's meta, so
-	 * callbacks at 10 read the settled row. Posts only, as sync() is.
+	 * True while keep_stricter() writes a row, so the meta hooks that write
+	 * fires leave it alone.
+	 *
+	 * @var bool
+	 */
+	private static bool $writing = false;
+
+	/**
+	 * Posts wp_delete_post() is deleting, keyed by ID. Their rows go with them.
+	 *
+	 * @var array<int, true>
+	 */
+	private static array $deleting = [];
+
+	/**
+	 * Hold a STRICTER_PRIVACY row at least as strict as the post's card
+	 * after a write or delete the card sync didn't make: REST meta,
+	 * meta_input, an ability, WP-CLI or another plugin's update_post_meta()
+	 * (issue 358). On added_, updated_ and deleted_post_meta at 5, so the
+	 * row is held as each write lands, and a REST request that fails after
+	 * writing it is held too. A missing row reads as the setting's default,
+	 * so a deleted row gets the card's value back only when the card is
+	 * stricter than that default: a Private check-in card.
+	 * Posts only, as sync() is. Reads the card from the posts table, so
+	 * meta_input saved with new content is held to the new card.
+	 *
+	 * @param int|int[] $meta_id   Meta ID, or IDs on delete. Unused.
+	 * @param int       $object_id Post ID.
+	 * @param string    $meta_key  Meta key.
+	 * @return void
+	 */
+	public static function keep_stricter_privacy( $meta_id, $object_id, $meta_key ): void {
+		global $wpdb;
+
+		$post_id = (int) $object_id;
+		if ( self::$writing || $post_id <= 0 || isset( self::$deleting[ $post_id ] ) ) {
+			return;
+		}
+
+		foreach ( self::STRICTER_PRIVACY as $name => $setting ) {
+			$key = Meta_Fields::PREFIX . $setting['suffix'];
+			if ( $key !== $meta_key ) {
+				continue;
+			}
+
+			// wp_insert_post() writes meta_input before it clears the post
+			// cache, so get_post() can still hold the content it replaced.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- The cached post can be stale here.
+			$post = $wpdb->get_row( $wpdb->prepare( "SELECT post_type, post_content FROM {$wpdb->posts} WHERE ID = %d", $post_id ) );
+			if ( ! is_object( $post ) || 'post' !== $post->post_type ) {
+				return;
+			}
+
+			$card = self::privacy_card( parse_blocks( (string) $post->post_content ), $name );
+			if ( null !== $card ) {
+				self::keep_stricter( $post_id, $setting, $card, get_metadata_raw( 'post', $post_id, $key, true ) );
+			}
+		}
+	}
+
+	/**
+	 * Note a post wp_delete_post() is about to delete, so deleting its rows
+	 * doesn't write the card's setting back.
 	 *
 	 * @param int $post_id Post ID.
 	 * @return void
 	 */
-	public static function keep_stricter_privacy( int $post_id ): void {
-		if ( 'post' !== get_post_type( $post_id ) ) {
-			return;
-		}
+	public static function mark_deleting( int $post_id ): void {
+		self::$deleting[ $post_id ] = true;
+	}
 
-		$stored = self::stored_privacy( $post_id );
-		if ( [] === array_filter( $stored, static fn( $row ): bool => null !== $row ) ) {
-			return;
-		}
-
-		self::apply_stricter_privacy( $post_id, parse_blocks( (string) get_post_field( 'post_content', $post_id ) ), $stored );
+	/**
+	 * Forget a post once wp_delete_post() has deleted it.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return void
+	 */
+	public static function unmark_deleting( int $post_id ): void {
+		unset( self::$deleting[ $post_id ] );
 	}
 
 	/**
@@ -543,18 +606,53 @@ class Card_Meta_Sync {
 	private static function apply_stricter_privacy( int $post_id, array $blocks, array $stored ): void {
 		foreach ( self::STRICTER_PRIVACY as $name => $setting ) {
 			$row  = $stored[ $setting['suffix'] ] ?? null;
-			$card = isset( self::ATTR_META_MAP[ $name ] )
-				? self::find_first_mapped_block( $blocks )
-				: self::find_first_mapped_block( $blocks, $name );
-			if ( null === $row || null === $card || $name !== $card['blockName'] ) {
-				continue;
+			$card = self::privacy_card( $blocks, $name );
+			if ( null !== $row && null !== $card ) {
+				self::keep_stricter( $post_id, $setting, $card, $row );
 			}
+		}
+	}
 
-			$keep = self::stricter( $setting, $card['attrs'][ $setting['attr'] ] ?? null, $row );
-			$key  = Meta_Fields::PREFIX . $setting['suffix'];
-			if ( get_metadata_raw( 'post', $post_id, $key, true ) !== $keep ) {
-				update_post_meta( $post_id, $key, $keep );
-			}
+	/**
+	 * The card a STRICTER_PRIVACY setting follows: the check-in setting the
+	 * first mapped card, when it's a check-in card, as ATTR_META_MAP syncs
+	 * it; the RSVP setting the first RSVP card.
+	 *
+	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
+	 * @param string                           $name   A STRICTER_PRIVACY block name.
+	 * @return array<string, mixed>|null The card, or null when the post has none.
+	 */
+	private static function privacy_card( array $blocks, string $name ): ?array {
+		$card = isset( self::ATTR_META_MAP[ $name ] )
+			? self::find_first_mapped_block( $blocks )
+			: self::find_first_mapped_block( $blocks, $name );
+
+		return null !== $card && $name === $card['blockName'] ? $card : null;
+	}
+
+	/**
+	 * Store the stricter of a card's setting and a row, when the row
+	 * doesn't hold it already. A missing row that reads as strict as the
+	 * card stays missing: writing back a looser card's value would loosen it.
+	 *
+	 * @param int                                                                    $post_id Post ID.
+	 * @param array{attr: string, suffix: string, default: string, values: string[]} $setting A STRICTER_PRIVACY entry.
+	 * @param array<string, mixed>                                                   $card    The card block.
+	 * @param mixed                                                                  $row     The row to compare, null for none.
+	 * @return void
+	 */
+	private static function keep_stricter( int $post_id, array $setting, array $card, $row ): void {
+		$keep = self::stricter( $setting, $card['attrs'][ $setting['attr'] ] ?? null, $row );
+		$key  = Meta_Fields::PREFIX . $setting['suffix'];
+		if ( ( null === $row && $setting['default'] === $keep ) || get_metadata_raw( 'post', $post_id, $key, true ) === $keep ) {
+			return;
+		}
+
+		self::$writing = true;
+		try {
+			update_post_meta( $post_id, $key, $keep );
+		} finally {
+			self::$writing = false;
 		}
 	}
 
