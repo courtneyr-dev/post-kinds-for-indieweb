@@ -166,10 +166,13 @@ function card_rating_html( $rating, int $best = 5 ): string {
 		return '';
 	}
 
+	// The row runs right to left on an RTL site, so the filled half faces
+	// the full stars on whichever side they sit.
+	$clip    = is_rtl() ? 'inset(0 0 0 50%)' : 'inset(0 50% 0 0)';
 	$path    = 'M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17l-6.9 3.5 1.6-6.8L1.4 9.1l7-.6z';
 	$full    = '<svg class="" viewBox="0 0 24 24" fill="currentColor" focusable="false"><path d="' . $path . '"/></svg>';
 	$empty   = '<svg class="off" viewBox="0 0 24 24" fill="currentColor" focusable="false"><path d="' . $path . '"/></svg>';
-	$half    = '<svg class="half" viewBox="0 0 24 24" fill="currentColor" focusable="false"><path class="off" d="' . $path . '"/><path d="' . $path . '" style="clip-path:inset(0 50% 0 0)"/></svg>';
+	$half    = '<svg class="half" viewBox="0 0 24 24" fill="currentColor" focusable="false"><path class="off" d="' . $path . '"/><path d="' . $path . '" style="clip-path:' . $clip . '"/></svg>';
 	$machine = rtrim( rtrim( number_format( $counts['value'], 2, '.', '' ), '0' ), '.' );
 
 	return '<div class="pk-stars" role="img" aria-label="' . esc_attr( card_rating_label( $counts['value'], $counts['best'] ) ) . '">'
