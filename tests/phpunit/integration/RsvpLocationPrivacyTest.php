@@ -763,6 +763,25 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * An RSVP saved before the card wrote its privacy row, then set to
+	 * Event, has only its card. No backfill writes the row, so the card
+	 * itself makes it an RSVP.
+	 */
+	public function test_an_rsvp_card_saved_before_the_privacy_row_keeps_the_location_from_visitors(): void {
+		$id = $this->rsvp( 'yes', 'future' );
+		wp_set_object_terms( $id, 'event', 'kind' );
+		foreach ( [ '_pkiw_rsvp_location_privacy', '_pkiw_rsvp_status', '_pkiw_rsvp_value' ] as $key ) {
+			delete_post_meta( $id, $key );
+			$this->assertFalse( metadata_exists( 'post', $id, $key ), "No {$key} row." );
+		}
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+
+		$this->assertFalse( Meta_Fields::event_location_visible( $id ) );
+		$this->assert_no_location_for_visitors( $id );
+		$this->assert_location_for_editors( $id );
+	}
+
+	/**
 	 * Assert someone who can't edit the post gets no event location from REST
 	 * meta, `content.rendered`, the get-post-meta ability or the binding.
 	 *
