@@ -45,7 +45,7 @@
 		),
 		category: 'post-kinds-indieweb',
 		icon: 'list-view',
-		usesContext: [ 'postId', 'postType', 'queryId' ],
+		usesContext: [ 'postId', 'postType', 'queryId', 'templateSlug' ],
 		attributes: {
 			showSections: { type: 'boolean', default: true },
 			headingLevel: { type: 'integer', default: 2 },
@@ -61,6 +61,14 @@
 			return null;
 		},
 	} );
+
+	// The kind a taxonomy-kind-<slug> template is the archive of, or ''.
+	function templateKind( slug ) {
+		return 'string' === typeof slug &&
+			0 === slug.indexOf( 'taxonomy-kind-' )
+			? slug.slice( 'taxonomy-kind-'.length )
+			: '';
+	}
 
 	function renderEdit( props, blockProps ) {
 		const postId = props.context && props.context.postId;
@@ -187,7 +195,7 @@
 									},
 								} )
 						)
-				  )
+					)
 				: null;
 
 		if ( ! postId ) {
@@ -201,6 +209,9 @@
 			);
 		}
 
+		// A post can hold several kinds; preview it as the template's kind.
+		const kind = templateKind( props.context.templateSlug );
+
 		return el(
 			'div',
 			blockProps,
@@ -208,7 +219,9 @@
 			el( ServerSideRender, {
 				block: 'post-kinds-indieweb/menu-entry',
 				attributes: props.attributes,
-				urlQueryArgs: { post_id: postId },
+				urlQueryArgs: kind
+					? { post_id: postId, pkiw_kind: kind }
+					: { post_id: postId },
 			} )
 		);
 	}
