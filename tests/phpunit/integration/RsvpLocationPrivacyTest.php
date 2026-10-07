@@ -907,6 +907,40 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Chains of synced patterns longer than the walk's old depth cap (10).
+	 *
+	 * @return array<string, array{0: int}>
+	 */
+	public function long_pattern_chains(): array {
+		return [
+			'eleven patterns'      => [ 11 ],
+			'twenty-five patterns' => [ 25 ],
+		];
+	}
+
+	/**
+	 * A plain Event post behind a chain of synced patterns with no RSVP card
+	 * in it keeps its location, however long the chain. The walk answered
+	 * "RSVP" for any ref past depth 10.
+	 *
+	 * @dataProvider long_pattern_chains
+	 *
+	 * @param int $length Patterns in the chain.
+	 */
+	public function test_a_plain_event_post_behind_a_long_chain_of_cardless_synced_patterns_keeps_its_location( int $length ): void {
+		$content = '<!-- wp:paragraph --><p>Doors at seven.</p><!-- /wp:paragraph -->';
+		for ( $i = 0; $i < $length; $i++ ) {
+			$content = $this->ref( $this->pattern( $content ) );
+		}
+		$id = $this->post_with( $content, [ 'event' ] );
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+
+		$this->assertTrue( Meta_Fields::event_location_visible( $id ) );
+		wp_set_current_user( 0 );
+		$this->assertSame( self::LOCATION, $this->rest_post( $id )['meta']['_pkiw_event_location'], 'REST meta for a visitor.' );
+	}
+
+	/**
 	 * Event Card markup that stores the event location.
 	 *
 	 * @param array<string, mixed> $attrs Attributes that replace the defaults.
