@@ -707,6 +707,22 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * An RSVP card saved before #328 has no `_pkiw_rsvp_location_privacy`
+	 * row, and a site that already ran the card meta backfill never wrote
+	 * one. Set to Event, the card still makes the post an RSVP.
+	 */
+	public function test_an_rsvp_card_with_no_stored_setting_on_an_event_post_keeps_the_location_from_visitors(): void {
+		$id = $this->rsvp( 'yes', 'future' );
+		wp_set_object_terms( $id, 'event', 'kind' );
+		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
+		delete_post_meta( $id, '_pkiw_rsvp_location_privacy' );
+		$this->assertFalse( metadata_exists( 'post', $id, '_pkiw_rsvp_location_privacy' ), 'No stored setting.' );
+
+		$this->assert_no_location_for_visitors( $id );
+		$this->assert_location_for_editors( $id );
+	}
+
+	/**
 	 * RSVP status rows a post keeps without an RSVP card: the editor
 	 * sidebar's, and the one Quick Post and the RSVP meta box store.
 	 *
