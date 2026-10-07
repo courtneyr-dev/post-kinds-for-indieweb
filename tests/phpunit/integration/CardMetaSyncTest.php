@@ -642,8 +642,34 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 		$this->assertSame( '900108', get_metadata_raw( 'post', $post_id, '_pkiw_play_bgg_id', true ) );
 	}
 
-	public function test_w1_bumps_the_backfill_version_once_to_3(): void {
-		$this->assertSame( '3', \PKIW\Card_Meta_Sync::BACKFILL_VERSION );
+	/**
+	 * #340 shipped version 3 on main, so W1 needs its own number.
+	 */
+	public function test_w1_bumps_the_backfill_version_once_to_4(): void {
+		$this->assertSame( '4', \PKIW\Card_Meta_Sync::BACKFILL_VERSION );
+	}
+
+	/**
+	 * A site that finished #340's backfill 3 runs W1's, which clears a
+	 * provider ID the play card no longer has.
+	 */
+	public function test_a_site_that_finished_backfill_3_runs_the_w1_backfill(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/play-card {"title":"Tidepool Express","bggId":"900108"} /-->',
+		] );
+		update_post_meta( $post_id, '_pkiw_play_rawg_id', '900008' );
+		update_option( \PKIW\Card_Meta_Sync::BACKFILL_OPTION, '3', false );
+		delete_option( \PKIW\Card_Meta_Sync::BACKFILL_CURSOR );
+		wp_clear_scheduled_hook( \PKIW\Card_Meta_Sync::BACKFILL_HOOK );
+
+		\PKIW\Card_Meta_Sync::maybe_schedule_backfill();
+		$this->assertNotFalse( wp_next_scheduled( \PKIW\Card_Meta_Sync::BACKFILL_HOOK ), 'A site that finished backfill 3 runs it again.' );
+
+		wp_clear_scheduled_hook( \PKIW\Card_Meta_Sync::BACKFILL_HOOK );
+		\PKIW\Card_Meta_Sync::run_backfill_event();
+
+		$this->assertNull( get_metadata_raw( 'post', $post_id, '_pkiw_play_rawg_id', true ) );
+		$this->assertSame( \PKIW\Card_Meta_Sync::BACKFILL_VERSION, get_option( \PKIW\Card_Meta_Sync::BACKFILL_OPTION ) );
 	}
 
 	/**
