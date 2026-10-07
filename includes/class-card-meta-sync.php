@@ -321,12 +321,14 @@ class Card_Meta_Sync {
 	 * number again. Version 3 (PR 340) re-syncs a card behind an RSVP card,
 	 * which version 2 skipped while the RSVP card sat in ATTR_META_MAP.
 	 * Version 4 fills the read-card status default and clears the play-card
-	 * provider IDs of the group a card switched away from.
+	 * provider IDs of the group a card switched away from. Version 5 (#358)
+	 * runs the same pass with the stricter-wins privacy hold, which version
+	 * 4 on main ran without.
 	 */
 	public const BACKFILL_HOOK    = 'pkiw_card_meta_backfill';
 	public const BACKFILL_OPTION  = 'pkiw_card_meta_backfill';
 	public const BACKFILL_CURSOR  = 'pkiw_card_meta_backfill_cursor';
-	public const BACKFILL_VERSION = '4';
+	public const BACKFILL_VERSION = '5';
 	public const BACKFILL_BATCH   = 50;
 
 	/**
