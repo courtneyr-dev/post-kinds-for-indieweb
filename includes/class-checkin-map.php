@@ -145,7 +145,7 @@ class Checkin_Map {
 			}
 
 			$entries[] = [
-				'id'       => $post->ID,
+				'id'        => $post->ID,
 				'title'     => $title,
 				'synthetic' => $synthetic,
 				'url'       => (string) get_permalink( $post ),

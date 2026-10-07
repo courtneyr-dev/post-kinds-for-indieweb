@@ -187,6 +187,38 @@ function card_url_host( string $url ): string {
 	return str_starts_with( $host, 'www.' ) ? substr( $host, 4 ) : $host;
 }
 
+/**
+ * The "<Kind>, <date>" name for a title-less post, with its parts.
+ *
+ * The last step of untitled_name(). A card that prints the date on its
+ * own line shows the kind and keeps the date in the link name only.
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post Untitled post.
+ * @return array{name: string, kind: string, date: string} Full name, kind label and post date.
+ */
+function untitled_fallback_name( \WP_Post $post ): array {
+	$kind_label = stream_card_kind_label( $post );
+	// A kind term created from its slug alone is named "checkin"; print
+	// the label the plugin seeds for that term instead.
+	if ( 'checkin' === get_post_kind_slug( $post ) && 'checkin' === strtolower( $kind_label ) ) {
+		$kind_label = __( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' );
+	}
+	$date = (string) get_the_date( '', $post );
+
+	return [
+		'name' => sprintf(
+			/* translators: 1: kind name, 2: post date */
+			__( '%1$s, %2$s', 'post-kinds-for-indieweb-in-block-themes' ),
+			$kind_label,
+			$date
+		),
+		'kind' => $kind_label,
+		'date' => $date,
+	];
+}
+
 // phpcs:disable Generic.Metrics.CyclomaticComplexity.TooHigh -- The order is the public naming contract.
 /**
  * Name a title-less post for lists and Stream cards.
@@ -202,21 +234,7 @@ function card_url_host( string $url ): string {
  */
 function untitled_name( \WP_Post $post, bool $from_content = true ): string {
 	$kind     = get_post_kind_slug( $post );
-	$fallback = static function () use ( $post, $kind ): string {
-		$kind_label = stream_card_kind_label( $post );
-		// A kind term created from its slug alone is named "checkin"; print
-		// the label the plugin seeds for that term instead.
-		if ( 'checkin' === $kind && 'checkin' === strtolower( $kind_label ) ) {
-			$kind_label = __( 'Check-in', 'post-kinds-for-indieweb-in-block-themes' );
-		}
-
-		return sprintf(
-			/* translators: 1: kind name, 2: post date */
-			__( '%1$s, %2$s', 'post-kinds-for-indieweb-in-block-themes' ),
-			$kind_label,
-			(string) get_the_date( '', $post )
-		);
-	};
+	$fallback = static fn(): string => untitled_fallback_name( $post )['name'];
 
 	if ( post_password_required( $post ) ) {
 		return $fallback();

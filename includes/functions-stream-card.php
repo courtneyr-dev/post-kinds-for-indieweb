@@ -382,8 +382,20 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 		}
 	}
 
+	$title_html = esc_html( $title );
+	if ( ! $has_title ) {
+		// The card prints the date on its own line, so the "<Kind>, <date>"
+		// name shows the kind and keeps the date in the link name (S7).
+		$fallback = untitled_fallback_name( $post );
+		if ( $title === $fallback['name'] && '' !== $fallback['kind'] && str_starts_with( $title, $fallback['kind'] ) ) {
+			$title_html = esc_html( $fallback['kind'] )
+				. '<span class="pk-sr-only">' . esc_html( substr( $title, strlen( $fallback['kind'] ) ) ) . '</span>';
+		}
+	}
+
 	$out .= '<div class="pk-caption">';
-	$out .= '<h' . $heading_level . ' class="' . esc_attr( $title_class ) . '"><a class="u-url" href="' . $permalink . '">' . esc_html( $title ) . '</a></h' . $heading_level . '>';
+	// $title_html is escaped above.
+	$out .= '<h' . $heading_level . ' class="' . esc_attr( $title_class ) . '"><a class="u-url" href="' . $permalink . '">' . $title_html . '</a></h' . $heading_level . '>';
 
 	$date_display = get_the_date( '', $post );
 	if ( '' !== $date_display ) {
