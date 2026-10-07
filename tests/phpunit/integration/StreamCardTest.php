@@ -97,7 +97,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 	/**
 	 * @return array<string, array{0: string, 1: array<string, mixed>}>
 	 */
-	public function protected_card_posts(): array {
+	public function protected_card_attrs(): array {
 		return [
 			'play' => [
 				'play',
@@ -131,20 +131,36 @@ final class StreamCardTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Each protected card, once with a post title and once without.
+	 *
+	 * @return array<string, array{0: string, 1: array<string, mixed>, 2: string}>
+	 */
+	public function protected_card_posts(): array {
+		$sets = [];
+		foreach ( $this->protected_card_attrs() as $kind => [ $slug, $attrs ] ) {
+			$sets[ $kind ]               = [ $slug, $attrs, 'Locked Box' ];
+			$sets[ 'untitled ' . $kind ] = [ $slug, $attrs, '' ];
+		}
+		return $sets;
+	}
+
+	/**
 	 * A password-protected card-only post shows its title link and nothing
 	 * from the card: no review, links, rating, cover or excerpt (#232 check
-	 * gap 3, #237 check gap 2).
+	 * gap 3, #237 check gap 2). An untitled one links its kind-and-date name,
+	 * which carries no p-name (X8), not core's bare "Protected:" prefix.
 	 *
 	 * @dataProvider protected_card_posts
 	 *
-	 * @param array<string, mixed> $attrs Card attributes.
+	 * @param array<string, mixed> $attrs      Card attributes.
+	 * @param string               $post_title Post title, empty for an untitled post.
 	 */
-	public function test_a_protected_card_only_post_shows_only_its_title_link( string $kind, array $attrs ): void {
+	public function test_a_protected_card_only_post_shows_only_its_title_link( string $kind, array $attrs, string $post_title ): void {
 		$this->ensure_play_reader();
 		[ $post_id, $html ] = $this->stream_card_for(
 			$kind,
 			[
-				'post_title'    => 'Locked Box',
+				'post_title'    => $post_title,
 				'post_password' => 'secret',
 				'post_content'  => '<!-- wp:post-kinds-indieweb/' . $kind . '-card ' . wp_json_encode( $attrs ) . ' /-->',
 			]
@@ -164,7 +180,19 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$visible = (string) preg_replace( '#<span class="pk-entry-props" hidden>.*?</span>$#s', '', str_replace( '</article>', '', $html ) );
 		$this->assertSame( 1, preg_match_all( '#<a\b[^>]*href="([^"]*)"#', $visible, $links ) );
 		$this->assertSame( get_permalink( $post_id ), $links[1][0] );
+
+		$entry = $this->parsed_entry( $html );
+		if ( '' === $post_title ) {
+			$this->assertStringNotContainsString( 'Protected:', $html );
+			$this->assertStringNotContainsString( 'Locked Box', $html, 'The card title is not the post name.' );
+			$this->assertSame( \PKIW\untitled_name( get_post( $post_id ), false ), trim( wp_strip_all_tags( $visible ) ) );
+			$this->assertStringNotContainsString( 'p-name', $html, 'A synthetic name carries no p-name.' );
+			$this->assertNotContains( 'Protected:', $entry['properties']['name'] ?? [] );
+			return;
+		}
+
 		$this->assertSame( get_the_title( $post_id ), trim( wp_strip_all_tags( $visible ) ) );
+		$this->assertSame( [ get_the_title( $post_id ) ], $entry['properties']['name'] );
 	}
 
 	/**
