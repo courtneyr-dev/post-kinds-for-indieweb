@@ -205,6 +205,16 @@
 		// in its own order, so they go back in order after every redraw. A
 		// cluster sits where its first check-in in the list would.
 		function orderPins() {
+			// Mid-animation, moving a pin would cut its transition short;
+			// animationend runs this again.
+			if (
+				map
+					.getPane( 'mapPane' )
+					.classList.contains( 'leaflet-cluster-anim' )
+			) {
+				return;
+			}
+
 			const pane = map.getPane( 'markerPane' );
 			const icons = [];
 			markers.forEach( ( marker ) => {
