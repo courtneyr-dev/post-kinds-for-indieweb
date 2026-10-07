@@ -217,6 +217,20 @@ class Card_Meta_Sync {
 	];
 
 	/**
+	 * Card attributes the wp_after_insert_post pass writes again, once the
+	 * REST controller has written the request's meta. The editor sends the
+	 * meta it loaded, so a stale read status or provider ID would otherwise
+	 * beat the card. Every other key, privacy settings included, keeps the
+	 * request's value.
+	 *
+	 * @var array<string, string[]>
+	 */
+	public const AFTER_INSERT_ATTRS = [
+		'post-kinds-indieweb/read-card' => [ 'readStatus' ],
+		'post-kinds-indieweb/play-card' => self::PROVIDER_ATTRS['post-kinds-indieweb/play-card'],
+	];
+
+	/**
 	 * Boolean card attributes the card always decides: on writes '1', off or
 	 * absent deletes the row. ATTR_META_MAP never erases meta with an empty
 	 * attr, and the block comment drops an attribute that equals its
@@ -281,13 +295,13 @@ class Card_Meta_Sync {
 	 * saved post_content the kind sync sees).
 	 *
 	 * The REST controller writes request meta after save_post and fires
-	 * wp_after_insert_post once it has, so a stale value from the editor's
-	 * meta would otherwise beat the card. Syncing again there, at 5, puts
-	 * the card back before the priority-10 callbacks read the post.
+	 * wp_after_insert_post once it has. resync_after_insert() runs there, at
+	 * 5, and writes back only AFTER_INSERT_ATTRS before the priority-10
+	 * callbacks read the post.
 	 */
 	public function __construct() {
 		add_action( 'save_post', [ $this, 'sync' ], 25, 2 );
-		add_action( 'wp_after_insert_post', [ $this, 'sync' ], 5, 2 );
+		add_action( 'wp_after_insert_post', [ $this, 'resync_after_insert' ], 5, 2 );
 		add_action( self::BACKFILL_HOOK, [ self::class, 'run_backfill_event' ] );
 		add_action( 'init', [ self::class, 'maybe_schedule_backfill' ], 20 );
 	}
@@ -300,11 +314,46 @@ class Card_Meta_Sync {
 	 * @return void
 	 */
 	public function sync( int $post_id, \WP_Post $post ): void {
-		if ( 'post' !== $post->post_type || wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+		if ( ! self::syncs( $post_id, $post ) ) {
 			return;
 		}
 
 		self::sync_content( $post_id, $post->post_content, true );
+	}
+
+	/**
+	 * Write the first mapped card's AFTER_INSERT_ATTRS again, after the REST
+	 * controller has written the request's meta.
+	 *
+	 * @param int      $post_id Post ID.
+	 * @param \WP_Post $post    Post object.
+	 * @return void
+	 */
+	public function resync_after_insert( int $post_id, \WP_Post $post ): void {
+		if ( ! self::syncs( $post_id, $post ) ) {
+			return;
+		}
+
+		$block = self::find_first_mapped_block( parse_blocks( $post->post_content ) );
+		if ( null === $block ) {
+			return;
+		}
+
+		foreach ( self::AFTER_INSERT_ATTRS[ $block['blockName'] ] ?? [] as $attr ) {
+			self::sync_attr( $post_id, $block, $attr, self::ATTR_META_MAP[ $block['blockName'] ][ $attr ], true );
+		}
+	}
+
+	/**
+	 * Whether a save of this post syncs card meta: a post, not a revision or
+	 * an autosave.
+	 *
+	 * @param int      $post_id Post ID.
+	 * @param \WP_Post $post    Post object.
+	 * @return bool
+	 */
+	private static function syncs( int $post_id, \WP_Post $post ): bool {
+		return 'post' === $post->post_type && ! wp_is_post_revision( $post_id ) && ! wp_is_post_autosave( $post_id );
 	}
 
 	/**
@@ -397,41 +446,8 @@ class Card_Meta_Sync {
 		$blocks = parse_blocks( $content );
 		$block  = self::find_first_mapped_block( $blocks );
 		if ( null !== $block ) {
-			$map = self::ATTR_META_MAP[ $block['blockName'] ];
-
-			foreach ( $map as $attr => $suffix ) {
-				$value = self::attr_value( $post_id, $block, $attr, $suffix, $on_save );
-
-				if ( null === $value || '' === $value ) {
-					// Never erase existing meta with an empty attr, except a
-					// provider ID the card no longer has.
-					self::clear_provider_id( $post_id, $block['blockName'], $attr, $suffix );
-					continue;
-				}
-
-				$value = (string) $value;
-
-				// A changed ISBN invalidates any previously-derived ASIN —
-				// clear it before writing the new ISBN so
-				// Book_Completion_Controller::complete_on_save() (which
-				// runs after this, at save_post:30) sees a blank read_asin
-				// and re-derives it from the new ISBN instead of leaving
-				// the stale one (which would render the wrong book's Kindle
-				// preview). Scoped to isbn/asin only: cover and publisher
-				// are user-visible and directly editable, so there's no
-				// invisible-staleness risk to guard against there.
-				if ( 'read_isbn' === $suffix ) {
-					$current_isbn = get_post_meta( $post_id, Meta_Fields::PREFIX . 'read_isbn', true );
-					if ( $current_isbn !== $value ) {
-						delete_post_meta( $post_id, Meta_Fields::PREFIX . 'read_asin' );
-					}
-				}
-
-				$clean = in_array( $suffix, self::TEXTAREA_SUFFIXES, true )
-					? sanitize_textarea_field( $value )
-					: sanitize_text_field( $value );
-
-				update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, $clean );
+			foreach ( self::ATTR_META_MAP[ $block['blockName'] ] as $attr => $suffix ) {
+				self::sync_attr( $post_id, $block, $attr, $suffix, $on_save );
 			}
 		}
 
@@ -463,6 +479,51 @@ class Card_Meta_Sync {
 		// An unchanged cover fires no meta hook, so a post stored before
 		// the cover map existed gets its map here, on save or backfill.
 		refresh_cover_attachments( $post_id );
+	}
+
+	/**
+	 * Mirror one card attribute into its meta key. Card attrs win when
+	 * non-empty; an empty attr never erases meta, except a provider ID the
+	 * card no longer has.
+	 *
+	 * @param int                  $post_id Post ID.
+	 * @param array<string, mixed> $block   Parsed card block.
+	 * @param string               $attr    Attribute name.
+	 * @param string               $suffix  Meta suffix the attribute maps to.
+	 * @param bool                 $on_save Whether a save is syncing.
+	 * @return void
+	 */
+	private static function sync_attr( int $post_id, array $block, string $attr, string $suffix, bool $on_save ): void {
+		$value = self::attr_value( $post_id, $block, $attr, $suffix, $on_save );
+
+		if ( null === $value || '' === $value ) {
+			self::clear_provider_id( $post_id, $block['blockName'], $attr, $suffix );
+			return;
+		}
+
+		$value = (string) $value;
+
+		// A changed ISBN invalidates any previously-derived ASIN —
+		// clear it before writing the new ISBN so
+		// Book_Completion_Controller::complete_on_save() (which
+		// runs after this, at save_post:30) sees a blank read_asin
+		// and re-derives it from the new ISBN instead of leaving
+		// the stale one (which would render the wrong book's Kindle
+		// preview). Scoped to isbn/asin only: cover and publisher
+		// are user-visible and directly editable, so there's no
+		// invisible-staleness risk to guard against there.
+		if ( 'read_isbn' === $suffix ) {
+			$current_isbn = get_post_meta( $post_id, Meta_Fields::PREFIX . 'read_isbn', true );
+			if ( $current_isbn !== $value ) {
+				delete_post_meta( $post_id, Meta_Fields::PREFIX . 'read_asin' );
+			}
+		}
+
+		$clean = in_array( $suffix, self::TEXTAREA_SUFFIXES, true )
+			? sanitize_textarea_field( $value )
+			: sanitize_text_field( $value );
+
+		update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, $clean );
 	}
 
 	/**
