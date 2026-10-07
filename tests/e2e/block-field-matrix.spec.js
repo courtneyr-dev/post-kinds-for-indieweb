@@ -71,6 +71,10 @@ const ROUND_TRIP_EXCEPTIONS = {
 	'post-kinds-indieweb/play-card': {
 		status: 'block.json enum (playing/completed/abandoned/backlog/wishlist); "Sample status value" is not a member, so core coerces it back to the schema default (playing) on save. Matches the BlockFieldRenderTest.php exception for the same attribute.',
 	},
+	'post-kinds-indieweb/rsvp-card': {
+		locationVisibility:
+			'block.json enum (private/public); "Sample locationVisibility value" is not a member, so core coerces it back to the schema default (private) on save. Matches the BlockFieldRenderTest.php exception for the same attribute.',
+	},
 };
 
 // Attributes whose sample never appears verbatim in the front-end render,
@@ -131,6 +135,8 @@ const RENDER_EXCEPTIONS = {
 			'rendered as a <time> only after strtotime() parses it; the non-date sample fails the parse gate by design',
 		eventEnd:
 			'rendered as a dt-end <data> only after strtotime() parses it, same gate as eventStart',
+		eventLocation:
+			"privacy-aware by design (#251): prints only when the card's locationVisibility and the post's _pkiw_rsvp_location_privacy are both public, for logged-in editors too; the sample leaves both private. Matches the BlockFieldRenderTest.php exception for the same attribute.",
 	},
 	'post-kinds-indieweb/event-card': {
 		eventStart:

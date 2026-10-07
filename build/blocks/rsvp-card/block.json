@@ -24,6 +24,11 @@
         "eventLocation": {
             "type": "string"
         },
+        "locationVisibility": {
+            "type": "string",
+            "enum": ["private", "public"],
+            "default": "private"
+        },
         "eventDescription": {
             "type": "string"
         },
