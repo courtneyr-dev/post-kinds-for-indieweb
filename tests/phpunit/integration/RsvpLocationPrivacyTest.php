@@ -58,6 +58,14 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	 */
 	private $clock = 'time';
 
+	/**
+	 * The time start() read first in this test. Every card a test builds
+	 * uses it, so the stored card and the expected card share one minute.
+	 *
+	 * @var int|null
+	 */
+	private ?int $now = null;
+
 	public function set_up(): void {
 		parent::set_up();
 		// The test framework wipes registered meta between tests.
@@ -80,7 +88,9 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	private function start( string $when ): string {
 		$offset = 'past' === $when ? -30 * DAY_IN_SECONDS : 30 * DAY_IN_SECONDS;
 
-		return gmdate( 'Y-m-d\TH:i', ( $this->clock )() + $offset );
+		$this->now ??= ( $this->clock )();
+
+		return gmdate( 'Y-m-d\TH:i', $this->now + $offset );
 	}
 
 	/**
