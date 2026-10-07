@@ -264,9 +264,11 @@ function untitled_fallback_name( \WP_Post $post ): array {
 /**
  * Name a title-less post for lists and Stream cards.
  *
- * Citation identity wins for response kinds, followed by visible kind
- * content when requested, then the kind label and publication date. A
- * citation name that is a URL counts as no name, so its host prints.
+ * Citation identity wins for response kinds, followed, when requested,
+ * by the weather reading or a note or question's first 25 words, then the
+ * kind label and publication date. A post with no kind term has no
+ * content name. A citation name that is a URL counts as no name, so its
+ * host prints.
  *
  * @since 1.9.0
  *
@@ -345,7 +347,7 @@ function untitled_name( \WP_Post $post, bool $from_content = true ): string {
 		}
 	}
 
-	if ( $from_content && in_array( $kind, [ '', 'note', 'question' ], true ) ) {
+	if ( $from_content && in_array( $kind, [ 'note', 'question' ], true ) ) {
 		$thought = '' !== trim( (string) $post->post_excerpt )
 			? (string) $post->post_excerpt
 			: excerpt_remove_blocks( strip_shortcodes( (string) $post->post_content ) );
