@@ -42,9 +42,9 @@ $pkiw_cover_html = '';
 if ( ! $pkiw_embed && $pkiw_cover_image ) {
 	$pkiw_cover_alt_text = $pkiw_cover_alt ? $pkiw_cover_alt : $pkiw_track_title . ' — ' . $pkiw_artist_name;
 	// A cover in this site's uploads prints as its media library image, so it
-	// gets core's srcset, sizes, width and height; at full size its src, and
-	// so the u-photo, stays the stored URL. Any other URL is a hotlink and
-	// prints as stored.
+	// gets core's srcset, sizes, width and height. At full size its src, and
+	// so the u-photo, is the library image's current file, as in
+	// kind_picture(). Any other URL is a hotlink and prints as stored.
 	$pkiw_cover_id = \PKIW\is_upload_url( (string) $pkiw_cover_image ) ? \PKIW\cover_local_copy( (int) get_the_ID(), (string) $pkiw_cover_image ) : 0;
 	if ( $pkiw_cover_id > 0 ) {
 		$pkiw_cover_html = wp_get_attachment_image(
