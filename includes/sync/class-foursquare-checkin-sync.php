@@ -448,7 +448,7 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 	 *
 	 * The check-in ID goes to `_pkiw_checkin_foursquare_id`, written by
 	 * Checkin_Sync_Base::import_checkins(), and the venue ID to
-	 * `_pkiw_checkin_venue_id`. Until #284 this method wrote the venue ID to
+	 * `_pkiw_checkin_venue_id`. Before issue 284 this method wrote the venue ID to
 	 * the check-in ID key and the base class overwrote it in the same
 	 * request, so the key has held a check-in ID at rest on every post
 	 * since 1662ff8 and needs no upgrade step. Imports from before 3da920d
