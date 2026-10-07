@@ -208,6 +208,7 @@
 
 .pk-embed--photo > img {
 	aspect-ratio: 16 / 10;
+	height: auto;
 	object-fit: cover;
 }
 
