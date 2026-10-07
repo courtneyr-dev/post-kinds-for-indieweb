@@ -232,6 +232,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 
 		[ $author_id ] = \PKIW\Import_Manager::resolve_author_for_post_type( 'post' );
 		if ( 0 === $author_id ) {
+			$this->log( 'No user can author imported posts', [ 'checkin' => $checkin_id ] );
 			return false;
 		}
 
