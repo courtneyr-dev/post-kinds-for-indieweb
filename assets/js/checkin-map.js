@@ -4,6 +4,11 @@
  * Draws the pins the server printed on `.pkiw-checkin-archive__map` and
  * links each pin to its list entry. The list works without this script.
  *
+ * A map marked data-pkiw-consent="required" (the
+ * pkiw_checkin_map_requires_consent filter) loads no tiles until a
+ * `pkiw:map-consent` event on document, at any time after this script
+ * loads, or window.pkiwMapConsent === true.
+ *
  * Keyboard: zoom buttons come before the pins in tab order. Enter on a pin
  * moves focus to its list entry. Each list number becomes a button that
  * centers the map on its pin, so nothing needs a drag. Nearby pins merge
@@ -127,6 +132,7 @@
 		} );
 
 		const markerByEntry = {};
+		const markers = [];
 
 		function entryEl( id ) {
 			return document.getElementById( 'pkiw-checkin-entry-' + id );
@@ -161,6 +167,8 @@
 				riseOnHover: true,
 			} );
 			marker.pkiwCount = pin.ids.length;
+			marker.pkiwNumber = pin.numbers[ 0 ];
+			markers.push( marker );
 
 			const goToEntry = () => {
 				markEntries( pin.ids );
@@ -190,6 +198,101 @@
 		} );
 
 		map.addLayer( group );
+
+		markers.sort( ( a, b ) => a.pkiwNumber - b.pkiwNumber );
+
+		// Pins take focus in list order. markercluster adds their elements
+		// in its own order, so they go back in order after every redraw. A
+		// cluster sits where its first check-in in the list would.
+		function orderPins() {
+			// Mid-animation, moving a pin would cut its transition short;
+			// animationend runs this again.
+			if (
+				map
+					.getPane( 'mapPane' )
+					.classList.contains( 'leaflet-cluster-anim' )
+			) {
+				return;
+			}
+
+			const pane = map.getPane( 'markerPane' );
+			const icons = [];
+			markers.forEach( ( marker ) => {
+				const visible = group.getVisibleParent( marker );
+				const icon = visible && visible.getElement();
+				if (
+					icon &&
+					icon.parentNode === pane &&
+					! icons.includes( icon )
+				) {
+					icons.push( icon );
+				}
+			} );
+
+			const current = Array.prototype.filter.call(
+				pane.children,
+				( child ) => icons.includes( child )
+			);
+			if ( current.every( ( icon, i ) => icon === icons[ i ] ) ) {
+				return;
+			}
+
+			// Moving the focused element drops its focus; give it back.
+			const doc = el.ownerDocument;
+			const focused = doc.activeElement;
+			icons.forEach( ( icon ) => pane.appendChild( icon ) );
+			if ( focused !== doc.activeElement && icons.includes( focused ) ) {
+				focused.focus( { preventScroll: true } );
+			}
+		}
+
+		// Under reduced motion markercluster spreads and folds a cluster with
+		// no animationend and no moveend. These run before the keyboard
+		// handler's own 'spiderfied' listener below.
+		map.on( 'moveend', orderPins );
+		group.on( 'animationend', orderPins );
+		group.on( 'spiderfied', orderPins );
+		group.on( 'unspiderfied', orderPins );
+		orderPins();
+
+		// The pin takes focus, or the cluster now holding it, or the map
+		// region when neither is drawn.
+		function focusPin( marker ) {
+			const visible = group.getVisibleParent( marker );
+			const icon = visible && visible.getElement();
+			( icon && icon.isConnected ? icon : el ).focus();
+		}
+
+		// leaflet.markercluster 1.4.1 zooms a cluster on click only. Enter
+		// and Space zoom in too, or spread the cluster at the maximum zoom.
+		// The cluster's element goes away, so focus moves to its first
+		// check-in in the list.
+		group.on( 'clusterkeypress', ( event ) => {
+			const key = event.originalEvent && event.originalEvent.key;
+			if ( 'Enter' !== key && ' ' !== key ) {
+				return;
+			}
+			event.originalEvent.preventDefault();
+
+			const cluster = event.layer;
+			const first = cluster
+				.getAllChildMarkers()
+				.reduce( ( a, b ) => ( b.pkiwNumber < a.pkiwNumber ? b : a ) );
+
+			if ( map.getZoom() >= map.getMaxZoom() ) {
+				const icon = first.getElement();
+				if ( icon && icon.isConnected ) {
+					icon.focus();
+					return;
+				}
+				group.once( 'spiderfied', () => focusPin( first ) );
+				cluster.spiderfy();
+				return;
+			}
+
+			map.once( 'moveend', () => focusPin( first ) );
+			cluster.zoomToBounds( { padding: [ 48, 48 ] } );
+		} );
 
 		// Each list number becomes the control that moves the map to its pin.
 		root.querySelectorAll(
@@ -223,13 +326,36 @@
 		} );
 	}
 
+	// A consent tool can answer before the page finishes loading, so the
+	// listener goes on now. Maps found waiting draw when it fires.
+	let consented = false;
+	const waiting = [];
+	document.addEventListener(
+		'pkiw:map-consent',
+		() => {
+			consented = true;
+			waiting.splice( 0 ).forEach( ( el ) => initMap( el ) );
+		},
+		{ once: true }
+	);
+
 	function init() {
 		if ( typeof L === 'undefined' || ! L.markerClusterGroup ) {
 			return;
 		}
 		document
 			.querySelectorAll( '.pkiw-checkin-archive__map[data-pins]' )
-			.forEach( initMap );
+			.forEach( ( el ) => {
+				if (
+					'required' === el.dataset.pkiwConsent &&
+					true !== window.pkiwMapConsent &&
+					! consented
+				) {
+					waiting.push( el );
+					return;
+				}
+				initMap( el );
+			} );
 	}
 
 	if ( document.readyState === 'loading' ) {

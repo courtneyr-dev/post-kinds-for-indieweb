@@ -647,16 +647,97 @@ class Taxonomy {
 	}
 
 	/**
-	 * Assign the kind term matching the post's first kind card block.
+	 * Resolve the kind this plugin would assign to a post automatically.
+	 *
+	 * The first kind card decides. A post with no card, or whose first card
+	 * is a listen card, becomes a presentation when Presentation_Classifier
+	 * finds a deck, a talk recording or authored presentation fields; a
+	 * recording embed such as YouTube never counts, so a listen-card post
+	 * with only a video resolves to listen. Other cards are an explicit
+	 * statement of kind and keep winning over a deck.
+	 *
+	 * @param \WP_Post $post Post object.
+	 * @return string|null Kind slug, or null when nothing implies a kind.
+	 */
+	public static function resolve_auto_kind( \WP_Post $post ): ?string {
+		$kind = self::get_first_block_kind( (string) $post->post_content );
+
+		if ( ( null === $kind || 'listen' === $kind ) && Presentation_Classifier::is_presentation( $post ) ) {
+			return Presentation_Classifier::KIND;
+		}
+
+		return $kind;
+	}
+
+	/**
+	 * Whether the automatic sync may set a kind on a post.
+	 *
+	 * Manual choices always win: the `note` default_term core stamps on
+	 * unselected posts is the only term treated as "not chosen", plus
+	 * whatever the sync itself set earlier (recorded in AUTO_KIND_META_KEY)
+	 * so a changed first block re-syncs. Shared by the save hook and
+	 * `wp postkind presentation backfill` so the two can't drift.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $kind    Kind slug the sync wants to set.
+	 * @return string 'same' when the post already has the kind, 'protected'
+	 *                when a person (or an older plugin) picked another kind,
+	 *                'eligible' otherwise.
+	 */
+	public function auto_kind_status( int $post_id, string $kind ): string {
+		$current = $this->get_post_kind( $post_id );
+		if ( ! $current instanceof \WP_Term ) {
+			return 'eligible';
+		}
+
+		if ( $current->slug === $kind ) {
+			return 'same';
+		}
+
+		$auto_assigned = get_post_meta( $post_id, self::AUTO_KIND_META_KEY, true );
+		if ( 'note' !== $current->slug && $current->slug !== $auto_assigned ) {
+			// A person picked this kind — never override it.
+			return 'protected';
+		}
+
+		return 'eligible';
+	}
+
+	/**
+	 * Set a kind automatically and record that the sync set it.
+	 *
+	 * Writes the term and AUTO_KIND_META_KEY only; never updates the post.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $kind    Kind slug.
+	 * @return bool True when the term was set.
+	 */
+	public function assign_auto_kind( int $post_id, string $kind ): bool {
+		if ( ! $this->set_post_kind( $post_id, $kind ) ) {
+			return false;
+		}
+
+		update_post_meta( $post_id, self::AUTO_KIND_META_KEY, $kind );
+
+		return true;
+	}
+
+	/**
+	 * Assign the kind term the post's content implies.
 	 *
 	 * A post whose first block is a kind card (eat-card, listen-card, …)
 	 * should carry the matching kind term without the author also having
-	 * to pick it in the taxonomy panel. Manual choices always win: the
-	 * `note` default_term core stamps on unselected posts is the only
-	 * term treated as "not chosen", plus whatever this method itself set
-	 * earlier (recorded in AUTO_KIND_META_KEY) so a changed first block
-	 * re-syncs. The block editor sends explicit panel picks with the
-	 * REST request, and those are applied before this hook fires.
+	 * to pick it in the taxonomy panel, and a post with a deck or talk
+	 * recording should carry `presentation` (see resolve_auto_kind()).
+	 * auto_kind_status() keeps a kind a person picked. The block editor
+	 * sends explicit panel picks with the REST request, and those are
+	 * applied before this hook fires.
+	 *
+	 * When the content stops implying a kind, the stored term stays: a post
+	 * with no card that loses its deck keeps `presentation`, the way a post
+	 * that loses its card keeps that card's kind. A listen-card post that
+	 * loses its deck goes back to `listen`, because the card still implies
+	 * a kind and the auto marker shows the sync set `presentation`.
 	 *
 	 * @param int      $post_id Post ID.
 	 * @param \WP_Post $post    Post object.
@@ -671,27 +752,16 @@ class Taxonomy {
 			return;
 		}
 
-		$kind = self::get_first_block_kind( $post->post_content );
+		$kind = self::resolve_auto_kind( $post );
 		if ( null === $kind || ! $this->is_valid_kind( $kind ) ) {
 			return;
 		}
 
-		$current = $this->get_post_kind( $post_id );
-		if ( $current instanceof \WP_Term ) {
-			if ( $current->slug === $kind ) {
-				return;
-			}
-
-			$auto_assigned = get_post_meta( $post_id, self::AUTO_KIND_META_KEY, true );
-			if ( 'note' !== $current->slug && $current->slug !== $auto_assigned ) {
-				// A person picked this kind — never override it.
-				return;
-			}
+		if ( 'eligible' !== $this->auto_kind_status( $post_id, $kind ) ) {
+			return;
 		}
 
-		if ( $this->set_post_kind( $post_id, $kind ) ) {
-			update_post_meta( $post_id, self::AUTO_KIND_META_KEY, $kind );
-		}
+		$this->assign_auto_kind( $post_id, $kind );
 	}
 
 	/**

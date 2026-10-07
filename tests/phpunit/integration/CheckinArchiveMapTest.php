@@ -207,6 +207,25 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'tile.openstreetmap.org', $html );
 	}
 
+	public function test_map_loads_without_waiting_for_consent_by_default(): void {
+		$html = $this->render( [ $this->checkin( 'pubone', 'public', 40.111111, -75.111111 ) ] );
+
+		$this->assertStringContainsString( 'class="pkiw-checkin-archive__map"', $html );
+		$this->assertStringNotContainsString( 'data-pkiw-consent', $html );
+	}
+
+	public function test_consent_filter_marks_the_map_and_keeps_the_list(): void {
+		add_filter( 'pkiw_checkin_map_requires_consent', '__return_true' );
+
+		$post = $this->checkin( 'pubone', 'public', 40.111111, -75.111111 );
+		$html = $this->render( [ $post ] );
+
+		$this->assertMatchesRegularExpression( '/<div\s+class="pkiw-checkin-archive__map"[^>]*\sdata-pkiw-consent="required"[^>]*\shidden\s*>/s', $html );
+		$this->assertSame( 1, substr_count( $html, 'data-pkiw-consent' ), 'Only the map waits; the list does not.' );
+		$this->assertStringContainsString( 'href="' . esc_url( get_permalink( $post ) ) . '"', $html );
+		$this->assertStringContainsString( 'data-label="Show Title pubone on map"', $html );
+	}
+
 	public function test_each_entry_parses_as_an_h_entry(): void {
 		$posts  = [
 			$this->checkin( 'pubone', 'public', 40.111111, -75.111111 ),
@@ -228,6 +247,78 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 		$this->assertSame( 24, Checkin_Map::template_per_page( '<!-- wp:post-kinds-indieweb/checkins-feed {"inherit":true} /-->' ) );
 		$this->assertSame( 0, Checkin_Map::template_per_page( '<!-- wp:post-kinds-indieweb/checkins-feed {"count":5} /-->' ) );
 		$this->assertSame( 0, Checkin_Map::template_per_page( '<!-- wp:paragraph --><p>x</p><!-- /wp:paragraph -->' ) );
+	}
+
+	public function test_editor_preview_of_an_inheriting_feed_prints_the_archive(): void {
+		// Same post date for all three, so the ID breaks the tie as on the archive.
+		$this->checkin( 'first', 'public', 40.111111, -75.111111 );
+		$this->checkin( 'second', 'approximate', 41.222222, -76.222222 );
+		$this->checkin( 'third', 'public', 43.444444, -78.444444 );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		// What the Site Editor's ServerSideRender asks for: no main query runs.
+		// rest_api_loaded() sets rest_route for the editor's HTTP request.
+		$GLOBALS['wp']->query_vars['rest_route'] = '/wp/v2/block-renderer/post-kinds-indieweb/checkins-feed';
+		$request                                 = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/post-kinds-indieweb/checkins-feed' );
+		$request->set_param( 'context', 'edit' );
+		$request->set_param(
+			'attributes',
+			[
+				'inherit' => true,
+				'count'   => 2,
+			]
+		);
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$html = (string) $response->get_data()['rendered'];
+
+		$this->assertStringContainsString( '<ul class="pkiw-checkin-archive__entries h-feed" role="list">', $html );
+		$this->assertMatchesRegularExpression( '/<h2 class="pkiw-checkin-archive__title p-name"><a class="u-url" href="[^"]+">Title third</', $html );
+		$this->assertStringContainsString( 'class="pkiw-checkin-archive__map"', $html );
+		// An editor sees every pin, approximate ones too, as on the front end.
+		$this->assertStringContainsString( '2 check-ins · 2 mapped', $html );
+		$this->assertLessThan( strpos( $html, 'Title second' ), strpos( $html, 'Title third' ) );
+		$this->assertStringNotContainsString( 'Title first', $html, 'The count attribute sets the page size, as on the archive.' );
+		$this->assertStringNotContainsString( 'checkins-feed__item', $html );
+	}
+
+	public function test_block_renderer_dispatched_inside_php_previews_the_archive(): void {
+		$this->checkin( 'first', 'public', 40.111111, -75.111111 );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		// WP-CLI or an abilities adapter calls rest_do_request() with no HTTP
+		// request, so rest_api_loaded() never set rest_route.
+		unset( $GLOBALS['wp']->query_vars['rest_route'] );
+		$request = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/post-kinds-indieweb/checkins-feed' );
+		$request->set_param( 'context', 'edit' );
+		$request->set_param( 'attributes', [ 'inherit' => true ] );
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertStringContainsString( 'Title first', (string) $response->get_data()['rendered'] );
+	}
+
+	public function test_rest_content_of_a_page_with_an_inheriting_feed_gets_no_stand_in(): void {
+		$this->checkin( 'first', 'public', 40.111111, -75.111111 );
+		$page_id = self::factory()->post->create(
+			[
+				'post_type'    => 'page',
+				'post_status'  => 'publish',
+				'post_content' => "<!-- wp:paragraph --><p>Above the feed</p><!-- /wp:paragraph -->\n\n<!-- wp:post-kinds-indieweb/checkins-feed {\"inherit\":true,\"count\":24} /-->",
+			]
+		);
+
+		// An outer block-renderer request that fetches the page from PHP: the
+		// route being dispatched decides, not the HTTP request's rest_route.
+		$GLOBALS['wp']->query_vars['rest_route'] = '/wp/v2/block-renderer/post-kinds-indieweb/checkins-feed';
+		$response                                = rest_do_request( new WP_REST_Request( 'GET', '/wp/v2/pages/' . $page_id ) );
+
+		$this->assertSame( 200, $response->get_status() );
+		$html = (string) $response->get_data()['content']['rendered'];
+
+		$this->assertStringContainsString( '>Above the feed</p>', $html );
+		$this->assertStringNotContainsString( 'Title first', $html, 'Only the block renderer stands in the newest check-ins.' );
 	}
 
 	public function test_editor_sees_pins_for_private_checkins(): void {

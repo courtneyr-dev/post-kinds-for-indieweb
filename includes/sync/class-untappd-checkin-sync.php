@@ -230,6 +230,12 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 			return false;
 		}
 
+		[ $author_id ] = \PKIW\Import_Manager::resolve_author_for_post_type( 'post' );
+		if ( 0 === $author_id ) {
+			$this->log( 'No user can author imported posts', [ 'checkin' => $checkin_id ] );
+			return false;
+		}
+
 		$settings    = get_option( 'pkiw_settings', [] );
 		$post_status = $settings['checkin_import_status'] ?? 'publish';
 
@@ -252,6 +258,7 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 			'post_content' => $content,
 			'post_status'  => $post_status,
 			'post_type'    => 'post',
+			'post_author'  => $author_id,
 			'post_date'    => gmdate( 'Y-m-d H:i:s', strtotime( $external_checkin['created_at'] ?? 'now' ) ),
 		];
 

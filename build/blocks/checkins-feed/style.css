@@ -177,7 +177,7 @@
 
 @media (min-width: 782px) {
 
-	.pkiw-checkin-archive:has(.pkiw-checkin-archive__map) {
+	.pkiw-checkin-archive:has(.pkiw-checkin-archive__map:not([hidden])) {
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 		align-items: stretch;
 	}

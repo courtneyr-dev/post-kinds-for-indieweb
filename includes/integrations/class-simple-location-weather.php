@@ -24,9 +24,10 @@
  *   option (class-weather-data.php:477, :497), converted by
  *   Weather_Provider::metric_to_imperial() (class-weather-provider.php:639).
  *
- * Simple Location's own inline weather output is left alone. A site that
- * shows both can turn Simple Location's off with its
- * `simple_location_display_defaults` filter (`weather => false`).
+ * register() turns Simple Location's inline weather off on a weather post
+ * through simple_location_display_defaults, inside the_content, only when
+ * that render already shows the post's own weather. See
+ * filter_display_defaults().
  *
  * @package PKIW
  * @since   1.9.0
@@ -68,6 +69,122 @@ final class Simple_Location_Weather {
 		'visibility',
 		'uv',
 	];
+
+	/**
+	 * The Stream card block, whose render prints Post Kinds' weather line
+	 * for a weather post (functions-stream-card.php:404-406).
+	 */
+	private const STREAM_CARD_BLOCK = 'post-kinds-indieweb/stream-card';
+
+	/**
+	 * The current the_content pass: its post and whether its content
+	 * carries a p-weather. Set at priority 11, just before Simple Location
+	 * appends its line at 12.
+	 *
+	 * @var array{post: int, weather: bool}|null
+	 */
+	private static ?array $content_pass = null;
+
+	/**
+	 * Posts whose weather a kind-meta binding printed during this request.
+	 *
+	 * @var array<int, true>
+	 */
+	private static array $bound = [];
+
+	/**
+	 * Hook Simple Location's display defaults.
+	 *
+	 * @return void
+	 */
+	public static function register(): void {
+		add_filter( 'the_content', [ self::class, 'note_content_weather' ], 11 );
+		add_filter( 'simple_location_display_defaults', [ self::class, 'filter_display_defaults' ] );
+	}
+
+	/**
+	 * Record whether this the_content pass carries weather of its own.
+	 *
+	 * A p-weather class in the content is Micropub's authored weather
+	 * paragraph (class-micropub-content-builder.php:932-938) or Post Kinds'
+	 * own render() markup. The content passes through unchanged.
+	 *
+	 * @param mixed $content Post content.
+	 * @return mixed
+	 */
+	public static function note_content_weather( $content ) {
+		self::$content_pass = [
+			'post'    => (int) get_the_ID(),
+			'weather' => is_string( $content )
+				&& 1 === preg_match( '/\bclass\s*=\s*["\'][^"\']*(?<![\w-])p-weather(?![\w-])/i', $content ),
+		];
+
+		return $content;
+	}
+
+	/**
+	 * Turn off Simple Location's inline weather when it would repeat a
+	 * weather post's own.
+	 *
+	 * Simple Location appends its location line, weather included, to
+	 * the_content at priority 12 for get_the_ID() (class-geo-data.php:49-51,
+	 * :799-805) and reads its display defaults from this filter (:991). Its
+	 * weather goes only when the render already shows the post's weather;
+	 * on a weather post with no weather of its own, Simple Location's line
+	 * is the only reading and stays. The location part always stays.
+	 *
+	 * @param mixed $defaults Simple Location display defaults.
+	 * @return mixed
+	 */
+	public static function filter_display_defaults( $defaults ) {
+		if ( ! is_array( $defaults ) || ! doing_filter( 'the_content' ) || ! self::is_active() ) {
+			return $defaults;
+		}
+
+		$post_id = (int) get_the_ID();
+		$post    = $post_id ? get_post( $post_id ) : null;
+		if ( ! $post instanceof \WP_Post || 'weather' !== \PKIW\get_post_kind_slug( $post ) ) {
+			return $defaults;
+		}
+
+		if ( self::render_shows_weather( $post_id ) ) {
+			$defaults['weather'] = false;
+		}
+
+		return $defaults;
+	}
+
+	/**
+	 * Whether the current render already shows the post's own weather.
+	 *
+	 * True when this the_content pass carries a p-weather, when a
+	 * kind-meta weather binding printed the post's weather earlier in the
+	 * request (in the content, which do_blocks renders at priority 9, or in
+	 * a template part above it), or when the_content runs inside the Stream
+	 * card (the excerpt, functions-stream-card.php:327) and the card prints
+	 * Post Kinds' weather line.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	private static function render_shows_weather( int $post_id ): bool {
+		if ( null !== self::$content_pass && $post_id === self::$content_pass['post'] && self::$content_pass['weather'] ) {
+			return true;
+		}
+
+		if ( isset( self::$bound[ $post_id ] ) ) {
+			return true;
+		}
+
+		// Core holds the block whose render callback is running
+		// (WP_Block::render(), class-wp-block.php:592-598).
+		$block = class_exists( 'WP_Block_Supports' ) ? \WP_Block_Supports::$block_to_render : null;
+		if ( is_array( $block ) && self::STREAM_CARD_BLOCK === ( $block['blockName'] ?? '' ) ) {
+			return '' !== self::render( $post_id );
+		}
+
+		return false;
+	}
 
 	/**
 	 * Whether Simple Location's weather API is loaded.
@@ -219,6 +336,10 @@ final class Simple_Location_Weather {
 	 * display does (class-weather-data.php:483-490); other values keep up
 	 * to two decimals (Weather_Provider::markup_value()'s default).
 	 *
+	 * The kind-meta weather bindings call this (class-block-bindings.php:565),
+	 * so a value returned here is the post's weather printed on the page,
+	 * which filter_display_defaults() reads.
+	 *
 	 * @param string $field   summary, condition, code, or a numeric field.
 	 * @param int    $post_id Post ID.
 	 * @return string|null Null when the value isn't available to this viewer.
@@ -229,7 +350,12 @@ final class Simple_Location_Weather {
 			return null;
 		}
 
-		return self::format_field( $field, $observation );
+		$value = self::format_field( $field, $observation );
+		if ( null !== $value ) {
+			self::$bound[ $post_id ] = true;
+		}
+
+		return $value;
 	}
 
 	/**
