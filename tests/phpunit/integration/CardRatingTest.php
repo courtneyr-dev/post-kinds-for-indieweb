@@ -53,6 +53,35 @@ final class CardRatingTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Beside visible "Rated N of 5" text, the decorative stars stay out of
+	 * the accessibility tree, so the rating is announced once. p-rating
+	 * stays for parsers (#232 PL8).
+	 */
+	public function test_decorative_rating_hides_the_stars_and_keeps_p_rating(): void {
+		$html = \PKIW\card_rating_html( 3.5, 5, true );
+
+		$this->assertStringContainsString( '<div class="pk-stars" aria-hidden="true">', $html );
+		$this->assertStringNotContainsString( 'role="img"', $html );
+		$this->assertStringNotContainsString( 'aria-label', $html );
+		$this->assertSame( 1, substr_count( $html, '<svg class="half"' ) );
+		$this->assertStringContainsString( '<data class="p-rating" value="3.5" hidden></data>', $html );
+		$this->assertSame( '', \PKIW\card_rating_html( 0.0, 5, true ) );
+
+		$parsed = \Mf2\parse( '<div class="h-cite">' . $html . '</div>' );
+		$this->assertSame( [ '3.5' ], $parsed['items'][0]['properties']['rating'] );
+	}
+
+	/**
+	 * The default variant still names the stars with role="img".
+	 */
+	public function test_the_default_rating_still_names_the_stars(): void {
+		$html = \PKIW\card_rating_html( 4 );
+
+		$this->assertStringContainsString( '<div class="pk-stars" role="img" aria-label="Rated 4 of 5">', $html );
+		$this->assertStringNotContainsString( 'aria-hidden', $html );
+	}
+
+	/**
 	 * A rating above best prints best in the label and in p-rating, so the
 	 * parsed value never disagrees with the stars. The comic card has
 	 * clamped both since #228.

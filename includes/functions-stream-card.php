@@ -254,6 +254,12 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 	// it got rendered — shares one heading level in the outline.
 	$heading_level = max( 2, min( 4, (int) ( $attributes['headingLevel'] ?? 2 ) ) );
 
+	// A password-protected post shows its title link and nothing else. Its
+	// card would otherwise print the review, rating, cover and links.
+	if ( post_password_required( $post ) ) {
+		return render_protected_stream_card( $post, $heading_level );
+	}
+
 	// Micro-post: the body is nothing but Post Kinds card block(s). Render
 	// it exactly as it renders today — this is the Enola-Holmes shape.
 	if ( content_is_kind_card_only( (string) $post->post_content ) ) {
@@ -298,6 +304,187 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 	// a compact card with the title, date, featured image, and excerpt —
 	// never the full body. Every Stream item reads as a card.
 	return render_generic_stream_card( $post, $attributes );
+}
+
+/**
+ * The Stream card for a password-protected post: its title, linked to the
+ * post, and nothing from its body or its kind's facts.
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post          Protected post.
+ * @param int      $heading_level Clamped heading level (2–4).
+ * @return string Card HTML.
+ */
+function render_protected_stream_card( \WP_Post $post, int $heading_level ): string {
+	$kind_slug = get_post_kind_slug( $post );
+	// get_the_title() prefixes "Protected: " even to an empty title, so the
+	// stored title decides whether the post has a name of its own.
+	$has_title = '' !== trim( $post->post_title );
+	$title     = $has_title ? trim( get_the_title( $post ) ) : untitled_name( $post, false );
+
+	return '<article class="pk-card pk-card--stream pk-card--protected k-' . esc_attr( '' !== $kind_slug ? $kind_slug : 'note' ) . ' h-entry">'
+		. '<h' . $heading_level . ' class="' . ( $has_title ? 'pk-title p-name' : 'pk-title' ) . '">'
+		. '<a class="u-url" href="' . esc_url( (string) get_permalink( $post ) ) . '">' . esc_html( $title ) . '</a>'
+		. '</h' . $heading_level . '></article>';
+}
+
+/**
+ * The hidden citation each kind adds to its generic Stream card.
+ *
+ * A kind's card block carries its citation (`u-play-of`, `u-read-of`), but
+ * a post whose body holds more than cards, or no card at all, renders the
+ * generic card instead. These callbacks give that card the same citation
+ * from the post's facts, so the entry still parses with it.
+ *
+ * @since 1.9.0
+ *
+ * @return array<string, callable> Kind slug => callback taking the post's kind_facts() and
+ *                                 the post, and returning hidden h-cite HTML or ''.
+ */
+function stream_card_kind_cite_map(): array {
+	$map = [
+		'play' => __NAMESPACE__ . '\\stream_card_play_cite',
+		'read' => __NAMESPACE__ . '\\stream_card_read_cite',
+	];
+
+	/**
+	 * Filters the hidden citation callbacks for generic Stream cards.
+	 *
+	 * Each callback receives the post's kind_facts() and the post, and
+	 * returns hidden h-cite markup, or '' when the facts are empty.
+	 * hidden_cite_html() builds that markup.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param array<string, callable> $map Kind slug => callback.
+	 */
+	return (array) apply_filters( 'pkiw_stream_card_kind_cite', $map );
+}
+
+/**
+ * The hidden citation for a post's generic Stream card.
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post Post.
+ * @return string Hidden h-cite HTML, or '' when the kind has none or its facts are empty.
+ */
+function stream_card_kind_cite( \WP_Post $post ): string {
+	$kind = get_post_kind_slug( $post );
+	$map  = stream_card_kind_cite_map();
+	if ( '' === $kind || ! isset( $map[ $kind ] ) || ! is_callable( $map[ $kind ] ) ) {
+		return '';
+	}
+
+	return (string) call_user_func( $map[ $kind ], kind_facts( $post->ID ), $post );
+}
+
+/**
+ * Hidden h-cite markup for an entry's citation property.
+ *
+ * Each part is a property class and its value or values. `p-author`
+ * prints as a nested h-card with that name; every other class prints as
+ * data, with `u-*` values escaped as URLs. A value that is empty, or
+ * that esc_url() empties, is dropped.
+ *
+ * @since 1.9.0
+ *
+ * @param string                         $property Entry property class, e.g. `u-play-of`.
+ * @param array<string, string|string[]> $parts    Property class => value or values.
+ * @return string Hidden span, or '' when every value is empty.
+ */
+function hidden_cite_html( string $property, array $parts ): string {
+	$inner = '';
+	foreach ( $parts as $class => $values ) {
+		foreach ( (array) $values as $value ) {
+			$value = trim( (string) $value );
+			if ( '' === $value ) {
+				continue;
+			}
+			if ( 'p-author' === $class ) {
+				$inner .= '<span class="p-author h-card"><data class="p-name" value="' . esc_attr( $value ) . '"></data></span>';
+				continue;
+			}
+			// esc_url() empties a disallowed protocol, and php-mf2 reads an
+			// empty u-* value as the page URL, so skip what escaping empties.
+			$escaped = str_starts_with( $class, 'u-' ) ? esc_url( $value ) : esc_attr( $value );
+			if ( '' === $escaped ) {
+				continue;
+			}
+			$inner .= '<data class="' . esc_attr( $class ) . '" value="' . $escaped . '"></data>';
+		}
+	}
+
+	return '' === $inner ? '' : '<span class="pk-kind-cite h-cite ' . esc_attr( $property ) . '" hidden>' . $inner . '</span>';
+}
+
+/**
+ * A play's citation: the game's name, its URL and a uid per provider ID,
+ * as the play-card prints them.
+ *
+ * @since 1.9.0
+ *
+ * @param array<string, mixed> $facts Play facts: `title`, `game_url`, `bgg_id`, `rawg_id`, `steam_id`.
+ * @param \WP_Post             $post  Post. Unused.
+ * @return string Hidden h-cite HTML, or ''.
+ */
+function stream_card_play_cite( array $facts, \WP_Post $post ): string { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Map callback signature.
+	$uids = [];
+	foreach (
+		[
+			'bgg_id'   => 'https://boardgamegeek.com/boardgame/',
+			'rawg_id'  => 'https://rawg.io/games/',
+			'steam_id' => 'https://store.steampowered.com/app/',
+		] as $key => $base
+	) {
+		$id = is_scalar( $facts[ $key ] ?? null ) ? trim( (string) $facts[ $key ] ) : '';
+		if ( '' !== $id ) {
+			$uids[] = $base . $id;
+		}
+	}
+
+	return hidden_cite_html(
+		'u-play-of',
+		[
+			'p-name' => is_scalar( $facts['title'] ?? null ) ? (string) $facts['title'] : '',
+			'u-url'  => is_scalar( $facts['game_url'] ?? null ) ? (string) $facts['game_url'] : '',
+			'u-uid'  => $uids,
+		]
+	);
+}
+
+/**
+ * A read's citation: the book's name, author and URL, as the read-card
+ * prints them.
+ *
+ * Kind_Facts has no read reader yet, so until one registers, the title,
+ * author and URL the read card syncs to meta stand in, behind the same
+ * visibility check kind_facts() applies.
+ *
+ * @since 1.9.0
+ *
+ * @param array<string, mixed> $facts Read facts: `title`, `author`, `url`.
+ * @param \WP_Post             $post  Post.
+ * @return string Hidden h-cite HTML, or ''.
+ */
+function stream_card_read_cite( array $facts, \WP_Post $post ): string {
+	if ( [] === $facts && null === Kind_Facts::reader( 'read' ) && Kind_Facts::can_show( $post ) ) {
+		$facts = [
+			'title'  => get_post_meta( $post->ID, Meta_Fields::PREFIX . 'read_title', true ),
+			'author' => get_post_meta( $post->ID, Meta_Fields::PREFIX . 'read_author', true ),
+			'url'    => get_post_meta( $post->ID, Meta_Fields::PREFIX . 'read_url', true ),
+		];
+	}
+
+	return hidden_cite_html(
+		'u-read-of',
+		[
+			'p-name'   => is_scalar( $facts['title'] ?? null ) ? (string) $facts['title'] : '',
+			'p-author' => is_scalar( $facts['author'] ?? null ) ? (string) $facts['author'] : '',
+			'u-url'    => is_scalar( $facts['url'] ?? null ) ? (string) $facts['url'] : '',
+		]
+	);
 }
 
 /**
@@ -427,6 +614,9 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	if ( '' !== $excerpt ) {
 		$out .= '<p class="pk-excerpt p-summary">' . esc_html( $excerpt ) . '</p>';
 	}
+
+	// The kind's citation, which a card block would otherwise carry.
+	$out .= stream_card_kind_cite( $post );
 
 	$out .= '<div class="pk-meta"><a class="pk-link" href="' . $permalink . '">'
 		. esc_html__( 'Read more', 'post-kinds-for-indieweb-in-block-themes' )
