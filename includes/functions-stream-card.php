@@ -318,11 +318,10 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
  */
 function render_protected_stream_card( \WP_Post $post, int $heading_level ): string {
 	$kind_slug = get_post_kind_slug( $post );
-	$title     = trim( get_the_title( $post ) );
-	$has_title = '' !== $title;
-	if ( ! $has_title ) {
-		$title = untitled_name( $post, false );
-	}
+	// get_the_title() prefixes "Protected: " even to an empty title, so the
+	// stored title decides whether the post has a name of its own.
+	$has_title = '' !== trim( $post->post_title );
+	$title     = $has_title ? trim( get_the_title( $post ) ) : untitled_name( $post, false );
 
 	return '<article class="pk-card pk-card--stream pk-card--protected k-' . esc_attr( '' !== $kind_slug ? $kind_slug : 'note' ) . ' h-entry">'
 		. '<h' . $heading_level . ' class="' . ( $has_title ? 'pk-title p-name' : 'pk-title' ) . '">'
