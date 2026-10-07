@@ -1950,7 +1950,9 @@ class Meta_Fields {
 	}
 
 	/**
-	 * Display-context post_content without private acquisition cost.
+	 * Display-context post_content without the private text cards saved as
+	 * static HTML hold: acquisition cost and, from an RSVP card saved before
+	 * #32, its event location (strip_private_card_text(), issue 251).
 	 *
 	 * Core's sanitize_post_field() runs the `post_content` filter for
 	 * display reads, such as get_post_field( 'post_content', $post ) and
@@ -1958,8 +1960,8 @@ class Meta_Fields {
 	 * summary and preview from post_content and has no filter of its own
 	 * (ActivityPub 9.3.1 includes/functions-post.php:363). The edit, db and
 	 * raw contexts skip this filter, so the block editor, saves and exports
-	 * get stored content. Only the static subtitle goes; the card keeps its
-	 * cost attribute. There's no editor override, for the reason
+	 * get stored content. Only the static HTML goes; each card keeps its
+	 * block attributes. There's no editor override, for the reason
 	 * acquisition_cost_visible() gives.
 	 *
 	 * @param mixed $value   Post content.
@@ -1967,7 +1969,7 @@ class Meta_Fields {
 	 * @return mixed
 	 */
 	public static function display_content_without_private_cost( $value, $post_id = 0 ) {
-		return is_string( $value ) ? self::strip_private_cost( $value, (int) $post_id ) : $value;
+		return is_string( $value ) ? self::strip_private_card_text( $value, (int) $post_id ) : $value;
 	}
 
 	/**
