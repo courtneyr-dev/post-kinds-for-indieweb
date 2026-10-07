@@ -157,13 +157,18 @@ function card_rating_label( float $rating, int $best = 5 ): string {
  * A rating above $best prints $best in the label and in p-rating, so the
  * parsed value matches the stars. The stored value doesn't change.
  *
+ * A card that prints the rating as visible text ("Rated 4 of 5") passes
+ * $decorative, so the stars are hidden from assistive tech and the rating
+ * is announced once. p-rating prints either way.
+ *
  * @since 1.9.0
  *
- * @param mixed $rating Stored rating.
- * @param int   $best   Best possible rating.
+ * @param mixed $rating     Stored rating.
+ * @param int   $best       Best possible rating.
+ * @param bool  $decorative Whether the stars sit beside visible rating text.
  * @return string Rating HTML, or an empty string for no rating.
  */
-function card_rating_html( $rating, int $best = 5 ): string {
+function card_rating_html( $rating, int $best = 5, bool $decorative = false ): string {
 	$counts = card_star_counts( (float) $rating, $best );
 	if ( $counts['value'] <= 0 ) {
 		return '';
@@ -178,7 +183,11 @@ function card_rating_html( $rating, int $best = 5 ): string {
 	$half    = '<svg class="half" viewBox="0 0 24 24" fill="currentColor" focusable="false"><path class="off" d="' . $path . '"/><path d="' . $path . '" style="clip-path:' . $clip . '"/></svg>';
 	$machine = rtrim( rtrim( number_format( $counts['value'], 2, '.', '' ), '0' ), '.' );
 
-	return '<div class="pk-stars" role="img" aria-label="' . esc_attr( card_rating_label( $counts['value'], $counts['best'] ) ) . '">'
+	$name = $decorative
+		? ' aria-hidden="true"'
+		: ' role="img" aria-label="' . esc_attr( card_rating_label( $counts['value'], $counts['best'] ) ) . '"';
+
+	return '<div class="pk-stars"' . $name . '>'
 		. str_repeat( $full, $counts['full'] )
 		. ( $counts['half'] ? $half : '' )
 		. str_repeat( $empty, $counts['empty'] )

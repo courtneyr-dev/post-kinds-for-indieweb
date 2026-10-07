@@ -19,7 +19,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Mirrors the first kind-card block's attributes into _pkiw_* post
  * meta on save, so Block Bindings (and templates) can consume what the
  * card knows. Card attrs win when non-empty; existing meta survives
- * empty attrs (completion and manual edits are never erased).
+ * empty attrs (completion and manual edits are never erased), except the
+ * provider IDs in PROVIDER_ATTRS, which follow the card.
  *
  * @since 1.2.0
  */
@@ -181,9 +182,41 @@ class Card_Meta_Sync {
 	 * @var array<string, array<string, string>>
 	 */
 	public const ATTR_DEFAULTS = [
+		'post-kinds-indieweb/read-card'  => [
+			'readStatus' => 'reading',
+		],
 		'post-kinds-indieweb/comic-card' => [
 			'readStatus' => 'reading',
 		],
+	];
+
+	/**
+	 * Defaults a save writes over a stored row when the card leaves the
+	 * attribute out. The editor drops an attribute that equals its
+	 * block.json default, so a To Read card switched back to Currently
+	 * Reading saves with no readStatus and would keep 'to-read' in meta.
+	 * Only sync() applies these: the backfill stays fill-only through
+	 * ATTR_DEFAULTS, so it never changes a stored status.
+	 *
+	 * @var array<string, array<string, string>>
+	 */
+	public const SAVE_DEFAULTS = [
+		'post-kinds-indieweb/read-card' => [
+			'readStatus' => 'reading',
+		],
+	];
+
+	/**
+	 * Provider IDs the card decides. An ID the card leaves out or blank is
+	 * deleted from meta, so a play switched from RAWG or Steam to BGG
+	 * leaves the video group. Every other attribute keeps the never-erase
+	 * rule, and a post with no such card keeps the IDs Quick Post or the
+	 * sidebar stored.
+	 *
+	 * @var array<string, string[]>
+	 */
+	public const PROVIDER_ATTRS = [
+		'post-kinds-indieweb/play-card' => [ 'bggId', 'rawgId', 'steamId' ],
 	];
 
 	/**
@@ -228,12 +261,14 @@ class Card_Meta_Sync {
 	/**
 	 * Backfill cron hook, completion option and the version it records.
 	 * Bump BACKFILL_VERSION when ATTR_META_MAP gains fields existing posts
-	 * need, and every site re-runs the batched backfill once.
+	 * need, and every site re-runs the batched backfill once. One bump per
+	 * release covers every map change in it. '3' covers the read-card
+	 * status default and the play-card provider IDs.
 	 */
 	public const BACKFILL_HOOK    = 'pkiw_card_meta_backfill';
 	public const BACKFILL_OPTION  = 'pkiw_card_meta_backfill';
 	public const BACKFILL_CURSOR  = 'pkiw_card_meta_backfill_cursor';
-	public const BACKFILL_VERSION = '2';
+	public const BACKFILL_VERSION = '3';
 	public const BACKFILL_BATCH   = 50;
 
 	/**
@@ -243,9 +278,15 @@ class Card_Meta_Sync {
 	 * runs on wp_after_insert_post, fired later in the request than
 	 * save_post regardless of priority — so this always reads the same
 	 * saved post_content the kind sync sees).
+	 *
+	 * The REST controller writes request meta after save_post and fires
+	 * wp_after_insert_post once it has, so a stale value from the editor's
+	 * meta would otherwise beat the card. Syncing again there, at 5, puts
+	 * the card back before the priority-10 callbacks read the post.
 	 */
 	public function __construct() {
 		add_action( 'save_post', [ $this, 'sync' ], 25, 2 );
+		add_action( 'wp_after_insert_post', [ $this, 'sync' ], 5, 2 );
 		add_action( self::BACKFILL_HOOK, [ self::class, 'run_backfill_event' ] );
 		add_action( 'init', [ self::class, 'maybe_schedule_backfill' ], 20 );
 	}
@@ -262,7 +303,7 @@ class Card_Meta_Sync {
 			return;
 		}
 
-		self::sync_content( $post_id, $post->post_content );
+		self::sync_content( $post_id, $post->post_content, true );
 	}
 
 	/**
@@ -347,31 +388,28 @@ class Card_Meta_Sync {
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param string $content Post content.
+	 * @param bool   $on_save Whether a save called this, which also writes SAVE_DEFAULTS
+	 *                        over stored rows. The backfill leaves it false.
 	 * @return void
 	 */
-	public static function sync_content( int $post_id, string $content ): void {
+	public static function sync_content( int $post_id, string $content, bool $on_save = false ): void {
 		$blocks = parse_blocks( $content );
 		$block  = self::find_first_mapped_block( $blocks );
 		if ( null !== $block ) {
-			$map      = self::ATTR_META_MAP[ $block['blockName'] ];
-			$defaults = self::ATTR_DEFAULTS[ $block['blockName'] ] ?? [];
+			$map = self::ATTR_META_MAP[ $block['blockName'] ];
 
 			foreach ( $map as $attr => $suffix ) {
 				if ( isset( self::ATTR_PRIVATE_DEFAULTS[ $block['blockName'] ][ $attr ] ) ) {
 					continue; // Synced below, from the first card of its own type.
 				}
 
-				$value = $block['attrs'][ $attr ] ?? null;
-
-				// get_metadata_raw(): a key registered with a default reads as
-				// that default through get_post_meta() when no row exists.
-				if ( ( null === $value || '' === $value ) && isset( $defaults[ $attr ] )
-					&& '' === (string) get_metadata_raw( 'post', $post_id, Meta_Fields::PREFIX . $suffix, true ) ) {
-					$value = $defaults[ $attr ];
-				}
+				$value = self::attr_value( $post_id, $block, $attr, $suffix, $on_save );
 
 				if ( null === $value || '' === $value ) {
-					continue; // Never erase existing meta with an empty attr.
+					// Never erase existing meta with an empty attr, except a
+					// provider ID the card no longer has.
+					self::clear_provider_id( $post_id, $block['blockName'], $attr, $suffix );
+					continue;
 				}
 
 				$value = (string) $value;
@@ -428,6 +466,58 @@ class Card_Meta_Sync {
 		// An unchanged cover fires no meta hook, so a post stored before
 		// the cover map existed gets its map here, on save or backfill.
 		refresh_cover_attachments( $post_id );
+	}
+
+	/**
+	 * A card attribute's value, with its block's defaults applied when the
+	 * card leaves it out or blank: a SAVE_DEFAULTS value on the save path,
+	 * else an ATTR_DEFAULTS value when no non-empty row is stored.
+	 *
+	 * @param int                  $post_id Post ID.
+	 * @param array<string, mixed> $block   Parsed card block.
+	 * @param string               $attr    Attribute name.
+	 * @param string               $suffix  Meta suffix the attribute maps to.
+	 * @param bool                 $on_save Whether a save is syncing.
+	 * @return mixed The value, or null or '' when there's none.
+	 */
+	private static function attr_value( int $post_id, array $block, string $attr, string $suffix, bool $on_save ) {
+		$value = $block['attrs'][ $attr ] ?? null;
+		if ( null !== $value && '' !== $value ) {
+			return $value;
+		}
+
+		if ( $on_save && isset( self::SAVE_DEFAULTS[ $block['blockName'] ][ $attr ] ) ) {
+			return self::SAVE_DEFAULTS[ $block['blockName'] ][ $attr ];
+		}
+
+		// get_metadata_raw(): a key registered with a default reads as
+		// that default through get_post_meta() when no row exists.
+		if ( isset( self::ATTR_DEFAULTS[ $block['blockName'] ][ $attr ] )
+			&& '' === (string) get_metadata_raw( 'post', $post_id, Meta_Fields::PREFIX . $suffix, true ) ) {
+			return self::ATTR_DEFAULTS[ $block['blockName'] ][ $attr ];
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Delete a provider ID the card left out or blank, so the post leaves the
+	 * archive group that ID put it in. Any other attribute is left alone.
+	 *
+	 * @param int    $post_id    Post ID.
+	 * @param string $block_name Card block name.
+	 * @param string $attr       Attribute name.
+	 * @param string $suffix     Meta suffix the attribute maps to.
+	 * @return void
+	 */
+	private static function clear_provider_id( int $post_id, string $block_name, string $attr, string $suffix ): void {
+		if ( ! in_array( $attr, self::PROVIDER_ATTRS[ $block_name ] ?? [], true ) ) {
+			return;
+		}
+
+		if ( '' !== trim( (string) get_metadata_raw( 'post', $post_id, Meta_Fields::PREFIX . $suffix, true ) ) ) {
+			delete_post_meta( $post_id, Meta_Fields::PREFIX . $suffix );
+		}
 	}
 
 	/**
