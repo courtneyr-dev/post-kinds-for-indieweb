@@ -218,16 +218,30 @@ final class PlayArchiveTemplateTest extends WP_UnitTestCase {
 		$this->assertDoesNotMatchRegularExpression( '/(^|\s)is-style-/', (string) ( $templates[0]['attrs']['className'] ?? '' ) );
 	}
 
-	public function test_the_post_template_holds_a_level_3_stream_card_beside_a_12_line_sections_marker(): void {
-		$template = $this->of_type( $this->template_blocks(), 'core/post-template' )[0];
-		$children = array_values( array_filter( $template['innerBlocks'], static fn( $b ) => null !== $b['blockName'] ) );
+	/**
+	 * The marker sits above the card: in the editor it prints its section's
+	 * heading where it sits in the Post Template.
+	 */
+	public function test_the_post_template_holds_a_12_line_sections_marker_above_a_level_3_stream_card(): void {
+		$children = $this->post_template_children();
 		$names    = array_column( $children, 'blockName' );
 
-		$this->assertSame( [ 'post-kinds-indieweb/stream-card', 'post-kinds-indieweb/archive-sections' ], $names );
-		$this->assertSame( 3, $children[0]['attrs']['headingLevel'] ?? null );
-		$this->assertSame( 12, $children[1]['attrs']['linesPerPage'] ?? null );
-		$this->assertArrayNotHasKey( 'groupLabels', $children[1]['attrs'], 'The plugin template keeps the source labels; a theme sets its own.' );
-		$this->assertArrayNotHasKey( 'emptyLabel', $children[1]['attrs'] );
+		$this->assertSame( [ 'post-kinds-indieweb/archive-sections', 'post-kinds-indieweb/stream-card' ], $names );
+		$this->assertSame( 12, $children[0]['attrs']['linesPerPage'] ?? null );
+		$this->assertSame( 3, $children[1]['attrs']['headingLevel'] ?? null );
+		$this->assertArrayNotHasKey( 'groupLabels', $children[0]['attrs'], 'The plugin template keeps the source labels; a theme sets its own.' );
+		$this->assertArrayNotHasKey( 'emptyLabel', $children[0]['attrs'] );
+	}
+
+	/**
+	 * The Post Template's blocks, in order.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function post_template_children(): array {
+		$template = $this->of_type( $this->template_blocks(), 'core/post-template' )[0];
+
+		return array_values( array_filter( $template['innerBlocks'], static fn( $b ) => null !== $b['blockName'] ) );
 	}
 
 	/**
@@ -260,6 +274,65 @@ final class PlayArchiveTemplateTest extends WP_UnitTestCase {
 		$GLOBALS['wp_rest_server'] = null;
 
 		$this->assertSame( 200, $response->get_status(), (string) wp_json_encode( $response->get_data() ) );
+	}
+
+	/**
+	 * The Site Editor previews the Post Template's blocks once per loop post,
+	 * each through the block renderer, with the post_id and pkiw_kind that
+	 * archive-sections-editor.js sends. The marker prints the heading only
+	 * for the post that opens a section, so the template's block order
+	 * decides whether the heading lands above or below that post's card.
+	 */
+	public function test_the_site_editor_preview_prints_each_section_heading_above_its_first_card(): void {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		$this->play( 'V1 Alpha', '2026-08-05 10:00:00', [ 'rawgId' => '900001' ] );
+		$this->play( 'V2 Bravo', '2026-08-04 10:00:00', [ 'steamId' => '900002' ] );
+		$this->play( 'B1 Delta', '2026-08-02 10:00:00', [ 'bggId' => '9990001' ] );
+		$this->play( 'B2 Echo', '2026-08-01 10:00:00', [ 'bggId' => '9990002' ] );
+		$this->play( 'O1 Foxtrot', '2026-07-30 10:00:00', [ 'gameUrl' => 'https://games.example/foxtrot' ] );
+
+		$this->go_to( (string) get_term_link( 'play', Taxonomy::TAXONOMY ) );
+		$ids = array_map( 'intval', wp_list_pluck( $GLOBALS['wp_query']->posts, 'ID' ) );
+
+		$sequence = [];
+		foreach ( $ids as $id ) {
+			foreach ( $this->post_template_children() as $child ) {
+				$request = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/' . $child['blockName'] );
+				$request->set_param( 'context', 'edit' );
+				$request->set_param( 'attributes', $child['attrs'] );
+				$request->set_param( 'post_id', $id );
+				$request->set_param( 'pkiw_kind', 'play' );
+				$response                  = rest_get_server()->dispatch( $request );
+				$GLOBALS['wp_rest_server'] = null;
+				$html                      = (string) ( $response->get_data()['rendered'] ?? '' );
+				$this->assertSame( 200, $response->get_status(), $child['blockName'] . ': ' . wp_json_encode( $response->get_data() ) );
+
+				if ( 'post-kinds-indieweb/archive-sections' !== $child['blockName'] ) {
+					$sequence[] = 'card:' . get_the_title( $id );
+				} elseif ( 1 === preg_match( '#<h([2-4])[^>]*>([^<]*)</h\1>#', $html, $m ) ) {
+					$sequence[] = 'H:' . $m[2];
+				} else {
+					$this->assertStringContainsString( ' hidden>', $html, 'A marker that prints no heading prints the hidden placeholder.' );
+					$sequence[] = '(hidden)';
+				}
+			}
+		}
+
+		$this->assertSame(
+			[
+				'H:Video games',
+				'card:V1 Alpha',
+				'(hidden)',
+				'card:V2 Bravo',
+				'H:Board games',
+				'card:B1 Delta',
+				'(hidden)',
+				'card:B2 Echo',
+				'H:Other',
+				'card:O1 Foxtrot',
+			],
+			$sequence
+		);
 	}
 
 	// Rendered.
