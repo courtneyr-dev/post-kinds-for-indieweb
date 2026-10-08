@@ -38,6 +38,7 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 			'listen'   => [ 'listen', 'listen-of', 'https://example.com/targets/listen' ],
 			'watch'    => [ 'watch', 'watch-of', 'https://example.com/targets/watch' ],
 			'read'     => [ 'read', 'read-of', 'https://example.com/targets/read' ],
+			'play'     => [ 'play', 'play-of', 'https://example.com/targets/play' ],
 		];
 	}
 
@@ -143,6 +144,84 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 		if ( in_array( $kind, [ 'like', 'reply', 'repost', 'bookmark', 'favorite' ], true ) ) {
 			$this->assertStringNotContainsString( 'href="' . esc_url( $target_url ) . '"', $html );
 		}
+	}
+
+	/**
+	 * Play cards with and without a game URL, as a video game and as a
+	 * board game, each away from its single so the title prints.
+	 *
+	 * @return array<string, array{0: array<string, mixed>, 1: string|null}>
+	 */
+	public function play_cards(): array {
+		return [
+			'video with a game url' => [
+				[
+					'title'   => 'Starbound Courier',
+					'rawgId'  => '900001',
+					'gameUrl' => 'https://rawg.example/games/starbound-courier',
+				],
+				'https://rawg.example/games/starbound-courier',
+			],
+			'video with no game url' => [
+				[
+					'title'  => 'Copper Kite',
+					'rawgId' => '900009',
+				],
+				null,
+			],
+			'board with a game url' => [
+				[
+					'title'   => 'Forest Paths',
+					'bggId'   => '9990001',
+					'gameUrl' => 'https://example.test/games/forest-paths',
+				],
+				'https://example.test/games/forest-paths',
+			],
+			'board with no game url' => [
+				[
+					'title' => 'Orbit Table',
+					'bggId' => '9990002',
+				],
+				null,
+			],
+		];
+	}
+
+	/**
+	 * The entry's play-of is the card's h-cite, named with the stored
+	 * title, with a url only when a game URL is stored, and never an empty
+	 * value php-mf2 would resolve to the page URL.
+	 *
+	 * @dataProvider play_cards
+	 *
+	 * @param array<string, mixed> $attributes Card attributes.
+	 * @param string|null          $url        Stored game URL, or null.
+	 */
+	public function test_a_play_card_is_the_entrys_play_of_citation( array $attributes, ?string $url ): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'A night of games',
+				'post_content' => '<!-- wp:post-kinds-indieweb/play-card ' . wp_json_encode( $attributes, JSON_UNESCAPED_SLASHES ) . ' /-->',
+			]
+		);
+		$this->assertNotWPError( wp_set_object_terms( $post_id, 'play', 'kind' ) );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$entry  = $this->top_level_h_entry( \Mf2\parse( '<div class="h-entry">' . do_blocks( (string) get_post_field( 'post_content', $post_id ) ) . '</div>' ) );
+		$values = $entry['properties']['play-of'] ?? [];
+
+		$this->assertCount( 1, $values );
+		$this->assertSame( [ 'h-cite' ], $values[0]['type'] ?? null );
+		$this->assertSame( [ $attributes['title'] ], $values[0]['properties']['name'] ?? null );
+		$this->assertNotSame( '', $values[0]['value'] ?? '' );
+		$this->assertNotSame( get_permalink( $post_id ), $values[0]['value'] ?? '' );
+		if ( null === $url ) {
+			$this->assertArrayNotHasKey( 'url', $values[0]['properties'] );
+			return;
+		}
+		$this->assertSame( [ $url ], $values[0]['properties']['url'] ?? null );
+		$this->assertSame( $url, $values[0]['value'] ?? null );
 	}
 
 	/**
@@ -489,6 +568,11 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 				return [
 					'bookTitle' => 'Test book',
 					'bookUrl'   => $target_url,
+				];
+			case 'play':
+				return [
+					'title'   => 'Test game',
+					'gameUrl' => $target_url,
 				];
 			case 'rsvp':
 				return [
