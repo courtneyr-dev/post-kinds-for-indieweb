@@ -58,13 +58,28 @@ test.beforeEach( async ( { page } ) => {
  * @return {Promise<Object>} Measurements.
  */
 async function measure( card, parts ) {
+	// The editor canvas is an iframe that starts loading the theme's web
+	// fonts when the server preview first lays out, so measure only after
+	// that document's fonts and images have settled.
 	await card.evaluate( async ( element ) => {
+		const doc = element.ownerDocument;
 		await Promise.all(
 			[ ...element.querySelectorAll( 'img' ) ].map( ( img ) =>
 				img.complete ? null : img.decode().catch( () => null )
 			)
 		);
+		await doc.fonts.ready;
+		await new Promise( ( resolve ) =>
+			doc.defaultView.requestAnimationFrame( () =>
+				doc.defaultView.requestAnimationFrame( resolve )
+			)
+		);
 	} );
+	await expect
+		.poll( () =>
+			card.evaluate( ( element ) => element.ownerDocument.fonts.status )
+		)
+		.toBe( 'loaded' );
 
 	return card.evaluate( ( element, selectors ) => {
 		const origin = element.getBoundingClientRect();
