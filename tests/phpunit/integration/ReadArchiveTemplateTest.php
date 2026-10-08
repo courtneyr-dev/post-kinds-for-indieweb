@@ -158,8 +158,11 @@ final class ReadArchiveTemplateTest extends WP_UnitTestCase {
 
 		$marker = $loops[0]['innerBlocks'][0]['attrs'];
 		$this->assertSame( 12, $marker['linesPerPage'] ?? null, 'Twelve reads a page.' );
-		$this->assertSame( '', $marker['emptyLabel'] ?? '', 'The empty shelf takes "Other".' );
-		$this->assertSame( 2, $loops[0]['innerBlocks'][1]['attrs']['headingLevel'] ?? 2, 'Stream card titles are h2; a theme raises them to h3 under a shelf heading.' );
+		$this->assertArrayHasKey( 'emptyLabel', $marker, 'The template sets emptyLabel itself.' );
+		$this->assertSame( '', $marker['emptyLabel'], 'The empty shelf takes "Other".' );
+		$card = $loops[0]['innerBlocks'][1]['attrs'];
+		$this->assertArrayHasKey( 'headingLevel', $card, 'The template sets the Stream card\'s headingLevel itself.' );
+		$this->assertSame( 2, $card['headingLevel'], 'Stream card titles are h2; a theme raises them to h3 under a shelf heading.' );
 
 		$pagination = $this->of_type( $blocks, 'core/query-pagination' );
 		$this->assertCount( 1, $pagination );
