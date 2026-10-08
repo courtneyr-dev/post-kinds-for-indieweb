@@ -89,6 +89,29 @@ final class KindLayoutPrimitivesTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '--pkiw-shelf-', $css, 'Shelf paint is token driven.' );
 	}
 
+	/**
+	 * A grouped loop prints div.wp-block-post-template > section.pkiw-group >
+	 * ul.pkiw-group__items > li, so the shelf rules written for
+	 * `.is-style-pkiw-shelf > li` need a sectioned twin.
+	 */
+	public function test_every_shelf_item_rule_has_a_sectioned_twin(): void {
+		$css = (string) file_get_contents( PKIW_PATH . 'styles/kind-layouts.css' );
+		$css = (string) preg_replace( '#/\*.*?\*/#s', '', $css );
+
+		preg_match_all( '/\.is-style-pkiw-shelf(-spine)? > li([^,{]*)/', $css, $rules, PREG_SET_ORDER );
+		$this->assertGreaterThanOrEqual( 12, count( $rules ), 'The shipped item rules are all found.' );
+		foreach ( $rules as $rule ) {
+			$twin = '.is-style-pkiw-shelf' . $rule[1] . ' .pkiw-group__items > li' . rtrim( $rule[2] );
+			$this->assertStringContainsString( $twin, $css, "No sectioned twin for \"{$rule[0]}\"." );
+		}
+
+		foreach ( [ '.is-style-pkiw-shelf .pkiw-group__items', '.is-style-pkiw-shelf-spine .pkiw-group__items' ] as $grid ) {
+			$this->assertMatchesRegularExpression( '/' . preg_quote( $grid, '/' ) . '[^{]*\{[^}]*display:\s*grid/', $css, "{$grid} lays its items on a grid." );
+		}
+		$this->assertMatchesRegularExpression( '/\.wp-block-post-template\.is-style-pkiw-shelf\.pkiw-grouped[^{]*\{[^}]*display:\s*flex/', $css, 'A grouped shelf stacks its sections.' );
+		$this->assertMatchesRegularExpression( '/@media \(max-width: 20em\)\s*\{[^@]*\.is-style-pkiw-shelf \.pkiw-group__items[^{]*\{[^}]*grid-template-columns:\s*1fr/', $css, 'Sectioned shelves drop to one column at 320 CSS px.' );
+	}
+
 	public function test_shelf_renders_one_item_per_post_with_no_filler_elements(): void {
 		$id = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => 'Only listen' ] );
 		wp_set_object_terms( $id, 'listen', 'kind' );
