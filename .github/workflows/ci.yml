@@ -2,9 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [main, develop, feature/wp70-api-integration]
+    branches: [main, develop, feature/wp70-api-integration, 'release/**']
   pull_request:
     branches: [main, develop, feature/wp70-api-integration]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
