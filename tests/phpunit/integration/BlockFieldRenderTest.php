@@ -206,7 +206,7 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * The play card's board tabletop (#232 PL7) is a second render path
+	 * The play card's board tabletop (issue 232 PL7) is a second render path
 	 * through the same block: the matrix's play row names a RAWG and a
 	 * Steam ID, so it renders the shared card. Without the two video IDs
 	 * the row files as a board game, and every other sample must reach

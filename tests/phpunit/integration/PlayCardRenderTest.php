@@ -306,7 +306,7 @@ final class PlayCardRenderTest extends WP_UnitTestCase {
 
 	/**
 	 * The shared card's markup, locked after W0 and this lane's all-card
-	 * changes (#232 check gap 7). A byte comparison against the card before
+	 * changes (issue 232 check gap 7). A byte comparison against the card before
 	 * those changes can't hold, so this file is the baseline from here on,
 	 * and a later change to the shared card shows up as a diff.
 	 */
