@@ -277,7 +277,12 @@ final class ArchiveSectionsBlockTest extends WP_UnitTestCase {
 		);
 		$inline = implode( "\n", (array) wp_scripts()->get_data( 'pkiw-archive-sections-editor', 'before' ) );
 		$this->assertStringContainsString( 'window.pkiwArchiveSections = {"groups":{"play":{"video":"Video games","board":"Board games"}}};', $inline );
-		$this->assertSame( [], \PKIW\Kind_Archive_Layouts::archive_sections_groups(), 'With no filter, no kind lists groups.' );
+
+		// Without the test's filter, the kind lanes' own filters answer. Read
+		// lists its four statuses (Read_Archive::sections_groups()).
+		$default = \PKIW\Kind_Archive_Layouts::archive_sections_groups();
+		$this->assertSame( \PKIW\read_status_labels(), $default['read'] ?? null, 'Read lists its statuses with the plugin labels, in shelf order.' );
+		$this->assertSame( [], array_values( array_diff( array_keys( $default ), Grouped_Archive::grouped_kinds() ) ), 'No kind without a registered source lists groups.' );
 	}
 
 	// Page size.

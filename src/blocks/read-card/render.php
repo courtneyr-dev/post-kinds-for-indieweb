@@ -42,12 +42,7 @@ $pkiw_progress_percent = ( $pkiw_page_count > 0 && $pkiw_current_page > 0 )
 	? min( 100, (int) round( ( $pkiw_current_page / $pkiw_page_count ) * 100 ) )
 	: 0;
 
-$pkiw_status_labels = [
-	'to-read'   => __( 'To Read', 'post-kinds-for-indieweb-in-block-themes' ),
-	'reading'   => __( 'Currently Reading', 'post-kinds-for-indieweb-in-block-themes' ),
-	'finished'  => __( 'Finished', 'post-kinds-for-indieweb-in-block-themes' ),
-	'abandoned' => __( 'Abandoned', 'post-kinds-for-indieweb-in-block-themes' ),
-];
+$pkiw_status_labels = \PKIW\read_status_labels();
 $pkiw_status_label  = $pkiw_status_labels[ $pkiw_read_status ] ?? '';
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
