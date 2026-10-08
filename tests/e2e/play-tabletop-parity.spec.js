@@ -3,11 +3,14 @@
  *
  * A board game play card that isn't selected shows the server's tabletop
  * in the editor canvas. This spec publishes one, then compares the card
- * region in the canvas with the card region on the published single at
- * the same viewport width: the same parts in the same order, the same
- * text, and boxes within a few pixels of each other. The template's H1
- * and featured image sit outside the card, so the comparison leaves them
- * out. Screenshots of both regions are attached to the report.
+ * region in the canvas with the card region on the published single: the
+ * same parts in the same order, the same text, and boxes within a few
+ * pixels of each other. The single loads at the canvas iframe's own
+ * width, because a theme's fluid type sizes text from the viewport, and
+ * the canvas is narrower than the browser window around it. The
+ * template's H1 and featured image sit outside the card, so the
+ * comparison leaves them out. Screenshots of both regions are attached to
+ * the report.
  */
 
 const { test, expect } = require( '@playwright/test' );
@@ -183,10 +186,17 @@ test( 'a board game card matches between the editor canvas and its single', asyn
 		contentType: 'image/png',
 	} );
 
+	const canvasWidth = await editorCard.evaluate(
+		( element ) => element.ownerDocument.defaultView.innerWidth
+	);
 	const link = await page.evaluate( () =>
 		window.wp.data.select( 'core/editor' ).getPermalink()
 	);
+	await page.setViewportSize( { width: canvasWidth, height: 1000 } );
 	await page.goto( link );
+	expect( await page.evaluate( () => window.innerWidth ) ).toBe(
+		canvasWidth
+	);
 	const singleCard = page.locator( 'article.pk-card--tabletop' );
 	await expect( singleCard ).toHaveCount( 1 );
 	const single = await measure( singleCard, PARTS );
