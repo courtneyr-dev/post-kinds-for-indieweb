@@ -1,0 +1,70 @@
+/**
+ * Staff Picks: structure only. A theme paints the boxes, type and shelf.
+ */
+
+.pkiw-staff-picks__list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
+	gap: 1.5em;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+/* The title link's ::after covers the item: the whole box is the hit area. */
+.pkiw-staff-picks__item {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5em;
+	min-width: 0;
+}
+
+.pkiw-staff-picks__box {
+	display: grid;
+	place-items: center;
+	aspect-ratio: 1;
+	overflow: hidden;
+}
+
+.pkiw-staff-picks__cover {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.pkiw-staff-picks__box--text {
+	padding: 1em;
+	border: 1px solid currentcolor;
+	text-align: center;
+	overflow-wrap: anywhere;
+}
+
+.pkiw-staff-picks__title,
+.pkiw-staff-picks__rating {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.pkiw-staff-picks__link::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+}
+
+.pkiw-staff-picks__item:has(.pkiw-staff-picks__link:focus-visible) {
+	outline: 2px solid currentcolor;
+	outline-offset: 2px;
+}
+
+.pkiw-staff-picks__link:focus-visible {
+	outline: none;
+}
+
+@supports not selector(:has(*)) {
+
+	.pkiw-staff-picks__link:focus-visible {
+		outline: 2px solid currentcolor;
+		outline-offset: 2px;
+	}
+}

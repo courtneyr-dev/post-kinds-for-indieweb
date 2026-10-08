@@ -24,8 +24,10 @@ import {
 	ButtonGroup,
 } from '@wordpress/components';
 import { useState } from '@wordpress/element';
+import { useDispatch } from '@wordpress/data';
 import { rsvpIcon } from '../shared/icons';
 import { BlockPlaceholder, parseDate } from '../shared/components';
+import { STORE_NAME } from '../../editor/stores/post-kinds';
 
 /**
  * Edit component for the RSVP Card block.
@@ -55,6 +57,10 @@ export default function Edit( { attributes, setAttributes } ) {
 	const [ showStartPicker, setShowStartPicker ] = useState( false );
 	const [ showEndPicker, setShowEndPicker ] = useState( false );
 	const [ showRsvpPicker, setShowRsvpPicker ] = useState( false );
+
+	// Undefined where the post-kinds store isn't registered: the site
+	// editor, widgets and post types without a kind.
+	const postKinds = useDispatch( STORE_NAME );
 
 	const blockProps = useBlockProps( {
 		className: `rsvp-card layout-${ layout } rsvp-${ rsvpStatus } pk-card k-rsvp`,
@@ -272,13 +278,15 @@ export default function Edit( { attributes, setAttributes } ) {
 							'post-kinds-for-indieweb-in-block-themes'
 						) }
 						checked={ 'public' === locationVisibility }
-						onChange={ ( value ) =>
-							setAttributes( {
-								locationVisibility: value
-									? 'public'
-									: 'private',
-							} )
-						}
+						onChange={ ( value ) => {
+							const visibility = value ? 'public' : 'private';
+							setAttributes( { locationVisibility: visibility } );
+							// The card sets the post's stored setting too (issue 358).
+							postKinds?.updateKindMeta(
+								'rsvp_location_privacy',
+								visibility
+							);
+						} }
 					/>
 					<TextareaControl
 						label={ __(
