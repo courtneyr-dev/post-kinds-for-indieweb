@@ -205,14 +205,14 @@ function play_status_labels(): array {
  * @since 1.9.0
  *
  * @param float $hours Hours played.
- * @return string Label, or '' for no hours.
+ * @return string Label, or '' for hours that round to 0 or less.
  */
 function play_hours_label( float $hours ): string {
+	$hours = round( $hours, 2 );
 	if ( $hours <= 0 ) {
 		return '';
 	}
 
-	$hours = round( $hours, 2 );
 	$whole = floor( $hours ) === $hours;
 	$text  = $whole
 		? number_format_i18n( $hours, 0 )
