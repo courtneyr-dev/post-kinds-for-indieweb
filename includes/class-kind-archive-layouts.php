@@ -56,6 +56,13 @@ final class Kind_Archive_Layouts {
 	public const MENU_SPECIALS = 'post-kinds-indieweb/menu-specials';
 
 	/**
+	 * Archive sections marker block name: a kind archive's section settings.
+	 *
+	 * @since 1.9.0
+	 */
+	public const ARCHIVE_SECTIONS = 'post-kinds-indieweb/archive-sections';
+
+	/**
 	 * REST `orderby` values for a kind in menu order: section direction,
 	 * then where posts with no group go.
 	 *
@@ -97,8 +104,10 @@ final class Kind_Archive_Layouts {
 			add_action( 'init', [ Grouped_Archive::class, 'section_post_template' ], 20 );
 		}
 		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_template_preview' ] );
+		add_action( 'enqueue_block_editor_assets', [ self::class, 'add_archive_sections_groups' ] );
 		add_action( 'enqueue_block_assets', [ Checkin_Map::class, 'enqueue_editor_assets' ] );
 		add_action( 'parse_request', [ $this, 'forget_templates' ] );
+		add_action( 'parse_request', [ Grouped_Archive::class, 'forget_heading_ids' ] );
 		add_filter( 'rest_request_before_callbacks', [ Grouped_Archive::class, 'track_block_preview' ], 10, 3 );
 		add_filter( 'rest_request_after_callbacks', [ Grouped_Archive::class, 'track_block_preview' ], 10, 3 );
 		if ( taxonomy_exists( Taxonomy::TAXONOMY ) ) {
@@ -372,6 +381,146 @@ final class Kind_Archive_Layouts {
 			];
 			register_block_type( self::MENU_SPECIALS, $args );
 		}
+
+		$this->register_archive_sections();
+	}
+
+	/**
+	 * Register the archive sections marker.
+	 *
+	 * It sits in a kind archive's Post Template beside the blocks that print
+	 * each item, and prints nothing on the front end. Its attributes size
+	 * the page and set the section headings; the engine prints the sections,
+	 * each with `data-pkiw-group` and a heading id. The heading labels carry
+	 * the content role, so a contentOnly pattern can still edit them.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	private function register_archive_sections(): void {
+		wp_register_script(
+			'pkiw-archive-sections-editor',
+			\PKIW_URL . 'assets/js/archive-sections-editor.js',
+			[ 'wp-blocks', 'wp-element', 'wp-i18n', 'wp-block-editor', 'wp-components', 'wp-server-side-render' ],
+			\PKIW_VERSION,
+			true
+		);
+		wp_set_script_translations( 'pkiw-archive-sections-editor', 'post-kinds-for-indieweb-in-block-themes' );
+
+		Grouped_Archive::register_entry_block(
+			self::ARCHIVE_SECTIONS,
+			[
+				'shape'       => Grouped_Archive::ENTRY_MARKER,
+				'expose_key'  => true,
+				'heading_ids' => true,
+			]
+		);
+		if ( \WP_Block_Type_Registry::get_instance()->is_registered( self::ARCHIVE_SECTIONS ) ) {
+			return;
+		}
+
+		/**
+		 * Block type arguments. No block.json, so apiVersion 3 is declared here.
+		 *
+		 * @var array<string, mixed> $args
+		 */
+		$args = [
+			'api_version'     => 3,
+			'title'           => __( 'Archive sections', 'post-kinds-for-indieweb-in-block-themes' ),
+			'description'     => __( 'Sorts a kind archive into sections with headings, and sets how many posts each page shows. Use inside a Query Loop.', 'post-kinds-for-indieweb-in-block-themes' ),
+			'category'        => 'post-kinds-indieweb',
+			'render_callback' => [ self::class, 'render_archive_sections' ],
+			'uses_context'    => [ 'postId', 'postType', 'queryId', 'templateSlug' ],
+			'attributes'      => Grouped_Archive::entry_attributes(
+				[
+					'groupLabels' => [
+						'type'    => 'object',
+						'default' => [],
+						'role'    => 'content',
+					],
+					'emptyLabel'  => [
+						'role' => 'content',
+					],
+				]
+			),
+			'supports'        => [
+				'html'     => false,
+				'reusable' => false,
+			],
+			'ancestor'        => [ 'core/post-template' ],
+			'editor_script'   => 'pkiw-archive-sections-editor',
+			'style'           => 'pkiw-kind-layouts',
+		];
+		register_block_type( self::ARCHIVE_SECTIONS, $args );
+	}
+
+	/**
+	 * Render the archive sections marker: nothing on the front end; in the
+	 * editor, the heading of the section a post opens.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param array<string, mixed> $attributes Block attributes.
+	 * @param string               $content    Unused.
+	 * @param \WP_Block|null       $block      Block instance.
+	 * @return string
+	 */
+	public static function render_archive_sections( array $attributes = [], string $content = '', ?\WP_Block $block = null ): string { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+		return Grouped_Archive::render_entry( self::ARCHIVE_SECTIONS, $attributes, $block, static fn(): string => '' );
+	}
+
+	/**
+	 * Group keys and default labels the marker's editor offers a heading field for, by kind.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return array<string, array<string, string>> Kind slug => group key => default label.
+	 */
+	public static function archive_sections_groups(): array {
+		/**
+		 * Filters the groups the archive sections editor offers a heading field for.
+		 *
+		 * A kind with a fixed set of groups (statuses, types) lists them so
+		 * an editor can rename each section. The label is what the section
+		 * prints when the field is left empty. Keys are the group keys the
+		 * kind's source files posts under, lowercase.
+		 *
+		 * @since 1.9.0
+		 *
+		 * @param array<string, array<string, string>> $groups Kind slug => group key => default label.
+		 */
+		$groups = apply_filters( 'pkiw_archive_sections_groups', [] );
+		$out    = [];
+		foreach ( is_array( $groups ) ? $groups : [] as $kind => $labels ) {
+			$kind = sanitize_key( (string) $kind );
+			if ( '' === $kind || ! is_array( $labels ) ) {
+				continue;
+			}
+			foreach ( $labels as $key => $label ) {
+				$key = mb_strtolower( trim( (string) $key ) );
+				if ( '' !== $key && is_scalar( $label ) ) {
+					$out[ $kind ][ $key ] = sanitize_text_field( (string) $label );
+				}
+			}
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Hand the marker's editor the group keys of each kind.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public static function add_archive_sections_groups(): void {
+		wp_add_inline_script(
+			'pkiw-archive-sections-editor',
+			'window.pkiwArchiveSections = ' . wp_json_encode( [ 'groups' => (object) array_map( static fn( array $labels ): object => (object) $labels, self::archive_sections_groups() ) ] ) . ';',
+			'before'
+		);
 	}
 
 	/**
@@ -668,8 +817,9 @@ final class Kind_Archive_Layouts {
 	 * PKIW layout or a grouping entry block: then order date DESC, ID DESC
 	 * (stable pages). When an entry block sits in the Post Template of the
 	 * Query Loop that inherits the archive, its settings set the page size
-	 * and, when the kind is grouped, the grouping (Grouped_Archive). A
-	 * theme's own kind template or an explicit ?orderby= is left alone.
+	 * and, when the kind is grouped, the grouping (Grouped_Archive). The
+	 * kind's feed keeps the date order only. A theme's own kind template or
+	 * an explicit ?orderby= is left alone.
 	 *
 	 * @param \WP_Query $query Query.
 	 * @return void
@@ -714,6 +864,13 @@ final class Kind_Archive_Layouts {
 				'ID'   => 'DESC',
 			]
 		);
+
+		// A kind feed is this main query with `feed` set. Feed readers expect
+		// newest first and the site's posts_per_rss, so it takes neither the
+		// grouping nor the archive's page size.
+		if ( $query->is_feed() ) {
+			return;
+		}
 
 		// The entry block in the archive's loop carries the settings.
 		$plan = Grouped_Archive::main_query_plan( $query, $term->slug, $content );

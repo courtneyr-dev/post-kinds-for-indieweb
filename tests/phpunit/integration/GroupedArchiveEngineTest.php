@@ -30,6 +30,7 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	private const LINE   = 'pkiw-test/group-line';
 	private const PAIRS  = 'pkiw-test/two-a-page';
 	private const MONTHS = 'pkiw-test/month-marker';
+	private const IDS    = 'pkiw-test/id-marker';
 
 	private const SOURCES = [ 'test_status', 'test_series', 'test_play', 'test_tags', 'test_cats', 'test_month', 'test_year', 'test_week' ];
 
@@ -120,10 +121,17 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 		$this->entry_block( self::LINE, [ 'shape' => Grouped_Archive::ENTRY_LINE ] );
 		$this->entry_block( self::PAIRS, [], [ 'linesPerPage' => [ 'default' => 2 ] ] );
 		$this->entry_block( self::MONTHS, [ 'source' => 'test_month' ] );
+		$this->entry_block(
+			self::IDS,
+			[
+				'expose_key'  => true,
+				'heading_ids' => true,
+			]
+		);
 	}
 
 	public function tear_down(): void {
-		foreach ( [ self::MARKER, self::LINE, self::PAIRS, self::MONTHS ] as $name ) {
+		foreach ( [ self::MARKER, self::LINE, self::PAIRS, self::MONTHS, self::IDS ] as $name ) {
 			Grouped_Archive::unregister_entry_block( $name );
 			if ( WP_Block_Type_Registry::get_instance()->is_registered( $name ) ) {
 				unregister_block_type( $name );
@@ -1000,6 +1008,34 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'data-pkiw-group=""><h2 class="pkiw-group__heading">Other</h2>', $html );
 		$this->assertStringContainsString( 'class="pkiw-grouped ', $html, 'Entry blocks that name no classes get the neutral ones.' );
 		$this->assertStringNotContainsString( 'data-pkiw-group', $this->serve( 'playkind', $this->loop( self::LINE ) ) );
+	}
+
+	public function test_an_entry_that_asks_gives_each_section_heading_an_id_unique_on_the_page(): void {
+		$this->tagged();
+		$this->make( 'tagkind', 'Post G', '2026-01-07 10:00:00', [], [ 'post_tag' => [ '日本' ] ] );
+		$heading_ids = static function ( string $html ): array {
+			preg_match_all( '#<h2 id="([^"]*)" class="pkiw-group__heading">#', $html, $found );
+			return $found[1];
+		};
+
+		$once = $heading_ids( $this->serve( 'tagkind', $this->loop( self::IDS ) ) );
+		$this->assertSame( [ 'pkiw-group-apple', 'pkiw-group-apple-press', 'pkiw-group-banana', 'pkiw-group-zebra', 'pkiw-group-e697a5e69cac', 'pkiw-group-empty' ], $once, 'Ids come from the group slug; an encoded slug keeps only id-safe characters; the empty group is "empty".' );
+
+		$twice = $heading_ids( $this->serve( 'tagkind', $this->loop( self::IDS ) . $this->loop( self::IDS ) ) );
+		$this->assertCount( 12, $twice );
+		$this->assertSame( $twice, array_values( array_unique( $twice ) ), 'A second grouped loop on the page gets ids of its own.' );
+		$this->assertSame( 'pkiw-group-apple-2', $twice[6] );
+
+		$this->assertSame( $once, $heading_ids( $this->serve( 'tagkind', $this->loop( self::IDS ) ) ), 'Each request starts over.' );
+		$this->assertStringNotContainsString( ' id="pkiw-group-', $this->serve( 'tagkind', $this->loop( self::MARKER ) ), 'An entry that doesn\'t ask prints headings without ids.' );
+	}
+
+	public function test_the_editor_preview_heading_of_an_entry_that_asks_carries_its_id(): void {
+		$p = $this->shelf();
+
+		$this->assertSame( '<h2 id="pkiw-group-to-read" class="pkiw-group__heading">To read</h2>', $this->editor_render( self::IDS, $p['emma'] ) );
+		$this->assertSame( '<h2 id="pkiw-group-to-read" class="pkiw-group__heading">To read</h2>', $this->editor_render( self::IDS, $p['emma'] ), 'Each preview request starts the ids over.' );
+		$this->assertSame( '<h2 class="pkiw-group__heading">To read</h2>', $this->editor_render( self::MARKER, $p['emma'] ) );
 	}
 
 	public function test_the_current_group_is_set_while_an_item_renders_and_cleared_after(): void {
