@@ -287,7 +287,8 @@ final class PlayCardTabletopTest extends WP_UnitTestCase {
 
 		$this->assertStringNotContainsString( 'pk-play-hours', $html );
 		$this->assertStringNotContainsString( 'pk-play-platform', $html );
-		$this->assertStringNotContainsString( 'played', $html );
+		$this->assertStringNotContainsString( 'hours played', $html );
+		$this->assertStringNotContainsString( '>Hours<', $html );
 	}
 
 	/**
@@ -538,26 +539,57 @@ final class PlayCardTabletopTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Ask the block renderer for a block, the way the editor's
+	 * ServerSideRender does: rest_api_loaded() names the route in the
+	 * rest_route query var before it serves the request.
+	 *
+	 * @param string               $block_name Block name.
+	 * @param int                  $post_id    Post the editor is editing.
+	 * @param array<string, mixed> $attributes Block attributes.
+	 * @return string Rendered HTML.
+	 */
+	private function block_renderer( string $block_name, int $post_id, array $attributes ): string {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		$route                                  = '/wp/v2/block-renderer/' . $block_name;
+		$GLOBALS['wp']->query_vars['rest_route'] = $route;
+
+		$request = new WP_REST_Request( 'GET', $route );
+		$request->set_param( 'context', 'edit' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'attributes', $attributes );
+		$response = rest_do_request( $request );
+		unset( $GLOBALS['wp']->query_vars['rest_route'] );
+
+		$this->assertSame( 200, $response->get_status() );
+
+		return (string) ( $response->get_data()['rendered'] ?? '' );
+	}
+
+	/**
 	 * The editor previews the card through the block renderer with the
 	 * post's ID, and that preview hides an equal title the way the single
 	 * does.
 	 */
 	public function test_the_editor_preview_hides_an_equal_title(): void {
-		$id = $this->board( self::forest_paths() );
-		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
-
-		$request = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/post-kinds-indieweb/play-card' );
-		$request->set_param( 'context', 'edit' );
-		$request->set_param( 'post_id', $id );
-		$request->set_param( 'attributes', self::forest_paths() );
-		$response = rest_do_request( $request );
-
-		$this->assertSame( 200, $response->get_status() );
-		$html  = (string) ( $response->get_data()['rendered'] ?? '' );
+		$id    = $this->board( self::forest_paths() );
+		$html  = $this->block_renderer( 'post-kinds-indieweb/play-card', $id, self::forest_paths() );
 		$xpath = $this->xpath( $html );
 		$this->assertSame( 'board', $this->root( $xpath )->getAttribute( 'data-pkiw-play-group' ) );
 		$this->assertSame( 0, $xpath->query( '//*[' . self::has_class( 'pk-title' ) . ']' )->length );
 		$this->assertSame( 1, $xpath->query( '//data[' . self::has_class( 'p-name' ) . '][@value="Forest Paths"]' )->length );
+	}
+
+	/**
+	 * A Stream card preview renders the post's play card inside another
+	 * block. That card is an item in a list, so its title prints as the
+	 * heading the Stream links to the post.
+	 */
+	public function test_a_stream_card_preview_keeps_the_play_card_heading(): void {
+		$id   = $this->board( self::forest_paths() );
+		$html = $this->block_renderer( 'post-kinds-indieweb/stream-card', $id, [] );
+
+		$this->assertStringContainsString( 'pk-card--tabletop', $html );
+		$this->assertMatchesRegularExpression( '#<h[2-4] class="pk-title p-name"><a\b[^>]*>Forest Paths</a>#', $html );
 	}
 
 	/**
@@ -574,6 +606,6 @@ final class PlayCardTabletopTest extends WP_UnitTestCase {
 		$this->assertSame( 'https://example.test/games/forest-paths', $cite['value'] ?? null );
 		$this->assertSame( [ 'https://boardgamegeek.com/boardgame/9990001' ], $cite['properties']['uid'] ?? null );
 		$this->assertSame( [ '4' ], $cite['properties']['rating'] ?? null );
-		$this->assertSame( 'Tense to the last turn.', trim( (string) ( $cite['properties']['content'][0]['value'] ?? '' ) ) );
+		$this->assertSame( [ 'Tense to the last turn.' ], $cite['properties']['content'] ?? null );
 	}
 }

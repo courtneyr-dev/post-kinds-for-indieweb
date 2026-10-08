@@ -303,4 +303,38 @@ final class PlayCardRenderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'class="pk-meta"', $html );
 		$this->assertStringContainsString( 'role="img"', $html );
 	}
+
+	/**
+	 * The shared card's markup, locked after W0 and this lane's all-card
+	 * changes (#232 check gap 7). A byte comparison against the card before
+	 * those changes can't hold, so this file is the baseline from here on,
+	 * and a later change to the shared card shows up as a diff.
+	 */
+	public function test_a_video_card_matches_its_golden_file(): void {
+		update_option( 'date_format', 'F j, Y' );
+		$html = $this->render(
+			[
+				'title'       => 'Starbound Courier',
+				'platform'    => 'PC',
+				'status'      => 'completed',
+				'hoursPlayed' => 42,
+				'rating'      => 4,
+				'review'      => 'Every route delivered.',
+				'gameUrl'     => 'https://rawg.example/games/starbound-courier',
+				'officialUrl' => 'https://starbound.example/',
+				'purchaseUrl' => 'https://shop.example/starbound',
+				'playedAt'    => '2026-09-22',
+				'rawgId'      => '900001',
+				'cover'       => 'https://media.rawg.example/starbound.jpg',
+				'coverAlt'    => 'Starbound Courier cover',
+			]
+		);
+
+		$normalize = static fn( string $markup ): string => trim( (string) preg_replace( [ '/>\s+</', '/\s+/' ], [ '><', ' ' ], $markup ) );
+
+		$this->assertSame(
+			$normalize( (string) file_get_contents( dirname( __DIR__ ) . '/fixtures/play-card-video.golden.html' ) ),
+			$normalize( $html )
+		);
+	}
 }
