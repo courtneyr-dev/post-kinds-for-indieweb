@@ -185,6 +185,40 @@ final class ReadArchiveTest extends WP_UnitTestCase {
 		return $ids;
 	}
 
+	/**
+	 * The REST posts route's read posts in grouped order, keyed by ID.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function rest_reads_by_group(): array {
+		$GLOBALS['wp_rest_server'] = null;
+		$request                   = new WP_REST_Request( 'GET', '/wp/v2/posts' );
+		$request->set_param( 'kind', [ get_term_by( 'slug', 'read', Taxonomy::TAXONOMY )->term_id ] );
+		$request->set_param( 'orderby', 'pkiw_group' );
+		$response = rest_get_server()->dispatch( $request );
+		$this->assertSame( 200, $response->get_status(), (string) wp_json_encode( $response->get_data() ) );
+
+		return array_column( (array) $response->get_data(), null, 'id' );
+	}
+
+	/**
+	 * The read archive's RSS2 feed, as core's feed template prints it.
+	 */
+	private function read_feed_document(): string {
+		$this->go_to( get_term_feed_link( get_term_by( 'slug', 'read', Taxonomy::TAXONOMY )->term_id, Taxonomy::TAXONOMY ) );
+		$this->assertTrue( is_feed() );
+
+		ob_start();
+		try {
+			// The template sends headers after PHPUnit's output, as core's feed tests do.
+			@require ABSPATH . WPINC . '/feed-rss2.php'; // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		} finally {
+			$out = (string) ob_get_clean();
+		}
+
+		return $out;
+	}
+
 	// The status source.
 
 	public function test_read_groups_by_status_through_a_registered_meta_source(): void {
@@ -338,7 +372,26 @@ final class ReadArchiveTest extends WP_UnitTestCase {
 		);
 	}
 
-	public function test_a_protected_read_sorts_by_its_post_title_with_no_author_whatever_it_hides(): void {
+	/**
+	 * Post passwords. Two spaces is a password to core, since
+	 * post_password_required() tests empty(), but under the PAD SPACE
+	 * collation utf8mb4_unicode_520_ci it compares equal to ''.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function protected_passwords(): array {
+		return [
+			'a password'           => [ 'hunter2' ],
+			'a two-space password' => [ '  ' ],
+		];
+	}
+
+	/**
+	 * @dataProvider protected_passwords
+	 *
+	 * @param string $password Post password.
+	 */
+	public function test_a_protected_read_sorts_by_its_post_title_with_no_author_whatever_it_hides( string $password ): void {
 		wp_set_current_user( 0 );
 		$alice   = $this->read( 'Copper Atlas', '2026-08-30 10:00:00', 'finished', 'Alice Ames' );
 		$carol   = $this->read( 'Harbor Weather', '2026-08-29 10:00:00', 'reading', 'Carol Cole' );
@@ -349,9 +402,10 @@ final class ReadArchiveTest extends WP_UnitTestCase {
 		wp_update_post(
 			[
 				'ID'            => $locked,
-				'post_password' => 'hunter2',
+				'post_password' => $password,
 			]
 		);
+		$this->assertSame( $password, get_post( $locked )->post_password, 'wp_update_post() stores the password as given.' );
 		$this->assertTrue( post_password_required( $locked ), 'An anonymous visitor has no password cookie.' );
 
 		$url = add_query_arg( Read_Archive::QUERY_VAR, 'author', $this->archive_url() );
@@ -377,6 +431,61 @@ final class ReadArchiveTest extends WP_UnitTestCase {
 				sprintf( "Author '%s' and book '%s' stay hidden: 'Locked Post' sorts with the no-author reads, by post title.", (string) $author, $book )
 			);
 		}
+	}
+
+	/**
+	 * @dataProvider protected_passwords
+	 *
+	 * @param string $password Post password.
+	 */
+	public function test_a_protected_read_shows_only_its_title_on_the_shelves_in_rest_and_in_the_feed( string $password ): void {
+		wp_set_current_user( 0 );
+		$open   = $this->read( 'Harbor Weather', '2026-08-29 10:00:00', 'finished', 'Carol Cole' );
+		$locked = $this->read( 'Locked Post', '2026-08-25 10:00:00', 'finished', 'Bob Baker' );
+		wp_update_post(
+			[
+				'ID'           => $open,
+				'post_content' => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Harbor Weather","authorName":"Carol Cole","readStatus":"finished"} /-->',
+			]
+		);
+		wp_update_post(
+			[
+				'ID'            => $locked,
+				'post_content'  => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Aardvark Secrets","authorName":"Bob Baker","readStatus":"finished"} /-->',
+				'post_password' => $password,
+			]
+		);
+		update_post_meta( $locked, '_pkiw_read_title', 'Aardvark Secrets' );
+		$this->assertSame( $password, get_post( $locked )->post_password );
+
+		// The shelves: the protected read keeps its status shelf, as fixture
+		// P1 does, and prints its title link alone.
+		$html    = $this->serve( $this->archive_url() );
+		$shelves = $this->shelves( $html );
+		$this->assertSame( [ 'finished' ], array_column( $shelves, 'group' ) );
+		$this->assertSame( 'h2:Finished', $shelves[0]['heading'] );
+		$this->assertSame( [ 'Harbor Weather', 'Protected: Locked Post' ], $shelves[0]['titles'] );
+		$this->assertSame( 1, $this->xpath( $html )->query( '//article[contains(concat(" ", normalize-space(@class), " "), " pk-card--protected ")]' )->length );
+		$this->assertStringContainsString( 'Carol Cole', $html, 'The open read prints its author, so the next two checks can fail.' );
+		$this->assertStringNotContainsString( 'Bob Baker', $html );
+		$this->assertStringNotContainsString( 'Aardvark Secrets', $html );
+
+		// REST in grouped order: both on the finished shelf, newest first,
+		// and the protected read's content and excerpt withheld.
+		$items = $this->rest_reads_by_group();
+		$this->assertSame( [ $open, $locked ], array_keys( $items ) );
+		$this->assertStringContainsString( 'Carol Cole', $items[ $open ]['content']['rendered'] );
+		$this->assertTrue( $items[ $locked ]['content']['protected'] );
+		$this->assertSame( '', $items[ $locked ]['content']['rendered'] );
+		$this->assertTrue( $items[ $locked ]['excerpt']['protected'] );
+		$this->assertSame( '', $items[ $locked ]['excerpt']['rendered'] );
+
+		// The feed.
+		$feed = $this->read_feed_document();
+		$this->assertStringContainsString( 'Carol Cole', $feed, 'The open read\'s card is in its feed item.' );
+		$this->assertStringContainsString( 'Locked Post', $feed );
+		$this->assertStringNotContainsString( 'Bob Baker', $feed );
+		$this->assertStringNotContainsString( 'Aardvark Secrets', $feed );
 	}
 
 	public function test_the_a_to_z_view_keeps_twelve_per_page_the_count_and_the_var_in_the_pager(): void {
