@@ -438,7 +438,7 @@ final class ReadArchiveTest extends WP_UnitTestCase {
 	 *
 	 * @param string $password Post password.
 	 */
-	public function test_a_protected_read_shows_only_its_title_on_the_shelves_in_rest_and_in_the_feed( string $password ): void {
+	public function test_a_protected_read_shows_only_its_title_on_the_shelves_and_in_the_feed_and_rest_withholds_its_content( string $password ): void {
 		wp_set_current_user( 0 );
 		$open   = $this->read( 'Harbor Weather', '2026-08-29 10:00:00', 'finished', 'Carol Cole' );
 		$locked = $this->read( 'Locked Post', '2026-08-25 10:00:00', 'finished', 'Bob Baker' );
@@ -471,7 +471,10 @@ final class ReadArchiveTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'Aardvark Secrets', $html );
 
 		// REST in grouped order: both on the finished shelf, newest first,
-		// and the protected read's content and excerpt withheld.
+		// and the protected read's content and excerpt withheld. Its meta
+		// isn't checked: _pkiw_read_author and _pkiw_read_title still come
+		// back, since class-meta-fields.php shows them in REST with no
+		// password check.
 		$items = $this->rest_reads_by_group();
 		$this->assertSame( [ $open, $locked ], array_keys( $items ) );
 		$this->assertStringContainsString( 'Carol Cole', $items[ $open ]['content']['rendered'] );
