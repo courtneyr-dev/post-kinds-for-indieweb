@@ -154,7 +154,8 @@ attribute maps, so `wire_matrix()` lists no gaps for comics.
 | `hoursPlayed` | — | `mp-hours-played` |
 | `playedAt` | — | `published` |
 | `review` | — | `content` already maps for every other of-kind post — extend `play_card()` to also read `content` into `review` (a builder gap, not a sender gap) |
-| `bggId` / `rawgId` / `steamId` | — | `mp-bgg-id` / `mp-rawg-id` / `mp-steam-id` |
+| `bggId` | `play-of`, when it's a boardgamegeek.com `/boardgame/<id>` or `/boardgameexpansion/<id>` page (`bgg_id_from_url()`); any other URL, VideoGameGeek included, leaves it empty | `mp-bgg-id` only for a play whose `play-of` isn't a BGG board game page |
+| `rawgId` / `steamId` | — | `mp-rawg-id` / `mp-steam-id` |
 | `officialUrl` / `purchaseUrl` | — | `mp-official-url` / `mp-purchase-url` |
 
 ## rsvp

@@ -432,6 +432,58 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '"review":"Halfway through."', $markup );
 	}
 
+	/**
+	 * Play-of URLs and the BoardGameGeek ID play_card() derives from them.
+	 * Only boardgamegeek.com boardgame and boardgameexpansion pages name a
+	 * board game: a VideoGameGeek ID or a BGG video game page is a video
+	 * game, and the BGG ID files the play as board.
+	 *
+	 * @return array<string, array{0: string, 1: string|null}>
+	 */
+	public function play_of_bgg_ids(): array {
+		return array(
+			'boardgame with slug'      => array( 'https://boardgamegeek.com/boardgame/13/catan', '13' ),
+			'boardgame without slug'   => array( 'https://boardgamegeek.com/boardgame/9990001', '9990001' ),
+			'boardgame expansion'      => array( 'https://boardgamegeek.com/boardgameexpansion/461932/wingspan-americas-expansion', '461932' ),
+			'www host and query'       => array( 'https://www.boardgamegeek.com/boardgame/174430/gloomhaven?ref=share', '174430' ),
+			'uppercase host, http'     => array( 'http://BoardGameGeek.com/boardgame/822/carcassonne', '822' ),
+			'videogamegeek'            => array( 'https://videogamegeek.com/videogame/12345/game-name', null ),
+			'bgg video game page'      => array( 'https://boardgamegeek.com/videogame/12345/game-name', null ),
+			'bgg rpg item'             => array( 'https://boardgamegeek.com/rpgitem/5000/core-rules', null ),
+			'bgg thing'                => array( 'https://boardgamegeek.com/thing/13', null ),
+			'look-alike host'          => array( 'https://boardgamegeek.com.example/boardgame/13/catan', null ),
+			'host with a prefix'       => array( 'https://notboardgamegeek.com/boardgame/13/catan', null ),
+			'bgg path on another host' => array( 'https://example.test/boardgamegeek.com/boardgame/13', null ),
+			'no id'                    => array( 'https://boardgamegeek.com/boardgame/catan', null ),
+			'id glued to text'         => array( 'https://boardgamegeek.com/boardgame/13abc/catan', null ),
+			'example host'             => array( 'https://example.test/game', null ),
+		);
+	}
+
+	/**
+	 * @dataProvider play_of_bgg_ids
+	 *
+	 * @param string      $url    The play-of URL.
+	 * @param string|null $bgg_id Expected bggId, or null for none.
+	 */
+	public function test_play_card_derives_a_bgg_id_from_a_boardgamegeek_play_of( string $url, ?string $bgg_id ): void {
+		$markup = $this->invoke_private(
+			'play_card',
+			array(
+				array(
+					'play-of' => array( $url ),
+					'name'    => array( 'Catan' ),
+				),
+			)
+		);
+		$attrs = parse_blocks( $markup )[0]['attrs'];
+
+		$this->assertSame( $url, $attrs['gameUrl'] ?? null, 'The play-of URL stays the game URL.' );
+		$this->assertSame( $bgg_id, $attrs['bggId'] ?? null );
+		$this->assertArrayNotHasKey( 'rawgId', $attrs );
+		$this->assertArrayNotHasKey( 'steamId', $attrs );
+	}
+
 	public function test_self_closing_block_with_no_attrs(): void {
 		$markup = $this->invoke_private(
 			'self_closing_block',
@@ -2084,6 +2136,21 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 					'rating'  => 4,
 				),
 				array( 'platform', 'cover', 'coverAlt', 'status', 'hoursPlayed', 'playedAt', 'review', 'bggId', 'rawgId', 'steamId', 'officialUrl', 'purchaseUrl' ),
+			),
+			'play bgg' => array(
+				array(
+					'play-of' => array( 'https://boardgamegeek.com/boardgame/13/catan' ),
+					'name'    => array( 'Catan' ),
+					'rating'  => array( '4' ),
+				),
+				'post-kinds-indieweb/play-card',
+				array(
+					'gameUrl' => 'https://boardgamegeek.com/boardgame/13/catan',
+					'title'   => 'Catan',
+					'rating'  => 4,
+					'bggId'   => '13',
+				),
+				array( 'platform', 'cover', 'coverAlt', 'status', 'hoursPlayed', 'playedAt', 'review', 'rawgId', 'steamId', 'officialUrl', 'purchaseUrl' ),
 			),
 			'rsvp'    => array(
 				array(

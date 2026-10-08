@@ -851,14 +851,38 @@ final class Micropub_Content_Builder {
 	 */
 	private static function play_card( array $properties ): string {
 		// Play-card attributes mirror Listen/Watch's URL+name pattern.
-		$attrs = self::filter_empty(
+		$game_url = self::flatten_scalar( $properties, 'play-of' );
+		$attrs    = self::filter_empty(
 			[
-				'gameUrl' => self::flatten_scalar( $properties, 'play-of' ),
+				'gameUrl' => $game_url,
 				'title'   => self::flatten_scalar( $properties, 'name' ),
 				'rating'  => self::flatten_numeric( $properties, 'rating' ),
+				'bggId'   => self::bgg_id_from_url( $game_url ),
 			]
 		);
 		return self::self_closing_block( 'post-kinds-indieweb/play-card', $attrs );
+	}
+
+	/**
+	 * The BoardGameGeek ID a board game page URL names, so a Micropub play
+	 * of a board game files under board games.
+	 *
+	 * Only boardgamegeek.com `/boardgame/<id>` and `/boardgameexpansion/<id>`
+	 * pages count. A VideoGameGeek page, or a BoardGameGeek video game or
+	 * RPG page, names an ID from another catalog, and a BGG ID would file
+	 * that play as a board game.
+	 *
+	 * @param string $url Play-of URL.
+	 * @return string The ID, or '' when the URL isn't a BGG board game page.
+	 */
+	private static function bgg_id_from_url( string $url ): string {
+		if ( 'boardgamegeek.com' !== url_host( $url ) || ! preg_match( '#^https?://#i', $url ) ) {
+			return '';
+		}
+
+		$path = (string) wp_parse_url( $url, PHP_URL_PATH );
+
+		return 1 === preg_match( '#^/(?:boardgame|boardgameexpansion)/(\d+)(?:/|$)#', $path, $matches ) ? $matches[1] : '';
 	}
 
 	/**
