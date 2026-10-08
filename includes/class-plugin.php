@@ -604,16 +604,6 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Recipe_Archive' ) ) {
 			( new Recipe_Archive() )->register();
 		}
-
-		// Read archive: status shelves and the A to Z order (issue 234).
-		if ( class_exists( __NAMESPACE__ . '\\Read_Archive' ) ) {
-			( new Read_Archive() )->register();
-		}
-
-		// Staff Picks: the top-rated board game plays above the play archive (issue 232).
-		if ( class_exists( __NAMESPACE__ . '\\Staff_Picks' ) ) {
-			( new Staff_Picks() )->register();
-		}
 	}
 
 	/**
@@ -1175,19 +1165,19 @@ final class Plugin {
 	private function get_plugin_template_definitions(): array {
 		return [
 			// Venue taxonomy template.
-			'taxonomy-venue'        => [
+			'taxonomy-venue'      => [
 				'title'       => __( 'Venue Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Template for displaying venue taxonomy archives.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 			// Kind archives (issue 233). Generic shelf for every kind; the
 			// menu layout only where the layout differs.
-			'taxonomy-kind'         => [
+			'taxonomy-kind'       => [
 				'title'       => __( 'Kind Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Shelf layout for any post kind archive.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
-			'taxonomy-kind-eat'     => [
+			'taxonomy-kind-eat'   => [
 				'title'       => __( 'Eat Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Menu layout for the eat archive, grouped by cuisine.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
@@ -1197,19 +1187,9 @@ final class Plugin {
 				'description' => __( 'Map and list of the check-ins on each archive page.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
-			'taxonomy-kind-drink'   => [
+			'taxonomy-kind-drink' => [
 				'title'       => __( 'Drink Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Menu layout for the drink archive, grouped by drink type.', 'post-kinds-for-indieweb-in-block-themes' ),
-				'post_types'  => [],
-			],
-			'taxonomy-kind-play'    => [
-				'title'       => __( 'Play Archive', 'post-kinds-for-indieweb-in-block-themes' ),
-				'description' => __( 'Play archive in sections: video games, board games, then other plays.', 'post-kinds-for-indieweb-in-block-themes' ),
-				'post_types'  => [],
-			],
-			'taxonomy-kind-read'    => [
-				'title'       => __( 'Read Archive', 'post-kinds-for-indieweb-in-block-themes' ),
-				'description' => __( 'Read archive on shelves by reading status.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 		];
