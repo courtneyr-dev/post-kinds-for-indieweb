@@ -20,16 +20,37 @@ use PKIW\Taxonomy;
  */
 final class KindFactsTest extends WP_UnitTestCase {
 
+	/**
+	 * Readers registered before the test, such as the play reader
+	 * functions-play.php registers once at file load.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $readers_before = [];
+
 	public function set_up(): void {
 		parent::set_up();
 		( new Taxonomy() )->create_default_terms();
+		$this->readers_before = $this->registered()->getValue();
 	}
 
+	/**
+	 * Put back the readers the test found, not an empty registry, so the
+	 * classes that run later still see the readers kinds register at load.
+	 */
 	public function tear_down(): void {
+		$this->registered()->setValue( null, $this->readers_before );
+		parent::tear_down();
+	}
+
+	/**
+	 * Kind_Facts' private registry of runtime readers.
+	 */
+	private function registered(): ReflectionProperty {
 		$registered = new ReflectionProperty( Kind_Facts::class, 'registered' );
 		$registered->setAccessible( true );
-		$registered->setValue( null, [] );
-		parent::tear_down();
+
+		return $registered;
 	}
 
 	/**
