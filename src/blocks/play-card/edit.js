@@ -20,9 +20,11 @@ import {
 	SelectControl,
 	RangeControl,
 	ExternalLink,
+	Disabled,
 } from '@wordpress/components';
 import { useState, useEffect, useRef } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
+import ServerSideRender from '@wordpress/server-side-render';
 import { StarRating, MediaSearch } from '../shared/components';
 import { suggestPlayStyle, applySuggestedStyle } from '../shared/play-style';
 
@@ -89,7 +91,125 @@ const PLATFORM_OPTIONS = [
 	{ label: 'Other (type below)', value: 'other' },
 ];
 
-export default function Edit( { attributes, setAttributes } ) {
+/**
+ * Whether an ID attribute names a provider.
+ *
+ * @param {string|undefined} id Attribute value.
+ * @return {boolean} True for a string that isn't blank.
+ */
+const namesProvider = ( id ) => 'string' === typeof id && '' !== id.trim();
+
+/**
+ * Whether a card is a board game: a BoardGameGeek ID and no RAWG or Steam
+ * ID. The server's play_group_of_attrs() files a card the same way, and
+ * prints the board game tabletop for it.
+ *
+ * @param {Object} attributes Block attributes.
+ * @return {boolean} True for a board game card.
+ */
+export function isBoardGame( attributes = {} ) {
+	return (
+		namesProvider( attributes.bggId ) &&
+		! namesProvider( attributes.rawgId ) &&
+		! namesProvider( attributes.steamId )
+	);
+}
+
+/**
+ * The host of an http(s) URL, lowercase and without a leading www.
+ *
+ * @param {string} url URL.
+ * @return {string} Host, or '' for anything else.
+ */
+function urlHost( url ) {
+	let parsed;
+	try {
+		parsed = new URL( String( url ?? '' ).trim() );
+	} catch {
+		return '';
+	}
+	if ( ! /^https?:$/.test( parsed.protocol ) ) {
+		return '';
+	}
+	return parsed.hostname
+		.toLowerCase()
+		.replace( /\.$/, '' )
+		.replace( /^www\./, '' );
+}
+
+/**
+ * The BoardGameGeek ID a board game page URL names.
+ *
+ * Only boardgamegeek.com /boardgame/<id> and /boardgameexpansion/<id>
+ * pages count, as in the Micropub builder. A VideoGameGeek page, or a BGG
+ * video game or RPG page, names an ID from another catalog, and a bggId
+ * would file that game as a board game (#372).
+ *
+ * @param {string} url Game URL.
+ * @return {string} The ID, or '' when the URL isn't a BGG board game page.
+ */
+export function bggIdFromUrl( url ) {
+	if ( 'boardgamegeek.com' !== urlHost( url ) ) {
+		return '';
+	}
+	const match = new URL( String( url ).trim() ).pathname.match(
+		/^\/(?:boardgame|boardgameexpansion)\/(\d+)(?:\/|$)/
+	);
+	return match ? match[ 1 ] : '';
+}
+
+/**
+ * A title from the slug of a BoardGameGeek or VideoGameGeek page URL:
+ * ".../boardgame/13/wingspan-americas-expansion" gives "Wingspan Americas
+ * Expansion".
+ *
+ * @param {string} url Game URL.
+ * @return {string} Title, or '' when the URL has no slug.
+ */
+function geekSlugTitle( url ) {
+	const match = String( url ?? '' ).match(
+		/(?:boardgamegeek|videogamegeek)\.com\/(?:boardgame|boardgameexpansion|videogame|videogameexpansion|rpgitem|thing)\/\d+\/([^/?#]+)/
+	);
+	if ( ! match ) {
+		return '';
+	}
+	return match[ 1 ]
+		.split( '-' )
+		.map( ( word ) => word.charAt( 0 ).toUpperCase() + word.slice( 1 ) )
+		.join( ' ' );
+}
+
+/**
+ * Link text for a game URL, by its host, as the server prints it.
+ *
+ * @param {string} url Game URL.
+ * @return {string} 'View on BGG', 'View on RAWG', 'View on Steam', the
+ *                  host, or '' when the URL isn't an http(s) URL.
+ */
+export function gameUrlLabel( url ) {
+	const host = urlHost( url );
+	switch ( host ) {
+		case 'boardgamegeek.com':
+			return __(
+				'View on BGG',
+				'post-kinds-for-indieweb-in-block-themes'
+			);
+		case 'rawg.io':
+			return __(
+				'View on RAWG',
+				'post-kinds-for-indieweb-in-block-themes'
+			);
+		case 'store.steampowered.com':
+			return __(
+				'View on Steam',
+				'post-kinds-for-indieweb-in-block-themes'
+			);
+		default:
+			return host;
+	}
+}
+
+export default function Edit( { attributes, setAttributes, isSelected } ) {
 	const {
 		className,
 		title,
@@ -129,20 +249,28 @@ export default function Edit( { attributes, setAttributes } ) {
 		return platform ? 'other' : '';
 	};
 
+	// A board game card that isn't selected shows the server's tabletop,
+	// so the canvas matches the published single. Selecting it brings the
+	// edit UI back.
+	const showPreview = ! isSelected && isBoardGame( attributes );
+
 	const blockProps = useBlockProps( {
-		className: 'play-card-block pk-card k-play',
+		className: showPreview
+			? 'pk-play-preview'
+			: 'play-card-block pk-card k-play',
 	} );
 
 	const { editPost } = useDispatch( 'core/editor' );
 
 	// Get post meta and kind - meta is the source of truth for sidebar sync
-	const { currentKind, postMeta } = useSelect( ( select ) => {
+	const { currentKind, postMeta, postId } = useSelect( ( select ) => {
 		const terms = select( 'core/editor' ).getEditedPostAttribute( 'kind' );
 		const meta =
 			select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
 		return {
 			currentKind: terms && terms.length > 0 ? terms[ 0 ] : null,
 			postMeta: meta,
+			postId: select( 'core/editor' ).getCurrentPostId(),
 		};
 	}, [] );
 
@@ -303,8 +431,11 @@ export default function Edit( { attributes, setAttributes } ) {
 			coverAlt: item.title || item.name || '',
 			platform: selectedPlatform,
 			gameUrl: item.url || '',
+			// A lookup names one provider, so the others go: a stale RAWG or
+			// Steam ID would keep a BGG pick filed as a video game.
 			bggId: item.source === 'bgg' ? String( item.id ) : '',
 			rawgId: item.source === 'rawg' ? String( item.id ) : '',
+			steamId: '',
 		} );
 		const suggested = applySuggestedStyle(
 			className,
@@ -340,6 +471,23 @@ export default function Edit( { attributes, setAttributes } ) {
 		label: `${ s.emoji } ${ s.label }`,
 		value: s.value,
 	} ) );
+
+	// The inspector shows only for the selected block, so the preview needs
+	// none.
+	if ( showPreview ) {
+		return (
+			<div { ...blockProps }>
+				<Disabled>
+					<ServerSideRender
+						block="post-kinds-indieweb/play-card"
+						attributes={ attributes }
+						urlQueryArgs={ postId ? { post_id: postId } : {} }
+						skipBlockSupportAttributes
+					/>
+				</Disabled>
+			</div>
+		);
+	}
 
 	return (
 		<>
@@ -405,31 +553,18 @@ export default function Edit( { attributes, setAttributes } ) {
 						) }
 						value={ gameUrl || '' }
 						onChange={ ( value ) => {
-							setAttributes( { gameUrl: value } );
-							// Extract BGG ID and title from URL patterns like:
-							// https://boardgamegeek.com/boardgame/13/catan
-							// https://boardgamegeek.com/boardgameexpansion/461932/wingspan-americas-expansion
-							// https://videogamegeek.com/videogame/12345/game-name
-							const bggMatch = value.match(
-								/(?:boardgamegeek|videogamegeek)\.com\/(?:boardgame|boardgameexpansion|videogame|videogameexpansion|rpgitem|thing)\/(\d+)(?:\/([^/?#]+))?/
-							);
-							if ( bggMatch ) {
-								const updates = { bggId: bggMatch[ 1 ] };
-								// Extract title from URL slug if present
-								if ( bggMatch[ 2 ] ) {
-									// Convert slug to title: "wingspan-americas-expansion" -> "Wingspan Americas Expansion"
-									const titleFromSlug = bggMatch[ 2 ]
-										.split( '-' )
-										.map(
-											( word ) =>
-												word.charAt( 0 ).toUpperCase() +
-												word.slice( 1 )
-										)
-										.join( ' ' );
-									updates.title = titleFromSlug;
-								}
-								setAttributes( updates );
+							// A BGG board game page sets bggId; any BGG or
+							// VGG page with a slug sets the title.
+							const updates = { gameUrl: value };
+							const pastedBggId = bggIdFromUrl( value );
+							if ( pastedBggId ) {
+								updates.bggId = pastedBggId;
 							}
+							const titleFromSlug = geekSlugTitle( value );
+							if ( titleFromSlug ) {
+								updates.title = titleFromSlug;
+							}
+							setAttributes( updates );
 						} }
 						placeholder="https://boardgamegeek.com/boardgame/13/catan"
 						help={ __(
@@ -708,7 +843,9 @@ export default function Edit( { attributes, setAttributes } ) {
 												type="button"
 												className="post-kinds-card__media-button"
 												onClick={ open }
-												style={ { aspectRatio: '3/4' } }
+												style={ {
+													aspectRatio: '3/4',
+												} }
 											>
 												{ cover ? (
 													<>
@@ -877,7 +1014,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 							{ /* Links */ }
 							<div className="post-kinds-card__links">
-								{ gameUrl && (
+								{ gameUrlLabel( gameUrl ) && (
 									<a
 										href={ gameUrl }
 										className="post-kinds-card__link"
@@ -885,10 +1022,7 @@ export default function Edit( { attributes, setAttributes } ) {
 										rel="noopener noreferrer"
 										onClick={ ( e ) => e.preventDefault() }
 									>
-										{ __(
-											'View on BGG',
-											'post-kinds-for-indieweb-in-block-themes'
-										) }
+										{ gameUrlLabel( gameUrl ) }
 									</a>
 								) }
 								{ officialUrl && (
@@ -925,7 +1059,10 @@ export default function Edit( { attributes, setAttributes } ) {
 							{ ! gameUrl && ! officialUrl && ! purchaseUrl && (
 								<div
 									className="post-kinds-card__input-row"
-									style={ { flexWrap: 'wrap', gap: '8px' } }
+									style={ {
+										flexWrap: 'wrap',
+										gap: '8px',
+									} }
 								>
 									<input
 										type="url"

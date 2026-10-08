@@ -206,6 +206,43 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The play card's board tabletop (issue 232 PL7) is a second render path
+	 * through the same block: the matrix's play row names a RAWG and a
+	 * Steam ID, so it renders the shared card. Without the two video IDs
+	 * the row files as a board game, and every other sample must reach
+	 * the tabletop markup.
+	 */
+	public function test_every_play_attribute_displays_on_a_board_tabletop(): void {
+		$attributes = $this->dynamic_blocks()['post-kinds-indieweb/play-card'][1];
+		unset( $attributes['rawgId'], $attributes['steamId'] );
+
+		$post_id = self::factory()->post->create();
+		$this->go_to( get_permalink( $post_id ) );
+
+		$attrs = array_map( static fn( $a ) => $a['sample'], $attributes );
+		$html  = do_blocks( sprintf( '<!-- wp:post-kinds-indieweb/play-card %s /-->', wp_json_encode( $attrs ) ) );
+
+		$this->assertStringContainsString( 'pk-card--tabletop', $html );
+
+		$exceptions = array_merge(
+			$this->assertion_exceptions()['*'],
+			$this->assertion_exceptions()['post-kinds-indieweb/play-card']
+		);
+		$missing    = [];
+		foreach ( $attributes as $attr => $def ) {
+			if ( isset( $exceptions[ $attr ] ) || 'boolean' === $def['type'] ) {
+				continue;
+			}
+			if ( false === strpos( $html, (string) $def['sample'] ) ) {
+				$missing[] = $attr;
+			}
+		}
+
+		$this->assertSame( [], $missing, 'play-card tabletop: attribute sample(s) missing from rendered output' );
+		$this->assertSame( [], $this->http_requests, 'play-card tabletop: rendering attempted live HTTP request(s)' );
+	}
+
+	/**
 	 * Card titles must render as <h2>, not <h3>. A card sits directly under the
 	 * page <h1> (single post) or the archive <h1> (stream), so an <h3> skips a
 	 * heading level — WCAG 1.3.1 (Info and Relationships). Regression guard for
