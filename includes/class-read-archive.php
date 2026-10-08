@@ -174,7 +174,7 @@ final class Read_Archive {
 		}
 
 		global $wpdb;
-		$first  = static fn( string $suffix ): string => 'NULLIF(TRIM(' . $wpdb->prepare(
+		$first = static fn( string $suffix ): string => 'NULLIF(TRIM(' . $wpdb->prepare(
 			"(SELECT pkiw_r.meta_value FROM {$wpdb->postmeta} pkiw_r WHERE pkiw_r.post_id = {$wpdb->posts}.ID AND pkiw_r.meta_key = %s ORDER BY pkiw_r.meta_id ASC LIMIT 1)",
 			Meta_Fields::PREFIX . $suffix
 		) . "), '')";
