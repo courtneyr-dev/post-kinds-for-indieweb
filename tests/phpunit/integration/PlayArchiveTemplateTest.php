@@ -230,14 +230,36 @@ final class PlayArchiveTemplateTest extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'emptyLabel', $children[1]['attrs'] );
 	}
 
-	public function test_staff_picks_sits_above_the_loop_for_the_play_kind(): void {
+	/**
+	 * Staff Picks lists board game plays on its own, so it takes no kind.
+	 */
+	public function test_staff_picks_sits_above_the_loop_with_no_attributes(): void {
 		$blocks = $this->template_blocks();
 		$names  = array_column( $blocks, 'blockName' );
 		$picks  = $this->of_type( $blocks, 'post-kinds-indieweb/staff-picks' );
 
 		$this->assertCount( 1, $picks );
-		$this->assertSame( 'play', $picks[0]['attrs']['kind'] ?? null );
+		$this->assertSame( [], $picks[0]['attrs'] );
 		$this->assertLessThan( array_search( 'core/query', $names, true ), array_search( 'post-kinds-indieweb/staff-picks', $names, true ) );
+	}
+
+	/**
+	 * The Site Editor previews Staff Picks through the block renderer, which
+	 * answers 400 rest_additional_properties_forbidden for an attribute the
+	 * block doesn't register.
+	 */
+	public function test_the_block_renderer_accepts_the_template_s_staff_picks_attributes(): void {
+		$picks = $this->of_type( $this->template_blocks(), 'post-kinds-indieweb/staff-picks' );
+		$this->assertCount( 1, $picks );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		$request = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/post-kinds-indieweb/staff-picks' );
+		$request->set_param( 'context', 'edit' );
+		$request->set_param( 'attributes', $picks[0]['attrs'] );
+		$response = rest_get_server()->dispatch( $request );
+		$GLOBALS['wp_rest_server'] = null;
+
+		$this->assertSame( 200, $response->get_status(), (string) wp_json_encode( $response->get_data() ) );
 	}
 
 	// Rendered.

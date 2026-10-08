@@ -109,27 +109,88 @@ final class PlayFactsTest extends WP_UnitTestCase {
 
 	/**
 	 * Meta beats a stale card attribute: an import or the sidebar can write
-	 * meta the card's copy never saw (X16).
+	 * meta the card's copy never saw (X16). Every mirrored field is stale
+	 * here, so a reader that reads any of them from the card fails.
 	 */
 	public function test_meta_beats_a_stale_card_attribute(): void {
 		$id = $this->play(
 			[
-				'title'    => 'Old Title',
-				'platform' => 'PC',
-				'rating'   => 2,
-				'rawgId'   => '900001',
+				'title'       => 'Old Title',
+				'platform'    => 'PC',
+				'status'      => 'abandoned',
+				'hoursPlayed' => 1,
+				'rating'      => 2,
+				'review'      => 'Old review.',
+				'gameUrl'     => 'https://rawg.io/games/old-title',
+				'officialUrl' => 'https://old.example/',
+				'purchaseUrl' => 'https://shop.example/old-title',
+				'rawgId'      => '900001',
+				'steamId'     => '900002',
+				'bggId'       => '9990001',
 			]
 		);
 		update_post_meta( $id, '_pkiw_play_title', 'New Title' );
 		update_post_meta( $id, '_pkiw_play_platform', 'Nintendo Switch' );
+		update_post_meta( $id, '_pkiw_play_status', 'completed' );
+		update_post_meta( $id, '_pkiw_play_hours', 7.5 );
 		update_post_meta( $id, '_pkiw_play_rating', 4 );
+		update_post_meta( $id, '_pkiw_play_review', 'New review.' );
+		update_post_meta( $id, '_pkiw_play_game_url', 'https://store.steampowered.com/app/900098/' );
+		update_post_meta( $id, '_pkiw_play_official_url', 'https://new.example/' );
+		update_post_meta( $id, '_pkiw_play_purchase_url', 'https://shop.example/new-title' );
+		update_post_meta( $id, '_pkiw_play_rawg_id', '900099' );
+		update_post_meta( $id, '_pkiw_play_steam_id', '900098' );
+		update_post_meta( $id, '_pkiw_play_bgg_id', '9990077' );
 
 		$facts = \PKIW\kind_facts( $id );
 
 		$this->assertSame( 'New Title', $facts['title'] );
 		$this->assertSame( 'Nintendo Switch', $facts['platform'] );
+		$this->assertSame( 'completed', $facts['status'] );
+		$this->assertSame( 'Completed', $facts['status_label'] );
+		$this->assertSame( 7.5, $facts['hours'] );
+		$this->assertSame( '7.5 hours played', $facts['hours_label'] );
 		$this->assertSame( 4.0, $facts['rating'] );
+		$this->assertSame( 'New review.', $facts['review'] );
+		$this->assertSame( 'https://store.steampowered.com/app/900098/', $facts['game_url'] );
+		$this->assertSame( 'View on Steam', $facts['game_url_label'] );
+		$this->assertSame( 'https://new.example/', $facts['official_url'] );
+		$this->assertSame( 'https://shop.example/new-title', $facts['purchase_url'] );
+		$this->assertSame( '900099', $facts['rawg_id'] );
+		$this->assertSame( '900098', $facts['steam_id'] );
+		$this->assertSame( '9990077', $facts['bgg_id'] );
 		$this->assertSame( 'video', $facts['group'] );
+	}
+
+	/**
+	 * Cleared meta stays cleared: the card's stale game URL and provider
+	 * IDs don't fill the gap, and the group follows the meta that's left.
+	 */
+	public function test_cleared_meta_does_not_fall_back_to_a_stale_card_attribute(): void {
+		$id = $this->play(
+			[
+				'title'   => 'Forest Paths',
+				'review'  => 'Old review.',
+				'gameUrl' => 'https://rawg.io/games/forest-paths',
+				'rawgId'  => '900001',
+				'steamId' => '900002',
+			]
+		);
+		delete_post_meta( $id, '_pkiw_play_review' );
+		delete_post_meta( $id, '_pkiw_play_game_url' );
+		delete_post_meta( $id, '_pkiw_play_rawg_id' );
+		delete_post_meta( $id, '_pkiw_play_steam_id' );
+		update_post_meta( $id, '_pkiw_play_bgg_id', '9990077' );
+
+		$facts = \PKIW\kind_facts( $id );
+
+		$this->assertSame( '', $facts['review'] );
+		$this->assertSame( '', $facts['game_url'] );
+		$this->assertSame( '', $facts['game_url_label'] );
+		$this->assertSame( '', $facts['rawg_id'] );
+		$this->assertSame( '', $facts['steam_id'] );
+		$this->assertSame( '9990077', $facts['bgg_id'] );
+		$this->assertSame( 'board', $facts['group'] );
 	}
 
 	public function test_a_meta_only_play_reports_its_facts_with_no_card(): void {
@@ -202,15 +263,18 @@ final class PlayFactsTest extends WP_UnitTestCase {
 	 */
 	public function hours(): array {
 		return [
-			'none'       => [ 0.0, '' ],
-			'negative'   => [ -2.0, '' ],
-			'one'        => [ 1.0, '1 hour played' ],
-			'two'        => [ 2.0, '2 hours played' ],
-			'one half'   => [ 1.5, '1.5 hours played' ],
-			'three half' => [ 3.5, '3.5 hours played' ],
-			'half'       => [ 0.5, '0.5 hours played' ],
-			'quarter'    => [ 2.25, '2.25 hours played' ],
-			'thousands'  => [ 1200.0, '1,200 hours played' ],
+			'none'            => [ 0.0, '' ],
+			'negative'        => [ -2.0, '' ],
+			'one'             => [ 1.0, '1 hour played' ],
+			'two'             => [ 2.0, '2 hours played' ],
+			'one half'        => [ 1.5, '1.5 hours played' ],
+			'three half'      => [ 3.5, '3.5 hours played' ],
+			'half'            => [ 0.5, '0.5 hours played' ],
+			'quarter'         => [ 2.25, '2.25 hours played' ],
+			'thousands'       => [ 1200.0, '1,200 hours played' ],
+			'rounds to 0'     => [ 0.004, '' ],
+			'rounds to 0.01'  => [ 0.005, '0.01 hours played' ],
+			'rounds to whole' => [ 1.999, '2 hours played' ],
 		];
 	}
 
@@ -224,6 +288,45 @@ final class PlayFactsTest extends WP_UnitTestCase {
 	 */
 	public function test_hours_label_keeps_decimals_and_picks_the_plural( float $hours, string $expected ): void {
 		$this->assertSame( $expected, \PKIW\play_hours_label( $hours ) );
+	}
+
+	/**
+	 * @return array<string, array{float, string}>
+	 */
+	public function hours_with_a_comma_decimal(): array {
+		return [
+			'one'             => [ 1.0, '1 hour played' ],
+			'one half'        => [ 1.5, '1,5 hours played' ],
+			'quarter'         => [ 2.25, '2,25 hours played' ],
+			'tenth'           => [ 10.1, '10,1 hours played' ],
+			'thousands'       => [ 1200.0, '1.200 hours played' ],
+			'thousands half'  => [ 1200.5, '1.200,5 hours played' ],
+			'rounds to 0'     => [ 0.004, '' ],
+		];
+	}
+
+	/**
+	 * A locale that writes 1.200,5 keeps its thousands dot and trims only
+	 * trailing decimal zeros.
+	 *
+	 * @dataProvider hours_with_a_comma_decimal
+	 *
+	 * @param float  $hours    Hours played.
+	 * @param string $expected Label.
+	 */
+	public function test_hours_label_follows_the_locale_s_separators( float $hours, string $expected ): void {
+		global $wp_locale;
+		$saved                                     = $wp_locale->number_format;
+		$wp_locale->number_format['decimal_point'] = ',';
+		$wp_locale->number_format['thousands_sep'] = '.';
+
+		try {
+			$label = \PKIW\play_hours_label( $hours );
+		} finally {
+			$wp_locale->number_format = $saved;
+		}
+
+		$this->assertSame( $expected, $label );
 	}
 
 	public function test_the_hours_fact_and_label_come_from_meta(): void {
