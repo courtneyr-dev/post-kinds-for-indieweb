@@ -80,6 +80,32 @@ class Title_Privacy {
 	private const SLUG_PASS_VERSION = '1';
 
 	/**
+	 * Cursor for batched stored-slug repair.
+	 */
+	private const SLUG_PASS_CURSOR_OPTION = 'pkiw_title_slug_pass_cursor';
+
+	/**
+	 * Lock for one stored-slug repair request at a time.
+	 */
+	private const SLUG_PASS_LOCK_OPTION = 'pkiw_title_slug_pass_lock';
+
+	/**
+	 * Candidate count per stored-slug repair request.
+	 */
+	private const SLUG_PASS_BATCH = 100;
+
+	/**
+	 * Seconds before a stored-slug repair lock is stale.
+	 */
+	private const SLUG_PASS_LOCK_TTL = 300;
+
+	private const SYNC_SKIPPED = 'skipped';
+
+	private const SYNC_REPLACED = 'replaced';
+
+	private const SYNC_FAILED = 'failed';
+
+	/**
 	 * Hooks.
 	 */
 	public function __construct() {
@@ -108,38 +134,179 @@ class Title_Privacy {
 			return;
 		}
 
-		self::replace_stored_slugs();
-		update_option( self::SLUG_PASS_OPTION, self::SLUG_PASS_VERSION );
+		if ( ! self::acquire_slug_pass_lock() ) {
+			return;
+		}
+
+		try {
+			self::replace_stored_slugs();
+		} finally {
+			delete_option( self::SLUG_PASS_LOCK_OPTION );
+			self::clear_slug_pass_lock_cache();
+		}
 	}
 
 	/**
-	 * Give every post with a generated title whose stored slug names a
-	 * hidden location the safe slug.
+	 * Process one stored-slug repair batch.
 	 *
 	 * @return int Number of slugs replaced.
 	 */
-	public static function replace_stored_slugs(): int {
-		$post_ids = get_posts(
-			[
-				'post_type'        => 'any',
-				'post_status'      => 'any',
-				'meta_key'         => self::META_KEY, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- One pass per version.
-				'meta_value'       => self::SOURCE_LOCATION, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- One pass per version.
-				'fields'           => 'ids',
-				'posts_per_page'   => -1,
-				'no_found_rows'    => true,
-				'suppress_filters' => true,
-			]
-		);
+	private static function replace_stored_slugs(): int {
+		$cursor   = self::slug_pass_cursor();
+		$post_ids = self::stored_slug_pass_candidates( $cursor['after'] );
+
+		if ( null === $post_ids ) {
+			return 0;
+		}
 
 		$replaced = 0;
+		$failed   = false;
 		foreach ( $post_ids as $post_id ) {
-			if ( self::sync_slug( (int) $post_id ) ) {
+			$result = self::sync_slug( (int) $post_id );
+			if ( self::SYNC_REPLACED === $result ) {
 				++$replaced;
+			} elseif ( self::SYNC_FAILED === $result ) {
+				$failed = true;
 			}
 		}
 
+		if ( [] !== $post_ids ) {
+			$cursor['after'] = max( array_map( 'intval', $post_ids ) );
+		}
+		$cursor['retry'] = $cursor['retry'] || $failed;
+
+		if ( count( $post_ids ) < self::SLUG_PASS_BATCH ) {
+			if ( $cursor['retry'] ) {
+				update_option(
+					self::SLUG_PASS_CURSOR_OPTION,
+					[
+						'after' => 0,
+						'retry' => false,
+					],
+					false
+				);
+			} else {
+				update_option( self::SLUG_PASS_OPTION, self::SLUG_PASS_VERSION, true );
+				delete_option( self::SLUG_PASS_CURSOR_OPTION );
+			}
+
+			return $replaced;
+		}
+
+		update_option( self::SLUG_PASS_CURSOR_OPTION, $cursor, false );
+
 		return $replaced;
+	}
+
+	/**
+	 * Acquire the stored-slug pass lock.
+	 */
+	private static function acquire_slug_pass_lock(): bool {
+		global $wpdb;
+
+		$now      = time();
+		$inserted = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic lock acquisition.
+			$wpdb->prepare(
+				"INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')",
+				self::SLUG_PASS_LOCK_OPTION,
+				(string) $now
+			)
+		);
+		self::clear_slug_pass_lock_cache();
+
+		if ( 1 === $inserted ) {
+			return true;
+		}
+
+		$locked_at = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Read lock directly, bypassing option cache.
+			$wpdb->prepare(
+				"SELECT option_value FROM {$wpdb->options} WHERE option_name = %s LIMIT 1",
+				self::SLUG_PASS_LOCK_OPTION
+			)
+		);
+
+		if ( null === $locked_at || (int) $locked_at > $now - self::SLUG_PASS_LOCK_TTL ) {
+			return false;
+		}
+
+		$taken = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic stale-lock takeover.
+			$wpdb->prepare(
+				"UPDATE {$wpdb->options} SET option_value = %s WHERE option_name = %s AND option_value = %s",
+				(string) $now,
+				self::SLUG_PASS_LOCK_OPTION,
+				(string) $locked_at
+			)
+		);
+		self::clear_slug_pass_lock_cache();
+
+		return 1 === $taken;
+	}
+
+	/**
+	 * Clear option cache entries touched by direct lock writes.
+	 */
+	private static function clear_slug_pass_lock_cache(): void {
+		wp_cache_delete( self::SLUG_PASS_LOCK_OPTION, 'options' );
+		wp_cache_delete( 'notoptions', 'options' );
+	}
+
+	/**
+	 * Stored cursor for the batched pass.
+	 *
+	 * @return array{after:int,retry:bool}
+	 */
+	private static function slug_pass_cursor(): array {
+		$cursor = get_option( self::SLUG_PASS_CURSOR_OPTION );
+		if ( ! is_array( $cursor ) ) {
+			return [
+				'after' => 0,
+				'retry' => false,
+			];
+		}
+
+		return [
+			'after' => max( 0, (int) ( $cursor['after'] ?? 0 ) ),
+			'retry' => (bool) ( $cursor['retry'] ?? false ),
+		];
+	}
+
+	/**
+	 * Candidate IDs for the stored-slug pass, or null when the SELECT failed.
+	 *
+	 * @param int $after Last processed post ID.
+	 * @return array<int>|null
+	 */
+	private static function stored_slug_pass_candidates( int $after ): ?array {
+		global $wpdb;
+
+		$wpdb->last_error = '';
+		$post_ids         = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One batched repair query per request.
+			$wpdb->prepare(
+				"SELECT DISTINCT p.ID
+				FROM {$wpdb->posts} p
+				INNER JOIN {$wpdb->postmeta} m ON m.post_id = p.ID
+				WHERE p.ID > %d
+					AND p.post_status NOT IN ('trash','auto-draft')
+					AND (
+						( m.meta_key = %s AND m.meta_value = %s )
+						OR m.meta_key IN ( %s, %s )
+					)
+				ORDER BY p.ID ASC
+				LIMIT %d",
+				$after,
+				self::META_KEY,
+				self::SOURCE_LOCATION,
+				Meta_Fields::PREFIX . 'checkin_name',
+				Meta_Fields::PREFIX . 'checkin_venue',
+				self::SLUG_PASS_BATCH
+			)
+		);
+
+		if ( '' !== $wpdb->last_error ) {
+			return null;
+		}
+
+		return array_map( 'intval', $post_ids );
 	}
 
 	/**
@@ -238,7 +405,8 @@ class Title_Privacy {
 			}
 		}
 
-		self::sync_slug( $post_id );
+		// Ordinary saves skip the old-slug read; the meta writes and the pass cover it.
+		self::sync_slug( $post_id, false );
 	}
 
 	/**
@@ -260,26 +428,36 @@ class Title_Privacy {
 	 * or an earlier one, for the safe one when the post's generated title is
 	 * hidden.
 	 *
-	 * @param int $post_id Post ID.
-	 * @return bool Whether the slug was replaced.
+	 * @param int  $post_id          Post ID.
+	 * @param bool $scrub_old_slugs  Whether a post whose slug isn't derived from its title still has hidden-location old slugs removed.
+	 * @return string One of the SYNC_* constants.
 	 */
-	private static function sync_slug( int $post_id ): bool {
+	private static function sync_slug( int $post_id, bool $scrub_old_slugs = true ): string {
 		$post = get_post( $post_id );
 		if ( ! $post instanceof \WP_Post || '' === $post->post_name || 'trash' === $post->post_status ) {
-			return false;
+			return self::SYNC_SKIPPED;
 		}
 
-		if ( ! isset( self::$derived_slugs[ self::slug_key( $post_id ) ] ) && ! self::is_title_slug( $post ) ) {
-			return false;
+		$derived_slug = isset( self::$derived_slugs[ self::slug_key( $post_id ) ] ) || self::is_title_slug( $post );
+		if ( ! $derived_slug ) {
+			if ( ! $scrub_old_slugs || [] === get_post_meta( $post_id, '_wp_old_slug', false ) || ! self::names_hidden_location( $post ) ) {
+				return self::SYNC_SKIPPED;
+			}
+
+			self::delete_hidden_location_old_slugs( $post );
+
+			return self::SYNC_SKIPPED;
 		}
 
 		if ( ! self::names_hidden_location( $post ) ) {
-			return false;
+			return self::SYNC_SKIPPED;
 		}
 
 		$slug = self::safe_slug( $post, $post->post_status );
 		if ( '' === $slug || $slug === $post->post_name ) {
-			return false;
+			self::delete_hidden_location_old_slugs( $post );
+
+			return self::SYNC_SKIPPED;
 		}
 
 		// wp_insert_post() set a new post's guid to its permalink, built from
@@ -294,13 +472,13 @@ class Title_Privacy {
 
 		// Written in place, as wp_insert_post() fills a missing slug, so the
 		// save hooks don't run a second time mid-insert. The venue slug isn't
-		// kept in _wp_old_slug: a redirect from it would confirm a guessed
-		// venue URL.
+		// kept in _wp_old_slug, and older venue slugs are cleaned up too.
 		$written = $wpdb->update( $wpdb->posts, $fields, [ 'ID' => $post_id ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- clean_post_cache() follows.
 		if ( false === $written ) {
-			return false;
+			return self::SYNC_FAILED;
 		}
 		clean_post_cache( $post_id );
+		self::delete_hidden_location_old_slugs( $post, $post->post_name );
 
 		/**
 		 * Fires after a slug WordPress derived from a hidden generated title
@@ -318,7 +496,34 @@ class Title_Privacy {
 		 */
 		do_action( 'pkiw_derived_slug_replaced', $post_id, $post->post_name, $slug );
 
-		return true;
+		return self::SYNC_REPLACED;
+	}
+
+	/**
+	 * Delete old slugs that expose a hidden generated title.
+	 *
+	 * @param \WP_Post    $post          Post.
+	 * @param string|null $replaced_slug Stored slug that was replaced.
+	 */
+	private static function delete_hidden_location_old_slugs( \WP_Post $post, ?string $replaced_slug = null ): void {
+		$old_slugs = get_post_meta( $post->ID, '_wp_old_slug', false );
+		if ( [] === $old_slugs ) {
+			return;
+		}
+
+		$title_slug = sanitize_title( (string) $post->post_title );
+		foreach ( $old_slugs as $old_slug ) {
+			$old_slug = (string) $old_slug;
+			$delete   = null !== $replaced_slug && $old_slug === $replaced_slug;
+
+			if ( '' !== $title_slug ) {
+				$delete = $delete || $old_slug === $title_slug || 1 === preg_match( '/^' . preg_quote( $title_slug, '/' ) . '-\d+$/', $old_slug );
+			}
+
+			if ( $delete ) {
+				delete_post_meta( $post->ID, '_wp_old_slug', $old_slug );
+			}
+		}
 	}
 
 	/**
