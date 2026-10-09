@@ -852,6 +852,7 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 		);
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
 		add_post_meta( $post_id, '_wp_old_slug', self::VENUE_SLUG );
+		add_post_meta( $post_id, '_wp_old_slug', self::VENUE_SLUG );
 		add_post_meta( $post_id, '_wp_old_slug', self::VENUE_SLUG . '-2' );
 		add_post_meta( $post_id, '_wp_old_slug', 'an-earlier-author-slug' );
 		$this->reset_slug_pass_options();
@@ -863,6 +864,47 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 		$this->assertNotContains( self::VENUE_SLUG, $old_slugs );
 		$this->assertNotContains( self::VENUE_SLUG . '-2', $old_slugs );
 		$this->assertContains( 'an-earlier-author-slug', $old_slugs );
+	}
+
+	/**
+	 * A failed old-slug delete counts as a failed write: the pass stays
+	 * incomplete and the next run removes the venue old slug.
+	 */
+	public function test_the_stored_slug_pass_retries_when_an_old_slug_delete_fails(): void {
+		global $wpdb;
+
+		$post_id = $this->generated_draft( 'public' );
+		$this->publish( $post_id );
+		wp_update_post(
+			[
+				'ID'        => $post_id,
+				'post_name' => 'my-own-slug',
+			]
+		);
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
+		add_post_meta( $post_id, '_wp_old_slug', self::VENUE_SLUG );
+		$this->reset_slug_pass_options();
+
+		$fail_delete = static function ( $query ) use ( $wpdb ) {
+			$query = (string) $query;
+			if ( 0 === strpos( $query, 'DELETE FROM ' ) && false !== strpos( $query, $wpdb->postmeta ) ) {
+				return 'DELETE FROM `pkiw_missing_table` WHERE 1 = 1';
+			}
+			return $query;
+		};
+		add_filter( 'query', $fail_delete );
+		$suppress = $wpdb->suppress_errors( true );
+		Title_Privacy::maybe_replace_stored_slugs();
+		$wpdb->suppress_errors( $suppress );
+		remove_filter( 'query', $fail_delete );
+
+		$this->assertFalse( get_option( 'pkiw_title_slug_pass' ) );
+		$this->assertContains( self::VENUE_SLUG, $this->venue_old_slugs( $post_id ) );
+
+		Title_Privacy::maybe_replace_stored_slugs();
+
+		$this->assertNotContains( self::VENUE_SLUG, $this->venue_old_slugs( $post_id ) );
+		$this->assertSame( '1', get_option( 'pkiw_title_slug_pass' ) );
 	}
 
 	/**

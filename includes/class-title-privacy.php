@@ -444,9 +444,7 @@ class Title_Privacy {
 				return self::SYNC_SKIPPED;
 			}
 
-			self::delete_hidden_location_old_slugs( $post );
-
-			return self::SYNC_SKIPPED;
+			return self::delete_hidden_location_old_slugs( $post ) ? self::SYNC_SKIPPED : self::SYNC_FAILED;
 		}
 
 		if ( ! self::names_hidden_location( $post ) ) {
@@ -455,9 +453,7 @@ class Title_Privacy {
 
 		$slug = self::safe_slug( $post, $post->post_status );
 		if ( '' === $slug || $slug === $post->post_name ) {
-			self::delete_hidden_location_old_slugs( $post );
-
-			return self::SYNC_SKIPPED;
+			return self::delete_hidden_location_old_slugs( $post ) ? self::SYNC_SKIPPED : self::SYNC_FAILED;
 		}
 
 		// wp_insert_post() set a new post's guid to its permalink, built from
@@ -478,7 +474,7 @@ class Title_Privacy {
 			return self::SYNC_FAILED;
 		}
 		clean_post_cache( $post_id );
-		self::delete_hidden_location_old_slugs( $post, $post->post_name );
+		$cleaned = self::delete_hidden_location_old_slugs( $post, $post->post_name );
 
 		/**
 		 * Fires after a slug WordPress derived from a hidden generated title
@@ -496,7 +492,7 @@ class Title_Privacy {
 		 */
 		do_action( 'pkiw_derived_slug_replaced', $post_id, $post->post_name, $slug );
 
-		return self::SYNC_REPLACED;
+		return $cleaned ? self::SYNC_REPLACED : self::SYNC_FAILED;
 	}
 
 	/**
@@ -504,26 +500,31 @@ class Title_Privacy {
 	 *
 	 * @param \WP_Post    $post          Post.
 	 * @param string|null $replaced_slug Stored slug that was replaced.
+	 * @return bool False when a delete failed.
 	 */
-	private static function delete_hidden_location_old_slugs( \WP_Post $post, ?string $replaced_slug = null ): void {
+	private static function delete_hidden_location_old_slugs( \WP_Post $post, ?string $replaced_slug = null ): bool {
 		$old_slugs = get_post_meta( $post->ID, '_wp_old_slug', false );
 		if ( [] === $old_slugs ) {
-			return;
+			return true;
 		}
 
+		$cleaned = true;
+
 		$title_slug = sanitize_title( (string) $post->post_title );
-		foreach ( $old_slugs as $old_slug ) {
-			$old_slug = (string) $old_slug;
-			$delete   = null !== $replaced_slug && $old_slug === $replaced_slug;
+		// delete_post_meta() removes every row with the value, so a repeated value is deleted once.
+		foreach ( array_unique( array_map( 'strval', $old_slugs ) ) as $old_slug ) {
+			$delete = null !== $replaced_slug && $old_slug === $replaced_slug;
 
 			if ( '' !== $title_slug ) {
 				$delete = $delete || $old_slug === $title_slug || 1 === preg_match( '/^' . preg_quote( $title_slug, '/' ) . '-\d+$/', $old_slug );
 			}
 
-			if ( $delete ) {
-				delete_post_meta( $post->ID, '_wp_old_slug', $old_slug );
+			if ( $delete && ! delete_post_meta( $post->ID, '_wp_old_slug', $old_slug ) ) {
+				$cleaned = false;
 			}
 		}
+
+		return $cleaned;
 	}
 
 	/**
