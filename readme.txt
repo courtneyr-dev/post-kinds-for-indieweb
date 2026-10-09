@@ -180,6 +180,20 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 
 == Changelog ==
 
+= Unreleased =
+* Added: a play kind archive template: Staff Picks, then plays at 12 a page in sections, video games, then board games, then plays with neither.
+* Added: the Staff Picks block lists up to three top-rated board game plays, one per BoardGameGeek game, on the first archive page only.
+* Added: a read kind archive template with shelves by status (Currently Reading, To Read, Finished, Abandoned) and a Read order block that switches to A–Z by author.
+* Added: the Archive sections block groups a kind archive's Post Template into headed sections, each with its group in data-pkiw-group and a unique heading id.
+* Added: a board game play card prints a tabletop (box, facts, links and a score pad with "Rated N of 5"), the same markup on every theme and in feeds.
+* Added: a Micropub play-of on a boardgamegeek.com board game page sets the play card's BGG ID.
+* Changed: every play card is the entry's u-play-of h-cite, with the class on the card's root.
+* Changed: a play card's Review heading sits one level below the card title, on the Stream too.
+* Fixed: kind feeds stay newest first when the kind archive is grouped.
+* Fixed: a play card switched from a video game to a board game drops the old video game ID, and a read card saved back to Currently Reading saves.
+* Fixed: the card meta backfill runs once at version 5, with the play ID and read status rules and the stricter-wins privacy hold.
+* Fixed: Stream cards cite plays and reads, and a password-protected one prints only its title link.
+
 = 1.8.6 =
 * Added: checkin-dashboard and checkins-feed gained a headingLevel attribute (default 2, clamped 2–4), matching the Stream card block.
 * Changed: checkin-dashboard's and checkins-feed's headings default to h2 instead of the previous hardcoded h3, unless a site sets headingLevel.
