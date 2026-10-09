@@ -31,6 +31,9 @@ delete_option( 'pkiw_webhook_log' );
 delete_option( 'pkiw_pending_scrobbles' );
 delete_option( 'pkiw_owntracks_last_location' );
 delete_option( 'pkiw_atmosphere' );
+delete_option( 'pkiw_title_slug_pass' );
+delete_option( 'pkiw_title_slug_pass_cursor' );
+delete_option( 'pkiw_title_slug_pass_lock' );
 
 // OAuth tokens for each service.
 $pkiw_for_indieweb_oauth_services = [ 'trakt', 'simkl', 'foursquare', 'untappd' ];
