@@ -185,11 +185,11 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 * Added: the Staff Picks block lists up to three top-rated board game plays, one per BoardGameGeek game, on the first archive page only.
 * Added: a read kind archive template with shelves by status (Currently Reading, To Read, Finished, Abandoned) and a Read order block that switches to A–Z by author.
 * Added: the Archive sections block groups a kind archive's Post Template into headed sections, each with its group in data-pkiw-group and a unique heading id.
-* Added: a board game play card prints a tabletop (box, facts, links and a score pad with "Rated N of 5"), the same markup on every theme and in feeds.
+* Added: a board game play card prints a tabletop (box, facts, links and a score pad with "Rated N of 5" and a Review heading one level below the card title, on the Stream too), the same markup on every theme and in feeds.
 * Added: a Micropub play-of on a boardgamegeek.com board game page sets the play card's BGG ID.
 * Changed: every play card is the entry's u-play-of h-cite, with the class on the card's root.
-* Changed: a play card's Review heading sits one level below the card title, on the Stream too.
 * Fixed: kind feeds stay newest first when the kind archive is grouped.
+* Fixed: a listen card whose cover is in this site's media library prints it with core's srcset, sizes, width and height, and its src and u-photo stay the stored URL.
 * Fixed: a play card switched from a video game to a board game drops the old video game ID, and a read card saved back to Currently Reading saves.
 * Fixed: the card meta backfill runs once at version 5, with the play ID and read status rules and the stricter-wins privacy hold.
 * Fixed: Stream cards cite plays and reads, and a password-protected one prints only its title link.
