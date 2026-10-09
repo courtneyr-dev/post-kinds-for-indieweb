@@ -92,6 +92,10 @@ if ( $pkiw_tabletop ) {
 			? '<data class="p-name" value="' . esc_attr( $pkiw_title ) . '" hidden></data>'
 			: '<h2 class="pk-title p-name">' . esc_html( $pkiw_title ) . '</h2>';
 	}
+	// Review nests under the card's h2 title. With no card heading it sits
+	// under the page's H1. The Stream shifts both by the same offset.
+	$pkiw_review_tag     = str_starts_with( $pkiw_title_html, '<h2' ) ? 'h3' : 'h2';
+	$pkiw_review_heading = '<' . $pkiw_review_tag . ' class="pk-scorepad__heading">' . esc_html__( 'Review', 'post-kinds-for-indieweb-in-block-themes' ) . '</' . $pkiw_review_tag . '>';
 
 	// The box: the post's picture, featured image first, else the card's cover.
 	$pkiw_name      = '' !== $pkiw_title_plain ? $pkiw_title_plain : ( null !== $pkiw_post ? $pkiw_plain( get_the_title( $pkiw_post ) ) : '' );
@@ -178,7 +182,7 @@ if ( $pkiw_tabletop ) {
 				<?php echo \PKIW\card_rating_html( $pkiw_rating, 5, true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 			<?php endif; ?>
 			<?php if ( $pkiw_has_review ) : ?>
-				<h2 class="pk-scorepad__heading"><?php esc_html_e( 'Review', 'post-kinds-for-indieweb-in-block-themes' ); ?></h2>
+				<?php echo $pkiw_review_heading; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped above. ?>
 				<div class="pk-scorepad__review p-content"><?php echo wp_kses_post( $pkiw_review ); ?></div>
 			<?php endif; ?>
 		</section>

@@ -1019,6 +1019,9 @@ function link_title_to_post( string $html, \WP_Post $post ): string {
  * rendered via do_blocks(), a synthetic watch-card block, or the generic
  * stream card (which sets its own level directly).
  *
+ * The play card's Review heading (`pk-scorepad__heading`) moves by the same
+ * offset, capped at h6, so it stays one level below the card title.
+ *
  * @param string $html  Rendered card HTML.
  * @param int    $level Clamped heading level (2–4).
  * @return string HTML with the title heading re-leveled.
@@ -1038,7 +1041,19 @@ function apply_stream_heading_level( string $html, int $level ): string {
 		$count
 	);
 
-	return ( null !== $out && $count > 0 ) ? $out : $html;
+	$html = ( null !== $out && $count > 0 ) ? $out : $html;
+
+	$offset = $level - 2;
+	$out    = preg_replace_callback(
+		'#<h([2-6])( class="pk-scorepad__heading")>(.*?)</h\1>#s',
+		static function ( $matches ) use ( $offset ) {
+			$to = min( 6, (int) $matches[1] + $offset );
+			return '<h' . $to . $matches[2] . '>' . $matches[3] . '</h' . $to . '>';
+		},
+		$html
+	);
+
+	return null !== $out ? $out : $html;
 }
 
 /**
