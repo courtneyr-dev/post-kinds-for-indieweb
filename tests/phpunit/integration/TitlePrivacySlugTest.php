@@ -385,11 +385,10 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * A slug that is already public stays put: links to it exist. This
-	 * covers posts published before this fix and a check-in made private
-	 * after it was published.
+	 * A check-in published with its venue slug, then made private: the slug
+	 * names the hidden venue in every link, so it goes (issue 379).
 	 */
-	public function test_a_published_slug_survives_later_saves(): void {
+	public function test_a_published_venue_slug_is_replaced_when_the_location_turns_private(): void {
 		global $wpdb;
 
 		$post_id = $this->generated_draft( 'public' );
@@ -405,6 +404,29 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 		clean_post_cache( $post_id );
 
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
+
+		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
+		$this->assertSame( [], get_post_meta( $post_id, '_wp_old_slug' ), 'A redirect from the venue slug would confirm the venue.' );
+	}
+
+	/**
+	 * A published venue slug on a public check-in is a link people use; a
+	 * later save keeps it.
+	 */
+	public function test_a_public_venue_slug_survives_later_saves(): void {
+		global $wpdb;
+
+		$post_id = $this->generated_draft( 'public' );
+		$wpdb->update(
+			$wpdb->posts,
+			[
+				'post_status' => 'publish',
+				'post_name'   => self::VENUE_SLUG,
+			],
+			[ 'ID' => $post_id ]
+		);
+		clean_post_cache( $post_id );
+
 		wp_update_post(
 			[
 				'ID'           => $post_id,
@@ -416,10 +438,11 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * wp_update_post() passes the stored slug along; wp_insert_post() with
-	 * an ID and no post_name keeps the stored slug without passing it.
+	 * wp_insert_post() with an ID and no post_name keeps the stored slug
+	 * without passing it; a private check-in saved that way still loses
+	 * its venue slug.
 	 */
-	public function test_a_published_slug_survives_a_direct_insert_update(): void {
+	public function test_a_private_venue_slug_saved_earlier_is_replaced_on_the_next_save(): void {
 		$post_id = $this->published_earlier_with_venue_slug();
 
 		wp_insert_post(
@@ -432,8 +455,84 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 			]
 		);
 
-		$this->assertSame( self::VENUE_SLUG, $this->slug( $post_id ) );
+		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
 		$this->assertSame( [], get_post_meta( $post_id, '_wp_old_slug' ) );
+	}
+
+	/**
+	 * Private check-ins saved with their venue slug before issue 379 get the
+	 * safe slug and guid once, without a save, and the old URL confirms
+	 * nothing.
+	 */
+	public function test_the_stored_slug_pass_replaces_a_venue_slug_saved_earlier(): void {
+		global $wpdb;
+
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
+		$post_id = $this->published_earlier_with_venue_slug();
+		$wpdb->update( $wpdb->posts, [ 'guid' => home_url( '/2026/09/12/' . self::VENUE_SLUG . '/' ) ], [ 'ID' => $post_id ] );
+		clean_post_cache( $post_id );
+		delete_option( 'pkiw_title_slug_pass' );
+
+		$heard = [];
+		add_action(
+			'pkiw_derived_slug_replaced',
+			static function ( ...$args ) use ( &$heard ) {
+				$heard[] = $args;
+			},
+			10,
+			3
+		);
+
+		Title_Privacy::maybe_replace_stored_slugs();
+
+		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
+		$this->assertSame( home_url( '/2026/09/12/' . self::SAFE_SLUG . '/' ), get_the_guid( $post_id ) );
+		$this->assertSame( [], get_post_meta( $post_id, '_wp_old_slug' ) );
+		$this->assertSame( [ [ $post_id, self::VENUE_SLUG, self::SAFE_SLUG ] ], $heard );
+
+		$this->go_to( home_url( '/2026/09/12/' . self::VENUE_SLUG . '/' ) );
+		$this->assertTrue( is_404() );
+		$this->assertFalse( redirect_guess_404_permalink(), 'No guessed redirect lands on the private check-in.' );
+	}
+
+	/**
+	 * The pass leaves public venue slugs and author slugs alone, and runs
+	 * once per version.
+	 */
+	public function test_the_stored_slug_pass_keeps_public_and_author_slugs_and_runs_once(): void {
+		global $wpdb;
+
+		$public = $this->generated_draft( 'public' );
+		$author = $this->generated_draft( 'private' );
+		$wpdb->update(
+			$wpdb->posts,
+			[
+				'post_status' => 'publish',
+				'post_name'   => self::VENUE_SLUG,
+			],
+			[ 'ID' => $public ]
+		);
+		$wpdb->update(
+			$wpdb->posts,
+			[
+				'post_status' => 'publish',
+				'post_name'   => 'my-own-slug',
+			],
+			[ 'ID' => $author ]
+		);
+		clean_post_cache( $public );
+		clean_post_cache( $author );
+		delete_option( 'pkiw_title_slug_pass' );
+
+		Title_Privacy::maybe_replace_stored_slugs();
+
+		$this->assertSame( self::VENUE_SLUG, $this->slug( $public ) );
+		$this->assertSame( 'my-own-slug', $this->slug( $author ) );
+
+		$later = $this->published_earlier_with_venue_slug();
+		Title_Privacy::maybe_replace_stored_slugs();
+
+		$this->assertSame( self::VENUE_SLUG, $this->slug( $later ), 'The pass already ran for this version.' );
 	}
 
 	/**
@@ -482,7 +581,8 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 	/**
 	 * An insert that fails at the database never reaches the wp_insert_post
 	 * action, so the slug it derived is never claimed. A later insert whose
-	 * author set that same slug isn't derived.
+	 * author set that same slug isn't derived. Its title differs, so only a
+	 * leaked pending key would make the slug look derived.
 	 */
 	public function test_an_author_slug_after_a_failed_insert_stays(): void {
 		global $wpdb;
@@ -509,7 +609,7 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 			[
 				'post_status'   => 'publish',
 				'post_name'     => self::VENUE_SLUG,
-				'post_title'    => 'Checked in at ' . self::VENUE,
+				'post_title'    => 'Checked in at ' . self::VENUE . ' again',
 				'post_date'     => '2026-09-12 14:30:00',
 				'post_date_gmt' => '2026-09-12 14:30:00',
 			]

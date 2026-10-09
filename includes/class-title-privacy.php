@@ -7,7 +7,8 @@
  * h1, the document title, feeds, REST and every link to the post. This
  * class records which titles were generated and swaps a hidden one for
  * "Check-in, <date>" wherever WordPress prints a title. A slug WordPress
- * derives from such a title is built from "Check-in, <date>" too.
+ * derives from such a title is built from "Check-in, <date>" too, including
+ * one it derived before the location was hidden.
  *
  * @package PKIW
  * @since 1.9.0
@@ -69,6 +70,16 @@ class Title_Privacy {
 	private static array $pending_slugs = [];
 
 	/**
+	 * Option naming the stored-slug pass that has run on this site.
+	 */
+	private const SLUG_PASS_OPTION = 'pkiw_title_slug_pass';
+
+	/**
+	 * Bump to run the stored-slug pass again on every site.
+	 */
+	private const SLUG_PASS_VERSION = '1';
+
+	/**
 	 * Hooks.
 	 */
 	public function __construct() {
@@ -84,6 +95,51 @@ class Title_Privacy {
 		add_action( 'wp_insert_post', [ $this, 'sync_slug_after_insert' ], 10, 3 );
 		add_action( 'added_post_meta', [ $this, 'sync_slug_on_meta' ], 10, 3 );
 		add_action( 'updated_post_meta', [ $this, 'sync_slug_on_meta' ], 10, 3 );
+
+		// Slugs saved before a hidden location replaced them (issue 379).
+		add_action( 'init', [ self::class, 'maybe_replace_stored_slugs' ], 20 );
+	}
+
+	/**
+	 * Run the stored-slug pass once per pass version.
+	 */
+	public static function maybe_replace_stored_slugs(): void {
+		if ( self::SLUG_PASS_VERSION === get_option( self::SLUG_PASS_OPTION ) ) {
+			return;
+		}
+
+		self::replace_stored_slugs();
+		update_option( self::SLUG_PASS_OPTION, self::SLUG_PASS_VERSION );
+	}
+
+	/**
+	 * Give every post with a generated title whose stored slug names a
+	 * hidden location the safe slug.
+	 *
+	 * @return int Number of slugs replaced.
+	 */
+	public static function replace_stored_slugs(): int {
+		$post_ids = get_posts(
+			[
+				'post_type'        => 'any',
+				'post_status'      => 'any',
+				'meta_key'         => self::META_KEY, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- One pass per version.
+				'meta_value'       => self::SOURCE_LOCATION, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- One pass per version.
+				'fields'           => 'ids',
+				'posts_per_page'   => -1,
+				'no_found_rows'    => true,
+				'suppress_filters' => true,
+			]
+		);
+
+		$replaced = 0;
+		foreach ( $post_ids as $post_id ) {
+			if ( self::sync_slug( (int) $post_id ) ) {
+				++$replaced;
+			}
+		}
+
+		return $replaced;
 	}
 
 	/**
@@ -103,7 +159,7 @@ class Title_Privacy {
 	 *
 	 * WordPress builds a slug from post_title when a post leaves draft
 	 * without one. A slug the caller passed, or one the post already has,
-	 * is never touched, so a published link doesn't change.
+	 * is left to sync_slug(), which replaces only one derived from the title.
 	 *
 	 * @param array<string, mixed> $data    Slashed post data about to be written.
 	 * @param array<string, mixed> $postarr Sanitized post data passed in.
@@ -186,8 +242,8 @@ class Title_Privacy {
 	}
 
 	/**
-	 * Recheck a slug derived in this request when its privacy, venue or
-	 * title marker is written.
+	 * Recheck a derived slug when the post's privacy, venue or title marker
+	 * is written.
 	 *
 	 * @param int    $meta_id   Meta ID.
 	 * @param int    $object_id Post ID.
@@ -200,24 +256,30 @@ class Title_Privacy {
 	}
 
 	/**
-	 * Swap a slug WordPress derived in this request for the safe one when
-	 * the post's generated title is hidden.
+	 * Swap a slug WordPress derived from the stored title, in this request
+	 * or an earlier one, for the safe one when the post's generated title is
+	 * hidden.
 	 *
 	 * @param int $post_id Post ID.
+	 * @return bool Whether the slug was replaced.
 	 */
-	private static function sync_slug( int $post_id ): void {
-		if ( ! isset( self::$derived_slugs[ self::slug_key( $post_id ) ] ) ) {
-			return;
+	private static function sync_slug( int $post_id ): bool {
+		$post = get_post( $post_id );
+		if ( ! $post instanceof \WP_Post || '' === $post->post_name || 'trash' === $post->post_status ) {
+			return false;
 		}
 
-		$post = get_post( $post_id );
-		if ( ! $post instanceof \WP_Post || '' === $post->post_name || 'trash' === $post->post_status || ! self::names_hidden_location( $post ) ) {
-			return;
+		if ( ! isset( self::$derived_slugs[ self::slug_key( $post_id ) ] ) && ! self::is_title_slug( $post ) ) {
+			return false;
+		}
+
+		if ( ! self::names_hidden_location( $post ) ) {
+			return false;
 		}
 
 		$slug = self::safe_slug( $post, $post->post_status );
 		if ( '' === $slug || $slug === $post->post_name ) {
-			return;
+			return false;
 		}
 
 		// wp_insert_post() set a new post's guid to its permalink, built from
@@ -233,16 +295,17 @@ class Title_Privacy {
 		// Written in place, as wp_insert_post() fills a missing slug, so the
 		// save hooks don't run a second time mid-insert. The venue slug isn't
 		// kept in _wp_old_slug: a redirect from it would confirm a guessed
-		// venue URL, and it existed only during this request.
+		// venue URL.
 		$written = $wpdb->update( $wpdb->posts, $fields, [ 'ID' => $post_id ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- clean_post_cache() follows.
 		if ( false === $written ) {
-			return;
+			return false;
 		}
 		clean_post_cache( $post_id );
 
 		/**
 		 * Fires after a slug WordPress derived from a hidden generated title
-		 * is replaced in place, without the save hooks running again.
+		 * is replaced in place, without the save hooks running again. Also
+		 * fires for a slug saved in an earlier request.
 		 *
 		 * Code that stored the post's permalink when it was saved, such as
 		 * Yoast SEO's indexable, rebuilds it here.
@@ -254,6 +317,23 @@ class Title_Privacy {
 		 * @param string $new_slug The slug derived from "Check-in, <date>".
 		 */
 		do_action( 'pkiw_derived_slug_replaced', $post_id, $post->post_name, $slug );
+
+		return true;
+	}
+
+	/**
+	 * Whether the post's slug is the one WordPress derives from its stored
+	 * title, with the "-2" style suffix wp_unique_post_slug() adds.
+	 *
+	 * @param \WP_Post $post Post.
+	 */
+	private static function is_title_slug( \WP_Post $post ): bool {
+		$base = sanitize_title( (string) $post->post_title );
+		if ( '' === $base ) {
+			return false;
+		}
+
+		return $post->post_name === $base || 1 === preg_match( '/^' . preg_quote( $base, '/' ) . '-\d+$/', $post->post_name );
 	}
 
 	/**
