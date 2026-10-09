@@ -539,6 +539,124 @@ final class PlayCardTabletopTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The levels of the card title heading and the Review heading, as
+	 * printed. 0 means that heading is absent.
+	 *
+	 * @param string $html Card HTML.
+	 * @return array{0: int, 1: int} Title level, Review level.
+	 */
+	private function title_and_review_levels( string $html ): array {
+		$title  = preg_match( '#<h([1-6]) class="pk-title[^"]*"#', $html, $t ) ? (int) $t[1] : 0;
+		$review = preg_match( '#<h([1-6]) class="pk-scorepad__heading"#', $html, $r ) ? (int) $r[1] : 0;
+
+		return [ $title, $review ];
+	}
+
+	/**
+	 * Cartographers' Table (B9) with a review: the card prints its own
+	 * title as an h2, so Review is an h3 under it.
+	 */
+	public function test_review_sits_below_a_printed_title_on_the_single(): void {
+		$attrs          = self::forest_paths();
+		$attrs['title'] = 'Cartographer\'s Table: Deluxe';
+		$html           = $this->on_single( $this->board( $attrs, [ 'post_title' => 'Cartographers\' Table' ] ) );
+
+		$this->assertSame( [ 2, 3 ], $this->title_and_review_levels( $html ) );
+	}
+
+	/**
+	 * Away from the single the equal title prints as the card's h2, so
+	 * Review is an h3 under it.
+	 */
+	public function test_review_sits_below_the_title_away_from_the_single(): void {
+		$html = $this->in_a_loop( $this->board( self::forest_paths() ) );
+
+		$this->assertSame( [ 2, 3 ], $this->title_and_review_levels( $html ) );
+	}
+
+	/**
+	 * With no card heading, as when the title is hidden data under the
+	 * template's H1, Review is the card's first heading: an h2.
+	 */
+	public function test_review_is_h2_when_the_card_prints_no_title_heading(): void {
+		$html = $this->on_single( $this->board( self::forest_paths() ) );
+
+		$this->assertSame( [ 0, 2 ], $this->title_and_review_levels( $html ) );
+	}
+
+	/**
+	 * Stream heading levels.
+	 *
+	 * @return array<string, array{0: int}>
+	 */
+	public function stream_levels(): array {
+		return [
+			'stream level 2' => [ 2 ],
+			'stream level 3' => [ 3 ],
+			'stream level 4' => [ 4 ],
+		];
+	}
+
+	/**
+	 * Render the Stream card for a post at a heading level.
+	 *
+	 * @param int $id    Post ID.
+	 * @param int $level Stream headingLevel.
+	 */
+	private function stream_card( int $id, int $level ): string {
+		$this->go_to( home_url( '/' ) );
+		$GLOBALS['post'] = get_post( $id );
+		setup_postdata( $GLOBALS['post'] );
+
+		return render_block(
+			[
+				'blockName'    => 'post-kinds-indieweb/stream-card',
+				'attrs'        => [ 'headingLevel' => $level ],
+				'innerBlocks'  => [],
+				'innerHTML'    => '',
+				'innerContent' => [],
+			]
+		);
+	}
+
+	/**
+	 * The Stream re-levels the card title; Review moves with it and stays
+	 * one level below, as on the plugin's play archive at headingLevel 3.
+	 *
+	 * @dataProvider stream_levels
+	 *
+	 * @param int $level Stream headingLevel.
+	 */
+	public function test_review_stays_one_level_below_the_stream_title( int $level ): void {
+		$html = $this->stream_card( $this->board( self::forest_paths() ), $level );
+
+		$this->assertSame( [ $level, $level + 1 ], $this->title_and_review_levels( $html ) );
+	}
+
+	/**
+	 * An untitled board card prints no card heading. Its Review takes the
+	 * Stream's title level, level with the titles of the cards beside it.
+	 *
+	 * @dataProvider stream_levels
+	 *
+	 * @param int $level Stream headingLevel.
+	 */
+	public function test_an_untitled_cards_review_takes_the_stream_title_level( int $level ): void {
+		$attrs = self::forest_paths();
+		unset( $attrs['title'] );
+		$html = $this->stream_card( $this->board( $attrs, [ 'post_title' => '' ] ), $level );
+
+		$this->assertSame( [ 0, $level ], $this->title_and_review_levels( $html ) );
+	}
+
+	public function test_the_stream_caps_the_review_shift_at_h6(): void {
+		$this->assertSame(
+			'<h6 class="pk-scorepad__heading">Review</h6>',
+			\PKIW\apply_stream_heading_level( '<h5 class="pk-scorepad__heading">Review</h5>', 4 )
+		);
+	}
+
+	/**
 	 * Ask the block renderer for a block, the way the editor's
 	 * ServerSideRender does: rest_api_loaded() names the route in the
 	 * rest_route query var before it serves the request.
