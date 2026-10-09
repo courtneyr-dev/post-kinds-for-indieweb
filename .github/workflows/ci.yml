@@ -341,6 +341,19 @@ jobs:
           path: build/
           retention-days: 7
 
+      # build/ ships as committed, but every later job tests a fresh build,
+      # so a src/ or lockfile change without a rebuild stays green. Runs
+      # after the upload so a failing run still has the fresh build/ to grab.
+      - name: Check committed build/ matches the fresh build
+        run: |
+          untracked=$(git ls-files --others --exclude-standard -- build/)
+          if git diff --exit-code --stat -- build/ && [ -z "$untracked" ]; then
+            exit 0
+          fi
+          git status --short build/
+          echo "::error::Committed build/ is stale. Run 'npm ci && npm run build:prod' on Node 24 and commit build/."
+          exit 1
+
   # ===== Security Scanning =====
   security:
     name: Security Scan
