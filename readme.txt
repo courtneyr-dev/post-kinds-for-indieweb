@@ -189,7 +189,7 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 * Added: a Micropub play-of on a boardgamegeek.com board game page sets the play card's BGG ID.
 * Changed: every play card is the entry's u-play-of h-cite, with the class on the card's root.
 * Fixed: kind feeds stay newest first when the kind archive is grouped.
-* Fixed: a listen card whose cover is in this site's media library prints it with core's srcset, sizes, width and height, and its src and u-photo stay the stored URL.
+* Fixed: a listen card whose cover is in this site's media library prints it with core's srcset, sizes, width and height, and its src and u-photo are the library image's current file, which is the stored URL unless the image was edited in the Media Library.
 * Fixed: a play card switched from a video game to a board game drops the old video game ID, and a read card saved back to Currently Reading saves.
 * Fixed: the card meta backfill runs once at version 5, with the play ID and read status rules and the stricter-wins privacy hold.
 * Fixed: Stream cards cite plays and reads, and a password-protected one prints only its title link.
