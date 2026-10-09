@@ -134,14 +134,23 @@ class Title_Privacy {
 			return;
 		}
 
-		if ( ! self::acquire_slug_pass_lock() ) {
+		$lock_token = self::acquire_slug_pass_lock();
+		if ( false === $lock_token ) {
 			return;
 		}
 
 		try {
 			self::replace_stored_slugs();
 		} finally {
-			delete_option( self::SLUG_PASS_LOCK_OPTION );
+			global $wpdb;
+
+			$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Release only this request's lock token.
+				$wpdb->options,
+				[
+					'option_name'  => self::SLUG_PASS_LOCK_OPTION,
+					'option_value' => $lock_token,
+				]
+			);
 			self::clear_slug_pass_lock_cache();
 		}
 	}
@@ -201,21 +210,21 @@ class Title_Privacy {
 	/**
 	 * Acquire the stored-slug pass lock.
 	 */
-	private static function acquire_slug_pass_lock(): bool {
+	private static function acquire_slug_pass_lock(): string|false {
 		global $wpdb;
 
-		$now      = time();
+		$token    = (string) time();
 		$inserted = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic lock acquisition.
 			$wpdb->prepare(
 				"INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')",
 				self::SLUG_PASS_LOCK_OPTION,
-				(string) $now
+				$token
 			)
 		);
 		self::clear_slug_pass_lock_cache();
 
 		if ( 1 === $inserted ) {
-			return true;
+			return $token;
 		}
 
 		$locked_at = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Read lock directly, bypassing option cache.
@@ -225,6 +234,7 @@ class Title_Privacy {
 			)
 		);
 
+		$now = time();
 		if ( null === $locked_at || (int) $locked_at > $now - self::SLUG_PASS_LOCK_TTL ) {
 			return false;
 		}
@@ -232,14 +242,14 @@ class Title_Privacy {
 		$taken = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic stale-lock takeover.
 			$wpdb->prepare(
 				"UPDATE {$wpdb->options} SET option_value = %s WHERE option_name = %s AND option_value = %s",
-				(string) $now,
+				$token,
 				self::SLUG_PASS_LOCK_OPTION,
 				(string) $locked_at
 			)
 		);
 		self::clear_slug_pass_lock_cache();
 
-		return 1 === $taken;
+		return 1 === $taken ? $token : false;
 	}
 
 	/**
@@ -248,6 +258,13 @@ class Title_Privacy {
 	private static function clear_slug_pass_lock_cache(): void {
 		wp_cache_delete( self::SLUG_PASS_LOCK_OPTION, 'options' );
 		wp_cache_delete( 'notoptions', 'options' );
+
+		// A lock saved with update_option() autoloads, as delete_option() handles.
+		$alloptions = wp_cache_get( 'alloptions', 'options' );
+		if ( is_array( $alloptions ) && isset( $alloptions[ self::SLUG_PASS_LOCK_OPTION ] ) ) {
+			unset( $alloptions[ self::SLUG_PASS_LOCK_OPTION ] );
+			wp_cache_set( 'alloptions', $alloptions, 'options' );
+		}
 	}
 
 	/**
@@ -302,11 +319,22 @@ class Title_Privacy {
 			)
 		);
 
-		if ( '' !== $wpdb->last_error ) {
+		if ( '' !== self::last_db_error() ) {
 			return null;
 		}
 
 		return array_map( 'intval', $post_ids );
+	}
+
+	/**
+	 * The error the last database query left, read after the query ran.
+	 *
+	 * @return string Empty when the query succeeded.
+	 */
+	private static function last_db_error(): string {
+		global $wpdb;
+
+		return $wpdb->last_error;
 	}
 
 	/**
@@ -440,11 +468,24 @@ class Title_Privacy {
 
 		$derived_slug = isset( self::$derived_slugs[ self::slug_key( $post_id ) ] ) || self::is_title_slug( $post );
 		if ( ! $derived_slug ) {
-			if ( ! $scrub_old_slugs || [] === get_post_meta( $post_id, '_wp_old_slug', false ) || ! self::names_hidden_location( $post ) ) {
+			if ( ! $scrub_old_slugs || ! self::names_hidden_location( $post ) ) {
 				return self::SYNC_SKIPPED;
 			}
 
-			return self::delete_hidden_location_old_slugs( $post ) ? self::SYNC_SKIPPED : self::SYNC_FAILED;
+			$guid    = self::scrub_title_slug_from_guid( $post, $post->post_name );
+			$written = true;
+			if ( $guid !== $post->guid ) {
+				global $wpdb;
+
+				$written = $wpdb->update( $wpdb->posts, [ 'guid' => $guid ], [ 'ID' => $post_id ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- clean_post_cache() follows.
+				if ( false !== $written ) {
+					clean_post_cache( $post_id );
+				}
+			}
+
+			$cleaned = self::delete_hidden_location_old_slugs( $post );
+
+			return false !== $written && $cleaned ? self::SYNC_SKIPPED : self::SYNC_FAILED;
 		}
 
 		if ( ! self::names_hidden_location( $post ) ) {
@@ -459,7 +500,7 @@ class Title_Privacy {
 		// wp_insert_post() set a new post's guid to its permalink, built from
 		// the slug being replaced. Feeds and REST print the guid.
 		$fields = [ 'post_name' => $slug ];
-		$guid   = (string) preg_replace( '#(?<=[/=])' . preg_quote( $post->post_name, '#' ) . '(?=[/?&\#]|$)#', $slug, $post->guid );
+		$guid   = self::replace_slug_segment_in_guid( $post->guid, $post->post_name, $slug );
 		if ( $guid !== $post->guid ) {
 			$fields['guid'] = $guid;
 		}
@@ -493,6 +534,32 @@ class Title_Privacy {
 		do_action( 'pkiw_derived_slug_replaced', $post_id, $post->post_name, $slug );
 
 		return $cleaned ? self::SYNC_REPLACED : self::SYNC_FAILED;
+	}
+
+	/**
+	 * Replace title-derived guid segments without changing an author slug.
+	 *
+	 * @param \WP_Post $post Post.
+	 * @param string   $slug Slug to write into the guid.
+	 */
+	private static function scrub_title_slug_from_guid( \WP_Post $post, string $slug ): string {
+		$title_slug = sanitize_title( (string) $post->post_title );
+		if ( '' === $title_slug ) {
+			return $post->guid;
+		}
+
+		return (string) preg_replace( '#(?<=[/=])' . preg_quote( $title_slug, '#' ) . '(?:-\d+)?(?=[/?&\#]|$)#', $slug, $post->guid );
+	}
+
+	/**
+	 * Replace one slug path or query segment in a guid.
+	 *
+	 * @param string $guid     Guid to scrub.
+	 * @param string $old_slug Slug to replace.
+	 * @param string $new_slug Replacement slug.
+	 */
+	private static function replace_slug_segment_in_guid( string $guid, string $old_slug, string $new_slug ): string {
+		return (string) preg_replace( '#(?<=[/=])' . preg_quote( $old_slug, '#' ) . '(?=[/?&\#]|$)#', $new_slug, $guid );
 	}
 
 	/**

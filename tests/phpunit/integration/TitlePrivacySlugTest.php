@@ -577,6 +577,109 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * An author slug stays, but a guid segment WordPress derived from the
+	 * hidden generated title must be scrubbed for feeds and REST.
+	 */
+	public function test_the_stored_slug_pass_scrubs_guid_after_author_rename_then_private(): void {
+		global $wpdb;
+
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
+		$post_id = $this->generated_draft( 'public' );
+		$this->publish( $post_id );
+		$this->assertSame( self::VENUE_SLUG, $this->slug( $post_id ), 'precondition: public publish got the venue slug' );
+
+		wp_update_post(
+			[
+				'ID'        => $post_id,
+				'post_name' => 'my-own-slug',
+			]
+		);
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
+		$wpdb->update( $wpdb->posts, [ 'guid' => home_url( '/2026/09/12/' . self::VENUE_SLUG . '/' ) ], [ 'ID' => $post_id ] );
+		clean_post_cache( $post_id );
+		$this->reset_slug_pass_options();
+
+		Title_Privacy::maybe_replace_stored_slugs();
+
+		$this->assertSame( 'my-own-slug', $this->slug( $post_id ) );
+		$this->assertStringNotContainsString( 'sentinel', get_the_guid( $post_id ) );
+		$this->assertSame( home_url( '/2026/09/12/my-own-slug/' ), get_the_guid( $post_id ) );
+		$this->assertSame( '2', get_option( 'pkiw_title_slug_pass' ) );
+	}
+
+	/**
+	 * Guid rewrites are segment-bounded; unrelated guid values are not
+	 * normalized just because the post has a hidden-location title.
+	 */
+	public function test_the_stored_slug_pass_leaves_guid_without_venue_segment_unchanged(): void {
+		global $wpdb;
+
+		$post_id = $this->generated_draft( 'public' );
+		$this->publish( $post_id );
+		wp_update_post(
+			[
+				'ID'        => $post_id,
+				'post_name' => 'my-own-slug',
+			]
+		);
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
+		$guid = home_url( '/?p=' . $post_id . '&source=archive' );
+		$wpdb->update( $wpdb->posts, [ 'guid' => $guid ], [ 'ID' => $post_id ] );
+		clean_post_cache( $post_id );
+		$this->reset_slug_pass_options();
+
+		Title_Privacy::maybe_replace_stored_slugs();
+
+		$this->assertSame( 'my-own-slug', $this->slug( $post_id ) );
+		$this->assertSame( $guid, get_the_guid( $post_id ) );
+		$this->assertSame( '2', get_option( 'pkiw_title_slug_pass' ) );
+	}
+
+	/**
+	 * A guid-only write failure is still a failed pass run, so the retry
+	 * option must stay unset.
+	 */
+	public function test_the_stored_slug_pass_retries_after_a_failed_guid_write(): void {
+		global $wpdb;
+
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
+		$post_id = $this->generated_draft( 'public' );
+		$this->publish( $post_id );
+		wp_update_post(
+			[
+				'ID'        => $post_id,
+				'post_name' => 'my-own-slug',
+			]
+		);
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
+		$wpdb->update( $wpdb->posts, [ 'guid' => home_url( '/2026/09/12/' . self::VENUE_SLUG . '/' ) ], [ 'ID' => $post_id ] );
+		clean_post_cache( $post_id );
+		$this->reset_slug_pass_options();
+
+		$fail_guid_update = static function ( $query ) use ( $wpdb, $post_id ) {
+			$query = (string) $query;
+			if ( 0 === strpos( $query, "UPDATE `{$wpdb->posts}` SET `guid`" ) && false !== strpos( $query, "`ID` = {$post_id}" ) ) {
+				return 'UPDATE `pkiw_missing_table` SET x = 1';
+			}
+			return $query;
+		};
+		add_filter( 'query', $fail_guid_update );
+		$suppress = $wpdb->suppress_errors( true );
+		Title_Privacy::maybe_replace_stored_slugs();
+		$wpdb->suppress_errors( $suppress );
+		remove_filter( 'query', $fail_guid_update );
+
+		$this->assertFalse( get_option( 'pkiw_title_slug_pass' ) );
+		$this->assertSame( 'my-own-slug', $this->slug( $post_id ) );
+		$this->assertStringContainsString( 'sentinel', get_the_guid( $post_id ) );
+
+		Title_Privacy::maybe_replace_stored_slugs();
+
+		$this->assertStringNotContainsString( 'sentinel', get_the_guid( $post_id ) );
+		$this->assertSame( '2', get_option( 'pkiw_title_slug_pass' ) );
+	}
+
+	/**
 	 * The pass leaves public venue slugs and author slugs alone, and runs
 	 * once per version.
 	 */
@@ -699,6 +802,40 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A successful slug replacement does not make the pass successful when
+	 * cleaning the redirect row failed afterward.
+	 */
+	public function test_the_stored_slug_pass_retries_when_old_slug_delete_fails_after_slug_replace(): void {
+		global $wpdb;
+
+		$post_id = $this->stored_with_slug( 'Checked in at ' . self::VENUE, self::VENUE_SLUG, 'publish', 'private', [ Meta_Fields::PREFIX . 'checkin_name' => self::VENUE ] );
+		add_post_meta( $post_id, '_wp_old_slug', self::VENUE_SLUG );
+		$this->reset_slug_pass_options();
+
+		$fail_delete = static function ( $query ) use ( $wpdb ) {
+			$query = (string) $query;
+			if ( 0 === strpos( $query, 'DELETE FROM ' ) && false !== strpos( $query, $wpdb->postmeta ) ) {
+				return 'DELETE FROM `pkiw_missing_table` WHERE 1 = 1';
+			}
+			return $query;
+		};
+		add_filter( 'query', $fail_delete );
+		$suppress = $wpdb->suppress_errors( true );
+		Title_Privacy::maybe_replace_stored_slugs();
+		$wpdb->suppress_errors( $suppress );
+		remove_filter( 'query', $fail_delete );
+
+		$this->assertFalse( get_option( 'pkiw_title_slug_pass' ) );
+		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
+		$this->assertContains( self::VENUE_SLUG, $this->venue_old_slugs( $post_id ) );
+
+		Title_Privacy::maybe_replace_stored_slugs();
+
+		$this->assertNotContains( self::VENUE_SLUG, $this->venue_old_slugs( $post_id ) );
+		$this->assertSame( '2', get_option( 'pkiw_title_slug_pass' ) );
+	}
+
+	/**
 	 * A failed candidate SELECT leaves every slug and the pass incomplete.
 	 */
 	public function test_the_stored_slug_pass_retries_after_a_failed_candidate_select(): void {
@@ -813,6 +950,28 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * If another request takes the lock during the batch, a stale finally
+	 * block must not delete the other request's lock.
+	 */
+	public function test_the_stored_slug_pass_releases_only_the_lock_it_acquired(): void {
+		$post_id = $this->stored_with_slug( 'Checked in at ' . self::VENUE, self::VENUE_SLUG, 'publish', 'private', [ Meta_Fields::PREFIX . 'checkin_name' => self::VENUE ] );
+		$this->reset_slug_pass_options();
+		$other_lock = (string) ( time() + 1 );
+
+		add_action(
+			'pkiw_derived_slug_replaced',
+			static function () use ( $other_lock ) {
+				update_option( 'pkiw_title_slug_pass_lock', $other_lock );
+			}
+		);
+
+		Title_Privacy::maybe_replace_stored_slugs();
+
+		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
+		$this->assertSame( $other_lock, get_option( 'pkiw_title_slug_pass_lock' ) );
+	}
+
+	/**
 	 * A completed stored-slug pass costs no database queries after cache warmup.
 	 */
 	public function test_a_completed_stored_slug_pass_costs_no_queries_after_the_option_is_cached(): void {
@@ -878,6 +1037,24 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 		$this->assertNotContains( self::VENUE_SLUG, $old_slugs );
 		$this->assertNotContains( self::VENUE_SLUG . '-2', $old_slugs );
 		$this->assertContains( 'an-earlier-author-slug', $old_slugs );
+	}
+
+	/**
+	 * Even when the stored slug is already safe, redirect rows from the
+	 * hidden venue still confirm a guessed location.
+	 */
+	public function test_the_stored_slug_pass_removes_venue_old_slug_when_slug_is_already_safe(): void {
+		$post_id = $this->generated_draft( 'private' );
+		$this->publish( $post_id );
+		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ), 'precondition: publish already wrote the safe slug' );
+		add_post_meta( $post_id, '_wp_old_slug', self::VENUE_SLUG );
+		$this->reset_slug_pass_options();
+
+		Title_Privacy::maybe_replace_stored_slugs();
+
+		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
+		$this->assertNotContains( self::VENUE_SLUG, $this->venue_old_slugs( $post_id ) );
+		$this->assertSame( '2', get_option( 'pkiw_title_slug_pass' ) );
 	}
 
 	/**
