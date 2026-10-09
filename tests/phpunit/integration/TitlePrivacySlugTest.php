@@ -617,6 +617,20 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A site that finished version 1 of the pass, which skipped unmarked check-ins, runs it again.
+	 */
+	public function test_a_site_that_completed_version_one_runs_the_pass_again(): void {
+		$this->reset_slug_pass_options();
+		update_option( 'pkiw_title_slug_pass', '1' );
+		$post_id = $this->stored_with_slug( 'Checked in at ' . self::VENUE, self::VENUE_SLUG, 'publish', 'private', [ Meta_Fields::PREFIX . 'checkin_name' => self::VENUE ], false );
+
+		Title_Privacy::maybe_replace_stored_slugs();
+
+		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
+		$this->assertSame( '2', get_option( 'pkiw_title_slug_pass' ) );
+	}
+
+	/**
 	 * The pass selects every frozen legacy candidate and lets privacy decide.
 	 */
 	public function test_the_stored_slug_pass_selects_legacy_candidates_and_respects_controls(): void {
@@ -681,7 +695,7 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 		Title_Privacy::maybe_replace_stored_slugs();
 
 		$this->assertStringStartsWith( 'check-in-', $this->slug( $first ) );
-		$this->assertSame( '1', get_option( 'pkiw_title_slug_pass' ) );
+		$this->assertSame( '2', get_option( 'pkiw_title_slug_pass' ) );
 	}
 
 	/**
@@ -712,7 +726,7 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 		Title_Privacy::maybe_replace_stored_slugs();
 
 		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
-		$this->assertSame( '1', get_option( 'pkiw_title_slug_pass' ) );
+		$this->assertSame( '2', get_option( 'pkiw_title_slug_pass' ) );
 	}
 
 	/**
@@ -738,7 +752,7 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 		Title_Privacy::maybe_replace_stored_slugs();
 
 		$this->assertSame( 0, $this->count_batch_venue_slugs() );
-		$this->assertSame( '1', get_option( 'pkiw_title_slug_pass' ) );
+		$this->assertSame( '2', get_option( 'pkiw_title_slug_pass' ) );
 	}
 
 	/**
@@ -804,7 +818,7 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 	public function test_a_completed_stored_slug_pass_costs_no_queries_after_the_option_is_cached(): void {
 		global $wpdb;
 
-		update_option( 'pkiw_title_slug_pass', '1' );
+		update_option( 'pkiw_title_slug_pass', '2' );
 		get_option( 'pkiw_title_slug_pass' );
 		$queries = $wpdb->num_queries;
 
@@ -904,7 +918,7 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 		Title_Privacy::maybe_replace_stored_slugs();
 
 		$this->assertNotContains( self::VENUE_SLUG, $this->venue_old_slugs( $post_id ) );
-		$this->assertSame( '1', get_option( 'pkiw_title_slug_pass' ) );
+		$this->assertSame( '2', get_option( 'pkiw_title_slug_pass' ) );
 	}
 
 	/**

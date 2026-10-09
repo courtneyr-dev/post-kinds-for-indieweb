@@ -77,7 +77,7 @@ class Title_Privacy {
 	/**
 	 * Bump to run the stored-slug pass again on every site.
 	 */
-	private const SLUG_PASS_VERSION = '1';
+	private const SLUG_PASS_VERSION = '2';
 
 	/**
 	 * Cursor for batched stored-slug repair.
