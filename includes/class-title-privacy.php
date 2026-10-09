@@ -213,7 +213,8 @@ class Title_Privacy {
 	private static function acquire_slug_pass_lock(): string|false {
 		global $wpdb;
 
-		$token    = (string) time();
+		// A timestamp for the takeover check, plus a suffix only this request holds.
+		$token    = time() . ':' . wp_generate_password( 12, false );
 		$inserted = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic lock acquisition.
 			$wpdb->prepare(
 				"INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')",
@@ -544,11 +545,15 @@ class Title_Privacy {
 	 */
 	private static function scrub_title_slug_from_guid( \WP_Post $post, string $slug ): string {
 		$title_slug = sanitize_title( (string) $post->post_title );
-		if ( '' === $title_slug ) {
+
+		// A number-only slug can't name a venue, and it would match a date
+		// segment or a ?p= post ID.
+		if ( '' === $title_slug || ctype_digit( $title_slug ) ) {
 			return $post->guid;
 		}
 
-		return (string) preg_replace( '#(?<=[/=])' . preg_quote( $title_slug, '#' ) . '(?:-\d+)?(?=[/?&\#]|$)#', $slug, $post->guid );
+		// Path segments only: a plain-permalink guid carries IDs, not slugs.
+		return (string) preg_replace( '#(?<=/)' . preg_quote( $title_slug, '#' ) . '(?:-\d+)?(?=[/?&\#]|$)#', $slug, $post->guid );
 	}
 
 	/**

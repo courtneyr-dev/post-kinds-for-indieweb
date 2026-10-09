@@ -608,6 +608,32 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A number-only title slug leaves date segments and post IDs in the guid alone.
+	 */
+	public function test_the_stored_slug_pass_leaves_numeric_guid_segments_alone(): void {
+		global $wpdb;
+
+		$dated   = $this->stored_with_slug( '2026', 'my-own-slug', 'publish', 'private', [ Meta_Fields::PREFIX . 'checkin_name' => '2026' ], false );
+		$plain   = $this->stored_with_slug( '123', 'my-other-slug', 'publish', 'private', [ Meta_Fields::PREFIX . 'checkin_name' => '123' ], false );
+		$guids   = [
+			$dated => home_url( '/2026/09/12/my-own-slug/' ),
+			$plain => home_url( '/?p=123' ),
+		];
+		foreach ( $guids as $id => $guid ) {
+			$wpdb->update( $wpdb->posts, [ 'guid' => $guid ], [ 'ID' => $id ] );
+			clean_post_cache( $id );
+		}
+		$this->reset_slug_pass_options();
+
+		Title_Privacy::maybe_replace_stored_slugs();
+
+		foreach ( $guids as $id => $guid ) {
+			$this->assertSame( $guid, get_post( $id )->guid );
+		}
+		$this->assertSame( '2', get_option( 'pkiw_title_slug_pass' ) );
+	}
+
+	/**
 	 * Guid rewrites are segment-bounded; unrelated guid values are not
 	 * normalized just because the post has a hidden-location title.
 	 */
@@ -969,6 +995,32 @@ final class TitlePrivacySlugTest extends WP_UnitTestCase {
 
 		$this->assertSame( self::SAFE_SLUG, $this->slug( $post_id ) );
 		$this->assertSame( $other_lock, get_option( 'pkiw_title_slug_pass_lock' ) );
+	}
+
+	/**
+	 * Another request's lock written in the same second still survives this request's release.
+	 */
+	public function test_the_stored_slug_pass_keeps_a_same_second_lock_it_did_not_write(): void {
+		global $wpdb;
+
+		$this->stored_with_slug( 'Checked in at ' . self::VENUE, self::VENUE_SLUG, 'publish', 'private', [ Meta_Fields::PREFIX . 'checkin_name' => self::VENUE ] );
+		$this->reset_slug_pass_options();
+		$other_lock = '';
+		$mine       = '';
+
+		add_action(
+			'pkiw_derived_slug_replaced',
+			static function () use ( $wpdb, &$other_lock, &$mine ) {
+				$mine       = (string) $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", 'pkiw_title_slug_pass_lock' ) );
+				$other_lock = strtok( $mine, ':' ) . ':another-request';
+				$wpdb->update( $wpdb->options, [ 'option_value' => $other_lock ], [ 'option_name' => 'pkiw_title_slug_pass_lock' ] );
+			}
+		);
+
+		Title_Privacy::maybe_replace_stored_slugs();
+
+		$this->assertMatchesRegularExpression( '/^\d+:[A-Za-z0-9]{12}$/', $mine, 'The lock token carries a suffix only this request holds.' );
+		$this->assertSame( $other_lock, (string) $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", 'pkiw_title_slug_pass_lock' ) ) );
 	}
 
 	/**
