@@ -567,6 +567,50 @@ final class StreamCardTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The title is a card's only link: the hidden author h-card carries its
+	 * name and URL as non-interactive markup that still parses.
+	 */
+	public function test_card_has_one_link_and_a_linkless_author_h_card(): void {
+		$author_id = self::factory()->user->create( [ 'display_name' => 'Courtney Example' ] );
+		$post_id   = self::factory()->post->create(
+			[
+				'post_author'  => $author_id,
+				'post_content' => '<!-- wp:post-kinds-indieweb/watch-card {"mediaTitle":"Enola Holmes 3"} /-->',
+			]
+		);
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = do_blocks( '<!-- wp:post-kinds-indieweb/stream-card /-->' );
+
+		$this->assertSame( 1, substr_count( $html, '<a ' ) );
+		$this->assertStringContainsString( '<span class="p-author h-card"><span class="p-name">Courtney Example</span><data class="u-url" value="' . esc_url( get_author_posts_url( $author_id ) ) . '"></data>', $html );
+
+		$authors = [];
+		$walk    = static function ( array $items ) use ( &$walk, &$authors ): void {
+			foreach ( $items as $item ) {
+				if ( ! is_array( $item ) ) {
+					continue;
+				}
+				foreach ( $item['properties']['author'] ?? [] as $author ) {
+					if ( is_array( $author ) ) {
+						$authors[] = $author;
+					}
+				}
+				$walk( $item['children'] ?? [] );
+				foreach ( $item['properties'] ?? [] as $values ) {
+					$walk( is_array( $values ) ? $values : [] );
+				}
+			}
+		};
+		$walk( \Mf2\parse( '<div class="h-entry">' . $html . '</div>' )['items'] );
+
+		$this->assertCount( 1, $authors );
+		$this->assertSame( [ 'h-card' ], $authors[0]['type'] );
+		$this->assertSame( [ 'Courtney Example' ], $authors[0]['properties']['name'] );
+		$this->assertSame( [ get_author_posts_url( $author_id ) ], $authors[0]['properties']['url'] );
+	}
+
+	/**
 	 * A long-form watch post renders a watch card carrying the post title.
 	 */
 	public function test_long_form_watch_renders_watch_card(): void {
