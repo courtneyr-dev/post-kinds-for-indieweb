@@ -126,7 +126,8 @@ function entry_author_html( \WP_Post $post ): string {
 	if ( ! is_array( $author ) || empty( $author['name'] ) || empty( $author['url'] ) ) {
 		return '';
 	}
-	$html = '<span class="p-author h-card"><a class="u-url p-name" href="' . esc_url( (string) $author['url'] ) . '" tabindex="-1">' . esc_html( (string) $author['name'] ) . '</a>';
+	// No <a>: a card's only link is its title, so the h-card carries its URL as <data>.
+	$html = '<span class="p-author h-card"><span class="p-name">' . esc_html( (string) $author['name'] ) . '</span><data class="u-url" value="' . esc_url( (string) $author['url'] ) . '"></data>';
 	if ( ! empty( $author['photo'] ) ) {
 		// This markup only ever renders inside an already-`hidden` mf2
 		// wrapper, so <data> (no rendered image, no meaningless empty alt)
