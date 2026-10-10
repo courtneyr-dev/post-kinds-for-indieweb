@@ -645,6 +645,16 @@ jobs:
           tools: wp-cli
           coverage: none
 
+      # setup-php's wp-cli tool step can fail without failing the job, which
+      # leaves `wp` missing (2026-10-10). Fall back to the official phar.
+      - name: Ensure WP-CLI
+        run: |
+          if ! command -v wp >/dev/null 2>&1; then
+            curl -fsSL -o /tmp/wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+            sudo install -m 0755 /tmp/wp-cli.phar /usr/local/bin/wp
+          fi
+          wp --info
+
       - name: Check for missing text domains
         run: |
           # Find PHP files and check for translation functions without text domain
