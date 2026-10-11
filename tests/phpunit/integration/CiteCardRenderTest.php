@@ -57,6 +57,36 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @return array<string, array{0: string, 1: string, 2: string, 3?: string}>
+	 */
+	public function url_only_synthetic_title_privacy_cases(): array {
+		$cases = [];
+
+		foreach ( $this->cite_card_kinds() as $kind_label => [ $kind ] ) {
+			$cases[ $kind_label . ' schemeless url' ] = [ $kind, 'notes.example.com/x?token=abc123', 'notes.example.com' ];
+			$cases[ $kind_label . ' mailto url' ]     = [ $kind, 'mailto:someone@example.com?token=abc123', 'mailto:someone@example.com', 'subject' ];
+		}
+
+		return $cases;
+	}
+
+	/**
+	 * @dataProvider url_only_synthetic_title_privacy_cases
+	 */
+	public function test_url_only_synthetic_titles_hide_stored_query_text( string $kind, string $url, string $text, string $extra_hidden = '' ): void {
+		$html       = $this->render_card( $kind, [ 'url' => $url ] );
+		$plain_text = $this->plain_text( $html );
+
+		$this->assertSyntheticTitleLink( $html, $url, $text );
+		$this->assertStringNotContainsString( 'token', $plain_text );
+		$this->assertStringNotContainsString( 'abc123', $plain_text );
+
+		if ( '' !== $extra_hidden ) {
+			$this->assertStringNotContainsString( $extra_hidden, $plain_text );
+		}
+	}
+
+	/**
 	 * @return array<string, array{0: string, 1: string, 2: string}>
 	 */
 	public function synthetic_title_cards(): array {
@@ -155,11 +185,22 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 	/**
 	 * @dataProvider cite_card_kinds
 	 */
-	public function test_synthetic_title_uses_url_text_when_url_has_no_host( string $kind ): void {
-		$url  = 'mailto:someone@example.com';
+	public function test_synthetic_title_strips_the_query_when_url_has_no_host( string $kind ): void {
+		$url  = 'mailto:someone@example.com?subject=hi';
 		$html = $this->render_card( $kind, [ 'url' => $url ] );
 
-		$this->assertSyntheticTitleLink( $html, $url, $url );
+		$this->assertSyntheticTitleLink( $html, $url, 'mailto:someone@example.com' );
+	}
+
+	/**
+	 * @dataProvider cite_card_kinds
+	 */
+	public function test_url_only_cards_with_unsafe_url_print_no_title_or_url_link( string $kind ): void {
+		$html = $this->render_card( $kind, [ 'url' => 'javascript:alert(1)' ] );
+
+		$this->assertSame( 0, $this->query( $html, '//h2[contains(concat(" ", normalize-space(@class), " "), " pk-title ")]' )->length );
+		$this->assertSame( 0, $this->query( $html, '//a[contains(concat(" ", normalize-space(@class), " "), " u-url ")]' )->length );
+		$this->assertStringNotContainsString( 'javascript:', $html );
 	}
 
 	public function test_like_single_uses_hidden_name_and_original_link_when_card_title_matches_post_title(): void {

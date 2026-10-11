@@ -36,14 +36,17 @@ $pkiw_link_rel = $pkiw_rel
 	? 'noopener noreferrer ' . esc_attr( $pkiw_rel )
 	: 'noopener noreferrer';
 
-$pkiw_synthetic = '' !== trim( (string) $pkiw_url ) && (
+$pkiw_href      = esc_url_raw( (string) $pkiw_url );
+$pkiw_synthetic = '' !== $pkiw_href && (
 	'' === trim( (string) $pkiw_title )
 	|| \PKIW\card_name_is_url( (string) $pkiw_title, (string) $pkiw_url )
 );
 $pkiw_link_text = '';
 if ( $pkiw_synthetic ) {
-	$pkiw_link_text = \PKIW\url_host( (string) $pkiw_url );
-	$pkiw_link_text = '' !== $pkiw_link_text ? $pkiw_link_text : (string) $pkiw_url;
+	$pkiw_link_text = \PKIW\url_host( $pkiw_href );
+	if ( '' === $pkiw_link_text ) {
+		$pkiw_link_text = (string) preg_replace( '/[?#].*$/s', '', $pkiw_href );
+	}
 }
 
 $pkiw_post     = get_post();
