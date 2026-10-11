@@ -109,26 +109,12 @@ final class Bookmark_Archive {
 	 * @since 1.9.0
 	 *
 	 * @param int $post_id Post ID.
-	 * @return array{url: string, host: string, title: string, cited_title: string, author: string, note: string, rel: string, date: array{0: string, 1: string}, picture: array{source: string, attachment_id: int, url: string, alt: string, remote: bool, suppress_featured: bool}, drawer: array{key: string, label: string}}
+	 * @return array{}|array{url: string, host: string, title: string, cited_title: string, author: string, note: string, rel: string, date: array{0: string, 1: string}, picture: array{source: string, attachment_id: int, url: string, alt: string, remote: bool, suppress_featured: bool}, drawer: array{key: string, label: string}}
 	 */
 	public static function facts( int $post_id ): array {
 		$post = get_post( $post_id );
-		if ( ! $post instanceof \WP_Post ) {
-			return [
-				'url'         => '',
-				'host'        => '',
-				'title'       => '',
-				'cited_title' => '',
-				'author'      => '',
-				'note'        => '',
-				'rel'         => '',
-				'date'        => [ '', '' ],
-				'picture'     => self::empty_picture(),
-				'drawer'      => [
-					'key'   => '',
-					'label' => '',
-				],
-			];
+		if ( ! $post instanceof \WP_Post || ! Kind_Facts::can_show( $post ) ) {
+			return [];
 		}
 
 		$card        = self::card_attrs( $post );
@@ -182,7 +168,7 @@ final class Bookmark_Archive {
 	 *
 	 * @param int                   $post_id Post ID.
 	 * @param array<string, string> $card    Card attributes.
-	 * @return array{url: string, source: string}
+	 * @return array{url: string, source: string, key: string}
 	 */
 	private static function url( int $post_id, array $card ): array {
 		$card_url = \PKIW\web_url( $card['url'] ?? '' );
@@ -190,15 +176,18 @@ final class Bookmark_Archive {
 			return [
 				'url'    => $card_url,
 				'source' => 'card',
+				'key'    => '',
 			];
 		}
 
 		foreach ( [ 'bookmark_of', 'cite_url' ] as $suffix ) {
-			$url = \PKIW\web_url( (string) get_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, true ) );
+			$key = Meta_Fields::PREFIX . $suffix;
+			$url = \PKIW\web_url( (string) get_post_meta( $post_id, $key, true ) );
 			if ( '' !== $url ) {
 				return [
 					'url'    => $url,
 					'source' => 'meta',
+					'key'    => $key,
 				];
 			}
 		}
@@ -206,6 +195,7 @@ final class Bookmark_Archive {
 		return [
 			'url'    => '',
 			'source' => '',
+			'key'    => '',
 		];
 	}
 
@@ -214,8 +204,8 @@ final class Bookmark_Archive {
 	 *
 	 * @since 1.9.0
 	 *
-	 * @param int                             $post_id Post ID.
-	 * @param array{url:string,source:string} $url URL and source.
+	 * @param int                                        $post_id Post ID.
+	 * @param array{url:string,source:string,key:string} $url URL, source and source key.
 	 * @return string
 	 */
 	private static function host( int $post_id, array $url ): string {
@@ -223,15 +213,34 @@ final class Bookmark_Archive {
 			return '';
 		}
 
-		// A card URL never syncs to cite host meta, so it must read its own host.
-		if ( 'meta' === $url['source'] ) {
+		// A card URL never uses the stored cite host, and a meta URL uses it only when that same key fed it.
+		if ( 'meta' === $url['source'] && self::first_cite_host_key( $post_id ) === $url['key'] ) {
 			$stored = get_post_meta( $post_id, CITE_HOST_META, true );
-			if ( is_string( $stored ) && '' !== $stored ) {
+			if ( is_string( $stored ) && '' !== trim( $stored ) ) {
 				return $stored;
 			}
 		}
 
 		return \PKIW\url_host( $url['url'] );
+	}
+
+	/**
+	 * The first non-empty cite host key for a post, matching sync_cite_host().
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string Meta key, or '' when none has a stored string value.
+	 */
+	private static function first_cite_host_key( int $post_id ): string {
+		foreach ( \PKIW\cite_host_keys() as $key ) {
+			$value = get_metadata_raw( 'post', $post_id, $key, true );
+			if ( is_string( $value ) && '' !== trim( $value ) ) {
+				return $key;
+			}
+		}
+
+		return '';
 	}
 
 	/**
@@ -373,24 +382,6 @@ final class Bookmark_Archive {
 		$picture['alt'] = '';
 
 		return $picture;
-	}
-
-	/**
-	 * Empty picture shape.
-	 *
-	 * @since 1.9.0
-	 *
-	 * @return array{source: string, attachment_id: int, url: string, alt: string, remote: bool, suppress_featured: bool}
-	 */
-	private static function empty_picture(): array {
-		return [
-			'source'            => '',
-			'attachment_id'     => 0,
-			'url'               => '',
-			'alt'               => '',
-			'remote'            => false,
-			'suppress_featured' => false,
-		];
 	}
 
 	/**

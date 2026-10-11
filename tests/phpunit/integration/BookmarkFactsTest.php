@@ -252,9 +252,48 @@ final class BookmarkFactsTest extends WP_UnitTestCase {
 		);
 		$cite = $this->bookmark( [], [ Meta_Fields::PREFIX . 'cite_url' => 'https://cite.example/c' ] );
 
-		$this->assertSame( 'https://card.example/a', $this->facts( $card )['url'] );
-		$this->assertSame( 'https://bookmark.example/b', $this->facts( $bookmark_of )['url'] );
-		$this->assertSame( 'https://cite.example/c', $this->facts( $cite )['url'] );
+		$card_facts        = $this->facts( $card );
+		$bookmark_of_facts = $this->facts( $bookmark_of );
+		$cite_facts        = $this->facts( $cite );
+
+		$this->assertSame( 'https://card.example/a', $card_facts['url'] );
+		$this->assertSame( 'card.example', $card_facts['host'] );
+		$this->assertSame( 'https://bookmark.example/b', $bookmark_of_facts['url'] );
+		$this->assertSame( 'bookmark.example', $bookmark_of_facts['host'] );
+		$this->assertSame( 'https://cite.example/c', $cite_facts['url'] );
+		$this->assertSame( 'cite.example', $cite_facts['host'] );
+	}
+
+	/**
+	 * Host names the accepted link target, regardless of meta add order.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function test_host_names_the_site_the_link_goes_to_in_either_meta_order(): void {
+		$bookmark_then_cite = $this->bookmark(
+			[],
+			[
+				Meta_Fields::PREFIX . 'bookmark_of' => 'https://bookmark.example/b',
+				Meta_Fields::PREFIX . 'cite_url'    => 'https://cite.example/c',
+			]
+		);
+		$cite_then_bookmark = $this->bookmark(
+			[],
+			[
+				Meta_Fields::PREFIX . 'cite_url'    => 'https://cite.example/c',
+				Meta_Fields::PREFIX . 'bookmark_of' => 'https://bookmark.example/b',
+			]
+		);
+
+		$bookmark_then_cite_facts = $this->facts( $bookmark_then_cite );
+		$cite_then_bookmark_facts = $this->facts( $cite_then_bookmark );
+
+		$this->assertSame( 'https://bookmark.example/b', $bookmark_then_cite_facts['url'] );
+		$this->assertSame( 'bookmark.example', $bookmark_then_cite_facts['host'] );
+		$this->assertSame( 'https://bookmark.example/b', $cite_then_bookmark_facts['url'] );
+		$this->assertSame( 'bookmark.example', $cite_then_bookmark_facts['host'] );
 	}
 
 	/**
@@ -444,6 +483,37 @@ final class BookmarkFactsTest extends WP_UnitTestCase {
 		$this->assertSame( [], $this->facts( $protected ) );
 		$this->assertSame( [], $this->facts( $draft ) );
 		$this->assertSame( [], $this->facts( $private ) );
+	}
+
+	/**
+	 * The registered reader also respects protected and unreadable posts.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function test_the_registered_reader_returns_nothing_for_a_protected_draft_or_private_post(): void {
+		$published = $this->bookmark( [ 'url' => 'https://example.test/public' ] );
+		$protected = $this->bookmark(
+			[
+				'url'         => 'https://example.test/secret',
+				'title'       => 'Secret title',
+				'description' => 'Secret note',
+			],
+			[],
+			[ 'post_password' => 'secret' ]
+		);
+		$draft     = $this->bookmark( [ 'url' => 'https://example.test/draft' ], [], [ 'post_status' => 'draft' ] );
+		$private   = $this->bookmark( [ 'url' => 'https://example.test/private' ], [], [ 'post_status' => 'private' ] );
+		$reader    = Kind_Facts::reader( 'bookmark' );
+
+		$this->assertIsArray( $reader );
+
+		wp_set_current_user( 0 );
+		$this->assertSame( 'https://example.test/public', call_user_func( $reader['reader'], $published )['url'] );
+		$this->assertSame( [], call_user_func( $reader['reader'], $protected ) );
+		$this->assertSame( [], call_user_func( $reader['reader'], $draft ) );
+		$this->assertSame( [], call_user_func( $reader['reader'], $private ) );
 	}
 
 	/**
