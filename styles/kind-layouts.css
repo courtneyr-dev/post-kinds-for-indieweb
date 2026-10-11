@@ -242,6 +242,86 @@
 }
 
 /* ------------------------------------------------------------------
+ * Review archive
+ * ------------------------------------------------------------------ */
+
+.wp-block-post-template.pkiw-review-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--pkiw-menu-section-gap, 2rem);
+	margin-inline: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.pkiw-review-list > li {
+	margin: 0;
+}
+
+.pkiw-review-list > li:has(.pkiw-review-entry--continued) {
+	display: none;
+}
+
+.pkiw-review-section__heading {
+	margin-block: 0 0.5rem;
+}
+
+.pkiw-review-section__items {
+	display: flex;
+	flex-direction: column;
+	gap: var(--pkiw-menu-line-gap, 1rem);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.pkiw-review-section__items > li {
+	margin: 0;
+}
+
+.pkiw-review-entry {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5em;
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.pkiw-review-entry__figure {
+	margin: 0;
+}
+
+.pkiw-review-entry__cover {
+	max-width: 100%;
+	height: auto;
+}
+
+.pkiw-review-entry__title,
+.pkiw-review-entry__item {
+	margin: 0;
+}
+
+.pkiw-four-stars__list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.pkiw-review-rating .pk-stars {
+	display: inline-flex;
+}
+
+.pkiw-review-rating .pk-stars svg {
+	width: 1em;
+	height: 1em;
+}
+
+.pkiw-review-rating .pk-stars svg.off,
+.pkiw-review-rating .pk-stars svg.half path.off {
+	opacity: 0.3;
+}
+
+/* ------------------------------------------------------------------
  * Focus and motion (after all item rules, lowest to highest specificity)
  * ------------------------------------------------------------------ */
 
