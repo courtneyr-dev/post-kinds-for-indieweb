@@ -62,7 +62,7 @@ $pkiw_own_view = $pkiw_post instanceof WP_Post && is_singular() && get_queried_o
 $pkiw_like_title_is_heading = false;
 // The H1 can name the cited title whether or not the url is usable, so the
 // print-once check runs before, and apart from, the link check. A synthetic
-// name (the host) runs it too: an untitled like's fallback H1 prints it.
+// name (the host) runs it too, so the clipping drops its host-named H2.
 if ( $pkiw_own_view && ( $pkiw_synthetic || '' !== trim( (string) $pkiw_title ) ) ) {
 	$pkiw_plain                 = static fn( string $text ): string => mb_strtolower( trim( html_entity_decode( wp_strip_all_tags( $text ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) ), 'UTF-8' );
 	$pkiw_normalized_post_title = $pkiw_plain( $pkiw_post->post_title );
@@ -80,6 +80,12 @@ if ( $pkiw_own_view && ( $pkiw_synthetic || '' !== trim( (string) $pkiw_title ) 
 	 * @param WP_Post $post       The like post.
 	 */
 	$pkiw_like_title_is_heading = (bool) apply_filters( 'pkiw_like_card_title_is_heading', $pkiw_default, $pkiw_post );
+
+	// Under the heading a synthetic name prints no card title, so the clipping
+	// names the host once, as the plain host line, unless the H1 is the host.
+	if ( $pkiw_like_title_is_heading && $pkiw_synthetic && $pkiw_plain( $pkiw_href_host ) !== $pkiw_normalized_post_title ) {
+		$pkiw_host = $pkiw_href_host;
+	}
 }
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(

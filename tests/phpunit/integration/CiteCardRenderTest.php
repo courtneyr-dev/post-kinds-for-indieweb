@@ -603,7 +603,7 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * X8: a host stand-in is never p-name, so the fallback-H1 case prints only the original link.
+	 * X8: a host stand-in is never p-name, so under the heading the card links only the original and names the host as plain text.
 	 */
 	public function test_synthetic_like_title_moves_to_original_link_when_filter_returns_true(): void {
 		add_filter( 'pkiw_like_card_title_is_heading', '__return_true' );
@@ -621,11 +621,11 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 		);
 
 		$this->assertOriginalLinkOnly( $html, $url );
-		$this->assertStringNotContainsString( 'notes.example.com', $this->plain_text( $html ) );
+		$this->assertHostLineOnce( $html, 'notes.example.com' );
 	}
 
 	/**
-	 * The theme's fallback H1 prints the host for an untitled URL-only like (F8).
+	 * F8: an untitled URL-only like under the theme's kind-and-date H1 names its host once, in the clipping.
 	 */
 	public function test_url_only_like_single_under_fallback_heading_prints_host_once(): void {
 		add_filter( 'pkiw_like_card_title_is_heading', '__return_true' );
@@ -642,7 +642,7 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 		);
 
 		$this->assertOriginalLinkOnly( $html, $url );
-		$this->assertStringNotContainsString( 'zine.example.org', $this->plain_text( $html ) );
+		$this->assertHostLineOnce( $html, 'zine.example.org' );
 	}
 
 	/**
@@ -677,22 +677,23 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 
 		$this->assertSame( 1, $this->query( $html, '//*[contains(concat(" ", normalize-space(@class), " "), " e-content ")]' )->length );
 		$this->assertOriginalLinkOnly( $html, $url );
-		$this->assertStringNotContainsString( 'zine.example.org', $this->plain_text( $html ) );
+		$this->assertHostLineOnce( $html, 'zine.example.org' );
 		$this->assertSame( 1, substr_count( $this->plain_text( $html ), $note ) );
 	}
 
 	/**
-	 * @return array<string, array{0: array<string, string>, 1: string}>
+	 * @return array<string, array{0: array<string, string>, 1: string, 2: int}>
 	 */
 	public function synthetic_names_the_post_title_already_shows(): array {
 		return [
-			'post title is the host'         => [ [ 'url' => 'https://zine.example.org/issue-13' ], 'Zine.Example.org ' ],
+			'post title is the host'         => [ [ 'url' => 'https://zine.example.org/issue-13' ], 'Zine.Example.org ', 0 ],
 			'post title and card are the url' => [
 				[
 					'title' => 'https://zine.example.org/issue-12',
 					'url'   => 'https://zine.example.org/issue-12',
 				],
 				'https://zine.example.org/issue-12',
+				1,
 			],
 		];
 	}
@@ -701,11 +702,14 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 	 * @dataProvider synthetic_names_the_post_title_already_shows
 	 *
 	 * @param array<string, string> $attributes Card attributes.
+	 * @param string                $post_title Post title.
+	 * @param int                   $host_lines Host lines the clipping prints: none when the H1 is the host.
 	 */
-	public function test_synthetic_name_the_post_title_shows_defaults_to_original_link( array $attributes, string $post_title ): void {
+	public function test_synthetic_name_the_post_title_shows_defaults_to_original_link( array $attributes, string $post_title, int $host_lines ): void {
 		$html = $this->render_card_on_single( 'like', $attributes, [ 'post_title' => $post_title ] );
 
 		$this->assertOriginalLinkOnly( $html, $attributes['url'] );
+		$this->assertSame( $host_lines, $this->query( $html, '//p[contains(concat(" ", normalize-space(@class), " "), " pk-host ")]' )->length );
 	}
 
 	/**
@@ -923,6 +927,15 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 		$this->assertSame( esc_url( $url ), $link->getAttribute( 'href' ) );
 		$this->assertSame( 'Read the original', $this->node_text( $link ) );
 		$this->assertSame( 'Read the original (opens in a new tab)', $link->getAttribute( 'aria-label' ) );
+	}
+
+	private function assertHostLineOnce( string $html, string $host ): void {
+		$lines = $this->query( $html, '//p[contains(concat(" ", normalize-space(@class), " "), " pk-host ")]' );
+		$this->assertSame( 1, $lines->length );
+		$this->assertSame( 'pk-sub pk-host', $lines->item( 0 )->getAttribute( 'class' ) );
+		$this->assertSame( $host, $this->node_text( $lines->item( 0 ) ) );
+		$this->assertSame( 0, $this->query( $html, '//p[contains(concat(" ", normalize-space(@class), " "), " pk-host ")]//*' )->length );
+		$this->assertSame( 1, substr_count( $this->plain_text( $html ), $host ) );
 	}
 
 	private function assertNoOriginalLinkOrHiddenName( string $html ): void {
