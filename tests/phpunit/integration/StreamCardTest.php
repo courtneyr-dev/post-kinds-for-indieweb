@@ -511,6 +511,74 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertLessThan( strpos( $out, 'pk-embed' ), strpos( $out, 'pk-stream-date' ) );
 	}
 
+	public function test_inject_post_date_into_card_keeps_dt_published_on_an_entry_rooted_card(): void {
+		$post = get_post( self::factory()->post->create( [ 'post_date' => '2026-07-05 09:00:00' ] ) );
+		$html = '<article class="pk-card k-note h-entry"><h3 class="pk-title p-name"><a href="#">Note</a></h3></article>';
+
+		$this->assertStringContainsString( '<time class="dt-published"', \PKIW\inject_post_date_into_card( $html, $post ) );
+	}
+
+	public function test_inject_post_date_into_card_leaves_dt_published_off_a_nested_h_cite(): void {
+		$post = get_post( self::factory()->post->create( [ 'post_date' => '2026-07-05 09:00:00' ] ) );
+		$html = '<article class="pk-card k-like h-cite u-like-of"><h2 class="pk-title p-name"><a href="#">Liked</a></h2></article>';
+
+		$out = \PKIW\inject_post_date_into_card( $html, $post );
+
+		$this->assertStringContainsString( '<p class="pk-sub pk-stream-date"><time datetime="', $out );
+		$this->assertStringNotContainsString( 'dt-published', $out );
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: string, 2: string}>
+	 */
+	public function stream_cite_cards_without_their_own_date(): array {
+		return [
+			'like'  => [ 'like', 'like-of', 'https://notes.example.com/paper-sites' ],
+			'reply' => [ 'reply', 'in-reply-to', 'https://notes.example.com/a-reply-target' ],
+		];
+	}
+
+	/**
+	 * F1 on the Stream: the visible date stays, the entry owns dt-published and the cited object doesn't.
+	 *
+	 * @dataProvider stream_cite_cards_without_their_own_date
+	 *
+	 * @param string $kind     Kind slug.
+	 * @param string $property Citation property.
+	 * @param string $url      Stored card URL.
+	 */
+	public function test_a_cite_card_stream_date_belongs_to_the_entry_not_the_citation( string $kind, string $property, string $url ): void {
+		$this->ensure_kind_term( $kind );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => '',
+				'post_date'    => '2026-10-11 11:09:34',
+				'post_content' => sprintf(
+					'<!-- wp:post-kinds-indieweb/%s-card {"title":"Field notes on paper sites","url":"%s"} /-->',
+					$kind,
+					$url
+				),
+			]
+		);
+		wp_set_object_terms( $post_id, $kind, 'kind' );
+		$this->go_to( home_url( '/' ) );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$card  = do_blocks( '<!-- wp:post-kinds-indieweb/stream-card /-->' );
+		$items = \Mf2\parse( '<li class="' . esc_attr( implode( ' ', get_post_class( '', $post_id ) ) ) . '">' . $card . '</li>', 'https://example.org/' )['items'];
+
+		$this->assertCount( 1, $items );
+		$entry = $items[0];
+		$this->assertContains( 'h-entry', $entry['type'] );
+		$this->assertSame( [ (string) get_post_time( 'c', true, $post_id ) ], $entry['properties']['published'] );
+		$this->assertContains( 'h-cite', $entry['properties'][ $property ][0]['type'] );
+		$this->assertArrayNotHasKey( 'published', $entry['properties'][ $property ][0]['properties'] );
+		$this->assertSame( [ $url ], $entry['properties'][ $property ][0]['properties']['url'] );
+		$this->assertSame( 1, preg_match( '#<p class="pk-sub pk-stream-date"><time datetime="[^"]+">([^<]+)</time></p>#', $card, $date ) );
+		$this->assertSame( get_the_date( '', $post_id ), $date[1] );
+	}
+
 	/**
 	 * A card wrapped in a group is still a micro-post.
 	 */
