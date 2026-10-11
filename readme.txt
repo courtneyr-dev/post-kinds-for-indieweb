@@ -187,12 +187,21 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 * Added: the Archive sections block groups a kind archive's Post Template into headed sections, each with its group in data-pkiw-group and a unique heading id.
 * Added: a board game play card prints a tabletop (box, facts, links and a score pad with "Rated N of 5" and a Review heading one level below the card title, on the Stream too), the same markup on every theme and in feeds.
 * Added: a Micropub play-of on a boardgamegeek.com board game page sets the play card's BGG ID.
+* Added: a review kind archive template with reviews in sections by category, plus a Four Stars block that lists up to six reviews rated four on their own scale on the first page.
+* Added: a review's rating, best rating, item name and item link fill from its first Star Rating block when you save it. Editing the Star Rating block after that first fill doesn't change the stored rating.
+* Added: the archive engine files replies and likes by the site they cite and bookmarks under tag drawers A to Z, with password-protected posts under Other. A theme supplies those three archive templates.
+* Added: reply and like cards copy their cited URL, title, author, description and image into post meta, and reply, like and bookmark Stream cards carry a hidden citation.
+* Added: review, reply and bookmark single pages carry microformats2 for the review body, the reply card and a bookmark's linked URL.
+* Changed: the card meta backfill runs once more, at version 6.
 * Changed: every play card is the entry's u-play-of h-cite, with the class on the card's root.
 * Fixed: kind feeds stay newest first when the kind archive is grouped.
 * Fixed: a listen card whose cover is in this site's media library prints it with core's srcset, sizes, width and height, and its src and u-photo are the library image's current file, which is the stored URL unless the image was edited in the Media Library.
 * Fixed: a play card switched from a video game to a board game drops the old video game ID, and a read card saved back to Currently Reading saves.
 * Fixed: the card meta backfill runs once at version 5, with the play ID and read status rules and the stricter-wins privacy hold.
 * Fixed: Stream cards cite plays and reads, and a password-protected one prints only its title link.
+* Fixed: reply, like and bookmark cards with a URL and no title link to the URL's host, or print "Original link" when the URL has no host, and never print a query string as link text.
+* Fixed: /kind/bookmark/?tag=alpha shows that tag's drawer.
+* Fixed: a private check-in's stored venue slug and guid become the date slug, and a venue old slug no longer redirects.
 
 = 1.8.6 =
 * Added: checkin-dashboard and checkins-feed gained a headingLevel attribute (default 2, clamped 2–4), matching the Stream card block.
