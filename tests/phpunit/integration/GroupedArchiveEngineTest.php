@@ -567,6 +567,9 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			$this->assertSame( 3, (int) $wp_query->get( 'posts_per_page' ) );
 
 			$this->go_to( $link );
+			// go_to() unsets the global, which breaks the reference taken above.
+			$wp_query = $GLOBALS['wp_query'];
+			$this->assertFalse( $wp_query->is_feed() );
 			$this->assertSame( 'post_month', (string) $wp_query->get( 'pkiw_group_source' ) );
 			$this->assertSame( 20, (int) $wp_query->get( 'posts_per_page' ) );
 		} finally {
