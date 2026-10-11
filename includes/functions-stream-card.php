@@ -655,7 +655,15 @@ function render_photo_stream_card( \WP_Post $post, array $attributes = [] ): str
 		if ( '' !== $image ) {
 			$out .= '<div class="pk-media pk-media--stream">' . $image; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			if ( '' !== $lead['caption'] ) {
-				$out .= '<p class="pk-media__caption">' . $lead['caption'] . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Sanitised by lead_image().
+				$caption = wp_kses(
+					$lead['caption'],
+					[
+						'em'     => [],
+						'strong' => [],
+						'br'     => [],
+					]
+				);
+				$out    .= '<p class="pk-media__caption">' . $caption . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Sanitised for the photo Stream card.
 			}
 			$out .= '</div>';
 		}
