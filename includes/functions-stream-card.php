@@ -621,6 +621,44 @@ function stream_card_own_card( \WP_Post $post ): ?array {
 }
 
 /**
+ * Whether a response post's title is its cited URL rather than a name.
+ *
+ * Micropub and some imports store post_title = url for a nameless
+ * response. That title is synthetic: the card prints the cited name or
+ * host instead, with no p-name (X8).
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post  Post.
+ * @param string   $title Trimmed post title.
+ * @return bool True for a cite kind whose title is its cited URL.
+ */
+function stream_card_title_is_cited_url( \WP_Post $post, string $title ): bool {
+	$kind = get_post_kind_slug( $post );
+	if ( ! in_array( $kind, [ 'like', 'reply', 'repost', 'bookmark', 'favorite', 'quote', 'follow' ], true ) ) {
+		return false;
+	}
+
+	$cited_url  = '';
+	$block_name = 'post-kinds-indieweb/' . $kind . '-card';
+	foreach ( flatten_blocks( parse_blocks( (string) $post->post_content ) ) as $block ) {
+		if ( ( $block['blockName'] ?? '' ) === $block_name ) {
+			$cited_url = (string) ( $block['attrs']['url'] ?? '' );
+			break;
+		}
+	}
+	foreach ( '' === $cited_url ? cite_host_keys() : [] as $key ) {
+		$value = get_post_meta( $post->ID, $key, true );
+		if ( is_string( $value ) && '' !== trim( $value ) ) {
+			$cited_url = $value;
+			break;
+		}
+	}
+
+	return card_name_is_url( $title, $cited_url );
+}
+
+/**
  * Render a compact card for a post that isn't a self-contained kind card.
  *
  * Articles, notes, and any long-form kind get a glanceable card — badge,
@@ -647,7 +685,7 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	$excerpt       = trim( wp_strip_all_tags( get_the_excerpt( $post ) ) );
 
 	$title     = trim( get_the_title( $post ) );
-	$has_title = '' !== $title;
+	$has_title = '' !== $title && ! stream_card_title_is_cited_url( $post, $title );
 	if ( ! $has_title ) {
 		$title = untitled_name( $post, false );
 	}

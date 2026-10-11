@@ -993,6 +993,54 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'token=abc123', $visible );
 	}
 
+	/**
+	 * A like whose post title and card title are both its URL (F7) prints
+	 * the host with no p-name, like an untitled one. The hidden like-of
+	 * keeps the full URL (issue 254, X8).
+	 */
+	public function test_a_like_titled_with_its_url_prints_only_the_host(): void {
+		$this->ensure_kind_term( 'like' );
+		$url     = 'https://zine.example.org/issue-12';
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => $url,
+				'post_content' => '<!-- wp:post-kinds-indieweb/like-card {"title":"' . $url . '","url":"' . $url . '"} /-->'
+					. '<!-- wp:paragraph --><p>A fictional like.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'like', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertSame( 1, preg_match( '#<h2 class="pk-title"><a class="u-url" href="[^"]+">(.*?)</a></h2>#s', $html, $link ) );
+		$this->assertSame( 'zine.example.org', $link[1] );
+		$this->assertStringNotContainsString( 'p-name', $link[0] );
+		$this->assertStringContainsString( '<data class="u-url" value="' . $url . '"></data>', $html );
+		$visible = (string) preg_replace( '#<span class="pk-kind-cite[^>]*hidden>.*?</span>#s', '', $html );
+		$this->assertStringNotContainsString( 'issue-12', $visible );
+	}
+
+	/**
+	 * A titled article whose title happens to be a URL keeps it as its name:
+	 * only response kinds treat a URL title as synthetic.
+	 */
+	public function test_a_note_titled_with_a_url_keeps_its_title_as_p_name(): void {
+		$this->ensure_kind_term( 'note' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => 'https://example.org/a-page',
+				'post_content' => '<!-- wp:paragraph --><p>A fictional note.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'note', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( '<h2 class="pk-title p-name"><a class="u-url" href="' . esc_url( (string) get_permalink( $post_id ) ) . '">https://example.org/a-page</a></h2>', $html );
+	}
+
 	public function test_untitled_long_form_note_uses_fallback_and_prints_excerpt_once(): void {
 		$this->ensure_kind_term( 'note' );
 		$post_id = self::factory()->post->create(
