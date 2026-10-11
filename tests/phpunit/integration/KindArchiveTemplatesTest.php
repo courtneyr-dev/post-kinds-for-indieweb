@@ -178,6 +178,44 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 		$this->assertSame( [], $definitions[ $slug ]['post_types'] );
 	}
 
+	public function test_the_review_archive_has_a_template_definition(): void {
+		$definitions = ( new ReflectionMethod( \PKIW\Plugin::class, 'get_plugin_template_definitions' ) )->invoke( \PKIW\Plugin::get_instance() );
+
+		$this->assertArrayHasKey( 'taxonomy-kind-review', $definitions );
+		$this->assertNotSame( '', trim( (string) $definitions['taxonomy-kind-review']['title'] ) );
+		$this->assertNotSame( '', trim( (string) $definitions['taxonomy-kind-review']['description'] ) );
+		$this->assertSame( [], $definitions['taxonomy-kind-review']['post_types'] );
+	}
+
+	public function test_the_review_template_serves_only_when_its_file_exists(): void {
+		$served = in_array(
+			'post-kinds-for-indieweb//taxonomy-kind-review',
+			wp_list_pluck( get_block_templates( [ 'slug__in' => [ 'taxonomy-kind-review' ] ] ), 'id' ),
+			true
+		);
+
+		$this->assertSame( file_exists( PKIW_PATH . 'templates/taxonomy-kind-review.html' ), $served );
+		$this->assertSame( $served, null !== get_block_template( 'post-kinds-for-indieweb//taxonomy-kind-review' ) );
+	}
+
+	/**
+	 * The W2 archive classes arrive in later lanes, so this source check pins
+	 * the loader wiring until the classes exist and can be observed directly.
+	 */
+	public function test_the_plugin_wires_the_w2_archive_classes_after_staff_picks(): void {
+		$source = (string) file_get_contents( PKIW_PATH . 'includes/class-plugin.php' );
+		$staff  = strpos( $source, "class_exists( __NAMESPACE__ . '\\\\Staff_Picks' )" );
+
+		$this->assertNotFalse( $staff );
+		foreach ( [ 'Review_Archive', 'Reply_Archive', 'Like_Archive', 'Bookmark_Archive' ] as $class ) {
+			$at = strpos( $source, "class_exists( __NAMESPACE__ . '\\\\{$class}' )" );
+			$this->assertNotFalse( $at, $class );
+			$this->assertGreaterThan( $staff, $at, $class );
+			$this->assertStringContainsString( "( new {$class}() )->register();", substr( $source, $at, 120 ), $class );
+			$staff = $at;
+		}
+	}
+
 	public function test_site_editor_customization_wins_over_plugin_template(): void {
 		$post_id = self::factory()->post->create(
 			[

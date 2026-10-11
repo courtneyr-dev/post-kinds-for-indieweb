@@ -614,6 +614,20 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Staff_Picks' ) ) {
 			( new Staff_Picks() )->register();
 		}
+
+		// Review, reply, like and bookmark archives: sections by category, host and tag (issues 252, 253, 254 and 258). The classes arrive with their lanes.
+		if ( class_exists( __NAMESPACE__ . '\\Review_Archive' ) ) {
+			( new Review_Archive() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Reply_Archive' ) ) {
+			( new Reply_Archive() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Like_Archive' ) ) {
+			( new Like_Archive() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Bookmark_Archive' ) ) {
+			( new Bookmark_Archive() )->register();
+		}
 	}
 
 	/**
@@ -1210,6 +1224,11 @@ final class Plugin {
 			'taxonomy-kind-read'    => [
 				'title'       => __( 'Read Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Read archive on shelves by reading status.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-review'  => [
+				'title'       => __( 'Review Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Review archive in sections by category.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 		];
