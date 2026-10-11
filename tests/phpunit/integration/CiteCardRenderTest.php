@@ -64,7 +64,7 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 
 		foreach ( $this->cite_card_kinds() as $kind_label => [ $kind ] ) {
 			$cases[ $kind_label . ' schemeless url' ] = [ $kind, 'notes.example.com/x?token=abc123', 'notes.example.com' ];
-			$cases[ $kind_label . ' mailto url' ]     = [ $kind, 'mailto:someone@example.com?token=abc123', 'mailto:someone@example.com', 'subject' ];
+			$cases[ $kind_label . ' mailto url' ]     = [ $kind, 'mailto:someone@example.com?token=abc123', __( 'Original link', 'post-kinds-for-indieweb-in-block-themes' ), 'someone@example.com' ];
 		}
 
 		return $cases;
@@ -84,6 +84,32 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 		if ( '' !== $extra_hidden ) {
 			$this->assertStringNotContainsString( $extra_hidden, $plain_text );
 		}
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: string, 2: string}>
+	 */
+	public function hostless_synthetic_title_privacy_cases(): array {
+		$cases = [];
+
+		foreach ( $this->cite_card_kinds() as $kind_label => [ $kind ] ) {
+			$cases[ $kind_label . ' mailto address' ] = [ $kind, 'mailto:a@b.example?subject=x', 'a@b.example' ];
+			$cases[ $kind_label . ' tel number' ]     = [ $kind, 'tel:+15551234567', '+15551234567' ];
+		}
+
+		return $cases;
+	}
+
+	/**
+	 * @dataProvider hostless_synthetic_title_privacy_cases
+	 */
+	public function test_hostless_synthetic_titles_print_original_link_without_sensitive_visible_text( string $kind, string $url, string $hidden_text ): void {
+		$html       = $this->render_card( $kind, [ 'url' => $url ] );
+		$link_text  = __( 'Original link', 'post-kinds-for-indieweb-in-block-themes' );
+		$plain_text = $this->plain_text( $html );
+
+		$this->assertSyntheticTitleLink( $html, $url, $link_text );
+		$this->assertStringNotContainsString( $hidden_text, $plain_text );
 	}
 
 	/**
@@ -185,11 +211,11 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 	/**
 	 * @dataProvider cite_card_kinds
 	 */
-	public function test_synthetic_title_strips_the_query_when_url_has_no_host( string $kind ): void {
+	public function test_synthetic_title_uses_original_link_when_url_has_no_host( string $kind ): void {
 		$url  = 'mailto:someone@example.com?subject=hi';
 		$html = $this->render_card( $kind, [ 'url' => $url ] );
 
-		$this->assertSyntheticTitleLink( $html, $url, 'mailto:someone@example.com' );
+		$this->assertSyntheticTitleLink( $html, $url, __( 'Original link', 'post-kinds-for-indieweb-in-block-themes' ) );
 	}
 
 	/**
@@ -201,6 +227,24 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 		$this->assertSame( 0, $this->query( $html, '//h2[contains(concat(" ", normalize-space(@class), " "), " pk-title ")]' )->length );
 		$this->assertSame( 0, $this->query( $html, '//a[contains(concat(" ", normalize-space(@class), " "), " u-url ")]' )->length );
 		$this->assertStringNotContainsString( 'javascript:', $html );
+	}
+
+	/**
+	 * @dataProvider cite_card_kinds
+	 */
+	public function test_real_titled_cards_with_unsafe_url_print_plain_title_without_empty_u_url( string $kind ): void {
+		$html  = $this->render_card(
+			$kind,
+			[
+				'title' => 'A Real Title',
+				'url'   => 'javascript:alert(1)',
+			]
+		);
+		$title = $this->one_title( $html );
+
+		$this->assertSame( 'A Real Title', $this->node_text( $title ) );
+		$this->assertStringNotContainsString( 'href=""', $html );
+		$this->assertStringNotContainsString( 'class="u-url"', $html );
 	}
 
 	public function test_like_single_uses_hidden_name_and_original_link_when_card_title_matches_post_title(): void {

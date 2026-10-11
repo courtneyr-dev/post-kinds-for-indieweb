@@ -45,7 +45,7 @@ $pkiw_link_text = '';
 if ( $pkiw_synthetic ) {
 	$pkiw_link_text = \PKIW\url_host( $pkiw_href );
 	if ( '' === $pkiw_link_text ) {
-		$pkiw_link_text = (string) preg_replace( '/[?#].*$/s', '', $pkiw_href );
+		$pkiw_link_text = __( 'Original link', 'post-kinds-for-indieweb-in-block-themes' );
 	}
 }
 
@@ -99,8 +99,8 @@ ob_start();
 				<p class="pk-original"><a class="u-url" href="<?php echo esc_url( $pkiw_href ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_read_original ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_read_original ); ?></a></p>
 			<?php elseif ( $pkiw_title || $pkiw_synthetic ) : ?>
 				<h2 class="<?php echo $pkiw_synthetic ? 'pk-title' : 'pk-title p-name'; ?>">
-					<?php if ( $pkiw_url ) : ?>
-						<a class="u-url" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_synthetic ? $pkiw_link_text : $pkiw_title ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_synthetic ? $pkiw_link_text : $pkiw_title ); ?></a>
+					<?php if ( '' !== $pkiw_href ) : ?>
+						<a class="u-url" href="<?php echo esc_url( $pkiw_href ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_synthetic ? $pkiw_link_text : $pkiw_title ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_synthetic ? $pkiw_link_text : $pkiw_title ); ?></a>
 					<?php else : ?>
 						<?php echo esc_html( $pkiw_title ); ?>
 					<?php endif; ?>
