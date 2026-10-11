@@ -324,6 +324,34 @@ final class Grouped_Archive {
 	}
 
 	/**
+	 * A post's group label under a kind's archive source.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string $kind    Kind slug.
+	 * @param int    $post_id Post ID.
+	 * @return string Label text, or '' when the kind isn't grouped or the post doesn't exist.
+	 */
+	public static function group_label_of_post( string $kind, int $post_id ): string {
+		$post = get_post( $post_id );
+		if ( ! $post instanceof \WP_Post ) {
+			return '';
+		}
+
+		$content = Kind_Archive_Layouts::kind_template_content( $kind );
+		$entry   = null === $content ? null : self::main_entry( parse_blocks( $content ) );
+		$name    = null === $entry ? '' : (string) $entry['blockName'];
+		$source  = ( '' !== $name ? self::entry_source( $name ) : null ) ?? self::kind_source( $kind, null );
+		if ( null === $source ) {
+			return '';
+		}
+
+		$settings = self::settings( $name, null === $entry ? [] : (array) ( $entry['attrs'] ?? [] ) );
+
+		return self::label( $source, $source->group_of( $post ), $settings );
+	}
+
+	/**
 	 * Kinds the editor previews in grouped order.
 	 *
 	 * @return string[]

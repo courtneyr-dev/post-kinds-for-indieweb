@@ -21,7 +21,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * its own name (the default category). The heading is the term name as
  * stored. Two terms with the same name stay separate sections. A taxonomy
  * visitors can't view (`is_taxonomy_viewable()` false, or not registered)
- * files every post in the empty group, so its term names never print.
+ * files every post in the empty group, so its term names never print. A
+ * source can opt to file password-protected posts in the empty group too.
  */
 final class Term_Source implements Group_Source {
 
@@ -44,14 +45,15 @@ final class Term_Source implements Group_Source {
 	/**
 	 * Constructor.
 	 *
-	 * @param string          $id          Source id.
-	 * @param string          $taxonomy    Taxonomy name.
-	 * @param \Closure|null   $last_term   Returns the id of a term filed after all others, under its own name.
-	 * @param string|\Closure $empty_label Label for posts with no term; '' uses the engine's.
+	 * @param string          $id                 Source id.
+	 * @param string          $taxonomy           Taxonomy name.
+	 * @param \Closure|null   $last_term          Returns the id of a term filed after all others, under its own name.
+	 * @param string|\Closure $empty_label        Label for posts with no term; '' uses the engine's.
+	 * @param bool            $protected_in_empty Whether protected posts file into the empty group.
 	 * @throws \InvalidArgumentException On a malformed id or an empty taxonomy.
 	 */
-	public function __construct( string $id, string $taxonomy, ?\Closure $last_term = null, $empty_label = '' ) {
-		$this->init_basics( $id, $empty_label );
+	public function __construct( string $id, string $taxonomy, ?\Closure $last_term = null, $empty_label = '', bool $protected_in_empty = false ) {
+		$this->init_basics( $id, $empty_label, $protected_in_empty );
 		if ( '' === $taxonomy ) {
 			throw new \InvalidArgumentException( 'A term group source needs a taxonomy.' );
 		}
@@ -70,9 +72,10 @@ final class Term_Source implements Group_Source {
 			return [ 'value' => "''" ];
 		}
 		$last  = $this->last_term_id();
-		$id    = 'COALESCE(' . $this->pick( 'pkiw_t.term_id', $query, $last ) . ', 0)';
+		$id    = $this->guard_protected_sql( 'COALESCE(' . $this->pick( 'pkiw_t.term_id', $query, $last ) . ', 0)', '0' );
+		$value = $this->guard_protected_sql( 'COALESCE(' . $this->pick( 'pkiw_t.name', $query, $last ) . ", '')", "''" );
 		$parts = [
-			'value'    => 'COALESCE(' . $this->pick( 'pkiw_t.name', $query, $last ) . ", '')",
+			'value'    => $value,
 			'tiebreak' => $id,
 		];
 		if ( $last > 0 ) {
@@ -112,6 +115,10 @@ final class Term_Source implements Group_Source {
 	 * @return Archive_Group
 	 */
 	public function group_of( \WP_Post $post, ?\WP_Query $query = null ): Archive_Group {
+		if ( $this->is_protected( $post ) ) {
+			return new Archive_Group( '', '', '' );
+		}
+
 		$terms = is_taxonomy_viewable( $this->taxonomy ) ? get_the_terms( $post, $this->taxonomy ) : false;
 		if ( ! is_array( $terms ) || [] === $terms ) {
 			return new Archive_Group( '', '', '' );

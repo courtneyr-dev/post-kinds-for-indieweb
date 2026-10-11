@@ -22,6 +22,9 @@ declare(strict_types=1);
 
 namespace PKIW;
 
+use PKIW\Grouping\Label_Mode;
+use PKIW\Grouping\Meta_Source;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -77,6 +80,13 @@ final class Kind_Archive_Layouts {
 	];
 
 	/**
+	 * Registered layout instance.
+	 *
+	 * @var self|null
+	 */
+	private static ?self $instance = null;
+
+	/**
 	 * Resolved-template content per kind term ID for this request.
 	 *
 	 * @var array<int, string|null>
@@ -89,6 +99,13 @@ final class Kind_Archive_Layouts {
 	 * @return void
 	 */
 	public function register(): void {
+		self::$instance = $this;
+
+		// The cite host groups reply and like archives; the kind lanes don't construct it (issues 253 and 254).
+		$cite_source = self::cite_source();
+		Grouped_Archive::register_source( $cite_source, 'reply' );
+		Grouped_Archive::register_source( $cite_source, 'like' );
+
 		if ( did_action( 'init' ) ) {
 			$this->register_assets_and_blocks();
 		} else {
@@ -257,6 +274,15 @@ final class Kind_Archive_Layouts {
 		 * @param array<string, string> $fields Kind slug => post meta key.
 		 */
 		return array_filter( (array) apply_filters( 'pkiw_archive_group_fields', self::DEFAULT_GROUP_FIELDS ), 'is_string' );
+	}
+
+	/**
+	 * The cite host source the reply and like archives group by.
+	 *
+	 * @return Meta_Source
+	 */
+	public static function cite_source(): Meta_Source {
+		return new Meta_Source( 'cite_host', [ \PKIW\CITE_HOST_META ], [], Label_Mode::verbatim(), '', true );
 	}
 
 	/**
@@ -924,6 +950,23 @@ final class Kind_Archive_Layouts {
 		$this->template_cache[ $term->term_id ] = $content;
 
 		return $content;
+	}
+
+	/**
+	 * Resolved block template content for a kind archive, with patterns included.
+	 *
+	 * Uses the same per-request cache as the main query.
+	 *
+	 * @param string $kind Kind slug.
+	 * @return string|null
+	 */
+	public static function kind_template_content( string $kind ): ?string {
+		$term = get_term_by( 'slug', $kind, Taxonomy::TAXONOMY );
+		if ( ! $term instanceof \WP_Term ) {
+			return null;
+		}
+
+		return ( self::$instance ?? new self() )->resolved_template_content( $term );
 	}
 
 	/**
