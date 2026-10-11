@@ -242,7 +242,9 @@ final class ReplyArchiveGroupingTest extends WP_UnitTestCase {
 		$this->assertSame( (int) $ungrouped->found_posts, (int) $wp_query->found_posts );
 
 		$this->serve( $template, 2 );
-		$this->assertSame( 5, $wp_query->post_count );
+		// go_to() builds a new main query, so read it from the global rather than the alias taken above.
+		$this->assertSame( 5, $GLOBALS['wp_query']->post_count );
+		$this->assertSame( 14, (int) $GLOBALS['wp_query']->found_posts );
 	}
 
 	public function test_a_protected_reply_files_under_other(): void {
