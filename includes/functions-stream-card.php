@@ -621,6 +621,44 @@ function stream_card_own_card( \WP_Post $post ): ?array {
 }
 
 /**
+ * Whether a response post's title is its cited URL rather than a name.
+ *
+ * Micropub and some imports store post_title = url for a nameless
+ * response. That title is synthetic: the card prints the cited name or
+ * host instead, with no p-name (X8).
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post  Post.
+ * @param string   $title Trimmed post title.
+ * @return bool True for a cite kind whose title is its cited URL.
+ */
+function stream_card_title_is_cited_url( \WP_Post $post, string $title ): bool {
+	$kind = get_post_kind_slug( $post );
+	if ( ! in_array( $kind, [ 'like', 'reply', 'repost', 'bookmark', 'favorite', 'quote', 'follow' ], true ) ) {
+		return false;
+	}
+
+	$cited_url  = '';
+	$block_name = 'post-kinds-indieweb/' . $kind . '-card';
+	foreach ( flatten_blocks( parse_blocks( (string) $post->post_content ) ) as $block ) {
+		if ( ( $block['blockName'] ?? '' ) === $block_name ) {
+			$cited_url = (string) ( $block['attrs']['url'] ?? '' );
+			break;
+		}
+	}
+	foreach ( '' === $cited_url ? cite_host_keys() : [] as $key ) {
+		$value = get_post_meta( $post->ID, $key, true );
+		if ( is_string( $value ) && '' !== trim( $value ) ) {
+			$cited_url = $value;
+			break;
+		}
+	}
+
+	return card_name_is_url( $title, $cited_url );
+}
+
+/**
  * Render a compact card for a post that isn't a self-contained kind card.
  *
  * Articles, notes, and any long-form kind get a glanceable card — badge,
@@ -647,7 +685,7 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	$excerpt       = trim( wp_strip_all_tags( get_the_excerpt( $post ) ) );
 
 	$title     = trim( get_the_title( $post ) );
-	$has_title = '' !== $title;
+	$has_title = '' !== $title && ! stream_card_title_is_cited_url( $post, $title );
 	if ( ! $has_title ) {
 		$title = untitled_name( $post, false );
 	}
@@ -1201,14 +1239,53 @@ function apply_stream_heading_level( string $html, int $level ): string {
 }
 
 /**
+ * Whether the card's first title sits inside a nested microformats object.
+ *
+ * A cite card's title belongs to its h-cite (or h-event, h-food...), so a
+ * property placed beside it attaches to that object, not to the entry. A
+ * title whose nearest root is an h-entry, or that has no root in the card,
+ * belongs to the entry.
+ *
+ * @param string $html Rendered card HTML.
+ * @return bool
+ */
+function card_title_in_nested_object( string $html ): bool {
+	if ( ! preg_match( '/\bh-[a-z]+/', $html ) ) {
+		return false;
+	}
+	$doc      = new \DOMDocument();
+	$previous = libxml_use_internal_errors( true );
+	$doc->loadHTML( '<?xml encoding="utf-8" ?><div id="pkiw-title-scope">' . $html . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD );
+	libxml_clear_errors();
+	libxml_use_internal_errors( $previous );
+	$title = ( new \DOMXPath( $doc ) )->query( '//*[self::h1 or self::h2 or self::h3 or self::h4 or self::h5 or self::h6][starts-with(@class, "pk-title")]' )->item( 0 );
+	if ( ! $title instanceof \DOMElement ) {
+		return false;
+	}
+	for ( $p = $title->parentNode; $p instanceof \DOMElement; $p = $p->parentNode ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM API property.
+		if ( 'pkiw-title-scope' === $p->getAttribute( 'id' ) ) {
+			return false;
+		}
+		$classes = ' ' . $p->getAttribute( 'class' ) . ' ';
+		if ( preg_match( '/\sh-[a-z]+(-[a-z]+)*\s/', $classes ) ) {
+			return ! str_contains( $classes, ' h-entry ' );
+		}
+	}
+	return false;
+}
+
+/**
  * Insert the post's published date inside the card, under the title.
  *
  * On the Stream the date reads inside each card rather than floating above
- * it, so the Post Template no longer renders its own post-date block.
+ * it, so the Post Template no longer renders its own post-date block. The
+ * date is the entry's: inside a nested object (a like card's h-cite) it
+ * prints without dt-published, and ensure_entry_properties() gives the
+ * entry its hidden date.
  *
  * @param string   $html Rendered card HTML.
  * @param \WP_Post $post Post the card represents.
- * @return string HTML with a dt-published date under the title.
+ * @return string HTML with the post date under the title.
  */
 function inject_post_date_into_card( string $html, \WP_Post $post ): string {
 	$display = get_the_date( '', $post );
@@ -1216,8 +1293,9 @@ function inject_post_date_into_card( string $html, \WP_Post $post ): string {
 		return $html;
 	}
 
-	$date_html = '<p class="pk-sub pk-stream-date"><time class="dt-published" datetime="'
-		. esc_attr( (string) get_post_time( 'c', true, $post ) ) . '">'
+	$date_html = '<p class="pk-sub pk-stream-date"><time'
+		. ( card_title_in_nested_object( $html ) ? '' : ' class="dt-published"' )
+		. ' datetime="' . esc_attr( (string) get_post_time( 'c', true, $post ) ) . '">'
 		. esc_html( $display ) . '</time></p>';
 
 	$out = preg_replace_callback(

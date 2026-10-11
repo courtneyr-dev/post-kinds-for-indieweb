@@ -511,6 +511,74 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertLessThan( strpos( $out, 'pk-embed' ), strpos( $out, 'pk-stream-date' ) );
 	}
 
+	public function test_inject_post_date_into_card_keeps_dt_published_on_an_entry_rooted_card(): void {
+		$post = get_post( self::factory()->post->create( [ 'post_date' => '2026-07-05 09:00:00' ] ) );
+		$html = '<article class="pk-card k-note h-entry"><h3 class="pk-title p-name"><a href="#">Note</a></h3></article>';
+
+		$this->assertStringContainsString( '<time class="dt-published"', \PKIW\inject_post_date_into_card( $html, $post ) );
+	}
+
+	public function test_inject_post_date_into_card_leaves_dt_published_off_a_nested_h_cite(): void {
+		$post = get_post( self::factory()->post->create( [ 'post_date' => '2026-07-05 09:00:00' ] ) );
+		$html = '<article class="pk-card k-like h-cite u-like-of"><h2 class="pk-title p-name"><a href="#">Liked</a></h2></article>';
+
+		$out = \PKIW\inject_post_date_into_card( $html, $post );
+
+		$this->assertStringContainsString( '<p class="pk-sub pk-stream-date"><time datetime="', $out );
+		$this->assertStringNotContainsString( 'dt-published', $out );
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: string, 2: string}>
+	 */
+	public function stream_cite_cards_without_their_own_date(): array {
+		return [
+			'like'  => [ 'like', 'like-of', 'https://notes.example.com/paper-sites' ],
+			'reply' => [ 'reply', 'in-reply-to', 'https://notes.example.com/a-reply-target' ],
+		];
+	}
+
+	/**
+	 * F1 on the Stream: the visible date stays, the entry owns dt-published and the cited object doesn't.
+	 *
+	 * @dataProvider stream_cite_cards_without_their_own_date
+	 *
+	 * @param string $kind     Kind slug.
+	 * @param string $property Citation property.
+	 * @param string $url      Stored card URL.
+	 */
+	public function test_a_cite_card_stream_date_belongs_to_the_entry_not_the_citation( string $kind, string $property, string $url ): void {
+		$this->ensure_kind_term( $kind );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => '',
+				'post_date'    => '2026-10-11 11:09:34',
+				'post_content' => sprintf(
+					'<!-- wp:post-kinds-indieweb/%s-card {"title":"Field notes on paper sites","url":"%s"} /-->',
+					$kind,
+					$url
+				),
+			]
+		);
+		wp_set_object_terms( $post_id, $kind, 'kind' );
+		$this->go_to( home_url( '/' ) );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$card  = do_blocks( '<!-- wp:post-kinds-indieweb/stream-card /-->' );
+		$items = \Mf2\parse( '<li class="' . esc_attr( implode( ' ', get_post_class( '', $post_id ) ) ) . '">' . $card . '</li>', 'https://example.org/' )['items'];
+
+		$this->assertCount( 1, $items );
+		$entry = $items[0];
+		$this->assertContains( 'h-entry', $entry['type'] );
+		$this->assertSame( [ (string) get_post_time( 'c', true, $post_id ) ], $entry['properties']['published'] );
+		$this->assertContains( 'h-cite', $entry['properties'][ $property ][0]['type'] );
+		$this->assertArrayNotHasKey( 'published', $entry['properties'][ $property ][0]['properties'] );
+		$this->assertSame( [ $url ], $entry['properties'][ $property ][0]['properties']['url'] );
+		$this->assertSame( 1, preg_match( '#<p class="pk-sub pk-stream-date"><time datetime="[^"]+">([^<]+)</time></p>#', $card, $date ) );
+		$this->assertSame( get_the_date( '', $post_id ), $date[1] );
+	}
+
 	/**
 	 * A card wrapped in a group is still a micro-post.
 	 */
@@ -991,6 +1059,54 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$visible = (string) preg_replace( '#<span class="pk-kind-cite[^>]*hidden>.*?</span>#s', '', $html );
 		$this->assertStringNotContainsString( 'private-thread', $visible );
 		$this->assertStringNotContainsString( 'token=abc123', $visible );
+	}
+
+	/**
+	 * A like whose post title and card title are both its URL (F7) prints
+	 * the host with no p-name, like an untitled one. The hidden like-of
+	 * keeps the full URL (issue 254, X8).
+	 */
+	public function test_a_like_titled_with_its_url_prints_only_the_host(): void {
+		$this->ensure_kind_term( 'like' );
+		$url     = 'https://zine.example.org/issue-12';
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => $url,
+				'post_content' => '<!-- wp:post-kinds-indieweb/like-card {"title":"' . $url . '","url":"' . $url . '"} /-->'
+					. '<!-- wp:paragraph --><p>A fictional like.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'like', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertSame( 1, preg_match( '#<h2 class="pk-title"><a class="u-url" href="[^"]+">(.*?)</a></h2>#s', $html, $link ) );
+		$this->assertSame( 'zine.example.org', $link[1] );
+		$this->assertStringNotContainsString( 'p-name', $link[0] );
+		$this->assertStringContainsString( '<data class="u-url" value="' . $url . '"></data>', $html );
+		$visible = (string) preg_replace( '#<span class="pk-kind-cite[^>]*hidden>.*?</span>#s', '', $html );
+		$this->assertStringNotContainsString( 'issue-12', $visible );
+	}
+
+	/**
+	 * A titled article whose title happens to be a URL keeps it as its name:
+	 * only response kinds treat a URL title as synthetic.
+	 */
+	public function test_a_note_titled_with_a_url_keeps_its_title_as_p_name(): void {
+		$this->ensure_kind_term( 'note' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => 'https://example.org/a-page',
+				'post_content' => '<!-- wp:paragraph --><p>A fictional note.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'note', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( '<h2 class="pk-title p-name"><a class="u-url" href="' . esc_url( (string) get_permalink( $post_id ) ) . '">https://example.org/a-page</a></h2>', $html );
 	}
 
 	public function test_untitled_long_form_note_uses_fallback_and_prints_excerpt_once(): void {
