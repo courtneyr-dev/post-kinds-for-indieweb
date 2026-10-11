@@ -390,7 +390,7 @@ test.describe( 'Micropub kind creation', () => {
 		expect( attrs.rating ).toBe( 5 );
 	} );
 
-	test( 'like-of with content lands url and description in attrs', async () => {
+	test( 'like-of with content lands url in attrs and the note once in e-content', async () => {
 		const { content } = await createAndFetch( {
 			'like-of': 'https://example.test/post/liked',
 			content: 'I really like this',
@@ -401,7 +401,9 @@ test.describe( 'Micropub kind creation', () => {
 		expect( match, 'like-card block must exist' ).toBeTruthy();
 		const attrs = JSON.parse( match[ 1 ] );
 		expect( attrs.url ).toBe( 'https://example.test/post/liked' );
-		expect( attrs.description ).toBe( 'I really like this' );
+		expect( attrs.description ).toBeUndefined();
+		expect( content.split( 'I really like this' ) ).toHaveLength( 2 );
+		expect( content ).toContain( 'e-content' );
 	} );
 
 	test( 'reply with in-reply-to url lands url in attrs', async () => {
