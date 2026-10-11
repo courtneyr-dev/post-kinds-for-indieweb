@@ -166,6 +166,20 @@ class Card_Meta_Sync {
 			'bggId'       => 'play_bgg_id',
 			'rawgId'      => 'play_rawg_id',
 		],
+		'post-kinds-indieweb/reply-card'   => [
+			'url'         => 'cite_url',
+			'title'       => 'cite_name',
+			'author'      => 'cite_author',
+			'description' => 'cite_summary',
+			'image'       => 'cite_photo',
+		],
+		'post-kinds-indieweb/like-card'    => [
+			'url'         => 'cite_url',
+			'title'       => 'cite_name',
+			'author'      => 'cite_author',
+			'description' => 'cite_summary',
+			'image'       => 'cite_photo',
+		],
 		// Other card blocks join this map in follow-on work; the class is
 		// deliberately map-driven so each is one entry, no new code.
 	];
@@ -313,6 +327,13 @@ class Card_Meta_Sync {
 	private const TEXTAREA_SUFFIXES = [ 'eat_notes', 'drink_notes', 'comic_review' ];
 
 	/**
+	 * Meta suffixes whose values are URLs.
+	 *
+	 * @var string[]
+	 */
+	private const URL_SUFFIXES = [ 'cite_url', 'cite_photo' ];
+
+	/**
 	 * Backfill cron hook, completion option and the version it records.
 	 * Bump BACKFILL_VERSION when sync_content() writes meta existing posts
 	 * need, and every site re-runs the batched backfill once. One bump per
@@ -323,12 +344,13 @@ class Card_Meta_Sync {
 	 * Version 4 fills the read-card status default and clears the play-card
 	 * provider IDs of the group a card switched away from. Version 5 (issue 358)
 	 * runs the same pass with the stricter-wins privacy hold, which version
-	 * 4 on main ran without.
+	 * 4 on main ran without. Version 6 (issue 252) replays every map with
+	 * the reply and like maps and the review star-rating fill.
 	 */
 	public const BACKFILL_HOOK    = 'pkiw_card_meta_backfill';
 	public const BACKFILL_OPTION  = 'pkiw_card_meta_backfill';
 	public const BACKFILL_CURSOR  = 'pkiw_card_meta_backfill_cursor';
-	public const BACKFILL_VERSION = '5';
+	public const BACKFILL_VERSION = '6';
 	public const BACKFILL_BATCH   = 50;
 
 	/**
@@ -347,6 +369,7 @@ class Card_Meta_Sync {
 	public function __construct() {
 		add_action( 'save_post', [ $this, 'sync' ], 25, 2 );
 		add_action( 'wp_after_insert_post', [ $this, 'resync_after_insert' ], 5, 2 );
+		add_action( 'wp_after_insert_post', [ $this, 'fill_review_after_insert' ], 30, 2 );
 		add_action( self::BACKFILL_HOOK, [ self::class, 'run_backfill_event' ] );
 		add_action( 'init', [ self::class, 'maybe_schedule_backfill' ], 20 );
 		foreach ( [ 'added_post_meta', 'updated_post_meta', 'deleted_post_meta' ] as $hook ) {
@@ -392,6 +415,23 @@ class Card_Meta_Sync {
 		foreach ( self::AFTER_INSERT_ATTRS[ $block['blockName'] ] ?? [] as $attr ) {
 			self::sync_attr( $post_id, $block, $attr, self::ATTR_META_MAP[ $block['blockName'] ][ $attr ], true );
 		}
+	}
+
+	/**
+	 * Fill review meta from the first star-rating block after insert.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int      $post_id Post ID.
+	 * @param \WP_Post $post    Post object.
+	 * @return void
+	 */
+	public function fill_review_after_insert( int $post_id, \WP_Post $post ): void {
+		if ( ! self::syncs( $post_id, $post ) ) {
+			return;
+		}
+
+		self::fill_review( $post_id, $post->post_content );
 	}
 
 	/**
@@ -472,6 +512,7 @@ class Card_Meta_Sync {
 			$post = get_post( $id );
 			if ( $post instanceof \WP_Post ) {
 				self::sync_content( $id, $post->post_content );
+				self::fill_review( $id, $post->post_content );
 			}
 			$last_id = $id;
 		}
@@ -555,7 +596,13 @@ class Card_Meta_Sync {
 			return;
 		}
 
-		$value = (string) $value;
+		$value   = (string) $value;
+		$cleaned = self::clean_value( $suffix, $value );
+
+		// A URL esc_url_raw() empties (a javascript: scheme) is no value, so it can't blank a stored one.
+		if ( '' === $cleaned && in_array( $suffix, self::URL_SUFFIXES, true ) ) {
+			return;
+		}
 
 		// A changed ISBN invalidates any previously-derived ASIN —
 		// clear it before writing the new ISBN so
@@ -573,7 +620,7 @@ class Card_Meta_Sync {
 			}
 		}
 
-		update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, self::clean_value( $suffix, $value ) );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, $cleaned );
 	}
 
 	/**
@@ -584,9 +631,11 @@ class Card_Meta_Sync {
 	 * @return string
 	 */
 	private static function clean_value( string $suffix, string $value ): string {
-		return in_array( $suffix, self::TEXTAREA_SUFFIXES, true )
-			? sanitize_textarea_field( $value )
-			: sanitize_text_field( $value );
+		if ( in_array( $suffix, self::URL_SUFFIXES, true ) ) {
+			return esc_url_raw( $value );
+		}
+
+		return in_array( $suffix, self::TEXTAREA_SUFFIXES, true ) ? sanitize_textarea_field( $value ) : sanitize_text_field( $value );
 	}
 
 	/**
@@ -609,6 +658,9 @@ class Card_Meta_Sync {
 
 		$value = $block['attrs'][ $attr ] ?? null;
 		if ( null !== $value && '' !== $value ) {
+			if ( 'cite_name' === $suffix && is_string( $value ) && card_name_is_url( $value, (string) ( $block['attrs']['url'] ?? '' ) ) ) {
+				return null;
+			}
 			return $value;
 		}
 
@@ -624,6 +676,82 @@ class Card_Meta_Sync {
 		}
 
 		return $value;
+	}
+
+	/**
+	 * Facts from the first star-rating block in content.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string $content Post content.
+	 * @return array{rating: float, best: int, item_name: string, item_url: string}|null
+	 */
+	public static function star_rating_facts( string $content ): ?array {
+		$blocks = parse_blocks( $content );
+		$stack  = array_reverse( $blocks );
+
+		while ( [] !== $stack ) {
+			$block = array_pop( $stack );
+			if ( ! is_array( $block ) ) {
+				continue;
+			}
+			if ( 'post-kinds-indieweb/star-rating' === ( $block['blockName'] ?? '' ) ) {
+				$attrs      = is_array( $block['attrs'] ?? null ) ? $block['attrs'] : [];
+				$rating     = is_scalar( $attrs['rating'] ?? null ) ? (float) $attrs['rating'] : 0.0;
+				$max_rating = is_scalar( $attrs['maxRating'] ?? null ) ? (int) $attrs['maxRating'] : 0;
+				return [
+					'rating'    => $rating,
+					'best'      => $max_rating > 0 ? $max_rating : 5,
+					'item_name' => sanitize_text_field( is_scalar( $attrs['itemName'] ?? null ) ? (string) $attrs['itemName'] : '' ),
+					'item_url'  => esc_url_raw( is_scalar( $attrs['itemUrl'] ?? null ) ? (string) $attrs['itemUrl'] : '' ),
+				];
+			}
+			foreach ( array_reverse( is_array( $block['innerBlocks'] ?? null ) ? $block['innerBlocks'] : [] ) as $inner ) {
+				$stack[] = $inner;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Fill review meta from a review post's first star-rating block.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $content Post content.
+	 * @return void
+	 */
+	public static function fill_review( int $post_id, string $content ): void {
+		$taxonomy = class_exists( Taxonomy::class ) ? Taxonomy::TAXONOMY : 'kind';
+		if ( ! has_term( 'review', $taxonomy, $post_id ) ) {
+			return;
+		}
+
+		$facts = self::star_rating_facts( $content );
+		if ( null === $facts ) {
+			return;
+		}
+
+		$rating_key = Meta_Fields::PREFIX . 'review_rating';
+		$best_key   = Meta_Fields::PREFIX . 'review_best';
+		$name_key   = Meta_Fields::PREFIX . 'review_item_name';
+		$url_key    = Meta_Fields::PREFIX . 'review_item_url';
+
+		$raw_rating = get_metadata_raw( 'post', $post_id, $rating_key, true );
+		if ( $facts['rating'] > 0 && ( null === $raw_rating || '' === $raw_rating || ( is_scalar( $raw_rating ) && 0.0 === (float) $raw_rating ) ) ) {
+			update_post_meta( $post_id, $rating_key, $facts['rating'] );
+			update_post_meta( $post_id, $best_key, $facts['best'] );
+		}
+
+		if ( '' !== $facts['item_name'] && '' === trim( (string) get_metadata_raw( 'post', $post_id, $name_key, true ) ) ) {
+			update_post_meta( $post_id, $name_key, $facts['item_name'] );
+		}
+
+		if ( '' !== $facts['item_url'] && '' === trim( (string) get_metadata_raw( 'post', $post_id, $url_key, true ) ) ) {
+			update_post_meta( $post_id, $url_key, $facts['item_url'] );
+		}
 	}
 
 	/**

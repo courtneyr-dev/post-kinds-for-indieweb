@@ -1278,7 +1278,9 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '"url":"https://example.test/liked-post"', $markup );
 	}
 
-	public function test_like_card_maps_name_author_and_content(): void {
+	public function test_like_card_maps_name_and_author_but_not_content(): void {
+		// The note is the author's own words. It lands once, as the entry's
+		// e-content; copying it to the description printed it twice (issue 254).
 		$markup = $this->invoke_private(
 			'like_card',
 			array(
@@ -1292,7 +1294,22 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		);
 		$this->assertStringContainsString( '"title":"A Great Post"', $markup );
 		$this->assertStringContainsString( '"author":"Jane Doe"', $markup );
-		$this->assertStringContainsString( '"description":"loved this"', $markup );
+		$this->assertStringNotContainsString( 'description', $markup );
+		$this->assertStringNotContainsString( 'loved this', $markup );
+	}
+
+	public function test_like_note_prints_once_as_e_content(): void {
+		$content = $this->invoke_private(
+			'build_block_content',
+			array(
+				array(
+					'like-of' => array( 'https://example.test/liked-post' ),
+					'content' => array( 'Sharing this with a note.' ),
+				),
+			)
+		);
+		$this->assertSame( 1, substr_count( $content, 'Sharing this with a note.' ) );
+		$this->assertStringContainsString( 'e-content', $content );
 	}
 
 	public function test_repost_card_falls_back_to_url_as_title(): void {
@@ -2175,12 +2192,12 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 				),
 				'post-kinds-indieweb/like-card',
 				array(
-					'title'       => 'Sample title',
-					'url'         => 'https://example.test/liked-post',
-					'author'      => 'Sample author',
-					'description' => 'Sample body',
+					'title'  => 'Sample title',
+					'url'    => 'https://example.test/liked-post',
+					'author' => 'Sample author',
 				),
-				array( 'image', 'imageAlt', 'likedAt', 'rel' ),
+				// content is the entry's e-content, never the card description.
+				array( 'description', 'image', 'imageAlt', 'likedAt', 'rel' ),
 			),
 			'repost'  => array(
 				array(

@@ -991,11 +991,12 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * #340 shipped version 3 on main and #349 took 4 without the #358
-	 * privacy hold, so the pass with the hold needs its own number.
+	 * #340 shipped version 3 on main, #349 took 4 and #358 took 5 with the
+	 * privacy hold. W2 adds the reply and like maps and the review fill, so
+	 * its pass needs the next number (X15: one bump per release).
 	 */
-	public function test_the_backfill_version_is_5_with_the_privacy_hold(): void {
-		$this->assertSame( '5', \PKIW\Card_Meta_Sync::BACKFILL_VERSION );
+	public function test_the_backfill_version_is_6_with_the_reply_and_like_maps(): void {
+		$this->assertSame( '6', \PKIW\Card_Meta_Sync::BACKFILL_VERSION );
 	}
 
 	/**
@@ -1019,6 +1020,210 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 
 		$this->assertNull( get_metadata_raw( 'post', $post_id, '_pkiw_play_rawg_id', true ) );
 		$this->assertSame( \PKIW\Card_Meta_Sync::BACKFILL_VERSION, get_option( \PKIW\Card_Meta_Sync::BACKFILL_OPTION ) );
+	}
+
+	/**
+	 * The reply and like cards share one attribute map onto the cite meta.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function cite_cards(): array {
+		return [
+			'reply' => [ 'reply' ],
+			'like'  => [ 'like' ],
+		];
+	}
+
+	/**
+	 * Issue 253 and 254: a reply or like card mirrors its five fields into
+	 * the cite meta the archives and the hidden citation read. Raw rows,
+	 * because a registered default hides an empty row from get_post_meta().
+	 *
+	 * @dataProvider cite_cards
+	 *
+	 * @param string $kind Card kind.
+	 */
+	public function test_a_reply_or_like_card_fills_the_five_cite_fields( string $kind ): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/' . $kind . '-card {"title":"A fictional thread","url":"https://notes.example.com/thread","author":"Fictional Author","description":"A fictional summary.","image":"https://notes.example.com/thread.jpg"} /-->',
+		] );
+
+		$this->assertSame( 'A fictional thread', get_metadata_raw( 'post', $post_id, '_pkiw_cite_name', true ) );
+		$this->assertSame( 'https://notes.example.com/thread', get_metadata_raw( 'post', $post_id, '_pkiw_cite_url', true ) );
+		$this->assertSame( 'Fictional Author', get_metadata_raw( 'post', $post_id, '_pkiw_cite_author', true ) );
+		$this->assertSame( 'A fictional summary.', get_metadata_raw( 'post', $post_id, '_pkiw_cite_summary', true ) );
+		$this->assertSame( 'https://notes.example.com/thread.jpg', get_metadata_raw( 'post', $post_id, '_pkiw_cite_photo', true ) );
+	}
+
+	/**
+	 * The map is declared, not inferred: both cards are in ATTR_META_MAP
+	 * with the same five attributes, and the bookmark card is not.
+	 */
+	public function test_the_reply_and_like_maps_are_declared_and_the_bookmark_card_has_none(): void {
+		$expected = [
+			'url'         => 'cite_url',
+			'title'       => 'cite_name',
+			'author'      => 'cite_author',
+			'description' => 'cite_summary',
+			'image'       => 'cite_photo',
+		];
+		foreach ( [ 'reply-card', 'like-card' ] as $card ) {
+			$map = \PKIW\Card_Meta_Sync::ATTR_META_MAP[ 'post-kinds-indieweb/' . $card ] ?? [];
+			ksort( $map );
+			$sorted = $expected;
+			ksort( $sorted );
+			$this->assertSame( $sorted, $map, $card );
+		}
+		$this->assertArrayNotHasKey( 'post-kinds-indieweb/bookmark-card', \PKIW\Card_Meta_Sync::ATTR_META_MAP );
+	}
+
+	/**
+	 * Micropub stores title = url when a response has no name. A URL isn't
+	 * a name, so cite_name stays unwritten and the host prints instead.
+	 *
+	 * @dataProvider cite_cards
+	 *
+	 * @param string $kind Card kind.
+	 */
+	public function test_a_card_title_equal_to_the_url_leaves_cite_name_unwritten( string $kind ): void {
+		$url     = 'https://notes.example.com/private-thread?token=abc123';
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/' . $kind . '-card {"title":"' . $url . '","url":"' . $url . '"} /-->',
+		] );
+
+		$this->assertNull( get_metadata_raw( 'post', $post_id, '_pkiw_cite_name', true ) );
+		$this->assertSame( $url, get_metadata_raw( 'post', $post_id, '_pkiw_cite_url', true ) );
+	}
+
+	/**
+	 * card_name_is_url() also flags a title that is some other absolute URL.
+	 */
+	public function test_a_card_title_that_is_another_url_leaves_cite_name_unwritten(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/like-card {"title":"http://example.org/other?ref=feed","url":"https://notes.example.com/a"} /-->',
+		] );
+
+		$this->assertNull( get_metadata_raw( 'post', $post_id, '_pkiw_cite_name', true ) );
+	}
+
+	/**
+	 * A title that only mentions a URL is still a name.
+	 */
+	public function test_a_card_title_that_mentions_a_url_is_stored(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/reply-card {"title":"Notes on https://example.org","url":"https://example.org/notes"} /-->',
+		] );
+
+		$this->assertSame( 'Notes on https://example.org', get_metadata_raw( 'post', $post_id, '_pkiw_cite_name', true ) );
+	}
+
+	/**
+	 * sanitize_text_field() strips %XX octets before the registered
+	 * esc_url_raw runs, so a percent-escaped path lost its escapes. The two
+	 * cite URL suffixes go through esc_url_raw instead.
+	 */
+	public function test_cite_url_and_cite_photo_keep_their_percent_escapes(): void {
+		$url   = 'https://notes.example.com/what%E2%80%99s-new?q=a%20b';
+		$photo = 'https://img.example.com/thread%20one%E2%80%99s.jpg';
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/like-card ' . wp_json_encode( [ 'title' => 'What is new', 'url' => $url, 'image' => $photo ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . ' /-->',
+		] );
+
+		$this->assertSame( $url, get_metadata_raw( 'post', $post_id, '_pkiw_cite_url', true ) );
+		$this->assertSame( $photo, get_metadata_raw( 'post', $post_id, '_pkiw_cite_photo', true ) );
+	}
+
+	/**
+	 * Only those two suffixes change. Every other suffix keeps
+	 * sanitize_text_field(), so the replay of older maps (X15) writes
+	 * nothing it didn't write before.
+	 */
+	public function test_only_the_cite_url_and_photo_suffixes_skip_the_text_sanitizer(): void {
+		$clean = new ReflectionMethod( \PKIW\Card_Meta_Sync::class, 'clean_value' );
+		$clean->setAccessible( true );
+		$value = 'https://img.example.com/a%20b%E2%80%99.jpg';
+
+		$this->assertSame( $value, $clean->invoke( null, 'cite_url', $value ) );
+		$this->assertSame( $value, $clean->invoke( null, 'cite_photo', $value ) );
+		foreach ( [ 'play_cover', 'play_game_url', 'read_cover', 'read_url', 'comic_url', 'cite_author', 'cite_name', 'cite_summary' ] as $suffix ) {
+			$this->assertSame( sanitize_text_field( $value ), $clean->invoke( null, $suffix, $value ), $suffix );
+		}
+		$this->assertSame( 'Bold Name', $clean->invoke( null, 'cite_author', '<b>Bold</b> Name' ) );
+	}
+
+	/**
+	 * A card attribute that is empty never erases a stored value, cite
+	 * fields included.
+	 */
+	public function test_an_empty_attribute_does_not_erase_a_stored_cite_field(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/reply-card {"title":"Kept title","url":"https://notes.example.com/kept","author":"Kept Author"} /-->',
+		] );
+
+		wp_update_post( [
+			'ID'           => $post_id,
+			'post_content' => '<!-- wp:post-kinds-indieweb/reply-card {"title":"","url":"","author":""} /-->',
+		] );
+
+		$this->assertSame( 'Kept title', get_metadata_raw( 'post', $post_id, '_pkiw_cite_name', true ) );
+		$this->assertSame( 'https://notes.example.com/kept', get_metadata_raw( 'post', $post_id, '_pkiw_cite_url', true ) );
+		$this->assertSame( 'Kept Author', get_metadata_raw( 'post', $post_id, '_pkiw_cite_author', true ) );
+	}
+
+	/**
+	 * A URL esc_url_raw empties (a javascript: scheme) is not a value, so it
+	 * can't blank the stored URL.
+	 */
+	public function test_a_cite_url_that_esc_url_raw_empties_leaves_the_stored_url(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/like-card {"title":"Kept","url":"https://notes.example.com/kept"} /-->',
+		] );
+
+		wp_update_post( [
+			'ID'           => $post_id,
+			'post_content' => '<!-- wp:post-kinds-indieweb/like-card {"title":"Kept","url":"javascript:alert(1)"} /-->',
+		] );
+
+		$this->assertSame( 'https://notes.example.com/kept', get_metadata_raw( 'post', $post_id, '_pkiw_cite_url', true ) );
+	}
+
+	/**
+	 * A save writes the derived cite host once the cite URL lands.
+	 */
+	public function test_a_reply_card_save_writes_the_derived_cite_host(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/reply-card {"title":"A thread","url":"https://WWW.Notes.Example.com/thread"} /-->',
+		] );
+
+		$this->assertSame( 'notes.example.com', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+	}
+
+	/**
+	 * Version 6 replays the reply and like maps over posts saved before
+	 * they existed, and the derived host follows.
+	 */
+	public function test_the_backfill_replays_the_reply_and_like_maps(): void {
+		$reply = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/reply-card {"title":"A thread","url":"https://notes.example.com/thread","author":"A. Fictional"} /-->',
+		] );
+		$like  = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/like-card {"title":"An essay","url":"https://essays.example.org/one"} /-->',
+		] );
+		// Saved before the maps existed: the cards are in the content, the meta is not.
+		foreach ( [ $reply, $like ] as $post_id ) {
+			foreach ( [ 'cite_name', 'cite_url', 'cite_author', 'cite_summary', 'cite_photo' ] as $suffix ) {
+				delete_post_meta( $post_id, '_pkiw_' . $suffix );
+			}
+			delete_post_meta( $post_id, \PKIW\CITE_HOST_META );
+		}
+
+		\PKIW\Card_Meta_Sync::backfill_batch( 0, 500 );
+
+		$this->assertSame( 'A thread', get_metadata_raw( 'post', $reply, '_pkiw_cite_name', true ) );
+		$this->assertSame( 'A. Fictional', get_metadata_raw( 'post', $reply, '_pkiw_cite_author', true ) );
+		$this->assertSame( 'notes.example.com', get_metadata_raw( 'post', $reply, \PKIW\CITE_HOST_META, true ) );
+		$this->assertSame( 'An essay', get_metadata_raw( 'post', $like, '_pkiw_cite_name', true ) );
+		$this->assertSame( 'essays.example.org', get_metadata_raw( 'post', $like, \PKIW\CITE_HOST_META, true ) );
 	}
 
 	/**

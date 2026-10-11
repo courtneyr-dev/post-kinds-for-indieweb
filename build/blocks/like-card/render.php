@@ -4,8 +4,10 @@
  *
  * Renders the like card in the two-layer pk-card system: plugin owns
  * structure (badge → label → title → sub → note → meta), theme owns paint
- * via --pk-* custom properties. The linked title carries the `u-like-of`
- * microformats2 class so parsers see the liked URL.
+ * via --pk-* custom properties. When no usable title exists, the card links
+ * the cited host. On the post's own single view, a name the page heading
+ * already shows prints no second time; a usable URL then links "Read the
+ * original." A real title stays as hidden p-name data, a host stand-in doesn't.
  *
  * @package PKIW
  * @var array    $attributes Block attributes.
@@ -35,6 +37,57 @@ $pkiw_link_rel = $pkiw_rel
 	? 'noopener noreferrer ' . esc_attr( $pkiw_rel )
 	: 'noopener noreferrer';
 
+// Only an http(s) URL with a real host is linkable. esc_url_raw() turns a
+// stored "not a url" into http://not%20a%20url, whose host is no host.
+$pkiw_href       = esc_url_raw( trim( (string) $pkiw_url ) );
+$pkiw_href_host  = \PKIW\url_host( $pkiw_href );
+$pkiw_href_valid = in_array( strtolower( (string) wp_parse_url( $pkiw_href, PHP_URL_SCHEME ) ), [ 'http', 'https' ], true )
+	&& '' !== $pkiw_href_host
+	&& 1 !== preg_match( '/[%\s]/', $pkiw_href_host );
+if ( ! $pkiw_href_valid ) {
+	$pkiw_href = '';
+}
+$pkiw_synthetic = '' !== $pkiw_href && (
+	'' === trim( (string) $pkiw_title )
+	|| \PKIW\card_name_is_url( (string) $pkiw_title, (string) $pkiw_url )
+);
+// A synthetic title prints the host as its link text, so the host line
+// shows only beside a real title.
+$pkiw_link_text = $pkiw_synthetic ? $pkiw_href_host : '';
+$pkiw_host      = '' !== $pkiw_href && ! $pkiw_synthetic ? $pkiw_href_host : '';
+
+$pkiw_post     = get_post();
+$pkiw_own_view = $pkiw_post instanceof WP_Post && is_singular() && get_queried_object_id() === $pkiw_post->ID;
+
+$pkiw_like_title_is_heading = false;
+// The H1 can name the cited title whether or not the url is usable, so the
+// print-once check runs before, and apart from, the link check. A synthetic
+// name (the host) runs it too, so the clipping drops its host-named H2.
+if ( $pkiw_own_view && ( $pkiw_synthetic || '' !== trim( (string) $pkiw_title ) ) ) {
+	$pkiw_plain                 = static fn( string $text ): string => mb_strtolower( trim( html_entity_decode( wp_strip_all_tags( $text ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) ), 'UTF-8' );
+	$pkiw_normalized_post_title = $pkiw_plain( $pkiw_post->post_title );
+	$pkiw_default               = '' !== $pkiw_normalized_post_title && (
+		$pkiw_plain( (string) $pkiw_title ) === $pkiw_normalized_post_title
+		|| ( $pkiw_synthetic && $pkiw_plain( $pkiw_link_text ) === $pkiw_normalized_post_title )
+	);
+
+	/**
+	 * Filter whether the page heading already names the liked page.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param bool    $is_heading Whether the page's H1 already shows this title.
+	 * @param WP_Post $post       The like post.
+	 */
+	$pkiw_like_title_is_heading = (bool) apply_filters( 'pkiw_like_card_title_is_heading', $pkiw_default, $pkiw_post );
+
+	// Under the heading a synthetic name prints no card title, so the clipping
+	// names the host once, as the plain host line, unless the H1 is the host.
+	if ( $pkiw_like_title_is_heading && $pkiw_synthetic && $pkiw_plain( $pkiw_href_host ) !== $pkiw_normalized_post_title ) {
+		$pkiw_host = $pkiw_href_host;
+	}
+}
+
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
 		'class' => 'pk-card k-like h-cite u-like-of',
@@ -42,6 +95,13 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 );
 
 [ $pkiw_liked_iso, $pkiw_liked_display ] = \PKIW\card_calendar_date( (string) $pkiw_liked_at );
+
+$pkiw_date_is_fallback = false;
+if ( '' === $pkiw_liked_iso && $pkiw_own_view ) {
+	$pkiw_liked_iso        = (string) get_the_date( 'Y-m-d', $pkiw_post );
+	$pkiw_liked_display    = (string) get_the_date( '', $pkiw_post );
+	$pkiw_date_is_fallback = true;
+}
 
 ob_start();
 ?>
@@ -51,10 +111,18 @@ ob_start();
 		<span class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Like', 'post-kinds-for-indieweb-in-block-themes' ), 'like', 'like-card' ) ); ?></span>
 
 		<div class="pk-caption">
-			<?php if ( $pkiw_title ) : ?>
-				<h2 class="pk-title p-name">
-					<?php if ( $pkiw_url ) : ?>
-						<a class="u-url" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_title ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_title ); ?></a>
+			<?php if ( $pkiw_like_title_is_heading ) : ?>
+				<?php $pkiw_read_original = __( 'Read the original', 'post-kinds-for-indieweb-in-block-themes' ); ?>
+				<?php if ( ! $pkiw_synthetic ) : ?>
+				<data class="p-name" value="<?php echo esc_attr( $pkiw_title ); ?>" hidden></data>
+				<?php endif; ?>
+				<?php if ( '' !== $pkiw_href ) : ?>
+				<p class="pk-original"><a class="u-url" href="<?php echo esc_url( $pkiw_href ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_read_original ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_read_original ); ?></a></p>
+				<?php endif; ?>
+			<?php elseif ( $pkiw_title || $pkiw_synthetic ) : ?>
+				<h2 class="<?php echo $pkiw_synthetic ? 'pk-title' : 'pk-title p-name'; ?>">
+					<?php if ( '' !== $pkiw_href ) : ?>
+						<a class="u-url" href="<?php echo esc_url( $pkiw_href ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_synthetic ? $pkiw_link_text : $pkiw_title ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_synthetic ? $pkiw_link_text : $pkiw_title ); ?></a>
 					<?php else : ?>
 						<?php echo esc_html( $pkiw_title ); ?>
 					<?php endif; ?>
@@ -65,6 +133,10 @@ ob_start();
 				<p class="pk-sub">
 					<span class="p-author h-card"><span class="p-name"><?php echo esc_html( $pkiw_author ); ?></span></span>
 				</p>
+			<?php endif; ?>
+
+			<?php if ( '' !== $pkiw_host ) : ?>
+				<p class="pk-sub pk-host"><?php echo esc_html( $pkiw_host ); ?></p>
 			<?php endif; ?>
 		</div>
 
@@ -78,7 +150,7 @@ ob_start();
 
 		<?php if ( $pkiw_liked_iso ) : ?>
 			<div class="pk-meta">
-				<time class="dt-published" datetime="<?php echo esc_attr( $pkiw_liked_iso ); ?>"><?php echo esc_html( $pkiw_liked_display ); ?></time>
+				<time<?php echo $pkiw_date_is_fallback ? '' : ' class="dt-published"'; ?> datetime="<?php echo esc_attr( $pkiw_liked_iso ); ?>"><?php echo esc_html( $pkiw_liked_display ); ?></time>
 			</div>
 		<?php endif; ?>
 	</div>

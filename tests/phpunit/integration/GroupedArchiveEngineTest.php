@@ -32,7 +32,7 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	private const MONTHS = 'pkiw-test/month-marker';
 	private const IDS    = 'pkiw-test/id-marker';
 
-	private const SOURCES = [ 'test_status', 'test_series', 'test_play', 'test_tags', 'test_cats', 'test_month', 'test_year', 'test_week' ];
+	private const SOURCES = [ 'test_status', 'test_series', 'test_play', 'test_tags', 'test_cats', 'test_month', 'test_year', 'test_week', 'test_flagged_tags' ];
 
 	/**
 	 * Stylesheet active before each test.
@@ -968,6 +968,93 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			array_column( $this->sections( $this->serve( 'playkind', $this->loop( self::MARKER ) ) ), 0 ),
 			'With neither, the empty group is "Other"; a case id prints as stored.'
 		);
+	}
+
+	public function test_group_label_of_post_returns_a_term_name_verbatim(): void {
+		$id = $this->make( 'tagkind', 'Tagged banana', '2026-02-01 10:00:00', [], [ 'post_tag' => [ 'Banana', 'Zebra' ] ] );
+
+		$this->assertSame( 'Banana', Grouped_Archive::group_label_of_post( 'tagkind', $id ) );
+	}
+
+	public function test_group_label_of_post_uses_the_template_empty_label_then_other(): void {
+		$id = $this->make( 'tagkind', 'Untagged post', '2026-02-01 10:00:00' );
+
+		$this->go_to( get_term_link( 'tagkind', 'kind' ) );
+		$this->assertSame( 'Other', Grouped_Archive::group_label_of_post( 'tagkind', $id ) );
+
+		$swap = function ( $templates ) {
+			foreach ( $templates as $found ) {
+				if ( in_array( $found->slug, [ 'taxonomy-kind', 'taxonomy-kind-tagkind' ], true ) ) {
+					$found->content = $this->loop( self::MARKER, [ 'emptyLabel' => 'Unfiled' ] );
+				}
+			}
+			return $templates;
+		};
+		add_filter( 'get_block_templates', $swap );
+		$this->go_to( get_term_link( 'tagkind', 'kind' ) );
+		$this->assertSame( 'Unfiled', Grouped_Archive::group_label_of_post( 'tagkind', $id ) );
+		remove_filter( 'get_block_templates', $swap );
+		$this->go_to( home_url( '/' ) );
+	}
+
+	public function test_group_label_of_post_is_empty_for_a_missing_post_or_an_ungrouped_kind(): void {
+		$id = $this->make( 'tagkind', 'Any grouped post', '2026-02-01 10:00:00', [], [ 'post_tag' => [ 'Banana' ] ] );
+
+		$this->assertSame( '', Grouped_Archive::group_label_of_post( 'tagkind', 999999 ) );
+		$this->assertSame( '', Grouped_Archive::group_label_of_post( 'nosuchkind', $id ) );
+	}
+
+	public function test_a_protected_post_in_a_flagged_source_gets_the_empty_label(): void {
+		Grouped_Archive::register_source( new Term_Source( 'test_flagged_tags', 'post_tag', null, '', true ), 'flaggedkind' );
+		$id = $this->make( 'flaggedkind', 'Protected tagged', '2026-02-01 10:00:00', [], [ 'post_tag' => [ 'Banana' ] ] );
+		wp_update_post(
+			[
+				'ID'            => $id,
+				'post_password' => 'secret',
+			]
+		);
+
+		$this->assertSame( 'Other', Grouped_Archive::group_label_of_post( 'flaggedkind', $id ) );
+		$this->assertSame( 'Banana', Grouped_Archive::group_label_of_post( 'tagkind', $id ) );
+	}
+
+	public function test_grouped_kinds_include_reply_and_like_once_cite_host_is_registered(): void {
+		$source = Grouped_Archive::source( 'cite_host' );
+
+		$this->assertContains( 'reply', Grouped_Archive::grouped_kinds() );
+		$this->assertContains( 'like', Grouped_Archive::grouped_kinds() );
+		$this->assertInstanceOf( Meta_Source::class, $source );
+		$this->assertSame( 'cite_host', $source->id() );
+		$this->assertTrue( $source->files_protected_as_empty() );
+		$this->assertSame( 'cite_host', \PKIW\Kind_Archive_Layouts::cite_source()->id() );
+	}
+
+	public function test_group_of_post_files_a_like_and_a_reply_under_their_host(): void {
+		$like = $this->make( 'like', 'Liked post', '2026-02-04 10:00:00', [ \PKIW\CITE_HOST_META => 'alpha.example' ] );
+		$reply = $this->make( 'reply', 'Reply post', '2026-02-03 10:00:00', [ \PKIW\CITE_HOST_META => 'beta.example' ] );
+		$empty = $this->make( 'like', 'Like with no host', '2026-02-02 10:00:00' );
+		$secret = $this->make( 'like', 'Protected like', '2026-02-01 10:00:00', [ \PKIW\CITE_HOST_META => 'alpha.example' ] );
+		wp_update_post(
+			[
+				'ID'            => $secret,
+				'post_password' => 'secret',
+			]
+		);
+
+		$this->assertSame( 'alpha.example', Grouped_Archive::group_of_post( 'like', $like )->key() );
+		$this->assertSame( 'alpha.example', Grouped_Archive::group_of_post( 'like', $like )->raw() );
+		$this->assertSame( 'beta.example', Grouped_Archive::group_of_post( 'reply', $reply )->key() );
+		$this->assertSame( 'beta.example', Grouped_Archive::group_of_post( 'reply', $reply )->raw() );
+		$this->assertTrue( Grouped_Archive::group_of_post( 'like', $empty )->is_empty() );
+		$this->assertTrue( Grouped_Archive::group_of_post( 'like', $secret )->is_empty() );
+	}
+
+	public function test_group_label_of_post_returns_the_host_for_a_like(): void {
+		$like = $this->make( 'like', 'Liked post', '2026-02-04 10:00:00', [ \PKIW\CITE_HOST_META => 'alpha.example' ] );
+		$empty = $this->make( 'like', 'Like with no host', '2026-02-03 10:00:00' );
+
+		$this->assertSame( 'alpha.example', Grouped_Archive::group_label_of_post( 'like', $like ) );
+		$this->assertSame( 'Other', Grouped_Archive::group_label_of_post( 'like', $empty ) );
 	}
 
 	// Page breaks.

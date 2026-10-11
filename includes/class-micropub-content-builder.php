@@ -910,7 +910,12 @@ final class Micropub_Content_Builder {
 	 * title, so without the fallback a URL-only like would render a bare
 	 * "Liked" badge with no `u-like-of` link for microformats2 parsers.
 	 *
-	 * @param array<string, mixed> $properties h-entry properties bag (uses `like-of`, `name`, `author`, `content`).
+	 * Like the reply card, `content` is not copied to the card's
+	 * description: it's the author's note, which wrap_h_entry() already
+	 * prints as e-content. The description is for the liked page's own
+	 * summary, so a copy would print the note twice (issue 254).
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `like-of`, `name`, `author`).
 	 * @return string Block-comment markup for the like-card block.
 	 */
 	private static function like_card( array $properties ): string {
@@ -918,10 +923,9 @@ final class Micropub_Content_Builder {
 		$title = self::flatten_scalar( $properties, 'name' );
 		$attrs = self::filter_empty(
 			[
-				'title'       => '' !== $title ? $title : $url,
-				'url'         => $url,
-				'author'      => self::flatten_scalar( $properties, 'author' ),
-				'description' => self::flatten_scalar( $properties, 'content' ),
+				'title'  => '' !== $title ? $title : $url,
+				'url'    => $url,
+				'author' => self::flatten_scalar( $properties, 'author' ),
 			]
 		);
 		return self::self_closing_block( 'post-kinds-indieweb/like-card', $attrs );

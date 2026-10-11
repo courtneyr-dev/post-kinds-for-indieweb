@@ -20,7 +20,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Groups by one meta key, or by the first non-empty of several, read from the
  * post's first stored row of each (lowest meta_id). Values are trimmed of
  * spaces the same way in SQL and PHP, and a post with no row is in the empty
- * group whatever default the key registers.
+ * group whatever default the key registers. A source can opt to file
+ * password-protected posts in that empty group too.
  *
  * The legacy form is the issue 230 menu path: its SQL is byte-identical to the
  * shipped clause (untrimmed), and its labels come from
@@ -68,15 +69,16 @@ final class Meta_Source implements Group_Source {
 	/**
 	 * Constructor.
 	 *
-	 * @param string          $id          Source id.
-	 * @param string[]        $keys        One meta key, or several read first-non-empty. Any non-empty string.
-	 * @param string[]        $order       Explicit value order; values not listed follow, A to Z.
-	 * @param Label_Mode|null $label       Label mode. Default verbatim.
-	 * @param string|\Closure $empty_label Label for the empty group; '' uses the engine's.
+	 * @param string          $id                 Source id.
+	 * @param string[]        $keys               One meta key, or several read first-non-empty. Any non-empty string.
+	 * @param string[]        $order              Explicit value order; values not listed follow, A to Z.
+	 * @param Label_Mode|null $label              Label mode. Default verbatim.
+	 * @param string|\Closure $empty_label        Label for the empty group; '' uses the engine's.
+	 * @param bool            $protected_in_empty Whether protected posts file into the empty group.
 	 * @throws \InvalidArgumentException When the id is malformed or no key is given.
 	 */
-	public function __construct( string $id, array $keys, array $order = [], ?Label_Mode $label = null, $empty_label = '' ) {
-		$this->init_basics( $id, $empty_label );
+	public function __construct( string $id, array $keys, array $order = [], ?Label_Mode $label = null, $empty_label = '', bool $protected_in_empty = false ) {
+		$this->init_basics( $id, $empty_label, $protected_in_empty );
 
 		$keys = array_values( array_filter( array_map( 'strval', $keys ), static fn( string $key ): bool => '' !== $key ) );
 		if ( [] === $keys ) {
@@ -138,7 +140,7 @@ final class Meta_Source implements Group_Source {
 				$key
 			) . "), '')";
 		}
-		$value = 'COALESCE(' . implode( ', ', $firsts ) . ", '')";
+		$value = $this->guard_protected_sql( 'COALESCE(' . implode( ', ', $firsts ) . ", '')", "''" );
 
 		$parts = [
 			'value'    => $value,
@@ -166,6 +168,9 @@ final class Meta_Source implements Group_Source {
 		if ( $this->legacy ) {
 			$raw = trim( self::stored( get_metadata_raw( 'post', (int) $post->ID, $this->keys[0], true ) ) );
 		} else {
+			if ( $this->is_protected( $post ) ) {
+				return new Archive_Group( '', '', '' );
+			}
 			$raw = '';
 			foreach ( $this->keys as $key ) {
 				$raw = trim( self::stored( get_metadata_raw( 'post', (int) $post->ID, $key, true ) ), ' ' );

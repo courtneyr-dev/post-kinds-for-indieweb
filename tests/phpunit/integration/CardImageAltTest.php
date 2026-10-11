@@ -196,6 +196,48 @@ final class CardImageAltTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @dataProvider url_only_cite_preview_image_cards
+	 *
+	 * @param array<string, string> $attributes Base block attributes.
+	 */
+	public function test_url_only_cite_preview_images_keep_stored_alt_or_empty_alt( string $kind, array $attributes ): void {
+		$with_alt    = $this->render_card( $kind, array_merge( $attributes, [ 'imageAlt' => 'A fictional citation preview' ] ) );
+		$without_alt = $this->render_card( $kind, $attributes );
+
+		$this->assertSame( 'A fictional citation preview', $this->image_alt( $with_alt ) );
+		$this->assertSame( '', $this->image_alt( $without_alt ), 'The img must carry alt="", not omit the attribute.' );
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: array<string, string>}>
+	 */
+	public function url_only_cite_preview_image_cards(): array {
+		return [
+			'reply'    => [
+				'reply',
+				[
+					'url'   => 'https://notes.example.com/reply?token=abc123',
+					'image' => 'https://images.example.net/reply.jpg',
+				],
+			],
+			'like'     => [
+				'like',
+				[
+					'url'   => 'https://notes.example.com/like?token=abc123',
+					'image' => 'https://images.example.net/like.jpg',
+				],
+			],
+			'bookmark' => [
+				'bookmark',
+				[
+					'url'   => 'https://notes.example.com/bookmark?token=abc123',
+					'image' => 'https://images.example.net/bookmark.jpg',
+				],
+			],
+		];
+	}
+
+	/**
 	 * @return array<string, array{0: string}>
 	 */
 	public function stored_listen_cover_urls(): array {

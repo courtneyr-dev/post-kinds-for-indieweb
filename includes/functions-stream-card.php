@@ -261,11 +261,23 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 		return render_protected_stream_card( $post, $heading_level );
 	}
 
+	if ( 'review' === get_post_kind_slug( $post ) ) {
+		return render_generic_stream_card( $post, $attributes );
+	}
+
 	// Micro-post: the body is nothing but Post Kinds card block(s). Render
 	// it exactly as it renders today — this is the Enola-Holmes shape.
 	if ( content_is_kind_card_only( (string) $post->post_content ) ) {
 		return apply_stream_heading_level(
 			inject_post_date_into_card( link_title_to_post( do_blocks( $post->post_content ), $post ), $post ),
+			$heading_level
+		);
+	}
+
+	$own_card = stream_card_own_card( $post );
+	if ( null !== $own_card ) {
+		return apply_stream_heading_level(
+			inject_post_date_into_card( link_title_to_post( render_block( $own_card ), $post ), $post ),
 			$heading_level
 		);
 	}
@@ -345,8 +357,11 @@ function render_protected_stream_card( \WP_Post $post, int $heading_level ): str
  */
 function stream_card_kind_cite_map(): array {
 	$map = [
-		'play' => __NAMESPACE__ . '\\stream_card_play_cite',
-		'read' => __NAMESPACE__ . '\\stream_card_read_cite',
+		'play'     => __NAMESPACE__ . '\\stream_card_play_cite',
+		'read'     => __NAMESPACE__ . '\\stream_card_read_cite',
+		'reply'    => __NAMESPACE__ . '\\stream_card_reply_cite',
+		'like'     => __NAMESPACE__ . '\\stream_card_like_cite',
+		'bookmark' => __NAMESPACE__ . '\\stream_card_bookmark_cite',
 	];
 
 	/**
@@ -489,6 +504,161 @@ function stream_card_read_cite( array $facts, \WP_Post $post ): string {
 }
 
 /**
+ * A reply's citation, as hidden data on its generic Stream card.
+ *
+ * @since 1.9.0
+ *
+ * @param array<string, mixed> $facts Reply facts.
+ * @param \WP_Post             $post  Post.
+ * @return string Hidden h-cite HTML, or ''.
+ */
+function stream_card_reply_cite( array $facts, \WP_Post $post ): string {
+	return stream_card_response_cite( 'reply', 'u-in-reply-to', $facts, $post );
+}
+
+/**
+ * A like's citation, as hidden data on its generic Stream card.
+ *
+ * @since 1.9.0
+ *
+ * @param array<string, mixed> $facts Like facts.
+ * @param \WP_Post             $post  Post.
+ * @return string Hidden h-cite HTML, or ''.
+ */
+function stream_card_like_cite( array $facts, \WP_Post $post ): string {
+	return stream_card_response_cite( 'like', 'u-like-of', $facts, $post );
+}
+
+/**
+ * A bookmark's citation, as hidden data on its generic Stream card.
+ *
+ * @since 1.9.0
+ *
+ * @param array<string, mixed> $facts Bookmark facts.
+ * @param \WP_Post             $post  Post.
+ * @return string Hidden h-cite HTML, or ''.
+ */
+function stream_card_bookmark_cite( array $facts, \WP_Post $post ): string {
+	return stream_card_response_cite( 'bookmark', 'u-bookmark-of', $facts, $post );
+}
+
+/**
+ * A response citation, from reader facts or raw response meta.
+ *
+ * @since 1.9.0
+ *
+ * @param string               $kind     Kind slug.
+ * @param string               $property Entry citation property class.
+ * @param array<string, mixed> $facts    Facts: `url`, `cited_title`, `author`.
+ * @param \WP_Post             $post     Post.
+ * @return string Hidden h-cite HTML, or ''.
+ */
+function stream_card_response_cite( string $kind, string $property, array $facts, \WP_Post $post ): string {
+	if ( [] === $facts && null === Kind_Facts::reader( $kind ) && Kind_Facts::can_show( $post ) ) {
+		$target_suffix = [
+			'reply'    => 'in_reply_to',
+			'like'     => 'like_of',
+			'bookmark' => 'bookmark_of',
+		][ $kind ] ?? '';
+		$url           = '';
+		foreach ( [ Meta_Fields::PREFIX . 'cite_url', Meta_Fields::PREFIX . $target_suffix ] as $key ) {
+			$value = get_metadata_raw( 'post', $post->ID, $key, true );
+			if ( is_string( $value ) && '' !== trim( $value ) ) {
+				$url = $value;
+				break;
+			}
+		}
+		$title = get_metadata_raw( 'post', $post->ID, Meta_Fields::PREFIX . 'cite_name', true );
+		$title = is_scalar( $title ) ? (string) $title : '';
+		$facts = [
+			'url'         => $url,
+			'cited_title' => card_name_is_url( $title, $url ) ? '' : $title,
+			'author'      => get_metadata_raw( 'post', $post->ID, Meta_Fields::PREFIX . 'cite_author', true ),
+		];
+	}
+
+	return hidden_cite_html(
+		$property,
+		[
+			'p-name'   => is_scalar( $facts['cited_title'] ?? null ) ? (string) $facts['cited_title'] : '',
+			'p-author' => is_scalar( $facts['author'] ?? null ) ? (string) $facts['author'] : '',
+			'u-url'    => is_scalar( $facts['url'] ?? null ) ? (string) $facts['url'] : '',
+		]
+	);
+}
+
+/**
+ * The post's own response card when it has a usable title.
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post Post.
+ * @return array<string, mixed>|null Parsed block, or null.
+ */
+function stream_card_own_card( \WP_Post $post ): ?array {
+	$kind = get_post_kind_slug( $post );
+	if ( ! in_array( $kind, [ 'reply', 'like', 'bookmark' ], true ) ) {
+		return null;
+	}
+
+	$block_name = 'post-kinds-indieweb/' . $kind . '-card';
+	foreach ( flatten_blocks( parse_blocks( (string) $post->post_content ) ) as $block ) {
+		if ( ( $block['blockName'] ?? '' ) !== $block_name ) {
+			continue;
+		}
+		$title = $block['attrs']['title'] ?? null;
+		if ( ! is_string( $title ) || '' === trim( $title ) ) {
+			continue;
+		}
+		if ( card_name_is_url( $title, (string) ( $block['attrs']['url'] ?? '' ) ) ) {
+			continue;
+		}
+
+		return $block;
+	}
+
+	return null;
+}
+
+/**
+ * Whether a response post's title is its cited URL rather than a name.
+ *
+ * Micropub and some imports store post_title = url for a nameless
+ * response. That title is synthetic: the card prints the cited name or
+ * host instead, with no p-name (X8).
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post  Post.
+ * @param string   $title Trimmed post title.
+ * @return bool True for a cite kind whose title is its cited URL.
+ */
+function stream_card_title_is_cited_url( \WP_Post $post, string $title ): bool {
+	$kind = get_post_kind_slug( $post );
+	if ( ! in_array( $kind, [ 'like', 'reply', 'repost', 'bookmark', 'favorite', 'quote', 'follow' ], true ) ) {
+		return false;
+	}
+
+	$cited_url  = '';
+	$block_name = 'post-kinds-indieweb/' . $kind . '-card';
+	foreach ( flatten_blocks( parse_blocks( (string) $post->post_content ) ) as $block ) {
+		if ( ( $block['blockName'] ?? '' ) === $block_name ) {
+			$cited_url = (string) ( $block['attrs']['url'] ?? '' );
+			break;
+		}
+	}
+	foreach ( '' === $cited_url ? cite_host_keys() : [] as $key ) {
+		$value = get_post_meta( $post->ID, $key, true );
+		if ( is_string( $value ) && '' !== trim( $value ) ) {
+			$cited_url = $value;
+			break;
+		}
+	}
+
+	return card_name_is_url( $title, $cited_url );
+}
+
+/**
  * Render a compact card for a post that isn't a self-contained kind card.
  *
  * Articles, notes, and any long-form kind get a glanceable card — badge,
@@ -515,7 +685,7 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	$excerpt       = trim( wp_strip_all_tags( get_the_excerpt( $post ) ) );
 
 	$title     = trim( get_the_title( $post ) );
-	$has_title = '' !== $title;
+	$has_title = '' !== $title && ! stream_card_title_is_cited_url( $post, $title );
 	if ( ! $has_title ) {
 		$title = untitled_name( $post, false );
 	}
@@ -591,6 +761,17 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 			. esc_attr( (string) get_post_time( 'c', true, $post ) ) . '">'
 			. esc_html( $date_display ) . '</time></p>';
 	}
+	/**
+	 * Filters markup printed after the generic Stream card's date.
+	 *
+	 * Callbacks must return escaped markup.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string   $html Markup to append after the date.
+	 * @param \WP_Post $post Post.
+	 */
+	$out .= (string) apply_filters( 'pkiw_stream_card_after_date', '', $post ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Callbacks return escaped markup.
 
 	if ( null !== $recipe ) {
 		$out .= recipe_stream_card_facts( $recipe );
@@ -1058,14 +1239,53 @@ function apply_stream_heading_level( string $html, int $level ): string {
 }
 
 /**
+ * Whether the card's first title sits inside a nested microformats object.
+ *
+ * A cite card's title belongs to its h-cite (or h-event, h-food...), so a
+ * property placed beside it attaches to that object, not to the entry. A
+ * title whose nearest root is an h-entry, or that has no root in the card,
+ * belongs to the entry.
+ *
+ * @param string $html Rendered card HTML.
+ * @return bool
+ */
+function card_title_in_nested_object( string $html ): bool {
+	if ( ! preg_match( '/\bh-[a-z]+/', $html ) ) {
+		return false;
+	}
+	$doc      = new \DOMDocument();
+	$previous = libxml_use_internal_errors( true );
+	$doc->loadHTML( '<?xml encoding="utf-8" ?><div id="pkiw-title-scope">' . $html . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD );
+	libxml_clear_errors();
+	libxml_use_internal_errors( $previous );
+	$title = ( new \DOMXPath( $doc ) )->query( '//*[self::h1 or self::h2 or self::h3 or self::h4 or self::h5 or self::h6][starts-with(@class, "pk-title")]' )->item( 0 );
+	if ( ! $title instanceof \DOMElement ) {
+		return false;
+	}
+	for ( $p = $title->parentNode; $p instanceof \DOMElement; $p = $p->parentNode ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM API property.
+		if ( 'pkiw-title-scope' === $p->getAttribute( 'id' ) ) {
+			return false;
+		}
+		$classes = ' ' . $p->getAttribute( 'class' ) . ' ';
+		if ( preg_match( '/\sh-[a-z]+(-[a-z]+)*\s/', $classes ) ) {
+			return ! str_contains( $classes, ' h-entry ' );
+		}
+	}
+	return false;
+}
+
+/**
  * Insert the post's published date inside the card, under the title.
  *
  * On the Stream the date reads inside each card rather than floating above
- * it, so the Post Template no longer renders its own post-date block.
+ * it, so the Post Template no longer renders its own post-date block. The
+ * date is the entry's: inside a nested object (a like card's h-cite) it
+ * prints without dt-published, and ensure_entry_properties() gives the
+ * entry its hidden date.
  *
  * @param string   $html Rendered card HTML.
  * @param \WP_Post $post Post the card represents.
- * @return string HTML with a dt-published date under the title.
+ * @return string HTML with the post date under the title.
  */
 function inject_post_date_into_card( string $html, \WP_Post $post ): string {
 	$display = get_the_date( '', $post );
@@ -1073,8 +1293,9 @@ function inject_post_date_into_card( string $html, \WP_Post $post ): string {
 		return $html;
 	}
 
-	$date_html = '<p class="pk-sub pk-stream-date"><time class="dt-published" datetime="'
-		. esc_attr( (string) get_post_time( 'c', true, $post ) ) . '">'
+	$date_html = '<p class="pk-sub pk-stream-date"><time'
+		. ( card_title_in_nested_object( $html ) ? '' : ' class="dt-published"' )
+		. ' datetime="' . esc_attr( (string) get_post_time( 'c', true, $post ) ) . '">'
 		. esc_html( $display ) . '</time></p>';
 
 	$out = preg_replace_callback(

@@ -27,6 +27,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * - Facts the reader names as location are cut to the post's public
  *   location tier (Meta_Fields::get_public_location_fields()), for editors
  *   too, so a page shows every visitor the same facts.
+ * - Reply, like and bookmark readers return cite facts for hidden
+ *   citations: `url`, `host`, `cited_title`, `picture`, `author` and
+ *   `summary`. Bookmark adds `title`, `note`, `rel`, `date` and `drawer`.
+ *   Each reader returns [] when can_show() is false and never returns
+ *   location keys.
  *
  * @since 1.9.0
  */

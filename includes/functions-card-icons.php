@@ -61,6 +61,7 @@ function get_kind_icon_paths( string $kind ): string {
 		'comics'      => '<path d="M12 2l1.7 4.6 3.5-2.5-1.3 4.2 4.6-.3-3.6 2.7 4 2.2-4.6.7 2.2 4-4.2-2L12 22l-1.7-4-3.5 2.6 1.3-4.2-4.6.3 3.6-2.7-4-2.2 4.6-.7-2.2-4 4.2 2z"/>',
 		'collection'  => '<rect x="3" y="8" width="18" height="12" rx="1.5"/><path d="M5 5h14M7 2h10"/>',
 		'presentation' => '<rect x="2" y="4" width="20" height="12" rx="1"/><path d="M12 16l2 4M12 16l-2 4M17 8v2a1.5 1.5 0 0 1-3 0V8a1.5 1.5 0 0 1 3 0Z"/>',
+		'review'      => '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 8l1.2 2.5 2.8.3-2.1 1.9.6 2.8-2.5-1.4-2.5 1.4.6-2.8L8 10.8l2.8-.3z"/>',
 	];
 
 	return $icons[ $kind ] ?? '<circle cx="12" cy="12" r="4"/>';

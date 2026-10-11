@@ -9,6 +9,8 @@
  * - Geo_Data::location_content() lines 799-805
  * - Geo_Data::get_location() lines 958-972, 976-993, 1010-1014,
  *   1031-1034, and 1094-1099
+ * - Geo_Base::meta_tags() class-geo-base.php lines 596-626
+ * - Geo_Base::init() wp_head hook class-geo-base.php line 44
  *
  * The class is guarded so the fixture defines nothing when the real Simple
  * Location plugin is loaded. Requiring this file registers no hooks.
@@ -129,6 +131,45 @@ if ( ! class_exists( 'Geo_Data' ) ) {
 
 			$return = implode( PHP_EOL, $c );
 			return sprintf( '<%1$s class="%2$s">%3$s</%1$s>', $args['wrapper-type'], implode( ' ', $class ), $return );
+		}
+	}
+}
+
+if ( ! class_exists( 'Geo_Base' ) ) {
+	/**
+	 * Simple Location head meta rendering.
+	 */
+	class Geo_Base {
+
+		public static function meta_tags() {
+			if ( ! is_single() ) {
+				return;
+			}
+			$geo = Geo_Data::get_geodata( 'post', get_the_ID() );
+			if ( ! $geo ) {
+				return;
+			}
+			if ( empty( $geo['visibility'] ) || 'private' === $geo['visibility'] ) {
+				return;
+			}
+			if ( isset( $geo['address'] ) ) {
+				printf(
+					'<meta name="geo.placename" content="%s" />' . PHP_EOL,
+					esc_attr( $geo['address'] )
+				);
+			}
+			if ( isset( $geo['latitude'] ) && 'protected' !== $geo['visibility'] ) {
+				printf(
+					'<meta name="geo.position" content="%s;%s" />' . PHP_EOL,
+					esc_attr( $geo['latitude'] ),
+					esc_attr( $geo['longitude'] )
+				);
+				printf(
+					'<meta name="ICBM" content="%s, %s" />' . PHP_EOL,
+					esc_attr( $geo['latitude'] ),
+					esc_attr( $geo['longitude'] )
+				);
+			}
 		}
 	}
 }

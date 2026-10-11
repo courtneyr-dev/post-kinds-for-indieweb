@@ -19,10 +19,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Meta key holding the normalized host of `_pkiw_cite_url`.
+ * Meta key holding the normalized host of the first non-empty cite URL key.
  *
- * Written whenever the cite URL is added, changed or deleted, so it can
- * group and order a query. Nothing else writes it.
+ * Written whenever a key in cite_host_keys() is added, changed or deleted,
+ * so it can group and order a query. Nothing else writes it.
  *
  * @since 1.9.0
  */
@@ -141,13 +141,49 @@ function url_host( string $url ): string {
 }
 
 /**
- * Keep `_pkiw_cite_host` in step with `_pkiw_cite_url`.
+ * Meta keys that can supply `_pkiw_cite_host`, in priority order.
  *
- * Runs on every write of the cite URL, whoever writes it: the card sync,
- * Micropub, Quick Post, an import or REST. Reads the stored rows rather
- * than the hook's value, so the host names the URL get_post_meta()
- * returns after any write, including a delete of one row of several or a
- * write made inside another meta hook.
+ * @since 1.9.0
+ *
+ * @return string[] Meta keys.
+ */
+function cite_host_keys(): array {
+	/**
+	 * Filters the meta keys that can supply `_pkiw_cite_host`.
+	 *
+	 * Keys are checked in order. The first non-empty stored string supplies
+	 * the URL whose normalized host is stored.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string[] $keys Default cite host keys, in priority order.
+	 */
+	$keys = apply_filters(
+		'pkiw_cite_host_keys',
+		[
+			Meta_Fields::PREFIX . 'cite_url',
+			Meta_Fields::PREFIX . 'in_reply_to',
+			Meta_Fields::PREFIX . 'like_of',
+			Meta_Fields::PREFIX . 'bookmark_of',
+		]
+	);
+
+	return array_values(
+		array_filter(
+			(array) $keys,
+			static fn( $key ): bool => is_string( $key ) && '' !== $key
+		)
+	);
+}
+
+/**
+ * Keep `_pkiw_cite_host` in step with the cite host key list.
+ *
+ * Runs on every write of the ordered key list, whoever writes it: the card
+ * sync, Micropub, Quick Post, an import or REST. Reads the stored rows
+ * rather than the hook's value, so the host names the URL the first
+ * non-empty key returns after any write, including a delete of one row of
+ * several or a write made inside another meta hook.
  *
  * @since 1.9.0
  *
@@ -157,12 +193,21 @@ function url_host( string $url ): string {
  * @return void
  */
 function sync_cite_host( $meta_id, int $object_id, string $meta_key ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed -- Hook signature.
-	if ( Meta_Fields::PREFIX . 'cite_url' !== $meta_key ) {
+	$keys = cite_host_keys();
+	if ( ! in_array( $meta_key, $keys, true ) ) {
 		return;
 	}
 
-	$url  = get_metadata_raw( 'post', $object_id, $meta_key, true );
-	$host = url_host( is_string( $url ) ? $url : '' );
+	$url = '';
+	foreach ( $keys as $key ) {
+		$value = get_metadata_raw( 'post', $object_id, $key, true );
+		if ( is_string( $value ) && '' !== trim( $value ) ) {
+			$url = $value;
+			break;
+		}
+	}
+
+	$host = url_host( $url );
 
 	if ( '' === $host ) {
 		delete_post_meta( $object_id, CITE_HOST_META );

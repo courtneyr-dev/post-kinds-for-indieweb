@@ -56,6 +56,89 @@ final class UntitledNameTest extends WP_UnitTestCase {
 		$this->assertSame( 'Fictional reply target', \PKIW\untitled_name( $post ) );
 	}
 
+	/**
+	 * The target keys a reply, like or bookmark made without a card stores.
+	 *
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public function target_key_kinds(): array {
+		return [
+			'reply'    => [ 'reply', '_pkiw_in_reply_to' ],
+			'like'     => [ 'like', '_pkiw_like_of' ],
+			'bookmark' => [ 'bookmark', '_pkiw_bookmark_of' ],
+		];
+	}
+
+	/**
+	 * A meta-only response has no card and no cite URL. The target key's
+	 * host names it, never the path or query (X8).
+	 *
+	 * @dataProvider target_key_kinds
+	 *
+	 * @param string $kind Kind slug.
+	 * @param string $key  Meta key.
+	 */
+	public function test_a_target_key_host_names_a_meta_only_response( string $kind, string $key ): void {
+		$post = $this->make_post( $kind );
+		update_post_meta( $post->ID, $key, 'https://www.Example.org/private-thread?token=abc123' );
+
+		$this->assertSame( 'example.org', \PKIW\untitled_name( $post ) );
+	}
+
+	/**
+	 * @dataProvider target_key_kinds
+	 *
+	 * @param string $kind Kind slug.
+	 * @param string $key  Meta key.
+	 */
+	public function test_a_cite_name_that_is_the_target_url_falls_back_to_its_host( string $kind, string $key ): void {
+		$post = $this->make_post( $kind );
+		$url  = 'https://example.net/thread?token=abc123';
+		update_post_meta( $post->ID, '_pkiw_cite_name', $url );
+		update_post_meta( $post->ID, $key, $url );
+
+		$this->assertSame( 'example.net', \PKIW\untitled_name( $post ) );
+	}
+
+	/**
+	 * @dataProvider target_key_kinds
+	 *
+	 * @param string $kind Kind slug.
+	 * @param string $key  Meta key.
+	 */
+	public function test_a_real_cite_name_still_beats_a_target_key_host( string $kind, string $key ): void {
+		$post = $this->make_post( $kind );
+		update_post_meta( $post->ID, '_pkiw_cite_name', 'Fictional target' );
+		update_post_meta( $post->ID, $key, 'https://example.org/a' );
+
+		$this->assertSame( 'Fictional target', \PKIW\untitled_name( $post ) );
+	}
+
+	public function test_the_cite_url_host_beats_a_target_key_host(): void {
+		$post = $this->make_post( 'reply' );
+		update_post_meta( $post->ID, '_pkiw_cite_url', 'https://cite.example.org/a' );
+		update_post_meta( $post->ID, '_pkiw_in_reply_to', 'https://target.example.org/a' );
+
+		$this->assertSame( 'cite.example.org', \PKIW\untitled_name( $post ) );
+	}
+
+	/**
+	 * One host rule everywhere: the card URL's host goes through url_host(),
+	 * so case, www., a port and an internationalized name read the same as
+	 * the archive's host group.
+	 */
+	public function test_the_card_url_host_follows_the_shared_host_rule(): void {
+		$url  = 'https://WWW.BÜCHER.example:8443/regal?token=abc123';
+		$post = $this->make_post( 'like', '<!-- wp:post-kinds-indieweb/like-card ' . wp_json_encode( [ 'url' => $url ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . ' /-->' );
+
+		$name = \PKIW\untitled_name( $post );
+
+		$this->assertSame( \PKIW\url_host( $url ), $name );
+		$this->assertNotSame( '', $name );
+		$this->assertStringNotContainsString( 'www.', $name );
+		$this->assertStringNotContainsString( 'Ü', $name );
+	}
+
 	public function test_favorite_prefers_favorite_name_meta(): void {
 		$post = $this->make_post( 'favorite' );
 		update_post_meta( $post->ID, '_pkiw_favorite_name', 'Favorite fictional page' );
