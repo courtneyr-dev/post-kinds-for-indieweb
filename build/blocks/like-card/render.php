@@ -5,8 +5,9 @@
  * Renders the like card in the two-layer pk-card system: plugin owns
  * structure (badge → label → title → sub → note → meta), theme owns paint
  * via --pk-* custom properties. When no usable title exists, the card links
- * the cited host. On the post's own single view, a repeated page title
- * moves to hidden data; a usable URL then links "Read the original."
+ * the cited host. On the post's own single view, a name the page heading
+ * already shows prints no second time; a usable URL then links "Read the
+ * original." A real title stays as hidden p-name data, a host stand-in doesn't.
  *
  * @package PKIW
  * @var array    $attributes Block attributes.
@@ -60,12 +61,15 @@ $pkiw_own_view = $pkiw_post instanceof WP_Post && is_singular() && get_queried_o
 
 $pkiw_like_title_is_heading = false;
 // The H1 can name the cited title whether or not the url is usable, so the
-// print-once check runs before, and apart from, the link check.
-if ( $pkiw_own_view && ! $pkiw_synthetic && '' !== trim( (string) $pkiw_title ) ) {
-	$pkiw_plain                 = static fn( string $text ): string => trim( html_entity_decode( wp_strip_all_tags( $text ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
+// print-once check runs before, and apart from, the link check. A synthetic
+// name (the host) runs it too: an untitled like's fallback H1 prints it.
+if ( $pkiw_own_view && ( $pkiw_synthetic || '' !== trim( (string) $pkiw_title ) ) ) {
+	$pkiw_plain                 = static fn( string $text ): string => mb_strtolower( trim( html_entity_decode( wp_strip_all_tags( $text ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) ), 'UTF-8' );
 	$pkiw_normalized_post_title = $pkiw_plain( $pkiw_post->post_title );
-	$pkiw_normalized_card_title = $pkiw_plain( (string) $pkiw_title );
-	$pkiw_default               = '' !== $pkiw_normalized_post_title && mb_strtolower( $pkiw_normalized_post_title, 'UTF-8' ) === mb_strtolower( $pkiw_normalized_card_title, 'UTF-8' );
+	$pkiw_default               = '' !== $pkiw_normalized_post_title && (
+		$pkiw_plain( (string) $pkiw_title ) === $pkiw_normalized_post_title
+		|| ( $pkiw_synthetic && $pkiw_plain( $pkiw_link_text ) === $pkiw_normalized_post_title )
+	);
 
 	/**
 	 * Filter whether the page heading already names the liked page.
@@ -103,7 +107,9 @@ ob_start();
 		<div class="pk-caption">
 			<?php if ( $pkiw_like_title_is_heading ) : ?>
 				<?php $pkiw_read_original = __( 'Read the original', 'post-kinds-for-indieweb-in-block-themes' ); ?>
+				<?php if ( ! $pkiw_synthetic ) : ?>
 				<data class="p-name" value="<?php echo esc_attr( $pkiw_title ); ?>" hidden></data>
+				<?php endif; ?>
 				<?php if ( '' !== $pkiw_href ) : ?>
 				<p class="pk-original"><a class="u-url" href="<?php echo esc_url( $pkiw_href ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_read_original ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_read_original ); ?></a></p>
 				<?php endif; ?>

@@ -537,7 +537,7 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 		);
 	}
 
-	public function test_like_title_filter_is_not_called_outside_real_titled_own_view_like_cards(): void {
+	public function test_like_title_filter_is_not_called_for_nameless_or_other_view_cards(): void {
 		$calls = 0;
 		add_filter(
 			'pkiw_like_card_title_is_heading',
@@ -550,11 +550,10 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 		$this->render_card_on_single(
 			'like',
 			[
-				'title' => 'https://notes.example.com/liked-page',
-				'url'   => 'https://notes.example.com/liked-page',
+				'url' => 'not a url',
 			],
 			[
-				'post_title' => 'notes.example.com',
+				'post_title' => '',
 			]
 		);
 		$this->render_like_off_own_view(
@@ -603,7 +602,10 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 		$this->assertNoOriginalLinkOrHiddenName( $other_single_html );
 	}
 
-	public function test_synthetic_like_title_stays_visible_as_host_on_own_view_even_when_filter_returns_true(): void {
+	/**
+	 * X8: a host stand-in is never p-name, so the fallback-H1 case prints only the original link.
+	 */
+	public function test_synthetic_like_title_moves_to_original_link_when_filter_returns_true(): void {
 		add_filter( 'pkiw_like_card_title_is_heading', '__return_true' );
 
 		$url  = 'https://notes.example.com/what%E2%80%99s-new?token=abc123';
@@ -618,8 +620,92 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 			]
 		);
 
-		$this->assertSyntheticTitleLink( $html, $url, 'notes.example.com' );
-		$this->assertNoOriginalLinkOrHiddenName( $html );
+		$this->assertOriginalLinkOnly( $html, $url );
+		$this->assertStringNotContainsString( 'notes.example.com', $this->plain_text( $html ) );
+	}
+
+	/**
+	 * The theme's fallback H1 prints the host for an untitled URL-only like (F8).
+	 */
+	public function test_url_only_like_single_under_fallback_heading_prints_host_once(): void {
+		add_filter( 'pkiw_like_card_title_is_heading', '__return_true' );
+
+		$url  = 'https://zine.example.org/issue-13';
+		$html = $this->render_card_on_single(
+			'like',
+			[
+				'url' => $url,
+			],
+			[
+				'post_title' => '',
+			]
+		);
+
+		$this->assertOriginalLinkOnly( $html, $url );
+		$this->assertStringNotContainsString( 'zine.example.org', $this->plain_text( $html ) );
+	}
+
+	/**
+	 * F17: the Micropub builder's group, card and e-content shape, untitled, under the fallback H1.
+	 */
+	public function test_micropub_like_single_under_fallback_heading_prints_host_once_and_note_once(): void {
+		add_filter( 'pkiw_like_card_title_is_heading', '__return_true' );
+
+		$url     = 'https://zine.example.org/issue-14';
+		$note    = 'Sharing this with a note: the third section is the one worth the time.';
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => '',
+				'post_content' => '',
+			]
+		);
+		\PKIW\Micropub_Content_Builder::apply(
+			[
+				'type'       => [ 'h-entry' ],
+				'properties' => [
+					'like-of' => [ $url ],
+					'content' => [ $note ],
+				],
+			],
+			[ 'ID' => $post_id ]
+		);
+		$this->go_to( get_permalink( $post_id ) );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = do_blocks( (string) get_post_field( 'post_content', $post_id ) );
+
+		$this->assertSame( 1, $this->query( $html, '//*[contains(concat(" ", normalize-space(@class), " "), " e-content ")]' )->length );
+		$this->assertOriginalLinkOnly( $html, $url );
+		$this->assertStringNotContainsString( 'zine.example.org', $this->plain_text( $html ) );
+		$this->assertSame( 1, substr_count( $this->plain_text( $html ), $note ) );
+	}
+
+	/**
+	 * @return array<string, array{0: array<string, string>, 1: string}>
+	 */
+	public function synthetic_names_the_post_title_already_shows(): array {
+		return [
+			'post title is the host'         => [ [ 'url' => 'https://zine.example.org/issue-13' ], 'Zine.Example.org ' ],
+			'post title and card are the url' => [
+				[
+					'title' => 'https://zine.example.org/issue-12',
+					'url'   => 'https://zine.example.org/issue-12',
+				],
+				'https://zine.example.org/issue-12',
+			],
+		];
+	}
+
+	/**
+	 * @dataProvider synthetic_names_the_post_title_already_shows
+	 *
+	 * @param array<string, string> $attributes Card attributes.
+	 */
+	public function test_synthetic_name_the_post_title_shows_defaults_to_original_link( array $attributes, string $post_title ): void {
+		$html = $this->render_card_on_single( 'like', $attributes, [ 'post_title' => $post_title ] );
+
+		$this->assertOriginalLinkOnly( $html, $attributes['url'] );
 	}
 
 	/**
@@ -827,6 +913,16 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 		$nodes = $this->query( $html, '//data[contains(concat(" ", normalize-space(@class), " "), " p-name ")]' );
 		$this->assertSame( 1, $nodes->length );
 		$this->assertSame( $value, $nodes->item( 0 )->getAttribute( 'value' ) );
+	}
+
+	private function assertOriginalLinkOnly( string $html, string $url ): void {
+		$this->assertSame( 0, $this->query( $html, '//h2' )->length );
+		$this->assertSame( 0, $this->query( $html, '//*[contains(concat(" ", normalize-space(@class), " "), " p-name ")]' )->length );
+		$this->assertSame( 1, $this->query( $html, '//a' )->length );
+		$link = $this->one_original_link( $html );
+		$this->assertSame( esc_url( $url ), $link->getAttribute( 'href' ) );
+		$this->assertSame( 'Read the original', $this->node_text( $link ) );
+		$this->assertSame( 'Read the original (opens in a new tab)', $link->getAttribute( 'aria-label' ) );
 	}
 
 	private function assertNoOriginalLinkOrHiddenName( string $html ): void {
