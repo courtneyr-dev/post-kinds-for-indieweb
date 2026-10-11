@@ -43,6 +43,7 @@ final class BookmarkMicroformatsTest extends WP_UnitTestCase {
 			$GLOBALS['wp_query']->set( 'atproto', null );
 		}
 		switch_theme( $this->original_stylesheet );
+		$this->set_permalink_structure( '' );
 		parent::tear_down();
 	}
 
@@ -110,6 +111,21 @@ final class BookmarkMicroformatsTest extends WP_UnitTestCase {
 
 		$this->assertArrayNotHasKey( 'bookmark-of', $entry['properties'] ?? [], 'The post permalink does not become bookmark-of.' );
 		$this->assertStringNotContainsString( 'u-bookmark-of', $html, 'The post permalink does not print a bookmark-of marker.' );
+	}
+
+	public function test_bookmark_of_ignores_a_trailing_slash_difference_from_the_permalink(): void {
+		$this->set_permalink_structure( '/%postname%/' );
+		$post_id   = $this->bookmark( $this->paragraph( 'Self link.' ) );
+		$permalink = (string) get_permalink( $post_id );
+
+		foreach ( [ untrailingslashit( $permalink ), trailingslashit( $permalink ) ] as $value ) {
+			update_post_meta( $post_id, Meta_Fields::PREFIX . 'bookmark_of', $value );
+			$html  = $this->render_single( $post_id );
+			$entry = $this->entry_for_post( $html, $post_id );
+
+			$this->assertStringNotContainsString( 'u-bookmark-of', $html, 'The post permalink variant ' . $value . ' does not print a bookmark-of marker.' );
+			$this->assertArrayNotHasKey( 'bookmark-of', $entry['properties'] ?? [], 'The post permalink variant ' . $value . ' does not become bookmark-of.' );
+		}
 	}
 
 	public function test_protected_bookmark_does_not_leak_meta_url(): void {

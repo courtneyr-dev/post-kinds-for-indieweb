@@ -953,7 +953,7 @@ class Microformats {
 			case 'bookmark':
 				$facts = Kind_Facts::get( $post_id );
 				$url   = (string) ( $facts['url'] ?? '' );
-				if ( '' !== $url && get_permalink( $post_id ) !== $url && ! $this->has_class_token( $content, 'u-bookmark-of' ) ) {
+				if ( '' !== $url && untrailingslashit( (string) get_permalink( $post_id ) ) !== untrailingslashit( $url ) && ! $this->has_class_token( $content, 'u-bookmark-of' ) ) {
 					$hidden_data .= sprintf(
 						'<data class="u-bookmark-of" value="%s"></data>',
 						esc_url( $url )
