@@ -228,6 +228,10 @@ final class ArchiveSectionsBlockTest extends WP_UnitTestCase {
 		$this->assertSame( 'object', $attributes['groupLabels']['type'] );
 		$this->assertSame( [], $attributes['groupLabels']['default'] );
 		$this->assertSame( '', $attributes['emptyLabel']['default'], 'An empty label falls back to the source, then "Other" (X2).' );
+		$this->assertArrayHasKey( 'dateFormat', $attributes );
+		$this->assertSame( 'string', $attributes['dateFormat']['type'] );
+		$this->assertSame( '', $attributes['dateFormat']['default'] );
+		$this->assertArrayNotHasKey( 'role', $attributes['dateFormat'] );
 	}
 
 	public function test_the_label_attributes_carry_the_content_role(): void {
@@ -277,6 +281,12 @@ final class ArchiveSectionsBlockTest extends WP_UnitTestCase {
 		);
 		$inline = implode( "\n", (array) wp_scripts()->get_data( 'pkiw-archive-sections-editor', 'before' ) );
 		$this->assertStringContainsString( 'window.pkiwArchiveSections = {"groups":{"play":{"video":"Video games","board":"Board games"}}};', $inline );
+		$this->assertStringContainsString( 'window.pkiwArchiveSectionsDateKinds = [', $inline );
+		$this->assertMatchesRegularExpression( '/window\.pkiwArchiveSectionsDateKinds = (\[.*?\]);/', $inline );
+		preg_match( '/window\.pkiwArchiveSectionsDateKinds = (\[.*?\]);/', $inline, $date_kinds );
+		$this->assertSame( \PKIW\Kind_Archive_Layouts::MONTH_KINDS, json_decode( $date_kinds[1], true ) );
+		$this->assertContains( 'article', json_decode( $date_kinds[1], true ) );
+		$this->assertNotContains( 'eat', json_decode( $date_kinds[1], true ) );
 
 		// Without the test's filter, the kind lanes' own filters answer. Read
 		// lists its four statuses (Read_Archive::sections_groups()).
@@ -379,5 +389,17 @@ final class ArchiveSectionsBlockTest extends WP_UnitTestCase {
 		$this->assertSame( '<div class="pkiw-group-placeholder" hidden></div>', $this->editor_render( $p['orbit'], $attrs ) );
 		$this->assertSame( '<h2 id="pkiw-group-board" class="pkiw-group__heading">Game Night</h2>', $this->editor_render( $p['meadow'], $attrs ), 'Meadow Songs opens page 2, so it heads the board group again.' );
 		$this->assertSame( '<h2 id="pkiw-group-empty" class="pkiw-group__heading">Other</h2>', $this->editor_render( $p['tag'], $attrs ) );
+	}
+
+	public function test_post_template_block_styles_include_contents_and_existing_layouts(): void {
+		$registry = WP_Block_Styles_Registry::get_instance();
+		$contents = $registry->get_registered( 'core/post-template', 'pkiw-contents' );
+
+		$this->assertIsArray( $contents );
+		$this->assertSame( 'Contents', $contents['label'] );
+		$this->assertArrayNotHasKey( 'style_handle', $contents );
+		foreach ( [ 'pkiw-shelf', 'pkiw-shelf-spine', 'pkiw-menu' ] as $style ) {
+			$this->assertIsArray( $registry->get_registered( 'core/post-template', $style ), $style );
+		}
 	}
 }

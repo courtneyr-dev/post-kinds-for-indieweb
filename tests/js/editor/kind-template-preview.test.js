@@ -274,6 +274,60 @@ describe( 'kind template preview', () => {
 		expect( state.termQueries[ 0 ][ 2 ].slug ).toBe( 'play' );
 	} );
 
+	it( 'previews a chicken archive by its registered entry block settings', () => {
+		const state = editorState( {
+			settings: { perPage: {}, grouped: [ 'chicken' ] },
+			entries: {
+				'post-kinds-indieweb/chicken-entry': { fixed: false },
+			},
+			blocks: [
+				{
+					name: 'post-kinds-indieweb/chicken-entry',
+					attributes: { linesPerPage: 24 },
+					innerBlocks: [],
+				},
+			],
+		} );
+		const element = load( state )(
+			postTemplate( { templateSlug: 'taxonomy-kind-chicken' } )
+		);
+
+		expect( element.props.context.query.perPage ).toBe( 24 );
+		expect( element.props.context.query.orderBy ).toBe( 'pkiw_group' );
+		expect( element.props.context.query.taxQuery ).toEqual( {
+			kind: [ 7 ],
+			include: { kind: [ 7 ] },
+		} );
+		expect( state.termQueries[ 0 ][ 2 ].slug ).toBe( 'chicken' );
+	} );
+
+	it( 'previews an acquisition archive-sections template in grouped order', () => {
+		const element = load(
+			editorState( {
+				settings: { perPage: {}, grouped: [ 'acquisition' ] },
+				entries: registeredEntries,
+				blocks: playTemplate( { linesPerPage: 12 } ),
+			} )
+		)( postTemplate( { templateSlug: 'taxonomy-kind-acquisition' } ) );
+
+		expect( element.props.context.query.perPage ).toBe( 12 );
+		expect( element.props.context.query.orderBy ).toBe( 'pkiw_group' );
+	} );
+
+	it( 'uses the editor posts-per-page fallback for grouped article sections', () => {
+		const element = load(
+			editorState( {
+				postsPerPage: 4,
+				settings: { perPage: {}, grouped: [ 'article' ] },
+				entries: registeredEntries,
+				blocks: playTemplate( { linesPerPage: 0 } ),
+			} )
+		)( postTemplate( { templateSlug: 'taxonomy-kind-article' } ) );
+
+		expect( element.props.context.query.perPage ).toBe( 4 );
+		expect( element.props.context.query.orderBy ).toBe( 'pkiw_group' );
+	} );
+
 	it( 'falls back to the site’s play page size when the marker sets none', () => {
 		const element = load(
 			editorState( {
