@@ -157,6 +157,12 @@ final class ReviewArchiveTest extends WP_UnitTestCase {
 		);
 		$attachment = self::factory()->attachment->create_object( 'lantern.png', 0, [ 'post_mime_type' => 'image/png' ] );
 		set_post_thumbnail( $id, $attachment );
+		wp_update_post(
+			[
+				'ID'          => $id,
+				'post_author' => self::factory()->user->create( [ 'display_name' => 'Fictional Author' ] ),
+			]
+		);
 
 		$html  = $this->serve( $this->archive_url() );
 		$xpath = $this->xpath( $html );
@@ -173,11 +179,14 @@ final class ReviewArchiveTest extends WP_UnitTestCase {
 		$this->assertSame( 1, $xpath->query( './/span[@hidden]//*[contains(@class,"p-author")]', $item )->length );
 
 		$item_html = $this->node_html( $item );
-		foreach ( [ 'Rated', 'Pull quote text', 'https://items.example.com/lantern', '2026', 'Alpha Books' ] as $absent ) {
+		foreach ( [ 'Rated', 'Pull quote text', 'https://items.example.com/lantern' ] as $absent ) {
 			$this->assertStringNotContainsString( $absent, $item_html );
 		}
+		foreach ( [ '2026', 'Alpha Books' ] as $absent ) {
+			$this->assertStringNotContainsString( $absent, (string) $item->textContent, 'No visible date or category text.' );
+		}
 		$this->assertStringNotContainsString( 'pk-stars', $item_html );
-		$this->assertSame( '', trim( $xpath->query( './/span[@hidden]', $item )->item( 0 )->textContent ), 'The author is present only in a hidden wrapper.' );
+		$this->assertSame( 0, $xpath->query( './/*[not(ancestor-or-self::*[@hidden])]/text()[contains(., "Fictional Author")]', $item )->length, 'The author is present only in a hidden wrapper.' );
 	}
 
 	public function test_untitled_review_heading_uses_synthetic_name_without_p_name(): void {
@@ -229,7 +238,7 @@ final class ReviewArchiveTest extends WP_UnitTestCase {
 	}
 
 	public function test_simple_location_content_callbacks_are_suppressed_only_on_review_singles(): void {
-		require_once dirname( __DIR__ ) . '/fixtures/Geo_Data_Stub.php';
+		require_once dirname( __DIR__ ) . '/fixtures/simple-location/location-stub.php';
 		$review = $this->review( 'Map Review', '2026-01-02 10:00:00' );
 		$watch  = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => 'Map Watch' ] );
 		wp_set_object_terms( $watch, 'watch', Taxonomy::TAXONOMY );
@@ -247,6 +256,12 @@ final class ReviewArchiveTest extends WP_UnitTestCase {
 		( new Review_Archive() )->suppress_simple_location();
 		$this->assertFalse( has_filter( 'the_content', $map ) );
 		$this->assertFalse( has_filter( 'the_content', $location ) );
+
+		$this->hook_geo_data( 'Geo_Data::content_map', 'Geo_Data::location_content' );
+		$this->go_to( get_permalink( $review ) );
+		( new Review_Archive() )->suppress_simple_location();
+		$this->assertFalse( has_filter( 'the_content', 'Geo_Data::content_map' ) );
+		$this->assertFalse( has_filter( 'the_content', 'Geo_Data::location_content' ) );
 
 		$this->hook_geo_data( [ 'Geo_Data', 'content_map' ], [ 'Geo_Data', 'location_content' ] );
 		$this->go_to( get_permalink( $watch ) );
@@ -458,11 +473,14 @@ final class ReviewArchiveTest extends WP_UnitTestCase {
 	/**
 	 * Hook Simple Location callbacks at the priorities this lane suppresses.
 	 *
-	 * @param callable $map      Map callback.
-	 * @param callable $location Location callback.
+	 * The callbacks are never run, and another test's Geo_Data stub may be the
+	 * class loaded in a full run, so they are not required to be callable.
+	 *
+	 * @param string|array<int, mixed> $map      Map callback.
+	 * @param string|array<int, mixed> $location Location callback.
 	 * @return void
 	 */
-	private function hook_geo_data( callable $map, callable $location ): void {
+	private function hook_geo_data( $map, $location ): void {
 		remove_all_filters( 'the_content', 11 );
 		remove_all_filters( 'the_content', 12 );
 		add_filter( 'the_content', $map, 11 );

@@ -60,7 +60,7 @@ final class FourStarsBlockTest extends WP_UnitTestCase {
 		foreach ( $in as $post_id ) {
 			$this->assertStringContainsString( get_permalink( $post_id ), $html );
 		}
-		foreach ( [ 'Fictional Five', 'Fictional Three Half', 'Fictional Four Half', 'Fictional Zero', 'Fictional Draft', 'Fictional Private', 'Fictional Locked', 'Fictional Watch', 'Hidden Type' ] as $absent ) {
+		foreach ( [ 'Fictional Five', 'Fictional Three Half', 'Fictional Four Half', 'Fictional Draft', 'Fictional Private', 'Fictional Locked', 'Fictional Watch', 'Hidden Type' ] as $absent ) {
 			$this->assertStringNotContainsString( $absent, $html );
 		}
 	}

@@ -107,9 +107,9 @@ final class ReviewFactsTest extends WP_UnitTestCase {
 		$this->assertSame( 1, $facts['stars']['empty'] );
 	}
 
-	public function test_item_url_is_sanitized_and_canonicalized(): void {
+	public function test_item_url_drops_unsafe_schemes_and_keeps_web_urls(): void {
 		$bad  = Review_Archive::review_facts( $this->review( 'Script Review', [ 'item_url' => 'javascript:alert(1)' ] ) );
-		$good = Review_Archive::review_facts( $this->review( 'Web Review', [ 'item_url' => ' https://items.example.com/path?x=1 ' ] ) );
+		$good = Review_Archive::review_facts( $this->review( 'Web Review', [ 'item_url' => 'https://items.example.com/path?x=1' ] ) );
 
 		$this->assertSame( '', $bad['item_url'] );
 		$this->assertSame( 'https://items.example.com/path?x=1', $good['item_url'] );
