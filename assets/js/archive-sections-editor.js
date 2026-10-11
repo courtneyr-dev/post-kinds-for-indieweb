@@ -7,7 +7,8 @@
  * section that post opens, or a hidden placeholder when it continues one.
  * The inspector sets the section settings the engine reads, plus a heading
  * field for each group of the template's kind (window.pkiwArchiveSections)
- * and for any group the block already names.
+ * and for any group the block already names; window.pkiwArchiveSectionsDateKinds
+ * switches month archives to a Date format field.
  *
  * Plain script on purpose: no build step, only WordPress globals.
  *
@@ -32,6 +33,9 @@
 	const TextControl = wp.components && wp.components.TextControl;
 	const data = window.pkiwArchiveSections || {};
 	const groupsByKind = data.groups || {};
+	const dateKinds = Array.isArray( window.pkiwArchiveSectionsDateKinds )
+		? window.pkiwArchiveSectionsDateKinds
+		: [];
 
 	// The kind a taxonomy-kind-<slug> template is the archive of, or ''.
 	function templateKind( slug ) {
@@ -57,6 +61,7 @@
 		const labels = attributes.groupLabels || {};
 		const set = props.setAttributes;
 		const fields = groupFields( kind, labels );
+		const byDate = -1 !== dateKinds.indexOf( kind );
 
 		const settings = [
 			el( ToggleControl, {
@@ -117,7 +122,26 @@
 							set( { headingLevel: parseInt( value, 10 ) || 2 } );
 						},
 					} ),
-				SelectControl &&
+				byDate &&
+					TextControl &&
+					el( TextControl, {
+						key: 'dateFormat',
+						label: __(
+							'Date format',
+							'post-kinds-for-indieweb-in-block-themes'
+						),
+						placeholder: 'F Y',
+						help: __(
+							'A PHP date format. Empty uses F Y.',
+							'post-kinds-for-indieweb-in-block-themes'
+						),
+						value: attributes.dateFormat,
+						onChange( value ) {
+							set( { dateFormat: value } );
+						},
+					} ),
+				! byDate &&
+					SelectControl &&
 					el( SelectControl, {
 						key: 'sectionOrder',
 						label: __(
@@ -145,7 +169,8 @@
 							set( { sectionOrder: value } );
 						},
 					} ),
-				SelectControl &&
+				! byDate &&
+					SelectControl &&
 					el( SelectControl, {
 						key: 'emptyGroup',
 						label: __(
@@ -173,7 +198,8 @@
 							set( { emptyGroup: value } );
 						},
 					} ),
-				TextControl &&
+				! byDate &&
+					TextControl &&
 					el( TextControl, {
 						key: 'emptyLabel',
 						label: __(
@@ -307,6 +333,7 @@
 			sectionOrder: { type: 'string', default: 'asc' },
 			emptyGroup: { type: 'string', default: 'last' },
 			emptyLabel: { type: 'string', default: '', role: 'content' },
+			dateFormat: { type: 'string', default: '' },
 			groupLabels: { type: 'object', default: {}, role: 'content' },
 		},
 		supports: { html: false, reusable: false },
