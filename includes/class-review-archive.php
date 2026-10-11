@@ -475,9 +475,11 @@ final class Review_Archive {
 			$title = untitled_name( $post );
 		}
 
-		$facts       = self::review_facts( $post->ID );
+		// A password-protected review shows its title and the password form, nothing else.
+		$protected   = post_password_required( $post );
+		$facts       = $protected ? [] : self::review_facts( $post->ID );
 		$item_name   = trim( (string) ( $facts['item_name'] ?? '' ) );
-		$cover       = self::cover( kind_picture( $post->ID ) );
+		$cover       = $protected ? '' : self::cover( kind_picture( $post->ID ) );
 		$author_html = function_exists( __NAMESPACE__ . '\\entry_author_html' ) ? entry_author_html( $post ) : '';
 
 		$html  = '<div class="pkiw-review-entry">';
@@ -490,7 +492,10 @@ final class Review_Archive {
 			esc_html( $title )
 		);
 		if ( '' !== $item_name ) {
-			$html .= '<p class="pkiw-review-entry__item">' . esc_html( $item_name ) . '</p>';
+			$html .= '<p class="pkiw-review-entry__item p-item h-product"><span class="p-name">' . esc_html( $item_name ) . '</span></p>';
+		}
+		if ( $protected ) {
+			$html .= '<div class="pkiw-review-entry__password">' . get_the_password_form( $post ) . '</div>';
 		}
 		$html .= '<data class="dt-published" value="' . esc_attr( (string) get_the_date( 'c', $post ) ) . '" hidden></data>';
 		if ( '' !== $author_html ) {
