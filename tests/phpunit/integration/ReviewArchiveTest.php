@@ -276,6 +276,11 @@ final class ReviewArchiveTest extends WP_UnitTestCase {
 		$this->assertFalse( has_filter( 'the_content', 'Geo_Data::location_content' ) );
 		$this->assertFalse( has_filter( 'wp_head', 'Geo_Base::meta_tags' ) );
 
+		// Script and style printing carries no location, and on some WordPress
+		// builds it raises an unrelated dependency notice for wp-edit-post.
+		remove_action( 'wp_head', 'wp_enqueue_scripts', 1 );
+		remove_action( 'wp_head', 'wp_print_styles', 8 );
+		remove_action( 'wp_head', 'wp_print_head_scripts', 9 );
 		ob_start();
 		do_action( 'wp_head' );
 		$review_head = (string) ob_get_clean();
