@@ -384,6 +384,14 @@ class Microformats {
 					'date'    => 'dt-published',
 				],
 			],
+			'acquisition' => [
+				'root'       => [ 'h-entry' ],
+				'properties' => [
+					'acquisition-of' => 'u-acquisition-of',
+					'content'        => 'e-content',
+					'date'           => 'dt-published',
+				],
+			],
 		];
 
 		/**
@@ -961,6 +969,20 @@ class Microformats {
 				}
 				break;
 
+			case 'favorite':
+				$url = $this->favorite_target_url( $post_id );
+				if ( '' === $url || untrailingslashit( (string) get_permalink( $post_id ) ) === untrailingslashit( $url ) || $this->has_class_token( $content, 'u-favorite-of' ) ) {
+					break;
+				}
+				$escaped = esc_url( $url );
+				if ( '' !== $escaped ) {
+					$hidden_data .= sprintf(
+						'<data class="u-favorite-of" value="%s"></data>',
+						$escaped
+					);
+				}
+				break;
+
 			case 'event':
 				$start = get_post_meta( $post_id, $prefix . 'event_start', true );
 				$end   = get_post_meta( $post_id, $prefix . 'event_end', true );
@@ -987,6 +1009,35 @@ class Microformats {
 		}
 
 		return $content;
+	}
+
+	/**
+	 * The URL a favorite post targets.
+	 *
+	 * A registered favorite reader decides on its own. Without one, the
+	 * stored cite URL or favorite URL stands in.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string Favorite target URL, or ''.
+	 */
+	private function favorite_target_url( int $post_id ): string {
+		$post = get_post( $post_id );
+		if ( ! $post instanceof \WP_Post || ! Kind_Facts::can_show( $post ) ) {
+			return '';
+		}
+
+		if ( null !== Kind_Facts::reader( 'favorite' ) ) {
+			return web_url( (string) ( Kind_Facts::get( $post_id )['url'] ?? '' ) );
+		}
+
+		foreach ( [ 'cite_url', 'favorite_url' ] as $suffix ) {
+			$value = get_metadata_raw( 'post', $post_id, Meta_Fields::PREFIX . $suffix, true );
+			if ( is_string( $value ) && '' !== trim( $value ) ) {
+				return web_url( $value );
+			}
+		}
+
+		return '';
 	}
 
 	/**

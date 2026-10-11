@@ -1910,7 +1910,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertSame( [ 'Site Author' ], $entry['properties']['author'][0]['properties']['name'] );
 		$this->assertCount( 1, $entry['properties']['photo'] );
 		$this->assertSame( [ 'Tide pool at dusk' ], $entry['properties']['name'] );
-		$this->assertSame( 1, substr_count( $html, 'pkiw-entry-props' ), 'The root is the card, so the author rides in one hidden span.' );
+		$this->assertSame( 1, substr_count( $html, 'pk-entry-props' ), 'The root is the card, so the author rides in one hidden span.' );
 	}
 
 	public function test_is_rendering_stream_card_is_true_only_during_a_render(): void {

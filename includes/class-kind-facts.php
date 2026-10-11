@@ -19,9 +19,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  * The facts a theme prints for a kind post, on the recipe_facts() model.
  *
  * Each kind registers one reader: a function that takes a post ID and
- * returns a plain array read from the meta the card syncs (never from
- * block attributes, whose stale copies leaked in 0.7.91). get() picks the
- * reader by the post's kind and applies what every kind shares:
+ * returns a plain array. A reader reads the meta Card_Meta_Sync writes
+ * when its card has an ATTR_META_MAP entry. A kind whose card has no map
+ * entry (bookmark, favorite, acquisition) reads its first card block, then
+ * falls back to meta. Theme code reads neither and goes through
+ * Kind_Facts::get() only, because issue 259's 0.7.91 leak came from theme
+ * code that read block attributes. get() picks the reader by the post's
+ * kind and applies what every kind shares:
  *
  * - No facts for a post the requester can't read, or one behind a password.
  * - Facts the reader names as location are cut to the post's public
