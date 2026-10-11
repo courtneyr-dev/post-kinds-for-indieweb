@@ -309,6 +309,28 @@ class BlockBindingsSourceTest extends WP_UnitTestCase {
 		$this->assertNull( $result );
 	}
 
+	public function test_get_value_returns_empty_string_for_password_required_post(): void {
+		$post_id = self::factory()->post->create( [ 'post_password' => 'secret' ] );
+		$this->assign_kind( $post_id, 'read' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'read_title', 'Hidden Read Title' );
+		wp_set_current_user( 0 );
+
+		$block = $this->make_block_instance( $post_id );
+
+		$this->assertSame( '', $this->source->get_value( [ 'key' => 'title' ], $block, 'content' ) );
+		$this->assertSame( '', $this->source->get_value( [ 'key' => 'kind' ], $block, 'content' ) );
+	}
+
+	public function test_get_value_keeps_public_post_value(): void {
+		$post_id = self::factory()->post->create();
+		$this->assign_kind( $post_id, 'read' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'read_title', 'Visible Read Title' );
+
+		$result = $this->source->get_value( [ 'key' => 'title' ], $this->make_block_instance( $post_id ), 'content' );
+
+		$this->assertSame( 'Visible Read Title', $result );
+	}
+
 	/**
 	 * Test get_value returns null when no kind assigned and meta is empty.
 	 */
