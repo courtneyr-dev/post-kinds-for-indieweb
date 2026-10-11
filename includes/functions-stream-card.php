@@ -261,11 +261,23 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 		return render_protected_stream_card( $post, $heading_level );
 	}
 
+	if ( 'review' === get_post_kind_slug( $post ) ) {
+		return render_generic_stream_card( $post, $attributes );
+	}
+
 	// Micro-post: the body is nothing but Post Kinds card block(s). Render
 	// it exactly as it renders today — this is the Enola-Holmes shape.
 	if ( content_is_kind_card_only( (string) $post->post_content ) ) {
 		return apply_stream_heading_level(
 			inject_post_date_into_card( link_title_to_post( do_blocks( $post->post_content ), $post ), $post ),
+			$heading_level
+		);
+	}
+
+	$own_card = stream_card_own_card( $post );
+	if ( null !== $own_card ) {
+		return apply_stream_heading_level(
+			inject_post_date_into_card( link_title_to_post( render_block( $own_card ), $post ), $post ),
 			$heading_level
 		);
 	}
@@ -345,8 +357,11 @@ function render_protected_stream_card( \WP_Post $post, int $heading_level ): str
  */
 function stream_card_kind_cite_map(): array {
 	$map = [
-		'play' => __NAMESPACE__ . '\\stream_card_play_cite',
-		'read' => __NAMESPACE__ . '\\stream_card_read_cite',
+		'play'     => __NAMESPACE__ . '\\stream_card_play_cite',
+		'read'     => __NAMESPACE__ . '\\stream_card_read_cite',
+		'reply'    => __NAMESPACE__ . '\\stream_card_reply_cite',
+		'like'     => __NAMESPACE__ . '\\stream_card_like_cite',
+		'bookmark' => __NAMESPACE__ . '\\stream_card_bookmark_cite',
 	];
 
 	/**
@@ -489,6 +504,123 @@ function stream_card_read_cite( array $facts, \WP_Post $post ): string {
 }
 
 /**
+ * A reply's citation, as hidden data on its generic Stream card.
+ *
+ * @since 1.9.0
+ *
+ * @param array<string, mixed> $facts Reply facts.
+ * @param \WP_Post             $post  Post.
+ * @return string Hidden h-cite HTML, or ''.
+ */
+function stream_card_reply_cite( array $facts, \WP_Post $post ): string {
+	return stream_card_response_cite( 'reply', 'u-in-reply-to', $facts, $post );
+}
+
+/**
+ * A like's citation, as hidden data on its generic Stream card.
+ *
+ * @since 1.9.0
+ *
+ * @param array<string, mixed> $facts Like facts.
+ * @param \WP_Post             $post  Post.
+ * @return string Hidden h-cite HTML, or ''.
+ */
+function stream_card_like_cite( array $facts, \WP_Post $post ): string {
+	return stream_card_response_cite( 'like', 'u-like-of', $facts, $post );
+}
+
+/**
+ * A bookmark's citation, as hidden data on its generic Stream card.
+ *
+ * @since 1.9.0
+ *
+ * @param array<string, mixed> $facts Bookmark facts.
+ * @param \WP_Post             $post  Post.
+ * @return string Hidden h-cite HTML, or ''.
+ */
+function stream_card_bookmark_cite( array $facts, \WP_Post $post ): string {
+	return stream_card_response_cite( 'bookmark', 'u-bookmark-of', $facts, $post );
+}
+
+/**
+ * A response citation, from reader facts or raw response meta.
+ *
+ * @since 1.9.0
+ *
+ * @param string               $kind     Kind slug.
+ * @param string               $property Entry citation property class.
+ * @param array<string, mixed> $facts    Facts: `url`, `cited_title`, `author`.
+ * @param \WP_Post             $post     Post.
+ * @return string Hidden h-cite HTML, or ''.
+ */
+function stream_card_response_cite( string $kind, string $property, array $facts, \WP_Post $post ): string {
+	if ( [] === $facts && null === Kind_Facts::reader( $kind ) && Kind_Facts::can_show( $post ) ) {
+		$target_suffix = [
+			'reply'    => 'in_reply_to',
+			'like'     => 'like_of',
+			'bookmark' => 'bookmark_of',
+		][ $kind ] ?? '';
+		$url           = '';
+		foreach ( [ Meta_Fields::PREFIX . 'cite_url', Meta_Fields::PREFIX . $target_suffix ] as $key ) {
+			$value = get_metadata_raw( 'post', $post->ID, $key, true );
+			if ( is_string( $value ) && '' !== trim( $value ) ) {
+				$url = $value;
+				break;
+			}
+		}
+		$title = get_metadata_raw( 'post', $post->ID, Meta_Fields::PREFIX . 'cite_name', true );
+		$title = is_scalar( $title ) ? (string) $title : '';
+		$facts = [
+			'url'         => $url,
+			'cited_title' => card_name_is_url( $title, $url ) ? '' : $title,
+			'author'      => get_metadata_raw( 'post', $post->ID, Meta_Fields::PREFIX . 'cite_author', true ),
+		];
+	}
+
+	return hidden_cite_html(
+		$property,
+		[
+			'p-name'   => is_scalar( $facts['cited_title'] ?? null ) ? (string) $facts['cited_title'] : '',
+			'p-author' => is_scalar( $facts['author'] ?? null ) ? (string) $facts['author'] : '',
+			'u-url'    => is_scalar( $facts['url'] ?? null ) ? (string) $facts['url'] : '',
+		]
+	);
+}
+
+/**
+ * The post's own response card when it has a usable title.
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post Post.
+ * @return array<string, mixed>|null Parsed block, or null.
+ */
+function stream_card_own_card( \WP_Post $post ): ?array {
+	$kind = get_post_kind_slug( $post );
+	if ( ! in_array( $kind, [ 'reply', 'like', 'bookmark' ], true ) ) {
+		return null;
+	}
+
+	$block_name = 'post-kinds-indieweb/' . $kind . '-card';
+	foreach ( flatten_blocks( parse_blocks( (string) $post->post_content ) ) as $block ) {
+		if ( ( $block['blockName'] ?? '' ) !== $block_name ) {
+			continue;
+		}
+		$title = $block['attrs']['title'] ?? null;
+		if ( ! is_string( $title ) || '' === trim( $title ) ) {
+			continue;
+		}
+		if ( card_name_is_url( $title, (string) ( $block['attrs']['url'] ?? '' ) ) ) {
+			continue;
+		}
+
+		return $block;
+	}
+
+	return null;
+}
+
+/**
  * Render a compact card for a post that isn't a self-contained kind card.
  *
  * Articles, notes, and any long-form kind get a glanceable card — badge,
@@ -591,6 +723,17 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 			. esc_attr( (string) get_post_time( 'c', true, $post ) ) . '">'
 			. esc_html( $date_display ) . '</time></p>';
 	}
+	/**
+	 * Filters markup printed after the generic Stream card's date.
+	 *
+	 * Callbacks must return escaped markup.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string   $html Markup to append after the date.
+	 * @param \WP_Post $post Post.
+	 */
+	$out .= (string) apply_filters( 'pkiw_stream_card_after_date', '', $post ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Callbacks return escaped markup.
 
 	if ( null !== $recipe ) {
 		$out .= recipe_stream_card_facts( $recipe );

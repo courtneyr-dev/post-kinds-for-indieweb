@@ -953,7 +953,14 @@ final class StreamCardTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'pk-card--stream', $html );
 		$this->assertStringContainsString( '>example.org</a>', $html );
-		$this->assertStringNotContainsString( 'token=abc123', $html );
+		// G5: the token sits only in the hidden citation's data value. The
+		// bookmark card has no map in W2 (the bookmark archive lane adds its
+		// own), so a bookmark post has no stored target and no citation yet.
+		if ( 'bookmark' !== $kind ) {
+			$this->assertStringContainsString( '<data class="u-url" value="https://example.org/private?token=abc123"></data>', $html );
+		}
+		$visible = (string) preg_replace( '#<span class="pk-kind-cite[^>]*hidden>.*?</span>#s', '', $html );
+		$this->assertStringNotContainsString( 'token=abc123', $visible );
 	}
 
 	/**
@@ -978,8 +985,12 @@ final class StreamCardTest extends WP_UnitTestCase {
 
 		$this->assertSame( 1, preg_match( '#<h2 class="pk-title"><a class="u-url" href="[^"]+">(.*?)</a></h2>#s', $html, $link ) );
 		$this->assertSame( 'example.com', $link[1] );
-		$this->assertStringNotContainsString( 'private-thread', $html );
-		$this->assertStringNotContainsString( 'token=abc123', $html );
+		// G5: the hidden u-in-reply-to keeps the full URL, query included, in
+		// its data value. Nowhere else on the card shows the path or token.
+		$this->assertStringContainsString( '<data class="u-url" value="' . $url . '"></data>', $html );
+		$visible = (string) preg_replace( '#<span class="pk-kind-cite[^>]*hidden>.*?</span>#s', '', $html );
+		$this->assertStringNotContainsString( 'private-thread', $visible );
+		$this->assertStringNotContainsString( 'token=abc123', $visible );
 	}
 
 	public function test_untitled_long_form_note_uses_fallback_and_prints_excerpt_once(): void {

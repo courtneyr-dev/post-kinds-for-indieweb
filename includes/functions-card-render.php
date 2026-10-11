@@ -195,22 +195,6 @@ function card_rating_html( $rating, int $best = 5, bool $decorative = false ): s
 }
 
 /**
- * Extract a normalized host for an untitled citation.
- *
- * A shared URL normalizer is planned in P9 and should replace this helper.
- *
- * @since 1.9.0
- *
- * @param string $url Citation URL.
- * @return string Lowercase host without a leading www., or an empty string.
- */
-function card_url_host( string $url ): string {
-	$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
-
-	return str_starts_with( $host, 'www.' ) ? substr( $host, 4 ) : $host;
-}
-
-/**
  * Whether a stored citation name is a URL rather than a name.
  *
  * Micropub stores title = url when a response arrives without a name. A
@@ -310,7 +294,7 @@ function untitled_name( \WP_Post $post, bool $from_content = true ): string {
 				return $title;
 			}
 
-			$host = card_url_host( $card_url );
+			$host = url_host( $card_url );
 			if ( '' !== $host ) {
 				return $host;
 			}
@@ -325,19 +309,27 @@ function untitled_name( \WP_Post $post, bool $from_content = true ): string {
 			}
 		}
 
-		$cite_url  = (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . 'cite_url', true );
+		$target_url = '';
+		foreach ( cite_host_keys() as $key ) {
+			$value = get_post_meta( $post->ID, $key, true );
+			if ( is_string( $value ) && '' !== trim( $value ) ) {
+				$target_url = $value;
+				break;
+			}
+		}
+
 		$cite_name = trim( (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . 'cite_name', true ) );
-		if ( '' !== $cite_name && ! card_name_is_url( $cite_name, $cite_url ) ) {
+		if ( '' !== $cite_name && ! card_name_is_url( $cite_name, $target_url ) ) {
 			return $cite_name;
 		}
 
-		$cite_host = card_url_host( $cite_url );
-		if ( '' !== $cite_host ) {
-			return $cite_host;
+		$target_host = url_host( $target_url );
+		if ( '' !== $target_host ) {
+			return $target_host;
 		}
 
 		if ( 'favorite' === $kind ) {
-			$favorite_host = card_url_host( $favorite_url );
+			$favorite_host = url_host( $favorite_url );
 			if ( '' !== $favorite_host ) {
 				return $favorite_host;
 			}
