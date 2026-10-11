@@ -243,8 +243,8 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * F11: a titled like whose stored url is "not a url" shows its title as
-	 * plain text on its own single, with no "Read the original" (issue 254).
+	 * F11: a titled like whose stored url is "not a url" keeps its title as
+	 * hidden data under the matching H1 and prints no external link (issue 254).
 	 */
 	public function test_like_single_with_an_unparseable_url_prints_no_external_link(): void {
 		$html = $this->render_card_on_single(
@@ -261,7 +261,44 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 		$this->assertSame( 0, $this->query( $html, '//a' )->length );
 		$this->assertStringNotContainsString( 'Read the original', $html );
 		$this->assertStringNotContainsString( 'not%20a%20url', $html );
-		$this->assertSame( 'A like with an unparseable address', $this->node_text( $this->one_title( $html ) ) );
+		$this->assertSame( 0, $this->query( $html, '//h2' )->length );
+		$this->assertHiddenName( $html, 'A like with an unparseable address' );
+		$this->assertStringNotContainsString( 'A like with an unparseable address', $this->plain_text( $html ) );
+	}
+
+	/**
+	 * F10: a titled like with no stored url prints its title once, as the
+	 * H1, and keeps it as hidden data in the card (issue 254).
+	 */
+	public function test_like_single_with_no_url_and_matching_title_prints_title_once(): void {
+		$html = $this->render_card_on_single(
+			'like',
+			[ 'title' => 'A like with no address' ],
+			[ 'post_title' => 'A like with no address' ]
+		);
+
+		$this->assertSame( 0, $this->query( $html, '//a' )->length );
+		$this->assertSame( 0, $this->query( $html, '//h2' )->length );
+		$this->assertStringNotContainsString( 'Read the original', $html );
+		$this->assertHiddenName( $html, 'A like with no address' );
+		$this->assertStringNotContainsString( 'A like with no address', $this->plain_text( $html ) );
+	}
+
+	/**
+	 * An untitled like with no url whose H1 fell back to the card title
+	 * keeps that title as hidden data only (issue 254).
+	 */
+	public function test_like_single_with_no_url_and_fallback_heading_prints_title_once(): void {
+		add_filter( 'pkiw_like_card_title_is_heading', '__return_true' );
+		$html = $this->render_card_on_single(
+			'like',
+			[ 'title' => 'A like with no address' ],
+			[ 'post_title' => '' ]
+		);
+
+		$this->assertSame( 0, $this->query( $html, '//a' )->length );
+		$this->assertSame( 0, $this->query( $html, '//h2' )->length );
+		$this->assertHiddenName( $html, 'A like with no address' );
 	}
 
 	/**
@@ -395,8 +432,9 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 		);
 
 		$this->assertStringNotContainsString( 'Read the original', $html );
-		$this->assertSame( 1, $this->query( $html, '//h2[contains(concat(" ", normalize-space(@class), " "), " pk-title ")][contains(concat(" ", normalize-space(@class), " "), " p-name ")]' )->length );
-		$this->assertSame( 0, $this->query( $html, '//data[contains(concat(" ", normalize-space(@class), " "), " p-name ")][@hidden]' )->length );
+		$this->assertSame( 0, $this->query( $html, '//a' )->length );
+		$this->assertSame( 0, $this->query( $html, '//h2' )->length );
+		$this->assertSame( 1, $this->query( $html, '//data[contains(concat(" ", normalize-space(@class), " "), " p-name ")][@hidden]' )->length );
 		$this->assertStringNotContainsString( 'javascript:', $html );
 	}
 
@@ -519,7 +557,6 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 				'post_title' => 'notes.example.com',
 			]
 		);
-		$this->render_card_on_single( 'like', [ 'title' => 'Liked Page Title' ], [ 'post_title' => 'Liked Page Title' ] );
 		$this->render_like_off_own_view(
 			[
 				'title' => 'Liked Page Title',

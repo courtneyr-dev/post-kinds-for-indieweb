@@ -5,8 +5,8 @@
  * Renders the like card in the two-layer pk-card system: plugin owns
  * structure (badge → label → title → sub → note → meta), theme owns paint
  * via --pk-* custom properties. When no usable title exists, the card links
- * the cited host. On the post's own single view, a repeated page title can
- * move to hidden data while the visible link reads "Read the original."
+ * the cited host. On the post's own single view, a repeated page title
+ * moves to hidden data; a usable URL then links "Read the original."
  *
  * @package PKIW
  * @var array    $attributes Block attributes.
@@ -59,7 +59,9 @@ $pkiw_post     = get_post();
 $pkiw_own_view = $pkiw_post instanceof WP_Post && is_singular() && get_queried_object_id() === $pkiw_post->ID;
 
 $pkiw_like_title_is_heading = false;
-if ( $pkiw_own_view && '' !== $pkiw_href && ! $pkiw_synthetic && '' !== trim( (string) $pkiw_title ) ) {
+// The H1 can name the cited title whether or not the url is usable, so the
+// print-once check runs before, and apart from, the link check.
+if ( $pkiw_own_view && ! $pkiw_synthetic && '' !== trim( (string) $pkiw_title ) ) {
 	$pkiw_plain                 = static fn( string $text ): string => trim( html_entity_decode( wp_strip_all_tags( $text ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
 	$pkiw_normalized_post_title = $pkiw_plain( $pkiw_post->post_title );
 	$pkiw_normalized_card_title = $pkiw_plain( (string) $pkiw_title );
@@ -102,7 +104,9 @@ ob_start();
 			<?php if ( $pkiw_like_title_is_heading ) : ?>
 				<?php $pkiw_read_original = __( 'Read the original', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 				<data class="p-name" value="<?php echo esc_attr( $pkiw_title ); ?>" hidden></data>
+				<?php if ( '' !== $pkiw_href ) : ?>
 				<p class="pk-original"><a class="u-url" href="<?php echo esc_url( $pkiw_href ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_read_original ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_read_original ); ?></a></p>
+				<?php endif; ?>
 			<?php elseif ( $pkiw_title || $pkiw_synthetic ) : ?>
 				<h2 class="<?php echo $pkiw_synthetic ? 'pk-title' : 'pk-title p-name'; ?>">
 					<?php if ( '' !== $pkiw_href ) : ?>
