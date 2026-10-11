@@ -496,6 +496,91 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @return array<string, array{0: string, 1: string, 2: array<string, string>, 3: string}>
+	 */
+	public function synthetic_cite_card_microformats(): array {
+		$url = 'https://notes.example.com/what%E2%80%99s-new?token=abc123';
+
+		return [
+			'like url only'            => [ 'like', 'like-of', [ 'url' => $url ], $url ],
+			'reply url only'           => [ 'reply', 'in-reply-to', [ 'url' => $url ], $url ],
+			'bookmark url only'        => [ 'bookmark', 'bookmark-of', [ 'url' => $url ], $url ],
+			'like title equals url'    => [ 'like', 'like-of', [ 'title' => $url, 'url' => $url ], $url ],
+			'reply title equals url'   => [ 'reply', 'in-reply-to', [ 'title' => $url, 'url' => $url ], $url ],
+			'bookmark title equals url' => [ 'bookmark', 'bookmark-of', [ 'title' => $url, 'url' => $url ], $url ],
+		];
+	}
+
+	/**
+	 * Synthetic citation titles still need a concrete `u-url`, because the
+	 * post permalink belongs to the outer h-entry, not the nested h-cite.
+	 *
+	 * @dataProvider synthetic_cite_card_microformats
+	 *
+	 * @param array<string, string> $attributes Block attributes.
+	 */
+	public function test_synthetic_cite_cards_keep_canonical_target_url(
+		string $kind,
+		string $canonical_property,
+		array $attributes,
+		string $target_url
+	): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => sprintf(
+					'<!-- wp:post-kinds-indieweb/%s-card %s /-->',
+					$kind,
+					wp_json_encode( $attributes, JSON_UNESCAPED_SLASHES )
+				),
+			]
+		);
+		$this->assertNotWPError( wp_set_object_terms( $post_id, $kind, 'kind' ) );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$entry      = $this->top_level_h_entry( \Mf2\parse( '<div class="h-entry">' . do_blocks( (string) get_post_field( 'post_content', $post_id ) ) . '</div>' ) );
+		$properties = $entry['properties'] ?? [];
+		$permalink  = (string) get_permalink( $post_id );
+
+		$this->assertArrayHasKey( $canonical_property, $properties );
+		$this->assertCount( 1, $properties[ $canonical_property ] );
+		$this->assertSame( [ $target_url ], $this->property_urls( $properties[ $canonical_property ] ) );
+		$this->assertNotContains( $permalink, $this->property_urls( $properties[ $canonical_property ] ) );
+	}
+
+	public function test_like_card_hidden_single_title_keeps_like_of_url(): void {
+		$target_url = 'https://notes.example.com/liked-page?token=abc123';
+		$post_id    = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Liked Page Title',
+				'post_content' => '<!-- wp:post-kinds-indieweb/like-card ' . wp_json_encode(
+					[
+						'title' => 'Liked Page Title',
+						'url'   => $target_url,
+					],
+					JSON_UNESCAPED_SLASHES
+				) . ' /-->',
+			]
+		);
+		$this->assertNotWPError( wp_set_object_terms( $post_id, 'like', 'kind' ) );
+		add_filter( 'pkiw_like_card_title_is_heading', '__return_true' );
+		$this->go_to( get_permalink( $post_id ) );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$entry      = $this->top_level_h_entry( \Mf2\parse( '<div class="h-entry">' . do_blocks( (string) get_post_field( 'post_content', $post_id ) ) . '</div>' ) );
+		$properties = $entry['properties'] ?? [];
+		$permalink  = (string) get_permalink( $post_id );
+
+		$this->assertArrayHasKey( 'like-of', $properties );
+		$this->assertCount( 1, $properties['like-of'] );
+		$this->assertSame( [ $target_url ], $this->property_urls( $properties['like-of'] ) );
+		$this->assertNotContains( $permalink, $this->property_urls( $properties['like-of'] ) );
+
+		remove_all_filters( 'pkiw_like_card_title_is_heading' );
+	}
+
+	/**
 	 * Add Simple Location's content filter when the fixture is in use.
 	 */
 	private function hook_simple_location_content(): void {
