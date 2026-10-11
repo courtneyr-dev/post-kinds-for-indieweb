@@ -28,6 +28,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Microformats {
 
 	/**
+	 * Hidden mf2 data wrapper opening tag.
+	 *
+	 * @since 1.9.0
+	 */
+	private const HIDDEN_MF2_DATA_OPEN = '<div class="post-kinds-indieweb-mf2-data" hidden>';
+
+	/**
 	 * Kind to microformat class mapping.
 	 *
 	 * @var array<string, array<string, mixed>>
@@ -401,6 +408,9 @@ class Microformats {
 		// Filter rendered blocks for mf2 classes.
 		add_filter( 'render_block', [ $this, 'filter_block_output' ], 10, 3 );
 
+		// Wrap reply body blocks outside the reply-card h-cite.
+		add_filter( 'the_content', [ $this, 'wrap_reply_body' ], 98 );
+
 		// Add hidden mf2 data elements.
 		add_filter( 'the_content', [ $this, 'add_hidden_mf2_data' ], 99 );
 
@@ -606,6 +616,56 @@ class Microformats {
 	}
 
 	/**
+	 * Wrap reply body content in e-content while keeping the h-cite outside it.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string $content Post content.
+	 * @return string Modified content, or the original content when no reply body wrap applies.
+	 */
+	public function wrap_reply_body( string $content ): string {
+		if ( null !== get_query_var( 'atproto', null ) ) {
+			return $content;
+		}
+
+		$post_id = get_the_ID();
+
+		if ( ! $post_id || ! is_singular() || get_queried_object_id() !== $post_id ) {
+			return $content;
+		}
+
+		if ( 'reply' !== $this->get_post_kind( $post_id ) ) {
+			return $content;
+		}
+
+		if ( $this->has_class_token( $content, 'e-content' ) ) {
+			return $content;
+		}
+
+		// The reply-card renderer emits no nested article, so the first
+		// matching article start tag through the next closing tag is balanced.
+		$pattern = '~<article\b(?=[^>]*\bclass\s*=\s*["\'](?:[^"\']*\s)?wp-block-post-kinds-indieweb-reply-card(?=\s|["\']))[^>]*>.*?</article>~s';
+		if ( ! preg_match( $pattern, $content, $matches, PREG_OFFSET_CAPTURE ) ) {
+			return $content;
+		}
+
+		$card   = $matches[0][0];
+		$offset = $matches[0][1];
+		$before = substr( $content, 0, $offset );
+		$after  = substr( $content, $offset + strlen( $card ) );
+		$body   = $before . $after;
+		if ( '' === trim( $body ) ) {
+			return $content;
+		}
+
+		$class = $this->kind_formats['reply']['properties']['content'] ?? 'e-content';
+
+		// Removing the whole balanced card element leaves before and after
+		// balanced, so concatenating them into the body wrapper is safe.
+		return $card . '<div class="' . esc_attr( $class ) . '">' . $body . '</div>';
+	}
+
+	/**
 	 * Wrap singular content in an h-entry when the theme supplied none.
 	 *
 	 * The kind properties ride markup inside the content (the card's
@@ -669,7 +729,7 @@ class Microformats {
 		);
 		// R-21 authorship: the singular entry names its author like every card does.
 		$singular_post = get_post( $post_id );
-		if ( $singular_post instanceof \WP_Post && function_exists( __NAMESPACE__ . '\\entry_author_html' ) && ! str_contains( $content, 'p-author' ) ) {
+		if ( $singular_post instanceof \WP_Post && function_exists( __NAMESPACE__ . '\\entry_author_html' ) && ! $this->has_entry_author( $content ) ) {
 			$author_html = entry_author_html( $singular_post );
 			if ( '' !== $author_html ) {
 				$entry_meta .= '<span hidden>' . $author_html . '</span>';
@@ -700,6 +760,23 @@ class Microformats {
 					'<data class="u-photo" value="%s" hidden></data>',
 					esc_url( $photo )
 				);
+			}
+		}
+
+		if ( 'review' === $kind && $singular_post instanceof \WP_Post && ! post_password_required( $singular_post ) && ! $this->has_class_token( $content, 'e-content' ) ) {
+			$hidden_data = '';
+			$trimmed     = rtrim( $content );
+			$open_pos    = strrpos( $trimmed, self::HIDDEN_MF2_DATA_OPEN );
+			if ( false !== $open_pos && str_ends_with( $trimmed, '</div>' ) ) {
+				$hidden_data = substr( $trimmed, $open_pos );
+				$content     = substr( $trimmed, 0, $open_pos );
+			}
+
+			if ( '' !== trim( $content ) ) {
+				$class   = $this->kind_formats['review']['properties']['content'] ?? 'e-content';
+				$content = '<div class="' . esc_attr( $class ) . '">' . $content . '</div>' . $hidden_data;
+			} else {
+				$content = $trimmed;
 			}
 		}
 
@@ -853,14 +930,33 @@ class Microformats {
 				break;
 
 			case 'review':
-				$rating = get_post_meta( $post_id, $prefix . 'review_rating', true );
-				$best   = get_post_meta( $post_id, $prefix . 'review_best', true ) ?: 5;
-				if ( $rating ) {
+				$facts = Kind_Facts::get( $post_id );
+				if ( empty( $facts ) ) {
+					break;
+				}
+
+				$rating = (float) ( $facts['rating'] ?? 0 );
+				if ( $rating > 0 ) {
 					$hidden_data .= sprintf(
 						'<data class="p-rating" value="%s"></data>' .
 						'<data class="p-best" value="%s"></data>',
-						esc_attr( $rating ),
-						esc_attr( $best )
+						esc_attr( (string) $rating ),
+						esc_attr( (string) (int) ( $facts['best'] ?? 5 ) )
+					);
+				}
+				$item_html = Review_Archive::review_item_html( $facts, true );
+				if ( '' !== $item_html ) {
+					$hidden_data .= $item_html;
+				}
+				break;
+
+			case 'bookmark':
+				$facts = Kind_Facts::get( $post_id );
+				$url   = (string) ( $facts['url'] ?? '' );
+				if ( '' !== $url && get_permalink( $post_id ) !== $url && ! $this->has_class_token( $content, 'u-bookmark-of' ) ) {
+					$hidden_data .= sprintf(
+						'<data class="u-bookmark-of" value="%s"></data>',
+						esc_url( $url )
 					);
 				}
 				break;
@@ -885,12 +981,74 @@ class Microformats {
 
 		if ( ! empty( $hidden_data ) ) {
 			$content .= sprintf(
-				'<div class="post-kinds-indieweb-mf2-data" hidden>%s</div>',
+				self::HIDDEN_MF2_DATA_OPEN . '%s</div>',
 				$hidden_data
 			);
 		}
 
 		return $content;
+	}
+
+	/**
+	 * Whether rendered HTML contains an element with a class token.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string $html  HTML fragment.
+	 * @param string $token Class token.
+	 * @return bool True when the token is present.
+	 */
+	private function has_class_token( string $html, string $token ): bool {
+		$tags = new \WP_HTML_Tag_Processor( $html );
+		while ( $tags->next_tag() ) {
+			if ( $tags->has_class( $token ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Whether content has an entry author outside nested citations.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string $content Rendered content.
+	 * @return bool True when a p-author belongs to the entry scope.
+	 */
+	private function has_entry_author( string $content ): bool {
+		if ( ! str_contains( $content, 'p-author' ) ) {
+			return false;
+		}
+
+		$processor = \WP_HTML_Processor::create_fragment( $content );
+		if ( null === $processor ) {
+			// Unparseable markup: the content holds a p-author, so keep the old answer.
+			return true;
+		}
+
+		$cite_depths = [];
+		while ( $processor->next_tag() ) {
+			$depth = $processor->get_current_depth();
+			while ( [] !== $cite_depths && end( $cite_depths ) >= $depth ) {
+				array_pop( $cite_depths );
+			}
+
+			if ( $processor->has_class( 'h-cite' ) ) {
+				$cite_depths[] = $depth;
+			}
+
+			if ( $processor->has_class( 'p-author' ) && [] === $cite_depths ) {
+				return true;
+			}
+		}
+
+		if ( null !== $processor->get_last_error() ) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
