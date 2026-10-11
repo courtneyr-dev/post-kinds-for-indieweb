@@ -45,6 +45,13 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public function cite_card_kinds_without_like(): array {
+		return array_diff_key( $this->cite_card_kinds(), [ 'like' => true ] );
+	}
+
+	/**
 	 * @dataProvider cite_card_kinds
 	 */
 	public function test_url_only_cards_print_a_host_link_without_p_name( string $kind ): void {
@@ -64,7 +71,9 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 
 		foreach ( $this->cite_card_kinds() as $kind_label => [ $kind ] ) {
 			$cases[ $kind_label . ' schemeless url' ] = [ $kind, 'notes.example.com/x?token=abc123', 'notes.example.com' ];
-			$cases[ $kind_label . ' mailto url' ]     = [ $kind, 'mailto:someone@example.com?token=abc123', __( 'Original link', 'post-kinds-for-indieweb-in-block-themes' ), 'someone@example.com' ];
+			if ( 'like' !== $kind ) {
+				$cases[ $kind_label . ' mailto url' ] = [ $kind, 'mailto:someone@example.com?token=abc123', __( 'Original link', 'post-kinds-for-indieweb-in-block-themes' ), 'someone@example.com' ];
+			}
 		}
 
 		return $cases;
@@ -92,7 +101,8 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 	public function hostless_synthetic_title_privacy_cases(): array {
 		$cases = [];
 
-		foreach ( $this->cite_card_kinds() as $kind_label => [ $kind ] ) {
+		// A like links only an http(s) address; see the like cases below.
+		foreach ( array_diff_key( $this->cite_card_kinds(), [ 'like' => true ] ) as $kind_label => [ $kind ] ) {
 			$cases[ $kind_label . ' mailto address' ] = [ $kind, 'mailto:a@b.example?subject=x', 'a@b.example' ];
 			$cases[ $kind_label . ' tel number' ]     = [ $kind, 'tel:+15551234567', '+15551234567' ];
 		}
@@ -209,7 +219,103 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * @dataProvider cite_card_kinds
+	 * @return array<string, array{0: string}>
+	 */
+	public function unusable_like_urls(): array {
+		return [
+			'unparseable (F11)' => [ 'not a url' ],
+			'mailto'            => [ 'mailto:a@b.example?subject=x' ],
+			'tel'               => [ 'tel:+15551234567' ],
+		];
+	}
+
+	/**
+	 * A like links its original only at a usable http(s) address (issue 254).
+	 *
+	 * @dataProvider unusable_like_urls
+	 */
+	public function test_like_with_an_unusable_url_prints_no_link( string $url ): void {
+		$html = $this->render_card( 'like', [ 'url' => $url ] );
+
+		$this->assertSame( 0, $this->query( $html, '//a' )->length );
+		$this->assertSame( 0, $this->query( $html, '//*[contains(concat(" ", normalize-space(@class), " "), " pk-host ")]' )->length );
+		$this->assertStringNotContainsString( 'Original link', $html );
+	}
+
+	/**
+	 * F11: a titled like whose stored url is "not a url" shows its title as
+	 * plain text on its own single, with no "Read the original" (issue 254).
+	 */
+	public function test_like_single_with_an_unparseable_url_prints_no_external_link(): void {
+		$html = $this->render_card_on_single(
+			'like',
+			[
+				'title' => 'A like with an unparseable address',
+				'url'   => 'not a url',
+			],
+			[
+				'post_title' => 'A like with an unparseable address',
+			]
+		);
+
+		$this->assertSame( 0, $this->query( $html, '//a' )->length );
+		$this->assertStringNotContainsString( 'Read the original', $html );
+		$this->assertStringNotContainsString( 'not%20a%20url', $html );
+		$this->assertSame( 'A like with an unparseable address', $this->node_text( $this->one_title( $html ) ) );
+	}
+
+	/**
+	 * The like card prints the cited host once, as plain text, beside a
+	 * real title (issue 254).
+	 */
+	public function test_like_prints_its_host_as_plain_text(): void {
+		$html = $this->render_card_on_single(
+			'like',
+			[
+				'title'  => 'Field notes on paper sites',
+				'url'    => 'https://www.Notes.Example.com:8080/paper-sites',
+				'author' => 'Rowan Vale',
+			],
+			[
+				'post_title' => 'Field notes on paper sites',
+			]
+		);
+
+		$host = $this->query( $html, '//p[contains(concat(" ", normalize-space(@class), " "), " pk-host ")]' );
+		$this->assertSame( 1, $host->length );
+		$this->assertSame( 'notes.example.com', $this->node_text( $host->item( 0 ) ) );
+		$this->assertSame( 0, $this->query( $html, '//p[contains(concat(" ", normalize-space(@class), " "), " pk-host ")]//a' )->length );
+		$this->assertSame( 1, $this->query( $html, '//a' )->length );
+	}
+
+	/**
+	 * A synthetic title already prints the host, so no host line repeats it.
+	 */
+	public function test_like_with_a_url_title_prints_no_second_host_line(): void {
+		$url  = 'https://zine.example.org/issue-12';
+		$html = $this->render_card(
+			'like',
+			[
+				'title' => $url,
+				'url'   => $url,
+			]
+		);
+
+		$this->assertSyntheticTitleLink( $html, $url, 'zine.example.org' );
+		$this->assertSame( 0, $this->query( $html, '//*[contains(concat(" ", normalize-space(@class), " "), " pk-host ")]' )->length );
+	}
+
+	/**
+	 * A like with no url prints no host line.
+	 */
+	public function test_like_without_a_url_prints_no_host_line(): void {
+		$html = $this->render_card( 'like', [ 'title' => 'A like with no address' ] );
+
+		$this->assertSame( 0, $this->query( $html, '//*[contains(concat(" ", normalize-space(@class), " "), " pk-host ")]' )->length );
+	}
+
+	/**
+	 * @dataProvider cite_card_kinds_without_like
 	 */
 	public function test_synthetic_title_uses_original_link_when_url_has_no_host( string $kind ): void {
 		$url  = 'mailto:someone@example.com?subject=hi';

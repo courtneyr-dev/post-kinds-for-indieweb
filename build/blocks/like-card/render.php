@@ -36,18 +36,24 @@ $pkiw_link_rel = $pkiw_rel
 	? 'noopener noreferrer ' . esc_attr( $pkiw_rel )
 	: 'noopener noreferrer';
 
-$pkiw_href      = esc_url_raw( (string) $pkiw_url );
+// Only an http(s) URL with a real host is linkable. esc_url_raw() turns a
+// stored "not a url" into http://not%20a%20url, whose host is no host.
+$pkiw_href       = esc_url_raw( trim( (string) $pkiw_url ) );
+$pkiw_href_host  = \PKIW\url_host( $pkiw_href );
+$pkiw_href_valid = in_array( strtolower( (string) wp_parse_url( $pkiw_href, PHP_URL_SCHEME ) ), [ 'http', 'https' ], true )
+	&& '' !== $pkiw_href_host
+	&& 1 !== preg_match( '/[%\s]/', $pkiw_href_host );
+if ( ! $pkiw_href_valid ) {
+	$pkiw_href = '';
+}
 $pkiw_synthetic = '' !== $pkiw_href && (
 	'' === trim( (string) $pkiw_title )
 	|| \PKIW\card_name_is_url( (string) $pkiw_title, (string) $pkiw_url )
 );
-$pkiw_link_text = '';
-if ( $pkiw_synthetic ) {
-	$pkiw_link_text = \PKIW\url_host( $pkiw_href );
-	if ( '' === $pkiw_link_text ) {
-		$pkiw_link_text = __( 'Original link', 'post-kinds-for-indieweb-in-block-themes' );
-	}
-}
+// A synthetic title prints the host as its link text, so the host line
+// shows only beside a real title.
+$pkiw_link_text = $pkiw_synthetic ? $pkiw_href_host : '';
+$pkiw_host      = '' !== $pkiw_href && ! $pkiw_synthetic ? $pkiw_href_host : '';
 
 $pkiw_post     = get_post();
 $pkiw_own_view = $pkiw_post instanceof WP_Post && is_singular() && get_queried_object_id() === $pkiw_post->ID;
@@ -111,6 +117,10 @@ ob_start();
 				<p class="pk-sub">
 					<span class="p-author h-card"><span class="p-name"><?php echo esc_html( $pkiw_author ); ?></span></span>
 				</p>
+			<?php endif; ?>
+
+			<?php if ( '' !== $pkiw_host ) : ?>
+				<p class="pk-sub pk-host"><?php echo esc_html( $pkiw_host ); ?></p>
 			<?php endif; ?>
 		</div>
 
