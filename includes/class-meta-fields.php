@@ -1066,6 +1066,8 @@ class Meta_Fields {
 		add_filter( 'rest_prepare_post', [ $this, 'redact_location_meta' ], 20, 3 );
 		// CPT import storage registers the same meta on the reaction post type.
 		add_filter( 'rest_prepare_' . Post_Type::POST_TYPE, [ $this, 'redact_location_meta' ], 20, 3 );
+		add_filter( 'rest_prepare_post', [ $this, 'redact_protected_kind_meta' ], 20, 3 );
+		add_filter( 'rest_prepare_' . Post_Type::POST_TYPE, [ $this, 'redact_protected_kind_meta' ], 20, 3 );
 		add_action( 'updated_post_meta', [ $this, 'clear_brand_source_on_rebrand' ], 10, 3 );
 	}
 
@@ -1681,6 +1683,42 @@ class Meta_Fields {
 		if ( $changed ) {
 			$response->set_data( $data );
 		}
+		return $response;
+	}
+
+	/**
+	 * Remove Post Kinds meta from protected REST responses the requester may not edit.
+	 *
+	 * @param \WP_REST_Response $response Response.
+	 * @param \WP_Post          $post     Post.
+	 * @param \WP_REST_Request  $request  Request.
+	 * @return \WP_REST_Response
+	 */
+	public function redact_protected_kind_meta( $response, $post, $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		if ( ! $response instanceof \WP_REST_Response || ! $post instanceof \WP_Post ) {
+			return $response;
+		}
+		if ( '' === (string) $post->post_password || current_user_can( 'edit_post', (int) $post->ID ) ) {
+			return $response;
+		}
+
+		$data = $response->get_data();
+		if ( empty( $data['meta'] ) || ! is_array( $data['meta'] ) ) {
+			return $response;
+		}
+
+		$changed = false;
+		foreach ( array_keys( $data['meta'] ) as $key ) {
+			if ( str_starts_with( (string) $key, self::PREFIX ) ) {
+				unset( $data['meta'][ $key ] );
+				$changed = true;
+			}
+		}
+
+		if ( $changed ) {
+			$response->set_data( $data );
+		}
+
 		return $response;
 	}
 
