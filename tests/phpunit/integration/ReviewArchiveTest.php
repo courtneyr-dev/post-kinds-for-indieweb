@@ -242,37 +242,64 @@ final class ReviewArchiveTest extends WP_UnitTestCase {
 		$review = $this->review( 'Map Review', '2026-01-02 10:00:00' );
 		$watch  = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => 'Map Watch' ] );
 		wp_set_object_terms( $watch, 'watch', Taxonomy::TAXONOMY );
+		foreach ( [ $review, $watch ] as $post_id ) {
+			update_post_meta( $post_id, 'geo_address', '1 Fictional Main St' );
+			update_post_meta( $post_id, 'geo_latitude', '40.1234' );
+			update_post_meta( $post_id, 'geo_longitude', '-75.5678' );
+			update_post_meta( $post_id, 'geo_public', '1' );
+		}
 
 		$this->hook_geo_data( [ 'Geo_Data', 'content_map' ], [ 'Geo_Data', 'location_content' ] );
+		$this->hook_geo_head( [ 'Geo_Base', 'meta_tags' ] );
 		$this->go_to( get_permalink( $review ) );
 		( new Review_Archive() )->suppress_simple_location();
 		$this->assertFalse( has_filter( 'the_content', [ 'Geo_Data', 'content_map' ] ) );
 		$this->assertFalse( has_filter( 'the_content', [ 'Geo_Data', 'location_content' ] ) );
+		$this->assertFalse( has_filter( 'wp_head', [ 'Geo_Base', 'meta_tags' ] ) );
 
 		$map      = [ new Geo_Data(), 'content_map' ];
 		$location = [ new Geo_Data(), 'location_content' ];
+		$head     = [ new Geo_Base(), 'meta_tags' ];
 		$this->hook_geo_data( $map, $location );
+		$this->hook_geo_head( $head );
 		$this->go_to( get_permalink( $review ) );
 		( new Review_Archive() )->suppress_simple_location();
 		$this->assertFalse( has_filter( 'the_content', $map ) );
 		$this->assertFalse( has_filter( 'the_content', $location ) );
+		$this->assertFalse( has_filter( 'wp_head', $head ) );
 
 		$this->hook_geo_data( 'Geo_Data::content_map', 'Geo_Data::location_content' );
+		$this->hook_geo_head( 'Geo_Base::meta_tags' );
 		$this->go_to( get_permalink( $review ) );
 		( new Review_Archive() )->suppress_simple_location();
 		$this->assertFalse( has_filter( 'the_content', 'Geo_Data::content_map' ) );
 		$this->assertFalse( has_filter( 'the_content', 'Geo_Data::location_content' ) );
+		$this->assertFalse( has_filter( 'wp_head', 'Geo_Base::meta_tags' ) );
+
+		ob_start();
+		do_action( 'wp_head' );
+		$review_head = (string) ob_get_clean();
+		$this->assertStringNotContainsString( '1 Fictional Main St', $review_head );
+		$this->assertStringNotContainsString( '40.1234', $review_head );
+		$this->assertStringNotContainsString( '-75.5678', $review_head );
 
 		$this->hook_geo_data( [ 'Geo_Data', 'content_map' ], [ 'Geo_Data', 'location_content' ] );
+		$this->hook_geo_head( [ 'Geo_Base', 'meta_tags' ] );
 		$this->go_to( get_permalink( $watch ) );
 		( new Review_Archive() )->suppress_simple_location();
 		$this->assertNotFalse( has_filter( 'the_content', [ 'Geo_Data', 'content_map' ] ) );
 		$this->assertNotFalse( has_filter( 'the_content', [ 'Geo_Data', 'location_content' ] ) );
+		$this->assertNotFalse( has_filter( 'wp_head', [ 'Geo_Base', 'meta_tags' ] ) );
+		ob_start();
+		do_action( 'wp_head' );
+		$watch_head = (string) ob_get_clean();
+		$this->assertStringContainsString( '1 Fictional Main St', $watch_head );
 
 		$this->go_to( $this->archive_url() );
 		( new Review_Archive() )->suppress_simple_location();
 		$this->assertNotFalse( has_filter( 'the_content', [ 'Geo_Data', 'content_map' ] ) );
 		$this->assertNotFalse( has_filter( 'the_content', [ 'Geo_Data', 'location_content' ] ) );
+		$this->assertNotFalse( has_filter( 'wp_head', [ 'Geo_Base', 'meta_tags' ] ) );
 	}
 
 	public function test_review_entry_block_registration(): void {
@@ -485,5 +512,16 @@ final class ReviewArchiveTest extends WP_UnitTestCase {
 		remove_all_filters( 'the_content', 12 );
 		add_filter( 'the_content', $map, 11 );
 		add_filter( 'the_content', $location, 12 );
+	}
+
+	/**
+	 * Hook Simple Location's head meta callback at the priority this lane suppresses.
+	 *
+	 * @param string|array<int, mixed> $callback Head meta callback.
+	 * @return void
+	 */
+	private function hook_geo_head( $callback ): void {
+		remove_action( 'wp_head', $callback, 10 );
+		add_action( 'wp_head', $callback, 10 );
 	}
 }

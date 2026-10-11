@@ -417,7 +417,7 @@ final class Review_Archive {
 	}
 
 	/**
-	 * Remove Simple Location map appenders on review singles.
+	 * Remove Simple Location map and location appenders and geo head meta tags on review singles.
 	 *
 	 * @since 1.9.0
 	 * @internal
@@ -441,9 +441,20 @@ final class Review_Archive {
 			}
 			foreach ( $hook->callbacks[ $priority ] as $callback ) {
 				$callable = $callback['function'] ?? null;
-				if ( self::is_geo_data_callback( $callable, $method ) ) {
+				if ( self::is_simple_location_callback( $callable, 'Geo_Data', $method ) ) {
 					remove_filter( 'the_content', $callable, $priority );
 				}
+			}
+		}
+
+		$hook = $GLOBALS['wp_filter']['wp_head'] ?? null;
+		if ( ! $hook instanceof \WP_Hook || empty( $hook->callbacks[10] ) ) {
+			return;
+		}
+		foreach ( $hook->callbacks[10] as $callback ) {
+			$callable = $callback['function'] ?? null;
+			if ( self::is_simple_location_callback( $callable, 'Geo_Base', 'meta_tags' ) ) {
+				remove_action( 'wp_head', $callable, 10 );
 			}
 		}
 	}
@@ -629,22 +640,24 @@ final class Review_Archive {
 	}
 
 	/**
-	 * Whether a callable belongs to Simple Location's Geo_Data class and method.
+	 * Whether a callable belongs to a Simple Location class and method.
 	 *
-	 * @param mixed  $candidate Callable candidate.
-	 * @param string $method    Method name.
+	 * @param mixed  $candidate  Callable candidate.
+	 * @param string $class_name Class name.
+	 * @param string $method     Method name.
 	 * @return bool
 	 */
-	private static function is_geo_data_callback( $candidate, string $method ): bool {
+	private static function is_simple_location_callback( $candidate, string $class_name, string $method ): bool {
+		$class_name = ltrim( $class_name, '\\' );
 		if ( is_string( $candidate ) ) {
-			return ltrim( $candidate, '\\' ) === 'Geo_Data::' . $method;
+			return ltrim( $candidate, '\\' ) === $class_name . '::' . $method;
 		}
 		if ( ! is_array( $candidate ) || 2 !== count( $candidate ) || $method !== (string) $candidate[1] ) {
 			return false;
 		}
-		$class = is_object( $candidate[0] ) ? get_class( $candidate[0] ) : (string) $candidate[0];
-		$class = ltrim( $class, '\\' );
+		$candidate_class = is_object( $candidate[0] ) ? get_class( $candidate[0] ) : (string) $candidate[0];
+		$candidate_class = ltrim( $candidate_class, '\\' );
 
-		return 'Geo_Data' === $class;
+		return $class_name === $candidate_class;
 	}
 }
