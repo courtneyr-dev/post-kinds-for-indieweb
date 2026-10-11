@@ -94,6 +94,10 @@ final class ReviewArchiveTest extends WP_UnitTestCase {
 		$this->assertSame( 1, $xpath->query( '//h3/a[text()="Protected: Space Locked"]' )->length );
 		$this->assertStringNotContainsString( 'Hidden Item', $html );
 		$this->assertSame( 0, $xpath->query( '//img' )->length );
+		$entry = $xpath->query( '//li[contains(@class,"post-' . $locked . '")]//div[contains(@class,"pkiw-review-entry")]' )->item( 0 );
+		$this->assertInstanceOf( DOMElement::class, $entry );
+		$this->assertSame( 1, $xpath->query( './/div[contains(@class,"pkiw-review-entry__password")]//form//input[@name="post_password"]', $entry )->length, 'The protected entry prints the password form.' );
+		$this->assertSame( 0, $xpath->query( './/*[contains(@class,"pkiw-review-entry__item") or contains(@class,"p-item")]', $entry )->length, 'The protected entry prints no item.' );
 	}
 
 	public function test_nine_reviews_fill_a_page_counts_stay_ungrouped_and_crossing_section_repeats(): void {
@@ -174,6 +178,8 @@ final class ReviewArchiveTest extends WP_UnitTestCase {
 		$this->assertSame( get_permalink( $id ), $link->getAttribute( 'href' ) );
 		$this->assertSame( 'Lantern Review', trim( $link->textContent ) );
 		$this->assertSame( 'Fictional Lantern', trim( $xpath->query( './/p[contains(@class,"pkiw-review-entry__item")]', $item )->item( 0 )->textContent ) );
+		$this->assertSame( 'Fictional Lantern', trim( $xpath->query( './/p[contains(concat(" ",@class," ")," pkiw-review-entry__item ") and contains(concat(" ",@class," ")," p-item ") and contains(concat(" ",@class," ")," h-product ")]/span[@class="p-name"]', $item )->item( 0 )->textContent ), 'The Item Name is p-item h-product with a nested p-name.' );
+		$this->assertSame( 0, $xpath->query( './/p[contains(@class,"pkiw-review-entry__item")]//a', $item )->length, 'The Item Name is not a link.' );
 		$this->assertSame( '', $xpath->query( './/img[contains(@class,"pkiw-review-entry__cover")]', $item )->item( 0 )->getAttribute( 'alt' ) );
 		$this->assertSame( 1, $xpath->query( './/data[contains(@class,"dt-published") and @hidden]', $item )->length );
 		$this->assertSame( 1, $xpath->query( './/span[@hidden]//*[contains(@class,"p-author")]', $item )->length );
@@ -187,6 +193,27 @@ final class ReviewArchiveTest extends WP_UnitTestCase {
 		}
 		$this->assertStringNotContainsString( 'pk-stars', $item_html );
 		$this->assertSame( 0, $xpath->query( './/*[not(ancestor-or-self::*[@hidden])]/text()[contains(., "Fictional Author")]', $item )->length, 'The author is present only in a hidden wrapper.' );
+	}
+
+	public function test_archive_items_parse_as_top_level_h_reviews_with_a_nested_item_product(): void {
+		$this->categories();
+		$named   = $this->review( 'Lantern Review', '2026-01-03 10:00:00', [ 'Alpha Books' ], [ 'item_name' => 'Fictional Lantern' ] );
+		$unnamed = $this->review( 'Bare Review', '2026-01-02 10:00:00', [ 'Alpha Books' ] );
+
+		$parsed  = \Mf2\parse( $this->serve( $this->archive_url() ), $this->archive_url() );
+		$reviews = [];
+		foreach ( $parsed['items'] as $item ) {
+			if ( in_array( 'h-review', $item['type'], true ) ) {
+				$reviews[ $item['properties']['url'][0] ?? '' ] = $item;
+			}
+		}
+
+		$this->assertCount( 2, $reviews, 'One top-level h-review per archive item.' );
+		$with = $reviews[ get_permalink( $named ) ];
+		$this->assertSame( [ 'h-product' ], $with['properties']['item'][0]['type'] ?? null );
+		$this->assertSame( [ 'Fictional Lantern' ], $with['properties']['item'][0]['properties']['name'] ?? null );
+		$this->assertSame( [ 'Lantern Review' ], $with['properties']['name'] ?? null );
+		$this->assertArrayNotHasKey( 'item', $reviews[ get_permalink( $unnamed ) ]['properties'] );
 	}
 
 	public function test_untitled_review_heading_uses_synthetic_name_without_p_name(): void {
