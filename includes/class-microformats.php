@@ -771,7 +771,17 @@ class Microformats {
 			}
 		}
 
-		if ( 'review' === $kind && $singular_post instanceof \WP_Post && ! post_password_required( $singular_post ) && ! $this->has_class_token( $content, 'e-content' ) ) {
+		$content_class     = $this->kind_formats[ $kind ]['properties']['content'] ?? '';
+		$has_content_class = '' !== $content_class
+			&& in_array( 'e-content', explode( ' ', $content_class ), true );
+		// Closed list: other kinds root their body through their own cards; see issue 396.
+		if (
+			in_array( $kind, [ 'review', 'article' ], true )
+			&& $has_content_class
+			&& $singular_post instanceof \WP_Post
+			&& ! post_password_required( $singular_post )
+			&& ! $this->has_class_token( $content, 'e-content' )
+		) {
 			$hidden_data = '';
 			$trimmed     = rtrim( $content );
 			$open_pos    = strrpos( $trimmed, self::HIDDEN_MF2_DATA_OPEN );
@@ -781,8 +791,7 @@ class Microformats {
 			}
 
 			if ( '' !== trim( $content ) ) {
-				$class   = $this->kind_formats['review']['properties']['content'] ?? 'e-content';
-				$content = '<div class="' . esc_attr( $class ) . '">' . $content . '</div>' . $hidden_data;
+				$content = '<div class="' . esc_attr( $content_class ) . '">' . $content . '</div>' . $hidden_data;
 			} else {
 				$content = $trimmed;
 			}
