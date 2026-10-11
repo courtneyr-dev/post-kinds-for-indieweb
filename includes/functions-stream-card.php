@@ -36,6 +36,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 const PK_STREAM_THUMB_LIMIT = 4;
 
 /**
+ * Track nested Stream card renders.
+ *
+ * @param int $delta Amount to add to the current depth.
+ * @return int Current render depth.
+ */
+function stream_card_render_depth( int $delta = 0 ): int {
+	static $depth = 0;
+
+	$depth = max( 0, $depth + $delta );
+
+	return $depth;
+}
+
+/**
+ * Whether execution is currently inside a Stream card render.
+ *
+ * @return bool True while a Stream card is rendering.
+ */
+function is_rendering_stream_card(): bool {
+	return stream_card_render_depth() > 0;
+}
+
+/**
  * Render the Stream card for the current post in the loop.
  *
  * Runs as a dynamic block render_callback so it executes inside the Query
@@ -49,7 +72,12 @@ const PK_STREAM_THUMB_LIMIT = 4;
  * @return string Card HTML.
  */
 function render_stream_card( array $attributes = [], string $content = '', ?\WP_Block $block = null ): string {
-	$html = render_stream_card_inner( $attributes, $content, $block );
+	stream_card_render_depth( 1 );
+	try {
+		$html = render_stream_card_inner( $attributes, $content, $block );
+	} finally {
+		stream_card_render_depth( -1 );
+	}
 
 	// 1.8.1: when the card carries its own h-entry root (the pk-card article,
 	// possibly inside an authored wrapper), register it so
@@ -261,6 +289,10 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 		return render_protected_stream_card( $post, $heading_level );
 	}
 
+	if ( 'photo' === get_post_kind_slug( $post ) ) {
+		return render_photo_stream_card( $post, $attributes );
+	}
+
 	if ( 'review' === get_post_kind_slug( $post ) ) {
 		return render_generic_stream_card( $post, $attributes );
 	}
@@ -343,6 +375,306 @@ function render_protected_stream_card( \WP_Post $post, int $heading_level ): str
 }
 
 /**
+ * Sanitise a Stream card caption.
+ *
+ * @param string $html Caption HTML.
+ * @return string Sanitised caption HTML.
+ */
+function stream_card_caption_kses( string $html ): string {
+	return wp_kses(
+		$html,
+		[
+			'a'      => [
+				'href'  => [],
+				'rel'   => [],
+				'title' => [],
+			],
+			'em'     => [],
+			'strong' => [],
+			'br'     => [],
+		]
+	);
+}
+
+/**
+ * Resolve an uploads URL to its attachment.
+ *
+ * @param string $src Image source URL.
+ * @return int Attachment ID, or 0.
+ */
+function resolve_upload_src( string $src ): int {
+	$src = trim( $src );
+	if ( '' === $src || ! is_upload_url( $src ) ) {
+		return 0;
+	}
+
+	$upload  = wp_get_upload_dir();
+	$baseurl = (string) ( $upload['baseurl'] ?? '' );
+	if ( '' === $baseurl ) {
+		return 0;
+	}
+
+	$stripped = (string) preg_replace( '/[?#].*$/', '', $src );
+	$base     = trailingslashit( set_url_scheme( $baseurl, 'https' ) );
+	$haystack = set_url_scheme( $stripped, 'https' );
+	if ( ! str_starts_with( $haystack, $base ) ) {
+		return 0;
+	}
+
+	$relative = ltrim( substr( $haystack, strlen( $base ) ), '/' );
+	if ( '' === $relative ) {
+		return 0;
+	}
+
+	$without_size = (string) preg_replace( '/-\d+x\d+(?=\.[^\/.]+$)/', '', $relative );
+	$candidates   = [];
+	foreach ( [ $relative, $without_size ] as $candidate ) {
+		if ( '' === $candidate || isset( $candidates[ $candidate ] ) ) {
+			continue;
+		}
+		$candidates[ $candidate ] = true;
+	}
+
+	foreach ( [ $relative, $without_size ] as $candidate ) {
+		if ( '' === $candidate ) {
+			continue;
+		}
+
+		$scaled = preg_match( '/-scaled(\.[^\/.]+)$/', $candidate )
+			? (string) preg_replace( '/-scaled(\.[^\/.]+)$/', '$1', $candidate )
+			: (string) preg_replace( '/(\.[^\/.]+)$/', '-scaled$1', $candidate );
+		if ( '' !== $scaled && ! isset( $candidates[ $scaled ] ) ) {
+			$candidates[ $scaled ] = true;
+		}
+	}
+
+	foreach ( array_keys( $candidates ) as $candidate ) {
+		$id = attachment_url_to_postid( trailingslashit( $baseurl ) . $candidate );
+		if ( $id > 0 ) {
+			return (int) $id;
+		}
+	}
+
+	return 0;
+}
+
+/**
+ * Read the first img src from a fragment.
+ *
+ * @param string $html HTML fragment.
+ * @return string Image source, or ''.
+ */
+function extract_first_img_src( string $html ): string {
+	if ( '' === $html || ! class_exists( '\WP_HTML_Tag_Processor' ) ) {
+		return '';
+	}
+	$processor = new \WP_HTML_Tag_Processor( $html );
+	if ( ! $processor->next_tag( [ 'tag_name' => 'img' ] ) ) {
+		return '';
+	}
+
+	return trim( (string) ( $processor->get_attribute( 'src' ) ?? '' ) );
+}
+
+/**
+ * Caption from the first figcaption in a fragment.
+ *
+ * @param string $html HTML fragment.
+ * @return string Sanitised caption HTML, or ''.
+ */
+function extract_first_figcaption( string $html ): string {
+	if ( ! preg_match( '/<figcaption\b[^>]*>(.*?)<\/figcaption>/is', $html, $matches ) ) {
+		return '';
+	}
+
+	return trim( stream_card_caption_kses( (string) $matches[1] ) );
+}
+
+/**
+ * Resolve a core/image block to a local image attachment.
+ *
+ * @param array<string,mixed> $block Parsed image block.
+ * @return int Attachment ID, or 0.
+ */
+function image_block_attachment_id( array $block ): int {
+	$block_id = (int) ( $block['attrs']['id'] ?? 0 );
+	if ( $block_id > 0 && wp_attachment_is_image( $block_id ) ) {
+		return $block_id;
+	}
+
+	$html = (string) ( $block['innerHTML'] ?? '' );
+	$src  = extract_first_img_src( $html );
+	if ( '' === $src ) {
+		$src = is_string( $block['attrs']['url'] ?? null ) ? (string) $block['attrs']['url'] : '';
+	}
+
+	return '' === $src ? 0 : resolve_upload_src( $src );
+}
+
+/**
+ * A photo post's lead image.
+ *
+ * @param int $post_id Post ID.
+ * @return array{attachment_id:int,alt:string,caption:string,source:string}
+ */
+function lead_image( int $post_id ): array {
+	$empty = [
+		'attachment_id' => 0,
+		'alt'           => '',
+		'caption'       => '',
+		'source'        => '',
+	];
+	$post  = get_post( $post_id );
+	if ( ! $post instanceof \WP_Post || ! Kind_Facts::can_show( $post ) ) {
+		return $empty;
+	}
+
+	foreach ( collect_image_blocks( parse_blocks( (string) $post->post_content ) ) as $block ) {
+		$id = image_block_attachment_id( $block );
+		if ( $id <= 0 ) {
+			continue;
+		}
+		$html    = (string) ( $block['innerHTML'] ?? '' );
+		$caption = extract_first_figcaption( $html );
+		if ( '' === trim( $caption ) ) {
+			$caption = stream_card_caption_kses( trim( (string) get_post_field( 'post_excerpt', $id ) ) );
+		}
+		$alt = extract_first_img_alt( $html );
+
+		return [
+			'attachment_id' => $id,
+			'alt'           => '' !== $alt ? $alt : attachment_alt( $id ),
+			'caption'       => trim( $caption ),
+			'source'        => 'block',
+		];
+	}
+
+	foreach ( get_attached_media( 'image', $post ) as $image ) {
+		$id = (int) $image->ID;
+		if ( ! wp_attachment_is_image( $id ) ) {
+			continue;
+		}
+
+		return [
+			'attachment_id' => $id,
+			'alt'           => attachment_alt( $id ),
+			'caption'       => trim( stream_card_caption_kses( (string) $image->post_excerpt ) ),
+			'source'        => 'attached',
+		];
+	}
+
+	$thumbnail_id = (int) get_post_thumbnail_id( $post );
+	if ( $thumbnail_id > 0 && wp_attachment_is_image( $thumbnail_id ) ) {
+		return [
+			'attachment_id' => $thumbnail_id,
+			'alt'           => attachment_alt( $thumbnail_id ),
+			'caption'       => trim( stream_card_caption_kses( (string) get_post_field( 'post_excerpt', $thumbnail_id ) ) ),
+			'source'        => 'featured',
+		];
+	}
+
+	return $empty;
+}
+
+/**
+ * Whether the featured image already appears in post content.
+ *
+ * @param int $post_id Post ID.
+ * @return bool True when the featured image is in the content.
+ */
+function featured_in_content( int $post_id ): bool {
+	$post = get_post( $post_id );
+	if ( ! $post instanceof \WP_Post || ! Kind_Facts::can_show( $post ) ) {
+		return false;
+	}
+
+	$thumbnail_id = (int) get_post_thumbnail_id( $post );
+	if ( $thumbnail_id <= 0 || ! wp_attachment_is_image( $thumbnail_id ) ) {
+		return false;
+	}
+
+	foreach ( collect_image_blocks( parse_blocks( (string) $post->post_content ) ) as $block ) {
+		if ( image_block_attachment_id( $block ) === $thumbnail_id ) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Render a photo Stream card.
+ *
+ * @param \WP_Post            $post       Post to render.
+ * @param array<string,mixed> $attributes Block attributes.
+ * @return string Card HTML.
+ */
+function render_photo_stream_card( \WP_Post $post, array $attributes = [] ): string {
+	$heading_level = max( 2, min( 4, (int) ( $attributes['headingLevel'] ?? 2 ) ) );
+	$permalink     = esc_url( (string) get_permalink( $post ) );
+	$safe_title    = trim( Title_Privacy::safe_title( $post->ID ) );
+	$titled        = '' !== trim( (string) $post->post_title ) && '' !== $safe_title;
+	$date_display  = (string) get_the_date( '', $post );
+	$date_time     = esc_attr( (string) get_post_time( 'c', true, $post ) );
+	$lead          = lead_image( $post->ID );
+
+	$out  = '<article class="pk-card pk-card--stream pk-card--photo k-photo h-entry">';
+	$out .= '<div class="pk-body">';
+	if ( $titled ) {
+		$out .= '<span class="pk-kindlabel">' . esc_html( get_kind_label( stream_card_kind_label( $post ), 'photo', 'stream-card' ) ) . '</span>';
+	}
+	$out .= '<div class="pk-caption">';
+	if ( $titled ) {
+		$out .= '<h' . $heading_level . ' class="pk-title p-name"><a class="u-url" href="' . $permalink . '">' . esc_html( $safe_title ) . '</a></h' . $heading_level . '>';
+		$out .= '<p class="pk-sub pk-stream-date"><time class="dt-published" datetime="' . $date_time . '">' . esc_html( $date_display ) . '</time></p>';
+	} else {
+		$fallback  = untitled_fallback_name( $post );
+		$time_html = '<time class="dt-published" datetime="' . $date_time . '">' . esc_html( $date_display ) . '</time>';
+		$out      .= '<h' . $heading_level . ' class="pk-title"><a class="u-url" href="' . $permalink . '">'
+			. sprintf(
+				/* translators: 1: kind name, 2: post date. */
+				esc_html__( '%1$s, %2$s', 'post-kinds-for-indieweb-in-block-themes' ),
+				esc_html( $fallback['kind'] ),
+				$time_html
+			)
+			. '</a></h' . $heading_level . '>';
+	}
+	$out .= '</div>';
+
+	if ( '' !== $lead['source'] ) {
+		$image = wp_get_attachment_image(
+			$lead['attachment_id'],
+			'medium',
+			false,
+			[
+				'class'   => 'u-photo',
+				'alt'     => $titled ? '' : $lead['alt'],
+				'loading' => 'lazy',
+			]
+		);
+		if ( '' !== $image ) {
+			$out .= '<div class="pk-media pk-media--stream">' . $image; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			if ( '' !== $lead['caption'] ) {
+				$caption = wp_kses(
+					$lead['caption'],
+					[
+						'em'     => [],
+						'strong' => [],
+						'br'     => [],
+					]
+				);
+				$out    .= '<p class="pk-media__caption">' . $caption . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Sanitised for the photo Stream card.
+			}
+			$out .= '</div>';
+		}
+	}
+
+	$out .= '</div></article>';
+
+	return $out;
+}
+
+/**
  * The hidden citation each kind adds to its generic Stream card.
  *
  * A kind's card block carries its citation (`u-play-of`, `u-read-of`), but
@@ -362,6 +694,8 @@ function stream_card_kind_cite_map(): array {
 		'reply'    => __NAMESPACE__ . '\\stream_card_reply_cite',
 		'like'     => __NAMESPACE__ . '\\stream_card_like_cite',
 		'bookmark' => __NAMESPACE__ . '\\stream_card_bookmark_cite',
+		'favorite' => __NAMESPACE__ . '\\stream_card_favorite_cite',
+		'repost'   => __NAMESPACE__ . '\\stream_card_repost_cite',
 	];
 
 	/**
@@ -543,6 +877,32 @@ function stream_card_bookmark_cite( array $facts, \WP_Post $post ): string {
 }
 
 /**
+ * A favorite's citation, as hidden data on its generic Stream card.
+ *
+ * @since 1.9.0
+ *
+ * @param array<string, mixed> $facts Favorite facts.
+ * @param \WP_Post             $post  Post.
+ * @return string Hidden h-cite HTML, or ''.
+ */
+function stream_card_favorite_cite( array $facts, \WP_Post $post ): string {
+	return stream_card_response_cite( 'favorite', 'u-favorite-of', $facts, $post, true );
+}
+
+/**
+ * A repost's citation, as hidden data on its generic Stream card.
+ *
+ * @since 1.9.0
+ *
+ * @param array<string, mixed> $facts Repost facts.
+ * @param \WP_Post             $post  Post.
+ * @return string Hidden h-cite HTML, or ''.
+ */
+function stream_card_repost_cite( array $facts, \WP_Post $post ): string {
+	return stream_card_response_cite( 'repost', 'u-repost-of', $facts, $post, true );
+}
+
+/**
  * A response citation, from reader facts or raw response meta.
  *
  * @since 1.9.0
@@ -551,14 +911,17 @@ function stream_card_bookmark_cite( array $facts, \WP_Post $post ): string {
  * @param string               $property Entry citation property class.
  * @param array<string, mixed> $facts    Facts: `url`, `cited_title`, `author`.
  * @param \WP_Post             $post     Post.
+ * @param bool                 $require_url Whether an empty URL suppresses the citation.
  * @return string Hidden h-cite HTML, or ''.
  */
-function stream_card_response_cite( string $kind, string $property, array $facts, \WP_Post $post ): string {
+function stream_card_response_cite( string $kind, string $property, array $facts, \WP_Post $post, bool $require_url = false ): string {
 	if ( [] === $facts && null === Kind_Facts::reader( $kind ) && Kind_Facts::can_show( $post ) ) {
 		$target_suffix = [
 			'reply'    => 'in_reply_to',
 			'like'     => 'like_of',
 			'bookmark' => 'bookmark_of',
+			'repost'   => 'repost_of',
+			'favorite' => 'favorite_url',
 		][ $kind ] ?? '';
 		$url           = '';
 		foreach ( [ Meta_Fields::PREFIX . 'cite_url', Meta_Fields::PREFIX . $target_suffix ] as $key ) {
@@ -568,7 +931,14 @@ function stream_card_response_cite( string $kind, string $property, array $facts
 				break;
 			}
 		}
-		$title = get_metadata_raw( 'post', $post->ID, Meta_Fields::PREFIX . 'cite_name', true );
+		$title = '';
+		if ( 'favorite' === $kind ) {
+			$favorite_title = get_metadata_raw( 'post', $post->ID, Meta_Fields::PREFIX . 'favorite_name', true );
+			$title          = is_scalar( $favorite_title ) ? (string) $favorite_title : '';
+		}
+		if ( '' === trim( $title ) ) {
+			$title = get_metadata_raw( 'post', $post->ID, Meta_Fields::PREFIX . 'cite_name', true );
+		}
 		$title = is_scalar( $title ) ? (string) $title : '';
 		$facts = [
 			'url'         => $url,
@@ -577,12 +947,17 @@ function stream_card_response_cite( string $kind, string $property, array $facts
 		];
 	}
 
+	$url = is_scalar( $facts['url'] ?? null ) ? trim( (string) $facts['url'] ) : '';
+	if ( $require_url && ( '' === $url || '' === esc_url( $url ) ) ) {
+		return '';
+	}
+
 	return hidden_cite_html(
 		$property,
 		[
 			'p-name'   => is_scalar( $facts['cited_title'] ?? null ) ? (string) $facts['cited_title'] : '',
 			'p-author' => is_scalar( $facts['author'] ?? null ) ? (string) $facts['author'] : '',
-			'u-url'    => is_scalar( $facts['url'] ?? null ) ? (string) $facts['url'] : '',
+			'u-url'    => $url,
 		]
 	);
 }
@@ -659,6 +1034,16 @@ function stream_card_title_is_cited_url( \WP_Post $post, string $title ): bool {
 }
 
 /**
+ * Whether a generic Stream card omits feed action furniture.
+ *
+ * @param string $kind_slug Kind slug.
+ * @return bool True for headline-only generic cards.
+ */
+function generic_card_headline_only( string $kind_slug ): bool {
+	return 'article' === $kind_slug;
+}
+
+/**
  * Render a compact card for a post that isn't a self-contained kind card.
  *
  * Articles, notes, and any long-form kind get a glanceable card — badge,
@@ -683,6 +1068,7 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	$badge_kind    = '' !== $kind_slug ? $kind_slug : 'note';
 	$kind_label    = stream_card_kind_label( $post );
 	$excerpt       = trim( wp_strip_all_tags( get_the_excerpt( $post ) ) );
+	$headline_only = generic_card_headline_only( $kind_slug );
 
 	$title     = trim( get_the_title( $post ) );
 	$has_title = '' !== $title && ! stream_card_title_is_cited_url( $post, $title );
@@ -789,7 +1175,7 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	if ( '' !== $thumb_html ) {
 		// get_the_post_thumbnail() returns core-generated, escaped <img> markup.
 		$out .= '<div class="pk-media pk-media--stream">' . $thumb_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		$out .= stream_card_media_extras( $post );
+		$out .= $headline_only ? stream_card_media_caption( $post ) : stream_card_media_extras( $post );
 		$out .= '</div>';
 	}
 
@@ -800,9 +1186,11 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	// The kind's citation, which a card block would otherwise carry.
 	$out .= stream_card_kind_cite( $post );
 
-	$out .= '<div class="pk-meta"><a class="pk-link" href="' . $permalink . '">'
-		. esc_html__( 'Read more', 'post-kinds-for-indieweb-in-block-themes' )
-		. '<span class="pk-sr-only">' . esc_html( ': ' . $title ) . '</span></a></div>';
+	if ( ! $headline_only ) {
+		$out .= '<div class="pk-meta"><a class="pk-link" href="' . $permalink . '">'
+			. esc_html__( 'Read more', 'post-kinds-for-indieweb-in-block-themes' )
+			. '<span class="pk-sr-only">' . esc_html( ': ' . $title ) . '</span></a></div>';
+	}
 	$out .= '</div></article>';
 
 	return $out;
@@ -849,29 +1237,7 @@ function recipe_stream_card_facts( array $recipe ): string {
 function stream_card_media_extras( \WP_Post $post ): string {
 	$hero_id = (int) get_post_thumbnail_id( $post );
 	$images  = get_attached_media( 'image', $post );
-
-	$hero_caption = $hero_id > 0
-		? trim( (string) get_post_field( 'post_excerpt', $hero_id ) )
-		: '';
-
-	$out = '';
-	if ( '' !== $hero_caption ) {
-		// Polite, not assertive: a caption changing must never interrupt.
-		$out .= '<p class="pk-media__caption" aria-live="polite">'
-			. wp_kses(
-				$hero_caption,
-				[
-					'a'      => [
-						'href'  => [],
-						'rel'   => [],
-						'title' => [],
-					],
-					'em'     => [],
-					'strong' => [],
-					'br'     => [],
-				]
-			) . '</p>';
-	}
+	$out     = stream_card_media_caption( $post );
 
 	// Everything except the hero, in attachment order.
 	$rest = [];
@@ -930,6 +1296,26 @@ function stream_card_media_extras( \WP_Post $post ): string {
 	$out .= '</ul>';
 
 	return $out;
+}
+
+/**
+ * The caption under a Stream card's hero image.
+ *
+ * @param \WP_Post $post Post being rendered.
+ * @return string Caption markup, or ''.
+ */
+function stream_card_media_caption( \WP_Post $post ): string {
+	$hero_id      = (int) get_post_thumbnail_id( $post );
+	$hero_caption = $hero_id > 0
+		? trim( (string) get_post_field( 'post_excerpt', $hero_id ) )
+		: '';
+
+	if ( '' === $hero_caption ) {
+		return '';
+	}
+
+	// Polite, not assertive: a caption changing must never interrupt.
+	return '<p class="pk-media__caption" aria-live="polite">' . stream_card_caption_kses( $hero_caption ) . '</p>';
 }
 
 

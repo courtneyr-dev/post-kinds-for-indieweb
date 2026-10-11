@@ -1673,4 +1673,670 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertSame( [ 'Piranesi' ], $entry['properties']['read-of'][0]['properties']['name'] );
 		$this->assertSame( [ get_permalink( $post_id ) ], $entry['properties']['url'] );
 	}
+
+	// ------------------------------------------------------------------
+	// W3-P0C: photo cards, favorite and repost citations, the article cut.
+	// ------------------------------------------------------------------
+
+	/**
+	 * XPath over a card fragment.
+	 *
+	 * @param string $html Card HTML.
+	 * @return DOMXPath
+	 */
+	private function card_xpath( string $html ): DOMXPath {
+		$doc      = new DOMDocument();
+		$previous = libxml_use_internal_errors( true );
+		$doc->loadHTML( '<?xml encoding="utf-8" ?><div id="card-scope">' . $html . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD );
+		libxml_clear_errors();
+		libxml_use_internal_errors( $previous );
+
+		return new DOMXPath( $doc );
+	}
+
+	/**
+	 * Rendered anchors: a[href] with no [hidden] on it or any ancestor (W3-G2).
+	 *
+	 * @param string $html            Card HTML.
+	 * @param bool   $outside_caption Skip anchors inside the hero caption.
+	 * @return int
+	 */
+	private function rendered_anchor_count( string $html, bool $outside_caption = false ): int {
+		$query = '//a[@href][not(ancestor-or-self::*[@hidden])]';
+		if ( $outside_caption ) {
+			$query .= '[not(ancestor::*[contains(concat(" ", normalize-space(@class), " "), " pk-media__caption ")])]';
+		}
+
+		return $this->card_xpath( $html )->query( $query )->length;
+	}
+
+	/**
+	 * Anchors with tabindex -1 that are not hidden (W3-G2 needs none).
+	 *
+	 * @param string $html Card HTML.
+	 * @return int
+	 */
+	private function visible_negative_tabindex_count( string $html ): int {
+		return $this->card_xpath( $html )->query( '//a[@tabindex="-1"][not(ancestor-or-self::*[@hidden])]' )->length;
+	}
+
+	/**
+	 * A real image attachment (sub-sizes written) on a post.
+	 *
+	 * @param int    $parent  Parent post ID.
+	 * @param string $alt     Stored alt.
+	 * @param string $caption Stored caption.
+	 * @return int Attachment ID.
+	 */
+	private function upload_image( int $parent, string $alt = '', string $caption = '' ): int {
+		$id = (int) self::factory()->attachment->create_upload_object( DIR_TESTDATA . '/images/canola.jpg', $parent );
+		if ( '' !== $alt ) {
+			update_post_meta( $id, '_wp_attachment_image_alt', $alt );
+		}
+		if ( '' !== $caption ) {
+			wp_update_post(
+				[
+					'ID'           => $id,
+					'post_excerpt' => $caption,
+				]
+			);
+		}
+
+		return $id;
+	}
+
+	/**
+	 * A published photo post whose body holds one image block.
+	 *
+	 * @param string               $title Post title ('' for an untitled photo).
+	 * @param array<string, mixed> $args  Extra post arguments.
+	 * @param string               $alt   Alt in the image block.
+	 * @param string               $cap   Figcaption HTML in the image block.
+	 * @return array{0: int, 1: int} Post ID and attachment ID.
+	 */
+	private function photo_post_with_image( string $title, array $args = [], string $alt = 'Stored alt', string $cap = '' ): array {
+		$this->ensure_kind_term( 'photo' );
+		$post_id = self::factory()->post->create(
+			array_merge(
+				[
+					'post_status' => 'publish',
+					'post_title'  => $title,
+					'post_date'   => '2026-09-12 14:30:00',
+				],
+				$args
+			)
+		);
+		wp_set_object_terms( $post_id, 'photo', 'kind' );
+		$attachment = $this->upload_image( $post_id );
+		wp_update_post(
+			[
+				'ID'           => $post_id,
+				'post_content' => '<!-- wp:image {"id":' . $attachment . '} --><figure class="wp-block-image"><img src="' . esc_url( (string) wp_get_attachment_url( $attachment ) ) . '" alt="' . esc_attr( $alt ) . '" class="wp-image-' . $attachment . '"/>'
+					. ( '' === $cap ? '' : '<figcaption class="wp-element-caption">' . $cap . '</figcaption>' )
+					. '</figure><!-- /wp:image -->',
+			]
+		);
+		$GLOBALS['post'] = get_post( $post_id );
+
+		return [ (int) $post_id, $attachment ];
+	}
+
+	public function test_a_titled_photo_card_prints_the_title_date_image_and_caption_only(): void {
+		[ $post_id, $attachment ] = $this->photo_post_with_image( 'Tide pool at dusk', [], 'Stored alt', 'Low tide <em>again</em>' );
+		unset( $GLOBALS['pkiw_stream_card_root_seen'] );
+
+		$html = \PKIW\render_stream_card();
+		$xp   = $this->card_xpath( $html );
+
+		$this->assertStringStartsWith( '<article class="pk-card pk-card--stream pk-card--photo k-photo h-entry">', $html, 'pk-card comes before h-entry.' );
+		$this->assertTrue( ! empty( $GLOBALS['pkiw_stream_card_root_seen'][ $post_id ] ), 'The card registers as the entry root.' );
+		$this->assertSame( 'Photo', trim( $xp->query( '//span[contains(@class,"pk-kindlabel")]' )->item( 0 )->textContent ) );
+
+		$link = $xp->query( '//h2[@class="pk-title p-name"]/a[@class="u-url"]' );
+		$this->assertSame( 1, $link->length );
+		$this->assertSame( 'Tide pool at dusk', $link->item( 0 )->textContent );
+		$this->assertSame( get_permalink( $post_id ), $link->item( 0 )->getAttribute( 'href' ) );
+
+		$this->assertSame( 1, $xp->query( '//p[contains(@class,"pk-stream-date")]/time[@class="dt-published"]' )->length );
+		$this->assertSame( 1, $xp->query( '//time[contains(@class,"dt-published")]' )->length );
+
+		$img = $xp->query( '//div[contains(@class,"pk-media") and contains(@class,"pk-media--stream")]/img[contains(@class,"u-photo")]' );
+		$this->assertSame( 1, $img->length );
+		$this->assertSame( '', $img->item( 0 )->getAttribute( 'alt' ), 'The title names a titled photo, so the image is decorative.' );
+		$this->assertSame( 'lazy', $img->item( 0 )->getAttribute( 'loading' ) );
+		$this->assertSame( wp_get_attachment_image_url( $attachment, 'medium' ), $img->item( 0 )->getAttribute( 'src' ), 'The medium size, unfiltered.' );
+
+		$caption = $xp->query( '//p[contains(@class,"pk-media__caption")]' );
+		$this->assertSame( 1, $caption->length );
+		$this->assertFalse( $caption->item( 0 )->hasAttribute( 'aria-live' ) );
+		$this->assertStringContainsString( 'Low tide <em>again</em>', $html );
+
+		foreach ( [ 'pk-badge', 'pk-meta', 'pk-media__thumbs', 'pk-media__thumb-more-link', 'pk-excerpt', 'Read more' ] as $absent ) {
+			$this->assertStringNotContainsString( $absent, $html, $absent . ' never prints on a photo card.' );
+		}
+		$this->assertSame( 1, $this->rendered_anchor_count( $html ), 'One link: the title.' );
+		$this->assertSame( 0, $this->visible_negative_tabindex_count( $html ) );
+	}
+
+	public function test_a_photo_caption_link_is_text_so_the_card_keeps_one_tab_stop(): void {
+		$caption_html = 'Photo by <a href="https://example.org/credit">Ana</a> at <em>dusk</em>';
+		[ $post_id ] = $this->photo_post_with_image( 'Tide pool at dusk', [], 'Stored alt', $caption_html );
+
+		$html = \PKIW\render_stream_card();
+		$xp   = $this->card_xpath( $html );
+
+		$this->assertSame( 1, $this->rendered_anchor_count( $html ) );
+		$this->assertSame( 1, $xp->query( '//h2[@class="pk-title p-name"]/a[@class="u-url"]' )->length );
+		$caption = $xp->query( '//p[contains(@class,"pk-media__caption")]' );
+		$this->assertSame( 1, $caption->length );
+		$this->assertSame( 'Photo by Ana at dusk', $caption->item( 0 )->textContent );
+		$this->assertSame( 1, $xp->query( '//p[contains(@class,"pk-media__caption")]/em[text()="dusk"]' )->length );
+		$this->assertStringNotContainsString( 'example.org/credit', $html );
+
+		[ $untitled_post_id ] = $this->photo_post_with_image( '', [], 'Stored alt', $caption_html );
+
+		$untitled_html = \PKIW\render_stream_card();
+		$untitled_xp   = $this->card_xpath( $untitled_html );
+
+		$this->assertSame( 1, $this->rendered_anchor_count( $untitled_html ) );
+		$this->assertSame( 1, $untitled_xp->query( '//h2[@class="pk-title"]/a[@class="u-url"]' )->length );
+		$this->assertSame( get_permalink( $post_id ), $xp->query( '//h2[@class="pk-title p-name"]/a[@class="u-url"]' )->item( 0 )->getAttribute( 'href' ) );
+		$this->assertSame( get_permalink( $untitled_post_id ), $untitled_xp->query( '//h2[@class="pk-title"]/a[@class="u-url"]' )->item( 0 )->getAttribute( 'href' ) );
+	}
+
+	public function test_an_untitled_photo_card_names_itself_kind_and_date_with_no_p_name(): void {
+		[ $post_id ] = $this->photo_post_with_image( '', [], 'Stored alt' );
+
+		$html = \PKIW\render_stream_card();
+		$xp   = $this->card_xpath( $html );
+
+		$this->assertSame( 0, $xp->query( '//*[contains(@class,"pk-kindlabel")]' )->length, 'No kind label on an untitled photo.' );
+		$this->assertStringNotContainsString( 'p-name', $html, 'A synthetic name is no p-name.' );
+		$heading = $xp->query( '//h2[@class="pk-title"]/a[@class="u-url"]' );
+		$this->assertSame( 1, $heading->length );
+		$this->assertSame( get_permalink( $post_id ), $heading->item( 0 )->getAttribute( 'href' ) );
+		$this->assertSame( 'Photo, ' . get_the_date( '', $post_id ), $heading->item( 0 )->textContent );
+		$this->assertSame( 1, $xp->query( '//a[@class="u-url"]/time[@class="dt-published"]' )->length, 'The date is the link name, once.' );
+		$this->assertSame( 1, $xp->query( '//time[contains(@class,"dt-published")]' )->length );
+		$this->assertSame( 'Stored alt', $xp->query( '//img[contains(@class,"u-photo")]' )->item( 0 )->getAttribute( 'alt' ) );
+		$this->assertSame( 1, $this->rendered_anchor_count( $html ) );
+	}
+
+	public function test_a_photo_card_without_an_image_has_no_media_block(): void {
+		$this->ensure_kind_term( 'photo' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Words about a photo',
+				'post_content' => '<!-- wp:paragraph --><p>The picture is lost.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'photo', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( 'pk-card--photo', $html );
+		$this->assertStringNotContainsString( 'pk-media', $html );
+		$this->assertStringNotContainsString( '<img', $html );
+	}
+
+	public function test_a_photo_card_with_no_caption_prints_no_caption_element(): void {
+		$this->photo_post_with_image( 'Quiet shot' );
+
+		$this->assertStringNotContainsString( 'pk-media__caption', \PKIW\render_stream_card() );
+	}
+
+	public function test_a_photo_card_takes_the_stream_heading_level(): void {
+		$this->photo_post_with_image( 'Third level' );
+
+		$html = \PKIW\render_stream_card( [ 'headingLevel' => 3 ] );
+
+		$this->assertStringContainsString( '<h3 class="pk-title p-name">', $html );
+		$this->assertStringNotContainsString( '<h2', $html );
+	}
+
+	public function test_a_photo_card_title_that_names_a_hidden_location_prints_the_fallback(): void {
+		[ $post_id ] = $this->photo_post_with_image( 'Checked in at Fictional Cove' );
+		update_post_meta( $post_id, '_pkiw_checkin_name', 'Fictional Cove' );
+		update_post_meta( $post_id, '_pkiw_geo_privacy', 'private' );
+		\PKIW\Title_Privacy::mark_location_title( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringNotContainsString( 'Fictional Cove', $html );
+		$this->assertStringContainsString( esc_html( \PKIW\Title_Privacy::safe_title( $post_id ) ), $html );
+	}
+
+	public function test_a_protected_photo_still_takes_the_protected_card(): void {
+		[ $post_id ] = $this->photo_post_with_image( 'Locked photo', [ 'post_password' => 'secret' ], 'Secret alt', 'Secret caption' );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( 'pk-card--protected', $html );
+		$this->assertStringNotContainsString( '<img', $html );
+		$this->assertStringNotContainsString( 'Secret caption', $html );
+		$this->assertStringNotContainsString( 'Secret alt', $html );
+		$this->assertSame( 1, $this->rendered_anchor_count( $html ) );
+		$this->assertStringContainsString( (string) get_permalink( $post_id ), $html );
+	}
+
+	public function test_a_photo_stream_card_parses_to_one_h_entry_with_url_published_author_and_photo(): void {
+		$author_id = self::factory()->user->create( [ 'display_name' => 'Site Author' ] );
+		[ $post_id ] = $this->photo_post_with_image( 'Tide pool at dusk', [ 'post_author' => $author_id ] );
+
+		$html  = do_blocks( '<!-- wp:post-kinds-indieweb/stream-card /-->' );
+		$items = \Mf2\parse( $html, 'https://example.org/' )['items'];
+
+		$this->assertCount( 1, $items );
+		$entry = $items[0];
+		$this->assertContains( 'h-entry', $entry['type'] );
+		$this->assertSame( [ get_permalink( $post_id ) ], $entry['properties']['url'] );
+		$this->assertNotEmpty( $entry['properties']['published'] );
+		$this->assertSame( [ 'Site Author' ], $entry['properties']['author'][0]['properties']['name'] );
+		$this->assertCount( 1, $entry['properties']['photo'] );
+		$this->assertSame( [ 'Tide pool at dusk' ], $entry['properties']['name'] );
+		$this->assertSame( 1, substr_count( $html, 'pk-entry-props' ), 'The root is the card, so the author rides in one hidden span.' );
+	}
+
+	public function test_is_rendering_stream_card_is_true_only_during_a_render(): void {
+		$this->assertFalse( \PKIW\is_rendering_stream_card() );
+
+		$seen  = [];
+		$probe = static function ( string $html, \WP_Post $post ) use ( &$seen ): string {
+			$seen[] = \PKIW\is_rendering_stream_card();
+			return $html;
+		};
+		add_filter( 'pkiw_stream_card_after_date', $probe, 10, 2 );
+		$this->stream_card_for(
+			'note',
+			[
+				'post_title'   => 'Flag probe',
+				'post_content' => '<!-- wp:paragraph --><p>Words.</p><!-- /wp:paragraph -->',
+			]
+		);
+		remove_filter( 'pkiw_stream_card_after_date', $probe, 10 );
+
+		$this->assertSame( [ true ], $seen );
+		$this->assertFalse( \PKIW\is_rendering_stream_card() );
+	}
+
+	public function test_is_rendering_stream_card_is_false_again_after_a_render_throws(): void {
+		$boom = static function (): string {
+			throw new \RuntimeException( 'render failed' );
+		};
+		add_filter( 'pkiw_stream_card_after_date', $boom );
+
+		try {
+			$this->stream_card_for(
+				'note',
+				[
+					'post_title'   => 'Throwing probe',
+					'post_content' => '<!-- wp:paragraph --><p>Words.</p><!-- /wp:paragraph -->',
+				]
+			);
+			$this->fail( 'The render should have thrown.' );
+		} catch ( \RuntimeException $e ) {
+			$this->assertSame( 'render failed', $e->getMessage() );
+		}
+		remove_filter( 'pkiw_stream_card_after_date', $boom );
+
+		$this->assertFalse( \PKIW\is_rendering_stream_card() );
+	}
+
+	public function test_is_rendering_stream_card_stays_true_through_a_nested_render(): void {
+		$inner_post = self::factory()->post->create( [ 'post_title' => 'Inner', 'post_status' => 'publish' ] );
+		$seen       = [];
+		$probe      = static function ( string $html, \WP_Post $post ) use ( &$seen, $inner_post ): string {
+			if ( $post->ID !== $inner_post ) {
+				$GLOBALS['post'] = get_post( $inner_post );
+				\PKIW\render_stream_card();
+				$GLOBALS['post'] = $post;
+			}
+			$seen[ $post->ID === $inner_post ? 'inner' : 'outer' ] = \PKIW\is_rendering_stream_card();
+			return $html;
+		};
+		add_filter( 'pkiw_stream_card_after_date', $probe, 10, 2 );
+		$this->stream_card_for(
+			'note',
+			[
+				'post_title'   => 'Outer',
+				'post_content' => '<!-- wp:paragraph --><p>Words.</p><!-- /wp:paragraph -->',
+			]
+		);
+		remove_filter( 'pkiw_stream_card_after_date', $probe, 10 );
+
+		$this->assertSame( [ 'inner' => true, 'outer' => true ], $seen );
+		$this->assertFalse( \PKIW\is_rendering_stream_card() );
+	}
+
+	/**
+	 * Where a favorite or repost with no usable card keeps its target.
+	 *
+	 * @return array<string, array{0: string, 1: string, 2: string}>
+	 */
+	public function favorite_and_repost_meta_shapes(): array {
+		return [
+			'favorite, favorite_url' => [ 'favorite', 'favorite-of', '_pkiw_favorite_url' ],
+			'favorite, cite url'     => [ 'favorite', 'favorite-of', '_pkiw_cite_url' ],
+			'repost, cite url'       => [ 'repost', 'repost-of', '_pkiw_cite_url' ],
+			'repost, repost_of'      => [ 'repost', 'repost-of', '_pkiw_repost_of' ],
+		];
+	}
+
+	/**
+	 * A favorite or repost with a URL carries a hidden citation with its
+	 * name and author, and the note stays out of the cite (G5).
+	 *
+	 * @dataProvider favorite_and_repost_meta_shapes
+	 *
+	 * @param string $kind     Kind slug.
+	 * @param string $property php-mf2 property name.
+	 * @param string $url_key  Meta key holding the target.
+	 */
+	public function test_a_favorite_or_repost_with_a_url_carries_its_citation( string $kind, string $property, string $url_key ): void {
+		$this->ensure_kind_term( $kind );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'My note on it',
+				'post_content' => '<!-- wp:paragraph --><p>My own words.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, $kind, 'kind' );
+		update_post_meta( $post_id, $url_key, 'https://remote.example.org/page?x=1' );
+		update_post_meta( $post_id, '_pkiw_cite_name', 'A remote page' );
+		update_post_meta( $post_id, '_pkiw_cite_author', 'Remote Author' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$cite = $this->parsed_entry( \PKIW\render_stream_card() )['properties'][ $property ][0];
+
+		$this->assertSame( [ 'h-cite' ], $cite['type'] );
+		$this->assertSame( [ 'https://remote.example.org/page?x=1' ], $cite['properties']['url'] );
+		$this->assertSame( [ 'A remote page' ], $cite['properties']['name'] );
+		$this->assertSame( [ 'Remote Author' ], $cite['properties']['author'][0]['properties']['name'] );
+	}
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public function favorite_and_repost(): array {
+		return [
+			'favorite' => [ 'favorite' ],
+			'repost'   => [ 'repost' ],
+		];
+	}
+
+	/**
+	 * A name or author with no URL prints no citation: hidden_cite_html()
+	 * would otherwise print a URL-less h-cite that parsers read as a bare
+	 * property value.
+	 *
+	 * @dataProvider favorite_and_repost
+	 *
+	 * @param string $kind Kind slug.
+	 */
+	public function test_a_favorite_or_repost_with_no_url_prints_no_citation( string $kind ): void {
+		[ , $html ] = $this->stream_card_for(
+			$kind,
+			[
+				'post_title'   => 'No target',
+				'post_content' => '<!-- wp:paragraph --><p>My own words.</p><!-- /wp:paragraph -->',
+				'meta_input'   => [
+					'_pkiw_cite_name'   => 'A name with no URL',
+					'_pkiw_cite_author' => 'An author with no URL',
+				],
+			]
+		);
+
+		$this->assertStringNotContainsString( 'h-cite', $html );
+		$this->assertStringNotContainsString( 'pk-kind-cite', $html );
+		$this->assertStringNotContainsString( 'A name with no URL', $html );
+	}
+
+	/**
+	 * A registered favorite or repost reader supplies the citation through
+	 * the contract keys url, cited_title and author; with a name and author
+	 * but an empty url it prints nothing.
+	 *
+	 * @dataProvider favorite_and_repost
+	 *
+	 * @param string $kind Kind slug.
+	 */
+	public function test_a_registered_reader_supplies_the_favorite_and_repost_citation( string $kind ): void {
+		$facts = [
+			'url'         => 'https://reader.example.org/page',
+			'host'        => 'reader.example.org',
+			'cited_title' => 'From the reader',
+			'author'      => 'Reader Author',
+			'summary'     => 'Ignored here.',
+			'picture'     => [],
+		];
+		$this->register_test_reader(
+			$kind,
+			static function ( int $post_id ) use ( &$facts ): array {
+				return $facts;
+			}
+		);
+		[ , $html ] = $this->stream_card_for(
+			$kind,
+			[
+				'post_title'   => 'Reader shape',
+				'post_content' => '<!-- wp:paragraph --><p>My own words.</p><!-- /wp:paragraph -->',
+			]
+		);
+		$cite = $this->parsed_entry( $html )['properties'][ $kind . '-of' ][0];
+
+		$this->assertSame( [ 'https://reader.example.org/page' ], $cite['properties']['url'] );
+		$this->assertSame( [ 'From the reader' ], $cite['properties']['name'] );
+		$this->assertSame( [ 'Reader Author' ], $cite['properties']['author'][0]['properties']['name'] );
+
+		$facts['url'] = '';
+		[ , $html ]   = $this->stream_card_for(
+			$kind,
+			[
+				'post_title'   => 'Reader shape, no url',
+				'post_content' => '<!-- wp:paragraph --><p>My own words.</p><!-- /wp:paragraph -->',
+			]
+		);
+		$this->assertStringNotContainsString( 'h-cite', $html, 'A reader with no URL prints no citation.' );
+	}
+
+	public function test_a_repost_with_a_note_parses_repost_of_to_the_source_and_a_url_title_prints_no_p_name(): void {
+		$url = 'https://quiet.example.com/essay?token=abc123';
+		$this->ensure_kind_term( 'repost' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Worth sharing',
+				'post_content' => '<!-- wp:post-kinds-indieweb/repost-card ' . wp_json_encode( [ 'title' => $url, 'url' => $url ], JSON_UNESCAPED_SLASHES ) . ' /-->'
+					. '<!-- wp:paragraph --><p>My note about it.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'repost', 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+		$cite = $this->parsed_entry( $html )['properties']['repost-of'][0];
+
+		$this->assertSame( [ $url ], $cite['properties']['url'] );
+		$this->assertStringNotContainsString( '<data class="p-name" value="' . $url . '"', $html, 'A title equal to the URL is no name.' );
+		$this->assertStringNotContainsString( 'My note about it.', $html, 'The note never prints on the Stream.' );
+	}
+
+	public function test_a_protected_favorite_or_repost_prints_only_the_title_link(): void {
+		foreach ( [ 'favorite', 'repost' ] as $kind ) {
+			[ $post_id, $html ] = $this->stream_card_for(
+				$kind,
+				[
+					'post_title'    => 'Locked ' . $kind,
+					'post_password' => 'secret',
+					'post_content'  => '<!-- wp:paragraph --><p>Secret words.</p><!-- /wp:paragraph -->',
+					'meta_input'    => [
+						'_pkiw_cite_url'     => 'https://secret.example.org/a',
+						'_pkiw_favorite_url' => 'https://secret.example.org/b',
+						'_pkiw_cite_name'    => 'Secret target',
+					],
+				]
+			);
+
+			$this->assertStringNotContainsString( 'secret.example.org', $html );
+			$this->assertStringNotContainsString( 'Secret target', $html );
+			$this->assertStringNotContainsString( 'h-cite', $html );
+			$this->assertSame( 1, $this->rendered_anchor_count( $html ) );
+		}
+	}
+
+	/**
+	 * An article post with a featured image, a caption and attachments.
+	 *
+	 * @param int    $extra_images Further attached images.
+	 * @param string $caption      Hero caption (attachment excerpt).
+	 * @param array  $args         Extra post arguments.
+	 * @return int Post ID.
+	 */
+	private function article_post( int $extra_images = 0, string $caption = '', array $args = [] ): int {
+		$this->ensure_kind_term( 'article' );
+		$no_hero = ! empty( $args['no_hero'] );
+		unset( $args['no_hero'] );
+		$post_id = self::factory()->post->create(
+			array_merge(
+				[
+					'post_status'  => 'publish',
+					'post_title'   => 'A long write-up',
+					'post_excerpt' => 'The deck for the write-up.',
+					'post_content' => '<!-- wp:paragraph --><p>The full body of the write-up.</p><!-- /wp:paragraph -->',
+				],
+				$args
+			)
+		);
+		wp_set_object_terms( $post_id, 'article', 'kind' );
+		if ( ! $no_hero ) {
+			$hero = $this->upload_image( $post_id, 'Hero alt', $caption );
+			set_post_thumbnail( $post_id, $hero );
+			for ( $n = 0; $n < $extra_images; $n++ ) {
+				$this->upload_image( $post_id );
+			}
+		}
+		$GLOBALS['post'] = get_post( $post_id );
+
+		return (int) $post_id;
+	}
+
+	public function test_an_article_card_keeps_the_hero_caption_links_included_and_prints_one_other_link(): void {
+		$this->article_post( 6, 'Photo by <a href="https://example.org/credit">Ana Example</a>' );
+
+		$html = \PKIW\render_stream_card();
+		$xp   = $this->card_xpath( $html );
+
+		$this->assertSame( 1, $xp->query( '//p[contains(@class,"pk-media__caption")]' )->length, 'The hero caption survives (G10 corrected).' );
+		$this->assertSame( 1, $xp->query( '//p[contains(@class,"pk-media__caption")]//a[@href="https://example.org/credit"]' )->length, 'The caption link survives.' );
+		$this->assertSame( 1, $this->rendered_anchor_count( $html, true ), 'One link outside [hidden] and outside the caption: the title.' );
+		$this->assertSame( 0, $this->visible_negative_tabindex_count( $html ) );
+		foreach ( [ 'pk-meta', 'Read more', 'pk-media__thumbs', 'pk-media__thumb', 'pk-media__thumb-more-link', 'data-pk-full' ] as $absent ) {
+			$this->assertStringNotContainsString( $absent, $html, $absent . ' is cut from the article card.' );
+		}
+		$this->assertDoesNotMatchRegularExpression( '/\+\d/', wp_strip_all_tags( $html ), 'No +N.' );
+	}
+
+	/**
+	 * @return array<string, array{0: int}>
+	 */
+	public function article_extra_image_counts(): array {
+		return [
+			'hero only'             => [ 0 ],
+			'one extra attachment'  => [ 1 ],
+			'six extra attachments' => [ 6 ],
+		];
+	}
+
+	/**
+	 * @dataProvider article_extra_image_counts
+	 *
+	 * @param int $extra Extra attached images.
+	 */
+	public function test_an_article_card_has_no_strip_whatever_the_attachment_count( int $extra ): void {
+		$this->article_post( $extra, 'A plain caption' );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringNotContainsString( 'pk-media__thumbs', $html );
+		$this->assertStringNotContainsString( 'pk-media__thumb', $html );
+		$this->assertStringContainsString( 'A plain caption', $html );
+	}
+
+	public function test_an_article_card_keeps_its_badge_first_and_the_dom_order(): void {
+		$this->article_post( 2, 'A caption' );
+
+		$html = \PKIW\render_stream_card();
+		$xp   = $this->card_xpath( $html );
+
+		$this->assertSame( 'pk-badge', $xp->query( '//article/*[1]' )->item( 0 )->getAttribute( 'class' ) );
+		$this->assertSame( 0, $xp->query( '//div[@class="pk-badge"]//a' )->length );
+		$order = [ 'pk-kindlabel', 'pk-title', 'dt-published', 'pk-media', 'pk-excerpt' ];
+		$last  = -1;
+		foreach ( $order as $token ) {
+			$pos = strpos( $html, $token );
+			$this->assertNotFalse( $pos, $token . ' prints.' );
+			$this->assertGreaterThan( $last, $pos, $token . ' keeps its place.' );
+			$last = $pos;
+		}
+		$this->assertStringContainsString( 'The deck for the write-up.', $html );
+	}
+
+	public function test_an_article_card_without_a_picture_or_deck_prints_no_media_and_no_excerpt(): void {
+		$this->article_post( 0, '', [ 'no_hero' => true, 'post_excerpt' => '', 'post_content' => '' ] );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringNotContainsString( 'pk-media', $html );
+		$this->assertStringNotContainsString( 'pk-excerpt', $html );
+		$this->assertStringNotContainsString( 'pk-meta', $html );
+		$this->assertSame( 1, $this->rendered_anchor_count( $html ) );
+	}
+
+	public function test_an_article_card_never_prints_the_body_or_a_reading_time(): void {
+		$this->article_post( 0, '', [ 'post_content' => '<!-- wp:paragraph --><p>' . str_repeat( 'Body words that run on. ', 40 ) . '</p><!-- /wp:paragraph -->' ] );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringNotContainsString( 'Body words that run on.', $html );
+		$this->assertStringContainsString( 'The deck for the write-up.', $html );
+		$this->assertStringNotContainsString( 'min read', $html );
+	}
+
+	public function test_a_note_card_keeps_read_more_and_thumbnails(): void {
+		$this->ensure_kind_term( 'note' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'A long note',
+				'post_excerpt' => 'A note deck.',
+				'post_content' => '<!-- wp:paragraph --><p>Note body.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'note', 'kind' );
+		$hero = $this->upload_image( $post_id, 'Hero alt', 'Note caption' );
+		set_post_thumbnail( $post_id, $hero );
+		$this->upload_image( $post_id );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( 'pk-meta', $html );
+		$this->assertStringContainsString( 'Read more', $html );
+		$this->assertStringContainsString( 'pk-media__thumbs', $html );
+		$this->assertStringContainsString( 'Note caption', $html );
+	}
+
+	public function test_a_protected_article_still_takes_the_protected_card(): void {
+		$this->article_post( 2, 'Secret caption', [ 'post_password' => 'secret' ] );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( 'pk-card--protected', $html );
+		$this->assertStringNotContainsString( 'pk-meta', $html );
+		$this->assertStringNotContainsString( 'Secret caption', $html );
+		$this->assertStringNotContainsString( 'The deck for the write-up.', $html );
+	}
 }
