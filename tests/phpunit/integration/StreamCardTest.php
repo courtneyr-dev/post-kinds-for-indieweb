@@ -31,7 +31,22 @@ final class StreamCardTest extends WP_UnitTestCase {
 	 */
 	private bool $registered_play_reader = false;
 
+	/**
+	 * Kinds whose facts reader a test registered, to unregister afterwards.
+	 *
+	 * @var string[]
+	 */
+	private array $registered_readers = [];
+
 	public function tear_down(): void {
+		foreach ( $this->registered_readers as $kind ) {
+			$registered = new ReflectionProperty( \PKIW\Kind_Facts::class, 'registered' );
+			$registered->setAccessible( true );
+			$readers = $registered->getValue();
+			unset( $readers[ $kind ] );
+			$registered->setValue( null, $readers );
+		}
+		$this->registered_readers = [];
 		if ( $this->registered_play_reader ) {
 			$registered = new ReflectionProperty( \PKIW\Kind_Facts::class, 'registered' );
 			$registered->setAccessible( true );
@@ -851,10 +866,58 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '<time class="dt-published"', $html );
 	}
 
-	public function test_untitled_long_form_like_uses_card_name_without_p_name(): void {
+	/**
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public function named_response_cards(): array {
+		return [
+			'reply'    => [ 'reply', 'u-in-reply-to' ],
+			'like'     => [ 'like', 'u-like-of' ],
+			'bookmark' => [ 'bookmark', 'u-bookmark-of' ],
+		];
+	}
+
+	/**
+	 * A reply, like or bookmark whose body holds its own card plus more
+	 * renders that card, not the generic one: the card's name is a real
+	 * name, so it keeps its p-name, and its title links to the post. The
+	 * target URL moves to hidden data. W2 flips the like case from the
+	 * generic card, which printed the card name without a p-name.
+	 *
+	 * @dataProvider named_response_cards
+	 *
+	 * @param string $kind     Kind slug.
+	 * @param string $property Card citation class.
+	 */
+	public function test_a_long_form_response_with_a_named_card_renders_that_card( string $kind, string $property ): void {
+		[ $post_id, $html ] = $this->stream_card_for(
+			$kind,
+			[
+				'post_title'   => '',
+				'post_content' => '<!-- wp:post-kinds-indieweb/' . $kind . '-card {"title":"A post on example.org","url":"https://example.org/a?x=1"} /-->'
+					. '<!-- wp:paragraph --><p>A separate paragraph.</p><!-- /wp:paragraph -->',
+			]
+		);
+		$permalink = esc_url( (string) get_permalink( $post_id ) );
+
+		$this->assertSame( 1, preg_match( '/class="[^"]*pk-card k-' . $kind . ' h-cite ' . $property . '/', $html ), 'The card block renders.' );
+		$this->assertStringContainsString( '<h2 class="pk-title p-name">', $html );
+		$this->assertStringContainsString( '<a href="' . $permalink . '">A post on example.org</a>', $html );
+		$this->assertStringContainsString( '<data class="u-url" value="https://example.org/a?x=1" hidden></data>', $html );
+		$this->assertStringNotContainsString( 'href="https://example.org/a', $html, 'The target is no visible link.' );
+		$this->assertStringNotContainsString( 'A separate paragraph.', $html, 'The body stays out of the Stream.' );
+		$this->assertStringNotContainsString( 'pk-excerpt', $html );
+		$this->assertStringNotContainsString( 'Read more', $html );
+	}
+
+	/**
+	 * The card route follows the Stream's heading level like the card-only one.
+	 */
+	public function test_a_long_form_response_card_takes_the_stream_heading_level(): void {
 		$this->ensure_kind_term( 'like' );
 		$post_id = self::factory()->post->create(
 			[
+				'post_status'  => 'publish',
 				'post_title'   => '',
 				'post_content' => '<!-- wp:post-kinds-indieweb/like-card {"title":"A post on example.org","url":"https://example.org/a"} /-->'
 					. '<!-- wp:paragraph --><p>A separate paragraph.</p><!-- /wp:paragraph -->',
@@ -863,10 +926,34 @@ final class StreamCardTest extends WP_UnitTestCase {
 		wp_set_object_terms( $post_id, 'like', 'kind' );
 		$GLOBALS['post'] = get_post( $post_id );
 
-		$html = \PKIW\render_stream_card();
+		$html = \PKIW\render_stream_card_inner( [ 'headingLevel' => 3 ] );
 
-		$this->assertStringContainsString( '>A post on example.org</a>', $html );
-		$this->assertStringNotContainsString( 'p-name', $html );
+		$this->assertStringContainsString( '<h3 class="pk-title p-name">', $html );
+		$this->assertStringNotContainsString( '<h2 class="pk-title', $html );
+	}
+
+	/**
+	 * A card that names nothing usable falls through to the generic card,
+	 * whose host name never shows a path or query: no title, or a title
+	 * that is the URL, is no name (X8).
+	 *
+	 * @dataProvider named_response_cards
+	 *
+	 * @param string $kind Kind slug.
+	 */
+	public function test_a_long_form_response_card_with_no_usable_title_keeps_the_generic_card( string $kind ): void {
+		[ , $html ] = $this->stream_card_for(
+			$kind,
+			[
+				'post_title'   => '',
+				'post_content' => '<!-- wp:post-kinds-indieweb/' . $kind . '-card {"url":"https://example.org/private?token=abc123"} /-->'
+					. '<!-- wp:paragraph --><p>A separate paragraph.</p><!-- /wp:paragraph -->',
+			]
+		);
+
+		$this->assertStringContainsString( 'pk-card--stream', $html );
+		$this->assertStringContainsString( '>example.org</a>', $html );
+		$this->assertStringNotContainsString( 'token=abc123', $html );
 	}
 
 	/**
@@ -1002,6 +1089,328 @@ final class StreamCardTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'k-mood', $html );
 		$this->assertStringNotContainsString( 'pk-mood__emoji', $html );
+	}
+
+	/**
+	 * Register a stand-in facts reader for a kind, unregistered in tear_down().
+	 *
+	 * @param string   $kind   Kind slug.
+	 * @param callable $reader Takes a post ID, returns facts.
+	 */
+	private function register_test_reader( string $kind, callable $reader ): void {
+		\PKIW\Kind_Facts::register( $kind, $reader );
+		$this->registered_readers[] = $kind;
+	}
+
+	/**
+	 * Where a reply, like or bookmark with no card keeps its target.
+	 *
+	 * @return array<string, array{0: string, 1: string, 2: string}>
+	 */
+	public function response_meta_shapes(): array {
+		return [
+			'reply, cite url'     => [ 'reply', 'in-reply-to', '_pkiw_cite_url' ],
+			'reply, in_reply_to'  => [ 'reply', 'in-reply-to', '_pkiw_in_reply_to' ],
+			'like, cite url'      => [ 'like', 'like-of', '_pkiw_cite_url' ],
+			'like, like_of'       => [ 'like', 'like-of', '_pkiw_like_of' ],
+			'bookmark, cite url'  => [ 'bookmark', 'bookmark-of', '_pkiw_cite_url' ],
+			'bookmark, bookmark_of' => [ 'bookmark', 'bookmark-of', '_pkiw_bookmark_of' ],
+		];
+	}
+
+	/**
+	 * A reply, like or bookmark with no card (the Quick Post shape) renders
+	 * the generic card, which carries the hidden citation with the full
+	 * target URL, query string included (G5), and the name and author the
+	 * post stores.
+	 *
+	 * @dataProvider response_meta_shapes
+	 *
+	 * @param string $kind     Kind slug.
+	 * @param string $property php-mf2 property name.
+	 * @param string $url_key  Meta key holding the target.
+	 */
+	public function test_a_meta_only_response_carries_its_citation( string $kind, string $property, string $url_key ): void {
+		$this->ensure_kind_term( $kind );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Thinking about threads',
+				'post_content' => '<!-- wp:paragraph --><p>My own words.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, $kind, 'kind' );
+		update_post_meta( $post_id, $url_key, 'https://remote.example.org/thread?page=2' );
+		update_post_meta( $post_id, '_pkiw_cite_name', 'A remote thread' );
+		update_post_meta( $post_id, '_pkiw_cite_author', 'Remote Author' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$cite = $this->parsed_entry( \PKIW\render_stream_card() )['properties'][ $property ][0];
+
+		$this->assertSame( [ 'h-cite' ], $cite['type'] );
+		$this->assertSame( [ 'https://remote.example.org/thread?page=2' ], $cite['properties']['url'] );
+		$this->assertSame( 'https://remote.example.org/thread?page=2', $cite['value'] );
+		$this->assertSame( [ 'A remote thread' ], $cite['properties']['name'] );
+		$this->assertSame( [ 'h-card' ], $cite['properties']['author'][0]['type'] );
+		$this->assertSame( [ 'Remote Author' ], $cite['properties']['author'][0]['properties']['name'] );
+	}
+
+	/**
+	 * With the target alone there is a URL and no invented name or author.
+	 *
+	 * @dataProvider response_meta_shapes
+	 *
+	 * @param string $kind     Kind slug.
+	 * @param string $property php-mf2 property name.
+	 * @param string $url_key  Meta key holding the target.
+	 */
+	public function test_a_meta_only_response_with_just_a_target_prints_its_url( string $kind, string $property, string $url_key ): void {
+		$this->ensure_kind_term( $kind );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Thinking about threads',
+				'post_content' => '<!-- wp:paragraph --><p>My own words.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, $kind, 'kind' );
+		update_post_meta( $post_id, $url_key, 'https://remote.example.org/thread' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$cite = $this->parsed_entry( \PKIW\render_stream_card() )['properties'][ $property ][0];
+
+		$this->assertSame( [ 'https://remote.example.org/thread' ], $cite['properties']['url'] );
+		$this->assertArrayNotHasKey( 'author', $cite['properties'] );
+	}
+
+	/**
+	 * Micropub stores title = url for a nameless response. The hidden
+	 * citation leaves that out as a p-name rather than naming the target by
+	 * its address.
+	 */
+	public function test_a_meta_only_response_leaves_a_url_cite_name_out_of_p_name(): void {
+		$url = 'https://remote.example.org/thread?page=2';
+		$this->ensure_kind_term( 'reply' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'A reply',
+				'post_content' => '<!-- wp:paragraph --><p>My own words.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'reply', 'kind' );
+		update_post_meta( $post_id, '_pkiw_cite_url', $url );
+		update_post_meta( $post_id, '_pkiw_cite_name', $url );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( '<data class="u-url" value="' . $url . '"></data>', $html );
+		$this->assertStringNotContainsString( '<data class="p-name" value="' . $url . '"', $html );
+	}
+
+	/**
+	 * A response with no stored target prints no citation.
+	 *
+	 * @dataProvider named_response_cards
+	 *
+	 * @param string $kind Kind slug.
+	 */
+	public function test_a_response_with_no_facts_prints_no_citation( string $kind ): void {
+		[ , $html ] = $this->stream_card_for(
+			$kind,
+			[
+				'post_title'   => 'Nothing cited',
+				'post_content' => '<!-- wp:paragraph --><p>No card and no stored target.</p><!-- /wp:paragraph -->',
+			]
+		);
+
+		$this->assertStringNotContainsString( 'h-cite', $html );
+		$this->assertStringNotContainsString( 'pk-kind-cite', $html );
+	}
+
+	/**
+	 * A registered facts reader supplies the citation, read through the
+	 * contract keys url, cited_title and author; the raw meta fallback is
+	 * for kinds with no reader yet.
+	 */
+	public function test_a_registered_reader_supplies_the_citation_through_the_contract_keys(): void {
+		$this->register_test_reader(
+			'reply',
+			static fn( int $post_id ): array => [
+				'url'         => 'https://reader.example.org/thread?page=2',
+				'host'        => 'reader.example.org',
+				'cited_title' => 'From the reader',
+				'author'      => 'Reader Author',
+				'summary'     => 'Ignored here.',
+				'picture'     => [],
+			]
+		);
+		$this->ensure_kind_term( 'reply' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'A reply',
+				'post_content' => '<!-- wp:paragraph --><p>My own words.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'reply', 'kind' );
+		update_post_meta( $post_id, '_pkiw_cite_url', 'https://stored.example.org/other' );
+		update_post_meta( $post_id, '_pkiw_cite_name', 'From the meta' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$cite = $this->parsed_entry( \PKIW\render_stream_card() )['properties']['in-reply-to'][0];
+
+		$this->assertSame( [ 'https://reader.example.org/thread?page=2' ], $cite['properties']['url'] );
+		$this->assertSame( [ 'From the reader' ], $cite['properties']['name'] );
+		$this->assertSame( [ 'Reader Author' ], $cite['properties']['author'][0]['properties']['name'] );
+	}
+
+	/**
+	 * A reader that returns no facts (its post can't be shown) leaves the
+	 * citation empty; the raw meta fallback must not step in behind it.
+	 */
+	public function test_a_registered_reader_with_no_facts_leaves_no_citation(): void {
+		$this->register_test_reader( 'like', static fn( int $post_id ): array => [] );
+		$this->ensure_kind_term( 'like' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'A like',
+				'post_content' => '<!-- wp:paragraph --><p>My own words.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'like', 'kind' );
+		update_post_meta( $post_id, '_pkiw_cite_url', 'https://stored.example.org/other' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringNotContainsString( 'stored.example.org', $html );
+		$this->assertStringNotContainsString( 'h-cite', $html );
+	}
+
+	/**
+	 * A protected response prints only its title link, card or no card:
+	 * no target, no citation, no body.
+	 *
+	 * @dataProvider named_response_cards
+	 *
+	 * @param string $kind Kind slug.
+	 */
+	public function test_a_protected_response_prints_only_the_title_link( string $kind ): void {
+		[ $post_id, $html ] = $this->stream_card_for(
+			$kind,
+			[
+				'post_title'    => 'Locked response',
+				'post_password' => 'secret',
+				'post_content'  => '<!-- wp:post-kinds-indieweb/' . $kind . '-card {"title":"Secret target","url":"https://secret.example.org/a"} /-->'
+					. '<!-- wp:paragraph --><p>Secret words.</p><!-- /wp:paragraph -->',
+				'meta_input'    => [ '_pkiw_cite_url' => 'https://secret.example.org/a' ],
+			]
+		);
+
+		$this->assertStringNotContainsString( 'secret.example.org', $html );
+		$this->assertStringNotContainsString( 'Secret target', $html );
+		$this->assertStringNotContainsString( 'Secret words.', $html );
+		$this->assertStringNotContainsString( 'h-cite', $html );
+		$this->assertSame( 1, preg_match_all( '#<a\b[^>]*href="([^"]*)"#', $html, $links ) );
+		$this->assertSame( get_permalink( $post_id ), $links[1][0] );
+	}
+
+	/**
+	 * A review always takes the generic card, even when its body is only a
+	 * star-rating block, which would otherwise read as a card-only post.
+	 */
+	public function test_a_review_always_takes_the_generic_card(): void {
+		[ $post_id, $html ] = $this->stream_card_for(
+			'review',
+			[
+				'post_title'   => 'Fictional Kettle',
+				'post_content' => '<!-- wp:post-kinds-indieweb/star-rating {"rating":4,"itemName":"Fictional Kettle","itemUrl":"https://shop.example.com/kettle"} /-->',
+			]
+		);
+
+		$this->assertStringContainsString( 'pk-card--stream', $html );
+		$this->assertStringContainsString( 'k-review', $html );
+		$this->assertStringContainsString( 'pk-stream-date', $html );
+		$this->assertStringContainsString( '<a class="u-url" href="' . esc_url( (string) get_permalink( $post_id ) ) . '">Fictional Kettle</a>', $html );
+	}
+
+	/**
+	 * Every link on a review card points at the review's permalink: the
+	 * reviewed item's URL is not a link there.
+	 */
+	public function test_every_link_on_a_review_card_points_at_the_permalink(): void {
+		[ $post_id, $html ] = $this->stream_card_for(
+			'review',
+			[
+				'post_title'   => 'Fictional Kettle',
+				'post_content' => '<!-- wp:post-kinds-indieweb/star-rating {"rating":4,"itemName":"Fictional Kettle","itemUrl":"https://shop.example.com/kettle"} /-->'
+					. '<!-- wp:paragraph --><p>See <a href="https://elsewhere.example/x">this</a> too.</p><!-- /wp:paragraph -->',
+				'meta_input'   => [ '_pkiw_review_item_url' => 'https://shop.example.com/kettle' ],
+			]
+		);
+
+		$this->assertGreaterThan( 0, preg_match_all( '#<a\b[^>]*href="([^"]*)"#', $html, $links ) );
+		$this->assertSame( [ get_permalink( $post_id ) ], array_values( array_unique( $links[1] ) ) );
+		$this->assertStringNotContainsString( 'shop.example.com', $html );
+	}
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public function generic_card_kinds(): array {
+		return [
+			'review' => [ 'review' ],
+			'note'   => [ 'note' ],
+		];
+	}
+
+	/**
+	 * pkiw_stream_card_after_date prints right after the date paragraph of
+	 * the generic card. It receives '' and the post.
+	 *
+	 * @dataProvider generic_card_kinds
+	 *
+	 * @param string $kind Kind slug.
+	 */
+	public function test_the_after_date_filter_prints_after_the_date_paragraph( string $kind ): void {
+		$seen  = [];
+		$probe = static function ( string $html, \WP_Post $post ) use ( &$seen ): string {
+			$seen[] = [ $html, $post->ID ];
+			return $html . '<p class="after-date-probe">Probe</p>';
+		};
+		add_filter( 'pkiw_stream_card_after_date', $probe, 10, 2 );
+
+		[ $post_id, $html ] = $this->stream_card_for(
+			$kind,
+			[
+				'post_title'   => 'Fictional Kettle',
+				'post_content' => '<!-- wp:paragraph --><p>Some words.</p><!-- /wp:paragraph -->',
+			]
+		);
+		remove_filter( 'pkiw_stream_card_after_date', $probe, 10 );
+
+		$this->assertSame( [ [ '', $post_id ] ], $seen );
+		$this->assertSame( 1, substr_count( $html, 'after-date-probe' ) );
+		$this->assertStringContainsString( '</time></p><p class="after-date-probe">Probe</p>', $html );
+		$this->assertLessThan( strpos( $html, 'pk-excerpt' ), strpos( $html, 'after-date-probe' ) );
+	}
+
+	/**
+	 * With nothing hooked the generic card is unchanged.
+	 */
+	public function test_the_after_date_filter_prints_nothing_by_default(): void {
+		[ , $html ] = $this->stream_card_for(
+			'review',
+			[
+				'post_title'   => 'Fictional Kettle',
+				'post_content' => '<!-- wp:paragraph --><p>Some words.</p><!-- /wp:paragraph -->',
+			]
+		);
+
+		$this->assertStringContainsString( '</time></p></div>', $html );
 	}
 
 	/**

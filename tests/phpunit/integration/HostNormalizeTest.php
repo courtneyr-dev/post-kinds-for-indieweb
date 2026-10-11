@@ -207,6 +207,173 @@ final class HostNormalizeTest extends WP_UnitTestCase {
 		$this->assertSame( 'second.example', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
 	}
 
+	/**
+	 * The keys a cite host can come from, in priority order.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function fallback_keys(): array {
+		return [
+			'in reply to' => [ 'in_reply_to' ],
+			'like of'     => [ 'like_of' ],
+			'bookmark of' => [ 'bookmark_of' ],
+		];
+	}
+
+	/**
+	 * A reply, like or bookmark made without a card (Quick Post, an import)
+	 * stores its target under its own key. The host follows it.
+	 *
+	 * @dataProvider fallback_keys
+	 *
+	 * @param string $suffix Meta suffix.
+	 */
+	public function test_a_target_key_alone_gives_the_post_a_host( string $suffix ): void {
+		$post_id = self::factory()->post->create();
+
+		add_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, 'https://notes.example.org/thread?page=2' );
+
+		$this->assertSame( 'notes.example.org', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+	}
+
+	/**
+	 * www. and case variants merge into one host, as for the cite URL.
+	 *
+	 * @dataProvider fallback_keys
+	 *
+	 * @param string $suffix Meta suffix.
+	 */
+	public function test_a_target_key_host_merges_www_and_case( string $suffix ): void {
+		$post_id = self::factory()->post->create();
+
+		update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, 'https://WWW.Example.COM/a' );
+
+		$this->assertSame( 'example.com', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+	}
+
+	public function test_a_target_key_host_normalizes_an_internationalized_name(): void {
+		$post_id = self::factory()->post->create();
+
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'like_of', 'https://BÜCHER.example/regal' );
+
+		$expected = \PKIW\normalize_host( 'BÜCHER.example' );
+		$this->skip_unicode_without_intl( $expected );
+		$this->assertSame( $expected, get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+		$this->assertNotSame( 'bÜcher.example', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+	}
+
+	/**
+	 * The cite URL is the first key, so it wins over a target key whichever
+	 * one is written first, and a later write to the target key can't move it.
+	 */
+	public function test_the_cite_url_wins_over_a_target_key(): void {
+		$post_id = self::factory()->post->create();
+		add_post_meta( $post_id, Meta_Fields::PREFIX . 'in_reply_to', 'https://reply-target.example/a' );
+		$this->assertSame( 'reply-target.example', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+
+		add_post_meta( $post_id, Meta_Fields::PREFIX . 'cite_url', 'https://cite.example/b' );
+		$this->assertSame( 'cite.example', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'in_reply_to', 'https://changed-target.example/c' );
+		$this->assertSame( 'cite.example', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+	}
+
+	/**
+	 * The order is cite URL, in_reply_to, like_of, bookmark_of.
+	 */
+	public function test_target_keys_rank_in_reply_to_over_like_of_over_bookmark_of(): void {
+		$post_id = self::factory()->post->create();
+		add_post_meta( $post_id, Meta_Fields::PREFIX . 'bookmark_of', 'https://bookmark.example/' );
+		add_post_meta( $post_id, Meta_Fields::PREFIX . 'like_of', 'https://like.example/' );
+		$this->assertSame( 'like.example', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+
+		add_post_meta( $post_id, Meta_Fields::PREFIX . 'in_reply_to', 'https://reply.example/' );
+		$this->assertSame( 'reply.example', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+	}
+
+	/**
+	 * Deleting the first key's row falls back to the next key with a row.
+	 */
+	public function test_deleting_the_cite_url_falls_back_to_the_next_key(): void {
+		$post_id = self::factory()->post->create();
+		add_post_meta( $post_id, Meta_Fields::PREFIX . 'cite_url', 'https://cite.example/b' );
+		add_post_meta( $post_id, Meta_Fields::PREFIX . 'bookmark_of', 'https://bookmark.example/' );
+		$this->assertSame( 'cite.example', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+
+		delete_post_meta( $post_id, Meta_Fields::PREFIX . 'cite_url' );
+
+		$this->assertSame( 'bookmark.example', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+
+		delete_post_meta( $post_id, Meta_Fields::PREFIX . 'bookmark_of' );
+
+		$this->assertNull( get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+	}
+
+	/**
+	 * An empty row is no row: the next key supplies the host.
+	 */
+	public function test_an_emptied_key_hands_the_host_to_the_next_key(): void {
+		$post_id = self::factory()->post->create();
+		add_post_meta( $post_id, Meta_Fields::PREFIX . 'cite_url', 'https://cite.example/b' );
+		add_post_meta( $post_id, Meta_Fields::PREFIX . 'like_of', 'https://like.example/' );
+
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'cite_url', '' );
+
+		$this->assertSame( 'like.example', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+	}
+
+	/**
+	 * Text that is no URL writes no host row, and clears a stale one.
+	 */
+	public function test_an_unparsable_target_writes_no_host_row(): void {
+		$post_id = self::factory()->post->create();
+		add_post_meta( $post_id, Meta_Fields::PREFIX . 'in_reply_to', 'not a url' );
+
+		$this->assertNull( get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'in_reply_to', 'https://good.example/' );
+		$this->assertSame( 'good.example', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'in_reply_to', 'not a url' );
+		$this->assertNull( get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+	}
+
+	/**
+	 * A key outside the list changes nothing.
+	 */
+	public function test_an_unlisted_key_does_not_write_a_host(): void {
+		$post_id = self::factory()->post->create();
+
+		add_post_meta( $post_id, Meta_Fields::PREFIX . 'repost_of', 'https://repost.example/' );
+		add_post_meta( $post_id, Meta_Fields::PREFIX . 'cite_author', 'https://author.example/' );
+
+		$this->assertNull( get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+	}
+
+	/**
+	 * The list is filterable through pkiw_cite_host_keys, which receives
+	 * the default keys in priority order.
+	 */
+	public function test_the_key_list_is_filterable(): void {
+		$seen = [];
+		$add  = static function ( array $keys ) use ( &$seen ): array {
+			$seen = $keys;
+			$keys[] = '_pkiw_repost_of';
+			return $keys;
+		};
+		add_filter( 'pkiw_cite_host_keys', $add );
+		$post_id = self::factory()->post->create();
+
+		add_post_meta( $post_id, '_pkiw_repost_of', 'https://repost.example/a' );
+		remove_filter( 'pkiw_cite_host_keys', $add );
+
+		$this->assertSame(
+			[ '_pkiw_cite_url', '_pkiw_in_reply_to', '_pkiw_like_of', '_pkiw_bookmark_of' ],
+			$seen
+		);
+		$this->assertSame( 'repost.example', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+	}
+
 	public function test_atmosphere_reaction_title_names_the_normalized_host(): void {
 		$post_id = self::factory()->post->create(
 			[
