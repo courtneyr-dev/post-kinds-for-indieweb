@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace PKIW;
 
+use PKIW\Grouping\Date_Source;
 use PKIW\Grouping\Label_Mode;
 use PKIW\Grouping\Meta_Source;
 
@@ -66,6 +67,17 @@ final class Kind_Archive_Layouts {
 	public const ARCHIVE_SECTIONS = 'post-kinds-indieweb/archive-sections';
 
 	/**
+	 * Kinds whose archive sections group by the local month of post_date through one shared Date_Source.
+	 *
+	 * The editor offers a Date format field for these kinds.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @var string[]
+	 */
+	public const MONTH_KINDS = [ 'photo', 'chicken', 'favorite', 'acquisition', 'repost', 'article' ];
+
+	/**
 	 * REST `orderby` values for a kind in menu order: section direction,
 	 * then where posts with no group go.
 	 *
@@ -105,6 +117,12 @@ final class Kind_Archive_Layouts {
 		$cite_source = self::cite_source();
 		Grouped_Archive::register_source( $cite_source, 'reply' );
 		Grouped_Archive::register_source( $cite_source, 'like' );
+
+		// These archives share one source: post_date grouped by local month.
+		$month = new Date_Source( 'post_month', 'month' );
+		foreach ( self::MONTH_KINDS as $kind ) {
+			Grouped_Archive::register_source( $month, $kind );
+		}
 
 		if ( did_action( 'init' ) ) {
 			$this->register_assets_and_blocks();
@@ -303,6 +321,7 @@ final class Kind_Archive_Layouts {
 			'pkiw-shelf'       => __( 'Shelf, face-out', 'post-kinds-for-indieweb-in-block-themes' ),
 			'pkiw-shelf-spine' => __( 'Shelf, spine-out', 'post-kinds-for-indieweb-in-block-themes' ),
 			'pkiw-menu'        => __( 'Menu', 'post-kinds-for-indieweb-in-block-themes' ),
+			'pkiw-contents'    => __( 'Contents', 'post-kinds-for-indieweb-in-block-themes' ),
 		];
 		foreach ( $styles as $name => $label ) {
 			register_block_style(
@@ -468,6 +487,10 @@ final class Kind_Archive_Layouts {
 					'emptyLabel'  => [
 						'role' => 'content',
 					],
+					'dateFormat'  => [
+						'type'    => 'string',
+						'default' => '',
+					],
 				]
 			),
 			'supports'        => [
@@ -535,7 +558,7 @@ final class Kind_Archive_Layouts {
 	}
 
 	/**
-	 * Hand the marker's editor the group keys of each kind.
+	 * Hand the marker's editor the group keys of each kind and the date-grouped kinds.
 	 *
 	 * @since 1.9.0
 	 *
@@ -545,6 +568,11 @@ final class Kind_Archive_Layouts {
 		wp_add_inline_script(
 			'pkiw-archive-sections-editor',
 			'window.pkiwArchiveSections = ' . wp_json_encode( [ 'groups' => (object) array_map( static fn( array $labels ): object => (object) $labels, self::archive_sections_groups() ) ] ) . ';',
+			'before'
+		);
+		wp_add_inline_script(
+			'pkiw-archive-sections-editor',
+			'window.pkiwArchiveSectionsDateKinds = ' . wp_json_encode( self::MONTH_KINDS ) . ';',
 			'before'
 		);
 	}

@@ -145,7 +145,7 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 		switch_theme( 'pkiw-kind-theme' );
 		$this->assertSame( 'pkiw-kind-theme', get_stylesheet() );
 
-		foreach ( [ 'listen', 'eat', 'drink', 'play', 'read' ] as $kind ) {
+		foreach ( [ 'listen', 'eat', 'drink', 'play', 'read', 'chicken', 'photo', 'favorite', 'acquisition', 'repost', 'article' ] as $kind ) {
 			$template = resolve_block_template( 'taxonomy', $this->hierarchy( $kind ), '' );
 
 			$this->assertSame( 'pkiw-kind-theme//taxonomy-kind', $template->id, "Theme template must win for {$kind}." );
@@ -199,6 +199,49 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @return array<string, array{string}>
+	 */
+	public function w3_archive_slugs(): array {
+		return [
+			'chicken archive'     => [ 'taxonomy-kind-chicken' ],
+			'photo archive'       => [ 'taxonomy-kind-photo' ],
+			'favorite archive'    => [ 'taxonomy-kind-favorite' ],
+			'acquisition archive' => [ 'taxonomy-kind-acquisition' ],
+			'repost archive'      => [ 'taxonomy-kind-repost' ],
+			'article archive'     => [ 'taxonomy-kind-article' ],
+		];
+	}
+
+	/**
+	 * @dataProvider w3_archive_slugs
+	 */
+	public function test_the_w3_archives_have_template_definitions( string $slug ): void {
+		$definitions = ( new ReflectionMethod( \PKIW\Plugin::class, 'get_plugin_template_definitions' ) )->invoke( \PKIW\Plugin::get_instance() );
+
+		$this->assertArrayHasKey( $slug, $definitions );
+		$this->assertNotSame( '', trim( (string) $definitions[ $slug ]['title'] ) );
+		$this->assertNotSame( '', trim( (string) $definitions[ $slug ]['description'] ) );
+		$this->assertSame( [], $definitions[ $slug ]['post_types'] );
+	}
+
+	/**
+	 * @dataProvider w3_archive_slugs
+	 */
+	public function test_the_w3_archives_serve_only_when_their_files_exist( string $slug ): void {
+		$definitions = ( new ReflectionMethod( \PKIW\Plugin::class, 'get_plugin_template_definitions' ) )->invoke( \PKIW\Plugin::get_instance() );
+		$this->assertArrayHasKey( $slug, $definitions );
+
+		$served = in_array(
+			'post-kinds-for-indieweb//' . $slug,
+			wp_list_pluck( get_block_templates( [ 'slug__in' => [ $slug ] ] ), 'id' ),
+			true
+		);
+
+		$this->assertSame( file_exists( PKIW_PATH . 'templates/' . $slug . '.html' ), $served );
+		$this->assertSame( $served, null !== get_block_template( 'post-kinds-for-indieweb//' . $slug ) );
+	}
+
+	/**
 	 * The W2 archive classes arrive in later lanes, so this source check pins
 	 * the loader wiring until the classes exist and can be observed directly.
 	 */
@@ -214,6 +257,28 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 			$this->assertStringContainsString( "( new {$class}() )->register();", substr( $source, $at, 120 ), $class );
 			$staff = $at;
 		}
+	}
+
+	public function test_the_plugin_wires_the_w3_archive_classes_after_staff_picks(): void {
+		$source = (string) file_get_contents( PKIW_PATH . 'includes/class-plugin.php' );
+		$staff  = strpos( $source, "class_exists( __NAMESPACE__ . '\\\\Staff_Picks' )" );
+
+		$this->assertNotFalse( $staff );
+		foreach ( [ 'Chicken_Archive', 'Photo_Archive', 'Favorite_Archive', 'Acquisition_Archive', 'Repost_Archive', 'Article_Archive', 'Reading_Time' ] as $class ) {
+			$at = strpos( $source, "class_exists( __NAMESPACE__ . '\\\\{$class}' )" );
+			$this->assertNotFalse( $at, $class );
+			$this->assertGreaterThan( $staff, $at, $class );
+			$this->assertStringContainsString( "( new {$class}() )->register();", substr( $source, $at, 140 ), $class );
+			$staff = $at;
+		}
+	}
+
+	public function test_favorite_archive_registers_its_kind_facts_reader_when_available(): void {
+		if ( ! class_exists( 'PKIW\\Favorite_Archive' ) ) {
+			$this->markTestSkipped( 'Favorite_Archive arrives with issue 259.' );
+		}
+
+		$this->assertNotNull( \PKIW\Kind_Facts::reader( 'favorite' ) );
 	}
 
 	public function test_site_editor_customization_wins_over_plugin_template(): void {

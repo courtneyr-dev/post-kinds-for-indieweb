@@ -628,6 +628,40 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Bookmark_Archive' ) ) {
 			( new Bookmark_Archive() )->register();
 		}
+
+		$this->init_month_archives();
+	}
+
+	/**
+	 * Wire the month archive classes.
+	 *
+	 * Each class arrives with its own lane (issues 250, 241, 259, 239, 255 and
+	 * 263), so each is wired only when it exists. The PKIW\ autoloader loads them.
+	 *
+	 * @return void
+	 */
+	private function init_month_archives(): void {
+		if ( class_exists( __NAMESPACE__ . '\\Chicken_Archive' ) ) {
+			( new Chicken_Archive() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Photo_Archive' ) ) {
+			( new Photo_Archive() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Favorite_Archive' ) ) {
+			( new Favorite_Archive() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Acquisition_Archive' ) ) {
+			( new Acquisition_Archive() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Repost_Archive' ) ) {
+			( new Repost_Archive() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Article_Archive' ) ) {
+			( new Article_Archive() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Reading_Time' ) ) {
+			( new Reading_Time() )->register();
+		}
 	}
 
 	/**
@@ -1189,46 +1223,76 @@ final class Plugin {
 	private function get_plugin_template_definitions(): array {
 		return [
 			// Venue taxonomy template.
-			'taxonomy-venue'        => [
+			'taxonomy-venue'            => [
 				'title'       => __( 'Venue Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Template for displaying venue taxonomy archives.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 			// Kind archives (issue 233). Generic shelf for every kind; the
 			// menu layout only where the layout differs.
-			'taxonomy-kind'         => [
+			'taxonomy-kind'             => [
 				'title'       => __( 'Kind Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Shelf layout for any post kind archive.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
-			'taxonomy-kind-eat'     => [
+			'taxonomy-kind-eat'         => [
 				'title'       => __( 'Eat Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Menu layout for the eat archive, grouped by cuisine.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
-			'taxonomy-kind-checkin' => [
+			'taxonomy-kind-checkin'     => [
 				'title'       => __( 'Check-in Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Map and list of the check-ins on each archive page.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
-			'taxonomy-kind-drink'   => [
+			'taxonomy-kind-drink'       => [
 				'title'       => __( 'Drink Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Menu layout for the drink archive, grouped by drink type.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
-			'taxonomy-kind-play'    => [
+			'taxonomy-kind-play'        => [
 				'title'       => __( 'Play Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Play archive in sections: video games, board games, then other plays.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
-			'taxonomy-kind-read'    => [
+			'taxonomy-kind-read'        => [
 				'title'       => __( 'Read Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Read archive on shelves by reading status.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
-			'taxonomy-kind-review'  => [
+			'taxonomy-kind-review'      => [
 				'title'       => __( 'Review Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Review archive in sections by category.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-chicken'     => [
+				'title'       => __( 'Chicken Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Chicken archive in month sections, one line for each post.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-photo'       => [
+				'title'       => __( 'Photo Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Photo archive in month sections.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-favorite'    => [
+				'title'       => __( 'Favorite Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Favorite archive in month sections.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-acquisition' => [
+				'title'       => __( 'Acquisition Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Acquisition archive in month sections.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-repost'      => [
+				'title'       => __( 'Repost Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Repost archive in month sections.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-article'     => [
+				'title'       => __( 'Article Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Article archive as a contents page: month sections and reading time.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 		];
