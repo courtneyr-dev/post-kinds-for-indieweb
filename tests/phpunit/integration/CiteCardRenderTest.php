@@ -229,6 +229,27 @@ final class CiteCardRenderTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( $title, $this->plain_text( $html ) );
 	}
 
+	/**
+	 * The original link needs a safe URL.
+	 */
+	public function test_like_single_with_unsafe_url_prints_no_original_link(): void {
+		$html = $this->render_card_on_single(
+			'like',
+			[
+				'title' => 'Liked Page Title',
+				'url'   => 'javascript:alert(1)',
+			],
+			[
+				'post_title' => 'Liked Page Title',
+			]
+		);
+
+		$this->assertStringNotContainsString( 'Read the original', $html );
+		$this->assertSame( 1, $this->query( $html, '//h2[contains(concat(" ", normalize-space(@class), " "), " pk-title ")][contains(concat(" ", normalize-space(@class), " "), " p-name ")]' )->length );
+		$this->assertSame( 0, $this->query( $html, '//data[contains(concat(" ", normalize-space(@class), " "), " p-name ")][@hidden]' )->length );
+		$this->assertStringNotContainsString( 'javascript:', $html );
+	}
+
 	public function test_like_single_keeps_linked_title_when_post_title_differs_from_card_title(): void {
 		$html = $this->render_card_on_single(
 			'like',
