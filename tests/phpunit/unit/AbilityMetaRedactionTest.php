@@ -88,6 +88,57 @@ final class AbilityMetaRedactionTest extends WP_UnitTestCase {
 		$this->assertSame( '123 Sentinel St', $result['meta']['checkin_address'] );
 	}
 
+	public function test_author_with_read_post_but_not_edit_post_gets_no_protected_kind_meta(): void {
+		$other_author = self::factory()->user->create( [ 'role' => 'author' ] );
+		wp_update_post(
+			[
+				'ID'            => $this->post_id,
+				'post_status'   => 'publish',
+				'post_author'   => $other_author,
+				'post_password' => 'secret',
+			]
+		);
+		update_post_meta( $this->post_id, Meta_Fields::PREFIX . 'checkin_name', 'Hidden Venue' );
+		wp_set_current_user( $this->author_id );
+
+		$all      = $this->abilities->execute_get_post_meta( [ 'post_id' => $this->post_id ] );
+		$explicit = $this->abilities->execute_get_post_meta(
+			[
+				'post_id'   => $this->post_id,
+				'meta_keys' => [ 'checkin_name', 'geo_latitude' ],
+			]
+		);
+
+		$this->assertSame( [], $all['meta'] );
+		$this->assertSame( [], $explicit['meta'] );
+	}
+
+	public function test_editor_gets_protected_kind_meta(): void {
+		wp_update_post(
+			[
+				'ID'            => $this->post_id,
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			]
+		);
+		update_post_meta( $this->post_id, Meta_Fields::PREFIX . 'checkin_name', 'Hidden Venue' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$result = $this->abilities->execute_get_post_meta( [ 'post_id' => $this->post_id ] );
+
+		$this->assertSame( 'Hidden Venue', $result['meta']['checkin_name'] );
+		$this->assertSame( '40.20192', $result['meta']['geo_latitude'] );
+	}
+
+	public function test_public_post_keeps_kind_meta(): void {
+		update_post_meta( $this->post_id, Meta_Fields::PREFIX . 'cite_name', 'Visible Citation' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'subscriber' ] ) );
+
+		$result = $this->abilities->execute_get_post_meta( [ 'post_id' => $this->post_id ] );
+
+		$this->assertSame( 'Visible Citation', $result['meta']['cite_name'] );
+	}
+
 	public function test_stored_meta_is_untouched_by_redaction(): void {
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'subscriber' ] ) );
 

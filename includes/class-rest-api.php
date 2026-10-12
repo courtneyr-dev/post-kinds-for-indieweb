@@ -2895,13 +2895,8 @@ class REST_API {
 		}
 
 		// Filter by venue type.
-		if ( $venue_type ) {
-			$args['meta_query'][] = [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-				'key'     => '_pkiw_checkin_type',
-				'value'   => $venue_type,
-				'compare' => '=',
-			];
-		}
+		// Applied after protected posts are removed below, so a venue-type
+		// query cannot confirm a protected check-in's hidden type.
 
 		// Search by venue name.
 		if ( $search ) {
@@ -2912,28 +2907,42 @@ class REST_API {
 			];
 		}
 
+		// The per-post protected-meta rule depends on edit_post, so filter
+		// candidates in PHP before counting, paginating and applying
+		// venue_type.
+		$args['posts_per_page'] = -1;
+		$args['no_found_rows']  = true;
+		$posts                  = array_values(
+			array_filter(
+				( new \WP_Query( $args ) )->posts,
+				static fn( \WP_Post $post ): bool => ! Meta_Fields::hides_kind_meta( $post )
+			)
+		);
+
+		if ( $venue_type ) {
+			$posts = array_values(
+				array_filter(
+					$posts,
+					static fn( \WP_Post $post ): bool => (string) get_post_meta( $post->ID, '_pkiw_checkin_type', true ) === (string) $venue_type
+				)
+			);
+		}
+
 		if ( $search ) {
 			// A match on a venue name the viewer can't see would confirm that
 			// name even with the field blanked, so drop those before counting
 			// and paginating.
-			$args['posts_per_page'] = -1;
-			$args['no_found_rows']  = true;
-
-			$posts       = array_values(
+			$posts = array_values(
 				array_filter(
-					( new \WP_Query( $args ) )->posts,
+					$posts,
 					static fn( \WP_Post $post ): bool => Meta_Fields::get_visible_location_fields( $post->ID )['name']
 				)
 			);
-			$total       = count( $posts );
-			$total_pages = (int) ceil( $total / $per_page );
-			$posts       = array_slice( $posts, ( $page - 1 ) * $per_page, $per_page );
-		} else {
-			$query       = new \WP_Query( $args );
-			$posts       = $query->posts;
-			$total       = $query->found_posts;
-			$total_pages = $query->max_num_pages;
 		}
+
+		$total       = count( $posts );
+		$total_pages = (int) ceil( $total / $per_page );
+		$posts       = array_slice( $posts, ( $page - 1 ) * $per_page, $per_page );
 
 		$checkins = [];
 		foreach ( $posts as $post ) {
@@ -2988,7 +2997,14 @@ class REST_API {
 		$cities       = [];
 		$most_visited = [];
 
-		foreach ( $query->posts as $post ) {
+		$visible_posts = array_values(
+			array_filter(
+				$query->posts,
+				static fn( \WP_Post $post ): bool => ! Meta_Fields::hides_kind_meta( $post )
+			)
+		);
+
+		foreach ( $visible_posts as $post ) {
 			// Count only the names and places this viewer may see on each post.
 			$visible    = Meta_Fields::get_visible_location_fields( $post->ID );
 			$venue_name = $visible['name'] ? get_post_meta( $post->ID, '_pkiw_checkin_name', true ) : '';
@@ -3026,7 +3042,7 @@ class REST_API {
 
 		return rest_ensure_response(
 			[
-				'total_checkins' => $query->found_posts,
+				'total_checkins' => count( $visible_posts ),
 				'unique_venues'  => count( $venues ),
 				'countries'      => count( $countries ),
 				'cities'         => count( $cities ),

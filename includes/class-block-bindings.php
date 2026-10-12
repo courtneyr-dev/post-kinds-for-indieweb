@@ -413,6 +413,10 @@ class Block_Bindings {
 			return null;
 		}
 
+		if ( post_password_required( (int) $post_id ) ) {
+			return '';
+		}
+
 		$binding = $this->bindings[ $key ];
 
 		// R-03: location fields are gated per field-visibility tier from

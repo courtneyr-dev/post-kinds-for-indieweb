@@ -54,6 +54,9 @@ if ( $pkiw_checkins_query->have_posts() ) {
 	while ( $pkiw_checkins_query->have_posts() ) {
 		$pkiw_checkins_query->the_post();
 		$pkiw_post_id = get_the_ID();
+		if ( post_password_required( (int) $pkiw_post_id ) ) {
+			continue;
+		}
 		// Blank every field this viewer's privacy tier hides, before the grid,
 		// timeline, map data or stats read it.
 		$pkiw_visible = \PKIW\Meta_Fields::get_visible_location_fields( (int) $pkiw_post_id );
@@ -76,7 +79,7 @@ if ( $pkiw_checkins_query->have_posts() ) {
 
 // Calculate stats.
 $pkiw_stats = [
-	'total'         => $pkiw_checkins_query->found_posts,
+	'total'         => count( $pkiw_checkins ),
 	'unique_venues' => 0,
 	'countries'     => [],
 	'cities'        => [],

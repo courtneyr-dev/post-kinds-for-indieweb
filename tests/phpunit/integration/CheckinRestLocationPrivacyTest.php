@@ -34,6 +34,7 @@ final class CheckinRestLocationPrivacyTest extends WP_UnitTestCase {
 	private const COUNTRY    = 'Sentinia';
 	private const LATITUDE   = '12.345678';
 	private const LONGITUDE  = '-76.543219';
+	private const TYPE       = 'cafe';
 
 	public function set_up(): void {
 		parent::set_up();
@@ -66,6 +67,7 @@ final class CheckinRestLocationPrivacyTest extends WP_UnitTestCase {
 			'checkin_locality' => $locality,
 			'checkin_region'   => self::REGION,
 			'checkin_country'  => self::COUNTRY,
+			'checkin_type'     => self::TYPE,
 			'geo_latitude'     => self::LATITUDE,
 			'geo_longitude'    => self::LONGITUDE,
 			'geo_privacy'      => $privacy,
@@ -164,6 +166,48 @@ final class CheckinRestLocationPrivacyTest extends WP_UnitTestCase {
 		$this->assertSame( self::VENUE_NAME, get_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_name', true ), 'stored data must stay intact' );
 	}
 
+	public function test_contributor_cannot_list_another_authors_password_protected_checkin(): void {
+		$post_id = $this->create_checkin( 'public', 'Hidden Venue' );
+		wp_update_post(
+			[
+				'ID'            => $post_id,
+				'post_author'   => self::factory()->user->create( [ 'role' => 'author' ] ),
+				'post_password' => 'secret',
+			]
+		);
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_address', '742 Sentinel Ave' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_latitude', '12.345678' );
+		$this->become( 'contributor' );
+
+		$unfiltered = $this->get( '/checkins' )->get_data();
+		$filtered   = $this->get( '/checkins', [ 'venue_type' => self::TYPE ] )->get_data();
+
+		$this->assertSame( [], $unfiltered['checkins'] );
+		$this->assertSame( 0, $unfiltered['total'] );
+		$this->assertSame( [], $filtered['checkins'] );
+		$this->assertSame( 0, $filtered['total'] );
+		$this->assertSame( 'Hidden Venue', get_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_name', true ), 'stored data must stay intact' );
+	}
+
+	public function test_editor_can_list_password_protected_checkin(): void {
+		$post_id = $this->create_checkin( 'public', 'Hidden Venue' );
+		wp_update_post(
+			[
+				'ID'            => $post_id,
+				'post_author'   => self::factory()->user->create( [ 'role' => 'author' ] ),
+				'post_password' => 'secret',
+			]
+		);
+		$this->become( 'editor' );
+
+		$data = $this->get( '/checkins', [ 'venue_type' => self::TYPE ] )->get_data();
+
+		$this->assertCount( 1, $data['checkins'] );
+		$this->assertSame( $post_id, $data['checkins'][0]['id'] );
+		$this->assertSame( 'Hidden Venue', $data['checkins'][0]['venue_name'] );
+		$this->assertSame( self::TYPE, $data['checkins'][0]['venue_type'] );
+	}
+
 	/**
 	 * @return array<string, array{0: string, 1: string, 2: int}>
 	 */
@@ -220,5 +264,27 @@ final class CheckinRestLocationPrivacyTest extends WP_UnitTestCase {
 
 		$this->assertSame( 2, $data['unique_venues'] );
 		$this->assertSame( 2, $data['cities'] );
+	}
+
+	public function test_stats_exclude_password_protected_checkins_a_contributor_cannot_edit(): void {
+		$this->create_checkin( 'public', 'Visible Venue', 'Visible Town' );
+		$protected_id = $this->create_checkin( 'public', 'Hidden Venue', 'Hidden Town' );
+		wp_update_post(
+			[
+				'ID'            => $protected_id,
+				'post_author'   => self::factory()->user->create( [ 'role' => 'author' ] ),
+				'post_password' => 'secret',
+			]
+		);
+		$this->become( 'contributor' );
+
+		$data = $this->get( '/checkins/stats' )->get_data();
+
+		$this->assertSame( 1, $data['total_checkins'] );
+		$this->assertSame( 1, $data['unique_venues'] );
+		$this->assertSame( [ 'Visible Venue' ], wp_list_pluck( $data['most_visited'], 'name' ) );
+		$json = (string) wp_json_encode( $data );
+		$this->assertStringNotContainsString( 'Hidden Venue', $json );
+		$this->assertStringNotContainsString( 'Hidden Town', $json );
 	}
 }
