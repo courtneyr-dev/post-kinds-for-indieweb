@@ -492,4 +492,121 @@ final class PhotoProjectorTest extends WP_UnitTestCase {
 
 		$this->assertStringNotContainsString( 'pkiw-projector', $html );
 	}
+
+	/**
+	 * Count figures carrying the projector mount class.
+	 *
+	 * @param string $html HTML.
+	 */
+	private function mount_count( string $html ): int {
+		return $this->xpath( $html )->query( '//figure[contains(concat(" ", normalize-space(@class), " "), " pkiw-projector__mount ")]' )->length;
+	}
+
+	/**
+	 * Placements for a second image block next to the post's own image.
+	 *
+	 * @return array<string, array{0:bool}>
+	 */
+	public function second_image_placements(): array {
+		return [
+			'after the own image'  => [ false ],
+			'before the own image' => [ true ],
+		];
+	}
+
+	/**
+	 * @dataProvider second_image_placements
+	 *
+	 * @param bool $before Whether the second image renders before the post's own image.
+	 */
+	public function test_a_second_image_from_a_reusable_block_stays_a_plain_image( bool $before ): void {
+		$own    = $this->attachment();
+		$other  = $this->attachment( '', 'Reusable caption' );
+		$reuse  = self::factory()->post->create(
+			[
+				'post_type'    => 'wp_block',
+				'post_status'  => 'publish',
+				'post_title'   => 'Badge',
+				'post_content' => $this->image_block( $other ),
+			]
+		);
+		$ref    = '<!-- wp:block {"ref":' . $reuse . '} /-->';
+		$own_b  = $this->image_block( $own );
+		$post   = $this->photo( $before ? $ref . $own_b : $own_b . $ref );
+
+		$html = $this->serve( $post );
+
+		$this->assertStringContainsString( (string) wp_get_attachment_url( $other ), $html, 'The reusable image renders.' );
+		$this->assertSame( 1, $this->mount_count( $html ), 'Only the post\'s own image becomes a mount.' );
+		$this->assertSame( 1, substr_count( $html, 'u-photo' ) );
+		$mount = $this->xpath( $html )->query( '//figure[contains(@class, "pkiw-projector__mount")]//img' )->item( 0 );
+		$this->assertInstanceOf( DOMElement::class, $mount );
+		$this->assertStringContainsString( (string) wp_get_attachment_url( $own ), $mount->getAttribute( 'src' ) );
+	}
+
+	public function test_a_second_image_from_a_pattern_stays_a_plain_image(): void {
+		$own     = $this->attachment();
+		$other   = $this->attachment();
+		$pattern = 'pkiw-test/second-image';
+		register_block_pattern(
+			$pattern,
+			[
+				'title'   => 'Second image',
+				'content' => $this->image_block( $other ),
+			]
+		);
+
+		try {
+			$post = $this->photo( $this->image_block( $own ) . '<!-- wp:pattern {"slug":"' . $pattern . '"} /-->' );
+			$html = $this->serve( $post );
+		} finally {
+			unregister_block_pattern( $pattern );
+		}
+
+		$this->assertStringContainsString( (string) wp_get_attachment_url( $other ), $html, 'The pattern image renders.' );
+		$this->assertSame( 1, $this->mount_count( $html ) );
+		$this->assertSame( 1, substr_count( $html, 'u-photo' ) );
+	}
+
+	public function test_a_template_part_image_rendered_beside_a_one_image_photo_stays_plain(): void {
+		$own    = $this->attachment();
+		$footer = $this->attachment();
+		$post   = $this->photo( $this->image_block( $own ) );
+
+		$this->go_to( (string) get_permalink( $post ) );
+		$GLOBALS['post'] = get_post( $post );
+		setup_postdata( $GLOBALS['post'] );
+		$footer_html = do_blocks( $this->image_block( $footer ) );
+		$own_html    = apply_filters( 'the_content', (string) get_post_field( 'post_content', $post ) );
+		wp_reset_postdata();
+
+		$this->assertSame( 0, $this->mount_count( $footer_html ) );
+		$this->assertStringNotContainsString( 'u-photo', $footer_html );
+		$this->assertSame( 1, $this->mount_count( $own_html ), 'The post\'s own image still mounts.' );
+	}
+
+	public function test_a_one_image_photo_with_a_remote_image_still_mounts_by_src(): void {
+		$src  = 'https://images.example.org/remote-one.jpg';
+		$post = $this->photo( $this->image_block( 0, $src, 'Remote' ) );
+
+		$html = $this->serve( $post );
+
+		$this->assertSame( 1, $this->mount_count( $html ) );
+		$this->assertStringContainsString( 'u-photo', $html );
+	}
+
+	public function test_a_remote_second_image_with_a_different_src_stays_plain(): void {
+		$own   = 'https://images.example.org/remote-own.jpg';
+		$other = 'https://images.example.org/remote-other.jpg';
+		$post  = $this->photo( $this->image_block( 0, $own, 'Own' ) );
+
+		$this->go_to( (string) get_permalink( $post ) );
+		$GLOBALS['post'] = get_post( $post );
+		setup_postdata( $GLOBALS['post'] );
+		$other_html = do_blocks( $this->image_block( 0, $other, 'Other' ) );
+		wp_reset_postdata();
+
+		$this->assertSame( 0, $this->mount_count( $other_html ) );
+		$this->assertStringNotContainsString( 'u-photo', $other_html );
+	}
 }

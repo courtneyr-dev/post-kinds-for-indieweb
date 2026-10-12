@@ -50,7 +50,7 @@ final class Photo_Projector {
 	/**
 	 * Per-post rendering plans.
 	 *
-	 * @var array<int, array{gallery:string,done:bool,image_count:int,has_gallery:bool,single_loose_image:bool,images:array<int,array<string,mixed>>}>
+	 * @var array<int, array{gallery:string,done:bool,image_count:int,has_gallery:bool,single_loose_image:bool,own_image:array{id:int,src:string},images:array<int,array<string,mixed>>}>
 	 */
 	private static array $plans = [];
 
@@ -189,7 +189,11 @@ final class Photo_Projector {
 			return $html;
 		}
 
-		$id    = $this->image_attachment_id( $html, $block );
+		$id = $this->image_attachment_id( $html, $block );
+		if ( ! $this->is_own_image( $plan['own_image'], $id, $html ) ) {
+			return $html;
+		}
+
 		$mount = $this->mount_html( $html, $id, 0, true, false );
 		if ( '' === $mount ) {
 			return $html;
@@ -235,7 +239,7 @@ final class Photo_Projector {
 	 * The per-post rendering plan.
 	 *
 	 * @param \WP_Post $post Post.
-	 * @return array{gallery:string,done:bool,image_count:int,has_gallery:bool,single_loose_image:bool,images:array<int,array<string,mixed>>}
+	 * @return array{gallery:string,done:bool,image_count:int,has_gallery:bool,single_loose_image:bool,own_image:array{id:int,src:string},images:array<int,array<string,mixed>>}
 	 */
 	private function plan( \WP_Post $post ): array {
 		if ( self::$last_post_id !== $post->ID ) {
@@ -250,13 +254,18 @@ final class Photo_Projector {
 		$blocks  = parse_blocks( (string) $post->post_content );
 		$gallery = $this->first_qualifying_gallery( $blocks );
 		$images  = collect_image_blocks( $blocks );
+		$single  = 1 === count( $images ) && 1 === $this->loose_image_count( $blocks );
 
 		self::$plans[ $post->ID ] = [
 			'gallery'            => null === $gallery ? '' : $this->signature( $gallery ),
 			'done'               => false,
 			'image_count'        => count( $images ),
 			'has_gallery'        => null !== $gallery,
-			'single_loose_image' => 1 === count( $images ) && 1 === $this->loose_image_count( $blocks ),
+			'single_loose_image' => $single,
+			'own_image'          => $single ? $this->saved_image_identity( $images[0] ) : [
+				'id'  => 0,
+				'src' => '',
+			],
 			'images'             => $images,
 		];
 
@@ -283,6 +292,40 @@ final class Photo_Projector {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Attachment ID and source of an image block as saved in the post content.
+	 *
+	 * @param array<string,mixed> $block Parsed image block.
+	 * @return array{id:int,src:string} Identity; id is 0 for a remote image.
+	 */
+	private function saved_image_identity( array $block ): array {
+		$html = (string) ( $block['innerHTML'] ?? '' );
+
+		return [
+			'id'  => $this->image_attachment_id( $html, $block ),
+			'src' => extract_first_img_src( $html ),
+		];
+	}
+
+	/**
+	 * Whether a rendered image block is the post's own image.
+	 *
+	 * A block rendered from a pattern, a reusable block or a template part isn't in the saved
+	 * content, so it matches neither the saved attachment nor the saved source.
+	 *
+	 * @param array{id:int,src:string} $own     Identity of the post's own image.
+	 * @param int                      $id      Attachment ID of the rendered block, or 0.
+	 * @param string                   $html    Rendered image HTML.
+	 * @return bool True when the rendered block shows the post's own image.
+	 */
+	private function is_own_image( array $own, int $id, string $html ): bool {
+		if ( $own['id'] > 0 && $id === $own['id'] ) {
+			return true;
+		}
+
+		return '' !== $own['src'] && extract_first_img_src( $html ) === $own['src'];
 	}
 
 	/**
