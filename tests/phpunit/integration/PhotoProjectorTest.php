@@ -395,7 +395,7 @@ final class PhotoProjectorTest extends WP_UnitTestCase {
 		$this->assertFalse( wp_script_is( 'pkiw-photo-projector', 'enqueued' ) );
 	}
 
-	public function test_non_photo_protected_feed_and_non_queried_posts_are_untouched(): void {
+	public function test_non_photo_and_protected_posts_are_untouched(): void {
 		$ids     = [ $this->attachment(), $this->attachment() ];
 		$content = $this->gallery_block( array_map( [ $this, 'image_block' ], $ids ) );
 		$note    = $this->post_of_kind( 'note', $content );
@@ -403,15 +403,6 @@ final class PhotoProjectorTest extends WP_UnitTestCase {
 
 		$protected = $this->photo( $content, [ 'post_password' => 'secret' ] );
 		$this->assertStringNotContainsString( 'pkiw-projector', $this->serve( $protected ) );
-
-		$this->go_to( get_term_feed_link( get_term_by( 'slug', 'photo', Taxonomy::TAXONOMY )->term_id, Taxonomy::TAXONOMY ) );
-		$GLOBALS['post'] = get_post( $protected );
-		$this->assertStringNotContainsString( 'pkiw-projector', apply_filters( 'the_content', $content ) );
-
-		$queried = $this->photo( '<!-- wp:paragraph --><p>Other post.</p><!-- /wp:paragraph -->' );
-		$this->go_to( (string) get_permalink( $queried ) );
-		$GLOBALS['post'] = get_post( $protected );
-		$this->assertStringNotContainsString( 'pkiw-projector', apply_filters( 'the_content', $content ) );
 	}
 
 	public function test_assets_enqueue_only_when_needed_and_are_registered_correctly(): void {
@@ -442,6 +433,37 @@ final class PhotoProjectorTest extends WP_UnitTestCase {
 		$html = $this->serve( $id );
 
 		$this->assertStringContainsString( 'wp-block-gallery', $html );
+		$this->assertStringNotContainsString( 'pkiw-projector', $html );
+	}
+
+	public function test_gallery_of_a_second_photo_is_not_projected_while_another_post_is_queried(): void {
+		$ids     = [ $this->attachment(), $this->attachment() ];
+		$content = $this->gallery_block( array_map( [ $this, 'image_block' ], $ids ) );
+		$queried = $this->photo( '<!-- wp:paragraph --><p>Main.</p><!-- /wp:paragraph -->' );
+		$other   = $this->photo( $content );
+
+		$this->go_to( (string) get_permalink( $queried ) );
+		$GLOBALS['post'] = get_post( $other );
+		setup_postdata( $GLOBALS['post'] );
+		$html = apply_filters( 'the_content', $content );
+		wp_reset_postdata();
+
+		$this->assertStringNotContainsString( 'pkiw-projector', $html );
+		$this->assertFalse( wp_script_is( 'pkiw-photo-projector', 'enqueued' ) );
+	}
+
+	public function test_gallery_on_a_photo_comments_feed_is_not_projected(): void {
+		$ids     = [ $this->attachment(), $this->attachment() ];
+		$content = $this->gallery_block( array_map( [ $this, 'image_block' ], $ids ) );
+		$id      = $this->photo( $content );
+
+		$this->go_to( get_post_comments_feed_link( $id ) );
+		$this->assertTrue( is_feed() );
+		$GLOBALS['post'] = get_post( $id );
+		setup_postdata( $GLOBALS['post'] );
+		$html = apply_filters( 'the_content', $content );
+		wp_reset_postdata();
+
 		$this->assertStringNotContainsString( 'pkiw-projector', $html );
 	}
 }

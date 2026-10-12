@@ -403,4 +403,95 @@ final class PhotoLocationTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'geo', $location->gate_json_feed_item( [ 'title' => 'Public', 'geo' => [ 'lat' => 40.1 ] ], $public ) );
 		$this->assertArrayHasKey( 'geo', $location->gate_json_feed_item( [ 'title' => 'Note', 'geo' => [ 'lat' => 40.1 ] ], $note ) );
 	}
+
+	/**
+	 * Remove every Photo_Location callback so a test sees only the wiring it triggers.
+	 */
+	private function strip_photo_location_hooks(): void {
+		foreach ( [ 'the_content', 'template_redirect', 'rss_item', 'rss2_item', 'atom_entry', 'rdf_item', 'json_feed_item' ] as $hook ) {
+			if ( ! isset( $GLOBALS['wp_filter'][ $hook ] ) ) {
+				continue;
+			}
+			foreach ( $GLOBALS['wp_filter'][ $hook ]->callbacks as $priority => $callbacks ) {
+				foreach ( $callbacks as $callback ) {
+					if ( is_array( $callback['function'] ) && $callback['function'][0] instanceof Photo_Location ) {
+						remove_filter( $hook, $callback['function'], $priority );
+					}
+				}
+			}
+		}
+	}
+
+	public function test_registered_content_gate_and_restore_hooks_run_through_the_content_filter(): void {
+		$this->strip_photo_location_hooks();
+		$this->location()->register();
+		$this->register_simple_location_callables();
+		$this->current_post( $this->photo( 'private' ) );
+		$seen = [];
+		add_filter(
+			'the_content',
+			static function ( $content ) use ( &$seen ) {
+				$seen['mid'] = [ has_filter( 'the_content', 'Geo_Data::content_map' ), has_filter( 'the_content', 'Geo_Data::location_content' ) ];
+				return $content;
+			},
+			12
+		);
+		add_filter(
+			'the_content',
+			static function ( $content ) use ( &$seen ) {
+				$seen['end'] = [ has_filter( 'the_content', 'Geo_Data::content_map' ), has_filter( 'the_content', 'Geo_Data::location_content' ) ];
+				return $content;
+			},
+			20
+		);
+
+		apply_filters( 'the_content', 'x' );
+
+		$this->assertSame( [ false, false ], $seen['mid'] );
+		$this->assertSame( [ 11, 12 ], $seen['end'] );
+	}
+
+	public function test_registered_head_feed_and_json_gates_run_through_their_hooks(): void {
+		$this->strip_photo_location_hooks();
+		$this->location()->register();
+		$this->register_simple_location_callables();
+		$id = $this->photo( 'private' );
+
+		$this->go_to( (string) get_permalink( $id ) );
+		do_action( 'template_redirect' );
+		$this->assertFalse( has_action( 'wp_head', 'Geo_Base::meta_tags' ) );
+
+		$this->register_simple_location_callables();
+		$this->current_post( $id );
+		foreach ( [ 'rss_item', 'rss2_item', 'atom_entry', 'rdf_item' ] as $hook ) {
+			$during = null;
+			add_action(
+				$hook,
+				static function () use ( &$during, $hook ) {
+					$during = has_action( $hook, 'Geo_Base::georss_item' );
+				},
+				10
+			);
+			do_action( $hook );
+			$this->assertFalse( $during, $hook . ' during' );
+			$this->assertSame( 10, has_action( $hook, 'Geo_Base::georss_item' ), $hook . ' after' );
+		}
+
+		remove_filter( 'json_feed_item', 'Geo_Base::json_feed_item', 10 );
+		$item = apply_filters( 'json_feed_item', [ 'geo' => [ 'lat' => 1 ], 'id' => 'a' ], get_post( $id ) );
+		$this->assertArrayNotHasKey( 'geo', $item );
+	}
+
+	public function test_photo_archive_register_wires_the_location_gate(): void {
+		$this->strip_photo_location_hooks();
+		( new \PKIW\Photo_Archive() )->register();
+
+		$found = false;
+		foreach ( $GLOBALS['wp_filter']['the_content']->callbacks[10] ?? [] as $callback ) {
+			if ( is_array( $callback['function'] ) && $callback['function'][0] instanceof Photo_Location ) {
+				$found = true;
+			}
+		}
+		$this->assertTrue( $found );
+	}
 }
