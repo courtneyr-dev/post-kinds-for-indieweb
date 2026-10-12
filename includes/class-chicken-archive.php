@@ -304,6 +304,16 @@ final class Chicken_Archive {
 		foreach ( [ 'latitude', 'longitude', 'geo_address', 'timezone' ] as $key ) {
 			unset( $data[ $key ] );
 		}
+		// A UTC offset on date or modified reveals the post's approximate location.
+		$date_columns = [
+			'date'     => 'post_date',
+			'modified' => 'post_modified',
+		];
+		foreach ( $date_columns as $key => $column ) {
+			if ( isset( $data[ $key ] ) ) {
+				$data[ $key ] = mysql_to_rfc3339( $post->$column );
+			}
+		}
 		$response->set_data( $data );
 
 		return $response;
@@ -442,15 +452,13 @@ final class Chicken_Archive {
 	/**
 	 * Whether a post title and local calendar date appear more than once.
 	 *
+	 * Untitled posts share the empty title, so two on one day count as duplicates.
+	 *
 	 * @param \WP_Post $post Post.
 	 * @return bool
 	 */
 	private static function title_date_is_duplicate_on_page( \WP_Post $post ): bool {
 		$title = self::normalized_title( $post );
-		if ( '' === $title ) {
-			return false;
-		}
-
 		$day   = wp_date( 'Y-m-d', get_post_timestamp( $post ) );
 		$count = 0;
 		foreach ( self::current_page_posts( $post ) as $page_post ) {

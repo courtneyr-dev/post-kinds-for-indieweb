@@ -167,6 +167,26 @@ final class ChickenEntryBlockTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'p-name', $this->entry_link( $xpath, $empty )->getAttribute( 'class' ) );
 	}
 
+	public function test_two_untitled_chickens_on_one_day_get_different_accessible_names(): void {
+		$morning   = $this->chicken( '', '2026-10-05 08:15:00' );
+		$afternoon = $this->chicken( '', '2026-10-05 16:40:00' );
+		$other_day = $this->chicken( '', '2026-10-04 08:15:00' );
+
+		$xpath = $this->xpath( $this->serve( $this->archive_url() ) );
+
+		$names = [];
+		foreach ( [ $morning, $afternoon, $other_day ] as $id ) {
+			$link = $this->entry_link( $xpath, $id );
+			$this->assertNotSame( '', $link->getAttribute( 'aria-labelledby' ) );
+			$names[ $id ] = $this->labelled_text( $xpath, $link );
+		}
+
+		$this->assertNotSame( $names[ $morning ], $names[ $afternoon ] );
+		$this->assertStringContainsString( '8:15', $names[ $morning ] );
+		$this->assertStringContainsString( '4:40', $names[ $afternoon ] );
+		$this->assertStringNotContainsString( '8:15', $names[ $other_day ] );
+	}
+
 	public function test_duplicate_titles_split_across_pages_do_not_get_aria_labelledby(): void {
 		$page_one = $this->chicken( 'Split duplicate', '2026-10-10 10:00:00' );
 		foreach ( range( 1, 23 ) as $i ) {
