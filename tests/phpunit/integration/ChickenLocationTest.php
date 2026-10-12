@@ -245,13 +245,18 @@ final class ChickenLocationTest extends WP_UnitTestCase {
 
 		$response = apply_filters( 'rest_prepare_post', $this->location_response( $chicken->ID ), $chicken, $view );
 		$data     = $response->get_data();
-		foreach ( [ 'latitude', 'longitude', 'geo_address' ] as $key ) {
+		foreach ( [ 'latitude', 'longitude', 'geo_address', 'timezone' ] as $key ) {
 			$this->assertArrayNotHasKey( $key, $data );
 		}
 		$this->assertSame( $chicken->ID, $data['id'] );
 
-		$this->assertArrayHasKey( 'latitude', apply_filters( 'rest_prepare_post', $this->location_response( $chicken->ID ), $chicken, $edit )->get_data() );
-		$this->assertArrayHasKey( 'latitude', apply_filters( 'rest_prepare_post', $this->location_response( $note->ID ), $note, $view )->get_data() );
+		$edit_data = apply_filters( 'rest_prepare_post', $this->location_response( $chicken->ID ), $chicken, $edit )->get_data();
+		$this->assertArrayHasKey( 'latitude', $edit_data );
+		$this->assertArrayHasKey( 'timezone', $edit_data );
+
+		$note_data = apply_filters( 'rest_prepare_post', $this->location_response( $note->ID ), $note, $view )->get_data();
+		$this->assertArrayHasKey( 'latitude', $note_data );
+		$this->assertArrayHasKey( 'timezone', $note_data );
 	}
 
 	public function test_no_simple_location_callbacks_registered_keeps_all_hooks_empty(): void {
@@ -331,6 +336,7 @@ final class ChickenLocationTest extends WP_UnitTestCase {
 				'latitude'    => 0.5,
 				'longitude'   => -30.5,
 				'geo_address' => '12 Example Lane, Sampletown',
+				'timezone'    => 'Asia/Tokyo',
 				'title'       => [ 'rendered' => 'x' ],
 			]
 		);

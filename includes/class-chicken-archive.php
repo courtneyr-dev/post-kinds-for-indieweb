@@ -301,7 +301,7 @@ final class Chicken_Archive {
 		}
 
 		$data = $response->get_data();
-		foreach ( [ 'latitude', 'longitude', 'geo_address' ] as $key ) {
+		foreach ( [ 'latitude', 'longitude', 'geo_address', 'timezone' ] as $key ) {
 			unset( $data[ $key ] );
 		}
 		$response->set_data( $data );

@@ -298,6 +298,23 @@ final class ChickenEntryBlockTest extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_author_h_card_is_hidden_and_the_author_name_is_never_visible(): void {
+		$author = self::factory()->user->create( [ 'display_name' => 'Fictional Keeper' ] );
+		$this->chicken( 'Hidden author hen', '2026-10-10 10:00:00', '', [ 'post_author' => $author ] );
+
+		$xpath    = $this->xpath( $this->serve( $this->archive_url() ) );
+		$class_at = 'contains(concat(" ", normalize-space(@class), " "), " p-author ")';
+
+		$this->assertSame( 0, $xpath->query( '//*[' . $class_at . '][not(ancestor-or-self::*[@hidden])]' )->length );
+		$this->assertSame( 1, $xpath->query( '//*[@hidden]//*[' . $class_at . ']' )->length );
+
+		$visible = '';
+		foreach ( $xpath->query( '//text()[not(ancestor-or-self::*[@hidden])]' ) as $text_node ) {
+			$visible .= $text_node->nodeValue;
+		}
+		$this->assertStringNotContainsString( 'Fictional Keeper', $visible );
+	}
+
 	/**
 	 * Create a chicken post.
 	 *
