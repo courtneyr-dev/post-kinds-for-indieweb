@@ -310,6 +310,49 @@ final class AcquisitionCardRenderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '$129.00', $data['content']['rendered'] );
 	}
 
+	public function test_rest_stream_card_render_hides_a_public_cost(): void {
+		$id = $this->acquisition( [ 'title' => 'Field Recorder', 'cost' => '$129.00', 'showCostPublicly' => true ] );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		$GLOBALS['wp_rest_server'] = null;
+		$request                   = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/post-kinds-indieweb/stream-card' );
+		$request->set_param( 'context', 'edit' );
+		$request->set_param( 'post_id', $id );
+		$data = (array) rest_do_request( $request )->get_data();
+		$html = (string) ( $data['rendered'] ?? wp_json_encode( $data ) );
+
+		$this->assertStringContainsString( 'pk-card', $html, 'The Stream card rendered over REST.' );
+		$this->assertStringNotContainsString( '$129.00', $html, 'A REST request opens the cost surface, so only the Stream guard hides it.' );
+	}
+
+	public function test_entity_encoded_markup_is_escaped_and_notes_are_plain_text(): void {
+		$html = $this->render_single_card(
+			$this->acquisition(
+				[
+					'title'    => '&lt;img src=x onerror=alert(1)&gt;',
+					'where'    => '&lt;script&gt;alert(2)&lt;/script&gt;',
+					'notes'    => 'One<br>Two <strong>bold</strong> &lt;i&gt;n&lt;/i&gt;',
+					'cost'     => '<b>$5</b>',
+					'showCostPublicly' => true,
+					'photo'    => 'http://example.org/wp-content/uploads/a.jpg',
+					'photoAlt' => 'a"><svg onload=alert(3)>',
+				]
+			)
+		);
+
+		$this->assertStringNotContainsString( '<img src=x', $html );
+		$this->assertStringNotContainsString( '<script>', $html );
+		$this->assertStringNotContainsString( '<i>n', $html );
+		$this->assertStringNotContainsString( '<b>$5', $html );
+		$this->assertStringNotContainsString( '<svg onload', $html );
+		$this->assertStringContainsString( '&lt;img src=x', $html, 'Encoded markup in the title prints as escaped text.' );
+		$this->assertStringContainsString( 'alt="a&quot;&gt;', $html, 'A double quote in photoAlt is escaped inside the attribute.' );
+		$this->assertStringNotContainsString( '&lt;br', $html, 'A line break in notes prints as plain text, not escaped markup.' );
+		$this->assertStringNotContainsString( '&lt;strong', $html, 'Tags in notes print as plain text, not escaped markup.' );
+		$this->assertStringContainsString( 'One', $html );
+		$this->assertStringContainsString( 'bold', $html );
+	}
+
 	public function test_rich_text_values_render_as_text_not_literal_markup(): void {
 		$html = $this->render_single_card(
 			$this->acquisition(

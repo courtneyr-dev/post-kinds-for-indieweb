@@ -166,6 +166,11 @@ final class AcquisitionFactsTest extends WP_UnitTestCase {
 		wp_update_post( [ 'ID' => $id, 'post_content' => wp_slash( $this->card( [ 'title' => 'Field Recorder', 'cost' => '$129.00' ] ) ) ] );
 		$this->assertSame( '', $this->facts( $id )['cost'] );
 
+		// The sync zeroes the meta row on that save, so restore a stale public row to isolate the card toggle.
+		update_post_meta( $id, '_pkiw_acquisition_cost_public', '1' );
+		$this->assertTrue( \PKIW\Meta_Fields::acquisition_cost_visible( $id ), 'The stale meta row says public.' );
+		$this->assertSame( '', $this->facts( $id )['cost'], 'The card toggle is off, so the stale row alone prints nothing.' );
+
 		$empty_cost = $this->acquisition( [ 'title' => 'Empty Cost', 'cost' => '', 'showCostPublicly' => true ] );
 		update_post_meta( $empty_cost, '_pkiw_acquisition_price', '$20.00' );
 		$this->assertSame( '', $this->facts( $empty_cost )['cost'] );
