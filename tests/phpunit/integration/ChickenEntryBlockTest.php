@@ -194,6 +194,45 @@ final class ChickenEntryBlockTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'p-name', $this->entry_link( $changed, $untitled )->getAttribute( 'class' ) );
 	}
 
+	public function test_untitled_private_chicken_link_reads_chicken(): void {
+		$user = self::factory()->user->create( [ 'role' => 'administrator' ] );
+		$id   = $this->chicken(
+			'',
+			'2026-10-10 10:00:00',
+			'',
+			[
+				'post_author' => $user,
+				'post_status' => 'private',
+			]
+		);
+		$this->add_chicken_p_name_to_microformats();
+
+		$xpath = $this->xpath( $this->editor_render( $id, $user ) );
+		$link  = $xpath->query( '//a[@href="' . get_permalink( $id ) . '"]' )->item( 0 );
+		$this->assertInstanceOf( DOMElement::class, $link );
+		$item = $xpath->query( '//a[@href="' . get_permalink( $id ) . '"]/ancestor::li[1]' )->item( 0 );
+		$this->assertInstanceOf( DOMElement::class, $item );
+
+		$this->assertSame( 'Chicken', trim( $link->textContent ) );
+		$this->assertNotSame( '', $link->getAttribute( 'aria-labelledby' ) );
+		$this->assertStringNotContainsString( 'p-name', $link->getAttribute( 'class' ) );
+		$this->assertStringNotContainsString( 'Private:', $this->node_html( $item ) );
+	}
+
+	public function test_untitled_password_protected_chicken_link_reads_chicken(): void {
+		wp_set_current_user( 0 );
+		$id = $this->chicken( '', '2026-10-10 10:00:00', '', [ 'post_password' => 'secret' ] );
+		$this->add_chicken_p_name_to_microformats();
+
+		$xpath = $this->xpath( $this->serve( $this->archive_url() ) );
+		$link  = $this->entry_link( $xpath, $id );
+
+		$this->assertSame( 'Chicken', trim( $link->textContent ) );
+		$this->assertNotSame( '', $link->getAttribute( 'aria-labelledby' ) );
+		$this->assertStringNotContainsString( 'p-name', $link->getAttribute( 'class' ) );
+		$this->assertStringNotContainsString( 'Protected:', trim( $link->textContent ) );
+	}
+
 	public function test_ids_are_unique_on_a_twenty_four_post_page(): void {
 		foreach ( range( 1, 24 ) as $i ) {
 			$this->chicken( 'Chicken ' . $i, sprintf( '2026-10-%02d 10:00:00', 25 - $i ) );
@@ -213,6 +252,7 @@ final class ChickenEntryBlockTest extends WP_UnitTestCase {
 		$xpath = $this->xpath( $this->serve( $this->archive_url() ) );
 		$link  = $this->entry_link( $xpath, $id );
 
+		$this->assertSame( 'Protected: Locked coop', trim( $link->textContent ) );
 		$this->assertStringStartsWith( 'Protected: ', trim( $link->textContent ) );
 		$this->assertStringNotContainsString( 'Hidden feed words', $xpath->document->textContent );
 	}
@@ -321,8 +361,8 @@ final class ChickenEntryBlockTest extends WP_UnitTestCase {
 		return get_the_block_template_html();
 	}
 
-	private function editor_render( int $post_id ): string {
-		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+	private function editor_render( int $post_id, int $user_id = 0 ): string {
+		wp_set_current_user( $user_id > 0 ? $user_id : self::factory()->user->create( [ 'role' => 'editor' ] ) );
 		$request = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/' . Chicken_Archive::ENTRY );
 		$request->set_param( 'context', 'edit' );
 		$request->set_param( 'post_id', $post_id );

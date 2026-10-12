@@ -70,6 +70,33 @@ final class ChickenFactsTest extends WP_UnitTestCase {
 		$this->assertFalse( $facts['named'] );
 	}
 
+	public function test_untitled_private_chicken_keeps_the_synthetic_name(): void {
+		$user    = self::factory()->user->create( [ 'role' => 'administrator' ] );
+		$post_id = $this->chicken(
+			'',
+			[
+				'post_author' => $user,
+				'post_date'   => '2026-10-09 09:00:00',
+				'post_status' => 'private',
+			]
+		);
+		$post    = get_post( $post_id );
+		wp_set_current_user( $user );
+
+		$facts = Chicken_Archive::facts( $post_id );
+
+		$this->assertSame( 'Chicken, ' . get_the_date( '', $post ), $facts['name'] );
+		$this->assertFalse( $facts['named'] );
+		$this->assertStringNotContainsString( 'Private', $facts['name'] );
+	}
+
+	public function test_untitled_password_protected_chicken_returns_empty_facts(): void {
+		wp_set_current_user( 0 );
+		$post_id = $this->chicken( '', [ 'post_password' => 'secret' ] );
+
+		$this->assertSame( [], Chicken_Archive::facts( $post_id ) );
+	}
+
 	public function test_facts_read_the_requested_post_not_the_global_post(): void {
 		$a = $this->chicken( 'Coop doorway', [ 'post_date' => '2026-10-08 08:00:00' ] );
 		$b = $this->chicken( 'Backyard visitor', [ 'post_date' => '2026-10-07 17:00:00' ] );

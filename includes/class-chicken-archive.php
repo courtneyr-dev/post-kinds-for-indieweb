@@ -159,12 +159,13 @@ final class Chicken_Archive {
 			return [];
 		}
 
-		$title = trim( wp_strip_all_tags( get_the_title( $post ) ) );
-		$named = '' !== $title;
-		$label = get_kind_label( stream_card_kind_label( $post ), self::KIND, 'archive-entry' );
+		$title   = trim( wp_strip_all_tags( $post->post_title ) );
+		$named   = '' !== $title;
+		$display = trim( wp_strip_all_tags( get_the_title( $post ) ) );
+		$label   = get_kind_label( stream_card_kind_label( $post ), self::KIND, 'archive-entry' );
 
 		return [
-			'name'                => $named ? $title : untitled_name( $post, false ),
+			'name'                => $named ? $display : untitled_name( $post, false ),
 			'named'               => $named,
 			'kind_label'          => $label,
 			'published'           => get_post_time( 'c', true, $post ),
@@ -319,7 +320,7 @@ final class Chicken_Archive {
 	private static function entry_html( \WP_Post $post, array $attributes, bool $in_section ): string {
 		$base_level = max( 2, min( 6, (int) ( $attributes['headingLevel'] ?? 2 ) ) );
 		$level      = max( 2, min( 6, $base_level + ( $in_section ? 1 : 0 ) ) );
-		$title      = trim( wp_strip_all_tags( get_the_title( $post ) ) );
+		$title      = trim( wp_strip_all_tags( $post->post_title ) );
 		$named      = '' !== $title;
 		$link_text  = $named ? get_the_title( $post ) : get_kind_label( stream_card_kind_label( $post ), self::KIND, 'archive-entry' );
 		$link_id    = 'pkiw-chicken-t-' . $post->ID;
@@ -468,6 +469,10 @@ final class Chicken_Archive {
 	 * @return string Normalized title.
 	 */
 	private static function normalized_title( \WP_Post $post ): string {
+		if ( '' === trim( wp_strip_all_tags( $post->post_title ) ) ) {
+			return '';
+		}
+
 		return mb_strtolower( trim( wp_strip_all_tags( get_the_title( $post ) ) ) );
 	}
 

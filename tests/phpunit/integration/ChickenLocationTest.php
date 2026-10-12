@@ -180,6 +180,41 @@ final class ChickenLocationTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'geo', $note_item );
 	}
 
+	public function test_registered_json_feed_filter_strips_geo_only_for_chicken_posts(): void {
+		$this->add_probe(
+			'json_feed_item',
+			static function ( array $item ): array {
+				$item['geo'] = [ 'latitude' => 1 ];
+				return $item;
+			},
+			10
+		);
+		$chicken = get_post( $this->chicken( 'Registered json hen' ) );
+		$note    = get_post( $this->note( 'Registered json note' ) );
+
+		$chicken_item = apply_filters( 'json_feed_item', [ 'title' => 'x' ], $chicken );
+		$note_item    = apply_filters( 'json_feed_item', [ 'title' => 'x' ], $note );
+
+		$this->assertArrayNotHasKey( 'geo', $chicken_item );
+		$this->assertSame( 'x', $chicken_item['title'] );
+		$this->assertArrayHasKey( 'geo', $note_item );
+	}
+
+	public function test_registered_template_redirect_hook_removes_head_meta_only_for_chicken_singles(): void {
+		$this->register_simple_location_callbacks();
+		$chicken = $this->chicken( 'Registered head hen' );
+		$note    = $this->note( 'Registered head note' );
+
+		$this->go_to( get_permalink( $chicken ) );
+		do_action( 'template_redirect' );
+		$this->assertFalse( has_filter( 'wp_head', 'Geo_Base::meta_tags' ) );
+
+		add_action( 'wp_head', 'Geo_Base::meta_tags', 10 );
+		$this->go_to( get_permalink( $note ) );
+		do_action( 'template_redirect' );
+		$this->assertSame( 10, has_filter( 'wp_head', 'Geo_Base::meta_tags' ) );
+	}
+
 	public function test_head_meta_is_removed_only_for_chicken_singles(): void {
 		$this->register_simple_location_callbacks();
 		$archive = new Chicken_Archive();
