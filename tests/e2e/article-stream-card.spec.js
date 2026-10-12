@@ -390,24 +390,21 @@ test.describe( 'article Stream card overlay', () => {
 	test( 'article stream stylesheet loads on article cards and not note cards', async ( {
 		page,
 	} ) => {
+		// A registered sheet that carries a `path` is inlined by core when it is
+		// small, so it is either a <link> or a <style>, both named after the handle.
+		const sheetLoaded = () =>
+			page.evaluate(
+				() =>
+					null !==
+					document.querySelector(
+						'#pkiw-article-stream-card-css, #pkiw-article-stream-card-inline-css'
+					)
+			);
+
 		await page.goto( articlePage.link );
-		const articleSheet = await page.evaluate( () =>
-			Array.from( document.styleSheets ).some(
-				( sheet ) =>
-					sheet.href &&
-					sheet.href.includes( 'article-stream-card.css' )
-			)
-		);
-		expect( articleSheet ).toBeTruthy();
+		expect( await sheetLoaded() ).toBe( true );
 
 		await page.goto( notePage.link );
-		const noteSheet = await page.evaluate( () =>
-			Array.from( document.styleSheets ).some(
-				( sheet ) =>
-					sheet.href &&
-					sheet.href.includes( 'article-stream-card.css' )
-			)
-		);
-		expect( noteSheet ).toBeFalsy();
+		expect( await sheetLoaded() ).toBe( false );
 	} );
 } );
