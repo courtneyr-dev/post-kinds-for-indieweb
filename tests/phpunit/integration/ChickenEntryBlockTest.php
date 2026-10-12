@@ -236,7 +236,8 @@ final class ChickenEntryBlockTest extends WP_UnitTestCase {
 		if ( ! function_exists( '\Mf2\parse' ) ) {
 			$this->markTestSkipped( 'php-mf2 is not available.' );
 		}
-		$id = $this->chicken( 'Mf2 chicken', '2026-10-10 10:00:00' );
+		$author = self::factory()->user->create( [ 'display_name' => 'Fictional Keeper' ] );
+		$id     = $this->chicken( 'Mf2 chicken', '2026-10-10 10:00:00', '', [ 'post_author' => $author ] );
 
 		$parsed  = \Mf2\parse( $this->serve( $this->archive_url() ), $this->archive_url() );
 		$entries = [];

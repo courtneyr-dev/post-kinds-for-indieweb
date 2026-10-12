@@ -165,17 +165,10 @@ describe( 'chicken entry editor', () => {
 	it( 'does not bake chicken item text into the editor output', () => {
 		const element = edit( { postId: 14 } );
 
-		expect( textChildren( element ).sort() ).toEqual(
-			[
-				'Chicken entries',
-				'Heading level',
-				'Lines per page',
-				'Show month headings',
-			].sort()
-		);
+		// Labels sit in control props; the only child text is none at all.
+		expect( textChildren( element ) ).toEqual( [] );
 		expect( JSON.stringify( element ) ).not.toMatch(
 			/Hen at|Backyard|Coop|visitor/
 		);
 	} );
-}
-);
+} );

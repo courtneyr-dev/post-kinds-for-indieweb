@@ -145,7 +145,7 @@ final class ChickenFactsTest extends WP_UnitTestCase {
 		$this->assertSame( [], Chicken_Archive::facts( $note ) );
 
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
-		$this->assertSame( 'Private coop', Chicken_Archive::facts( $private )['name'] );
+		$this->assertSame( 'Private: Private coop', Chicken_Archive::facts( $private )['name'] );
 	}
 
 	public function test_location_meta_never_appears_in_chicken_facts(): void {
