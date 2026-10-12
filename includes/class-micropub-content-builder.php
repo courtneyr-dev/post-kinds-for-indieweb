@@ -173,7 +173,9 @@ final class Micropub_Content_Builder {
 		wp_update_post(
 			[
 				'ID'           => $post_id,
-				'post_content' => $block_content,
+				// wp_update_post() unslashes its input; without wp_slash() it eats
+				// the backslash of every JSON escape in a card attribute.
+				'post_content' => wp_slash( $block_content ),
 			]
 		);
 	}
@@ -314,9 +316,13 @@ final class Micropub_Content_Builder {
 		// Append the image/gallery markup after the kind's card. A comic's
 		// cover already sits on the card, and photo_card() skips empty
 		// values, so a comic needs no has_property() check on photo[0].
+		// An acquisition's local photo sits on its card the same way, and a
+		// photo on another host is dropped, never hotlinked.
 		$photo_markup = '';
 		if ( 'comics' === $kind ) {
 			$photo_markup = self::photo_card( self::without_comic_cover( $properties ) );
+		} elseif ( 'acquisition' === $kind && self::has_property( $properties, 'photo' ) ) {
+			$photo_markup = self::photo_card( self::without_acquisition_photo( $properties ) );
 		} elseif ( 'photo' !== $kind && self::has_property( $properties, 'photo' ) ) {
 			$photo_markup = self::photo_card( $properties );
 		}
@@ -335,12 +341,14 @@ final class Micropub_Content_Builder {
 	 * comic read is a `read-of` entry, so `comics` may refine `read`. A hint
 	 * outside this map sets the kind term (assign_kind_term()) but never
 	 * changes the card, so `jam` on a `listen-of` entry still builds a
-	 * listen card.
+	 * listen card. A photo-only entry hinted `acquisition` is an
+	 * acquisition whose one property is its picture (issue 239).
 	 *
 	 * @var array<string, string[]>
 	 */
 	private const HINT_REFINEMENTS = [
-		'read' => [ 'comics' ],
+		'read'  => [ 'comics' ],
+		'photo' => [ 'acquisition' ],
 	];
 
 	/**
@@ -468,6 +476,8 @@ final class Micropub_Content_Builder {
 				return self::repost_card( $properties );
 			case 'bookmark':
 				return self::bookmark_card( $properties );
+			case 'acquisition':
+				return self::acquisition_card( $properties );
 			case 'reply':
 				return self::reply_card( $properties );
 			case 'mood':
@@ -517,8 +527,6 @@ final class Micropub_Content_Builder {
 				return self::typed_paragraph( $properties, 'issue-of', 'u-in-reply-to', __( 'Issue for', 'post-kinds-for-indieweb-in-block-themes' ) );
 			case 'craft':
 				return self::typed_paragraph( $properties, 'craft-of', 'u-craft-of', __( 'Crafted', 'post-kinds-for-indieweb-in-block-themes' ) );
-			case 'acquisition':
-				return self::typed_paragraph( $properties, 'acquisition-of', 'u-acquisition-of', __( 'Acquired', 'post-kinds-for-indieweb-in-block-themes' ) );
 			case 'exercise':
 				return self::typed_paragraph( $properties, 'exercise', 'p-exercise', '' );
 			case 'sleep':
@@ -978,6 +986,113 @@ final class Micropub_Content_Builder {
 			]
 		);
 		return self::self_closing_block( 'post-kinds-indieweb/bookmark-card', $attrs );
+	}
+
+	/**
+	 * Build an Acquisition Card block from the h-entry property bag.
+	 *
+	 * The card is the item's h-cite, so like the repost card it leaves
+	 * `content` out: the body is the author's own words and prints once, as
+	 * the e-content paragraph wrap_h_entry() appends. A URL-only entry
+	 * titles the card with the `acquisition-of` URL and links it; a text
+	 * `acquisition-of` is the item's name.
+	 *
+	 * `mp-cost` is stored as the card's cost with `showCostPublicly` left at
+	 * its block default, off (issue 239: cost is private until the author
+	 * turns the toggle on in the editor). Nothing here prints the cost.
+	 *
+	 * The photo is the first `photo` value that resolves to a local
+	 * attachment. A URL on another host is never put on the card, so a
+	 * visitor's browser never asks a third-party host for it.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `acquisition-of`, `name`, `photo`, `mp-photo-alt`, `mp-acquisition-type`, `mp-cost`, `mp-where`, `mp-where-url`, `mp-acquired-at`).
+	 * @return string Block-comment markup for the acquisition-card block.
+	 */
+	private static function acquisition_card( array $properties ): string {
+		$item     = trim( self::flatten_scalar( $properties, 'acquisition-of' ) );
+		$item_url = 0 === strpos( $item, 'http://' ) || 0 === strpos( $item, 'https://' );
+		$name     = trim( self::flatten_scalar( $properties, 'name' ) );
+		$where    = trim( self::flatten_scalar( $properties, 'mp-where-url' ) );
+		$type     = sanitize_key( self::flatten_scalar( $properties, 'mp-acquisition-type' ) );
+		$photo    = self::acquisition_photo( $properties );
+		$attrs    = self::filter_empty(
+			[
+				'title'           => sanitize_text_field( '' !== $name ? $name : $item ),
+				'acquisitionType' => isset( Acquisition_Archive::type_labels()[ $type ] ) ? $type : '',
+				'cost'            => sanitize_text_field( self::flatten_scalar( $properties, 'mp-cost' ) ),
+				'where'           => sanitize_text_field( self::flatten_scalar( $properties, 'mp-where' ) ),
+				'whereUrl'        => web_url( '' !== $where ? $where : ( $item_url ? $item : '' ) ),
+				'photo'           => $photo['url'],
+				'photoAlt'        => $photo['alt'],
+				'acquiredAt'      => card_calendar_date( self::flatten_scalar( $properties, 'mp-acquired-at' ) )[0],
+			]
+		);
+		// Core's serializer escapes `--`, `<`, `>` and `&`, so a name or cost
+		// holding `-->` can't close the block comment early and leak the cost
+		// to readers that strip tags from raw post_content.
+		return [] === $attrs
+			? '<!-- wp:post-kinds-indieweb/acquisition-card /-->'
+			: '<!-- wp:post-kinds-indieweb/acquisition-card ' . serialize_block_attributes( $attrs ) . ' /-->';
+	}
+
+	/**
+	 * The acquisition's card photo: the first `photo` image that resolves to
+	 * a local attachment.
+	 *
+	 * Read through photo_values(), so a sideloaded copy follows its remote
+	 * original and carries the original's alt. A request alt wins; without
+	 * one the attachment's stored alt is used.
+	 *
+	 * @param array<string, mixed>                                         $properties h-entry properties bag.
+	 * @param array<int, array{url: string, alt: string, image: int}>|null $values     photo_values() of the bag, when the caller has them.
+	 * @return array{url: string, alt: string, image: int} Photo URL, alt and image index; `image` is -1 when no photo is local.
+	 */
+	private static function acquisition_photo( array $properties, ?array $values = null ): array {
+		foreach ( $values ?? self::photo_values( $properties ) as $value ) {
+			$attachment_id = self::attachment_id( $value['url'] );
+			if ( 0 === $attachment_id ) {
+				continue;
+			}
+			return [
+				'url'   => $value['url'],
+				'alt'   => '' !== $value['alt'] ? $value['alt'] : attachment_alt( $attachment_id ),
+				'image' => $value['image'],
+			];
+		}
+		return [
+			'url'   => '',
+			'alt'   => '',
+			'image' => -1,
+		];
+	}
+
+	/**
+	 * Drop the acquisition's card photo from `photo`, keeping `mp-photo-alt` aligned.
+	 *
+	 * Every value of the image that holds the card photo goes, so neither
+	 * the remote original nor its sideloaded copy repeats the photo below
+	 * the card. A value that isn't a local attachment goes too, so no photo
+	 * is hotlinked from another host. Local photos the card doesn't take
+	 * stay as they were sent.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return array<string, mixed> The bag without the card photo.
+	 */
+	private static function without_acquisition_photo( array $properties ): array {
+		$values = self::photo_values( $properties );
+		$photo  = self::acquisition_photo( $properties, $values );
+		$photos = [];
+		$alts   = [];
+		foreach ( $values as $value ) {
+			if ( $value['image'] === $photo['image'] || $value['url'] === $photo['url'] || 0 === self::attachment_id( $value['url'] ) ) {
+				continue;
+			}
+			$photos[] = $value['url'];
+			$alts[]   = $value['alt'];
+		}
+		$properties['photo']        = $photos;
+		$properties['mp-photo-alt'] = $alts;
+		return $properties;
 	}
 
 	/**
