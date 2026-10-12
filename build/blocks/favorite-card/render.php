@@ -30,11 +30,20 @@ $pkiw_author       = $attributes['author'] ?? '';
 $pkiw_favorited_at = $attributes['favoritedAt'] ?? '';
 $pkiw_rel          = $attributes['rel'] ?? '';
 
-$pkiw_link_rel = $pkiw_rel ? 'noopener noreferrer ' . $pkiw_rel : 'noopener noreferrer';
+$pkiw_link_rel  = $pkiw_rel ? 'noopener noreferrer ' . $pkiw_rel : 'noopener noreferrer';
+$pkiw_web_url   = \PKIW\web_url( (string) $pkiw_url );
+$pkiw_synthetic = '' !== $pkiw_web_url && (
+	'' === trim( (string) $pkiw_title )
+	|| \PKIW\card_name_is_url( (string) $pkiw_title, (string) $pkiw_url )
+);
+$pkiw_link_text = '';
+if ( $pkiw_synthetic ) {
+	$pkiw_link_text = \PKIW\url_host( $pkiw_web_url );
+}
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
-		'class' => 'pk-card k-favorite h-cite u-favorite-of',
+		'class' => 'pk-card k-favorite h-cite' . ( '' !== $pkiw_web_url ? ' u-favorite-of' : '' ),
 	]
 );
 
@@ -48,10 +57,14 @@ ob_start();
 		<span class="pk-kindlabel"><?php echo esc_html( get_kind_label( __( 'Favorite', 'post-kinds-for-indieweb-in-block-themes' ), 'favorite', 'favorite-card' ) ); ?></span>
 
 		<div class="pk-caption">
-			<?php if ( $pkiw_title ) : ?>
+			<?php if ( $pkiw_synthetic ) : ?>
+				<h2 class="pk-title">
+					<a class="u-url" href="<?php echo esc_url( $pkiw_web_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_link_text ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_link_text ); ?></a>
+				</h2>
+			<?php elseif ( $pkiw_title ) : ?>
 				<h2 class="pk-title p-name">
-					<?php if ( $pkiw_url ) : ?>
-						<a class="u-url" href="<?php echo esc_url( $pkiw_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_title ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_title ); ?></a>
+					<?php if ( '' !== $pkiw_web_url ) : ?>
+						<a class="u-url" href="<?php echo esc_url( $pkiw_web_url ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_title ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_title ); ?></a>
 					<?php else : ?>
 						<?php echo esc_html( $pkiw_title ); ?>
 					<?php endif; ?>
