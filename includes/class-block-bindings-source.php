@@ -253,6 +253,10 @@ final class Block_Bindings_Source {
 			return null;
 		}
 
+		if ( post_password_required( (int) $post_id ) ) {
+			return '';
+		}
+
 		// Handle 'kind' key specially — it comes from taxonomy, not meta.
 		if ( 'kind' === $key ) {
 			return $this->get_kind( (int) $post_id );

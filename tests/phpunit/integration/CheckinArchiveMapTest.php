@@ -137,6 +137,33 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_password_required_entry_hides_kind_data_and_has_no_pin(): void {
+		$post = $this->checkin( 'protected', 'public', 42.333333, -77.333333 );
+		wp_update_post(
+			[
+				'ID'            => $post->ID,
+				'post_password' => 'secret',
+			]
+		);
+		$post = get_post( $post->ID );
+		wp_set_current_user( 0 );
+
+		$entries = Checkin_Map::entries( [ $post ] );
+		$pins    = Checkin_Map::pins( $entries );
+		$html    = $this->render( [ $post ] );
+
+		$this->assertSame( '', $entries[0]['name'] );
+		$this->assertSame( [], $entries[0]['place'] );
+		$this->assertNull( $entries[0]['lat'] );
+		$this->assertNull( $entries[0]['lng'] );
+		$this->assertSame( 0, $entries[0]['number'] );
+		$this->assertSame( [], $pins );
+		$this->assertStringContainsString( 'Title protected', $html );
+		foreach ( [ 'Venue protected', 'Town protected', 'Region protected', 'Country protected', '42.333333', '77.333333', '1 Street protected', 'p-geo', 'data-pins' ] as $needle ) {
+			$this->assertStringNotContainsString( $needle, $html );
+		}
+	}
+
 	public function test_private_entry_matches_an_entry_with_no_location(): void {
 		$private = $this->checkin( 'secret', 'private', 42.333333, -77.333333 );
 		$bare_id = self::factory()->post->create(

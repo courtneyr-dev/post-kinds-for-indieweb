@@ -727,6 +727,13 @@ final class Core_Abilities {
 			);
 		}
 
+		if ( Meta_Fields::hides_kind_meta( $post ) ) {
+			return [
+				'post_id' => $post_id,
+				'meta'    => [],
+			];
+		}
+
 		$meta = [];
 
 		// Only this plugin's own registered fields are ever returned, in

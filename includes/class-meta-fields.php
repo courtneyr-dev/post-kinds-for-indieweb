@@ -1698,7 +1698,7 @@ class Meta_Fields {
 		if ( ! $response instanceof \WP_REST_Response || ! $post instanceof \WP_Post ) {
 			return $response;
 		}
-		if ( '' === (string) $post->post_password || current_user_can( 'edit_post', (int) $post->ID ) ) {
+		if ( ! self::hides_kind_meta( $post ) ) {
 			return $response;
 		}
 
@@ -1709,7 +1709,7 @@ class Meta_Fields {
 
 		$changed = false;
 		foreach ( array_keys( $data['meta'] ) as $key ) {
-			if ( str_starts_with( (string) $key, self::PREFIX ) ) {
+			if ( str_starts_with( (string) $key, self::PREFIX ) || str_starts_with( (string) $key, 'pk_' ) ) {
 				unset( $data['meta'][ $key ] );
 				$changed = true;
 			}
@@ -1720,6 +1720,16 @@ class Meta_Fields {
 		}
 
 		return $response;
+	}
+
+	/**
+	 * Whether Post Kinds meta must be hidden from the current requester.
+	 *
+	 * @param \WP_Post $post Post object.
+	 * @return bool
+	 */
+	public static function hides_kind_meta( \WP_Post $post ): bool {
+		return '' !== (string) $post->post_password && ! current_user_can( 'edit_post', (int) $post->ID );
 	}
 
 	/**
@@ -2183,6 +2193,8 @@ class Meta_Fields {
 		$this->post_types = apply_filters( 'pkiw_meta_post_types', $this->post_types );
 
 		foreach ( $this->post_types as $post_type ) {
+			add_filter( 'rest_prepare_' . $post_type, [ $this, 'redact_protected_kind_meta' ], 20, 3 );
+
 			foreach ( $this->fields as $key => $field ) {
 				$meta_key = self::PREFIX . $key;
 
