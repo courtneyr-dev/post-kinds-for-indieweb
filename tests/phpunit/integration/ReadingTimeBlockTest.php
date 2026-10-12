@@ -52,10 +52,21 @@ final class ReadingTimeBlockTest extends WP_UnitTestCase {
 
 	public function test_a_protected_post_prints_no_reading_time_block(): void {
 		$post_id = $this->article( 1000, 'Locked Article', [ 'post_password' => 'secret' ] );
+		$this->go_to( home_url( '/' ) );
 
-		$html = $this->render_reading_time_for_post( $post_id );
+		// Render inside a Post Template so template depth is above 0 and the
+		// protected check in Reading_Time::minutes() is the only thing that can
+		// keep the label out. At depth 0 render() returns '' before it gets there.
+		$html = do_blocks(
+			'<!-- wp:query {"queryId":8,"query":{"inherit":false,"postType":"post","perPage":1,"include":[' . $post_id . ']}} --><div class="wp-block-query">'
+			. '<!-- wp:post-template --><!-- wp:post-title /--><!-- wp:post-kinds-indieweb/reading-time /--><!-- /wp:post-template -->'
+			. '</div><!-- /wp:query -->'
+		);
 
-		$this->assertSame( '', $html );
+		$this->assertStringContainsString( 'Locked Article', $html, 'The Post Template rendered the protected post.' );
+		$this->assertStringNotContainsString( 'wp-block-post-kinds-indieweb-reading-time', $html );
+		$this->assertStringNotContainsString( 'min read', $html );
+		$this->assertSame( 0, $this->template_depth(), 'Template depth is back to zero after the render.' );
 	}
 
 	public function test_a_reading_time_block_in_post_content_does_not_print_in_the_content(): void {

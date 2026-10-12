@@ -87,6 +87,14 @@ final class ArticleContentsMarkupTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'min read', $html );
 	}
 
+	public function test_an_unprotected_article_prints_reading_time_in_the_contents_item(): void {
+		$post_id = $this->article( 'Open Field Report', 1000, '2026-08-18 10:00:00' );
+		$html    = $this->contents_item_html( $post_id );
+
+		$this->assertStringContainsString( 'wp-block-post-kinds-indieweb-reading-time', $html );
+		$this->assertStringContainsString( 'min read', $html );
+	}
+
 	public function test_every_contents_image_has_empty_alt_text(): void {
 		$first = $this->article( 'Illustrated One', 200, '2026-08-18 10:00:00' );
 		$this->attach_image( $first, 'Stored alt' );
@@ -283,10 +291,15 @@ final class ArticleContentsMarkupTest extends WP_UnitTestCase {
 		$this->go_to( get_permalink( $post_id ) );
 		$GLOBALS['post'] = get_post( $post_id );
 
+		// Inside a Post Template, so the depth-guarded reading-time block can print.
 		return do_blocks(
-			'<!-- wp:post-title {"level":3,"isLink":true,"className":"pkiw-contents__title"} /-->'
+			'<!-- wp:query {"queryId":' . $post_id . ',"query":{"inherit":false,"postType":"post","perPage":1,"include":[' . $post_id . ']}} --><div class="wp-block-query">'
+			. '<!-- wp:post-template -->'
+			. '<!-- wp:post-title {"level":3,"isLink":true,"className":"pkiw-contents__title"} /-->'
 			. '<!-- wp:post-kinds-indieweb/reading-time /-->'
 			. '<!-- wp:post-featured-image {"className":"pkiw-contents__picture"} /-->'
+			. '<!-- /wp:post-template -->'
+			. '</div><!-- /wp:query -->'
 		);
 	}
 
