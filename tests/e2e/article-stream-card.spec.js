@@ -9,7 +9,6 @@ const BASE = process.env.WP_BASE_URL || 'http://localhost:8888';
 const RUN = Date.now().toString( 36 );
 
 let createdPosts = [];
-let createdPages = [];
 let createdMedia = [];
 let articleKind = 0;
 let noteKind = 0;
@@ -89,8 +88,11 @@ async function createPost( page, nonce, data ) {
 	return post;
 }
 
+// A post, not a page: the test environment's IndieAuth scopes allow creating
+// posts over REST but refuse pages (403 rest_cannot_create). The post holds the
+// Query Loop and is not itself a kind-article or kind-note post.
 async function createPage( page, nonce, title, content ) {
-	const res = await page.request.post( `${ BASE }/?rest_route=/wp/v2/pages`, {
+	const res = await page.request.post( `${ BASE }/?rest_route=/wp/v2/posts`, {
 		headers: { 'X-WP-Nonce': nonce },
 		data: {
 			title,
@@ -104,7 +106,7 @@ async function createPage( page, nonce, title, content ) {
 		);
 	}
 	const post = await res.json();
-	createdPages.push( post.id );
+	createdPosts.push( post.id );
 	return post;
 }
 
@@ -198,9 +200,9 @@ test.describe( 'article Stream card overlay', () => {
 
 	test.afterAll( async ( { browser } ) => {
 		const { context, page, nonce } = await adminRequest( browser );
-		for ( const id of [ ...createdPages, ...createdPosts ] ) {
+		for ( const id of createdPosts ) {
 			await page.request.delete(
-				`${ BASE }/?rest_route=/wp/v2/${ createdPages.includes( id ) ? 'pages' : 'posts' }/${ id }&force=true`,
+				`${ BASE }/?rest_route=/wp/v2/posts/${ id }&force=true`,
 				{ headers: { 'X-WP-Nonce': nonce } }
 			);
 		}
@@ -211,7 +213,6 @@ test.describe( 'article Stream card overlay', () => {
 			);
 		}
 		createdPosts = [];
-		createdPages = [];
 		createdMedia = [];
 		await context.close();
 	} );
