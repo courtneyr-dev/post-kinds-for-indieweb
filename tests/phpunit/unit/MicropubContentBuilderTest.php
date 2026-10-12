@@ -1324,7 +1324,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '"url":"https://example.test/reposted"', $markup );
 	}
 
-	public function test_repost_card_maps_name_author_and_content(): void {
+	public function test_repost_card_maps_name_and_author_but_not_content(): void {
 		$markup = $this->invoke_private(
 			'repost_card',
 			array(
@@ -1338,7 +1338,24 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		);
 		$this->assertStringContainsString( '"title":"A Great Post"', $markup );
 		$this->assertStringContainsString( '"author":"Jane Doe"', $markup );
-		$this->assertStringContainsString( '"description":"sharing this"', $markup );
+		$this->assertStringNotContainsString( '"description"', $markup );
+		$this->assertStringNotContainsString( 'sharing this', $markup );
+	}
+
+	public function test_repost_with_content_builds_one_card_and_one_e_content_paragraph(): void {
+		$content = $this->invoke_private(
+			'build_block_content',
+			array(
+				array(
+					'repost-of' => array( 'https://example.test/reposted' ),
+					'content'   => array( 'Keeping this one for later.' ),
+				),
+			)
+		);
+		$this->assertSame( 1, substr_count( $content, 'wp:post-kinds-indieweb/repost-card' ) );
+		$this->assertStringNotContainsString( '"description"', $content );
+		$this->assertSame( 1, substr_count( $content, 'Keeping this one for later.' ) );
+		$this->assertStringContainsString( 'e-content', $content );
 	}
 
 	public function test_bookmark_card_uses_name_as_title(): void {
@@ -2208,12 +2225,12 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 				),
 				'post-kinds-indieweb/repost-card',
 				array(
-					'title'       => 'Sample title',
-					'url'         => 'https://example.test/reposted',
-					'author'      => 'Sample author',
-					'description' => 'Sample body',
+					'title'  => 'Sample title',
+					'url'    => 'https://example.test/reposted',
+					'author' => 'Sample author',
 				),
-				array( 'image', 'imageAlt', 'repostedAt', 'rel' ),
+				// content is the entry's e-content, never the card description.
+				array( 'description', 'image', 'imageAlt', 'repostedAt', 'rel' ),
 			),
 			'bookmark' => array(
 				array(
