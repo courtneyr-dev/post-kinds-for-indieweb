@@ -2112,6 +2112,75 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'photo', $attrs );
 		$this->assertArrayNotHasKey( 'photoAlt', $attrs );
 		$this->assertStringNotContainsString( 'images.example.com', $markup );
+
+		// build_block_content() must not put the remote photo below the card either.
+		$content = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+		$this->assertStringNotContainsString( 'images.example.com', $content );
+		$this->assertStringNotContainsString( 'wp:image', $content );
+		$this->assertSame( array(), $this->images( $content ) );
+		$this->assertSame( array( 'post-kinds-indieweb/acquisition-card' ), array_values( array_unique( array_filter( $this->block_names( $content ), static fn( $n ) => 0 === strpos( (string) $n, 'post-kinds-indieweb/' ) ) ) ) );
+	}
+
+	/** apply() stores escaped attributes intact: wp_update_post() unslashes, so a title with an arrow or a quote must survive the save. */
+	public function test_apply_stores_an_arrow_and_quote_title_intact(): void {
+		// An administrator has unfiltered_html, so kses doesn't rewrite the stored comment.
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$post_id               = self::factory()->post->create( array( 'post_status' => 'publish' ) );
+		$properties            = $this->acquisition_properties();
+		$properties['name']    = array( 'USB-C --> "HDMI" adapter' );
+		$properties['mp-cost'] = array( '$73.41' );
+
+		Micropub_Content_Builder::apply(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => $properties,
+			),
+			array( 'ID' => $post_id )
+		);
+
+		$stored = (string) get_post_field( 'post_content', $post_id );
+		$attrs  = $this->first_attrs( $stored, 'post-kinds-indieweb/acquisition-card' );
+		$this->assertSame( 'USB-C --> "HDMI" adapter', $attrs['title'] ?? null );
+		$this->assertSame( '$73.41', $attrs['cost'] ?? null );
+		$this->assertStringNotContainsString( '73.41', wp_strip_all_tags( $stored ) );
+		$this->assertStringContainsString( 'Seeds for the balcony.', $stored, 'the e-content body survives' );
+	}
+
+	/** A remote photo that rides along a local one is dropped too, not left below the card. */
+	public function test_acquisition_drops_a_remote_photo_next_to_a_local_one(): void {
+		$local                      = $this->local_upload_url( 'seeds-local.jpg' );
+		$properties                 = $this->acquisition_properties();
+		$properties['photo']        = array( $local, 'https://images.example.com/other.jpg' );
+		$properties['mp-photo-alt'] = array( 'Local seeds', 'Other seeds' );
+		$content                    = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+
+		$this->assertSame( $local, $this->first_attrs( $content, 'post-kinds-indieweb/acquisition-card' )['photo'] ?? null );
+		$this->assertStringNotContainsString( 'images.example.com', $content );
+		$this->assertSame( array(), $this->images( $content ) );
+	}
+
+	/** A name or cost holding the comment closer cannot end the card's block comment early. */
+	public function test_acquisition_card_escapes_the_comment_closer_in_attributes(): void {
+		$properties            = $this->acquisition_properties();
+		$properties['name']    = array( 'USB-C --> HDMI adapter' );
+		$properties['mp-cost'] = array( '--> $73.41' );
+		$markup                = (string) $this->invoke_private( 'acquisition_card', array( $properties ) );
+
+		$this->assertSame( 1, substr_count( $markup, '-->' ), 'only the card\'s own closer remains' );
+		$this->assertSame( strlen( $markup ) - 3, strpos( $markup, '-->' ), 'the single closer ends the markup' );
+		$this->assertStringEndsWith( ' /-->', $markup );
+
+		$attrs = $this->first_attrs( $markup, 'post-kinds-indieweb/acquisition-card' );
+		$this->assertSame( 'USB-C --> HDMI adapter', $attrs['title'] ?? null, 'the block parser decodes the escape' );
+		$this->assertSame( '--> $73.41', $attrs['cost'] ?? null );
+
+		$content = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+		$opening = strpos( $content, '<!-- wp:post-kinds-indieweb/acquisition-card' );
+		$closing = strpos( $content, '/-->', (int) $opening );
+		$this->assertNotFalse( $opening );
+		$this->assertNotFalse( $closing );
+		$this->assertStringNotContainsString( '-->', substr( $content, $opening, $closing - $opening ), 'no closer between the card opening and its own closer' );
+		$this->assertStringNotContainsString( '73.41', wp_strip_all_tags( $content ), 'a tag-stripping reader never sees the private cost' );
 	}
 
 	/** Micropub's sideload appends the local copy after the remote original: the card takes the copy and nothing repeats it. */

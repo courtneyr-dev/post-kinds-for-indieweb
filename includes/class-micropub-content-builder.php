@@ -173,7 +173,9 @@ final class Micropub_Content_Builder {
 		wp_update_post(
 			[
 				'ID'           => $post_id,
-				'post_content' => $block_content,
+				// wp_update_post() unslashes its input; without wp_slash() it eats
+				// the backslash of every JSON escape in a card attribute.
+				'post_content' => wp_slash( $block_content ),
 			]
 		);
 	}
@@ -314,7 +316,8 @@ final class Micropub_Content_Builder {
 		// Append the image/gallery markup after the kind's card. A comic's
 		// cover already sits on the card, and photo_card() skips empty
 		// values, so a comic needs no has_property() check on photo[0].
-		// An acquisition's local photo sits on its card the same way.
+		// An acquisition's local photo sits on its card the same way, and a
+		// photo on another host is dropped, never hotlinked.
 		$photo_markup = '';
 		if ( 'comics' === $kind ) {
 			$photo_markup = self::photo_card( self::without_comic_cover( $properties ) );
@@ -1024,7 +1027,12 @@ final class Micropub_Content_Builder {
 				'acquiredAt'      => card_calendar_date( self::flatten_scalar( $properties, 'mp-acquired-at' ) )[0],
 			]
 		);
-		return self::self_closing_block( 'post-kinds-indieweb/acquisition-card', $attrs );
+		// Core's serializer escapes `--`, `<`, `>` and `&`, so a name or cost
+		// holding `-->` can't close the block comment early and leak the cost
+		// to readers that strip tags from raw post_content.
+		return [] === $attrs
+			? '<!-- wp:post-kinds-indieweb/acquisition-card /-->'
+			: '<!-- wp:post-kinds-indieweb/acquisition-card ' . serialize_block_attributes( $attrs ) . ' /-->';
 	}
 
 	/**
@@ -1063,7 +1071,9 @@ final class Micropub_Content_Builder {
 	 *
 	 * Every value of the image that holds the card photo goes, so neither
 	 * the remote original nor its sideloaded copy repeats the photo below
-	 * the card. Photos the card doesn't take stay as they were sent.
+	 * the card. A value that isn't a local attachment goes too, so no photo
+	 * is hotlinked from another host. Local photos the card doesn't take
+	 * stay as they were sent.
 	 *
 	 * @param array<string, mixed> $properties h-entry properties bag.
 	 * @return array<string, mixed> The bag without the card photo.
@@ -1071,13 +1081,10 @@ final class Micropub_Content_Builder {
 	private static function without_acquisition_photo( array $properties ): array {
 		$values = self::photo_values( $properties );
 		$photo  = self::acquisition_photo( $properties, $values );
-		if ( '' === $photo['url'] ) {
-			return $properties;
-		}
 		$photos = [];
 		$alts   = [];
 		foreach ( $values as $value ) {
-			if ( $value['image'] === $photo['image'] || $value['url'] === $photo['url'] ) {
+			if ( $value['image'] === $photo['image'] || $value['url'] === $photo['url'] || 0 === self::attachment_id( $value['url'] ) ) {
 				continue;
 			}
 			$photos[] = $value['url'];
