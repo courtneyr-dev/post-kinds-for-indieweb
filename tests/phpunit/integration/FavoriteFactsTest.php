@@ -516,4 +516,22 @@ final class FavoriteFactsTest extends WP_UnitTestCase {
 		$this->assertFalse( $facts['has_card'] );
 		$this->assertSame( '', $facts['url'] );
 	}
+
+	public function test_a_title_generated_from_a_hidden_location_is_not_the_name(): void {
+		$post_id = $this->favorite(
+			null,
+			[
+				'post_title' => 'Checked in at Private Venue',
+				'post_date'  => '2026-09-12 09:00:00',
+			],
+			[
+				'_pkiw_title_source' => 'location',
+				'_pkiw_geo_privacy'  => 'private',
+			]
+		);
+		$name    = $this->facts( $post_id )['name'];
+
+		$this->assertSame( 'Check-in, September 12, 2026', $name );
+		$this->assertStringNotContainsString( 'Private Venue', $name );
+	}
 }

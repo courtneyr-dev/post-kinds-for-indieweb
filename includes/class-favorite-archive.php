@@ -69,7 +69,7 @@ final class Favorite_Archive {
 		$card        = self::card_attrs( $post );
 		$url         = self::url( $post_id, $card );
 		$cited_title = self::cited_title( $post_id, $card, $url );
-		$title       = trim( (string) $post->post_title );
+		$title       = trim( Title_Privacy::safe_title( $post_id ) );
 		if ( '' !== $title && ! card_name_is_url( $title, $url ) ) {
 			$name          = $title;
 			$name_is_title = true;
