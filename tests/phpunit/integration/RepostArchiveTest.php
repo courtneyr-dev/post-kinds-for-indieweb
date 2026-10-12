@@ -172,13 +172,13 @@ final class RepostArchiveTest extends WP_UnitTestCase {
 
 		$first       = $this->serve( $this->archive_url() );
 		$first_xpath = $this->xpath( $first );
-		$this->assertSame( 12, $first_xpath->query( '//li[contains(concat(" ", normalize-space(@class), " "), " h-entry-or-wp-post ")]' )->length );
+		$this->assertSame( 12, $first_xpath->query( '//li[contains(concat(" ", normalize-space(@class), " "), " wp-block-post ")]' )->length );
 		$this->assertSame( [ 'August 2026', 'July 2026' ], array_column( $this->sections( $first ), 'heading' ) );
 
 		$second       = $this->serve( $this->archive_url() . 'page/2/' );
 		$second_xpath = $this->xpath( $second );
 		$sections     = $this->sections( $second );
-		$this->assertSame( 9, $second_xpath->query( '//li[contains(concat(" ", normalize-space(@class), " "), " h-entry-or-wp-post ")]' )->length );
+		$this->assertSame( 9, $second_xpath->query( '//li[contains(concat(" ", normalize-space(@class), " "), " wp-block-post ")]' )->length );
 		$this->assertSame( 'July 2026', $sections[0]['heading'] );
 		$this->assertStringNotContainsString( 'continued', $second );
 

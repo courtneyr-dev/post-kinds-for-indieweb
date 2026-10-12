@@ -935,11 +935,12 @@ final class Micropub_Content_Builder {
 	 * Build a Repost Card block from the h-entry property bag.
 	 *
 	 * Contentless reposts fall back to the reposted URL as the card
-	 * title — the repost-card render only links the title, so without
-	 * the fallback a URL-only repost would render a bare "Reposted"
-	 * badge with no `u-repost-of` link for microformats2 parsers.
+	 * title. `content` is NOT mapped to the card's description — the
+	 * card is an h-cite of the post being reposted, and the repost body
+	 * is the author's own words, not the cited post's. The body lands in
+	 * the e-content paragraph appended by wrap_h_entry().
 	 *
-	 * @param array<string, mixed> $properties h-entry properties bag (uses `repost-of`, `name`, `author`, `content`).
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `repost-of`, `name`, `author`).
 	 * @return string Block-comment markup for the repost-card block.
 	 */
 	private static function repost_card( array $properties ): string {
@@ -947,10 +948,9 @@ final class Micropub_Content_Builder {
 		$title = self::flatten_scalar( $properties, 'name' );
 		$attrs = self::filter_empty(
 			[
-				'title'       => '' !== $title ? $title : $url,
-				'url'         => $url,
-				'author'      => self::flatten_scalar( $properties, 'author' ),
-				'description' => self::flatten_scalar( $properties, 'content' ),
+				'title'  => '' !== $title ? $title : $url,
+				'url'    => $url,
+				'author' => self::flatten_scalar( $properties, 'author' ),
 			]
 		);
 		return self::self_closing_block( 'post-kinds-indieweb/repost-card', $attrs );

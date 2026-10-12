@@ -239,7 +239,7 @@ final class RepostArchiveTemplateTest extends WP_UnitTestCase {
 		$_wp_current_template_id      = $template->id;
 		$_wp_current_template_content = $template->content;
 		$html                         = get_the_block_template_html();
-		$month                        = wp_date( 'F Y', strtotime( '2026-07-01 00:30:00' ), wp_timezone() );
+		$month                        = 'July 2026';
 
 		$this->assertSame( 1, substr_count( $html, '<h1' ) );
 		$this->assertStringContainsString( '<h2 id="pkiw-group-2026-07" class="pkiw-group__heading">' . esc_html( $month ) . '</h2>', $html );
