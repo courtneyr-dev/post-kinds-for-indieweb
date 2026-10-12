@@ -26,6 +26,7 @@ final class PhotoLocationTest extends WP_UnitTestCase {
 
 	public function tear_down(): void {
 		$this->unregister_simple_location_callables();
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
 		wp_set_current_user( 0 );
 		Photo_Location::reset();
 		parent::tear_down();
@@ -592,5 +593,140 @@ final class PhotoLocationTest extends WP_UnitTestCase {
 			}
 		}
 		$this->assertTrue( $found );
+	}
+
+	/**
+	 * Give the current visitor a post-password cookie.
+	 *
+	 * @param string $password Password the cookie proves.
+	 */
+	private function send_postpass_cookie( string $password ): void {
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+		$hasher                                 = new PasswordHash( 8, true );
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = $hasher->HashPassword( $password );
+	}
+
+	/**
+	 * Run one feed item gate/restore pair and report whether GeoRSS was hooked in between.
+	 *
+	 * @param Photo_Location $location Gate under test.
+	 * @param string         $hook     Feed hook.
+	 * @return int|false Priority of the GeoRSS callback during the item, or false when removed.
+	 */
+	private function georss_during_gate( Photo_Location $location, string $hook ) {
+		$GLOBALS['wp_current_filter'][] = $hook;
+		try {
+			$location->gate_feed_item();
+			$during = has_action( $hook, 'Geo_Base::georss_item' );
+			$location->restore_feed_item();
+		} finally {
+			array_pop( $GLOBALS['wp_current_filter'] );
+		}
+
+		return $during;
+	}
+
+	/**
+	 * @dataProvider feed_hooks
+	 *
+	 * @param string $hook Feed hook.
+	 */
+	public function test_protected_public_photo_hides_georss_on_every_feed_hook( string $hook ): void {
+		wp_set_current_user( 0 );
+		$this->strip_photo_location_hooks();
+		$this->location()->register();
+		$this->register_simple_location_callables();
+		$this->current_post( $this->photo( 'public', '1', [ 'post_password' => 'pw' ] ) );
+
+		$during = null;
+		add_action(
+			$hook,
+			static function () use ( &$during, $hook ) {
+				$during = has_action( $hook, 'Geo_Base::georss_item' );
+			},
+			10
+		);
+		do_action( $hook );
+
+		$this->assertFalse( $during, $hook . ' hides GeoRSS for a protected post during the item' );
+		$this->assertSame( 10, has_action( $hook, 'Geo_Base::georss_item' ), $hook . ' restores GeoRSS afterward' );
+	}
+
+	/**
+	 * @dataProvider feed_hooks
+	 *
+	 * @param string $hook Feed hook.
+	 */
+	public function test_visitor_with_the_post_password_cookie_gets_the_normal_public_tier_in_feeds( string $hook ): void {
+		wp_set_current_user( 0 );
+		$this->register_simple_location_callables();
+		$location    = $this->location();
+		$public      = $this->photo( 'public', '1', [ 'post_password' => 'pw' ] );
+		$approximate = $this->photo( 'approximate', '1', [ 'post_password' => 'pw' ] );
+
+		$this->current_post( $public );
+		$this->assertFalse( $this->georss_during_gate( $location, $hook ), $hook . ' hides GeoRSS before the password is entered' );
+
+		$this->send_postpass_cookie( 'other' );
+		$this->assertFalse( $this->georss_during_gate( $location, $hook ), $hook . ' hides GeoRSS for a wrong password cookie' );
+
+		$this->send_postpass_cookie( 'pw' );
+		$this->assertFalse( post_password_required( $public ) );
+		$this->assertSame( 10, $this->georss_during_gate( $location, $hook ), $hook . ' keeps GeoRSS on a public photo once the password is entered' );
+		$this->assertSame( 10, has_action( $hook, 'Geo_Base::georss_item' ) );
+
+		$this->current_post( $approximate );
+		$this->assertFalse( $this->georss_during_gate( $location, $hook ), $hook . ' still hides GeoRSS on an approximate photo' );
+		$this->assertSame( 10, has_action( $hook, 'Geo_Base::georss_item' ) );
+
+		$item = $location->gate_json_feed_item( [ 'id' => 'a', 'geo' => [ 'lat' => 1 ] ], get_post( $public ) );
+		$this->assertArrayHasKey( 'geo', $item, 'The JSON item keeps geo for a public photo once the password is entered.' );
+		$item = $location->gate_json_feed_item( [ 'id' => 'a', 'geo' => [ 'lat' => 1 ] ], get_post( $approximate ) );
+		$this->assertArrayNotHasKey( 'geo', $item );
+	}
+
+	public function test_visitor_with_the_post_password_cookie_gets_the_normal_content_and_head_tiers(): void {
+		wp_set_current_user( 0 );
+		$this->register_simple_location_callables();
+		$location = $this->location();
+		$public   = $this->photo( 'public', '1', [ 'post_password' => 'pw' ] );
+		$approx   = $this->photo( 'approximate', '1', [ 'post_password' => 'pw' ] );
+		update_post_meta( $approx, 'geo_venue', 'Example Hall' );
+		update_post_meta( $approx, 'geo_locality', 'Sampletown' );
+
+		// A wrong cookie proves nothing, so the protected public photo hides its content callables.
+		$this->send_postpass_cookie( 'other' );
+		$this->assertTrue( post_password_required( $public ) );
+		$this->current_post( $public );
+		$location->gate_content( 'x' );
+		$this->assertFalse( has_filter( 'the_content', 'Geo_Data::content_map' ), 'A wrong password cookie hides the map.' );
+		$this->assertFalse( has_filter( 'the_content', 'Geo_Data::location_content' ), 'A wrong password cookie hides the place.' );
+		$this->assertSame( 'x', $location->restore_content( 'x' ) );
+
+		// The correct cookie restores the normal tiers: a public photo keeps both callables.
+		$this->send_postpass_cookie( 'pw' );
+		$this->assertFalse( post_password_required( $public ) );
+		$location->gate_content( 'x' );
+		$this->assertSame( 11, has_filter( 'the_content', 'Geo_Data::content_map' ), 'A public photo keeps the map once the password is entered.' );
+		$this->assertSame( 12, has_filter( 'the_content', 'Geo_Data::location_content' ), 'A public photo keeps the place once the password is entered.' );
+		$this->assertSame( 'x', $location->restore_content( 'x' ) );
+
+		// An approximate photo drops the precise callables and prints its place line.
+		$this->current_post( $approx );
+		$location->gate_content( 'x' );
+		$this->assertFalse( has_filter( 'the_content', 'Geo_Data::content_map' ) );
+		$this->assertFalse( has_filter( 'the_content', 'Geo_Data::location_content' ) );
+		$this->assertSame( 'x<p class="pkiw-photo-place">Example Hall, Sampletown</p>', $location->restore_content( 'x' ), 'An approximate photo prints its place line once the password is entered.' );
+		$this->assertSame( 11, has_filter( 'the_content', 'Geo_Data::content_map' ) );
+		$this->assertSame( 12, has_filter( 'the_content', 'Geo_Data::location_content' ) );
+
+		// Head meta follows the same tiers.
+		$this->go_to( (string) get_permalink( $public ) );
+		$location->gate_head();
+		$this->assertSame( 10, has_action( 'wp_head', 'Geo_Base::meta_tags' ), 'A public photo keeps head meta once the password is entered.' );
+
+		$this->go_to( (string) get_permalink( $approx ) );
+		$location->gate_head();
+		$this->assertFalse( has_action( 'wp_head', 'Geo_Base::meta_tags' ), 'An approximate photo still hides head meta.' );
 	}
 }
