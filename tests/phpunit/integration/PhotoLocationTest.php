@@ -89,12 +89,13 @@ final class PhotoLocationTest extends WP_UnitTestCase {
 	/**
 	 * A photo post with optional privacy.
 	 *
-	 * @param string|null $privacy Post Kinds privacy.
-	 * @param string     $geo      Simple Location geo_public.
+	 * @param string|null          $privacy Post Kinds privacy.
+	 * @param string               $geo     Simple Location geo_public.
+	 * @param array<string, mixed> $args    Extra post arguments.
 	 * @return int Post ID.
 	 */
-	private function photo( ?string $privacy = null, string $geo = '1' ): int {
-		$id = $this->post_of_kind( 'photo' );
+	private function photo( ?string $privacy = null, string $geo = '1', array $args = [] ): int {
+		$id = $this->post_of_kind( 'photo', $args );
 		if ( null !== $privacy ) {
 			update_post_meta( $id, Meta_Fields::PREFIX . 'geo_privacy', $privacy );
 		}
@@ -480,6 +481,104 @@ final class PhotoLocationTest extends WP_UnitTestCase {
 		remove_filter( 'json_feed_item', 'Geo_Base::json_feed_item', 10 );
 		$item = apply_filters( 'json_feed_item', [ 'geo' => [ 'lat' => 1 ], 'id' => 'a' ], get_post( $id ) );
 		$this->assertArrayNotHasKey( 'geo', $item );
+	}
+
+	public function test_protected_public_photo_hides_every_location_output(): void {
+		wp_set_current_user( 0 );
+		$this->register_simple_location_callables();
+		$post_id = $this->photo( 'public', '1', [ 'post_password' => 'pw' ] );
+		$post    = get_post( $post_id );
+		$this->current_post( $post_id );
+		$location = $this->location();
+
+		$location->gate_content( 'x' );
+		$this->assertFalse( has_filter( 'the_content', 'Geo_Data::content_map' ) );
+		$this->assertFalse( has_filter( 'the_content', 'Geo_Data::location_content' ) );
+		$this->assertSame( 'x', $location->restore_content( 'x' ), 'A protected post prints no place line.' );
+		$this->assertSame( 11, has_filter( 'the_content', 'Geo_Data::content_map' ) );
+		$this->assertSame( 12, has_filter( 'the_content', 'Geo_Data::location_content' ) );
+
+		$this->go_to( (string) get_permalink( $post_id ) );
+		$location->gate_head();
+		$this->assertFalse( has_action( 'wp_head', 'Geo_Base::meta_tags' ) );
+
+		$GLOBALS['wp_current_filter'][] = 'rss2_item';
+		try {
+			$location->gate_feed_item();
+			$this->assertFalse( has_action( 'rss2_item', 'Geo_Base::georss_item' ) );
+			$location->restore_feed_item();
+		} finally {
+			array_pop( $GLOBALS['wp_current_filter'] );
+		}
+		$this->assertSame( 10, has_action( 'rss2_item', 'Geo_Base::georss_item' ) );
+
+		$item = $location->gate_json_feed_item( [ 'id' => 'a', 'geo' => [ 'lat' => 1 ] ], $post );
+		$this->assertArrayNotHasKey( 'geo', $item );
+	}
+
+	public function test_protected_approximate_photo_prints_no_place_line_and_registers_no_geo_callable_mid_pass(): void {
+		wp_set_current_user( 0 );
+		$meta = [
+			'geo_venue'        => 'Example Hall',
+			'geo_locality'     => 'Sampletown',
+			'geo_region'       => 'Example Region',
+			'geo_country_name' => 'Exampleland',
+		];
+
+		$this->strip_photo_location_hooks();
+		$this->location()->register();
+		$this->register_simple_location_callables();
+		$seen = [];
+		add_filter(
+			'the_content',
+			static function ( $content ) use ( &$seen ) {
+				$seen[] = [ has_filter( 'the_content', 'Geo_Data::content_map' ), has_filter( 'the_content', 'Geo_Data::location_content' ) ];
+				return $content;
+			},
+			12
+		);
+
+		$protected = $this->photo( 'approximate', '1', [ 'post_password' => 'pw' ] );
+		foreach ( $meta as $key => $value ) {
+			update_post_meta( $protected, $key, $value );
+		}
+		$this->current_post( $protected );
+		$out = apply_filters( 'the_content', '<p>x</p>' );
+
+		$this->assertSame( '<p>x</p>', trim( $out ) );
+		$this->assertStringNotContainsString( 'pkiw-photo-place', $out );
+		$this->assertStringNotContainsString( 'Example Hall', $out );
+		$this->assertSame( [ [ false, false ] ], $seen, 'No Simple Location content callable runs mid-pass for a protected post.' );
+		$this->assertSame( 11, has_filter( 'the_content', 'Geo_Data::content_map' ) );
+		$this->assertSame( 12, has_filter( 'the_content', 'Geo_Data::location_content' ) );
+
+		$open = $this->photo( 'approximate' );
+		foreach ( $meta as $key => $value ) {
+			update_post_meta( $open, $key, $value );
+		}
+		$this->current_post( $open );
+		$this->assertStringContainsString(
+			'<p class="pkiw-photo-place">Example Hall, Sampletown, Example Region, Exampleland</p>',
+			apply_filters( 'the_content', '<p>x</p>' ),
+			'An unprotected approximate photo still prints its place line.'
+		);
+	}
+
+	public function test_street_visible_map_hidden_tier_keeps_location_line_and_drops_map(): void {
+		wp_set_current_user( 0 );
+		$this->register_simple_location_callables();
+		$this->current_post( $this->photo( 'public', '2' ) );
+		$location = $this->location();
+
+		$location->gate_content( 'x' );
+		$this->assertFalse( has_filter( 'the_content', 'Geo_Data::content_map' ) );
+		$this->assertSame( 12, has_filter( 'the_content', 'Geo_Data::location_content' ) );
+
+		$this->assertSame( 'x', $location->restore_content( 'x' ) );
+		$this->assertSame( 11, has_filter( 'the_content', 'Geo_Data::content_map' ) );
+		$this->assertSame( 12, has_filter( 'the_content', 'Geo_Data::location_content' ) );
+		$this->assertSame( 1, $this->callback_count( 'the_content', 11 ) );
+		$this->assertSame( 1, $this->callback_count( 'the_content', 12 ) );
 	}
 
 	public function test_photo_archive_register_wires_the_location_gate(): void {

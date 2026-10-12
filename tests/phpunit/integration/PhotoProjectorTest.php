@@ -300,14 +300,40 @@ final class PhotoProjectorTest extends WP_UnitTestCase {
 	}
 
 	public function test_loading_rules_for_local_and_remote_first_images(): void {
-		$ids = [ $this->attachment(), $this->attachment(), $this->attachment() ];
-		$id  = $this->photo( $this->gallery_block( array_map( [ $this, 'image_block' ], $ids ) ) );
-		$html = $this->serve( $id );
+		$ids  = [ $this->attachment(), $this->attachment(), $this->attachment() ];
+		$id   = $this->photo( $this->gallery_block( array_map( [ $this, 'image_block' ], $ids ) ) );
 
-		$first = $this->xpath( $html )->query( '//img[contains(concat(" ", normalize-space(@class), " "), " wp-image-' . $ids[0] . ' ")]' )->item( 0 );
+		// Post content loses sizes to kses on insert, so give every image an auto-prefixed sizes at render time, before the projector runs.
+		$add_sizes = static function ( string $block_html ): string {
+			$processor = new \WP_HTML_Tag_Processor( $block_html );
+			if ( $processor->next_tag( [ 'tag_name' => 'img' ] ) ) {
+				$processor->set_attribute( 'sizes', 'auto, (max-width: 1600px) 100vw, 1600px' );
+			}
+
+			return $processor->get_updated_html();
+		};
+		add_filter( 'render_block_core/image', $add_sizes, 5 );
+
+		// Core's content-tag filter also drops auto from eager images; leave it out so only the projector's own strip is under test.
+		$core_filter = has_filter( 'the_content', 'wp_filter_content_tags' );
+		remove_filter( 'the_content', 'wp_filter_content_tags', 12 );
+		try {
+			$html = $this->serve( $id );
+		} finally {
+			remove_filter( 'render_block_core/image', $add_sizes, 5 );
+			if ( false !== $core_filter ) {
+				add_filter( 'the_content', 'wp_filter_content_tags', (int) $core_filter );
+			}
+		}
+
+		$xpath  = $this->xpath( $html );
+		$first  = $xpath->query( '//img[contains(concat(" ", normalize-space(@class), " "), " wp-image-' . $ids[0] . ' ")]' )->item( 0 );
+		$second = $xpath->query( '//img[contains(concat(" ", normalize-space(@class), " "), " wp-image-' . $ids[1] . ' ")]' )->item( 0 );
 		$this->assertSame( 'eager', $first->getAttribute( 'loading' ) );
 		$this->assertSame( 'high', $first->getAttribute( 'fetchpriority' ) );
-		$this->assertStringNotContainsString( 'auto', $first->getAttribute( 'sizes' ), 'The eager slide carries no auto sizes; the lazy ones may.' );
+		$this->assertNotSame( '', $first->getAttribute( 'sizes' ), 'The eager slide keeps its real sizes.' );
+		$this->assertStringNotContainsString( 'auto', $first->getAttribute( 'sizes' ), 'The eager slide carries no auto sizes.' );
+		$this->assertStringStartsWith( 'auto', $second->getAttribute( 'sizes' ), 'The lazy slides keep auto sizes.' );
 		$this->assertSame( 2, substr_count( $html, 'loading="lazy"' ) );
 
 		$remote = $this->photo(

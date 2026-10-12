@@ -105,7 +105,10 @@ final class Photo_Location {
 		$place   = '';
 
 		if ( $post instanceof \WP_Post && $this->is_photo( $post ) ) {
-			$visible = Meta_Fields::get_visible_location_fields( $post->ID );
+			// A protected post hides every location field, like Kind_Facts::can_show().
+			$visible = post_password_required( $post )
+				? Meta_Fields::get_public_location_fields( 0 )
+				: Meta_Fields::get_visible_location_fields( $post->ID );
 			if ( ! $visible['map'] && remove_filter( 'the_content', self::CONTENT_MAP, 11 ) ) {
 				$removed[] = [
 					'callable' => self::CONTENT_MAP,
@@ -168,7 +171,7 @@ final class Photo_Location {
 		}
 
 		$visible = Meta_Fields::get_public_location_fields( $post->ID );
-		if ( ! $visible['street'] || ! $visible['coordinates'] ) {
+		if ( post_password_required( $post ) || ! $visible['street'] || ! $visible['coordinates'] ) {
 			remove_action( 'wp_head', self::META_TAGS, 10 );
 		}
 	}
@@ -233,12 +236,16 @@ final class Photo_Location {
 	}
 
 	/**
-	 * Whether public privacy hides either street or coordinates.
+	 * Whether a password or public privacy hides either street or coordinates.
 	 *
 	 * @param int $post_id Post ID.
 	 * @return bool True when precise location is hidden.
 	 */
 	private function public_precise_hidden( int $post_id ): bool {
+		if ( post_password_required( $post_id ) ) {
+			return true;
+		}
+
 		$visible = Meta_Fields::get_public_location_fields( $post_id );
 
 		return ! $visible['street'] || ! $visible['coordinates'];
