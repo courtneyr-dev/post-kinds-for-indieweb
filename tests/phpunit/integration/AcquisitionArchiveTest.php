@@ -56,7 +56,7 @@ final class AcquisitionArchiveTest extends WP_UnitTestCase {
 	 * @param array<string, mixed> $attrs Card attributes.
 	 */
 	private function card( array $attrs ): string {
-		return '<!-- wp:post-kinds-indieweb/acquisition-card ' . wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES ) . ' /-->';
+		return '<!-- wp:post-kinds-indieweb/acquisition-card ' . serialize_block_attributes( $attrs ) . ' /-->';
 	}
 
 	/**
@@ -77,7 +77,7 @@ final class AcquisitionArchiveTest extends WP_UnitTestCase {
 					'post_status'  => 'publish',
 					'post_title'   => $title,
 					'post_date'    => $date,
-					'post_content' => $content,
+					'post_content' => wp_slash( $content ),
 				],
 				$args
 			)

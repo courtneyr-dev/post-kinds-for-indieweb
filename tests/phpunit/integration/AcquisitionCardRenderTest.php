@@ -51,7 +51,7 @@ final class AcquisitionCardRenderTest extends WP_UnitTestCase {
 	 * @param array<string, mixed> $attrs Card attributes.
 	 */
 	private function card( array $attrs ): string {
-		return '<!-- wp:post-kinds-indieweb/acquisition-card ' . wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES ) . ' /-->';
+		return '<!-- wp:post-kinds-indieweb/acquisition-card ' . serialize_block_attributes( $attrs ) . ' /-->';
 	}
 
 	/**
@@ -67,7 +67,7 @@ final class AcquisitionCardRenderTest extends WP_UnitTestCase {
 					'post_status'  => 'publish',
 					'post_title'   => 'Field Recorder',
 					'post_date'    => '2026-08-12 10:00:00',
-					'post_content' => $this->card( $attrs ),
+					'post_content' => wp_slash( $this->card( $attrs ) ),
 				],
 				$args
 			)
@@ -271,6 +271,24 @@ final class AcquisitionCardRenderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'from Corner Hardware', $html );
 		$this->assertStringNotContainsString( '<strong>', $html );
 		$this->assertStringNotContainsString( '&lt;strong', $html );
+	}
+
+	public function test_stream_cards_print_a_local_photo_and_never_a_remote_one(): void {
+		$image_id = self::factory()->attachment->create_upload_object( DIR_TESTDATA . '/images/canola.jpg' );
+		$local    = $this->acquisition( [ 'title' => 'Local Lantern', 'photo' => (string) wp_get_attachment_url( $image_id ), 'photoAlt' => 'A brass lantern' ] );
+		$remote   = $this->acquisition( [ 'title' => 'Remote Lantern', 'photo' => 'https://images.example.com/missing-lantern.jpg', 'photoAlt' => 'A brass lantern' ] );
+
+		foreach ( [ home_url( '/' ), (string) get_term_link( 'acquisition', Taxonomy::TAXONOMY ) ] as $url ) {
+			$this->go_to( $url );
+			$local_html = $this->render_stream( $local );
+			$this->assertStringContainsString( '<img', $local_html, $url );
+			$this->assertStringContainsString( (string) wp_get_attachment_url( $image_id ), $local_html, $url );
+
+			$remote_html = $this->render_stream( $remote );
+			$this->assertStringNotContainsString( '<img', $remote_html, $url );
+			$this->assertStringNotContainsString( 'images.example.com', $remote_html, $url );
+			$this->assertStringContainsString( 'Remote Lantern', $remote_html, $url );
+		}
 	}
 
 	public function test_single_where_url_wraps_the_title_link(): void {

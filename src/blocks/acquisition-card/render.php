@@ -21,46 +21,63 @@ if ( ! defined( 'ABSPATH' ) ) {
 use function PKIW\get_kind_icon_svg;
 use function PKIW\get_kind_label;
 
-$pkiw_title       = $attributes['title'] ?? '';
-$pkiw_type        = $attributes['acquisitionType'] ?? '';
-$pkiw_cost        = $attributes['cost'] ?? '';
-$pkiw_where       = $attributes['where'] ?? '';
-$pkiw_where_url   = $attributes['whereUrl'] ?? '';
+$pkiw_title       = \PKIW\Acquisition_Archive::plain( (string) ( $attributes['title'] ?? '' ) );
+$pkiw_type        = array_key_exists( 'acquisitionType', $attributes ) ? (string) $attributes['acquisitionType'] : 'purchase';
+$pkiw_cost        = trim( (string) ( $attributes['cost'] ?? '' ) );
+$pkiw_where       = \PKIW\Acquisition_Archive::plain( (string) ( $attributes['where'] ?? '' ) );
+$pkiw_where_url   = (string) ( $attributes['whereUrl'] ?? '' );
 $pkiw_photo       = $attributes['photo'] ?? '';
 $pkiw_photo_alt   = $attributes['photoAlt'] ?? '';
-$pkiw_notes       = $attributes['notes'] ?? '';
+$pkiw_notes       = \PKIW\Acquisition_Archive::plain( (string) ( $attributes['notes'] ?? '' ), true );
 $pkiw_acquired_at = $attributes['acquiredAt'] ?? '';
+$pkiw_post_id     = ( $block instanceof \WP_Block && ! empty( $block->context['postId'] ) ) ? (int) $block->context['postId'] : (int) get_the_ID();
+$pkiw_in_stream   = function_exists( 'PKIW\is_rendering_stream_card' ) && \PKIW\is_rendering_stream_card();
 
-// #239: cost is private unless this card and the post's synced toggle both say public.
-if ( empty( $attributes['showCostPublicly'] ) || ! \PKIW\Meta_Fields::acquisition_cost_visible( (int) ( $block->context['postId'] ?? get_the_ID() ) ) ) {
+// issue 239: cost is private unless this card, request and the post's synced toggle say public.
+if (
+	empty( $attributes['showCostPublicly'] )
+	|| ! \PKIW\Meta_Fields::acquisition_cost_visible( $pkiw_post_id )
+	|| $pkiw_in_stream
+	|| is_search()
+	|| ( is_archive() && ! is_feed() )
+) {
 	$pkiw_cost = '';
 }
 
-$pkiw_type_labels = [
-	'purchase' => __( 'Purchase', 'post-kinds-for-indieweb-in-block-themes' ),
-	'gift'     => __( 'Gift', 'post-kinds-for-indieweb-in-block-themes' ),
-	'found'    => __( 'Found', 'post-kinds-for-indieweb-in-block-themes' ),
-	'won'      => __( 'Won', 'post-kinds-for-indieweb-in-block-themes' ),
-	'trade'    => __( 'Trade', 'post-kinds-for-indieweb-in-block-themes' ),
-	'free'     => __( 'Free', 'post-kinds-for-indieweb-in-block-themes' ),
-	'other'    => __( 'Other', 'post-kinds-for-indieweb-in-block-themes' ),
-];
+$pkiw_type_labels = \PKIW\Acquisition_Archive::type_labels();
 $pkiw_type_label  = $pkiw_type_labels[ $pkiw_type ] ?? ( $pkiw_type ? $pkiw_type : __( 'Acquired', 'post-kinds-for-indieweb-in-block-themes' ) );
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
-		'class' => 'pk-card k-acquisition h-cite',
+		'class' => 'pk-card k-acquisition h-cite u-acquisition-of',
 	]
 );
 
 [ $pkiw_acquired_iso, $pkiw_acquired_display ] = \PKIW\card_calendar_date( (string) $pkiw_acquired_at );
+
+if ( $pkiw_in_stream ) {
+	$pkiw_where_url = '';
+	$pkiw_notes     = '';
+	// Stream and archive cards print local pictures only, so a visitor's browser never asks a third-party host for one.
+	if ( ! \PKIW\is_upload_url( \PKIW\web_url( (string) $pkiw_photo ) ) ) {
+		$pkiw_photo = '';
+	}
+	if ( is_archive() || is_search() ) {
+		$pkiw_type_label       = '';
+		$pkiw_where            = '';
+		$pkiw_acquired_iso     = '';
+		$pkiw_acquired_display = '';
+	}
+}
 
 ob_start();
 ?>
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="pk-badge"><?php echo get_kind_icon_svg( 'acquisition' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 	<div class="pk-body">
-		<span class="pk-kindlabel"><?php echo esc_html( get_kind_label( $pkiw_type_label, 'acquisition', 'acquisition-card' ) ); ?></span>
+		<?php if ( $pkiw_type_label ) : ?>
+			<span class="pk-kindlabel"><?php echo esc_html( get_kind_label( $pkiw_type_label, 'acquisition', 'acquisition-card' ) ); ?></span>
+		<?php endif; ?>
 
 		<div class="pk-caption">
 			<?php if ( $pkiw_title ) : ?>
@@ -105,8 +122,6 @@ ob_start();
 			</div>
 		<?php endif; ?>
 	</div>
-
-	<data class="u-acquired" value="<?php echo esc_attr( $pkiw_title ); ?>" hidden></data>
 </article>
 <?php
 echo ob_get_clean(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

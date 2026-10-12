@@ -50,7 +50,7 @@ final class AcquisitionFactsTest extends WP_UnitTestCase {
 	 * @param array<string, mixed> $attrs Card attributes.
 	 */
 	private function card( array $attrs ): string {
-		return '<!-- wp:post-kinds-indieweb/acquisition-card ' . wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES ) . ' /-->';
+		return '<!-- wp:post-kinds-indieweb/acquisition-card ' . serialize_block_attributes( $attrs ) . ' /-->';
 	}
 
 	/**
@@ -68,7 +68,7 @@ final class AcquisitionFactsTest extends WP_UnitTestCase {
 					'post_status'  => 'publish',
 					'post_title'   => 'Field Recorder',
 					'post_date'    => '2026-08-12 10:00:00',
-					'post_content' => $content,
+					'post_content' => wp_slash( $content ),
 				],
 				$args
 			)
@@ -156,14 +156,14 @@ final class AcquisitionFactsTest extends WP_UnitTestCase {
 		$id = $this->acquisition( [ 'title' => 'Field Recorder', 'cost' => '$129.00' ] );
 		$this->assertSame( '', $this->facts( $id )['cost'] );
 
-		wp_update_post( [ 'ID' => $id, 'post_content' => $this->card( [ 'title' => 'Field Recorder', 'cost' => '$129.00', 'showCostPublicly' => true ] ) ] );
+		wp_update_post( [ 'ID' => $id, 'post_content' => wp_slash( $this->card( [ 'title' => 'Field Recorder', 'cost' => '$129.00', 'showCostPublicly' => true ] ) ) ] );
 		delete_post_meta( $id, '_pkiw_acquisition_cost_public' );
 		$this->assertSame( '', $this->facts( $id )['cost'] );
 
 		update_post_meta( $id, '_pkiw_acquisition_cost_public', '1' );
 		$this->assertSame( '$129.00', $this->facts( $id )['cost'] );
 
-		wp_update_post( [ 'ID' => $id, 'post_content' => $this->card( [ 'title' => 'Field Recorder', 'cost' => '$129.00' ] ) ] );
+		wp_update_post( [ 'ID' => $id, 'post_content' => wp_slash( $this->card( [ 'title' => 'Field Recorder', 'cost' => '$129.00' ] ) ) ] );
 		$this->assertSame( '', $this->facts( $id )['cost'] );
 
 		$empty_cost = $this->acquisition( [ 'title' => 'Empty Cost', 'cost' => '', 'showCostPublicly' => true ] );
