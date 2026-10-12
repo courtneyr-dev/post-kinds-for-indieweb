@@ -1,0 +1,62 @@
+.pkiw-projector__mount {
+	margin: 0;
+}
+
+.pkiw-projector__mount img {
+	display: block;
+	height: auto;
+	max-width: 100%;
+}
+
+.pkiw-projector__mount[hidden] {
+	display: none;
+}
+
+.pkiw-projector--enhanced .pkiw-projector__mount > figcaption {
+	display: none;
+}
+
+.pkiw-projector__controls {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	justify-content: center;
+	margin-block-start: 1rem;
+}
+
+.pkiw-projector__status {
+	text-align: center;
+}
+
+.pkiw-projector__counter,
+.pkiw-projector__caption {
+	margin-block: 0;
+}
+
+.pkiw-projector__button,
+.pkiw-projector__thumb {
+	color: inherit;
+	min-height: 2.75rem;
+	min-width: 2.75rem;
+}
+
+.pkiw-projector__rail {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	justify-content: center;
+	margin-block-start: 1rem;
+}
+
+.pkiw-projector__thumb {
+	align-items: center;
+	display: inline-flex;
+	gap: 0.25rem;
+}
+
+.pkiw-projector__thumb img {
+	height: 2.75rem;
+	object-fit: cover;
+	width: 2.75rem;
+}
