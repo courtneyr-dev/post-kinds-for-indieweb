@@ -7,9 +7,13 @@
 
 declare(strict_types=1);
 
+use PKIW\Block_Bindings_Source;
 use PKIW\Meta_Fields;
+use PKIW\Post_Type;
 
 final class RestProtectedKindMetaTest extends WP_UnitTestCase {
+
+	private const FILTERED_POST_TYPE = 'pkiw_meta_filter';
 
 	private const META = [
 		'_pkiw_cite_url'         => 'https://example.test/source',
@@ -18,6 +22,8 @@ final class RestProtectedKindMetaTest extends WP_UnitTestCase {
 		'_pkiw_read_title'       => 'Hidden Read Title',
 	];
 
+	private bool $registered_reaction_post_type = false;
+
 	public function set_up(): void {
 		parent::set_up();
 		( new Meta_Fields() )->register_meta_fields();
@@ -25,6 +31,13 @@ final class RestProtectedKindMetaTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down(): void {
+		remove_filter( 'pkiw_meta_post_types', [ $this, 'add_filtered_meta_post_type' ] );
+		if ( post_type_exists( self::FILTERED_POST_TYPE ) ) {
+			unregister_post_type( self::FILTERED_POST_TYPE );
+		}
+		if ( $this->registered_reaction_post_type && post_type_exists( Post_Type::POST_TYPE ) ) {
+			unregister_post_type( Post_Type::POST_TYPE );
+		}
 		wp_set_current_user( 0 );
 		parent::tear_down();
 	}
@@ -72,6 +85,76 @@ final class RestProtectedKindMetaTest extends WP_UnitTestCase {
 		$this->assertKindMetaOmitted( $data[0]['meta'] );
 	}
 
+	public function test_reaction_post_type_omits_protected_kind_meta(): void {
+		$this->register_reaction_post_type();
+		( new Meta_Fields() )->register_meta_fields();
+		$post_id = $this->kind_post(
+			[
+				'post_type'     => Post_Type::POST_TYPE,
+				'post_password' => 'secret',
+			]
+		);
+
+		$data = $this->rest_post( $post_id, [], '/wp/v2/post-kinds/' );
+
+		$this->assertKindMetaOmitted( $data['meta'] );
+	}
+
+	public function test_filtered_meta_post_type_omits_protected_kind_meta(): void {
+		$result = register_post_type(
+			self::FILTERED_POST_TYPE,
+			[
+				'public'       => true,
+				'show_in_rest' => true,
+				'supports'     => [ 'title', 'custom-fields' ],
+			]
+		);
+		$this->assertNotWPError( $result );
+		$this->assertTrue( post_type_exists( self::FILTERED_POST_TYPE ) );
+		add_filter( 'pkiw_meta_post_types', [ $this, 'add_filtered_meta_post_type' ] );
+		( new Meta_Fields() )->register_meta_fields();
+		$post_id = $this->kind_post(
+			[
+				'post_type'     => self::FILTERED_POST_TYPE,
+				'post_password' => 'secret',
+			]
+		);
+
+		$data = $this->rest_post( $post_id, [], '/wp/v2/' . self::FILTERED_POST_TYPE . '/' );
+
+		$this->assertKindMetaOmitted( $data['meta'] );
+	}
+
+	public function test_anonymous_protected_post_omits_pk_alias_meta(): void {
+		( new Block_Bindings_Source() )->register_meta();
+		$post_id = $this->kind_post( [ 'post_password' => 'secret' ] );
+		update_post_meta( $post_id, 'pk_title', 'Hidden PK Title' );
+
+		$data = $this->rest_post( $post_id );
+
+		$this->assertArrayNotHasKey( 'pk_title', $data['meta'] );
+	}
+
+	public function test_anonymous_public_post_keeps_pk_alias_meta(): void {
+		( new Block_Bindings_Source() )->register_meta();
+		$post_id = $this->kind_post();
+		update_post_meta( $post_id, 'pk_title', 'Hidden PK Title' );
+
+		$data = $this->rest_post( $post_id );
+
+		$this->assertArrayHasKey( 'pk_title', $data['meta'] );
+		$this->assertSame( 'Hidden PK Title', $data['meta']['pk_title'] );
+	}
+
+	/**
+	 * @param array<string> $post_types Post types.
+	 * @return array<string>
+	 */
+	public function add_filtered_meta_post_type( array $post_types ): array {
+		$post_types[] = self::FILTERED_POST_TYPE;
+		return $post_types;
+	}
+
 	/**
 	 * @param array<string, mixed> $post Post overrides.
 	 */
@@ -97,14 +180,31 @@ final class RestProtectedKindMetaTest extends WP_UnitTestCase {
 	 * @param array<string, mixed> $params Request parameters.
 	 * @return array<string, mixed>
 	 */
-	private function rest_post( int $post_id, array $params = [] ): array {
+	private function rest_post( int $post_id, array $params = [], string $route_base = '/wp/v2/posts/' ): array {
 		$GLOBALS['wp_rest_server'] = null;
-		$request = new WP_REST_Request( 'GET', '/wp/v2/posts/' . $post_id );
+		$request = new WP_REST_Request( 'GET', $route_base . $post_id );
 		foreach ( $params as $key => $value ) {
 			$request->set_param( $key, $value );
 		}
 
 		return (array) rest_do_request( $request )->get_data();
+	}
+
+	private function register_reaction_post_type(): void {
+		if ( post_type_exists( Post_Type::POST_TYPE ) ) {
+			return;
+		}
+
+		register_post_type(
+			Post_Type::POST_TYPE,
+			[
+				'public'       => true,
+				'show_in_rest' => true,
+				'rest_base'    => 'post-kinds',
+				'supports'     => [ 'title', 'custom-fields' ],
+			]
+		);
+		$this->registered_reaction_post_type = true;
 	}
 
 	/**

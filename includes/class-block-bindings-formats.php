@@ -163,6 +163,10 @@ final class Block_Bindings_Formats {
 			return null;
 		}
 
+		if ( post_password_required( (int) $post_id ) ) {
+			return '';
+		}
+
 		if ( ! in_array( $key, self::BINDABLE_KEYS, true ) ) {
 			return null;
 		}

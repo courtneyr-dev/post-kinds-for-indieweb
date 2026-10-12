@@ -142,6 +142,29 @@ final class CheckinDashboardLocationPrivacyTest extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_dashboard_skips_password_required_checkins_before_grid_map_and_stats(): void {
+		$this->create_checkin( 'public', 'Visible Venue', '1 Visible Way' );
+		$protected_id = $this->create_checkin( 'public', 'Hidden Venue', '742 Sentinel Ave' );
+		wp_update_post(
+			[
+				'ID'            => $protected_id,
+				'post_password' => 'secret',
+			]
+		);
+		$this->become( 'anonymous' );
+
+		$html = $this->render_dashboard();
+
+		$this->assertStringContainsString( 'Visible Venue', $html );
+		$this->assertStringContainsString( '1 Visible Way', $html );
+		foreach ( [ 'Hidden Venue', '742 Sentinel Ave' ] as $hidden ) {
+			$this->assertStringNotContainsString( $hidden, $html );
+		}
+		$this->assertGreaterThanOrEqual( 2, preg_match_all( '/<span class="stat-value">([^<]*)<\/span>/', $html, $matches ) );
+		$this->assertSame( '1', trim( $matches[1][0] ), 'total check-ins stat must exclude the protected check-in' );
+		$this->assertSame( '1', trim( $matches[1][1] ), 'unique venues stat must exclude the protected check-in' );
+	}
+
 	/**
 	 * @return array<string, array{0: string, 1: string}>
 	 */

@@ -129,6 +129,33 @@ class BlockBindingsTest extends WP_UnitTestCase {
 		$this->assertNull( $result );
 	}
 
+	public function test_get_binding_value_returns_empty_string_for_password_required_post() {
+		$post_id = self::factory()->post->create( [ 'post_password' => 'secret' ] );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'cite_name', 'Hidden Citation' );
+		wp_set_current_user( 0 );
+
+		$result = $this->block_bindings->get_binding_value(
+			[ 'key' => 'cite_name' ],
+			$this->create_mock_block( $post_id ),
+			'content'
+		);
+
+		$this->assertSame( '', $result );
+	}
+
+	public function test_get_binding_value_keeps_public_post_value() {
+		$post_id = self::factory()->post->create();
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'cite_name', 'Visible Citation' );
+
+		$result = $this->block_bindings->get_binding_value(
+			[ 'key' => 'cite_name' ],
+			$this->create_mock_block( $post_id ),
+			'content'
+		);
+
+		$this->assertSame( 'Visible Citation', $result );
+	}
+
 	/**
 	 * Test get_binding_value returns null for invalid key.
 	 */

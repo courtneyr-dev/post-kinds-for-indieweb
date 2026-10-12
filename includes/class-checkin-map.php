@@ -119,19 +119,20 @@ class Checkin_Map {
 				continue;
 			}
 
-			$visible = Meta_Fields::get_visible_location_fields( $post->ID );
-			$meta    = static fn( string $key ): string => trim( (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . $key, true ) );
+			$password_required = post_password_required( $post );
+			$visible           = $password_required ? [] : Meta_Fields::get_visible_location_fields( $post->ID );
+			$meta              = static fn( string $key ): string => trim( (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . $key, true ) );
 
 			$place = [];
 			foreach ( [ 'locality', 'region', 'country' ] as $part ) {
-				if ( $visible[ $part ] && '' !== $meta( 'checkin_' . $part ) ) {
+				if ( ! empty( $visible[ $part ] ) && '' !== $meta( 'checkin_' . $part ) ) {
 					$place[ $part ] = $meta( 'checkin_' . $part );
 				}
 			}
 
 			$lat = null;
 			$lng = null;
-			if ( $visible['coordinates'] && $visible['map'] && is_numeric( $meta( 'geo_latitude' ) ) && is_numeric( $meta( 'geo_longitude' ) ) ) {
+			if ( ! empty( $visible['coordinates'] ) && ! empty( $visible['map'] ) && is_numeric( $meta( 'geo_latitude' ) ) && is_numeric( $meta( 'geo_longitude' ) ) ) {
 				$lat = (float) $meta( 'geo_latitude' );
 				$lng = (float) $meta( 'geo_longitude' );
 			}
@@ -151,7 +152,7 @@ class Checkin_Map {
 				'url'       => (string) get_permalink( $post ),
 				'date_iso'  => (string) get_the_date( 'c', $post ),
 				'date'      => (string) get_the_date( '', $post ),
-				'name'      => $visible['name'] ? $meta( 'checkin_name' ) : '',
+				'name'      => ! empty( $visible['name'] ) ? $meta( 'checkin_name' ) : '',
 				'place'     => $place,
 				'lat'       => $lat,
 				'lng'       => $lng,
@@ -375,23 +376,23 @@ class Checkin_Map {
 										if ( '' !== $entry['name'] ) {
 											$parts[] = '<span class="p-name">' . esc_html( $entry['name'] ) . '</span>';
 										}
-										$town = [];
-										$classes = [
-											'locality' => 'p-locality',
-											'region'   => 'p-region',
-											'country'  => 'p-country-name',
-										];
-										foreach ( $classes as $part => $class ) {
-											if ( isset( $entry['place'][ $part ] ) ) {
-												$town[] = '<span class="' . $class . '">' . esc_html( $entry['place'][ $part ] ) . '</span>';
+											$town    = [];
+											$classes = [
+												'locality' => 'p-locality',
+												'region'   => 'p-region',
+												'country'  => 'p-country-name',
+											];
+											foreach ( $classes as $part => $class ) {
+												if ( isset( $entry['place'][ $part ] ) ) {
+													$town[] = '<span class="' . $class . '">' . esc_html( $entry['place'][ $part ] ) . '</span>';
+												}
 											}
-										}
-										if ( $town ) {
-											$parts[] = implode( ', ', $town );
-										}
-										// Each part is escaped above.
-										echo implode( ' · ', $parts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-										?>
+											if ( $town ) {
+												$parts[] = implode( ', ', $town );
+											}
+											// Each part is escaped above.
+											echo implode( ' · ', $parts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+											?>
 										<?php if ( null !== $entry['lat'] ) : ?>
 											<data class="p-geo h-geo" value="<?php echo esc_attr( sprintf( 'geo:%F,%F', $entry['lat'], $entry['lng'] ) ); ?>"><data class="p-latitude" value="<?php echo esc_attr( (string) $entry['lat'] ); ?>" hidden></data><data class="p-longitude" value="<?php echo esc_attr( (string) $entry['lng'] ); ?>" hidden></data></data>
 										<?php endif; ?>

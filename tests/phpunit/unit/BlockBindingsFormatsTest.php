@@ -128,6 +128,25 @@ class BlockBindingsFormatsTest extends WP_UnitTestCase {
 		$this->assertSame( 'standard', $result );
 	}
 
+	public function test_get_value_returns_empty_string_for_password_required_post(): void {
+		$post_id = self::factory()->post->create( [ 'post_password' => 'secret' ] );
+		set_post_format( $post_id, 'aside' );
+		wp_set_current_user( 0 );
+
+		$result = $this->source->get_value( [ 'key' => 'format_name' ], $this->make_block_instance( $post_id ), 'content' );
+
+		$this->assertSame( '', $result );
+	}
+
+	public function test_get_value_keeps_public_post_format(): void {
+		$post_id = self::factory()->post->create();
+		set_post_format( $post_id, 'aside' );
+
+		$result = $this->source->get_value( [ 'key' => 'format_name' ], $this->make_block_instance( $post_id ), 'content' );
+
+		$this->assertSame( 'aside', $result );
+	}
+
 	/**
 	 * Test format_name returns correct slug for each supported format.
 	 *
