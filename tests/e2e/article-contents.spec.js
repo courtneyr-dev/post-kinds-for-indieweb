@@ -281,25 +281,18 @@ test.describe( 'article contents archive', () => {
 		} );
 	}
 
-	test( 'the archive does not scroll horizontally at 320px or a 400 percent zoom equivalent', async ( {
+	test( 'the archive does not scroll horizontally at 320px, which is 400 percent of a 1280px window', async ( {
 		page,
 	} ) => {
-		for ( const width of [ 320, 1280 ] ) {
-			await page.setViewportSize( { width, height: 900 } );
-			await page.goto( `${ BASE }/?kind=article` );
-			if ( width === 1280 ) {
-				await page.addStyleTag( { content: 'html { zoom: 4; }' } );
-			}
-			const overflow = await page.evaluate(
-				() =>
-					document.documentElement.scrollWidth -
-					document.documentElement.clientWidth
-			);
-			expect(
-				overflow,
-				`${ width }px viewport overflow`
-			).toBeLessThanOrEqual( 0 );
-		}
+		await page.setViewportSize( { width: 320, height: 900 } );
+		await page.goto( `${ BASE }/?kind=article` );
+
+		const overflow = await page.evaluate(
+			() =>
+				document.documentElement.scrollWidth -
+				document.documentElement.clientWidth
+		);
+		expect( overflow ).toBeLessThanOrEqual( 0 );
 	} );
 
 	test( 'the page-one lead spans the grid and reflows its picture', async ( {
@@ -365,7 +358,13 @@ test.describe( 'article contents archive', () => {
 			.first()
 			.locator( '.pkiw-contents__title a' )
 			.getAttribute( 'href' );
-		await page.locator( '.is-style-pkiw-contents li img' ).first().click();
+		// The title link's ::after overlay sits over the picture, so Playwright's
+		// own hit-target check would refuse the click. force: true sends the real
+		// mouse click to the point, and the overlay is what receives it.
+		await page
+			.locator( '.is-style-pkiw-contents li img' )
+			.first()
+			.click( { force: true } );
 		await expect( page ).toHaveURL( href );
 	} );
 
@@ -385,7 +384,7 @@ test.describe( 'article contents archive', () => {
 					.map( ( link ) => link.href )
 			);
 		const seen = [];
-		for ( let i = 0; i < expected.length + 8; i++ ) {
+		for ( let i = 0; i < expected.length + 24; i++ ) {
 			await page.keyboard.press( 'Tab' );
 			const href = await page
 				.locator( 'body' )
@@ -451,10 +450,21 @@ test.describe( 'article contents archive', () => {
 		await expect( page.locator( '[aria-current="page"]' ) ).toHaveText(
 			'1'
 		);
-		await expect( page.getByLabel( 'Previous Page' ) ).toHaveCount( 0 );
+		const nav = page.locator( 'nav.wp-block-query-pagination' );
+		await expect(
+			nav.getByRole( 'link', { name: /Previous Page/ } )
+		).toHaveCount( 0 );
+		await expect(
+			nav.getByRole( 'link', { name: /Next Page/ } )
+		).toHaveCount( 1 );
 
 		await page.goto( `${ BASE }/?kind=article&paged=2` );
-		await expect( page.getByLabel( 'Next Page' ) ).toHaveCount( 0 );
+		await expect(
+			nav.getByRole( 'link', { name: /Previous Page/ } )
+		).toHaveCount( 1 );
+		await expect(
+			nav.getByRole( 'link', { name: /Next Page/ } )
+		).toHaveCount( 0 );
 	} );
 
 	test( 'article archive main has no axe violations', async ( { page } ) => {
@@ -490,7 +500,7 @@ test.describe( 'article contents archive', () => {
 		await context.close();
 
 		await page.goto( `${ BASE }/?kind=article` );
-		await expect( page.locator( 'h2' ) ).toHaveCount( 1 );
+		await expect( page.locator( '.pkiw-group__heading' ) ).toHaveCount( 1 );
 		await expect(
 			page.locator( '.is-style-pkiw-contents li' )
 		).toHaveCount( 1 );

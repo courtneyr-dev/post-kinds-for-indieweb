@@ -67,9 +67,20 @@ final class ReadingTimeBlockTest extends WP_UnitTestCase {
 
 	public function test_a_reading_time_block_in_post_content_does_not_print_in_rss2(): void {
 		$post_id = $this->article( 1000, 'Feed Block', [ 'post_content' => '<!-- wp:post-kinds-indieweb/reading-time /-->' ] );
-		$this->go_to( get_permalink( $post_id ) );
+		// The feed template prints each item through these two functions. Calling
+		// the template itself would send headers from inside PHPUnit.
+		$this->go_to( get_feed_link() );
+		$this->assertTrue( have_posts() );
+		$feed = '';
+		while ( have_posts() ) {
+			the_post();
+			if ( get_the_ID() === $post_id ) {
+				$feed = get_echo( 'the_title_rss' ) . get_echo( 'the_content_feed', [ 'rss2' ] ) . get_echo( 'the_excerpt_rss' );
+			}
+		}
 
-		$this->assertStringNotContainsString( 'min read', get_echo( 'do_feed_rss2' ) );
+		$this->assertStringContainsString( 'Feed Block', $feed, 'The post is in the feed.' );
+		$this->assertStringNotContainsString( 'min read', $feed );
 	}
 
 	public function test_a_reading_time_block_in_post_content_does_not_print_in_rest_content(): void {

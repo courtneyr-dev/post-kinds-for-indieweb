@@ -22,9 +22,14 @@ final class ArticleArchiveTemplateTest extends WP_UnitTestCase {
 		wp_clean_themes_cache();
 		switch_theme( 'twentytwentyfive' );
 		update_option( 'timezone_string', 'America/New_York' );
+		// Pretty permalinks, as the site runs: /kind/article/page/2/ and /kind/article/feed/.
+		$this->set_permalink_structure( '/%postname%/' );
+		get_taxonomy( \PKIW\Taxonomy::TAXONOMY )->add_rewrite_rules();
+		flush_rewrite_rules( false );
 	}
 
 	public function tear_down(): void {
+		$this->set_permalink_structure( '' );
 		switch_theme( $this->original_stylesheet );
 		$key = array_search( dirname( __DIR__ ) . '/fixtures/themes', $GLOBALS['wp_theme_directories'], true );
 		if ( false !== $key ) {
@@ -171,6 +176,9 @@ final class ArticleArchiveTemplateTest extends WP_UnitTestCase {
 	}
 
 	public function test_a_renamed_article_term_prints_the_new_singular_name(): void {
+		if ( ! term_exists( 'article', 'kind' ) ) {
+			wp_insert_term( 'Article', 'kind', [ 'slug' => 'article' ] );
+		}
 		$term = get_term_by( 'slug', 'article', 'kind' );
 		wp_update_term( $term->term_id, 'kind', [ 'name' => 'Essay' ] );
 

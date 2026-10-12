@@ -113,9 +113,14 @@ final class ReadingTimeTest extends WP_UnitTestCase {
 	public function test_a_protected_post_with_its_cookie_gives_reading_time(): void {
 		$this->assert_reading_time_class_exists();
 		$post_id = $this->post_with_words( 1000, [ 'post_password' => 'secret' ] );
-		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = wp_hash_password( 'secret' );
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'secret' );
 
-		$this->assertSame( 5, \PKIW\Reading_Time::minutes( $post_id ) );
+		try {
+			$this->assertSame( 5, \PKIW\Reading_Time::minutes( $post_id ) );
+		} finally {
+			unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+		}
 	}
 
 	public function test_minutes_does_not_write_postmeta(): void {

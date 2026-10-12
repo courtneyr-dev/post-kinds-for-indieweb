@@ -222,7 +222,10 @@ test.describe( 'article Stream card overlay', () => {
 		const a06Href = await a06
 			.locator( '.pk-title a' )
 			.getAttribute( 'href' );
-		await a06.locator( '.pk-media img' ).click();
+		// The title link's ::after overlay covers the picture, so Playwright's
+		// hit-target check would refuse a normal click. force: true sends the
+		// real mouse click to the point; the overlay receives it.
+		await a06.locator( '.pk-media img' ).click( { force: true } );
 		await expect( page ).toHaveURL( a06Href );
 
 		await page.goto( articlePage.link );
@@ -232,7 +235,7 @@ test.describe( 'article Stream card overlay', () => {
 		const a10Href = await a10
 			.locator( '.pk-title a' )
 			.getAttribute( 'href' );
-		await a10.locator( '.pk-excerpt' ).click();
+		await a10.locator( '.pk-excerpt' ).click( { force: true } );
 		await expect( page ).toHaveURL( a10Href );
 	} );
 

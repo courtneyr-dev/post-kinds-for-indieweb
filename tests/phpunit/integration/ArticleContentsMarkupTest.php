@@ -14,12 +14,22 @@ final class ArticleContentsMarkupTest extends WP_UnitTestCase {
 
 	private string $original_stylesheet = '';
 
+	/**
+	 * A real author, so the hidden author h-card has a name and a URL to print.
+	 */
+	private int $author_id = 0;
+
 	public function set_up(): void {
 		parent::set_up();
 		$this->original_stylesheet = get_stylesheet();
 		switch_theme( 'twentytwentyfive' );
 		update_option( 'timezone_string', 'America/New_York' );
 		update_option( 'posts_per_page', 10 );
+		$this->author_id = self::factory()->user->create( [ 'role' => 'author', 'display_name' => 'Ana Example' ] );
+		// Pretty permalinks, as the site runs: /kind/article/page/2/.
+		$this->set_permalink_structure( '/%postname%/' );
+		get_taxonomy( \PKIW\Taxonomy::TAXONOMY )->add_rewrite_rules();
+		flush_rewrite_rules( false );
 		$this->register_article_archive();
 	}
 
@@ -28,6 +38,7 @@ final class ArticleContentsMarkupTest extends WP_UnitTestCase {
 		wp_dequeue_style( 'pkiw-article-contents' );
 		wp_dequeue_style( 'pkiw-article-stream-card' );
 		wp_set_current_user( 0 );
+		$this->set_permalink_structure( '' );
 		switch_theme( $this->original_stylesheet );
 		parent::tear_down();
 	}
@@ -53,7 +64,7 @@ final class ArticleContentsMarkupTest extends WP_UnitTestCase {
 		$html    = $this->contents_item_html( $post_id );
 
 		$this->assertStringContainsString( 'Article, August 19, 2026', $html );
-		$this->assertStringNotContainsString( 'p-name', $html );
+		$this->assertNoEntryNameOutsideTheHiddenAuthor( $html );
 	}
 
 	public function test_an_untitled_protected_article_uses_the_fallback_without_protected_text(): void {
@@ -61,7 +72,7 @@ final class ArticleContentsMarkupTest extends WP_UnitTestCase {
 		$html    = $this->contents_item_html( $post_id );
 
 		$this->assertStringContainsString( 'Article, August 19, 2026', $html );
-		$this->assertStringNotContainsString( 'p-name', $html );
+		$this->assertNoEntryNameOutsideTheHiddenAuthor( $html );
 		$this->assertStringNotContainsString( 'Protected', $html );
 	}
 
@@ -111,15 +122,22 @@ final class ArticleContentsMarkupTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'pkiw-contents--first-page', $html );
 	}
 
-	public function test_visible_text_is_title_reading_time_and_date_only(): void {
+	public function test_visible_text_of_an_item_is_the_title_and_reading_time_only(): void {
 		$this->article( 'Plain Article', 1000, '2026-08-12 10:00:00', [ 'post_excerpt' => 'Do not print this deck.' ] );
-		$text = trim( preg_replace( '/\s+/', ' ', wp_strip_all_tags( $this->article_archive_html() ) ) );
+		$html  = $this->article_archive_html();
+		$xpath = $this->xpath( $html );
 
-		$this->assertStringContainsString( 'Plain Article', $text );
-		$this->assertStringContainsString( '5 min read', $text );
-		$this->assertStringNotContainsString( 'Do not print this deck.', $text );
-		$this->assertStringNotContainsString( 'Kind', $text );
-		$this->assertStringNotContainsString( 'Badge', $text );
+		$items = $xpath->query( '//li[contains(concat(" ", normalize-space(@class), " "), " wp-block-post ")]' );
+		$this->assertSame( 1, $items->length );
+		$item = $items->item( 0 );
+		// The date is visually hidden by the stylesheet and the author h-card is
+		// [hidden]; neither is visible text.
+		foreach ( iterator_to_array( $xpath->query( './/*[@hidden] | .//*[contains(concat(" ", normalize-space(@class), " "), " pkiw-contents__date ")]', $item ) ) as $node ) {
+			$node->parentNode->removeChild( $node );
+		}
+
+		$this->assertSame( 'Plain Article 5 min read', trim( preg_replace( '/\s+/', ' ', $item->textContent ) ) );
+		$this->assertStringNotContainsString( 'Do not print this deck.', $html );
 	}
 
 	public function test_the_date_is_inside_the_contents_date_block(): void {
@@ -129,29 +147,38 @@ final class ArticleContentsMarkupTest extends WP_UnitTestCase {
 	}
 
 	public function test_geo_values_are_absent_from_contents_items(): void {
-		$this->article( 'Geo Article', 200, '2026-08-12 10:00:00', [ 'post_content' => '<!-- wp:paragraph --><p>Body from a fictional orchard.</p><!-- /wp:paragraph -->' ] );
+		$post_id = $this->article( 'Orchard Article', 200, '2026-08-12 10:00:00' );
+		update_post_meta( $post_id, 'geo_latitude', '40.0' );
+		update_post_meta( $post_id, 'geo_longitude', '-75.0' );
+		update_post_meta( $post_id, 'geo_address', '1 Example Way, Exampleville' );
+		update_post_meta( $post_id, 'geo_public', '1' );
 		$html = $this->article_archive_html();
 
-		foreach ( [ 'p-location', 'h-geo', 'geo', 'latitude', 'longitude' ] as $token ) {
+		$this->assertStringContainsString( 'Orchard Article', $html );
+		foreach ( [ 'Example Way', 'Exampleville', 'p-location', 'h-geo', 'latitude', 'longitude' ] as $token ) {
 			$this->assertStringNotContainsString( $token, $html );
 		}
 	}
 
 	public function test_theme_shaped_post_template_is_byte_identical_and_does_not_enqueue_the_contents_style(): void {
-		$post_id = $this->article( 'Theme Shape', 200, '2026-08-12 10:00:00' );
-		$template = '<!-- wp:post-template --><!-- wp:post-title {"isLink":true} /--><!-- wp:post-date /--><!-- /wp:post-template -->';
+		$post_id  = $this->article( 'Theme Shape', 200, '2026-08-12 10:00:00' );
+		$template = '<!-- wp:query {"queryId":9,"query":{"inherit":false,"postType":"post","perPage":3}} --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-title {"isLink":true} /--><!-- wp:post-date /--><!-- /wp:post-template --></div><!-- /wp:query -->';
 		$this->go_to( get_permalink( $post_id ) );
 
+		$with = do_blocks( $template );
+		$this->assertFalse( wp_style_is( 'pkiw-article-contents', 'enqueued' ) );
+
+		// The hooks stay registered for the process, so take them off here;
+		// WP_UnitTestCase restores them after the test.
 		remove_filter( 'render_block_core/post-title', [ \PKIW\Article_Archive::class, 'title' ], 10 );
 		remove_filter( 'render_block_core/post-date', [ \PKIW\Article_Archive::class, 'date' ], 10 );
 		remove_filter( 'render_block_core/post-featured-image', [ \PKIW\Article_Archive::class, 'picture' ], 10 );
 		remove_filter( 'render_block_core/post-template', [ \PKIW\Article_Archive::class, 'contents_wrapper' ], 10 );
 		$without = do_blocks( $template );
-		( new \PKIW\Article_Archive() )->register();
-		$with = do_blocks( $template );
 
 		$this->assertSame( $without, $with );
-		$this->assertFalse( wp_style_is( 'pkiw-article-contents', 'enqueued' ) );
+		$this->assertStringContainsString( 'Theme Shape', $with );
+		$this->assertStringNotContainsString( 'p-name', $with );
 	}
 
 	public function test_contents_post_template_enqueues_the_contents_style(): void {
@@ -181,12 +208,24 @@ final class ArticleContentsMarkupTest extends WP_UnitTestCase {
 		$this->assertFalse( wp_style_is( 'pkiw-article-stream-card', 'enqueued' ) );
 	}
 
+	/**
+	 * No element outside the hidden author h-card carries p-name.
+	 *
+	 * The hidden `p-author h-card` has its own p-name (the author's name), which
+	 * is not the entry's name, so a bare substring check would be wrong.
+	 */
+	private function assertNoEntryNameOutsideTheHiddenAuthor( string $html ): void {
+		$xpath = $this->xpath( $html );
+		$this->assertSame( 0, $xpath->query( '//*[contains(concat(" ", normalize-space(@class), " "), " p-name ")][not(ancestor::*[@hidden])]' )->length, 'An untitled item has no entry p-name.' );
+		$this->assertSame( 1, $xpath->query( '//*[@hidden]//*[contains(concat(" ", normalize-space(@class), " "), " h-card ")]' )->length, 'The hidden author h-card stays.' );
+	}
+
 	private function register_article_archive(): void {
 		$this->assertTrue( class_exists( 'PKIW\\Article_Archive' ), 'PKIW\\Article_Archive must exist for issue 263.' );
 		$this->assertTrue( class_exists( 'PKIW\\Reading_Time' ), 'PKIW\\Reading_Time must exist for issue 263.' );
-		( new \PKIW\Article_Archive() )->register();
-		( new \PKIW\Reading_Time() )->register();
-		do_action( 'init' );
+		// The plugin wires both classes at load. Re-running init here would
+		// register every other init callback twice.
+		$this->assertNotFalse( has_filter( 'render_block_core/post-title', [ \PKIW\Article_Archive::class, 'title' ] ), 'Article_Archive hooks are registered.' );
 	}
 
 	/**
@@ -212,6 +251,7 @@ final class ArticleContentsMarkupTest extends WP_UnitTestCase {
 			array_merge(
 				[
 					'post_status'  => 'publish',
+					'post_author'  => $this->author_id,
 					'post_title'   => $title,
 					'post_date'    => $date,
 					'post_content' => '<!-- wp:paragraph --><p>' . str_repeat( 'word ', $words ) . '</p><!-- /wp:paragraph -->',
