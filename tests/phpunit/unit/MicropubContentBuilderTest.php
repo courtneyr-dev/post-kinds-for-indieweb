@@ -32,7 +32,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 	 */
 	public function set_up(): void {
 		parent::set_up();
-		foreach ( array( 'note', 'checkin', 'eat', 'drink', 'like', 'rsvp', 'jam', 'favorite', 'wish', 'exercise', 'event', 'video', 'quote', 'issue', 'listen', 'comics', 'read' ) as $slug ) {
+		foreach ( array( 'note', 'checkin', 'eat', 'drink', 'like', 'rsvp', 'jam', 'favorite', 'wish', 'exercise', 'event', 'video', 'quote', 'issue', 'listen', 'comics', 'read', 'acquisition' ) as $slug ) {
 			if ( ! term_exists( $slug, 'kind' ) ) {
 				wp_insert_term( ucfirst( $slug ), 'kind', array( 'slug' => $slug ) );
 			}
@@ -2001,6 +2001,250 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'wp:post-kinds-indieweb/comic-card', $content );
 	}
 
+	// --- Acquisition card (issue 239, Courtney's G5 answer) ------------------
+
+	/**
+	 * Properties of a Micropub acquisition with every card property sent.
+	 *
+	 * @param string $photo Local photo URL, or ''.
+	 * @return array<string, mixed>
+	 */
+	private function acquisition_properties( string $photo = '' ): array {
+		$properties = array(
+			'acquisition-of'      => array( 'https://shop.example.com/seeds' ),
+			'name'                => array( 'Balcony Seeds' ),
+			'content'             => array( 'Seeds for the balcony.' ),
+			'mp-acquisition-type' => array( 'gift' ),
+			'mp-where'            => array( 'Corner Shop' ),
+			'mp-where-url'        => array( 'https://shop.example.com/corner' ),
+			'mp-acquired-at'      => array( '2026-07-15' ),
+		);
+		if ( '' !== $photo ) {
+			$properties['photo']        = array( $photo );
+			$properties['mp-photo-alt'] = array( 'A paper packet of seeds' );
+		}
+		return $properties;
+	}
+
+	/** Number of core/group blocks carrying the e-content class. */
+	private function e_content_groups( string $content ): int {
+		$count = 0;
+		$walk  = static function ( array $blocks ) use ( &$walk, &$count ): void {
+			foreach ( $blocks as $block ) {
+				if ( 'core/group' === $block['blockName'] && 'e-content' === ( $block['attrs']['className'] ?? '' ) ) {
+					++$count;
+				}
+				$walk( $block['innerBlocks'] ?? array() );
+			}
+		};
+		$walk( parse_blocks( $content ) );
+		return $count;
+	}
+
+	/** An acquisition builds one card and one e-content group, with the local photo on the card. */
+	public function test_acquisition_builds_one_card_one_e_content_group_and_the_local_photo(): void {
+		$photo   = $this->local_upload_url( 'seeds.jpg' );
+		$content = (string) $this->invoke_private( 'build_block_content', array( $this->acquisition_properties( $photo ) ) );
+		$names   = $this->block_names( $content );
+		$attrs   = $this->first_attrs( $content, 'post-kinds-indieweb/acquisition-card' );
+
+		$this->assertSame( 1, count( array_keys( $names, 'post-kinds-indieweb/acquisition-card', true ) ) );
+		$this->assertSame( 1, $this->e_content_groups( $content ) );
+		$this->assertSame( 1, substr_count( $content, 'Seeds for the balcony.' ), 'the body prints once, as e-content' );
+		$this->assertStringNotContainsString( 'Acquired <a', $content );
+		$this->assertSame(
+			array(
+				'title'           => 'Balcony Seeds',
+				'acquisitionType' => 'gift',
+				'where'           => 'Corner Shop',
+				'whereUrl'        => 'https://shop.example.com/corner',
+				'photo'           => $photo,
+				'photoAlt'        => 'A paper packet of seeds',
+				'acquiredAt'      => '2026-07-15',
+			),
+			$attrs
+		);
+		$this->assertSame( array(), $this->images( $content ), 'the card photo is not repeated as an image block' );
+	}
+
+	/** The request's cost lands on the card with the public toggle off, and nothing in the builder prints it. */
+	public function test_acquisition_stores_cost_with_the_public_toggle_off(): void {
+		$properties            = $this->acquisition_properties();
+		$properties['mp-cost'] = array( '$12.00' );
+		$content               = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+		$attrs                 = $this->first_attrs( $content, 'post-kinds-indieweb/acquisition-card' );
+
+		$this->assertSame( '$12.00', $attrs['cost'] ?? null );
+		$this->assertEmpty( $attrs['showCostPublicly'] ?? false, 'private by default' );
+		$this->assertSame( 1, substr_count( $content, '$12.00' ), 'the cost appears only as the card attribute' );
+
+		$rendered = do_blocks( $content );
+		$this->assertStringContainsString( 'Balcony Seeds', $rendered );
+		$this->assertStringNotContainsString( '12.00', $rendered, 'the stored card does not print its cost' );
+	}
+
+	/** A cost with no toggle stays private through apply() and the stored post. */
+	public function test_apply_keeps_acquisition_cost_private_and_sets_the_kind(): void {
+		$post_id = self::factory()->post->create( array( 'post_status' => 'publish' ) );
+		$input   = array(
+			'type'       => array( 'h-entry' ),
+			'properties' => $this->acquisition_properties() + array( 'mp-cost' => array( '$12.00' ) ),
+		);
+
+		Micropub_Content_Builder::apply( $input, array( 'ID' => $post_id ) );
+
+		$stored = (string) get_post_field( 'post_content', $post_id );
+		$attrs  = $this->first_attrs( $stored, 'post-kinds-indieweb/acquisition-card' );
+		$this->assertSame( '$12.00', $attrs['cost'] ?? null );
+		$this->assertEmpty( $attrs['showCostPublicly'] ?? false );
+		$this->assertSame( array( 'acquisition' ), $this->kind_slugs( $post_id ) );
+		$this->assertSame( '1', (string) get_post_meta( $post_id, '_pkiw_block_content_generated', true ) );
+		$this->assertSame( '', (string) get_post_meta( $post_id, '_pkiw_acquisition_cost_public', true ) );
+	}
+
+	/** A remote photo never reaches the card, so no visitor's browser asks a third-party host for it. */
+	public function test_acquisition_card_does_not_hotlink_a_remote_photo(): void {
+		$properties                 = $this->acquisition_properties( 'https://images.example.com/seeds.jpg' );
+		$properties['mp-photo-alt'] = array( 'Remote seeds' );
+		$markup                     = (string) $this->invoke_private( 'acquisition_card', array( $properties ) );
+		$attrs                      = $this->first_attrs( $markup, 'post-kinds-indieweb/acquisition-card' );
+
+		$this->assertArrayNotHasKey( 'photo', $attrs );
+		$this->assertArrayNotHasKey( 'photoAlt', $attrs );
+		$this->assertStringNotContainsString( 'images.example.com', $markup );
+	}
+
+	/** Micropub's sideload appends the local copy after the remote original: the card takes the copy and nothing repeats it. */
+	public function test_acquisition_card_takes_the_sideloaded_copy_of_a_remote_photo(): void {
+		$local                      = $this->local_upload_url( 'seeds-copy.jpg' );
+		$properties                 = $this->acquisition_properties();
+		$properties['photo']        = array( 'https://images.example.com/seeds.jpg', $local );
+		$properties['mp-photo-alt'] = array( 'A paper packet of seeds' );
+		$content                    = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+		$attrs                      = $this->first_attrs( $content, 'post-kinds-indieweb/acquisition-card' );
+
+		$this->assertSame( $local, $attrs['photo'] ?? null );
+		$this->assertSame( 'A paper packet of seeds', $attrs['photoAlt'] ?? null );
+		$this->assertSame( array(), $this->images( $content ), 'neither copy follows the card' );
+		$this->assertStringNotContainsString( 'images.example.com', $content );
+	}
+
+	/** A second local photo stays below the card with its own alt. */
+	public function test_acquisition_second_local_photo_follows_the_card(): void {
+		$first                      = $this->local_upload_url( 'seeds-a.jpg' );
+		$second                     = $this->local_upload_url( 'seeds-b.jpg' );
+		$properties                 = $this->acquisition_properties();
+		$properties['photo']        = array( $first, $second );
+		$properties['mp-photo-alt'] = array( 'Packet front', 'Packet back' );
+		$content                    = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+
+		$this->assertSame( $first, $this->first_attrs( $content, 'post-kinds-indieweb/acquisition-card' )['photo'] ?? null );
+		$this->assertSame(
+			array(
+				array(
+					'src' => $second,
+					'alt' => 'Packet back',
+				),
+			),
+			$this->images( $content )
+		);
+	}
+
+	/** Without a request alt, the card uses the attachment's stored alt. */
+	public function test_acquisition_photo_alt_falls_back_to_the_attachment_alt(): void {
+		$photo = $this->local_upload_url( 'seeds-alt.jpg' );
+		update_post_meta( attachment_url_to_postid( $photo ), '_wp_attachment_image_alt', 'Stored alt' );
+		$properties          = $this->acquisition_properties();
+		$properties['photo'] = array( $photo );
+		$content             = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+
+		$this->assertSame( 'Stored alt', $this->first_attrs( $content, 'post-kinds-indieweb/acquisition-card' )['photoAlt'] ?? null );
+	}
+
+	/** A URL-only acquisition titles the card with the URL, as a repost does, and links it. */
+	public function test_acquisition_card_falls_back_to_the_url_as_title(): void {
+		$markup = (string) $this->invoke_private( 'acquisition_card', array( array( 'acquisition-of' => 'https://shop.example.com/seeds' ) ) );
+		$attrs  = $this->first_attrs( $markup, 'post-kinds-indieweb/acquisition-card' );
+
+		$this->assertSame( 'https://shop.example.com/seeds', $attrs['title'] ?? null );
+		$this->assertSame( 'https://shop.example.com/seeds', $attrs['whereUrl'] ?? null );
+		$this->assertArrayNotHasKey( 'acquisitionType', $attrs, 'the block default applies' );
+	}
+
+	/** A text acquisition-of is the item's name and has no link. */
+	public function test_acquisition_card_uses_a_text_acquisition_of_as_title(): void {
+		$markup = (string) $this->invoke_private( 'acquisition_card', array( array( 'acquisition-of' => array( 'Linen napkins' ) ) ) );
+		$attrs  = $this->first_attrs( $markup, 'post-kinds-indieweb/acquisition-card' );
+
+		$this->assertSame( 'Linen napkins', $attrs['title'] ?? null );
+		$this->assertArrayNotHasKey( 'whereUrl', $attrs );
+	}
+
+	/** Type, URL and date are checked before they reach the card. */
+	public function test_acquisition_card_drops_values_the_card_cannot_print(): void {
+		$markup = (string) $this->invoke_private(
+			'acquisition_card',
+			array(
+				array(
+					'acquisition-of'      => 'Linen napkins',
+					'mp-acquisition-type' => 'Barter',
+					'mp-where-url'        => 'javascript:alert(1)',
+					'mp-acquired-at'      => '2026-02-30',
+				)
+			)
+		);
+		$attrs  = $this->first_attrs( $markup, 'post-kinds-indieweb/acquisition-card' );
+
+		$this->assertSame( array( 'title' => 'Linen napkins' ), $attrs );
+		$this->assertSame( 'gift', $this->first_attrs( (string) $this->invoke_private( 'acquisition_card', array( array( 'acquisition-of' => 'x', 'mp-acquisition-type' => 'Gift' ) ) ), 'post-kinds-indieweb/acquisition-card' )['acquisitionType'] ?? null, 'type is matched as a slug' );
+		$this->assertSame( '2026-07-15', $this->first_attrs( (string) $this->invoke_private( 'acquisition_card', array( array( 'acquisition-of' => 'x', 'mp-acquired-at' => '2026-07-15T10:30:00-04:00' ) ) ), 'post-kinds-indieweb/acquisition-card' )['acquiredAt'] ?? null, 'a datetime keeps its calendar day' );
+	}
+
+	/** A photo-only entry with the acquisition hint is an acquisition; without the hint it stays a photo. */
+	public function test_acquisition_hint_refines_a_photo_only_entry(): void {
+		$photo      = $this->local_upload_url( 'hint.jpg' );
+		$properties = array(
+			'photo'        => array( $photo ),
+			'mp-photo-alt' => array( 'Hinted' ),
+			'name'         => array( 'Hinted find' ),
+			'pkiw-kind'    => array( 'acquisition' ),
+		);
+		$content    = (string) $this->invoke_private( 'build_block_content', array( $properties ) );
+
+		$this->assertSame( array( 'post-kinds-indieweb/acquisition-card' ), $this->block_names( $content ) );
+		$this->assertSame( $photo, $this->first_attrs( $content, 'post-kinds-indieweb/acquisition-card' )['photo'] ?? null );
+
+		unset( $properties['pkiw-kind'] );
+		$this->assertSame( array( 'core/image' ), $this->block_names( (string) $this->invoke_private( 'build_block_content', array( $properties ) ) ) );
+	}
+
+	/** Requests with no acquisition-of keep today's output, whatever acquisition vendor properties ride along. */
+	public function test_requests_without_acquisition_properties_keep_todays_output(): void {
+		$this->assertNull( $this->invoke_private( 'build_block_content', array( array( 'content' => array( 'Just a note.' ) ) ) ) );
+		$this->assertNull(
+			$this->invoke_private(
+				'build_block_content',
+				array(
+					array(
+						'content'             => array( 'Cost and place without a kind.' ),
+						'mp-cost'             => array( '$12.00' ),
+						'mp-where'            => array( 'Corner Shop' ),
+						'mp-acquisition-type' => array( 'gift' ),
+					),
+				)
+			),
+			'acquisition vendor properties alone do not make a card'
+		);
+		$this->assertNull( $this->invoke_private( 'build_block_content', array( array( 'content' => array( 'Hint without a shape.' ), 'pkiw-kind' => array( 'acquisition' ) ) ) ) );
+
+		$like = (string) $this->invoke_private( 'build_block_content', array( array( 'like-of' => array( 'https://example.test/liked' ), 'mp-cost' => array( '$1' ) ) ) );
+		$this->assertSame( array( 'post-kinds-indieweb/like-card' ), $this->block_names( $like ) );
+		$this->assertStringNotContainsString( 'acquisition', $like );
+
+		$bookmark = (string) $this->invoke_private( 'build_block_content', array( array( 'bookmark-of' => array( 'https://example.test/saved' ) ) ) );
+		$this->assertSame( array( 'post-kinds-indieweb/bookmark-card' ), $this->block_names( $bookmark ) );
+	}
+
 	// --- Wire matrix: every kind's Micropub properties -> card attrs --------
 
 	/**
@@ -2262,6 +2506,29 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 					'author' => 'Sample author',
 				),
 				array( 'description', 'image', 'imageAlt', 'repliedAt', 'rel' ),
+			),
+			'acquisition' => array(
+				array(
+					'acquisition-of'      => array( 'https://shop.example.com/seeds' ),
+					'name'                => array( 'Sample title' ),
+					'content'             => array( 'Sample body' ),
+					'mp-acquisition-type' => array( 'gift' ),
+					'mp-cost'             => array( '$12.00' ),
+					'mp-where'            => array( 'Sample shop' ),
+					'mp-where-url'        => array( 'https://shop.example.com/shop' ),
+					'mp-acquired-at'      => array( '2026-07-15' ),
+				),
+				'post-kinds-indieweb/acquisition-card',
+				array(
+					'title'           => 'Sample title',
+					'acquisitionType' => 'gift',
+					'cost'            => '$12.00',
+					'where'           => 'Sample shop',
+					'whereUrl'        => 'https://shop.example.com/shop',
+					'acquiredAt'      => '2026-07-15',
+				),
+				// photo and photoAlt need a local attachment (covered above); content is the entry's e-content, never the card notes; showCostPublicly stays off.
+				array( 'showCostPublicly', 'photo', 'photoAlt', 'notes' ),
 			),
 			'mood'    => array(
 				array(
