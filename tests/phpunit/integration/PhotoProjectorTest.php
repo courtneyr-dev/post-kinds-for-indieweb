@@ -272,8 +272,11 @@ final class PhotoProjectorTest extends WP_UnitTestCase {
 		$id  = $this->photo( $this->gallery_block( array_map( [ $this, 'image_block' ], $ids ) ) );
 		$html = $this->serve( $id );
 
-		foreach ( $this->xpath( $html )->query( '//*[contains(concat(" ", normalize-space(@class), " "), " pkiw-projector__mount ")]' ) as $mount ) {
-			$this->assertSame( 1, $this->xpath( $html )->query( './/figcaption', $mount )->length );
+		$xpath  = $this->xpath( $html );
+		$mounts = $xpath->query( '//*[contains(concat(" ", normalize-space(@class), " "), " pkiw-projector__mount ")]' );
+		$this->assertSame( 3, $mounts->length );
+		foreach ( $mounts as $mount ) {
+			$this->assertSame( 1, $xpath->query( './/figcaption', $mount )->length );
 		}
 
 		$single = $this->photo( $this->image_block( $ids[0] ) );
@@ -285,8 +288,10 @@ final class PhotoProjectorTest extends WP_UnitTestCase {
 		$id   = $this->photo( $this->gallery_block( array_map( [ $this, 'image_block' ], $ids ) ) );
 		$html = $this->serve( $id );
 
-		$this->assertStringNotContainsString( '<button', $html );
-		$this->assertStringNotContainsString( '<a ', $html );
+		$xpath      = $this->xpath( $html );
+		$projectors = $xpath->query( '//div[contains(concat(" ", normalize-space(@class), " "), " pkiw-projector ")]' );
+		$this->assertSame( 1, $projectors->length );
+		$this->assertSame( 0, $xpath->query( './/button | .//a', $projectors->item( 0 ) )->length, 'The projector prints no button and no link; the entry wrapper\'s hidden u-url sits outside it.' );
 		foreach ( $ids as $attachment_id ) {
 			$medium = (string) wp_get_attachment_image_url( $attachment_id, 'medium' );
 			$this->assertStringContainsString( 'data-pkiw-thumb-src="' . esc_url( $medium ) . '"', $html );
@@ -299,8 +304,10 @@ final class PhotoProjectorTest extends WP_UnitTestCase {
 		$id  = $this->photo( $this->gallery_block( array_map( [ $this, 'image_block' ], $ids ) ) );
 		$html = $this->serve( $id );
 
-		$this->assertMatchesRegularExpression( '/<img[^>]+wp-image-' . $ids[0] . '[^>]+loading="eager"[^>]+fetchpriority="high"/', $html );
-		$this->assertStringNotContainsString( 'sizes="auto,', $html );
+		$first = $this->xpath( $html )->query( '//img[contains(concat(" ", normalize-space(@class), " "), " wp-image-' . $ids[0] . ' ")]' )->item( 0 );
+		$this->assertSame( 'eager', $first->getAttribute( 'loading' ) );
+		$this->assertSame( 'high', $first->getAttribute( 'fetchpriority' ) );
+		$this->assertStringNotContainsString( 'auto', $first->getAttribute( 'sizes' ), 'The eager slide carries no auto sizes; the lazy ones may.' );
 		$this->assertSame( 2, substr_count( $html, 'loading="lazy"' ) );
 
 		$remote = $this->photo(
@@ -361,7 +368,7 @@ final class PhotoProjectorTest extends WP_UnitTestCase {
 
 		$html = $this->serve( $post_id );
 
-		$this->assertStringContainsString( 'wp-duotone-test', $html );
+		$this->assertMatchesRegularExpression( '/wp-duotone-[a-z-]+-\d+/', $html, 'Core\'s duotone class survives the mount rewrite.' );
 		$this->assertStringContainsString( 'pkiw-projector__mount', $html );
 		$this->assertStringContainsString( 'u-photo', $html );
 	}

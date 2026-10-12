@@ -43,7 +43,9 @@ function buttons() {
 	return {
 		prev: document.querySelector( '.pkiw-projector__button--prev' ),
 		next: document.querySelector( '.pkiw-projector__button--next' ),
-		rail: Array.from( document.querySelectorAll( '.pkiw-projector__thumb' ) ),
+		rail: Array.from(
+			document.querySelectorAll( '.pkiw-projector__thumb' )
+		),
 	};
 }
 
@@ -73,19 +75,18 @@ describe( 'photo projector', () => {
 				( mount ) => mount.hasAttribute( 'hidden' )
 			)
 		).toEqual( [ false, true, true ] );
-		expect( root.querySelector( '.pkiw-projector__counter' ) ).toHaveTextContent(
-			'1 of 3'
-		);
-		expect( prev ).toBeInstanceOf( HTMLButtonElement );
-		expect( next ).toBeInstanceOf( HTMLButtonElement );
+		expect(
+			root.querySelector( '.pkiw-projector__counter' )
+		).toHaveTextContent( '1 of 3' );
+		expect( prev ).toBeInstanceOf( window.HTMLButtonElement );
+		expect( next ).toBeInstanceOf( window.HTMLButtonElement );
 		expect( prev ).toHaveAttribute( 'type', 'button' );
 		expect( next ).toHaveAttribute( 'type', 'button' );
 		expect( prev ).toHaveTextContent( 'Previous image' );
 		expect( next ).toHaveTextContent( 'Next image' );
-		expect( root.querySelector( '.pkiw-projector__status' ) ).toHaveAttribute(
-			'aria-live',
-			'polite'
-		);
+		expect(
+			root.querySelector( '.pkiw-projector__status' )
+		).toHaveAttribute( 'aria-live', 'polite' );
 		expect( jest.getTimerCount() ).toBe( 0 );
 	} );
 
@@ -99,9 +100,9 @@ describe( 'photo projector', () => {
 		).toContain( '<a href="https://example.org/1">link 1</a>' );
 
 		next.click();
-		expect( document.querySelector( '.pkiw-projector__caption' ).innerHTML ).toBe(
-			''
-		);
+		expect(
+			document.querySelector( '.pkiw-projector__caption' ).innerHTML
+		).toBe( '' );
 		expect( jest.getTimerCount() ).toBe( 0 );
 	} );
 
@@ -113,18 +114,18 @@ describe( 'photo projector', () => {
 		expect( prev ).toHaveAttribute( 'aria-disabled', 'true' );
 		expect( prev ).not.toHaveAttribute( 'disabled' );
 		prev.click();
-		expect( document.querySelector( '.pkiw-projector__counter' ) ).toHaveTextContent(
-			'1 of 3'
-		);
+		expect(
+			document.querySelector( '.pkiw-projector__counter' )
+		).toHaveTextContent( '1 of 3' );
 
 		next.click();
 		next.click();
 		expect( next ).toHaveAttribute( 'aria-disabled', 'true' );
 		expect( next ).not.toHaveAttribute( 'disabled' );
 		next.click();
-		expect( document.querySelector( '.pkiw-projector__counter' ) ).toHaveTextContent(
-			'3 of 3'
-		);
+		expect(
+			document.querySelector( '.pkiw-projector__counter' )
+		).toHaveTextContent( '3 of 3' );
 		expect( jest.getTimerCount() ).toBe( 0 );
 	} );
 
@@ -147,43 +148,52 @@ describe( 'photo projector', () => {
 		loadScript();
 		const { rail } = buttons();
 
-		rail[0].dispatchEvent(
-			new KeyboardEvent( 'keydown', { key: 'ArrowRight', bubbles: true } )
+		rail[ 0 ].dispatchEvent(
+			new window.KeyboardEvent( 'keydown', {
+				key: 'ArrowRight',
+				bubbles: true,
+			} )
 		);
-		expect( document.querySelector( '.pkiw-projector__counter' ) ).toHaveTextContent(
-			'2 of 3'
-		);
+		expect(
+			document.querySelector( '.pkiw-projector__counter' )
+		).toHaveTextContent( '2 of 3' );
 
 		document.body.dispatchEvent(
-			new KeyboardEvent( 'keydown', { key: 'ArrowRight', bubbles: true } )
+			new window.KeyboardEvent( 'keydown', {
+				key: 'ArrowRight',
+				bubbles: true,
+			} )
 		);
-		expect( document.querySelector( '.pkiw-projector__counter' ) ).toHaveTextContent(
-			'2 of 3'
-		);
+		expect(
+			document.querySelector( '.pkiw-projector__counter' )
+		).toHaveTextContent( '2 of 3' );
 
-		rail[1].dispatchEvent(
-			new KeyboardEvent( 'keydown', {
+		rail[ 1 ].dispatchEvent(
+			new window.KeyboardEvent( 'keydown', {
 				key: 'ArrowRight',
 				bubbles: true,
 				shiftKey: true,
 			} )
 		);
-		expect( document.querySelector( '.pkiw-projector__counter' ) ).toHaveTextContent(
-			'2 of 3'
-		);
+		expect(
+			document.querySelector( '.pkiw-projector__counter' )
+		).toHaveTextContent( '2 of 3' );
 
-		rail[1].dispatchEvent(
-			new KeyboardEvent( 'keydown', { key: 'ArrowLeft', bubbles: true } )
-		);
-		expect( document.querySelector( '.pkiw-projector__counter' ) ).toHaveTextContent(
-			'1 of 3'
+		rail[ 1 ].dispatchEvent(
+			new window.KeyboardEvent( 'keydown', {
+				key: 'ArrowLeft',
+				bubbles: true,
+			} )
 		);
 		expect(
-			documentSpy.mock.calls.some( ( call ) => 'keydown' === call[0] )
+			document.querySelector( '.pkiw-projector__counter' )
+		).toHaveTextContent( '1 of 3' );
+		expect(
+			documentSpy.mock.calls.some( ( call ) => 'keydown' === call[ 0 ] )
 		).toBe( false );
-		expect( windowSpy.mock.calls.some( ( call ) => 'keydown' === call[0] ) ).toBe(
-			false
-		);
+		expect(
+			windowSpy.mock.calls.some( ( call ) => 'keydown' === call[ 0 ] )
+		).toBe( false );
 		documentSpy.mockRestore();
 		windowSpy.mockRestore();
 		expect( jest.getTimerCount() ).toBe( 0 );
@@ -204,39 +214,39 @@ describe( 'photo projector', () => {
 			);
 			expect( image ).toHaveAttribute( 'alt', '' );
 			expect( image ).toHaveAttribute( 'sizes', '44px' );
-			expect( button.querySelector( '.pkiw-projector__ordinal' ) ).toHaveTextContent(
-				String( number )
-			);
+			expect(
+				button.querySelector( '.pkiw-projector__ordinal' )
+			).toHaveTextContent( String( number ) );
 		} );
-		expect( rail[0].querySelector( 'img' ) ).toHaveAttribute(
+		expect( rail[ 0 ].querySelector( 'img' ) ).toHaveAttribute(
 			'src',
 			'https://example.org/medium-one.jpg'
 		);
-		expect( rail[0].querySelector( 'img' ) ).toHaveAttribute(
+		expect( rail[ 0 ].querySelector( 'img' ) ).toHaveAttribute(
 			'srcset',
 			'https://example.org/medium-one.jpg 300w'
 		);
-		expect( rail[1].querySelector( 'img' ) ).toHaveAttribute(
+		expect( rail[ 1 ].querySelector( 'img' ) ).toHaveAttribute(
 			'src',
 			'https://example.org/full-2.jpg'
 		);
-		expect( rail[0] ).toHaveAttribute( 'aria-current', 'true' );
+		expect( rail[ 0 ] ).toHaveAttribute( 'aria-current', 'true' );
 		expect(
-			rail[0].querySelector( '.pkiw-projector__current' )
+			rail[ 0 ].querySelector( '.pkiw-projector__current' )
 		).not.toHaveAttribute( 'hidden' );
-		expect( rail[1] ).not.toHaveAttribute( 'aria-current' );
-		expect( rail[1].querySelector( '.pkiw-projector__current' ) ).toHaveAttribute(
-			'hidden'
-		);
+		expect( rail[ 1 ] ).not.toHaveAttribute( 'aria-current' );
+		expect(
+			rail[ 1 ].querySelector( '.pkiw-projector__current' )
+		).toHaveAttribute( 'hidden' );
 
-		rail[2].click();
-		expect( rail[2] ).toHaveAttribute( 'aria-current', 'true' );
+		rail[ 2 ].click();
+		expect( rail[ 2 ] ).toHaveAttribute( 'aria-current', 'true' );
 		expect(
-			rail[2].querySelector( '.pkiw-projector__current' )
+			rail[ 2 ].querySelector( '.pkiw-projector__current' )
 		).not.toHaveAttribute( 'hidden' );
-		expect( document.querySelector( '.pkiw-projector__counter' ) ).toHaveTextContent(
-			'3 of 3'
-		);
+		expect(
+			document.querySelector( '.pkiw-projector__counter' )
+		).toHaveTextContent( '3 of 3' );
 		expect( jest.getTimerCount() ).toBe( 0 );
 	} );
 
@@ -244,15 +254,19 @@ describe( 'photo projector', () => {
 		printProjector( 1 );
 		loadScript();
 		expect( projector() ).not.toHaveClass( 'pkiw-projector--enhanced' );
-		expect( document.querySelector( '.pkiw-projector__controls' ) ).toBeNull();
+		expect(
+			document.querySelector( '.pkiw-projector__controls' )
+		).toBeNull();
 
 		printProjector( 3 );
 		loadScript();
 		loadScript();
-		expect( document.querySelectorAll( '.pkiw-projector__controls' ) ).toHaveLength(
-			1
-		);
-		expect( document.querySelectorAll( '.pkiw-projector__rail' ) ).toHaveLength( 1 );
+		expect(
+			document.querySelectorAll( '.pkiw-projector__controls' )
+		).toHaveLength( 1 );
+		expect(
+			document.querySelectorAll( '.pkiw-projector__rail' )
+		).toHaveLength( 1 );
 		expect( jest.getTimerCount() ).toBe( 0 );
 	} );
 
@@ -264,7 +278,7 @@ describe( 'photo projector', () => {
 		const { next, prev, rail } = buttons();
 		next.click();
 		prev.click();
-		rail[2].click();
+		rail[ 2 ].click();
 
 		expect( jest.getTimerCount() ).toBe( 0 );
 	} );

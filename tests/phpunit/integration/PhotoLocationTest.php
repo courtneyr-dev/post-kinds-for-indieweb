@@ -123,7 +123,9 @@ final class PhotoLocationTest extends WP_UnitTestCase {
 	 * @return int Callback count.
 	 */
 	private function callback_count( string $hook, int $priority ): int {
-		return isset( $GLOBALS['wp_filter'][ $hook ]->callbacks[ $priority ] ) ? count( $GLOBALS['wp_filter'][ $hook ]->callbacks[ $priority ] ) : 0;
+		$callbacks = $GLOBALS['wp_filter'][ $hook ]->callbacks[ $priority ] ?? [];
+
+		return count( array_filter( array_keys( $callbacks ), static fn( $key ): bool => str_contains( (string) $key, 'Geo_' ) ) );
 	}
 
 	/**

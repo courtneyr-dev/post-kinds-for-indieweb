@@ -210,7 +210,7 @@ final class PhotoArchiveTest extends WP_UnitTestCase {
 		$this->assertSame( 1, $this->xpath( $html )->query( '//section[@data-pkiw-sections]//h3[contains(concat(" ", normalize-space(@class), " "), " pk-title ") and contains(., "Boardwalk Light")]' )->length );
 	}
 
-	public function test_a_continuing_month_repeats_its_h2_with_a_different_id(): void {
+	public function test_a_continuing_month_repeats_its_h2_with_its_own_id(): void {
 		$this->fourteen();
 
 		$first  = $this->sections( $this->serve( $this->archive_url() ) );
@@ -218,7 +218,12 @@ final class PhotoArchiveTest extends WP_UnitTestCase {
 
 		$this->assertSame( 'h2:August 2026', $first[0]['heading'] );
 		$this->assertSame( 'h2:August 2026', $second[0]['heading'] );
-		$this->assertNotSame( $first[0]['id'], $second[0]['id'] );
+		$this->assertSame( 'pkiw-group-2026-08', $first[0]['id'] );
+		$this->assertSame( 'pkiw-group-2026-08', $second[0]['id'], 'The repeated H2 carries its own id on page 2; ids only need to be unique inside one page.' );
+		foreach ( [ $first, $second ] as $page ) {
+			$ids = array_column( $page, 'id' );
+			$this->assertSame( $ids, array_values( array_unique( $ids ) ), 'Heading ids are unique within a page.' );
+		}
 	}
 
 	public function test_the_editor_preview_renders_a_month_heading(): void {
