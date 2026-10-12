@@ -33,11 +33,17 @@ $pkiw_acquired_at = $attributes['acquiredAt'] ?? '';
 $pkiw_post_id     = ( $block instanceof \WP_Block && ! empty( $block->context['postId'] ) ) ? (int) $block->context['postId'] : (int) get_the_ID();
 $pkiw_in_stream   = function_exists( 'PKIW\is_rendering_stream_card' ) && \PKIW\is_rendering_stream_card();
 
+// issue 239: cost prints only on the post's own single, its feed, REST and cron. Any other front-end main query (blog home, 404, a page or post listing posts) is a listing.
+$pkiw_cost_surface_open = is_feed() || wp_is_rest_endpoint() || wp_doing_cron();
+$pkiw_in_listing        = ! $pkiw_cost_surface_open
+	&& ( is_home() || is_404() || ( is_singular() && (int) get_queried_object_id() !== $pkiw_post_id ) );
+
 // issue 239: cost is private unless this card, request and the post's synced toggle say public.
 if (
 	empty( $attributes['showCostPublicly'] )
 	|| ! \PKIW\Meta_Fields::acquisition_cost_visible( $pkiw_post_id )
 	|| $pkiw_in_stream
+	|| $pkiw_in_listing
 	|| is_search()
 	|| ( is_archive() && ! is_feed() )
 ) {

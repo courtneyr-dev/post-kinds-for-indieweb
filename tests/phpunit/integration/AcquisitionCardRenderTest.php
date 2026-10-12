@@ -257,6 +257,59 @@ final class AcquisitionCardRenderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '$129.00', $this->render_single_card( $id ) );
 	}
 
+	public function test_cost_is_suppressed_on_the_blog_home_and_a_404(): void {
+		$id = $this->acquisition( [ 'title' => 'Field Recorder', 'cost' => '$129.00', 'showCostPublicly' => true ] );
+
+		$this->go_to( home_url( '/' ) );
+		$this->assertTrue( is_home() );
+		$GLOBALS['post'] = get_post( $id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$html            = apply_filters( 'the_content', (string) get_post_field( 'post_content', $id ) );
+		$this->assertStringContainsString( 'Field Recorder', $html );
+		$this->assertStringNotContainsString( '$129.00', $html );
+
+		$this->go_to( home_url( '/no-such-page-zq9/' ) );
+		$this->assertTrue( is_404() );
+		$GLOBALS['post'] = get_post( $id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$html            = do_blocks( (string) get_post_field( 'post_content', $id ) );
+		$this->assertStringContainsString( 'Field Recorder', $html );
+		$this->assertStringNotContainsString( '$129.00', $html );
+	}
+
+	public function test_cost_is_suppressed_in_a_page_level_query_loop(): void {
+		$id      = $this->acquisition( [ 'title' => 'Field Recorder', 'cost' => '$129.00', 'showCostPublicly' => true ] );
+		$page_id = self::factory()->post->create(
+			[
+				'post_type'    => 'page',
+				'post_status'  => 'publish',
+				'post_title'   => 'Recent acquisitions',
+				'post_content' => wp_slash(
+					'<!-- wp:query {"queryId":0,"query":{"perPage":5,"pages":0,"offset":0,"postType":"post","order":"desc","orderBy":"date","author":"","search":"","exclude":[],"sticky":"","inherit":false}} -->'
+					. '<div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-content /--><!-- /wp:post-template --></div>'
+					. '<!-- /wp:query -->'
+				),
+			]
+		);
+
+		$this->go_to( get_permalink( $page_id ) );
+		$this->assertTrue( is_page() );
+		$this->assertNotSame( $id, get_queried_object_id() );
+		$html = do_blocks( (string) get_post_field( 'post_content', $page_id ) );
+
+		$this->assertStringContainsString( 'Field Recorder', $html, 'The query loop lists the acquisition card.' );
+		$this->assertStringNotContainsString( '$129.00', $html );
+	}
+
+	public function test_rest_content_keeps_a_public_cost_after_a_listing_request(): void {
+		$id = $this->acquisition( [ 'title' => 'Field Recorder', 'cost' => '$129.00', 'showCostPublicly' => true ] );
+
+		$this->go_to( home_url( '/' ) );
+		$this->assertTrue( is_home() );
+		$GLOBALS['wp_rest_server'] = null;
+		$data                      = (array) rest_do_request( new WP_REST_Request( 'GET', '/wp/v2/posts/' . $id ) )->get_data();
+
+		$this->assertStringContainsString( '$129.00', $data['content']['rendered'] );
+	}
+
 	public function test_rich_text_values_render_as_text_not_literal_markup(): void {
 		$html = $this->render_single_card(
 			$this->acquisition(
