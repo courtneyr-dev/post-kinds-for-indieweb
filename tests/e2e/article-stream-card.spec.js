@@ -98,7 +98,11 @@ async function createPage( page, nonce, title, content ) {
 			status: 'publish',
 		},
 	} );
-	expect( res.ok() ).toBeTruthy();
+	if ( ! res.ok() ) {
+		throw new Error(
+			`Creating the page failed: ${ res.status() } ${ await res.text() }`
+		);
+	}
 	const post = await res.json();
 	createdPages.push( post.id );
 	return post;

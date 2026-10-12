@@ -372,17 +372,21 @@ test.describe( 'article contents archive', () => {
 		page,
 	} ) => {
 		await page.goto( `${ BASE }/?kind=article` );
+		// A page-number link and the Next link can share a URL, and the Tab walk
+		// below records each URL once, so compare unique URLs in DOM order.
 		const expected = await page
 			.locator( 'main a' )
-			.evaluateAll( ( links ) =>
-				links
-					.filter(
-						( link ) =>
-							link.closest( '.pkiw-contents__title' ) ||
-							link.closest( '.wp-block-query-pagination' )
-					)
-					.map( ( link ) => link.href )
-			);
+			.evaluateAll( ( links ) => [
+				...new Set(
+					links
+						.filter(
+							( link ) =>
+								link.closest( '.pkiw-contents__title' ) ||
+								link.closest( '.wp-block-query-pagination' )
+						)
+						.map( ( link ) => link.href )
+				),
+			] );
 		const seen = [];
 		for ( let i = 0; i < expected.length + 24; i++ ) {
 			await page.keyboard.press( 'Tab' );
