@@ -87,6 +87,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		photo,
 		photoAlt,
 		notes,
+		acquiredAt,
 	} = attributes;
 
 	const blockProps = useBlockProps( {
@@ -125,15 +126,11 @@ export default function Edit( { attributes, setAttributes } ) {
 	}, [ photo ] );
 
 	const handleImageSelect = ( media ) => {
+		// Alt text is stored as the media library has it, or '' when it has
+		// none. The card never invents a description for the picture.
 		setAttributes( {
 			photo: media.url,
-			photoAlt:
-				media.alt ||
-				title ||
-				__(
-					'Acquisition photo',
-					'post-kinds-for-indieweb-in-block-themes'
-				),
+			photoAlt: media.alt || '',
 		} );
 	};
 
@@ -239,6 +236,21 @@ export default function Edit( { attributes, setAttributes } ) {
 						type="url"
 						help={ __(
 							'Link to where you got it',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
+					/>
+					<TextControl
+						label={ __(
+							'Acquired',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
+						value={ acquiredAt || '' }
+						onChange={ ( value ) =>
+							setAttributes( { acquiredAt: value || '' } )
+						}
+						type="date"
+						help={ __(
+							'The day you got it',
 							'post-kinds-for-indieweb-in-block-themes'
 						) }
 					/>
