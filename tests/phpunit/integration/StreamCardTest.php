@@ -1814,31 +1814,32 @@ final class StreamCardTest extends WP_UnitTestCase {
 		foreach ( [ 'pk-badge', 'pk-meta', 'pk-media__thumbs', 'pk-media__thumb-more-link', 'pk-excerpt', 'Read more' ] as $absent ) {
 			$this->assertStringNotContainsString( $absent, $html, $absent . ' never prints on a photo card.' );
 		}
-		$this->assertSame( 1, $this->rendered_anchor_count( $html ), 'One link: the title.' );
+		$this->assertSame( 1, $this->rendered_anchor_count( $html, true ), 'One link outside the caption: the title.' );
 		$this->assertSame( 0, $this->visible_negative_tabindex_count( $html ) );
 	}
 
-	public function test_a_photo_caption_link_is_text_so_the_card_keeps_one_tab_stop(): void {
+	public function test_a_photo_card_keeps_a_caption_link_and_prints_one_other_link(): void {
 		$caption_html = 'Photo by <a href="https://example.org/credit">Ana</a> at <em>dusk</em>';
 		[ $post_id ] = $this->photo_post_with_image( 'Tide pool at dusk', [], 'Stored alt', $caption_html );
 
 		$html = \PKIW\render_stream_card();
 		$xp   = $this->card_xpath( $html );
 
-		$this->assertSame( 1, $this->rendered_anchor_count( $html ) );
+		$this->assertSame( 1, $this->rendered_anchor_count( $html, true ), 'One link outside [hidden] and outside the caption: the title.' );
 		$this->assertSame( 1, $xp->query( '//h2[@class="pk-title p-name"]/a[@class="u-url"]' )->length );
 		$caption = $xp->query( '//p[contains(@class,"pk-media__caption")]' );
 		$this->assertSame( 1, $caption->length );
+		$this->assertSame( 1, $xp->query( '//p[contains(@class,"pk-media__caption")]//a[@href="https://example.org/credit"]' )->length, 'The caption link survives (G10 ruling, 2026-10-15).' );
 		$this->assertSame( 'Photo by Ana at dusk', $caption->item( 0 )->textContent );
 		$this->assertSame( 1, $xp->query( '//p[contains(@class,"pk-media__caption")]/em[text()="dusk"]' )->length );
-		$this->assertStringNotContainsString( 'example.org/credit', $html );
 
 		[ $untitled_post_id ] = $this->photo_post_with_image( '', [], 'Stored alt', $caption_html );
 
 		$untitled_html = \PKIW\render_stream_card();
 		$untitled_xp   = $this->card_xpath( $untitled_html );
 
-		$this->assertSame( 1, $this->rendered_anchor_count( $untitled_html ) );
+		$this->assertSame( 1, $this->rendered_anchor_count( $untitled_html, true ) );
+		$this->assertSame( 1, $untitled_xp->query( '//p[contains(@class,"pk-media__caption")]//a[@href="https://example.org/credit"]' )->length );
 		$this->assertSame( 1, $untitled_xp->query( '//h2[@class="pk-title"]/a[@class="u-url"]' )->length );
 		$this->assertSame( get_permalink( $post_id ), $xp->query( '//h2[@class="pk-title p-name"]/a[@class="u-url"]' )->item( 0 )->getAttribute( 'href' ) );
 		$this->assertSame( get_permalink( $untitled_post_id ), $untitled_xp->query( '//h2[@class="pk-title"]/a[@class="u-url"]' )->item( 0 )->getAttribute( 'href' ) );
