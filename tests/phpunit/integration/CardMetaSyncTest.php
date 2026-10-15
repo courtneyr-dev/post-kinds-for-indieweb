@@ -992,11 +992,37 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 
 	/**
 	 * #340 shipped version 3 on main, #349 took 4 and #358 took 5 with the
-	 * privacy hold. W2 adds the reply and like maps and the review fill, so
-	 * its pass needs the next number (X15: one bump per release).
+	 * privacy hold, W2 took 6 for the reply and like maps and the review
+	 * fill. W3 adds the repost-card map, so its pass needs the next number
+	 * (X15: one bump per release).
 	 */
-	public function test_the_backfill_version_is_6_with_the_reply_and_like_maps(): void {
-		$this->assertSame( '6', \PKIW\Card_Meta_Sync::BACKFILL_VERSION );
+	public function test_the_backfill_version_is_7_with_the_repost_map(): void {
+		$this->assertSame( '7', \PKIW\Card_Meta_Sync::BACKFILL_VERSION );
+	}
+
+	/**
+	 * The version docblock says what each number replays, and names the
+	 * repost map for 7 without a pound sign before digits (NoColorLeakageTest).
+	 */
+	public function test_the_version_docblock_names_the_repost_map(): void {
+		$doc = (string) ( new ReflectionClassConstant( \PKIW\Card_Meta_Sync::class, 'BACKFILL_HOOK' ) )->getDocComment();
+
+		$this->assertMatchesRegularExpression( '/Version 7\b[^.]*repost/s', $doc );
+		$this->assertStringContainsString( 'issue 255', $doc );
+		$this->assertDoesNotMatchRegularExpression( '/#[0-9a-fA-F]{3,8}\b/', $doc );
+	}
+
+	/**
+	 * A site that finished W2's backfill 6 runs 7 once.
+	 */
+	public function test_a_site_that_finished_backfill_6_runs_the_w3_backfill(): void {
+		update_option( \PKIW\Card_Meta_Sync::BACKFILL_OPTION, '6', false );
+		delete_option( \PKIW\Card_Meta_Sync::BACKFILL_CURSOR );
+		wp_clear_scheduled_hook( \PKIW\Card_Meta_Sync::BACKFILL_HOOK );
+
+		\PKIW\Card_Meta_Sync::maybe_schedule_backfill();
+
+		$this->assertNotFalse( wp_next_scheduled( \PKIW\Card_Meta_Sync::BACKFILL_HOOK ) );
 	}
 
 	/**
@@ -1056,10 +1082,11 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * The map is declared, not inferred: both cards are in ATTR_META_MAP
-	 * with the same five attributes, and the bookmark card is not.
+	 * The map is declared, not inferred: the reply, like and repost cards are
+	 * in ATTR_META_MAP with the same five attributes, and the bookmark card
+	 * is not.
 	 */
-	public function test_the_reply_and_like_maps_are_declared_and_the_bookmark_card_has_none(): void {
+	public function test_the_reply_like_and_repost_maps_are_declared_and_the_bookmark_card_has_none(): void {
 		$expected = [
 			'url'         => 'cite_url',
 			'title'       => 'cite_name',
@@ -1067,7 +1094,7 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 			'description' => 'cite_summary',
 			'image'       => 'cite_photo',
 		];
-		foreach ( [ 'reply-card', 'like-card' ] as $card ) {
+		foreach ( [ 'reply-card', 'like-card', 'repost-card' ] as $card ) {
 			$map = \PKIW\Card_Meta_Sync::ATTR_META_MAP[ 'post-kinds-indieweb/' . $card ] ?? [];
 			ksort( $map );
 			$sorted = $expected;
@@ -1224,6 +1251,86 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 		$this->assertSame( 'notes.example.com', get_metadata_raw( 'post', $reply, \PKIW\CITE_HOST_META, true ) );
 		$this->assertSame( 'An essay', get_metadata_raw( 'post', $like, '_pkiw_cite_name', true ) );
 		$this->assertSame( 'essays.example.org', get_metadata_raw( 'post', $like, \PKIW\CITE_HOST_META, true ) );
+	}
+
+	/**
+	 * Issue 255: a repost card mirrors its five fields into the cite meta
+	 * the repost archive and the hidden citation read. Raw rows.
+	 */
+	public function test_a_repost_card_fills_the_five_cite_fields(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/repost-card {"title":"A fictional essay","url":"https://quiet.example.com/essay","author":"Fictional Author","description":"A fictional summary.","image":"https://quiet.example.com/essay.jpg"} /-->',
+		] );
+
+		$this->assertSame( 'A fictional essay', get_metadata_raw( 'post', $post_id, '_pkiw_cite_name', true ) );
+		$this->assertSame( 'https://quiet.example.com/essay', get_metadata_raw( 'post', $post_id, '_pkiw_cite_url', true ) );
+		$this->assertSame( 'Fictional Author', get_metadata_raw( 'post', $post_id, '_pkiw_cite_author', true ) );
+		$this->assertSame( 'A fictional summary.', get_metadata_raw( 'post', $post_id, '_pkiw_cite_summary', true ) );
+		$this->assertSame( 'https://quiet.example.com/essay.jpg', get_metadata_raw( 'post', $post_id, '_pkiw_cite_photo', true ) );
+		$this->assertSame( 'quiet.example.com', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
+	}
+
+	/**
+	 * A repost card title equal to the URL (the Micropub shape) is no name.
+	 */
+	public function test_a_repost_title_equal_to_the_url_leaves_cite_name_unwritten(): void {
+		$url     = 'https://quiet.example.com/essay?token=abc123';
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/repost-card ' . wp_json_encode( [ 'title' => $url, 'url' => $url ], JSON_UNESCAPED_SLASHES ) . ' /-->',
+		] );
+
+		$this->assertNull( get_metadata_raw( 'post', $post_id, '_pkiw_cite_name', true ) );
+		$this->assertSame( $url, get_metadata_raw( 'post', $post_id, '_pkiw_cite_url', true ) );
+	}
+
+	/**
+	 * A repost card inside a group still syncs.
+	 */
+	public function test_a_nested_repost_card_syncs(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:group --><div class="wp-block-group"><!-- wp:post-kinds-indieweb/repost-card {"title":"Nested essay","url":"https://quiet.example.com/nested"} /--></div><!-- /wp:group -->',
+		] );
+
+		$this->assertSame( 'Nested essay', get_metadata_raw( 'post', $post_id, '_pkiw_cite_name', true ) );
+		$this->assertSame( 'https://quiet.example.com/nested', get_metadata_raw( 'post', $post_id, '_pkiw_cite_url', true ) );
+	}
+
+	/**
+	 * esc_url_raw() empties a javascript: URL, and an empty value never
+	 * blanks the stored one; an empty attribute never erases a stored cite field.
+	 */
+	public function test_a_repost_card_never_blanks_a_stored_cite_field(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/repost-card {"title":"Kept title","url":"https://quiet.example.com/kept","author":"Kept Author"} /-->',
+		] );
+
+		wp_update_post( [
+			'ID'           => $post_id,
+			'post_content' => '<!-- wp:post-kinds-indieweb/repost-card {"title":"","url":"javascript:alert(1)","author":""} /-->',
+		] );
+
+		$this->assertSame( 'Kept title', get_metadata_raw( 'post', $post_id, '_pkiw_cite_name', true ) );
+		$this->assertSame( 'https://quiet.example.com/kept', get_metadata_raw( 'post', $post_id, '_pkiw_cite_url', true ) );
+		$this->assertSame( 'Kept Author', get_metadata_raw( 'post', $post_id, '_pkiw_cite_author', true ) );
+	}
+
+	/**
+	 * Version 7 replays the repost map over posts saved before it existed.
+	 */
+	public function test_the_backfill_replays_the_repost_map(): void {
+		$post_id = self::factory()->post->create( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/repost-card {"title":"An old repost","url":"https://quiet.example.com/old","author":"A. Fictional"} /-->',
+		] );
+		foreach ( [ 'cite_name', 'cite_url', 'cite_author', 'cite_summary', 'cite_photo' ] as $suffix ) {
+			delete_post_meta( $post_id, '_pkiw_' . $suffix );
+		}
+		delete_post_meta( $post_id, \PKIW\CITE_HOST_META );
+
+		\PKIW\Card_Meta_Sync::backfill_batch( 0, 500 );
+
+		$this->assertSame( 'An old repost', get_metadata_raw( 'post', $post_id, '_pkiw_cite_name', true ) );
+		$this->assertSame( 'A. Fictional', get_metadata_raw( 'post', $post_id, '_pkiw_cite_author', true ) );
+		$this->assertSame( 'quiet.example.com', get_metadata_raw( 'post', $post_id, \PKIW\CITE_HOST_META, true ) );
 	}
 
 	/**

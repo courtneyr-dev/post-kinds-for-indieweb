@@ -144,6 +144,25 @@ the image that holds the cover URL, plus any other copy of that URL, and
 appends the remaining photos with their alts aligned. Every comic-card
 attribute maps, so `wire_matrix()` lists no gaps for comics.
 
+## acquisition
+
+An entry with `acquisition-of` builds one acquisition card plus the
+`e-content` group for `content`. A photo-only entry sent with
+`pkiw-kind: acquisition` builds the same card. The card replaces the
+one-line `u-acquisition-of` paragraph the builder wrote before issue 239.
+
+| Card attribute | Micropub property | Notes |
+|---|---|---|
+| `title` | `name`, else `acquisition-of` | a URL-only entry titles the card with the URL, as a repost does |
+| `acquisitionType` | `mp-acquisition-type` | vendor extension; kept only when it matches a type slug (`purchase`, `gift`, `found`, `won`, `trade`, `free`, `inherited`, `other`), else the block default applies |
+| `cost` | `mp-cost` | vendor extension; stored on the card, never printed by the builder |
+| `showCostPublicly` | — (by design) | the toggle stays at its block default, off; the author turns it on in the editor |
+| `where` | `mp-where` | vendor extension |
+| `whereUrl` | `mp-where-url`, else `acquisition-of` when it's an http(s) URL | |
+| `photo` / `photoAlt` | `photo` / `mp-photo-alt` | local attachments only: the first `photo` image that resolves to one, read through the same sideload pairing as the comic cover. A URL on another host never reaches the card. The alt is the request's, else the attachment's stored alt. A card photo isn't repeated as an image block |
+| `notes` | — (by design) | not a gap: `content` is the author's own words and prints once, as `e-content` |
+| `acquiredAt` | `mp-acquired-at` | vendor extension; kept as `Y-m-d` when it opens with a real calendar day |
+
 ## play
 
 | Card attribute | Micropub property today | Proposed property for Outpost |
@@ -212,8 +231,8 @@ one-line `core/paragraph` carrying the canonical microformats2 class:
 - URL-shaped: `jam-of` (`u-jam-of`), `favorite-of` (`u-favorite-of`),
   `wish-of` (`u-wish-of`; `wishlist-of` accepted as a compat alias),
   `tag-of` (`u-tag-of`), `issue-of` (`u-in-reply-to` — an issue is a reply
-  to a repository), `craft-of` (`u-craft-of`), `acquisition-of`
-  (`u-acquisition-of`), `video` (`u-video`), `audio` (`u-audio`).
+  to a repository), `craft-of` (`u-craft-of`), `video` (`u-video`),
+  `audio` (`u-audio`).
 - Text-shaped: `exercise`, `sleep`, `trip`, `itinerary`, `question`
   (each `p-<property>`).
 - Detected for kind assignment only (no generated content; these shapes
@@ -226,8 +245,8 @@ only way to reach kinds whose property shape is ambiguous (issue vs. reply,
 quote with content only). Invalid values fall back to inference. A valid
 hint always sets the kind term, but it changes the card only when
 `Micropub_Content_Builder::HINT_REFINEMENTS` lists it for the inferred kind.
-Today that's `comics` on a `read-of` entry, so `jam` on a `listen-of` still
-builds a listen card. Like the follow/weather trio, the paragraph-only kinds
+Today that's `comics` on a `read-of` entry and `acquisition` on a photo-only
+entry, so `jam` on a `listen-of` still builds a listen card. Like the follow/weather trio, the paragraph-only kinds
 are outside the wire-matrix completeness assertion.
 
 ## Follow-on work

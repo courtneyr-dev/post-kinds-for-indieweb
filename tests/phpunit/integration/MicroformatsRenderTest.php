@@ -581,6 +581,113 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The acquisition kind has a format: an h-entry that cites what was
+	 * acquired. It names no p-name, so the singular wrapper adds none.
+	 */
+	public function test_the_acquisition_format_roots_an_h_entry_that_cites_what_was_acquired(): void {
+		$format = ( new \PKIW\Microformats() )->get_kind_format( 'acquisition' );
+
+		$this->assertIsArray( $format );
+		$this->assertSame( [ 'h-entry' ], $format['root'] );
+		$this->assertSame(
+			[
+				'acquisition-of' => 'u-acquisition-of',
+				'content'        => 'e-content',
+				'date'           => 'dt-published',
+			],
+			$format['properties']
+		);
+	}
+
+	public function test_an_acquisition_single_is_an_h_entry_with_no_synthetic_p_name(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'A watering can',
+				'post_content' => '<!-- wp:paragraph --><p>Found it at a market.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'acquisition', 'kind' );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$content = apply_filters( 'the_content', get_post_field( 'post_content', $post_id ) );
+		$items   = \Mf2\parse( $content, get_permalink( $post_id ) )['items'];
+
+		$this->assertCount( 1, $items );
+		$this->assertSame( [ 'h-entry' ], $items[0]['type'] );
+		$this->assertStringContainsString( 'kind-acquisition', $content );
+		$this->assertStringNotContainsString( 'class="p-name" hidden', $content, 'The format has no name entry, so no hidden p-name.' );
+	}
+
+	/**
+	 * An article single is one h-entry with a name, content, a date and an author.
+	 * The plugin wraps the article body in e-content.
+	 */
+	public function test_an_article_single_parses_to_one_h_entry_with_name_published_and_author(): void {
+		$author_id = self::factory()->user->create( [ 'display_name' => 'Site Author' ] );
+		$post_id   = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_author'  => $author_id,
+				'post_title'   => 'An essay on tide pools',
+				'post_content' => '<!-- wp:paragraph --><p>Body words.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'article', 'kind' );
+		$this->go_to( get_permalink( $post_id ) );
+		$this->assertTrue( is_singular() );
+
+		$content = apply_filters( 'the_content', get_post_field( 'post_content', $post_id ) );
+		$items   = \Mf2\parse( $content, get_permalink( $post_id ) )['items'];
+
+		$this->assertCount( 1, $items, 'One root.' );
+		$entry = $items[0];
+		$this->assertSame( [ 'h-entry' ], $entry['type'] );
+		$this->assertSame( [ 'An essay on tide pools' ], $entry['properties']['name'] );
+		$this->assertSame( [ get_permalink( $post_id ) ], $entry['properties']['url'] );
+		$this->assertArrayHasKey( 'content', $entry['properties'] );
+		$this->assertStringContainsString( 'Body words.', $entry['properties']['content'][0]['value'] );
+		$this->assertCount( 1, $entry['properties']['published'] );
+		$this->assertSame( [ 'Site Author' ], $entry['properties']['author'][0]['properties']['name'] );
+	}
+
+	public function test_an_article_single_whose_body_already_has_e_content_is_not_wrapped_twice(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Wrapped already',
+				'post_content' => '<!-- wp:html --><div class="e-content"><p>Own wrapper.</p></div><!-- /wp:html -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'article', 'kind' );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$content = apply_filters( 'the_content', get_post_field( 'post_content', $post_id ) );
+		$items   = \Mf2\parse( $content, get_permalink( $post_id ) )['items'];
+
+		$this->assertSame( 1, substr_count( $content, 'e-content' ) );
+		$this->assertArrayHasKey( 'content', $items[0]['properties'] );
+		$this->assertCount( 1, $items[0]['properties']['content'] );
+	}
+
+	public function test_a_password_protected_article_single_gets_no_e_content_wrapper(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'   => 'publish',
+				'post_title'    => 'Protected article',
+				'post_password' => 'secret',
+				'post_content'  => '<!-- wp:paragraph --><p>Locked words.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'article', 'kind' );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$content = apply_filters( 'the_content', get_post_field( 'post_content', $post_id ) );
+
+		$this->assertStringNotContainsString( 'class="e-content"', $content );
+	}
+
+	/**
 	 * Add Simple Location's content filter when the fixture is in use.
 	 */
 	private function hook_simple_location_content(): void {

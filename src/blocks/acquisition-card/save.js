@@ -1,12 +1,15 @@
 /**
  * Acquisition Card Block - Save Component
  *
+ * The static markup keeps a private cost out of post_content, and agrees
+ * with render.php: the same type labels, the h-cite marked as the entry's
+ * acquisition-of property, and an acquired date printed as the stored
+ * Y-m-d so the saved bytes don't depend on the author's time zone.
+ *
  * @package
  */
 
 import { useBlockProps } from '@wordpress/block-editor';
-
-import { parseDate } from '../shared/components';
 
 const TYPE_LABELS = {
 	purchase: 'Purchase',
@@ -15,8 +18,37 @@ const TYPE_LABELS = {
 	won: 'Won',
 	trade: 'Trade',
 	free: 'Free',
+	inherited: 'Inherited',
 	other: 'Other',
 };
+
+/**
+ * The calendar day in an acquiredAt value, as render.php reads it.
+ *
+ * @param {string} raw Stored acquiredAt value.
+ * @return {string} Y-m-d, or '' when the value doesn't start with a real day.
+ */
+function calendarDay( raw ) {
+	const match = /^(\d{4})-(\d{2})-(\d{2})/.exec( String( raw || '' ).trim() );
+
+	if ( ! match ) {
+		return '';
+	}
+
+	const [ year, month, day ] = match.slice( 1 ).map( Number );
+	const date = new Date( 0 );
+	date.setUTCFullYear( year, month - 1, day );
+
+	if (
+		date.getUTCFullYear() !== year ||
+		date.getUTCMonth() !== month - 1 ||
+		date.getUTCDate() !== day
+	) {
+		return '';
+	}
+
+	return match.slice( 1 ).join( '-' );
+}
 
 export default function Save( { attributes } ) {
 	const {
@@ -35,15 +67,16 @@ export default function Save( { attributes } ) {
 	const blockProps = useBlockProps.save( {
 		className: `acquisition-card layout-${ layout }`,
 	} );
+	const acquiredDay = calendarDay( acquiredAt );
 
 	return (
 		<div { ...blockProps }>
-			<div className="post-kinds-card h-cite">
+			<div className="post-kinds-card h-cite u-acquisition-of">
 				{ photo && (
 					<div className="post-kinds-card__media">
 						<img
 							src={ photo }
-							alt={ photoAlt || title }
+							alt={ photoAlt || '' }
 							className="post-kinds-card__image u-photo"
 							loading="lazy"
 						/>
@@ -51,7 +84,9 @@ export default function Save( { attributes } ) {
 				) }
 				<div className="post-kinds-card__content">
 					<span className="post-kinds-card__badge">
-						{ TYPE_LABELS[ acquisitionType ] || acquisitionType }
+						{ TYPE_LABELS[ acquisitionType ] ||
+							acquisitionType ||
+							'Acquired' }
 					</span>
 
 					{ title && (
@@ -87,17 +122,15 @@ export default function Save( { attributes } ) {
 						</p>
 					) }
 
-					{ parseDate( acquiredAt ) && (
+					{ acquiredDay && (
 						<time
 							className="post-kinds-card__timestamp dt-published"
-							dateTime={ parseDate( acquiredAt ).toISOString() }
+							dateTime={ acquiredDay }
 						>
-							{ parseDate( acquiredAt ).toLocaleString() }
+							{ acquiredDay }
 						</time>
 					) }
 				</div>
-
-				<data className="u-acquired" value={ title || '' } hidden />
 			</div>
 		</div>
 	);

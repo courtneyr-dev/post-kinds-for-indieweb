@@ -1,0 +1,41 @@
+.pk-card--stream.k-article .pk-body {
+	position: static;
+}
+
+.pk-card--stream.k-article .pk-title a::after {
+	content: "";
+	inset: 0;
+	position: absolute;
+	z-index: 1;
+}
+
+.pk-card--stream.k-article:has(.pk-title a:focus-visible) {
+	outline: 3px solid currentColor;
+	outline-offset: 2px;
+}
+
+@supports selector(:has(a)) {
+	.pk-card--stream.k-article .pk-title a:focus-visible {
+		outline: none;
+	}
+}
+
+.pk-card--stream.k-article .pk-media__caption a {
+	position: relative;
+	z-index: 2;
+}
+
+.pk-card--stream.k-article .pk-media__caption a:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+	.pk-card--stream.k-article {
+		outline: 2px solid CanvasText;
+	}
+
+	.pk-card--stream.k-article:has(.pk-title a:focus-visible) {
+		outline: 3px solid Highlight;
+	}
+}

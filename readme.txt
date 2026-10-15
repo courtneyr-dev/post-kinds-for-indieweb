@@ -192,7 +192,7 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 * Added: the archive engine files replies and likes by the site they cite and bookmarks under tag drawers A to Z, with password-protected posts under Other. A theme supplies those three archive templates.
 * Added: reply and like cards copy their cited URL, title, author, description and image into post meta, and reply, like and bookmark Stream cards carry a hidden citation.
 * Added: review, reply and bookmark single pages carry microformats2 for the review body, the reply card and a bookmark's linked URL.
-* Changed: the card meta backfill runs once more, at version 6.
+* Changed: the card meta backfill runs once more, at version 7.
 * Changed: every play card is the entry's u-play-of h-cite, with the class on the card's root.
 * Fixed: kind feeds stay newest first when the kind archive is grouped.
 * Fixed: a listen card whose cover is in this site's media library prints it with core's srcset, sizes, width and height, and its src and u-photo are the library image's current file, which is the stored URL unless the image was edited in the Media Library.
@@ -202,6 +202,19 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 * Fixed: reply, like and bookmark cards with a URL and no title link to the URL's host, or print "Original link" when the URL has no host, and never print a query string as link text.
 * Fixed: /kind/bookmark/?tag=alpha shows that tag's drawer.
 * Fixed: a private check-in's stored venue slug and guid become the date slug, and a venue old slug no longer redirects.
+
+* Added: month archives for chicken, photo, favorite, acquisition, repost and article posts, each filed by the month of the post's local date, 12 a page (24 for chicken).
+* Added: the photo archive and a photo projector: a gallery on a photo single becomes a carousel with Previous and Next buttons, an "N of M" counter, captions and arrow keys.
+* Added: photo and chicken posts hide Simple Location's map, address, head meta and GeoRSS unless the post's location is public. Chicken posts hide it always and report REST dates in site time.
+* Added: favorite, acquisition and repost archives. A favorite or repost with a URL and no title prints the URL's host as its heading link.
+* Added: acquisition cards have an "Inherited" type and an editable acquired date, and cost never prints on the Stream or an archive.
+* Added: a Micropub acquisition builds an Acquisition Card with cost private by default. Local photos only.
+* Added: the article archive, a Reading time block (words divided by 200, never stored, hidden on protected posts), a Contents Post Template style and a Date format setting on the Archive sections block.
+* Added: a photo post warns before publish about images with empty alt text.
+* Changed: article Stream cards drop Read more, the thumbnail strip and "+N" and keep the hero caption.
+* Changed: a Micropub repost no longer copies its note into the repost card.
+* Changed: the repost card syncs into post meta, and the card meta backfill runs once, at version 7.
+* Fixed: a password-protected post's kind data no longer reaches REST, the get-post-meta ability, the check-in routes, block bindings, the check-in map or the dashboard block for someone who can't edit it.
 
 = 1.8.6 =
 * Added: checkin-dashboard and checkins-feed gained a headingLevel attribute (default 2, clamped 2–4), matching the Stream card block.

@@ -28,6 +28,7 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 
 	private const MARKER = 'pkiw-test/group-marker';
 	private const LINE   = 'pkiw-test/group-line';
+	private const OL_LINE = 'pkiw-test/ol-line';
 	private const PAIRS  = 'pkiw-test/two-a-page';
 	private const MONTHS = 'pkiw-test/month-marker';
 	private const IDS    = 'pkiw-test/id-marker';
@@ -131,7 +132,7 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down(): void {
-		foreach ( [ self::MARKER, self::LINE, self::PAIRS, self::MONTHS, self::IDS ] as $name ) {
+		foreach ( [ self::MARKER, self::LINE, self::OL_LINE, self::PAIRS, self::MONTHS, self::IDS ] as $name ) {
 			Grouped_Archive::unregister_entry_block( $name );
 			if ( WP_Block_Type_Registry::get_instance()->is_registered( $name ) ) {
 				unregister_block_type( $name );
@@ -493,6 +494,89 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 		$this->assertFalse( Grouped_Archive::is_entry_block( self::MARKER ) );
 	}
 
+	public function test_month_kinds_are_frozen_in_layout_order(): void {
+		$this->assertSame(
+			[ 'photo', 'chicken', 'favorite', 'acquisition', 'repost', 'article' ],
+			\PKIW\Kind_Archive_Layouts::MONTH_KINDS
+		);
+	}
+
+	/**
+	 * @return array<string, array{string}>
+	 */
+	public function month_kinds(): array {
+		return [
+			'photo'       => [ 'photo' ],
+			'chicken'     => [ 'chicken' ],
+			'favorite'    => [ 'favorite' ],
+			'acquisition' => [ 'acquisition' ],
+			'repost'      => [ 'repost' ],
+			'article'     => [ 'article' ],
+		];
+	}
+
+	/**
+	 * @dataProvider month_kinds
+	 */
+	public function test_month_kinds_group_posts_by_local_post_month( string $kind ): void {
+		update_option( 'timezone_string', 'America/New_York' );
+		$id     = $this->make( $kind, "{$kind} late", '2026-08-31 23:30:00' );
+		$source = Grouped_Archive::source( 'post_month' );
+
+		$this->assertInstanceOf( Date_Source::class, $source );
+		$this->assertSame( 'post_month', $source->id() );
+		$this->assertSame( '2026-08', Grouped_Archive::group_of_post( $kind, $id )->key() );
+		$this->assertSame( 'August 2026', Grouped_Archive::group_label_of_post( $kind, $id ) );
+	}
+
+	public function test_grouped_kinds_include_the_month_kinds(): void {
+		foreach ( [ 'photo', 'chicken', 'favorite', 'acquisition', 'repost', 'article' ] as $kind ) {
+			$this->assertContains( $kind, Grouped_Archive::grouped_kinds(), "{$kind} should be grouped by post_month." );
+		}
+	}
+
+	/**
+	 * @dataProvider month_kinds
+	 */
+	public function test_month_kind_feeds_keep_rss_size_and_html_archives_group_by_month( string $kind ): void {
+		update_option( 'posts_per_rss', 3 );
+		for ( $i = 0; $i < 5; $i++ ) {
+			$this->make( $kind, "{$kind} {$i}", '2026-08-0' . ( $i + 1 ) . ' 10:00:00' );
+		}
+
+		$template = $this->loop( 'post-kinds-indieweb/archive-sections', [ 'linesPerPage' => 20 ], false );
+		$swap     = static function ( $templates ) use ( $template ) {
+			foreach ( $templates as $found ) {
+				if ( str_starts_with( $found->slug, 'taxonomy-kind' ) ) {
+					$found->content = $template;
+				}
+			}
+			return $templates;
+		};
+		add_filter( 'get_block_templates', $swap );
+
+		try {
+			$link = get_term_link( $kind, 'kind' );
+			$this->assertIsString( $link );
+
+			$this->go_to( add_query_arg( 'feed', 'rss2', $link ) );
+			global $wp_query;
+			$this->assertTrue( $wp_query->is_feed() );
+			$this->assertSame( '', (string) $wp_query->get( 'pkiw_group_source' ) );
+			$this->assertSame( '', (string) $wp_query->get( 'pkiw_group_by' ) );
+			$this->assertSame( 3, (int) $wp_query->get( 'posts_per_page' ) );
+
+			$this->go_to( $link );
+			// go_to() unsets the global, which breaks the reference taken above.
+			$wp_query = $GLOBALS['wp_query'];
+			$this->assertFalse( $wp_query->is_feed() );
+			$this->assertSame( 'post_month', (string) $wp_query->get( 'pkiw_group_source' ) );
+			$this->assertSame( 20, (int) $wp_query->get( 'posts_per_page' ) );
+		} finally {
+			remove_filter( 'get_block_templates', $swap );
+		}
+	}
+
 	/**
 	 * Inputs the registry and the bundled sources refuse.
 	 *
@@ -513,6 +597,7 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			'entry block with an unknown shape'  => [ static fn() => Grouped_Archive::register_entry_block( 'pkiw-test/x', [ 'shape' => 'grid' ] ) ],
 			'entry block fixing a meta source'   => [ static fn() => Grouped_Archive::register_entry_block( 'pkiw-test/x', [ 'source' => 'test_status' ] ) ],
 			'entry block fixing an unknown one'  => [ static fn() => Grouped_Archive::register_entry_block( 'pkiw-test/x', [ 'source' => 'nope' ] ) ],
+			'entry block with an unknown list'   => [ static fn() => Grouped_Archive::register_entry_block( 'pkiw-test/x', [ 'list' => 'dl' ] ) ],
 		];
 	}
 
@@ -837,6 +922,19 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 		);
 	}
 
+	public function test_article_archive_sections_use_the_month_source_and_date_format(): void {
+		update_option( 'timezone_string', 'America/Chicago' );
+		$this->make( 'article', 'September article', '2026-09-02 10:00:00' );
+		$this->make( 'article', 'Late August article', '2026-08-31 23:30:00' );
+		$this->make( 'article', 'Early August article', '2026-08-01 10:00:00' );
+
+		$short = $this->sections( $this->serve( 'article', $this->loop( 'post-kinds-indieweb/archive-sections', [ 'dateFormat' => 'M Y' ] ) ) );
+		$this->assertSame( [ 'h2:Sep 2026', 'h2:Aug 2026' ], array_column( $short, 0 ) );
+
+		$long = $this->sections( $this->serve( 'article', $this->loop( 'post-kinds-indieweb/archive-sections' ) ) );
+		$this->assertSame( [ 'h2:September 2026', 'h2:August 2026' ], array_column( $long, 0 ) );
+	}
+
 	public function test_a_loop_ordered_by_title_still_keeps_each_month_together(): void {
 		$this->months();
 		$kind = get_term_by( 'slug', 'monthkind', 'kind' );
@@ -1097,6 +1195,20 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'data-pkiw-group', $this->serve( 'playkind', $this->loop( self::LINE ) ) );
 	}
 
+	public function test_line_entries_can_choose_an_ordered_section_list(): void {
+		$this->entry_block( self::OL_LINE, [ 'shape' => Grouped_Archive::ENTRY_LINE, 'list' => 'ol' ] );
+		$p = $this->shelf();
+
+		$html = $this->serve( 'shelfkind', $this->loop( self::OL_LINE, [], false ) );
+		$this->assertStringContainsString( '<ol class="pkiw-group__items">', $html );
+		$this->assertStringNotContainsString( '<ul class="pkiw-group__items">', $html );
+
+		$plain = $this->serve( 'shelfkind', $this->loop( self::LINE, [], false ) );
+		$this->assertStringContainsString( '<ul class="pkiw-group__items">', $plain );
+
+		$this->assertStringContainsString( '<ol', $this->editor_render( self::OL_LINE, $p['dune'], [ 'linesPerPage' => 2 ] ) );
+	}
+
 	public function test_an_entry_that_asks_gives_each_section_heading_an_id_unique_on_the_page(): void {
 		$this->tagged();
 		$this->make( 'tagkind', 'Post G', '2026-01-07 10:00:00', [], [ 'post_tag' => [ '日本' ] ] );
@@ -1180,6 +1292,49 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'data-pkiw-sections="1"', $line );
 		$this->assertSame( '<div class="pkiw-group-placeholder" hidden></div>', $this->editor_render( self::LINE, $p['beloved'], $attrs ) );
 		$this->assertSame( [ [ 'h2:To read', [ 'Emma' ] ] ], $this->sections( $this->editor_render( self::LINE, $p['emma'], $attrs ) ) );
+	}
+
+	public function test_current_page_ids_follow_the_grouped_main_query_page(): void {
+		$months = $this->months();
+
+		$this->serve( 'monthkind', $this->loop( self::MARKER, [ 'linesPerPage' => 2 ] ) );
+		$this->assertSame( [ $months['september'], $months['late'] ], Grouped_Archive::current_page_ids() );
+
+		$this->serve( 'monthkind', $this->loop( self::MARKER, [ 'linesPerPage' => 2 ] ), 2 );
+		$this->assertSame( [ $months['early'], $months['july'] ], Grouped_Archive::current_page_ids() );
+
+		$this->serve( 'monthkind', $this->loop( self::MARKER ) );
+		$this->assertSame( [ $months['september'], $months['late'], $months['early'], $months['july'] ], Grouped_Archive::current_page_ids() );
+
+		$this->go_to( home_url( '/' ) );
+		$this->assertSame( [], Grouped_Archive::current_page_ids() );
+	}
+
+	public function test_current_page_ids_follow_the_editor_preview_page_and_reset_afterwards(): void {
+		$months   = $this->months();
+		$captured = [];
+		$this->go_to( home_url( '/' ) );
+
+		$this->on_item = static function () use ( &$captured ): string {
+			$page = Grouped_Archive::current_page_ids();
+			if ( $page !== end( $captured ) ) {
+				$captured[] = $page;
+			}
+			return '';
+		};
+
+		$this->editor_render( self::LINE, $months['september'], [ 'linesPerPage' => 2 ] );
+		$this->assertSame( [], Grouped_Archive::current_page_ids() );
+		$this->editor_render( self::LINE, $months['early'], [ 'linesPerPage' => 2 ] );
+		$this->assertSame( [], Grouped_Archive::current_page_ids() );
+
+		$this->assertSame(
+			[
+				[ $months['september'], $months['late'] ],
+				[ $months['early'], $months['july'] ],
+			],
+			$captured
+		);
 	}
 
 	public function test_a_post_of_two_kinds_previews_as_the_kind_the_template_names(): void {

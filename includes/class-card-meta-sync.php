@@ -180,6 +180,13 @@ class Card_Meta_Sync {
 			'description' => 'cite_summary',
 			'image'       => 'cite_photo',
 		],
+		'post-kinds-indieweb/repost-card'  => [
+			'url'         => 'cite_url',
+			'title'       => 'cite_name',
+			'author'      => 'cite_author',
+			'description' => 'cite_summary',
+			'image'       => 'cite_photo',
+		],
 		// Other card blocks join this map in follow-on work; the class is
 		// deliberately map-driven so each is one entry, no new code.
 	];
@@ -345,12 +352,13 @@ class Card_Meta_Sync {
 	 * provider IDs of the group a card switched away from. Version 5 (issue 358)
 	 * runs the same pass with the stricter-wins privacy hold, which version
 	 * 4 on main ran without. Version 6 (issue 252) replays every map with
-	 * the reply and like maps and the review star-rating fill.
+	 * the reply and like maps and the review star-rating fill. Version 7
+	 * (issue 255) replays every map with the repost map.
 	 */
 	public const BACKFILL_HOOK    = 'pkiw_card_meta_backfill';
 	public const BACKFILL_OPTION  = 'pkiw_card_meta_backfill';
 	public const BACKFILL_CURSOR  = 'pkiw_card_meta_backfill_cursor';
-	public const BACKFILL_VERSION = '6';
+	public const BACKFILL_VERSION = '7';
 	public const BACKFILL_BATCH   = 50;
 
 	/**

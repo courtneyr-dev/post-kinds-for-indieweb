@@ -11,10 +11,11 @@ const BLOCK = 'post-kinds-indieweb/archive-sections';
 /**
  * Load the script and return the settings it registers the block with.
  *
- * @param {Object} [groups] Group keys and their default labels, by kind.
+ * @param {Object} [groups]    Group keys and their default labels, by kind.
+ * @param {Array}  [dateKinds] Kind slugs grouped by post month.
  * @return {Object} Block settings.
  */
-function register( groups ) {
+function register( groups, dateKinds ) {
 	const registerBlockType = jest.fn();
 	const component = ( name ) => name;
 	window.wp = {
@@ -47,6 +48,9 @@ function register( groups ) {
 	if ( groups ) {
 		window.pkiwArchiveSections = { groups };
 	}
+	if ( dateKinds ) {
+		window.pkiwArchiveSectionsDateKinds = dateKinds;
+	}
 	jest.isolateModules( () => {
 		require( SCRIPT );
 	} );
@@ -74,6 +78,7 @@ const defaults = {
 	emptyGroup: 'last',
 	emptyLabel: '',
 	groupLabels: {},
+	dateFormat: '',
 };
 
 /**
@@ -108,6 +113,7 @@ describe( 'archive sections editor', () => {
 	afterEach( () => {
 		delete window.wp;
 		delete window.pkiwArchiveSections;
+		delete window.pkiwArchiveSectionsDateKinds;
 	} );
 
 	it( 'registers inside a Post Template with the server-side attributes', () => {
@@ -128,6 +134,10 @@ describe( 'archive sections editor', () => {
 		expect( settings.attributes.emptyLabel ).toMatchObject( {
 			type: 'string',
 			role: 'content',
+		} );
+		expect( settings.attributes.dateFormat ).toEqual( {
+			type: 'string',
+			default: '',
 		} );
 		expect( settings.save() ).toBeNull();
 	} );
@@ -268,5 +278,81 @@ describe( 'archive sections editor', () => {
 			'Show section headings',
 			'Posts per page',
 		] );
+	} );
+
+	it( 'uses a date format control for month-grouped kind templates', () => {
+		const { tree, setAttributes } = edit(
+			register( undefined, [ 'article' ] ),
+			{ dateFormat: 'M Y' },
+			{ templateSlug: 'taxonomy-kind-article' }
+		);
+		const labels = tree
+			.filter( ( node ) => node.props && node.props.label )
+			.map( ( node ) => node.props.label );
+		const date = control( tree, 'TextControl', 'Date format' );
+
+		expect( labels ).toEqual(
+			expect.arrayContaining( [
+				'Show section headings',
+				'Heading level',
+				'Posts per page',
+				'Date format',
+			] )
+		);
+		expect( labels ).not.toContain( 'Section order' );
+		expect( labels ).not.toContain( 'Posts in no group' );
+		expect( labels ).not.toContain( 'Heading for posts in no group' );
+		expect( date.props.placeholder ).toBe( 'F Y' );
+		expect( date.props.help ).toBe( 'A PHP date format. Empty uses F Y.' );
+		expect( date.props.value ).toBe( 'M Y' );
+
+		date.props.onChange( 'Y-m' );
+		expect( setAttributes ).toHaveBeenCalledWith( { dateFormat: 'Y-m' } );
+	} );
+
+	it( 'keeps group controls for templates outside the date-kind list', () => {
+		const { tree } = edit(
+			register( undefined, [ 'article' ] ),
+			{},
+			{ templateSlug: 'taxonomy-kind-eat' }
+		);
+		const labels = tree
+			.filter( ( node ) => node.props && node.props.label )
+			.map( ( node ) => node.props.label );
+
+		expect( labels ).toEqual(
+			expect.arrayContaining( [
+				'Section order',
+				'Posts in no group',
+				'Heading for posts in no group',
+			] )
+		);
+		expect( labels ).not.toContain( 'Date format' );
+	} );
+
+	it( "keeps today's controls when the date-kind global is absent", () => {
+		const { tree } = edit(
+			register(),
+			{},
+			{ templateSlug: 'taxonomy-kind-article' }
+		);
+		const labels = tree
+			.filter( ( node ) => node.props && node.props.label )
+			.map( ( node ) => node.props.label );
+
+		expect( labels ).not.toContain( 'Date format' );
+	} );
+
+	it( 'hides date format while section headings are off', () => {
+		const { tree } = edit(
+			register( undefined, [ 'article' ] ),
+			{ showSections: false },
+			{ templateSlug: 'taxonomy-kind-article' }
+		);
+		const labels = tree
+			.filter( ( node ) => node.props && node.props.label )
+			.map( ( node ) => node.props.label );
+
+		expect( labels ).not.toContain( 'Date format' );
 	} );
 } );

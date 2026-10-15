@@ -77,7 +77,7 @@ final class Grouped_Archive {
 	/**
 	 * Registered entry blocks by block name.
 	 *
-	 * @var array<string, array{shape:string, source:?string, expose_key:bool, heading_ids:bool, classes:array<string, string>}>
+	 * @var array<string, array{shape:string, source:?string, expose_key:bool, heading_ids:bool, list:string, classes:array<string, string>}>
 	 */
 	private static array $entries = [];
 
@@ -122,6 +122,13 @@ final class Grouped_Archive {
 	 * @var array<string, int[]>
 	 */
 	private static array $preview_order = [];
+
+	/**
+	 * Post IDs of the page the last previewed entry belongs to.
+	 *
+	 * @var int[]
+	 */
+	private static array $preview_page = [];
 
 	/**
 	 * Render state, one frame per Post Template render and per item.
@@ -179,6 +186,7 @@ final class Grouped_Archive {
 	 * - expose_key: print `data-pkiw-group` on each section. Default false.
 	 * - heading_ids: give each section heading an id, `pkiw-group-<slug>`,
 	 *   unique on the page. Default false.
+	 * - list: 'ul' (default) or 'ol', the element that holds a section's items.
 	 * - classes: wrapper, section, heading, items and placeholder classes.
 	 *
 	 * @param string               $block_name Block name, `namespace/name`.
@@ -193,6 +201,10 @@ final class Grouped_Archive {
 		$shape = (string) ( $args['shape'] ?? self::ENTRY_MARKER );
 		if ( ! in_array( $shape, [ self::ENTRY_LINE, self::ENTRY_MARKER ], true ) ) {
 			throw new \InvalidArgumentException( sprintf( 'Entry shape "%s" must be line or marker.', esc_html( $shape ) ) );
+		}
+		$list = isset( $args['list'] ) ? (string) $args['list'] : 'ul';
+		if ( ! in_array( $list, [ 'ul', 'ol' ], true ) ) {
+			throw new \InvalidArgumentException( sprintf( 'Entry list "%s" must be ul or ol.', esc_html( $list ) ) );
 		}
 		$source = isset( $args['source'] ) ? (string) $args['source'] : null;
 		if ( null !== $source && ! self::source( $source ) instanceof Date_Source ) {
@@ -210,6 +222,7 @@ final class Grouped_Archive {
 			'source'      => $source,
 			'expose_key'  => ! empty( $args['expose_key'] ),
 			'heading_ids' => ! empty( $args['heading_ids'] ),
+			'list'        => $list,
 			'classes'     => $classes,
 		];
 	}
@@ -307,6 +320,40 @@ final class Grouped_Archive {
 		$frame = end( self::$frames );
 
 		return false !== $frame ? $frame['group'] : null;
+	}
+
+	/**
+	 * Post IDs on the grouped page currently known to the engine.
+	 *
+	 * In the editor block-renderer request this is the preview page that
+	 * preview_run() computed. On the front end it is the main query's posts
+	 * when that query is grouped. [] means no grouped page is known, so
+	 * callers should treat the current post alone as the page.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return int[]
+	 */
+	public static function current_page_ids(): array {
+		if ( self::$block_preview ) {
+			return self::$preview_page;
+		}
+
+		global $wp_query;
+		if ( ! $wp_query instanceof \WP_Query ) {
+			return [];
+		}
+
+		$source = (string) $wp_query->get( 'pkiw_group_source' );
+		$field  = (string) $wp_query->get( 'pkiw_group_by' );
+		if ( '' === $source && '' === $field ) {
+			return [];
+		}
+
+		return array_map(
+			static fn( $post ): int => $post instanceof \WP_Post ? (int) $post->ID : (int) $post,
+			(array) $wp_query->posts
+		);
 	}
 
 	/**
@@ -677,6 +724,7 @@ final class Grouped_Archive {
 			$kind                = $request->get_param( 'pkiw_kind' );
 			self::$preview_kind  = self::$block_preview && is_string( $kind ) ? sanitize_key( $kind ) : '';
 			self::$preview_order = [];
+			self::$preview_page  = [];
 			self::$heading_ids   = [];
 		}
 
@@ -936,13 +984,15 @@ final class Grouped_Archive {
 	private static function section( string $block_name, Group_Source $source, Archive_Group $group, array $items, array $settings, int $count ): string {
 		$entry   = self::$entries[ $block_name ] ?? null;
 		$classes = null !== $entry ? $entry['classes'] : self::DEFAULT_CLASSES;
+		$list    = null !== $entry && 'ol' === $entry['list'] ? 'ol' : 'ul';
 
 		return sprintf(
-			'<section class="%1$s" data-pkiw-sections="%2$d"%3$s>%4$s<ul class="%5$s">%6$s</ul></section>',
+			'<section class="%1$s" data-pkiw-sections="%2$d"%3$s>%4$s<%5$s class="%6$s">%7$s</%5$s></section>',
 			esc_attr( $classes['section'] ),
 			max( 1, $count ),
 			null !== $entry && $entry['expose_key'] ? ' data-pkiw-group="' . esc_attr( $group->slug() ) . '"' : '',
 			self::heading( $classes['heading'], (int) ( $settings['level'] ?? 2 ), self::label( $source, $group, $settings ), null !== $entry && $entry['heading_ids'] ? self::heading_id( $group ) : '' ),
+			$list,
 			esc_attr( $classes['items'] ),
 			implode( '', $items )
 		);
@@ -1197,6 +1247,7 @@ final class Grouped_Archive {
 		$order = self::$preview_order[ $cache ];
 		$index = array_search( $post_id, $order, true );
 		if ( false === $index ) {
+			self::$preview_page     = [ $post_id ];
 			self::$preview_sections = 1;
 			return [ $post_id ];
 		}
@@ -1210,12 +1261,14 @@ final class Grouped_Archive {
 		$first    = $per_page > 0 ? $index - ( $index % $per_page ) : 0;
 		$end      = $per_page > 0 ? min( count( $order ), $first + $per_page ) : count( $order );
 		$key      = $group( $post_id );
+
+		self::$preview_page = array_slice( $order, $first, $end - $first );
 		if ( $index > $first && $key === $group( $order[ $index - 1 ] ) ) {
 			return [];
 		}
 
 		// The page's sections: one for each change of group across its items.
-		$page                   = array_map( $group, array_slice( $order, $first, $end - $first ) );
+		$page                   = array_map( $group, self::$preview_page );
 		self::$preview_sections = 0;
 		foreach ( $page as $at => $name ) {
 			if ( 0 === $at || $name !== $page[ $at - 1 ] ) {
