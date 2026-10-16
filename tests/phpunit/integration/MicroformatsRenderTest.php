@@ -438,7 +438,7 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 		$entry = $this->top_level_h_entry( \Mf2\parse( $html ) );
 
 		$this->assertSame( [ 'Sunny and warm' ], $entry['properties']['weather'] ?? null );
-		$this->assertArrayHasKey( 'location', $entry['properties'], 'Simple Location\'s p-location line should stay.' );
+		$this->assertArrayNotHasKey( 'location', $entry['properties'], 'Issue 246 holds Simple Location\'s line back from every weather pass.' );
 		$this->assertNull( $this->find_nested_item_with_property( $entry, 'weather' ), 'The nested Simple Location h-adr must not carry a weather property.' );
 		$this->assertStringNotContainsString( 'sloc-weather', $html );
 	}
@@ -482,17 +482,10 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 				'innerContent' => [],
 			]
 		);
-		$this->assertStringContainsString( '<p class="pk-weather p-weather">Clear Sky, 27 °C</p>', $html );
+		// Issue 246: an untitled weather card carries the reading in its heading link and runs no excerpt.
+		$this->assertStringContainsString( '<span class="p-weather">Clear Sky, 27 °C</span>', $html );
 		$this->assertSame( 1, substr_count( $html, 'Clear Sky' ) );
-
-		$dom = new DOMDocument();
-		libxml_use_internal_errors( true );
-		$dom->loadHTML( '<?xml encoding="utf-8"?><div>' . $html . '</div>' );
-		libxml_clear_errors();
-		$summary = ( new DOMXPath( $dom ) )->query( '//p[contains(concat(" ", @class, " "), " pk-excerpt ")]' )->item( 0 );
-		$this->assertInstanceOf( DOMElement::class, $summary );
-		$this->assertStringNotContainsString( 'Clear Sky', $summary->textContent );
-		$this->assertStringNotContainsString( '°', $summary->textContent );
+		$this->assertStringNotContainsString( 'pk-excerpt', $html );
 	}
 
 	/**
