@@ -127,7 +127,8 @@ test.describe( 'Visual Regression', () => {
 					return window.wp.data.dispatch( 'core/editor' ).savePost();
 				} );
 				await page.waitForFunction(
-					() => ! window.wp.data.select( 'core/editor' ).isSavingPost()
+					() =>
+						! window.wp.data.select( 'core/editor' ).isSavingPost()
 				);
 			}
 
