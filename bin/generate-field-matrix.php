@@ -43,10 +43,18 @@ $pkiw_generate_field_matrix = static function ( string $blocks_dir ): array {
 			];
 		}
 
-		$pk_matrix[ $json['name'] ] = [
+		$pk_entry = [
 			'render'     => isset( $json['render'] ) ? 'dynamic' : 'static',
 			'attributes' => $pk_attrs,
 		];
+
+		// A block that only lives inside another (step, inside steps) names its
+		// parents, so the editor spec can insert it where the editor allows it.
+		if ( ! empty( $json['parent'] ) && is_array( $json['parent'] ) ) {
+			$pk_entry['parent'] = array_values( $json['parent'] );
+		}
+
+		$pk_matrix[ $json['name'] ] = $pk_entry;
 	}
 
 	ksort( $pk_matrix );

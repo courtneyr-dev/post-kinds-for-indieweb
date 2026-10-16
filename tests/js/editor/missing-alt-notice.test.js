@@ -48,6 +48,30 @@ const gallery = ( clientId, innerBlocks ) => ( {
 	innerBlocks,
 } );
 
+// A craft post keeps its photos in steps: a steps list of step blocks, each
+// holding an image and a paragraph (issue 249).
+const steps = ( clientId, innerBlocks ) => ( {
+	clientId,
+	name: 'post-kinds-indieweb/steps',
+	attributes: {},
+	innerBlocks,
+} );
+
+const step = ( clientId, innerBlocks ) => ( {
+	clientId,
+	name: 'post-kinds-indieweb/step',
+	attributes: {},
+	innerBlocks: [
+		...innerBlocks,
+		{
+			clientId: `${ clientId }-note`,
+			name: 'core/paragraph',
+			attributes: { content: 'Cast on 40.' },
+			innerBlocks: [],
+		},
+	],
+} );
+
 const group = ( clientId, innerBlocks ) => ( {
 	clientId,
 	name: 'core/group',
@@ -58,6 +82,7 @@ const group = ( clientId, innerBlocks ) => ( {
 const KINDS = [
 	{ id: 4, slug: 'note' },
 	{ id: 9, slug: 'photo' },
+	{ id: 11, slug: 'craft' },
 ];
 
 const createNotice = jest.fn();
@@ -187,8 +212,23 @@ describe( 'findImagesMissingAlt', () => {
 		expect( findImagesMissingAlt( null ) ).toEqual( [] );
 	} );
 
-	it( 'names photo as the one kind it checks, in a list other kinds can join', () => {
-		expect( MISSING_ALT_KINDS ).toEqual( [ 'photo' ] );
+	it( 'names photo and craft as the kinds it checks, in a list other kinds can join', () => {
+		expect( MISSING_ALT_KINDS ).toEqual( [ 'photo', 'craft' ] );
+	} );
+
+	it( 'finds the image of a step inside a steps list', () => {
+		const found = findImagesMissingAlt( [
+			steps( 'steps', [
+				step( 's1', [ image( 'a', '' ) ] ),
+				step( 's2', [ image( 'b', 'A finished sleeve' ) ] ),
+				step( 's3', [ image( 'c', '' ) ] ),
+			] ),
+		] );
+
+		expect( found.map( ( item ) => item.clientId ) ).toEqual( [
+			'a',
+			'c',
+		] );
 	} );
 } );
 
@@ -226,6 +266,42 @@ describe( 'Missing alt notice', () => {
 	it( 'shows nothing for another kind', () => {
 		mockKindIds = [ 4 ];
 		mockBlocks = [ image( 'solo', '' ) ];
+
+		const { container } = render( <MissingAltNotice /> );
+
+		expect( container.innerHTML ).toBe( '' );
+		expect( createNotice ).not.toHaveBeenCalled();
+		expectNoBlockWrites();
+	} );
+
+	it( 'lists the empty-alt step images of a craft post', () => {
+		mockKindIds = [ 11 ];
+		mockBlocks = [
+			steps( 'steps', [
+				step( 's1', [ image( 'a', '' ) ] ),
+				step( 's2', [ image( 'b', 'A finished sleeve' ) ] ),
+				step( 's3', [ image( 'c', '' ) ] ),
+			] ),
+		];
+
+		render( <MissingAltNotice /> );
+
+		expect( screen.getByRole( 'region' ) ).toBeTruthy();
+		expect( screen.getAllByRole( 'button' ) ).toHaveLength( 2 );
+		expect( createNotice ).toHaveBeenCalledWith(
+			'warning',
+			expect.stringContaining( '2 images' ),
+			expect.objectContaining( { id: NOTICE_ID, isDismissible: true } )
+		);
+		expectNoBlockWrites();
+	} );
+
+	it( 'lists nothing for a note, even one holding the same steps', () => {
+		mockKindIds = [ 4 ];
+		mockBlocks = [
+			steps( 'steps', [ step( 's1', [ image( 'a', '' ) ] ) ] ),
+			image( 'solo', '' ),
+		];
 
 		const { container } = render( <MissingAltNotice /> );
 

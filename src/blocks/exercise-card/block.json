@@ -1,0 +1,55 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "post-kinds-indieweb/exercise-card",
+	"version": "1.0.0",
+	"title": "Exercise Card",
+	"category": "post-kinds-indieweb",
+	"description": "Record a workout: the activity, and the distance, time, splits and personal best you choose to share.",
+	"keywords": ["exercise", "workout", "run", "walk", "cycle", "training"],
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
+	"attributes": {
+		"activity": {
+			"type": "string"
+		},
+		"distance": {
+			"type": "number"
+		},
+		"distanceUnit": {
+			"type": "string",
+			"default": "km",
+			"enum": ["km", "mi"]
+		},
+		"duration": {
+			"type": "string"
+		},
+		"splits": {
+			"type": "array"
+		},
+		"personalBest": {
+			"type": "boolean",
+			"default": false
+		},
+		"pbCategory": {
+			"type": "string"
+		},
+		"showDetailsPublicly": {
+			"type": "boolean",
+			"default": false
+		},
+		"origin": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"usesContext": ["postId"],
+	"supports": {
+		"html": false
+	},
+	"example": {
+		"attributes": {
+			"activity": "Run"
+		}
+	},
+	"render": "file:./render.php"
+}

@@ -18,7 +18,7 @@ import {
 	RangeControl,
 	SelectControl,
 } from '@wordpress/components';
-import { useEffect } from '@wordpress/element';
+import { useEffect, useRef } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useInstanceId } from '@wordpress/compose';
 import {
@@ -155,6 +155,15 @@ const EMOJI_OPTIONS = Object.entries( MOOD_EMOJIS ).map(
 	} )
 );
 
+/**
+ * Whether a value is a stored mood intensity: a whole number from 1 to 5.
+ *
+ * @param {unknown} value Value to check.
+ * @return {boolean} True for 1-5.
+ */
+const isIntensity = ( value ) =>
+	Number.isInteger( value ) && value >= 1 && value <= 5;
+
 export default function Edit( { attributes, setAttributes } ) {
 	const { mood, moodKey, emoji, note, intensity } = attributes;
 
@@ -186,6 +195,16 @@ export default function Edit( { attributes, setAttributes } ) {
 			postMeta: meta,
 		};
 	}, [] );
+
+	// The intensity the author picked. Meta holds a pick of 3, which equals
+	// block.json's default and so never serializes. A non-default attribute is
+	// always serialized, so it counts too. Nothing else does: the default 3 is
+	// not a pick, and nothing here writes it for the author (issue 248).
+	const metaIntensity = Number( postMeta._pkiw_mood_rating ) || 0;
+	const shownIntensity = isIntensity( metaIntensity )
+		? metaIntensity
+		: ( isIntensity( intensity ) && 3 !== intensity && intensity ) || 0;
+	const previousMetaIntensity = useRef( metaIntensity );
 
 	// Set post kind to "mood" when block is inserted
 	useEffect( () => {
@@ -221,11 +240,6 @@ export default function Edit( { attributes, setAttributes } ) {
 		if ( metaEmoji && metaEmoji !== ( emoji || '' ) ) {
 			updates.emoji = metaEmoji;
 		}
-		const metaIntensity = postMeta._pkiw_mood_rating;
-		if ( metaIntensity && metaIntensity !== ( intensity || 3 ) ) {
-			updates.intensity = metaIntensity;
-		}
-
 		if ( Object.keys( updates ).length > 0 ) {
 			setAttributes( updates );
 		}
@@ -233,8 +247,28 @@ export default function Edit( { attributes, setAttributes } ) {
 		postMeta._pkiw_mood_label,
 		postMeta._pkiw_mood_key,
 		postMeta._pkiw_mood_emoji,
-		postMeta._pkiw_mood_rating,
 	] );
+
+	// Sync the intensity FROM post meta TO the block attribute. A rating of
+	// 1-5 in meta is the author's pick, from the card or the Kind Fields
+	// sidebar. The sidebar's 'Select level' writes 0, so a rating that drops
+	// to 0 while the card is mounted resets the attribute: nothing serializes
+	// and the server stops printing a value the author removed. Mounting a
+	// post whose meta is 0 and whose comment holds an intensity changes
+	// nothing, because the previous value starts as the mounted one.
+	useEffect( () => {
+		const previous = previousMetaIntensity.current;
+		previousMetaIntensity.current = metaIntensity;
+
+		if ( isIntensity( metaIntensity ) ) {
+			if ( metaIntensity !== intensity ) {
+				setAttributes( { intensity: metaIntensity } );
+			}
+		} else if ( isIntensity( previous ) ) {
+			setAttributes( { intensity: undefined } );
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- Runs when the stored rating changes, not on every attribute edit.
+	}, [ metaIntensity ] );
 
 	// Sync FROM block attributes TO post meta when attributes change
 	useEffect( () => {
@@ -249,14 +283,21 @@ export default function Edit( { attributes, setAttributes } ) {
 		if ( ( emoji || '' ) !== ( postMeta._pkiw_mood_emoji ?? '' ) ) {
 			metaUpdates._pkiw_mood_emoji = emoji || '';
 		}
-		if ( ( intensity || 3 ) !== ( postMeta._pkiw_mood_rating ?? 3 ) ) {
-			metaUpdates._pkiw_mood_rating = intensity || 3;
-		}
-
 		if ( Object.keys( metaUpdates ).length > 0 ) {
 			editPost( { meta: metaUpdates } );
 		}
-	}, [ mood, moodKey, emoji, intensity ] );
+	}, [ mood, moodKey, emoji ] );
+
+	// Meta is written only on an explicit pick (or a reset), never on mount.
+	const pickIntensity = ( value ) => {
+		if ( ! isIntensity( value ) ) {
+			setAttributes( { intensity: undefined } );
+			editPost( { meta: { _pkiw_mood_rating: 0 } } );
+			return;
+		}
+		setAttributes( { intensity: value } );
+		editPost( { meta: { _pkiw_mood_rating: value } } );
+	};
 
 	const handleEmojiSelect = ( selectedEmoji ) => {
 		setAttributes( { emoji: selectedEmoji } );
@@ -306,10 +347,9 @@ export default function Edit( { attributes, setAttributes } ) {
 							'Intensity',
 							'post-kinds-for-indieweb-in-block-themes'
 						) }
-						value={ intensity || 3 }
-						onChange={ ( value ) =>
-							setAttributes( { intensity: value } )
-						}
+						value={ shownIntensity || undefined }
+						onChange={ pickIntensity }
+						allowReset
 						min={ 1 }
 						max={ 5 }
 						marks={ [
@@ -359,11 +399,9 @@ export default function Edit( { attributes, setAttributes } ) {
 									key={ i }
 									type="button"
 									className={ `post-kinds-card__intensity-dot ${
-										i < ( intensity || 3 ) ? 'filled' : ''
+										i < shownIntensity ? 'filled' : ''
 									}` }
-									onClick={ () =>
-										setAttributes( { intensity: i + 1 } )
-									}
+									onClick={ () => pickIntensity( i + 1 ) }
 									aria-label={ `${ __(
 										'Set intensity to',
 										'post-kinds-for-indieweb-in-block-themes'
