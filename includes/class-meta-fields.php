@@ -2334,8 +2334,8 @@ class Meta_Fields {
 		$terms  = [];
 		$likes  = [];
 		foreach ( (array) $query->get( 'search_terms' ) as $term ) {
-			$term     = (string) $term;
 			// Core reads no exclusion prefix in exact mode.
+			$term     = (string) $term;
 			$excluded = ! $exact && $prefix && str_starts_with( $term, (string) $prefix );
 			$term     = $excluded ? substr( $term, 1 ) : $term;
 			$terms[]  = [ $term, $excluded ];
