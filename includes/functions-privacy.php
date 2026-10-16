@@ -31,6 +31,23 @@ if ( ! function_exists( 'pkiw_get_visible_location_fields' ) ) {
 	}
 }
 
+if ( ! function_exists( 'pkiw_get_visible_health_fields' ) ) {
+	/**
+	 * Public wrapper for Meta_Fields::get_visible_health_fields(), for
+	 * themes and other consumers: which exercise or sleep fields print for a
+	 * post, by field key without the prefix. Activity and sleep duration are
+	 * always true. The opt-in fields are true only when the post's toggle is
+	 * on, for every requester. Heart rate, calories, other biometrics and
+	 * start and end clock times have no key and never print.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array<string, bool> Empty for a post of any other kind.
+	 */
+	function pkiw_get_visible_health_fields( int $post_id ): array {
+		return \PKIW\Meta_Fields::get_visible_health_fields( $post_id );
+	}
+}
+
 if ( ! function_exists( 'pkiw_get_safe_title' ) ) {
 	/**
 	 * The title to print for a post: the stored title, or "Check-in, <date>"

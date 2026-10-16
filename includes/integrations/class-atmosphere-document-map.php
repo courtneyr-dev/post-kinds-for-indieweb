@@ -75,13 +75,21 @@ class Atmosphere_Document_Map {
 	private array $previous_posts = [];
 
 	/**
-	 * Meta that hides an RSVP's location: its own setting, and the post's
-	 * location privacy, PKIW's or Simple Location's, which
-	 * rsvp_location_visible() lets win.
+	 * Meta that hides private text in a shared record: an RSVP's location
+	 * setting, the post's location privacy (PKIW's or Simple Location's,
+	 * which rsvp_location_visible() lets win), and the exercise and sleep
+	 * toggles that open a post's opt-in health details. Switching any of
+	 * them queues an update, so the record is rebuilt to match.
 	 *
 	 * @var string[]
 	 */
-	private const PRIVACY_META_KEYS = [ '_pkiw_rsvp_location_privacy', '_pkiw_geo_privacy', 'geo_public' ];
+	private const PRIVACY_META_KEYS = [
+		'_pkiw_rsvp_location_privacy',
+		'_pkiw_geo_privacy',
+		'geo_public',
+		Meta_Fields::EXERCISE_PUBLIC_KEY,
+		Meta_Fields::SLEEP_PUBLIC_KEY,
+	];
 
 	/**
 	 * Meta-change hooks queue_update_on_privacy_change() runs on.

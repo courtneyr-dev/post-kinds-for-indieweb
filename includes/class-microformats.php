@@ -347,6 +347,7 @@ class Microformats {
 			'craft'     => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
+					'name'     => 'p-name',
 					'craft-of' => 'u-craft-of',
 					'content'  => 'e-content',
 					'date'     => 'dt-published',

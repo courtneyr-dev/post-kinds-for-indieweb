@@ -225,6 +225,141 @@ function card_name_is_url( string $name, string $url = '' ): bool {
 }
 
 /**
+ * Seconds in an ISO 8601 duration.
+ *
+ * Reads days, hours, minutes and seconds (`P1D`, `PT1H2M3S`, `PT29M12S`).
+ * Weeks, months, years, fractions and any trailing text read as no duration.
+ *
+ * @since 1.9.0
+ *
+ * @param string $duration Duration such as `PT29M12S`.
+ * @return int Seconds, or 0 when the text is not a duration.
+ */
+function card_duration_seconds( string $duration ): int {
+	if ( 1 !== preg_match( '/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/i', trim( $duration ), $parts ) ) {
+		return 0;
+	}
+
+	return (int) ( $parts[1] ?? 0 ) * 86400 + (int) ( $parts[2] ?? 0 ) * 3600 + (int) ( $parts[3] ?? 0 ) * 60 + (int) ( $parts[4] ?? 0 );
+}
+
+/**
+ * Seconds as an ISO 8601 duration: 1752 is `PT29M12S`, 3600 is `PT1H`.
+ *
+ * Hours stay hours, so a day is `PT24H`.
+ *
+ * @since 1.9.0
+ *
+ * @param int $seconds Seconds.
+ * @return string Duration, or '' for no time.
+ */
+function card_duration_iso( int $seconds ): string {
+	if ( $seconds <= 0 ) {
+		return '';
+	}
+
+	$hours   = intdiv( $seconds, 3600 );
+	$minutes = intdiv( $seconds % 3600, 60 );
+	$rest    = $seconds % 60;
+
+	return 'PT' . ( $hours > 0 ? $hours . 'H' : '' ) . ( $minutes > 0 ? $minutes . 'M' : '' ) . ( $rest > 0 ? $rest . 'S' : '' );
+}
+
+/**
+ * Seconds as a clock reading: 1752 is `29:12`, 3723 is `1:02:03`.
+ *
+ * @since 1.9.0
+ *
+ * @param int $seconds Seconds.
+ * @return string Clock form, or '' for no time.
+ */
+function card_clock_duration( int $seconds ): string {
+	if ( $seconds <= 0 ) {
+		return '';
+	}
+
+	$hours   = intdiv( $seconds, 3600 );
+	$minutes = intdiv( $seconds % 3600, 60 );
+	$rest    = $seconds % 60;
+
+	return $hours > 0
+		? sprintf( '%d:%02d:%02d', $hours, $minutes, $rest )
+		: sprintf( '%d:%02d', $minutes, $rest );
+}
+
+/**
+ * Minutes as an ISO 8601 duration: 45 is `PT45M`, 150 is `PT2H30M`.
+ *
+ * @since 1.9.0
+ *
+ * @param int $minutes Minutes.
+ * @return string Duration, or '' for no time.
+ */
+function card_minutes_iso( int $minutes ): string {
+	if ( $minutes <= 0 ) {
+		return '';
+	}
+
+	$hours    = intdiv( $minutes, 60 );
+	$rest     = $minutes % 60;
+	$duration = 'PT';
+	if ( $hours > 0 ) {
+		$duration .= $hours . 'H';
+	}
+	if ( $rest > 0 ) {
+		$duration .= $rest . 'M';
+	}
+
+	return $duration;
+}
+
+/**
+ * Minutes in a stored ISO 8601 duration. Seconds are dropped, and a day is
+ * 1440 minutes.
+ *
+ * @since 1.9.0
+ *
+ * @param string $duration Duration such as `PT1H30M`.
+ * @return int Minutes, or 0 when the text is not a duration.
+ */
+function card_minutes_from_iso( string $duration ): int {
+	if ( 1 !== preg_match( '/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:\d+S)?)?$/i', trim( $duration ), $parts ) ) {
+		return 0;
+	}
+
+	return (int) ( $parts[1] ?? 0 ) * 1440 + (int) ( $parts[2] ?? 0 ) * 60 + (int) ( $parts[3] ?? 0 );
+}
+
+/**
+ * A time for people: "45 min", "1 hr", "2 hr 30 min".
+ *
+ * @since 1.9.0
+ *
+ * @param int $minutes Minutes.
+ * @return string Label, or '' for no time.
+ */
+function card_minutes_label( int $minutes ): string {
+	if ( $minutes <= 0 ) {
+		return '';
+	}
+
+	$hours = intdiv( $minutes, 60 );
+	$rest  = $minutes % 60;
+
+	if ( 0 === $hours ) {
+		/* translators: %d: number of minutes. */
+		return sprintf( __( '%d min', 'post-kinds-for-indieweb-in-block-themes' ), $rest );
+	}
+	if ( 0 === $rest ) {
+		/* translators: %d: number of hours. */
+		return sprintf( __( '%d hr', 'post-kinds-for-indieweb-in-block-themes' ), $hours );
+	}
+
+	/* translators: 1: number of hours, 2: number of minutes. */
+	return sprintf( __( '%1$d hr %2$d min', 'post-kinds-for-indieweb-in-block-themes' ), $hours, $rest );
+}
+
+/**
  * The "<Kind>, <date>" name for a title-less post, with its parts.
  *
  * The last step of untitled_name(). A card that prints the date on its
@@ -254,6 +389,29 @@ function untitled_fallback_name( \WP_Post $post ): array {
 		'kind' => $kind_label,
 		'date' => $date,
 	];
+}
+
+/**
+ * A title-less note or question's first 25 words: its name when it has no title.
+ *
+ * The excerpt when there is one, else the content with blocks and shortcodes
+ * removed and tags stripped, with runs of whitespace collapsed. Callers check
+ * for a password first: this reads the post's text without asking whether the
+ * requester may see it. untitled_name() and the note archive both name a note
+ * this way, so the 25-word rule lives here.
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post Post.
+ * @return string The thought, cut to 25 words with an ellipsis, or '' when the post has no text.
+ */
+function untitled_thought( \WP_Post $post ): string {
+	$thought = '' !== trim( (string) $post->post_excerpt )
+		? (string) $post->post_excerpt
+		: excerpt_remove_blocks( strip_shortcodes( (string) $post->post_content ) );
+	$thought = trim( (string) preg_replace( '/\s+/', ' ', wp_strip_all_tags( $thought ) ) );
+
+	return '' === $thought ? '' : wp_trim_words( $thought, 25, '…' );
 }
 
 // phpcs:disable Generic.Metrics.CyclomaticComplexity.TooHigh -- The order is the public naming contract.
@@ -352,12 +510,9 @@ function untitled_name( \WP_Post $post, bool $from_content = true ): string {
 	}
 
 	if ( $from_content && in_array( $kind, [ 'note', 'question' ], true ) ) {
-		$thought = '' !== trim( (string) $post->post_excerpt )
-			? (string) $post->post_excerpt
-			: excerpt_remove_blocks( strip_shortcodes( (string) $post->post_content ) );
-		$thought = trim( (string) preg_replace( '/\s+/', ' ', wp_strip_all_tags( $thought ) ) );
+		$thought = untitled_thought( $post );
 		if ( '' !== $thought ) {
-			return wp_trim_words( $thought, 25, '…' );
+			return $thought;
 		}
 	}
 

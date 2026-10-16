@@ -62,6 +62,7 @@ final class Micropub_Content_Builder {
 	public static function register(): void {
 		add_action( 'after_micropub', [ self::class, 'apply' ], 30, 2 );
 		add_filter( 'micropub_post_content', [ self::class, 'fill_empty_content' ], 20, 2 );
+		add_filter( 'micropub_post_content', [ self::class, 'record_sleep_night' ], 21, 2 );
 	}
 
 	/**
@@ -92,6 +93,39 @@ final class Micropub_Content_Builder {
 		$block_content = self::build_block_content( $properties );
 
 		return null === $block_content ? $post_content : $block_content;
+	}
+
+	/**
+	 * Tell Sleep_Night which night a sleep request files under, before the
+	 * insert (issue 247).
+	 *
+	 * A sleep post publishes at noon of its night, never at the time it was
+	 * posted. A request carrying plain `content` gets its sleep card only in
+	 * the after_micropub pass, so at insert time the post has no card and no
+	 * kind term for Sleep_Night to read. This hands it the night: the night
+	 * of `start`, else `published`, else now. The next insert consumes it.
+	 *
+	 * @param string               $post_content Content Micropub derived from the request, returned untouched.
+	 * @param array<string, mixed> $input        Original parsed Micropub request body.
+	 * @return string
+	 */
+	public static function record_sleep_night( $post_content, $input ): string {
+		$post_content = (string) $post_content;
+		if ( ! is_array( $input ) || ! class_exists( Sleep_Night::class ) ) {
+			return $post_content;
+		}
+
+		$properties = self::extract_properties( $input );
+		if ( 'sleep' !== self::card_kind( $properties ) ) {
+			return $post_content;
+		}
+
+		$when = card_datetime( self::flatten_scalar( $properties, 'start' ) )
+			?? card_datetime( self::flatten_scalar( $properties, 'published' ) )
+			?? new \DateTimeImmutable( 'now', wp_timezone() );
+		Sleep_Night::set_pending_night( Sleep_Night::night_of( $when ) );
+
+		return $post_content;
 	}
 
 	/**
@@ -318,6 +352,16 @@ final class Micropub_Content_Builder {
 		// values, so a comic needs no has_property() check on photo[0].
 		// An acquisition's local photo sits on its card the same way, and a
 		// photo on another host is dropped, never hotlinked.
+		// A sleep answer's own words print as written, between the card and
+		// the photos (Courtney's answer on the Outpost free-text question).
+		// Only the duration parsed from it reaches the card.
+		if ( 'sleep' === $kind ) {
+			$sleep_note = self::sleep_note( $properties );
+			if ( '' !== $sleep_note ) {
+				$card_markup .= "\n\n\t" . $sleep_note;
+			}
+		}
+
 		$photo_markup = '';
 		if ( 'comics' === $kind ) {
 			$photo_markup = self::photo_card( self::without_comic_cover( $properties ) );
@@ -342,7 +386,11 @@ final class Micropub_Content_Builder {
 	 * outside this map sets the kind term (assign_kind_term()) but never
 	 * changes the card, so `jam` on a `listen-of` entry still builds a
 	 * listen card. A photo-only entry hinted `acquisition` is an
-	 * acquisition whose one property is its picture (issue 239).
+	 * acquisition whose one property is its picture (issue 239). Sleep is the
+	 * one exception, handled in card_kind() because it has no shape of its
+	 * own: a sleep card reads only `sleep`, `start` and `end`, so a hint
+	 * narrowing an event or check-in shape to sleep drops nothing the card
+	 * would print, and a hint with `content` alone must still build the card.
 	 *
 	 * @var array<string, string[]>
 	 */
@@ -359,11 +407,18 @@ final class Micropub_Content_Builder {
 	 * @return string|null Kind slug, or null when no kind matches.
 	 */
 	private static function card_kind( array $properties ): ?string {
+		$hint = self::explicit_kind( $properties );
+		if ( 'sleep' === $hint ) {
+			$taxonomy = Plugin::get_instance()->get_taxonomy();
+			if ( null !== $taxonomy && $taxonomy->is_valid_kind( 'sleep' ) ) {
+				return 'sleep';
+			}
+		}
+
 		$kind = self::detect_kind( $properties );
 		if ( null === $kind ) {
 			return null;
 		}
-		$hint = self::explicit_kind( $properties );
 		if ( null === $hint || ! in_array( $hint, self::HINT_REFINEMENTS[ $kind ] ?? [], true ) ) {
 			return $kind;
 		}
@@ -442,6 +497,7 @@ final class Micropub_Content_Builder {
 		return null;
 	}
 
+	// phpcs:disable Generic.Metrics.CyclomaticComplexity.TooHigh -- One case per kind that has a card builder.
 	/**
 	 * Build the card block for a given post kind. Returns null if the
 	 * kind doesn't have a corresponding card block.
@@ -478,6 +534,10 @@ final class Micropub_Content_Builder {
 				return self::bookmark_card( $properties );
 			case 'acquisition':
 				return self::acquisition_card( $properties );
+			case 'exercise':
+				return self::exercise_card( $properties );
+			case 'sleep':
+				return self::sleep_card( $properties );
 			case 'reply':
 				return self::reply_card( $properties );
 			case 'mood':
@@ -491,6 +551,7 @@ final class Micropub_Content_Builder {
 		}
 		return self::paragraph_for_kind( $kind, $properties );
 	}
+	// phpcs:enable Generic.Metrics.CyclomaticComplexity.TooHigh
 
 	/**
 	 * Build a typed paragraph for kinds without a dedicated card block.
@@ -527,10 +588,6 @@ final class Micropub_Content_Builder {
 				return self::typed_paragraph( $properties, 'issue-of', 'u-in-reply-to', __( 'Issue for', 'post-kinds-for-indieweb-in-block-themes' ) );
 			case 'craft':
 				return self::typed_paragraph( $properties, 'craft-of', 'u-craft-of', __( 'Crafted', 'post-kinds-for-indieweb-in-block-themes' ) );
-			case 'exercise':
-				return self::typed_paragraph( $properties, 'exercise', 'p-exercise', '' );
-			case 'sleep':
-				return self::typed_paragraph( $properties, 'sleep', 'p-sleep', '' );
 			case 'trip':
 				return self::typed_paragraph( $properties, 'trip', 'p-trip', '' );
 			case 'itinerary':
@@ -1241,6 +1298,143 @@ final class Micropub_Content_Builder {
 			. $children . "\n"
 			. '</figure>' . "\n"
 			. '<!-- /wp:gallery -->';
+	}
+
+	/**
+	 * Build an Exercise Card block from the h-entry property bag.
+	 *
+	 * Reads the `exercise` activity and nothing else. Start, end, duration,
+	 * distance, calories, heart rate and location never reach the card,
+	 * whatever a client sends: Courtney's answer on the health data question
+	 * keeps heart rate, calories and clock times out of everything. The
+	 * Micropub plugin keeps every other property in its own `mf2_*` rows,
+	 * which no Post Kinds surface reads. `origin` records where the card came
+	 * from; no surface prints it.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `exercise`).
+	 * @return string Block-comment markup for the exercise-card block.
+	 */
+	private static function exercise_card( array $properties ): string {
+		return self::self_closing_block(
+			'post-kinds-indieweb/exercise-card',
+			self::filter_empty(
+				[
+					'activity' => trim( self::flatten_scalar( $properties, 'exercise' ) ),
+					'origin'   => 'micropub',
+				]
+			)
+		);
+	}
+
+	/**
+	 * Build a Sleep Card block from the h-entry property bag.
+	 *
+	 * The card gets a duration in minutes and an origin, never a bedtime,
+	 * wake time, publish time or place. The duration comes from the `sleep`
+	 * property when it opens with one, else from `end` minus `start` when
+	 * both parse and the span is 1 to 1440 minutes. A request with neither
+	 * gets a card with no duration.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `sleep`, `start`, `end`).
+	 * @return string Block-comment markup for the sleep-card block.
+	 */
+	private static function sleep_card( array $properties ): string {
+		$minutes = self::sleep_answer( self::flatten_scalar( $properties, 'sleep' ) )['minutes'];
+		if ( null === $minutes ) {
+			$start = card_datetime( self::flatten_scalar( $properties, 'start' ) );
+			$end   = card_datetime( self::flatten_scalar( $properties, 'end' ) );
+			if ( null !== $start && null !== $end ) {
+				$span    = intdiv( $end->getTimestamp() - $start->getTimestamp(), 60 );
+				$minutes = $span >= 1 && $span <= 1440 ? $span : null;
+			}
+		}
+
+		return self::self_closing_block(
+			'post-kinds-indieweb/sleep-card',
+			self::filter_empty(
+				[
+					'durationMinutes' => $minutes,
+					'origin'          => 'micropub',
+				]
+			)
+		);
+	}
+
+	/**
+	 * The author's own words from a sleep answer, as a plain paragraph.
+	 *
+	 * The answer prints as written (Courtney's answer on the Outpost free-text
+	 * question), unless it is only a duration, which the card already prints.
+	 * Nothing parsed from it is printed here: the duration lives in the card,
+	 * and no heart rate, calories, other biometrics or clock times are read
+	 * out of the text.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `sleep`).
+	 * @return string Block-comment markup, or '' when the answer is empty or only a duration.
+	 */
+	private static function sleep_note( array $properties ): string {
+		$answer = self::sleep_answer( self::flatten_scalar( $properties, 'sleep' ) );
+		if ( '' === $answer['text'] || $answer['only_duration'] ) {
+			return '';
+		}
+
+		return '<!-- wp:paragraph -->' . "\n"
+			. '<p>' . esc_html( $answer['text'] ) . '</p>' . "\n"
+			. '<!-- /wp:paragraph -->';
+	}
+
+	/**
+	 * Read a sleep answer: the duration it opens with, in minutes, and
+	 * whether the answer is only that duration.
+	 *
+	 * Forms: an ISO 8601 duration (`PT7H42M`), `7h 05m`, `7 hr 42 min`,
+	 * `45m`, `7:42` and decimal hours (`7.5`, `7.5 hours`). Anything after the
+	 * duration is the author's note. A reading above 16 hours (`23:10`) or
+	 * followed by am or pm is a time of day, not a length, and a bare number
+	 * without a unit counts only when it is the whole answer, so `1am` and
+	 * `3 beers` read as no duration. A duration outside 1 to 1440 minutes
+	 * reads as none.
+	 *
+	 * @param string $answer The `sleep` property.
+	 * @return array{text: string, minutes: int|null, only_duration: bool}
+	 */
+	private static function sleep_answer( string $answer ): array {
+		$text    = trim( $answer );
+		$minutes = null;
+		$whole   = false;
+
+		if ( '' === $text ) {
+			return [
+				'text'          => '',
+				'minutes'       => null,
+				'only_duration' => false,
+			];
+		}
+
+		if ( card_duration_seconds( $text ) > 0 ) {
+			$minutes = intdiv( card_duration_seconds( $text ), 60 );
+			$whole   = true;
+		} elseif ( 1 === preg_match( '/^(?:(\d{1,2})\s*(?:h|hr|hrs|hour|hours)\b)?\s*(?:(\d{1,2})\s*(?:m|min|mins|minute|minutes)\b)?/i', $text, $parts ) && ( '' !== ( $parts[1] ?? '' ) || '' !== ( $parts[2] ?? '' ) ) ) {
+			$minutes = (int) ( $parts[1] ?? 0 ) * 60 + (int) ( $parts[2] ?? 0 );
+			$whole   = strlen( $parts[0] ) === strlen( $text );
+		} elseif ( 1 === preg_match( '/^(\d{1,2}):([0-5]\d)(?![\d:])(?!\s*[ap]\.?m)/i', $text, $parts ) && (int) $parts[1] <= 16 ) {
+			$minutes = (int) $parts[1] * 60 + (int) $parts[2];
+			$whole   = strlen( $parts[0] ) === strlen( $text );
+		} elseif ( 1 === preg_match( '/^(\d{1,2}(?:\.\d+)?)(?:\s*(?:h|hr|hrs|hour|hours)\b|$)/i', $text, $parts ) ) {
+			$minutes = (int) round( (float) $parts[1] * 60 );
+			$whole   = strlen( $parts[0] ) === strlen( $text );
+		}
+
+		if ( null !== $minutes && ( $minutes < 1 || $minutes > 1440 ) ) {
+			$minutes = null;
+			$whole   = false;
+		}
+
+		return [
+			'text'          => $text,
+			'minutes'       => $minutes,
+			'only_duration' => null !== $minutes && $whole,
+		];
 	}
 
 	/**

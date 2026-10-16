@@ -2340,4 +2340,489 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'Secret caption', $html );
 		$this->assertStringNotContainsString( 'The deck for the write-up.', $html );
 	}
+
+	// --- W4-P0C: date-only kinds, the kind render filter and the craft card. ---
+
+	/**
+	 * A published post of a kind, with its local publish time set.
+	 *
+	 * @param string $kind  Kind slug.
+	 * @param string $local Local post_date.
+	 * @param array  $args  Extra post arguments.
+	 * @return \WP_Post
+	 */
+	private function kind_post_at( string $kind, string $local, array $args = [] ): \WP_Post {
+		$this->ensure_kind_term( $kind );
+		update_option( 'timezone_string', 'America/New_York' );
+		$post_id = self::factory()->post->create(
+			array_merge(
+				[
+					'post_status'  => 'publish',
+					'post_title'   => ucfirst( $kind ) . ' fixture',
+					'post_date'    => $local,
+					'post_content' => '<!-- wp:paragraph --><p>Body.</p><!-- /wp:paragraph -->',
+				],
+				$args
+			)
+		);
+		wp_set_object_terms( $post_id, $kind, 'kind' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		return get_post( $post_id );
+	}
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public function date_only_kinds(): array {
+		return [
+			'exercise' => [ 'exercise' ],
+			'sleep'    => [ 'sleep' ],
+		];
+	}
+
+	/**
+	 * Exercise and sleep print a date, never a clock time, on the Stream. The
+	 * local date is the one the card shows: 22:30 on Aug 23 in New York is
+	 * already Aug 24 in UTC.
+	 *
+	 * @dataProvider date_only_kinds
+	 *
+	 * @param string $kind Kind slug.
+	 */
+	public function test_inject_post_date_writes_the_local_date_only_for_exercise_and_sleep( string $kind ): void {
+		$post = $this->kind_post_at( $kind, '2026-08-23 22:30:00' );
+		$html = '<article class="pk-card"><h2 class="pk-title">x</h2></article>';
+
+		$out = \PKIW\inject_post_date_into_card( $html, $post );
+
+		$this->assertMatchesRegularExpression( '/<time class="dt-published" datetime="2026-08-23">/', $out, 'Local date, no time.' );
+		$this->assertDoesNotMatchRegularExpression( '/datetime="[^"]*T/', $out );
+		$this->assertStringContainsString( 'August 23, 2026', $out, 'The visible date text doesn\'t change.' );
+	}
+
+	public function test_inject_post_date_keeps_the_full_timestamp_for_a_note(): void {
+		$post = $this->kind_post_at( 'note', '2026-08-23 22:30:00' );
+
+		$out = \PKIW\inject_post_date_into_card( '<article class="pk-card"><h2 class="pk-title">x</h2></article>', $post );
+
+		$this->assertMatchesRegularExpression( '/datetime="2026-08-24T02:30:00\+00:00"/', $out );
+	}
+
+	public function test_the_date_only_kinds_filter_adds_and_removes_kinds(): void {
+		$note     = $this->kind_post_at( 'note', '2026-08-23 22:30:00' );
+		$exercise = $this->kind_post_at( 'exercise', '2026-08-23 22:30:00' );
+		$html     = '<article class="pk-card"><h2 class="pk-title">x</h2></article>';
+
+		$add = static fn( array $kinds ): array => array_merge( $kinds, [ 'note' ] );
+		add_filter( 'pkiw_stream_date_only_kinds', $add );
+		$this->assertStringContainsString( 'datetime="2026-08-23"', \PKIW\inject_post_date_into_card( $html, $note ) );
+		remove_filter( 'pkiw_stream_date_only_kinds', $add );
+
+		add_filter( 'pkiw_stream_date_only_kinds', '__return_empty_array' );
+		$this->assertMatchesRegularExpression( '/datetime="2026-08-24T02:30:00\+00:00"/', \PKIW\inject_post_date_into_card( $html, $exercise ) );
+		remove_filter( 'pkiw_stream_date_only_kinds', '__return_empty_array' );
+	}
+
+	/**
+	 * The generic card and the hidden entry date follow the same rule, so a
+	 * long exercise post can't print the clock time the card-only path hides.
+	 *
+	 * @dataProvider date_only_kinds
+	 *
+	 * @param string $kind Kind slug.
+	 */
+	public function test_the_generic_card_and_the_hidden_entry_date_are_date_only_too( string $kind ): void {
+		$this->kind_post_at( $kind, '2026-08-23 22:30:00' );
+
+		$html = \PKIW\render_stream_card();
+		$this->assertMatchesRegularExpression( '/<time class="dt-published" datetime="2026-08-23">/', $html );
+
+		$hidden = \PKIW\ensure_entry_properties( '<article class="pk-card"><h2 class="pk-title">x</h2></article>', get_post(), true );
+		$this->assertStringContainsString( '<data class="dt-published" value="2026-08-23"></data>', $hidden );
+		foreach ( [ $html, $hidden ] as $out ) {
+			$this->assertDoesNotMatchRegularExpression( '/(?:datetime|value)="[^"]*T\d\d:/', $out, 'No clock time anywhere.' );
+		}
+	}
+
+	public function test_a_note_keeps_the_full_timestamp_in_the_generic_card_and_hidden_entry_date(): void {
+		$this->kind_post_at( 'note', '2026-08-23 22:30:00' );
+
+		$this->assertMatchesRegularExpression( '/<time class="dt-published" datetime="2026-08-24T02:30:00\+00:00">/', \PKIW\render_stream_card() );
+		$this->assertStringContainsString( 'value="2026-08-24T02:30:00+00:00"', \PKIW\ensure_entry_properties( '<article class="pk-card"><h2 class="pk-title">x</h2></article>', get_post(), true ) );
+	}
+
+	public function test_a_card_only_exercise_post_on_the_stream_carries_a_date_only_dt_published(): void {
+		$this->kind_post_at( 'exercise', '2026-08-23 22:30:00', [ 'post_content' => '<!-- wp:post-kinds-indieweb/exercise-card {"activity":"Run"} /-->' ] );
+		// Stand in for the card's render.php, which a later lane ships.
+		$registered = false;
+		if ( ! \WP_Block_Type_Registry::get_instance()->is_registered( 'post-kinds-indieweb/exercise-card' ) ) {
+			register_block_type(
+				'post-kinds-indieweb/exercise-card',
+				[
+					'render_callback' => static fn(): string => '<article class="pk-card k-exercise h-entry"><h2 class="pk-title">Run</h2></article>',
+				]
+			);
+			$registered = true;
+		}
+
+		$html = \PKIW\render_stream_card();
+
+		if ( $registered ) {
+			unregister_block_type( 'post-kinds-indieweb/exercise-card' );
+		}
+		$this->assertMatchesRegularExpression( '/<time class="dt-published" datetime="2026-08-23">/', $html );
+		$this->assertDoesNotMatchRegularExpression( '/datetime="[^"]*T/', $html );
+	}
+
+	// --- pkiw_stream_card_kind_render. ---
+
+	public function test_a_kind_render_callback_that_returns_a_string_replaces_the_card(): void {
+		$this->kind_post_at( 'note', '2026-08-23 10:00:00' );
+		$seen = [];
+		add_filter(
+			'pkiw_stream_card_kind_render',
+			static function ( $html, $post, $level, $attributes ) use ( &$seen ) {
+				$seen[] = [ $post->post_title, $level, $attributes ];
+				return '<article class="pk-card k-note h-entry">Kind card</article>';
+			},
+			10,
+			4
+		);
+
+		$html = \PKIW\render_stream_card( [ 'headingLevel' => 3 ] );
+
+		$this->assertSame( '<article class="pk-card k-note h-entry">Kind card</article>', $html );
+		$this->assertSame( [ [ 'Note fixture', 3, [ 'headingLevel' => 3 ] ] ], $seen, 'It receives the post, the clamped level and the attributes.' );
+	}
+
+	public function test_a_kind_render_callback_that_returns_null_falls_through_to_the_card(): void {
+		$this->kind_post_at( 'note', '2026-08-23 10:00:00' );
+		add_filter( 'pkiw_stream_card_kind_render', '__return_null' );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( 'pk-card--stream', $html );
+		$this->assertStringContainsString( 'Note fixture', $html );
+	}
+
+	public function test_a_protected_post_never_reaches_the_kind_render_filter(): void {
+		$this->kind_post_at( 'note', '2026-08-23 10:00:00', [ 'post_password' => 'secret' ] );
+		$called = false;
+		add_filter(
+			'pkiw_stream_card_kind_render',
+			static function ( $html ) use ( &$called ) {
+				$called = true;
+				return '<p>Kind card</p>';
+			}
+		);
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertFalse( $called );
+		$this->assertStringContainsString( 'pk-card--protected', $html );
+	}
+
+	// --- Craft. ---
+
+	/**
+	 * A craft post, card-only unless the arguments say otherwise.
+	 *
+	 * @param array $args Extra post arguments.
+	 * @return int Post ID.
+	 */
+	private function craft_post( array $args = [] ): int {
+		return $this->kind_post_at(
+			'craft',
+			'2026-08-23 10:00:00',
+			array_merge(
+				[
+					'post_title'   => 'Garter scarf',
+					'post_excerpt' => 'A scarf for winter.',
+					'post_content' => '<!-- wp:post-kinds-indieweb/craft-card {"craftType":"Knitting","timeMinutes":1080} /-->',
+				],
+				$args
+			)
+		)->ID;
+	}
+
+	/**
+	 * Register a craft facts reader that returns what the Craft_Archive one
+	 * will: type, minutes and the ISO and label of the time.
+	 *
+	 * @param array<string, mixed> $facts Facts to return.
+	 */
+	private function craft_reader( array $facts ): void {
+		$this->register_test_reader( 'craft', static fn(): array => $facts );
+	}
+
+	public function test_a_card_only_craft_post_renders_the_generic_card_with_one_link_and_no_card_facts_list(): void {
+		$id = $this->craft_post();
+
+		$html = \PKIW\render_stream_card();
+		$xp   = $this->card_xpath( $html );
+
+		$this->assertSame( 1, $xp->query( '//article[contains(@class,"pk-card") and contains(@class,"k-craft") and contains(@class,"h-entry")]' )->length );
+		$link = $xp->query( '//h2[contains(@class,"pk-title")]/a[contains(@class,"u-url")]' );
+		$this->assertSame( 1, $link->length );
+		$this->assertSame( get_permalink( $id ), $link->item( 0 )->getAttribute( 'href' ) );
+		$this->assertStringNotContainsString( 'pkiw-craft-facts', $html, 'The card block\'s own facts list stays off the Stream.' );
+		$this->assertSame( 1, $this->rendered_anchor_count( $html ) );
+	}
+
+	public function test_a_craft_card_prints_the_type_and_time_after_the_title_and_before_the_picture(): void {
+		$this->craft_post();
+		$this->craft_reader(
+			[
+				'craft_type'     => 'Knitting',
+				'minutes'        => 1080,
+				'duration_iso'   => 'PT18H',
+				'duration_label' => '18 hr',
+			]
+		);
+		$id = (int) get_the_ID();
+		set_post_thumbnail( $id, $this->upload_image( $id, 'Hero alt' ) );
+
+		$html = \PKIW\render_stream_card();
+		$xp   = $this->card_xpath( $html );
+
+		$facts = $xp->query( '//p[contains(@class,"pk-craft-facts")]' );
+		$this->assertSame( 1, $facts->length );
+		$this->assertSame( 'pk-sub pk-craft-facts', $facts->item( 0 )->getAttribute( 'class' ) );
+		$this->assertSame( 'Knitting', trim( $xp->query( '//p[contains(@class,"pk-craft-facts")]/span[@class="pk-craft-type"]' )->item( 0 )->textContent ) );
+		$this->assertSame( 'Time spent ', $xp->query( '//span[@class="pk-craft-time"]/span[@class="pk-sr-only"]' )->item( 0 )->textContent );
+		$time = $xp->query( '//span[@class="pk-craft-time"]/time[@datetime="PT18H"]' );
+		$this->assertSame( 1, $time->length );
+		$this->assertSame( '18 hr', $time->item( 0 )->textContent );
+
+		$order = [ 'pk-title', 'pk-stream-date', 'pk-craft-facts', 'pk-media' ];
+		$last  = -1;
+		foreach ( $order as $token ) {
+			$pos = strpos( $html, $token );
+			$this->assertNotFalse( $pos, $token );
+			$this->assertGreaterThan( $last, $pos, $token . ' keeps its place.' );
+			$last = $pos;
+		}
+	}
+
+	public function test_a_craft_card_cuts_the_caption_the_thumbnails_and_the_plus_link_but_keeps_the_picture(): void {
+		$id   = $this->craft_post();
+		$hero = $this->upload_image( $id, 'Hero alt', 'Photo by <a href="https://example.org/credit">Ana Example</a>' );
+		set_post_thumbnail( $id, $hero );
+		for ( $n = 0; $n < 5; $n++ ) {
+			$this->upload_image( $id, 'Step alt' );
+		}
+
+		$html = \PKIW\render_stream_card();
+		$xp   = $this->card_xpath( $html );
+
+		$this->assertSame( 1, $xp->query( '//div[contains(@class,"pk-media")]//img' )->length, 'The hero stays.' );
+		$this->assertSame( 0, $xp->query( '//ul[contains(@class,"pk-media__thumbs")]' )->length );
+		$this->assertSame( 0, $xp->query( '//button' )->length );
+		$this->assertSame( 0, $xp->query( '//p[contains(@class,"pk-media__caption")]' )->length );
+		$this->assertDoesNotMatchRegularExpression( '/\+\d/', wp_strip_all_tags( $html ), 'No +N.' );
+		$this->assertSame( 1, $this->rendered_anchor_count( $html ), 'The title is the only link.' );
+		$this->assertStringNotContainsString( 'pk-meta', $html );
+		$this->assertStringNotContainsString( 'Read more', $html );
+	}
+
+	public function test_the_craft_cut_does_not_reach_other_kinds(): void {
+		$this->kind_post_at( 'note', '2026-08-23 10:00:00' );
+		$id = (int) get_the_ID();
+		set_post_thumbnail( $id, $this->upload_image( $id, 'Hero alt', 'Note caption' ) );
+		$this->upload_image( $id );
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( 'pk-media__thumbs', $html );
+		$this->assertStringContainsString( 'Note caption', $html );
+		$this->assertStringContainsString( 'Read more', $html );
+	}
+
+	public function test_a_craft_card_never_prints_a_status_line_or_a_craft_of_link(): void {
+		$this->craft_post();
+		$this->craft_reader(
+			[
+				'craft_type'     => 'Knitting',
+				'minutes'        => 90,
+				'duration_iso'   => 'PT1H30M',
+				'duration_label' => '1 hr 30 min',
+			]
+		);
+
+		$html = \PKIW\render_stream_card();
+
+		foreach ( [ 'Finished', 'In progress', 'u-craft-of' ] as $absent ) {
+			$this->assertStringNotContainsString( $absent, $html );
+		}
+	}
+
+	public function test_a_protected_craft_post_takes_the_protected_card(): void {
+		$this->craft_post( [ 'post_password' => 'secret' ] );
+		$this->craft_reader(
+			[
+				'craft_type'   => 'Secret craft',
+				'duration_iso' => 'PT1H',
+			]
+		);
+
+		$html = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( 'pk-card--protected', $html );
+		$this->assertStringNotContainsString( 'Secret craft', $html );
+		$this->assertStringNotContainsString( 'pk-craft-facts', $html );
+	}
+
+	/**
+	 * @return array<string, array{0: array<string, mixed>, 1: string}>
+	 */
+	public function craft_fact_shapes(): array {
+		return [
+			'both'              => [
+				[
+					'craft_type'     => 'Knitting',
+					'duration_iso'   => 'PT18H',
+					'duration_label' => '18 hr',
+					'minutes'        => 1080,
+				],
+				'<p class="pk-sub pk-craft-facts"><span class="pk-craft-type">Knitting</span> <span class="pk-craft-time"><span class="pk-sr-only">Time spent </span><time datetime="PT18H">18 hr</time></span></p>',
+			],
+			'type only'         => [
+				[ 'craft_type' => 'Sewing' ],
+				'<p class="pk-sub pk-craft-facts"><span class="pk-craft-type">Sewing</span></p>',
+			],
+			'time only'         => [
+				[
+					'duration_iso'   => 'PT45M',
+					'duration_label' => '45 min',
+					'minutes'        => 45,
+				],
+				'<p class="pk-sub pk-craft-facts"><span class="pk-craft-time"><span class="pk-sr-only">Time spent </span><time datetime="PT45M">45 min</time></span></p>',
+			],
+			'neither'           => [ [], '' ],
+			'zero minutes'      => [
+				[
+					'craft_type' => 'Sewing',
+					'minutes'    => 0,
+				],
+				'<p class="pk-sub pk-craft-facts"><span class="pk-craft-type">Sewing</span></p>',
+			],
+			'type is escaped'   => [
+				[ 'craft_type' => 'Knit <b>&</b>' ],
+				'<p class="pk-sub pk-craft-facts"><span class="pk-craft-type">Knit &lt;b&gt;&amp;&lt;/b&gt;</span></p>',
+			],
+		];
+	}
+
+	/**
+	 * @dataProvider craft_fact_shapes
+	 *
+	 * @param array<string, mixed> $facts    Facts from the craft reader.
+	 * @param string               $expected Markup.
+	 */
+	public function test_craft_stream_card_facts_prints_each_fact_only_when_known( array $facts, string $expected ): void {
+		$this->assertSame( $expected, \PKIW\craft_stream_card_facts( $facts ) );
+	}
+
+	// --- untitled_thought(). ---
+
+	public function test_untitled_thought_is_the_name_an_untitled_note_gets(): void {
+		$this->ensure_kind_term( 'note' );
+		$long     = implode( ' ', array_fill( 0, 40, 'word' ) );
+		$shapes   = [
+			'excerpt'             => [ 'post_excerpt' => 'A thought from the excerpt.', 'post_content' => 'Ignored body.' ],
+			'content'             => [ 'post_excerpt' => '', 'post_content' => '<!-- wp:paragraph --><p>A thought from the body.</p><!-- /wp:paragraph -->' ],
+			'shortcode stripped'  => [ 'post_excerpt' => '', 'post_content' => 'Before [gallery] after.' ],
+			'trimmed to 25 words' => [ 'post_excerpt' => '', 'post_content' => $long ],
+			'whitespace'          => [ 'post_excerpt' => '', 'post_content' => "Line one\n\n   line   two" ],
+		];
+
+		foreach ( $shapes as $label => $args ) {
+			$post_id = self::factory()->post->create( array_merge( [ 'post_status' => 'publish', 'post_title' => '' ], $args ) );
+			wp_set_object_terms( $post_id, 'note', 'kind' );
+			$post = get_post( $post_id );
+
+			$this->assertNotSame( '', \PKIW\untitled_thought( $post ), $label );
+			$this->assertSame( \PKIW\untitled_name( $post ), \PKIW\untitled_thought( $post ), $label . ': identical output.' );
+		}
+
+		$post_id = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => '', 'post_excerpt' => '', 'post_content' => $long ] );
+		$this->assertSame( implode( ' ', array_fill( 0, 25, 'word' ) ) . '…', \PKIW\untitled_thought( get_post( $post_id ) ) );
+	}
+
+	public function test_untitled_thought_is_empty_for_a_post_with_no_text(): void {
+		// WordPress trunk refuses an empty post unless this filter allows it.
+		add_filter( 'wp_insert_post_empty_content', '__return_false' );
+		$post_id = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => '', 'post_excerpt' => '', 'post_content' => '' ] );
+		remove_filter( 'wp_insert_post_empty_content', '__return_false' );
+
+		$this->assertSame( '', \PKIW\untitled_thought( get_post( $post_id ) ) );
+	}
+
+	// --- From the issue 263 stream fidelity nit: no dead live region. ---
+
+	public function test_an_article_card_prints_a_static_caption_with_no_live_region(): void {
+		$this->article_post( 3, 'A plain caption' );
+
+		$html    = \PKIW\render_stream_card();
+		$caption = $this->card_xpath( $html )->query( '//p[contains(@class,"pk-media__caption")]' );
+
+		$this->assertSame( 1, $caption->length );
+		$this->assertSame( 'A plain caption', trim( $caption->item( 0 )->textContent ) );
+		$this->assertFalse( $caption->item( 0 )->hasAttribute( 'aria-live' ), 'Nothing swaps an article caption, so it is not a live region.' );
+		$this->assertStringNotContainsString( 'aria-live', $html );
+	}
+
+	public function test_a_card_with_a_thumbnail_strip_keeps_its_live_caption(): void {
+		$this->ensure_kind_term( 'note' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'A note with photos',
+				'post_content' => '<!-- wp:paragraph --><p>Note body.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'note', 'kind' );
+		set_post_thumbnail( $post_id, $this->upload_image( $post_id, 'Hero alt', 'Swappable caption' ) );
+		$this->upload_image( $post_id );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html    = \PKIW\render_stream_card();
+		$xp      = $this->card_xpath( $html );
+		$caption = $xp->query( '//p[contains(@class,"pk-media__caption")]' );
+
+		$this->assertSame( 1, $xp->query( '//ul[contains(@class,"pk-media__thumbs")]' )->length, 'There is a strip to swap it.' );
+		$this->assertSame( 1, $caption->length );
+		$this->assertSame( 'polite', $caption->item( 0 )->getAttribute( 'aria-live' ) );
+	}
+
+	public function test_a_single_image_card_that_is_not_an_article_has_a_static_caption(): void {
+		$this->ensure_kind_term( 'note' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'A note with one photo',
+				'post_content' => '<!-- wp:paragraph --><p>Note body.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'note', 'kind' );
+		set_post_thumbnail( $post_id, $this->upload_image( $post_id, 'Hero alt', 'Only caption' ) );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+		$xp   = $this->card_xpath( $html );
+
+		$this->assertSame( 0, $xp->query( '//ul[contains(@class,"pk-media__thumbs")]' )->length, 'No strip, so nothing swaps the caption.' );
+		$caption = $xp->query( '//p[contains(@class,"pk-media__caption")]' );
+		$this->assertSame( 1, $caption->length );
+		$this->assertFalse( $caption->item( 0 )->hasAttribute( 'aria-live' ), 'No dead live region.' );
+	}
+
+	public function test_the_caption_helper_is_live_only_when_asked(): void {
+		$post_id = $this->article_post( 0, 'Helper caption' );
+		$post    = get_post( $post_id );
+
+		$this->assertStringNotContainsString( 'aria-live', \PKIW\stream_card_media_caption( $post ) );
+		$this->assertStringContainsString( 'aria-live="polite"', \PKIW\stream_card_media_caption( $post, true ) );
+	}
 }

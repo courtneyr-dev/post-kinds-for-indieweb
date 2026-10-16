@@ -60,6 +60,9 @@ class Taxonomy {
 		'post-kinds-indieweb/wish-card'        => 'wish',
 		'post-kinds-indieweb/mood-card'        => 'mood',
 		'post-kinds-indieweb/acquisition-card' => 'acquisition',
+		'post-kinds-indieweb/exercise-card'    => 'exercise',
+		'post-kinds-indieweb/sleep-card'       => 'sleep',
+		'post-kinds-indieweb/craft-card'       => 'craft',
 	];
 
 	/**
