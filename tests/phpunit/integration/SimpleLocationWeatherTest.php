@@ -59,6 +59,13 @@ final class SimpleLocationWeatherTest extends WP_UnitTestCase {
 		foreach ( [ 'added_post_meta', 'updated_post_meta', 'deleted_post_meta' ] as $action ) {
 			add_action( $action, [ $this, 'record_weather_write' ], 10, 3 );
 		}
+
+		// These tests cover the issue 209 display-defaults rule, which needs
+		// Simple Location's line to print on a weather post. Issue 246 holds
+		// that line back from every weather pass (WeatherLocationGateTest), so
+		// the gate stays off here; the test framework restores the hooks.
+		remove_filter( 'the_content', [ Simple_Location_Weather::class, 'gate_content' ], 10 );
+		remove_filter( 'the_content', [ Simple_Location_Weather::class, 'restore_content' ], 13 );
 	}
 
 	/**
@@ -667,14 +674,38 @@ final class SimpleLocationWeatherTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Weather-kind stream cards carry the observation; other kinds don't.
+	 * A Stream card the way the Stream card block renders it.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	private function stream_card( int $post_id ): string {
+		$post            = get_post( $post_id );
+		$GLOBALS['post'] = $post;
+		setup_postdata( $post );
+		$block          = new WP_Block(
+			[
+				'blockName' => 'post-kinds-indieweb/stream-card',
+				'attrs'     => [],
+			],
+			[ 'postId' => $post_id ]
+		);
+		$block->context = [ 'postId' => $post_id ];
+
+		return \PKIW\render_stream_card_inner( [], '', $block );
+	}
+
+	/**
+	 * Weather-kind stream cards carry the observation inside the heading
+	 * link; other kinds don't.
 	 */
 	public function test_stream_card_shows_weather_on_weather_kind_only(): void {
 		$weather_post = $this->make_post( [ 'temperature' => 15 ] );
 		$note_post    = $this->make_post( [ 'temperature' => 15 ], '1', 'note' );
 
-		$this->assertStringContainsString( '<p class="pk-weather p-weather">15 °C</p>', \PKIW\render_generic_stream_card( get_post( $weather_post ) ) );
-		$this->assertStringNotContainsString( 'p-weather', \PKIW\render_generic_stream_card( get_post( $note_post ) ) );
+		$weather_card = $this->stream_card( $weather_post );
+		$this->assertMatchesRegularExpression( '#<h2 class="pk-title"><a class="u-url" href="[^"]+"><span class="p-weather">15 °C</span>#', $weather_card );
+		$this->assertSame( 1, substr_count( $weather_card, 'p-weather' ), 'One reading.' );
+		$this->assertStringNotContainsString( 'p-weather', $this->stream_card( $note_post ) );
 	}
 
 	/**

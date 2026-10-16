@@ -904,7 +904,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'pk-title', $html );
 		// The synthetic title is navigation, not the entry name.
 		$this->assertStringNotContainsString( 'p-name', $html );
-		$this->assertStringContainsString( '>Weather<span class="pk-sr-only">, ' . get_the_date( '', $post_id ) . '</span></a>', $html );
+		$this->assertMatchesRegularExpression( '#>Weather<span class="pk-sr-only">, ' . preg_quote( get_the_date( '', $post_id ), '#' ) . ' at [^<]+</span></a>#', $html );
 	}
 
 	/**
@@ -927,7 +927,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$html = \PKIW\render_stream_card();
 
 		$this->assertSame( 1, preg_match( '#<h2 class="pk-title"><a class="u-url" href="[^"]+">(.*?)</a></h2>#s', $html, $link ) );
-		$this->assertSame( 'Weather, October 6, 2026', wp_strip_all_tags( $link[1] ) );
+		$this->assertSame( 'Weather, October 6, 2026 at 9:00 am', wp_strip_all_tags( $link[1] ) );
 
 		$visible = wp_strip_all_tags( (string) preg_replace( '#<span class="pk-sr-only">.*?</span>#s', '', $html ) );
 		$this->assertSame( 1, substr_count( $visible, 'October 6, 2026' ) );

@@ -402,8 +402,9 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 
 	/**
 	 * A weather single keeps the authored weather as its only weather
-	 * property: Simple Location's location line stays, without its own
-	 * nested p-weather.
+	 * property. Issue 246 holds Simple Location's location line back from
+	 * every weather pass, so the single carries no p-location and no nested
+	 * p-weather from Simple Location.
 	 */
 	public function test_weather_single_content_parses_one_weather_property(): void {
 		require_once dirname( __DIR__ ) . '/fixtures/simple-location/weather-stub.php';
@@ -438,15 +439,16 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 		$entry = $this->top_level_h_entry( \Mf2\parse( $html ) );
 
 		$this->assertSame( [ 'Sunny and warm' ], $entry['properties']['weather'] ?? null );
-		$this->assertArrayHasKey( 'location', $entry['properties'], 'Simple Location\'s p-location line should stay.' );
+		$this->assertArrayNotHasKey( 'location', $entry['properties'], 'Issue 246 holds Simple Location\'s line back from every weather pass.' );
 		$this->assertNull( $this->find_nested_item_with_property( $entry, 'weather' ), 'The nested Simple Location h-adr must not carry a weather property.' );
 		$this->assertStringNotContainsString( 'sloc-weather', $html );
 	}
 
 	/**
-	 * A weather post made in the editor has no authored weather, but its
-	 * Stream card prints Post Kinds' weather line, so the card's excerpt
-	 * doesn't repeat Simple Location's weather.
+	 * A weather post made in the editor has no authored weather. Its Stream
+	 * card (issue 246) carries the observation once, as the p-weather inside
+	 * the heading link, and runs no excerpt pass, so Simple Location's weather
+	 * can't reach the card a second time.
 	 */
 	public function test_weather_stream_card_summary_has_no_simple_location_weather(): void {
 		require_once dirname( __DIR__ ) . '/fixtures/simple-location/weather-stub.php';
@@ -482,17 +484,10 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 				'innerContent' => [],
 			]
 		);
-		$this->assertStringContainsString( '<p class="pk-weather p-weather">Clear Sky, 27 °C</p>', $html );
+		// Issue 246: an untitled weather card carries the reading in its heading link and runs no excerpt.
+		$this->assertStringContainsString( '<span class="p-weather">Clear Sky, 27 °C</span>', $html );
 		$this->assertSame( 1, substr_count( $html, 'Clear Sky' ) );
-
-		$dom = new DOMDocument();
-		libxml_use_internal_errors( true );
-		$dom->loadHTML( '<?xml encoding="utf-8"?><div>' . $html . '</div>' );
-		libxml_clear_errors();
-		$summary = ( new DOMXPath( $dom ) )->query( '//p[contains(concat(" ", @class, " "), " pk-excerpt ")]' )->item( 0 );
-		$this->assertInstanceOf( DOMElement::class, $summary );
-		$this->assertStringNotContainsString( 'Clear Sky', $summary->textContent );
-		$this->assertStringNotContainsString( '°', $summary->textContent );
+		$this->assertStringNotContainsString( 'pk-excerpt', $html );
 	}
 
 	/**
