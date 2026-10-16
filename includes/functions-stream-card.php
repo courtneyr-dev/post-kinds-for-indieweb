@@ -1294,7 +1294,6 @@ function craft_stream_card_facts( array $facts ): string {
 function stream_card_media_extras( \WP_Post $post ): string {
 	$hero_id = (int) get_post_thumbnail_id( $post );
 	$images  = get_attached_media( 'image', $post );
-	$out     = stream_card_media_caption( $post, true );
 
 	// Everything except the hero, in attachment order.
 	$rest = [];
@@ -1303,6 +1302,9 @@ function stream_card_media_extras( \WP_Post $post ): string {
 			$rest[] = $image;
 		}
 	}
+
+	// Only a strip swaps the caption, so only a card with one has a live region.
+	$out = stream_card_media_caption( $post, [] !== $rest );
 	if ( empty( $rest ) ) {
 		return $out;
 	}

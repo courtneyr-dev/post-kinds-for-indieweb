@@ -2756,7 +2756,7 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertSame( '', \PKIW\untitled_thought( get_post( $post_id ) ) );
 	}
 
-	// --- From the #263 stream fidelity nit: no dead live region. ---
+	// --- From the issue 263 stream fidelity nit: no dead live region. ---
 
 	public function test_an_article_card_prints_a_static_caption_with_no_live_region(): void {
 		$this->article_post( 3, 'A plain caption' );
@@ -2791,6 +2791,28 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertSame( 1, $xp->query( '//ul[contains(@class,"pk-media__thumbs")]' )->length, 'There is a strip to swap it.' );
 		$this->assertSame( 1, $caption->length );
 		$this->assertSame( 'polite', $caption->item( 0 )->getAttribute( 'aria-live' ) );
+	}
+
+	public function test_a_single_image_card_that_is_not_an_article_has_a_static_caption(): void {
+		$this->ensure_kind_term( 'note' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'A note with one photo',
+				'post_content' => '<!-- wp:paragraph --><p>Note body.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'note', 'kind' );
+		set_post_thumbnail( $post_id, $this->upload_image( $post_id, 'Hero alt', 'Only caption' ) );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+		$xp   = $this->card_xpath( $html );
+
+		$this->assertSame( 0, $xp->query( '//ul[contains(@class,"pk-media__thumbs")]' )->length, 'No strip, so nothing swaps the caption.' );
+		$caption = $xp->query( '//p[contains(@class,"pk-media__caption")]' );
+		$this->assertSame( 1, $caption->length );
+		$this->assertFalse( $caption->item( 0 )->hasAttribute( 'aria-live' ), 'No dead live region.' );
 	}
 
 	public function test_the_caption_helper_is_live_only_when_asked(): void {

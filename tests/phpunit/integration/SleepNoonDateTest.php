@@ -727,4 +727,33 @@ final class SleepNoonDateTest extends WP_UnitTestCase {
 		$this->assertSame( '2026-08-19 12:00:00', $post->post_modified );
 		$this->assertSame( '2026-08-19 16:00:00', $post->post_modified_gmt );
 	}
+
+	public function test_a_second_create_in_the_same_request_does_not_inherit_the_rest_sleep_term(): void {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		$term    = get_term_by( 'slug', 'sleep', 'kind' );
+		$request = new WP_REST_Request( 'POST', '/wp/v2/posts' );
+		$request->set_header( 'content-type', 'application/json' );
+		$request->set_body_params(
+			[
+				'status'  => 'publish',
+				'title'   => 'REST night',
+				'content' => '<!-- wp:paragraph --><p>Slept badly.</p><!-- /wp:paragraph -->',
+				'date'    => '2026-08-21T07:31:00',
+				'kind'    => [ $term->term_id ],
+			]
+		);
+		$first = rest_do_request( $request );
+		$this->assertSame( 201, $first->get_status() );
+		$this->assertSame( '2026-08-20 12:00:00', get_post( (int) $first->get_data()['id'] )->post_date, 'The sleep create gets noon.' );
+
+		// Another plugin, or a REST batch, creates a plain post in the same request.
+		$second = $this->insert(
+			[
+				'post_date'    => '2026-08-22 07:31:00',
+				'post_content' => '<!-- wp:paragraph --><p>A plain note.</p><!-- /wp:paragraph -->',
+			]
+		);
+
+		$this->assertSame( '2026-08-22 07:31:00', $second['post']->post_date, 'The second create keeps its real time.' );
+	}
 }

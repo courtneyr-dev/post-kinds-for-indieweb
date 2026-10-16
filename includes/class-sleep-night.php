@@ -215,8 +215,11 @@ final class Sleep_Night {
 			return $data;
 		}
 
+		// Spend what this insert used, so a later create in the same request
+		// (a REST batch, another plugin) doesn't read as sleep.
 		$hint                = self::$pending_night;
 		self::$pending_night = null;
+		self::$rest_kind     = null;
 		$night               = self::night_for( $content, $incoming, $hint );
 		$noon                = self::noon( $night );
 

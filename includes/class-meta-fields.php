@@ -2310,9 +2310,13 @@ class Meta_Fields {
 	public static function search_without_private_cost( $search, $query ) {
 		global $wpdb;
 
-		if ( ! is_string( $search ) || '' === $search || ! $query instanceof \WP_Query || $query->get( 'exact' ) ) {
+		if ( ! is_string( $search ) || '' === $search || ! $query instanceof \WP_Query ) {
 			return $search;
 		}
+
+		// `exact` is a public query var. Skipping an exact search would let
+		// `?s=<full card comment>&exact=1` confirm a hidden value by guess.
+		$exact = (bool) $query->get( 'exact' );
 
 		$columns = $query->get( 'search_columns' );
 		$columns = empty( $columns ) ? self::SEARCH_COLUMNS : (array) $columns;
@@ -2331,7 +2335,8 @@ class Meta_Fields {
 		$likes  = [];
 		foreach ( (array) $query->get( 'search_terms' ) as $term ) {
 			$term     = (string) $term;
-			$excluded = $prefix && str_starts_with( $term, (string) $prefix );
+			// Core reads no exclusion prefix in exact mode.
+			$excluded = ! $exact && $prefix && str_starts_with( $term, (string) $prefix );
 			$term     = $excluded ? substr( $term, 1 ) : $term;
 			$terms[]  = [ $term, $excluded ];
 			$likes[]  = '%' . $wpdb->esc_like( $term ) . '%';
@@ -2398,9 +2403,9 @@ class Meta_Fields {
 				array_flip( $columns )
 			);
 
-			$before                 = self::search_matches( $terms, $fields );
+			$before                 = self::search_matches( $terms, $fields, $exact );
 			$fields['post_content'] = $safe;
-			$after                  = self::search_matches( $terms, $fields );
+			$after                  = self::search_matches( $terms, $fields, $exact );
 
 			if ( $before === $after ) {
 				continue;
@@ -2424,17 +2429,21 @@ class Meta_Fields {
 
 	/**
 	 * Whether text passes a search the way WP_Query's LIKE clauses decide
-	 * it: each term in at least one field, and no excluded term in any.
+	 * it: each term in at least one field, and no excluded term in any. An
+	 * exact search matches a field only when the whole field equals the term,
+	 * ignoring case, as `LIKE` without wildcards does.
 	 *
 	 * @param array<int, array{0: string, 1: bool}> $terms  Each term and whether it's excluded.
 	 * @param array<string, string>                 $fields Searched text by column.
+	 * @param bool                                  $exact  Whether the query is an exact search.
 	 * @return bool
 	 */
-	private static function search_matches( array $terms, array $fields ): bool {
+	private static function search_matches( array $terms, array $fields, bool $exact = false ): bool {
 		foreach ( $terms as [ $term, $excluded ] ) {
 			$found = false;
 			foreach ( $fields as $text ) {
-				if ( false !== mb_stripos( $text, $term ) ) {
+				$hit = $exact ? mb_strtolower( $text ) === mb_strtolower( $term ) : false !== mb_stripos( $text, $term );
+				if ( $hit ) {
 					$found = true;
 					break;
 				}
