@@ -2334,9 +2334,9 @@ class Meta_Fields {
 		$terms  = [];
 		$likes  = [];
 		foreach ( (array) $query->get( 'search_terms' ) as $term ) {
-			// Core reads no exclusion prefix in exact mode.
+			// Core reads the exclusion prefix in exact mode too: only the % wildcards depend on it.
 			$term     = (string) $term;
-			$excluded = ! $exact && $prefix && str_starts_with( $term, (string) $prefix );
+			$excluded = $prefix && str_starts_with( $term, (string) $prefix );
 			$term     = $excluded ? substr( $term, 1 ) : $term;
 			$terms[]  = [ $term, $excluded ];
 			$likes[]  = '%' . $wpdb->esc_like( $term ) . '%';

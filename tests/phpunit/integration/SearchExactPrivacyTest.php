@@ -190,10 +190,91 @@ final class SearchExactPrivacyTest extends WP_UnitTestCase {
 		$this->assertContains( $id, $this->main_query_ids( $comment, '&exact=1&sentence=1' ), 'Visible details match, so the strip changes nothing.' );
 	}
 
-	public function test_an_exact_search_does_not_read_a_leading_dash_as_an_exclusion(): void {
-		$id = $this->post( $this->card( 'exercise-card', [ 'activity' => 'Run', 'distance' => 7.77 ] ), 'exercise', '-Dash title' );
+	/**
+	 * A wrong guess at each hidden value, with the card name and kind, beside
+	 * the right one in hidden_cards().
+	 *
+	 * @return array<string, array{0: string, 1: array<string, mixed>, 2: array<string, mixed>, 3: string}>
+	 */
+	public function right_and_wrong_guesses(): array {
+		return [
+			'exercise distance' => [
+				'exercise-card',
+				[
+					'activity' => 'Run',
+					'distance' => 7.77,
+				],
+				[
+					'activity' => 'Run',
+					'distance' => 7.78,
+				],
+				'exercise',
+			],
+			'sleep bedtime'     => [
+				'sleep-card',
+				[
+					'durationMinutes' => 462,
+					'bedtime'         => '2026-08-19T23:10',
+				],
+				[
+					'durationMinutes' => 462,
+					'bedtime'         => '2026-08-19T23:11',
+				],
+				'sleep',
+			],
+			'acquisition cost'  => [
+				'acquisition-card',
+				[
+					'title'           => 'Walnut Desk Lamp Zq9',
+					'acquisitionType' => 'purchase',
+					'cost'            => '$149.99',
+				],
+				[
+					'title'           => 'Walnut Desk Lamp Zq9',
+					'acquisitionType' => 'purchase',
+					'cost'            => '$149.98',
+				],
+				'acquisition',
+			],
+		];
+	}
 
-		$this->assertContains( $id, $this->main_query_ids( '-Dash title', '&exact=1&sentence=1' ), 'In exact mode core treats the dash as part of the phrase.' );
+	/**
+	 * Core runs `-<phrase>` as NOT LIKE in exact mode too. A right guess at a
+	 * hidden value must not drop the post while a wrong one keeps it: that
+	 * would be the same oracle with the sign flipped.
+	 *
+	 * @dataProvider right_and_wrong_guesses
+	 *
+	 * @param string               $block Card block name.
+	 * @param array<string, mixed> $right Attributes as stored.
+	 * @param array<string, mixed> $wrong A wrong guess.
+	 * @param string               $kind  Kind slug.
+	 */
+	public function test_a_negated_exact_search_answers_the_same_for_a_right_and_a_wrong_guess( string $block, array $right, array $wrong, string $kind ): void {
+		$id = $this->post( $this->card( $block, $right ), $kind );
+
+		$for_right = $this->main_query_ids( '-' . $this->card( $block, $right ), '&exact=1&sentence=1' );
+		$for_wrong = $this->main_query_ids( '-' . $this->card( $block, $wrong ), '&exact=1&sentence=1' );
+
+		$this->assertContains( $id, $for_wrong, 'A wrong guess keeps the post.' );
+		$this->assertContains( $id, $for_right, 'A right guess keeps it too, so the answer reveals nothing.' );
+	}
+
+	/**
+	 * @dataProvider right_and_wrong_guesses
+	 *
+	 * @param string               $block Card block name.
+	 * @param array<string, mixed> $right Attributes as stored.
+	 * @param array<string, mixed> $wrong A wrong guess.
+	 * @param string               $kind  Kind slug.
+	 */
+	public function test_an_editor_s_negated_exact_search_drops_the_post_on_a_right_guess( string $block, array $right, array $wrong, string $kind ): void {
+		$id = $this->post( $this->card( $block, $right ), $kind );
+
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		$this->assertNotContains( $id, $this->main_query_ids( '-' . $this->card( $block, $right ), '&exact=1&sentence=1' ), 'An editor sees the stored card, so the exclusion applies.' );
+		$this->assertContains( $id, $this->main_query_ids( '-' . $this->card( $block, $wrong ), '&exact=1&sentence=1' ) );
 	}
 
 	/**
