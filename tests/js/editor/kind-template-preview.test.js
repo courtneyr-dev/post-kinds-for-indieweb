@@ -429,6 +429,74 @@ describe( 'kind template preview', () => {
 		expect( element.props.context.query.perPage ).toBe( 9 );
 	} );
 
+	it( 'previews the exercise entry by its weeks per page, a week at a time, ahead of lines per page', () => {
+		const exercise = ( attributes ) =>
+			load(
+				editorState( {
+					settings: {
+						perPage: { exercise: 10 },
+						grouped: [ 'exercise' ],
+					},
+					entries: {
+						'post-kinds-indieweb/exercise-entry': { fixed: true },
+					},
+					blocks: [
+						{
+							name: 'post-kinds-indieweb/exercise-entry',
+							attributes,
+							innerBlocks: [],
+						},
+					],
+					postsPerPage: 10,
+				} )
+			)(
+				postTemplate( {
+					templateSlug: 'taxonomy-kind-exercise',
+					query: { ...inheriting, orderBy: 'title', order: 'asc' },
+				} )
+			).props.context.query;
+
+		const four = exercise( { weeksPerPage: 4, linesPerPage: 3 } );
+		expect( four.perPage ).toBe( 28 );
+		expect( four.orderBy ).toBe( 'date' );
+		expect( four.order ).toBe( 'desc' );
+
+		expect( exercise( { weeksPerPage: 2 } ).perPage ).toBe( 14 );
+		expect( exercise( { weeksPerPage: 99 } ).perPage ).toBe( 84 );
+		expect( exercise( { weeksPerPage: 0, linesPerPage: 5 } ).perPage ).toBe(
+			5
+		);
+		expect( exercise( {} ).perPage ).toBe( 10 );
+	} );
+
+	it( 'previews the sleep night sheet by its lines per page', () => {
+		const sleep = ( attributes ) =>
+			load(
+				editorState( {
+					settings: { perPage: { sleep: 10 }, grouped: [ 'sleep' ] },
+					entries: {
+						'post-kinds-indieweb/sleep-night': { fixed: true },
+					},
+					blocks: [
+						{
+							name: 'post-kinds-indieweb/sleep-night',
+							attributes,
+							innerBlocks: [],
+						},
+					],
+				} )
+			)(
+				postTemplate( {
+					templateSlug: 'taxonomy-kind-sleep',
+					query: { ...inheriting, orderBy: 'title', order: 'asc' },
+				} )
+			).props.context.query;
+
+		expect( sleep( { linesPerPage: 31 } ).perPage ).toBe( 31 );
+		expect( sleep( { linesPerPage: 31 } ).orderBy ).toBe( 'date' );
+		expect( sleep( { linesPerPage: 0 } ).perPage ).toBe( 10 );
+	} );
+
 	it( 'leaves the Query Loop’s own query object as it was', () => {
 		load( editorState() )( postTemplate() );
 

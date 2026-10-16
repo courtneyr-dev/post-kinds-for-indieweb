@@ -13,7 +13,10 @@
  * for in grouped order, `orderby=pkiw_group`, which the plugin adds to the
  * REST posts routes; the entry block's section order and empty-group setting
  * pick the variant of that order. An entry block that fixes a date bucket is
- * asked for newest first, the order its buckets need.
+ * asked for newest first, the order its buckets need. An entry that pages by
+ * whole weeks (`weeksPerPage`, the exercise entry) previews that many weeks, at
+ * seven posts a week, ahead of any lines per page; the server works out which
+ * posts open and fill each week.
  *
  * Core works out a block's context before this filter runs and passes it down
  * as a prop, so the preview replaces that prop. Nothing is saved: the block's
@@ -45,6 +48,10 @@
 	const entries = window.pkiwGroupedEntries || null;
 
 	const MENU_ENTRY = 'post-kinds-indieweb/menu-entry';
+	// The most weeks to a page, and the posts the preview loads for each: a
+	// week of workouts is about one a day, and the server decides the rest.
+	const MAX_WEEKS_PER_PAGE = 12;
+	const PREVIEW_POSTS_PER_WEEK = 7;
 
 	function isEntry( name ) {
 		return entries
@@ -189,7 +196,12 @@
 					entries[ entry.name ] &&
 					entries[ entry.name ].fixed
 				);
+				const weeks =
+					menu && menu.weeksPerPage > 0
+						? Math.min( MAX_WEEKS_PER_PAGE, menu.weeksPerPage )
+						: 0;
 				const lines =
+					weeks * PREVIEW_POSTS_PER_WEEK ||
 					( menu && menu.linesPerPage > 0 && menu.linesPerPage ) ||
 					perPage[ kind ] ||
 					sitePerPage ||
