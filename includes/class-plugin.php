@@ -630,6 +630,50 @@ final class Plugin {
 		}
 
 		$this->init_month_archives();
+		$this->init_calendar_kinds();
+	}
+
+	/**
+	 * Wire the calendar kind classes: mood, weather, exercise, sleep and craft (issues 245 to 249).
+	 *
+	 * Each class arrives with its own lane, so each is wired only when it
+	 * exists. The PKIW\ autoloader loads them. Mood_Vocabulary and
+	 * Simple_Location_Weather are wired elsewhere. Note_Archive (issue 265)
+	 * rides here too.
+	 *
+	 * @return void
+	 */
+	private function init_calendar_kinds(): void {
+		if ( class_exists( __NAMESPACE__ . '\\Mood_Year_Grid' ) ) {
+			( new Mood_Year_Grid() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Almanac_Month' ) ) {
+			( new Almanac_Month() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Exercise_Archive' ) ) {
+			( new Exercise_Archive() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Exercise_Medals' ) ) {
+			( new Exercise_Medals() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Exercise_Location' ) ) {
+			( new Exercise_Location() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Sleep_Archive' ) ) {
+			( new Sleep_Archive() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Sleep_Night' ) ) {
+			( new Sleep_Night() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Sleep_Location' ) ) {
+			( new Sleep_Location() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Craft_Archive' ) ) {
+			( new Craft_Archive() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Note_Archive' ) ) {
+			( new Note_Archive() )->register();
+		}
 	}
 
 	/**
@@ -952,6 +996,12 @@ final class Plugin {
 			'venue-detail',
 			'star-rating',
 			'media-lookup',
+			// Registered once PBUNDLE adds each block.json; the loop below skips a block without one.
+			'exercise-card',
+			'sleep-card',
+			'craft-card',
+			'steps',
+			'step',
 		];
 
 		// Enqueue blocks script first so it's available for registration.
@@ -1293,6 +1343,37 @@ final class Plugin {
 			'taxonomy-kind-article'     => [
 				'title'       => __( 'Article Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Article archive as a contents page: month sections and reading time.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			// Calendar kinds (issues 245 to 249 and 265). A slug serves only once its file exists.
+			'taxonomy-kind-mood'        => [
+				'title'       => __( 'Mood Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'A year of moods on a grid, one calendar year per page.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-weather'     => [
+				'title'       => __( 'Weather Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'One calendar month of weather per page.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-exercise'    => [
+				'title'       => __( 'Exercise Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Exercise archive as a training log: whole weeks of workouts on each page.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-sleep'       => [
+				'title'       => __( 'Sleep Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Sleep archive as one chart sheet per month.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-craft'       => [
+				'title'       => __( 'Craft Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Craft archive on a pegboard, in sections by craft type.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-note'        => [
+				'title'       => __( 'Note Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Note archive as a board of notes, in sections by week.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 		];
