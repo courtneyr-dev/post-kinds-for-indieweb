@@ -514,6 +514,346 @@ class MoodVocabularyTest extends WP_UnitTestCase {
 	}
 
 	/*
+	 * Families and intensity text (issue 248).
+	 */
+
+	public function test_there_are_thirteen_families_in_the_theme_catalog_order_with_unique_codes(): void {
+		$families = Mood_Vocabulary::families();
+
+		$this->assertSame(
+			[ 'joy', 'calm', 'energy', 'thoughtful', 'uncertain', 'sad', 'angry', 'anxious', 'social', 'physical', 'work', 'playful', 'other' ],
+			array_keys( $families )
+		);
+		$this->assertSame( [ 'J', 'C', 'E', 'T', 'U', 'S', 'A', 'Ax', 'So', 'P', 'W', 'Pl', 'O' ], array_column( $families, 'code' ) );
+		$this->assertCount( 13, array_unique( array_column( $families, 'code' ) ) );
+		$this->assertSame( 'Joy', $families['joy']['label'] );
+		$this->assertSame( 'joy', $families['joy']['key'] );
+	}
+
+	public function test_every_vocabulary_key_has_a_family(): void {
+		$families = Mood_Vocabulary::families();
+
+		foreach ( Mood_Vocabulary::get_moods() as $mood ) {
+			$family = Mood_Vocabulary::family_of( $mood['label'], $mood['key'] );
+			$this->assertArrayHasKey( $family, $families, $mood['key'] );
+			$this->assertNotSame( 'other', $family, $mood['key'] . ' has a plugin family.' );
+			$this->assertArrayHasKey( $mood['key'], Mood_Vocabulary::FAMILY_OF_KEY );
+		}
+		$this->assertCount( 19, Mood_Vocabulary::FAMILY_OF_KEY );
+	}
+
+	/**
+	 * @return array<string, array{string, string}>
+	 */
+	public function family_by_key(): array {
+		return [
+			'happy'       => [ 'happy', 'joy' ],
+			'excited'     => [ 'excited', 'energy' ],
+			'grateful'    => [ 'grateful', 'social' ],
+			'calm'        => [ 'calm', 'calm' ],
+			'hopeful'     => [ 'hopeful', 'thoughtful' ],
+			'inspired'    => [ 'inspired', 'thoughtful' ],
+			'energized'   => [ 'energized', 'energy' ],
+			'honored'     => [ 'honored', 'joy' ],
+			'mesmerized'  => [ 'mesmerized', 'joy' ],
+			'revitalized' => [ 'revitalized', 'energy' ],
+			'organized'   => [ 'organized', 'work' ],
+			'thoughtful'  => [ 'thoughtful', 'thoughtful' ],
+			'neutral'     => [ 'neutral', 'calm' ],
+			'tired'       => [ 'tired', 'physical' ],
+			'sad'         => [ 'sad', 'sad' ],
+			'anxious'     => [ 'anxious', 'anxious' ],
+			'overwhelmed' => [ 'overwhelmed', 'anxious' ],
+			'angry'       => [ 'angry', 'angry' ],
+			'demoralized' => [ 'demoralized', 'sad' ],
+		];
+	}
+
+	/**
+	 * @dataProvider family_by_key
+	 */
+	public function test_a_stored_key_gives_its_family( string $key, string $family ): void {
+		$this->assertSame( $family, Mood_Vocabulary::family_of( 'anything typed', $key ) );
+		$this->assertSame( $family, Mood_Vocabulary::family_of( '', $key ) );
+	}
+
+	public function test_a_key_less_label_resolves_by_variant_without_changing_the_displayed_text(): void {
+		$this->assertSame( 'joy', Mood_Vocabulary::family_of( 'happy' ) );
+		$this->assertSame( 'happy', Mood_Vocabulary::display_label( 'happy' ), 'Typed text prints as saved.' );
+		$this->assertSame( 'energy', Mood_Vocabulary::family_of( 'Energised' ), 'The British spelling is a variant.' );
+		$this->assertSame( 'energy', Mood_Vocabulary::family_of( '  ENERGIZED ' ) );
+	}
+
+	public function test_an_unknown_label_is_other_unless_a_filter_files_it(): void {
+		$this->assertSame( 'other', Mood_Vocabulary::family_of( 'Curious' ) );
+
+		$seen = [];
+		add_filter(
+			'pkiw_mood_family',
+			static function ( $family, $key, $label ) use ( &$seen ) {
+				$seen = [ $family, $key, $label ];
+				return 'Curious' === $label ? 'thoughtful' : $family;
+			},
+			10,
+			3
+		);
+		$this->assertSame( 'thoughtful', Mood_Vocabulary::family_of( 'Curious' ) );
+		$this->assertSame( [ '', '', 'Curious' ], $seen );
+	}
+
+	public function test_a_filter_returning_a_family_that_does_not_exist_gives_other(): void {
+		add_filter( 'pkiw_mood_family', static fn() => 'bogus' );
+		$this->assertSame( 'other', Mood_Vocabulary::family_of( 'Curious' ) );
+
+		remove_all_filters( 'pkiw_mood_family' );
+		add_filter( 'pkiw_mood_family', static fn() => array( 'joy' ) );
+		$this->assertSame( 'other', Mood_Vocabulary::family_of( 'Curious' ), 'A non-string answer is ignored.' );
+	}
+
+	public function test_an_unknown_stored_key_goes_to_the_filter_then_other(): void {
+		$seen = [];
+		add_filter(
+			'pkiw_mood_family',
+			static function ( $family, $key, $label ) use ( &$seen ) {
+				$seen = [ $family, $key, $label ];
+				return $family;
+			},
+			10,
+			3
+		);
+
+		$this->assertSame( 'other', Mood_Vocabulary::family_of( 'Whatever', 'zzz' ) );
+		$this->assertSame( [ '', 'zzz', 'Whatever' ], $seen );
+	}
+
+	public function test_a_mood_added_by_the_labels_filter_is_classified_without_a_warning(): void {
+		add_filter(
+			'pkiw_mood_labels',
+			static function ( $labels ) {
+				$labels['giddy'] = 'Giddy';
+				return $labels;
+			}
+		);
+		$errors = [];
+		set_error_handler(
+			static function ( int $number, string $message ) use ( &$errors ): bool {
+				$errors[] = $message;
+				return true;
+			}
+		);
+
+		$bare  = Mood_Vocabulary::family_of( 'Giddy', 'giddy' );
+		$typed = Mood_Vocabulary::family_of( 'Giddy' );
+		add_filter( 'pkiw_mood_family', static fn( $family, $key ) => 'giddy' === $key ? 'playful' : $family, 10, 2 );
+		$keyed = Mood_Vocabulary::family_of( 'Giddy', 'giddy' );
+		$other = Mood_Vocabulary::family_of( 'Giddy' );
+		restore_error_handler();
+
+		$this->assertSame( [], $errors, 'No notice or warning.' );
+		$this->assertSame( 'other', $bare );
+		$this->assertSame( 'other', $typed );
+		$this->assertSame( 'playful', $keyed );
+		$this->assertSame( 'other', $other, 'Key-less Giddy has an empty key, which the filter above does not map.' );
+	}
+
+	public function test_family_returns_the_row_and_falls_back_to_other(): void {
+		$this->assertSame(
+			[
+				'key'   => 'joy',
+				'label' => 'Joy',
+				'code'  => 'J',
+			],
+			Mood_Vocabulary::family( 'joy' )
+		);
+		$this->assertSame( 'other', Mood_Vocabulary::family( 'nope' )['key'] );
+		$this->assertSame( 'O', Mood_Vocabulary::family( '' )['code'] );
+	}
+
+	public function test_a_family_added_by_the_filter_keeps_codes_unique(): void {
+		add_filter(
+			'pkiw_mood_families',
+			static function ( $families ) {
+				$families['sorrow'] = [
+					'label' => 'Sorrow',
+					'code'  => 'So',
+				];
+				$families['quiet']  = [
+					'label' => 'Quiet',
+					'code'  => '',
+				];
+				return $families;
+			}
+		);
+
+		$families = Mood_Vocabulary::families();
+		$codes    = array_column( $families, 'code' );
+
+		$this->assertSame( 'Sr', $families['sorrow']['code'], 'So belongs to social, which claims it first.' );
+		$this->assertSame( 'Qu', $families['quiet']['code'], 'An empty code becomes the key\'s first two letters.' );
+		$this->assertSame( $codes, array_values( array_unique( $codes ) ) );
+	}
+
+	public function test_a_code_keeps_two_graphemes_and_a_late_clash_walks_the_key_then_digits(): void {
+		add_filter(
+			'pkiw_mood_families',
+			static function ( $families ) {
+				$families['jolly']  = [
+					'label' => 'Jolly',
+					'code'  => 'Jolly',
+				];
+				$families['jaunty'] = [
+					'label' => 'Jaunty',
+					'code'  => 'J',
+				];
+				return $families;
+			}
+		);
+
+		$families = Mood_Vocabulary::families();
+
+		$this->assertSame( 'Jo', $families['jolly']['code'] );
+		$this->assertSame( 'Ja', $families['jaunty']['code'], 'J is joy\'s, so the first two letters of the key are tried.' );
+	}
+
+	public function test_a_family_with_no_free_code_is_dropped_and_its_moods_read_as_other(): void {
+		$this->setExpectedIncorrectUsage( Mood_Vocabulary::class . '::families' );
+		add_filter(
+			'pkiw_mood_families',
+			static function ( $families ) {
+				// Claim every code the family 'ad' could take: Ad, then A2 through A9.
+				$families['zz1'] = [
+					'label' => 'One',
+					'code'  => 'Ad',
+				];
+				foreach ( range( 2, 9 ) as $n ) {
+					$families[ 'zz' . $n ] = [
+						'label' => 'Number ' . $n,
+						'code'  => 'A' . $n,
+					];
+				}
+				$families['ad'] = [
+					'label' => 'Ad',
+					'code'  => 'Ad',
+				];
+				return $families;
+			}
+		);
+
+		$families = Mood_Vocabulary::families();
+
+		$this->assertArrayNotHasKey( 'ad', $families );
+		$this->assertArrayHasKey( 'zz9', $families );
+		$this->assertSame( 'other', Mood_Vocabulary::family( 'ad' )['key'] );
+		$this->assertSame( 'other', Mood_Vocabulary::family_of( 'Anything', 'ad' ), 'Its moods read as other.' );
+		$codes = array_column( $families, 'code' );
+		$this->assertSame( $codes, array_values( array_unique( $codes ) ) );
+	}
+
+	public function test_a_numeric_family_key_is_kept_as_a_string_key_without_a_type_error(): void {
+		add_filter(
+			'pkiw_mood_families',
+			static function ( $families ) {
+				// PHP turns this key into an int.
+				$families['123'] = [
+					'label' => 'Numbers',
+					'code'  => 'N',
+				];
+				return $families;
+			}
+		);
+
+		$families = Mood_Vocabulary::families();
+
+		$this->assertSame( '123', $families[123]['key'], 'The row names its key as a string.' );
+		$this->assertSame( 'Numbers', Mood_Vocabulary::family( '123' )['label'] );
+		$this->assertSame( 'N', Mood_Vocabulary::family( '123' )['code'] );
+		add_filter( 'pkiw_mood_family', static fn() => '123' );
+		$this->assertSame( '123', Mood_Vocabulary::family_of( 'Anything' ), 'A mood can be filed under it.' );
+	}
+
+	public function test_a_list_shaped_filter_return_keeps_only_rows_with_a_label(): void {
+		add_filter(
+			'pkiw_mood_families',
+			static fn() => [
+				'Joy',
+				[
+					'label' => 'Kept',
+					'code'  => 'K',
+				],
+				[ 'code' => 'Z' ],
+				[
+					'label' => '   ',
+					'code'  => 'Y',
+				],
+				[
+					'label' => [ 'nested' ],
+					'code'  => 'X',
+				],
+			]
+		);
+
+		$families = Mood_Vocabulary::families();
+
+		$this->assertSame( [ '1', 'other' ], array_map( 'strval', array_keys( $families ) ), 'Only the row with a label survives, plus other.' );
+		$this->assertSame( 'Kept', $families[1]['label'] );
+		$this->assertSame( 'K', $families[1]['code'] );
+		$this->assertSame( 'other', Mood_Vocabulary::family( 'joy' )['key'] );
+	}
+
+	public function test_other_is_always_present_even_when_the_filter_removes_it(): void {
+		add_filter(
+			'pkiw_mood_families',
+			static function ( $families ) {
+				unset( $families['other'] );
+				return $families;
+			}
+		);
+
+		$families = Mood_Vocabulary::families();
+
+		$this->assertArrayHasKey( 'other', $families );
+		$this->assertSame( 'Other', $families['other']['label'] );
+		$this->assertSame( 'O', $families['other']['code'] );
+		$this->assertSame( 'other', array_key_last( $families ) );
+	}
+
+	public function test_a_filter_that_returns_junk_leaves_the_defaults(): void {
+		add_filter( 'pkiw_mood_families', static fn() => 'nope' );
+
+		$this->assertCount( 13, Mood_Vocabulary::families() );
+	}
+
+	public function test_family_labels_and_codes_translate_through_gettext(): void {
+		$this->fake_translations(
+			[
+				'en_US' => [
+					'Joy' => 'Joie',
+				],
+			]
+		);
+		add_filter(
+			'gettext_with_context',
+			static fn( $translation, $text, $context ) => 'mood family code: Joy' === $context ? 'Jo' : $translation,
+			10,
+			3
+		);
+
+		$joy = Mood_Vocabulary::families()['joy'];
+
+		$this->assertSame( 'Joie', $joy['label'] );
+		$this->assertSame( 'Jo', $joy['code'] );
+	}
+
+	public function test_intensity_text_names_one_to_five_and_is_blank_otherwise(): void {
+		$this->assertSame( 'Intensity 4 of 5', Mood_Vocabulary::intensity_text( 4 ) );
+		$this->assertSame( 'Intensity 1 of 5', Mood_Vocabulary::intensity_text( 1 ) );
+		$this->assertSame( 'Intensity 5 of 5', Mood_Vocabulary::intensity_text( 5 ) );
+		foreach ( [ null, 0, 6, -1 ] as $out_of_range ) {
+			$this->assertSame( '', Mood_Vocabulary::intensity_text( $out_of_range ), (string) wp_json_encode( $out_of_range ) );
+		}
+	}
+
+	/*
 	 * Helpers.
 	 */
 
