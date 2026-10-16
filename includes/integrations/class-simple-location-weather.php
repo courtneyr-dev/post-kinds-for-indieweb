@@ -24,10 +24,13 @@
  *   option (class-weather-data.php:477, :497), converted by
  *   Weather_Provider::metric_to_imperial() (class-weather-provider.php:639).
  *
- * register() turns Simple Location's inline weather off on a weather post
- * through simple_location_display_defaults, inside the_content, only when
- * that render already shows the post's own weather. See
- * filter_display_defaults().
+ * On a weather post the gate (gate_content()) removes Simple Location's
+ * location line on every the_content pass, so its inline weather never
+ * prints there. The issue 209 helpers (filter_display_defaults(),
+ * note_content_weather() and the printed-weather bookkeeping behind them)
+ * remain only for the hooks that still read them, such as a Simple Location
+ * shortcode or block rendered inside a weather post's content; they have
+ * nothing left to switch off in the line itself.
  *
  * @package PKIW
  * @since   1.9.0
@@ -202,6 +205,7 @@ final class Simple_Location_Weather {
 		}
 		add_filter( 'json_feed_item', [ self::class, 'gate_json_feed_item' ], 11, 2 );
 		add_action( 'template_redirect', [ self::class, 'gate_head' ], 10 );
+		add_filter( 'rest_prepare_post', [ self::class, 'strip_rest_location' ], 30, 3 );
 
 		// The weather Stream card and the single's hidden p-weather.
 		add_filter( 'pkiw_stream_card_kind_render', [ self::class, 'stream_card' ], 10, 4 );
@@ -860,6 +864,50 @@ final class Simple_Location_Weather {
 		}
 
 		return $item;
+	}
+
+	/**
+	 * Strip Simple Location's REST location fields from a weather post's response.
+	 *
+	 * Simple Location adds top-level latitude, longitude and geo_address (and
+	 * a timezone, and a UTC offset on date and modified) to post responses,
+	 * gated only on geo_public and blind to the Post Kinds tier. A weather
+	 * post that may not keep its geo (keep_geo()) loses them in every context
+	 * but edit, which core already limits to people who can edit the post.
+	 *
+	 * @internal Hooked to `rest_prepare_post` at 30, after Simple Location's own.
+	 *
+	 * @param mixed $response Response.
+	 * @param mixed $post     Post.
+	 * @param mixed $request  Request.
+	 * @return mixed Response.
+	 */
+	public static function strip_rest_location( $response, $post = null, $request = null ) {
+		if ( ! $response instanceof \WP_REST_Response || ! $post instanceof \WP_Post || ! $request instanceof \WP_REST_Request ) {
+			return $response;
+		}
+		if ( 'edit' === $request->get_param( 'context' ) || ! self::is_weather_post( $post ) || self::keep_geo( $post ) ) {
+			return $response;
+		}
+
+		$data = $response->get_data();
+		foreach ( [ 'latitude', 'longitude', 'geo_address', 'timezone' ] as $key ) {
+			unset( $data[ $key ] );
+		}
+		// A UTC offset on date or modified places the post.
+		foreach (
+			[
+				'date'     => 'post_date',
+				'modified' => 'post_modified',
+			] as $key => $column
+		) {
+			if ( isset( $data[ $key ] ) ) {
+				$data[ $key ] = mysql_to_rfc3339( $post->$column );
+			}
+		}
+		$response->set_data( $data );
+
+		return $response;
 	}
 
 	/**

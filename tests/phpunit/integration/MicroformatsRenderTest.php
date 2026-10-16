@@ -402,8 +402,9 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 
 	/**
 	 * A weather single keeps the authored weather as its only weather
-	 * property: Simple Location's location line stays, without its own
-	 * nested p-weather.
+	 * property. Issue 246 holds Simple Location's location line back from
+	 * every weather pass, so the single carries no p-location and no nested
+	 * p-weather from Simple Location.
 	 */
 	public function test_weather_single_content_parses_one_weather_property(): void {
 		require_once dirname( __DIR__ ) . '/fixtures/simple-location/weather-stub.php';
@@ -444,9 +445,10 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * A weather post made in the editor has no authored weather, but its
-	 * Stream card prints Post Kinds' weather line, so the card's excerpt
-	 * doesn't repeat Simple Location's weather.
+	 * A weather post made in the editor has no authored weather. Its Stream
+	 * card (issue 246) carries the observation once, as the p-weather inside
+	 * the heading link, and runs no excerpt pass, so Simple Location's weather
+	 * can't reach the card a second time.
 	 */
 	public function test_weather_stream_card_summary_has_no_simple_location_weather(): void {
 		require_once dirname( __DIR__ ) . '/fixtures/simple-location/weather-stub.php';

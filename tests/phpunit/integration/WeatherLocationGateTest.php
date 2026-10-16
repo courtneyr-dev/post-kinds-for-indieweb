@@ -42,6 +42,8 @@ final class WeatherLocationGateTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down(): void {
+		global $wp_rest_additional_fields;
+		unset( $wp_rest_additional_fields['post']['latitude'], $wp_rest_additional_fields['post']['longitude'], $wp_rest_additional_fields['post']['geo_address'], $wp_rest_additional_fields['post']['timezone'] );
 		$this->unregister_simple_location_callables();
 		Simple_Location_Weather::reset();
 		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
@@ -529,5 +531,236 @@ final class WeatherLocationGateTest extends WP_UnitTestCase {
 		Simple_Location_Weather::gate_head();
 
 		$this->assertSame( 10, has_action( 'wp_head', 'Geo_Base::meta_tags' ) );
+	}
+
+	/**
+	 * Register Simple Location 5.0.25's REST fields for posts the way it does
+	 * (class-geo-base.php:46, :676-802): latitude and longitude only when
+	 * geo_public is public, the address when it is public or protected, never
+	 * a look at the Post Kinds tier; a rest_prepare_post at 10 that drops empty
+	 * fields; and a UTC offset on date and modified. Closures stand in for
+	 * Geo_Base, whose class this suite never defines.
+	 */
+	private function register_simple_location_rest_fields(): void {
+		$visibility = static function ( int $post_id ): string {
+			$value = (string) get_post_meta( $post_id, 'geo_public', true );
+
+			return [
+				'0' => 'private',
+				'1' => 'public',
+				'2' => 'protected',
+			][ $value ] ?? 'private';
+		};
+		register_rest_field(
+			'post',
+			'latitude',
+			[ 'get_callback' => static fn( $object ) => 'public' === $visibility( (int) $object['id'] ) ? (string) get_post_meta( (int) $object['id'], 'geo_latitude', true ) : '' ]
+		);
+		register_rest_field(
+			'post',
+			'longitude',
+			[ 'get_callback' => static fn( $object ) => 'public' === $visibility( (int) $object['id'] ) ? (string) get_post_meta( (int) $object['id'], 'geo_longitude', true ) : '' ]
+		);
+		register_rest_field(
+			'post',
+			'geo_address',
+			[ 'get_callback' => static fn( $object ) => in_array( $visibility( (int) $object['id'] ), [ 'public', 'protected' ], true ) ? (string) get_post_meta( (int) $object['id'], 'geo_address', true ) : '' ]
+		);
+		register_rest_field( 'post', 'timezone', [ 'get_callback' => static fn() => 'America/New_York' ] );
+		add_filter(
+			'rest_prepare_post',
+			static function ( $response, $post ) {
+				$data = $response->get_data();
+				foreach ( [ 'latitude', 'longitude', 'geo_address' ] as $field ) {
+					if ( empty( $data[ $field ] ) ) {
+						unset( $data[ $field ] );
+					}
+				}
+				foreach ( [ 'date' => 'post_date', 'modified' => 'post_modified' ] as $key => $column ) {
+					if ( isset( $data[ $key ] ) ) {
+						$data[ $key ] = mysql_to_rfc3339( $post->$column ) . '-04:00';
+					}
+				}
+				$response->set_data( $data );
+
+				return $response;
+			},
+			10,
+			2
+		);
+	}
+
+	/**
+	 * A weather post with a street and a point.
+	 *
+	 * @param string|null          $privacy Post Kinds tier.
+	 * @param string               $kind    Kind slug.
+	 * @param array<string, mixed> $args    Post arguments.
+	 */
+	private function located( ?string $privacy, string $kind = 'weather', array $args = [] ): int {
+		$id = 'weather' === $kind ? $this->weather( $privacy, '1', $args ) : $this->post_of_kind( $kind, $args );
+		if ( 'weather' !== $kind && null !== $privacy ) {
+			update_post_meta( $id, Meta_Fields::PREFIX . 'geo_privacy', $privacy );
+			update_post_meta( $id, 'geo_public', '1' );
+		}
+		update_post_meta( $id, 'geo_address', '300 Hidden Lane, Privateburg' );
+		update_post_meta( $id, 'geo_latitude', '41.333333' );
+		update_post_meta( $id, 'geo_longitude', '-75.444444' );
+
+		return $id;
+	}
+
+	/**
+	 * A REST item or list response's data.
+	 *
+	 * @param string               $route  Route.
+	 * @param array<string, mixed> $params Query params.
+	 * @return array<string, mixed>
+	 */
+	private function rest_data( string $route, array $params = [] ): array {
+		$request = new WP_REST_Request( 'GET', $route );
+		foreach ( $params as $key => $value ) {
+			$request->set_param( $key, $value );
+		}
+		$response = rest_do_request( $request );
+		$this->assertSame( 200, $response->get_status(), wp_json_encode( $response->get_data() ) );
+
+		return (array) $response->get_data();
+	}
+
+	/**
+	 * The location keys and the points they would print, from a response's data.
+	 *
+	 * @param array<string, mixed> $data Item data.
+	 * @return array<string, mixed>
+	 */
+	private function leaked( array $data ): array {
+		return array_intersect_key( $data, array_flip( [ 'latitude', 'longitude', 'geo_address', 'timezone' ] ) );
+	}
+
+	/**
+	 * Context, then tier, for the logged-out cases.
+	 *
+	 * @return array<string, array{0:string,1:string|null}>
+	 */
+	public function rest_cases(): array {
+		return [
+			'view, approximate' => [ 'view', 'approximate' ],
+			'view, private'     => [ 'view', 'private' ],
+			'view, unset'       => [ 'view', null ],
+			'embed, approximate' => [ 'embed', 'approximate' ],
+			'embed, private'    => [ 'embed', 'private' ],
+		];
+	}
+
+	public function test_rest_post_filter_runs_after_simple_locations_at_30(): void {
+		$this->assertSame( 30, has_filter( 'rest_prepare_post', [ Simple_Location_Weather::class, 'strip_rest_location' ] ) );
+	}
+
+	/**
+	 * @dataProvider rest_cases
+	 *
+	 * @param string      $context Request context.
+	 * @param string|null $privacy Post Kinds tier.
+	 */
+	public function test_a_logged_out_item_response_carries_no_location_fields( string $context, ?string $privacy ): void {
+		$this->register_simple_location_rest_fields();
+		$id = $this->located( $privacy );
+
+		$data = $this->rest_data( '/wp/v2/posts/' . $id, [ 'context' => $context ] );
+
+		$this->assertSame( [], $this->leaked( $data ) );
+		$this->assertStringNotContainsString( '300 Hidden Lane', (string) wp_json_encode( $data ) );
+		$this->assertStringNotContainsString( '41.333', (string) wp_json_encode( $data ) );
+	}
+
+	/**
+	 * @dataProvider rest_cases
+	 *
+	 * @param string      $context Request context.
+	 * @param string|null $privacy Post Kinds tier.
+	 */
+	public function test_a_logged_out_list_response_carries_no_location_fields( string $context, ?string $privacy ): void {
+		$this->register_simple_location_rest_fields();
+		$id = $this->located( $privacy );
+
+		$list = $this->rest_data( '/wp/v2/posts', [ 'context' => $context, 'include' => [ $id ] ] );
+
+		$this->assertCount( 1, $list );
+		$this->assertSame( [], $this->leaked( (array) $list[0] ) );
+		$this->assertStringNotContainsString( '300 Hidden Lane', (string) wp_json_encode( $list ) );
+	}
+
+	public function test_the_date_and_modified_lose_their_utc_offset(): void {
+		$this->register_simple_location_rest_fields();
+		$id   = $this->located( 'approximate', 'weather', [ 'post_date' => '2026-08-03 09:15:00' ] );
+		$post = get_post( $id );
+
+		$data = $this->rest_data( '/wp/v2/posts/' . $id );
+
+		$this->assertSame( mysql_to_rfc3339( $post->post_date ), $data['date'] );
+		$this->assertSame( mysql_to_rfc3339( $post->post_modified ), $data['modified'] );
+		$this->assertDoesNotMatchRegularExpression( '/[+-]\d\d:\d\d$/', $data['date'] );
+	}
+
+	public function test_a_weather_post_that_keeps_its_geo_keeps_its_location_fields(): void {
+		$this->register_simple_location_rest_fields();
+		$id = $this->located( 'public' );
+
+		$data = $this->rest_data( '/wp/v2/posts/' . $id );
+
+		$this->assertSame( '41.333333', $data['latitude'] );
+		$this->assertSame( '-75.444444', $data['longitude'] );
+		$this->assertSame( '300 Hidden Lane, Privateburg', $data['geo_address'] );
+		$this->assertSame( 'America/New_York', $data['timezone'] );
+		$this->assertMatchesRegularExpression( '/-04:00$/', $data['date'], 'Its offset stays too.' );
+	}
+
+	public function test_a_protected_weather_post_is_stripped_whatever_its_tier(): void {
+		$this->register_simple_location_rest_fields();
+		$id = $this->located( 'public', 'weather', [ 'post_password' => 'secret' ] );
+
+		$this->assertSame( [], $this->leaked( $this->rest_data( '/wp/v2/posts/' . $id ) ) );
+	}
+
+	public function test_another_kinds_response_is_left_as_simple_location_made_it(): void {
+		$this->register_simple_location_rest_fields();
+		$id = $this->located( 'approximate', 'note' );
+
+		$data = $this->rest_data( '/wp/v2/posts/' . $id );
+
+		$this->assertSame( '41.333333', $data['latitude'] );
+		$this->assertSame( '300 Hidden Lane, Privateburg', $data['geo_address'] );
+	}
+
+	public function test_an_editor_keeps_the_location_fields_in_edit_context(): void {
+		$this->register_simple_location_rest_fields();
+		$id = $this->located( 'private' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$data = $this->rest_data( '/wp/v2/posts/' . $id, [ 'context' => 'edit' ] );
+
+		$this->assertSame( '41.333333', $data['latitude'] );
+		$this->assertSame( '300 Hidden Lane, Privateburg', $data['geo_address'] );
+	}
+
+	public function test_edit_context_stays_closed_to_visitors_and_subscribers(): void {
+		$this->register_simple_location_rest_fields();
+		$id = $this->located( 'private' );
+		$request = new WP_REST_Request( 'GET', '/wp/v2/posts/' . $id );
+		$request->set_param( 'context', 'edit' );
+
+		$this->assertSame( 401, rest_do_request( $request )->get_status() );
+
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'subscriber' ] ) );
+		$this->assertSame( 403, rest_do_request( $request )->get_status() );
+	}
+
+	public function test_an_editor_in_view_context_gets_the_same_stripped_response_as_a_visitor(): void {
+		$this->register_simple_location_rest_fields();
+		$id = $this->located( 'private' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$this->assertSame( [], $this->leaked( $this->rest_data( '/wp/v2/posts/' . $id ) ) );
 	}
 }
