@@ -22,7 +22,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * returns a plain array. A reader reads the meta Card_Meta_Sync writes
  * when its card has an ATTR_META_MAP entry. A kind whose card has no map
  * entry (bookmark, favorite, acquisition) reads its first card block, then
- * falls back to meta. Theme code reads neither and goes through
+ * falls back to meta. Mood (issue 248) has no Card_Meta_Sync map, so its
+ * reader takes label, key and emoji from its first mood-card block, then
+ * meta. One exception: intensity reads _pkiw_mood_rating first (1-5), then
+ * an intensity attribute the block comment actually serializes, never the
+ * block.json default, because an explicit pick of 3 is stored only in meta.
+ * Theme code reads neither and goes through
  * Kind_Facts::get() only, because issue 259's 0.7.91 leak came from theme
  * code that read block attributes. get() picks the reader by the post's
  * kind and applies what every kind shares:
