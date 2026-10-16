@@ -122,6 +122,20 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 				'venueId'      => 'venue term lookup; term 4 does not exist in the test DB so the block renders nothing (all its content comes from term meta, not attributes)',
 				'checkinCount' => 'posts_per_page limit for the checkins query, never echoed',
 			],
+			'post-kinds-indieweb/exercise-card'     => [
+				'distance'     => 'privacy-aware by design (issue 245): prints only when the card\'s showDetailsPublicly and the post\'s exercise details row are both on; the test post has no row, so the health rule keeps it private',
+				'distanceUnit' => 'block.json enum (km/mi); core drops the invalid sample pre-render, and the unit only labels a distance, which is gated the same way',
+				'duration'     => 'privacy-aware by design, same gate as distance; the fixture sample is not an ISO 8601 duration either',
+				'splits'       => 'typed array, so the fixture\'s flat string fails the schema; the rows are privacy-aware by design, same gate as distance',
+				'pbCategory'   => 'privacy-aware by design: the personal best line prints only behind the distance gate',
+				'origin'       => 'who built the card (a key such as micropub); stored for the sync and never printed',
+			],
+			'post-kinds-indieweb/sleep-card'        => [
+				'durationMinutes' => 'the render reads the post\'s own facts (Sleep_Archive::facts), not the attribute; the test post has no sleep rows',
+				'bedtime'         => 'privacy-aware by design (issue 247): prints only when the card\'s showTimesPublicly and the post\'s toggle row are both on; the test post has no row',
+				'wakeTime'        => 'privacy-aware by design (issue 247), same gate as bedtime',
+				'origin'          => 'who built the card (a key such as micropub); stored for the sync and never printed',
+			],
 			'post-kinds-indieweb/watch-card'        => [
 				'mediaType'    => 'display-mode string driving the movie/tv/episode layout; the pk-card redesign shows a single Watch kind label and no longer echoes it as a badge modifier class',
 				'captionsUrl'  => 'WebVTT file passed to the card video-embed filter; with no accessible-player filter active in tests the oEmbed fallback runs and the caption file is not echoed',
