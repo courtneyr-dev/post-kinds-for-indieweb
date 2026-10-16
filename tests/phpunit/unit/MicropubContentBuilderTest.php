@@ -32,7 +32,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 	 */
 	public function set_up(): void {
 		parent::set_up();
-		foreach ( array( 'note', 'checkin', 'eat', 'drink', 'like', 'rsvp', 'jam', 'favorite', 'wish', 'exercise', 'event', 'video', 'quote', 'issue', 'listen', 'comics', 'read', 'acquisition' ) as $slug ) {
+		foreach ( array( 'note', 'checkin', 'eat', 'drink', 'like', 'rsvp', 'jam', 'favorite', 'wish', 'exercise', 'event', 'video', 'quote', 'issue', 'listen', 'comics', 'read', 'acquisition', 'sleep' ) as $slug ) {
 			if ( ! term_exists( $slug, 'kind' ) ) {
 				wp_insert_term( ucfirst( $slug ), 'kind', array( 'slug' => $slug ) );
 			}
@@ -2659,5 +2659,414 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$all     = array_keys( $matrix[ $block ]['attributes'] );
 		$covered = array_merge( array_keys( $expected_attrs ), $known_gaps, array( 'layout' ) );
 		$this->assertSame( array(), array_diff( $all, $covered ), "$block has attrs neither asserted nor declared as gaps" );
+	}
+
+	// --- exercise and sleep: health cards (issues 245 and 247) ---------------
+
+	/**
+	 * The attribute JSON of every card comment of one block in some markup.
+	 *
+	 * @param string $markup Block markup.
+	 * @param string $block  Block name without the namespace.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function cards_in( string $markup, string $block ): array {
+		preg_match_all( '/<!-- wp:post-kinds-indieweb\/' . preg_quote( $block, '/' ) . '(?: (\{.*?\}))? \/-->/s', $markup, $found );
+
+		return array_map(
+			static fn( string $json ): array => '' === $json ? [] : (array) json_decode( $json, true ),
+			$found[1]
+		);
+	}
+
+	/**
+	 * Build the markup for a request.
+	 *
+	 * @param array<string, mixed> $properties Micropub properties.
+	 */
+	private function built( array $properties ): string {
+		$markup = $this->invoke_private( 'build_block_content', [ $properties ] );
+		$this->assertIsString( $markup );
+
+		return $markup;
+	}
+
+	public function test_an_exercise_request_builds_a_card_with_the_activity_and_origin_only(): void {
+		$markup = $this->built( [ 'exercise' => [ '5k run' ] ] );
+
+		$this->assertSame( [ [ 'activity' => '5k run', 'origin' => 'micropub' ] ], $this->cards_in( $markup, 'exercise-card' ) );
+		$this->assertStringNotContainsString( 'p-exercise', $markup, 'No typed paragraph.' );
+	}
+
+	public function test_an_exercise_request_never_carries_start_end_duration_calories_or_heart_rate_into_the_card(): void {
+		$markup = $this->built(
+			[
+				'exercise'   => [ '5k run' ],
+				'start'      => [ '2026-08-23T07:10:00-04:00' ],
+				'end'        => [ '2026-08-23T07:40:12-04:00' ],
+				'published'  => [ '2026-08-23T07:41:00-04:00' ],
+				'duration'   => [ 'PT30M12S' ],
+				'distance'   => [ '5.01' ],
+				'calories'   => [ '487' ],
+				'heart-rate' => [ '151' ],
+				'location'   => [ 'geo:40.7,-74.0' ],
+			]
+		);
+
+		foreach ( [ '07:10', '07:40', '07:41', 'PT30M', '5.01', '487', '151', 'geo:', '40.7', 'calories', 'heart' ] as $leak ) {
+			$this->assertStringNotContainsString( $leak, $markup, "{$leak} stays out of the post." );
+		}
+		$this->assertSame( [ [ 'activity' => '5k run', 'origin' => 'micropub' ] ], $this->cards_in( $markup, 'exercise-card' ) );
+	}
+
+	public function test_exercise_with_a_location_is_an_exercise_and_the_card_holds_no_location(): void {
+		$properties = [
+			'exercise' => [ 'trail run' ],
+			'location' => [ 'geo:40.7,-74.0' ],
+		];
+
+		$this->assertSame( 'exercise', $this->invoke_private( 'detect_kind', [ $properties ] ) );
+		$this->assertSame( [ [ 'activity' => 'trail run', 'origin' => 'micropub' ] ], $this->cards_in( $this->built( $properties ), 'exercise-card' ) );
+	}
+
+	public function test_an_exercise_card_comes_before_its_photo_and_the_content_follows_inside_the_group(): void {
+		$markup = $this->built(
+			[
+				'exercise' => [ '5k run' ],
+				'photo'    => [ 'https://example.test/uploads/run.jpg' ],
+				'content'  => [ 'Felt fast.' ],
+			]
+		);
+
+		$card  = strpos( $markup, 'wp:post-kinds-indieweb/exercise-card' );
+		$photo = strpos( $markup, 'wp:image' );
+		$body  = strpos( $markup, 'Felt fast.' );
+		$this->assertNotFalse( $card );
+		$this->assertGreaterThan( $card, $photo, 'The photo follows the card.' );
+		$this->assertGreaterThan( $photo, $body, 'The body follows the photo.' );
+		$this->assertStringStartsWith( '<!-- wp:group', $markup );
+		$this->assertStringContainsString( 'e-content', $markup );
+	}
+
+	public function test_fill_empty_content_supplies_an_exercise_card(): void {
+		$content = Micropub_Content_Builder::fill_empty_content( '', [ 'properties' => [ 'exercise' => [ '5k run' ] ] ] );
+
+		$this->assertNotSame( '', trim( $content ) );
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/exercise-card', $content );
+	}
+
+	/**
+	 * Sleep values the builder reads as a duration, and what it stores.
+	 *
+	 * @return array<string, array{0: string, 1: int|null}>
+	 */
+	public function sleep_durations(): array {
+		return [
+			'hours and minutes with a note'  => [ '7h 05m, restless after 3am', 425 ],
+			'iso hours'                      => [ 'PT8H', 480 ],
+			'iso hours and minutes'          => [ 'PT7H42M', 462 ],
+			'iso with seconds drops them'    => [ 'PT7H42M50S', 462 ],
+			'hours and minutes, long form'   => [ '7 hr 42 min', 462 ],
+			'hours spelled out'              => [ '7 hours 42 minutes', 462 ],
+			'hours only'                     => [ '8h', 480 ],
+			'minutes only'                   => [ '45m', 45 ],
+			'colon form'                     => [ '7:42', 462 ],
+			'decimal hours'                  => [ '7.5', 450 ],
+			'decimal hours with a unit'      => [ '7.5 hours', 450 ],
+			'a note and no duration'         => [ 'restless', null ],
+			'a time of day is not a length'  => [ 'asleep by 23:10', null ],
+			'a clock time alone is no length' => [ '23:10', null ],
+			'a 12-hour clock time is not a length' => [ '7:42pm', null ],
+			'a spaced 12-hour clock time'    => [ '7:42 am', null ],
+			'a time of day with am'          => [ '1am', null ],
+			'a count that is not hours'      => [ '3 beers', null ],
+			'a long form with a note'        => [ '3 hours of broken sleep', 180 ],
+			'minutes with a note'            => [ '30 min nap', 30 ],
+			'over a day'                     => [ '25h', null ],
+			'zero'                           => [ '0h', null ],
+		];
+	}
+
+	/**
+	 * @dataProvider sleep_durations
+	 *
+	 * @param string   $text     The sleep property.
+	 * @param int|null $expected durationMinutes, or null for none.
+	 */
+	public function test_the_sleep_property_becomes_a_duration_and_nothing_else_parsed( string $text, ?int $expected ): void {
+		$cards = $this->cards_in( $this->built( [ 'sleep' => [ $text ] ] ), 'sleep-card' );
+
+		$this->assertCount( 1, $cards );
+		$expected_card = [ 'origin' => 'micropub' ];
+		if ( null !== $expected ) {
+			$expected_card = [ 'durationMinutes' => $expected ] + $expected_card;
+		}
+		$this->assertSame( $expected_card, $cards[0], 'The card holds a duration and the origin, never a clock string.' );
+	}
+
+	public function test_a_sleep_request_with_start_end_and_published_keeps_their_clock_times_out_of_the_card(): void {
+		$markup = $this->built(
+			[
+				'sleep'     => [ '7h 05m, restless after 3am' ],
+				'start'     => [ '2026-08-19T23:40:00-04:00' ],
+				'end'       => [ '2026-08-20T06:45:00-04:00' ],
+				'published' => [ '2026-08-20T07:02:00-04:00' ],
+				'content'   => [ 'Fictional body.' ],
+			]
+		);
+
+		$this->assertSame( [ [ 'durationMinutes' => 425, 'origin' => 'micropub' ] ], $this->cards_in( $markup, 'sleep-card' ) );
+		foreach ( [ '23:40', '06:45', '07:02', 'p-sleep' ] as $leak ) {
+			$this->assertStringNotContainsString( $leak, $markup, "{$leak} stays out of the post." );
+		}
+		$this->assertStringContainsString( 'Fictional body.', $markup, 'Body text prints as written.' );
+	}
+
+	public function test_the_free_text_of_a_sleep_answer_prints_as_written_after_the_card(): void {
+		$markup = $this->built(
+			[
+				'sleep'   => [ '7h 05m, restless after 3am' ],
+				'content' => [ 'Fictional body.' ],
+			]
+		);
+
+		$card = strpos( $markup, 'wp:post-kinds-indieweb/sleep-card' );
+		$text = strpos( $markup, '<p>7h 05m, restless after 3am</p>' );
+		$body = strpos( $markup, 'Fictional body.' );
+		$this->assertNotFalse( $text, 'The author\'s own words print.' );
+		$this->assertGreaterThan( $card, $text, 'After the card.' );
+		$this->assertGreaterThan( $text, $body, 'Before the body.' );
+		$this->assertStringContainsString( '<!-- wp:paragraph -->', $markup );
+	}
+
+	public function test_the_free_text_is_escaped(): void {
+		$markup = $this->built( [ 'sleep' => [ 'rough <b>night</b> & noisy' ] ] );
+
+		$this->assertStringContainsString( '<p>rough &lt;b&gt;night&lt;/b&gt; &amp; noisy</p>', $markup );
+		$this->assertStringNotContainsString( '<b>', $markup );
+	}
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public function machine_durations(): array {
+		return [
+			'iso'           => [ 'PT8H' ],
+			'colon'         => [ '7:42' ],
+			'long form'     => [ '7 hr 42 min' ],
+			'decimal hours' => [ '7.5' ],
+		];
+	}
+
+	/**
+	 * A value that is only a duration adds nothing the card doesn't print.
+	 *
+	 * @dataProvider machine_durations
+	 *
+	 * @param string $text The sleep property.
+	 */
+	public function test_an_answer_that_is_only_a_duration_prints_no_second_copy_of_it( string $text ): void {
+		$markup = $this->built( [ 'sleep' => [ $text ] ] );
+
+		$this->assertStringNotContainsString( '<p>', $markup );
+		$this->assertStringNotContainsString( $text, $markup );
+	}
+
+	public function test_a_sleep_request_with_start_and_end_and_no_answer_gets_the_difference(): void {
+		$properties = [
+			'pkiw-kind' => [ 'sleep' ],
+			'start'     => [ '2026-08-12T23:40:00-04:00' ],
+			'end'       => [ '2026-08-13T07:10:00-04:00' ],
+		];
+		$markup     = $this->built( $properties );
+
+		$this->assertSame( [ [ 'durationMinutes' => 450, 'origin' => 'micropub' ] ], $this->cards_in( $markup, 'sleep-card' ) );
+		$this->assertStringNotContainsString( '23:40', $markup );
+		$this->assertStringNotContainsString( '07:10', $markup );
+		$this->assertStringNotContainsString( '<p>', $markup, 'There is no free text to print.' );
+	}
+
+	public function test_a_start_to_end_span_over_a_day_gives_no_duration(): void {
+		$cards = $this->cards_in(
+			$this->built(
+				[
+					'pkiw-kind' => [ 'sleep' ],
+					'start'     => [ '2026-08-12T23:40:00-04:00' ],
+					'end'       => [ '2026-08-14T07:10:00-04:00' ],
+				]
+			),
+			'sleep-card'
+		);
+
+		$this->assertSame( [ [ 'origin' => 'micropub' ] ], $cards );
+	}
+
+	public function test_a_sleep_hint_with_a_location_builds_a_sleep_card_with_no_place(): void {
+		$markup = $this->built(
+			[
+				'pkiw-kind' => [ 'sleep' ],
+				'location'  => [ 'geo:0,0' ],
+			]
+		);
+
+		$this->assertSame( [ [ 'origin' => 'micropub' ] ], $this->cards_in( $markup, 'sleep-card' ) );
+		$this->assertStringNotContainsString( 'geo:', $markup );
+		$this->assertStringNotContainsString( '0,0', $markup );
+		$this->assertStringNotContainsString( 'checkin', $markup, 'The location does not make it a check-in.' );
+	}
+
+	public function test_a_hint_and_content_only_request_builds_a_sleep_card_with_no_duration_then_the_content(): void {
+		$markup = $this->built(
+			[
+				'pkiw-kind' => [ 'sleep' ],
+				'content'   => [ 'Fictional note' ],
+			]
+		);
+
+		$this->assertSame( [ [ 'origin' => 'micropub' ] ], $this->cards_in( $markup, 'sleep-card' ) );
+		$this->assertGreaterThan( strpos( $markup, 'wp:post-kinds-indieweb/sleep-card' ), strpos( $markup, 'Fictional note' ) );
+	}
+
+	public function test_a_sleep_hint_wins_over_an_event_shape_and_a_checkin_shape(): void {
+		foreach ( [ 'start' => [ '2026-08-12T23:40:00-04:00' ], 'location' => [ 'geo:40.7,-74.0' ] ] as $key => $value ) {
+			$markup = $this->built(
+				[
+					'pkiw-kind' => [ 'sleep' ],
+					$key        => $value,
+				]
+			);
+			$this->assertCount( 1, $this->cards_in( $markup, 'sleep-card' ), "{$key} shape." );
+			$this->assertStringNotContainsString( 'event-card', $markup );
+			$this->assertStringNotContainsString( 'checkin-card', $markup );
+		}
+	}
+
+	public function test_a_jam_hint_on_a_listen_request_still_builds_a_listen_card(): void {
+		$markup = $this->built(
+			[
+				'pkiw-kind' => [ 'jam' ],
+				'listen-of' => [ 'https://example.test/track/9' ],
+			]
+		);
+
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/listen-card', $markup );
+		$this->assertStringNotContainsString( 'sleep-card', $markup );
+	}
+
+	public function test_a_sleep_hint_the_site_has_no_term_for_does_not_build_a_sleep_card(): void {
+		$term = get_term_by( 'slug', 'sleep', 'kind' );
+		if ( $term instanceof \WP_Term ) {
+			wp_delete_term( $term->term_id, 'kind' );
+		}
+
+		$this->assertNull( $this->invoke_private( 'build_block_content', [ [ 'pkiw-kind' => [ 'sleep' ], 'content' => [ 'Fictional note' ] ] ] ) );
+	}
+
+	public function test_fill_empty_content_supplies_a_sleep_card_for_a_sleep_only_request(): void {
+		foreach ( [ [ 'sleep' => [ '7h' ] ], [ 'pkiw-kind' => [ 'sleep' ] ], [ 'sleep' => [ 'restless' ] ] ] as $properties ) {
+			$content = Micropub_Content_Builder::fill_empty_content( '', [ 'properties' => $properties ] );
+
+			$this->assertNotSame( '', trim( $content ), wp_json_encode( $properties ) );
+			$this->assertStringContainsString( 'wp:post-kinds-indieweb/sleep-card', $content );
+		}
+	}
+
+	public function test_apply_assigns_the_sleep_kind_and_writes_the_card_over_the_plain_content(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => 'Fictional note',
+			]
+		);
+
+		Micropub_Content_Builder::apply(
+			[
+				'h'         => 'entry',
+				'pkiw-kind' => 'sleep',
+				'sleep'     => '7 hr 42 min',
+				'content'   => 'Fictional note',
+			],
+			[ 'ID' => $post_id ]
+		);
+
+		$this->assertSame( [ 'sleep' ], wp_get_object_terms( $post_id, 'kind', [ 'fields' => 'slugs' ] ) );
+		$this->assertSame( '462', get_metadata_raw( 'post', $post_id, '_pkiw_sleep_duration', true ), 'Card_Meta_Sync mirrored the duration.' );
+	}
+
+	public function test_a_sleep_request_records_the_night_of_its_start_for_the_next_insert(): void {
+		\PKIW\Sleep_Night::reset();
+		\PKIW\Sleep_Night::register();
+		update_option( 'timezone_string', 'America/New_York' );
+
+		Micropub_Content_Builder::record_sleep_night(
+			'Fictional note',
+			[
+				'properties' => [
+					'pkiw-kind' => [ 'sleep' ],
+					'start'     => [ '2026-08-12T23:40:00-04:00' ],
+					'end'       => [ '2026-08-13T07:10:00-04:00' ],
+				],
+			]
+		);
+		$id = wp_insert_post(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Night',
+				'post_date'    => '2026-08-13 07:30:00',
+				'post_content' => 'Fictional note',
+			]
+		);
+		clean_post_cache( $id );
+
+		$this->assertSame( '2026-08-12 12:00:00', get_post( $id )->post_date, 'The night of the start, Aug 12, not of the 07:30 publish time.' );
+		\PKIW\Sleep_Night::reset();
+	}
+
+	public function test_a_sleep_request_with_no_start_records_the_night_of_its_published_time(): void {
+		\PKIW\Sleep_Night::reset();
+		\PKIW\Sleep_Night::register();
+		update_option( 'timezone_string', 'America/New_York' );
+
+		Micropub_Content_Builder::record_sleep_night(
+			'Fictional note',
+			[
+				'properties' => [
+					'sleep'     => [ '7h' ],
+					'published' => [ '2026-08-13T07:30:00-04:00' ],
+				],
+			]
+		);
+		$id = wp_insert_post(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Night',
+				'post_date'    => '2026-08-13 07:30:00',
+				'post_content' => 'Fictional note',
+			]
+		);
+		clean_post_cache( $id );
+
+		$this->assertSame( '2026-08-12 12:00:00', get_post( $id )->post_date );
+		\PKIW\Sleep_Night::reset();
+	}
+
+	public function test_a_request_that_is_not_a_sleep_request_records_no_night(): void {
+		\PKIW\Sleep_Night::reset();
+		\PKIW\Sleep_Night::register();
+
+		$out = Micropub_Content_Builder::record_sleep_night( 'A plain note', [ 'properties' => [ 'content' => [ 'A plain note' ] ] ] );
+		$id  = wp_insert_post(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Plain',
+				'post_date'    => '2026-08-13 07:30:00',
+				'post_content' => 'A plain note',
+			]
+		);
+		clean_post_cache( $id );
+
+		$this->assertSame( 'A plain note', $out, 'The filter returns the content untouched.' );
+		$this->assertSame( '2026-08-13 07:30:00', get_post( $id )->post_date );
+		\PKIW\Sleep_Night::reset();
 	}
 }
