@@ -75,6 +75,11 @@ const ROUND_TRIP_EXCEPTIONS = {
 		locationVisibility:
 			'block.json enum (private/public); "Sample locationVisibility value" is not a member, so core coerces it back to the schema default (private) on save. Matches the BlockFieldRenderTest.php exception for the same attribute.',
 	},
+	'post-kinds-indieweb/exercise-card': {
+		distanceUnit:
+			'block.json enum (km/mi); "Sample distanceUnit value" is not a member, so core coerces it back to the schema default (km) on save. Matches the BlockFieldRenderTest.php exception for the same attribute.',
+		splits: 'Typed "array" (a list of { i, t } splits); the sampler has no array rule, so sampleFor() returns a flat string that block attribute validation drops on reload. Covered by tests/js/blocks/exercise-card-edit.test.js with real split rows.',
+	},
 };
 
 // Attributes whose sample never appears verbatim in the front-end render,
@@ -154,6 +159,27 @@ const RENDER_EXCEPTIONS = {
 		checkinCount:
 			'posts_per_page limit for the checkins query, never echoed',
 	},
+	'post-kinds-indieweb/exercise-card': {
+		distance:
+			'privacy-aware by design (issue 245): prints only when the card and the post both opt in; the health rule decides, not the sample',
+		distanceUnit:
+			'block.json enum (km/mi); core drops the invalid sample, and the unit only labels a distance that is gated',
+		duration:
+			'privacy-aware by design, same gate as distance; the sample is not an ISO 8601 duration either',
+		splits: 'typed array, privacy-aware by design, same gate as distance',
+		pbCategory:
+			'privacy-aware by design: the personal best line prints only behind the distance gate',
+		origin: 'who built the card (a key such as micropub); never printed',
+	},
+	'post-kinds-indieweb/sleep-card': {
+		durationMinutes:
+			'the render reads the post facts (Sleep_Archive::facts), not the attribute; Card_Meta_Sync writes the row on save and the facts label it as hours and minutes',
+		bedtime:
+			'privacy-aware by design (issue 247): prints only when the card and the post both opt in',
+		wakeTime:
+			'privacy-aware by design (issue 247): prints only when the card and the post both opt in',
+		origin: 'who built the card (a key such as micropub); never printed',
+	},
 	'post-kinds-indieweb/watch-card': {
 		mediaType:
 			'display-mode string driving the movie/tv/episode layout; the pk-card redesign shows a single Watch kind label and no longer echoes it as a badge modifier class',
@@ -211,17 +237,31 @@ for ( const [ name, def ] of Object.entries( matrix ) ) {
 			] )
 		);
 
+		// A block with a `parent` rule (step, inside steps) can't go in at the
+		// root: insertBlocks() keeps only what canInsertBlockType() allows
+		// there. The matrix entry names its parents, so insert the block
+		// inside a freshly created one.
 		await page.evaluate(
-			( { blockName, blockAttrs } ) => {
+			( { blockName, blockAttrs, parents } ) => {
 				const block = window.wp.blocks.createBlock(
 					blockName,
 					blockAttrs
 				);
+				const root =
+					parents && parents.length > 0
+						? window.wp.blocks.createBlock( parents[ 0 ], {}, [
+								block,
+							] )
+						: block;
 				window.wp.data
 					.dispatch( 'core/block-editor' )
-					.insertBlocks( block );
+					.insertBlocks( root );
 			},
-			{ blockName: name, blockAttrs: attrs }
+			{
+				blockName: name,
+				blockAttrs: attrs,
+				parents: def.parent || null,
+			}
 		);
 
 		await page.evaluate( () =>
@@ -243,11 +283,23 @@ for ( const [ name, def ] of Object.entries( matrix ) ) {
 			.locator( '.is-root-container' )
 			.waitFor( { timeout: 30000 } );
 
+		// Recursive, so a parented block is found inside its parent.
 		const saved = await page.evaluate( ( blockName ) => {
-			const blocks = window.wp.data
-				.select( 'core/block-editor' )
-				.getBlocks();
-			const match = blocks.find( ( b ) => b.name === blockName );
+			const find = ( list ) => {
+				for ( const block of list ) {
+					if ( block.name === blockName ) {
+						return block;
+					}
+					const inner = find( block.innerBlocks || [] );
+					if ( inner ) {
+						return inner;
+					}
+				}
+				return null;
+			};
+			const match = find(
+				window.wp.data.select( 'core/block-editor' ).getBlocks()
+			);
 			return match ? match.attributes : null;
 		}, name );
 
