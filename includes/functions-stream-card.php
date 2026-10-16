@@ -397,9 +397,12 @@ function post_title_is_hidden( \WP_Post $post ): bool {
  *
  * Title_Privacy hands back the stored title on an admin screen, so
  * get_the_title() would print a title generated from a hidden location
- * there. A hidden title is replaced by the safe one with its tags stripped,
- * and a password-protected post gets core's prefix back, because the safe
- * title carries none. Any other title comes from get_the_title().
+ * there. A hidden title is replaced by the safe one with its tags stripped.
+ * A hidden title on a password-protected post gets core's
+ * protected_title_format prefix on every screen, because the safe title
+ * carries none; a hidden title on a private post gets no "Private:" prefix.
+ * A visible title follows get_the_title(), which adds core's "Protected:" or
+ * "Private:" prefix off admin screens only.
  *
  * @since 1.9.0
  *
@@ -699,7 +702,9 @@ function render_photo_stream_card( \WP_Post $post, array $attributes = [] ): str
 	}
 	$out .= '<div class="pk-caption">';
 	if ( $titled ) {
-		$out .= '<h' . $heading_level . ' class="pk-title p-name"><a class="u-url" href="' . $permalink . '">' . esc_html( $safe_title ) . '</a></h' . $heading_level . '>';
+		// A hidden-location title is replaced by a synthetic name, which carries no p-name.
+		$title_class = post_title_is_hidden( $post ) ? 'pk-title' : 'pk-title p-name';
+		$out        .= '<h' . $heading_level . ' class="' . $title_class . '"><a class="u-url" href="' . $permalink . '">' . esc_html( $safe_title ) . '</a></h' . $heading_level . '>';
 		$out .= '<p class="pk-sub pk-stream-date"><time class="dt-published" datetime="' . $date_time . '">' . esc_html( $date_display ) . '</time></p>';
 	} else {
 		$fallback  = untitled_fallback_name( $post );

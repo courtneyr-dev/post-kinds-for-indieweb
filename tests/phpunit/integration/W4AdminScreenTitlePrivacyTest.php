@@ -143,9 +143,10 @@ final class W4AdminScreenTitlePrivacyTest extends WP_UnitTestCase {
 
 		return [
 			'note'              => [ 'note', '', $plain ],
+			'photo'             => [ 'photo', '', $plain ],
 			'checkin'           => [ 'checkin', '', $plain ],
 			'watch'             => [ 'watch', '', $plain ],
-			'mood'              => [ 'mood', '', '' ],
+			'mood'              => [ 'mood', '', 'value="Happy"' ],
 			'craft'             => [ 'craft', '', $plain ],
 			'protected note'    => [ 'note', self::PASSWORD, $protected ],
 			'protected checkin' => [ 'checkin', self::PASSWORD, $protected ],
@@ -169,7 +170,7 @@ final class W4AdminScreenTitlePrivacyTest extends WP_UnitTestCase {
 		$html = $this->stream_card( $id );
 
 		$this->assertNoHiddenTitle( $html, $kind );
-		$this->assertStringContainsString( $expected, $html, 'A mood card prints no title, so it expects none.' );
+		$this->assertStringContainsString( $expected, $html );
 		$this->assertSame( '' !== $password, post_password_required( get_post( $id ) ) );
 		$this->assertSame( $front, $html, 'The admin screen prints the card a visitor gets.' );
 	}
@@ -283,6 +284,7 @@ final class W4AdminScreenTitlePrivacyTest extends WP_UnitTestCase {
 			'note'              => [ 'note', '' ],
 			'checkin'           => [ 'checkin', '' ],
 			'craft'             => [ 'craft', '' ],
+			'photo'             => [ 'photo', '' ],
 			'protected note'    => [ 'note', self::PASSWORD ],
 			'protected checkin' => [ 'checkin', self::PASSWORD ],
 			'protected mood'    => [ 'mood', self::PASSWORD ],
@@ -325,8 +327,15 @@ final class W4AdminScreenTitlePrivacyTest extends WP_UnitTestCase {
 			]
 		);
 		wp_set_object_terms( $protected, 'craft', Taxonomy::TAXONOMY );
+		$photo = self::factory()->post->create(
+			[
+				'post_status' => 'publish',
+				'post_title'  => 'Garden gate photo',
+			]
+		);
+		wp_set_object_terms( $photo, 'photo', Taxonomy::TAXONOMY );
 
-		foreach ( [ $id, $protected ] as $post_id ) {
+		foreach ( [ $id, $protected, $photo ] as $post_id ) {
 			$this->assertSame( 1, $this->xpath( $this->stream_card( $post_id ) )->query( '//*[contains(concat(" ",normalize-space(@class)," ")," p-name ")]' )->length );
 		}
 	}
