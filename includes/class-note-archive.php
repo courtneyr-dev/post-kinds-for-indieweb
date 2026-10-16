@@ -176,14 +176,20 @@ final class Note_Archive {
 
 		if ( '' !== trim( (string) $post->post_title ) ) {
 			// A stored title that came from a location that isn't public is not the title to print.
-			$hidden = Title_Privacy::safe_title( $post->ID ) !== (string) $post->post_title;
-			$name   = trim( wp_strip_all_tags( get_the_title( $post ) ) );
-			if ( $hidden && $protected && '' !== $name ) {
-				// The_title replaced the whole string, core's prefix with it. Put it back.
-				/** This filter is documented in wp-includes/post-template.php */
-				/* translators: %s: the post title. Core's string. */
-				$format = (string) apply_filters( 'protected_title_format', __( 'Protected: %s', 'default' ), $post ); // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch,WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core's own string and hook.
-				$name   = sprintf( $format, $name );
+			// The safe title is read directly: the_title hands back the stored one on an admin screen.
+			$safe   = Title_Privacy::safe_title( $post->ID );
+			$hidden = $safe !== (string) $post->post_title;
+			if ( $hidden ) {
+				$name = trim( wp_strip_all_tags( $safe ) );
+				if ( $protected && '' !== $name ) {
+					// The prefix core adds to a protected title; the safe title carries none.
+					/** This filter is documented in wp-includes/post-template.php */
+					/* translators: %s: the post title. Core's string. */
+					$format = (string) apply_filters( 'protected_title_format', __( 'Protected: %s', 'default' ), $post ); // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch,WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core's own string and hook.
+					$name   = sprintf( $format, $name );
+				}
+			} else {
+				$name = trim( wp_strip_all_tags( get_the_title( $post ) ) );
 			}
 			if ( '' !== $name ) {
 				$is_real = ! $hidden;
@@ -222,7 +228,7 @@ final class Note_Archive {
 	 * @param \WP_Block|null       $block      Block instance.
 	 * @return string Markup.
 	 */
-	public static function render( array $attributes = [], string $content = '', ?\WP_Block $block = null ): string { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+	public static function render( array $attributes = [], string $content = '', ?\WP_Block $block = null ): string {
 		$post = get_post( (int) ( $block->context['postId'] ?? get_the_ID() ) );
 		if ( ! $post instanceof \WP_Post ) {
 			return '';

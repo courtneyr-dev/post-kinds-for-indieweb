@@ -56,6 +56,7 @@ final class NoteEntryBlockTest extends WP_UnitTestCase {
 
 	public function tear_down(): void {
 		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+		unset( $GLOBALS['current_screen'] );
 		update_option( 'timezone_string', $this->original_timezone );
 		switch_theme( $this->original_stylesheet );
 		$this->set_permalink_structure( '' );
@@ -227,6 +228,42 @@ final class NoteEntryBlockTest extends WP_UnitTestCase {
 		$this->assertSame( 0, $this->xpath( $html )->query( '//*[contains(concat(" ",@class," ")," p-name ")]' )->length );
 	}
 
+	/**
+	 * @return array<string, array{array<string, mixed>, string}>
+	 */
+	public function admin_screen_cases(): array {
+		return [
+			'unprotected' => [ [], 'Check-in, August 26, 2026' ],
+			'protected'   => [ [ 'post_password' => self::PASSWORD ], 'Protected: Check-in, August 26, 2026' ],
+		];
+	}
+
+	/**
+	 * Title_Privacy::filter_the_title() hands back the stored title on an admin
+	 * screen, so a name read through get_the_title() would print it there.
+	 *
+	 * @dataProvider admin_screen_cases
+	 *
+	 * @param array<string, mixed> $extra    Extra post args.
+	 * @param string               $expected Name the note prints.
+	 */
+	public function test_a_hidden_location_title_never_prints_on_an_admin_screen( array $extra, string $expected ): void {
+		$id = $this->hidden_title_note( 'Checked in at Sentinel Venue Zyx9', $extra );
+		set_current_screen( 'edit-post' );
+		$this->assertTrue( is_admin(), 'The request looks like an admin screen.' );
+
+		$html  = $this->render( $id );
+		$lower = strtolower( $html );
+
+		foreach ( [ 'sentinel venue', 'sentinel-venue', 'zyx9', 'checked in at' ] as $needle ) {
+			$this->assertStringNotContainsString( $needle, $lower, $needle );
+		}
+		$this->assertStringContainsString( $expected, $html );
+		$this->assertSame( $expected, Note_Archive::parts( get_post( $id ) )['name'] );
+		$this->assertFalse( Note_Archive::parts( get_post( $id ) )['name_is_title'] );
+		$this->assertSame( 0, $this->xpath( $html )->query( '//*[contains(concat(" ",@class," ")," p-name ")]' )->length );
+	}
+
 	public function test_a_post_with_a_second_kind_prints_no_thought_and_is_named_by_the_fallback(): void {
 		$id = $this->note( '', '2026-08-26 09:15:00', 'Ran 5 km, heart rate 150' );
 		wp_set_object_terms( $id, [ 'exercise', 'note' ], Taxonomy::TAXONOMY );
@@ -383,6 +420,31 @@ final class NoteEntryBlockTest extends WP_UnitTestCase {
 			}
 		}
 		$this->assertSame( '', $this->link( $xpath, $unique )->getAttribute( 'aria-labelledby' ) );
+	}
+
+	public function test_a_block_preview_counts_no_page_even_when_it_knows_repeated_page_ids(): void {
+		$first  = $this->note( 'Garden gate', '2026-08-26 09:15:00', 'First body.' );
+		$second = $this->note( 'Garden gate', '2026-08-25 09:15:00', 'Second body.' );
+		$page   = new ReflectionProperty( \PKIW\Grouped_Archive::class, 'preview_page' );
+		$page->setAccessible( true );
+		$request = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/' . Note_Archive::BLOCK );
+
+		// The engine's own hook marks the request a block preview, then a
+		// preview run leaves the page it computed: both notes, one name.
+		apply_filters( 'rest_request_before_callbacks', null, [], $request );
+		$page->setValue( null, [ $first, $second ] );
+		try {
+			$this->assertTrue( \PKIW\Grouped_Archive::is_block_preview() );
+			$this->assertSame( [ $first, $second ], \PKIW\Grouped_Archive::current_page_ids() );
+			$html = $this->render( $first );
+		} finally {
+			apply_filters( 'rest_request_after_callbacks', null, [], $request );
+			$page->setValue( null, [] );
+		}
+
+		$this->assertFalse( \PKIW\Grouped_Archive::is_block_preview() );
+		$this->assertStringContainsString( 'Garden gate', $html );
+		$this->assertStringNotContainsString( 'aria-labelledby', $html, 'A preview counts no page.' );
 	}
 
 	public function test_a_name_alone_on_the_page_has_no_aria_labelledby_when_the_item_renders_by_itself(): void {
