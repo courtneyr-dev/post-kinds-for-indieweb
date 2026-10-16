@@ -195,4 +195,37 @@ final class SearchExactPrivacyTest extends WP_UnitTestCase {
 
 		$this->assertContains( $id, $this->main_query_ids( '-Dash title', '&exact=1&sentence=1' ), 'In exact mode core treats the dash as part of the phrase.' );
 	}
+
+	/**
+	 * What the field comparison does in each mode, which the SQL can't show:
+	 * the database has already matched the raw field, so the comparison only
+	 * decides what the stripped field does.
+	 *
+	 * @return array<string, array{0: string, 1: string, 2: bool, 3: bool}>
+	 */
+	public function comparison_cases(): array {
+		return [
+			'exact, whole field'            => [ 'Exact Title', 'exact title', true, true ],
+			'exact, a substring'            => [ 'Exact Title', 'Exact', true, false ],
+			'exact, accents are not folded' => [ 'Café', 'Cafe', true, false ],
+			'loose, a substring'            => [ 'Exact Title', 'exact', false, true ],
+			'loose, no match'               => [ 'Exact Title', 'other', false, false ],
+		];
+	}
+
+	/**
+	 * @dataProvider comparison_cases
+	 *
+	 * @param string $field    Field text.
+	 * @param string $term     Search term.
+	 * @param bool   $exact    Exact mode.
+	 * @param bool   $expected Whether the field matches.
+	 */
+	public function test_the_field_comparison_follows_the_search_mode( string $field, string $term, bool $exact, bool $expected ): void {
+		$method = new ReflectionMethod( Meta_Fields::class, 'search_matches' );
+		$method->setAccessible( true );
+
+		$this->assertSame( $expected, $method->invoke( null, [ [ $term, false ] ], [ 'post_title' => $field ], $exact ) );
+		$this->assertSame( ! $expected, $method->invoke( null, [ [ $term, true ] ], [ 'post_title' => $field ], $exact ), 'An excluded term inverts it.' );
+	}
 }
