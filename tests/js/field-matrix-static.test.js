@@ -32,6 +32,11 @@ jest.mock( '@wordpress/block-editor', () => {
 		RichText: () => null,
 		MediaUpload: () => null,
 		MediaUploadCheck: ( { children } ) => children,
+		// steps and step save their inner blocks through InnerBlocks.Content;
+		// these two have no attributes, so an empty stand-in is enough here.
+		// tests/js/blocks/steps-save.test.js serializes them with real inner
+		// blocks.
+		InnerBlocks: { Content: () => null },
 	};
 } );
 
@@ -64,11 +69,14 @@ require( '../../src/blocks/acquisition-card' );
 require( '../../src/blocks/favorite-card' );
 require( '../../src/blocks/media-lookup' );
 require( '../../src/blocks/star-rating' );
+require( '../../src/blocks/step' );
+require( '../../src/blocks/steps' );
 require( '../../src/blocks/wish-card' );
 
 // registerCoreBlocks() from @wordpress/block-library is intentionally NOT
-// used: none of the 5 static blocks' save.js nest a core block (no
-// InnerBlocks, no core/* references) — verified by inspecting each save.js.
+// used: none of the required blocks' save.js reference a core/* block.
+// steps and step nest their children through InnerBlocks.Content, which the
+// block-editor stub above leaves empty — verified by inspecting each save.js.
 
 const staticBlocks = Object.entries( matrix ).filter(
 	( [ , def ] ) => def.render === 'static'

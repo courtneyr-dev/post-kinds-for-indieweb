@@ -305,6 +305,19 @@
             }
         }
     },
+    "post-kinds-indieweb/craft-card": {
+        "render": "dynamic",
+        "attributes": {
+            "craftType": {
+                "type": "string",
+                "sample": "Sample craftType value"
+            },
+            "timeMinutes": {
+                "type": "integer",
+                "sample": 4
+            }
+        }
+    },
     "post-kinds-indieweb/drink-card": {
         "render": "dynamic",
         "attributes": {
@@ -501,6 +514,47 @@
             "layout": {
                 "type": "string",
                 "sample": "horizontal"
+            }
+        }
+    },
+    "post-kinds-indieweb/exercise-card": {
+        "render": "dynamic",
+        "attributes": {
+            "activity": {
+                "type": "string",
+                "sample": "Sample activity value"
+            },
+            "distance": {
+                "type": "number",
+                "sample": 4
+            },
+            "distanceUnit": {
+                "type": "string",
+                "sample": "Sample distanceUnit value"
+            },
+            "duration": {
+                "type": "string",
+                "sample": "Sample duration value"
+            },
+            "splits": {
+                "type": "array",
+                "sample": "Sample splits value"
+            },
+            "personalBest": {
+                "type": "boolean",
+                "sample": true
+            },
+            "pbCategory": {
+                "type": "string",
+                "sample": "Sample pbCategory value"
+            },
+            "showDetailsPublicly": {
+                "type": "boolean",
+                "sample": true
+            },
+            "origin": {
+                "type": "string",
+                "sample": "Sample origin value"
             }
         }
     },
@@ -1031,6 +1085,31 @@
             }
         }
     },
+    "post-kinds-indieweb/sleep-card": {
+        "render": "dynamic",
+        "attributes": {
+            "durationMinutes": {
+                "type": "integer",
+                "sample": 4
+            },
+            "bedtime": {
+                "type": "string",
+                "sample": "Sample bedtime value"
+            },
+            "wakeTime": {
+                "type": "string",
+                "sample": "Sample wakeTime value"
+            },
+            "showTimesPublicly": {
+                "type": "boolean",
+                "sample": true
+            },
+            "origin": {
+                "type": "string",
+                "sample": "Sample origin value"
+            }
+        }
+    },
     "post-kinds-indieweb/star-rating": {
         "render": "static",
         "attributes": {
@@ -1075,6 +1154,17 @@
                 "sample": "Sample itemName value"
             }
         }
+    },
+    "post-kinds-indieweb/step": {
+        "render": "static",
+        "attributes": [],
+        "parent": [
+            "post-kinds-indieweb/steps"
+        ]
+    },
+    "post-kinds-indieweb/steps": {
+        "render": "static",
+        "attributes": []
     },
     "post-kinds-indieweb/venue-detail": {
         "render": "dynamic",

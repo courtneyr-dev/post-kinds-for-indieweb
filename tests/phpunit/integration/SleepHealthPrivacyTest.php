@@ -214,10 +214,24 @@ final class SleepHealthPrivacyTest extends WP_UnitTestCase {
 	/**
 	 * Logged-out REST: no sleep key, and a post with its times hidden answers
 	 * like one that never stored them.
+	 *
+	 * The card is registered by its block.json, so content.rendered holds the
+	 * rendered card, whose Date and Moon phase rows follow the post's night. A
+	 * card with no bedtime keeps the date it was created on, so the "never"
+	 * post takes the "hidden" post's date and both render the same night. The
+	 * bodies then differ only in ids and URLs.
 	 */
 	public function test_rest_exposes_no_sleep_meta_and_hidden_times_match_a_card_that_never_stored_them(): void {
 		$hidden = $this->sleep( 'Same title', $this->attrs( false ) );
 		$never  = $this->sleep( 'Same title', [ 'durationMinutes' => self::MINUTES ] );
+		wp_update_post(
+			[
+				'ID'            => $never,
+				'post_date'     => get_post_field( 'post_date', $hidden ),
+				'post_date_gmt' => get_post_field( 'post_date_gmt', $hidden ),
+			]
+		);
+		$this->assertSame( get_post_field( 'post_date', $hidden ), get_post_field( 'post_date', $never ), 'Both posts sit on the same night.' );
 		$opted  = $this->sleep( 'Opted title', $this->attrs( true ) );
 
 		$bodies = [];

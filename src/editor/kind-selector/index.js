@@ -76,6 +76,7 @@ function getKindCardBlockMap() {
 		wish: 'post-kinds-indieweb/wish-card',
 		mood: 'post-kinds-indieweb/mood-card',
 		acquisition: 'post-kinds-indieweb/acquisition-card',
+		craft: 'post-kinds-indieweb/craft-card',
 		// Note: bookmark is handled separately - see insertBookmarkBlock()
 	};
 }

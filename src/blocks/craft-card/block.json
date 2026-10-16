@@ -1,0 +1,29 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "post-kinds-indieweb/craft-card",
+	"version": "1.0.0",
+	"title": "Craft Card",
+	"category": "post-kinds-indieweb",
+	"description": "Record what you made: the craft type and the time it took.",
+	"keywords": ["craft", "make", "project", "handmade", "hobby"],
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
+	"attributes": {
+		"craftType": {
+			"type": "string"
+		},
+		"timeMinutes": {
+			"type": "integer"
+		}
+	},
+	"usesContext": ["postId"],
+	"supports": {
+		"html": false
+	},
+	"example": {
+		"attributes": {
+			"timeMinutes": 150
+		}
+	},
+	"render": "file:./render.php"
+}
