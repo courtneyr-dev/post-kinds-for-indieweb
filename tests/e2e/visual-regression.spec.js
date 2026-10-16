@@ -121,15 +121,25 @@ test.describe( 'Visual Regression', () => {
 
 			if ( FIXED_DATE_BLOCKS.includes( name ) ) {
 				await page.evaluate( () => {
-					window.wp.data
-						.dispatch( 'core/editor' )
-						.editPost( { date: '2026-07-04T12:00:00' } );
+					// An empty post isn't saveable, so give it a title too.
+					window.wp.data.dispatch( 'core/editor' ).editPost( {
+						title: 'Visual fixture',
+						date: '2026-07-04T12:00:00',
+					} );
 					return window.wp.data.dispatch( 'core/editor' ).savePost();
 				} );
 				await page.waitForFunction(
 					() =>
 						! window.wp.data.select( 'core/editor' ).isSavingPost()
 				);
+				// Fail here rather than baseline the run date.
+				expect(
+					await page.evaluate( () =>
+						window.wp.data
+							.select( 'core/editor' )
+							.getCurrentPostAttribute( 'date' )
+					)
+				).toMatch( /^2026-07-04/ );
 			}
 
 			// A block with a `parent` rule (step, inside steps) can't go in at
