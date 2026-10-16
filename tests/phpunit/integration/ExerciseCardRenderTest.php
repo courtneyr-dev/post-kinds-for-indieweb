@@ -95,6 +95,7 @@ final class ExerciseCardRenderTest extends WP_UnitTestCase {
 		update_option( 'timezone_string', $this->original_timezone );
 		switch_theme( $this->original_stylesheet );
 		$this->set_permalink_structure( '' );
+		set_current_screen( 'front' );
 		wp_set_current_user( 0 );
 		wp_reset_postdata();
 		parent::tear_down();
@@ -512,6 +513,49 @@ final class ExerciseCardRenderTest extends WP_UnitTestCase {
 		$this->assertSame( 'Exercise, August 27, 2026', trim( $title->textContent ) );
 		$this->assertStringNotContainsString( 'p-name', $title->getAttribute( 'class' ) );
 		$this->assertSame( '2026-08-27', $xpath->query( '//time[contains(@class,"dt-published")]' )->item( 0 )->getAttribute( 'datetime' ) );
+	}
+
+	public function test_a_hidden_location_title_never_prints_in_the_stream_skeleton_on_an_admin_screen(): void {
+		$id = $this->exercise(
+			'Maplewood Track',
+			'2026-08-23 07:10:00',
+			[ 'activity' => 'Run' ],
+			[
+				'meta_input' => [
+					'_pkiw_title_source' => 'location',
+					'_pkiw_geo_privacy'  => 'private',
+				],
+			]
+		);
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		set_current_screen( 'edit-post' );
+		$this->assertTrue( is_admin() );
+
+		$html = $this->stream( $id );
+		$this->assertStringNotContainsStringIgnoringCase( 'maplewood', $html );
+		$this->assertStringContainsString( 'Check-in, August 23, 2026', $html );
+		$this->assertStringNotContainsStringIgnoringCase( 'maplewood', $this->single( $id ) );
+	}
+
+	public function test_a_hidden_location_title_never_prints_from_a_protected_card_on_an_admin_screen(): void {
+		$id = $this->exercise(
+			'Maplewood Track',
+			'2026-08-23 07:10:00',
+			[ 'activity' => 'Run' ],
+			[
+				'post_password' => 'secret',
+				'meta_input'    => [
+					'_pkiw_title_source' => 'location',
+					'_pkiw_geo_privacy'  => 'private',
+				],
+			]
+		);
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		set_current_screen( 'edit-post' );
+		$GLOBALS['post'] = get_post( $id );
+		setup_postdata( $GLOBALS['post'] );
+
+		$this->assertSame( '', trim( do_blocks( (string) get_post_field( 'post_content', $id ) ) ), 'A protected card prints nothing, so it prints no title.' );
 	}
 
 	public function test_an_editor_reading_a_private_workout_in_the_stream_sees_no_private_prefix(): void {

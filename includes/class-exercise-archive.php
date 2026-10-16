@@ -290,7 +290,8 @@ final class Exercise_Archive {
 			return [];
 		}
 
-		$stored  = trim( wp_strip_all_tags( (string) apply_filters( 'the_title', $post->post_title, $post->ID ) ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core's filter; get_the_title() would prefix a private post with "Private:".
+		// The safe title is read directly: Title_Privacy hands the stored title back through the_title on an admin screen.
+		$stored  = trim( wp_strip_all_tags( '' === trim( (string) $post->post_title ) ? '' : Title_Privacy::safe_title( $post->ID ) ) );
 		$named   = '' !== $stored;
 		$parts   = untitled_fallback_name( $post );
 		$visible = Meta_Fields::get_visible_health_fields( $post->ID );
@@ -613,11 +614,11 @@ final class Exercise_Archive {
 	 */
 	private static function bib_html( \WP_Post $post, array $attributes, bool $in_section ): string {
 		$facts = Kind_Facts::get( $post->ID );
-		$level = max( 2, min( 6, max( 2, min( 6, (int) ( $attributes['headingLevel'] ?? 2 ) ) ) + ( $in_section ? 1 : 0 ) ) );
+		$level = max( 2, min( 6, (int) ( $attributes['headingLevel'] ?? 2 ) + ( $in_section ? 1 : 0 ) ) );
 		$href  = esc_url( (string) get_permalink( $post ) );
 
 		if ( [] === $facts ) {
-			$link = sprintf( '<a class="pkiw-exercise-bib__link u-url" href="%1$s">%2$s</a>', $href, esc_html( wp_strip_all_tags( get_the_title( $post ) ) ) );
+			$link = sprintf( '<a class="pkiw-exercise-bib__link u-url" href="%1$s">%2$s</a>', $href, esc_html( self::protected_title( $post ) ) );
 
 			return ensure_entry_properties( sprintf( '<h%1$d class="pkiw-exercise-bib__title">%2$s</h%1$d>', $level, $link ), $post, false );
 		}
@@ -643,6 +644,36 @@ final class Exercise_Archive {
 		$html .= sprintf( '<data class="dt-published" value="%s" hidden></data>', esc_attr( (string) $facts['date_iso'] ) );
 
 		return ensure_entry_properties( $html, $post, false );
+	}
+
+	/**
+	 * A protected post's title as its bib prints it: core's prefix, then a title that is safe to print.
+	 *
+	 * A stored title generated from a location that isn't public is not the
+	 * title to print. Title_Privacy swaps it through the_title, but hands the
+	 * stored one back on an admin screen, so a hidden title is read from
+	 * safe_title() and given core's prefix here. Any other title goes through
+	 * get_the_title() as core gives it.
+	 *
+	 * @param \WP_Post $post Protected post.
+	 * @return string Plain text.
+	 */
+	private static function protected_title( \WP_Post $post ): string {
+		$safe = Title_Privacy::safe_title( $post->ID );
+		if ( $safe === (string) $post->post_title ) {
+			return trim( wp_strip_all_tags( get_the_title( $post ) ) );
+		}
+
+		$name = trim( wp_strip_all_tags( $safe ) );
+		if ( '' === $name ) {
+			return $name;
+		}
+
+		/** This filter is documented in wp-includes/post-template.php */
+		/* translators: %s: the post title. Core's string. */
+		$format = (string) apply_filters( 'protected_title_format', __( 'Protected: %s', 'default' ), $post ); // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch,WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core's own string and hook.
+
+		return sprintf( $format, $name );
 	}
 
 	/**

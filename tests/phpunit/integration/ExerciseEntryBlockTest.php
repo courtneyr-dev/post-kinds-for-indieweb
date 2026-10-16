@@ -46,6 +46,7 @@ final class ExerciseEntryBlockTest extends WP_UnitTestCase {
 		update_option( 'timezone_string', $this->original_timezone );
 		switch_theme( $this->original_stylesheet );
 		$this->set_permalink_structure( '' );
+		set_current_screen( 'front' );
 		wp_set_current_user( 0 );
 		wp_reset_postdata();
 		parent::tear_down();
@@ -274,6 +275,59 @@ final class ExerciseEntryBlockTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( '20.00', $html, 'No distance from a protected card.' );
 		$this->assertStringNotContainsString( '25.0 km', $html, 'Its distance is not in the week total either.' );
 		$this->assertStringContainsString( '5.0 km', $html, 'The open run still counts in the total.' );
+	}
+
+	/**
+	 * A workout titled from a hidden location.
+	 *
+	 * @param array<string, mixed> $args Post args.
+	 */
+	private function location_titled( array $args = [] ): int {
+		return $this->exercise(
+			'Maplewood Track',
+			'2026-08-23 07:10:00',
+			[ 'activity' => 'Run' ],
+			array_merge(
+				[
+					'meta_input' => [
+						'_pkiw_title_source' => 'location',
+						'_pkiw_geo_privacy'  => 'private',
+					],
+				],
+				$args
+			)
+		);
+	}
+
+	public function test_a_hidden_location_title_never_prints_in_a_bib_on_an_admin_screen(): void {
+		$id = $this->location_titled();
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		set_current_screen( 'edit-post' );
+		$this->assertTrue( is_admin() );
+
+		$preview = $this->editor_render( $id );
+		$this->assertStringNotContainsStringIgnoringCase( 'maplewood', $preview );
+		$this->assertStringContainsString( 'Check-in, August 23, 2026', $preview );
+	}
+
+	public function test_a_hidden_location_title_never_prints_in_a_protected_bib_on_an_admin_screen(): void {
+		$id = $this->location_titled( [ 'post_password' => 'secret' ] );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		set_current_screen( 'edit-post' );
+
+		$preview = $this->editor_render( $id );
+		$this->assertStringNotContainsStringIgnoringCase( 'maplewood', $preview );
+		$this->assertStringContainsString( 'Protected: Check-in, August 23, 2026', $preview, 'Core\'s prefix, then the safe title.' );
+	}
+
+	public function test_a_protected_bib_with_a_visible_title_prints_it_as_core_gives_it_on_an_admin_screen(): void {
+		$id = $this->exercise( 'Locked run', '2026-08-23 07:10:00', [ 'activity' => 'Run' ], [ 'post_password' => 'secret' ] );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		set_current_screen( 'edit-post' );
+
+		$html = $this->editor_render( $id );
+		$this->assertStringContainsString( '>Locked run</a>', $html, 'Core adds its prefix on the front end only.' );
+		$this->assertStringNotContainsString( 'Run</p>', $html, 'A protected post prints no activity.' );
 	}
 
 	public function test_the_entry_outside_a_section_prints_one_line_with_no_week_markup(): void {

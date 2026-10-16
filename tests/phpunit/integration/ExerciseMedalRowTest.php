@@ -46,6 +46,7 @@ final class ExerciseMedalRowTest extends WP_UnitTestCase {
 		update_option( 'timezone_string', $this->original_timezone );
 		switch_theme( $this->original_stylesheet );
 		$this->set_permalink_structure( '' );
+		set_current_screen( 'front' );
 		wp_set_current_user( 0 );
 		parent::tear_down();
 	}
@@ -151,6 +152,55 @@ final class ExerciseMedalRowTest extends WP_UnitTestCase {
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
 
 		$this->assertSame( [ '5K 29:12, Shared best' ], $this->medals( $this->row( [ 'count' => 6 ] ) ), 'The row is published, unprotected posts only, whoever reads it.' );
+	}
+
+	public function test_a_hidden_location_title_never_prints_in_a_medal_on_an_admin_screen(): void {
+		$this->pb(
+			'Maplewood Track',
+			'2026-08-23 07:10:00',
+			[],
+			[
+				'meta_input' => [
+					'_pkiw_title_source' => 'location',
+					'_pkiw_geo_privacy'  => 'private',
+				],
+			]
+		);
+		$visitor = $this->medals( $this->row() );
+		$this->assertSame( [ '5K 29:12, Check-in, August 23, 2026' ], $visitor );
+
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		set_current_screen( 'edit-post' );
+		$this->assertTrue( is_admin() );
+
+		$html = $this->row();
+		$this->assertStringNotContainsStringIgnoringCase( 'maplewood', $html );
+		$this->assertSame( $visitor, $this->medals( $html ) );
+	}
+
+	public function test_the_medal_query_keeps_protected_posts_out_in_sql_and_a_newer_protected_best_takes_no_slot(): void {
+		global $wpdb;
+		$older = $this->pb( 'Open best', '2026-08-01 07:10:00' );
+		foreach ( range( 1, 3 ) as $n ) {
+			$this->pb( 'Locked ' . $n, sprintf( '2026-08-%02d 07:10:00', 10 + $n ), [], [ 'post_password' => 'secret' ] );
+		}
+
+		$queries = [];
+		$capture = static function ( $sql ) use ( &$queries ) {
+			if ( is_string( $sql ) && str_contains( $sql, 'exercise_pb' ) ) {
+				$queries[] = $sql;
+			}
+			return $sql;
+		};
+		add_filter( 'query', $capture );
+		$medals = $this->medals( $this->row( [ 'count' => 1 ] ) );
+		remove_filter( 'query', $capture );
+
+		$this->assertSame( [ '5K 29:12, Open best' ], $medals );
+		$this->assertNotEmpty( $queries );
+		$this->assertStringContainsString( 'LENGTH( p.post_password ) = 0', $queries[0], 'The query itself leaves protected posts out.' );
+		$ids = array_map( 'intval', (array) $wpdb->get_col( $queries[0] ) );
+		$this->assertSame( [ $older ], $ids, 'No protected row reaches the facts check, so none takes a slot of the batch.' );
 	}
 
 	public function test_a_stale_post_row_does_not_open_a_card_whose_toggle_is_off(): void {

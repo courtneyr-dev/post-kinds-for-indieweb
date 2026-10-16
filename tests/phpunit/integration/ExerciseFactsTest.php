@@ -52,6 +52,7 @@ final class ExerciseFactsTest extends WP_UnitTestCase {
 		update_option( 'date_format', $this->original_date_format );
 		delete_option( 'sloc_measurements' );
 		remove_all_filters( 'pkiw_exercise_total_unit' );
+		set_current_screen( 'front' );
 		wp_set_current_user( 0 );
 		parent::tear_down();
 	}
@@ -250,6 +251,52 @@ final class ExerciseFactsTest extends WP_UnitTestCase {
 		$facts = Kind_Facts::get( $private );
 		$this->assertSame( 'Quiet walk', $facts['name'], 'get_the_title() would say "Private: Quiet walk".' );
 		$this->assertStringNotContainsString( 'Private', (string) wp_json_encode( $facts ) );
+	}
+
+	/**
+	 * An exercise post titled from a location that is hidden (a title the check-in importers generate).
+	 *
+	 * @param array<string, mixed> $args Post args.
+	 */
+	private function location_titled( array $args = [] ): int {
+		return $this->exercise(
+			'Maplewood Track',
+			'2026-08-23 07:10:00',
+			[ 'activity' => 'Run' ],
+			array_merge(
+				[
+					'meta_input' => [
+						'_pkiw_title_source' => 'location',
+						'_pkiw_geo_privacy'  => 'private',
+					],
+				],
+				$args
+			)
+		);
+	}
+
+	public function test_a_hidden_location_title_never_prints_on_an_admin_screen_and_facts_match_a_visitor(): void {
+		$id      = $this->location_titled();
+		$visitor = Kind_Facts::get( $id );
+		$this->assertSame( 'Check-in, August 23, 2026', $visitor['name'], 'A visitor gets the safe title.' );
+		$this->assertTrue( $visitor['name_is_title'] );
+
+		// Title_Privacy hands the stored title back on an admin screen (the_title), so facts read the safe title.
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		set_current_screen( 'edit-post' );
+		$this->assertTrue( is_admin() );
+
+		$facts = Kind_Facts::get( $id );
+		$this->assertSame( $visitor, $facts, 'An administrator on an admin screen gets a visitor\'s facts.' );
+		$this->assertStringNotContainsStringIgnoringCase( 'maplewood', (string) wp_json_encode( $facts ) );
+	}
+
+	public function test_a_visible_title_is_unchanged_on_an_admin_screen(): void {
+		$id = $this->exercise( 'Lakeside Loop', '2026-08-23 07:10:00', [ 'activity' => 'Run' ] );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		set_current_screen( 'edit-post' );
+
+		$this->assertSame( 'Lakeside Loop', Kind_Facts::get( $id )['name'] );
 	}
 
 	public function test_a_post_of_another_kind_has_no_exercise_facts(): void {
