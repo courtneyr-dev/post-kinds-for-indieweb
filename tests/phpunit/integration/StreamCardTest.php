@@ -2755,4 +2755,49 @@ final class StreamCardTest extends WP_UnitTestCase {
 
 		$this->assertSame( '', \PKIW\untitled_thought( get_post( $post_id ) ) );
 	}
+
+	// --- From the #263 stream fidelity nit: no dead live region. ---
+
+	public function test_an_article_card_prints_a_static_caption_with_no_live_region(): void {
+		$this->article_post( 3, 'A plain caption' );
+
+		$html    = \PKIW\render_stream_card();
+		$caption = $this->card_xpath( $html )->query( '//p[contains(@class,"pk-media__caption")]' );
+
+		$this->assertSame( 1, $caption->length );
+		$this->assertSame( 'A plain caption', trim( $caption->item( 0 )->textContent ) );
+		$this->assertFalse( $caption->item( 0 )->hasAttribute( 'aria-live' ), 'Nothing swaps an article caption, so it is not a live region.' );
+		$this->assertStringNotContainsString( 'aria-live', $html );
+	}
+
+	public function test_a_card_with_a_thumbnail_strip_keeps_its_live_caption(): void {
+		$this->ensure_kind_term( 'note' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'A note with photos',
+				'post_content' => '<!-- wp:paragraph --><p>Note body.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'note', 'kind' );
+		set_post_thumbnail( $post_id, $this->upload_image( $post_id, 'Hero alt', 'Swappable caption' ) );
+		$this->upload_image( $post_id );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html    = \PKIW\render_stream_card();
+		$xp      = $this->card_xpath( $html );
+		$caption = $xp->query( '//p[contains(@class,"pk-media__caption")]' );
+
+		$this->assertSame( 1, $xp->query( '//ul[contains(@class,"pk-media__thumbs")]' )->length, 'There is a strip to swap it.' );
+		$this->assertSame( 1, $caption->length );
+		$this->assertSame( 'polite', $caption->item( 0 )->getAttribute( 'aria-live' ) );
+	}
+
+	public function test_the_caption_helper_is_live_only_when_asked(): void {
+		$post_id = $this->article_post( 0, 'Helper caption' );
+		$post    = get_post( $post_id );
+
+		$this->assertStringNotContainsString( 'aria-live', \PKIW\stream_card_media_caption( $post ) );
+		$this->assertStringContainsString( 'aria-live="polite"', \PKIW\stream_card_media_caption( $post, true ) );
+	}
 }

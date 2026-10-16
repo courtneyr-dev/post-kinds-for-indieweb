@@ -1294,7 +1294,7 @@ function craft_stream_card_facts( array $facts ): string {
 function stream_card_media_extras( \WP_Post $post ): string {
 	$hero_id = (int) get_post_thumbnail_id( $post );
 	$images  = get_attached_media( 'image', $post );
-	$out     = stream_card_media_caption( $post );
+	$out     = stream_card_media_caption( $post, true );
 
 	// Everything except the hero, in attachment order.
 	$rest = [];
@@ -1358,10 +1358,15 @@ function stream_card_media_extras( \WP_Post $post ): string {
 /**
  * The caption under a Stream card's hero image.
  *
+ * Static by default. The thumbnail strip swaps the caption when a thumbnail
+ * is chosen, so only that path asks for a live region. A caption nothing ever
+ * swaps would add a dead live region to every card.
+ *
  * @param \WP_Post $post Post being rendered.
+ * @param bool     $live Whether the caption is a live region (aria-live polite).
  * @return string Caption markup, or ''.
  */
-function stream_card_media_caption( \WP_Post $post ): string {
+function stream_card_media_caption( \WP_Post $post, bool $live = false ): string {
 	$hero_id      = (int) get_post_thumbnail_id( $post );
 	$hero_caption = $hero_id > 0
 		? trim( (string) get_post_field( 'post_excerpt', $hero_id ) )
@@ -1372,7 +1377,9 @@ function stream_card_media_caption( \WP_Post $post ): string {
 	}
 
 	// Polite, not assertive: a caption changing must never interrupt.
-	return '<p class="pk-media__caption" aria-live="polite">' . stream_card_caption_kses( $hero_caption ) . '</p>';
+	$live_attr = $live ? ' aria-live="polite"' : '';
+
+	return '<p class="pk-media__caption"' . $live_attr . '>' . stream_card_caption_kses( $hero_caption ) . '</p>';
 }
 
 
