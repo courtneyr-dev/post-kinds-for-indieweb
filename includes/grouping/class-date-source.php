@@ -135,7 +135,7 @@ final class Date_Source implements Group_Source {
 	 * @return string[]
 	 */
 	public static function viewable_types(): array {
-		$taxonomy = get_taxonomy( 'kind' );
+		$taxonomy = get_taxonomy( \PKIW\Taxonomy::TAXONOMY );
 
 		return array_values(
 			array_filter(
