@@ -192,12 +192,12 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 * Added: the archive engine files replies and likes by the site they cite and bookmarks under tag drawers A to Z, with password-protected posts under Other. A theme supplies those three archive templates.
 * Added: reply and like cards copy their cited URL, title, author, description and image into post meta, and reply, like and bookmark Stream cards carry a hidden citation.
 * Added: review, reply and bookmark single pages carry microformats2 for the review body, the reply card and a bookmark's linked URL.
-* Changed: the card meta backfill runs once more, at version 7.
+* Changed: the card meta backfill runs once more, at version 8.
 * Changed: every play card is the entry's u-play-of h-cite, with the class on the card's root.
 * Fixed: kind feeds stay newest first when the kind archive is grouped.
 * Fixed: a listen card whose cover is in this site's media library prints it with core's srcset, sizes, width and height, and its src and u-photo are the library image's current file, which is the stored URL unless the image was edited in the Media Library.
 * Fixed: a play card switched from a video game to a board game drops the old video game ID, and a read card saved back to Currently Reading saves.
-* Fixed: the card meta backfill applies the play ID and read status rules and the stricter-wins privacy hold when it runs once at version 6.
+* Fixed: the card meta backfill applies the play ID and read status rules and the stricter-wins privacy hold when it runs once, at version 8.
 * Fixed: Stream cards cite plays and reads, and a password-protected one prints only its title link.
 * Fixed: reply, like and bookmark cards with a URL and no title link to the URL's host, or print "Original link" when the URL has no host, and never print a query string as link text.
 * Fixed: /kind/bookmark/?tag=alpha shows that tag's drawer.
@@ -213,8 +213,27 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 * Added: a photo post warns before publish about images with empty alt text.
 * Changed: article Stream cards drop Read more, the thumbnail strip and "+N" and keep the hero caption.
 * Changed: a Micropub repost no longer copies its note into the repost card.
-* Changed: the repost card syncs into post meta, and the card meta backfill runs once, at version 7.
+* Changed: the repost card, and the exercise, sleep and craft cards, sync into post meta, and the card meta backfill runs once, at version 8.
 * Fixed: a password-protected post's kind data no longer reaches REST, the get-post-meta ability, the check-in routes, block bindings, the check-in map or the dashboard block for someone who can't edit it.
+
+* Added: archives can page by year, month or whole week, so a kind's page count follows the posts that are public.
+* Added: mood families and a mood year grid. /kind/mood/ shows one year a page, a cell for each day, with the family code in every filled cell.
+* Added: weather posts have one reading, from Simple Location or the first p-weather text. /kind/weather/ is a month sheet with an almanac block, and the Stream card has one link and the reading once.
+* Added: exercise training log and medal row. /kind/exercise/ lists whole weeks with a bib for each workout, and a row of the newest personal bests sits above it.
+* Added: the exercise card prints on a single, the Stream and in listings. Distance, duration, splits and personal best print only when the card's toggle and the post's row both say yes.
+* Added: Micropub builds an Exercise Card from the exercise activity and a Sleep Card from the sleep answer's duration. Start, end, calories, heart rate and location never reach either card.
+* Added: the sleep kind. The card prints the duration, /kind/sleep/ is a monthly sheet with the moon phase for each night, and bedtime and wake time print only when the card and the post both opt in.
+* Added: a sleep post publishes at noon of its night, so its publish date never shows when you went to bed or woke up.
+* Added: exercise and sleep posts hide Simple Location's map, address, head meta and GeoRSS, and leave the map, location and venue listings. Weather posts follow the post's location privacy.
+* Added: the craft kind. /kind/craft/ files posts in sections by the craft type as you typed it, the craft card prints the type and time spent, and Steps and Step blocks and a project pattern record the work.
+* Added: editors for the exercise, sleep and craft cards, a craft entry in the kind selector, and craft step images in the missing-alt notice.
+* Added: the note archive. /kind/note/ is a board of notes in week sections, 12 a page, and the note-entry block prints a name, a 25-word thought and the date.
+* Changed: exercise and sleep Stream cards print the date without a time, and craft Stream cards print one link with no thumbnail strip, caption, button or "+N".
+* Changed: a post titled from a hidden location prints its safe name on admin screens too, on Stream cards and in craft facts.
+* Fixed: a mood card's intensity of 3 is no longer confused with no rating.
+* Fixed: weather posts no longer print Simple Location's map or location line, and their REST responses drop its coordinates, address and time zone.
+* Fixed: a search can't confirm a hidden exercise distance, sleep bedtime or acquisition cost with an exact-phrase guess.
+* Fixed: article archive columns use the wide width, and a static Stream card caption is no longer a live region.
 
 = 1.8.6 =
 * Added: checkin-dashboard and checkins-feed gained a headingLevel attribute (default 2, clamped 2–4), matching the Stream card block.
