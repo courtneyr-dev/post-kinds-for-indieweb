@@ -96,7 +96,9 @@ final class Craft_Archive {
 	 * is as private. The type is the stored text, trimmed, case kept. A
 	 * synthetic name (the kind and date of an untitled post) is never a title:
 	 * `name_is_title` says which it is, so a theme gives only a real title
-	 * p-name. The reader never reads the post's content for a name.
+	 * p-name. The reader never reads the post's content for a name. A title
+	 * generated from a hidden location is replaced by the safe title on every
+	 * screen, and that name is synthetic too.
 	 *
 	 * @since 1.9.0
 	 *
@@ -112,8 +114,9 @@ final class Craft_Archive {
 		$type    = self::stored_text( $post->ID, self::TYPE_META );
 		$minutes = max( 0, (int) self::stored_text( $post->ID, self::MINUTES_META ) );
 
-		$name_is_title = '' !== trim( (string) $post->post_title );
-		$name          = $name_is_title ? get_the_title( $post ) : untitled_name( $post, false );
+		$titled        = '' !== trim( (string) $post->post_title );
+		$name          = $titled ? visitor_post_title( $post ) : untitled_name( $post, false );
+		$name_is_title = $titled && ! post_title_is_hidden( $post );
 
 		return [
 			'craft_type'          => $type,
