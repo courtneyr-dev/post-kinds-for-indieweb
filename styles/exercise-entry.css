@@ -1,0 +1,84 @@
+/**
+ * Exercise entries: structure only. A theme paints the bibs, the day cells
+ * and the type. Borders use currentcolor, so nothing here picks a palette.
+ *
+ * Seven columns from 64rem, with empty days shown. From 40rem to 64rem the
+ * days that hold workouts sit two or three to a row. Below 40rem each day
+ * is one column. The empty cells are decoration, so they collapse below 64rem.
+ */
+
+.pkiw-exercise-week__days {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 0.75rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.pkiw-exercise-day {
+	display: grid;
+	align-content: start;
+	gap: 0.5rem;
+	min-width: 0;
+	padding: 0.5rem;
+	border: 1px solid currentcolor;
+}
+
+.pkiw-exercise-day--empty {
+	display: none;
+}
+
+.pkiw-exercise-day__bibs {
+	display: grid;
+	gap: 0.5rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.pkiw-exercise-bib__title,
+.pkiw-exercise-bib__activity {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.pkiw-exercise-bib__link .pk-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.pkiw-exercise-week__summary {
+	margin-block: 0.75rem 0;
+}
+
+@media (min-width: 40rem) {
+	.pkiw-exercise-week__days {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 48rem) {
+	.pkiw-exercise-week__days {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 64rem) {
+	.pkiw-exercise-week__days {
+		grid-template-columns: repeat(7, minmax(0, 1fr));
+	}
+
+	.pkiw-exercise-day--empty {
+		display: block;
+		border-style: dashed;
+		opacity: 0.4;
+	}
+}
