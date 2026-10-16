@@ -17,9 +17,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// family() and families() are this plugin's mood methods, not the removed fam extension's functions.
-// phpcs:disable PHPCompatibility.Extensions.RemovedExtensions.famRemoved
-
 /**
  * The mood year grid block (issue 248).
  *
@@ -170,10 +167,15 @@ final class Mood_Year_Grid {
 		[ $year, $posts ] = self::source();
 		$days             = self::days( $posts, $year );
 		if ( [] === $days ) {
-			return '';
+			// Posts the query holds but none a visitor may see (a year filed only under another kind first): the query-no-results block won't print, so say so here. With no posts at all that block prints.
+			return [] === $posts ? '' : sprintf(
+				'<p %1$s>%2$s</p>',
+				get_block_wrapper_attributes( [ 'class' => 'pkiw-mood-year__empty' ] ),
+				esc_html__( 'No moods yet.', 'post-kinds-for-indieweb-in-block-themes' )
+			);
 		}
 
-		$families = Mood_Vocabulary::families();
+		$families = Mood_Vocabulary::families(); // phpcs:ignore PHPCompatibility.Extensions.RemovedExtensions.famRemoved -- Not the removed fam extension.
 		$present  = [];
 		foreach ( $days as $entries ) {
 			foreach ( $entries as $entry ) {

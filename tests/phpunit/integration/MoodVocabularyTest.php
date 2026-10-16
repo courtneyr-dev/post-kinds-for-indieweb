@@ -749,6 +749,57 @@ class MoodVocabularyTest extends WP_UnitTestCase {
 		$this->assertSame( $codes, array_values( array_unique( $codes ) ) );
 	}
 
+	public function test_a_numeric_family_key_is_kept_as_a_string_key_without_a_type_error(): void {
+		add_filter(
+			'pkiw_mood_families',
+			static function ( $families ) {
+				// PHP turns this key into an int.
+				$families['123'] = [
+					'label' => 'Numbers',
+					'code'  => 'N',
+				];
+				return $families;
+			}
+		);
+
+		$families = Mood_Vocabulary::families();
+
+		$this->assertSame( '123', $families[123]['key'], 'The row names its key as a string.' );
+		$this->assertSame( 'Numbers', Mood_Vocabulary::family( '123' )['label'] );
+		$this->assertSame( 'N', Mood_Vocabulary::family( '123' )['code'] );
+		add_filter( 'pkiw_mood_family', static fn() => '123' );
+		$this->assertSame( '123', Mood_Vocabulary::family_of( 'Anything' ), 'A mood can be filed under it.' );
+	}
+
+	public function test_a_list_shaped_filter_return_keeps_only_rows_with_a_label(): void {
+		add_filter(
+			'pkiw_mood_families',
+			static fn() => [
+				'Joy',
+				[
+					'label' => 'Kept',
+					'code'  => 'K',
+				],
+				[ 'code' => 'Z' ],
+				[
+					'label' => '   ',
+					'code'  => 'Y',
+				],
+				[
+					'label' => [ 'nested' ],
+					'code'  => 'X',
+				],
+			]
+		);
+
+		$families = Mood_Vocabulary::families();
+
+		$this->assertSame( [ '1', 'other' ], array_map( 'strval', array_keys( $families ) ), 'Only the row with a label survives, plus other.' );
+		$this->assertSame( 'Kept', $families[1]['label'] );
+		$this->assertSame( 'K', $families[1]['code'] );
+		$this->assertSame( 'other', Mood_Vocabulary::family( 'joy' )['key'] );
+	}
+
 	public function test_other_is_always_present_even_when_the_filter_removes_it(): void {
 		add_filter(
 			'pkiw_mood_families',

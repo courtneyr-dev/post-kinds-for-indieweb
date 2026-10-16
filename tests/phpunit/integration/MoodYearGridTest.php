@@ -695,6 +695,75 @@ final class MoodYearGridTest extends WP_UnitTestCase {
 		$this->assertSame( 1, $xp->query( '//li[contains(@class, "pkiw-mood-daycard")]/h4' )->length );
 	}
 
+	/**
+	 * @return array<string, array{mixed, string, string}>
+	 */
+	public function out_of_range_heading_levels(): array {
+		return [
+			'1 is not a second h1'    => [ 1, 'h2', 'h3' ],
+			'0'                       => [ 0, 'h2', 'h3' ],
+			'-3'                      => [ -3, 'h2', 'h3' ],
+			'5 stops at 4'            => [ 5, 'h4', 'h5' ],
+			'6 is not an h7'          => [ 6, 'h4', 'h5' ],
+			'a non-numeric string'    => [ 'big', 'h2', 'h3' ],
+			'null'                    => [ null, 'h2', 'h3' ],
+			'a numeric string'        => [ '3', 'h3', 'h4' ],
+		];
+	}
+
+	/**
+	 * @dataProvider out_of_range_heading_levels
+	 *
+	 * @param mixed $level Value of headingLevel.
+	 */
+	public function test_the_heading_level_is_clamped_to_two_through_four( $level, string $year_tag, string $month_tag ): void {
+		$this->mood( '2026-03-01 10:00:00' );
+		$this->mood( '2026-03-01 11:00:00' );
+		$this->visit();
+
+		// Straight to render(): a block's attribute check would swap a bad value for the default before it got here.
+		WP_Block_Supports::$block_to_render = [ 'blockName' => Mood_Year_Grid::BLOCK ];
+		try {
+			$html = Mood_Year_Grid::render( [ 'headingLevel' => $level ] );
+		} finally {
+			WP_Block_Supports::$block_to_render = null;
+		}
+		$xp = $this->dom( $html );
+
+		$this->assertSame( 1, $xp->query( '//' . $year_tag . '[contains(@class, "pkiw-mood-year__year")]' )->length );
+		$this->assertSame( 12, $xp->query( '//' . $month_tag . '[contains(@class, "pkiw-mood-month__name")]' )->length );
+		$this->assertSame( 1, $xp->query( '//li[contains(@class, "pkiw-mood-daycard")]/' . $month_tag )->length );
+		$this->assertSame( 0, $xp->query( '//h1|//h7' )->length, 'No h1 and no h7.' );
+	}
+
+	public function test_a_year_whose_only_post_is_filed_under_another_kind_first_says_no_moods_yet(): void {
+		// Filed [checkin, mood]: the year counts for paging, but the post's facts come from its first kind, so the grid has nothing to draw.
+		$id = self::factory()->post->create(
+			[
+				'post_status' => 'publish',
+				'post_date'   => '2026-03-01 10:00:00',
+			]
+		);
+		wp_set_object_terms( $id, [ 'checkin', 'mood' ], 'kind' );
+		$this->visit();
+		$this->assertSame( 1, (int) $GLOBALS['wp_query']->max_num_pages, 'Paging counts the year.' );
+		$this->assertContains( $id, wp_list_pluck( $GLOBALS['wp_query']->posts, 'ID' ) );
+
+		$html = do_blocks( self::BLOCK );
+
+		$this->assertStringContainsString( 'No moods yet.', $html );
+		$this->assertStringNotContainsString( 'pkiw-mood-month', $html );
+		$this->assertStringNotContainsString( 'pkiw-mood-legend', $html );
+		$this->assertStringNotContainsString( get_permalink( $id ), $html );
+	}
+
+	public function test_the_empty_message_does_not_double_the_templates_no_results_block(): void {
+		$this->visit();
+		$this->assertSame( [], $GLOBALS['wp_query']->posts );
+
+		$this->assertSame( '', trim( do_blocks( self::BLOCK ) ), 'With no posts at all the template\'s no-results block speaks, not the grid.' );
+	}
+
 	public function test_a_month_heading_is_named_by_the_full_month(): void {
 		$this->mood( '2026-03-01 10:00:00' );
 
@@ -821,6 +890,71 @@ final class MoodYearGridTest extends WP_UnitTestCase {
 		$this->assertSame( '2026', trim( $xp->query( self::cls( 'pkiw-mood-year__year' ) )->item( 0 )->textContent ), 'Newest visible year; the 2027 password post and 2028 draft add none.' );
 		$this->assertNotNull( $this->cell( $xp, '2026-03-01' ) );
 		$this->assertStringNotContainsString( get_permalink( $locked ), $html );
+	}
+
+	/**
+	 * Run the block as the block-renderer preview does.
+	 */
+	private function preview(): string {
+		$request = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/post-kinds-indieweb/mood-year-grid' );
+		apply_filters( 'rest_request_before_callbacks', null, [], $request );
+		$this->go_to( home_url( '/' ) );
+		$html = do_blocks( self::BLOCK );
+		apply_filters( 'rest_request_after_callbacks', null, [], $request );
+
+		return $html;
+	}
+
+	/**
+	 * A protected post and a whitespace-password post in the same year as a public mood.
+	 *
+	 * @return array{public: int, locked: int, spaces: int}
+	 */
+	private function protected_beside_a_public_mood(): array {
+		global $wpdb;
+		$public = $this->mood( '2026-03-01 10:00:00', [ 'mood' => 'Happy', 'moodKey' => 'happy' ] );
+		$locked = $this->mood( '2026-03-02 10:00:00', [ 'mood' => 'Calm', 'moodKey' => 'calm' ], [ 'post_password' => 'sesame' ] );
+		$spaces = $this->mood( '2026-03-03 10:00:00', [ 'mood' => 'Sad', 'moodKey' => 'sad' ] );
+		$wpdb->update( $wpdb->posts, [ 'post_password' => '   ' ], [ 'ID' => $spaces ] );
+		clean_post_cache( $spaces );
+
+		return [
+			'public' => $public,
+			'locked' => $locked,
+			'spaces' => $spaces,
+		];
+	}
+
+	public function test_the_preview_leaves_out_protected_posts_in_the_year_it_draws(): void {
+		$ids = $this->protected_beside_a_public_mood();
+		// Core would hide a protected post unless unlocked; unlock it so only this block's own guards stand in the way.
+		add_filter( 'post_password_required', '__return_false' );
+
+		$html = $this->preview();
+
+		$this->assertStringContainsString( get_permalink( $ids['public'] ), $html );
+		$this->assertStringNotContainsString( get_permalink( $ids['locked'] ), $html );
+		$this->assertStringNotContainsString( get_permalink( $ids['spaces'] ), $html );
+	}
+
+	public function test_the_preview_query_itself_excludes_protected_posts(): void {
+		$ids = $this->protected_beside_a_public_mood();
+		// Watch what the preview's own query returns, before any PHP guard in the block can hide a post.
+		$returned = [];
+		$watch    = static function ( $posts, $query ) use ( &$returned ) {
+			if ( false === $query->is_main_query() && is_array( $query->get( 'date_query' ) ) && -1 === (int) $query->get( 'posts_per_page' ) ) {
+				$returned = array_merge( $returned, wp_list_pluck( (array) $posts, 'ID' ) );
+			}
+			return $posts;
+		};
+		add_filter( 'the_posts', $watch, 99, 2 );
+
+		$this->preview();
+
+		remove_filter( 'the_posts', $watch, 99 );
+		$this->assertContains( $ids['public'], $returned, 'The preview query ran.' );
+		$this->assertNotContains( $ids['locked'], $returned, 'A password post is out of the SQL.' );
+		$this->assertNotContains( $ids['spaces'], $returned, 'So is a password of spaces, which the column compares equal to an empty one.' );
 	}
 
 	public function test_the_preview_with_no_moods_prints_nothing(): void {

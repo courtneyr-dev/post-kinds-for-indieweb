@@ -33,9 +33,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// family() and families() are this plugin's mood methods, not the removed fam extension's functions.
-// phpcs:disable PHPCompatibility.Extensions.RemovedExtensions.famRemoved
-
 /**
  * Mood vocabulary and label resolution.
  *
@@ -353,12 +350,13 @@ final class Mood_Vocabulary {
 
 		$pending = [];
 		foreach ( $filtered as $raw_key => $row ) {
-			$key = sanitize_key( (string) $raw_key );
-			if ( '' === $key || ! is_array( $row ) || isset( $pending[ $key ] ) ) {
+			$key   = sanitize_key( (string) $raw_key );
+			$label = is_array( $row ) && is_scalar( $row['label'] ?? null ) ? trim( wp_strip_all_tags( (string) $row['label'] ) ) : '';
+			if ( '' === $key || '' === $label || isset( $pending[ $key ] ) ) {
 				continue;
 			}
 			$pending[ $key ] = [
-				is_scalar( $row['label'] ?? null ) ? trim( wp_strip_all_tags( (string) $row['label'] ) ) : '',
+				$label,
 				is_scalar( $row['code'] ?? null ) ? self::trim_code( (string) $row['code'] ) : '',
 			];
 		}
@@ -368,7 +366,9 @@ final class Mood_Vocabulary {
 
 		$families = [];
 		$claimed  = [];
-		foreach ( $pending as $key => [ $label, $given ] ) {
+		foreach ( $pending as $raw_key => [ $label, $given ] ) {
+			// PHP turns a numeric-string array key into an int.
+			$key  = (string) $raw_key;
 			$code = '';
 			foreach ( self::code_candidates( $key, $given ) as $candidate ) {
 				if ( ! isset( $claimed[ $candidate ] ) ) {
@@ -388,7 +388,7 @@ final class Mood_Vocabulary {
 			$claimed[ $code ] = true;
 			$families[ $key ] = [
 				'key'   => $key,
-				'label' => '' !== $label ? $label : ucfirst( str_replace( [ '-', '_' ], ' ', $key ) ),
+				'label' => $label,
 				'code'  => $code,
 			];
 		}
@@ -405,7 +405,7 @@ final class Mood_Vocabulary {
 	 * @return array{key: string, label: string, code: string}
 	 */
 	public static function family( string $family_key ): array {
-		$families = self::families();
+		$families = self::families(); // phpcs:ignore PHPCompatibility.Extensions.RemovedExtensions.famRemoved -- Not the removed fam extension.
 
 		return $families[ $family_key ] ?? $families['other'] ?? [
 			'key'   => 'other',
@@ -467,7 +467,7 @@ final class Mood_Vocabulary {
 		$family = apply_filters( 'pkiw_mood_family', $family, $key, $label );
 		$family = is_string( $family ) ? sanitize_key( $family ) : '';
 
-		return array_key_exists( $family, self::families() ) ? $family : 'other';
+		return array_key_exists( $family, self::families() ) ? $family : 'other'; // phpcs:ignore PHPCompatibility.Extensions.RemovedExtensions.famRemoved -- Not the removed fam extension.
 	}
 
 	/**
@@ -543,7 +543,7 @@ final class Mood_Vocabulary {
 		}
 
 		$label     = trim( self::display_label( $authored, $key ) );
-		$family    = self::family( self::family_of( $authored, $key ) );
+		$family    = self::family( self::family_of( $authored, $key ) ); // phpcs:ignore PHPCompatibility.Extensions.RemovedExtensions.famRemoved -- Not the removed fam extension.
 		$intensity = self::rating_meta( $post_id ) ?? self::attribute_intensity( $card );
 		$day       = get_post_datetime( $post, 'date', 'local' );
 
