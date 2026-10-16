@@ -150,8 +150,28 @@ final class CraftArchiveTest extends WP_UnitTestCase {
 				'post_password' => 'seed-249',
 			]
 		);
+		// The save above runs Card_Meta_Sync, which finds no craft card and deletes
+		// the rows (the no-card rule). Write them back after it so E03 stores a type.
+		$this->store_e03_craft_meta();
 		$this->craft( 'X01', 'Private Embroidery Hoop', '2026-08-08 10:00:00', 'Embroidery', 45, 'private' );
 		$this->craft( 'X02', 'Unfinished Draft', '2026-08-09 10:00:00', 'Weaving', 45, 'draft' );
+	}
+
+	/**
+	 * Give E03 the craft type and time a protected post could store, after a save
+	 * with no craft card in its content has deleted them, and prove they are stored.
+	 */
+	private function store_e03_craft_meta(): void {
+		$e03 = $this->ids['E03'];
+		delete_post_meta( $e03, '_pkiw_craft_type' );
+		delete_post_meta( $e03, '_pkiw_craft_minutes' );
+		add_post_meta( $e03, '_pkiw_craft_type', 'Knitting' );
+		add_post_meta( $e03, '_pkiw_craft_minutes', '120' );
+		wp_cache_delete( $e03, 'post_meta' );
+
+		$this->assertSame( 'Knitting', get_metadata_raw( 'post', $e03, '_pkiw_craft_type', true ), 'E03 stores a type, so only the protected flag can file it under the empty group.' );
+		$this->assertSame( '120', get_metadata_raw( 'post', $e03, '_pkiw_craft_minutes', true ) );
+		$this->assertNotSame( '', get_post( $e03 )->post_password );
 	}
 
 	private function archive_url(): string {
@@ -504,6 +524,7 @@ final class CraftArchiveTest extends WP_UnitTestCase {
 				'post_content' => '<!-- wp:paragraph --><p>Hidden quilt notes.</p><!-- /wp:paragraph -->',
 			]
 		);
+		$this->store_e03_craft_meta();
 
 		$items = array_column( $this->rest_craft(), null, 'id' );
 		$open  = $items[ $this->ids['K01'] ];
@@ -592,10 +613,9 @@ final class CraftArchiveTest extends WP_UnitTestCase {
 				if ( ! $file->isFile() ) {
 					continue;
 				}
-				$lines = file( $file->getPathname() );
-				foreach ( (array) $lines as $number => $line ) {
+				foreach ( (array) file( $file->getPathname() ) as $line ) {
 					if ( 1 === preg_match( $pattern, (string) $line ) ) {
-						$found[] = substr( $file->getPathname(), strlen( PKIW_PATH ) ) . ':' . ( $number + 1 );
+						$found[] = substr( $file->getPathname(), strlen( PKIW_PATH ) ) . ' | ' . trim( (string) $line );
 					}
 				}
 			}
@@ -606,16 +626,16 @@ final class CraftArchiveTest extends WP_UnitTestCase {
 		// class-taxonomy.php's shipped description only. Two lines in files the
 		// health-rule lane owns match too: an example in a meta description and a
 		// docblock example. They aren't craft logic and this lane doesn't own
-		// them; list them here so a third match fails, and remove them with the fix.
+		// them. The list holds each exact line, so a new match anywhere, those two
+		// files included, fails. Remove the two when the lines are reworded.
 		$known = [
-			'includes/class-meta-fields.php',
-			'includes/class-taxonomy.php',
-			'includes/functions-stream-card.php',
+			"includes/class-meta-fields.php | 'description' => __( 'What kind of craft the project is, such as Knitting.', 'post-kinds-for-indieweb-in-block-themes' ),",
+			"includes/class-taxonomy.php | 'description' => 'Making something by hand - knitting, woodworking, 3D printing.',",
+			'includes/functions-stream-card.php | * `Knitting` and `18 hr`, the time as a machine-readable duration. No status,',
 		];
-		$files = array_values( array_unique( array_map( static fn( string $hit ): string => explode( ':', $hit )[0], $found ) ) );
+		sort( $known );
 
-		$this->assertSame( $known, $files, 'A craft type name in code: ' . implode( ', ', $found ) );
-		$this->assertCount( 1, array_filter( $found, static fn( string $hit ): bool => str_starts_with( $hit, 'includes/class-taxonomy.php:' ) ), 'The term description is the one match in class-taxonomy.php.' );
+		$this->assertSame( $known, $found );
 	}
 
 	public function test_the_craft_archive_class_names_no_craft_type(): void {
