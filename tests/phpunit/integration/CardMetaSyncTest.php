@@ -997,7 +997,7 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 	 * (X15: one bump per release).
 	 */
 	public function test_the_backfill_version_is_7_with_the_repost_map(): void {
-		$this->assertSame( '7', \PKIW\Card_Meta_Sync::BACKFILL_VERSION );
+		$this->assertSame( '8', \PKIW\Card_Meta_Sync::BACKFILL_VERSION );
 	}
 
 	/**
@@ -1381,5 +1381,469 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 		\PKIW\Card_Meta_Sync::run_backfill_event();
 
 		$this->assertSame( 'Quill Primer', get_post_meta( $post_id, '_pkiw_read_title', true ) );
+	}
+
+	// --- Exercise, sleep and craft: the card decides (issues 245, 247 and 249). ---
+
+	/**
+	 * A row as get_metadata_raw() reads it: null when there's none, so a
+	 * registered default can't stand in for a missing row.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $suffix  Meta suffix without the prefix.
+	 * @return mixed
+	 */
+	private function row( int $post_id, string $suffix ) {
+		return get_metadata_raw( 'post', $post_id, '_pkiw_' . $suffix, true );
+	}
+
+	/**
+	 * A post holding one card, saved through save_post.
+	 *
+	 * @param string $block Block name without the namespace.
+	 * @param array  $attrs Card attributes.
+	 * @return int Post ID.
+	 */
+	private function post_with_card( string $block, array $attrs ): int {
+		return self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:post-kinds-indieweb/' . $block . ' ' . serialize_block_attributes( $attrs ) . ' /-->',
+			]
+		);
+	}
+
+	/**
+	 * Save new content over a post, the way the editor does.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $content Post content.
+	 */
+	private function resave( int $post_id, string $content ): void {
+		wp_update_post(
+			[
+				'ID'           => $post_id,
+				'post_content' => wp_slash( $content ),
+			]
+		);
+	}
+
+	public function test_an_exercise_card_writes_every_row_it_decides(): void {
+		$id = $this->post_with_card(
+			'exercise-card',
+			[
+				'activity'     => ' Trail run ',
+				'distance'     => 7.77,
+				'distanceUnit' => 'mi',
+				'duration'     => 'pt41m37s',
+				'splits'       => [
+					[
+						'i' => 1,
+						't' => 'PT6M11S',
+					],
+					[
+						'i' => 2,
+						't' => 'PT6M02S',
+					],
+				],
+				'pbCategory'   => '10K',
+				'origin'       => 'micropub',
+			]
+		);
+
+		$this->assertSame( 'Trail run', $this->row( $id, 'exercise_activity' ) );
+		$this->assertSame( '7.77', $this->row( $id, 'exercise_distance' ) );
+		$this->assertSame( 'mi', $this->row( $id, 'exercise_distance_unit' ) );
+		$this->assertSame( 'PT41M37S', $this->row( $id, 'exercise_duration' ), 'The duration is stored upper case.' );
+		$this->assertSame( '[{"i":1,"t":"PT6M11S"},{"i":2,"t":"PT6M02S"}]', $this->row( $id, 'exercise_splits' ), 'Splits round-trip in order.' );
+		$this->assertSame( '10K', $this->row( $id, 'exercise_pb_category' ) );
+		$this->assertSame( 'micropub', $this->row( $id, 'exercise_origin' ) );
+	}
+
+	public function test_an_exercise_card_clears_each_row_it_leaves_out(): void {
+		$id = $this->post_with_card(
+			'exercise-card',
+			[
+				'activity'     => 'Run',
+				'distance'     => 5,
+				'distanceUnit' => 'mi',
+				'duration'     => 'PT29M12S',
+				'splits'       => [
+					[
+						'i' => 1,
+						't' => 'PT5M50S',
+					],
+				],
+				'pbCategory'   => '5K',
+				'origin'       => 'micropub',
+			]
+		);
+		$this->assertSame( '5', $this->row( $id, 'exercise_distance' ) );
+
+		$this->resave( $id, '<!-- wp:post-kinds-indieweb/exercise-card {"activity":"Run"} /-->' );
+
+		$this->assertSame( 'Run', $this->row( $id, 'exercise_activity' ) );
+		foreach ( [ 'exercise_distance', 'exercise_duration', 'exercise_splits', 'exercise_pb_category', 'exercise_origin' ] as $suffix ) {
+			$this->assertNull( $this->row( $id, $suffix ), "{$suffix} goes with the attribute." );
+		}
+		$this->assertSame( 'km', $this->row( $id, 'exercise_distance_unit' ), 'An absent unit writes the block default.' );
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: array<string, mixed>, 2: string}>
+	 */
+	public function invalid_exercise_attrs(): array {
+		return [
+			'zero distance'     => [ 'exercise_distance', [ 'distance' => 0 ], 'distance' ],
+			'negative distance' => [ 'exercise_distance', [ 'distance' => -3 ], 'distance' ],
+			'text distance'     => [ 'exercise_distance', [ 'distance' => 'far' ], 'distance' ],
+			'unknown unit'      => [ 'exercise_distance_unit', [ 'distanceUnit' => 'furlong' ], 'unit' ],
+			'text duration'     => [ 'exercise_duration', [ 'duration' => 'soon' ], 'duration' ],
+			'zero duration'     => [ 'exercise_duration', [ 'duration' => 'PT0S' ], 'duration' ],
+			'bare P duration'   => [ 'exercise_duration', [ 'duration' => 'P' ], 'duration' ],
+			'array splits'      => [ 'exercise_splits', [ 'splits' => 'fast' ], 'splits' ],
+			'bad split rows'    => [
+				'exercise_splits',
+				[
+					'splits' => [
+						[
+							'i' => 0,
+							't' => 'PT5M',
+						],
+						[
+							'i' => 2,
+							't' => 'soon',
+						],
+						'text',
+					],
+				],
+				'splits',
+			],
+		];
+	}
+
+	/**
+	 * @dataProvider invalid_exercise_attrs
+	 *
+	 * @param string               $suffix Row that must not exist.
+	 * @param array<string, mixed> $attrs  Card attributes.
+	 * @param string               $label  What is invalid.
+	 */
+	public function test_an_invalid_exercise_attribute_writes_no_row( string $suffix, array $attrs, string $label ): void {
+		$id = $this->post_with_card( 'exercise-card', array_merge( [ 'activity' => 'Run' ], $attrs ) );
+
+		$this->assertNull( $this->row( $id, $suffix ), "An invalid {$label} leaves no {$suffix} row." );
+	}
+
+	public function test_an_exercise_card_drops_only_the_invalid_split_rows(): void {
+		$id = $this->post_with_card(
+			'exercise-card',
+			[
+				'activity' => 'Run',
+				'splits'   => [
+					[
+						'i' => 1,
+						't' => 'PT5M50S',
+					],
+					[
+						'i' => 2,
+						't' => 'soon',
+					],
+					[
+						'i' => 3,
+						't' => 'PT6M',
+					],
+				],
+			]
+		);
+
+		$this->assertSame( '[{"i":1,"t":"PT5M50S"},{"i":3,"t":"PT6M"}]', $this->row( $id, 'exercise_splits' ) );
+	}
+
+	public function test_the_exercise_toggles_write_one_or_delete_the_row(): void {
+		$id = $this->post_with_card(
+			'exercise-card',
+			[
+				'activity'            => 'Run',
+				'showDetailsPublicly' => true,
+				'personalBest'        => true,
+			]
+		);
+		$this->assertSame( '1', $this->row( $id, 'exercise_details_public' ) );
+		$this->assertSame( '1', $this->row( $id, 'exercise_pb' ) );
+
+		$this->resave( $id, '<!-- wp:post-kinds-indieweb/exercise-card {"activity":"Run","personalBest":true} /-->' );
+		$this->assertNull( $this->row( $id, 'exercise_details_public' ), 'An absent toggle deletes the row.' );
+		$this->assertSame( '1', $this->row( $id, 'exercise_pb' ) );
+
+		$this->resave( $id, '<!-- wp:post-kinds-indieweb/exercise-card {"activity":"Run","showDetailsPublicly":"yes"} /-->' );
+		$this->assertNull( $this->row( $id, 'exercise_details_public' ), 'Only a true boolean writes the row.' );
+		$this->assertNull( $this->row( $id, 'exercise_pb' ) );
+	}
+
+	public function test_a_post_with_no_exercise_card_deletes_every_exercise_row(): void {
+		$id = $this->post_with_card(
+			'exercise-card',
+			[
+				'activity'            => 'Run',
+				'distance'            => 5,
+				'showDetailsPublicly' => true,
+				'personalBest'        => true,
+			]
+		);
+		$this->assertSame( '5', $this->row( $id, 'exercise_distance' ) );
+
+		$this->resave( $id, '<!-- wp:paragraph --><p>Rest day.</p><!-- /wp:paragraph -->' );
+
+		foreach ( \PKIW\Meta_Fields::EXERCISE_KEYS as $suffix ) {
+			$this->assertNull( $this->row( $id, $suffix ), "{$suffix} goes with the card." );
+		}
+	}
+
+	public function test_an_exercise_card_behind_a_read_card_still_syncs(): void {
+		$id = self::factory()->post->create(
+			[
+				'post_content' => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Fourth Wing"} /-->' . "\n\n" . '<!-- wp:post-kinds-indieweb/exercise-card {"activity":"Walk","distance":3,"showDetailsPublicly":true} /-->',
+			]
+		);
+
+		$this->assertSame( 'Fourth Wing', get_post_meta( $id, '_pkiw_read_title', true ), 'The read card keeps its map.' );
+		$this->assertSame( 'Walk', $this->row( $id, 'exercise_activity' ) );
+		$this->assertSame( '3', $this->row( $id, 'exercise_distance' ) );
+		$this->assertSame( '1', $this->row( $id, 'exercise_details_public' ) );
+	}
+
+	public function test_an_exercise_card_ahead_of_a_read_card_does_not_block_the_read_map(): void {
+		$id = self::factory()->post->create(
+			[
+				'post_content' => '<!-- wp:post-kinds-indieweb/exercise-card {"activity":"Walk"} /-->' . "\n\n" . '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Fourth Wing"} /-->',
+			]
+		);
+
+		$this->assertSame( 'Walk', $this->row( $id, 'exercise_activity' ) );
+		$this->assertSame( 'Fourth Wing', get_post_meta( $id, '_pkiw_read_title', true ), 'The exercise map stays out of ATTR_META_MAP.' );
+	}
+
+	public function test_a_sleep_card_writes_clears_and_deletes_its_rows(): void {
+		$id = $this->post_with_card(
+			'sleep-card',
+			[
+				'durationMinutes'   => 462,
+				'bedtime'           => '2026-08-19T23:10',
+				'wakeTime'          => '2026-08-20T06:52',
+				'showTimesPublicly' => true,
+				'origin'            => 'micropub',
+			]
+		);
+		$this->assertSame( '462', $this->row( $id, 'sleep_duration' ) );
+		$this->assertSame( '2026-08-19T23:10', $this->row( $id, 'sleep_bedtime' ) );
+		$this->assertSame( '2026-08-20T06:52', $this->row( $id, 'sleep_wake' ) );
+		$this->assertSame( '1', $this->row( $id, 'sleep_times_public' ) );
+		$this->assertSame( 'micropub', $this->row( $id, 'sleep_origin' ) );
+
+		$this->resave( $id, '<!-- wp:post-kinds-indieweb/sleep-card {"durationMinutes":450} /-->' );
+		$this->assertSame( '450', $this->row( $id, 'sleep_duration' ) );
+		foreach ( [ 'sleep_bedtime', 'sleep_wake', 'sleep_times_public', 'sleep_origin' ] as $suffix ) {
+			$this->assertNull( $this->row( $id, $suffix ), "{$suffix} goes with the attribute." );
+		}
+
+		$this->resave( $id, '<!-- wp:paragraph --><p>No card.</p><!-- /wp:paragraph -->' );
+		foreach ( \PKIW\Meta_Fields::SLEEP_KEYS as $suffix ) {
+			$this->assertNull( $this->row( $id, $suffix ), "{$suffix} goes with the card." );
+		}
+	}
+
+	/**
+	 * @return array<string, array{0: array<string, mixed>, 1: string}>
+	 */
+	public function malformed_sleep_attrs(): array {
+		return [
+			'duration zero'        => [ [ 'durationMinutes' => 0 ], 'sleep_duration' ],
+			'duration over a day'  => [ [ 'durationMinutes' => 1441 ], 'sleep_duration' ],
+			'duration negative'    => [ [ 'durationMinutes' => -5 ], 'sleep_duration' ],
+			'duration text'        => [ [ 'durationMinutes' => 'long' ], 'sleep_duration' ],
+			'duration fraction'    => [ [ 'durationMinutes' => 7.5 ], 'sleep_duration' ],
+			'bedtime no T'         => [ [ 'bedtime' => '2026-08-19 23:10' ], 'sleep_bedtime' ],
+			'bedtime with seconds' => [ [ 'bedtime' => '2026-08-19T23:10:00' ], 'sleep_bedtime' ],
+			'bedtime with offset'  => [ [ 'bedtime' => '2026-08-19T23:10-04:00' ], 'sleep_bedtime' ],
+			'bedtime not a date'   => [ [ 'bedtime' => '2026-02-30T23:10' ], 'sleep_bedtime' ],
+			'bedtime past 24h'     => [ [ 'bedtime' => '2026-08-19T25:10' ], 'sleep_bedtime' ],
+			'wake text'            => [ [ 'wakeTime' => 'morning' ], 'sleep_wake' ],
+			'wake date only'       => [ [ 'wakeTime' => '2026-08-20' ], 'sleep_wake' ],
+		];
+	}
+
+	/**
+	 * @dataProvider malformed_sleep_attrs
+	 *
+	 * @param array<string, mixed> $attrs  Card attributes.
+	 * @param string               $suffix Row that must not exist.
+	 */
+	public function test_a_malformed_sleep_value_writes_nothing( array $attrs, string $suffix ): void {
+		$id = $this->post_with_card( 'sleep-card', array_merge( [ 'durationMinutes' => 400 ], $attrs ) );
+
+		if ( 'sleep_duration' === $suffix ) {
+			$this->assertNull( $this->row( $id, $suffix ), "A malformed value leaves no {$suffix} row." );
+		} else {
+			$this->assertSame( '400', $this->row( $id, 'sleep_duration' ), 'The valid duration still writes.' );
+			$this->assertNull( $this->row( $id, $suffix ), "A malformed value leaves no {$suffix} row." );
+		}
+	}
+
+	public function test_a_sleep_card_behind_a_read_card_still_syncs(): void {
+		$id = self::factory()->post->create(
+			[
+				'post_content' => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Fourth Wing"} /-->' . "\n\n" . '<!-- wp:post-kinds-indieweb/sleep-card {"durationMinutes":480} /-->',
+			]
+		);
+
+		$this->assertSame( 'Fourth Wing', get_post_meta( $id, '_pkiw_read_title', true ) );
+		$this->assertSame( '480', $this->row( $id, 'sleep_duration' ) );
+	}
+
+	public function test_a_craft_card_writes_clears_and_deletes_its_rows(): void {
+		$id = $this->post_with_card(
+			'craft-card',
+			[
+				'craftType'   => ' Knitting ',
+				'timeMinutes' => 1080,
+			]
+		);
+		$this->assertSame( 'Knitting', $this->row( $id, 'craft_type' ) );
+		$this->assertSame( '1080', $this->row( $id, 'craft_minutes' ) );
+
+		$this->resave( $id, '<!-- wp:post-kinds-indieweb/craft-card {"timeMinutes":1080} /-->' );
+		$this->assertNull( $this->row( $id, 'craft_type' ), 'A card without craftType deletes the type row.' );
+		$this->assertSame( '1080', $this->row( $id, 'craft_minutes' ) );
+
+		$this->resave( $id, '<!-- wp:post-kinds-indieweb/craft-card {"craftType":"Sewing","timeMinutes":0} /-->' );
+		$this->assertSame( 'Sewing', $this->row( $id, 'craft_type' ) );
+		$this->assertNull( $this->row( $id, 'craft_minutes' ), 'Zero minutes deletes the minutes row.' );
+
+		$this->resave( $id, '<!-- wp:post-kinds-indieweb/craft-card {"craftType":"Sewing","timeMinutes":-5} /-->' );
+		$this->assertNull( $this->row( $id, 'craft_minutes' ), 'Negative minutes deletes the minutes row.' );
+
+		$this->resave( $id, '<!-- wp:paragraph --><p>No card.</p><!-- /wp:paragraph -->' );
+		$this->assertNull( $this->row( $id, 'craft_type' ), 'No craft card deletes the type row.' );
+		$this->assertNull( $this->row( $id, 'craft_minutes' ), 'No craft card deletes the minutes row.' );
+	}
+
+	public function test_the_backfill_path_deletes_a_stored_craft_row_when_the_post_holds_no_craft_card(): void {
+		$id = self::factory()->post->create(
+			[
+				'post_content' => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Fourth Wing"} /-->',
+			]
+		);
+		update_post_meta( $id, '_pkiw_craft_type', 'Stale' );
+		update_post_meta( $id, '_pkiw_craft_minutes', 5 );
+
+		\PKIW\Card_Meta_Sync::sync_content( $id, (string) get_post_field( 'post_content', $id ), false );
+
+		$this->assertNull( $this->row( $id, 'craft_type' ) );
+		$this->assertNull( $this->row( $id, 'craft_minutes' ) );
+	}
+
+	public function test_a_craft_card_behind_a_read_card_still_syncs_and_the_read_map_still_does(): void {
+		$id = self::factory()->post->create(
+			[
+				'post_content' => '<!-- wp:post-kinds-indieweb/read-card {"bookTitle":"Fourth Wing"} /-->' . "\n\n" . '<!-- wp:post-kinds-indieweb/craft-card {"craftType":"Knitting"} /-->',
+			]
+		);
+
+		$this->assertSame( 'Fourth Wing', get_post_meta( $id, '_pkiw_read_title', true ) );
+		$this->assertSame( 'Knitting', $this->row( $id, 'craft_type' ) );
+	}
+
+	public function test_the_craft_keys_are_registered_with_rest_schema_types(): void {
+		// The test framework wipes registered meta between tests.
+		( new \PKIW\Meta_Fields() )->register_meta_fields();
+		$keys = get_registered_meta_keys( 'post', 'post' );
+
+		$this->assertArrayHasKey( '_pkiw_craft_type', $keys );
+		$this->assertArrayHasKey( '_pkiw_craft_minutes', $keys );
+		$this->assertSame( 'string', $keys['_pkiw_craft_type']['type'] );
+		$this->assertSame( 'integer', $keys['_pkiw_craft_minutes']['type'] );
+		$this->assertNotFalse( $keys['_pkiw_craft_type']['show_in_rest'] );
+		$this->assertNotFalse( $keys['_pkiw_craft_minutes']['show_in_rest'] );
+	}
+
+	/**
+	 * The REST controller writes the request's meta after save_post, so a
+	 * craft-card-only post, which has no ATTR_META_MAP card, would lose its
+	 * type to the request's '' unless the replay runs before
+	 * resync_after_insert() looks for a mapped card.
+	 */
+	public function test_the_replay_restores_craft_rows_a_stale_request_wiped(): void {
+		$id = $this->post_with_card(
+			'craft-card',
+			[
+				'craftType'   => 'Knitting',
+				'timeMinutes' => 1080,
+			]
+		);
+		$this->assertSame( 'Knitting', $this->row( $id, 'craft_type' ) );
+
+		// What the controller does after save_post.
+		update_post_meta( $id, '_pkiw_craft_type', '' );
+		update_post_meta( $id, '_pkiw_craft_minutes', 0 );
+		do_action( 'wp_after_insert_post', $id, get_post( $id ), true, null );
+
+		$this->assertSame( 'Knitting', $this->row( $id, 'craft_type' ), 'The card decides again.' );
+		$this->assertSame( '1080', $this->row( $id, 'craft_minutes' ) );
+	}
+
+	public function test_a_rest_create_with_craft_meta_keeps_what_the_card_says(): void {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		$request = new WP_REST_Request( 'POST', '/wp/v2/posts' );
+		$request->set_header( 'content-type', 'application/json' );
+		$request->set_body_params(
+			[
+				'status'  => 'publish',
+				'title'   => 'Scarf',
+				'content' => '<!-- wp:post-kinds-indieweb/craft-card {"craftType":"Knitting","timeMinutes":90} /-->',
+				'meta'    => [
+					'_pkiw_craft_type'    => '',
+					'_pkiw_craft_minutes' => 0,
+				],
+			]
+		);
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 201, $response->get_status() );
+		$id = (int) $response->get_data()['id'];
+		$this->assertSame( 'Knitting', $this->row( $id, 'craft_type' ) );
+		$this->assertSame( '90', $this->row( $id, 'craft_minutes' ) );
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public function card_only_kinds(): array {
+		return [
+			'exercise' => [ 'exercise-card', 'exercise' ],
+			'sleep'    => [ 'sleep-card', 'sleep' ],
+			'craft'    => [ 'craft-card', 'craft' ],
+		];
+	}
+
+	/**
+	 * @dataProvider card_only_kinds
+	 *
+	 * @param string $block Card block name.
+	 * @param string $kind  Kind the card implies.
+	 */
+	public function test_a_card_only_post_gets_the_cards_kind( string $block, string $kind ): void {
+		if ( ! term_exists( $kind, 'kind' ) ) {
+			wp_insert_term( ucfirst( $kind ), 'kind', [ 'slug' => $kind ] );
+		}
+		$id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:post-kinds-indieweb/' . $block . ' /-->',
+			]
+		);
+
+		$terms = wp_get_object_terms( $id, 'kind', [ 'fields' => 'slugs' ] );
+		$this->assertSame( [ $kind ], $terms );
 	}
 }

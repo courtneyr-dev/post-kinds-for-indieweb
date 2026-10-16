@@ -274,6 +274,61 @@ class Card_Meta_Sync {
 		'post-kinds-indieweb/acquisition-card' => [
 			'showCostPublicly' => 'acquisition_cost_public',
 		],
+		'post-kinds-indieweb/exercise-card'    => [
+			'showDetailsPublicly' => 'exercise_details_public',
+			'personalBest'        => 'exercise_pb',
+		],
+		'post-kinds-indieweb/sleep-card'       => [
+			'showTimesPublicly' => 'sleep_times_public',
+		],
+	];
+
+	/**
+	 * Cards that decide their rows outright (issues 245, 247 and 249): card
+	 * name => attribute => meta suffix. ATTR_META_MAP never erases a row for
+	 * an empty attribute, which would leave a distance the author cleared in
+	 * meta and in everything that reads it. Here the first card of the type
+	 * decides: a valid non-empty attribute writes its row; an empty, absent
+	 * or invalid one deletes it; a post with no card of the type deletes
+	 * every row in its entry. Valid means:
+	 *
+	 * - exercise: distance a number above 0, distanceUnit 'km' or 'mi' (absent
+	 *   writes 'km', the block.json default the editor drops), duration an ISO
+	 *   8601 duration above 0 seconds, splits a list of { i, t } with a whole
+	 *   i and an ISO t (kept as JSON, in order), activity and pbCategory text,
+	 *   origin a key.
+	 * - sleep: durationMinutes a whole number 1-1440, bedtime and wakeTime a
+	 *   site-local `YYYY-MM-DDTHH:MM` wall time, origin a key.
+	 * - craft: craftType trimmed text, timeMinutes a whole number above 0.
+	 *
+	 * The map stays out of ATTR_META_MAP so it never blocks another card's map
+	 * (find_first_mapped_block() matches ATTR_META_MAP only). Exercise and
+	 * sleep keys are unregistered, so REST never writes one. The craft keys
+	 * are registered, so resync_after_insert() replays the whole map once the
+	 * REST controller has written its meta. A card toggle is in ATTR_TOGGLES.
+	 *
+	 * @var array<string, array<string, string>>
+	 */
+	public const CARD_DECIDES_MAP = [
+		'post-kinds-indieweb/exercise-card' => [
+			'activity'     => 'exercise_activity',
+			'distance'     => 'exercise_distance',
+			'distanceUnit' => 'exercise_distance_unit',
+			'duration'     => 'exercise_duration',
+			'splits'       => 'exercise_splits',
+			'pbCategory'   => 'exercise_pb_category',
+			'origin'       => 'exercise_origin',
+		],
+		'post-kinds-indieweb/sleep-card'    => [
+			'durationMinutes' => 'sleep_duration',
+			'bedtime'         => 'sleep_bedtime',
+			'wakeTime'        => 'sleep_wake',
+			'origin'          => 'sleep_origin',
+		],
+		'post-kinds-indieweb/craft-card'    => [
+			'craftType'   => 'craft_type',
+			'timeMinutes' => 'craft_minutes',
+		],
 	];
 
 	/**
@@ -353,12 +408,15 @@ class Card_Meta_Sync {
 	 * runs the same pass with the stricter-wins privacy hold, which version
 	 * 4 on main ran without. Version 6 (issue 252) replays every map with
 	 * the reply and like maps and the review star-rating fill. Version 7
-	 * (issue 255) replays every map with the repost map.
+	 * (issue 255) replays every map with the repost map. Version 8
+	 * (issues 245, 247 and 249) replays every map with CARD_DECIDES_MAP, the
+	 * exercise, sleep and craft maps; the exercise and sleep toggles in
+	 * ATTR_TOGGLES join it.
 	 */
 	public const BACKFILL_HOOK    = 'pkiw_card_meta_backfill';
 	public const BACKFILL_OPTION  = 'pkiw_card_meta_backfill';
 	public const BACKFILL_CURSOR  = 'pkiw_card_meta_backfill_cursor';
-	public const BACKFILL_VERSION = '7';
+	public const BACKFILL_VERSION = '8';
 	public const BACKFILL_BATCH   = 50;
 
 	/**
@@ -415,7 +473,14 @@ class Card_Meta_Sync {
 			return;
 		}
 
-		$block = self::find_first_mapped_block( parse_blocks( $post->post_content ) );
+		$blocks = parse_blocks( $post->post_content );
+
+		// First: a craft-card-only post has no ATTR_META_MAP card, and the
+		// lookup below returns for it. The REST controller wrote the
+		// request's craft meta after save_post, so the card decides again.
+		self::sync_card_decides( $post_id, $blocks );
+
+		$block = self::find_first_mapped_block( $blocks );
 		if ( null === $block ) {
 			return;
 		}
@@ -562,6 +627,8 @@ class Card_Meta_Sync {
 			}
 		}
 
+		self::sync_card_decides( $post_id, $blocks );
+
 		// A read card ahead of an RSVP card must not leave the RSVP's
 		// location public after its toggle goes off (issue 251).
 		foreach ( self::ATTR_PRIVATE_DEFAULTS as $name => $privacy ) {
@@ -582,6 +649,159 @@ class Card_Meta_Sync {
 		// An unchanged cover fires no meta hook, so a post stored before
 		// the cover map existed gets its map here, on save or backfill.
 		refresh_cover_attachments( $post_id );
+	}
+
+	/**
+	 * Write the rows of each card in CARD_DECIDES_MAP from the post's first
+	 * card of that type, deleting every row the card leaves empty or invalid
+	 * and every row of a type the post holds no card of.
+	 *
+	 * @param int                              $post_id Post ID.
+	 * @param array<int, array<string, mixed>> $blocks  Parsed post content.
+	 * @return void
+	 */
+	private static function sync_card_decides( int $post_id, array $blocks ): void {
+		$stored = get_post_meta( $post_id );
+		$stored = is_array( $stored ) ? $stored : [];
+
+		foreach ( self::CARD_DECIDES_MAP as $name => $map ) {
+			$card = self::find_first_mapped_block( $blocks, $name );
+			foreach ( $map as $attr => $suffix ) {
+				$key   = Meta_Fields::PREFIX . $suffix;
+				$value = null === $card ? '' : self::card_decided_value( $suffix, $card['attrs'][ $attr ] ?? null );
+				if ( '' !== $value ) {
+					update_post_meta( $post_id, $key, $value );
+				} elseif ( array_key_exists( $key, $stored ) ) {
+					delete_post_meta( $post_id, $key );
+				}
+			}
+		}
+	}
+
+	/**
+	 * A CARD_DECIDES_MAP attribute as its meta row stores it.
+	 *
+	 * @param string $suffix Meta suffix the attribute maps to.
+	 * @param mixed  $value  The attribute from the block comment, null when absent.
+	 * @return string The row's value, or '' when the row goes.
+	 */
+	private static function card_decided_value( string $suffix, $value ): string {
+		switch ( $suffix ) {
+			case 'exercise_activity':
+			case 'exercise_pb_category':
+			case 'craft_type':
+				return is_scalar( $value ) ? sanitize_text_field( trim( (string) $value ) ) : '';
+			case 'exercise_origin':
+			case 'sleep_origin':
+				return is_scalar( $value ) ? sanitize_key( (string) $value ) : '';
+			case 'exercise_distance':
+				return is_numeric( $value ) && (float) $value > 0 && (float) $value < 100000 ? (string) ( 0 + $value ) : '';
+			case 'exercise_distance_unit':
+				$unit = is_scalar( $value ) ? strtolower( trim( (string) $value ) ) : '';
+				if ( '' === $unit ) {
+					return 'km';
+				}
+				return in_array( $unit, [ 'km', 'mi' ], true ) ? $unit : '';
+			case 'exercise_duration':
+				return self::valid_duration( $value );
+			case 'exercise_splits':
+				return self::clean_splits( $value );
+			case 'sleep_duration':
+				return self::whole_number( $value, 1, 1440 );
+			case 'sleep_bedtime':
+			case 'sleep_wake':
+				return self::local_wall_time( $value );
+			case 'craft_minutes':
+				return self::whole_number( $value, 1, PHP_INT_MAX );
+		}
+
+		return '';
+	}
+
+	/**
+	 * A whole number inside a range, as the string a meta row stores.
+	 *
+	 * @param mixed $value Attribute value.
+	 * @param int   $min   Lowest valid value.
+	 * @param int   $max   Highest valid value.
+	 * @return string The number, or '' for anything else.
+	 */
+	private static function whole_number( $value, int $min, int $max ): string {
+		if ( is_string( $value ) && 1 !== preg_match( '/^\d{1,9}$/', trim( $value ) ) ) {
+			return '';
+		}
+		if ( ! is_int( $value ) && ! is_string( $value ) ) {
+			return '';
+		}
+
+		$number = (int) $value;
+		return $number >= $min && $number <= $max ? (string) $number : '';
+	}
+
+	/**
+	 * An ISO 8601 duration above 0 seconds, upper-cased.
+	 *
+	 * @param mixed $value Attribute value.
+	 * @return string The duration, or '' for anything else.
+	 */
+	private static function valid_duration( $value ): string {
+		if ( ! is_string( $value ) ) {
+			return '';
+		}
+
+		$duration = strtoupper( trim( $value ) );
+		if ( 1 !== preg_match( '/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/', $duration, $parts ) ) {
+			return '';
+		}
+
+		$seconds = (int) ( $parts[1] ?? 0 ) * 86400 + (int) ( $parts[2] ?? 0 ) * 3600 + (int) ( $parts[3] ?? 0 ) * 60 + (int) ( $parts[4] ?? 0 );
+		return $seconds > 0 ? $duration : '';
+	}
+
+	/**
+	 * An exercise card's splits as the JSON a meta row stores: the entries
+	 * with a whole i above 0 and an ISO 8601 t above 0 seconds, in order.
+	 *
+	 * @param mixed $value Attribute value.
+	 * @return string JSON list of { i, t }, or '' when no entry is valid.
+	 */
+	private static function clean_splits( $value ): string {
+		if ( ! is_array( $value ) ) {
+			return '';
+		}
+
+		$clean = [];
+		foreach ( $value as $split ) {
+			if ( ! is_array( $split ) ) {
+				continue;
+			}
+
+			$index = self::whole_number( $split['i'] ?? null, 1, 9999 );
+			$time  = self::valid_duration( $split['t'] ?? null );
+			if ( '' !== $index && '' !== $time ) {
+				$clean[] = [
+					'i' => (int) $index,
+					't' => $time,
+				];
+			}
+		}
+
+		return [] === $clean ? '' : (string) wp_json_encode( $clean );
+	}
+
+	/**
+	 * A card's site-local wall time, `YYYY-MM-DDTHH:MM`.
+	 *
+	 * @param mixed $value Attribute value.
+	 * @return string The value, or '' when it isn't a real date and time.
+	 */
+	private static function local_wall_time( $value ): string {
+		if ( ! is_string( $value ) || 1 !== preg_match( '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $value ) ) {
+			return '';
+		}
+
+		$parsed = \DateTimeImmutable::createFromFormat( '!Y-m-d\TH:i', $value, new \DateTimeZone( 'UTC' ) );
+		return $parsed instanceof \DateTimeImmutable && $parsed->format( 'Y-m-d\TH:i' ) === $value ? $value : '';
 	}
 
 	/**
