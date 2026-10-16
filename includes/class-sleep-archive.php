@@ -179,7 +179,7 @@ final class Sleep_Archive {
 		$card    = self::first_card( $post );
 		$times   = self::card_times( $card, $post->ID );
 		$minutes = $times['minutes'];
-		$stored  = trim( wp_strip_all_tags( $post->post_title ) );
+		$stored  = self::title( $post );
 		$night   = class_exists( __NAMESPACE__ . '\\Sleep_Night' ) ? Sleep_Night::night_date( $post ) : self::night_of_post( $post );
 		$label   = self::night_label( $night );
 		$moon    = self::moon( $night );
@@ -187,7 +187,7 @@ final class Sleep_Archive {
 		$wake    = self::time_parts( $times['wake'], $times['visible'] );
 
 		return [
-			'name'             => '' !== $stored ? trim( wp_strip_all_tags( get_the_title( $post ) ) ) : untitled_name( $post, false ),
+			'name'             => '' !== $stored ? $stored : untitled_name( $post, false ),
 			'name_is_title'    => '' !== $stored,
 			'name_kind'        => stream_card_kind_label( $post ),
 			'has_card'         => null !== $card,
@@ -376,7 +376,8 @@ final class Sleep_Archive {
 		$base_level = max( 2, min( 6, (int) ( $attributes['headingLevel'] ?? 2 ) ) );
 		$level      = max( 2, min( 6, $base_level + ( $in_section ? 1 : 0 ) ) );
 		// A night with no facts (a protected one) prints its date, moon and phase only: no stored title either.
-		$titled    = [] !== $facts && '' !== trim( wp_strip_all_tags( $post->post_title ) );
+		$title     = [] === $facts ? '' : self::title( $post );
+		$titled    = '' !== $title;
 		$title_id  = 'pkiw-sleep-t-' . $id;
 		$date_id   = 'pkiw-sleep-d-' . $id;
 		$length_id = 'pkiw-sleep-h-' . $id;
@@ -409,7 +410,7 @@ final class Sleep_Archive {
 				$level,
 				esc_attr( $title_id ),
 				$link,
-				esc_html( trim( wp_strip_all_tags( get_the_title( $post ) ) ) ),
+				esc_html( $title ),
 				$date
 			);
 		} else {
@@ -437,6 +438,20 @@ final class Sleep_Archive {
 		$by    = function_exists( __NAMESPACE__ . '\\entry_author_html' ) ? entry_author_html( $post ) : '';
 
 		return $head . $length . $bar . $moon . $phase . ( '' !== $by ? '<span hidden>' . $by . '</span>' : '' );
+	}
+
+	/**
+	 * The stored title as a visitor may read it, or '' for none.
+	 *
+	 * Read through Title_Privacy::safe_title() and not get_the_title(): the
+	 * title filter hands the stored title back on an admin screen, and a
+	 * title generated from a hidden location must not print there either.
+	 *
+	 * @param \WP_Post $post Post.
+	 * @return string Plain text.
+	 */
+	private static function title( \WP_Post $post ): string {
+		return '' === trim( (string) $post->post_title ) ? '' : trim( wp_strip_all_tags( Title_Privacy::safe_title( $post->ID ) ) );
 	}
 
 	/**

@@ -449,6 +449,12 @@ final class SleepLocationTest extends WP_UnitTestCase {
 		$this->assertFalse( has_filter( 'wp_head', [ 'Geo_Base', 'meta_tags' ] ) );
 	}
 
+	public function test_the_timezone_filters_run_after_simple_locations_at_priority_ten(): void {
+		foreach ( [ 'get_the_date', 'get_the_time', 'get_the_modified_date', 'get_the_modified_time' ] as $hook ) {
+			$this->assertSame( 10, has_filter( $hook, [ Sleep_Location::class, 'keep_site_timezone' ] ), $hook );
+		}
+	}
+
 	public function test_the_gate_hooks_itself_in_once_at_the_documented_priorities(): void {
 		$this->assertSame( 10, has_filter( 'the_content', [ Sleep_Location::class, 'gate_content' ] ) );
 		$this->assertSame( 13, has_filter( 'the_content', [ Sleep_Location::class, 'restore_content' ] ) );
@@ -464,6 +470,82 @@ final class SleepLocationTest extends WP_UnitTestCase {
 		( new Sleep_Location() )->register();
 		( new Sleep_Location() )->register();
 		$this->assertSame( 10, has_filter( 'the_content', [ Sleep_Location::class, 'gate_content' ] ), 'A second register() adds nothing.' );
+	}
+
+	// Simple Location's timezone filters.
+
+	/**
+	 * Copy Simple Location's Loc_Timezone filters: priority 9 on the four date
+	 * and time getters, formatted in the post's own geo_timezone.
+	 */
+	private function simple_location_timezone_filters(): void {
+		$tokyo = static function ( $value, $format = '', $post = null ) {
+			$post = get_post( $post );
+			$zone = $post instanceof WP_Post ? (string) get_post_meta( $post->ID, 'geo_timezone', true ) : '';
+			if ( '' === $zone ) {
+				return $value;
+			}
+			$hook     = current_filter();
+			$modified = str_contains( $hook, 'modified' );
+			$time     = str_ends_with( $hook, '_time' );
+			$format   = '' !== (string) $format ? (string) $format : (string) get_option( $time ? 'time_format' : 'date_format' );
+			$moment   = get_post_datetime( $post, $modified ? 'modified' : 'date' );
+
+			return $moment ? wp_date( $format, $moment->getTimestamp(), new DateTimeZone( $zone ) ) : $value;
+		};
+		foreach ( [ 'get_the_date', 'get_the_time', 'get_the_modified_date', 'get_the_modified_time' ] as $hook ) {
+			add_filter( $hook, $tokyo, 9, 3 );
+			$this->probes[] = [ $hook, $tokyo, 9 ];
+		}
+	}
+
+	private function tokyo_post( string $kind ): int {
+		$id = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => 'Night', 'post_date' => '2026-08-23 12:00:00', 'post_modified' => '2026-08-24 08:15:00', 'post_modified_gmt' => '2026-08-24 12:15:00' ] );
+		wp_set_object_terms( $id, $kind, Taxonomy::TAXONOMY );
+		update_post_meta( $id, 'geo_timezone', 'Asia/Tokyo' );
+		global $wpdb;
+		$wpdb->update( $wpdb->posts, [ 'post_modified' => '2026-08-24 08:15:00', 'post_modified_gmt' => '2026-08-24 12:15:00' ], [ 'ID' => $id ] );
+		clean_post_cache( $id );
+
+		return (int) $id;
+	}
+
+	public function test_a_sleep_posts_dates_stay_in_the_site_timezone_whatever_simple_location_stored(): void {
+		$this->simple_location_timezone_filters();
+		$sleep = $this->tokyo_post( 'sleep' );
+		$note  = $this->tokyo_post( 'note' );
+
+		// Precondition: the stand-in moves a note to Tokyo, where noon in New York is 01:00 the next day.
+		$this->assertSame( 'August 24, 2026', get_the_date( '', $note ) );
+		$this->assertSame( '2026-08-24T01:00:00+09:00', get_the_date( 'c', $note ) );
+
+		$this->assertSame( 'August 23, 2026', get_the_date( '', $sleep ) );
+		$this->assertSame( '2026-08-23T12:00:00-04:00', get_the_date( 'c', $sleep ) );
+		$this->assertSame( '2026-08-23', get_the_date( 'Y-m-d', $sleep ) );
+		$this->assertSame( '12:00 pm', get_the_time( '', $sleep ) );
+		$this->assertSame( '12:00', get_the_time( 'H:i', $sleep ) );
+		$this->assertSame( 'August 24, 2026', get_the_modified_date( '', $sleep ) );
+		$this->assertSame( '2026-08-24T08:15:00-04:00', get_the_modified_date( 'c', $sleep ) );
+		$this->assertSame( '08:15', get_the_modified_time( 'H:i', $sleep ), 'The modified fields are read as modified, not as the date.' );
+		$this->assertSame( '1787500800', get_the_date( 'U', $sleep ), 'The requested format is respected.' );
+		$this->assertSame( '01:00', get_the_time( 'H:i', $note ), 'Other kinds are left alone.' );
+		$this->assertSame( '21:15', get_the_modified_time( 'H:i', $note ) );
+	}
+
+	public function test_the_global_post_form_and_an_admin_screen_get_the_site_timezone_too(): void {
+		$this->simple_location_timezone_filters();
+		$sleep = $this->tokyo_post( 'sleep' );
+		$this->set_global_post( $sleep );
+
+		$this->assertSame( '2026-08-23T12:00:00-04:00', get_the_date( 'c' ) );
+
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		set_current_screen( 'edit-post' );
+		try {
+			$this->assertSame( '2026-08-23T12:00:00-04:00', get_the_date( 'c', $sleep ) );
+		} finally {
+			set_current_screen( 'front' );
+		}
 	}
 
 	// Listings and the real REST route.

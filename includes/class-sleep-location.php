@@ -49,6 +49,14 @@ final class Sleep_Location {
 	private const FEED_HOOKS = [ 'rss_item', 'rss2_item', 'atom_entry', 'rdf_item' ];
 
 	/**
+	 * Date and time getters Simple Location's Loc_Timezone reformats at
+	 * priority 9, in the timezone it stored for the post.
+	 *
+	 * @var string[]
+	 */
+	private const DATE_HOOKS = [ 'get_the_date', 'get_the_time', 'get_the_modified_date', 'get_the_modified_time' ];
+
+	/**
 	 * Removed content callbacks, one frame per the_content pass.
 	 *
 	 * @var array<int, array<int, array{hook:string, callable:mixed, priority:int, accepted_args:int}>>
@@ -78,6 +86,9 @@ final class Sleep_Location {
 		add_action( 'template_redirect', [ self::class, 'suppress_head_meta' ], 10 );
 		add_filter( 'rest_prepare_post', [ self::class, 'strip_rest_location' ], 30, 3 );
 		add_action( 'pre_get_posts', [ self::class, 'exclude_from_place_listings' ] );
+		foreach ( self::DATE_HOOKS as $hook ) {
+			add_filter( $hook, [ self::class, 'keep_site_timezone' ], 10, 3 );
+		}
 	}
 
 	/**
@@ -243,6 +254,43 @@ final class Sleep_Location {
 		$response->set_data( $data );
 
 		return $response;
+	}
+
+	/**
+	 * Print a sleep post's dates and times in the site timezone.
+	 *
+	 * Simple Location stores a timezone for a post that arrives with a
+	 * location and reformats the date and time getters in it, at priority 9.
+	 * For a sleep post that would move the noon date (the single's hidden
+	 * dt-published, the Stream's date) to another day and show where the
+	 * night was spent. This runs after it, at priority 10, and formats the
+	 * post's own date fields in wp_timezone(), in the requested format. Other
+	 * kinds are left alone. It applies on admin screens too.
+	 *
+	 * @internal Hooked to `get_the_date`, `get_the_time`, `get_the_modified_date` and `get_the_modified_time` at 10.
+	 *
+	 * @param mixed $value  Formatted date or time.
+	 * @param mixed $format Requested format, or '' for the site's.
+	 * @param mixed $post   Post, ID or null for the current post.
+	 * @return mixed
+	 */
+	public static function keep_site_timezone( $value, $format = '', $post = null ) {
+		$post = get_post( is_object( $post ) || is_int( $post ) ? $post : null );
+		if ( ! $post instanceof \WP_Post || ! self::is_sleep_post( $post ) ) {
+			return $value;
+		}
+
+		$hook     = current_filter();
+		$modified = str_contains( $hook, 'modified' );
+		$option   = str_ends_with( $hook, '_time' ) ? 'time_format' : 'date_format';
+		$moment   = get_post_datetime( $post, $modified ? 'modified' : 'date' );
+		if ( ! $moment instanceof \DateTimeImmutable ) {
+			return $value;
+		}
+
+		$format = is_string( $format ) && '' !== $format ? $format : (string) get_option( $option );
+
+		return wp_date( $format, $moment->getTimestamp(), wp_timezone() );
 	}
 
 	/**

@@ -67,6 +67,7 @@ final class SleepCardRenderTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down(): void {
+		set_current_screen( 'front' );
 		if ( $this->registered_here ) {
 			unregister_block_type( self::BLOCK );
 		}
@@ -339,6 +340,23 @@ final class SleepCardRenderTest extends WP_UnitTestCase {
 		return $html;
 	}
 
+	/**
+	 * A Stream card carries no clock time: not the labels the card would print
+	 * in the site's time format, not the ISO values, and no time pressed
+	 * against other text.
+	 */
+	private function assert_stream_holds_no_time( int $id, string $html ): void {
+		$facts = \PKIW\Sleep_Archive::facts( $id );
+		$this->assertNotSame( '', $facts['bedtime_label'], 'Precondition: the post is opted in, so the facts carry the labels.' );
+		$this->assertNotSame( '', $facts['wake_label'] );
+
+		foreach ( [ $facts['bedtime_label'], $facts['wake_label'], $facts['bedtime_iso'], $facts['wake_iso'] ] as $needle ) {
+			$this->assertStringNotContainsString( (string) $needle, $html, (string) $needle );
+		}
+		$this->assertDoesNotMatchRegularExpression( '/\d{1,2}:\d{2}/', wp_strip_all_tags( $html ), 'No visible clock time, spaced or not.' );
+		$this->assertDoesNotMatchRegularExpression( '/T\d{2}:\d{2}/', $html, 'No ISO time in any attribute.' );
+	}
+
 	public function test_the_stream_shape_is_one_link_a_date_only_published_and_the_duration(): void {
 		$id   = $this->sleep(
 			'2026-08-19',
@@ -356,7 +374,7 @@ final class SleepCardRenderTest extends WP_UnitTestCase {
 		$this->assertSame( 1, preg_match_all( '/<time\b[^>]*class="dt-published"/', $html ), 'One published time.' );
 		$this->assertMatchesRegularExpression( '/<time class="dt-published" datetime="2026-08-19">/', $html );
 		$this->assertDoesNotMatchRegularExpression( '/(?:datetime|value)="[^"]*T\d\d:/', $html, 'No hidden full timestamp.' );
-		$this->assertDoesNotMatchRegularExpression( '/\b\d{1,2}:\d{2}\b/', wp_strip_all_tags( $html ), 'No visible clock time.' );
+		$this->assert_stream_holds_no_time( $id, $html );
 		$this->assertStringContainsString( '<p class="pkiw-sleep__duration p-sleep"><time datetime="PT7H42M">7 hr 42 min</time></p>', $html );
 		$this->assertStringContainsString( '<p class="pkiw-sleep__phase">First quarter</p>', $html );
 		$this->assertStringNotContainsString( '23:10', $html );
@@ -380,8 +398,7 @@ final class SleepCardRenderTest extends WP_UnitTestCase {
 		$html = $this->stream( $id );
 
 		$this->assertMatchesRegularExpression( '#<h2 class="pk-title p-name"><a class="u-url" href="[^"]+">Fictional title: storm night</a></h2>#', $html );
-		$this->assertStringNotContainsString( '21:45', $html );
-		$this->assertDoesNotMatchRegularExpression( '/\b\d{1,2}:\d{2}\b/', wp_strip_all_tags( $html ) );
+		$this->assert_stream_holds_no_time( $id, $html );
 	}
 
 	public function test_a_stream_card_with_no_duration_has_no_p_sleep(): void {
@@ -398,6 +415,51 @@ final class SleepCardRenderTest extends WP_UnitTestCase {
 
 		$this->assertSame( 1, substr_count( $html, 'theme-moon' ) );
 		$this->assertSame( 1, substr_count( $html, 'pkiw-sleep__moon' ) );
+	}
+
+	public function test_a_hidden_location_title_never_heads_a_stream_card_even_on_an_admin_screen(): void {
+		$id = $this->sleep( '2026-08-23', [ 'durationMinutes' => 420 ], [ 'post_title' => 'Maplewood Home' ] );
+		update_post_meta( $id, '_pkiw_title_source', 'location' );
+		update_post_meta( $id, '_pkiw_geo_privacy', 'private' );
+		$visitor = $this->stream( $id );
+		$this->assertStringContainsString( 'Check-in, August 23, 2026', $visitor, 'Precondition: the front end prints the safe title.' );
+
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		set_current_screen( 'edit-post' );
+		$this->assertTrue( is_admin() );
+		$admin = $this->stream( $id );
+
+		$this->assertStringNotContainsString( 'Maplewood', $admin );
+		$this->assertStringContainsString( 'Check-in, August 23, 2026', $admin );
+	}
+
+	public function test_simple_locations_timezone_cannot_move_the_published_date_of_the_single_or_the_stream(): void {
+		$tokyo = static function ( $value, $format = '', $post = null ) {
+			$post = get_post( $post );
+			$zone = $post instanceof WP_Post ? (string) get_post_meta( $post->ID, 'geo_timezone', true ) : '';
+			if ( '' === $zone ) {
+				return $value;
+			}
+			$format = '' !== (string) $format ? (string) $format : (string) get_option( 'date_format' );
+
+			return wp_date( $format, get_post_datetime( $post )->getTimestamp(), new DateTimeZone( $zone ) );
+		};
+		add_filter( 'get_the_date', $tokyo, 9, 3 );
+		$id = $this->sleep( '2026-08-23', [ 'durationMinutes' => 420 ] );
+		update_post_meta( $id, 'geo_timezone', 'Asia/Tokyo' );
+		$note = self::factory()->post->create( [ 'post_status' => 'publish', 'post_date' => '2026-08-23 12:00:00' ] );
+		update_post_meta( $note, 'geo_timezone', 'Asia/Tokyo' );
+		$this->assertSame( 'August 24, 2026', get_the_date( '', $note ), 'Precondition: the stand-in is live.' );
+
+		$single = $this->single( $id );
+		$stream = $this->stream( $id );
+		remove_filter( 'get_the_date', $tokyo, 9 );
+
+		$this->assertStringContainsString( 'datetime="2026-08-23T12:00:00-04:00"', $single );
+		$this->assertStringNotContainsString( '+09:00', $single );
+		$this->assertStringContainsString( 'August 23, 2026', $stream );
+		$this->assertStringNotContainsString( 'August 24', $stream );
+		$this->assertMatchesRegularExpression( '/<time class="dt-published" datetime="2026-08-23">/', $stream );
 	}
 
 	// Card-less singles.

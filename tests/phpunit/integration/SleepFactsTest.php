@@ -38,6 +38,7 @@ final class SleepFactsTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down(): void {
+		set_current_screen( 'front' );
 		update_option( 'timezone_string', $this->original_timezone );
 		wp_set_current_user( 0 );
 		parent::tear_down();
@@ -429,5 +430,31 @@ final class SleepFactsTest extends WP_UnitTestCase {
 		);
 
 		$this->assertSame( '2026-08-19', $this->facts( $id )['night'] );
+	}
+
+	/**
+	 * A sleep post whose stored title came from a hidden location.
+	 */
+	private function located_title_post(): int {
+		$id = $this->sleep( '2026-08-23', [ 'durationMinutes' => 420 ], [ 'post_title' => 'Maplewood Home' ] );
+		update_post_meta( $id, '_pkiw_title_source', 'location' );
+		update_post_meta( $id, '_pkiw_geo_privacy', 'private' );
+
+		return $id;
+	}
+
+	public function test_a_hidden_location_title_is_never_a_name_even_on_an_admin_screen(): void {
+		$id      = $this->located_title_post();
+		$visitor = $this->facts( $id );
+		$this->assertSame( 'Check-in, August 23, 2026', $visitor['name'], 'Precondition: the front end prints the safe title.' );
+		$this->assertTrue( $visitor['name_is_title'] );
+
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		set_current_screen( 'edit-post' );
+		$this->assertTrue( is_admin() );
+		$admin = $this->facts( $id );
+
+		$this->assertSame( $visitor, $admin, 'Admin facts equal a visitor\'s.' );
+		$this->assertStringNotContainsString( 'Maplewood', (string) wp_json_encode( $admin ) );
 	}
 }

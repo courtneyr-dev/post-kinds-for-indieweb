@@ -42,6 +42,7 @@ final class SleepNightBlockTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down(): void {
+		set_current_screen( 'front' );
 		remove_all_filters( 'pkiw_sleep_moon_html' );
 		update_option( 'timezone_string', $this->original_timezone );
 		$this->set_permalink_structure( '' );
@@ -257,5 +258,21 @@ final class SleepNightBlockTest extends WP_UnitTestCase {
 
 		$this->assertIsString( $this->cell( (int) $id ) );
 		$this->assertStringNotContainsString( 'p-sleep', $this->cell( (int) $id ) );
+	}
+
+	public function test_a_hidden_location_title_never_heads_a_cell_even_on_an_admin_screen(): void {
+		$id = $this->sleep( '2026-08-23', [ 'durationMinutes' => 420 ], [ 'post_title' => 'Maplewood Home' ] );
+		update_post_meta( $id, '_pkiw_title_source', 'location' );
+		update_post_meta( $id, '_pkiw_geo_privacy', 'private' );
+		$visitor = $this->cell( $id );
+		$this->assertStringContainsString( 'Check-in, August 23, 2026', $visitor, 'Precondition: the front end prints the safe title.' );
+
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		set_current_screen( 'edit-post' );
+		$this->assertTrue( is_admin() );
+		$admin = $this->cell( $id );
+
+		$this->assertSame( $visitor, $admin );
+		$this->assertStringNotContainsString( 'Maplewood', $admin );
 	}
 }
