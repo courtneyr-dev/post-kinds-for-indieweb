@@ -148,6 +148,8 @@ final class Kind_Archive_Layouts {
 		}
 		add_filter( 'get_block_type_variations', [ $this, 'add_query_variations' ], 10, 2 );
 		add_action( 'pre_get_posts', [ $this, 'maybe_group_main_query' ] );
+		add_filter( 'posts_where', [ self::class, 'calendar_where' ], 10, 2 );
+		add_filter( 'the_posts', [ self::class, 'calendar_page_count' ], 10, 2 );
 		add_filter( 'posts_orderby', [ Grouped_Archive::class, 'group_orderby' ], 10, 2 );
 		add_filter( 'query_loop_block_query_vars', [ Grouped_Archive::class, 'query_block_group_by' ], 10, 2 );
 		if ( did_action( 'init' ) && ! doing_action( 'init' ) ) {
@@ -889,8 +891,10 @@ final class Kind_Archive_Layouts {
 	 * (stable pages). When an entry block sits in the Post Template of the
 	 * Query Loop that inherits the archive, its settings set the page size
 	 * and, when the kind is grouped, the grouping (Grouped_Archive). The
-	 * kind's feed keeps the date order only. A theme's own kind template or
-	 * an explicit ?orderby= is left alone.
+	 * kind's feed keeps the date order only. A kind whose class answers
+	 * `pkiw_calendar_paging` for the template pages by year, month or whole
+	 * weeks instead (see apply_calendar_paging()). A theme's own kind
+	 * template or an explicit ?orderby= is left alone.
 	 *
 	 * @param \WP_Query $query Query.
 	 * @return void
@@ -909,6 +913,11 @@ final class Kind_Archive_Layouts {
 		}
 
 		$content = $this->resolved_template_content( $term );
+
+		// A kind with a calendar block pages by year, month or whole weeks.
+		if ( null !== $content && $this->apply_calendar_paging( $query, $term, $content ) ) {
+			return;
+		}
 
 		// A Check-ins Feed that inherits the archive sets the page size.
 		$checkins_per_page = null === $content ? 0 : Checkin_Map::template_per_page( $content );
@@ -954,6 +963,177 @@ final class Kind_Archive_Layouts {
 		foreach ( $plan['vars'] as $var => $value ) {
 			$query->set( $var, $value );
 		}
+	}
+
+	/**
+	 * Page a kind archive by calendar unit when the kind asks for it.
+	 *
+	 * A kind's own class answers `pkiw_calendar_paging`, and only when the
+	 * resolved template (patterns expanded) holds that kind's calendar block.
+	 * Page N then holds the Nth run of `count` units of the term's visible
+	 * posts, newest unit first, in the plan's order. Feeds, searches and the
+	 * editor's block-renderer preview keep core's query.
+	 *
+	 * @param \WP_Query $query   Main query.
+	 * @param \WP_Term  $term    Kind term.
+	 * @param string    $content Resolved template content.
+	 * @return bool Whether the query was set up for calendar paging.
+	 */
+	private function apply_calendar_paging( \WP_Query $query, \WP_Term $term, string $content ): bool {
+		if ( $query->is_feed() || $query->is_search() || Grouped_Archive::is_block_preview() ) {
+			return false;
+		}
+
+		/**
+		 * Filters how a kind archive pages by calendar unit.
+		 *
+		 * A kind returns `[ 'unit' => 'year'|'month'|'week', 'count' => int, 'order' => 'ASC'|'DESC' ]`:
+		 * `count` is how many units a page holds (default 1, clamped 1 to 12) and
+		 * `order` is the order of the posts on a page (default 'ASC'). Only a
+		 * kind's own class hooks this, and only when `$content` holds that
+		 * kind's calendar block. Nothing turns it on by default.
+		 *
+		 * @since 1.9.0
+		 *
+		 * @param array{unit:string, count?:int, order?:string}|null $plan    Plan. Default null.
+		 * @param \WP_Term                                           $term    Kind term.
+		 * @param string                                             $content Resolved template content, patterns expanded.
+		 */
+		$plan = apply_filters( 'pkiw_calendar_paging', null, $term, $content );
+		if ( ! is_array( $plan ) || ! in_array( $plan['unit'] ?? '', [ 'year', 'month', 'week' ], true ) ) {
+			return false;
+		}
+
+		$unit  = (string) $plan['unit'];
+		$count = max( 1, min( 12, (int) ( $plan['count'] ?? 1 ) ) );
+		$order = 'DESC' === strtoupper( (string) ( $plan['order'] ?? 'ASC' ) ) ? 'DESC' : 'ASC';
+		$units = Date_Source::units( $term, $unit );
+		$pages = (int) ceil( count( $units ) / $count );
+		$page  = max( 1, (int) $query->get( 'paged' ) );
+		$keys  = array_slice( $units, ( $page - 1 ) * $count, $count );
+
+		$types = Date_Source::viewable_types();
+		if ( [] !== $types ) {
+			// The same types units() counted, so a page and its page count agree.
+			$query->set( 'post_type', $types );
+		}
+		$query->set( 'post_status', 'publish' );
+		$query->set( 'posts_per_page', -1 );
+		$query->set(
+			'orderby',
+			[
+				'date' => $order,
+				'ID'   => $order,
+			]
+		);
+		$query->set(
+			'pkiw_calendar',
+			[
+				'unit'  => $unit,
+				'key'   => $keys[0] ?? '',
+				'keys'  => $keys,
+				'page'  => $page,
+				'pages' => $pages,
+			]
+		);
+
+		if ( [] === $keys ) {
+			// Nothing to show: page 1 prints the no-results block, a page past the end is core's 404.
+			$query->set( 'post__in', [ 0 ] );
+			return true;
+		}
+
+		$range = self::calendar_range( $keys, $unit );
+		$query->set(
+			'date_query',
+			[
+				[
+					'after'     => $range[0],
+					'before'    => $range[1],
+					'inclusive' => true,
+				],
+			]
+		);
+
+		// An entry block in the template groups the page; it brings its sections, never a page size.
+		$entry = Grouped_Archive::mentions_entry_block( $content ) ? Grouped_Archive::main_query_plan( $query, $term->slug, $content ) : null;
+		foreach ( null !== $entry ? $entry['vars'] : [] as $var => $value ) {
+			$query->set( $var, $value );
+		}
+
+		return true;
+	}
+
+	/**
+	 * The first and last second the units on a calendar page cover.
+	 *
+	 * @param string[] $keys Unit keys on the page, newest first.
+	 * @param string   $unit 'year', 'month' or 'week'.
+	 * @return array{0:string, 1:string} Local `Y-m-d H:i:s` bounds, oldest unit's start and newest unit's end.
+	 */
+	private static function calendar_range( array $keys, string $unit ): array {
+		$bounds = static function ( string $key ) use ( $unit ): array {
+			if ( 'year' === $unit ) {
+				return [ $key . '-01-01', $key . '-12-31' ];
+			}
+			if ( 'month' === $unit ) {
+				$first = date_create_immutable( $key . '-01' );
+
+				return [ $key . '-01', $first instanceof \DateTimeImmutable ? $first->modify( 'last day of this month' )->format( 'Y-m-d' ) : $key . '-31' ];
+			}
+			$start = date_create_immutable( $key );
+
+			return [ $key, $start instanceof \DateTimeImmutable ? $start->modify( '+6 days' )->format( 'Y-m-d' ) : $key ];
+		};
+
+		return [
+			$bounds( (string) end( $keys ) )[0] . ' 00:00:00',
+			$bounds( (string) reset( $keys ) )[1] . ' 23:59:59',
+		];
+	}
+
+	/**
+	 * Keep password-protected posts out of a calendar page's query.
+	 *
+	 * `has_password => false` alone compares `post_password = ''`, which a
+	 * password of spaces also satisfies under the column's collation. LENGTH()
+	 * tells them apart.
+	 *
+	 * @internal Hooked to `posts_where`.
+	 *
+	 * @param string    $where WHERE clause.
+	 * @param \WP_Query $query Query.
+	 * @return string
+	 */
+	public static function calendar_where( $where, $query ) {
+		if ( ! $query instanceof \WP_Query || ! is_array( $query->get( 'pkiw_calendar' ) ) ) {
+			return $where;
+		}
+
+		global $wpdb;
+
+		return $where . " AND LENGTH( {$wpdb->posts}.post_password ) = 0";
+	}
+
+	/**
+	 * Set a calendar page's page count: the number of units over the count a page holds.
+	 *
+	 * The page is not a paged LIMIT query (posts_per_page is -1), so core
+	 * leaves max_num_pages at 0, and the shared pager needs it.
+	 *
+	 * @internal Hooked to `the_posts`.
+	 *
+	 * @param array<int, \WP_Post> $posts Posts.
+	 * @param \WP_Query            $query Query.
+	 * @return array<int, \WP_Post>
+	 */
+	public static function calendar_page_count( array $posts, \WP_Query $query ): array {
+		$calendar = $query->get( 'pkiw_calendar' );
+		if ( is_array( $calendar ) ) {
+			$query->max_num_pages = (int) ( $calendar['pages'] ?? 0 );
+		}
+
+		return $posts;
 	}
 
 	/**
