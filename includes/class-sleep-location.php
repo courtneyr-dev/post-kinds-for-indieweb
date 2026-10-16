@@ -263,9 +263,10 @@ final class Sleep_Location {
 	 * location and reformats the date and time getters in it, at priority 9.
 	 * For a sleep post that would move the noon date (the single's hidden
 	 * dt-published, the Stream's date) to another day and show where the
-	 * night was spent. This runs after it, at priority 10, and formats the
-	 * post's own date fields in wp_timezone(), in the requested format. Other
-	 * kinds are left alone. It applies on admin screens too.
+	 * night was spent. This runs after it, at priority 10, and asks core for
+	 * the post's own date fields in the site timezone, in the requested
+	 * format, so 'U' and 'G' answer as core answers. Other kinds are left
+	 * alone. It applies on admin screens too.
 	 *
 	 * @internal Hooked to `get_the_date`, `get_the_time`, `get_the_modified_date` and `get_the_modified_time` at 10.
 	 *
@@ -281,16 +282,16 @@ final class Sleep_Location {
 		}
 
 		$hook     = current_filter();
-		$modified = str_contains( $hook, 'modified' );
 		$option   = str_ends_with( $hook, '_time' ) ? 'time_format' : 'date_format';
-		$moment   = get_post_datetime( $post, $modified ? 'modified' : 'date' );
-		if ( ! $moment instanceof \DateTimeImmutable ) {
-			return $value;
-		}
+		$format   = is_string( $format ) && '' !== $format ? $format : (string) get_option( $option );
+		$modified = str_contains( $hook, 'modified' );
 
-		$format = is_string( $format ) && '' !== $format ? $format : (string) get_option( $option );
+		// Core's own functions, as get_the_date() and friends call them. They read the
+		// post's date fields in the site timezone, which Simple Location hooks neither
+		// of, and they answer 'U' and 'G' with an int as core does.
+		$answer = $modified ? get_post_modified_time( $format, false, $post, true ) : get_post_time( $format, false, $post, true );
 
-		return wp_date( $format, $moment->getTimestamp(), wp_timezone() );
+		return false === $answer ? $value : $answer;
 	}
 
 	/**

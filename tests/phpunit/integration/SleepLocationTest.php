@@ -527,9 +527,66 @@ final class SleepLocationTest extends WP_UnitTestCase {
 		$this->assertSame( 'August 24, 2026', get_the_modified_date( '', $sleep ) );
 		$this->assertSame( '2026-08-24T08:15:00-04:00', get_the_modified_date( 'c', $sleep ) );
 		$this->assertSame( '08:15', get_the_modified_time( 'H:i', $sleep ), 'The modified fields are read as modified, not as the date.' );
-		$this->assertSame( '1787500800', get_the_date( 'U', $sleep ), 'The requested format is respected.' );
+		$this->assertSame( 1787486400, get_the_date( 'U', $sleep ), 'U answers as core answers: an int, the timestamp plus the site offset.' );
 		$this->assertSame( '01:00', get_the_time( 'H:i', $note ), 'Other kinds are left alone.' );
 		$this->assertSame( '21:15', get_the_modified_time( 'H:i', $note ) );
+	}
+
+	/**
+	 * Each date and time getter with the arguments an identity check uses.
+	 *
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public function date_getters(): array {
+		return [
+			'get_the_date'          => [ 'get_the_date', 'date' ],
+			'get_the_time'          => [ 'get_the_time', 'date' ],
+			'get_the_modified_date' => [ 'get_the_modified_date', 'modified' ],
+			'get_the_modified_time' => [ 'get_the_modified_time', 'modified' ],
+		];
+	}
+
+	/**
+	 * With no Simple Location filter, a sleep post's getters answer exactly as
+	 * core does: the same value for 'U' and 'G' (an int, the timestamp plus
+	 * the site offset), 'c', the site format and a custom format, in every
+	 * post form.
+	 *
+	 * @dataProvider date_getters
+	 */
+	public function test_a_sleep_post_gets_exactly_cores_answer_for_every_format_and_post_form( string $getter, string $which ): void {
+		$id = $this->tokyo_post( 'sleep' );
+		delete_post_meta( $id, 'geo_timezone' );
+		$post = get_post( $id );
+		$this->set_global_post( $id );
+
+		$core = static function ( string $format, $form ) use ( $getter ) {
+			$hooks = [ 'get_the_date', 'get_the_time', 'get_the_modified_date', 'get_the_modified_time' ];
+			foreach ( $hooks as $hook ) {
+				remove_filter( $hook, [ Sleep_Location::class, 'keep_site_timezone' ], 10 );
+			}
+			try {
+				return $getter( $format, $form );
+			} finally {
+				foreach ( $hooks as $hook ) {
+					add_filter( $hook, [ Sleep_Location::class, 'keep_site_timezone' ], 10, 3 );
+				}
+			}
+		};
+
+		foreach ( [ 'U', 'G', 'c', '', 'Y/m/d H.i', 'j M Y, g:i a' ] as $format ) {
+			foreach ( [ 'id' => $id, 'object' => $post, 'current' => 0 ] as $label => $form ) {
+				$ours = $getter( $format, $form );
+				$this->assertSame( $core( $format, $form ), $ours, "$getter('$format') with the $label form" );
+			}
+		}
+
+		// Spelled out, so the identity cannot be circular.
+		$base = 'date' === $which ? 1787486400 : 1787559300;
+		$this->assertSame( $base, $getter( 'U', $id ) );
+		$this->assertSame( $base, $getter( 'G', $id ) );
+		$this->assertIsInt( $getter( 'U', $id ) );
+		$this->assertSame( 'date' === $which ? '2026/08/23 12.00' : '2026/08/24 08.15', $getter( 'Y/m/d H.i', $id ) );
 	}
 
 	public function test_the_global_post_form_and_an_admin_screen_get_the_site_timezone_too(): void {
