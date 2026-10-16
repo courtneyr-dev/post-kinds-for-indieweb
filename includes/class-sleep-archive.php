@@ -32,9 +32,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Card_Meta_Sync reads it, so the card is the single source. The archive
  * never prints a bedtime or a wake time, even when the post opts in.
  *
- * Protected posts stay out of the kind archive and every feed. Their facts
- * are [] for everyone, and frame() gives the editor preview a date and a moon
- * and nothing more.
+ * A protected night's facts are [] for everyone. The sheet still lists it as
+ * a cell built from frame(): the date, the moon and the phase, no title, no
+ * duration and nothing from the card. The sleep kind's own feed leaves
+ * protected nights out.
  *
  * @since 1.9.0
  */
@@ -261,11 +262,13 @@ final class Sleep_Archive {
 	}
 
 	/**
-	 * Keep protected sleep posts out of the sleep archive and every feed.
+	 * Keep protected sleep posts out of the sleep kind's own feed.
 	 *
-	 * A protected post's existence, date and moon are not the archive's to
-	 * list. The kind archive drops them for everyone; any other feed drops
-	 * protected sleep posts and keeps the rest.
+	 * The sleep sheet lists a protected night as a date, a moon and a phase
+	 * and nothing else (plan 247, X01), so its HTML archive keeps the post.
+	 * The plan is silent on feeds, so the kind feed leaves protected nights
+	 * out, and the site feed, category and tag feeds behave as core does for
+	 * every kind: a protected item is title-only, with no card content.
 	 *
 	 * @internal Hooked to `posts_where`.
 	 *
@@ -277,23 +280,13 @@ final class Sleep_Archive {
 		if ( ! is_string( $where ) || ! $query instanceof \WP_Query || ! $query->is_main_query() || is_admin() ) {
 			return $where;
 		}
+		if ( ! $query->is_feed() || ! $query->is_tax( Taxonomy::TAXONOMY, self::KIND ) ) {
+			return $where;
+		}
 
 		global $wpdb;
-		if ( $query->is_tax( Taxonomy::TAXONOMY, self::KIND ) ) {
-			return $where . " AND LENGTH({$wpdb->posts}.post_password) = 0";
-		}
 
-		if ( $query->is_feed() ) {
-			$term = get_term_by( 'slug', self::KIND, Taxonomy::TAXONOMY );
-			if ( $term instanceof \WP_Term ) {
-				return $where . $wpdb->prepare(
-					" AND NOT ( LENGTH({$wpdb->posts}.post_password) > 0 AND {$wpdb->posts}.ID IN ( SELECT object_id FROM {$wpdb->term_relationships} WHERE term_taxonomy_id = %d ) )",
-					$term->term_taxonomy_id
-				);
-			}
-		}
-
-		return $where;
+		return $where . " AND LENGTH({$wpdb->posts}.post_password) = 0";
 	}
 
 	/**
@@ -382,14 +375,15 @@ final class Sleep_Archive {
 
 		$base_level = max( 2, min( 6, (int) ( $attributes['headingLevel'] ?? 2 ) ) );
 		$level      = max( 2, min( 6, $base_level + ( $in_section ? 1 : 0 ) ) );
-		$titled     = '' !== trim( wp_strip_all_tags( $post->post_title ) );
-		$title_id   = 'pkiw-sleep-t-' . $id;
-		$date_id    = 'pkiw-sleep-d-' . $id;
-		$length_id  = 'pkiw-sleep-h-' . $id;
-		$phase_id   = 'pkiw-sleep-p-' . $id;
-		$minutes    = (int) ( $facts['duration_minutes'] ?? 0 );
-		$separator  = '<span class="pk-sr-only">, </span>';
-		$permalink  = esc_url( (string) get_permalink( $post ) );
+		// A night with no facts (a protected one) prints its date, moon and phase only: no stored title either.
+		$titled    = [] !== $facts && '' !== trim( wp_strip_all_tags( $post->post_title ) );
+		$title_id  = 'pkiw-sleep-t-' . $id;
+		$date_id   = 'pkiw-sleep-d-' . $id;
+		$length_id = 'pkiw-sleep-h-' . $id;
+		$phase_id  = 'pkiw-sleep-p-' . $id;
+		$minutes   = (int) ( $facts['duration_minutes'] ?? 0 );
+		$separator = '<span class="pk-sr-only">, </span>';
+		$permalink = esc_url( (string) get_permalink( $post ) );
 
 		$named_by = array_filter(
 			[

@@ -210,7 +210,7 @@ final class SleepNightBlockTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '<span class="pkiw-sleep-night__moon" aria-hidden="true"><svg class="theme-moon"></svg></span>', $html );
 	}
 
-	public function test_a_protected_night_prints_the_frame_only_and_the_password_form_link(): void {
+	public function test_a_protected_night_prints_the_frame_only_and_a_link_to_the_password_form(): void {
 		$id   = $this->sleep(
 			'2026-08-08',
 			[ 'durationMinutes' => 430, 'bedtime' => '2026-08-08T23:40', 'wakeTime' => '2026-08-09T06:30', 'showTimesPublicly' => true ],
@@ -219,8 +219,10 @@ final class SleepNightBlockTest extends WP_UnitTestCase {
 		$html = $this->cell( $id );
 
 		$this->assertSame( [], Sleep_Archive::facts( $id ) );
-		$this->assertStringContainsString( 'Protected: Secret night', $html );
+		$this->assertStringNotContainsString( 'Secret night', $html, 'Not even the stored title.' );
+		$this->assertStringNotContainsString( 'Protected', $html );
 		$this->assertStringContainsString( 'Waning crescent', $html );
+		$this->assertStringContainsString( 'aria-labelledby="pkiw-sleep-d-' . $id . ' pkiw-sleep-p-' . $id . '"', $html );
 		$this->assertStringContainsString( 'datetime="2026-08-08"', $html );
 		foreach ( [ 'p-sleep', '__bar', '7 hr', '23:40', '06:30', '430' ] as $needle ) {
 			$this->assertStringNotContainsString( $needle, $html, $needle );
