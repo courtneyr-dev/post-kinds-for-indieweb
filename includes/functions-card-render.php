@@ -391,6 +391,29 @@ function untitled_fallback_name( \WP_Post $post ): array {
 	];
 }
 
+/**
+ * A title-less note or question's first 25 words: its name when it has no title.
+ *
+ * The excerpt when there is one, else the content with blocks and shortcodes
+ * removed and tags stripped, with runs of whitespace collapsed. Callers check
+ * for a password first: this reads the post's text without asking whether the
+ * requester may see it. untitled_name() and the note archive both name a note
+ * this way, so the 25-word rule lives here.
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post Post.
+ * @return string The thought, cut to 25 words with an ellipsis, or '' when the post has no text.
+ */
+function untitled_thought( \WP_Post $post ): string {
+	$thought = '' !== trim( (string) $post->post_excerpt )
+		? (string) $post->post_excerpt
+		: excerpt_remove_blocks( strip_shortcodes( (string) $post->post_content ) );
+	$thought = trim( (string) preg_replace( '/\s+/', ' ', wp_strip_all_tags( $thought ) ) );
+
+	return '' === $thought ? '' : wp_trim_words( $thought, 25, '…' );
+}
+
 // phpcs:disable Generic.Metrics.CyclomaticComplexity.TooHigh -- The order is the public naming contract.
 /**
  * Name a title-less post for lists and Stream cards.
@@ -487,12 +510,9 @@ function untitled_name( \WP_Post $post, bool $from_content = true ): string {
 	}
 
 	if ( $from_content && in_array( $kind, [ 'note', 'question' ], true ) ) {
-		$thought = '' !== trim( (string) $post->post_excerpt )
-			? (string) $post->post_excerpt
-			: excerpt_remove_blocks( strip_shortcodes( (string) $post->post_content ) );
-		$thought = trim( (string) preg_replace( '/\s+/', ' ', wp_strip_all_tags( $thought ) ) );
+		$thought = untitled_thought( $post );
 		if ( '' !== $thought ) {
-			return wp_trim_words( $thought, 25, '…' );
+			return $thought;
 		}
 	}
 
