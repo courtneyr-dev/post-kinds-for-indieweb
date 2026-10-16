@@ -62,11 +62,13 @@ jest.mock( '@wordpress/components', () => ( {
 
 const editPost = jest.fn();
 const setAttributes = jest.fn();
-let mockMeta = {};
+// Meta_Fields registers _pkiw_mood_rating with a default of 0, so a post
+// that never had a pick reads 0, not a missing key.
+let mockMeta = { _pkiw_mood_rating: 0 };
 
 beforeEach( () => {
 	jest.clearAllMocks();
-	mockMeta = {};
+	mockMeta = { _pkiw_mood_rating: 0 };
 	useDispatch.mockImplementation( () => ( { editPost } ) );
 	useSelect.mockImplementation( ( callback ) =>
 		callback( () => ( {
