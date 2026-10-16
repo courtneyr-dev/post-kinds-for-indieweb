@@ -1,0 +1,80 @@
+/*
+ * Sleep: the month sheet and the card's record (issue 247).
+ *
+ * Neutral structure only. A theme paints the sheet, the bars and the moons.
+ * Every cell is one list item with one link; the bar is as tall as the
+ * night is long, on a 12 hour scale, set by --pkiw-sleep-ratio.
+ */
+
+.pkiw-sleep-sheet {
+	display: grid;
+	grid-template-columns: repeat(7, minmax(0, 1fr));
+	gap: 0.5rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.pkiw-sleep-night {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	min-width: 0;
+}
+
+.pkiw-sleep-night__title {
+	margin-block: 0;
+}
+
+.pkiw-sleep-night__bar,
+.pkiw-sleep__bar {
+	display: block;
+	height: calc(var(--pkiw-sleep-ratio, 0) * 6rem);
+	min-height: 0.25rem;
+}
+
+.pkiw-sleep-night__moon:empty,
+.pkiw-sleep__moon:empty {
+	display: none;
+}
+
+.pkiw-sleep-night .pk-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.pkiw-sleep__record {
+	display: grid;
+	gap: 0.25rem;
+	margin: 0;
+}
+
+.pkiw-sleep__row {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.pkiw-sleep__row dt,
+.pkiw-sleep__row dd {
+	margin: 0;
+}
+
+@media (max-width: 40rem) {
+	.pkiw-sleep-sheet {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 24rem) {
+	.pkiw-sleep-sheet {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
