@@ -133,21 +133,7 @@ function recipe_fallback_course_taxonomy(): string {
  * @return string Duration, or '' for no time.
  */
 function recipe_duration_from_minutes( int $minutes ): string {
-	if ( $minutes <= 0 ) {
-		return '';
-	}
-
-	$hours    = intdiv( $minutes, 60 );
-	$rest     = $minutes % 60;
-	$duration = 'PT';
-	if ( $hours > 0 ) {
-		$duration .= $hours . 'H';
-	}
-	if ( $rest > 0 ) {
-		$duration .= $rest . 'M';
-	}
-
-	return $duration;
+	return card_minutes_iso( $minutes );
 }
 
 /**
@@ -159,11 +145,7 @@ function recipe_duration_from_minutes( int $minutes ): string {
  * @return int Minutes, or 0 when the text is not a duration.
  */
 function recipe_minutes_from_duration( string $duration ): int {
-	if ( 1 !== preg_match( '/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:\d+S)?)?$/i', trim( $duration ), $parts ) ) {
-		return 0;
-	}
-
-	return (int) ( $parts[1] ?? 0 ) * 1440 + (int) ( $parts[2] ?? 0 ) * 60 + (int) ( $parts[3] ?? 0 );
+	return card_minutes_from_iso( $duration );
 }
 
 /**
@@ -175,24 +157,7 @@ function recipe_minutes_from_duration( string $duration ): int {
  * @return string Label, or '' for no time.
  */
 function recipe_time_label( int $minutes ): string {
-	if ( $minutes <= 0 ) {
-		return '';
-	}
-
-	$hours = intdiv( $minutes, 60 );
-	$rest  = $minutes % 60;
-
-	if ( 0 === $hours ) {
-		/* translators: %d: number of minutes. */
-		return sprintf( __( '%d min', 'post-kinds-for-indieweb-in-block-themes' ), $rest );
-	}
-	if ( 0 === $rest ) {
-		/* translators: %d: number of hours. */
-		return sprintf( __( '%d hr', 'post-kinds-for-indieweb-in-block-themes' ), $hours );
-	}
-
-	/* translators: 1: number of hours, 2: number of minutes. */
-	return sprintf( __( '%1$d hr %2$d min', 'post-kinds-for-indieweb-in-block-themes' ), $hours, $rest );
+	return card_minutes_label( $minutes );
 }
 
 /**
