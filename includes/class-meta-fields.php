@@ -1026,7 +1026,7 @@ class Meta_Fields {
 			// with no craft type or no minutes deletes the row.
 			'craft_type'              => [
 				'type'        => 'string',
-				'description' => __( 'What kind of craft the project is, such as Knitting.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'What kind of craft the project is, in your own words.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
