@@ -2811,12 +2811,14 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 				'start'     => [ '2026-08-19T23:40:00-04:00' ],
 				'end'       => [ '2026-08-20T06:45:00-04:00' ],
 				'published' => [ '2026-08-20T07:02:00-04:00' ],
+				'heart-rate' => [ '58' ],
+				'calories'   => [ '2150' ],
 				'content'   => [ 'Fictional body.' ],
 			]
 		);
 
 		$this->assertSame( [ [ 'durationMinutes' => 425, 'origin' => 'micropub' ] ], $this->cards_in( $markup, 'sleep-card' ) );
-		foreach ( [ '23:40', '06:45', '07:02', 'p-sleep' ] as $leak ) {
+		foreach ( [ '23:40', '06:45', '07:02', 'p-sleep', '58', '2150', 'heart', 'calories' ] as $leak ) {
 			$this->assertStringNotContainsString( $leak, $markup, "{$leak} stays out of the post." );
 		}
 		$this->assertStringContainsString( 'Fictional body.', $markup, 'Body text prints as written.' );

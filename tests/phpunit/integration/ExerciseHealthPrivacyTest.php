@@ -423,6 +423,19 @@ final class ExerciseHealthPrivacyTest extends WP_UnitTestCase {
 		$this->assertContains( $hidden, $this->found( $term, [ $opted, $hidden ] ), "An editor's search finds the hidden post by '{$term}'." );
 	}
 
+	/**
+	 * A row of '1' alone doesn't open a card whose own toggle is off: the
+	 * card is the decision, and a stale row (an import, WP-CLI) can't flip it.
+	 */
+	public function test_a_stale_public_row_does_not_open_a_card_whose_toggle_is_off(): void {
+		$id = $this->exercise( 'Stale row', $this->attrs( false ) );
+		update_post_meta( $id, self::PUBLIC_KEY, '1' );
+
+		$this->assertTrue( Meta_Fields::health_details_visible( $id ), 'The row says visible.' );
+		$this->assertSame( [], $this->found( self::DISTANCE, [ $id ] ), 'The card says hidden, and search follows the card.' );
+		$this->assertSame( [], $this->found( 'distance', [ $id ] ) );
+	}
+
 	public function test_turning_the_toggle_on_lets_the_search_find_the_post(): void {
 		$id = $this->exercise( 'Toggle fixture', $this->attrs( false ) );
 		$this->assertSame( [], $this->found( self::DISTANCE, [ $id ] ) );

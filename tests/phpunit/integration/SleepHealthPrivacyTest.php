@@ -351,6 +351,18 @@ final class SleepHealthPrivacyTest extends WP_UnitTestCase {
 		$this->assertSame( [ $id ], $this->found( 'Zq3', [ $id ] ), 'Body text prints as written.' );
 	}
 
+	/**
+	 * A row of '1' alone doesn't open a card whose own toggle is off.
+	 */
+	public function test_a_stale_public_row_does_not_open_a_card_whose_toggle_is_off(): void {
+		$id = $this->sleep( 'Stale row', $this->attrs( false ) );
+		update_post_meta( $id, self::PUBLIC_KEY, '1' );
+
+		$this->assertTrue( Meta_Fields::health_details_visible( $id ), 'The row says visible.' );
+		$this->assertSame( [], $this->found( '23:10', [ $id ] ), 'The card says hidden, and search follows the card.' );
+		$this->assertSame( [], $this->found( 'bedtime', [ $id ] ) );
+	}
+
 	public function test_turning_the_toggle_on_lets_the_search_find_the_post(): void {
 		$id = $this->sleep( 'Toggle fixture', $this->attrs( false ) );
 		$this->assertSame( [], $this->found( '23:10', [ $id ] ) );
