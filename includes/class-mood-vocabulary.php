@@ -14,6 +14,12 @@
  * stored text is still one of that mood's known spellings — a label the
  * author typed or edited renders exactly as saved.
  *
+ * Every mood also belongs to a family (joy, calm, energy and so on; issue
+ * 248). A family has a label and a one- or two-letter code the mood year grid
+ * prints, so the grid never relies on color alone. Typed moods the
+ * vocabulary doesn't know land in 'other' unless a filter files them.
+ * facts() is the one reader a theme uses for a mood post.
+ *
  * @package PKIW
  * @since   1.9.0
  */
@@ -26,6 +32,9 @@ namespace PKIW;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+// family() and families() are this plugin's mood methods, not the removed fam extension's functions.
+// phpcs:disable PHPCompatibility.Extensions.RemovedExtensions.famRemoved
 
 /**
  * Mood vocabulary and label resolution.
@@ -70,6 +79,46 @@ final class Mood_Vocabulary {
 	public const REST_ROUTE = '/moods';
 
 	/**
+	 * Highest intensity a mood card holds.
+	 *
+	 * @var int
+	 */
+	public const MAX_INTENSITY = 5;
+
+	/**
+	 * The family of each plugin-supplied mood, by key.
+	 *
+	 * The twelve moods the theme's catalog also lists keep its family. The
+	 * other seven take the family of their nearest catalog synonym: honored
+	 * (proud), mesmerized (enthralled, amazed), revitalized (refreshed,
+	 * rejuvenated), organized (accomplished, productive), neutral
+	 * (indifferent), overwhelmed (stressed) and demoralized (hopeless).
+	 *
+	 * @var array<string, string>
+	 */
+	public const FAMILY_OF_KEY = [
+		'happy'       => 'joy',
+		'excited'     => 'energy',
+		'grateful'    => 'social',
+		'calm'        => 'calm',
+		'hopeful'     => 'thoughtful',
+		'inspired'    => 'thoughtful',
+		'energized'   => 'energy',
+		'honored'     => 'joy',
+		'mesmerized'  => 'joy',
+		'revitalized' => 'energy',
+		'organized'   => 'work',
+		'thoughtful'  => 'thoughtful',
+		'neutral'     => 'calm',
+		'tired'       => 'physical',
+		'sad'         => 'sad',
+		'anxious'     => 'anxious',
+		'overwhelmed' => 'anxious',
+		'angry'       => 'angry',
+		'demoralized' => 'sad',
+	];
+
+	/**
 	 * British spellings for the moods whose en_US source label differs.
 	 *
 	 * Scoped to plugin-supplied mood labels only. Used for en_GB when no
@@ -105,6 +154,7 @@ final class Mood_Vocabulary {
 	 */
 	public static function register(): void {
 		add_action( 'rest_api_init', [ self::class, 'register_routes' ] );
+		Kind_Facts::register( 'mood', [ self::class, 'facts' ] );
 	}
 
 	/**
@@ -268,6 +318,375 @@ final class Mood_Vocabulary {
 		}
 
 		return $authored;
+	}
+
+	/**
+	 * The mood families, in the order the theme's catalog lists them.
+	 *
+	 * Each is `[ 'key' => 'joy', 'label' => 'Joy', 'code' => 'J' ]`. A code
+	 * is one or two characters and unique across the list; 'other' is always
+	 * present, last unless the filter adds more after it.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return array<string, array{key: string, label: string, code: string}> Family key => family.
+	 */
+	public static function families(): array {
+		$defaults = self::default_families();
+
+		/**
+		 * Filters the mood families.
+		 *
+		 * Add a family, rename one, or change a code. Codes longer than two
+		 * characters are cut, an empty or taken code is replaced with the first
+		 * free one built from the family key, and 'other' is put back if removed.
+		 * To file a mood in a family, use `pkiw_mood_family`.
+		 *
+		 * @since 1.9.0
+		 *
+		 * @param array<string, array{label: string, code: string}> $families Family key => label and code.
+		 */
+		$filtered = apply_filters( 'pkiw_mood_families', $defaults );
+		if ( ! is_array( $filtered ) ) {
+			$filtered = $defaults;
+		}
+
+		$pending = [];
+		foreach ( $filtered as $raw_key => $row ) {
+			$key = sanitize_key( (string) $raw_key );
+			if ( '' === $key || ! is_array( $row ) || isset( $pending[ $key ] ) ) {
+				continue;
+			}
+			$pending[ $key ] = [
+				is_scalar( $row['label'] ?? null ) ? trim( wp_strip_all_tags( (string) $row['label'] ) ) : '',
+				is_scalar( $row['code'] ?? null ) ? self::trim_code( (string) $row['code'] ) : '',
+			];
+		}
+		if ( ! isset( $pending['other'] ) ) {
+			$pending['other'] = [ $defaults['other']['label'], $defaults['other']['code'] ];
+		}
+
+		$families = [];
+		$claimed  = [];
+		foreach ( $pending as $key => [ $label, $given ] ) {
+			$code = '';
+			foreach ( self::code_candidates( $key, $given ) as $candidate ) {
+				if ( ! isset( $claimed[ $candidate ] ) ) {
+					$code = $candidate;
+					break;
+				}
+			}
+			if ( '' === $code ) {
+				_doing_it_wrong(
+					__METHOD__,
+					esc_html( sprintf( 'Mood family %s has no free code and was dropped. Its moods read as other.', $key ) ),
+					'1.9.0'
+				);
+				continue;
+			}
+
+			$claimed[ $code ] = true;
+			$families[ $key ] = [
+				'key'   => $key,
+				'label' => '' !== $label ? $label : ucfirst( str_replace( [ '-', '_' ], ' ', $key ) ),
+				'code'  => $code,
+			];
+		}
+
+		return $families;
+	}
+
+	/**
+	 * One family, falling back to 'other' for a key the list doesn't hold.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string $family_key Family key.
+	 * @return array{key: string, label: string, code: string}
+	 */
+	public static function family( string $family_key ): array {
+		$families = self::families();
+
+		return $families[ $family_key ] ?? $families['other'] ?? [
+			'key'   => 'other',
+			'label' => __( 'Other', 'post-kinds-for-indieweb-in-block-themes' ),
+			'code'  => 'O',
+		];
+	}
+
+	/**
+	 * The family key of a mood.
+	 *
+	 * Resolves in this order: a stored key the vocabulary knows and
+	 * FAMILY_OF_KEY lists; with no key, a label that equals one of the
+	 * vocabulary's spellings, ignoring case; then the `pkiw_mood_family`
+	 * filter. Anything that isn't a family on the list becomes 'other'.
+	 * Displayed text is untouched: display_label() still prints a typed
+	 * label as saved.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string $label Stored label text.
+	 * @param string $key   Stored mood key ('' when none).
+	 * @return string A key of families().
+	 */
+	public static function family_of( string $label, string $key = '' ): string {
+		$family = '';
+
+		if ( '' !== $key ) {
+			if ( null !== self::find( $key ) ) {
+				$family = self::FAMILY_OF_KEY[ $key ] ?? '';
+			}
+		} else {
+			$needle = mb_strtolower( trim( $label ) );
+			if ( '' !== $needle ) {
+				foreach ( self::get_moods() as $mood ) {
+					foreach ( $mood['variants'] as $variant ) {
+						if ( mb_strtolower( $variant ) === $needle ) {
+							$family = self::FAMILY_OF_KEY[ $mood['key'] ] ?? '';
+							break 2;
+						}
+					}
+				}
+			}
+		}
+
+		/**
+		 * Files a mood in a family.
+		 *
+		 * The family is '' when the vocabulary didn't place the mood: a typed
+		 * label, or a mood a site added with `pkiw_mood_labels`. Return a key
+		 * of `pkiw_mood_families`. Anything else reads as 'other'.
+		 *
+		 * @since 1.9.0
+		 *
+		 * @param string $family Family key the vocabulary found, or ''.
+		 * @param string $key    Stored mood key, or ''.
+		 * @param string $label  Stored label text.
+		 */
+		$family = apply_filters( 'pkiw_mood_family', $family, $key, $label );
+		$family = is_string( $family ) ? sanitize_key( $family ) : '';
+
+		return array_key_exists( $family, self::families() ) ? $family : 'other';
+	}
+
+	/**
+	 * Intensity text for a 1-5 rating, such as "Intensity 4 of 5".
+	 *
+	 * A pure formatter, so the facts reader and a theme's editor preview
+	 * print one string.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int|null $intensity Rating.
+	 * @return string The text, or '' for null or a rating outside 1-5.
+	 */
+	public static function intensity_text( ?int $intensity ): string {
+		if ( null === $intensity || $intensity < 1 || $intensity > self::MAX_INTENSITY ) {
+			return '';
+		}
+
+		return sprintf(
+			/* translators: 1: mood intensity from 1 to 5; 2: the highest intensity, 5. */
+			__( 'Intensity %1$d of %2$d', 'post-kinds-for-indieweb-in-block-themes' ),
+			$intensity,
+			self::MAX_INTENSITY
+		);
+	}
+
+	/**
+	 * A mood post's intensity, 1-5, or null when nobody picked one.
+	 *
+	 * Reads the saved rating (meta 1-5) first, then an intensity attribute
+	 * the mood card's block comment actually serializes. It never reads the
+	 * block.json default of 3: parse_blocks() returns only serialized
+	 * attributes, and an explicit pick of 3 is stored only in meta.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int $post_id Post ID.
+	 * @return int|null
+	 */
+	public static function intensity( int $post_id ): ?int {
+		$meta = self::rating_meta( $post_id );
+		if ( null !== $meta ) {
+			return $meta;
+		}
+
+		return self::attribute_intensity( self::card_attrs( $post_id ) );
+	}
+
+	/**
+	 * The facts a theme prints for a mood post.
+	 *
+	 * Label and key come from the post's first mood card, then meta;
+	 * intensity from meta, then a serialized attribute. No note, emoji, time
+	 * or location is among them, and a post the requester can't read has none.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array{label: string, key: string, has_label: bool, name: string, family: string, family_label: string, family_code: string, intensity: int|null, intensity_text: string, day: string}|array{} Facts, or [] when the post can't be shown.
+	 */
+	public static function facts( int $post_id ): array {
+		$post = get_post( $post_id );
+		if ( ! $post instanceof \WP_Post || ! Kind_Facts::can_show( $post ) ) {
+			return [];
+		}
+
+		$card     = self::card_attrs( $post_id );
+		$authored = is_array( $card ) && is_string( $card['mood'] ?? null ) ? (string) $card['mood'] : '';
+		$key      = is_array( $card ) && is_string( $card['moodKey'] ?? null ) ? sanitize_key( (string) $card['moodKey'] ) : '';
+		if ( '' === trim( $authored ) && '' === $key ) {
+			$authored = (string) get_metadata_raw( 'post', $post_id, Meta_Fields::PREFIX . 'mood_label', true );
+			$key      = sanitize_key( (string) get_metadata_raw( 'post', $post_id, Meta_Fields::PREFIX . 'mood_key', true ) );
+		}
+
+		$label     = trim( self::display_label( $authored, $key ) );
+		$family    = self::family( self::family_of( $authored, $key ) );
+		$intensity = self::rating_meta( $post_id ) ?? self::attribute_intensity( $card );
+		$day       = get_post_datetime( $post, 'date', 'local' );
+
+		return [
+			'label'          => $label,
+			'key'            => $key,
+			'has_label'      => '' !== $label,
+			'name'           => '' !== $label ? $label : __( 'Mood', 'post-kinds-for-indieweb-in-block-themes' ),
+			'family'         => $family['key'],
+			'family_label'   => $family['label'],
+			'family_code'    => $family['code'],
+			'intensity'      => $intensity,
+			'intensity_text' => self::intensity_text( $intensity ),
+			'day'            => $day instanceof \DateTimeImmutable ? $day->format( 'Y-m-d' ) : '',
+		];
+	}
+
+	/**
+	 * The saved 1-5 rating, or null when there's none.
+	 *
+	 * The registered default is 0, and a post that never saved the key has
+	 * no row; both read as null.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return int|null
+	 */
+	private static function rating_meta( int $post_id ): ?int {
+		$value = get_metadata_raw( 'post', $post_id, Meta_Fields::PREFIX . 'mood_rating', true );
+		$value = is_numeric( $value ) ? (int) $value : 0;
+
+		return $value >= 1 && $value <= self::MAX_INTENSITY ? $value : null;
+	}
+
+	/**
+	 * An intensity attribute the mood card's comment serializes, 1-5.
+	 *
+	 * @param array<string, mixed>|null $card Card attributes, or null with no card.
+	 * @return int|null
+	 */
+	private static function attribute_intensity( ?array $card ): ?int {
+		if ( null === $card || ! array_key_exists( 'intensity', $card ) ) {
+			return null;
+		}
+
+		$value = $card['intensity'];
+		if ( is_float( $value ) && floor( $value ) === $value ) {
+			$value = (int) $value;
+		}
+
+		return is_int( $value ) && $value >= 1 && $value <= self::MAX_INTENSITY ? $value : null;
+	}
+
+	/**
+	 * The serialized attributes of a post's first mood card, found at any depth.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array<string, mixed>|null Null when the post has no mood card.
+	 */
+	private static function card_attrs( int $post_id ): ?array {
+		$content = (string) get_post_field( 'post_content', $post_id );
+		if ( ! str_contains( $content, 'wp:post-kinds-indieweb/mood-card' ) ) {
+			return null;
+		}
+
+		foreach ( flatten_blocks( parse_blocks( $content ) ) as $block ) {
+			if ( 'post-kinds-indieweb/mood-card' === ( $block['blockName'] ?? '' ) ) {
+				return is_array( $block['attrs'] ?? null ) ? $block['attrs'] : [];
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * The plugin's families before the filter.
+	 *
+	 * @return array<string, array{label: string, code: string}>
+	 */
+	private static function default_families(): array {
+		$rows = [
+			[ 'joy', __( 'Joy', 'post-kinds-for-indieweb-in-block-themes' ), _x( 'J', 'mood family code: Joy', 'post-kinds-for-indieweb-in-block-themes' ) ],
+			[ 'calm', __( 'Calm', 'post-kinds-for-indieweb-in-block-themes' ), _x( 'C', 'mood family code: Calm', 'post-kinds-for-indieweb-in-block-themes' ) ],
+			[ 'energy', __( 'Energy', 'post-kinds-for-indieweb-in-block-themes' ), _x( 'E', 'mood family code: Energy', 'post-kinds-for-indieweb-in-block-themes' ) ],
+			[ 'thoughtful', __( 'Thoughtful', 'post-kinds-for-indieweb-in-block-themes' ), _x( 'T', 'mood family code: Thoughtful', 'post-kinds-for-indieweb-in-block-themes' ) ],
+			[ 'uncertain', __( 'Uncertain', 'post-kinds-for-indieweb-in-block-themes' ), _x( 'U', 'mood family code: Uncertain', 'post-kinds-for-indieweb-in-block-themes' ) ],
+			[ 'sad', __( 'Sad', 'post-kinds-for-indieweb-in-block-themes' ), _x( 'S', 'mood family code: Sad', 'post-kinds-for-indieweb-in-block-themes' ) ],
+			[ 'angry', __( 'Angry', 'post-kinds-for-indieweb-in-block-themes' ), _x( 'A', 'mood family code: Angry', 'post-kinds-for-indieweb-in-block-themes' ) ],
+			[ 'anxious', __( 'Anxious', 'post-kinds-for-indieweb-in-block-themes' ), _x( 'Ax', 'mood family code: Anxious', 'post-kinds-for-indieweb-in-block-themes' ) ],
+			[ 'social', __( 'Social', 'post-kinds-for-indieweb-in-block-themes' ), _x( 'So', 'mood family code: Social', 'post-kinds-for-indieweb-in-block-themes' ) ],
+			[ 'physical', __( 'Physical', 'post-kinds-for-indieweb-in-block-themes' ), _x( 'P', 'mood family code: Physical', 'post-kinds-for-indieweb-in-block-themes' ) ],
+			[ 'work', __( 'Work', 'post-kinds-for-indieweb-in-block-themes' ), _x( 'W', 'mood family code: Work', 'post-kinds-for-indieweb-in-block-themes' ) ],
+			[ 'playful', __( 'Playful', 'post-kinds-for-indieweb-in-block-themes' ), _x( 'Pl', 'mood family code: Playful', 'post-kinds-for-indieweb-in-block-themes' ) ],
+			[ 'other', __( 'Other', 'post-kinds-for-indieweb-in-block-themes' ), _x( 'O', 'mood family code: Other', 'post-kinds-for-indieweb-in-block-themes' ) ],
+		];
+
+		$families = [];
+		foreach ( $rows as [ $key, $label, $code ] ) {
+			$families[ $key ] = [
+				'label' => $label,
+				'code'  => $code,
+			];
+		}
+
+		return $families;
+	}
+
+	/**
+	 * A family code cut to two graphemes.
+	 *
+	 * @param string $code Raw code.
+	 * @return string
+	 */
+	private static function trim_code( string $code ): string {
+		$code = trim( wp_strip_all_tags( $code ) );
+
+		return function_exists( 'grapheme_substr' ) ? (string) grapheme_substr( $code, 0, 2 ) : mb_substr( $code, 0, 2 );
+	}
+
+	/**
+	 * The codes a family may take, best first.
+	 *
+	 * Its own code; then the first two letters of its key; then its first
+	 * letter with each later letter of the key in turn; then its first
+	 * letter with 2 through 9 ('other' keeps going to 99, so it is never
+	 * left without one).
+	 *
+	 * @param string $key   Family key.
+	 * @param string $given Code the list asked for ('' for none).
+	 * @return list<string>
+	 */
+	private static function code_candidates( string $key, string $given ): array {
+		$first        = ucfirst( substr( $key, 0, 1 ) );
+		$length       = strlen( $key );
+		$candidates   = '' !== $given ? [ $given ] : [];
+		$candidates[] = ucfirst( substr( $key, 0, 2 ) );
+		for ( $at = 1; $at < $length; $at++ ) {
+			$candidates[] = $first . $key[ $at ];
+		}
+		for ( $number = 2, $last = 'other' === $key ? 99 : 9; $number <= $last; $number++ ) {
+			$candidates[] = $first . $number;
+		}
+
+		return array_values( array_filter( array_unique( $candidates ), static fn( string $code ): bool => '' !== $code ) );
 	}
 
 	/**
