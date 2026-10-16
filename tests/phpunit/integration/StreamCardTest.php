@@ -2751,7 +2751,10 @@ final class StreamCardTest extends WP_UnitTestCase {
 	}
 
 	public function test_untitled_thought_is_empty_for_a_post_with_no_text(): void {
+		// WordPress trunk refuses an empty post unless this filter allows it.
+		add_filter( 'wp_insert_post_empty_content', '__return_false' );
 		$post_id = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => '', 'post_excerpt' => '', 'post_content' => '' ] );
+		remove_filter( 'wp_insert_post_empty_content', '__return_false' );
 
 		$this->assertSame( '', \PKIW\untitled_thought( get_post( $post_id ) ) );
 	}
