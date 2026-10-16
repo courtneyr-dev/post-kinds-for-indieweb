@@ -118,6 +118,15 @@ final class W4AdminScreenTitlePrivacyTest extends WP_UnitTestCase {
 		return \PKIW\render_stream_card();
 	}
 
+	private function xpath( string $html ): DOMXPath {
+		$dom = new DOMDocument();
+		libxml_use_internal_errors( true );
+		$dom->loadHTML( '<?xml encoding="utf-8"?><div>' . $html . '</div>' );
+		libxml_clear_errors();
+
+		return new DOMXPath( $dom );
+	}
+
 	private function assertNoHiddenTitle( string $haystack, string $where ): void {
 		$lower = strtolower( $haystack );
 		foreach ( self::NEEDLES as $needle ) {
@@ -223,6 +232,145 @@ final class W4AdminScreenTitlePrivacyTest extends WP_UnitTestCase {
 		$this->assertSame( 'Check-in, August 26, 2026', $admin['name'] );
 		$this->assertEquals( $visitor, $admin, 'An administrator reads what a visitor reads.' );
 		$this->assertEquals( $visitor, \PKIW\kind_facts( $id ) );
+	}
+
+	/**
+	 * A hidden-location title is a synthetic name (X8), so craft facts say it is
+	 * no title and nothing prints it as a p-name, on every screen.
+	 *
+	 * @return array<string, array{bool}>
+	 */
+	public function screen_cases(): array {
+		return [
+			'front'        => [ false ],
+			'admin screen' => [ true ],
+		];
+	}
+
+	/**
+	 * @dataProvider screen_cases
+	 *
+	 * @param bool $admin Whether the request is an admin screen.
+	 */
+	public function test_craft_facts_for_a_hidden_location_title_are_not_a_title( bool $admin ): void {
+		$hidden  = $this->hidden_title_post( 'craft' );
+		$visible = self::factory()->post->create(
+			[
+				'post_status' => 'publish',
+				'post_title'  => 'Wool Scarf',
+				'post_date'   => '2026-08-25 09:15:00',
+			]
+		);
+		wp_set_object_terms( $visible, 'craft', Taxonomy::TAXONOMY );
+		if ( $admin ) {
+			$this->administrator();
+			$this->admin_screen();
+		}
+
+		$facts = Craft_Archive::facts( $hidden );
+
+		$this->assertSame( 'Check-in, August 26, 2026', $facts['name'] );
+		$this->assertFalse( $facts['name_is_title'], 'A hidden title is a synthetic name.' );
+		$this->assertTrue( Craft_Archive::facts( $visible )['name_is_title'], 'A visible title stays a title.' );
+		$this->assertSame( 'Wool Scarf', Craft_Archive::facts( $visible )['name'] );
+	}
+
+	/**
+	 * @return array<string, array{string, string}>
+	 */
+	public function no_p_name_cases(): array {
+		return [
+			'note'              => [ 'note', '' ],
+			'checkin'           => [ 'checkin', '' ],
+			'craft'             => [ 'craft', '' ],
+			'protected note'    => [ 'note', self::PASSWORD ],
+			'protected checkin' => [ 'checkin', self::PASSWORD ],
+			'protected mood'    => [ 'mood', self::PASSWORD ],
+			'protected craft'   => [ 'craft', self::PASSWORD ],
+		];
+	}
+
+	/**
+	 * @dataProvider no_p_name_cases
+	 *
+	 * @param string $kind     Kind slug.
+	 * @param string $password Post password.
+	 */
+	public function test_a_stream_card_gives_a_hidden_location_title_no_p_name( string $kind, string $password ): void {
+		$id = $this->hidden_title_post( $kind, $password );
+
+		$front = $this->stream_card( $id );
+		$this->admin_screen();
+		$admin = $this->stream_card( $id );
+
+		foreach ( [ 'front' => $front, 'admin screen' => $admin ] as $where => $html ) {
+			$this->assertStringContainsString( 'Check-in, August 26, 2026', $html, $where );
+			$this->assertSame( 0, $this->xpath( $html )->query( '//*[contains(concat(" ",normalize-space(@class)," ")," p-name ")]' )->length, $where . ': a synthetic name carries no p-name.' );
+		}
+	}
+
+	public function test_a_visible_title_keeps_its_p_name_on_the_stream_card(): void {
+		$id = self::factory()->post->create(
+			[
+				'post_status' => 'publish',
+				'post_title'  => 'Wool Scarf',
+			]
+		);
+		wp_set_object_terms( $id, 'craft', Taxonomy::TAXONOMY );
+		$protected = self::factory()->post->create(
+			[
+				'post_status'   => 'publish',
+				'post_title'    => 'Locked Scarf',
+				'post_password' => self::PASSWORD,
+			]
+		);
+		wp_set_object_terms( $protected, 'craft', Taxonomy::TAXONOMY );
+
+		foreach ( [ $id, $protected ] as $post_id ) {
+			$this->assertSame( 1, $this->xpath( $this->stream_card( $post_id ) )->query( '//*[contains(concat(" ",normalize-space(@class)," ")," p-name ")]' )->length );
+		}
+	}
+
+	/**
+	 * @dataProvider screen_cases
+	 *
+	 * @param bool $admin Whether the request is an admin screen.
+	 */
+	public function test_the_craft_archive_gives_a_hidden_location_title_no_p_name( bool $admin ): void {
+		$this->hidden_title_post( 'craft' );
+		$visible = self::factory()->post->create(
+			[
+				'post_status' => 'publish',
+				'post_title'  => 'Wool Scarf',
+				'post_date'   => '2026-08-25 09:15:00',
+			]
+		);
+		wp_set_object_terms( $visible, 'craft', Taxonomy::TAXONOMY );
+		add_post_meta( $visible, '_pkiw_craft_type', 'Loom work' );
+
+		$this->set_permalink_structure( '/%postname%/' );
+		get_taxonomy( Taxonomy::TAXONOMY )->add_rewrite_rules();
+		flush_rewrite_rules( false );
+		$this->go_to( (string) get_term_link( 'craft', Taxonomy::TAXONOMY ) );
+		if ( $admin ) {
+			$this->admin_screen();
+		}
+		$template = resolve_block_template( 'taxonomy', [ 'taxonomy-kind-craft.php', 'taxonomy-kind.php', 'taxonomy.php', 'archive.php', 'index.php' ], '' );
+		$this->assertNotNull( $template );
+		global $_wp_current_template_id, $_wp_current_template_content;
+		$_wp_current_template_id      = $template->id;
+		$_wp_current_template_content = $template->content;
+
+		$html  = get_the_block_template_html();
+		$xpath = $this->xpath( $html );
+
+		$this->assertNoHiddenTitle( $html, 'craft archive' );
+		$hidden_titles = $xpath->query( '//*[contains(@class,"pk-title")][.//a[contains(.,"Check-in, August 26, 2026")]]' );
+		$this->assertSame( 1, $hidden_titles->length, 'The listing prints the safe name once.' );
+		$this->assertStringNotContainsString( 'p-name', (string) $hidden_titles->item( 0 )->getAttribute( 'class' ) );
+		$visible_titles = $xpath->query( '//*[contains(@class,"pk-title")][.//a[contains(.,"Wool Scarf")]]' );
+		$this->assertSame( 1, $visible_titles->length );
+		$this->assertStringContainsString( 'p-name', (string) $visible_titles->item( 0 )->getAttribute( 'class' ) );
 	}
 
 	public function test_mood_facts_and_the_year_grid_never_carry_a_hidden_location_title(): void {

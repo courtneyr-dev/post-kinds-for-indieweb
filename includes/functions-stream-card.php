@@ -378,6 +378,21 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 }
 
 /**
+ * Whether the stored title was generated from a location that is hidden.
+ *
+ * What a visitor reads in its place is a synthetic name, never the entry's
+ * title, so it carries no p-name (X8).
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post Post.
+ * @return bool True when the safe title replaces the stored one.
+ */
+function post_title_is_hidden( \WP_Post $post ): bool {
+	return Title_Privacy::safe_title( $post->ID ) !== (string) $post->post_title;
+}
+
+/**
  * A post's title as a visitor reads it, whichever screen asks.
  *
  * Title_Privacy hands back the stored title on an admin screen, so
@@ -392,10 +407,11 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
  * @return string The title to print, which may be ''.
  */
 function visitor_post_title( \WP_Post $post ): string {
-	$safe = Title_Privacy::safe_title( $post->ID );
-	if ( $safe === (string) $post->post_title ) {
+	if ( ! post_title_is_hidden( $post ) ) {
 		return get_the_title( $post );
 	}
+
+	$safe = Title_Privacy::safe_title( $post->ID );
 
 	$name = trim( wp_strip_all_tags( $safe ) );
 	if ( '' !== $name && '' !== (string) $post->post_password ) {
@@ -423,10 +439,11 @@ function render_protected_stream_card( \WP_Post $post, int $heading_level ): str
 	// get_the_title() prefixes "Protected: " even to an empty title, so the
 	// stored title decides whether the post has a name of its own.
 	$has_title = '' !== trim( $post->post_title );
+	$is_real   = $has_title && ! post_title_is_hidden( $post );
 	$title     = $has_title ? trim( visitor_post_title( $post ) ) : untitled_name( $post, false );
 
 	return '<article class="pk-card pk-card--stream pk-card--protected k-' . esc_attr( '' !== $kind_slug ? $kind_slug : 'note' ) . ' h-entry">'
-		. '<h' . $heading_level . ' class="' . ( $has_title ? 'pk-title p-name' : 'pk-title' ) . '">'
+		. '<h' . $heading_level . ' class="' . ( $is_real ? 'pk-title p-name' : 'pk-title' ) . '">'
 		. '<a class="u-url" href="' . esc_url( (string) get_permalink( $post ) ) . '">' . esc_html( $title ) . '</a>'
 		. '</h' . $heading_level . '></article>';
 }
@@ -1128,7 +1145,8 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	}
 	// A synthetic title is navigation, not the entry's name — no p-name, so
 	// mf2 parsers fall back to the implied name / content as intended.
-	$title_class = $has_title ? 'pk-title p-name' : 'pk-title';
+	// A hidden-location title is the safe name, which is synthetic too.
+	$title_class = $has_title && ! post_title_is_hidden( $post ) ? 'pk-title p-name' : 'pk-title';
 
 	// A recipe's facts come from the recipe plugin when one holds the recipe,
 	// read here as the card renders.
