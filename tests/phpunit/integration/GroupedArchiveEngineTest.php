@@ -1663,10 +1663,10 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 		$this->assertSame( '<div class="pkiw-group-placeholder" hidden></div>', $this->editor_render( self::WEEKS, $p['w1b'], $attrs, $params ) );
 		$this->assertSame( [ [ 'h2:September 14–20, 2026', [ 'W2' ] ] ], $this->sections( $this->editor_render( self::WEEKS, $p['w2'], $attrs, $params ) ) );
 
-		$third = $this->editor_render( self::WEEKS, $p['w3a'], $attrs, $params );
-		$this->assertStringContainsString( 'data-pkiw-sections="2"', $third, 'Page 2 is weeks 3 and 4.' );
-		$fifth = $this->editor_render( self::WEEKS, $p['w5'], $attrs, $params );
-		$this->assertStringContainsString( 'data-pkiw-sections="1"', $fifth, 'Page 3 holds the last week alone.' );
+		$hidden = '<div class="pkiw-group-placeholder" hidden></div>';
+		foreach ( [ 'w3a', 'w3b', 'w4', 'w5' ] as $later ) {
+			$this->assertSame( $hidden, $this->editor_render( self::WEEKS, $p[ $later ], $attrs, $params ), "{$later} sits on front-end page 2 or 3, so the editor leaves it hidden." );
+		}
 
 		$pages = [];
 		foreach ( $captured as $page ) {
@@ -1674,15 +1674,41 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 				$pages[] = $page;
 			}
 		}
+		$this->assertSame( [ [ $p['w1a'], $p['w1b'], $p['w2'] ] ], $pages, 'Only the newest page, whole weeks, ever reaches an item.' );
+	}
+
+	public function test_the_editor_shows_only_the_newest_weeks_when_light_weeks_load_more_posts(): void {
+		update_option( 'start_of_week', 1 );
+		$ids = [];
+		foreach ( [ '2026-09-23', '2026-09-22', '2026-09-15', '2026-09-08', '2026-09-01', '2026-08-26', '2026-08-18', '2026-08-11' ] as $i => $day ) {
+			$ids[] = $this->make( 'weekkind', "Run {$i}", "{$day} 10:00:00" );
+		}
+		$ids    = array_reverse( $ids );
+		$params = [ 'pkiw_kind' => 'weekkind' ];
+		$attrs  = [ 'weeksPerPage' => 2 ];
+
+		$visible = [];
+		foreach ( array_reverse( $ids ) as $id ) {
+			$html = $this->editor_render( self::WEEKS, $id, $attrs, $params );
+			foreach ( $this->sections( $html ) as $section ) {
+				$visible[] = $section[0];
+			}
+		}
+
 		$this->assertSame(
-			[
-				[ $p['w1a'], $p['w1b'], $p['w2'] ],
-				[ $p['w3a'], $p['w3b'], $p['w4'] ],
-				[ $p['w5'] ],
-			],
-			$pages,
-			'Each page is whole weeks, newest first.'
+			[ 'h2:September 21–27, 2026', 'h2:September 14–20, 2026' ],
+			$visible,
+			'Eight posts over six weeks, all loaded: the editor shows the two weeks of front-end page 1 and no more.'
 		);
+	}
+
+	public function test_the_main_query_plan_carries_the_entrys_weeks_per_page(): void {
+		$plan = static fn( array $attrs ) => Grouped_Archive::main_query_plan( new WP_Query(), 'weekkind', '<!-- wp:query {"queryId":7,"query":{"inherit":true}} --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:' . self::WEEKS . ' ' . wp_json_encode( (object) $attrs ) . ' /--><!-- /wp:post-template --></div><!-- /wp:query -->' );
+
+		$this->assertSame( 3, $plan( [ 'weeksPerPage' => 3 ] )['weeks'] );
+		$this->assertSame( 12, $plan( [ 'weeksPerPage' => 99 ] )['weeks'], 'Clamped to 12 like the section setting.' );
+		$this->assertSame( 0, $plan( [] )['weeks'], 'Absent is 0.' );
+		$this->assertSame( 2, $plan( [ 'weeksPerPage' => 2, 'linesPerPage' => 5 ] )['weeks'] );
 	}
 
 	public function test_weeks_per_page_beats_lines_per_page_in_the_editor_and_lines_still_count_without_it(): void {

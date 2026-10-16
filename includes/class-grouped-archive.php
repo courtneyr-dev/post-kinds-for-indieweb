@@ -458,7 +458,7 @@ final class Grouped_Archive {
 	 * @param \WP_Query $query            Main query.
 	 * @param string    $kind             Kind slug.
 	 * @param string    $template_content Resolved template, patterns included.
-	 * @return array{per_page:int, vars:array<string, string>}|null Null when no entry block configures the archive.
+	 * @return array{per_page:int, weeks:int, vars:array<string, string>}|null Null when no entry block configures the archive. `weeks` is the entry's weeksPerPage (0 when it has none), clamped to 12.
 	 */
 	public static function main_query_plan( \WP_Query $query, string $kind, string $template_content ): ?array {
 		$entry = self::main_entry( parse_blocks( $template_content ) );
@@ -471,6 +471,7 @@ final class Grouped_Archive {
 
 		return [
 			'per_page' => $settings['per_page'],
+			'weeks'    => $settings['weeks'],
 			'vars'     => null === $source ? [] : self::query_vars( $source, $settings ),
 		];
 	}
@@ -1280,9 +1281,12 @@ final class Grouped_Archive {
 		};
 		$key   = $group( $post_id );
 		$weeks = (int) ( $settings['weeks'] ?? 0 );
+		$later = false;
 		if ( $weeks > 0 && $source instanceof Date_Source && 'week' === $source->unit() ) {
 			// A page is whole weeks, as the calendar pages are; a stray linesPerPage doesn't cut one.
-			[ $first, $end ] = self::week_page_bounds( array_map( $group, $order ), $index, $weeks );
+			[ $first, $end, $page_at ] = self::week_page_bounds( array_map( $group, $order ), $index, $weeks );
+			// The editor previews the newest page only; posts the preview loads from later pages stay hidden.
+			$later = $page_at > 0;
 		} else {
 			$per_page = (int) $settings['per_page'] > 0 ? (int) $settings['per_page'] : ( Kind_Archive_Layouts::preview_page_sizes()[ $kind ] ?? (int) get_option( 'posts_per_page' ) );
 			$first    = $per_page > 0 ? $index - ( $index % $per_page ) : 0;
@@ -1290,7 +1294,7 @@ final class Grouped_Archive {
 		}
 
 		self::$preview_page = array_slice( $order, $first, $end - $first );
-		if ( $index > $first && $key === $group( $order[ $index - 1 ] ) ) {
+		if ( $later || ( $index > $first && $key === $group( $order[ $index - 1 ] ) ) ) {
 			return [];
 		}
 
@@ -1320,7 +1324,7 @@ final class Grouped_Archive {
 	 * @param string[] $keys  Each post's week key, in preview order (weeks run contiguously).
 	 * @param int      $index Position of the post being previewed.
 	 * @param int      $weeks Weeks to a page.
-	 * @return array{0:int, 1:int} First position on the page and the position after the last.
+	 * @return array{0:int, 1:int, 2:int} First position on the page, the position after the last, and the page's index (0 is the newest).
 	 */
 	private static function week_page_bounds( array $keys, int $index, int $weeks ): array {
 		$week_of = [];
@@ -1345,6 +1349,6 @@ final class Grouped_Archive {
 			++$end;
 		}
 
-		return [ $first, $end ];
+		return [ $first, $end, $page ];
 	}
 }
