@@ -623,15 +623,10 @@ final class CraftArchiveTest extends WP_UnitTestCase {
 		sort( $found );
 
 		// The plan's `git grep` over includes/ src/ templates/ patterns/ matches
-		// class-taxonomy.php's shipped description only. Two lines in files the
-		// health-rule lane owns match too: an example in a meta description and a
-		// docblock example. They aren't craft logic and this lane doesn't own
-		// them. The list holds each exact line, so a new match anywhere, those two
-		// files included, fails. Remove the two when the lines are reworded.
+		// class-taxonomy.php's shipped description only. The list holds that exact
+		// line, so a new match anywhere fails.
 		$known = [
-			"includes/class-meta-fields.php | 'description' => __( 'What kind of craft the project is, such as Knitting.', 'post-kinds-for-indieweb-in-block-themes' ),",
 			"includes/class-taxonomy.php | 'description' => 'Making something by hand - knitting, woodworking, 3D printing.',",
-			'includes/functions-stream-card.php | * `Knitting` and `18 hr`, the time as a machine-readable duration. No status,',
 		];
 		sort( $known );
 

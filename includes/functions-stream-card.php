@@ -344,7 +344,7 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 	// nothing else. A synthetic block reuses the card structure, the Able
 	// Player embed path, and the on-demand style enqueue.
 	if ( 'watch' === get_post_kind_slug( $post ) ) {
-		$attrs = [ 'mediaTitle' => get_the_title( $post ) ];
+		$attrs = [ 'mediaTitle' => visitor_post_title( $post ) ];
 
 		$video_url = extract_first_video_url( (string) $post->post_content );
 		if ( '' !== $video_url ) {
@@ -378,6 +378,37 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 }
 
 /**
+ * A post's title as a visitor reads it, whichever screen asks.
+ *
+ * Title_Privacy hands back the stored title on an admin screen, so
+ * get_the_title() would print a title generated from a hidden location
+ * there. A hidden title is replaced by the safe one with its tags stripped,
+ * and a password-protected post gets core's prefix back, because the safe
+ * title carries none. Any other title comes from get_the_title().
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post Post.
+ * @return string The title to print, which may be ''.
+ */
+function visitor_post_title( \WP_Post $post ): string {
+	$safe = Title_Privacy::safe_title( $post->ID );
+	if ( $safe === (string) $post->post_title ) {
+		return get_the_title( $post );
+	}
+
+	$name = trim( wp_strip_all_tags( $safe ) );
+	if ( '' !== $name && '' !== (string) $post->post_password ) {
+		/** This filter is documented in wp-includes/post-template.php */
+		/* translators: %s: the post title. Core's string. */
+		$format = (string) apply_filters( 'protected_title_format', __( 'Protected: %s', 'default' ), $post ); // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch,WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core's own string and hook.
+		$name   = sprintf( $format, $name );
+	}
+
+	return $name;
+}
+
+/**
  * The Stream card for a password-protected post: its title, linked to the
  * post, and nothing from its body or its kind's facts.
  *
@@ -392,7 +423,7 @@ function render_protected_stream_card( \WP_Post $post, int $heading_level ): str
 	// get_the_title() prefixes "Protected: " even to an empty title, so the
 	// stored title decides whether the post has a name of its own.
 	$has_title = '' !== trim( $post->post_title );
-	$title     = $has_title ? trim( get_the_title( $post ) ) : untitled_name( $post, false );
+	$title     = $has_title ? trim( visitor_post_title( $post ) ) : untitled_name( $post, false );
 
 	return '<article class="pk-card pk-card--stream pk-card--protected k-' . esc_attr( '' !== $kind_slug ? $kind_slug : 'note' ) . ' h-entry">'
 		. '<h' . $heading_level . ' class="' . ( $has_title ? 'pk-title p-name' : 'pk-title' ) . '">'
@@ -1090,7 +1121,7 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	$excerpt       = trim( wp_strip_all_tags( get_the_excerpt( $post ) ) );
 	$headline_only = generic_card_headline_only( $kind_slug );
 
-	$title     = trim( get_the_title( $post ) );
+	$title     = trim( visitor_post_title( $post ) );
 	$has_title = '' !== $title && ! stream_card_title_is_cited_url( $post, $title );
 	if ( ! $has_title ) {
 		$title = untitled_name( $post, false );
@@ -1249,8 +1280,8 @@ function recipe_stream_card_facts( array $recipe ): string {
  * A craft post's type and time spent, each printed only when known.
  *
  * Reads the craft facts, so a theme and the generic card print one line:
- * `Knitting` and `18 hr`, the time as a machine-readable duration. No status,
- * no "Finished" and no link.
+ * the craft type as stored, then the time as a machine-readable duration
+ * labeled `18 hr`. No status, no "Finished" and no link.
  *
  * @since 1.9.0
  *
@@ -1432,7 +1463,7 @@ function stream_card_thumbnail_alt( \WP_Post $post, int $thumbnail_id ): string 
 		return $attachment_alt;
 	}
 
-	return wp_strip_all_tags( get_the_title( $post ) );
+	return wp_strip_all_tags( visitor_post_title( $post ) );
 }
 
 /**
