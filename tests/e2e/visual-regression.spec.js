@@ -65,6 +65,11 @@ const SSR_ENUM_SAMPLES = {
 	'post-kinds-indieweb/exercise-card': { distanceUnit: 'km' },
 };
 
+// Server-rendered previews that print the post's own date. A new post's date
+// is the run date, so the baseline would go stale overnight; save the draft
+// with a fixed date before inserting the block.
+const FIXED_DATE_BLOCKS = [ 'post-kinds-indieweb/exercise-card' ];
+
 test.slow();
 
 test.describe( 'Visual Regression', () => {
@@ -113,6 +118,18 @@ test.describe( 'Visual Regression', () => {
 				] )
 			);
 			Object.assign( attrs, SSR_ENUM_SAMPLES[ name ] || {} );
+
+			if ( FIXED_DATE_BLOCKS.includes( name ) ) {
+				await page.evaluate( () => {
+					window.wp.data
+						.dispatch( 'core/editor' )
+						.editPost( { date: '2026-07-04T12:00:00' } );
+					return window.wp.data.dispatch( 'core/editor' ).savePost();
+				} );
+				await page.waitForFunction(
+					() => ! window.wp.data.select( 'core/editor' ).isSavingPost()
+				);
+			}
 
 			// A block with a `parent` rule (step, inside steps) can't go in at
 			// the root: insertBlocks() keeps only what canInsertBlockType()
