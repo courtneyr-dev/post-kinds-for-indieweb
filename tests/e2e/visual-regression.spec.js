@@ -55,6 +55,16 @@ const SELECTED_ITEM_SAMPLE = {
 	id: 'sample-item-id',
 };
 
+// Server-rendered previews (ServerSideRender) send their attributes to the
+// block-renderer REST route, which validates them against block.json and
+// answers "Invalid parameter(s): attributes" for a value outside an enum.
+// The sampler's flat string isn't a member, so the editor would snapshot the
+// error notice. Give those attributes a real member instead. Client-rendered
+// blocks keep the sampler's value, so their baselines don't move.
+const SSR_ENUM_SAMPLES = {
+	'post-kinds-indieweb/exercise-card': { distanceUnit: 'km' },
+};
+
 test.slow();
 
 test.describe( 'Visual Regression', () => {
@@ -102,18 +112,33 @@ test.describe( 'Visual Regression', () => {
 						: sampleFor( attr, attrDef ),
 				] )
 			);
+			Object.assign( attrs, SSR_ENUM_SAMPLES[ name ] || {} );
 
+			// A block with a `parent` rule (step, inside steps) can't go in at
+			// the root: insertBlocks() keeps only what canInsertBlockType()
+			// allows there. Insert it inside a fresh parent, as
+			// block-field-matrix.spec.js does.
 			await page.evaluate(
-				( { blockName, blockAttrs } ) => {
+				( { blockName, blockAttrs, parents } ) => {
 					const block = window.wp.blocks.createBlock(
 						blockName,
 						blockAttrs
 					);
+					const root =
+						parents && parents.length > 0
+							? window.wp.blocks.createBlock( parents[ 0 ], {}, [
+									block,
+								] )
+							: block;
 					window.wp.data
 						.dispatch( 'core/block-editor' )
-						.insertBlocks( block );
+						.insertBlocks( root );
 				},
-				{ blockName: name, blockAttrs: attrs }
+				{
+					blockName: name,
+					blockAttrs: attrs,
+					parents: def.parent || null,
+				}
 			);
 
 			const block = editor.locator( `[data-type="${ name }"]` );
