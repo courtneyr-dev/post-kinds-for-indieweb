@@ -77,7 +77,7 @@ final class Grouped_Archive {
 	/**
 	 * Registered entry blocks by block name.
 	 *
-	 * @var array<string, array{shape:string, source:?string, expose_key:bool, heading_ids:bool, list:string, classes:array<string, string>}>
+	 * @var array<string, array{shape:string, source:?string, expose_key:bool, heading_ids:bool, list:string, classes:array<string, string>, section_body:?callable}>
 	 */
 	private static array $entries = [];
 
@@ -188,11 +188,16 @@ final class Grouped_Archive {
 	 *   unique on the page. Default false.
 	 * - list: 'ul' (default) or 'ol', the element that holds a section's items.
 	 * - classes: wrapper, section, heading, items and placeholder classes.
+	 * - section_body: `callable( Archive_Group $group, array<int, string> $items_by_post_id, array $settings ): string`.
+	 *   Prints a section's body in place of the default list. The items are
+	 *   the engine's own `li` strings, keyed by post ID in query order, on
+	 *   the front end and in a block-renderer request alike. The heading is
+	 *   still the engine's. Default none: the engine prints its list.
 	 *
 	 * @param string               $block_name Block name, `namespace/name`.
 	 * @param array<string, mixed> $args       Args.
 	 * @return void
-	 * @throws \InvalidArgumentException On a malformed name, an unknown shape or a fixed source that isn't a registered date source.
+	 * @throws \InvalidArgumentException On a malformed name, an unknown shape, a fixed source that isn't a registered date source or a section body that isn't callable.
 	 */
 	public static function register_entry_block( string $block_name, array $args = [] ): void {
 		if ( 1 !== preg_match( '#^[a-z0-9-]+/[a-z0-9-]+$#', $block_name ) ) {
@@ -210,6 +215,10 @@ final class Grouped_Archive {
 		if ( null !== $source && ! self::source( $source ) instanceof Date_Source ) {
 			throw new \InvalidArgumentException( sprintf( 'Entry block "%s" can fix only a registered date source.', esc_html( $block_name ) ) );
 		}
+		$body = $args['section_body'] ?? null;
+		if ( null !== $body && ! is_callable( $body ) ) {
+			throw new \InvalidArgumentException( sprintf( 'Entry block "%s" section_body must be callable.', esc_html( $block_name ) ) );
+		}
 		$classes = self::DEFAULT_CLASSES;
 		foreach ( (array) ( $args['classes'] ?? [] ) as $part => $class ) {
 			if ( isset( $classes[ $part ] ) && is_string( $class ) ) {
@@ -218,12 +227,13 @@ final class Grouped_Archive {
 		}
 
 		self::$entries[ $block_name ] = [
-			'shape'       => $shape,
-			'source'      => $source,
-			'expose_key'  => ! empty( $args['expose_key'] ),
-			'heading_ids' => ! empty( $args['heading_ids'] ),
-			'list'        => $list,
-			'classes'     => $classes,
+			'shape'        => $shape,
+			'source'       => $source,
+			'expose_key'   => ! empty( $args['expose_key'] ),
+			'heading_ids'  => ! empty( $args['heading_ids'] ),
+			'list'         => $list,
+			'classes'      => $classes,
+			'section_body' => $body,
 		];
 	}
 
@@ -513,7 +523,7 @@ final class Grouped_Archive {
 		foreach ( $run as $id ) {
 			$member = get_post( $id );
 			if ( $member instanceof \WP_Post ) {
-				$items[] = '<li>' . $item( $member, true, $kind ) . '</li>';
+				$items[ $id ] = '<li>' . $item( $member, true, $kind ) . '</li>';
 			}
 		}
 
@@ -528,7 +538,9 @@ final class Grouped_Archive {
 	 * order, then post_date DESC, ID DESC. Every source expression is a
 	 * scalar subquery used only here, so the query keeps one row per post
 	 * and pagination counts don't change. A date source orders by date and
-	 * ID only, whatever order the loop asked for.
+	 * ID only, whatever order the loop asked for; a month source built with
+	 * days 'asc' orders the months newest first and the days inside a month
+	 * oldest first.
 	 *
 	 * @internal Hooked to `posts_orderby`.
 	 *
@@ -549,6 +561,10 @@ final class Grouped_Archive {
 		$tail = "{$wpdb->posts}.post_date DESC, {$wpdb->posts}.ID DESC";
 		$sql  = $source->sql( $query );
 		if ( null === $sql ) {
+			if ( $source instanceof Date_Source && $source->runs_month_ascending() ) {
+				return "DATE_FORMAT({$wpdb->posts}.post_date,'%Y-%m') DESC, {$wpdb->posts}.post_date ASC, {$wpdb->posts}.ID ASC";
+			}
+
 			return $tail;
 		}
 
@@ -689,7 +705,7 @@ final class Grouped_Archive {
 					];
 					$last       = $group->key();
 				}
-				$sections[ array_key_last( $sections ) ]['items'][] = sprintf(
+				$sections[ array_key_last( $sections ) ]['items'][ $post_id ] = sprintf(
 					'<li%1$s class="%2$s">%3$s</li>',
 					$enhanced ? ' data-wp-key="post-template-item-' . $post_id . '"' : '',
 					esc_attr( implode( ' ', get_post_class( 'wp-block-post' ) ) ),
@@ -889,7 +905,7 @@ final class Grouped_Archive {
 	 *
 	 * @param string               $block_name Block name.
 	 * @param array<string, mixed> $attrs      Attributes.
-	 * @return array{show:bool, level:int, per_page:int, order:string, empty:string, label:string, group_labels:array<string, string>, date_format:string}
+	 * @return array{show:bool, level:int, per_page:int, weeks:int, order:string, empty:string, label:string, group_labels:array<string, string>, date_format:string}
 	 */
 	private static function settings( string $block_name, array $attrs ): array {
 		$type = '' !== $block_name ? \WP_Block_Type_Registry::get_instance()->get_registered( $block_name ) : null;
@@ -903,6 +919,7 @@ final class Grouped_Archive {
 			'show'         => (bool) ( $attrs['showSections'] ?? true ),
 			'level'        => (int) ( $attrs['headingLevel'] ?? 2 ),
 			'per_page'     => max( 0, min( 100, (int) ( $attrs['linesPerPage'] ?? 0 ) ) ),
+			'weeks'        => max( 0, min( 12, (int) ( $attrs['weeksPerPage'] ?? 0 ) ) ),
 			'order'        => 'desc' === ( $attrs['sectionOrder'] ?? 'asc' ) ? 'DESC' : 'ASC',
 			'empty'        => 'first' === ( $attrs['emptyGroup'] ?? 'last' ) ? 'first' : 'last',
 			'label'        => self::text( $attrs['emptyLabel'] ?? '' ),
@@ -975,7 +992,7 @@ final class Grouped_Archive {
 	 * @param string               $block_name Entry block name.
 	 * @param Group_Source         $source     Source.
 	 * @param Archive_Group        $group      Group.
-	 * @param string[]             $items      The section's items, each an `li`.
+	 * @param array<int, string>   $items      The section's items, each an `li`, keyed by post ID in query order.
 	 * @param array<string, mixed> $settings   Entry settings.
 	 * @param int                  $count      How many sections this page holds, so a
 	 *                                         theme can lay out as many columns.
@@ -985,16 +1002,20 @@ final class Grouped_Archive {
 		$entry   = self::$entries[ $block_name ] ?? null;
 		$classes = null !== $entry ? $entry['classes'] : self::DEFAULT_CLASSES;
 		$list    = null !== $entry && 'ol' === $entry['list'] ? 'ol' : 'ul';
+		$body    = null !== $entry ? $entry['section_body'] : null;
+
+		// The entry's own body replaces the list; the heading stays the engine's.
+		$inner = null !== $body
+			? (string) call_user_func( $body, $group, $items, $settings )
+			: sprintf( '<%1$s class="%2$s">%3$s</%1$s>', $list, esc_attr( $classes['items'] ), implode( '', $items ) );
 
 		return sprintf(
-			'<section class="%1$s" data-pkiw-sections="%2$d"%3$s>%4$s<%5$s class="%6$s">%7$s</%5$s></section>',
+			'<section class="%1$s" data-pkiw-sections="%2$d"%3$s>%4$s%5$s</section>',
 			esc_attr( $classes['section'] ),
 			max( 1, $count ),
 			null !== $entry && $entry['expose_key'] ? ' data-pkiw-group="' . esc_attr( $group->slug() ) . '"' : '',
 			self::heading( $classes['heading'], (int) ( $settings['level'] ?? 2 ), self::label( $source, $group, $settings ), null !== $entry && $entry['heading_ids'] ? self::heading_id( $group ) : '' ),
-			$list,
-			esc_attr( $classes['items'] ),
-			implode( '', $items )
+			$inner
 		);
 	}
 
@@ -1252,15 +1273,21 @@ final class Grouped_Archive {
 			return [ $post_id ];
 		}
 
-		$group    = static function ( int $id ) use ( $source ): string {
+		$group = static function ( int $id ) use ( $source ): string {
 			$post = get_post( $id );
 
 			return $post instanceof \WP_Post ? $source->group_of( $post )->key() : '';
 		};
-		$per_page = (int) $settings['per_page'] > 0 ? (int) $settings['per_page'] : ( Kind_Archive_Layouts::preview_page_sizes()[ $kind ] ?? (int) get_option( 'posts_per_page' ) );
-		$first    = $per_page > 0 ? $index - ( $index % $per_page ) : 0;
-		$end      = $per_page > 0 ? min( count( $order ), $first + $per_page ) : count( $order );
-		$key      = $group( $post_id );
+		$key   = $group( $post_id );
+		$weeks = (int) ( $settings['weeks'] ?? 0 );
+		if ( $weeks > 0 && $source instanceof Date_Source && 'week' === $source->unit() ) {
+			// A page is whole weeks, as the calendar pages are; a stray linesPerPage doesn't cut one.
+			[ $first, $end ] = self::week_page_bounds( array_map( $group, $order ), $index, $weeks );
+		} else {
+			$per_page = (int) $settings['per_page'] > 0 ? (int) $settings['per_page'] : ( Kind_Archive_Layouts::preview_page_sizes()[ $kind ] ?? (int) get_option( 'posts_per_page' ) );
+			$first    = $per_page > 0 ? $index - ( $index % $per_page ) : 0;
+			$end      = $per_page > 0 ? min( count( $order ), $first + $per_page ) : count( $order );
+		}
 
 		self::$preview_page = array_slice( $order, $first, $end - $first );
 		if ( $index > $first && $key === $group( $order[ $index - 1 ] ) ) {
@@ -1285,5 +1312,39 @@ final class Grouped_Archive {
 		}
 
 		return $run;
+	}
+
+	/**
+	 * The posts a preview page of whole weeks covers.
+	 *
+	 * @param string[] $keys  Each post's week key, in preview order (weeks run contiguously).
+	 * @param int      $index Position of the post being previewed.
+	 * @param int      $weeks Weeks to a page.
+	 * @return array{0:int, 1:int} First position on the page and the position after the last.
+	 */
+	private static function week_page_bounds( array $keys, int $index, int $weeks ): array {
+		$week_of = [];
+		$week    = -1;
+		$last    = null;
+		foreach ( array_values( $keys ) as $at => $key ) {
+			if ( $key !== $last ) {
+				++$week;
+				$last = $key;
+			}
+			$week_of[ $at ] = $week;
+		}
+
+		$total = count( $week_of );
+		$page  = intdiv( $week_of[ $index ], $weeks );
+		$first = $index;
+		$end   = $index + 1;
+		while ( $first > 0 && intdiv( $week_of[ $first - 1 ], $weeks ) === $page ) {
+			--$first;
+		}
+		while ( $end < $total && intdiv( $week_of[ $end ], $weeks ) === $page ) {
+			++$end;
+		}
+
+		return [ $first, $end ];
 	}
 }

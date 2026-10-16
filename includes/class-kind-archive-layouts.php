@@ -78,6 +78,15 @@ final class Kind_Archive_Layouts {
 	public const MONTH_KINDS = [ 'photo', 'chicken', 'favorite', 'acquisition', 'repost', 'article' ];
 
 	/**
+	 * Kinds whose archive sections group by the local week of post_date through one shared Date_Source.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @var string[]
+	 */
+	public const WEEK_KINDS = [ 'exercise', 'note' ];
+
+	/**
 	 * REST `orderby` values for a kind in menu order: section direction,
 	 * then where posts with no group go.
 	 *
@@ -122,6 +131,14 @@ final class Kind_Archive_Layouts {
 		$month = new Date_Source( 'post_month', 'month' );
 		foreach ( self::MONTH_KINDS as $kind ) {
 			Grouped_Archive::register_source( $month, $kind );
+		}
+
+		// Exercise and note share one week source (issues 245 and 265). Mapping it
+		// groups their sections by week; it doesn't page by week. That takes a
+		// kind's calendar block (pkiw_calendar_paging).
+		$week = new Date_Source( 'post_week', 'week' );
+		foreach ( self::WEEK_KINDS as $kind ) {
+			Grouped_Archive::register_source( $week, $kind );
 		}
 
 		if ( did_action( 'init' ) ) {

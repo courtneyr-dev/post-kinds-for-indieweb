@@ -32,8 +32,10 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	private const PAIRS  = 'pkiw-test/two-a-page';
 	private const MONTHS = 'pkiw-test/month-marker';
 	private const IDS    = 'pkiw-test/id-marker';
+	private const BODY   = 'pkiw-test/body-line';
+	private const WEEKS  = 'pkiw-test/weeks-line';
 
-	private const SOURCES = [ 'test_status', 'test_series', 'test_play', 'test_tags', 'test_cats', 'test_month', 'test_year', 'test_week', 'test_flagged_tags' ];
+	private const SOURCES = [ 'test_status', 'test_series', 'test_play', 'test_tags', 'test_cats', 'test_month', 'test_month_asc', 'test_year', 'test_week', 'test_flagged_tags' ];
 
 	/**
 	 * Stylesheet active before each test.
@@ -48,6 +50,13 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	 * @var callable|null
 	 */
 	private $on_item = null;
+
+	/**
+	 * What the section_body entry's callback received, one record per section.
+	 *
+	 * @var array<int, array{group:string, ids:int[], items:array<int, string>, settings:array<string, mixed>}>
+	 */
+	private array $bodies = [];
 
 	public function set_up(): void {
 		parent::set_up();
@@ -102,6 +111,7 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 		Grouped_Archive::register_source( new Term_Source( 'test_tags', 'post_tag' ), 'tagkind' );
 		Grouped_Archive::register_source( new Term_Source( 'test_cats', 'category', static fn(): int => (int) get_option( 'default_category' ) ), 'catkind' );
 		Grouped_Archive::register_source( new Date_Source( 'test_month', 'month' ), 'monthkind' );
+		Grouped_Archive::register_source( new Date_Source( 'test_month_asc', 'month', 'asc' ), 'monthasckind' );
 		Grouped_Archive::register_source( new Date_Source( 'test_year', 'year' ), 'yearkind' );
 		Grouped_Archive::register_source( new Date_Source( 'test_week', 'week' ), 'weekkind' );
 
@@ -129,10 +139,43 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 				'heading_ids' => true,
 			]
 		);
+		$this->entry_block(
+			self::BODY,
+			[
+				'shape'        => Grouped_Archive::ENTRY_LINE,
+				'section_body' => function ( Archive_Group $group, array $items, array $settings ): string {
+					$this->bodies[] = [
+						'group'    => $group->key(),
+						'ids'      => array_keys( $items ),
+						'items'    => $items,
+						'settings' => $settings,
+					];
+
+					return sprintf( '<div class="body" data-count="%d">%s</div>', count( $items ), implode( '', $items ) );
+				},
+			],
+			[
+				'weeksPerPage' => [
+					'type' => 'integer',
+				],
+			]
+		);
+		$this->entry_block(
+			self::WEEKS,
+			[
+				'shape'  => Grouped_Archive::ENTRY_LINE,
+				'source' => 'test_week',
+			],
+			[
+				'weeksPerPage' => [
+					'type' => 'integer',
+				],
+			]
+		);
 	}
 
 	public function tear_down(): void {
-		foreach ( [ self::MARKER, self::LINE, self::OL_LINE, self::PAIRS, self::MONTHS, self::IDS ] as $name ) {
+		foreach ( [ self::MARKER, self::LINE, self::OL_LINE, self::PAIRS, self::MONTHS, self::IDS, self::BODY, self::WEEKS ] as $name ) {
 			Grouped_Archive::unregister_entry_block( $name );
 			if ( WP_Block_Type_Registry::get_instance()->is_registered( $name ) ) {
 				unregister_block_type( $name );
@@ -143,6 +186,7 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 		}
 		unregister_post_meta( 'post', '_pkiw_test_status' );
 		$this->on_item = null;
+		$this->bodies  = [];
 		wp_set_current_user( 0 );
 		switch_theme( $this->original_stylesheet );
 		parent::tear_down();
@@ -1361,5 +1405,313 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 
 		$this->assertSame( [ $s['dune'], $s['beloved'], $s['emma'], $s['ulysses'], $s['kindred'], $s['middlemarch'], $s['walden'], $s['persuasion'], $s['ada'] ], $this->rest_ids( 'shelfkind' ) );
 		$this->assertSame( [ $t['a'], $t['d'], $t['b'], $t['f'], $t['e'], $t['c'] ], $this->rest_ids( 'tagkind' ) );
+	}
+
+	// Calendar units and month order (W4-P0E).
+
+	/**
+	 * @return array<string, array{string}>
+	 */
+	public function date_units(): array {
+		return [
+			'year'  => [ 'year' ],
+			'month' => [ 'month' ],
+			'week'  => [ 'week' ],
+		];
+	}
+
+	/**
+	 * @dataProvider date_units
+	 */
+	public function test_unit_key_gives_the_key_and_start_group_of_gives( string $unit ): void {
+		update_option( 'timezone_string', 'America/Chicago' );
+		$source = new Date_Source( 'test_tmp_unit', $unit );
+
+		foreach ( [ 0, 1 ] as $start_of_week ) {
+			update_option( 'start_of_week', $start_of_week );
+			foreach ( [ '2024-12-31 10:00:00', '2025-01-01 10:00:00', '2025-12-31 23:30:00', '2026-01-01 00:10:00', '2026-03-08 03:30:00' ] as $date ) {
+				$post  = get_post( $this->make( 'weekkind', "At {$date}", $date ) );
+				$group = $source->group_of( $post );
+				$local = get_post_datetime( $post, 'date', 'local' );
+				$this->assertInstanceOf( DateTimeImmutable::class, $local );
+
+				$found = Date_Source::unit_key( $local->setTime( 0, 0 ), $unit );
+
+				$this->assertSame( $group->key(), $found['key'], "{$unit} key of {$date}, week starting on day {$start_of_week}." );
+				$this->assertSame( $group->raw(), $found['start'], "{$unit} start of {$date}, week starting on day {$start_of_week}." );
+			}
+		}
+	}
+
+	public function test_unit_key_names_the_week_across_a_year_edge(): void {
+		$day = new DateTimeImmutable( '2024-12-31', wp_timezone() );
+		$wed = new DateTimeImmutable( '2025-01-01', wp_timezone() );
+
+		update_option( 'start_of_week', 0 );
+		$this->assertSame( [ 'key' => '2024-12-29', 'start' => '2024-12-29' ], Date_Source::unit_key( $day, 'week' ) );
+		$this->assertSame( [ 'key' => '2024-12-29', 'start' => '2024-12-29' ], Date_Source::unit_key( $wed, 'week' ) );
+		update_option( 'start_of_week', 1 );
+		$this->assertSame( [ 'key' => '2024-12-30', 'start' => '2024-12-30' ], Date_Source::unit_key( $day, 'week' ) );
+		$this->assertSame( [ 'key' => '2024-12-30', 'start' => '2024-12-30' ], Date_Source::unit_key( $wed, 'week' ) );
+		$this->assertSame( [ 'key' => '2024', 'start' => '2024-01-01' ], Date_Source::unit_key( $day, 'year' ) );
+		$this->assertSame( [ 'key' => '2025-01', 'start' => '2025-01-01' ], Date_Source::unit_key( $wed, 'month' ) );
+	}
+
+	public function test_unit_key_refuses_an_unknown_unit(): void {
+		$this->expectException( InvalidArgumentException::class );
+		Date_Source::unit_key( new DateTimeImmutable( '2026-01-01', wp_timezone() ), 'fortnight' );
+	}
+
+	public function test_weeks_file_by_local_time_not_utc_and_across_the_end_of_daylight_saving(): void {
+		update_option( 'timezone_string', 'America/New_York' );
+		update_option( 'start_of_week', 0 );
+		$week = Grouped_Archive::source( 'test_week' );
+
+		$late = get_post( $this->make( 'weekkind', 'Saturday night', '2026-08-29 23:30:00' ) );
+		$this->assertSame( '2026-08-23', $week->group_of( $late )->key(), 'Saturday August 29, 11:30 pm local is 03:30 UTC on the 30th, and still files in the week of the 23rd.' );
+
+		$dst = get_post( $this->make( 'weekkind', 'Fall back', '2026-11-01 01:30:00' ) );
+		$this->assertSame( '2026-11-01', $week->group_of( $dst )->key(), 'The Sunday the clocks go back starts its own week.' );
+		$this->assertSame( '2026-11-01', Date_Source::unit_key( new DateTimeImmutable( '2026-11-01 00:00:00', wp_timezone() ), 'week' )['key'] );
+	}
+
+	public function test_a_date_source_takes_only_desc_or_asc_within_a_month(): void {
+		$this->assertInstanceOf( Date_Source::class, new Date_Source( 'test_tmp_within', 'month', 'asc' ) );
+		$this->expectException( InvalidArgumentException::class );
+		new Date_Source( 'test_tmp_within', 'month', 'sideways' );
+	}
+
+	/**
+	 * Six posts in three months; two share a minute and differ by ID.
+	 *
+	 * @param string $kind Kind slug.
+	 * @return array<string, int>
+	 */
+	private function sleep_nights( string $kind ): array {
+		return [
+			'aug03'  => $this->make( $kind, 'Aug 3', '2026-08-03 12:00:00' ),
+			'aug22a' => $this->make( $kind, 'Aug 22 a', '2026-08-22 12:00:00' ),
+			'aug22b' => $this->make( $kind, 'Aug 22 b', '2026-08-22 12:00:00' ),
+			'jul01'  => $this->make( $kind, 'Jul 1', '2026-07-01 12:00:00' ),
+			'jul24'  => $this->make( $kind, 'Jul 24', '2026-07-24 12:00:00' ),
+			'jun06'  => $this->make( $kind, 'Jun 6', '2026-06-06 12:00:00' ),
+		];
+	}
+
+	public function test_an_ascending_month_source_runs_months_newest_first_and_days_oldest_first(): void {
+		$p = $this->sleep_nights( 'monthasckind' );
+
+		$ids = $this->grouped_ids( 'monthasckind', 'test_month_asc' );
+
+		$this->assertSame( [ $p['aug03'], $p['aug22a'], $p['aug22b'], $p['jul01'], $p['jul24'], $p['jun06'] ], $ids );
+		$this->assert_contiguous( 'test_month_asc', $ids );
+
+		global $wpdb;
+		$query = new WP_Query( [ 'post_type' => 'post', 'posts_per_page' => -1, 'pkiw_group_source' => 'test_month_asc', 'fields' => 'ids' ] );
+		$this->assertStringContainsString( "ORDER BY DATE_FORMAT({$wpdb->posts}.post_date,'%Y-%m') DESC, {$wpdb->posts}.post_date ASC, {$wpdb->posts}.ID ASC", $query->request );
+	}
+
+	public function test_every_other_date_source_keeps_post_date_descending(): void {
+		$p = $this->sleep_nights( 'monthkind' );
+		global $wpdb;
+
+		$this->assertSame( [ $p['aug22b'], $p['aug22a'], $p['aug03'], $p['jul24'], $p['jul01'], $p['jun06'] ], $this->grouped_ids( 'monthkind', 'test_month' ) );
+		$query = new WP_Query( [ 'post_type' => 'post', 'posts_per_page' => -1, 'pkiw_group_source' => 'test_month', 'fields' => 'ids' ] );
+		$this->assertStringContainsString( "ORDER BY {$wpdb->posts}.post_date DESC, {$wpdb->posts}.ID DESC", $query->request );
+		$this->assertStringNotContainsString( 'DATE_FORMAT', $query->request );
+	}
+
+	public function test_an_ascending_month_source_pages_and_previews_in_the_same_order(): void {
+		$p = $this->sleep_nights( 'monthasckind' );
+		$this->assertCount( 6, $p );
+
+		$this->assertSame(
+			[ [ 'h2:August 2026', [ 'Aug 3', 'Aug 22 a', 'Aug 22 b' ] ] ],
+			$this->sections( $this->serve( 'monthasckind', $this->loop( self::LINE, [ 'linesPerPage' => 3 ], false ), 1 ) )
+		);
+		$this->assertSame(
+			[
+				[ 'h2:July 2026', [ 'Jul 1', 'Jul 24' ] ],
+				[ 'h2:June 2026', [ 'Jun 6' ] ],
+			],
+			$this->sections( $this->serve( 'monthasckind', $this->loop( self::LINE, [ 'linesPerPage' => 3 ], false ), 2 ) ),
+			'Page 2 holds July 1, July 24 and June 6.'
+		);
+
+		$this->assertSame(
+			[ [ 'h2:August 2026', [ 'Aug 3', 'Aug 22 a', 'Aug 22 b' ] ] ],
+			$this->sections( $this->editor_render( self::LINE, $p['aug03'], [ 'linesPerPage' => 3 ], [ 'pkiw_kind' => 'monthasckind' ] ) ),
+			'The editor opens August at its oldest post and lists the days oldest first.'
+		);
+		$this->assertSame(
+			'<div class="pkiw-group-placeholder" hidden></div>',
+			$this->editor_render( self::LINE, $p['aug22a'], [ 'linesPerPage' => 3 ], [ 'pkiw_kind' => 'monthasckind' ] )
+		);
+		$this->assertSame(
+			[ [ 'h2:July 2026', [ 'Jul 1', 'Jul 24' ] ] ],
+			$this->sections( $this->editor_render( self::LINE, $p['jul01'], [ 'linesPerPage' => 3 ], [ 'pkiw_kind' => 'monthasckind' ] ) )
+		);
+	}
+
+	// Section body.
+
+	public function test_a_section_body_gets_the_posts_in_query_order_and_replaces_the_list(): void {
+		$m = $this->months();
+
+		$html = $this->serve( 'monthkind', $this->loop( self::BODY, [], false ) );
+
+		$this->assertSame(
+			[
+				[ '2026-09', [ $m['september'] ] ],
+				[ '2026-08', [ $m['late'], $m['early'] ] ],
+				[ '2026-07', [ $m['july'] ] ],
+			],
+			array_map( static fn( array $body ): array => [ $body['group'], $body['ids'] ], $this->bodies )
+		);
+		$this->assertStringContainsString( '<div class="body" data-count="2">', $html );
+		$this->assertStringNotContainsString( 'pkiw-group__items', $html, 'The default list is replaced.' );
+		$this->assertMatchesRegularExpression( '/<section class="pkiw-group" data-pkiw-sections="3"><h2 class="pkiw-group__heading">September 2026<\/h2><div class="body"/', $html );
+
+		foreach ( $this->bodies[1]['items'] as $post_id => $item ) {
+			$this->assertStringStartsWith( '<li class="', $item );
+			$this->assertStringContainsString( 'wp-block-post', $item, "Item {$post_id} is the engine's own post-template item." );
+			$this->assertStringContainsString( 'post-' . $post_id, $item );
+		}
+		$this->assertSame( 2, $this->bodies[0]['settings']['level'] );
+	}
+
+	public function test_a_section_body_gets_the_posts_in_query_order_in_a_block_renderer_request(): void {
+		$m = $this->months();
+
+		$html = $this->editor_render( self::BODY, $m['late'], [], [ 'pkiw_kind' => 'monthkind' ] );
+
+		$this->assertSame( [ [ '2026-08', [ $m['late'], $m['early'] ] ] ], array_map( static fn( array $body ): array => [ $body['group'], $body['ids'] ], $this->bodies ) );
+		$this->assertStringContainsString( '<div class="body" data-count="2">', $html );
+		$this->assertStringNotContainsString( 'pkiw-group__items', $html );
+		foreach ( $this->bodies[0]['items'] as $item ) {
+			$this->assertStringStartsWith( '<li>', $item, 'In the editor the engine wraps each item in a plain li.' );
+		}
+	}
+
+	public function test_an_entry_without_a_section_body_prints_the_default_list(): void {
+		$this->months();
+
+		$html = $this->serve( 'monthkind', $this->loop( self::MARKER ) );
+
+		$this->assertStringContainsString( '<ul class="pkiw-group__items">', $html );
+		$this->assertSame( [], $this->bodies );
+	}
+
+	public function test_a_section_body_must_be_callable(): void {
+		$this->expectException( InvalidArgumentException::class );
+		Grouped_Archive::register_entry_block( 'pkiw-test/bad-body', [ 'section_body' => 'no_such_function_pkiw' ] );
+	}
+
+	public function test_the_weeks_setting_is_the_entrys_weeks_per_page_clamped_to_twelve(): void {
+		$this->months();
+
+		$weeks = function ( array $attrs ): int {
+			$this->bodies = [];
+			$this->serve( 'monthkind', $this->loop( self::BODY, $attrs, false ) );
+
+			return $this->bodies[0]['settings']['weeks'];
+		};
+
+		$this->assertSame( 0, $weeks( [] ), 'Absent is 0.' );
+		$this->assertSame( 3, $weeks( [ 'weeksPerPage' => 3 ] ) );
+		$this->assertSame( 12, $weeks( [ 'weeksPerPage' => 99 ] ) );
+		$this->assertSame( 0, $weeks( [ 'weeksPerPage' => -2 ] ) );
+	}
+
+	// Week previews.
+
+	/**
+	 * Five weeks, Monday start: two posts in week 1, one in 2, two in 3, one each in 4 and 5.
+	 *
+	 * @return array<string, int>
+	 */
+	private function five_weeks(): array {
+		update_option( 'start_of_week', 1 );
+
+		return [
+			'w1a' => $this->make( 'weekkind', 'W1 Wed', '2026-09-23 10:00:00' ),
+			'w1b' => $this->make( 'weekkind', 'W1 Mon', '2026-09-21 10:00:00' ),
+			'w2'  => $this->make( 'weekkind', 'W2', '2026-09-15 10:00:00' ),
+			'w3a' => $this->make( 'weekkind', 'W3 Fri', '2026-09-11 10:00:00' ),
+			'w3b' => $this->make( 'weekkind', 'W3 Tue', '2026-09-08 10:00:00' ),
+			'w4'  => $this->make( 'weekkind', 'W4', '2026-09-02 10:00:00' ),
+			'w5'  => $this->make( 'weekkind', 'W5', '2026-08-26 10:00:00' ),
+		];
+	}
+
+	public function test_the_editor_previews_whole_weeks_by_weeks_per_page(): void {
+		$p        = $this->five_weeks();
+		$captured = [];
+		$this->on_item = static function () use ( &$captured ): string {
+			$page = Grouped_Archive::current_page_ids();
+			if ( $page !== end( $captured ) ) {
+				$captured[] = $page;
+			}
+			return '';
+		};
+		$params = [ 'pkiw_kind' => 'weekkind' ];
+		$attrs  = [ 'weeksPerPage' => 2 ];
+
+		$first = $this->editor_render( self::WEEKS, $p['w1a'], $attrs, $params );
+		$this->assertSame( [ [ 'h2:September 21–27, 2026', [ 'W1 Wed', 'W1 Mon' ] ] ], $this->sections( $first ) );
+		$this->assertStringContainsString( 'data-pkiw-sections="2"', $first, 'Page 1 holds two weeks.' );
+		$this->assertSame( '<div class="pkiw-group-placeholder" hidden></div>', $this->editor_render( self::WEEKS, $p['w1b'], $attrs, $params ) );
+		$this->assertSame( [ [ 'h2:September 14–20, 2026', [ 'W2' ] ] ], $this->sections( $this->editor_render( self::WEEKS, $p['w2'], $attrs, $params ) ) );
+
+		$third = $this->editor_render( self::WEEKS, $p['w3a'], $attrs, $params );
+		$this->assertStringContainsString( 'data-pkiw-sections="2"', $third, 'Page 2 is weeks 3 and 4.' );
+		$fifth = $this->editor_render( self::WEEKS, $p['w5'], $attrs, $params );
+		$this->assertStringContainsString( 'data-pkiw-sections="1"', $fifth, 'Page 3 holds the last week alone.' );
+
+		$pages = [];
+		foreach ( $captured as $page ) {
+			if ( ! in_array( $page, $pages, true ) ) {
+				$pages[] = $page;
+			}
+		}
+		$this->assertSame(
+			[
+				[ $p['w1a'], $p['w1b'], $p['w2'] ],
+				[ $p['w3a'], $p['w3b'], $p['w4'] ],
+				[ $p['w5'] ],
+			],
+			$pages,
+			'Each page is whole weeks, newest first.'
+		);
+	}
+
+	public function test_weeks_per_page_beats_lines_per_page_in_the_editor_and_lines_still_count_without_it(): void {
+		$p      = $this->five_weeks();
+		$params = [ 'pkiw_kind' => 'weekkind' ];
+
+		$both = $this->editor_render( self::WEEKS, $p['w1a'], [ 'weeksPerPage' => 2, 'linesPerPage' => 1 ], $params );
+		$this->assertSame( [ [ 'h2:September 21–27, 2026', [ 'W1 Wed', 'W1 Mon' ] ] ], $this->sections( $both ), 'One line per page would cut week 1; whole weeks win.' );
+		$this->assertStringContainsString( 'data-pkiw-sections="2"', $both );
+
+		$lines = $this->editor_render( self::WEEKS, $p['w1a'], [ 'linesPerPage' => 2 ], $params );
+		$this->assertStringContainsString( 'data-pkiw-sections="1"', $lines, 'With no weeksPerPage the page is two posts: one week.' );
+	}
+
+	// Registry wiring.
+
+	public function test_the_shared_week_source_is_mapped_to_exercise_and_note(): void {
+		$week = Grouped_Archive::source( 'post_week' );
+
+		$this->assertInstanceOf( Date_Source::class, $week );
+		$this->assertSame( 'week', $week->unit() );
+		$this->assertSame( 'desc', $week->within() );
+		$this->assertContains( 'exercise', Grouped_Archive::grouped_kinds() );
+		$this->assertContains( 'note', Grouped_Archive::grouped_kinds() );
+
+		update_option( 'start_of_week', 0 );
+		$id = $this->make( 'exercise', 'Run', '2026-08-26 07:00:00' );
+		$this->assertSame( '2026-08-23', Grouped_Archive::group_of_post( 'exercise', $id )->key() );
+		$note = $this->make( 'note', 'A note', '2026-08-26 07:00:00' );
+		$this->assertSame( '2026-08-23', Grouped_Archive::group_of_post( 'note', $note )->key() );
 	}
 }
