@@ -1,0 +1,16 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "post-kinds-indieweb/step",
+	"version": "1.0.0",
+	"title": "Craft Step",
+	"category": "post-kinds-indieweb",
+	"description": "One step in a craft project: a photo and what you did.",
+	"keywords": ["step", "craft", "instruction", "process"],
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
+	"parent": ["post-kinds-indieweb/steps"],
+	"supports": {
+		"html": false,
+		"reusable": false
+	}
+}
