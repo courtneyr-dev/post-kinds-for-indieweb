@@ -345,6 +345,31 @@ final class ExerciseCardRenderTest extends WP_UnitTestCase {
 		}
 	}
 
+	/**
+	 * The editor stores a private card without the toggle: false equals the
+	 * block.json default, so the comment drops it. The block must read an
+	 * absent toggle as off, whatever the post's row says.
+	 */
+	public function test_a_card_comment_that_omits_the_toggle_stays_private_although_the_post_row_is_on(): void {
+		$attrs = $this->a01();
+		unset( $attrs['showDetailsPublicly'] );
+		$id = $this->exercise( 'Private card', '2026-08-24 19:40:00', $attrs );
+		update_post_meta( $id, self::PUBLIC_KEY, '1' );
+
+		$this->assertStringNotContainsString( 'showDetailsPublicly', (string) get_post_field( 'post_content', $id ), 'The comment omits the toggle.' );
+		$this->assertTrue( Meta_Fields::health_details_visible( $id ), 'The row alone says visible.' );
+		$this->assertFalse(
+			WP_Block_Type_Registry::get_instance()->get_registered( self::BLOCK )->attributes['showDetailsPublicly']['default'],
+			'The registered block.json default is off.'
+		);
+
+		$html = $this->single( $id );
+		$this->assertStringContainsString( 'Run', $html );
+		foreach ( [ '5.00 km', 'PT29M12S', '29:12', 'Personal best', 'Splits', '5:58' ] as $needle ) {
+			$this->assertStringNotContainsString( $needle, $html, $needle );
+		}
+	}
+
 	public function test_a_card_toggle_that_is_on_does_not_open_a_post_whose_row_is_gone(): void {
 		$id = $this->exercise( 'Missing row', '2026-08-24 19:40:00', $this->a01() );
 		$this->assertStringContainsString( '5.00 km', $this->single( $id ), 'Both agree: it prints.' );
