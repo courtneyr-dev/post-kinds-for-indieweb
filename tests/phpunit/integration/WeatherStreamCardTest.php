@@ -267,7 +267,9 @@ final class WeatherStreamCardTest extends WP_UnitTestCase {
 		);
 		$html = $this->card( $hidden );
 		$this->assertStringNotContainsString( 'Partly', $html );
-		$this->assertStringNotContainsString( '80', $html );
+		// The post ID shows up in the permalink, and an ID like 8680 holds "80".
+		$this->assertStringNotContainsString( '80', str_replace( (string) $hidden->ID, '', $html ) );
+		$this->assertStringNotContainsString( '°', $html );
 		$this->assertStringNotContainsString( 'data-pkiw-weather-icon', $html );
 	}
 
