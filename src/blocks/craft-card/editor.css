@@ -1,0 +1,19 @@
+/**
+ * Craft Card Block - Editor Styles
+ *
+ * @package PKIW
+ */
+
+.pkiw-craft-time-fields {
+	display: flex;
+	gap: 8px;
+}
+
+.pkiw-craft-time-fields > * {
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+.wp-block-post-kinds-indieweb-craft-card .components-placeholder {
+	min-height: 0;
+}

@@ -1022,6 +1022,21 @@ class Meta_Fields {
 				'default'     => '',
 			],
 
+			// Craft (issue 249). A craft card decides both rows, so a save
+			// with no craft type or no minutes deletes the row.
+			'craft_type'              => [
+				'type'        => 'string',
+				'description' => __( 'What kind of craft the project is, in your own words.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'craft_minutes'           => [
+				'type'        => 'integer',
+				'description' => __( 'Minutes spent on the project.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'absint',
+				'default'     => 0,
+			],
+
 			// Syndication Opt-Out Fields.
 			'syndicate_lastfm'        => [
 				'type'        => 'boolean',
@@ -1816,6 +1831,200 @@ class Meta_Fields {
 	}
 
 	/**
+	 * Keys an exercise card decides, without the prefix (issue 245).
+	 *
+	 * None is registered post meta, so is_valid_field() is false for each:
+	 * REST, the post-kinds abilities and core/post-meta bindings never read
+	 * or write one, the block editor never loads one and so never sends a
+	 * stale copy back over the card on save, and Card_Meta_Sync is the only
+	 * writer. This is the COST_PUBLIC_KEY model applied to every key.
+	 *
+	 * @var string[]
+	 */
+	public const EXERCISE_KEYS = [
+		'exercise_activity',
+		'exercise_distance',
+		'exercise_distance_unit',
+		'exercise_duration',
+		'exercise_splits',
+		'exercise_pb',
+		'exercise_pb_category',
+		'exercise_details_public',
+		'exercise_origin',
+	];
+
+	/**
+	 * Keys a sleep card decides, without the prefix (issue 247). Unregistered,
+	 * for the reasons EXERCISE_KEYS gives.
+	 *
+	 * @var string[]
+	 */
+	public const SLEEP_KEYS = [
+		'sleep_duration',
+		'sleep_bedtime',
+		'sleep_wake',
+		'sleep_times_public',
+		'sleep_origin',
+	];
+
+	/**
+	 * Meta row holding an exercise card's "Show details publicly" toggle: '1'
+	 * when on, no row when off. Card_Meta_Sync is its only writer.
+	 */
+	public const EXERCISE_PUBLIC_KEY = '_pkiw_exercise_details_public';
+
+	/**
+	 * Meta row holding a sleep card's "Show times publicly" toggle: '1' when
+	 * on, no row when off. Card_Meta_Sync is its only writer.
+	 */
+	public const SLEEP_PUBLIC_KEY = '_pkiw_sleep_times_public';
+
+	/**
+	 * What each health kind may print (Courtney's answer A, issue 245 and
+	 * issue 247). 'public' fields print for everyone. 'opt_in' fields print
+	 * only when the post's toggle is on, for every requester alike.
+	 *
+	 * A third tier never prints and has no key anywhere in Post Kinds: heart
+	 * rate, calories, other biometrics and start and end clock times. The
+	 * plugin maps, stores and reads none of them, and the Outpost keys that
+	 * hold them (`_outpost_oura_calories`, `_outpost_oura_start_at`,
+	 * `_outpost_polar_start_time`) stay outside it. Values can still sit
+	 * outside Post Kinds: the Micropub plugin stores every request property
+	 * except name, published, updated, summary, content and visibility as an
+	 * `mf2_<property>` meta row, and `q=source` returns those rows to any
+	 * valid token. The Micropub content builder reads none of them, so no
+	 * Post Kinds surface prints them.
+	 *
+	 * @var array<string, array{public: string[], opt_in: string[]}>
+	 */
+	public const HEALTH_FIELDS = [
+		'exercise' => [
+			'public' => [ 'exercise_activity' ],
+			'opt_in' => [
+				'exercise_distance',
+				'exercise_distance_unit',
+				'exercise_duration',
+				'exercise_splits',
+				'exercise_pb',
+				'exercise_pb_category',
+			],
+		],
+		'sleep'    => [
+			'public' => [ 'sleep_duration' ],
+			'opt_in' => [ 'sleep_bedtime', 'sleep_wake' ],
+		],
+	];
+
+	/**
+	 * The toggle row for each health kind.
+	 *
+	 * @var array<string, string>
+	 */
+	private const HEALTH_PUBLIC_KEYS = [
+		'exercise' => self::EXERCISE_PUBLIC_KEY,
+		'sleep'    => self::SLEEP_PUBLIC_KEY,
+	];
+
+	/**
+	 * Health cards whose block comments hold opt-in values: card name => the
+	 * toggle attribute and every attribute search must not match while the
+	 * post hides them. Both cards save null, so the comment is all
+	 * post_content holds.
+	 *
+	 * @var array<string, array{toggle: string, attrs: string[]}>
+	 */
+	private const HEALTH_HIDDEN_ATTRS = [
+		'post-kinds-indieweb/exercise-card' => [
+			'toggle' => 'showDetailsPublicly',
+			'attrs'  => [
+				'distance',
+				'distanceUnit',
+				'duration',
+				'splits',
+				'personalBest',
+				'pbCategory',
+				'showDetailsPublicly',
+			],
+		],
+		'post-kinds-indieweb/sleep-card'    => [
+			'toggle' => 'showTimesPublicly',
+			'attrs'  => [
+				'bedtime',
+				'wakeTime',
+				'showTimesPublicly',
+			],
+		],
+	];
+
+	/**
+	 * Cards whose private values WP_Query search must not match: the
+	 * acquisition card's cost (issue 239) and the opt-in fields of the
+	 * exercise and sleep cards.
+	 *
+	 * @var string[]
+	 */
+	private const SEARCH_PRIVATE_CARDS = [
+		'post-kinds-indieweb/acquisition-card',
+		'post-kinds-indieweb/exercise-card',
+		'post-kinds-indieweb/sleep-card',
+	];
+
+	/**
+	 * Whether a health post's opt-in details may print (issue 245 and 247).
+	 *
+	 * Opt-in details print only when the post's kind toggle is '1': an
+	 * exercise post's `_pkiw_exercise_details_public`, a sleep post's
+	 * `_pkiw_sleep_times_public`. A card prints each opt-in field only when
+	 * its own toggle attribute is on too. There's no editor override, for the
+	 * reason acquisition_cost_visible() gives: the page, feeds, ActivityPub,
+	 * ATmosphere, the Markdown alternate and rss.chat all build from one
+	 * render, which can run in the author's own request. Editors see stored
+	 * values in the block editor's own fields.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool False for a post of any other kind.
+	 */
+	public static function health_details_visible( int $post_id ): bool {
+		if ( $post_id <= 0 ) {
+			return false;
+		}
+
+		$terms = get_the_terms( $post_id, 'kind' );
+		$kind  = is_array( $terms ) && isset( $terms[0] ) && $terms[0] instanceof \WP_Term ? $terms[0]->slug : '';
+		$key   = self::HEALTH_PUBLIC_KEYS[ $kind ] ?? '';
+
+		return '' !== $key && '1' === (string) get_post_meta( $post_id, $key, true );
+	}
+
+	/**
+	 * Which health fields print for a post, by field key without the prefix:
+	 * the public ones true, the opt-in ones true only when
+	 * health_details_visible() says so. Modelled on get_public_location_fields()
+	 * with no editor branch.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array<string, bool> Empty for a post whose kind has no health entry.
+	 */
+	public static function get_visible_health_fields( int $post_id ): array {
+		$terms = $post_id > 0 ? get_the_terms( $post_id, 'kind' ) : false;
+		$kind  = is_array( $terms ) && isset( $terms[0] ) && $terms[0] instanceof \WP_Term ? $terms[0]->slug : '';
+		if ( ! isset( self::HEALTH_FIELDS[ $kind ] ) ) {
+			return [];
+		}
+
+		$visible = self::health_details_visible( $post_id );
+		$fields  = [];
+		foreach ( self::HEALTH_FIELDS[ $kind ]['public'] as $key ) {
+			$fields[ $key ] = true;
+		}
+		foreach ( self::HEALTH_FIELDS[ $kind ]['opt_in'] as $key ) {
+			$fields[ $key ] = $visible;
+		}
+
+		return $fields;
+	}
+
+	/**
 	 * An acquisition card in post_content: a bare block comment, or the
 	 * comment pair around the static HTML save.js stored. The attrs part
 	 * is core's pattern from WP_Block_Parser::next_token().
@@ -1973,6 +2182,65 @@ class Meta_Fields {
 	}
 
 	/**
+	 * $content with each hidden opt-in value taken out of the exercise and
+	 * sleep card comments (issue 245 and 247).
+	 *
+	 * Both cards keep their attributes in the block comment, and WP_Query
+	 * matches search terms against post_content, so a visitor could read a
+	 * hidden distance or bedtime one character at a time. For every card
+	 * whose details aren't visible (its toggle attribute on AND
+	 * health_details_visible()), this removes the opt-in attributes and the
+	 * toggle outright, so the comment matches a card that never stored them.
+	 * Blanking the value and keeping the key, as cost does, would still let
+	 * a search for 'distance' or 'bedtime' tell a hidden card from a bare
+	 * one. Search is the only caller: a display read that wrote its result
+	 * back would erase the stored attributes.
+	 *
+	 * @param string $content Post content.
+	 * @param int    $post_id Post the content belongs to.
+	 * @return string
+	 */
+	public static function strip_private_health( string $content, int $post_id ): string {
+		if ( ! str_contains( $content, 'wp:post-kinds-indieweb/exercise-card' ) && ! str_contains( $content, 'wp:post-kinds-indieweb/sleep-card' ) ) {
+			return $content;
+		}
+
+		$post_public = self::health_details_visible( $post_id );
+		foreach ( self::HEALTH_HIDDEN_ATTRS as $name => $card_rule ) {
+			if ( ! str_contains( $content, 'wp:' . $name ) ) {
+				continue;
+			}
+
+			$quoted   = preg_quote( $name, '#' );
+			$pattern  = '#(?P<head><!--\s+wp:' . $quoted . '\s+)(?P<attrs>\{(?:(?:[^}]+|\}+(?=\})|(?!\}\s+/?-->).)*+)?\}\s+)?(?P<tail>/-->|-->(?P<inner>.*?)<!--\s+/wp:' . $quoted . '\s+-->)#s';
+			$stripped = preg_replace_callback(
+				$pattern,
+				static function ( array $card ) use ( $post_public, $card_rule ): string {
+					$decoded = json_decode( (string) $card['attrs'], true );
+					if ( ! is_array( $decoded ) || ( $post_public && true === ( $decoded[ $card_rule['toggle'] ] ?? null ) ) ) {
+						return $card[0];
+					}
+
+					$kept = array_diff_key( $decoded, array_flip( $card_rule['attrs'] ) );
+					if ( count( $kept ) === count( $decoded ) ) {
+						return $card[0];
+					}
+
+					return $card['head'] . ( [] === $kept ? '' : serialize_block_attributes( $kept ) . ' ' ) . $card['tail'];
+				},
+				$content,
+				-1,
+				$count,
+				PREG_UNMATCHED_AS_NULL
+			);
+
+			$content = is_string( $stripped ) ? $stripped : $content;
+		}
+
+		return $content;
+	}
+
+	/**
 	 * One acquisition card's `cost` attribute as plain text.
 	 *
 	 * @param string|null $attrs The card's block comment attributes, JSON.
@@ -2032,7 +2300,8 @@ class Meta_Fields {
 	 * the content with private cost taken out. A post that matched only
 	 * through cost leaves the results, and a post that an excluded term
 	 * dropped only through cost comes back. REST search runs on WP_Query,
-	 * so it follows.
+	 * so it follows. The same pass hides the opt-in values and key names of
+	 * an exercise or sleep card (strip_private_health(), issue 245 and 247).
 	 *
 	 * @param mixed $search Search SQL from WP_Query::parse_search().
 	 * @param mixed $query  The query.
@@ -2041,9 +2310,13 @@ class Meta_Fields {
 	public static function search_without_private_cost( $search, $query ) {
 		global $wpdb;
 
-		if ( ! is_string( $search ) || '' === $search || ! $query instanceof \WP_Query || $query->get( 'exact' ) ) {
+		if ( ! is_string( $search ) || '' === $search || ! $query instanceof \WP_Query ) {
 			return $search;
 		}
+
+		// `exact` is a public query var. Skipping an exact search would let
+		// `?s=<full card comment>&exact=1` confirm a hidden value by guess.
+		$exact = (bool) $query->get( 'exact' );
 
 		$columns = $query->get( 'search_columns' );
 		$columns = empty( $columns ) ? self::SEARCH_COLUMNS : (array) $columns;
@@ -2061,6 +2334,7 @@ class Meta_Fields {
 		$terms  = [];
 		$likes  = [];
 		foreach ( (array) $query->get( 'search_terms' ) as $term ) {
+			// Core reads the exclusion prefix in exact mode too: only the % wildcards depend on it.
 			$term     = (string) $term;
 			$excluded = $prefix && str_starts_with( $term, (string) $prefix );
 			$term     = $excluded ? substr( $term, 1 ) : $term;
@@ -2072,7 +2346,12 @@ class Meta_Fields {
 		}
 
 		$term_clauses = implode( "\n\t\t\t\t\t\t\tOR ", array_fill( 0, count( $likes ), 'post_content LIKE %s' ) );
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Per-search lookup; $term_clauses holds only %s placeholders, filled from $likes.
+		$card_clauses = implode( ' OR ', array_fill( 0, count( self::SEARCH_PRIVATE_CARDS ), 'post_content LIKE %s' ) );
+		$card_likes   = array_map(
+			static fn( string $card ): string => '%' . $wpdb->esc_like( 'wp:' . $card ) . '%',
+			self::SEARCH_PRIVATE_CARDS
+		);
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Per-search lookup; $card_clauses and $term_clauses hold only %s placeholders, filled from $card_likes and $likes.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				'
@@ -2086,7 +2365,9 @@ class Meta_Fields {
 						%i
 					WHERE
 						post_type <> %s
-						AND post_content LIKE %s
+						AND (
+							' . $card_clauses . '
+						)
 						AND (
 							' . $term_clauses . '
 						)
@@ -2095,8 +2376,8 @@ class Meta_Fields {
 					[
 						$wpdb->posts,
 						'revision',
-						'%' . $wpdb->esc_like( 'wp:post-kinds-indieweb/acquisition-card' ) . '%',
 					],
+					$card_likes,
 					$likes
 				)
 			)
@@ -2108,7 +2389,7 @@ class Meta_Fields {
 		foreach ( (array) $rows as $row ) {
 			$id      = (int) $row->ID;
 			$content = (string) $row->post_content;
-			$safe    = self::strip_private_cost( $content, $id, true );
+			$safe    = self::strip_private_health( self::strip_private_cost( $content, $id, true ), $id );
 			if ( $safe === $content || current_user_can( 'edit_post', $id ) ) {
 				continue;
 			}
@@ -2122,9 +2403,9 @@ class Meta_Fields {
 				array_flip( $columns )
 			);
 
-			$before                 = self::search_matches( $terms, $fields );
+			$before                 = self::search_matches( $terms, $fields, $exact );
 			$fields['post_content'] = $safe;
-			$after                  = self::search_matches( $terms, $fields );
+			$after                  = self::search_matches( $terms, $fields, $exact );
 
 			if ( $before === $after ) {
 				continue;
@@ -2148,17 +2429,21 @@ class Meta_Fields {
 
 	/**
 	 * Whether text passes a search the way WP_Query's LIKE clauses decide
-	 * it: each term in at least one field, and no excluded term in any.
+	 * it: each term in at least one field, and no excluded term in any. An
+	 * exact search matches a field only when the whole field equals the term,
+	 * ignoring case, as `LIKE` without wildcards does.
 	 *
 	 * @param array<int, array{0: string, 1: bool}> $terms  Each term and whether it's excluded.
 	 * @param array<string, string>                 $fields Searched text by column.
+	 * @param bool                                  $exact  Whether the query is an exact search.
 	 * @return bool
 	 */
-	private static function search_matches( array $terms, array $fields ): bool {
+	private static function search_matches( array $terms, array $fields, bool $exact = false ): bool {
 		foreach ( $terms as [ $term, $excluded ] ) {
 			$found = false;
 			foreach ( $fields as $text ) {
-				if ( false !== mb_stripos( $text, $term ) ) {
+				$hit = $exact ? mb_strtolower( $text ) === mb_strtolower( $term ) : false !== mb_stripos( $text, $term );
+				if ( $hit ) {
 					$found = true;
 					break;
 				}

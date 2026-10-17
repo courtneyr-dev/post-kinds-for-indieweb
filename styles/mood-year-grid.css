@@ -1,0 +1,246 @@
+/**
+ * Mood year grid: structure only. A theme paints the fills, frame and type.
+ *
+ * Two tokens let a theme set the edges a plugin-only site gets from
+ * currentcolor: --pkiw-mood-cell-edge (the outline of a filled cell) and
+ * --pkiw-mood-segment-divider (the line between stripes).
+ */
+
+.pkiw-mood-year {
+	--pkiw-mood-cell: 2.75rem;
+}
+
+.pkiw-mood-year__sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* Legend. */
+.pkiw-mood-legend__families {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5em 1em;
+	margin: 0 0 0.5em;
+	padding: 0;
+	list-style: none;
+}
+
+.pkiw-mood-legend__families li {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35em;
+}
+
+.pkiw-mood-legend__swatch {
+	display: inline-block;
+	box-sizing: border-box;
+	inline-size: 1rem;
+	block-size: 1rem;
+	outline: 1px solid var(--pkiw-mood-cell-edge, currentcolor);
+	outline-offset: -1px;
+}
+
+.pkiw-mood-legend p {
+	margin: 0.25em 0;
+	font-size: 0.875em;
+}
+
+/* The grid: a 1-31 gutter, then twelve month columns. */
+.pkiw-mood-year__gutter,
+.pkiw-mood-year__months,
+.pkiw-mood-daycards,
+.pkiw-mood-daycard__entries {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.pkiw-mood-month__name {
+	margin: 0;
+	font-size: 0.875em;
+	line-height: var(--pkiw-mood-cell);
+}
+
+.pkiw-mood-month__days {
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.pkiw-mood-year__gutter {
+	display: none;
+}
+
+/* A cell: a square at least 44px each way. */
+.pkiw-mood-day {
+	position: relative;
+	box-sizing: border-box;
+	flex: 0 0 var(--pkiw-mood-cell);
+	inline-size: var(--pkiw-mood-cell);
+	block-size: var(--pkiw-mood-cell);
+}
+
+.pkiw-mood-day[data-family],
+.pkiw-mood-day[data-count] {
+	outline: 1px solid var(--pkiw-mood-cell-edge, currentcolor);
+	outline-offset: -1px;
+}
+
+.pkiw-mood-day__link {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: inherit;
+	text-decoration: none;
+}
+
+.pkiw-mood-day__link:focus-visible {
+	z-index: 1;
+	outline: 3px solid currentcolor;
+	outline-offset: 2px;
+}
+
+.pkiw-mood-day__code {
+	font-size: 0.75rem;
+	line-height: 1;
+}
+
+/* Two moods: a diagonal. The first is upper left, the second lower right, each code in its own corner. */
+.pkiw-mood-day--split .pkiw-mood-day__seg {
+	position: absolute;
+	inset: 0;
+}
+
+.pkiw-mood-day--split .pkiw-mood-day__seg:first-child {
+	clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.pkiw-mood-day--split .pkiw-mood-day__seg:last-child {
+	clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.pkiw-mood-day--split .pkiw-mood-day__seg .pkiw-mood-day__code {
+	position: absolute;
+}
+
+.pkiw-mood-day--split .pkiw-mood-day__seg:first-child .pkiw-mood-day__code {
+	inset-block-start: 0.15rem;
+	inset-inline-start: 0.2rem;
+}
+
+.pkiw-mood-day--split .pkiw-mood-day__seg:last-child .pkiw-mood-day__code {
+	inset-block-end: 0.15rem;
+	inset-inline-end: 0.2rem;
+}
+
+/* Three or more: stripes, each divided from the one before. */
+.pkiw-mood-day--stripes .pkiw-mood-day__link {
+	align-items: stretch;
+	justify-content: stretch;
+}
+
+.pkiw-mood-day--stripes .pkiw-mood-day__seg {
+	flex: 1 1 0;
+}
+
+.pkiw-mood-day--stripes .pkiw-mood-day__seg + .pkiw-mood-day__seg {
+	border-inline-start: 1px solid var(--pkiw-mood-segment-divider, currentcolor);
+}
+
+/* The cards for days with several moods. */
+.pkiw-mood-daycard {
+	margin-block: 1em;
+}
+
+.pkiw-mood-daycard__date {
+	margin: 0 0 0.25em;
+}
+
+.pkiw-mood-daycard__link {
+	display: inline-block;
+	min-block-size: 2.75rem;
+	line-height: 2.75rem;
+}
+
+.pkiw-mood-daycard:target {
+	outline: 3px solid currentcolor;
+	outline-offset: 2px;
+}
+
+/* Wide screens: twelve month columns beside the gutter. */
+@media (min-width: 48rem) {
+
+	.pkiw-mood-year__grid {
+		display: flex;
+		align-items: flex-start;
+	}
+
+	.pkiw-mood-year__gutter {
+		display: block;
+		flex: 0 0 var(--pkiw-mood-cell);
+		padding-block-start: var(--pkiw-mood-cell);
+		font-size: 0.75rem;
+		text-align: end;
+	}
+
+	.pkiw-mood-year__gutter li {
+		box-sizing: border-box;
+		block-size: var(--pkiw-mood-cell);
+		padding-inline-end: 0.35rem;
+		line-height: var(--pkiw-mood-cell);
+	}
+
+	.pkiw-mood-year__months {
+		display: flex;
+	}
+
+	.pkiw-mood-month {
+		flex: 0 0 var(--pkiw-mood-cell);
+		text-align: center;
+	}
+
+	.pkiw-mood-month__days {
+		display: block;
+	}
+}
+
+/* Forced colors: no clip-path, and a system-color line between segments. */
+@media (forced-colors: active) {
+
+	.pkiw-mood-day--split .pkiw-mood-day__link {
+		align-items: stretch;
+		justify-content: stretch;
+	}
+
+	.pkiw-mood-day--split .pkiw-mood-day__seg {
+		position: relative;
+		flex: 1 1 0;
+		clip-path: none;
+	}
+
+	.pkiw-mood-day--split .pkiw-mood-day__seg + .pkiw-mood-day__seg,
+	.pkiw-mood-day--stripes .pkiw-mood-day__seg + .pkiw-mood-day__seg {
+		border-inline-start: 1px solid CanvasText;
+	}
+
+	.pkiw-mood-day--split .pkiw-mood-day__seg .pkiw-mood-day__code {
+		position: static;
+	}
+
+	.pkiw-mood-day__code {
+		color: LinkText;
+	}
+
+	.pkiw-mood-day[data-family],
+	.pkiw-mood-day[data-count] {
+		outline: 2px solid CanvasText;
+	}
+}

@@ -533,4 +533,66 @@ final class SingularEntryWrapperTest extends WP_UnitTestCase {
 
 		$this->fail( 'No parsed value carries ' . $target_url );
 	}
+
+	// --- Craft: the entry names itself (issue 249). ---
+
+	/**
+	 * A craft post's filtered content on its permalink.
+	 *
+	 * @param string $title Post title, '' for an untitled post.
+	 * @return string The_content output.
+	 */
+	private function craft_single_content( string $title ): string {
+		if ( ! term_exists( 'craft', 'kind' ) ) {
+			wp_insert_term( 'Craft', 'kind', [ 'slug' => 'craft' ] );
+		}
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => $title,
+				'post_content' => '<!-- wp:paragraph --><p>Cast on, knit, bind off.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'craft', 'kind' );
+
+		$this->go_to( get_permalink( $post_id ) );
+		$this->assertTrue( is_singular() );
+
+		return (string) apply_filters( 'the_content', get_post_field( 'post_content', $post_id ) );
+	}
+
+	public function test_a_titled_craft_single_carries_one_hidden_p_name_with_its_title(): void {
+		$content = $this->craft_single_content( 'Garter scarf' );
+
+		$xpath = $this->xpath_for( $content );
+		$names = $xpath->query( '//*[contains(concat(" ", normalize-space(@class), " "), " h-entry ")]/span[contains(concat(" ", normalize-space(@class), " "), " p-name ")][@hidden]' );
+		$this->assertSame( 1, $names->length );
+		$this->assertSame( 'Garter scarf', $names->item( 0 )->textContent );
+		$this->assertSame( 1, $this->hidden_token_count( $content, 'p-name' ) );
+		$this->assertSame( 0, $this->hidden_token_count( $content, 'u-craft-of' ), 'No craft-of unless the content carries it.' );
+	}
+
+	public function test_an_untitled_craft_single_carries_no_p_name(): void {
+		$content = $this->craft_single_content( '' );
+
+		$this->assertSame( 0, $this->hidden_token_count( $content, 'p-name' ) );
+		$this->assertStringNotContainsString( 'p-name', $content );
+		$this->assertStringContainsString( 'h-entry', $content, 'The entry root is still there.' );
+	}
+
+	/**
+	 * Parse markup for an XPath query.
+	 *
+	 * @param string $html Markup.
+	 * @return DOMXPath
+	 */
+	private function xpath_for( string $html ): DOMXPath {
+		$doc      = new DOMDocument();
+		$previous = libxml_use_internal_errors( true );
+		$doc->loadHTML( '<?xml encoding="utf-8" ?><div id="scope">' . $html . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD );
+		libxml_clear_errors();
+		libxml_use_internal_errors( $previous );
+
+		return new DOMXPath( $doc );
+	}
 }

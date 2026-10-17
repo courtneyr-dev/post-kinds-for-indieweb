@@ -248,7 +248,7 @@ function ensure_entry_properties( string $html, \WP_Post $post, bool $card_roote
 		$extra .= '<data class="u-url" value="' . esc_url( (string) get_permalink( $post ) ) . '"></data>';
 	}
 	if ( $needs_date ) {
-		$extra .= '<data class="dt-published" value="' . esc_attr( (string) get_post_time( 'c', true, $post ) ) . '"></data>';
+		$extra .= '<data class="dt-published" value="' . esc_attr( stream_card_published_datetime( $post ) ) . '"></data>';
 	}
 	$extra = '<span class="pk-entry-props" hidden>' . $extra . '</span>';
 	if ( $card_rooted ) {
@@ -289,11 +289,37 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 		return render_protected_stream_card( $post, $heading_level );
 	}
 
+	/**
+	 * Filters a kind's Stream card before any built-in path renders it.
+	 *
+	 * A kind that draws its own card from its own class returns the markup
+	 * here. A string replaces the card; null falls through to the built-in
+	 * paths. A password-protected post never reaches this filter.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string|null          $html          Card markup, null to fall through.
+	 * @param \WP_Post             $post          Post.
+	 * @param int                  $heading_level Clamped heading level (2-4).
+	 * @param array<string, mixed> $attributes    Block attributes.
+	 */
+	$kind_card = apply_filters( 'pkiw_stream_card_kind_render', null, $post, $heading_level, $attributes );
+	if ( is_string( $kind_card ) ) {
+		return $kind_card;
+	}
+
 	if ( 'photo' === get_post_kind_slug( $post ) ) {
 		return render_photo_stream_card( $post, $attributes );
 	}
 
 	if ( 'review' === get_post_kind_slug( $post ) ) {
+		return render_generic_stream_card( $post, $attributes );
+	}
+
+	// A craft post always takes the generic card: its project sections add
+	// headings, lists and step photos, so a post holding only the card would
+	// otherwise print the card block's bare facts list with no title link.
+	if ( 'craft' === get_post_kind_slug( $post ) ) {
 		return render_generic_stream_card( $post, $attributes );
 	}
 
@@ -318,7 +344,7 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 	// nothing else. A synthetic block reuses the card structure, the Able
 	// Player embed path, and the on-demand style enqueue.
 	if ( 'watch' === get_post_kind_slug( $post ) ) {
-		$attrs = [ 'mediaTitle' => get_the_title( $post ) ];
+		$attrs = [ 'mediaTitle' => visitor_post_title( $post ) ];
 
 		$video_url = extract_first_video_url( (string) $post->post_content );
 		if ( '' !== $video_url ) {
@@ -352,6 +378,56 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 }
 
 /**
+ * Whether the stored title was generated from a location that is hidden.
+ *
+ * What a visitor reads in its place is a synthetic name, never the entry's
+ * title, so it carries no p-name (X8).
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post Post.
+ * @return bool True when the safe title replaces the stored one.
+ */
+function post_title_is_hidden( \WP_Post $post ): bool {
+	return Title_Privacy::safe_title( $post->ID ) !== (string) $post->post_title;
+}
+
+/**
+ * A post's title as a visitor reads it, whichever screen asks.
+ *
+ * Title_Privacy hands back the stored title on an admin screen, so
+ * get_the_title() would print a title generated from a hidden location
+ * there. A hidden title is replaced by the safe one with its tags stripped.
+ * A hidden title on a password-protected post gets core's
+ * protected_title_format prefix on every screen, because the safe title
+ * carries none; a hidden title on a private post gets no "Private:" prefix.
+ * A visible title follows get_the_title(), which adds core's "Protected:" or
+ * "Private:" prefix off admin screens only.
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post Post.
+ * @return string The title to print, which may be ''.
+ */
+function visitor_post_title( \WP_Post $post ): string {
+	if ( ! post_title_is_hidden( $post ) ) {
+		return get_the_title( $post );
+	}
+
+	$safe = Title_Privacy::safe_title( $post->ID );
+
+	$name = trim( wp_strip_all_tags( $safe ) );
+	if ( '' !== $name && '' !== (string) $post->post_password ) {
+		/** This filter is documented in wp-includes/post-template.php */
+		/* translators: %s: the post title. Core's string. */
+		$format = (string) apply_filters( 'protected_title_format', __( 'Protected: %s', 'default' ), $post ); // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch,WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core's own string and hook.
+		$name   = sprintf( $format, $name );
+	}
+
+	return $name;
+}
+
+/**
  * The Stream card for a password-protected post: its title, linked to the
  * post, and nothing from its body or its kind's facts.
  *
@@ -366,10 +442,11 @@ function render_protected_stream_card( \WP_Post $post, int $heading_level ): str
 	// get_the_title() prefixes "Protected: " even to an empty title, so the
 	// stored title decides whether the post has a name of its own.
 	$has_title = '' !== trim( $post->post_title );
-	$title     = $has_title ? trim( get_the_title( $post ) ) : untitled_name( $post, false );
+	$is_real   = $has_title && ! post_title_is_hidden( $post );
+	$title     = $has_title ? trim( visitor_post_title( $post ) ) : untitled_name( $post, false );
 
 	return '<article class="pk-card pk-card--stream pk-card--protected k-' . esc_attr( '' !== $kind_slug ? $kind_slug : 'note' ) . ' h-entry">'
-		. '<h' . $heading_level . ' class="' . ( $has_title ? 'pk-title p-name' : 'pk-title' ) . '">'
+		. '<h' . $heading_level . ' class="' . ( $is_real ? 'pk-title p-name' : 'pk-title' ) . '">'
 		. '<a class="u-url" href="' . esc_url( (string) get_permalink( $post ) ) . '">' . esc_html( $title ) . '</a>'
 		. '</h' . $heading_level . '></article>';
 }
@@ -625,7 +702,9 @@ function render_photo_stream_card( \WP_Post $post, array $attributes = [] ): str
 	}
 	$out .= '<div class="pk-caption">';
 	if ( $titled ) {
-		$out .= '<h' . $heading_level . ' class="pk-title p-name"><a class="u-url" href="' . $permalink . '">' . esc_html( $safe_title ) . '</a></h' . $heading_level . '>';
+		// A hidden-location title is replaced by a synthetic name, which carries no p-name.
+		$title_class = post_title_is_hidden( $post ) ? 'pk-title' : 'pk-title p-name';
+		$out        .= '<h' . $heading_level . ' class="' . $title_class . '"><a class="u-url" href="' . $permalink . '">' . esc_html( $safe_title ) . '</a></h' . $heading_level . '>';
 		$out .= '<p class="pk-sub pk-stream-date"><time class="dt-published" datetime="' . $date_time . '">' . esc_html( $date_display ) . '</time></p>';
 	} else {
 		$fallback  = untitled_fallback_name( $post );
@@ -1026,15 +1105,17 @@ function stream_card_title_is_cited_url( \WP_Post $post, string $title ): bool {
 }
 
 /**
- * Whether a generic Stream card omits feed action furniture.
+ * Whether a generic Stream card omits feed action furniture: the thumbnail
+ * strip, the "+N" link and "Read more". Articles and crafts are headline-only.
  *
  * @param string $kind_slug Kind slug.
  * @return bool True for headline-only generic cards.
  */
 function generic_card_headline_only( string $kind_slug ): bool {
-	return 'article' === $kind_slug;
+	return in_array( $kind_slug, [ 'article', 'craft' ], true );
 }
 
+// phpcs:disable Generic.Metrics.CyclomaticComplexity.TooHigh -- One branch per kind-specific line the generic card prints.
 /**
  * Render a compact card for a post that isn't a self-contained kind card.
  *
@@ -1062,14 +1143,15 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	$excerpt       = trim( wp_strip_all_tags( get_the_excerpt( $post ) ) );
 	$headline_only = generic_card_headline_only( $kind_slug );
 
-	$title     = trim( get_the_title( $post ) );
+	$title     = trim( visitor_post_title( $post ) );
 	$has_title = '' !== $title && ! stream_card_title_is_cited_url( $post, $title );
 	if ( ! $has_title ) {
 		$title = untitled_name( $post, false );
 	}
 	// A synthetic title is navigation, not the entry's name — no p-name, so
 	// mf2 parsers fall back to the implied name / content as intended.
-	$title_class = $has_title ? 'pk-title p-name' : 'pk-title';
+	// A hidden-location title is the safe name, which is synthetic too.
+	$title_class = $has_title && ! post_title_is_hidden( $post ) ? 'pk-title p-name' : 'pk-title';
 
 	// A recipe's facts come from the recipe plugin when one holds the recipe,
 	// read here as the card renders.
@@ -1136,7 +1218,7 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	$date_display = get_the_date( '', $post );
 	if ( '' !== $date_display ) {
 		$out .= '<p class="pk-sub pk-stream-date"><time class="dt-published" datetime="'
-			. esc_attr( (string) get_post_time( 'c', true, $post ) ) . '">'
+			. esc_attr( stream_card_published_datetime( $post ) ) . '">'
 			. esc_html( $date_display ) . '</time></p>';
 	}
 	/**
@@ -1155,6 +1237,10 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 		$out .= recipe_stream_card_facts( $recipe );
 	}
 
+	if ( 'craft' === $kind_slug ) {
+		$out .= craft_stream_card_facts( kind_facts( $post->ID ) );
+	}
+
 	$out .= '</div>';
 
 	// Weather posts have no card block; show the observation Simple
@@ -1167,7 +1253,10 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	if ( '' !== $thumb_html ) {
 		// get_the_post_thumbnail() returns core-generated, escaped <img> markup.
 		$out .= '<div class="pk-media pk-media--stream">' . $thumb_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		$out .= $headline_only ? stream_card_media_caption( $post ) : stream_card_media_extras( $post );
+		// An article keeps the hero's caption. A craft card prints the picture alone.
+		if ( 'craft' !== $kind_slug ) {
+			$out .= $headline_only ? stream_card_media_caption( $post ) : stream_card_media_extras( $post );
+		}
 		$out .= '</div>';
 	}
 
@@ -1187,6 +1276,7 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 
 	return $out;
 }
+// phpcs:enable Generic.Metrics.CyclomaticComplexity.TooHigh
 
 /**
  * A recipe card's course and total time, each printed only when known.
@@ -1210,6 +1300,35 @@ function recipe_stream_card_facts( array $recipe ): string {
 }
 
 /**
+ * A craft post's type and time spent, each printed only when known.
+ *
+ * Reads the craft facts, so a theme and the generic card print one line:
+ * the craft type as stored, then the time as a machine-readable duration
+ * labeled `18 hr`. No status, no "Finished" and no link.
+ *
+ * @since 1.9.0
+ *
+ * @param array<string, mixed> $facts Facts from kind_facts() for a craft post.
+ * @return string Markup, or '' when neither is known.
+ */
+function craft_stream_card_facts( array $facts ): string {
+	$parts = [];
+
+	$type = trim( (string) ( $facts['craft_type'] ?? '' ) );
+	if ( '' !== $type ) {
+		$parts[] = '<span class="pk-craft-type">' . esc_html( $type ) . '</span>';
+	}
+
+	$iso   = (string) ( $facts['duration_iso'] ?? '' );
+	$label = (string) ( $facts['duration_label'] ?? '' );
+	if ( '' !== $iso && '' !== $label ) {
+		$parts[] = '<span class="pk-craft-time"><span class="pk-sr-only">' . esc_html__( 'Time spent', 'post-kinds-for-indieweb-in-block-themes' ) . ' </span><time datetime="' . esc_attr( $iso ) . '">' . esc_html( $label ) . '</time></span>';
+	}
+
+	return $parts ? '<p class="pk-sub pk-craft-facts">' . implode( ' ', $parts ) . '</p>' : '';
+}
+
+/**
  * The caption under a Stream card's hero image, plus a thumbnail row when the
  * post carries more than one image.
  *
@@ -1229,7 +1348,6 @@ function recipe_stream_card_facts( array $recipe ): string {
 function stream_card_media_extras( \WP_Post $post ): string {
 	$hero_id = (int) get_post_thumbnail_id( $post );
 	$images  = get_attached_media( 'image', $post );
-	$out     = stream_card_media_caption( $post );
 
 	// Everything except the hero, in attachment order.
 	$rest = [];
@@ -1238,6 +1356,9 @@ function stream_card_media_extras( \WP_Post $post ): string {
 			$rest[] = $image;
 		}
 	}
+
+	// Only a strip swaps the caption, so only a card with one has a live region.
+	$out = stream_card_media_caption( $post, [] !== $rest );
 	if ( empty( $rest ) ) {
 		return $out;
 	}
@@ -1293,10 +1414,15 @@ function stream_card_media_extras( \WP_Post $post ): string {
 /**
  * The caption under a Stream card's hero image.
  *
+ * Static by default. The thumbnail strip swaps the caption when a thumbnail
+ * is chosen, so only that path asks for a live region. A caption nothing ever
+ * swaps would add a dead live region to every card.
+ *
  * @param \WP_Post $post Post being rendered.
+ * @param bool     $live Whether the caption is a live region (aria-live polite).
  * @return string Caption markup, or ''.
  */
-function stream_card_media_caption( \WP_Post $post ): string {
+function stream_card_media_caption( \WP_Post $post, bool $live = false ): string {
 	$hero_id      = (int) get_post_thumbnail_id( $post );
 	$hero_caption = $hero_id > 0
 		? trim( (string) get_post_field( 'post_excerpt', $hero_id ) )
@@ -1307,7 +1433,9 @@ function stream_card_media_caption( \WP_Post $post ): string {
 	}
 
 	// Polite, not assertive: a caption changing must never interrupt.
-	return '<p class="pk-media__caption" aria-live="polite">' . stream_card_caption_kses( $hero_caption ) . '</p>';
+	$live_attr = $live ? ' aria-live="polite"' : '';
+
+	return '<p class="pk-media__caption"' . $live_attr . '>' . stream_card_caption_kses( $hero_caption ) . '</p>';
 }
 
 
@@ -1358,7 +1486,7 @@ function stream_card_thumbnail_alt( \WP_Post $post, int $thumbnail_id ): string 
 		return $attachment_alt;
 	}
 
-	return wp_strip_all_tags( get_the_title( $post ) );
+	return wp_strip_all_tags( visitor_post_title( $post ) );
 }
 
 /**
@@ -1653,6 +1781,36 @@ function card_title_in_nested_object( string $html ): bool {
 }
 
 /**
+ * The datetime a Stream card prints for a post's publish date.
+ *
+ * Exercise and sleep print the local date alone: a clock time would say when
+ * a workout ended or when someone woke up (Courtney's answer on the health
+ * data question). Every other kind keeps the full UTC timestamp. The
+ * `pkiw_stream_date_only_kinds` filter names the date-only kinds.
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post Post.
+ * @return string `Y-m-d` for a date-only kind, else an ISO 8601 timestamp.
+ */
+function stream_card_published_datetime( \WP_Post $post ): string {
+	/**
+	 * Filters the kinds whose Stream card prints a date, not a timestamp.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string[] $kinds Kind slugs. Default exercise and sleep.
+	 */
+	$date_only = (array) apply_filters( 'pkiw_stream_date_only_kinds', [ 'exercise', 'sleep' ] );
+
+	if ( in_array( get_post_kind_slug( $post ), $date_only, true ) ) {
+		return (string) get_post_time( 'Y-m-d', false, $post );
+	}
+
+	return (string) get_post_time( 'c', true, $post );
+}
+
+/**
  * Insert the post's published date inside the card, under the title.
  *
  * On the Stream the date reads inside each card rather than floating above
@@ -1673,7 +1831,7 @@ function inject_post_date_into_card( string $html, \WP_Post $post ): string {
 
 	$date_html = '<p class="pk-sub pk-stream-date"><time'
 		. ( card_title_in_nested_object( $html ) ? '' : ' class="dt-published"' )
-		. ' datetime="' . esc_attr( (string) get_post_time( 'c', true, $post ) ) . '">'
+		. ' datetime="' . esc_attr( stream_card_published_datetime( $post ) ) . '">'
 		. esc_html( $display ) . '</time></p>';
 
 	$out = preg_replace_callback(

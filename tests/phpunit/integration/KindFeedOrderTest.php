@@ -217,4 +217,69 @@ final class KindFeedOrderTest extends WP_UnitTestCase {
 		$this->assertSame( 20, (int) $wp_query->get( 'posts_per_page' ), 'The entry block sizes the archive page.' );
 		$this->assertNotSame( $ids, array_map( 'intval', wp_list_pluck( $wp_query->posts, 'ID' ) ), 'Grouped order is not date order.' );
 	}
+
+	/**
+	 * Each calendar kind with the unit its stand-in answers `pkiw_calendar_paging` with,
+	 * the order it asks for, and whether its template also holds an entry block.
+	 * The kind classes arrive in other lanes; the template carries a marker block
+	 * the stand-in looks for, the way those classes look for their own. The
+	 * exercise archive's template holds an entry block inside its Post Template,
+	 * so its feed also proves the grouping stays off.
+	 *
+	 * @return array<string, array{string, string, string, bool}>
+	 */
+	public function calendar_kinds(): array {
+		return [
+			'mood year grid'     => [ 'mood', 'year', 'ASC', false ],
+			'weather almanac'    => [ 'weather', 'month', 'ASC', false ],
+			'exercise week list' => [ 'exercise', 'week', 'DESC', true ],
+		];
+	}
+
+	/**
+	 * @dataProvider calendar_kinds
+	 */
+	public function test_a_calendar_kind_feed_stays_newest_first_at_posts_per_rss( string $kind, string $unit, string $order, bool $entry ): void {
+		update_option( 'start_of_week', 0 );
+		$ids = [];
+		foreach ( [ '2026-08-05', '2026-08-04', '2026-08-03', '2026-08-02', '2025-06-01' ] as $i => $day ) {
+			$id = self::factory()->post->create(
+				[
+					'post_status' => 'publish',
+					'post_title'  => "{$kind} {$i}",
+					'post_date'   => "{$day} 10:00:00",
+				]
+			);
+			wp_set_object_terms( $id, $kind, 'kind' );
+			$ids[] = $id;
+		}
+
+		$this->template = '<!-- wp:query {"queryId":3,"query":{"inherit":true}} --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-title />'
+			. ( $entry ? '<!-- wp:post-kinds-indieweb/archive-sections {"linesPerPage":20} /-->' : '' )
+			. '<!-- /wp:post-template --></div><!-- /wp:query --><!-- wp:pkiw-test/calendar /-->';
+		$plan           = static fn( $found, $term, $content ) => str_contains( $content, 'wp:pkiw-test/calendar' )
+			? [
+				'unit'  => $unit,
+				'count' => 1,
+				'order' => $order,
+			]
+			: $found;
+		add_filter( 'pkiw_calendar_paging', $plan, 10, 3 );
+		update_option( 'posts_per_rss', 4 );
+
+		$this->go_to( get_term_link( $kind, 'kind' ) );
+		$this->assertIsArray( $GLOBALS['wp_query']->get( 'pkiw_calendar' ), 'The stand-in is live: the HTML archive pages by ' . $unit . '.' );
+		$this->assertSame( -1, (int) $GLOBALS['wp_query']->get( 'posts_per_page' ) );
+
+		$this->go_to( $this->feed_url( $kind ) );
+		remove_filter( 'pkiw_calendar_paging', $plan, 10 );
+		global $wp_query, $wpdb;
+
+		$this->assertTrue( $wp_query->is_feed() && $wp_query->is_tax( 'kind', $kind ) );
+		$this->assertSame( '', $wp_query->get( 'pkiw_calendar' ), 'No pkiw_calendar var reaches the feed query.' );
+		$this->assertSame( [], $this->grouping_vars(), 'Nor does a grouping var.' );
+		$this->assertSame( 4, (int) $wp_query->get( 'posts_per_page' ), 'The feed shows posts_per_rss.' );
+		$this->assertSame( array_slice( $ids, 0, 4 ), array_map( 'intval', wp_list_pluck( $wp_query->posts, 'ID' ) ), 'Newest first, whatever the calendar page order is.' );
+		$this->assertStringContainsString( "ORDER BY {$wpdb->posts}.post_date DESC", $wp_query->request );
+	}
 }

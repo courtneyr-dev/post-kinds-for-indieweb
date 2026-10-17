@@ -12,11 +12,13 @@
 /**
  * Kinds whose posts get the missing-alt notice.
  *
- * Another kind joins by adding its slug here.
+ * Another kind joins by adding its slug here. Craft joins for its steps:
+ * each step holds a photo, and the walk below reaches it through the
+ * steps and step blocks (issue 249).
  *
  * @type {Array<string>}
  */
-export const MISSING_ALT_KINDS = [ 'photo' ];
+export const MISSING_ALT_KINDS = [ 'photo', 'craft' ];
 
 /**
  * Whether a value holds no alt text.

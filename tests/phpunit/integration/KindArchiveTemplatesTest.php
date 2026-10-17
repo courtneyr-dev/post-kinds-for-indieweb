@@ -242,6 +242,103 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @return array<string, array{string, string}>
+	 */
+	public function w4_archive_slugs(): array {
+		return [
+			'mood archive'     => [ 'taxonomy-kind-mood', 'Mood Archive' ],
+			'weather archive'  => [ 'taxonomy-kind-weather', 'Weather Archive' ],
+			'exercise archive' => [ 'taxonomy-kind-exercise', 'Exercise Archive' ],
+			'sleep archive'    => [ 'taxonomy-kind-sleep', 'Sleep Archive' ],
+			'craft archive'    => [ 'taxonomy-kind-craft', 'Craft Archive' ],
+			'note archive'     => [ 'taxonomy-kind-note', 'Note Archive' ],
+		];
+	}
+
+	/**
+	 * @dataProvider w4_archive_slugs
+	 */
+	public function test_the_w4_archives_have_template_definitions( string $slug, string $title ): void {
+		$definitions = ( new ReflectionMethod( \PKIW\Plugin::class, 'get_plugin_template_definitions' ) )->invoke( \PKIW\Plugin::get_instance() );
+
+		$this->assertArrayHasKey( $slug, $definitions );
+		$this->assertSame( $title, $definitions[ $slug ]['title'] );
+		$this->assertNotSame( '', trim( (string) $definitions[ $slug ]['description'] ) );
+		$this->assertSame( [], $definitions[ $slug ]['post_types'] );
+	}
+
+	/**
+	 * A definition serves only once its file exists. Each kind lane ships its
+	 * file; until then the slug is registered and absent from the list.
+	 *
+	 * @dataProvider w4_archive_slugs
+	 */
+	public function test_the_w4_archives_serve_only_when_their_files_exist( string $slug ): void {
+		$served = in_array(
+			'post-kinds-for-indieweb//' . $slug,
+			wp_list_pluck( get_block_templates( [ 'slug__in' => [ $slug ] ] ), 'id' ),
+			true
+		);
+
+		$this->assertSame( file_exists( PKIW_PATH . 'templates/' . $slug . '.html' ), $served );
+		$this->assertSame( $served, null !== get_block_template( 'post-kinds-for-indieweb//' . $slug ) );
+	}
+
+	/**
+	 * With a theme taxonomy-kind in the list the plugin adds none of its kind
+	 * templates; without one it adds the slug exactly when the file exists.
+	 *
+	 * @dataProvider w4_archive_slugs
+	 */
+	public function test_a_theme_taxonomy_kind_template_blocks_each_w4_archive( string $slug ): void {
+		$plugin = \PKIW\Plugin::get_instance();
+		$theme  = new WP_Block_Template();
+
+		$theme->id     = 'pkiw-kind-theme//taxonomy-kind';
+		$theme->slug   = 'taxonomy-kind';
+		$theme->theme  = 'pkiw-kind-theme';
+		$theme->type   = 'wp_template';
+		$theme->source = 'theme';
+
+		$with    = $plugin->add_plugin_templates( [ $theme ], [ 'slug__in' => [ $slug ] ], 'wp_template' );
+		$without = $plugin->add_plugin_templates( [], [ 'slug__in' => [ $slug ] ], 'wp_template' );
+
+		$this->assertSame( [ 'pkiw-kind-theme//taxonomy-kind' ], wp_list_pluck( $with, 'id' ) );
+		$this->assertSame(
+			file_exists( PKIW_PATH . 'templates/' . $slug . '.html' ) ? [ 'post-kinds-for-indieweb//' . $slug ] : [],
+			wp_list_pluck( $without, 'id' )
+		);
+	}
+
+	public function test_the_plugin_wires_the_w4_kind_classes_after_staff_picks_each_behind_class_exists(): void {
+		$source = (string) file_get_contents( PKIW_PATH . 'includes/class-plugin.php' );
+		$staff  = strpos( $source, "class_exists( __NAMESPACE__ . '\\\\Staff_Picks' )" );
+
+		$this->assertNotFalse( $staff );
+		foreach ( [ 'Mood_Year_Grid', 'Almanac_Month', 'Exercise_Archive', 'Exercise_Medals', 'Exercise_Location', 'Sleep_Archive', 'Sleep_Night', 'Sleep_Location', 'Craft_Archive', 'Note_Archive' ] as $class ) {
+			$at = strpos( $source, "class_exists( __NAMESPACE__ . '\\\\{$class}' )" );
+			$this->assertNotFalse( $at, $class );
+			$this->assertGreaterThan( $staff, $at, $class );
+			$this->assertStringContainsString( "( new {$class}() )->register();", substr( $source, $at, 140 ), $class );
+			$staff = $at;
+		}
+	}
+
+	public function test_the_w4_block_names_are_in_the_block_list_and_skip_until_their_block_json_exists(): void {
+		$source = (string) file_get_contents( PKIW_PATH . 'includes/class-plugin.php' );
+		$start  = strpos( $source, '$blocks = [' );
+		$end    = strpos( $source, '];', (int) $start );
+		$list   = substr( $source, (int) $start, (int) $end - (int) $start );
+
+		foreach ( [ 'exercise-card', 'sleep-card', 'craft-card', 'steps', 'step' ] as $block ) {
+			$this->assertStringContainsString( "'{$block}',", $list, $block );
+			$registered = WP_Block_Type_Registry::get_instance()->is_registered( 'post-kinds-indieweb/' . $block );
+			$has_json   = file_exists( PKIW_PATH . 'build/blocks/' . $block . '/block.json' ) || file_exists( PKIW_PATH . 'src/blocks/' . $block . '/block.json' );
+			$this->assertSame( $has_json, $registered, "{$block} registers when its block.json exists and not before." );
+		}
+	}
+
+	/**
 	 * The W2 archive classes arrive in later lanes, so this source check pins
 	 * the loader wiring until the classes exist and can be observed directly.
 	 */
