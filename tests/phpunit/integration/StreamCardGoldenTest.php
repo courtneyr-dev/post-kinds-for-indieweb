@@ -173,11 +173,16 @@ final class StreamCardGoldenTest extends WP_UnitTestCase {
 	private function render_rows(): array {
 		$taxonomy = \PKIW\Plugin::get_instance()->get_taxonomy();
 		$this->assertInstanceOf( \PKIW\Taxonomy::class, $taxonomy );
-		$kinds = array_keys( $taxonomy->get_default_kinds() );
+		$defaults = $taxonomy->get_default_kinds();
+		$kinds    = array_keys( $defaults );
 		sort( $kinds );
+		// Pin each term to its shipped name so an earlier test's term edits can't change a kind label.
 		foreach ( $kinds as $kind ) {
-			if ( ! term_exists( $kind, 'kind' ) ) {
-				wp_insert_term( ucfirst( $kind ), 'kind', [ 'slug' => $kind ] );
+			$term = term_exists( $kind, 'kind' );
+			if ( ! $term ) {
+				wp_insert_term( $defaults[ $kind ]['name'], 'kind', [ 'slug' => $kind ] );
+			} else {
+				wp_update_term( (int) $term['term_id'], 'kind', [ 'name' => $defaults[ $kind ]['name'] ] );
 			}
 		}
 
