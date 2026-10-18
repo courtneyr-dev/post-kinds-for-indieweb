@@ -621,6 +621,14 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 		$this->assertNotNull( \PKIW\Kind_Facts::reader( 'favorite' ) );
 	}
 
+	public function test_question_archive_joins_the_grouped_kinds_when_available(): void {
+		if ( ! class_exists( 'PKIW\\Question_Archive' ) ) {
+			$this->markTestSkipped( 'Question_Archive arrives with issue 256.' );
+		}
+
+		$this->assertContains( 'question', \PKIW\Grouped_Archive::grouped_kinds() );
+	}
+
 	public function test_site_editor_customization_wins_over_plugin_template(): void {
 		$post_id = self::factory()->post->create(
 			[
