@@ -217,7 +217,8 @@ final class Meta_Source implements Group_Source {
 			$default_rank    = array_search( $this->within['default'] ?? '', $this->within['order'], true );
 			$default_rank    = false === $default_rank ? count( $this->within['order'] ) : (int) $default_rank;
 			$rank            = "CASE LOWER(TRIM({$first})){$cases} ELSE {$default_rank} END";
-			$parts['within'] = [ $this->guard_protected_sql( $rank, (string) $default_rank ) . ' ASC' ];
+			// A protected post ranks as the default whether or not its group is forced empty: its place among the others must not reveal its value.
+			$parts['within'] = [ "IF(LENGTH({$wpdb->posts}.post_password) > 0, {$default_rank}, {$rank}) ASC" ];
 		}
 
 		return $parts;

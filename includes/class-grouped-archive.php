@@ -882,6 +882,10 @@ final class Grouped_Archive {
 			);
 		}
 		if ( null !== $active ) {
+			if ( ! current_user_can( 'edit_others_posts' ) ) {
+				// A view's membership must not reveal which protected posts match it.
+				$args['pkiw_view_public'] = 1;
+			}
 			$clause = Kind_Archive_Layouts::filtered_view_meta_query( $term->slug, $view );
 			if ( [] !== $clause ) {
 				$existing           = $args['meta_query'] ?? [];
@@ -1343,12 +1347,10 @@ final class Grouped_Archive {
 		self::$preview_lead_n = 0;
 		self::$preview_at     = 0;
 
-		$view = Kind_Archive_Layouts::preview_view();
-		if ( null === Kind_Archive_Layouts::registered_view( $kind, $view ) ) {
-			$view = '';
-		}
-		$vars  = self::query_vars( $source, $settings );
-		$cache = $kind . '|' . implode( '|', $vars ) . ( '' !== $view ? '|' . $view : '' );
+		$view   = Kind_Archive_Layouts::preview_view();
+		$clause = '' !== $view ? Kind_Archive_Layouts::filtered_view_meta_query( $kind, $view ) : [];
+		$vars   = self::query_vars( $source, $settings );
+		$cache  = $kind . '|' . implode( '|', $vars ) . ( [] !== $clause ? '|' . $view : '' );
 		if ( ! isset( self::$preview_order[ $cache ] ) ) {
 			$taxonomy = get_taxonomy( Taxonomy::TAXONOMY );
 			$args     = [
@@ -1374,10 +1376,10 @@ final class Grouped_Archive {
 					],
 				],
 			];
-			if ( '' !== $view ) {
-				$clause = Kind_Archive_Layouts::filtered_view_meta_query( $kind, $view );
-				if ( [] !== $clause ) {
-					$args['meta_query'] = [ $clause ]; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- the registered view limits the preview to its posts.
+			if ( [] !== $clause ) {
+				$args['meta_query'] = [ $clause ]; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- the registered view limits the preview to its posts.
+				if ( ! current_user_can( 'edit_others_posts' ) ) {
+					$args['pkiw_view_public'] = 1;
 				}
 			}
 			self::$preview_order[ $cache ] = array_map(

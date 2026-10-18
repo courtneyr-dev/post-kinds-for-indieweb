@@ -178,6 +178,7 @@ final class Kind_Archive_Layouts {
 		add_filter( 'taxonomy_template_hierarchy', [ self::class, 'add_view_template' ] );
 		add_action( 'pre_get_posts', [ $this, 'maybe_group_main_query' ] );
 		add_filter( 'posts_where', [ self::class, 'calendar_where' ], 10, 2 );
+		add_filter( 'posts_where', [ self::class, 'view_where' ], 10, 2 );
 		add_filter( 'the_posts', [ self::class, 'calendar_page_count' ], 10, 2 );
 		add_filter( 'posts_orderby', [ Grouped_Archive::class, 'group_orderby' ], 10, 2 );
 		add_filter( 'query_loop_block_query_vars', [ Grouped_Archive::class, 'query_block_group_by' ], 10, 2 );
@@ -1373,6 +1374,30 @@ final class Kind_Archive_Layouts {
 	 */
 	public static function calendar_where( $where, $query ) {
 		if ( ! $query instanceof \WP_Query || ! is_array( $query->get( 'pkiw_calendar' ) ) ) {
+			return $where;
+		}
+
+		global $wpdb;
+
+		return $where . " AND LENGTH( {$wpdb->posts}.post_password ) = 0";
+	}
+
+	/**
+	 * Keep password-protected posts out of a filtered view's REST result.
+	 *
+	 * The view's meta clause would otherwise list a protected post that
+	 * matches and omit one that doesn't, which tells a visitor what the
+	 * protected posts hold. LENGTH() tells an empty password from one of
+	 * spaces, which the column compares equal.
+	 *
+	 * @internal Hooked to `posts_where`.
+	 *
+	 * @param string    $where WHERE clause.
+	 * @param \WP_Query $query Query.
+	 * @return string
+	 */
+	public static function view_where( $where, $query ) {
+		if ( ! $query instanceof \WP_Query || ! $query->get( 'pkiw_view_public' ) ) {
 			return $where;
 		}
 

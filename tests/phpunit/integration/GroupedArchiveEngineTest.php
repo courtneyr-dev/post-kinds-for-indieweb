@@ -197,6 +197,7 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	public function tear_down(): void {
 		Kind_Archive_Layouts::unregister_filtered_view( 'listen', 'pkiw_listen_type' );
 		Kind_Archive_Layouts::set_rest_view( '' );
+		$GLOBALS['wp_rest_server'] = null;
 		foreach ( [ self::MARKER, self::LINE, self::OL_LINE, self::PAIRS, self::MONTHS, self::IDS, self::BODY, self::WEEKS, self::LEAD ] as $name ) {
 			Grouped_Archive::unregister_entry_block( $name );
 			if ( WP_Block_Type_Registry::get_instance()->is_registered( $name ) ) {
@@ -711,9 +712,13 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			$plain = new WP_REST_Request( 'GET', '/wp/v2/posts' );
 			$plain->set_param( 'orderby', 'pkiw_group' );
 			$plain->set_param( 'kind', [ $watch->term_id ] );
-			$this->assertSame( Grouped_Archive::rest_order( [], $plain ), Grouped_Archive::rest_order( [], $view ) );
-			$this->assertArrayNotHasKey( 'meta_query', Grouped_Archive::rest_order( [], $view ) );
-			$this->assertContains( [ 'watch', '' ], $seen );
+			$seen = [];
+			$from_view = Grouped_Archive::rest_order( [], $view );
+			$this->assertSame( [ [ 'watch', '' ] ], $seen, 'The view is not active for a kind that did not register it.' );
+			$this->assertSame( '', Kind_Archive_Layouts::preview_view() );
+			$this->assertSame( Grouped_Archive::rest_order( [], $plain ), $from_view );
+			$this->assertArrayNotHasKey( 'meta_query', $from_view );
+			$this->assertArrayNotHasKey( 'pkiw_view_public', $from_view, 'No public-only rule for a kind without the view.' );
 
 			foreach ( [ [], [ $listen->term_id, $watch->term_id ] ] as $terms ) {
 				$many = new WP_REST_Request( 'GET', '/wp/v2/posts' );
@@ -731,6 +736,7 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 
 	public function test_real_rest_view_request_filters_posts_and_rejects_an_unknown_token(): void {
 		Kind_Archive_Layouts::register_filtered_view( 'listen', 'pkiw_listen_type', [ 'podcast' ] );
+		$GLOBALS['wp_rest_server'] = null; // The orderby enum is built when the routes register, after the view exists.
 		Grouped_Archive::register_source( new Meta_Source( 'test_listen_show', [ '_pkiw_test_listen_show' ] ) );
 		$podcast = $this->make( 'listen', 'Podcast', '2026-09-10 10:00:00', [ '_pkiw_test_listen_type' => 'podcast', '_pkiw_test_listen_show' => 'Show' ] );
 		$this->make( 'listen', 'Music', '2026-09-09 10:00:00', [ '_pkiw_test_listen_type' => 'music', '_pkiw_test_listen_show' => 'Show' ] );
@@ -793,6 +799,75 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			remove_filter( 'pkiw_archive_group_source', $source, 10 );
 			remove_filter( 'pkiw_filtered_view_meta_query', $meta );
 		}
+	}
+
+	public function test_a_filtered_view_hides_protected_posts_from_requesters_who_cannot_edit_others_posts(): void {
+		Kind_Archive_Layouts::register_filtered_view( 'listen', 'pkiw_listen_type', [ 'podcast' ] );
+		$GLOBALS['wp_rest_server'] = null; // The orderby enum is built when the routes register, after the view exists.
+		$show = static fn( string $type ): array => [ '_pkiw_test_listen_type' => $type, '_pkiw_test_listen_show' => 'Show' ];
+		Grouped_Archive::register_source( new Meta_Source( 'test_listen_show', [ '_pkiw_test_listen_show' ] ) );
+
+		$public_podcast   = $this->make( 'listen', 'Public podcast', '2026-09-10 10:00:00', $show( 'podcast' ) );
+		$public_music     = $this->make( 'listen', 'Public music', '2026-09-09 10:00:00', $show( 'music' ) );
+		$locked_podcast   = $this->make( 'listen', 'Locked podcast', '2026-09-08 10:00:00', $show( 'podcast' ) );
+		$locked_music     = $this->make( 'listen', 'Locked music', '2026-09-07 10:00:00', $show( 'music' ) );
+		$spaces_podcast   = $this->make( 'listen', 'Spaces podcast', '2026-09-06 10:00:00', $show( 'podcast' ) );
+		foreach ( [ $locked_podcast => 'secret', $locked_music => 'secret', $spaces_podcast => '   ' ] as $id => $password ) {
+			wp_update_post(
+				[
+					'ID'            => $id,
+					'post_password' => $password,
+				]
+			);
+		}
+		$term   = get_the_terms( $public_podcast, 'kind' )[0];
+		$source = static fn( $default, string $kind ) => 'listen' === $kind && 'podcast' === Kind_Archive_Layouts::preview_view() ? 'test_listen_show' : $default;
+		$meta   = static fn( array $clause ): array => [ 'key' => '_pkiw_test_listen_type', 'value' => 'podcast', 'compare' => '=' ];
+		add_filter( 'pkiw_archive_group_source', $source, 10, 2 );
+		add_filter( 'pkiw_filtered_view_meta_query', $meta );
+
+		$ids = static function () use ( $term ): array {
+			$request = new WP_REST_Request( 'GET', '/wp/v2/posts' );
+			$request->set_param( 'kind', [ $term->term_id ] );
+			$request->set_param( 'orderby', 'pkiw_group__podcast' );
+			$request->set_param( 'per_page', 20 );
+			$response = rest_get_server()->dispatch( $request );
+
+			return 200 === $response->get_status() ? array_map( 'intval', wp_list_pluck( $response->get_data(), 'id' ) ) : [ $response->get_status() ];
+		};
+
+		try {
+			wp_set_current_user( 0 );
+			$this->assertSame( [ $public_podcast ], $ids(), 'Anonymous: neither a protected podcast nor a protected music listen shows, so the view says nothing about them.' );
+
+			wp_set_current_user( self::factory()->user->create( [ 'role' => 'author' ] ) );
+			$this->assertSame( [ $public_podcast ], $ids(), 'An author cannot edit others posts, so the rule holds.' );
+
+			wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+			$this->assertSame( [ $public_podcast, $locked_podcast, $spaces_podcast ], $ids(), 'An editor sees every podcast, protected or not, and still no music.' );
+		} finally {
+			remove_filter( 'pkiw_archive_group_source', $source, 10 );
+			remove_filter( 'pkiw_filtered_view_meta_query', $meta );
+		}
+
+		$this->assertSame( [ $public_music ], array_values( array_intersect( [ $public_music ], $this->grouped_ids( 'listen', 'test_listen_show' ) ) ), 'A request with no view still lists the music listen.' );
+	}
+
+	public function test_the_editor_preview_of_a_kind_without_the_view_ignores_the_view(): void {
+		Kind_Archive_Layouts::register_filtered_view( 'listen', 'pkiw_listen_type', [ 'podcast' ] );
+		$p    = $this->shelf();
+		$meta = static fn( array $clause ): array => [ 'key' => '_pkiw_test_listen_type', 'value' => 'podcast', 'compare' => '=' ];
+		add_filter( 'pkiw_filtered_view_meta_query', $meta );
+
+		try {
+			$plain = $this->editor_render( self::LINE, $p['dune'], [], [ 'pkiw_kind' => 'shelfkind' ] );
+			$with  = $this->editor_render( self::LINE, $p['dune'], [], [ 'pkiw_kind' => 'shelfkind', 'pkiw_view' => 'podcast' ] );
+		} finally {
+			remove_filter( 'pkiw_filtered_view_meta_query', $meta );
+		}
+
+		$this->assertNotSame( [], $this->sections( $plain ) );
+		$this->assertSame( $this->sections( $plain ), $this->sections( $with ), 'A view the kind did not register limits nothing, though the request names it.' );
 	}
 
 	public function test_entry_blocks_register_and_the_menu_entry_registers_itself(): void {
@@ -1358,6 +1433,31 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			$this->grouped_ids( 'wishkind', 'test_wish_type' ),
 			'A protected high-priority post ranks with medium posts, where date places it after an unprotected high and before the older medium.'
 		);
+	}
+
+	public function test_a_protected_post_ranks_as_the_default_within_its_group_whether_or_not_the_source_flags_it(): void {
+		foreach ( [ true, false ] as $flag ) {
+			Grouped_Archive::unregister_source( 'test_wish_type' );
+			$this->register_wish_source( $flag );
+			$kind = $flag ? 'wishkind_flagged' : 'wishkind_open';
+			Grouped_Archive::register_source( Grouped_Archive::source( 'test_wish_type' ), $kind );
+			$group = $flag ? 'other' : 'book';
+			$high  = $this->make( $kind, 'High', '2026-01-01 10:00:00', [ '_pkiw_test_wish_type' => $group, '_pkiw_test_wish_priority' => 'high' ] );
+			$mid   = $this->make( $kind, 'Medium', '2026-01-02 10:00:00', [ '_pkiw_test_wish_type' => $group, '_pkiw_test_wish_priority' => 'medium' ] );
+			$lock  = $this->make( $kind, 'Locked high', '2026-01-03 10:00:00', [ '_pkiw_test_wish_type' => $group, '_pkiw_test_wish_priority' => 'high' ] );
+			wp_update_post(
+				[
+					'ID'            => $lock,
+					'post_password' => 'secret',
+				]
+			);
+
+			$this->assertSame(
+				[ $high, $lock, $mid ],
+				$this->grouped_ids( $kind, 'test_wish_type' ),
+				$flag ? 'Flagged: a protected high wish ranks medium.' : 'Unflagged: its group stays visible, but its rank still reads medium.'
+			);
+		}
 	}
 
 	public function test_a_protected_post_stays_in_its_mapped_group_when_the_source_does_not_flag_it(): void {

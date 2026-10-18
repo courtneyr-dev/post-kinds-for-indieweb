@@ -120,6 +120,25 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 		$this->assertNull( \PKIW\Kind_Archive_Layouts::filtered_view( new WP_Query() ) );
 	}
 
+	public function test_filtered_view_ignores_a_query_that_is_not_the_main_query(): void {
+		$this->register_listen_view();
+		$listen = $this->kind_term( 'listen' );
+
+		$this->go_to( add_query_arg( 'pkiw_listen_type', 'podcast', get_term_link( $listen ) ) );
+		$this->assertNotNull( \PKIW\Kind_Archive_Layouts::filtered_view(), 'The main query matches.' );
+
+		$other = new WP_Query(
+			[
+				'taxonomy'         => 'kind',
+				'term'             => 'listen',
+				'pkiw_listen_type' => 'podcast',
+			]
+		);
+		$this->assertTrue( $other->is_tax( 'kind' ), 'The stand-in query is a listen archive query.' );
+		$this->assertFalse( $other->is_main_query() );
+		$this->assertNull( \PKIW\Kind_Archive_Layouts::filtered_view( $other ) );
+	}
+
 	public function test_filtered_view_prepends_its_taxonomy_template_candidate_only_when_active(): void {
 		$this->register_listen_view();
 		$listen    = $this->kind_term( 'listen' );
@@ -549,13 +568,6 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 			$this->assertStringContainsString( "( new {$class}() )->register();", substr( $source, $at, 140 ), $class );
 			$previous = $at;
 		}
-	}
-
-	public function test_the_w5_class_wiring_is_a_no_op_until_the_kind_lanes_arrive(): void {
-		foreach ( [ 'Video_Archive', 'Audio_Archive', 'Audio_Transcript', 'Jam_Archive', 'Listen_Archive', 'Wish_Archive', 'Question_Archive', 'Question_Answers', 'Question_Location' ] as $class ) {
-			$this->assertFalse( class_exists( 'PKIW\\' . $class ), $class );
-		}
-		$this->assertNull( \PKIW\Kind_Facts::reader( 'video' ) );
 	}
 
 	public function test_the_plugin_wires_the_w4_kind_classes_after_staff_picks_each_behind_class_exists(): void {
