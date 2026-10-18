@@ -10,6 +10,8 @@
  * @group   atmosphere
  */
 
+declare(strict_types=1);
+
 namespace PKIW\Tests\Unit;
 
 use PKIW\Integrations\Atmosphere_Titles;
@@ -47,6 +49,9 @@ class AtmosphereTitlesProtectedTest extends \WP_UnitTestCase {
 		return get_post( $post_id );
 	}
 
+	/**
+	 * A protected post derives no title.
+	 */
 	public function test_protected_post_derives_empty_title() {
 		$post = $this->make_jam( 'secret' );
 
@@ -70,6 +75,9 @@ class AtmosphereTitlesProtectedTest extends \WP_UnitTestCase {
 		$this->assertSame( '', $title );
 	}
 
+	/**
+	 * A protected post never reaches the title filter.
+	 */
 	public function test_protected_post_skips_the_title_filter() {
 		$post  = $this->make_jam( 'secret' );
 		$calls = 0;
@@ -85,6 +93,9 @@ class AtmosphereTitlesProtectedTest extends \WP_UnitTestCase {
 		$this->assertSame( 0, $calls );
 	}
 
+	/**
+	 * A public post still derives its title from kind meta.
+	 */
 	public function test_public_post_still_derives_its_title() {
 		$post  = $this->make_jam( '' );
 		$title = Atmosphere_Titles::derive( $post );

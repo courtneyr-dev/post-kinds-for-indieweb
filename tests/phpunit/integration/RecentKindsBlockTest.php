@@ -120,35 +120,46 @@ final class RecentKindsBlockTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * A password-protected jam never lists: no title, no track name, no link.
-	 * The public jam's list is byte-identical with and without it.
+	 * A password-protected jam never lists: no title, track name, cover or
+	 * link, including a password of spaces, which `post_password = ''`
+	 * matches under the column's collation. The public jam's list, covers
+	 * included, is byte-identical with and without them.
 	 */
 	public function test_protected_jam_never_lists(): void {
+		global $wpdb;
+
 		$public_id = $this->make_kind_post( 'jam', 'Public jam probe' );
 		update_post_meta( $public_id, '_pkiw_jam_track', 'Public Track Probe' );
+		update_post_meta( $public_id, '_pkiw_jam_cover', 'https://example.com/public-cover.jpg' );
 
 		$attrs  = [
 			'kind'      => 'jam',
 			'count'     => 5,
-			'showCover' => false,
+			'showCover' => true,
 		];
 		$before = $this->render( $attrs );
 
-		$protected_id = $this->make_kind_post( 'jam', 'Locked jam probe' );
-		wp_update_post(
-			[
-				'ID'            => $protected_id,
-				'post_password' => 'secret',
-			]
-		);
-		update_post_meta( $protected_id, '_pkiw_jam_track', 'Locked Track Probe' );
+		$locked = [];
+		foreach ( [ 'secret', '   ' ] as $i => $password ) {
+			$post_id = $this->make_kind_post( 'jam', "Locked jam probe {$i}" );
+			// Write the password directly so a password of spaces survives as stored.
+			$wpdb->update( $wpdb->posts, [ 'post_password' => $password ], [ 'ID' => $post_id ] );
+			clean_post_cache( $post_id );
+			update_post_meta( $post_id, '_pkiw_jam_track', "Locked Track Probe {$i}" );
+			update_post_meta( $post_id, '_pkiw_jam_cover', "https://example.com/locked-cover-{$i}.jpg" );
+			$this->assertSame( $password, get_post( $post_id )->post_password );
+			$locked[] = $post_id;
+		}
 
 		$after = $this->render( $attrs );
 
-		$this->assertStringContainsString( 'Public', $after );
-		$this->assertStringNotContainsString( 'Locked jam probe', $after );
-		$this->assertStringNotContainsString( 'Locked Track Probe', $after );
-		$this->assertStringNotContainsString( (string) get_permalink( $protected_id ), $after );
+		$this->assertStringContainsString( 'Public Track Probe', $after );
+		$this->assertStringContainsString( 'public-cover.jpg', $after );
+		$this->assertStringNotContainsString( 'Locked', $after );
+		$this->assertStringNotContainsString( 'locked-cover', $after );
+		foreach ( $locked as $post_id ) {
+			$this->assertStringNotContainsString( (string) get_permalink( $post_id ), $after );
+		}
 		$this->assertSame( $before, $after );
 	}
 }

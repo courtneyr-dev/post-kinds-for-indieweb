@@ -123,6 +123,16 @@ final class Recent_Kinds {
 			$kind = 'listen';
 		}
 
+		// has_password false compares post_password = '', which a password of
+		// spaces also satisfies under the column's collation; LENGTH() tells
+		// them apart (the Kind_Archive_Layouts::calendar_where() rule).
+		$no_password = static function ( $where ) {
+			global $wpdb;
+
+			return $where . " AND LENGTH( {$wpdb->posts}.post_password ) = 0";
+		};
+		add_filter( 'posts_where', $no_password );
+
 		$query = new \WP_Query(
 			[
 				'post_type'      => 'post',
@@ -139,6 +149,8 @@ final class Recent_Kinds {
 				],
 			]
 		);
+
+		remove_filter( 'posts_where', $no_password );
 
 		if ( ! $query->have_posts() ) {
 			return '';

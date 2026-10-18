@@ -86,9 +86,10 @@ final class Atmosphere_Titles {
 		/**
 		 * Filters the derived Standard.site document title for a post.
 		 *
-		 * Runs for every mapped post, including titled posts, where the
-		 * derived value is '' (the WordPress title wins). Return '' to
-		 * leave ATmosphere's own title mapping untouched.
+		 * Runs for every mapped post that has no stored password,
+		 * including titled posts, where the derived value is '' (the
+		 * WordPress title wins). Return '' to leave ATmosphere's own title
+		 * mapping untouched.
 		 *
 		 * @since 1.6.0
 		 *
