@@ -9,7 +9,8 @@
  * Only the audio rows differ from pkiw-w4 on purpose: the audio card drops its
  * media region, excerpt, Read more link and badge, and the audio single gains
  * a p-name, an e-content wrapper and a hidden u-audio. Those rows were recorded
- * from the W5-P0C head.
+ * from the W5-P0C head. W5-P235 changes the jam rows (the generic card and the
+ * jam-card post) because a jam now draws its own compact Stream card.
  *
  * To re-record, run with PKIW_GOLDEN_DUMP=/path/rows.json and read the file.
  *
@@ -53,7 +54,8 @@ final class StreamCardGoldenTest extends WP_UnitTestCase {
 		'block:event|card'               => 'aba562b4d317b335e7d67f9c8df0265442e9c794',
 		'block:exercise|card'            => '29913fd6883b345e57c0aaeefd345a9d429d1ce2',
 		'block:favorite|card'            => 'fd4dc9233d18eb80b8bb15cea09cfec64a77e5cc',
-		'block:jam|card'                 => 'a6f2a9d527b60c58e7e3a0488022a03f8e55a95b',
+		// Recorded from the W5-P235 head: this row changes on purpose.
+		'block:jam|card'                 => '9c1e62d034ef3fcf1e1e620219723d87d9cfa204',
 		'block:like|card'                => 'f7df746df2a5e3cf54977c55efc36ff7aebd6e6f',
 		'block:listen|card'              => '3039b72d425574f8e98034d7249ff88b56965793',
 		'block:mood|card'                => '8833459451497a6c6cbb5c52bc5c05080ae6d867',
@@ -93,8 +95,10 @@ final class StreamCardGoldenTest extends WP_UnitTestCase {
 		'issue|generic-untitled'         => '798a11d59d04687e91954bfa06e8d8c805dfcae4',
 		'itinerary|generic-titled'       => 'ec1ff896f0f3ba23ba5730c108e0b6ee0412b34e',
 		'itinerary|generic-untitled'     => 'c069a0b65e22da5566877e10032cde34ca54d993',
-		'jam|generic-titled'             => 'dd0c48eb9a9ba85bf02127c28ad526165a95c42f',
-		'jam|generic-untitled'           => '9ef2d19e7b170d3bd9c400d655e70aa46718ecbd',
+		// Recorded from the W5-P235 head: this row changes on purpose.
+		'jam|generic-titled'             => '09759126b10c786f88b576adc42a6be0da79eb1f',
+		// Recorded from the W5-P235 head: this row changes on purpose.
+		'jam|generic-untitled'           => '05355c1a30dae61665cfc5a913890a279bc32d51',
 		'like|generic-titled'            => '79f65c0f80ecb2d1c5a3e3ebb7c2abcdf94a7b7e',
 		'like|generic-untitled'          => '71e9a3ace20218fff135bb5c7658084c348f74f2',
 		'listen|generic-titled'          => 'f500726b767662839662bb878c9c26e05c5b0b21',
