@@ -52,7 +52,9 @@ final class Atmosphere_Titles {
 	 * Derive a Standard.site document title for a post.
 	 *
 	 * Returns '' when the post has a real title (nothing to derive — the
-	 * post title wins) or when the post cannot be resolved.
+	 * post title wins), when the post cannot be resolved, or when the post
+	 * is password-protected: a derived title reads kind meta (track, artist,
+	 * show), which a protected post keeps behind its password.
 	 *
 	 * @since 1.6.0
 	 *
@@ -60,6 +62,10 @@ final class Atmosphere_Titles {
 	 * @return string Derived title, or '' to leave ATmosphere's mapping alone.
 	 */
 	public static function derive( \WP_Post $post ): string {
+		if ( '' !== $post->post_password ) {
+			return '';
+		}
+
 		$kind  = self::kind_slug( $post );
 		$title = '';
 
@@ -80,9 +86,10 @@ final class Atmosphere_Titles {
 		/**
 		 * Filters the derived Standard.site document title for a post.
 		 *
-		 * Runs for every mapped post, including titled posts, where the
-		 * derived value is '' (the WordPress title wins). Return '' to
-		 * leave ATmosphere's own title mapping untouched.
+		 * Runs for every mapped post that has no stored password,
+		 * including titled posts, where the derived value is '' (the
+		 * WordPress title wins). Return '' to leave ATmosphere's own title
+		 * mapping untouched.
 		 *
 		 * @since 1.6.0
 		 *
