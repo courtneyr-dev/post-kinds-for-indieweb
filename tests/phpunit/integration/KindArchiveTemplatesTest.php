@@ -532,18 +532,23 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 	public function test_the_plugin_wires_the_w5_kind_classes_after_the_w2_archives_each_behind_class_exists(): void {
 		$source   = (string) file_get_contents( PKIW_PATH . 'includes/class-plugin.php' );
 		$previous = strpos( $source, "class_exists( __NAMESPACE__ . '\\\\Bookmark_Archive' )" );
+		$media    = strpos( $source, '$this->init_media_archives();', (int) $previous );
+		$months   = strpos( $source, '$this->init_month_archives();', (int) $previous );
 
 		$this->assertNotFalse( $previous );
+		$this->assertNotFalse( $media, 'init() calls the W5 wiring right after the W2 archives.' );
+		$this->assertNotFalse( $months );
+		$this->assertLessThan( $months, $media, 'The W5 wiring runs before the month archives.' );
+
+		$method = strpos( $source, 'private function init_media_archives(): void {' );
+		$this->assertNotFalse( $method );
+		$previous = $method;
 		foreach ( [ 'Video_Archive', 'Audio_Archive', 'Audio_Transcript', 'Jam_Archive', 'Listen_Archive', 'Wish_Archive', 'Question_Archive', 'Question_Answers', 'Question_Location' ] as $class ) {
-			$at = strpos( $source, "class_exists( __NAMESPACE__ . '\\\\{$class}' )" );
+			$at = strpos( $source, "class_exists( __NAMESPACE__ . '\\\\{$class}' )", $previous );
 			$this->assertNotFalse( $at, $class );
-			$this->assertGreaterThan( $previous, $at, $class );
 			$this->assertStringContainsString( "( new {$class}() )->register();", substr( $source, $at, 140 ), $class );
 			$previous = $at;
 		}
-		$months = strpos( $source, '$this->init_month_archives();', (int) $previous );
-		$this->assertNotFalse( $months );
-		$this->assertGreaterThan( $previous, $months );
 	}
 
 	public function test_the_w5_class_wiring_is_a_no_op_until_the_kind_lanes_arrive(): void {

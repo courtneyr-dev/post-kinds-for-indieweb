@@ -629,7 +629,20 @@ final class Plugin {
 			( new Bookmark_Archive() )->register();
 		}
 
-		// The classes arrive with their kind lanes (issues 235, 236, 238, 242, 243 and 256), and each is wired only when it exists.
+		$this->init_media_archives();
+		$this->init_month_archives();
+		$this->init_calendar_kinds();
+	}
+
+	/**
+	 * Wire the video, audio, jam, listen, wish and question classes (issues 235, 236, 238, 242, 243 and 256).
+	 *
+	 * Each class arrives with its own lane, so each is wired only when it
+	 * exists. The PKIW\ autoloader loads them.
+	 *
+	 * @return void
+	 */
+	private function init_media_archives(): void {
 		if ( class_exists( __NAMESPACE__ . '\\Video_Archive' ) ) {
 			( new Video_Archive() )->register();
 		}
@@ -657,9 +670,6 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Question_Location' ) ) {
 			( new Question_Location() )->register();
 		}
-
-		$this->init_month_archives();
-		$this->init_calendar_kinds();
 	}
 
 	/**
