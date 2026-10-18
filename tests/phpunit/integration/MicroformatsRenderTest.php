@@ -24,6 +24,33 @@ declare(strict_types=1);
 final class MicroformatsRenderTest extends WP_UnitTestCase {
 
 	/**
+	 * Whether a test registered the stand-in listen facts reader.
+	 *
+	 * @since 1.9.0
+	 */
+	private bool $registered_listen_reader = false;
+
+	/**
+	 * Remove a listen reader registered by a test.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function tear_down(): void {
+		if ( $this->registered_listen_reader ) {
+			$registered = new ReflectionProperty( \PKIW\Kind_Facts::class, 'registered' );
+			$registered->setAccessible( true );
+			$readers = $registered->getValue();
+			unset( $readers['listen'] );
+			$registered->setValue( null, $readers );
+			$this->registered_listen_reader = false;
+		}
+
+		parent::tear_down();
+	}
+
+	/**
 	 * Card-backed kinds and their canonical target properties.
 	 *
 	 * @return array<string, array{0: string, 1: string, 2: string}>
@@ -680,6 +707,310 @@ final class MicroformatsRenderTest extends WP_UnitTestCase {
 		$content = apply_filters( 'the_content', get_post_field( 'post_content', $post_id ) );
 
 		$this->assertStringNotContainsString( 'class="e-content"', $content );
+	}
+
+	/**
+	 * Audio titles and their expected direct p-name property.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return array<string, array{0: string, 1: string[]|null}>
+	 */
+	public function audio_titles(): array {
+		return [
+			'titled'     => [ 'Field recording', [ 'Field recording' ] ],
+			'empty title' => [ '', null ],
+		];
+	}
+
+	/**
+	 * An audio single has one entry, one content wrapper, and one media property.
+	 *
+	 * @since 1.9.0
+	 * @dataProvider audio_titles
+	 *
+	 * @param string        $title         Post title.
+	 * @param string[]|null $expected_name Expected direct name property.
+	 * @return void
+	 */
+	public function test_an_audio_single_wraps_content_and_exposes_its_attachment_once( string $title, ?array $expected_name ): void {
+		$attachment_id  = self::factory()->attachment->create( [ 'post_mime_type' => 'audio/mpeg' ] );
+		$attachment_url = (string) wp_get_attachment_url( $attachment_id );
+		$content        = '<!-- wp:audio {"id":' . $attachment_id . '} -->'
+			. '<figure class="wp-block-audio"><audio controls src="' . esc_url( $attachment_url ) . '"></audio></figure>'
+			. '<!-- /wp:audio -->'
+			. '<!-- wp:paragraph --><p>Spoken words.</p><!-- /wp:paragraph -->';
+		$post_id        = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => $title,
+				'post_content' => $content,
+			]
+		);
+		$this->assign_kind( $post_id, 'audio' );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$html  = apply_filters( 'the_content', $content );
+		$items = \Mf2\parse( $html, get_permalink( $post_id ) )['items'];
+
+		$this->assertCount( 1, $items );
+		$this->assertSame( [ 'h-entry' ], $items[0]['type'] );
+		$this->assertSame( $expected_name, $items[0]['properties']['name'] ?? null );
+		$this->assertCount( 1, $items[0]['properties']['content'] ?? [] );
+		$this->assertSame( [ $attachment_url ], $items[0]['properties']['audio'] ?? null );
+		$this->assertSame( 1, substr_count( $html, 'class="e-content"' ) );
+		$this->assertSame( 1, substr_count( $html, 'class="u-audio"' ) );
+		$this->assertStringContainsString( '</div><div class="post-kinds-indieweb-mf2-data" hidden>', $html );
+	}
+
+	/**
+	 * Authored Micropub u-audio remains the only audio property.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function test_a_micropub_audio_single_gets_no_hidden_duplicate(): void {
+		$url     = 'https://example.com/a.mp3';
+		$content = '<!-- wp:paragraph --><p><a class="u-audio" href="' . $url . '">Listen</a></p><!-- /wp:paragraph -->';
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'A remote recording',
+				'post_content' => $content,
+			]
+		);
+		$this->assign_kind( $post_id, 'audio' );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$html       = apply_filters( 'the_content', $content );
+		$properties = $this->top_level_h_entry( \Mf2\parse( $html, get_permalink( $post_id ) ) )['properties'];
+
+		$this->assertSame( 1, substr_count( $html, 'class="u-audio"' ) );
+		$this->assertSame( [ $url ], $properties['audio'] ?? null );
+	}
+
+	/**
+	 * Password protection suppresses both the audio property and body wrapper.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function test_a_password_protected_audio_single_exposes_no_audio_property_or_content_wrapper(): void {
+		$attachment_id  = self::factory()->attachment->create( [ 'post_mime_type' => 'audio/mpeg' ] );
+		$attachment_url = (string) wp_get_attachment_url( $attachment_id );
+		$content        = '<!-- wp:audio {"id":' . $attachment_id . '} -->'
+			. '<figure class="wp-block-audio"><audio controls src="' . esc_url( $attachment_url ) . '"></audio></figure>'
+			. '<!-- /wp:audio -->';
+		$post_id        = self::factory()->post->create(
+			[
+				'post_status'   => 'publish',
+				'post_title'    => 'Locked recording',
+				'post_password' => 'secret',
+				'post_content'  => $content,
+			]
+		);
+		$this->assign_kind( $post_id, 'audio' );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$html = apply_filters( 'the_content', $content );
+
+		$this->assertStringNotContainsString( 'class="u-audio"', $html );
+		$this->assertStringNotContainsString( 'class="e-content"', $html );
+	}
+
+	/**
+	 * An audio embed has no URL-valued u-audio data fallback.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function test_an_embed_only_audio_single_exposes_no_audio_property(): void {
+		$content = '<!-- wp:embed {"url":"https://www.mixcloud.com/example/show/","type":"rich","providerNameSlug":"mixcloud"} -->'
+			. '<figure class="wp-block-embed is-type-rich is-provider-mixcloud"></figure>'
+			. '<!-- /wp:embed -->';
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Mixcloud show',
+				'post_content' => $content,
+			]
+		);
+		$this->assign_kind( $post_id, 'audio' );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$html = apply_filters( 'the_content', $content );
+
+		$this->assertStringNotContainsString( 'class="u-audio"', $html );
+	}
+
+	/**
+	 * A card-less podcast gets one hidden listen citation from Kind_Facts.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function test_a_card_less_podcast_single_gets_one_hidden_listen_citation(): void {
+		\PKIW\Kind_Facts::register(
+			'listen',
+			static fn( int $post_id ): array => [
+				'is_podcast'  => true,
+				'episode_text' => 'A test episode',
+				'url'          => 'https://example.com/podcasts/episode',
+				'show'         => 'Example Show',
+			]
+		);
+		$this->registered_listen_reader = true;
+		$content = '<!-- wp:paragraph --><p>Episode notes.</p><!-- /wp:paragraph -->';
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Listening notes',
+				'post_content' => $content,
+			]
+		);
+		$this->assign_kind( $post_id, 'listen' );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$html       = apply_filters( 'the_content', $content );
+		$properties = $this->top_level_h_entry( \Mf2\parse( $html, get_permalink( $post_id ) ) )['properties'];
+		$citation   = $properties['listen-of'][0] ?? [];
+
+		$this->assertSame( 1, substr_count( $html, 'u-listen-of' ) );
+		$this->assertCount( 1, $properties['listen-of'] ?? [] );
+		$this->assertSame( [ 'h-cite' ], $citation['type'] ?? null );
+		$this->assertSame( [ 'A test episode' ], $citation['properties']['name'] ?? null );
+		$this->assertSame( [ 'https://example.com/podcasts/episode' ], $citation['properties']['url'] ?? null );
+		$this->assertSame( [ 'Example Show' ], $citation['properties']['author'][0]['properties']['name'] ?? null );
+	}
+
+	/**
+	 * Existing listen-of content prevents a second hidden citation.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function test_an_existing_listen_of_element_prevents_a_hidden_duplicate(): void {
+		\PKIW\Kind_Facts::register(
+			'listen',
+			static fn( int $post_id ): array => [
+				'is_podcast'  => true,
+				'episode_text' => 'A test episode',
+				'url'          => 'https://example.com/podcasts/episode',
+				'show'         => 'Example Show',
+			]
+		);
+		$this->registered_listen_reader = true;
+		$content = '<!-- wp:html --><a class="u-listen-of" href="https://example.com/already-there">Existing episode</a><!-- /wp:html -->';
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => $content,
+			]
+		);
+		$this->assign_kind( $post_id, 'listen' );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$html = apply_filters( 'the_content', $content );
+
+		$this->assertSame( 1, substr_count( $html, 'u-listen-of' ) );
+		$this->assertStringNotContainsString( 'pk-kind-cite', $html );
+	}
+
+	/**
+	 * Music listen facts don't create a podcast citation.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function test_a_music_listen_single_gets_no_hidden_listen_citation(): void {
+		\PKIW\Kind_Facts::register(
+			'listen',
+			static fn( int $post_id ): array => [
+				'is_podcast'  => false,
+				'episode_text' => 'Not a podcast',
+				'url'          => 'https://example.com/music/track',
+				'show'         => 'An Artist',
+			]
+		);
+		$this->registered_listen_reader = true;
+		$content = '<!-- wp:paragraph --><p>Track notes.</p><!-- /wp:paragraph -->';
+		$post_id = self::factory()->post->create( [ 'post_status' => 'publish', 'post_content' => $content ] );
+		$this->assign_kind( $post_id, 'listen' );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$html = apply_filters( 'the_content', $content );
+
+		$this->assertStringNotContainsString( 'u-listen-of', $html );
+	}
+
+	/**
+	 * Listen posts have no synthetic citation without a registered reader.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function test_a_listen_single_without_a_reader_gets_no_hidden_listen_citation(): void {
+		$content = '<!-- wp:paragraph --><p>Listening notes.</p><!-- /wp:paragraph -->';
+		$post_id = self::factory()->post->create( [ 'post_status' => 'publish', 'post_content' => $content ] );
+		$this->assign_kind( $post_id, 'listen' );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$html = apply_filters( 'the_content', $content );
+
+		$this->assertStringNotContainsString( 'u-listen-of', $html );
+	}
+
+	/**
+	 * A non-singular content pass can't add podcast microformats.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function test_a_non_singular_podcast_content_pass_gets_no_hidden_listen_citation(): void {
+		\PKIW\Kind_Facts::register(
+			'listen',
+			static fn( int $post_id ): array => [
+				'is_podcast'  => true,
+				'episode_text' => 'A test episode',
+				'url'          => 'https://example.com/podcasts/episode',
+				'show'         => 'Example Show',
+			]
+		);
+		$this->registered_listen_reader = true;
+		$content = '<!-- wp:paragraph --><p>Episode notes.</p><!-- /wp:paragraph -->';
+		$post_id = self::factory()->post->create( [ 'post_status' => 'publish', 'post_content' => $content ] );
+		$this->assign_kind( $post_id, 'listen' );
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$this->assertFalse( is_singular() );
+		$html = apply_filters( 'the_content', $content );
+
+		$this->assertStringNotContainsString( 'u-listen-of', $html );
+	}
+
+	/**
+	 * Assign a real kind term to a fixture post.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $kind    Kind slug.
+	 * @return void
+	 */
+	private function assign_kind( int $post_id, string $kind ): void {
+		if ( ! term_exists( $kind, 'kind' ) ) {
+			$this->assertNotWPError( wp_insert_term( ucfirst( $kind ), 'kind', [ 'slug' => $kind ] ) );
+		}
+
+		$this->assertNotWPError( wp_set_object_terms( $post_id, $kind, 'kind' ) );
 	}
 
 	/**
