@@ -1,6 +1,6 @@
 <?php
 /**
- * Simple Location privacy gate for photo posts.
+ * Simple Location privacy gate: photo content, and head and feed output for every kind.
  *
  * @package PKIW
  * @since 1.9.0
@@ -15,7 +15,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Removes precise Simple Location output from photo posts when privacy hides it.
+ * Removes precise Simple Location output when privacy hides it.
+ *
+ * The content gate (map and place line) applies to photo posts. The head meta
+ * tags, GeoRSS and JSON Feed geo apply to photo posts and to any other post
+ * that stores an address or coordinates (issue 422): a note with private or
+ * approximate location printed its street and coordinates in geo.placename,
+ * geo.position and ICBM while its card hid them.
  */
 final class Photo_Location {
 
@@ -154,7 +160,7 @@ final class Photo_Location {
 	}
 
 	/**
-	 * Remove Simple Location head meta when public privacy hides precise fields.
+	 * Remove Simple Location head meta on any kind's single when public privacy hides precise fields.
 	 *
 	 * @since 1.9.0
 	 *
@@ -166,7 +172,7 @@ final class Photo_Location {
 		}
 
 		$post = get_post( get_queried_object_id() );
-		if ( ! $post instanceof \WP_Post || ! $this->is_photo( $post ) ) {
+		if ( ! $post instanceof \WP_Post || ! $this->is_gated( $post ) ) {
 			return;
 		}
 
@@ -186,7 +192,7 @@ final class Photo_Location {
 	public function gate_feed_item(): void {
 		$removed = false;
 		$post    = get_post();
-		if ( $post instanceof \WP_Post && $this->is_photo( $post ) && $this->public_precise_hidden( $post->ID ) ) {
+		if ( $post instanceof \WP_Post && $this->is_gated( $post ) && $this->public_precise_hidden( $post->ID ) ) {
 			$removed = remove_action( current_action(), self::GEORSS_ITEM, 10 );
 		}
 
@@ -208,7 +214,7 @@ final class Photo_Location {
 	}
 
 	/**
-	 * Remove JSON Feed geo data from hidden photo locations.
+	 * Remove JSON Feed geo data from any kind's hidden location.
 	 *
 	 * @since 1.9.0
 	 *
@@ -218,7 +224,7 @@ final class Photo_Location {
 	 */
 	public function gate_json_feed_item( $item, $post = null ) {
 		$post = $post instanceof \WP_Post ? $post : get_post();
-		if ( is_array( $item ) && $post instanceof \WP_Post && $this->is_photo( $post ) && $this->public_precise_hidden( $post->ID ) ) {
+		if ( is_array( $item ) && $post instanceof \WP_Post && $this->is_gated( $post ) && $this->public_precise_hidden( $post->ID ) ) {
 			unset( $item['geo'] );
 		}
 
@@ -233,6 +239,27 @@ final class Photo_Location {
 	 */
 	private function is_photo( \WP_Post $post ): bool {
 		return Photo_Archive::KIND === Kind_Facts::kind_of( $post );
+	}
+
+	/**
+	 * Whether the head and feed gate covers the post: every photo, and any other
+	 * post that stores an address or coordinates for Simple Location to print.
+	 *
+	 * @param \WP_Post $post Post.
+	 * @return bool True when the gate applies.
+	 */
+	private function is_gated( \WP_Post $post ): bool {
+		if ( $this->is_photo( $post ) ) {
+			return true;
+		}
+
+		foreach ( [ 'geo_address', 'geo_latitude', 'geo_longitude' ] as $key ) {
+			if ( '' !== trim( (string) get_post_meta( $post->ID, $key, true ) ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
