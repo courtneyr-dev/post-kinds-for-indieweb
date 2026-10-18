@@ -469,4 +469,144 @@ final class WishGroupTest extends WP_UnitTestCase {
 		$this->serve( $this->template() );
 		$this->assertSame( [ $public ], array_map( 'intval', wp_list_pluck( $GLOBALS['wp_query']->posts, 'ID' ) ) );
 	}
+
+	/**
+	 * Run the real Quick Post writer for a wish.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param array<string, string> $data Form data as the admin page posts it.
+	 * @return int Post ID.
+	 */
+	private function quick_post_wish( array $data ): int {
+		$quick_post = new \PKIW\Admin\Quick_Post( new \PKIW\Admin\Admin( \PKIW\Plugin::get_instance() ) );
+		$create     = new ReflectionMethod( $quick_post, 'create_reaction_post' );
+		$id         = $create->invoke( $quick_post, 'wish', array_merge( [ 'post_status' => 'publish' ], $data ) );
+		$this->assertIsInt( $id );
+
+		return $id;
+	}
+
+	/**
+	 * Move a post to a fixed date so ties never decide an order.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int    $id   Post ID.
+	 * @param string $date Post date.
+	 * @return void
+	 */
+	private function date_post( int $id, string $date ): void {
+		wp_update_post(
+			[
+				'ID'            => $id,
+				'post_date'     => $date,
+				'post_date_gmt' => $date,
+				'edit_date'     => true,
+			]
+		);
+	}
+
+	/**
+	 * Every type and priority Quick Post can send lists under the right section and rank.
+	 *
+	 * Quick Post's type select offers book, movie, game, music, product, experience
+	 * and other, plus an empty "Select..." option; its priority select always sends a
+	 * value. All of them go through the real writer, then the real archive.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function test_quick_post_wishes_list_under_their_type_and_priority_rank(): void {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		$rows = [
+			[ 'Novel low', 'book', 'low', '2026-03-01 10:00:00' ],
+			[ 'Novel high', 'book', 'high', '2026-03-02 10:00:00' ],
+			[ 'Film low', 'movie', 'low', '2026-03-03 10:00:00' ],
+			[ 'Film high', 'movie', 'high', '2026-03-04 10:00:00' ],
+			[ 'Console', 'game', 'medium', '2026-03-05 10:00:00' ],
+			[ 'Album', 'music', 'medium', '2026-03-06 10:00:00' ],
+			[ 'Gadget', 'product', 'medium', '2026-03-07 10:00:00' ],
+			[ 'Trip', 'experience', 'medium', '2026-03-08 10:00:00' ],
+			[ 'Misc high', 'other', 'high', '2026-03-09 10:00:00' ],
+			[ 'Untyped', '', 'medium', '2026-03-10 10:00:00' ],
+		];
+		$ids  = [];
+		foreach ( $rows as [ $name, $type, $priority, $date ] ) {
+			$ids[ $name ] = $this->quick_post_wish( [ 'wish_name' => $name, 'wish_type' => $type, 'wish_priority' => $priority ] );
+			$this->date_post( $ids[ $name ], $date );
+			$this->assertTrue( has_term( 'wish', Taxonomy::TAXONOMY, $ids[ $name ] ), $name );
+			$this->assertSame( $type, get_post_meta( $ids[ $name ], '_pkiw_wish_type', true ), "{$name}: Quick Post stores the type it was given, or none." );
+			$this->assertSame( $priority, get_post_meta( $ids[ $name ], '_pkiw_wish_priority', true ), $name );
+		}
+
+		$this->assertSame( 'movie', Wish_Archive::facts( $ids['Film high'] )['type'] );
+		$this->assertSame( 'Movie/Show', Wish_Archive::facts( $ids['Film high'] )['type_label'] );
+		$this->assertSame( 'high', Wish_Archive::facts( $ids['Film high'] )['priority'] );
+		$this->assertSame( 'Other', Wish_Archive::facts( $ids['Untyped'] )['type_label'] );
+
+		$sections = $this->sections( $this->serve( $this->template() ) );
+		$this->assertSame(
+			[
+				[ 'heading' => 'h2:Book', 'titles' => [ 'Novel high', 'Novel low' ] ],
+				[ 'heading' => 'h2:Experience', 'titles' => [ 'Trip' ] ],
+				[ 'heading' => 'h2:Game', 'titles' => [ 'Console' ] ],
+				[ 'heading' => 'h2:Movie/Show', 'titles' => [ 'Film high', 'Film low' ] ],
+				[ 'heading' => 'h2:Music', 'titles' => [ 'Album' ] ],
+				[ 'heading' => 'h2:Product', 'titles' => [ 'Gadget' ] ],
+				[ 'heading' => 'h2:Other', 'titles' => [ 'Misc high', 'Untyped' ] ],
+			],
+			$sections,
+			'Quick Post values all map through VALUE_MAP; other and no type share the Other section.'
+		);
+	}
+
+	/**
+	 * A Micropub wish stores no type and no priority, so it lists under Other at medium rank.
+	 *
+	 * The test runs the builder's real apply() step on a post Micropub just created: it
+	 * assigns the wish kind and writes the 'Wishing for' paragraph, and nothing else.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function test_micropub_wish_lists_under_other_between_high_and_low(): void {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		$high = $this->post( 'Misc high', '2026-04-01 10:00:00', [ '_pkiw_wish_type' => 'other', '_pkiw_wish_priority' => 'high' ] );
+		$low  = $this->post( 'Misc low', '2026-04-03 10:00:00', [ '_pkiw_wish_type' => 'other', '_pkiw_wish_priority' => 'low' ] );
+
+		$micropub = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Micropub wish',
+				'post_date'    => '2026-04-02 10:00:00',
+				'post_content' => 'Wishing for a field recorder',
+			]
+		);
+		\PKIW\Micropub_Content_Builder::apply(
+			[
+				'type'       => [ 'h-entry' ],
+				'properties' => [
+					'name'    => [ 'Micropub wish' ],
+					'wish-of' => [ 'https://shop.example/recorder' ],
+				],
+			],
+			[ 'ID' => $micropub ]
+		);
+
+		$this->assertTrue( has_term( 'wish', Taxonomy::TAXONOMY, $micropub ) );
+		$this->assertStringContainsString( 'u-wish-of', (string) get_post_field( 'post_content', $micropub ) );
+		$this->assertSame( '', get_post_meta( $micropub, '_pkiw_wish_type', true ), 'The Micropub path stores no type.' );
+		$this->assertSame( 'medium', Wish_Archive::facts( $micropub )['priority'] );
+		$this->assertSame( [], array_filter( [ get_metadata_raw( 'post', $micropub, '_pkiw_wish_priority', true ) ] ), 'The Micropub path stores no priority row.' );
+
+		$sections = $this->sections( $this->serve( $this->template() ) );
+		$this->assertSame(
+			[ [ 'heading' => 'h2:Other', 'titles' => [ 'Misc high', 'Micropub wish', 'Misc low' ] ] ],
+			$sections
+		);
+		$this->assertSame( [ $high, $micropub, $low ], $this->ordered_ids() );
+	}
 }

@@ -229,13 +229,16 @@ final class WishFactsTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Quick Post omits a type row but stores its fixed medium priority.
+	 * A Quick Post wish with the type select left on "Select..." stores no type row.
+	 *
+	 * Quick Post skips empty fields and its priority select always sends a value
+	 * (medium unless changed). WishGroupTest runs the real writer for every type.
 	 *
 	 * @since 1.9.0
 	 *
 	 * @return void
 	 */
-	public function test_quick_post_shape_files_under_other_at_medium_priority(): void {
+	public function test_quick_post_with_no_type_picked_files_under_other(): void {
 		$id = $this->post( [ 'post_title' => 'Quick wish', 'post_content' => '<!-- wp:paragraph --><p>Notes.</p><!-- /wp:paragraph -->' ] );
 		$this->meta( $id, [ '_pkiw_wish_name' => 'Train ticket', '_pkiw_wish_priority' => 'medium' ] );
 

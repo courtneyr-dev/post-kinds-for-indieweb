@@ -198,13 +198,17 @@ final class WishPictureTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * A thumbnail row for a missing file follows kind_picture's image check.
+	 * A featured image whose file was never written still wins over the card image.
+	 *
+	 * wp_attachment_is_image() reads the attachment row's MIME type, not the file,
+	 * so the row counts as an image and the featured source is kept with a URL
+	 * built from the stored file name.
 	 *
 	 * @since 1.9.0
 	 *
 	 * @return void
 	 */
-	public function test_missing_featured_file_matches_kind_picture_fallback(): void {
+	public function test_featured_image_with_a_missing_file_still_wins_over_the_card_image(): void {
 		$post_id       = $this->wish();
 		$attachment_id = self::factory()->attachment->create_object(
 			[
@@ -213,16 +217,14 @@ final class WishPictureTest extends WP_UnitTestCase {
 			]
 		);
 		update_post_meta( $post_id, '_thumbnail_id', $attachment_id );
-		$base    = \PKIW\kind_picture( $post_id );
+
 		$picture = Wish_Archive::picture( $post_id, [ 'image' => 'https://images.example/fallback.jpg', 'imageAlt' => 'Fallback' ] );
 
-		if ( 'featured' === $base['source'] ) {
-			$this->assertSame( $base, $picture );
-			$this->assertSame( $attachment_id, $picture['attachment_id'] );
-		} else {
-			$this->assertSame( 'https://images.example/fallback.jpg', $picture['url'] );
-			$this->assertSame( 'Fallback', $picture['alt'] );
-		}
+		$this->assertSame( 'featured', $picture['source'] );
+		$this->assertSame( $attachment_id, $picture['attachment_id'] );
+		$this->assertSame( (string) wp_get_attachment_url( $attachment_id ), $picture['url'] );
+		$this->assertStringEndsWith( '/2026/10/missing-wish.jpg', $picture['url'] );
+		$this->assertFalse( $picture['remote'] );
 	}
 
 	/**
