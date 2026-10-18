@@ -118,4 +118,37 @@ final class RecentKindsBlockTest extends WP_UnitTestCase {
 
 		$this->assertSame( '', $html );
 	}
+
+	/**
+	 * A password-protected jam never lists: no title, no track name, no link.
+	 * The public jam's list is byte-identical with and without it.
+	 */
+	public function test_protected_jam_never_lists(): void {
+		$public_id = $this->make_kind_post( 'jam', 'Public jam probe' );
+		update_post_meta( $public_id, '_pkiw_jam_track', 'Public Track Probe' );
+
+		$attrs  = [
+			'kind'      => 'jam',
+			'count'     => 5,
+			'showCover' => false,
+		];
+		$before = $this->render( $attrs );
+
+		$protected_id = $this->make_kind_post( 'jam', 'Locked jam probe' );
+		wp_update_post(
+			[
+				'ID'            => $protected_id,
+				'post_password' => 'secret',
+			]
+		);
+		update_post_meta( $protected_id, '_pkiw_jam_track', 'Locked Track Probe' );
+
+		$after = $this->render( $attrs );
+
+		$this->assertStringContainsString( 'Public', $after );
+		$this->assertStringNotContainsString( 'Locked jam probe', $after );
+		$this->assertStringNotContainsString( 'Locked Track Probe', $after );
+		$this->assertStringNotContainsString( (string) get_permalink( $protected_id ), $after );
+		$this->assertSame( $before, $after );
+	}
 }
