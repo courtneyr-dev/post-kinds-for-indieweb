@@ -232,6 +232,10 @@ final class ArchiveSectionsBlockTest extends WP_UnitTestCase {
 		$this->assertSame( 'string', $attributes['dateFormat']['type'] );
 		$this->assertSame( '', $attributes['dateFormat']['default'] );
 		$this->assertArrayNotHasKey( 'role', $attributes['dateFormat'] );
+		$this->assertSame( 'integer', $attributes['leadCount']['type'] );
+		$this->assertSame( 0, $attributes['leadCount']['default'] );
+		$this->assertSame( 'string', $attributes['leadLabel']['type'] );
+		$this->assertSame( '', $attributes['leadLabel']['default'] );
 	}
 
 	public function test_the_label_attributes_carry_the_content_role(): void {
@@ -239,6 +243,7 @@ final class ArchiveSectionsBlockTest extends WP_UnitTestCase {
 
 		$this->assertSame( 'content', $server['groupLabels']['role'] ?? null, 'A contentOnly pattern can edit the group labels.' );
 		$this->assertSame( 'content', $server['emptyLabel']['role'] ?? null, 'A contentOnly pattern can edit the empty-group label.' );
+		$this->assertSame( 'content', $server['leadLabel']['role'] ?? null, 'A contentOnly pattern can edit the lead heading.' );
 		$this->assertArrayNotHasKey( 'role', $server['linesPerPage'], 'Settings stay out of contentOnly editing.' );
 	}
 

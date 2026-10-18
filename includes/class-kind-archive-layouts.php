@@ -524,6 +524,15 @@ final class Kind_Archive_Layouts {
 						'type'    => 'string',
 						'default' => '',
 					],
+					'leadCount'   => [
+						'type'    => 'integer',
+						'default' => 0,
+					],
+					'leadLabel'   => [
+						'type'    => 'string',
+						'default' => '',
+						'role'    => 'content',
+					],
 				]
 			),
 			'supports'        => [

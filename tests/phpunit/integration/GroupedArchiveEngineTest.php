@@ -34,6 +34,7 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	private const IDS    = 'pkiw-test/id-marker';
 	private const BODY   = 'pkiw-test/body-line';
 	private const WEEKS  = 'pkiw-test/weeks-line';
+	private const LEAD   = 'pkiw-test/lead-marker';
 
 	private const SOURCES = [ 'test_status', 'test_series', 'test_play', 'test_tags', 'test_cats', 'test_month', 'test_month_asc', 'test_year', 'test_week', 'test_flagged_tags', 'test_wish_type' ];
 
@@ -130,6 +131,24 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			]
 		);
 		$this->entry_block( self::LINE, [ 'shape' => Grouped_Archive::ENTRY_LINE ] );
+		$this->entry_block(
+			self::LEAD,
+			[
+				'expose_key'  => true,
+				'heading_ids' => true,
+			],
+			[
+				'leadCount' => [
+					'type'    => 'integer',
+					'default' => 0,
+				],
+				'leadLabel' => [
+					'type'    => 'string',
+					'default' => '',
+					'role'    => 'content',
+				],
+			]
+		);
 		$this->entry_block( self::PAIRS, [], [ 'linesPerPage' => [ 'default' => 2 ] ] );
 		$this->entry_block( self::MONTHS, [ 'source' => 'test_month' ] );
 		$this->entry_block(
@@ -175,7 +194,7 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down(): void {
-		foreach ( [ self::MARKER, self::LINE, self::OL_LINE, self::PAIRS, self::MONTHS, self::IDS, self::BODY, self::WEEKS ] as $name ) {
+		foreach ( [ self::MARKER, self::LINE, self::OL_LINE, self::PAIRS, self::MONTHS, self::IDS, self::BODY, self::WEEKS, self::LEAD ] as $name ) {
 			Grouped_Archive::unregister_entry_block( $name );
 			if ( WP_Block_Type_Registry::get_instance()->is_registered( $name ) ) {
 				unregister_block_type( $name );
@@ -1541,6 +1560,176 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	}
 
 	// Sections.
+
+	public function test_zero_lead_keeps_play_and_read_archive_sections_byte_identical(): void {
+		$fixtures = [
+			'play' => [
+				[ 'Video Play', '2026-08-03 10:00:00', [ '_pkiw_play_rawg_id' => '3498' ] ],
+				[ 'Board Play', '2026-08-02 10:00:00', [ '_pkiw_play_bgg_id' => '13' ] ],
+				[ 'Outdoor Play', '2026-08-01 10:00:00', [] ],
+			],
+			'read' => [
+				[ 'Reading Book', '2026-08-03 10:00:00', [ '_pkiw_read_status' => 'reading' ] ],
+				[ 'Finished Book', '2026-08-02 10:00:00', [ '_pkiw_read_status' => 'finished' ] ],
+			],
+		];
+		$expected = [
+			'play' => '<section class="pkiw-group" data-pkiw-sections="3" data-pkiw-group="video"><h2 id="pkiw-group-video" class="pkiw-group__heading">Video games</h2><ul class="pkiw-group__items"><li><h2 class="wp-block-post-title">Video Play</h2></li></ul></section>'
+				. '<section class="pkiw-group" data-pkiw-sections="3" data-pkiw-group="board"><h2 id="pkiw-group-board" class="pkiw-group__heading">Board games</h2><ul class="pkiw-group__items"><li><h2 class="wp-block-post-title">Board Play</h2></li></ul></section>'
+				. '<section class="pkiw-group" data-pkiw-sections="3" data-pkiw-group=""><h2 id="pkiw-group-empty" class="pkiw-group__heading">Other</h2><ul class="pkiw-group__items"><li><h2 class="wp-block-post-title">Outdoor Play</h2></li></ul></section>',
+			'read' => '<section class="pkiw-group" data-pkiw-sections="2" data-pkiw-group="reading"><h2 id="pkiw-group-reading" class="pkiw-group__heading">Currently Reading</h2><ul class="pkiw-group__items"><li><h2 class="wp-block-post-title">Reading Book</h2></li></ul></section>'
+				. '<section class="pkiw-group" data-pkiw-sections="2" data-pkiw-group="finished"><h2 id="pkiw-group-finished" class="pkiw-group__heading">Finished</h2><ul class="pkiw-group__items"><li><h2 class="wp-block-post-title">Finished Book</h2></li></ul></section>',
+		];
+		$normalize = static function ( string $html ): string {
+			$html = (string) preg_replace( '/post-\d+/', 'post-ID', $html );
+			preg_match_all( '#<section class="pkiw-group" data-pkiw-sections="[^"]+" data-pkiw-group="[^"]*">.*?</section>#s', $html, $sections );
+
+			return (string) preg_replace( '#<li[^>]*>#', '<li>', implode( '', $sections[0] ) );
+		};
+
+		foreach ( $fixtures as $kind => $posts ) {
+			foreach ( $posts as [ $title, $date, $meta ] ) {
+				$this->make( $kind, $title, $date, $meta );
+			}
+			$plain = $this->serve( $kind, $this->loop( 'post-kinds-indieweb/archive-sections' ) );
+			$zero  = $this->serve( $kind, $this->loop( 'post-kinds-indieweb/archive-sections', [ 'leadCount' => 0, 'leadLabel' => 'x' ] ) );
+
+			$this->assertSame( (string) preg_replace( '/post-\d+/', 'post-ID', $plain ), (string) preg_replace( '/post-\d+/', 'post-ID', $zero ), "{$kind}: an explicit zero lead changes no byte except generated post IDs." );
+			$this->assertSame( $expected[ $kind ], $normalize( $plain ), "{$kind}: the shipped section structure stays frozen." );
+		}
+	}
+
+	public function test_page_one_lead_precedes_sections_and_the_first_remaining_post_reopens_its_month(): void {
+		$this->make( 'monthkind', 'Newest September', '2026-09-03 10:00:00' );
+		$this->make( 'monthkind', 'Middle September', '2026-09-02 10:00:00' );
+		$this->make( 'monthkind', 'Oldest September', '2026-09-01 10:00:00' );
+		$this->make( 'monthkind', 'August', '2026-08-31 10:00:00' );
+
+		$html = $this->serve( 'monthkind', $this->loop( self::LEAD, [ 'leadCount' => 1, 'leadLabel' => 'Latest' ] ) );
+
+		$this->assertStringContainsString( '<section class="pkiw-lead" data-pkiw-lead="1"><h2 id="pkiw-lead" class="pkiw-lead__heading">Latest</h2><ul class="pkiw-lead__items">', $html );
+		$this->assertTrue( strpos( $html, 'class="pkiw-lead"' ) < strpos( $html, 'class="pkiw-group"' ), 'The lead prints before the month sections.' );
+		$this->assertSame(
+			[
+				[ 'h2:September 2026', [ 'Middle September', 'Oldest September' ] ],
+				[ 'h2:August 2026', [ 'August' ] ],
+			],
+			$this->sections( $html ),
+			'The first non-lead post opens its month even when the lead shares that month.'
+		);
+		$this->assertSame( 2, substr_count( $html, 'data-pkiw-sections="2"' ), 'The section count excludes the lead.' );
+		$this->assertSame( 1, substr_count( $html, 'Newest September' ), 'The lead post is absent from every month section.' );
+	}
+
+	public function test_a_month_consumed_by_the_lead_prints_no_empty_section(): void {
+		$this->months();
+
+		$html = $this->serve( 'monthkind', $this->loop( self::LEAD, [ 'leadCount' => 1 ] ) );
+
+		$this->assertStringContainsString( 'data-pkiw-lead="1"', $html );
+		$this->assertStringNotContainsString( '>September 2026</h2>', $html );
+		$this->assertSame(
+			[
+				[ 'h2:August 2026', [ 'Late August', 'Early August' ] ],
+				[ 'h2:July 2026', [ 'July' ] ],
+			],
+			$this->sections( $html )
+		);
+	}
+
+	public function test_lead_count_clamps_to_three_and_uses_the_number_of_posts_actually_printed(): void {
+		$this->make( 'monthkind', 'Second', '2026-09-02 10:00:00' );
+		$this->make( 'monthkind', 'First', '2026-09-03 10:00:00' );
+
+		$two = $this->serve( 'monthkind', $this->loop( self::LEAD, [ 'leadCount' => 3 ] ) );
+		$this->assertStringContainsString( '<section class="pkiw-lead" data-pkiw-lead="2"><ul class="pkiw-lead__items">', $two );
+		$this->assertStringNotContainsString( 'pkiw-lead__heading', $two, 'An empty lead label omits the heading.' );
+		$this->assertSame( [], $this->sections( $two ), 'No empty month section prints when the lead consumes the page.' );
+
+		$this->make( 'monthkind', 'Fourth', '2026-09-01 10:00:00' );
+		$this->make( 'monthkind', 'Third', '2026-09-01 12:00:00' );
+		$clamped = $this->serve( 'monthkind', $this->loop( self::LEAD, [ 'leadCount' => 9 ] ) );
+		$this->assertStringContainsString( 'data-pkiw-lead="3"', $clamped );
+		$this->assertSame( [ [ 'h2:September 2026', [ 'Fourth' ] ] ], $this->sections( $clamped ) );
+	}
+
+	public function test_lead_posts_count_toward_page_size_and_only_page_one_has_a_lead(): void {
+		$ids = [
+			$this->make( 'monthkind', 'Fourth', '2026-09-01 10:00:00' ),
+			$this->make( 'monthkind', 'Third', '2026-09-02 10:00:00' ),
+			$this->make( 'monthkind', 'Second', '2026-09-03 10:00:00' ),
+			$this->make( 'monthkind', 'First', '2026-09-04 10:00:00' ),
+		];
+		$attrs = [ 'leadCount' => 1, 'leadLabel' => 'Latest', 'linesPerPage' => 2 ];
+
+		$first  = $this->serve( 'monthkind', $this->loop( self::LEAD, $attrs ), 1 );
+		$second = $this->serve( 'monthkind', $this->loop( self::LEAD, $attrs ), 2 );
+		$this->assertStringContainsString( 'data-pkiw-lead="1"', $first );
+		$this->assertStringNotContainsString( 'data-pkiw-lead', $second );
+		$this->assertSame( [ $ids[1], $ids[0] ], array_map( 'intval', wp_list_pluck( $GLOBALS['wp_query']->posts, 'ID' ) ), 'Page 2 starts after both posts from page 1, including its lead.' );
+		$this->assertSame( [ [ 'h2:September 2026', [ 'Third', 'Fourth' ] ] ], $this->sections( $second ) );
+	}
+
+	public function test_non_inheriting_loop_uses_its_local_page_to_limit_the_lead(): void {
+		$this->make( 'monthkind', 'Fourth', '2026-09-01 10:00:00' );
+		$this->make( 'monthkind', 'Third', '2026-09-02 10:00:00' );
+		$this->make( 'monthkind', 'Second', '2026-09-03 10:00:00' );
+		$this->make( 'monthkind', 'First', '2026-09-04 10:00:00' );
+		$kind = get_term_by( 'slug', 'monthkind', 'kind' );
+		$loop = '<!-- wp:query {"query":{"perPage":2,"postType":"post","inherit":false,"pkiwGroupBy":"monthkind","taxQuery":{"include":{"kind":[' . $kind->term_id . ']}}}} --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-title /--><!-- wp:' . self::LEAD . ' {"leadCount":1,"leadLabel":"Latest"} /--><!-- /wp:post-template --></div><!-- /wp:query -->';
+
+		$this->go_to( home_url( '/' ) );
+		$this->assertStringContainsString( 'data-pkiw-lead="1"', do_blocks( $loop ) );
+		$this->go_to( add_query_arg( 'query-page', 2, home_url( '/' ) ) );
+		$this->assertStringNotContainsString( 'data-pkiw-lead', do_blocks( $loop ) );
+	}
+
+	public function test_each_lead_heading_id_is_unique_within_the_request(): void {
+		$this->make( 'monthkind', 'Newest', '2026-09-04 10:00:00' );
+		$template = $this->loop( self::LEAD, [ 'leadCount' => 1, 'leadLabel' => 'Latest' ] );
+
+		$html = $this->serve( 'monthkind', $template . $template );
+		preg_match_all( '/class="pkiw-lead__heading"/', $html, $headings );
+		$this->assertCount( 2, $headings[0] );
+		$this->assertStringContainsString( 'id="pkiw-lead"', $html );
+		$this->assertStringContainsString( 'id="pkiw-lead-2"', $html );
+	}
+
+	public function test_a_protected_lead_post_uses_the_stream_cards_title_only_rendering(): void {
+		$protected = $this->make( 'monthkind', 'Private notes', '2026-09-04 10:00:00' );
+		wp_update_post(
+			[
+				'ID'           => $protected,
+				'post_password' => 'secret',
+				'post_content'  => '<!-- wp:paragraph --><p>Private body</p><!-- /wp:paragraph -->',
+				'post_excerpt'  => 'Private excerpt',
+			]
+		);
+		$this->make( 'monthkind', 'Public notes', '2026-09-03 10:00:00' );
+		$template = '<!-- wp:query {"queryId":7,"query":{"inherit":true}} --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-kinds-indieweb/stream-card /--><!-- wp:post-kinds-indieweb/archive-sections {"leadCount":1,"leadLabel":"Latest"} /--><!-- /wp:post-template --></div><!-- /wp:query -->';
+
+		$html = $this->serve( 'monthkind', $template );
+		preg_match( '#<section class="pkiw-lead".*?</section>#s', $html, $lead );
+		$this->assertStringContainsString( 'pk-card--protected', $lead[0] );
+		$this->assertStringContainsString( 'Protected: Private notes', $lead[0] );
+		$this->assertStringNotContainsString( 'Private body', $lead[0] );
+		$this->assertStringNotContainsString( 'Private excerpt', $lead[0] );
+		$this->assertStringNotContainsString( 'p-author', $lead[0] );
+		$this->assertStringNotContainsString( 'pk-card__meta', $lead[0] );
+	}
+
+	public function test_the_editor_preview_marks_lead_items_and_reopens_the_first_remaining_month(): void {
+		$newest = $this->make( 'monthkind', 'Newest September', '2026-09-04 10:00:00' );
+		$second = $this->make( 'monthkind', 'Middle September', '2026-09-03 10:00:00' );
+		$third  = $this->make( 'monthkind', 'Oldest September', '2026-09-02 10:00:00' );
+		$attrs  = [ 'leadCount' => 1, 'leadLabel' => 'Latest' ];
+
+		$this->assertSame( '<h2 class="pkiw-lead__heading">Latest</h2>', $this->editor_render( self::LEAD, $newest, $attrs, [ 'pkiw_kind' => 'monthkind' ] ) );
+		$this->assertSame( '<h2 id="pkiw-group-2026-09" class="pkiw-group__heading">September 2026</h2>', $this->editor_render( self::LEAD, $second, $attrs, [ 'pkiw_kind' => 'monthkind' ] ) );
+		$this->assertSame( '<div class="pkiw-group-placeholder" hidden></div>', $this->editor_render( self::LEAD, $third, $attrs, [ 'pkiw_kind' => 'monthkind' ] ) );
+		$this->assertSame( '<h2 id="pkiw-group-2026-09" class="pkiw-group__heading">September 2026</h2>', $this->editor_render( self::LEAD, $newest, [ 'leadCount' => 0 ], [ 'pkiw_kind' => 'monthkind' ] ), 'A zero lead keeps the existing preview.' );
+		$this->assertSame( '<h2 id="pkiw-group-2026-09" class="pkiw-group__heading">September 2026</h2>', $this->editor_render( self::LEAD, $third, $attrs + [ 'linesPerPage' => 2 ], [ 'pkiw_kind' => 'monthkind' ] ), 'A post on page 2 opens its ordinary section instead of becoming a lead.' );
+	}
 
 	public function test_only_an_entry_that_asks_exposes_the_group_key(): void {
 		$this->plays();
