@@ -35,7 +35,7 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	private const BODY   = 'pkiw-test/body-line';
 	private const WEEKS  = 'pkiw-test/weeks-line';
 
-	private const SOURCES = [ 'test_status', 'test_series', 'test_play', 'test_tags', 'test_cats', 'test_month', 'test_month_asc', 'test_year', 'test_week', 'test_flagged_tags' ];
+	private const SOURCES = [ 'test_status', 'test_series', 'test_play', 'test_tags', 'test_cats', 'test_month', 'test_month_asc', 'test_year', 'test_week', 'test_flagged_tags', 'test_wish_type' ];
 
 	/**
 	 * Stylesheet active before each test.
@@ -292,6 +292,45 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			'd' => $this->make( 'multikind', 'Guards', '2026-01-02 10:00:00', [ '_pkiw_test_series_alt' => 'Discworld' ] ),
 			'e' => $this->make( 'multikind', 'Standalone', '2026-01-01 10:00:00' ),
 		];
+	}
+
+	/**
+	 * Register the mapped wish type source with an ordered priority inside each type.
+	 *
+	 * @param bool $protected_in_empty Whether protected posts file into the empty group.
+	 * @return Meta_Source
+	 */
+	private function register_wish_source( bool $protected_in_empty = true ): Meta_Source {
+		$source = new Meta_Source(
+			'test_wish_type',
+			[ '_pkiw_test_wish_type' ],
+			[],
+			Label_Mode::map(
+				[
+					'movie' => 'Movie/Show',
+					'book'  => 'Book',
+					'food'  => 'Food',
+				]
+			),
+			'',
+			$protected_in_empty,
+			[
+				' MEDIA ' => ' MOVIE ',
+				'movie'   => 'movie',
+				'book'    => 'book',
+				'food'    => 'food',
+				'gizmo'   => '',
+				''        => 'food',
+			],
+			[
+				'key'     => '_pkiw_test_wish_priority',
+				'order'   => [ ' HIGH ', 'medium', 'LOW', 'high', ' ' ],
+				'default' => ' MEDIUM ',
+			]
+		);
+		Grouped_Archive::register_source( $source, 'wishkind' );
+
+		return $source;
 	}
 
 	/**
@@ -798,6 +837,8 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			'source id with a space'             => [ static fn() => new Meta_Source( 'bad id', [ '_k' ] ) ],
 			'source id over 64 characters'       => [ static fn() => new Meta_Source( str_repeat( 'a', 65 ), [ '_k' ] ) ],
 			'meta source with no key'            => [ static fn() => new Meta_Source( 'ok', [ '' ] ) ],
+			'within order with no key'            => [ static fn() => new Meta_Source( 'ok', [ '_k' ], [], null, '', false, [], [ 'key' => ' ', 'order' => [ 'high' ] ] ) ],
+			'within order with no values'         => [ static fn() => new Meta_Source( 'ok', [ '_k' ], [], null, '', false, [], [ 'key' => '_priority', 'order' => [ '', ' ' ] ] ) ],
 			'cases source with no case'          => [ static fn() => new Cases_Source( 'ok', [] ) ],
 			'case with no key'                   => [ static fn() => new Cases_Source( 'ok', [ 'video' => [] ] ) ],
 			'case id with capitals'              => [ static fn() => new Cases_Source( 'ok', [ 'Video' => [ '_k' ] ] ) ],
@@ -1003,6 +1044,111 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			$this->sections( $this->serve( 'multikind', $this->loop( self::MARKER ) ) ),
 			'An empty or blank first key falls through to the second.'
 		);
+	}
+
+	public function test_a_value_map_files_stored_spellings_under_mapped_groups_and_unknowns_under_other(): void {
+		$this->register_wish_source();
+		$p = [
+			'media'       => $this->make( 'wishkind', 'Media', '2026-01-11 10:00:00', [ '_pkiw_test_wish_type' => 'media' ] ),
+			'Media'       => $this->make( 'wishkind', 'Capital media', '2026-01-10 10:00:00', [ '_pkiw_test_wish_type' => 'Media' ] ),
+			' MEDIA '     => $this->make( 'wishkind', 'Spaced media', '2026-01-09 10:00:00', [ '_pkiw_test_wish_type' => ' MEDIA ' ] ),
+			'movie'       => $this->make( 'wishkind', 'Movie', '2026-01-08 10:00:00', [ '_pkiw_test_wish_type' => 'movie' ] ),
+			'Movie'       => $this->make( 'wishkind', 'Capital movie', '2026-01-07 10:00:00', [ '_pkiw_test_wish_type' => 'Movie' ] ),
+			'book'        => $this->make( 'wishkind', 'Book', '2026-01-06 10:00:00', [ '_pkiw_test_wish_type' => 'book' ] ),
+			'other'       => $this->make( 'wishkind', 'Other value', '2026-01-05 10:00:00', [ '_pkiw_test_wish_type' => 'other' ] ),
+			'empty'       => $this->make( 'wishkind', 'Empty value', '2026-01-04 10:00:00', [ '_pkiw_test_wish_type' => '' ] ),
+			'spaces'      => $this->make( 'wishkind', 'Spaces value', '2026-01-03 10:00:00', [ '_pkiw_test_wish_type' => '   ' ] ),
+			'gizmo'       => $this->make( 'wishkind', 'Mapped empty', '2026-01-02 10:00:00', [ '_pkiw_test_wish_type' => 'gizmo' ] ),
+			'no_row'      => $this->make( 'wishkind', 'No row', '2026-01-01 10:00:00' ),
+		];
+
+		$ids = $this->grouped_ids( 'wishkind', 'test_wish_type' );
+		$this->assert_contiguous( 'test_wish_type', $ids );
+		$this->assertSame(
+			[ 'book', 'movie', 'movie', 'movie', 'movie', 'movie', '', '', '', '', '' ],
+			array_map( static fn( int $id ): string => Grouped_Archive::group_of_post( 'wishkind', $id )->key(), $ids ),
+			'Mapped groups sort together and the empty group sorts last.'
+		);
+		foreach ( [ 'media', 'Media', ' MEDIA ', 'movie', 'Movie' ] as $stored ) {
+			$group = Grouped_Archive::group_of_post( 'wishkind', $p[ $stored ] );
+			$this->assertSame( 'movie', $group->key(), $stored );
+			$this->assertSame( 'movie', $group->raw(), $stored );
+		}
+		$this->assertSame( 'book', Grouped_Archive::group_of_post( 'wishkind', $p['book'] )->key() );
+		foreach ( [ 'other', 'empty', 'spaces', 'gizmo', 'no_row' ] as $stored ) {
+			$this->assertTrue( Grouped_Archive::group_of_post( 'wishkind', $p[ $stored ] )->is_empty(), $stored );
+		}
+		$this->assertSame(
+			[ 'h2:Book', 'h2:Movie/Show', 'h2:Other' ],
+			array_column( $this->sections( $this->serve( 'wishkind', $this->loop( self::MARKER ) ) ), 0 )
+		);
+	}
+
+	public function test_an_accent_variant_missing_from_the_value_map_is_empty_in_sql_and_php(): void {
+		$this->register_wish_source();
+		$movie  = $this->make( 'wishkind', 'Movie', '2026-01-01 10:00:00', [ '_pkiw_test_wish_type' => 'media' ] );
+		$accent = $this->make( 'wishkind', 'Accent', '2026-01-02 10:00:00', [ '_pkiw_test_wish_type' => 'médiá' ] );
+
+		$this->assertSame( [ $movie, $accent ], $this->grouped_ids( 'wishkind', 'test_wish_type' ) );
+		$this->assertSame( 'movie', Grouped_Archive::group_of_post( 'wishkind', $movie )->key() );
+		$this->assertTrue( Grouped_Archive::group_of_post( 'wishkind', $accent )->is_empty() );
+	}
+
+	public function test_within_order_ranks_priorities_then_uses_date_and_id_inside_a_rank(): void {
+		$this->register_wish_source();
+		$high    = $this->make( 'wishkind', 'High', '2026-01-01 10:00:00', [ '_pkiw_test_wish_type' => 'book', '_pkiw_test_wish_priority' => ' HIGH ' ] );
+		$medium  = $this->make( 'wishkind', 'Medium', '2026-01-02 10:00:00', [ '_pkiw_test_wish_type' => 'book', '_pkiw_test_wish_priority' => 'medium' ] );
+		$low     = $this->make( 'wishkind', 'Low', '2026-01-06 10:00:00', [ '_pkiw_test_wish_type' => 'book', '_pkiw_test_wish_priority' => 'LOW' ] );
+		$unset   = $this->make( 'wishkind', 'Unset', '2026-01-05 10:00:00', [ '_pkiw_test_wish_type' => 'book' ] );
+		$unknown = $this->make( 'wishkind', 'Unknown', '2026-01-04 10:00:00', [ '_pkiw_test_wish_type' => 'book', '_pkiw_test_wish_priority' => 'urgent' ] );
+		$expected = [ $high, $unset, $unknown, $medium, $low ];
+
+		$this->assertSame( $expected, $this->grouped_ids( 'wishkind', 'test_wish_type' ) );
+		$this->assertSame( $expected, $this->rest_ids( 'wishkind' ) );
+		$this->assertSame(
+			[ 'High', 'Unset', 'Unknown', 'Medium', 'Low' ],
+			$this->sections( $this->editor_render( self::LINE, $high, [], [ 'pkiw_kind' => 'wishkind' ] ) )[0][1],
+			'The block-renderer preview uses the same within-group order as the archive and REST route.'
+		);
+	}
+
+	public function test_a_protected_post_uses_the_default_within_rank_in_the_empty_group(): void {
+		$this->register_wish_source();
+		$high      = $this->make( 'wishkind', 'Unprotected high', '2026-01-01 10:00:00', [ '_pkiw_test_wish_type' => 'other', '_pkiw_test_wish_priority' => 'high' ] );
+		$medium    = $this->make( 'wishkind', 'Unprotected medium', '2026-01-02 10:00:00', [ '_pkiw_test_wish_type' => 'other', '_pkiw_test_wish_priority' => 'medium' ] );
+		$protected = $this->make( 'wishkind', 'Protected high', '2026-01-03 10:00:00', [ '_pkiw_test_wish_type' => 'movie', '_pkiw_test_wish_priority' => 'high' ] );
+		wp_update_post(
+			[
+				'ID'            => $protected,
+				'post_password' => 'secret',
+			]
+		);
+
+		$this->assertTrue( Grouped_Archive::group_of_post( 'wishkind', $protected )->is_empty() );
+		$this->assertSame(
+			[ $high, $protected, $medium ],
+			$this->grouped_ids( 'wishkind', 'test_wish_type' ),
+			'A protected high-priority post ranks with medium posts, where date places it after an unprotected high and before the older medium.'
+		);
+	}
+
+	public function test_a_protected_post_stays_in_its_mapped_group_when_the_source_does_not_flag_it(): void {
+		$this->register_wish_source( false );
+		$id = $this->make( 'wishkind', 'Protected movie', '2026-01-01 10:00:00', [ '_pkiw_test_wish_type' => 'media' ] );
+		wp_update_post(
+			[
+				'ID'            => $id,
+				'post_password' => 'secret',
+			]
+		);
+
+		$this->assertSame( 'movie', Grouped_Archive::group_of_post( 'wishkind', $id )->key() );
+	}
+
+	public function test_a_plain_meta_source_keeps_its_original_sql_shape(): void {
+		$source = new Meta_Source( 'test_plain', [ '_pkiw_test_plain' ] );
+
+		$this->assertSame( [ 'value', 'tiebreak' ], array_keys( $source->sql( new WP_Query() ) ) );
 	}
 
 	// Cases.

@@ -583,6 +583,9 @@ final class Grouped_Archive {
 		if ( isset( $sql['tiebreak'] ) ) {
 			$parts[] = "{$sql['tiebreak']} {$groups}";
 		}
+		foreach ( (array) ( $sql['within'] ?? [] ) as $part ) {
+			$parts[] = (string) $part;
+		}
 		$parts[] = $tail;
 
 		return implode( ', ', $parts );
