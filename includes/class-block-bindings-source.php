@@ -51,7 +51,7 @@ final class Block_Bindings_Source {
 	private const KEY_MAP = [
 		'title'            => [
 			'listen'   => 'listen_track',
-			'jam'      => 'listen_track',
+			'jam'      => 'jam_track',
 			'watch'    => 'watch_title',
 			'read'     => 'read_title',
 			'comics'   => 'comic_title',
@@ -59,10 +59,11 @@ final class Block_Bindings_Source {
 		],
 		'artist'           => [
 			'listen'   => 'listen_artist',
-			'jam'      => 'listen_artist',
+			'jam'      => 'jam_artist',
 			'_default' => 'cite_author',
 		],
 		'album'            => [
+			'jam'      => 'jam_album',
 			'_default' => 'listen_album',
 		],
 		'rating'           => [
@@ -74,7 +75,7 @@ final class Block_Bindings_Source {
 		],
 		'url'              => [
 			'listen'   => 'listen_url',
-			'jam'      => 'listen_url',
+			'jam'      => 'jam_url',
 			'watch'    => 'watch_url',
 			'read'     => 'read_url',
 			'comics'   => 'comic_url',
@@ -82,7 +83,7 @@ final class Block_Bindings_Source {
 		],
 		'cover_image'      => [
 			'listen'   => 'listen_cover',
-			'jam'      => 'listen_cover',
+			'jam'      => 'jam_cover',
 			'watch'    => 'watch_poster',
 			'read'     => 'read_cover',
 			'comics'   => 'comic_cover',
