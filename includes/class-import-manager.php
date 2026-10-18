@@ -1058,17 +1058,18 @@ class Import_Manager {
 					$show       = $item['show_name'] ?? $item['author'] ?? '';
 					$source_url = $item['source_url'] ?? '';
 
-					$meta['_pkiw_cite_name']       = $episode;
-					$meta['_pkiw_cite_author']     = $show;
-					$meta['_pkiw_cite_photo']      = $item['cover_image'] ?? '';
-					$meta['_pkiw_cite_url']        = $source_url;
-					$meta['_pkiw_listen_track']    = $episode;
-					$meta['_pkiw_listen_artist']   = $show;
-					$meta['_pkiw_listen_album']    = $show;
-					$meta['_pkiw_listen_cover']    = $item['cover_image'] ?? '';
-					$meta['_pkiw_listen_url']      = $source_url;
-					$meta['_pkiw_source']          = $item['source'] ?? 'Snipd';
-					$meta['_pkiw_highlight_count'] = $item['highlight_count'] ?? 0;
+					$meta['_pkiw_cite_name']         = $episode;
+					$meta['_pkiw_cite_author']       = $show;
+					$meta['_pkiw_cite_photo']        = $item['cover_image'] ?? '';
+					$meta['_pkiw_cite_url']          = $source_url;
+					$meta['_pkiw_listen_track']      = $episode;
+					$meta['_pkiw_listen_artist']     = $show;
+					$meta['_pkiw_listen_album']      = $show;
+					$meta['_pkiw_listen_media_type'] = Listen_Media_Type::PODCAST;
+					$meta['_pkiw_listen_cover']      = $item['cover_image'] ?? '';
+					$meta['_pkiw_listen_url']        = $source_url;
+					$meta['_pkiw_source']            = $item['source'] ?? 'Snipd';
+					$meta['_pkiw_highlight_count']   = $item['highlight_count'] ?? 0;
 				} else {
 					// Music track.
 					$track  = $item['track'] ?? '';
@@ -1384,19 +1385,20 @@ class Import_Manager {
 
 		$meta = [
 			// Citation fields for Post Kind editor.
-			'_pkiw_cite_name'   => $episode,
-			'_pkiw_cite_author' => $show,
-			'_pkiw_cite_photo'  => $item['cover_image'] ?? '',
-			'_pkiw_cite_url'    => $source_url,
+			'_pkiw_cite_name'         => $episode,
+			'_pkiw_cite_author'       => $show,
+			'_pkiw_cite_photo'        => $item['cover_image'] ?? '',
+			'_pkiw_cite_url'          => $source_url,
 			// Listen-specific fields.
-			'_pkiw_listen_track'  => $episode,
-			'_pkiw_listen_artist' => $show,
-			'_pkiw_listen_album'  => $show, // Show name as album for podcasts.
-			'_pkiw_listen_cover'  => $item['cover_image'] ?? '',
-			'_pkiw_listen_url'    => $source_url,
+			'_pkiw_listen_track'      => $episode,
+			'_pkiw_listen_artist'     => $show,
+			'_pkiw_listen_album'      => $show, // Show name as album for podcasts.
+			'_pkiw_listen_media_type' => Listen_Media_Type::PODCAST,
+			'_pkiw_listen_cover'      => $item['cover_image'] ?? '',
+			'_pkiw_listen_url'        => $source_url,
 			// Import tracking.
-			'_pkiw_source'          => $item['source'] ?? 'Snipd',
-			'_pkiw_highlight_count' => $item['highlight_count'] ?? 0,
+			'_pkiw_source'            => $item['source'] ?? 'Snipd',
+			'_pkiw_highlight_count'   => $item['highlight_count'] ?? 0,
 		];
 
 		return [ $post_data, $meta, 'audio' ];
