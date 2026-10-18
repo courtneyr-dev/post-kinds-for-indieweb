@@ -147,12 +147,15 @@ final class ListenPrivacyTest extends WP_UnitTestCase {
 	}
 
 	public function test_locked_line_prints_only_the_protected_title_and_published_day(): void {
-		$id = $this->listen( 'Listened to Closed Signal', 'Alder Street Radio', 'podcast', [ 'post_password' => 'secret' ] );
+		$id = $this->listen( 'Listened to Closed Signal', 'Alder Street Radio', 'podcast', [ 'post_password' => 'secret' ], [ '_pkiw_listen_listened_at' => '2026-08-01' ] );
 		$html = $this->render_line( $id );
 
 		$this->assertSame( [], Kind_Facts::get( $id ) );
 		$this->assertStringContainsString( 'Protected: Listened to Closed Signal', $html );
 		$this->assertStringContainsString( '2026-09-26', $html );
+		// The stored listened day differs from the published day and must not print for a locked post.
+		$this->assertStringNotContainsString( '2026-08-01', $html );
+		$this->assertStringNotContainsString( 'August 1, 2026', $html );
 		foreach ( [ 'p-author', 'h-card', 'Jordan Vale', 'author/', 'gravatar', 'avatar', 'u-listen-of', '<img', 'pk-kind-cite', 'aria-labelledby' ] as $private ) {
 			$this->assertStringNotContainsString( $private, $html, $private );
 		}
@@ -168,6 +171,7 @@ final class ListenPrivacyTest extends WP_UnitTestCase {
 		$public_url = (string) wp_get_attachment_url( $public_image );
 		$locked_url = (string) wp_get_attachment_url( $locked_image );
 
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 		$xpath = $this->xpath( $this->serve( $this->podcast_url() ) );
 		$alder = $this->station( $xpath, 'Alder Street Radio' );
 		$other = $this->station( $xpath, 'Other' );
@@ -246,6 +250,31 @@ final class ListenPrivacyTest extends WP_UnitTestCase {
 
 	public function test_embed_markup_never_reaches_archive_stream_feed_or_lineup(): void {
 		$id = $this->listen( 'Listened to Embeddable Episode' );
+		$card_url = 'https://audio.example.org/episodes/card-authored';
+		$card_id  = $this->listen(
+			'Listened to Card Authored',
+			'Alder Street Radio',
+			'podcast',
+			[ 'post_content' => '<!-- wp:post-kinds-indieweb/listen-card {"trackTitle":"Card Authored","albumTitle":"Alder Street Radio","listenUrl":"' . $card_url . '","mediaType":"podcast"} /-->' ],
+			[ '_pkiw_listen_url' => $card_url ]
+		);
+		$music_id = $this->listen(
+			'Listened to Card Song',
+			'Example Album',
+			'music',
+			[ 'post_content' => '<!-- wp:post-kinds-indieweb/listen-card {"trackTitle":"Card Song","listenUrl":"https://audio.example.org/episodes/song"} /-->' ],
+			[ '_pkiw_listen_url' => 'https://audio.example.org/episodes/song' ]
+		);
+
+		$card_stream = $this->stream_card( $card_id );
+		$this->assertDoesNotMatchRegularExpression( '/<(?:iframe|script|embed)\b|wp-block-embed|pk-embed/i', $card_stream, 'A card-authored podcast keeps the provider player off its Stream card.' );
+		$this->assertStringContainsString( 'Card Authored', $card_stream );
+		$this->assertStringContainsString( '<iframe', $this->stream_card( $music_id ), 'A music listen card keeps its player.' );
+
+		$this->go_to( get_permalink( $card_id ) );
+		$GLOBALS['post'] = get_post( $card_id );
+		setup_postdata( $GLOBALS['post'] );
+		$this->assertStringContainsString( '<iframe', do_blocks( (string) get_post( $card_id )->post_content ), 'The podcast single keeps its player.' );
 
 		$this->go_to( $this->podcast_url() );
 		$this->assertSame( '', Kind_Facts::get( $id )['embed_html'] );

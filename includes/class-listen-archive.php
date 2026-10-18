@@ -100,6 +100,7 @@ final class Listen_Archive {
 		add_filter( 'pkiw_archive_group_source', [ self::class, 'group_source' ], 10, 3 );
 		Kind_Facts::register( self::KIND, [ self::class, 'facts' ] );
 		add_filter( 'pkiw_stream_card_kind_cite', [ self::class, 'cite_map' ] );
+		add_filter( 'render_block_post-kinds-indieweb/listen-card', [ self::class, 'strip_card_player' ], 10, 3 );
 		add_filter( 'get_block_type_variations', [ self::class, 'add_query_variation' ], 10, 2 );
 		add_action( 'parse_request', [ self::class, 'reset_cover_counter' ] );
 		add_filter( 'rest_request_before_callbacks', [ self::class, 'reset_cover_counter_filter' ], 10, 1 );
@@ -153,6 +154,10 @@ final class Listen_Archive {
 			]
 			: [ $clause ];
 		$query->set( 'meta_query', $meta ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- The public podcast view is stored in post meta.
+		if ( ! current_user_can( 'edit_others_posts' ) ) {
+			// Kind_Archive_Layouts::view_where() keeps protected posts out, so membership of the view can't reveal a protected post's media type.
+			$query->set( 'pkiw_view_public', 1 );
+		}
 	}
 
 	/**
@@ -293,6 +298,60 @@ final class Listen_Archive {
 				'p-author' => (string) ( $facts['show'] ?? '' ),
 			]
 		);
+	}
+
+	/**
+	 * Keep the provider player off a podcast's listen card outside the post's own page.
+	 *
+	 * The card prints its oEmbed player on every render. A podcast's Stream
+	 * card, and its card in a grouped or filtered archive, are lists: the
+	 * player loads only on the podcast's own single. Music cards and the
+	 * single are untouched.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param mixed $html     Rendered card.
+	 * @param mixed $block    Parsed block.
+	 * @param mixed $instance Block instance.
+	 * @return mixed
+	 */
+	public static function strip_card_player( $html, $block = null, $instance = null ) {
+		if ( ! is_string( $html ) || ! str_contains( $html, 'pk-embed--audio' ) ) {
+			return $html;
+		}
+
+		$in_list = is_rendering_stream_card() || Grouped_Archive::is_sectioning() || '' !== Grouped_Archive::preview_view() || null !== Kind_Archive_Layouts::filtered_view();
+		if ( ! $in_list ) {
+			return $html;
+		}
+
+		$attrs   = is_array( $block ) && is_array( $block['attrs'] ?? null ) ? $block['attrs'] : [];
+		$post_id = $instance instanceof \WP_Block && ! empty( $instance->context['postId'] ) ? (int) $instance->context['postId'] : (int) get_the_ID();
+		$podcast = Listen_Media_Type::PODCAST === Listen_Media_Type::sanitize( $attrs['mediaType'] ?? '' )
+			|| ( $post_id > 0 && Listen_Media_Type::PODCAST === Listen_Media_Type::stored( $post_id ) );
+		if ( ! $podcast ) {
+			return $html;
+		}
+
+		$start = strpos( $html, '<div class="pk-embed pk-embed--audio">' );
+		if ( false === $start ) {
+			return $html;
+		}
+
+		// The wrapper holds the provider's own markup, which can nest divs: walk to the matching close tag.
+		$depth = 0;
+		$end   = false;
+		if ( preg_match_all( '#<div\b|</div>#i', $html, $tags, PREG_OFFSET_CAPTURE, $start ) ) {
+			foreach ( $tags[0] as $tag ) {
+				$depth += 0 === stripos( $tag[0], '</' ) ? -1 : 1;
+				if ( 0 === $depth ) {
+					$end = $tag[1] + strlen( '</div>' );
+					break;
+				}
+			}
+		}
+
+		return false === $end ? $html : substr( $html, 0, $start ) . substr( $html, $end );
 	}
 
 	/**

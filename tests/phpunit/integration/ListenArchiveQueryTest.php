@@ -147,7 +147,8 @@ final class ListenArchiveQueryTest extends WP_UnitTestCase {
 	}
 
 	public function test_other_kind_archives_ignore_the_listen_view(): void {
-		$note = $this->listen( 'N01', '2026-09-11 10:00:00', 'podcast', [], 'note' );
+		// No media-type meta: only the is_tax( kind, listen ) guard keeps the podcast clause off this archive.
+		$note = $this->listen( 'N01', '2026-09-11 10:00:00', null, [], 'note' );
 		$url = add_query_arg( Listen_Archive::QUERY_VAR, 'podcast', get_term_link( 'note', Taxonomy::TAXONOMY ) );
 
 		$this->go_to( $url );
@@ -184,6 +185,34 @@ final class ListenArchiveQueryTest extends WP_UnitTestCase {
 		$this->assertTrue( is_feed() );
 		$this->assertSame( [ $newer_high, $newer_low, $older ], $this->current_ids() );
 		$this->assertSame( '', (string) $GLOBALS['wp_query']->get( 'pkiw_group_source' ) );
+	}
+
+	public function test_the_view_and_its_feed_hide_protected_podcasts_from_anyone_who_cannot_edit_others_posts(): void {
+		$public = $this->listen( 'P01', '2026-09-10 10:00:00', 'podcast' );
+		$locked = $this->listen( 'P02', '2026-09-11 10:00:00', 'podcast', [ 'post_password' => 'secret' ] );
+		$spaces = $this->listen( 'P03', '2026-09-12 10:00:00', 'podcast', [ 'post_password' => '   ' ] );
+		$music_locked = $this->listen( 'M01', '2026-09-13 10:00:00', 'music', [ 'post_password' => 'secret' ] );
+		$term = get_term_by( 'slug', 'listen', Taxonomy::TAXONOMY );
+		$this->assertInstanceOf( WP_Term::class, $term );
+		$feed = add_query_arg( Listen_Archive::QUERY_VAR, 'podcast', get_term_feed_link( $term->term_id, Taxonomy::TAXONOMY ) );
+
+		foreach ( [ 0, self::factory()->user->create( [ 'role' => 'author' ] ) ] as $user ) {
+			wp_set_current_user( $user );
+			foreach ( [ $this->podcast_url(), $feed ] as $url ) {
+				$this->go_to( $url );
+				$this->assertSame( [ $public ], $this->current_ids(), $url );
+			}
+			// Plain /kind/listen/ is unchanged: protected posts still list.
+			$this->go_to( $this->archive_url() );
+			$this->assertContains( $locked, $this->current_ids() );
+			$this->assertContains( $music_locked, $this->current_ids() );
+		}
+
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		foreach ( [ $this->podcast_url(), $feed ] as $url ) {
+			$this->go_to( $url );
+			$this->assertEqualsCanonicalizing( [ $public, $locked, $spaces ], $this->current_ids(), $url );
+		}
 	}
 
 	public function test_duplicate_media_type_rows_do_not_duplicate_a_post_or_found_count(): void {

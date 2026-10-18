@@ -191,6 +191,8 @@ final class ListenLineupMarkupTest extends WP_UnitTestCase {
 
 	public function test_pages_follow_the_frozen_station_map_and_page_four_is_a_404(): void {
 		$this->seed();
+		// An editor sees the protected podcast under Other; the next test proves who does not.
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 		$one = $this->station_map( $this->xpath( $this->serve( $this->archive_url( 1 ) ) ) );
 		$two = $this->station_map( $this->xpath( $this->serve( $this->archive_url( 2 ) ) ) );
 		$three = $this->station_map( $this->xpath( $this->serve( $this->archive_url( 3 ) ) ) );
@@ -266,8 +268,22 @@ final class ListenLineupMarkupTest extends WP_UnitTestCase {
 		$this->assertSame( 1, $two->query( '//section[.//h2[normalize-space()="Other"]]//div[contains(@class,"pkiw-lineup__cover--none")]' )->length );
 	}
 
+	public function test_protected_podcast_is_absent_from_the_view_unless_the_requester_can_edit_others_posts(): void {
+		$this->seed();
+		foreach ( [ 0, self::factory()->user->create( [ 'role' => 'author' ] ) ] as $user ) {
+			wp_set_current_user( $user );
+			$xpath = $this->xpath( $this->serve( $this->archive_url( 3 ) ) );
+			$this->assertSame( [ 'Other' => 2 ], $this->station_map( $xpath ) );
+			$this->assertStringNotContainsString( 'Hidden One', $xpath->document->textContent );
+			$this->assertStringNotContainsString( 'post-' . $this->ids['H01'] . ' ', $xpath->document->saveHTML() );
+			$this->serve( $this->archive_url( 4 ) );
+			$this->assertTrue( is_404() );
+		}
+	}
+
 	public function test_locked_line_and_heading_ids_keep_the_privacy_and_uniqueness_contracts(): void {
 		$this->seed();
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 		$xpath = $this->xpath( $this->serve( $this->archive_url( 3 ) ) );
 		$line = $xpath->query( '//*[contains(concat(" ",@class," ")," post-' . $this->ids['H01'] . ' ")]//*[contains(concat(" ",@class," ")," pkiw-episode ")]' )->item( 0 );
 		$this->assertInstanceOf( DOMElement::class, $line );
