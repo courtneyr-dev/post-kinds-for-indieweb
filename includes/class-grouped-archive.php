@@ -113,6 +113,13 @@ final class Grouped_Archive {
 	private static string $preview_kind = '';
 
 	/**
+	 * Filtered view the editor previews (`pkiw_view` on the block-renderer request).
+	 *
+	 * @var string
+	 */
+	private static string $preview_view = '';
+
+	/**
 	 * How many sections the page of the last previewed entry holds.
 	 *
 	 * @var int
@@ -326,6 +333,15 @@ final class Grouped_Archive {
 	 */
 	public static function is_block_preview(): bool {
 		return self::$block_preview;
+	}
+
+	/**
+	 * Filtered view named by the current block-renderer request.
+	 *
+	 * @return string
+	 */
+	public static function preview_view(): string {
+		return self::$preview_view;
 	}
 
 	/**
@@ -788,7 +804,9 @@ final class Grouped_Archive {
 		if ( $request instanceof \WP_REST_Request && str_starts_with( $request->get_route(), '/wp/v2/block-renderer/' ) ) {
 			self::$block_preview  = 'rest_request_before_callbacks' === current_filter();
 			$kind                 = $request->get_param( 'pkiw_kind' );
+			$view                 = $request->get_param( 'pkiw_view' );
 			self::$preview_kind   = self::$block_preview && is_string( $kind ) ? sanitize_key( $kind ) : '';
+			self::$preview_view   = self::$block_preview && is_string( $view ) ? sanitize_key( $view ) : '';
 			self::$preview_order  = [];
 			self::$preview_page   = [];
 			self::$preview_lead_n = 0;
@@ -810,6 +828,7 @@ final class Grouped_Archive {
 	public static function rest_collection_params( $params ) {
 		if ( isset( $params['orderby']['enum'] ) && is_array( $params['orderby']['enum'] ) ) {
 			array_push( $params['orderby']['enum'], ...array_keys( Kind_Archive_Layouts::REST_MENU_ORDERS ) );
+			array_push( $params['orderby']['enum'], ...array_keys( Kind_Archive_Layouts::rest_view_orders() ) );
 		}
 
 		return $params;
@@ -828,7 +847,16 @@ final class Grouped_Archive {
 	 * @return array<string, mixed>
 	 */
 	public static function rest_order( $args, $request ) {
-		$order = Kind_Archive_Layouts::REST_MENU_ORDERS[ (string) $request['orderby'] ] ?? null;
+		$token = (string) $request['orderby'];
+		$order = Kind_Archive_Layouts::REST_MENU_ORDERS[ $token ] ?? null;
+		$view  = '';
+		if ( null === $order ) {
+			$view_order = Kind_Archive_Layouts::rest_view_orders()[ $token ] ?? null;
+			if ( null !== $view_order ) {
+				$order = [ $view_order[0], $view_order[1] ];
+				$view  = $view_order[2];
+			}
+		}
 		if ( null === $order ) {
 			return $args;
 		}
@@ -838,7 +866,9 @@ final class Grouped_Archive {
 
 		$term_ids = array_values( array_filter( array_map( 'intval', (array) $request[ Taxonomy::TAXONOMY ] ) ) );
 		$term     = 1 === count( $term_ids ) ? get_term( $term_ids[0], Taxonomy::TAXONOMY ) : null;
-		$source   = $term instanceof \WP_Term ? self::kind_source( $term->slug, null ) : null;
+		$active   = '' !== $view && $term instanceof \WP_Term ? Kind_Archive_Layouts::registered_view( $term->slug, $view ) : null;
+		Kind_Archive_Layouts::set_rest_view( null !== $active ? $view : '' );
+		$source = $term instanceof \WP_Term ? self::kind_source( $term->slug, null ) : null;
 		if ( null !== $source ) {
 			$args = array_merge(
 				$args,
@@ -850,6 +880,19 @@ final class Grouped_Archive {
 					]
 				)
 			);
+		}
+		if ( null !== $active ) {
+			$clause = Kind_Archive_Layouts::filtered_view_meta_query( $term->slug, $view );
+			if ( [] !== $clause ) {
+				$existing           = $args['meta_query'] ?? [];
+				$args['meta_query'] = is_array( $existing ) && [] !== $existing
+					? [
+						'relation' => 'AND',
+						$existing,
+						$clause,
+					]
+					: [ $clause ];
+			}
 		}
 
 		return $args;
@@ -1296,41 +1339,50 @@ final class Grouped_Archive {
 	 * @param array<string, mixed> $settings Entry settings.
 	 * @return int[]
 	 */
-	private static function preview_run( int $post_id, string $kind, Group_Source $source, array $settings ): array {
+	private static function preview_run( int $post_id, string $kind, Group_Source $source, array $settings ): array { // phpcs:ignore Generic.Metrics.CyclomaticComplexity.TooHigh -- one pass computes the preview page, lead and section run.
 		self::$preview_lead_n = 0;
 		self::$preview_at     = 0;
 
+		$view = Kind_Archive_Layouts::preview_view();
+		if ( null === Kind_Archive_Layouts::registered_view( $kind, $view ) ) {
+			$view = '';
+		}
 		$vars  = self::query_vars( $source, $settings );
-		$cache = $kind . '|' . implode( '|', $vars );
+		$cache = $kind . '|' . implode( '|', $vars ) . ( '' !== $view ? '|' . $view : '' );
 		if ( ! isset( self::$preview_order[ $cache ] ) ) {
-			$taxonomy                      = get_taxonomy( Taxonomy::TAXONOMY );
+			$taxonomy = get_taxonomy( Taxonomy::TAXONOMY );
+			$args     = [
+				'post_type'         => $taxonomy ? $taxonomy->object_type : 'post',
+				'post_status'       => 'publish',
+				'posts_per_page'    => -1,
+				'fields'            => 'ids',
+				'no_found_rows'     => true,
+				'suppress_filters'  => false,
+				'orderby'           => [
+					'date' => 'DESC',
+					'ID'   => 'DESC',
+				],
+				'pkiw_group_by'     => $vars['pkiw_group_by'] ?? '',
+				'pkiw_group_source' => $vars['pkiw_group_source'] ?? '',
+				'pkiw_group_order'  => $vars['pkiw_group_order'],
+				'pkiw_group_empty'  => $vars['pkiw_group_empty'],
+				'tax_query'         => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- the archive is a kind's posts.
+					[
+						'taxonomy' => Taxonomy::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => $kind,
+					],
+				],
+			];
+			if ( '' !== $view ) {
+				$clause = Kind_Archive_Layouts::filtered_view_meta_query( $kind, $view );
+				if ( [] !== $clause ) {
+					$args['meta_query'] = [ $clause ]; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- the registered view limits the preview to its posts.
+				}
+			}
 			self::$preview_order[ $cache ] = array_map(
 				'intval',
-				get_posts(
-					[
-						'post_type'         => $taxonomy ? $taxonomy->object_type : 'post',
-						'post_status'       => 'publish',
-						'posts_per_page'    => -1,
-						'fields'            => 'ids',
-						'no_found_rows'     => true,
-						'suppress_filters'  => false,
-						'orderby'           => [
-							'date' => 'DESC',
-							'ID'   => 'DESC',
-						],
-						'pkiw_group_by'     => $vars['pkiw_group_by'] ?? '',
-						'pkiw_group_source' => $vars['pkiw_group_source'] ?? '',
-						'pkiw_group_order'  => $vars['pkiw_group_order'],
-						'pkiw_group_empty'  => $vars['pkiw_group_empty'],
-						'tax_query'         => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- the archive is a kind's posts.
-							[
-								'taxonomy' => Taxonomy::TAXONOMY,
-								'field'    => 'slug',
-								'terms'    => $kind,
-							],
-						],
-					]
-				)
+				get_posts( $args )
 			);
 		}
 
