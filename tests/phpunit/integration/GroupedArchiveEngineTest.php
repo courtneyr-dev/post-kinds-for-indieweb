@@ -540,9 +540,13 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 
 	public function test_month_kinds_are_frozen_in_layout_order(): void {
 		$this->assertSame(
-			[ 'photo', 'chicken', 'favorite', 'acquisition', 'repost', 'article' ],
+			[ 'photo', 'chicken', 'favorite', 'acquisition', 'repost', 'article', 'audio', 'jam' ],
 			\PKIW\Kind_Archive_Layouts::MONTH_KINDS
 		);
+	}
+
+	public function test_year_kinds_are_frozen_in_layout_order(): void {
+		$this->assertSame( [ 'video' ], \PKIW\Kind_Archive_Layouts::YEAR_KINDS );
 	}
 
 	/**
@@ -556,6 +560,8 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			'acquisition' => [ 'acquisition' ],
 			'repost'      => [ 'repost' ],
 			'article'     => [ 'article' ],
+			'audio'       => [ 'audio' ],
+			'jam'         => [ 'jam' ],
 		];
 	}
 
@@ -574,8 +580,169 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	}
 
 	public function test_grouped_kinds_include_the_month_kinds(): void {
-		foreach ( [ 'photo', 'chicken', 'favorite', 'acquisition', 'repost', 'article' ] as $kind ) {
+		foreach ( [ 'photo', 'chicken', 'favorite', 'acquisition', 'repost', 'article', 'audio', 'jam' ] as $kind ) {
 			$this->assertContains( $kind, Grouped_Archive::grouped_kinds(), "{$kind} should be grouped by post_month." );
+		}
+		$this->assertContains( 'video', Grouped_Archive::grouped_kinds(), 'Video should be grouped by post_year.' );
+	}
+
+	/**
+	 * @return array<string, array{string, string, string, string}>
+	 */
+	public function jam_local_months(): array {
+		return [
+			'chicago late august' => [ 'America/Chicago', '2026-08-31 23:30:00', '2026-08', 'August 2026' ],
+			'honolulu september'  => [ 'Pacific/Honolulu', '2026-09-01 00:30:00', '2026-09', 'September 2026' ],
+		];
+	}
+
+	/**
+	 * @dataProvider jam_local_months
+	 */
+	public function test_jams_group_by_the_site_s_local_month( string $timezone, string $date, string $key, string $label ): void {
+		update_option( 'timezone_string', $timezone );
+		$id = $this->make( 'jam', 'Local jam', $date );
+
+		$this->assertSame( $key, Grouped_Archive::group_of_post( 'jam', $id )->key() );
+		$this->assertSame( $label, Grouped_Archive::group_label_of_post( 'jam', $id ) );
+	}
+
+	public function test_video_archives_group_by_local_year_and_accept_a_date_format(): void {
+		update_option( 'timezone_string', 'America/New_York' );
+		$old = $this->make( 'video', 'Old year', '2025-12-31 23:30:00' );
+		$new = $this->make( 'video', 'New year', '2026-01-01 00:10:00' );
+		$year = Grouped_Archive::source( 'post_year' );
+
+		$this->assertInstanceOf( Date_Source::class, $year );
+		$this->assertSame( 'post_year', $year->id() );
+		$this->assertSame( 'year', $year->unit() );
+		$this->assertSame( '2025', Grouped_Archive::group_of_post( 'video', $old )->key() );
+		$this->assertSame( '2026', Grouped_Archive::group_of_post( 'video', $new )->key() );
+		$this->assertSame( '2026', Grouped_Archive::group_label_of_post( 'video', $new ) );
+		$this->assertSame(
+			[ 'h2:26', 'h2:25' ],
+			array_column( $this->sections( $this->serve( 'video', $this->loop( self::MARKER, [ 'dateFormat' => 'y' ] ) ) ), 0 )
+		);
+	}
+
+	public function test_a_video_year_reopens_on_page_two_and_keeps_date_then_id_order(): void {
+		update_option( 'timezone_string', 'America/New_York' );
+		$oldest = $this->make( 'video', 'January', '2026-01-01 10:00:00' );
+		$middle = $this->make( 'video', 'June', '2026-06-01 10:00:00' );
+		$first  = $this->make( 'video', 'First September', '2026-09-30 10:00:00' );
+		$second = $this->make( 'video', 'Second September', '2026-09-30 10:00:00' );
+
+		$this->assertSame( [ $second, $first, $middle, $oldest ], $this->grouped_ids( 'video', 'post_year' ) );
+		$pages = $this->headings_by_page( 'video', [ 'linesPerPage' => 2 ], 2 );
+		$this->assertSame( [ 'h2:2026' ], $pages[1] );
+		$this->assertSame( [ 'h2:2026' ], $pages[2] );
+	}
+
+	public function test_every_shipped_kinds_group_order_by_is_unchanged(): void {
+		$golden = [
+			'eat|ASC|last' => '05a8898573f60c416fc7cd461c7cb36363ee91c4',
+			'eat|DESC|last' => '149da7797cda444d0f38106a73cbaa78bbbdd389',
+			'eat|ASC|first' => 'f73db325bc8d77ceb0e1346bf47a0a4fe2335691',
+			'eat|DESC|first' => 'c4e2c2560eb60da8d1981f64165324c580877832',
+			'drink|ASC|last' => 'a9a8b64bf89066ed297d4018582dc107bdaee10b',
+			'drink|DESC|last' => '6f1aac22fc92dbad9783938d7b06c25040c01ca7',
+			'drink|ASC|first' => 'c54fecc96cba0d3b85dfa3e89bb8976c4218465d',
+			'drink|DESC|first' => '31428dcd530f5fbdfccb01c672725c19d0d33a5a',
+			'play|ASC|last' => '4c532ec9ab320155ba7525703d49c696a9372e1a',
+			'play|DESC|last' => 'b90d85b8116fc71bd33f187361fca0eb08ceab3f',
+			'play|ASC|first' => '283997dfb8ab8a2575cff0df357cce4c48570339',
+			'play|DESC|first' => '24f3314f4bcb8b56cc95b37782b63eeeb006b5f2',
+			'reply|ASC|last' => 'e5a9a14deb11b049c37b8acb7b52d086974c7246',
+			'reply|DESC|last' => 'bf0243dedd4a8336a93b147aa905335c26f230b5',
+			'reply|ASC|first' => '25ef3b413fc66d2228fd7db85c2f34cd497d8cc0',
+			'reply|DESC|first' => 'b1c6df3275c6b06517075a35065221eb7ec6f153',
+			'like|ASC|last' => 'e5a9a14deb11b049c37b8acb7b52d086974c7246',
+			'like|DESC|last' => 'bf0243dedd4a8336a93b147aa905335c26f230b5',
+			'like|ASC|first' => '25ef3b413fc66d2228fd7db85c2f34cd497d8cc0',
+			'like|DESC|first' => 'b1c6df3275c6b06517075a35065221eb7ec6f153',
+			'photo|ASC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'photo|DESC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'photo|ASC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'photo|DESC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'chicken|ASC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'chicken|DESC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'chicken|ASC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'chicken|DESC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'favorite|ASC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'favorite|DESC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'favorite|ASC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'favorite|DESC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'acquisition|ASC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'acquisition|DESC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'acquisition|ASC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'acquisition|DESC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'repost|ASC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'repost|DESC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'repost|ASC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'repost|DESC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'article|ASC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'article|DESC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'article|ASC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'article|DESC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'exercise|ASC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'exercise|DESC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'exercise|ASC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'exercise|DESC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'note|ASC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'note|DESC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'note|ASC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'note|DESC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'read|ASC|last' => '450084839ecca84ba5f5f1a318180a43d4506330',
+			'read|DESC|last' => 'ab01f20e38c406aefbda56009e111c4e9291b99a',
+			'read|ASC|first' => '401d7135f3e8dffd66006098302fdf7181438c24',
+			'read|DESC|first' => '80ebfbadfb6c87e579c4cc985f0416e35d9947a5',
+			'review|ASC|last' => 'd6ba5f28c9fceb8e210c32dbbb9f8c0e945a3101',
+			'review|DESC|last' => 'da4a604f2e9b42ea6e839720e45f076b8a89e71f',
+			'review|ASC|first' => '909d6d24402e0cf589f34ea0ef224ff26b83b444',
+			'review|DESC|first' => '8148654824da4e2834f85d8cee4a51178c5ec888',
+			'bookmark|ASC|last' => '6ffdf292a3c66f966c1f619653535bf9522d0d73',
+			'bookmark|DESC|last' => 'ec4cd4403a2d10122bac3f86f8e4d95057fb03df',
+			'bookmark|ASC|first' => 'f909ba30c4c5eeb9e82c2e4feea797c661dd2c6e',
+			'bookmark|DESC|first' => 'ab970cae86cb04dc5f8196cae18da3d7d4c8f564',
+			'sleep|ASC|last' => '9385ce1ec67c4517df6de501835e61c30bdc6047',
+			'sleep|DESC|last' => '9385ce1ec67c4517df6de501835e61c30bdc6047',
+			'sleep|ASC|first' => '9385ce1ec67c4517df6de501835e61c30bdc6047',
+			'sleep|DESC|first' => '9385ce1ec67c4517df6de501835e61c30bdc6047',
+			'craft|ASC|last' => '5732cdbfa95e9d30ff91e327be9f24af412b7471',
+			'craft|DESC|last' => 'b52b7c95b9a7915961869caf272e70f66146eb09',
+			'craft|ASC|first' => '880f4637c639aee024bf61ab3421229cf37a6f30',
+			'craft|DESC|first' => '9e658d666d6abf3daa341d59672bc7b25405a04c',
+		];
+		$tokens = [
+			'ASC|last'   => 'pkiw_group',
+			'DESC|last'  => 'pkiw_group_desc',
+			'ASC|first'  => 'pkiw_group_empty_first',
+			'DESC|first' => 'pkiw_group_desc_empty_first',
+		];
+		global $wpdb;
+
+		foreach ( $golden as $case => $expected ) {
+			[ $kind, $order, $empty ] = explode( '|', $case );
+			$term = get_term_by( 'slug', $kind, 'kind' );
+			if ( ! $term instanceof WP_Term ) {
+				$created = wp_insert_term( $kind, 'kind', [ 'slug' => $kind ] );
+				$this->assertIsArray( $created, $case );
+				$term = get_term( (int) $created['term_id'], 'kind' );
+			}
+			$this->assertInstanceOf( WP_Term::class, $term, $case );
+
+			$request = new WP_REST_Request( 'GET', '/wp/v2/posts' );
+			$request->set_param( 'orderby', $tokens[ $order . '|' . $empty ] );
+			$request->set_param( 'kind', [ $term->term_id ] );
+			$args  = Grouped_Archive::rest_order( [], $request );
+			$query = new WP_Query();
+			foreach ( $args as $name => $value ) {
+				if ( str_starts_with( (string) $name, 'pkiw_' ) ) {
+					$query->set( $name, $value );
+				}
+			}
+			$sql = str_replace( $wpdb->prefix, '{p}', Grouped_Archive::group_orderby( 'x', $query ) );
+			$this->assertSame( $expected, sha1( $sql ), $case . ': ' . $sql );
 		}
 	}
 

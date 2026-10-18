@@ -75,7 +75,16 @@ final class Kind_Archive_Layouts {
 	 *
 	 * @var string[]
 	 */
-	public const MONTH_KINDS = [ 'photo', 'chicken', 'favorite', 'acquisition', 'repost', 'article' ];
+	public const MONTH_KINDS = [ 'photo', 'chicken', 'favorite', 'acquisition', 'repost', 'article', 'audio', 'jam' ];
+
+	/**
+	 * Kinds whose archive sections group by the local year of post_date through one shared Date_Source.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @var string[]
+	 */
+	public const YEAR_KINDS = [ 'video' ];
 
 	/**
 	 * Kinds whose archive sections group by the local week of post_date through one shared Date_Source.
@@ -131,6 +140,11 @@ final class Kind_Archive_Layouts {
 		$month = new Date_Source( 'post_month', 'month' );
 		foreach ( self::MONTH_KINDS as $kind ) {
 			Grouped_Archive::register_source( $month, $kind );
+		}
+
+		$year = new Date_Source( 'post_year', 'year' );
+		foreach ( self::YEAR_KINDS as $kind ) {
+			Grouped_Archive::register_source( $year, $kind );
 		}
 
 		// Exercise and note share one week source (issues 245 and 265). Mapping it
@@ -577,6 +591,22 @@ final class Kind_Archive_Layouts {
 	}
 
 	/**
+	 * Default date formats for each date-grouped kind.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return array<string, string> Kind slug => PHP date format.
+	 */
+	public static function date_formats(): array {
+		$formats = array_fill_keys( self::MONTH_KINDS, 'F Y' );
+		foreach ( self::YEAR_KINDS as $kind ) {
+			$formats[ $kind ] = 'Y';
+		}
+
+		return $formats;
+	}
+
+	/**
 	 * Hand the marker's editor the group keys of each kind and the date-grouped kinds.
 	 *
 	 * @since 1.9.0
@@ -591,7 +621,12 @@ final class Kind_Archive_Layouts {
 		);
 		wp_add_inline_script(
 			'pkiw-archive-sections-editor',
-			'window.pkiwArchiveSectionsDateKinds = ' . wp_json_encode( self::MONTH_KINDS ) . ';',
+			'window.pkiwArchiveSectionsDateKinds = ' . wp_json_encode( array_merge( self::MONTH_KINDS, self::YEAR_KINDS ) ) . ';',
+			'before'
+		);
+		wp_add_inline_script(
+			'pkiw-archive-sections-editor',
+			'window.pkiwArchiveSectionsDateFormats = ' . wp_json_encode( (object) self::date_formats() ) . ';',
 			'before'
 		);
 	}

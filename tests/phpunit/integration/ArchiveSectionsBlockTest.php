@@ -284,9 +284,22 @@ final class ArchiveSectionsBlockTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'window.pkiwArchiveSectionsDateKinds = [', $inline );
 		$this->assertMatchesRegularExpression( '/window\.pkiwArchiveSectionsDateKinds = (\[.*?\]);/', $inline );
 		preg_match( '/window\.pkiwArchiveSectionsDateKinds = (\[.*?\]);/', $inline, $date_kinds );
-		$this->assertSame( \PKIW\Kind_Archive_Layouts::MONTH_KINDS, json_decode( $date_kinds[1], true ) );
-		$this->assertContains( 'article', json_decode( $date_kinds[1], true ) );
-		$this->assertNotContains( 'eat', json_decode( $date_kinds[1], true ) );
+		$decoded_kinds = json_decode( $date_kinds[1], true );
+		$this->assertSame( array_merge( \PKIW\Kind_Archive_Layouts::MONTH_KINDS, \PKIW\Kind_Archive_Layouts::YEAR_KINDS ), $decoded_kinds );
+		foreach ( [ 'jam', 'audio', 'video', 'article' ] as $kind ) {
+			$this->assertContains( $kind, $decoded_kinds );
+		}
+		$this->assertNotContains( 'eat', $decoded_kinds );
+
+		$this->assertMatchesRegularExpression( '/window\.pkiwArchiveSectionsDateFormats = (\{.*?\});/', $inline );
+		preg_match( '/window\.pkiwArchiveSectionsDateFormats = (\{.*?\});/', $inline, $date_formats );
+		$expected_formats = array_fill_keys( \PKIW\Kind_Archive_Layouts::MONTH_KINDS, 'F Y' );
+		foreach ( \PKIW\Kind_Archive_Layouts::YEAR_KINDS as $kind ) {
+			$expected_formats[ $kind ] = 'Y';
+		}
+		$this->assertSame( $expected_formats, json_decode( $date_formats[1], true ) );
+		$this->assertSame( 1, substr_count( $inline, 'window.pkiwArchiveSectionsDateKinds =' ) );
+		$this->assertSame( 1, substr_count( $inline, 'window.pkiwArchiveSectionsDateFormats =' ) );
 
 		// Without the test's filter, the kind lanes' own filters answer. Read
 		// lists its four statuses (Read_Archive::sections_groups()).

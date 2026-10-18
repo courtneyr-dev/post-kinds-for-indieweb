@@ -310,6 +310,93 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 		);
 	}
 
+	/**
+	 * @return array<string, array{string, string}>
+	 */
+	public function w5_archive_slugs(): array {
+		return [
+			'video archive'          => [ 'taxonomy-kind-video', 'Video Archive' ],
+			'audio archive'          => [ 'taxonomy-kind-audio', 'Audio Archive' ],
+			'jam archive'            => [ 'taxonomy-kind-jam', 'Jam Archive' ],
+			'podcast listens archive' => [ 'taxonomy-kind-listen-podcast', 'Podcast Listens Archive' ],
+			'wish archive'           => [ 'taxonomy-kind-wish', 'Wish Archive' ],
+			'question archive'       => [ 'taxonomy-kind-question', 'Question Archive' ],
+		];
+	}
+
+	/**
+	 * @dataProvider w5_archive_slugs
+	 */
+	public function test_the_w5_archives_have_template_definitions( string $slug, string $title ): void {
+		$definitions = ( new ReflectionMethod( \PKIW\Plugin::class, 'get_plugin_template_definitions' ) )->invoke( \PKIW\Plugin::get_instance() );
+
+		$this->assertArrayHasKey( $slug, $definitions );
+		$this->assertSame( $title, $definitions[ $slug ]['title'] );
+		$this->assertNotSame( '', trim( (string) $definitions[ $slug ]['description'] ) );
+		$this->assertSame( [], $definitions[ $slug ]['post_types'] );
+	}
+
+	/**
+	 * @dataProvider w5_archive_slugs
+	 */
+	public function test_the_w5_archives_serve_only_when_their_files_exist( string $slug ): void {
+		$served = in_array(
+			'post-kinds-for-indieweb//' . $slug,
+			wp_list_pluck( get_block_templates( [ 'slug__in' => [ $slug ] ] ), 'id' ),
+			true
+		);
+
+		$this->assertSame( file_exists( PKIW_PATH . 'templates/' . $slug . '.html' ), $served );
+		$this->assertSame( $served, null !== get_block_template( 'post-kinds-for-indieweb//' . $slug ) );
+	}
+
+	/**
+	 * @dataProvider w5_archive_slugs
+	 */
+	public function test_a_theme_taxonomy_kind_template_blocks_each_w5_archive( string $slug ): void {
+		$plugin = \PKIW\Plugin::get_instance();
+		$theme  = new WP_Block_Template();
+
+		$theme->id     = 'pkiw-kind-theme//taxonomy-kind';
+		$theme->slug   = 'taxonomy-kind';
+		$theme->theme  = 'pkiw-kind-theme';
+		$theme->type   = 'wp_template';
+		$theme->source = 'theme';
+
+		$with    = $plugin->add_plugin_templates( [ $theme ], [ 'slug__in' => [ $slug ] ], 'wp_template' );
+		$without = $plugin->add_plugin_templates( [], [ 'slug__in' => [ $slug ] ], 'wp_template' );
+
+		$this->assertSame( [ 'pkiw-kind-theme//taxonomy-kind' ], wp_list_pluck( $with, 'id' ) );
+		$this->assertSame(
+			file_exists( PKIW_PATH . 'templates/' . $slug . '.html' ) ? [ 'post-kinds-for-indieweb//' . $slug ] : [],
+			wp_list_pluck( $without, 'id' )
+		);
+	}
+
+	public function test_the_plugin_wires_the_w5_kind_classes_after_the_w2_archives_each_behind_class_exists(): void {
+		$source   = (string) file_get_contents( PKIW_PATH . 'includes/class-plugin.php' );
+		$previous = strpos( $source, "class_exists( __NAMESPACE__ . '\\\\Bookmark_Archive' )" );
+
+		$this->assertNotFalse( $previous );
+		foreach ( [ 'Video_Archive', 'Audio_Archive', 'Audio_Transcript', 'Jam_Archive', 'Listen_Archive', 'Wish_Archive', 'Question_Archive', 'Question_Answers', 'Question_Location' ] as $class ) {
+			$at = strpos( $source, "class_exists( __NAMESPACE__ . '\\\\{$class}' )" );
+			$this->assertNotFalse( $at, $class );
+			$this->assertGreaterThan( $previous, $at, $class );
+			$this->assertStringContainsString( "( new {$class}() )->register();", substr( $source, $at, 140 ), $class );
+			$previous = $at;
+		}
+		$months = strpos( $source, '$this->init_month_archives();', (int) $previous );
+		$this->assertNotFalse( $months );
+		$this->assertGreaterThan( $previous, $months );
+	}
+
+	public function test_the_w5_class_wiring_is_a_no_op_until_the_kind_lanes_arrive(): void {
+		foreach ( [ 'Video_Archive', 'Audio_Archive', 'Audio_Transcript', 'Jam_Archive', 'Listen_Archive', 'Wish_Archive', 'Question_Archive', 'Question_Answers', 'Question_Location' ] as $class ) {
+			$this->assertFalse( class_exists( 'PKIW\\' . $class ), $class );
+		}
+		$this->assertNull( \PKIW\Kind_Facts::reader( 'video' ) );
+	}
+
 	public function test_the_plugin_wires_the_w4_kind_classes_after_staff_picks_each_behind_class_exists(): void {
 		$source = (string) file_get_contents( PKIW_PATH . 'includes/class-plugin.php' );
 		$staff  = strpos( $source, "class_exists( __NAMESPACE__ . '\\\\Staff_Picks' )" );
