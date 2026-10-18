@@ -94,6 +94,7 @@ class MicroformatsTest extends WP_UnitTestCase {
 			'review: p-best'        => [ 'review',   'best',         'p-best' ],
 			'recipe: p-ingredient'  => [ 'recipe',   'ingredient',   'p-ingredient' ],
 			'recipe: e-instructions' => [ 'recipe',  'instructions', 'e-instructions' ],
+			'audio: p-name'         => [ 'audio',    'name',         'p-name' ],
 			'audio: u-audio'        => [ 'audio',    'audio',        'u-audio' ],
 			'quote: u-quotation-of' => [ 'quote',    'quotation-of', 'u-quotation-of' ],
 			'tag: u-tag-of'         => [ 'tag',      'tag-of',       'u-tag-of' ],

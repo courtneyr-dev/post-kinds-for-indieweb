@@ -86,17 +86,18 @@ class BlockBindingsSourceTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test get_value resolves title for listen kind.
+	 * Test get_value resolves title and album for listen kind.
 	 */
-	public function test_get_value_title_for_listen_kind(): void {
+	public function test_get_value_title_and_album_for_listen_kind(): void {
 		$post_id = self::factory()->post->create();
 		$this->assign_kind( $post_id, 'listen' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'listen_track', 'Bohemian Rhapsody' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'listen_album', 'A Night at the Opera' );
 
-		$block  = $this->make_block_instance( $post_id );
-		$result = $this->source->get_value( [ 'key' => 'title' ], $block, 'content' );
+		$block = $this->make_block_instance( $post_id );
 
-		$this->assertSame( 'Bohemian Rhapsody', $result );
+		$this->assertSame( 'Bohemian Rhapsody', $this->source->get_value( [ 'key' => 'title' ], $block, 'content' ) );
+		$this->assertSame( 'A Night at the Opera', $this->source->get_value( [ 'key' => 'album' ], $block, 'content' ) );
 	}
 
 	/**
@@ -156,17 +157,49 @@ class BlockBindingsSourceTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test get_value resolves artist for jam kind.
+	 * Test get_value resolves every jam-specific binding.
 	 */
-	public function test_get_value_artist_for_jam_kind(): void {
+	public function test_get_value_for_public_jam_kind(): void {
 		$post_id = self::factory()->post->create();
 		$this->assign_kind( $post_id, 'jam' );
-		update_post_meta( $post_id, Meta_Fields::PREFIX . 'listen_artist', 'The Beatles' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'jam_track', 'Come Together' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'jam_album', 'Abbey Road' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'jam_artist', 'The Beatles' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'jam_url', 'https://example.com/come-together' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'jam_cover', 'https://example.com/abbey-road.jpg' );
 
-		$block  = $this->make_block_instance( $post_id );
-		$result = $this->source->get_value( [ 'key' => 'artist' ], $block, 'content' );
+		$block = $this->make_block_instance( $post_id );
 
-		$this->assertSame( 'The Beatles', $result );
+		$this->assertSame( 'Come Together', $this->source->get_value( [ 'key' => 'title' ], $block, 'content' ) );
+		$this->assertSame( 'Abbey Road', $this->source->get_value( [ 'key' => 'album' ], $block, 'content' ) );
+		$this->assertSame( 'The Beatles', $this->source->get_value( [ 'key' => 'artist' ], $block, 'content' ) );
+		$this->assertSame( 'https://example.com/come-together', $this->source->get_value( [ 'key' => 'url' ], $block, 'content' ) );
+		$this->assertSame( 'https://example.com/abbey-road.jpg', $this->source->get_value( [ 'key' => 'cover_image' ], $block, 'content' ) );
+	}
+
+	/**
+	 * Test protected jam bindings return an empty string.
+	 */
+	public function test_get_value_for_protected_jam_kind(): void {
+		$post_id = self::factory()->post->create( [ 'post_password' => 'secret' ] );
+		$this->assign_kind( $post_id, 'jam' );
+		$values = [
+			'title'       => [ 'jam_track', 'Hidden Track' ],
+			'artist'      => [ 'jam_artist', 'Hidden Artist' ],
+			'album'       => [ 'jam_album', 'Hidden Album' ],
+			'url'         => [ 'jam_url', 'https://example.com/hidden-track' ],
+			'cover_image' => [ 'jam_cover', 'https://example.com/hidden-cover.jpg' ],
+		];
+		foreach ( $values as [ $suffix, $value ] ) {
+			update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, $value );
+		}
+		wp_set_current_user( 0 );
+
+		$block = $this->make_block_instance( $post_id );
+
+		foreach ( array_keys( $values ) as $key ) {
+			$this->assertSame( '', $this->source->get_value( [ 'key' => $key ], $block, 'content' ), "A protected jam binds {$key} to ''." );
+		}
 	}
 
 	/**

@@ -376,7 +376,13 @@ final class FavoriteArchiveTest extends WP_UnitTestCase {
 			$this->assertSame( [ 'h-entry' ], $item['type'], 'No item\'s root is an h-cite.' );
 			$this->assertNotEmpty( $item['properties']['url'] ?? [], 'u-url' );
 			$this->assertNotEmpty( $item['properties']['published'] ?? [], 'dt-published' );
-			$this->assertNotEmpty( $item['properties']['author'] ?? [], 'p-author' );
+			// A password-protected item names no author until the password is entered (W5-G35).
+			$locked = in_array( 'Protected: Locked Favorite Sample', array_map( 'strval', (array) ( $item['properties']['name'] ?? [] ) ), true );
+			if ( $locked ) {
+				$this->assertEmpty( $item['properties']['author'] ?? [], 'A protected item has no p-author.' );
+			} else {
+				$this->assertNotEmpty( $item['properties']['author'] ?? [], 'p-author' );
+			}
 			foreach ( $item['properties']['url'] as $url ) {
 				$by_url[ is_array( $url ) ? (string) ( $url['value'] ?? '' ) : (string) $url ] = $item;
 			}

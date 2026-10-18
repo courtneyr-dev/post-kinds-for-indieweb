@@ -233,6 +233,65 @@ class CLI_Commands {
 	}
 
 	/**
+	 * Mark selected legacy podcast listens with their media type.
+	 *
+	 * Dry runs list every candidate without titles or content. A write run
+	 * requires an explicit ID allowlist and updates post meta only.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <action>
+	 * : Must be 'backfill'.
+	 *
+	 * [--dry-run]
+	 * : List each candidate and its signals without writing anything.
+	 *
+	 * [--ids=<csv>]
+	 * : Comma-separated candidate post IDs to mark as podcasts.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp postkind listen-media-type backfill --dry-run
+	 *     wp postkind listen-media-type backfill --ids=123,456
+	 *
+	 * @subcommand listen-media-type
+	 *
+	 * @param array $args       Positional arguments; expects 'backfill'.
+	 * @param array $assoc_args Associative arguments (dry-run and ids).
+	 * @return void
+	 */
+	public function listen_media_type( array $args, array $assoc_args ): void {
+		if ( 'backfill' !== ( $args[0] ?? '' ) ) {
+			WP_CLI::error( 'Usage: wp postkind listen-media-type backfill [--dry-run] [--ids=<csv>]' );
+		}
+
+		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		if ( $dry_run ) {
+			$candidates = Listen_Media_Type::candidates();
+			foreach ( $candidates as $row ) {
+				WP_CLI::log( Listen_Media_Type::report_line( $row ) );
+			}
+			WP_CLI::success( sprintf( 'Dry run: %d candidate(s).', count( $candidates ) ) );
+			return;
+		}
+
+		if ( ! array_key_exists( 'ids', $assoc_args ) ) {
+			WP_CLI::error( 'Refusing to write without --ids=<csv>. Run with --dry-run first.' );
+		}
+
+		$result = Listen_Media_Type::apply(
+			Listen_Media_Type::parse_ids( (string) $assoc_args['ids'] )
+		);
+		WP_CLI::success(
+			sprintf(
+				'Backfill: %d written, %d skipped.',
+				count( $result['written'] ),
+				count( $result['skipped'] )
+			)
+		);
+	}
+
+	/**
 	 * Set featured images from kind artwork for existing posts.
 	 *
 	 * New saves handle this automatically; this backfills posts created

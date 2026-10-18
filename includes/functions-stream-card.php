@@ -166,6 +166,75 @@ function entry_author_html( \WP_Post $post ): string {
 }
 
 /**
+ * Whether a media URL is under the uploads folder or on the site's own host.
+ *
+ * @since 1.9.0
+ *
+ * @param string $url Media URL.
+ * @return bool
+ */
+function media_url_is_local( string $url ): bool {
+	$host = wp_parse_url( $url, PHP_URL_HOST );
+	if ( ! is_string( $host ) || '' === $host ) {
+		return false;
+	}
+
+	$uploads = wp_get_upload_dir();
+	$base    = isset( $uploads['baseurl'] ) ? (string) $uploads['baseurl'] : '';
+	if ( '' !== $base ) {
+		$base_host = wp_parse_url( $base, PHP_URL_HOST );
+		$base_path = (string) wp_parse_url( $base, PHP_URL_PATH );
+		$path      = (string) wp_parse_url( $url, PHP_URL_PATH );
+		if ( is_string( $base_host ) && strtolower( $host ) === strtolower( $base_host ) && str_starts_with( $path, trailingslashit( $base_path ) ) ) {
+			return true;
+		}
+	}
+
+	$site_host = wp_parse_url( home_url(), PHP_URL_HOST );
+
+	return is_string( $site_host ) && strtolower( $host ) === strtolower( $site_host );
+}
+
+/**
+ * Hidden media property for the entry represented by a Stream card.
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post Post represented by the card.
+ * @return string Hidden u-video or u-audio data, or an empty string.
+ */
+function entry_media_property_html( \WP_Post $post ): string {
+	if ( post_password_required( $post ) || ! Kind_Facts::can_show( $post ) ) {
+		return '';
+	}
+
+	$kind = get_post_kind_slug( $post );
+	if ( 'video' === $kind ) {
+		$facts = Kind_Facts::get( $post->ID );
+		$src   = is_string( $facts['src'] ?? null ) ? $facts['src'] : '';
+		// Only a file the site holds becomes u-video; a remote source never does.
+		$url = '' !== $src && ( ! empty( $facts['is_local'] ) || media_url_is_local( $src ) ) ? esc_url( $src ) : '';
+		if ( '' === $url ) {
+			return '';
+		}
+
+		return '<data class="u-video" value="' . $url . '"></data>';
+	}
+
+	if ( 'audio' !== $kind ) {
+		return '';
+	}
+
+	$media = first_media_block( $post, 'audio' );
+	if ( null === $media || ! in_array( $media['type'], [ 'attachment', 'url' ], true ) ) {
+		return '';
+	}
+	$url = esc_url( $media['url'] );
+
+	return '' === $url ? '' : '<data class="u-audio" value="' . $url . '"></data>';
+}
+
+/**
  * Whether the entry itself (not a nested microformats object) carries a property.
  *
  * With a rooted card the entry is the `pk-card` article; otherwise the entry is
@@ -232,10 +301,14 @@ function ensure_entry_properties( string $html, \WP_Post $post, bool $card_roote
 	// nested object (h-cite, h-event, h-card, h-food) owns its own u-url,
 	// dt-published and p-author even when they point at this post.
 	$permalink    = (string) get_permalink( $post );
+	$media        = entry_media_property_html( $post );
+	$kind         = get_post_kind_slug( $post );
+	$media_class  = 'video' === $kind ? 'u-video' : ( 'audio' === $kind ? 'u-audio' : '' );
 	$needs_url    = ! entry_has_own_property( $html, $card_rooted, 'u-url', $permalink );
 	$needs_date   = ! entry_has_own_property( $html, $card_rooted, 'dt-published' );
-	$needs_author = ! entry_has_own_property( $html, $card_rooted, 'p-author' );
-	if ( ! $needs_url && ! $needs_date && ! $needs_author ) {
+	$needs_author = ! entry_has_own_property( $html, $card_rooted, 'p-author' ) && ! post_password_required( $post );
+	$needs_media  = '' !== $media && '' !== $media_class && ! entry_has_own_property( $html, $card_rooted, $media_class );
+	if ( ! $needs_url && ! $needs_date && ! $needs_author && ! $needs_media ) {
 		return $html;
 	}
 	$extra = '';
@@ -249,6 +322,9 @@ function ensure_entry_properties( string $html, \WP_Post $post, bool $card_roote
 	}
 	if ( $needs_date ) {
 		$extra .= '<data class="dt-published" value="' . esc_attr( stream_card_published_datetime( $post ) ) . '"></data>';
+	}
+	if ( $needs_media ) {
+		$extra .= $media;
 	}
 	$extra = '<span class="pk-entry-props" hidden>' . $extra . '</span>';
 	if ( $card_rooted ) {
@@ -705,7 +781,7 @@ function render_photo_stream_card( \WP_Post $post, array $attributes = [] ): str
 		// A hidden-location title is replaced by a synthetic name, which carries no p-name.
 		$title_class = post_title_is_hidden( $post ) ? 'pk-title' : 'pk-title p-name';
 		$out        .= '<h' . $heading_level . ' class="' . $title_class . '"><a class="u-url" href="' . $permalink . '">' . esc_html( $safe_title ) . '</a></h' . $heading_level . '>';
-		$out .= '<p class="pk-sub pk-stream-date"><time class="dt-published" datetime="' . $date_time . '">' . esc_html( $date_display ) . '</time></p>';
+		$out        .= '<p class="pk-sub pk-stream-date"><time class="dt-published" datetime="' . $date_time . '">' . esc_html( $date_display ) . '</time></p>';
 	} else {
 		$fallback  = untitled_fallback_name( $post );
 		$time_html = '<time class="dt-published" datetime="' . $date_time . '">' . esc_html( $date_display ) . '</time>';
@@ -1115,6 +1191,45 @@ function generic_card_headline_only( string $kind_slug ): bool {
 	return in_array( $kind_slug, [ 'article', 'craft' ], true );
 }
 
+/**
+ * Generic Stream card regions a kind omits.
+ *
+ * @since 1.9.0
+ *
+ * @param string $kind_slug Kind slug.
+ * @return string[] Known cut tokens.
+ */
+function generic_card_cuts( string $kind_slug ): array {
+	if ( generic_card_headline_only( $kind_slug ) ) {
+		$cuts = [ 'extras', 'meta' ];
+	} elseif ( 'audio' === $kind_slug ) {
+		$cuts = [ 'media', 'excerpt', 'meta', 'badge' ];
+	} else {
+		$cuts = [];
+	}
+
+	/**
+	 * Filters the regions omitted from a kind's generic Stream card.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string[] $cuts      Cut tokens.
+	 * @param string   $kind_slug Kind slug.
+	 */
+	$cuts     = apply_filters( 'pkiw_generic_card_cuts', $cuts, $kind_slug );
+	$cuts     = is_array( $cuts ) ? $cuts : [];
+	$known    = [ 'extras', 'meta', 'media', 'excerpt', 'badge' ];
+	$filtered = [];
+	foreach ( $cuts as $cut ) {
+		if ( ! is_string( $cut ) || ! in_array( $cut, $known, true ) || in_array( $cut, $filtered, true ) ) {
+			continue;
+		}
+		$filtered[] = $cut;
+	}
+
+	return $filtered;
+}
+
 // phpcs:disable Generic.Metrics.CyclomaticComplexity.TooHigh -- One branch per kind-specific line the generic card prints.
 /**
  * Render a compact card for a post that isn't a self-contained kind card.
@@ -1141,7 +1256,7 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	$badge_kind    = '' !== $kind_slug ? $kind_slug : 'note';
 	$kind_label    = stream_card_kind_label( $post );
 	$excerpt       = trim( wp_strip_all_tags( get_the_excerpt( $post ) ) );
-	$headline_only = generic_card_headline_only( $kind_slug );
+	$cuts          = generic_card_cuts( $kind_slug );
 
 	$title     = trim( visitor_post_title( $post ) );
 	$has_title = '' !== $title && ! stream_card_title_is_cited_url( $post, $title );
@@ -1184,8 +1299,10 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	}
 
 	$out = '<article class="pk-card pk-card--stream k-' . esc_attr( $badge_kind ) . ' h-entry">';
-	// Badge SVG is a static, decorative glyph from get_kind_icon_svg().
-	$out .= '<div class="pk-badge">' . get_kind_icon_svg( $badge_kind ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	if ( ! in_array( 'badge', $cuts, true ) ) {
+		// Badge SVG is a static, decorative glyph from get_kind_icon_svg().
+		$out .= '<div class="pk-badge">' . get_kind_icon_svg( $badge_kind ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
 	$out .= '<div class="pk-body">';
 	$out .= '<span class="pk-kindlabel">' . esc_html( get_kind_label( $kind_label, $badge_kind, 'stream-card' ) ) . '</span>';
 
@@ -1214,6 +1331,17 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	$out .= '<div class="pk-caption">';
 	// $title_html is escaped above.
 	$out .= '<h' . $heading_level . ' class="' . esc_attr( $title_class ) . '"><a class="u-url" href="' . $permalink . '">' . $title_html . '</a></h' . $heading_level . '>';
+	/**
+	 * Filters markup printed before the generic Stream card's date.
+	 *
+	 * Callbacks must return escaped markup.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string   $html Markup to append before the date.
+	 * @param \WP_Post $post Post.
+	 */
+	$out .= (string) apply_filters( 'pkiw_stream_card_before_date', '', $post ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Callbacks return escaped markup.
 
 	$date_display = get_the_date( '', $post );
 	if ( '' !== $date_display ) {
@@ -1250,24 +1378,24 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 		$out .= Integrations\Simple_Location_Weather::render( $post->ID );
 	}
 
-	if ( '' !== $thumb_html ) {
+	if ( '' !== $thumb_html && ! in_array( 'media', $cuts, true ) ) {
 		// get_the_post_thumbnail() returns core-generated, escaped <img> markup.
 		$out .= '<div class="pk-media pk-media--stream">' . $thumb_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		// An article keeps the hero's caption. A craft card prints the picture alone.
 		if ( 'craft' !== $kind_slug ) {
-			$out .= $headline_only ? stream_card_media_caption( $post ) : stream_card_media_extras( $post );
+			$out .= in_array( 'extras', $cuts, true ) ? stream_card_media_caption( $post ) : stream_card_media_extras( $post );
 		}
 		$out .= '</div>';
 	}
 
-	if ( '' !== $excerpt ) {
+	if ( '' !== $excerpt && ! in_array( 'excerpt', $cuts, true ) ) {
 		$out .= '<p class="pk-excerpt p-summary">' . esc_html( $excerpt ) . '</p>';
 	}
 
 	// The kind's citation, which a card block would otherwise carry.
 	$out .= stream_card_kind_cite( $post );
 
-	if ( ! $headline_only ) {
+	if ( ! in_array( 'meta', $cuts, true ) ) {
 		$out .= '<div class="pk-meta"><a class="pk-link" href="' . $permalink . '">'
 			. esc_html__( 'Read more', 'post-kinds-for-indieweb-in-block-themes' )
 			. '<span class="pk-sr-only">' . esc_html( ': ' . $title ) . '</span></a></div>';

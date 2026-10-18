@@ -253,6 +253,7 @@ class Microformats {
 			'audio'     => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
+					'name'    => 'p-name',
 					'audio'   => 'u-audio',
 					'content' => 'e-content',
 					'date'    => 'dt-published',
@@ -777,7 +778,7 @@ class Microformats {
 			&& in_array( 'e-content', explode( ' ', $content_class ), true );
 		// Closed list: other kinds root their body through their own cards; see issue 396.
 		if (
-			in_array( $kind, [ 'review', 'article' ], true )
+			in_array( $kind, [ 'review', 'article', 'audio' ], true )
 			&& $has_content_class
 			&& $singular_post instanceof \WP_Post
 			&& ! post_password_required( $singular_post )
@@ -965,6 +966,28 @@ class Microformats {
 				$item_html = Review_Archive::review_item_html( $facts, true );
 				if ( '' !== $item_html ) {
 					$hidden_data .= $item_html;
+				}
+				break;
+
+			case 'audio':
+				$post  = get_post( $post_id );
+				$media = $post instanceof \WP_Post ? entry_media_property_html( $post ) : '';
+				if ( '' !== $media && ! $this->has_class_token( $content, 'u-audio' ) ) {
+					$hidden_data .= $media;
+				}
+				break;
+
+			case 'listen':
+				$facts = Kind_Facts::get( $post_id );
+				if ( ! empty( $facts['is_podcast'] ) && ! $this->has_class_token( $content, 'u-listen-of' ) ) {
+					$hidden_data .= hidden_cite_html(
+						'u-listen-of',
+						[
+							'p-name'   => (string) ( $facts['episode_text'] ?? '' ),
+							'u-url'    => (string) ( $facts['url'] ?? '' ),
+							'p-author' => (string) ( $facts['show'] ?? '' ),
+						]
+					);
 				}
 				break;
 
