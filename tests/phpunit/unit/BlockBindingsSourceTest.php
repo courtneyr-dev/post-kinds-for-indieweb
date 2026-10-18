@@ -183,14 +183,23 @@ class BlockBindingsSourceTest extends WP_UnitTestCase {
 	public function test_get_value_for_protected_jam_kind(): void {
 		$post_id = self::factory()->post->create( [ 'post_password' => 'secret' ] );
 		$this->assign_kind( $post_id, 'jam' );
-		update_post_meta( $post_id, Meta_Fields::PREFIX . 'jam_track', 'Hidden Track' );
-		update_post_meta( $post_id, Meta_Fields::PREFIX . 'jam_album', 'Hidden Album' );
+		$values = [
+			'title'       => [ 'jam_track', 'Hidden Track' ],
+			'artist'      => [ 'jam_artist', 'Hidden Artist' ],
+			'album'       => [ 'jam_album', 'Hidden Album' ],
+			'url'         => [ 'jam_url', 'https://example.com/hidden-track' ],
+			'cover_image' => [ 'jam_cover', 'https://example.com/hidden-cover.jpg' ],
+		];
+		foreach ( $values as [ $suffix, $value ] ) {
+			update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, $value );
+		}
 		wp_set_current_user( 0 );
 
 		$block = $this->make_block_instance( $post_id );
 
-		$this->assertSame( '', $this->source->get_value( [ 'key' => 'title' ], $block, 'content' ) );
-		$this->assertSame( '', $this->source->get_value( [ 'key' => 'album' ], $block, 'content' ) );
+		foreach ( array_keys( $values ) as $key ) {
+			$this->assertSame( '', $this->source->get_value( [ 'key' => $key ], $block, 'content' ), "A protected jam binds {$key} to ''." );
+		}
 	}
 
 	/**

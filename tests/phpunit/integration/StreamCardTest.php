@@ -2886,6 +2886,36 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertSame( '', \PKIW\entry_media_property_html( get_post( $note_id ) ) );
 	}
 
+	/**
+	 * A remote video source never becomes a u-video property, even when a reader
+	 * hands one over. Only facts that say the file is local, or a source under
+	 * the uploads folder or the site's own host, print.
+	 */
+	public function test_video_entry_media_never_prints_a_remote_source(): void {
+		$this->ensure_kind_term( 'video' );
+		$post_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_object_terms( $post_id, 'video', 'kind' );
+		$post    = get_post( $post_id );
+		$uploads = wp_get_upload_dir();
+
+		$cases = [
+			'remote, no is_local'      => [ [ 'src' => 'https://remote.example.org/v.mp4' ], '' ],
+			'remote, is_local false'   => [ [ 'src' => 'https://remote.example.org/v.mp4', 'is_local' => false ], '' ],
+			'lookalike host'           => [ [ 'src' => 'https://example.org.evil.example/v.mp4' ], '' ],
+			'local, is_local true'     => [ [ 'src' => 'https://remote.example.org/v.mp4', 'is_local' => true ], 'https://remote.example.org/v.mp4' ],
+			'uploads, no is_local'     => [ [ 'src' => $uploads['baseurl'] . '/2026/01/v.mp4' ], $uploads['baseurl'] . '/2026/01/v.mp4' ],
+			'site host, is_local false' => [ [ 'src' => home_url( '/media/v.mp4' ), 'is_local' => false ], home_url( '/media/v.mp4' ) ],
+		];
+		foreach ( $cases as $label => [ $facts, $expected_url ] ) {
+			$this->register_test_reader( 'video', static fn(): array => $facts );
+			$this->assertSame(
+				'' === $expected_url ? '' : '<data class="u-video" value="' . esc_url( $expected_url ) . '"></data>',
+				\PKIW\entry_media_property_html( $post ),
+				$label
+			);
+		}
+	}
+
 	public function test_existing_video_property_is_not_duplicated(): void {
 		$this->ensure_kind_term( 'video' );
 		$post_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
@@ -2897,6 +2927,53 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$out = \PKIW\ensure_entry_properties( $html, $post, true );
 
 		$this->assertSame( 1, substr_count( $out, 'class="u-video"' ) );
+	}
+
+	/**
+	 * Audio resolves its player from the post's blocks, not from Kind_Facts, so
+	 * the can_show() gate is what keeps a private, draft or future post's file
+	 * URL out of the property for a logged-out reader.
+	 *
+	 * @dataProvider unreadable_audio_statuses
+	 *
+	 * @param string $status Post status.
+	 */
+	public function test_audio_entry_media_is_empty_for_a_post_the_reader_cannot_see( string $status ): void {
+		$this->ensure_kind_term( 'audio' );
+		$args = [
+			'post_status'  => $status,
+			'post_content' => '<!-- wp:paragraph --><p><a class="u-audio" href="https://media.example.org/hidden.mp3">Listen</a></p><!-- /wp:paragraph -->',
+		];
+		if ( 'future' === $status ) {
+			$args['post_date'] = gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS );
+		}
+		$post_id = self::factory()->post->create( $args );
+		wp_set_object_terms( $post_id, 'audio', 'kind' );
+		$post = get_post( $post_id );
+
+		$this->assertFalse( post_password_required( $post ), 'No password stands in the way.' );
+		$this->assertSame( [], \PKIW\Kind_Facts::get( $post_id ), 'Kind_Facts has no audio reader here, so it is not what blocks this.' );
+
+		wp_set_current_user( 0 );
+		$this->assertSame( '', \PKIW\entry_media_property_html( $post ), 'A logged-out reader gets nothing.' );
+
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		$this->assertSame(
+			'<data class="u-audio" value="https://media.example.org/hidden.mp3"></data>',
+			\PKIW\entry_media_property_html( $post ),
+			'A reader who may read the post gets the property.'
+		);
+	}
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public function unreadable_audio_statuses(): array {
+		return [
+			'private' => [ 'private' ],
+			'draft'   => [ 'draft' ],
+			'future'  => [ 'future' ],
+		];
 	}
 
 	public function test_audio_entry_media_uses_attachment_and_url_players(): void {

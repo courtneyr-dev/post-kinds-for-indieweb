@@ -166,6 +166,36 @@ function entry_author_html( \WP_Post $post ): string {
 }
 
 /**
+ * Whether a media URL is under the uploads folder or on the site's own host.
+ *
+ * @since 1.9.0
+ *
+ * @param string $url Media URL.
+ * @return bool
+ */
+function media_url_is_local( string $url ): bool {
+	$host = wp_parse_url( $url, PHP_URL_HOST );
+	if ( ! is_string( $host ) || '' === $host ) {
+		return false;
+	}
+
+	$uploads = wp_get_upload_dir();
+	$base    = isset( $uploads['baseurl'] ) ? (string) $uploads['baseurl'] : '';
+	if ( '' !== $base ) {
+		$base_host = wp_parse_url( $base, PHP_URL_HOST );
+		$base_path = (string) wp_parse_url( $base, PHP_URL_PATH );
+		$path      = (string) wp_parse_url( $url, PHP_URL_PATH );
+		if ( is_string( $base_host ) && strtolower( $host ) === strtolower( $base_host ) && str_starts_with( $path, trailingslashit( $base_path ) ) ) {
+			return true;
+		}
+	}
+
+	$site_host = wp_parse_url( home_url(), PHP_URL_HOST );
+
+	return is_string( $site_host ) && strtolower( $host ) === strtolower( $site_host );
+}
+
+/**
  * Hidden media property for the entry represented by a Stream card.
  *
  * @since 1.9.0
@@ -181,7 +211,9 @@ function entry_media_property_html( \WP_Post $post ): string {
 	$kind = get_post_kind_slug( $post );
 	if ( 'video' === $kind ) {
 		$facts = Kind_Facts::get( $post->ID );
-		$url   = is_string( $facts['src'] ?? null ) ? esc_url( $facts['src'] ) : '';
+		$src   = is_string( $facts['src'] ?? null ) ? $facts['src'] : '';
+		// Only a file the site holds becomes u-video; a remote source never does.
+		$url = '' !== $src && ( ! empty( $facts['is_local'] ) || media_url_is_local( $src ) ) ? esc_url( $src ) : '';
 		if ( '' === $url ) {
 			return '';
 		}
