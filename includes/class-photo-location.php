@@ -19,9 +19,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * The content gate (map and place line) applies to photo posts. The head meta
  * tags, GeoRSS and JSON Feed geo apply to photo posts and to any other post
- * that stores an address or coordinates (issue 422): a note with private or
- * approximate location printed its street and coordinates in geo.placename,
- * geo.position and ICBM while its card hid them.
+ * that stores an address or coordinates under an explicit privacy choice
+ * (issue 422): a note with private location printed its street and
+ * coordinates in geo.placename, geo.position and ICBM while its card hid them.
+ * On other kinds an unset Post Kinds privacy keeps Simple Location's tags
+ * (Courtney, 2026-10-18), though the cards read unset as approximate.
  */
 final class Photo_Location {
 
@@ -243,7 +245,9 @@ final class Photo_Location {
 
 	/**
 	 * Whether the head and feed gate covers the post: every photo, and any other
-	 * post that stores an address or coordinates for Simple Location to print.
+	 * post that stores an address or coordinates and carries an explicit privacy
+	 * choice (Post Kinds private or approximate, Simple Location private or
+	 * protected, or a post password).
 	 *
 	 * @param \WP_Post $post Post.
 	 * @return bool True when the gate applies.
@@ -253,13 +257,23 @@ final class Photo_Location {
 			return true;
 		}
 
+		$stored = false;
 		foreach ( [ 'geo_address', 'geo_latitude', 'geo_longitude' ] as $key ) {
 			if ( '' !== trim( (string) get_post_meta( $post->ID, $key, true ) ) ) {
-				return true;
+				$stored = true;
+				break;
 			}
 		}
+		if ( ! $stored ) {
+			return false;
+		}
 
-		return false;
+		$privacy    = (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . 'geo_privacy', true );
+		$geo_public = (string) get_post_meta( $post->ID, 'geo_public', true );
+
+		return in_array( $privacy, [ 'private', 'approximate' ], true )
+			|| in_array( $geo_public, [ '0', '2' ], true )
+			|| post_password_required( $post );
 	}
 
 	/**
