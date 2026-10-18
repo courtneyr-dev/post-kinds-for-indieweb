@@ -96,7 +96,26 @@ final class PhotoLocationTest extends WP_UnitTestCase {
 	 * @return int Post ID.
 	 */
 	private function photo( ?string $privacy = null, string $geo = '1', array $args = [] ): int {
-		$id = $this->post_of_kind( 'photo', $args );
+		return $this->located( 'photo', $privacy, $geo, $args );
+	}
+
+	/**
+	 * A post of any kind with optional privacy.
+	 *
+	 * @param string               $kind    Kind slug.
+	 * @param string|null          $privacy Post Kinds privacy.
+	 * @param string               $geo     Simple Location geo_public.
+	 * @param array<string, mixed> $args    Extra post arguments.
+	 * @return int Post ID.
+	 */
+	private function located( string $kind, ?string $privacy = null, string $geo = '1', array $args = [] ): int {
+		$id = $this->post_of_kind( $kind, $args );
+		if ( 'photo' !== $kind ) {
+			// Non-photo posts are gated only when they store a location (issue 422).
+			update_post_meta( $id, 'geo_address', '100 Example Avenue, Sampletown' );
+			update_post_meta( $id, 'geo_latitude', '0.1' );
+			update_post_meta( $id, 'geo_longitude', '0.1' );
+		}
 		if ( null !== $privacy ) {
 			update_post_meta( $id, Meta_Fields::PREFIX . 'geo_privacy', $privacy );
 		}
@@ -303,28 +322,33 @@ final class PhotoLocationTest extends WP_UnitTestCase {
 		$this->assertSame( 12, has_filter( 'the_content', 'Geo_Data::location_content' ) );
 	}
 
-	public function test_gate_head_hides_meta_tags_for_non_public_photo_location_only(): void {
+	public function test_gate_head_hides_meta_tags_for_any_kind_when_privacy_hides_precise_fields(): void {
 		$this->register_simple_location_callables();
 		$location = $this->location();
-		foreach ( [ null, 'approximate', 'private' ] as $privacy ) {
+		// Issue 422: a private-location note printed its street in geo.placename.
+		foreach ( [ 'photo', 'note', 'article' ] as $kind ) {
+			foreach ( [ null, 'approximate', 'private' ] as $privacy ) {
+				remove_action( 'wp_head', 'Geo_Base::meta_tags', 10 );
+				add_action( 'wp_head', 'Geo_Base::meta_tags', 10 );
+				$id = $this->located( $kind, $privacy );
+				$this->go_to( (string) get_permalink( $id ) );
+				$location->gate_head();
+				$this->assertFalse( has_action( 'wp_head', 'Geo_Base::meta_tags' ), $kind . ' ' . var_export( $privacy, true ) );
+			}
+
 			remove_action( 'wp_head', 'Geo_Base::meta_tags', 10 );
 			add_action( 'wp_head', 'Geo_Base::meta_tags', 10 );
-			$id = $this->photo( $privacy );
-			$this->go_to( (string) get_permalink( $id ) );
+			$public = $this->located( $kind, 'public' );
+			$this->go_to( (string) get_permalink( $public ) );
 			$location->gate_head();
-			$this->assertFalse( has_action( 'wp_head', 'Geo_Base::meta_tags' ) );
+			$this->assertSame( 10, has_action( 'wp_head', 'Geo_Base::meta_tags' ), $kind . ' public' );
 		}
 
-		add_action( 'wp_head', 'Geo_Base::meta_tags', 10 );
-		$public = $this->photo( 'public' );
-		$this->go_to( (string) get_permalink( $public ) );
+		// A note with no stored location has nothing to hide, so the gate leaves it alone.
+		$plain = $this->post_of_kind( 'note' );
+		$this->go_to( (string) get_permalink( $plain ) );
 		$location->gate_head();
-		$this->assertSame( 10, has_action( 'wp_head', 'Geo_Base::meta_tags' ) );
-
-		$note = $this->post_of_kind( 'note' );
-		$this->go_to( (string) get_permalink( $note ) );
-		$location->gate_head();
-		$this->assertSame( 10, has_action( 'wp_head', 'Geo_Base::meta_tags' ) );
+		$this->assertSame( 10, has_action( 'wp_head', 'Geo_Base::meta_tags' ), 'note without location' );
 	}
 
 	/**
@@ -371,6 +395,27 @@ final class PhotoLocationTest extends WP_UnitTestCase {
 			array_pop( $GLOBALS['wp_current_filter'] );
 		}
 
+		$this->current_post( $this->located( 'note', 'private' ) );
+		$GLOBALS['wp_current_filter'][] = $hook;
+		try {
+			$location->gate_feed_item();
+			$this->assertFalse( has_action( $hook, 'Geo_Base::georss_item' ), 'private note' );
+			$location->restore_feed_item();
+		} finally {
+			array_pop( $GLOBALS['wp_current_filter'] );
+		}
+		$this->assertSame( 10, has_action( $hook, 'Geo_Base::georss_item' ) );
+
+		$this->current_post( $this->located( 'note', 'public' ) );
+		$GLOBALS['wp_current_filter'][] = $hook;
+		try {
+			$location->gate_feed_item();
+			$this->assertSame( 10, has_action( $hook, 'Geo_Base::georss_item' ), 'public note' );
+			$location->restore_feed_item();
+		} finally {
+			array_pop( $GLOBALS['wp_current_filter'] );
+		}
+
 		foreach ( [ $this->photo( 'private' ), $this->post_of_kind( 'note' ) ] as $post_id ) {
 			$this->current_post( $post_id );
 			$GLOBALS['wp_current_filter'][] = $hook;
@@ -395,15 +440,17 @@ final class PhotoLocationTest extends WP_UnitTestCase {
 		$this->assertFalse( has_action( $hook, 'Geo_Base::georss_item' ) );
 	}
 
-	public function test_json_feed_item_unsets_geo_only_for_hidden_photo_location(): void {
-		$location = $this->location();
-		$hidden   = get_post( $this->photo( 'approximate' ) );
-		$public   = get_post( $this->photo( 'public' ) );
-		$note     = get_post( $this->post_of_kind( 'note' ) );
+	public function test_json_feed_item_unsets_geo_for_any_kind_with_hidden_location(): void {
+		$location     = $this->location();
+		$hidden       = get_post( $this->photo( 'approximate' ) );
+		$public       = get_post( $this->photo( 'public' ) );
+		$private_note = get_post( $this->located( 'note', 'private' ) );
+		$public_note  = get_post( $this->located( 'note', 'public' ) );
 
 		$this->assertSame( [ 'title' => 'Hidden' ], $location->gate_json_feed_item( [ 'title' => 'Hidden', 'geo' => [ 'lat' => 40.1 ] ], $hidden ) );
 		$this->assertArrayHasKey( 'geo', $location->gate_json_feed_item( [ 'title' => 'Public', 'geo' => [ 'lat' => 40.1 ] ], $public ) );
-		$this->assertArrayHasKey( 'geo', $location->gate_json_feed_item( [ 'title' => 'Note', 'geo' => [ 'lat' => 40.1 ] ], $note ) );
+		$this->assertSame( [ 'title' => 'Note' ], $location->gate_json_feed_item( [ 'title' => 'Note', 'geo' => [ 'lat' => 40.1 ] ], $private_note ) );
+		$this->assertArrayHasKey( 'geo', $location->gate_json_feed_item( [ 'title' => 'Public note', 'geo' => [ 'lat' => 40.1 ] ], $public_note ) );
 	}
 
 	/**
