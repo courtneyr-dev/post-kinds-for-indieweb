@@ -327,7 +327,8 @@ final class PhotoLocationTest extends WP_UnitTestCase {
 		$location = $this->location();
 		// Issue 422: a private-location note printed its street in geo.placename.
 		foreach ( [ 'photo', 'note', 'article' ] as $kind ) {
-			foreach ( [ null, 'approximate', 'private' ] as $privacy ) {
+			$hidden = 'photo' === $kind ? [ null, 'approximate', 'private' ] : [ 'approximate', 'private' ];
+			foreach ( $hidden as $privacy ) {
 				remove_action( 'wp_head', 'Geo_Base::meta_tags', 10 );
 				add_action( 'wp_head', 'Geo_Base::meta_tags', 10 );
 				$id = $this->located( $kind, $privacy );
@@ -344,7 +345,28 @@ final class PhotoLocationTest extends WP_UnitTestCase {
 			$this->assertSame( 10, has_action( 'wp_head', 'Geo_Base::meta_tags' ), $kind . ' public' );
 		}
 
+		// Unset privacy on a non-photo kind keeps Simple Location's tags (Courtney, 2026-10-18).
+		foreach ( [ 'note', 'article' ] as $kind ) {
+			remove_action( 'wp_head', 'Geo_Base::meta_tags', 10 );
+			add_action( 'wp_head', 'Geo_Base::meta_tags', 10 );
+			$unset = $this->located( $kind, null );
+			$this->go_to( (string) get_permalink( $unset ) );
+			$location->gate_head();
+			$this->assertSame( 10, has_action( 'wp_head', 'Geo_Base::meta_tags' ), $kind . ' unset privacy' );
+		}
+
+		// Simple Location's own private (geo_public '0') or protected ('2') is an explicit choice.
+		foreach ( [ '0', '2' ] as $geo ) {
+			remove_action( 'wp_head', 'Geo_Base::meta_tags', 10 );
+			add_action( 'wp_head', 'Geo_Base::meta_tags', 10 );
+			$explicit = $this->located( 'note', null, $geo );
+			$this->go_to( (string) get_permalink( $explicit ) );
+			$location->gate_head();
+			$this->assertFalse( has_action( 'wp_head', 'Geo_Base::meta_tags' ), 'note geo_public ' . $geo );
+		}
+
 		// A note with no stored location has nothing to hide, so the gate leaves it alone.
+		add_action( 'wp_head', 'Geo_Base::meta_tags', 10 );
 		$plain = $this->post_of_kind( 'note' );
 		$this->go_to( (string) get_permalink( $plain ) );
 		$location->gate_head();
