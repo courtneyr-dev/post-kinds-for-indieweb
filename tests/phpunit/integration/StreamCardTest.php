@@ -2825,4 +2825,311 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'aria-live', \PKIW\stream_card_media_caption( $post ) );
 		$this->assertStringContainsString( 'aria-live="polite"', \PKIW\stream_card_media_caption( $post, true ) );
 	}
+
+	// ------------------------------------------------------------------
+	// W5-P0C: entry media properties and generic-card cuts.
+	// ------------------------------------------------------------------
+
+	/**
+	 * Create an attachment whose URL resolves back to its post ID.
+	 *
+	 * @param string $mime      Attachment MIME type.
+	 * @param string $extension File extension.
+	 * @return int Attachment ID.
+	 */
+	private function stream_media_attachment( string $mime, string $extension ): int {
+		$id = self::factory()->attachment->create( [ 'post_mime_type' => $mime ] );
+		update_post_meta( $id, '_wp_attached_file', '2026/10/pkiw-stream-media-' . $id . '.' . $extension );
+
+		return $id;
+	}
+
+	public function test_video_entry_media_uses_the_reader_and_respects_visibility(): void {
+		$this->ensure_kind_term( 'video' );
+		$public_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_object_terms( $public_id, 'video', 'kind' );
+		$empty_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_object_terms( $empty_id, 'video', 'kind' );
+		$protected_id = self::factory()->post->create( [ 'post_status' => 'publish', 'post_password' => 'secret' ] );
+		wp_set_object_terms( $protected_id, 'video', 'kind' );
+		$private_id = self::factory()->post->create( [ 'post_status' => 'private' ] );
+		wp_set_object_terms( $private_id, 'video', 'kind' );
+
+		$sources = [
+			$public_id    => home_url( '/media/local-video.mp4' ),
+			$protected_id => home_url( '/media/secret.mp4' ),
+			$private_id   => home_url( '/media/private.mp4' ),
+		];
+		$this->register_test_reader(
+			'video',
+			static fn( int $post_id ): array => [ 'src' => $sources[ $post_id ] ?? '' ]
+		);
+
+		$this->assertSame(
+			'<data class="u-video" value="' . esc_url( $sources[ $public_id ] ) . '"></data>',
+			\PKIW\entry_media_property_html( get_post( $public_id ) )
+		);
+		$this->assertSame( '', \PKIW\entry_media_property_html( get_post( $empty_id ) ) );
+		$this->assertSame( '', \PKIW\entry_media_property_html( get_post( $protected_id ) ) );
+
+		wp_set_current_user( 0 );
+		$this->assertSame( '', \PKIW\entry_media_property_html( get_post( $private_id ) ) );
+
+		$this->ensure_kind_term( 'note' );
+		$note_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:video --><figure class="wp-block-video"><video controls src="https://example.org/note.mp4"></video></figure><!-- /wp:video -->',
+			]
+		);
+		wp_set_object_terms( $note_id, 'note', 'kind' );
+		$this->assertSame( '', \PKIW\entry_media_property_html( get_post( $note_id ) ) );
+	}
+
+	public function test_existing_video_property_is_not_duplicated(): void {
+		$this->ensure_kind_term( 'video' );
+		$post_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_object_terms( $post_id, 'video', 'kind' );
+		$this->register_test_reader( 'video', static fn(): array => [ 'src' => 'https://example.org/video.mp4' ] );
+		$post = get_post( $post_id );
+		$html = '<article class="pk-card h-entry"><data class="u-video" value="https://example.org/video.mp4"></data></article>';
+
+		$out = \PKIW\ensure_entry_properties( $html, $post, true );
+
+		$this->assertSame( 1, substr_count( $out, 'class="u-video"' ) );
+	}
+
+	public function test_audio_entry_media_uses_attachment_and_url_players(): void {
+		$this->ensure_kind_term( 'audio' );
+		$attachment_id = $this->stream_media_attachment( 'audio/mpeg', 'mp3' );
+		$attachment_url = (string) wp_get_attachment_url( $attachment_id );
+		$attachment_post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:audio {"id":' . $attachment_id . '} --><figure class="wp-block-audio"><audio controls src="https://stale.example.org/audio.mp3"></audio></figure><!-- /wp:audio -->',
+			]
+		);
+		wp_set_object_terms( $attachment_post_id, 'audio', 'kind' );
+		$this->assertSame(
+			'<data class="u-audio" value="' . esc_url( $attachment_url ) . '"></data>',
+			\PKIW\entry_media_property_html( get_post( $attachment_post_id ) )
+		);
+		$attachment_post = get_post( $attachment_post_id );
+		$attachment_html = \PKIW\ensure_entry_properties( '<article class="pk-card h-entry"></article>', $attachment_post, true );
+		$attachment_xp   = $this->card_xpath( $attachment_html );
+		$this->assertSame(
+			1,
+			$attachment_xp->query( '//span[contains(@class,"pk-entry-props") and @hidden]//data[@class="u-audio" and @value="' . $attachment_url . '"]' )->length
+		);
+
+		$url_post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:paragraph --><p><a class="u-audio" href="https://media.example.org/episode.mp3">Listen</a></p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $url_post_id, 'audio', 'kind' );
+		$post      = get_post( $url_post_id );
+		$permalink = esc_url( (string) get_permalink( $post ) );
+		$html      = '<article class="pk-card h-entry"><a class="u-url" href="' . $permalink . '">Episode</a><time class="dt-published"></time><span class="p-author h-card"><span class="p-name">Author</span></span></article>';
+
+		$out = \PKIW\ensure_entry_properties( $html, $post, true );
+
+		$this->assertStringContainsString( '<span class="pk-entry-props" hidden><data class="u-audio" value="https://media.example.org/episode.mp3"></data></span>', $out );
+		$this->assertSame( 1, substr_count( $out, 'class="u-url"' ) );
+		$this->assertSame( 1, substr_count( $out, 'class="dt-published"' ) );
+		$this->assertSame( 1, substr_count( $out, 'class="p-author h-card"' ) );
+	}
+
+	public function test_audio_entry_media_omits_embeds_missing_players_and_protected_posts(): void {
+		$this->ensure_kind_term( 'audio' );
+		$contents = [
+			'embed' => '<!-- wp:embed {"url":"https://www.mixcloud.com/example/show/","providerNameSlug":"mixcloud"} --><figure class="wp-block-embed"></figure><!-- /wp:embed -->',
+			'none'  => '<!-- wp:paragraph --><p>No player here.</p><!-- /wp:paragraph -->',
+		];
+		foreach ( $contents as $label => $content ) {
+			$post_id = self::factory()->post->create( [ 'post_status' => 'publish', 'post_content' => $content ] );
+			wp_set_object_terms( $post_id, 'audio', 'kind' );
+			$this->assertSame( '', \PKIW\entry_media_property_html( get_post( $post_id ) ), $label );
+		}
+
+		$protected_id = self::factory()->post->create(
+			[
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+				'post_content'  => '<!-- wp:audio --><figure class="wp-block-audio"><audio controls src="https://example.org/secret.mp3"></audio></figure><!-- /wp:audio -->',
+			]
+		);
+		wp_set_object_terms( $protected_id, 'audio', 'kind' );
+		$this->assertSame( '', \PKIW\entry_media_property_html( get_post( $protected_id ) ) );
+	}
+
+	public function test_the_before_date_filter_prints_between_title_and_date(): void {
+		$probe = static fn( string $html ): string => $html . '<span class="before-date-probe">Probe</span>';
+		add_filter( 'pkiw_stream_card_before_date', $probe, 10, 2 );
+		[ , $html ] = $this->stream_card_for(
+			'note',
+			[
+				'post_title'   => 'Filter order',
+				'post_content' => '<!-- wp:paragraph --><p>Body.</p><!-- /wp:paragraph -->',
+			]
+		);
+		remove_filter( 'pkiw_stream_card_before_date', $probe, 10 );
+
+		$this->assertLessThan( strpos( $html, 'before-date-probe' ), strpos( $html, 'pk-title' ) );
+		$this->assertLessThan( strpos( $html, 'pk-stream-date' ), strpos( $html, 'before-date-probe' ) );
+	}
+
+	public function test_generic_card_cuts_have_closed_kind_defaults(): void {
+		$this->assertSame( [ 'media', 'excerpt', 'meta', 'badge' ], \PKIW\generic_card_cuts( 'audio' ) );
+		$this->assertSame( [ 'extras', 'meta' ], \PKIW\generic_card_cuts( 'article' ) );
+		$this->assertSame( [ 'extras', 'meta' ], \PKIW\generic_card_cuts( 'craft' ) );
+		$this->assertSame( [], \PKIW\generic_card_cuts( 'note' ) );
+	}
+
+	public function test_audio_generic_card_cuts_visual_media_excerpt_meta_and_badge(): void {
+		$this->ensure_kind_term( 'audio' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => 'Audio field note',
+				'post_excerpt' => 'An excerpt that stays off the card.',
+				'post_content' => '<!-- wp:audio --><figure class="wp-block-audio"><audio controls src="https://example.org/audio.mp3"></audio></figure><!-- /wp:audio -->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'audio', 'kind' );
+		$hero = $this->upload_image( $post_id, 'Hero alt', 'Photo by <a href="https://example.org/credit">Ana</a>' );
+		set_post_thumbnail( $post_id, $hero );
+		for ( $n = 0; $n < 5; $n++ ) {
+			$this->upload_image( $post_id );
+		}
+		$GLOBALS['post'] = get_post( $post_id );
+
+		$html = \PKIW\render_stream_card();
+		$xp   = $this->card_xpath( $html );
+
+		$this->assertSame( 0, $xp->query( '//div[contains(@class,"pk-media")]' )->length );
+		$this->assertSame( 0, $xp->query( '//ul[contains(@class,"pk-media__thumbs")]' )->length );
+		$this->assertSame( 0, $xp->query( '//button' )->length );
+		$this->assertDoesNotMatchRegularExpression( '/\+\d/', wp_strip_all_tags( $html ) );
+		$this->assertSame( 0, $xp->query( '//p[contains(@class,"pk-excerpt")]' )->length );
+		$this->assertSame( 0, $xp->query( '//div[contains(@class,"pk-meta")]' )->length );
+		$this->assertSame( 0, $xp->query( '//div[contains(@class,"pk-badge")]' )->length );
+		$this->assertSame( 1, $xp->query( '//span[contains(@class,"pk-kindlabel")]' )->length );
+	}
+
+	public function test_article_and_craft_keep_their_existing_headline_only_regions(): void {
+		$this->article_post( 5, 'Article caption' );
+		$article = \PKIW\render_stream_card();
+		$this->assertStringContainsString( 'pk-badge', $article );
+		$this->assertStringContainsString( 'pk-media pk-media--stream', $article );
+		$this->assertStringContainsString( 'pk-media__caption', $article );
+		$this->assertStringContainsString( 'pk-excerpt', $article );
+		$this->assertStringNotContainsString( 'pk-media__thumbs', $article );
+		$this->assertStringNotContainsString( 'pk-meta', $article );
+
+		$craft_id = $this->craft_post();
+		$hero     = $this->upload_image( $craft_id, 'Hero alt', 'Craft caption' );
+		set_post_thumbnail( $craft_id, $hero );
+		for ( $n = 0; $n < 5; $n++ ) {
+			$this->upload_image( $craft_id );
+		}
+		$GLOBALS['post'] = get_post( $craft_id );
+		$craft           = \PKIW\render_stream_card();
+
+		$this->assertStringContainsString( 'pk-badge', $craft );
+		$this->assertStringContainsString( 'pk-media pk-media--stream', $craft );
+		$this->assertStringContainsString( 'pk-excerpt', $craft );
+		$this->assertStringNotContainsString( 'pk-media__caption', $craft );
+		$this->assertStringNotContainsString( 'pk-media__thumbs', $craft );
+		$this->assertStringNotContainsString( 'pk-meta', $craft );
+		$this->assertDoesNotMatchRegularExpression( '/\+\d/', wp_strip_all_tags( $craft ) );
+	}
+
+	// ------------------------------------------------------------------
+	// W5-P0C: the protected-card author guard (W5-G35).
+	// ------------------------------------------------------------------
+
+	/**
+	 * Kinds whose protected Stream card must not name the author.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public function protected_author_kinds(): array {
+		return [
+			'video' => [ 'video' ],
+			'jam'   => [ 'jam' ],
+			'note'  => [ 'note' ],
+		];
+	}
+
+	/**
+	 * A post of a kind by a named author, rendered through the Stream card
+	 * block inside a loop, the way a Query Loop item reaches the filter.
+	 *
+	 * @param string $kind     Kind slug.
+	 * @param string $password Post password, '' for none.
+	 * @return array{html: string, post_id: int, author: int}
+	 */
+	private function loop_card_by_named_author( string $kind, string $password ): array {
+		$this->ensure_kind_term( $kind );
+		$author  = self::factory()->user->create(
+			[
+				'role'         => 'editor',
+				'display_name' => 'Zed Authorperson',
+				'user_login'   => 'zedauthor' . $kind . ( '' === $password ? 'pub' : 'prot' ),
+			]
+		);
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'   => 'publish',
+				'post_title'    => 'A ' . $kind . ' by Zed',
+				'post_author'   => $author,
+				'post_password' => $password,
+				'post_content'  => '<!-- wp:paragraph --><p>Body for the ' . $kind . '.</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $post_id, $kind, 'kind' );
+
+		$this->go_to( get_permalink( $post_id ) );
+		$html = '';
+		while ( have_posts() ) {
+			the_post();
+			$html .= do_blocks( '<!-- wp:post-kinds-indieweb/stream-card /-->' );
+		}
+		wp_reset_postdata();
+
+		return [
+			'html'    => $html,
+			'post_id' => $post_id,
+			'author'  => $author,
+		];
+	}
+
+	/**
+	 * @dataProvider protected_author_kinds
+	 */
+	public function test_a_protected_stream_card_names_no_author_through_the_block_filter( string $kind ): void {
+		$card = $this->loop_card_by_named_author( $kind, 'secret' );
+		$html = $card['html'];
+
+		$this->assertStringContainsString( 'pk-card--protected', $html, 'The title-only protected card renders.' );
+		$this->assertStringNotContainsString( 'p-author', $html );
+		$this->assertStringNotContainsString( 'Zed Authorperson', $html );
+		$this->assertStringNotContainsString( get_author_posts_url( $card['author'] ), $html );
+		$this->assertStringNotContainsString( 'gravatar', $html );
+		$this->assertStringContainsString( 'u-url', $html, 'The permalink property stays.' );
+		$this->assertStringContainsString( 'dt-published', $html, 'The publication date stays.' );
+	}
+
+	/**
+	 * @dataProvider protected_author_kinds
+	 */
+	public function test_an_unprotected_stream_card_keeps_the_hidden_author( string $kind ): void {
+		$card = $this->loop_card_by_named_author( $kind, '' );
+
+		$this->assertStringContainsString( 'p-author h-card', $card['html'] );
+		$this->assertStringContainsString( 'Zed Authorperson', $card['html'] );
+		$this->assertStringContainsString( get_author_posts_url( $card['author'] ), $card['html'] );
+	}
 }
