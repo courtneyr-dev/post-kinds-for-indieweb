@@ -7,8 +7,10 @@
  * section that post opens, or a hidden placeholder when it continues one.
  * The inspector sets the section settings the engine reads, plus a heading
  * field for each group of the template's kind (window.pkiwArchiveSections)
- * and for any group the block already names; window.pkiwArchiveSectionsDateKinds
- * switches month archives to a Date format field.
+ * and for any group the block already names. window.pkiwArchiveSectionsDateKinds
+ * switches date archives to a Date format field;
+ * window.pkiwArchiveSectionsDateFormats supplies its default and limits the
+ * lead controls to month archives.
  *
  * Plain script on purpose: no build step, only WordPress globals.
  *
@@ -36,6 +38,12 @@
 	const dateKinds = Array.isArray( window.pkiwArchiveSectionsDateKinds )
 		? window.pkiwArchiveSectionsDateKinds
 		: [];
+	const dateFormats =
+		window.pkiwArchiveSectionsDateFormats &&
+		'object' === typeof window.pkiwArchiveSectionsDateFormats &&
+		! Array.isArray( window.pkiwArchiveSectionsDateFormats )
+			? window.pkiwArchiveSectionsDateFormats
+			: {};
 
 	// The kind a taxonomy-kind-<slug> template is the archive of, or ''.
 	function templateKind( slug ) {
@@ -62,6 +70,7 @@
 		const set = props.setAttributes;
 		const fields = groupFields( kind, labels );
 		const byDate = -1 !== dateKinds.indexOf( kind );
+		const dateFormat = dateFormats[ kind ] || 'F Y';
 
 		const settings = [
 			el( ToggleControl, {
@@ -130,14 +139,54 @@
 							'Date format',
 							'post-kinds-for-indieweb-in-block-themes'
 						),
-						placeholder: 'F Y',
-						help: __(
-							'A PHP date format. Empty uses F Y.',
-							'post-kinds-for-indieweb-in-block-themes'
+						placeholder: dateFormat,
+						help: sprintf(
+							/* translators: %s: the default PHP date format. */
+							__(
+								'A PHP date format. Empty uses %s.',
+								'post-kinds-for-indieweb-in-block-themes'
+							),
+							dateFormat
 						),
 						value: attributes.dateFormat,
 						onChange( value ) {
 							set( { dateFormat: value } );
+						},
+					} ),
+				byDate &&
+					'F Y' === dateFormat &&
+					ToggleControl &&
+					el( ToggleControl, {
+						key: 'leadCount',
+						label: __(
+							'Feature the newest post on page 1',
+							'post-kinds-for-indieweb-in-block-themes'
+						),
+						help: __(
+							'Prints the newest post first, above the month sections, on the first page only.',
+							'post-kinds-for-indieweb-in-block-themes'
+						),
+						checked: attributes.leadCount > 0,
+						onChange( value ) {
+							set( { leadCount: value ? 1 : 0 } );
+						},
+					} ),
+				byDate &&
+					'F Y' === dateFormat &&
+					TextControl &&
+					el( TextControl, {
+						key: 'leadLabel',
+						label: __(
+							'Heading for the featured post',
+							'post-kinds-for-indieweb-in-block-themes'
+						),
+						help: __(
+							'Empty prints no heading.',
+							'post-kinds-for-indieweb-in-block-themes'
+						),
+						value: attributes.leadLabel,
+						onChange( value ) {
+							set( { leadLabel: value } );
 						},
 					} ),
 				! byDate &&
@@ -334,6 +383,8 @@
 			emptyGroup: { type: 'string', default: 'last' },
 			emptyLabel: { type: 'string', default: '', role: 'content' },
 			dateFormat: { type: 'string', default: '' },
+			leadCount: { type: 'integer', default: 0 },
+			leadLabel: { type: 'string', default: '', role: 'content' },
 			groupLabels: { type: 'object', default: {}, role: 'content' },
 		},
 		supports: { html: false, reusable: false },

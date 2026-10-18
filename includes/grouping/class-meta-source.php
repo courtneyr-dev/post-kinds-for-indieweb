@@ -46,6 +46,20 @@ final class Meta_Source implements Group_Source {
 	private array $order;
 
 	/**
+	 * Stored values mapped to group keys, lowercase.
+	 *
+	 * @var array<string, string>
+	 */
+	private array $value_map;
+
+	/**
+	 * Meta value order inside each group.
+	 *
+	 * @var array{key:string, order:string[], default?:string}|null
+	 */
+	private ?array $within;
+
+	/**
 	 * Label mode.
 	 *
 	 * @var Label_Mode
@@ -69,15 +83,17 @@ final class Meta_Source implements Group_Source {
 	/**
 	 * Constructor.
 	 *
-	 * @param string          $id                 Source id.
-	 * @param string[]        $keys               One meta key, or several read first-non-empty. Any non-empty string.
-	 * @param string[]        $order              Explicit value order; values not listed follow, A to Z.
-	 * @param Label_Mode|null $label              Label mode. Default verbatim.
-	 * @param string|\Closure $empty_label        Label for the empty group; '' uses the engine's.
-	 * @param bool            $protected_in_empty Whether protected posts file into the empty group.
-	 * @throws \InvalidArgumentException When the id is malformed or no key is given.
+	 * @param string                                                  $id                 Source id.
+	 * @param string[]                                                $keys               One meta key, or several read first-non-empty. Any non-empty string.
+	 * @param string[]                                                $order              Explicit value order; values not listed follow, A to Z.
+	 * @param Label_Mode|null                                         $label              Label mode. Default verbatim.
+	 * @param string|\Closure                                         $empty_label        Label for the empty group; '' uses the engine's.
+	 * @param bool                                                    $protected_in_empty Whether protected posts file into the empty group.
+	 * @param array<string, string>                                   $value_map          Stored values mapped to group keys.
+	 * @param array{key:string, order:string[], default?:string}|null $within Meta value order inside each group.
+	 * @throws \InvalidArgumentException When the id is malformed, no key is given, or within is invalid.
 	 */
-	public function __construct( string $id, array $keys, array $order = [], ?Label_Mode $label = null, $empty_label = '', bool $protected_in_empty = false ) {
+	public function __construct( string $id, array $keys, array $order = [], ?Label_Mode $label = null, $empty_label = '', bool $protected_in_empty = false, array $value_map = [], ?array $within = null ) {
 		$this->init_basics( $id, $empty_label, $protected_in_empty );
 
 		$keys = array_values( array_filter( array_map( 'strval', $keys ), static fn( string $key ): bool => '' !== $key ) );
@@ -88,6 +104,32 @@ final class Meta_Source implements Group_Source {
 
 		$order       = array_map( static fn( $value ): string => mb_strtolower( trim( (string) $value, ' ' ) ), $order );
 		$this->order = array_values( array_unique( array_filter( $order, static fn( string $value ): bool => '' !== $value ) ) );
+
+		$this->value_map = [];
+		foreach ( $value_map as $stored => $group ) {
+			$stored = mb_strtolower( trim( (string) $stored, ' ' ) );
+			if ( '' !== $stored ) {
+				$this->value_map[ $stored ] = mb_strtolower( trim( (string) $group, ' ' ) );
+			}
+		}
+
+		$this->within = null;
+		if ( null !== $within ) {
+			$key          = trim( (string) ( $within['key'] ?? '' ), ' ' );
+			$within_order = array_map( static fn( $value ): string => mb_strtolower( trim( (string) $value, ' ' ) ), (array) ( $within['order'] ?? [] ) );
+			$within_order = array_values( array_unique( array_filter( $within_order, static fn( string $value ): bool => '' !== $value ) ) );
+			if ( '' === $key || [] === $within_order ) {
+				throw new \InvalidArgumentException( 'A within-group meta order needs a key and at least one value.' );
+			}
+			$this->within = [
+				'key'   => $key,
+				'order' => $within_order,
+			];
+			if ( array_key_exists( 'default', $within ) ) {
+				$this->within['default'] = mb_strtolower( trim( (string) $within['default'], ' ' ) );
+			}
+		}
+
 		$this->label = $label ?? Label_Mode::verbatim();
 	}
 
@@ -119,7 +161,7 @@ final class Meta_Source implements Group_Source {
 	 * ORDER BY parts.
 	 *
 	 * @param \WP_Query $query Query.
-	 * @return array{value:string, rank?:string, tiebreak?:string}
+	 * @return array{value:string, rank?:string, tiebreak?:string, within?:string[]}
 	 */
 	public function sql( \WP_Query $query ): array {
 		global $wpdb;
@@ -140,7 +182,17 @@ final class Meta_Source implements Group_Source {
 				$key
 			) . "), '')";
 		}
-		$value = $this->guard_protected_sql( 'COALESCE(' . implode( ', ', $firsts ) . ", '')", "''" );
+		$raw = 'COALESCE(' . implode( ', ', $firsts ) . ", '')";
+		if ( [] === $this->value_map ) {
+			$value = $this->guard_protected_sql( $raw, "''" );
+		} else {
+			$cases = '';
+			foreach ( $this->value_map as $stored => $group ) {
+				$cases .= $wpdb->prepare( ' WHEN %s THEN %s', $stored, $group );
+			}
+			$mapped = "CASE CAST( LOWER( {$raw} ) AS BINARY ){$cases} ELSE '' END";
+			$value  = $this->guard_protected_sql( $mapped, "''" );
+		}
 
 		$parts = [
 			'value'    => $value,
@@ -152,6 +204,21 @@ final class Meta_Source implements Group_Source {
 				$cases .= $wpdb->prepare( ' WHEN %s THEN %d', $listed, $at );
 			}
 			$parts['rank'] = "CASE LOWER({$value}){$cases} ELSE " . count( $this->order ) . ' END';
+		}
+		if ( null !== $this->within ) {
+			$first = $wpdb->prepare(
+				"(SELECT pkiw_g.meta_value FROM {$wpdb->postmeta} pkiw_g WHERE pkiw_g.post_id = {$wpdb->posts}.ID AND pkiw_g.meta_key = %s ORDER BY pkiw_g.meta_id ASC LIMIT 1)",
+				$this->within['key']
+			);
+			$cases = '';
+			foreach ( $this->within['order'] as $at => $listed ) {
+				$cases .= $wpdb->prepare( ' WHEN %s THEN %d', $listed, $at );
+			}
+			$default_rank    = array_search( $this->within['default'] ?? '', $this->within['order'], true );
+			$default_rank    = false === $default_rank ? count( $this->within['order'] ) : (int) $default_rank;
+			$rank            = "CASE LOWER(TRIM({$first})){$cases} ELSE {$default_rank} END";
+			// A protected post ranks as the default whether or not its group is forced empty: its place among the others must not reveal its value.
+			$parts['within'] = [ "IF(LENGTH({$wpdb->posts}.post_password) > 0, {$default_rank}, {$rank}) ASC" ];
 		}
 
 		return $parts;
@@ -178,6 +245,11 @@ final class Meta_Source implements Group_Source {
 					break;
 				}
 			}
+		}
+		if ( [] !== $this->value_map ) {
+			$key = $this->value_map[ mb_strtolower( $raw ) ] ?? '';
+
+			return '' === $key ? new Archive_Group( '', '', '' ) : new Archive_Group( $key, $key, sanitize_title( $key ) );
 		}
 		$key = mb_strtolower( $raw );
 

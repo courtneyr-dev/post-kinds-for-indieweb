@@ -75,7 +75,16 @@ final class Kind_Archive_Layouts {
 	 *
 	 * @var string[]
 	 */
-	public const MONTH_KINDS = [ 'photo', 'chicken', 'favorite', 'acquisition', 'repost', 'article' ];
+	public const MONTH_KINDS = [ 'photo', 'chicken', 'favorite', 'acquisition', 'repost', 'article', 'audio', 'jam' ];
+
+	/**
+	 * Kinds whose archive sections group by the local year of post_date through one shared Date_Source.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @var string[]
+	 */
+	public const YEAR_KINDS = [ 'video' ];
 
 	/**
 	 * Kinds whose archive sections group by the local week of post_date through one shared Date_Source.
@@ -108,9 +117,23 @@ final class Kind_Archive_Layouts {
 	private static ?self $instance = null;
 
 	/**
+	 * Registered filtered archive views, keyed by kind and query variable.
+	 *
+	 * @var array<string, array{kind:string,var:string,values:string[]}>
+	 */
+	private static array $filtered_views = [];
+
+	/**
+	 * Filtered view active for the current REST posts request.
+	 *
+	 * @var string
+	 */
+	private static string $rest_view = '';
+
+	/**
 	 * Resolved-template content per kind term ID for this request.
 	 *
-	 * @var array<int, string|null>
+	 * @var array<int|string, string|null>
 	 */
 	private array $template_cache = [];
 
@@ -133,6 +156,11 @@ final class Kind_Archive_Layouts {
 			Grouped_Archive::register_source( $month, $kind );
 		}
 
+		$year = new Date_Source( 'post_year', 'year' );
+		foreach ( self::YEAR_KINDS as $kind ) {
+			Grouped_Archive::register_source( $year, $kind );
+		}
+
 		// Exercise and note share one week source (issues 245 and 265). Mapping it
 		// groups their sections by week; it doesn't page by week. That takes a
 		// kind's calendar block (pkiw_calendar_paging).
@@ -147,8 +175,10 @@ final class Kind_Archive_Layouts {
 			add_action( 'init', [ $this, 'register_assets_and_blocks' ] );
 		}
 		add_filter( 'get_block_type_variations', [ $this, 'add_query_variations' ], 10, 2 );
+		add_filter( 'taxonomy_template_hierarchy', [ self::class, 'add_view_template' ] );
 		add_action( 'pre_get_posts', [ $this, 'maybe_group_main_query' ] );
 		add_filter( 'posts_where', [ self::class, 'calendar_where' ], 10, 2 );
+		add_filter( 'posts_where', [ self::class, 'view_where' ], 10, 2 );
 		add_filter( 'the_posts', [ self::class, 'calendar_page_count' ], 10, 2 );
 		add_filter( 'posts_orderby', [ Grouped_Archive::class, 'group_orderby' ], 10, 2 );
 		add_filter( 'query_loop_block_query_vars', [ Grouped_Archive::class, 'query_block_group_by' ], 10, 2 );
@@ -164,6 +194,7 @@ final class Kind_Archive_Layouts {
 		add_action( 'parse_request', [ Grouped_Archive::class, 'forget_heading_ids' ] );
 		add_filter( 'rest_request_before_callbacks', [ Grouped_Archive::class, 'track_block_preview' ], 10, 3 );
 		add_filter( 'rest_request_after_callbacks', [ Grouped_Archive::class, 'track_block_preview' ], 10, 3 );
+		add_filter( 'rest_post_dispatch', [ self::class, 'clear_rest_view' ] );
 		if ( taxonomy_exists( Taxonomy::TAXONOMY ) ) {
 			$this->register_rest_menu_order();
 		} else {
@@ -206,6 +237,209 @@ final class Kind_Archive_Layouts {
 	}
 
 	/**
+	 * Register a filtered archive view.
+	 *
+	 * @param string   $kind      Kind slug.
+	 * @param string   $query_var Public query variable.
+	 * @param string[] $values    Accepted view values.
+	 * @return void
+	 * @throws \InvalidArgumentException When the kind, query variable or values are empty.
+	 */
+	public static function register_filtered_view( string $kind, string $query_var, array $values ): void {
+		$kind      = sanitize_key( $kind );
+		$query_var = sanitize_key( $query_var );
+		$values    = array_map( static fn( $value ): string => sanitize_key( (string) $value ), $values );
+		$values    = array_values( array_unique( array_filter( $values, static fn( string $value ): bool => '' !== $value ) ) );
+		if ( '' === $kind || '' === $query_var || [] === $values ) {
+			throw new \InvalidArgumentException( 'A filtered view needs a kind, query variable and at least one value.' );
+		}
+
+		self::$filtered_views[ $kind . '|' . $query_var ] = [
+			'kind'   => $kind,
+			'var'    => $query_var,
+			'values' => $values,
+		];
+	}
+
+	/**
+	 * Remove a filtered archive view.
+	 *
+	 * @param string $kind      Kind slug.
+	 * @param string $query_var Public query variable.
+	 * @return void
+	 */
+	public static function unregister_filtered_view( string $kind, string $query_var ): void {
+		unset( self::$filtered_views[ sanitize_key( $kind ) . '|' . sanitize_key( $query_var ) ] );
+	}
+
+	/**
+	 * Registered filtered archive views in registration order.
+	 *
+	 * @return array<int, array{kind:string,var:string,values:string[]}>
+	 */
+	public static function filtered_views(): array {
+		return array_values( self::$filtered_views );
+	}
+
+	/**
+	 * Filtered view active on a main kind archive query.
+	 *
+	 * @param \WP_Query|null $query Query, or the global main query.
+	 * @return array{kind:string,var:string,value:string,slug:string}|null
+	 */
+	public static function filtered_view( ?\WP_Query $query = null ): ?array {
+		$query ??= $GLOBALS['wp_query'] ?? null;
+		if ( ! $query instanceof \WP_Query || ! $query->is_main_query() || ! $query->is_tax( Taxonomy::TAXONOMY ) ) {
+			return null;
+		}
+		$term = $query->get_queried_object();
+		if ( ! $term instanceof \WP_Term ) {
+			return null;
+		}
+
+		foreach ( self::$filtered_views as $view ) {
+			$value = sanitize_key( (string) $query->get( $view['var'] ) );
+			if ( $term->slug === $view['kind'] && in_array( $value, $view['values'], true ) ) {
+				return [
+					'kind'  => $view['kind'],
+					'var'   => $view['var'],
+					'value' => $value,
+					'slug'  => 'taxonomy-kind-' . $view['kind'] . '-' . $value,
+				];
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Registered row that owns a kind and view value.
+	 *
+	 * @param string $kind  Kind slug.
+	 * @param string $value View value.
+	 * @return array{kind:string,var:string,values:string[]}|null
+	 */
+	public static function registered_view( string $kind, string $value ): ?array {
+		$kind  = sanitize_key( $kind );
+		$value = sanitize_key( $value );
+		foreach ( self::$filtered_views as $view ) {
+			if ( $kind === $view['kind'] && in_array( $value, $view['values'], true ) ) {
+				return $view;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * REST grouped-order tokens for registered filtered views.
+	 *
+	 * @return array<string, array{0:string,1:string,2:string}>
+	 */
+	public static function rest_view_orders(): array {
+		$orders = [];
+		foreach ( self::$filtered_views as $view ) {
+			foreach ( $view['values'] as $value ) {
+				foreach ( self::REST_MENU_ORDERS as $token => $order ) {
+					$orders[ $token . '__' . $value ] = [ $order[0], $order[1], $value ];
+				}
+			}
+		}
+
+		return $orders;
+	}
+
+	/**
+	 * Filtered view active in a REST posts request or block preview.
+	 *
+	 * @return string
+	 */
+	public static function preview_view(): string {
+		$value = Grouped_Archive::is_block_preview() ? Grouped_Archive::preview_view() : self::$rest_view;
+		foreach ( self::$filtered_views as $view ) {
+			if ( in_array( $value, $view['values'], true ) ) {
+				return $value;
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Set the filtered view carried by a REST posts request.
+	 *
+	 * @internal
+	 *
+	 * @param string $value View value.
+	 * @return void
+	 */
+	public static function set_rest_view( string $value ): void {
+		self::$rest_view = sanitize_key( $value );
+	}
+
+	/**
+	 * Clear the filtered view after a REST request finishes.
+	 *
+	 * @internal Hooked to `rest_post_dispatch`.
+	 *
+	 * @param mixed $response Response, passed through.
+	 * @return mixed
+	 */
+	public static function clear_rest_view( $response ) {
+		self::$rest_view = '';
+
+		return $response;
+	}
+
+	/**
+	 * Meta query clause that limits a filtered view's posts.
+	 *
+	 * A kind lane returns the clause used by the REST posts route and editor
+	 * preview. Its own pre_get_posts callback limits the front-end main query.
+	 *
+	 * @param string $kind  Kind slug.
+	 * @param string $value View value.
+	 * @return array<string|int, mixed>
+	 */
+	public static function filtered_view_meta_query( string $kind, string $value ): array {
+		$view = self::registered_view( $kind, $value );
+		if ( null === $view ) {
+			return [];
+		}
+
+		/**
+		 * Filters the meta query clause that limits posts to a filtered archive view.
+		 *
+		 * @since 1.9.0
+		 *
+		 * @param array<string|int, mixed>                 $clause Meta query clause. Default empty.
+		 * @param array{kind:string,var:string,values:string[]} $view    Registered view.
+		 * @param string                                   $value   Active view value.
+		 */
+		$clause = apply_filters( 'pkiw_filtered_view_meta_query', [], $view, sanitize_key( $value ) );
+
+		return is_array( $clause ) && [] !== $clause ? $clause : [];
+	}
+
+	/**
+	 * Prepend the active filtered view to the taxonomy template hierarchy.
+	 *
+	 * @param mixed $templates Template candidates.
+	 * @return mixed
+	 */
+	public static function add_view_template( $templates ) {
+		if ( ! is_array( $templates ) ) {
+			return $templates;
+		}
+		$view = self::filtered_view();
+		if ( null === $view ) {
+			return $templates;
+		}
+
+		return array_merge( [ $view['slug'] . '.php' ], $templates );
+	}
+
+	/**
 	 * Forget which template each kind archive resolved to.
 	 *
 	 * The lookup is remembered for one request. A long-running process
@@ -245,6 +479,7 @@ final class Kind_Archive_Layouts {
 				[
 					'perPage' => (object) self::preview_page_sizes(),
 					'grouped' => Grouped_Archive::grouped_kinds(),
+					'views'   => self::filtered_views(),
 				]
 			) . ';',
 			'before'
@@ -341,6 +576,7 @@ final class Kind_Archive_Layouts {
 			'pkiw-shelf-spine' => __( 'Shelf, spine-out', 'post-kinds-for-indieweb-in-block-themes' ),
 			'pkiw-menu'        => __( 'Menu', 'post-kinds-for-indieweb-in-block-themes' ),
 			'pkiw-contents'    => __( 'Contents', 'post-kinds-for-indieweb-in-block-themes' ),
+			'pkiw-lineup'      => __( 'Lineup', 'post-kinds-for-indieweb-in-block-themes' ),
 		];
 		foreach ( $styles as $name => $label ) {
 			register_block_style(
@@ -510,6 +746,15 @@ final class Kind_Archive_Layouts {
 						'type'    => 'string',
 						'default' => '',
 					],
+					'leadCount'   => [
+						'type'    => 'integer',
+						'default' => 0,
+					],
+					'leadLabel'   => [
+						'type'    => 'string',
+						'default' => '',
+						'role'    => 'content',
+					],
 				]
 			),
 			'supports'        => [
@@ -577,6 +822,22 @@ final class Kind_Archive_Layouts {
 	}
 
 	/**
+	 * Default date formats for each date-grouped kind.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return array<string, string> Kind slug => PHP date format.
+	 */
+	public static function date_formats(): array {
+		$formats = array_fill_keys( self::MONTH_KINDS, 'F Y' );
+		foreach ( self::YEAR_KINDS as $kind ) {
+			$formats[ $kind ] = 'Y';
+		}
+
+		return $formats;
+	}
+
+	/**
 	 * Hand the marker's editor the group keys of each kind and the date-grouped kinds.
 	 *
 	 * @since 1.9.0
@@ -591,7 +852,12 @@ final class Kind_Archive_Layouts {
 		);
 		wp_add_inline_script(
 			'pkiw-archive-sections-editor',
-			'window.pkiwArchiveSectionsDateKinds = ' . wp_json_encode( self::MONTH_KINDS ) . ';',
+			'window.pkiwArchiveSectionsDateKinds = ' . wp_json_encode( array_merge( self::MONTH_KINDS, self::YEAR_KINDS ) ) . ';',
+			'before'
+		);
+		wp_add_inline_script(
+			'pkiw-archive-sections-editor',
+			'window.pkiwArchiveSectionsDateFormats = ' . wp_json_encode( (object) self::date_formats() ) . ';',
 			'before'
 		);
 	}
@@ -912,7 +1178,8 @@ final class Kind_Archive_Layouts {
 			return;
 		}
 
-		$content = $this->resolved_template_content( $term );
+		$view    = self::filtered_view( $query );
+		$content = $this->resolved_template_content( $term, $view );
 
 		// A kind with a calendar block pages by year, month or whole weeks.
 		if ( null !== $content && $this->apply_calendar_paging( $query, $term, $content ) ) {
@@ -933,7 +1200,7 @@ final class Kind_Archive_Layouts {
 			return;
 		}
 
-		if ( null === $content || ( ! preg_match( '/is-style-pkiw-(?:shelf|shelf-spine|menu)/', $content ) && ! Grouped_Archive::mentions_entry_block( $content ) ) ) {
+		if ( null === $content || ( ! preg_match( '/is-style-pkiw-(?:shelf|shelf-spine|menu|lineup)/', $content ) && ! Grouped_Archive::mentions_entry_block( $content ) ) ) {
 			return;
 		}
 
@@ -1116,6 +1383,30 @@ final class Kind_Archive_Layouts {
 	}
 
 	/**
+	 * Keep password-protected posts out of a filtered view's REST result.
+	 *
+	 * The view's meta clause would otherwise list a protected post that
+	 * matches and omit one that doesn't, which tells a visitor what the
+	 * protected posts hold. LENGTH() tells an empty password from one of
+	 * spaces, which the column compares equal.
+	 *
+	 * @internal Hooked to `posts_where`.
+	 *
+	 * @param string    $where WHERE clause.
+	 * @param \WP_Query $query Query.
+	 * @return string
+	 */
+	public static function view_where( $where, $query ) {
+		if ( ! $query instanceof \WP_Query || ! $query->get( 'pkiw_view_public' ) ) {
+			return $where;
+		}
+
+		global $wpdb;
+
+		return $where . " AND LENGTH( {$wpdb->posts}.post_password ) = 0";
+	}
+
+	/**
 	 * Set a calendar page's page count: the number of units over the count a page holds.
 	 *
 	 * The page is not a paged LIMIT query (posts_per_page is -1), so core
@@ -1143,17 +1434,23 @@ final class Kind_Archive_Layouts {
 	 * through the public get_block_templates() (theme, user and plugin
 	 * templates, with this plugin's precedence guard applied).
 	 *
-	 * @param \WP_Term $term Kind term.
+	 * @param \WP_Term   $term Kind term.
+	 * @param array|null $view Filtered view, when active.
 	 * @return string|null
 	 */
-	private function resolved_template_content( \WP_Term $term ): ?string {
-		if ( array_key_exists( $term->term_id, $this->template_cache ) ) {
-			return $this->template_cache[ $term->term_id ];
+	private function resolved_template_content( \WP_Term $term, ?array $view = null ): ?string {
+		$active = null !== $view && ( $view['kind'] ?? '' ) === $term->slug;
+		$key    = $active ? $term->term_id . ':' . $view['slug'] : $term->term_id;
+		if ( array_key_exists( $key, $this->template_cache ) ) {
+			return $this->template_cache[ $key ];
 		}
 
 		$tax   = $term->taxonomy;
 		$slugs = [];
-		$dec   = urldecode( $term->slug );
+		if ( $active ) {
+			$slugs[] = $view['slug'];
+		}
+		$dec = urldecode( $term->slug );
 		if ( $dec !== $term->slug ) {
 			$slugs[] = "taxonomy-{$tax}-{$dec}";
 		}
@@ -1171,8 +1468,8 @@ final class Kind_Archive_Layouts {
 			static fn( $a, $b ) => ( $priority[ $a->slug ] ?? 99 ) <=> ( $priority[ $b->slug ] ?? 99 )
 		);
 
-		$content                                = isset( $templates[0] ) ? self::with_patterns( (string) $templates[0]->content ) : null;
-		$this->template_cache[ $term->term_id ] = $content;
+		$content                      = isset( $templates[0] ) ? self::with_patterns( (string) $templates[0]->content ) : null;
+		$this->template_cache[ $key ] = $content;
 
 		return $content;
 	}

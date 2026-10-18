@@ -8,6 +8,7 @@
 declare(strict_types=1);
 
 use PKIW\Grouped_Archive;
+use PKIW\Kind_Archive_Layouts;
 use PKIW\Grouping\Archive_Group;
 use PKIW\Grouping\Cases_Source;
 use PKIW\Grouping\Date_Source;
@@ -34,8 +35,9 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	private const IDS    = 'pkiw-test/id-marker';
 	private const BODY   = 'pkiw-test/body-line';
 	private const WEEKS  = 'pkiw-test/weeks-line';
+	private const LEAD   = 'pkiw-test/lead-marker';
 
-	private const SOURCES = [ 'test_status', 'test_series', 'test_play', 'test_tags', 'test_cats', 'test_month', 'test_month_asc', 'test_year', 'test_week', 'test_flagged_tags' ];
+	private const SOURCES = [ 'test_status', 'test_series', 'test_play', 'test_tags', 'test_cats', 'test_month', 'test_month_asc', 'test_year', 'test_week', 'test_flagged_tags', 'test_wish_type', 'test_listen_show' ];
 
 	/**
 	 * Stylesheet active before each test.
@@ -130,6 +132,24 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			]
 		);
 		$this->entry_block( self::LINE, [ 'shape' => Grouped_Archive::ENTRY_LINE ] );
+		$this->entry_block(
+			self::LEAD,
+			[
+				'expose_key'  => true,
+				'heading_ids' => true,
+			],
+			[
+				'leadCount' => [
+					'type'    => 'integer',
+					'default' => 0,
+				],
+				'leadLabel' => [
+					'type'    => 'string',
+					'default' => '',
+					'role'    => 'content',
+				],
+			]
+		);
 		$this->entry_block( self::PAIRS, [], [ 'linesPerPage' => [ 'default' => 2 ] ] );
 		$this->entry_block( self::MONTHS, [ 'source' => 'test_month' ] );
 		$this->entry_block(
@@ -175,7 +195,10 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down(): void {
-		foreach ( [ self::MARKER, self::LINE, self::OL_LINE, self::PAIRS, self::MONTHS, self::IDS, self::BODY, self::WEEKS ] as $name ) {
+		Kind_Archive_Layouts::unregister_filtered_view( 'listen', 'pkiw_listen_type' );
+		Kind_Archive_Layouts::set_rest_view( '' );
+		$GLOBALS['wp_rest_server'] = null;
+		foreach ( [ self::MARKER, self::LINE, self::OL_LINE, self::PAIRS, self::MONTHS, self::IDS, self::BODY, self::WEEKS, self::LEAD ] as $name ) {
 			Grouped_Archive::unregister_entry_block( $name );
 			if ( WP_Block_Type_Registry::get_instance()->is_registered( $name ) ) {
 				unregister_block_type( $name );
@@ -292,6 +315,45 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			'd' => $this->make( 'multikind', 'Guards', '2026-01-02 10:00:00', [ '_pkiw_test_series_alt' => 'Discworld' ] ),
 			'e' => $this->make( 'multikind', 'Standalone', '2026-01-01 10:00:00' ),
 		];
+	}
+
+	/**
+	 * Register the mapped wish type source with an ordered priority inside each type.
+	 *
+	 * @param bool $protected_in_empty Whether protected posts file into the empty group.
+	 * @return Meta_Source
+	 */
+	private function register_wish_source( bool $protected_in_empty = true ): Meta_Source {
+		$source = new Meta_Source(
+			'test_wish_type',
+			[ '_pkiw_test_wish_type' ],
+			[],
+			Label_Mode::map(
+				[
+					'movie' => 'Movie/Show',
+					'book'  => 'Book',
+					'food'  => 'Food',
+				]
+			),
+			'',
+			$protected_in_empty,
+			[
+				' MEDIA ' => ' MOVIE ',
+				'movie'   => 'movie',
+				'book'    => 'book',
+				'food'    => 'food',
+				'gizmo'   => '',
+				''        => 'food',
+			],
+			[
+				'key'     => '_pkiw_test_wish_priority',
+				'order'   => [ ' HIGH ', 'medium', 'LOW', 'high', ' ' ],
+				'default' => ' MEDIUM ',
+			]
+		);
+		Grouped_Archive::register_source( $source, 'wishkind' );
+
+		return $source;
 	}
 
 	/**
@@ -528,6 +590,286 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 		$this->assertNotContains( 'tmpkind', Grouped_Archive::grouped_kinds(), 'Unregistering drops the kind default too.' );
 	}
 
+	public function test_filtered_view_registry_normalizes_replaces_and_unregisters_in_registration_order(): void {
+		Kind_Archive_Layouts::register_filtered_view( ' Listen! ', ' PKIW_Listen_Type ', [ ' Podcast ', 'podcast', '', ' Radio++ ' ] );
+		Kind_Archive_Layouts::register_filtered_view( 'watch', 'pkiw_watch_type', [ 'series' ] );
+
+		$this->assertSame(
+			[
+				[ 'kind' => 'listen', 'var' => 'pkiw_listen_type', 'values' => [ 'podcast', 'radio' ] ],
+				[ 'kind' => 'watch', 'var' => 'pkiw_watch_type', 'values' => [ 'series' ] ],
+			],
+			Kind_Archive_Layouts::filtered_views()
+		);
+		$this->assertSame(
+			[ 'kind' => 'listen', 'var' => 'pkiw_listen_type', 'values' => [ 'podcast', 'radio' ] ],
+			Kind_Archive_Layouts::registered_view( 'listen', 'podcast' )
+		);
+
+		Kind_Archive_Layouts::register_filtered_view( 'listen', 'pkiw_listen_type', [ 'interview' ] );
+		$this->assertSame( [ 'listen', 'watch' ], wp_list_pluck( Kind_Archive_Layouts::filtered_views(), 'kind' ) );
+		$this->assertNull( Kind_Archive_Layouts::registered_view( 'listen', 'podcast' ) );
+		$this->assertNotNull( Kind_Archive_Layouts::registered_view( 'listen', 'interview' ) );
+
+		Kind_Archive_Layouts::unregister_filtered_view( ' Listen! ', ' PKIW_Listen_Type ' );
+		$this->assertSame( [ [ 'kind' => 'watch', 'var' => 'pkiw_watch_type', 'values' => [ 'series' ] ] ], Kind_Archive_Layouts::filtered_views() );
+		Kind_Archive_Layouts::unregister_filtered_view( 'watch', 'pkiw_watch_type' );
+	}
+
+	public function test_filtered_view_registry_rejects_an_empty_kind_var_or_value_list(): void {
+		foreach (
+			[
+				[ '', 'pkiw_listen_type', [ 'podcast' ] ],
+				[ 'listen', '', [ 'podcast' ] ],
+				[ 'listen', 'pkiw_listen_type', [ '', ' ! ' ] ],
+			] as $case
+		) {
+			try {
+				Kind_Archive_Layouts::register_filtered_view( $case[0], $case[1], $case[2] );
+				$this->fail( 'Invalid filtered view input was accepted.' );
+			} catch ( InvalidArgumentException $error ) {
+				$this->assertNotSame( '', $error->getMessage() );
+			}
+		}
+	}
+
+	public function test_rest_collection_params_add_view_tokens_only_while_a_view_is_registered(): void {
+		$base = [ 'orderby' => [ 'enum' => [ 'date' ] ] ];
+		$this->assertSame(
+			[ 'date', 'pkiw_group', 'pkiw_group_desc', 'pkiw_group_empty_first', 'pkiw_group_desc_empty_first' ],
+			Grouped_Archive::rest_collection_params( $base )['orderby']['enum']
+		);
+		$this->assertSame( [], Kind_Archive_Layouts::rest_view_orders() );
+
+		Kind_Archive_Layouts::register_filtered_view( 'listen', 'pkiw_listen_type', [ 'podcast' ] );
+		$this->assertSame(
+			[
+				'pkiw_group__podcast'                  => [ 'ASC', 'last', 'podcast' ],
+				'pkiw_group_desc__podcast'             => [ 'DESC', 'last', 'podcast' ],
+				'pkiw_group_empty_first__podcast'      => [ 'ASC', 'first', 'podcast' ],
+				'pkiw_group_desc_empty_first__podcast' => [ 'DESC', 'first', 'podcast' ],
+			],
+			Kind_Archive_Layouts::rest_view_orders()
+		);
+		$this->assertSame(
+			[
+				'date',
+				'pkiw_group',
+				'pkiw_group_desc',
+				'pkiw_group_empty_first',
+				'pkiw_group_desc_empty_first',
+				'pkiw_group__podcast',
+				'pkiw_group_desc__podcast',
+				'pkiw_group_empty_first__podcast',
+				'pkiw_group_desc_empty_first__podcast',
+			],
+			Grouped_Archive::rest_collection_params( $base )['orderby']['enum']
+		);
+	}
+
+	public function test_rest_view_order_activates_its_source_and_meta_clause_only_for_the_registered_kind(): void {
+		Kind_Archive_Layouts::register_filtered_view( 'listen', 'pkiw_listen_type', [ 'podcast' ] );
+		Grouped_Archive::register_source( new Meta_Source( 'test_listen_show', [ '_pkiw_test_listen_show' ] ) );
+		$listen_id = $this->make( 'listen', 'Podcast', '2026-09-10 10:00:00', [ '_pkiw_test_listen_type' => 'podcast', '_pkiw_test_listen_show' => 'Show' ] );
+		$watch_id  = $this->make( 'watch', 'Watch', '2026-09-09 10:00:00' );
+		$listen    = get_the_terms( $listen_id, 'kind' )[0];
+		$watch     = get_the_terms( $watch_id, 'kind' )[0];
+		$seen      = [];
+		$source    = static function ( $default, string $kind ) use ( &$seen ) {
+			$seen[] = [ $kind, Kind_Archive_Layouts::preview_view() ];
+
+			return 'listen' === $kind && 'podcast' === Kind_Archive_Layouts::preview_view() ? 'test_listen_show' : $default;
+		};
+		$meta      = static fn( array $clause ): array => [ 'key' => '_pkiw_test_listen_type', 'value' => 'podcast', 'compare' => '=' ];
+		add_filter( 'pkiw_archive_group_source', $source, 10, 2 );
+		add_filter( 'pkiw_filtered_view_meta_query', $meta );
+
+		try {
+			$request = new WP_REST_Request( 'GET', '/wp/v2/posts' );
+			$request->set_param( 'orderby', 'pkiw_group__podcast' );
+			$request->set_param( 'kind', [ $listen->term_id ] );
+			$args = Grouped_Archive::rest_order( [ 'meta_query' => [ [ 'key' => 'existing' ] ] ], $request ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+
+			$this->assertSame( 'test_listen_show', $args['pkiw_group_source'] );
+			$this->assertSame(
+				[
+					'relation' => 'AND',
+					[ [ 'key' => 'existing' ] ],
+					[ 'key' => '_pkiw_test_listen_type', 'value' => 'podcast', 'compare' => '=' ],
+				],
+				$args['meta_query']
+			);
+			$this->assertContains( [ 'listen', 'podcast' ], $seen );
+			$this->assertSame( 'podcast', Kind_Archive_Layouts::preview_view() );
+
+			$response = new WP_REST_Response();
+			$this->assertSame( $response, apply_filters( 'rest_post_dispatch', $response, rest_get_server(), $request ) );
+			$this->assertSame( '', Kind_Archive_Layouts::preview_view() );
+
+			$view = new WP_REST_Request( 'GET', '/wp/v2/posts' );
+			$view->set_param( 'orderby', 'pkiw_group__podcast' );
+			$view->set_param( 'kind', [ $watch->term_id ] );
+			$plain = new WP_REST_Request( 'GET', '/wp/v2/posts' );
+			$plain->set_param( 'orderby', 'pkiw_group' );
+			$plain->set_param( 'kind', [ $watch->term_id ] );
+			$seen = [];
+			$from_view = Grouped_Archive::rest_order( [], $view );
+			$this->assertSame( [ [ 'watch', '' ] ], $seen, 'The view is not active for a kind that did not register it.' );
+			$this->assertSame( '', Kind_Archive_Layouts::preview_view() );
+			$this->assertSame( Grouped_Archive::rest_order( [], $plain ), $from_view );
+			$this->assertArrayNotHasKey( 'meta_query', $from_view );
+			$this->assertArrayNotHasKey( 'pkiw_view_public', $from_view, 'No public-only rule for a kind without the view.' );
+
+			foreach ( [ [], [ $listen->term_id, $watch->term_id ] ] as $terms ) {
+				$many = new WP_REST_Request( 'GET', '/wp/v2/posts' );
+				$many->set_param( 'orderby', 'pkiw_group__podcast' );
+				$many->set_param( 'kind', $terms );
+				$result = Grouped_Archive::rest_order( [], $many );
+				$this->assertArrayNotHasKey( 'pkiw_group_source', $result );
+				$this->assertArrayNotHasKey( 'meta_query', $result );
+			}
+		} finally {
+			remove_filter( 'pkiw_archive_group_source', $source, 10 );
+			remove_filter( 'pkiw_filtered_view_meta_query', $meta );
+		}
+	}
+
+	public function test_real_rest_view_request_filters_posts_and_rejects_an_unknown_token(): void {
+		Kind_Archive_Layouts::register_filtered_view( 'listen', 'pkiw_listen_type', [ 'podcast' ] );
+		$GLOBALS['wp_rest_server'] = null; // The orderby enum is built when the routes register, after the view exists.
+		Grouped_Archive::register_source( new Meta_Source( 'test_listen_show', [ '_pkiw_test_listen_show' ] ) );
+		$podcast = $this->make( 'listen', 'Podcast', '2026-09-10 10:00:00', [ '_pkiw_test_listen_type' => 'podcast', '_pkiw_test_listen_show' => 'Show' ] );
+		$this->make( 'listen', 'Music', '2026-09-09 10:00:00', [ '_pkiw_test_listen_type' => 'music', '_pkiw_test_listen_show' => 'Show' ] );
+		$term   = get_the_terms( $podcast, 'kind' )[0];
+		$source = static fn( $default, string $kind ) => 'listen' === $kind && 'podcast' === Kind_Archive_Layouts::preview_view() ? 'test_listen_show' : $default;
+		$meta   = static fn( array $clause ): array => [ 'key' => '_pkiw_test_listen_type', 'value' => 'podcast', 'compare' => '=' ];
+		add_filter( 'pkiw_archive_group_source', $source, 10, 2 );
+		add_filter( 'pkiw_filtered_view_meta_query', $meta );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		try {
+			$request = new WP_REST_Request( 'GET', '/wp/v2/posts' );
+			$request->set_param( 'kind', [ $term->term_id ] );
+			$request->set_param( 'orderby', 'pkiw_group__podcast' );
+			$response = rest_get_server()->dispatch( $request );
+			$this->assertSame( 200, $response->get_status(), wp_json_encode( $response->get_data() ) );
+			$this->assertSame( [ $podcast ], array_map( 'intval', wp_list_pluck( $response->get_data(), 'id' ) ) );
+
+			$bad = new WP_REST_Request( 'GET', '/wp/v2/posts' );
+			$bad->set_param( 'kind', [ $term->term_id ] );
+			$bad->set_param( 'orderby', 'pkiw_group__nosuch' );
+			$this->assertSame( 400, rest_get_server()->dispatch( $bad )->get_status() );
+		} finally {
+			remove_filter( 'pkiw_archive_group_source', $source, 10 );
+			remove_filter( 'pkiw_filtered_view_meta_query', $meta );
+		}
+	}
+
+	public function test_block_renderer_carries_a_registered_view_and_filters_the_preview_run(): void {
+		Kind_Archive_Layouts::register_filtered_view( 'listen', 'pkiw_listen_type', [ 'podcast' ] );
+		Grouped_Archive::register_source( new Meta_Source( 'test_listen_show', [ '_pkiw_test_listen_show' ] ) );
+		$podcast = $this->make( 'listen', 'Podcast', '2026-09-10 10:00:00', [ '_pkiw_test_listen_type' => 'podcast', '_pkiw_test_listen_show' => 'Show' ] );
+		$this->make( 'listen', 'Music', '2026-09-09 10:00:00', [ '_pkiw_test_listen_type' => 'music', '_pkiw_test_listen_show' => 'Show' ] );
+		$source = static fn( $default, string $kind ) => 'listen' === $kind && 'podcast' === Kind_Archive_Layouts::preview_view() ? 'test_listen_show' : $default;
+		$meta   = static fn( array $clause ): array => [ 'key' => '_pkiw_test_listen_type', 'value' => 'podcast', 'compare' => '=' ];
+		add_filter( 'pkiw_archive_group_source', $source, 10, 2 );
+		add_filter( 'pkiw_filtered_view_meta_query', $meta );
+
+		try {
+			$request = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/' . self::LINE );
+			$request->set_param( 'pkiw_kind', 'listen' );
+			$request->set_param( 'pkiw_view', 'podcast' );
+			apply_filters( 'rest_request_before_callbacks', null, null, $request );
+			$this->assertSame( 'podcast', Grouped_Archive::preview_view() );
+			$this->assertSame( 'podcast', Kind_Archive_Layouts::preview_view() );
+			apply_filters( 'rest_request_after_callbacks', null, null, $request );
+			$this->assertSame( '', Grouped_Archive::preview_view() );
+
+			$unknown = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/' . self::LINE );
+			$unknown->set_param( 'pkiw_kind', 'listen' );
+			$unknown->set_param( 'pkiw_view', 'music' );
+			apply_filters( 'rest_request_before_callbacks', null, null, $unknown );
+			$this->assertSame( '', Kind_Archive_Layouts::preview_view() );
+			apply_filters( 'rest_request_after_callbacks', null, null, $unknown );
+
+			$html = $this->editor_render( self::LINE, $podcast, [], [ 'pkiw_kind' => 'listen', 'pkiw_view' => 'podcast' ] );
+			$this->assertSame( [ [ 'h2:Show', [ 'Podcast' ] ] ], $this->sections( $html ) );
+			$this->assertSame( '', Kind_Archive_Layouts::preview_view() );
+		} finally {
+			remove_filter( 'pkiw_archive_group_source', $source, 10 );
+			remove_filter( 'pkiw_filtered_view_meta_query', $meta );
+		}
+	}
+
+	public function test_a_filtered_view_hides_protected_posts_from_requesters_who_cannot_edit_others_posts(): void {
+		Kind_Archive_Layouts::register_filtered_view( 'listen', 'pkiw_listen_type', [ 'podcast' ] );
+		$GLOBALS['wp_rest_server'] = null; // The orderby enum is built when the routes register, after the view exists.
+		$show = static fn( string $type ): array => [ '_pkiw_test_listen_type' => $type, '_pkiw_test_listen_show' => 'Show' ];
+		Grouped_Archive::register_source( new Meta_Source( 'test_listen_show', [ '_pkiw_test_listen_show' ] ) );
+
+		$public_podcast   = $this->make( 'listen', 'Public podcast', '2026-09-10 10:00:00', $show( 'podcast' ) );
+		$public_music     = $this->make( 'listen', 'Public music', '2026-09-09 10:00:00', $show( 'music' ) );
+		$locked_podcast   = $this->make( 'listen', 'Locked podcast', '2026-09-08 10:00:00', $show( 'podcast' ) );
+		$locked_music     = $this->make( 'listen', 'Locked music', '2026-09-07 10:00:00', $show( 'music' ) );
+		$spaces_podcast   = $this->make( 'listen', 'Spaces podcast', '2026-09-06 10:00:00', $show( 'podcast' ) );
+		foreach ( [ $locked_podcast => 'secret', $locked_music => 'secret', $spaces_podcast => '   ' ] as $id => $password ) {
+			wp_update_post(
+				[
+					'ID'            => $id,
+					'post_password' => $password,
+				]
+			);
+		}
+		$term   = get_the_terms( $public_podcast, 'kind' )[0];
+		$source = static fn( $default, string $kind ) => 'listen' === $kind && 'podcast' === Kind_Archive_Layouts::preview_view() ? 'test_listen_show' : $default;
+		$meta   = static fn( array $clause ): array => [ 'key' => '_pkiw_test_listen_type', 'value' => 'podcast', 'compare' => '=' ];
+		add_filter( 'pkiw_archive_group_source', $source, 10, 2 );
+		add_filter( 'pkiw_filtered_view_meta_query', $meta );
+
+		$ids = static function () use ( $term ): array {
+			$request = new WP_REST_Request( 'GET', '/wp/v2/posts' );
+			$request->set_param( 'kind', [ $term->term_id ] );
+			$request->set_param( 'orderby', 'pkiw_group__podcast' );
+			$request->set_param( 'per_page', 20 );
+			$response = rest_get_server()->dispatch( $request );
+
+			return 200 === $response->get_status() ? array_map( 'intval', wp_list_pluck( $response->get_data(), 'id' ) ) : [ $response->get_status() ];
+		};
+
+		try {
+			wp_set_current_user( 0 );
+			$this->assertSame( [ $public_podcast ], $ids(), 'Anonymous: neither a protected podcast nor a protected music listen shows, so the view says nothing about them.' );
+
+			wp_set_current_user( self::factory()->user->create( [ 'role' => 'author' ] ) );
+			$this->assertSame( [ $public_podcast ], $ids(), 'An author cannot edit others posts, so the rule holds.' );
+
+			wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+			$this->assertSame( [ $public_podcast, $locked_podcast, $spaces_podcast ], $ids(), 'An editor sees every podcast, protected or not, and still no music.' );
+		} finally {
+			remove_filter( 'pkiw_archive_group_source', $source, 10 );
+			remove_filter( 'pkiw_filtered_view_meta_query', $meta );
+		}
+
+		$this->assertSame( [ $public_music ], array_values( array_intersect( [ $public_music ], $this->grouped_ids( 'listen', 'test_listen_show' ) ) ), 'A request with no view still lists the music listen.' );
+	}
+
+	public function test_the_editor_preview_of_a_kind_without_the_view_ignores_the_view(): void {
+		Kind_Archive_Layouts::register_filtered_view( 'listen', 'pkiw_listen_type', [ 'podcast' ] );
+		$p    = $this->shelf();
+		$meta = static fn( array $clause ): array => [ 'key' => '_pkiw_test_listen_type', 'value' => 'podcast', 'compare' => '=' ];
+		add_filter( 'pkiw_filtered_view_meta_query', $meta );
+
+		try {
+			$plain = $this->editor_render( self::LINE, $p['dune'], [], [ 'pkiw_kind' => 'shelfkind' ] );
+			$with  = $this->editor_render( self::LINE, $p['dune'], [], [ 'pkiw_kind' => 'shelfkind', 'pkiw_view' => 'podcast' ] );
+		} finally {
+			remove_filter( 'pkiw_filtered_view_meta_query', $meta );
+		}
+
+		$this->assertNotSame( [], $this->sections( $plain ) );
+		$this->assertSame( $this->sections( $plain ), $this->sections( $with ), 'A view the kind did not register limits nothing, though the request names it.' );
+	}
+
 	public function test_entry_blocks_register_and_the_menu_entry_registers_itself(): void {
 		$this->assertTrue( Grouped_Archive::is_entry_block( 'post-kinds-indieweb/menu-entry' ) );
 		$entries = Grouped_Archive::editor_entries();
@@ -540,9 +882,13 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 
 	public function test_month_kinds_are_frozen_in_layout_order(): void {
 		$this->assertSame(
-			[ 'photo', 'chicken', 'favorite', 'acquisition', 'repost', 'article' ],
+			[ 'photo', 'chicken', 'favorite', 'acquisition', 'repost', 'article', 'audio', 'jam' ],
 			\PKIW\Kind_Archive_Layouts::MONTH_KINDS
 		);
+	}
+
+	public function test_year_kinds_are_frozen_in_layout_order(): void {
+		$this->assertSame( [ 'video' ], \PKIW\Kind_Archive_Layouts::YEAR_KINDS );
 	}
 
 	/**
@@ -556,6 +902,8 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			'acquisition' => [ 'acquisition' ],
 			'repost'      => [ 'repost' ],
 			'article'     => [ 'article' ],
+			'audio'       => [ 'audio' ],
+			'jam'         => [ 'jam' ],
 		];
 	}
 
@@ -574,8 +922,169 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	}
 
 	public function test_grouped_kinds_include_the_month_kinds(): void {
-		foreach ( [ 'photo', 'chicken', 'favorite', 'acquisition', 'repost', 'article' ] as $kind ) {
+		foreach ( [ 'photo', 'chicken', 'favorite', 'acquisition', 'repost', 'article', 'audio', 'jam' ] as $kind ) {
 			$this->assertContains( $kind, Grouped_Archive::grouped_kinds(), "{$kind} should be grouped by post_month." );
+		}
+		$this->assertContains( 'video', Grouped_Archive::grouped_kinds(), 'Video should be grouped by post_year.' );
+	}
+
+	/**
+	 * @return array<string, array{string, string, string, string}>
+	 */
+	public function jam_local_months(): array {
+		return [
+			'chicago late august' => [ 'America/Chicago', '2026-08-31 23:30:00', '2026-08', 'August 2026' ],
+			'honolulu september'  => [ 'Pacific/Honolulu', '2026-09-01 00:30:00', '2026-09', 'September 2026' ],
+		];
+	}
+
+	/**
+	 * @dataProvider jam_local_months
+	 */
+	public function test_jams_group_by_the_site_s_local_month( string $timezone, string $date, string $key, string $label ): void {
+		update_option( 'timezone_string', $timezone );
+		$id = $this->make( 'jam', 'Local jam', $date );
+
+		$this->assertSame( $key, Grouped_Archive::group_of_post( 'jam', $id )->key() );
+		$this->assertSame( $label, Grouped_Archive::group_label_of_post( 'jam', $id ) );
+	}
+
+	public function test_video_archives_group_by_local_year_and_accept_a_date_format(): void {
+		update_option( 'timezone_string', 'America/New_York' );
+		$old = $this->make( 'video', 'Old year', '2025-12-31 23:30:00' );
+		$new = $this->make( 'video', 'New year', '2026-01-01 00:10:00' );
+		$year = Grouped_Archive::source( 'post_year' );
+
+		$this->assertInstanceOf( Date_Source::class, $year );
+		$this->assertSame( 'post_year', $year->id() );
+		$this->assertSame( 'year', $year->unit() );
+		$this->assertSame( '2025', Grouped_Archive::group_of_post( 'video', $old )->key() );
+		$this->assertSame( '2026', Grouped_Archive::group_of_post( 'video', $new )->key() );
+		$this->assertSame( '2026', Grouped_Archive::group_label_of_post( 'video', $new ) );
+		$this->assertSame(
+			[ 'h2:26', 'h2:25' ],
+			array_column( $this->sections( $this->serve( 'video', $this->loop( self::MARKER, [ 'dateFormat' => 'y' ] ) ) ), 0 )
+		);
+	}
+
+	public function test_a_video_year_reopens_on_page_two_and_keeps_date_then_id_order(): void {
+		update_option( 'timezone_string', 'America/New_York' );
+		$oldest = $this->make( 'video', 'January', '2026-01-01 10:00:00' );
+		$middle = $this->make( 'video', 'June', '2026-06-01 10:00:00' );
+		$first  = $this->make( 'video', 'First September', '2026-09-30 10:00:00' );
+		$second = $this->make( 'video', 'Second September', '2026-09-30 10:00:00' );
+
+		$this->assertSame( [ $second, $first, $middle, $oldest ], $this->grouped_ids( 'video', 'post_year' ) );
+		$pages = $this->headings_by_page( 'video', [ 'linesPerPage' => 2 ], 2 );
+		$this->assertSame( [ 'h2:2026' ], $pages[1] );
+		$this->assertSame( [ 'h2:2026' ], $pages[2] );
+	}
+
+	public function test_every_shipped_kinds_group_order_by_is_unchanged(): void {
+		$golden = [
+			'eat|ASC|last' => '05a8898573f60c416fc7cd461c7cb36363ee91c4',
+			'eat|DESC|last' => '149da7797cda444d0f38106a73cbaa78bbbdd389',
+			'eat|ASC|first' => 'f73db325bc8d77ceb0e1346bf47a0a4fe2335691',
+			'eat|DESC|first' => 'c4e2c2560eb60da8d1981f64165324c580877832',
+			'drink|ASC|last' => 'a9a8b64bf89066ed297d4018582dc107bdaee10b',
+			'drink|DESC|last' => '6f1aac22fc92dbad9783938d7b06c25040c01ca7',
+			'drink|ASC|first' => 'c54fecc96cba0d3b85dfa3e89bb8976c4218465d',
+			'drink|DESC|first' => '31428dcd530f5fbdfccb01c672725c19d0d33a5a',
+			'play|ASC|last' => '4c532ec9ab320155ba7525703d49c696a9372e1a',
+			'play|DESC|last' => 'b90d85b8116fc71bd33f187361fca0eb08ceab3f',
+			'play|ASC|first' => '283997dfb8ab8a2575cff0df357cce4c48570339',
+			'play|DESC|first' => '24f3314f4bcb8b56cc95b37782b63eeeb006b5f2',
+			'reply|ASC|last' => 'e5a9a14deb11b049c37b8acb7b52d086974c7246',
+			'reply|DESC|last' => 'bf0243dedd4a8336a93b147aa905335c26f230b5',
+			'reply|ASC|first' => '25ef3b413fc66d2228fd7db85c2f34cd497d8cc0',
+			'reply|DESC|first' => 'b1c6df3275c6b06517075a35065221eb7ec6f153',
+			'like|ASC|last' => 'e5a9a14deb11b049c37b8acb7b52d086974c7246',
+			'like|DESC|last' => 'bf0243dedd4a8336a93b147aa905335c26f230b5',
+			'like|ASC|first' => '25ef3b413fc66d2228fd7db85c2f34cd497d8cc0',
+			'like|DESC|first' => 'b1c6df3275c6b06517075a35065221eb7ec6f153',
+			'photo|ASC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'photo|DESC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'photo|ASC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'photo|DESC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'chicken|ASC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'chicken|DESC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'chicken|ASC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'chicken|DESC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'favorite|ASC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'favorite|DESC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'favorite|ASC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'favorite|DESC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'acquisition|ASC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'acquisition|DESC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'acquisition|ASC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'acquisition|DESC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'repost|ASC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'repost|DESC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'repost|ASC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'repost|DESC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'article|ASC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'article|DESC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'article|ASC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'article|DESC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'exercise|ASC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'exercise|DESC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'exercise|ASC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'exercise|DESC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'note|ASC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'note|DESC|last' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'note|ASC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'note|DESC|first' => 'dd66257ece7e87c19e2942a9e80bdd1202bf1de7',
+			'read|ASC|last' => '450084839ecca84ba5f5f1a318180a43d4506330',
+			'read|DESC|last' => 'ab01f20e38c406aefbda56009e111c4e9291b99a',
+			'read|ASC|first' => '401d7135f3e8dffd66006098302fdf7181438c24',
+			'read|DESC|first' => '80ebfbadfb6c87e579c4cc985f0416e35d9947a5',
+			'review|ASC|last' => 'd6ba5f28c9fceb8e210c32dbbb9f8c0e945a3101',
+			'review|DESC|last' => 'da4a604f2e9b42ea6e839720e45f076b8a89e71f',
+			'review|ASC|first' => '909d6d24402e0cf589f34ea0ef224ff26b83b444',
+			'review|DESC|first' => '8148654824da4e2834f85d8cee4a51178c5ec888',
+			'bookmark|ASC|last' => '6ffdf292a3c66f966c1f619653535bf9522d0d73',
+			'bookmark|DESC|last' => 'ec4cd4403a2d10122bac3f86f8e4d95057fb03df',
+			'bookmark|ASC|first' => 'f909ba30c4c5eeb9e82c2e4feea797c661dd2c6e',
+			'bookmark|DESC|first' => 'ab970cae86cb04dc5f8196cae18da3d7d4c8f564',
+			'sleep|ASC|last' => '9385ce1ec67c4517df6de501835e61c30bdc6047',
+			'sleep|DESC|last' => '9385ce1ec67c4517df6de501835e61c30bdc6047',
+			'sleep|ASC|first' => '9385ce1ec67c4517df6de501835e61c30bdc6047',
+			'sleep|DESC|first' => '9385ce1ec67c4517df6de501835e61c30bdc6047',
+			'craft|ASC|last' => '5732cdbfa95e9d30ff91e327be9f24af412b7471',
+			'craft|DESC|last' => 'b52b7c95b9a7915961869caf272e70f66146eb09',
+			'craft|ASC|first' => '880f4637c639aee024bf61ab3421229cf37a6f30',
+			'craft|DESC|first' => '9e658d666d6abf3daa341d59672bc7b25405a04c',
+		];
+		$tokens = [
+			'ASC|last'   => 'pkiw_group',
+			'DESC|last'  => 'pkiw_group_desc',
+			'ASC|first'  => 'pkiw_group_empty_first',
+			'DESC|first' => 'pkiw_group_desc_empty_first',
+		];
+		global $wpdb;
+
+		foreach ( $golden as $case => $expected ) {
+			[ $kind, $order, $empty ] = explode( '|', $case );
+			$term = get_term_by( 'slug', $kind, 'kind' );
+			if ( ! $term instanceof WP_Term ) {
+				$created = wp_insert_term( $kind, 'kind', [ 'slug' => $kind ] );
+				$this->assertIsArray( $created, $case );
+				$term = get_term( (int) $created['term_id'], 'kind' );
+			}
+			$this->assertInstanceOf( WP_Term::class, $term, $case );
+
+			$request = new WP_REST_Request( 'GET', '/wp/v2/posts' );
+			$request->set_param( 'orderby', $tokens[ $order . '|' . $empty ] );
+			$request->set_param( 'kind', [ $term->term_id ] );
+			$args  = Grouped_Archive::rest_order( [], $request );
+			$query = new WP_Query();
+			foreach ( $args as $name => $value ) {
+				if ( str_starts_with( (string) $name, 'pkiw_' ) ) {
+					$query->set( $name, $value );
+				}
+			}
+			$sql = str_replace( $wpdb->prefix, '{p}', Grouped_Archive::group_orderby( 'x', $query ) );
+			$this->assertSame( $expected, sha1( $sql ), $case . ': ' . $sql );
 		}
 	}
 
@@ -631,6 +1140,8 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			'source id with a space'             => [ static fn() => new Meta_Source( 'bad id', [ '_k' ] ) ],
 			'source id over 64 characters'       => [ static fn() => new Meta_Source( str_repeat( 'a', 65 ), [ '_k' ] ) ],
 			'meta source with no key'            => [ static fn() => new Meta_Source( 'ok', [ '' ] ) ],
+			'within order with no key'            => [ static fn() => new Meta_Source( 'ok', [ '_k' ], [], null, '', false, [], [ 'key' => ' ', 'order' => [ 'high' ] ] ) ],
+			'within order with no values'         => [ static fn() => new Meta_Source( 'ok', [ '_k' ], [], null, '', false, [], [ 'key' => '_priority', 'order' => [ '', ' ' ] ] ) ],
 			'cases source with no case'          => [ static fn() => new Cases_Source( 'ok', [] ) ],
 			'case with no key'                   => [ static fn() => new Cases_Source( 'ok', [ 'video' => [] ] ) ],
 			'case id with capitals'              => [ static fn() => new Cases_Source( 'ok', [ 'Video' => [ '_k' ] ] ) ],
@@ -836,6 +1347,136 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			$this->sections( $this->serve( 'multikind', $this->loop( self::MARKER ) ) ),
 			'An empty or blank first key falls through to the second.'
 		);
+	}
+
+	public function test_a_value_map_files_stored_spellings_under_mapped_groups_and_unknowns_under_other(): void {
+		$this->register_wish_source();
+		$p = [
+			'media'       => $this->make( 'wishkind', 'Media', '2026-01-11 10:00:00', [ '_pkiw_test_wish_type' => 'media' ] ),
+			'Media'       => $this->make( 'wishkind', 'Capital media', '2026-01-10 10:00:00', [ '_pkiw_test_wish_type' => 'Media' ] ),
+			' MEDIA '     => $this->make( 'wishkind', 'Spaced media', '2026-01-09 10:00:00', [ '_pkiw_test_wish_type' => ' MEDIA ' ] ),
+			'movie'       => $this->make( 'wishkind', 'Movie', '2026-01-08 10:00:00', [ '_pkiw_test_wish_type' => 'movie' ] ),
+			'Movie'       => $this->make( 'wishkind', 'Capital movie', '2026-01-07 10:00:00', [ '_pkiw_test_wish_type' => 'Movie' ] ),
+			'book'        => $this->make( 'wishkind', 'Book', '2026-01-06 10:00:00', [ '_pkiw_test_wish_type' => 'book' ] ),
+			'other'       => $this->make( 'wishkind', 'Other value', '2026-01-05 10:00:00', [ '_pkiw_test_wish_type' => 'other' ] ),
+			'empty'       => $this->make( 'wishkind', 'Empty value', '2026-01-04 10:00:00', [ '_pkiw_test_wish_type' => '' ] ),
+			'spaces'      => $this->make( 'wishkind', 'Spaces value', '2026-01-03 10:00:00', [ '_pkiw_test_wish_type' => '   ' ] ),
+			'gizmo'       => $this->make( 'wishkind', 'Mapped empty', '2026-01-02 10:00:00', [ '_pkiw_test_wish_type' => 'gizmo' ] ),
+			'no_row'      => $this->make( 'wishkind', 'No row', '2026-01-01 10:00:00' ),
+		];
+
+		$ids = $this->grouped_ids( 'wishkind', 'test_wish_type' );
+		$this->assert_contiguous( 'test_wish_type', $ids );
+		$this->assertSame(
+			[ 'book', 'movie', 'movie', 'movie', 'movie', 'movie', '', '', '', '', '' ],
+			array_map( static fn( int $id ): string => Grouped_Archive::group_of_post( 'wishkind', $id )->key(), $ids ),
+			'Mapped groups sort together and the empty group sorts last.'
+		);
+		foreach ( [ 'media', 'Media', ' MEDIA ', 'movie', 'Movie' ] as $stored ) {
+			$group = Grouped_Archive::group_of_post( 'wishkind', $p[ $stored ] );
+			$this->assertSame( 'movie', $group->key(), $stored );
+			$this->assertSame( 'movie', $group->raw(), $stored );
+		}
+		$this->assertSame( 'book', Grouped_Archive::group_of_post( 'wishkind', $p['book'] )->key() );
+		foreach ( [ 'other', 'empty', 'spaces', 'gizmo', 'no_row' ] as $stored ) {
+			$this->assertTrue( Grouped_Archive::group_of_post( 'wishkind', $p[ $stored ] )->is_empty(), $stored );
+		}
+		$this->assertSame(
+			[ 'h2:Book', 'h2:Movie/Show', 'h2:Other' ],
+			array_column( $this->sections( $this->serve( 'wishkind', $this->loop( self::MARKER ) ) ), 0 )
+		);
+	}
+
+	public function test_an_accent_variant_missing_from_the_value_map_is_empty_in_sql_and_php(): void {
+		$this->register_wish_source();
+		$movie  = $this->make( 'wishkind', 'Movie', '2026-01-01 10:00:00', [ '_pkiw_test_wish_type' => 'media' ] );
+		$accent = $this->make( 'wishkind', 'Accent', '2026-01-02 10:00:00', [ '_pkiw_test_wish_type' => 'médiá' ] );
+
+		$this->assertSame( [ $movie, $accent ], $this->grouped_ids( 'wishkind', 'test_wish_type' ) );
+		$this->assertSame( 'movie', Grouped_Archive::group_of_post( 'wishkind', $movie )->key() );
+		$this->assertTrue( Grouped_Archive::group_of_post( 'wishkind', $accent )->is_empty() );
+	}
+
+	public function test_within_order_ranks_priorities_then_uses_date_and_id_inside_a_rank(): void {
+		$this->register_wish_source();
+		$high    = $this->make( 'wishkind', 'High', '2026-01-01 10:00:00', [ '_pkiw_test_wish_type' => 'book', '_pkiw_test_wish_priority' => ' HIGH ' ] );
+		$medium  = $this->make( 'wishkind', 'Medium', '2026-01-02 10:00:00', [ '_pkiw_test_wish_type' => 'book', '_pkiw_test_wish_priority' => 'medium' ] );
+		$low     = $this->make( 'wishkind', 'Low', '2026-01-06 10:00:00', [ '_pkiw_test_wish_type' => 'book', '_pkiw_test_wish_priority' => 'LOW' ] );
+		$unset   = $this->make( 'wishkind', 'Unset', '2026-01-05 10:00:00', [ '_pkiw_test_wish_type' => 'book' ] );
+		$unknown = $this->make( 'wishkind', 'Unknown', '2026-01-04 10:00:00', [ '_pkiw_test_wish_type' => 'book', '_pkiw_test_wish_priority' => 'urgent' ] );
+		$expected = [ $high, $unset, $unknown, $medium, $low ];
+
+		$this->assertSame( $expected, $this->grouped_ids( 'wishkind', 'test_wish_type' ) );
+		$this->assertSame( $expected, $this->rest_ids( 'wishkind' ) );
+		$this->assertSame(
+			[ 'High', 'Unset', 'Unknown', 'Medium', 'Low' ],
+			$this->sections( $this->editor_render( self::LINE, $high, [], [ 'pkiw_kind' => 'wishkind' ] ) )[0][1],
+			'The block-renderer preview uses the same within-group order as the archive and REST route.'
+		);
+	}
+
+	public function test_a_protected_post_uses_the_default_within_rank_in_the_empty_group(): void {
+		$this->register_wish_source();
+		$high      = $this->make( 'wishkind', 'Unprotected high', '2026-01-01 10:00:00', [ '_pkiw_test_wish_type' => 'other', '_pkiw_test_wish_priority' => 'high' ] );
+		$medium    = $this->make( 'wishkind', 'Unprotected medium', '2026-01-02 10:00:00', [ '_pkiw_test_wish_type' => 'other', '_pkiw_test_wish_priority' => 'medium' ] );
+		$protected = $this->make( 'wishkind', 'Protected high', '2026-01-03 10:00:00', [ '_pkiw_test_wish_type' => 'movie', '_pkiw_test_wish_priority' => 'high' ] );
+		wp_update_post(
+			[
+				'ID'            => $protected,
+				'post_password' => 'secret',
+			]
+		);
+
+		$this->assertTrue( Grouped_Archive::group_of_post( 'wishkind', $protected )->is_empty() );
+		$this->assertSame(
+			[ $high, $protected, $medium ],
+			$this->grouped_ids( 'wishkind', 'test_wish_type' ),
+			'A protected high-priority post ranks with medium posts, where date places it after an unprotected high and before the older medium.'
+		);
+	}
+
+	public function test_a_protected_post_ranks_as_the_default_within_its_group_whether_or_not_the_source_flags_it(): void {
+		foreach ( [ true, false ] as $flag ) {
+			Grouped_Archive::unregister_source( 'test_wish_type' );
+			$this->register_wish_source( $flag );
+			$kind = $flag ? 'wishkind_flagged' : 'wishkind_open';
+			Grouped_Archive::register_source( Grouped_Archive::source( 'test_wish_type' ), $kind );
+			$group = $flag ? 'other' : 'book';
+			$high  = $this->make( $kind, 'High', '2026-01-01 10:00:00', [ '_pkiw_test_wish_type' => $group, '_pkiw_test_wish_priority' => 'high' ] );
+			$mid   = $this->make( $kind, 'Medium', '2026-01-02 10:00:00', [ '_pkiw_test_wish_type' => $group, '_pkiw_test_wish_priority' => 'medium' ] );
+			$lock  = $this->make( $kind, 'Locked high', '2026-01-03 10:00:00', [ '_pkiw_test_wish_type' => $group, '_pkiw_test_wish_priority' => 'high' ] );
+			wp_update_post(
+				[
+					'ID'            => $lock,
+					'post_password' => 'secret',
+				]
+			);
+
+			$this->assertSame(
+				[ $high, $lock, $mid ],
+				$this->grouped_ids( $kind, 'test_wish_type' ),
+				$flag ? 'Flagged: a protected high wish ranks medium.' : 'Unflagged: its group stays visible, but its rank still reads medium.'
+			);
+		}
+	}
+
+	public function test_a_protected_post_stays_in_its_mapped_group_when_the_source_does_not_flag_it(): void {
+		$this->register_wish_source( false );
+		$id = $this->make( 'wishkind', 'Protected movie', '2026-01-01 10:00:00', [ '_pkiw_test_wish_type' => 'media' ] );
+		wp_update_post(
+			[
+				'ID'            => $id,
+				'post_password' => 'secret',
+			]
+		);
+
+		$this->assertSame( 'movie', Grouped_Archive::group_of_post( 'wishkind', $id )->key() );
+	}
+
+	public function test_a_plain_meta_source_keeps_its_original_sql_shape(): void {
+		$source = new Meta_Source( 'test_plain', [ '_pkiw_test_plain' ] );
+
+		$this->assertSame( [ 'value', 'tiebreak' ], array_keys( $source->sql( new WP_Query() ) ) );
 	}
 
 	// Cases.
@@ -1228,6 +1869,176 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	}
 
 	// Sections.
+
+	public function test_zero_lead_keeps_play_and_read_archive_sections_byte_identical(): void {
+		$fixtures = [
+			'play' => [
+				[ 'Video Play', '2026-08-03 10:00:00', [ '_pkiw_play_rawg_id' => '3498' ] ],
+				[ 'Board Play', '2026-08-02 10:00:00', [ '_pkiw_play_bgg_id' => '13' ] ],
+				[ 'Outdoor Play', '2026-08-01 10:00:00', [] ],
+			],
+			'read' => [
+				[ 'Reading Book', '2026-08-03 10:00:00', [ '_pkiw_read_status' => 'reading' ] ],
+				[ 'Finished Book', '2026-08-02 10:00:00', [ '_pkiw_read_status' => 'finished' ] ],
+			],
+		];
+		$expected = [
+			'play' => '<section class="pkiw-group" data-pkiw-sections="3" data-pkiw-group="video"><h2 id="pkiw-group-video" class="pkiw-group__heading">Video games</h2><ul class="pkiw-group__items"><li><h2 class="wp-block-post-title">Video Play</h2></li></ul></section>'
+				. '<section class="pkiw-group" data-pkiw-sections="3" data-pkiw-group="board"><h2 id="pkiw-group-board" class="pkiw-group__heading">Board games</h2><ul class="pkiw-group__items"><li><h2 class="wp-block-post-title">Board Play</h2></li></ul></section>'
+				. '<section class="pkiw-group" data-pkiw-sections="3" data-pkiw-group=""><h2 id="pkiw-group-empty" class="pkiw-group__heading">Other</h2><ul class="pkiw-group__items"><li><h2 class="wp-block-post-title">Outdoor Play</h2></li></ul></section>',
+			'read' => '<section class="pkiw-group" data-pkiw-sections="2" data-pkiw-group="reading"><h2 id="pkiw-group-reading" class="pkiw-group__heading">Currently Reading</h2><ul class="pkiw-group__items"><li><h2 class="wp-block-post-title">Reading Book</h2></li></ul></section>'
+				. '<section class="pkiw-group" data-pkiw-sections="2" data-pkiw-group="finished"><h2 id="pkiw-group-finished" class="pkiw-group__heading">Finished</h2><ul class="pkiw-group__items"><li><h2 class="wp-block-post-title">Finished Book</h2></li></ul></section>',
+		];
+		$normalize = static function ( string $html ): string {
+			$html = (string) preg_replace( '/post-\d+/', 'post-ID', $html );
+			preg_match_all( '#<section class="pkiw-group" data-pkiw-sections="[^"]+" data-pkiw-group="[^"]*">.*?</section>#s', $html, $sections );
+
+			return (string) preg_replace( '#<li[^>]*>#', '<li>', implode( '', $sections[0] ) );
+		};
+
+		foreach ( $fixtures as $kind => $posts ) {
+			foreach ( $posts as [ $title, $date, $meta ] ) {
+				$this->make( $kind, $title, $date, $meta );
+			}
+			$plain = $this->serve( $kind, $this->loop( 'post-kinds-indieweb/archive-sections' ) );
+			$zero  = $this->serve( $kind, $this->loop( 'post-kinds-indieweb/archive-sections', [ 'leadCount' => 0, 'leadLabel' => 'x' ] ) );
+
+			$this->assertSame( (string) preg_replace( '/post-\d+/', 'post-ID', $plain ), (string) preg_replace( '/post-\d+/', 'post-ID', $zero ), "{$kind}: an explicit zero lead changes no byte except generated post IDs." );
+			$this->assertSame( $expected[ $kind ], $normalize( $plain ), "{$kind}: the shipped section structure stays frozen." );
+		}
+	}
+
+	public function test_page_one_lead_precedes_sections_and_the_first_remaining_post_reopens_its_month(): void {
+		$this->make( 'monthkind', 'Newest September', '2026-09-03 10:00:00' );
+		$this->make( 'monthkind', 'Middle September', '2026-09-02 10:00:00' );
+		$this->make( 'monthkind', 'Oldest September', '2026-09-01 10:00:00' );
+		$this->make( 'monthkind', 'August', '2026-08-31 10:00:00' );
+
+		$html = $this->serve( 'monthkind', $this->loop( self::LEAD, [ 'leadCount' => 1, 'leadLabel' => 'Latest' ] ) );
+
+		$this->assertStringContainsString( '<section class="pkiw-lead" data-pkiw-lead="1"><h2 id="pkiw-lead" class="pkiw-lead__heading">Latest</h2><ul class="pkiw-lead__items">', $html );
+		$this->assertTrue( strpos( $html, 'class="pkiw-lead"' ) < strpos( $html, 'class="pkiw-group"' ), 'The lead prints before the month sections.' );
+		$this->assertSame(
+			[
+				[ 'h2:September 2026', [ 'Middle September', 'Oldest September' ] ],
+				[ 'h2:August 2026', [ 'August' ] ],
+			],
+			$this->sections( $html ),
+			'The first non-lead post opens its month even when the lead shares that month.'
+		);
+		$this->assertSame( 2, substr_count( $html, 'data-pkiw-sections="2"' ), 'The section count excludes the lead.' );
+		$this->assertSame( 1, substr_count( $html, 'Newest September' ), 'The lead post is absent from every month section.' );
+	}
+
+	public function test_a_month_consumed_by_the_lead_prints_no_empty_section(): void {
+		$this->months();
+
+		$html = $this->serve( 'monthkind', $this->loop( self::LEAD, [ 'leadCount' => 1 ] ) );
+
+		$this->assertStringContainsString( 'data-pkiw-lead="1"', $html );
+		$this->assertStringNotContainsString( '>September 2026</h2>', $html );
+		$this->assertSame(
+			[
+				[ 'h2:August 2026', [ 'Late August', 'Early August' ] ],
+				[ 'h2:July 2026', [ 'July' ] ],
+			],
+			$this->sections( $html )
+		);
+	}
+
+	public function test_lead_count_clamps_to_three_and_uses_the_number_of_posts_actually_printed(): void {
+		$this->make( 'monthkind', 'Second', '2026-09-02 10:00:00' );
+		$this->make( 'monthkind', 'First', '2026-09-03 10:00:00' );
+
+		$two = $this->serve( 'monthkind', $this->loop( self::LEAD, [ 'leadCount' => 3 ] ) );
+		$this->assertStringContainsString( '<section class="pkiw-lead" data-pkiw-lead="2"><ul class="pkiw-lead__items">', $two );
+		$this->assertStringNotContainsString( 'pkiw-lead__heading', $two, 'An empty lead label omits the heading.' );
+		$this->assertSame( [], $this->sections( $two ), 'No empty month section prints when the lead consumes the page.' );
+
+		$this->make( 'monthkind', 'Fourth', '2026-09-01 10:00:00' );
+		$this->make( 'monthkind', 'Third', '2026-09-01 12:00:00' );
+		$clamped = $this->serve( 'monthkind', $this->loop( self::LEAD, [ 'leadCount' => 9 ] ) );
+		$this->assertStringContainsString( 'data-pkiw-lead="3"', $clamped );
+		$this->assertSame( [ [ 'h2:September 2026', [ 'Fourth' ] ] ], $this->sections( $clamped ) );
+	}
+
+	public function test_lead_posts_count_toward_page_size_and_only_page_one_has_a_lead(): void {
+		$ids = [
+			$this->make( 'monthkind', 'Fourth', '2026-09-01 10:00:00' ),
+			$this->make( 'monthkind', 'Third', '2026-09-02 10:00:00' ),
+			$this->make( 'monthkind', 'Second', '2026-09-03 10:00:00' ),
+			$this->make( 'monthkind', 'First', '2026-09-04 10:00:00' ),
+		];
+		$attrs = [ 'leadCount' => 1, 'leadLabel' => 'Latest', 'linesPerPage' => 2 ];
+
+		$first  = $this->serve( 'monthkind', $this->loop( self::LEAD, $attrs ), 1 );
+		$second = $this->serve( 'monthkind', $this->loop( self::LEAD, $attrs ), 2 );
+		$this->assertStringContainsString( 'data-pkiw-lead="1"', $first );
+		$this->assertStringNotContainsString( 'data-pkiw-lead', $second );
+		$this->assertSame( [ $ids[1], $ids[0] ], array_map( 'intval', wp_list_pluck( $GLOBALS['wp_query']->posts, 'ID' ) ), 'Page 2 starts after both posts from page 1, including its lead.' );
+		$this->assertSame( [ [ 'h2:September 2026', [ 'Third', 'Fourth' ] ] ], $this->sections( $second ) );
+	}
+
+	public function test_non_inheriting_loop_uses_its_local_page_to_limit_the_lead(): void {
+		$this->make( 'monthkind', 'Fourth', '2026-09-01 10:00:00' );
+		$this->make( 'monthkind', 'Third', '2026-09-02 10:00:00' );
+		$this->make( 'monthkind', 'Second', '2026-09-03 10:00:00' );
+		$this->make( 'monthkind', 'First', '2026-09-04 10:00:00' );
+		$kind = get_term_by( 'slug', 'monthkind', 'kind' );
+		$loop = '<!-- wp:query {"query":{"perPage":2,"postType":"post","inherit":false,"pkiwGroupBy":"monthkind","taxQuery":{"include":{"kind":[' . $kind->term_id . ']}}}} --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-title /--><!-- wp:' . self::LEAD . ' {"leadCount":1,"leadLabel":"Latest"} /--><!-- /wp:post-template --></div><!-- /wp:query -->';
+
+		$this->go_to( home_url( '/' ) );
+		$this->assertStringContainsString( 'data-pkiw-lead="1"', do_blocks( $loop ) );
+		$this->go_to( add_query_arg( 'query-page', 2, home_url( '/' ) ) );
+		$this->assertStringNotContainsString( 'data-pkiw-lead', do_blocks( $loop ) );
+	}
+
+	public function test_each_lead_heading_id_is_unique_within_the_request(): void {
+		$this->make( 'monthkind', 'Newest', '2026-09-04 10:00:00' );
+		$template = $this->loop( self::LEAD, [ 'leadCount' => 1, 'leadLabel' => 'Latest' ] );
+
+		$html = $this->serve( 'monthkind', $template . $template );
+		preg_match_all( '/class="pkiw-lead__heading"/', $html, $headings );
+		$this->assertCount( 2, $headings[0] );
+		$this->assertStringContainsString( 'id="pkiw-lead"', $html );
+		$this->assertStringContainsString( 'id="pkiw-lead-2"', $html );
+	}
+
+	public function test_a_protected_lead_post_uses_the_stream_cards_title_only_rendering(): void {
+		$protected = $this->make( 'monthkind', 'Private notes', '2026-09-04 10:00:00' );
+		wp_update_post(
+			[
+				'ID'           => $protected,
+				'post_password' => 'secret',
+				'post_content'  => '<!-- wp:paragraph --><p>Private body</p><!-- /wp:paragraph -->',
+				'post_excerpt'  => 'Private excerpt',
+			]
+		);
+		$this->make( 'monthkind', 'Public notes', '2026-09-03 10:00:00' );
+		$template = '<!-- wp:query {"queryId":7,"query":{"inherit":true}} --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-kinds-indieweb/stream-card /--><!-- wp:post-kinds-indieweb/archive-sections {"leadCount":1,"leadLabel":"Latest"} /--><!-- /wp:post-template --></div><!-- /wp:query -->';
+
+		$html = $this->serve( 'monthkind', $template );
+		preg_match( '#<section class="pkiw-lead".*?</section>#s', $html, $lead );
+		$this->assertStringContainsString( 'pk-card--protected', $lead[0] );
+		$this->assertStringContainsString( 'Protected: Private notes', $lead[0] );
+		$this->assertStringNotContainsString( 'Private body', $lead[0] );
+		$this->assertStringNotContainsString( 'Private excerpt', $lead[0] );
+		$this->assertStringNotContainsString( 'p-author', $lead[0] );
+		$this->assertStringNotContainsString( 'pk-card__meta', $lead[0] );
+	}
+
+	public function test_the_editor_preview_marks_lead_items_and_reopens_the_first_remaining_month(): void {
+		$newest = $this->make( 'monthkind', 'Newest September', '2026-09-04 10:00:00' );
+		$second = $this->make( 'monthkind', 'Middle September', '2026-09-03 10:00:00' );
+		$third  = $this->make( 'monthkind', 'Oldest September', '2026-09-02 10:00:00' );
+		$attrs  = [ 'leadCount' => 1, 'leadLabel' => 'Latest' ];
+
+		$this->assertSame( '<h2 class="pkiw-lead__heading">Latest</h2>', $this->editor_render( self::LEAD, $newest, $attrs, [ 'pkiw_kind' => 'monthkind' ] ) );
+		$this->assertSame( '<h2 id="pkiw-group-2026-09" class="pkiw-group__heading">September 2026</h2>', $this->editor_render( self::LEAD, $second, $attrs, [ 'pkiw_kind' => 'monthkind' ] ) );
+		$this->assertSame( '<div class="pkiw-group-placeholder" hidden></div>', $this->editor_render( self::LEAD, $third, $attrs, [ 'pkiw_kind' => 'monthkind' ] ) );
+		$this->assertSame( '<h2 id="pkiw-group-2026-09" class="pkiw-group__heading">September 2026</h2>', $this->editor_render( self::LEAD, $newest, [ 'leadCount' => 0 ], [ 'pkiw_kind' => 'monthkind' ] ), 'A zero lead keeps the existing preview.' );
+		$this->assertSame( '<h2 id="pkiw-group-2026-09" class="pkiw-group__heading">September 2026</h2>', $this->editor_render( self::LEAD, $third, $attrs + [ 'linesPerPage' => 2 ], [ 'pkiw_kind' => 'monthkind' ] ), 'A post on page 2 opens its ordinary section instead of becoming a lead.' );
+	}
 
 	public function test_only_an_entry_that_asks_exposes_the_group_key(): void {
 		$this->plays();
