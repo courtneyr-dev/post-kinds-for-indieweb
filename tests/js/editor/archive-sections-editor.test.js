@@ -11,11 +11,12 @@ const BLOCK = 'post-kinds-indieweb/archive-sections';
 /**
  * Load the script and return the settings it registers the block with.
  *
- * @param {Object} [groups]    Group keys and their default labels, by kind.
- * @param {Array}  [dateKinds] Kind slugs grouped by post month.
+ * @param {Object} [groups]      Group keys and their default labels, by kind.
+ * @param {Array}  [dateKinds]   Kind slugs grouped by post date.
+ * @param {Object} [dateFormats] Default PHP date formats, by kind.
  * @return {Object} Block settings.
  */
-function register( groups, dateKinds ) {
+function register( groups, dateKinds, dateFormats ) {
 	const registerBlockType = jest.fn();
 	const component = ( name ) => name;
 	window.wp = {
@@ -51,6 +52,9 @@ function register( groups, dateKinds ) {
 	if ( dateKinds ) {
 		window.pkiwArchiveSectionsDateKinds = dateKinds;
 	}
+	if ( dateFormats ) {
+		window.pkiwArchiveSectionsDateFormats = dateFormats;
+	}
 	jest.isolateModules( () => {
 		require( SCRIPT );
 	} );
@@ -79,6 +83,8 @@ const defaults = {
 	emptyLabel: '',
 	groupLabels: {},
 	dateFormat: '',
+	leadCount: 0,
+	leadLabel: '',
 };
 
 /**
@@ -114,6 +120,7 @@ describe( 'archive sections editor', () => {
 		delete window.wp;
 		delete window.pkiwArchiveSections;
 		delete window.pkiwArchiveSectionsDateKinds;
+		delete window.pkiwArchiveSectionsDateFormats;
 	} );
 
 	it( 'registers inside a Post Template with the server-side attributes', () => {
@@ -138,6 +145,15 @@ describe( 'archive sections editor', () => {
 		expect( settings.attributes.dateFormat ).toEqual( {
 			type: 'string',
 			default: '',
+		} );
+		expect( settings.attributes.leadCount ).toEqual( {
+			type: 'integer',
+			default: 0,
+		} );
+		expect( settings.attributes.leadLabel ).toEqual( {
+			type: 'string',
+			default: '',
+			role: 'content',
 		} );
 		expect( settings.save() ).toBeNull();
 	} );
@@ -309,6 +325,134 @@ describe( 'archive sections editor', () => {
 		date.props.onChange( 'Y-m' );
 		expect( setAttributes ).toHaveBeenCalledWith( { dateFormat: 'Y-m' } );
 	} );
+
+	it.each( [
+		[ 'video', { photo: 'F Y', video: 'Y' }, 'Y' ],
+		[ 'photo', { photo: 'F Y', video: 'Y' }, 'F Y' ],
+		[ 'jam', { photo: 'F Y', video: 'Y' }, 'F Y' ],
+		[ 'article', undefined, 'F Y' ],
+	] )(
+		'uses the %s kind’s default date format',
+		( kind, dateFormats, expected ) => {
+			const { tree } = edit(
+				register(
+					undefined,
+					[ 'video', 'photo', 'jam', 'article' ],
+					dateFormats
+				),
+				{},
+				{ templateSlug: 'taxonomy-kind-' + kind }
+			);
+			const date = control( tree, 'TextControl', 'Date format' );
+
+			expect( date.props.placeholder ).toBe( expected );
+			expect( date.props.help ).toBe(
+				'A PHP date format. Empty uses ' + expected + '.'
+			);
+		}
+	);
+
+	it.each( [ 'photo', 'jam' ] )(
+		'shows lead controls for the month-grouped %s kind',
+		( kind ) => {
+			const { tree } = edit(
+				register( undefined, [ 'photo', 'jam', 'video' ], {
+					photo: 'F Y',
+					jam: 'F Y',
+					video: 'Y',
+				} ),
+				{},
+				{ templateSlug: 'taxonomy-kind-' + kind }
+			);
+
+			expect(
+				control(
+					tree,
+					'ToggleControl',
+					'Feature the newest post on page 1'
+				).props.help
+			).toBe(
+				'Prints the newest post first, above the month sections, on the first page only.'
+			);
+			expect(
+				control( tree, 'TextControl', 'Heading for the featured post' )
+					.props.help
+			).toBe( 'Empty prints no heading.' );
+		}
+	);
+
+	it( 'writes the lead attributes from the month controls', () => {
+		const { tree, setAttributes } = edit(
+			register( undefined, [ 'photo' ], { photo: 'F Y' } ),
+			{ leadLabel: 'Featured' },
+			{ templateSlug: 'taxonomy-kind-photo' }
+		);
+		const toggle = control(
+			tree,
+			'ToggleControl',
+			'Feature the newest post on page 1'
+		);
+		const label = control(
+			tree,
+			'TextControl',
+			'Heading for the featured post'
+		);
+
+		expect( label.props.value ).toBe( 'Featured' );
+		toggle.props.onChange( true );
+		expect( setAttributes ).toHaveBeenLastCalledWith( { leadCount: 1 } );
+		toggle.props.onChange( false );
+		expect( setAttributes ).toHaveBeenLastCalledWith( { leadCount: 0 } );
+		label.props.onChange( 'Latest' );
+		expect( setAttributes ).toHaveBeenLastCalledWith( {
+			leadLabel: 'Latest',
+		} );
+	} );
+
+	it.each( [
+		[ 0, false ],
+		[ 1, true ],
+	] )( 'reads leadCount %d as checked %s', ( leadCount, expected ) => {
+		const { tree } = edit(
+			register( undefined, [ 'photo' ], { photo: 'F Y' } ),
+			{ leadCount },
+			{ templateSlug: 'taxonomy-kind-photo' }
+		);
+
+		expect(
+			control(
+				tree,
+				'ToggleControl',
+				'Feature the newest post on page 1'
+			).props.checked
+		).toBe( expected );
+	} );
+
+	it.each( [
+		[ 'video', true ],
+		[ 'play', true ],
+		[ 'photo', false ],
+	] )(
+		'hides lead controls for %s when showSections is %s',
+		( kind, showSections ) => {
+			const { tree } = edit(
+				register( undefined, [ 'photo', 'video' ], {
+					photo: 'F Y',
+					video: 'Y',
+				} ),
+				{ showSections },
+				{ templateSlug: 'taxonomy-kind-' + kind }
+			);
+			const labels = tree
+				.filter( ( node ) => node.props && node.props.label )
+				.map( ( node ) => node.props.label );
+
+			expect( labels ).not.toContain(
+				'Feature the newest post on page 1'
+			);
+			expect( labels ).not.toContain( 'Heading for the featured post' );
+		}
+	);
 
 	it( 'keeps group controls for templates outside the date-kind list', () => {
 		const { tree } = edit(
