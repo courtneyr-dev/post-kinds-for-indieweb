@@ -102,6 +102,7 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 			],
 			'post-kinds-indieweb/listen-card'       => [
 				'musicbrainzId' => 'embedded in a canonical musicbrainz.org URL via esc_url(), which percent-encodes the space-containing sample',
+				'mediaType'     => 'block.json enum (music/podcast); core drops the invalid sample pre-render, and the card does not echo the media type',
 			],
 			'post-kinds-indieweb/play-card'         => [
 				'status' => 'block.json enum (playing/completed/...); core drops the invalid sample pre-render and falls back to the default',

@@ -18,6 +18,7 @@ import { PanelBody, TextControl, SelectControl } from '@wordpress/components';
 import { useEffect } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
 import StandardSitePanel from '../../components/standard-site-panel';
+import { DayField } from '../shared/components';
 
 /**
  * Wish type options with emojis.
@@ -93,8 +94,17 @@ function getWishTypeInfo( type ) {
 }
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { title, wishType, url, image, imageAlt, price, reason, priority } =
-		attributes;
+	const {
+		title,
+		wishType,
+		url,
+		image,
+		imageAlt,
+		price,
+		reason,
+		priority,
+		wishedAt,
+	} = attributes;
 
 	const blockProps = useBlockProps( {
 		className: 'wish-card-block pk-card k-wish',
@@ -209,6 +219,16 @@ export default function Edit( { attributes, setAttributes } ) {
 						options={ priorityOptions }
 						onChange={ ( value ) =>
 							setAttributes( { priority: value } )
+						}
+					/>
+					<DayField
+						label={ __(
+							'Wished',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
+						value={ wishedAt }
+						onChange={ ( value ) =>
+							setAttributes( { wishedAt: value } )
 						}
 					/>
 					<TextControl

@@ -21,6 +21,7 @@ import { store as postKindsStore, STORE_NAME } from './stores/post-kinds';
 import KindSelectorPanel from './kind-selector';
 import './promote-panel';
 import './missing-alt-notice';
+import './transcript';
 
 // Register the data store.
 register( postKindsStore );

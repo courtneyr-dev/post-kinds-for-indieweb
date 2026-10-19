@@ -68,6 +68,10 @@ const ROUND_TRIP_EXCEPTIONS = {
 		locationPrivacy:
 			'block.json enum (public/approximate/private); "Sample locationPrivacy value" is not a member, so core coerces it back to the schema default (approximate) on save. Matches the BlockFieldRenderTest.php exception for the same attribute.',
 	},
+	'post-kinds-indieweb/listen-card': {
+		mediaType:
+			'block.json enum (music/podcast); "Sample mediaType value" is not a member, so core drops it on save (no default). Matches the BlockFieldRenderTest.php exception for the same attribute.',
+	},
 	'post-kinds-indieweb/play-card': {
 		status: 'block.json enum (playing/completed/abandoned/backlog/wishlist); "Sample status value" is not a member, so core coerces it back to the schema default (playing) on save. Matches the BlockFieldRenderTest.php exception for the same attribute.',
 	},
@@ -108,9 +112,9 @@ const RENDER_EXCEPTIONS = {
 	},
 	'post-kinds-indieweb/wish-card': {
 		wishType:
-			'wishlist subtype metadata; not surfaced as visible text in the card',
+			'mapped to a label; an unknown value prints Other and the raw value is never echoed',
 		priority:
-			'ordering hint metadata; not surfaced as visible text in the card',
+			'mapped to a label; an unknown value prints Medium and the raw value is never echoed',
 	},
 	'post-kinds-indieweb/checkin-card': {
 		venueType:
@@ -131,6 +135,8 @@ const RENDER_EXCEPTIONS = {
 	'post-kinds-indieweb/listen-card': {
 		musicbrainzId:
 			'embedded in a canonical musicbrainz.org URL via esc_url(), which percent-encodes the space-containing sample',
+		mediaType:
+			'block.json enum (music/podcast); core drops the invalid sample pre-render, and the card does not echo the media type. Matches the BlockFieldRenderTest.php exception for the same attribute.',
 	},
 	'post-kinds-indieweb/play-card': {
 		status: 'block.json enum (playing/completed/...); core drops the invalid sample pre-render and falls back to the default',
