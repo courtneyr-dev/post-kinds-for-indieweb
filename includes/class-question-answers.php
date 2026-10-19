@@ -160,6 +160,7 @@ final class Question_Answers {
 			|| null !== get_query_var( 'atproto', null )
 			|| '' !== (string) get_query_var( 'markdown_request', '' )
 			|| 'markdown' === get_query_var( 'format', '' )
+			|| ( function_exists( '\\Activitypub\\is_activitypub_request' ) && \Activitypub\is_activitypub_request() )
 			|| doing_filter( 'get_excerpt' )
 			|| doing_filter( 'get_the_excerpt' )
 			|| doing_action( 'wp_head' )

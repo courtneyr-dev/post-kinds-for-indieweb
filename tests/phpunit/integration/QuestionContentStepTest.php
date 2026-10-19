@@ -214,6 +214,27 @@ final class QuestionContentStepTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'pkiw-answers', Question_Answers::decorate_content( $content ), 'The same request without the markdown vars still prints the section.' );
 	}
 
+	public function test_activitypub_request_content_holds_no_answer_text_and_the_guard_is_inert_without_the_plugin(): void {
+		$id      = $this->s01();
+		$content = '<p>ActivityPub body.</p>';
+		$this->go_to( get_permalink( $id ) );
+		$GLOBALS['post'] = get_post( $id );
+
+		// ActivityPub is not loaded here: the guard is a no-op and the section prints.
+		$this->assertFalse( function_exists( '\\Activitypub\\is_activitypub_request' ) );
+		$this->assertStringContainsString( 'pkiw-answers', Question_Answers::decorate_content( $content ) );
+
+		require_once dirname( __DIR__ ) . '/fixtures/activitypub-request-stub.php';
+		try {
+			$GLOBALS['pkiw_test_activitypub_request'] = false;
+			$this->assertStringContainsString( 'pkiw-answers', Question_Answers::decorate_content( $content ) );
+			$GLOBALS['pkiw_test_activitypub_request'] = true;
+			$this->assertSame( $content, Question_Answers::decorate_content( $content ) );
+		} finally {
+			unset( $GLOBALS['pkiw_test_activitypub_request'] );
+		}
+	}
+
 	public function test_get_the_excerpt_contains_no_answer_text(): void {
 		$id = $this->s01();
 		$this->go_to( get_permalink( $id ) );
