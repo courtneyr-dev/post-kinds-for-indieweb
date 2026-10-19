@@ -12,6 +12,11 @@ use PKIW\Taxonomy;
 use PKIW\Video_Archive;
 
 /**
+ * Stands in for Post Formats for Block Themes' mf2 class; PHP 8.2 cannot alias an internal class.
+ */
+final class PKIW_Test_PFBT_Format_Mf2_Stub {}
+
+/**
  * A plain video single keeps its player outside e-content and exposes one
  * local u-video value. Other request surfaces receive none of that markup.
  *
@@ -184,7 +189,7 @@ final class VideoSingleMarkupTest extends WP_UnitTestCase {
 	 */
 	private function enable_pfbt_wrapper(): void {
 		if ( ! class_exists( 'PFBT_Format_Mf2', false ) ) {
-			class_alias( stdClass::class, 'PFBT_Format_Mf2' );
+			class_alias( PKIW_Test_PFBT_Format_Mf2_Stub::class, 'PFBT_Format_Mf2' );
 		}
 
 		$this->pfbt_filter = static fn ( string $content ): string => sprintf( '<div class="%s">%s</div>', esc_attr( 'e-content' ), $content );
