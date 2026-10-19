@@ -289,19 +289,21 @@ final class JamCardRenderTest extends WP_UnitTestCase {
 		}
 		$this->assertTrue( $seen_public, 'The public jam appeared in the feed query.' );
 		$this->assertTrue( $seen_protected, 'The protected jam appeared in the feed query.' );
-
-		$GLOBALS['post'] = get_post( $protected ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
-		$filtered        = apply_filters( 'the_content', (string) get_post_field( 'post_content', $protected ) );
-		foreach ( [ 'Locked Track Probe', 'Locked Artist Probe', 'Locked Note Probe' ] as $secret ) {
-			$this->assertStringNotContainsString( $secret, $filtered );
-		}
 	}
+
 	/**
-	 * The single's markup is the develop renderer's, byte for byte: three public
-	 * cards (all fields; a provider embed that beats the cover; a title-only
-	 * card with a cover) hash to the value recorded from develop 8133c16.
+	 * Per-set sha1 of the single's markup. Sets 1 and 2 are byte-identical to
+	 * develop 8133c16's renderer (all fields; a provider embed that beats the
+	 * cover). Set 3 (title-only card with a cover) is recorded from this lane's
+	 * head: its alt changes on purpose, from "Only Title by " to "Only Title".
 	 */
-	public function test_public_single_markup_is_byte_identical_to_the_shipped_renderer(): void {
+	private const SINGLE_HASHES = [
+		'a9e2aea2ca5471af975514316e6c697cbdca75b5',
+		'80f1d45886474f6abfb7731c94a9b3e1cb98f9a7',
+		'c36671a9e26704c2f252fb0f330c1522e7ec8938',
+	];
+
+	public function test_public_single_markup_matches_develop_except_the_artist_less_alt(): void {
 		$sets = [
 			[
 				'title'    => 'Hollow Light',
@@ -325,17 +327,50 @@ final class JamCardRenderTest extends WP_UnitTestCase {
 				'cover' => 'https://covers.example.net/a.png',
 			],
 		];
-		$html = '';
+		$hashes = [];
+		$html   = '';
 		foreach ( $sets as $attrs ) {
-			$html .= $this->render_single( $this->post( $attrs ) );
+			$one      = $this->render_single( $this->post( $attrs ) );
+			$html    .= $one;
+			$hashes[] = sha1( $one );
 		}
 
 		$dump = getenv( 'PKIW_GOLDEN_DUMP' );
 		if ( is_string( $dump ) && '' !== $dump ) {
-			file_put_contents( $dump, sha1( $html ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+			file_put_contents( $dump, (string) wp_json_encode( $hashes ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
 		}
 
 		$this->assertStringContainsString( '<iframe src="https://player.example.test/embed/1?autoplay=1"></iframe>', $html, 'The embed case rendered a provider player.' );
-		$this->assertSame( '2f6b470b7f5b8c3af1ff667c278fb70268a91f69', sha1( $html ) );
+		$this->assertSame( self::SINGLE_HASHES, $hashes );
+	}
+
+	/**
+	 * The guard reads the global post. A protected jam-card prints nothing when
+	 * the global post is the protected post (single, feed, Query Loop item,
+	 * ActivityPub). The block declares no postId context, and a the_content
+	 * render with no global post is NOT claimed to be covered: ATmosphere's text
+	 * render has none, and ATmosphere refuses password-protected posts before it
+	 * renders.
+	 */
+	public function test_protected_card_prints_nothing_when_the_global_post_is_protected(): void {
+		$attrs     = [
+			'title'  => 'Locked Track Probe',
+			'artist' => 'Locked Artist Probe',
+			'note'   => 'Locked Note Probe',
+			'url'    => 'https://tracks.example.org/locked',
+		];
+		$protected = $this->post( $attrs, [ 'post_password' => 'secret' ] );
+		$public    = $this->post( $attrs );
+
+		$GLOBALS['post'] = get_post( $protected ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$html            = apply_filters( 'the_content', (string) get_post_field( 'post_content', $protected ) );
+		foreach ( [ 'Locked Track Probe', 'Locked Artist Probe', 'Locked Note Probe' ] as $secret ) {
+			$this->assertStringNotContainsString( $secret, $html, $secret );
+		}
+		$this->assertStringNotContainsString( 'pk-card', $html );
+
+		$GLOBALS['post'] = get_post( $public ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$html            = apply_filters( 'the_content', (string) get_post_field( 'post_content', $public ) );
+		$this->assertStringContainsString( 'Locked Track Probe', $html, 'The same card on a public post renders.' );
 	}
 }

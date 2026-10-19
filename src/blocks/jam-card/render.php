@@ -33,11 +33,14 @@ $pkiw_note      = $attributes['note'] ?? '';
 $pkiw_jammed_at = $attributes['jammedAt'] ?? '';
 $pkiw_rel       = $attributes['rel'] ?? '';
 
-$pkiw_post_id = ( isset( $block ) && $block instanceof WP_Block && ! empty( $block->context['postId'] ) ) ? (int) $block->context['postId'] : (int) get_the_ID();
+$pkiw_post_id = (int) get_the_ID();
 $pkiw_post    = $pkiw_post_id > 0 ? get_post( $pkiw_post_id ) : null;
 
-// A protected post prints nothing from its card, whatever asks: feeds, REST,
-// ActivityPub and ATmosphere all build from one the_content render.
+// A protected post prints nothing from its card. This covers requests that
+// carry the post as the global post: a single, a feed, a Query Loop item, or
+// ActivityPub. The block declares no postId context, so context is not read. A
+// the_content render with no global post (ATmosphere's text render) is not
+// covered here; ATmosphere refuses password-protected posts before it renders.
 if ( $pkiw_post instanceof WP_Post && post_password_required( $pkiw_post ) ) {
 	return;
 }

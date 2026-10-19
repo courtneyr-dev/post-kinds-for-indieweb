@@ -332,4 +332,15 @@ final class JamStreamCardTest extends WP_UnitTestCase {
 		$this->assertSame( 1, $this->xpath( $this->render_stream( $id, [ 'headingLevel' => 1 ] ) )->query( '//h2[contains(@class,"pk-title")]' )->length );
 		$this->assertSame( 1, $this->xpath( $this->render_stream( $id, [ 'headingLevel' => 9 ] ) )->query( '//h4[contains(@class,"pk-title")]' )->length );
 	}
+
+	public function test_a_coverless_listing_card_has_no_media_region(): void {
+		$id = $this->post( [ 'title' => 'No Cover Track', 'artist' => 'Marlowe Kite' ] );
+		$this->go_to( (string) get_term_link( 'jam', Taxonomy::TAXONOMY ) );
+
+		$html = $this->render_stream( $id );
+
+		$this->assertStringContainsString( 'pk-card--jam-listing', $html );
+		$this->assertSame( 0, $this->xpath( $html )->query( '//*[contains(concat(" ", normalize-space(@class), " "), " pk-media ")]' )->length );
+		$this->assertSame( 0, $this->xpath( $html )->query( '//img' )->length );
+	}
 }

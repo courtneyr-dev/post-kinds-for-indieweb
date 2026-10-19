@@ -363,4 +363,36 @@ final class JamFactsTest extends WP_UnitTestCase {
 
 		$this->assertSame( $expected, $facts['cover_alt_fallback'] );
 	}
+
+	public function test_album_falls_back_to_meta_when_the_card_has_none(): void {
+		$id = $this->jam( [ 'title' => 'Hollow Light' ] );
+		update_post_meta( $id, Meta_Fields::PREFIX . 'jam_album', 'Signal Bloom' );
+		$this->assertSame( 'Signal Bloom', $this->facts( $id )['album'] );
+
+		$with_card_album = $this->jam( [ 'title' => 'Hollow Light', 'album' => 'Card Album' ] );
+		update_post_meta( $with_card_album, Meta_Fields::PREFIX . 'jam_album', 'Signal Bloom' );
+		$this->assertSame( 'Card Album', $this->facts( $with_card_album )['album'] );
+	}
+
+	/**
+	 * A remote cover URL that Featured_Artwork already sideloaded resolves to its
+	 * library copy (cover_local_copy via Featured_Artwork::SOURCE_META), so the
+	 * page never hotlinks the image host.
+	 */
+	public function test_a_sideloaded_remote_cover_resolves_to_its_local_copy(): void {
+		$url = 'https://covers.example.net/sideloaded.png';
+		$id  = $this->jam( [ 'title' => 'Hollow Light', 'cover' => $url ] );
+
+		$this->assertTrue( $this->facts( $id )['picture']['remote'], 'Without a copy the remote URL stays remote.' );
+
+		$attachment = $this->image();
+		update_post_meta( $id, \PKIW\Featured_Artwork::SOURCE_META, $url );
+		update_post_meta( $id, \PKIW\Featured_Artwork::ATTACHMENT_META, $attachment );
+
+		$after = $this->facts( $id )['picture'];
+		$this->assertSame( 'cover', $after['source'] );
+		$this->assertSame( $attachment, $after['attachment_id'] );
+		$this->assertSame( (string) wp_get_attachment_url( $attachment ), $after['url'] );
+		$this->assertFalse( $after['remote'] );
+	}
 }
