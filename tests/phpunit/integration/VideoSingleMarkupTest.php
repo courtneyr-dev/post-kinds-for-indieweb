@@ -19,6 +19,13 @@ use PKIW\Video_Archive;
  */
 final class VideoSingleMarkupTest extends WP_UnitTestCase {
 
+	/**
+	 * The PFBT-shaped priority 5 the_content filter, while a test has it added.
+	 *
+	 * @var Closure|null
+	 */
+	private ?Closure $pfbt_filter = null;
+
 	public function set_up(): void {
 		parent::set_up();
 		( new Taxonomy() )->create_default_terms();
@@ -34,6 +41,10 @@ final class VideoSingleMarkupTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down(): void {
+		if ( null !== $this->pfbt_filter ) {
+			remove_filter( 'the_content', $this->pfbt_filter, 5 );
+			$this->pfbt_filter = null;
+		}
 		wp_set_current_user( 0 );
 		set_query_var( 'atproto', null );
 		set_query_var( 'markdown_request', null );
@@ -163,6 +174,21 @@ final class VideoSingleMarkupTest extends WP_UnitTestCase {
 		$this->assertSame( $baseline, $actual );
 		$this->assertStringNotContainsString( Video_Archive::MARKER_ATTRIBUTE, $actual );
 		$this->assertStringNotContainsString( '<data class="u-video"', $actual );
+	}
+
+	/**
+	 * Behave like post-formats-for-block-themes: the class exists and wraps the whole content.
+	 *
+	 * The class cannot be undeclared, so it stays for the rest of the process. Tests that need
+	 * the plugin absent must not depend on that and are written to hold either way.
+	 */
+	private function enable_pfbt_wrapper(): void {
+		if ( ! class_exists( 'PFBT_Format_Mf2', false ) ) {
+			class_alias( stdClass::class, 'PFBT_Format_Mf2' );
+		}
+
+		$this->pfbt_filter = static fn ( string $content ): string => sprintf( '<div class="%s">%s</div>', esc_attr( 'e-content' ), $content );
+		add_filter( 'the_content', $this->pfbt_filter, 5 );
 	}
 
 	/**
@@ -568,5 +594,80 @@ final class VideoSingleMarkupTest extends WP_UnitTestCase {
 		$this->assertSame( substr_count( $baseline, (string) wp_get_attachment_url( $poster ) ), substr_count( $actual, (string) wp_get_attachment_url( $poster ) ) );
 		$this->assertSame( substr_count( $baseline, $track ), substr_count( $actual, $track ) );
 		$this->assertSame( substr_count( $baseline, (string) wp_get_attachment_url( $media ) ) + 1, substr_count( $actual, (string) wp_get_attachment_url( $media ) ) );
+	}
+
+	public function test_authored_e_content_wrapper_without_pfbt_keeps_todays_behavior(): void {
+		$media   = $this->video_attachment();
+		$content = '<!-- wp:group {"className":"e-content"} --><div class="wp-block-group e-content">' . $this->video_block( $media ) . $this->paragraph( 'Author prose.' ) . '</div><!-- /wp:group -->';
+		$id      = $this->video_post( $content );
+		$this->go_to( (string) get_permalink( $id ) );
+
+		$this->assertSame( $content, Video_Archive::wrap_prose( $content ) );
+	}
+
+	public function test_bare_authored_e_content_div_is_unchanged_when_pfbt_is_absent(): void {
+		if ( class_exists( 'PFBT_Format_Mf2', false ) ) {
+			$this->markTestSkipped( 'A PFBT stub was declared earlier in this process and cannot be removed.' );
+		}
+
+		$media   = $this->video_attachment();
+		$content = '<div class="e-content">' . $this->video_block( $media ) . $this->paragraph( 'Author prose.' ) . '</div>';
+		$id      = $this->video_post( $content );
+		$this->go_to( (string) get_permalink( $id ) );
+
+		$this->assertSame( $content, Video_Archive::wrap_prose( $content ) );
+	}
+
+	public function test_pfbt_wrapper_keeps_one_prose_only_e_content_with_the_player_outside(): void {
+		$this->enable_pfbt_wrapper();
+		$media = $this->video_attachment();
+		$id    = $this->video_post( $this->video_block( $media ) . $this->paragraph( 'The path opens after the rain.' ) );
+
+		$html     = $this->filtered( $id );
+		$xpath    = $this->xpath( $html );
+		$wrappers = $xpath->query( '//*[contains(concat(" ", normalize-space(@class), " "), " e-content ")]' );
+		$wrapper  = $wrappers->item( 0 );
+
+		$this->assertSame( 1, substr_count( $html, 'e-content' ) );
+		$this->assertSame( 1, $wrappers->length );
+		$this->assertInstanceOf( DOMElement::class, $wrapper );
+		$this->assertStringContainsString( 'The path opens after the rain.', $wrapper->textContent );
+		$this->assertSame( 0, $xpath->query( './/video', $wrapper )->length );
+		$this->assertSame( 0, $xpath->query( './/*[contains(@class, "wp-block-video")]', $wrapper )->length );
+		$this->assertLessThan( strpos( $html, 'e-content' ), strpos( $html, 'wp-block-video' ) );
+		$this->assertSame( 1, substr_count( $html, '<data class="u-video"' ) );
+	}
+
+	public function test_pfbt_wrapper_is_left_intact_when_no_top_level_player_is_found(): void {
+		$this->enable_pfbt_wrapper();
+		$media   = $this->video_attachment();
+		$content = '<!-- wp:group --><div class="wp-block-group">' . $this->video_block( $media ) . '</div><!-- /wp:group -->' . $this->paragraph( 'Nested prose.' );
+		$id      = $this->video_post( $content );
+		$this->go_to( (string) get_permalink( $id ) );
+		$wrapped = '<div class="e-content">' . $content . '</div>';
+
+		$this->assertSame( $wrapped, Video_Archive::wrap_prose( $wrapped ) );
+		$this->assertSame( 1, substr_count( apply_filters( 'the_content', $content ), 'e-content' ) );
+	}
+
+	public function test_pfbt_wrapper_is_left_intact_when_nothing_follows_the_player(): void {
+		$this->enable_pfbt_wrapper();
+		$media   = $this->video_attachment();
+		$content = $this->video_block( $media );
+		$id      = $this->video_post( $content );
+		$this->go_to( (string) get_permalink( $id ) );
+		$wrapped = '<div class="e-content">' . $content . '</div>';
+
+		$this->assertSame( $wrapped, Video_Archive::wrap_prose( $wrapped ) );
+	}
+
+	public function test_pfbt_wrapper_is_not_unwrapped_when_the_first_div_closes_early(): void {
+		$this->enable_pfbt_wrapper();
+		$media   = $this->video_attachment();
+		$content = '<div class="e-content">' . $this->paragraph( 'One.' ) . '</div>' . $this->video_block( $media ) . '<div>' . $this->paragraph( 'Two.' ) . '</div>';
+		$id      = $this->video_post( $content );
+		$this->go_to( (string) get_permalink( $id ) );
+
+		$this->assertSame( $content, Video_Archive::wrap_prose( $content ) );
 	}
 }

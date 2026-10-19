@@ -224,8 +224,11 @@ final class Video_Archive {
 		}
 
 		$facts = Kind_Facts::get( (int) get_the_ID() );
+		// Post Formats for Block Themes wraps the whole content in one e-content div at priority 5.
+		$original = $content;
+		$content  = self::unwrap_pfbt_content( $content );
 		if ( empty( $facts['has_player'] ) || self::has_class_token( $content, 'e-content' ) ) {
-			return $content;
+			return $original;
 		}
 
 		$blocks       = parse_blocks( $content );
@@ -245,7 +248,7 @@ final class Video_Archive {
 		}
 
 		if ( null === $player_index || ! $top_level ) {
-			return $content;
+			return $original;
 		}
 
 		$start = $player_index + 1;
@@ -258,7 +261,7 @@ final class Video_Archive {
 		}
 
 		if ( $start > $end ) {
-			return $content;
+			return $original;
 		}
 
 		$inner_blocks  = array_slice( $blocks, $start, $end - $start + 1 );
@@ -286,6 +289,38 @@ final class Video_Archive {
 		);
 
 		return serialize_blocks( $new_blocks );
+	}
+
+	/**
+	 * Inner content of the single e-content div Post Formats for Block Themes adds.
+	 *
+	 * Its PFBT_Format_Mf2::wrap_content_mf2 wraps the whole the_content in
+	 * <div class="e-content"> at priority 5, so the label and player would sit inside
+	 * e-content and mf2 would parse published twice.
+	 *
+	 * @param string $content Stored block markup.
+	 * @return string The inner content, or the original when it is not exactly one such wrapper.
+	 */
+	private static function unwrap_pfbt_content( string $content ): string {
+		if ( ! class_exists( 'PFBT_Format_Mf2' )
+			|| 1 !== preg_match( '/^\s*<div class="([^"]*)">(.*)<\/div>\s*$/s', $content, $match )
+			|| ! in_array( 'e-content', preg_split( '/\s+/', trim( $match[1] ) ), true )
+			|| self::has_class_token( $match[2], 'e-content' )
+		) {
+			return $content;
+		}
+
+		// The first div must close at the very end, not earlier in the content.
+		$depth = 0;
+		preg_match_all( '/<div\b|<\/div>/i', $match[2], $tags );
+		foreach ( $tags[0] as $tag ) {
+			$depth += str_starts_with( $tag, '</' ) ? -1 : 1;
+			if ( $depth < 0 ) {
+				return $content;
+			}
+		}
+
+		return 0 === $depth ? $match[2] : $content;
 	}
 
 	/**
