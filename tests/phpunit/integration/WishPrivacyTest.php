@@ -373,7 +373,7 @@ final class WishPrivacyTest extends WP_UnitTestCase {
 		$post_id = $this->wish( [ 'post_content' => $this->card( [ 'title' => 'URL wish', 'url' => $url ] ) ] );
 		$single  = $this->single( $post_id );
 		$this->assertSame( 1, substr_count( $single, $url ) );
-		$this->assertMatchesRegularExpression( '/<a class="u-url u-wish-of"[^>]+>View item<\/a>/', $single );
+		$this->assertMatchesRegularExpression( '/<a class="u-url u-wish-of"[^>]+><svg class="pk-original__icon"[^>]*aria-hidden="true" focusable="false">.*?<\/svg>View item<\/a>/', $single );
 
 		$stream = $this->stream( $post_id );
 		$this->assertSame( 1, substr_count( $stream, $url ) );
