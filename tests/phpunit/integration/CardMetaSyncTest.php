@@ -1552,7 +1552,8 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 		$this->ensure_kind_term( 'question' );
 		$question = self::factory()->post->create( [ 'post_content' => '<!-- wp:paragraph --><p>What should I read?</p><!-- /wp:paragraph -->' ] );
 		wp_set_object_terms( $question, 'question', 'kind' );
-		update_post_meta( $question, '_pkiw_question_status', 'answered' );
+		// A key Question_Archive does not own: once it is wired its action recomputes the status row itself.
+		update_post_meta( $question, '_pkiw_question_sentinel', 'kept' );
 		update_post_meta( $question, '_pkiw_exercise_pb', '1' );
 		$card = $this->post_with_card( 'listen-card', [ 'trackTitle' => 'One' ] );
 
@@ -1581,7 +1582,7 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 		$this->assertSame( [ 'processed' => 0, 'last_id' => $card, 'done' => true ], $third );
 		$this->assertSame( [ [ $question, $question ], [ $card, $card ] ], $seen );
 		$this->assertSame( 3, $filter_calls, 'The filter runs once per batch.' );
-		$this->assertSame( 'answered', $this->row( $question, 'question_status' ), 'The card-less pass keeps non-toggle question meta.' );
+		$this->assertSame( 'kept', $this->row( $question, 'question_sentinel' ), 'The card-less pass keeps non-toggle question meta.' );
 		$this->assertNull( $this->row( $question, 'exercise_pb' ), 'The ordinary toggle cleanup still runs.' );
 	}
 

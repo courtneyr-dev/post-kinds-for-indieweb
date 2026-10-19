@@ -114,8 +114,10 @@ final class StreamCardGoldenTest extends WP_UnitTestCase {
 		'play|generic-untitled'          => '54bbe339f8b37c81ebc10a0b33d35053c1208b4b',
 		'presentation|generic-titled'    => 'b1c902b17d2f45b97f84d7b4a3391ae65ac8ee85',
 		'presentation|generic-untitled'  => '3affe4a8c20bd95d455c9fbe2375803ed4d73bf9',
-		'question|generic-titled'        => 'ab37d73b6ad710b08c4d84d12f1362c45c4cb994',
-		'question|generic-untitled'      => 'cfbf75d1059640fc9aa573d0e3fb8dbc5ec4aa5d',
+		// Recorded from the W5-P256 head: the question card now renders through Question_Archive::stream_card(), so this row changes on purpose.
+		'question|generic-titled'        => '2f39ec11ce24952d7e2f566715be4fc2be73ec52',
+		// Recorded from the W5-P256 head: see the row above.
+		'question|generic-untitled'      => '6d6eefa75a419a749c628c5a967849b9e6111fde',
 		'quote|generic-titled'           => '3dea8d240517d7791183b42b067e8ab35e119d89',
 		'quote|generic-untitled'         => '910c2c7fb229d9d959a71eece8269d5360c4f0f3',
 		'read|generic-titled'            => '26f2405d11dd85f59f13dca87c3ee65e6465335f',
