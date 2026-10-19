@@ -67,6 +67,7 @@ property today** (`—` = nothing maps) | **proposed property for Outpost**
 | `coverImage` / `coverImageAlt` | — | `mp-cover-image` / `mp-cover-image-alt`, or reuse Micropub's standard `photo` if Outpost already fetches cover art as a photo |
 | `musicbrainzId` | — | `mp-musicbrainz-id` (vendor extension) |
 | `listenedAt` | — | `published` |
+| `mediaType` | — | `mp-media-type` (music/podcast — vendor extension) |
 
 ## watch
 

@@ -27,7 +27,12 @@ import StandardSitePanel from '../../components/standard-site-panel';
 import { MediaSearch } from '../shared/components';
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { title, artist, album, cover, coverAlt, url, note } = attributes;
+	const { title, artist, album, cover, coverAlt, url, note, jammedAt } =
+		attributes;
+	const jammedDay =
+		typeof jammedAt === 'string' && /^\d{4}-\d{2}-\d{2}/.test( jammedAt )
+			? jammedAt.slice( 0, 10 )
+			: '';
 
 	const [ isSearching, setIsSearching ] = useState( false );
 
@@ -202,6 +207,17 @@ export default function Edit( { attributes, setAttributes } ) {
 							'Link to Spotify, Apple Music, etc.',
 							'post-kinds-for-indieweb-in-block-themes'
 						) }
+					/>
+					<TextControl
+						label={ __(
+							'Date jammed',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
+						type="date"
+						value={ jammedDay }
+						onChange={ ( value ) =>
+							setAttributes( { jammedAt: value || '' } )
+						}
 					/>
 				</PanelBody>
 				<PanelBody

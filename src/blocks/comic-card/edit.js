@@ -18,62 +18,9 @@ import {
 	TextareaControl,
 	SelectControl,
 	Button,
-	DatePicker,
-	Popover,
 } from '@wordpress/components';
-import { useState } from '@wordpress/element';
-import { StarRating, CoverImage } from '../shared/components';
-import {
-	calendarDay,
-	dateLines,
-	displayDay,
-	issueParts,
-	statusLabel,
-} from './labels';
-
-/**
- * A date-only field: a button that opens a day picker, and a way to clear it.
- *
- * @param {Object}   props          Component props.
- * @param {string}   props.label    Field label.
- * @param {string}   props.value    Stored date.
- * @param {Function} props.onChange Receives YYYY-MM-DD, or an empty string.
- * @return {JSX.Element} Field.
- */
-function DayField( { label, value, onChange } ) {
-	const [ isOpen, setIsOpen ] = useState( false );
-	const day = calendarDay( value );
-
-	return (
-		<div className="components-base-control">
-			<span className="components-base-control__label">{ label }</span>
-			<Button variant="secondary" onClick={ () => setIsOpen( true ) }>
-				{ day
-					? displayDay( day )
-					: __(
-							'Set date',
-							'post-kinds-for-indieweb-in-block-themes'
-						) }
-			</Button>
-			{ day && (
-				<Button variant="tertiary" onClick={ () => onChange( '' ) }>
-					{ __( 'Clear', 'post-kinds-for-indieweb-in-block-themes' ) }
-				</Button>
-			) }
-			{ isOpen && (
-				<Popover onClose={ () => setIsOpen( false ) }>
-					<DatePicker
-						currentDate={ day ? `${ day }T12:00:00` : undefined }
-						onChange={ ( picked ) => {
-							onChange( calendarDay( picked ) );
-							setIsOpen( false );
-						} }
-					/>
-				</Popover>
-			) }
-		</div>
-	);
-}
+import { StarRating, CoverImage, DayField } from '../shared/components';
+import { dateLines, issueParts, statusLabel } from './labels';
 
 /**
  * Edit component for the Comic Card block.

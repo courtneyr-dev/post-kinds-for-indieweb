@@ -43,6 +43,10 @@
         "layout": {
             "type": "string",
             "default": "horizontal"
+        },
+        "mediaType": {
+            "type": "string",
+            "enum": ["music", "podcast"]
         }
     },
     "supports": {
