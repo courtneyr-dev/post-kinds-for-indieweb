@@ -114,6 +114,59 @@ final class Wish_Archive {
 		Grouped_Archive::register_source( self::source(), self::KIND );
 		add_filter( 'pkiw_archive_sections_groups', [ self::class, 'sections_groups' ] );
 		add_filter( 'pkiw_stream_card_kind_cite', [ self::class, 'cite_map' ] );
+		add_filter( 'pkiw_stream_card_kind_render', [ self::class, 'stream_card' ], 10, 4 );
+	}
+
+	/**
+	 * Render only the first wish card when a card-only wish holds several.
+	 *
+	 * The facts reader takes the first wish card, so the Stream card prints
+	 * that card alone. Every other wish post, and every other kind, falls
+	 * through to the built-in paths unchanged. A password-protected post never
+	 * reaches this filter; the protected title-only card handles it.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @internal Hooked to pkiw_stream_card_kind_render.
+	 *
+	 * @param mixed $html          Card HTML so far, null to fall through.
+	 * @param mixed $post          Post.
+	 * @param mixed $heading_level Heading level, 2 to 4.
+	 * @param mixed $attributes    Block attributes. Unused.
+	 * @return mixed First wish card HTML, else $html unchanged.
+	 */
+	public static function stream_card( $html, $post = null, $heading_level = 2, $attributes = [] ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		if ( ! $post instanceof \WP_Post || self::KIND !== \PKIW\get_post_kind_slug( $post ) || post_password_required( $post ) ) {
+			return $html;
+		}
+
+		$content = (string) $post->post_content;
+		if ( ! \PKIW\content_is_kind_card_only( $content ) ) {
+			return $html;
+		}
+
+		$first = null;
+		$count = 0;
+		foreach ( \PKIW\flatten_blocks( parse_blocks( $content ) ) as $block ) {
+			if ( self::CARD_BLOCK !== ( $block['blockName'] ?? '' ) ) {
+				continue;
+			}
+			if ( null === $first ) {
+				$first = $block;
+			}
+			++$count;
+		}
+
+		if ( null === $first || $count < 2 ) {
+			return $html;
+		}
+
+		$level = max( 2, min( 4, (int) $heading_level ) );
+
+		return \PKIW\apply_stream_heading_level(
+			\PKIW\inject_post_date_into_card( \PKIW\link_title_to_post( render_block( $first ), $post ), $post ),
+			$level
+		);
 	}
 
 	/**
