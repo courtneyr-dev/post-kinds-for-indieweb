@@ -233,9 +233,14 @@ final class Audio_Archive {
 	 * @return bool True when the identifying block fields match.
 	 */
 	private static function same_block( array $block, array $first ): bool {
-		return ( $block['blockName'] ?? null ) === ( $first['blockName'] ?? null )
+		$name = $block['blockName'] ?? null;
+
+		// Core's autoembed rewrites an embed's URL line into provider HTML before
+		// blocks render, so its innerHTML never equals the stored block's. The
+		// url attribute identifies the embed instead.
+		return ( $first['blockName'] ?? null ) === $name
 			// phpcs:ignore Universal.Operators.StrictComparisons.LooseEqual -- The frozen contract requires loose equality for parsed attributes.
 			&& ( $block['attrs'] ?? [] ) == ( $first['attrs'] ?? [] )
-			&& ( $block['innerHTML'] ?? null ) === ( $first['innerHTML'] ?? null );
+			&& ( 'core/embed' === $name || ( $block['innerHTML'] ?? null ) === ( $first['innerHTML'] ?? null ) );
 	}
 }
