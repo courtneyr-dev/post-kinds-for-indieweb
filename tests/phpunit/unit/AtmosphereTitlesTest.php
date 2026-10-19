@@ -231,6 +231,28 @@ class AtmosphereTitlesTest extends \WP_UnitTestCase {
 		$this->assertSame( 'Acquired Field recorder', Atmosphere_Titles::derive( $acq ) );
 	}
 
+	/**
+	 * The wish card sync supplies the title used by ATmosphere.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function test_saved_wish_card_supplies_the_derived_title(): void {
+		$content = '<!-- wp:post-kinds-indieweb/wish-card ' . serialize_block_attributes( [ 'title' => 'Greenhouse' ] ) . ' /-->';
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_title'   => '',
+				'post_content' => $content,
+			]
+		);
+		wp_set_object_terms( $post_id, 'wish', 'kind' );
+
+		$this->assertSame( 'Greenhouse', get_post_meta( $post_id, '_pkiw_wish_name', true ) );
+		$this->assertSame( 'Wish: Greenhouse', Atmosphere_Titles::derive( get_post( $post_id ) ) );
+	}
+
 	public function test_untitled_note_derives_from_content() {
 		$post = $this->make_kind_post(
 			'note',

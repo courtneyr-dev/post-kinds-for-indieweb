@@ -22,6 +22,14 @@ final class RestProtectedKindMetaTest extends WP_UnitTestCase {
 		'_pkiw_read_title'       => 'Hidden Read Title',
 	];
 
+	private const WISH_META = [
+		'_pkiw_wish_name'     => 'Hidden Greenhouse',
+		'_pkiw_wish_url'      => 'https://example.test/greenhouse',
+		'_pkiw_wish_photo'    => 'https://example.test/greenhouse.jpg',
+		'_pkiw_wish_type'     => 'product',
+		'_pkiw_wish_priority' => 'high',
+	];
+
 	private bool $registered_reaction_post_type = false;
 
 	public function set_up(): void {
@@ -68,6 +76,26 @@ final class RestProtectedKindMetaTest extends WP_UnitTestCase {
 		$data = $this->rest_post( $this->kind_post() );
 
 		$this->assertKindMetaPresent( $data['meta'] );
+	}
+
+	/**
+	 * Wish meta follows the same protected-post gate on every REST access path.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function test_wish_meta_is_redacted_for_protected_visitors_and_kept_for_editors_and_public_posts(): void {
+		$protected = $this->wish_post( [ 'post_password' => 'secret' ] );
+
+		$this->assertWishMetaOmitted( $this->rest_post( $protected )['meta'] );
+		$this->assertWishMetaOmitted( $this->rest_post( $protected, [ 'password' => 'secret' ] )['meta'] );
+
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		$this->assertWishMetaPresent( $this->rest_post( $protected )['meta'] );
+
+		wp_set_current_user( 0 );
+		$this->assertWishMetaPresent( $this->rest_post( $this->wish_post() )['meta'] );
 	}
 
 	public function test_collection_endpoint_omits_protected_kind_meta(): void {
@@ -177,6 +205,33 @@ final class RestProtectedKindMetaTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Create a wish carrying all five public wish meta keys.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param array<string, mixed> $post Post overrides.
+	 * @return int Post ID.
+	 */
+	private function wish_post( array $post = [] ): int {
+		$post_id = self::factory()->post->create(
+			array_merge(
+				[
+					'post_status' => 'publish',
+					'post_title'  => 'Wish meta sentinel',
+				],
+				$post
+			)
+		);
+		wp_set_object_terms( $post_id, 'wish', 'kind' );
+
+		foreach ( self::WISH_META as $key => $value ) {
+			update_post_meta( $post_id, $key, $value );
+		}
+
+		return $post_id;
+	}
+
+	/**
 	 * @param array<string, mixed> $params Request parameters.
 	 * @return array<string, mixed>
 	 */
@@ -221,6 +276,35 @@ final class RestProtectedKindMetaTest extends WP_UnitTestCase {
 	 */
 	private function assertKindMetaPresent( array $meta ): void {
 		foreach ( self::META as $key => $value ) {
+			$this->assertArrayHasKey( $key, $meta );
+			$this->assertSame( $value, $meta[ $key ] );
+		}
+	}
+
+	/**
+	 * Assert that no wish meta key crosses the protected REST boundary.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param array<string, mixed> $meta REST meta payload.
+	 * @return void
+	 */
+	private function assertWishMetaOmitted( array $meta ): void {
+		foreach ( array_keys( self::WISH_META ) as $key ) {
+			$this->assertArrayNotHasKey( $key, $meta );
+		}
+	}
+
+	/**
+	 * Assert that all wish meta remains available to an authorized reader.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param array<string, mixed> $meta REST meta payload.
+	 * @return void
+	 */
+	private function assertWishMetaPresent( array $meta ): void {
+		foreach ( self::WISH_META as $key => $value ) {
 			$this->assertArrayHasKey( $key, $meta );
 			$this->assertSame( $value, $meta[ $key ] );
 		}
