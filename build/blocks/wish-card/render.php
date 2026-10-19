@@ -137,7 +137,7 @@ ob_start();
 
 		<?php if ( $pkiw_own_view && '' !== $pkiw_href ) : ?>
 			<?php $pkiw_view_item = __( 'View item', 'post-kinds-for-indieweb-in-block-themes' ); ?>
-			<p class="pk-original"><a class="u-url u-wish-of" href="<?php echo esc_url( $pkiw_href ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_view_item ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_view_item ); ?></a></p>
+			<p class="pk-original"><a class="u-url u-wish-of" href="<?php echo esc_url( $pkiw_href ); ?>" target="_blank" rel="<?php echo esc_attr( $pkiw_link_rel ); ?>"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_view_item ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><svg class="pk-original__icon" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true" focusable="false"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg><?php echo esc_html( $pkiw_view_item ); ?></a></p>
 		<?php endif; ?>
 
 		<?php if ( $pkiw_has_reason ) : ?>

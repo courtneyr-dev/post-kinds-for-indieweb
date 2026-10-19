@@ -66,8 +66,8 @@ final class StreamCardGoldenTest extends WP_UnitTestCase {
 		'block:rsvp|card'                => 'd6d6ee8d47e320c0dc6c9d0ada007851ab4dea65',
 		'block:sleep|card'               => 'c2e897e48c0afa125cfc331fde3e9fb44c0b1c8d',
 		'block:watch|card'               => '6dddfa9574216931da0d40d39f329ed722609bb3',
-		// Recorded from the W5-P238 head: this row changes on purpose (Stream chips replace the price chip).
-		'block:wish|card'                => 'b5a9a2e31930ed996127e749e041799082b21b79',
+		// Recorded from the W5-T238 fidelity fix: this row changes on purpose (Stream chips replace the price chip; the View item link gains an aria-hidden external-link icon).
+		'block:wish|card'                => 'cb7da01d6f0660daeaa44cbf67cb7e185271ccf9',
 		'bookmark|generic-titled'        => '12890b60a11b4001f25e040ebc4b0b792be1a3a2',
 		'bookmark|generic-untitled'      => '1495408c6baad4667d43e75515204d7d42ce4e21',
 		'checkin|generic-titled'         => '444ee2ed8c8f1ddc947c133791eb8c21d94d7af8',
