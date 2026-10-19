@@ -9,7 +9,9 @@ declare(strict_types=1);
 
 use PKIW\Audio_Archive;
 use PKIW\Kind_Facts;
+use PKIW\Meta_Fields;
 use PKIW\Taxonomy;
+use PKIW\Title_Privacy;
 
 /**
  * Audio facts expose player shape and duration without copying media or
@@ -345,6 +347,24 @@ final class AudioFactsTest extends WP_UnitTestCase {
 		foreach ( array_keys( $facts ) as $key ) {
 			$this->assertDoesNotMatchRegularExpression( '/lat|lon|geo|place|location|address/i', $key );
 		}
+	}
+
+	public function test_a_title_generated_from_a_hidden_location_is_synthetic_and_never_a_p_name(): void {
+		$id = $this->audio( 'Voice memo at Maple Street Cafe', '<!-- wp:paragraph --><p>Words.</p><!-- /wp:paragraph -->' );
+		update_post_meta( $id, Title_Privacy::META_KEY, Title_Privacy::SOURCE_LOCATION );
+		update_post_meta( $id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
+
+		$this->assertTrue( \PKIW\post_title_is_hidden( get_post( $id ) ), 'The fixture title names a hidden location.' );
+		$facts = Audio_Archive::facts( $id );
+
+		$this->assertFalse( $facts['name_is_title'], 'A hidden-location title is not a real title, so it gets no p-name (X8).' );
+		$this->assertSame( \PKIW\untitled_name( get_post( $id ), false ), $facts['name'] );
+		$this->assertStringNotContainsString( 'Maple Street', (string) wp_json_encode( $facts ) );
+
+		update_post_meta( $id, Meta_Fields::PREFIX . 'geo_privacy', 'public' );
+		$shown = Audio_Archive::facts( $id );
+		$this->assertTrue( $shown['name_is_title'], 'With the place public the stored title is a real title.' );
+		$this->assertSame( 'Voice memo at Maple Street Cafe', $shown['name'] );
 	}
 
 	public function test_an_untitled_post_is_never_named_from_its_attachment(): void {
