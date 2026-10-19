@@ -71,8 +71,8 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 				'finishedAt' => 'renders only when readStatus is finished or abandoned; the fixture status sample is neither, so no end date is shown (the same sample as startedAt would otherwise match by coincidence)',
 			],
 			'post-kinds-indieweb/wish-card'         => [
-				'wishType' => 'wishlist subtype metadata; not surfaced as visible text in the card',
-				'priority' => 'ordering hint metadata; not surfaced as visible text in the card',
+				'wishType' => 'mapped to a plugin label; an unknown value like the fixture sample prints Other and the raw value is never echoed',
+				'priority' => 'mapped to High, Medium or Low; an unknown value like the fixture sample prints Medium and the raw value is never echoed',
 			],
 			'post-kinds-indieweb/checkin-card'      => [
 				'venueType'       => 'enum mapped to icon + translated label; unknown values fall back to the Place label, raw slug never echoed',

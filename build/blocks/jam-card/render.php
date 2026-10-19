@@ -33,11 +33,33 @@ $pkiw_note      = $attributes['note'] ?? '';
 $pkiw_jammed_at = $attributes['jammedAt'] ?? '';
 $pkiw_rel       = $attributes['rel'] ?? '';
 
+$pkiw_post_id = (int) get_the_ID();
+$pkiw_post    = $pkiw_post_id > 0 ? get_post( $pkiw_post_id ) : null;
+
+// A protected post prints nothing from its card. This covers requests that
+// carry the post as the global post: a single, a feed, a Query Loop item, or
+// ActivityPub. The block declares no postId context, so context is not read. A
+// the_content render with no global post (ATmosphere's text render) is not
+// covered here; ATmosphere refuses password-protected posts before it renders.
+if ( $pkiw_post instanceof WP_Post && post_password_required( $pkiw_post ) ) {
+	return;
+}
+
 $pkiw_link_rel = $pkiw_rel
 	? 'noopener noreferrer ' . esc_attr( $pkiw_rel )
 	: 'noopener noreferrer';
 
-$pkiw_embed = $pkiw_url ? get_cached_embed_html( $pkiw_url ) : false;
+$pkiw_embed = $pkiw_url && ! \PKIW\is_rendering_stream_card() ? get_cached_embed_html( $pkiw_url ) : false;
+
+$pkiw_cover_title  = trim( (string) $pkiw_title );
+$pkiw_cover_artist = trim( (string) $pkiw_artist );
+if ( '' !== $pkiw_cover_title && '' !== $pkiw_cover_artist ) {
+	$pkiw_cover_fallback = $pkiw_cover_title . ' by ' . $pkiw_cover_artist;
+} elseif ( '' !== $pkiw_cover_title ) {
+	$pkiw_cover_fallback = $pkiw_cover_title;
+} else {
+	$pkiw_cover_fallback = $pkiw_cover_artist;
+}
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
@@ -88,7 +110,7 @@ ob_start();
 		<?php if ( $pkiw_embed ) : ?>
 			<div class="pk-embed pk-embed--audio"><?php echo $pkiw_embed; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 		<?php elseif ( $pkiw_cover ) : ?>
-			<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_cover ); ?>" alt="<?php echo esc_attr( $pkiw_cover_alt ? $pkiw_cover_alt : $pkiw_title . ' by ' . $pkiw_artist ); ?>" loading="lazy" /></div>
+			<div class="pk-embed pk-embed--photo"><img class="u-photo" src="<?php echo esc_url( $pkiw_cover ); ?>" alt="<?php echo esc_attr( $pkiw_cover_alt ? $pkiw_cover_alt : $pkiw_cover_fallback ); ?>" loading="lazy" /></div>
 		<?php endif; ?>
 
 		<div class="pk-meta">
