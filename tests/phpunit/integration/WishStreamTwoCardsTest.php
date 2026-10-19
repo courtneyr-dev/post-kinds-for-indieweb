@@ -264,6 +264,49 @@ final class WishStreamTwoCardsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Prose between two wish cards keeps the post out of the card-only path.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function test_two_wish_cards_with_prose_between_are_byte_identical(): void {
+		$content = $this->wish_card( 'Prose First' ) . "\n\n<!-- wp:paragraph --><p>Prose between the cards.</p><!-- /wp:paragraph -->\n\n" . $this->wish_card( 'Prose Second' );
+		$post_id = $this->post_of_kind( 'wish', $content );
+
+		$this->assertFalse( PKIW\content_is_kind_card_only( $content ) );
+		$with    = $this->stream( $post_id );
+		$without = $this->stream_without_callback( $post_id );
+		$this->assertSame( $without, $with );
+		// The built-in generic card carries no body prose; the callback must not change that.
+		$this->assertStringNotContainsString( 'Prose First', $with, 'Callback did not take over with the first card.' );
+		$this->assertStringNotContainsString( 'Prose Second', $with );
+	}
+
+	/**
+	 * A wish post with two wish cards and another kind's card prints only the first wish card.
+	 *
+	 * Intended: a wish post is one Stream item, the card its facts read.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return void
+	 */
+	public function test_two_wish_cards_plus_another_kind_card_print_only_the_first_wish_card(): void {
+		$bookmark = '<!-- wp:post-kinds-indieweb/bookmark-card ' . serialize_block_attributes( [ 'bookmarkTitle' => 'Mixed Bookmark' ] ) . ' /-->';
+		$content  = $this->wish_card( 'Mixed First Wish' ) . "\n\n" . $bookmark . "\n\n" . $this->wish_card( 'Mixed Second Wish' );
+		$post_id  = $this->post_of_kind( 'wish', $content );
+
+		$this->assertTrue( PKIW\content_is_kind_card_only( $content ) );
+		$html  = $this->stream( $post_id );
+		$xpath = $this->xpath( $html );
+		$this->assertSame( 1, $xpath->query( '//article' )->length );
+		$this->assertStringContainsString( 'Mixed First Wish', $html );
+		$this->assertStringNotContainsString( 'Mixed Second Wish', $html );
+		$this->assertSame( 0, $xpath->query( '//*[contains(@class, "k-bookmark")]' )->length );
+	}
+
+	/**
 	 * A protected two-card wish keeps the existing title-only path.
 	 *
 	 * @since 1.9.0
