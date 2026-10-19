@@ -483,6 +483,39 @@ final class AudioFactsTest extends WP_UnitTestCase {
 		$this->assertSame( 1, substr_count( (string) apply_filters( 'the_content', $content ), 'data-pkiw-primary-media="1"' ), 'The main post still gets its marker afterwards.' );
 	}
 
+	/**
+	 * A core/embed as the editor saves it: the URL sits on its own line, so core's
+	 * autoembed (the_content priority 8) rewrites it into provider HTML before the
+	 * block renders.
+	 */
+	private function autoembed_block( string $url ): string {
+		return '<!-- wp:embed {"url":"' . $url . '","type":"rich","providerNameSlug":"soundcloud","responsive":true} --><figure class="wp-block-embed is-type-rich is-provider-soundcloud wp-block-embed-soundcloud"><div class="wp-block-embed__wrapper">' . "\n" . $url . "\n" . '</div></figure><!-- /wp:embed -->';
+	}
+
+	public function test_an_autoembedded_first_player_receives_the_marker_once(): void {
+		$stub = static function ( $result, $url ) {
+			return 0 === strpos( (string) $url, 'https://soundcloud.com/' ) ? '<iframe title="Embedded player" src="https://w.soundcloud.com/player/?url=' . rawurlencode( (string) $url ) . '"></iframe>' : $result;
+		};
+		add_filter( 'pre_oembed_result', $stub, 10, 2 );
+
+		try {
+			$one  = $this->singular_content( $this->audio( 'Autoembed', $this->autoembed_block( 'https://soundcloud.com/artist/one' ) ) );
+			$both = $this->singular_content( $this->audio( 'Two autoembeds', $this->autoembed_block( 'https://soundcloud.com/artist/one' ) . $this->autoembed_block( 'https://soundcloud.com/artist/two' ) ) );
+			$same = $this->singular_content( $this->audio( 'Identical autoembeds', $this->autoembed_block( 'https://soundcloud.com/artist/one' ) . $this->autoembed_block( 'https://soundcloud.com/artist/one' ) ) );
+		} finally {
+			remove_filter( 'pre_oembed_result', $stub, 10 );
+		}
+
+		$this->assertStringContainsString( 'w.soundcloud.com/player', $one, 'Autoembed rewrote the URL line before the block rendered.' );
+		$this->assertSame( 1, substr_count( $one, 'data-pkiw-primary-media="1"' ) );
+		$this->assertMatchesRegularExpression( '/<figure[^>]*data-pkiw-primary-media="1"[^>]*>.*w\.soundcloud\.com/s', $one );
+
+		$this->assertSame( 1, substr_count( $both, 'data-pkiw-primary-media="1"' ) );
+		$this->assertLessThan( strpos( $both, 'artist%2Ftwo' ), strpos( $both, 'data-pkiw-primary-media="1"' ) );
+
+		$this->assertSame( 1, substr_count( $same, 'data-pkiw-primary-media="1"' ), 'Two identical embeds mark only the first.' );
+	}
+
 	public function test_a_player_inside_a_synced_pattern_never_takes_the_marker_before_the_stored_first_player(): void {
 		$pattern = self::factory()->post->create(
 			[
