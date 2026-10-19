@@ -72,6 +72,38 @@ final class MicroformatsExcerptTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'Quillfeather Review Title', $excerpt );
 	}
 
+	public function test_automatic_excerpt_on_a_public_checkin_single_has_no_hidden_venue_or_address(): void {
+		$post_id = $this->kind_post(
+			'checkin',
+			'Quillfeather Checkin Title',
+			'<!-- wp:paragraph --><p>Lunch was quiet.</p><!-- /wp:paragraph -->'
+		);
+		$values = [
+			'checkin_name'     => 'Marigold Noodle House',
+			'checkin_address'  => '14 Cobblestone Lane',
+			'checkin_locality' => 'Fictional Heights',
+			'checkin_region'   => 'Westmark Province',
+			'checkin_country'  => 'Elbonia',
+		];
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'public' );
+		foreach ( $values as $suffix => $value ) {
+			update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, $value );
+		}
+		$this->go_to_post( $post_id );
+
+		$page = apply_filters( 'the_content', get_post_field( 'post_content', $post_id ) );
+		foreach ( $values as $value ) {
+			$this->assertStringContainsString( $value, $page, 'Precondition: the page markup carries the hidden check-in value.' );
+		}
+
+		$excerpt = get_the_excerpt( $post_id );
+
+		$this->assertStringContainsString( 'Lunch was quiet', $excerpt );
+		foreach ( $values as $value ) {
+			$this->assertStringNotContainsString( $value, $excerpt, 'The hidden check-in h-card text stays out of the excerpt.' );
+		}
+	}
+
 	/**
 	 * Byte-identical guard: outside the excerpt the page markup keeps every
 	 * hidden marker, and building an excerpt first does not change it.

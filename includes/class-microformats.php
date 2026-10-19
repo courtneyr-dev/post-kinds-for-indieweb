@@ -849,7 +849,7 @@ class Microformats {
 			return $content;
 		}
 
-		// Hidden data carries text (review item, podcast cite) that must stay out of automatic excerpts.
+		// Hidden data carries text (the review item, the check-in h-card) that must stay out of automatic excerpts.
 		if ( doing_filter( 'get_the_excerpt' ) ) {
 			return $content;
 		}
