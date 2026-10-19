@@ -127,6 +127,7 @@ add_filter( 'render_block_post-kinds-indieweb/stream-card', __NAMESPACE__ . '\\e
 
 /**
  * Hidden `p-author h-card` for an entry (empty when no author identity).
+ * Empty for a password-protected post (issue: protected reads hide the author).
  *
  * @since 1.8.1
  *
@@ -134,6 +135,10 @@ add_filter( 'render_block_post-kinds-indieweb/stream-card', __NAMESPACE__ . '\\e
  * @return string
  */
 function entry_author_html( \WP_Post $post ): string {
+	if ( post_password_required( $post ) ) {
+		return '';
+	}
+
 	/**
 	 * Filters the author identity emitted as the entry's hidden `p-author h-card`.
 	 *
