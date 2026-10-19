@@ -164,7 +164,8 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 				$template          = new WP_Block_Template();
 				$template->slug    = $slug;
 				$template->content = $content;
-				$templates[]       = $template;
+				// First, so the stand-in wins over the plugin's own taxonomy-kind-listen-podcast file.
+				array_unshift( $templates, $template );
 			}
 
 			return $templates;
