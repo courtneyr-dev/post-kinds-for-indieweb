@@ -142,6 +142,28 @@ final class QuestionEntryBlockTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Protected: How do you name a new post kind?', wp_strip_all_tags( $html ) );
 		$this->assertStringNotContainsString( 'Hidden words', $html );
 		$this->assertStringNotContainsString( 'post-password-form', $html );
+		// W5-G35: a protected entry keeps u-url and dt-published and drops the author h-card (name, URL, Gravatar).
+		$this->assertSame( 1, $xpath->query( '//a[@class="u-url" and @href]' )->length );
+		$this->assertSame( 1, $xpath->query( '//data[@class="dt-published" and @hidden]' )->length );
+		$this->assertSame( 0, $xpath->query( '//*[contains(@class,"p-author") or contains(@class,"h-card")]' )->length );
+		$this->assertStringNotContainsString( 'Entry Author', $html );
+		$this->assertStringNotContainsString( 'gravatar', $html );
+		$this->assertStringNotContainsString( 'author=', $html );
+	}
+
+	public function test_protected_entry_for_a_visitor_holding_the_password_keeps_the_author(): void {
+		$id   = $this->question( [ 'post_password' => 'seed-pass-256' ] );
+		$post = get_post( $id );
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+		$hasher = new PasswordHash( 8, true );
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = $hasher->HashPassword( 'seed-pass-256' );
+		try {
+			$this->assertFalse( post_password_required( $post ) );
+			$html = Question_Archive::entry_html( $post, [ 'headingLevel' => 2 ], true );
+			$this->assertStringContainsString( 'p-author', $html );
+		} finally {
+			unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+		}
 	}
 
 	public function test_block_renderer_preview_renders_the_same_entry_contract(): void {

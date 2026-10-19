@@ -380,7 +380,8 @@ final class Question_Archive {
 		$html .= '</h' . $level . '>';
 		$html .= '<data class="dt-published" value="' . esc_attr( $date_iso ) . '" hidden></data>';
 
-		$author_html = function_exists( __NAMESPACE__ . '\\entry_author_html' ) ? entry_author_html( $post ) : '';
+		// W5-G35: a visitor without the password gets no author h-card (name, URL, Gravatar); u-url and dt-published stay.
+		$author_html = ! $protected && function_exists( __NAMESPACE__ . '\\entry_author_html' ) ? entry_author_html( $post ) : '';
 		if ( '' !== $author_html ) {
 			$html .= '<span hidden>' . $author_html . '</span>';
 		}

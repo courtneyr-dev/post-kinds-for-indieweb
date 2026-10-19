@@ -235,6 +235,19 @@ final class QuestionContentStepTest extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_singular_comment_feed_content_is_unchanged(): void {
+		// A per-post comment feed is singular for the question and is_feed(); only the feed guard keeps the section out.
+		$id      = $this->s01();
+		$content = '<p>Feed body.</p>';
+		$this->go_to( get_post_comments_feed_link( $id ) );
+		$GLOBALS['post'] = get_post( $id );
+
+		$this->assertTrue( is_feed() );
+		$this->assertTrue( is_singular( 'post' ) );
+		$this->assertSame( get_queried_object_id(), get_the_ID() );
+		$this->assertSame( $content, Question_Answers::decorate_content( $content ) );
+	}
+
 	public function test_get_the_excerpt_contains_no_answer_text(): void {
 		$id = $this->s01();
 		$this->go_to( get_permalink( $id ) );

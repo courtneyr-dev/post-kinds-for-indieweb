@@ -45,6 +45,7 @@ final class QuestionLocationTest extends WP_UnitTestCase {
 			remove_filter( $row[0], [ 'Geo_Base', 'georss_item' ], 10 );
 		}
 		remove_filter( 'wp_head', [ 'Geo_Base', 'meta_tags' ], 10 );
+		remove_filter( 'get_comment_text', [ 'Geo_Data', 'location_comment' ], 12 );
 		if ( $this->registered_location && taxonomy_exists( 'location' ) ) {
 			unregister_taxonomy( 'location' );
 		}
@@ -452,6 +453,124 @@ final class QuestionLocationTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'Seed Cove', (string) wp_json_encode( $response->get_data()['excerpt'] ?? [] ) );
 	}
 
+	private function comment_on( int $post_id, string $text, array $args = [] ): WP_Comment {
+		$id = self::factory()->comment->create(
+			array_merge(
+				[
+					'comment_post_ID'  => $post_id,
+					'comment_approved' => '1',
+					'comment_content'  => $text,
+					'comment_author'   => 'Avery Quill',
+				],
+				$args
+			)
+		);
+		foreach ( [ 'geo_latitude' => '0.1', 'geo_longitude' => '0.2', 'geo_address' => 'Seed Cove, Test Ocean', 'geo_public' => '1' ] as $key => $value ) {
+			add_comment_meta( $id, $key, $value );
+		}
+
+		return get_comment( $id );
+	}
+
+	/**
+	 * Register Simple Location's comment callback by name, and a probe at the same priority that prints the place only while it is registered.
+	 */
+	private function register_comment_location(): void {
+		add_filter( 'get_comment_text', [ 'Geo_Data', 'location_comment' ], 12, 3 );
+		$probe = static function ( $text ): string {
+			return false !== has_filter( 'get_comment_text', [ 'Geo_Data', 'location_comment' ] ) ? $text . '<p>Seed Cove, Test Ocean</p>' : (string) $text;
+		};
+		$this->add_probe( 'get_comment_text', $probe, 12 );
+		$this->assertSame( 12, has_filter( 'get_comment_text', [ 'Geo_Data', 'location_comment' ] ) );
+	}
+
+	public function test_comment_on_a_question_loses_the_simple_location_comment_filter_for_its_pass_and_gets_it_back(): void {
+		$this->register_comment_location();
+		$comment = $this->comment_on( $this->located_question(), 'A01 answer text.' );
+
+		$text = apply_filters( 'get_comment_text', 'A01 answer text.', $comment, [] );
+
+		$this->assertSame( 'A01 answer text.', $text );
+		$this->assertSame( 12, has_filter( 'get_comment_text', [ 'Geo_Data', 'location_comment' ] ), 'The restore puts it back at its own priority.' );
+	}
+
+	public function test_non_answer_comment_on_a_question_single_prints_no_place(): void {
+		$this->register_comment_location();
+		$id      = $this->located_question();
+		$author  = (int) get_post_field( 'post_author', $id );
+		$comment = $this->comment_on( $id, 'Author follow-up.', [ 'user_id' => $author ] );
+		$this->go_to( get_permalink( $id ) );
+
+		ob_start();
+		comment_text( $comment );
+		$html = (string) ob_get_clean();
+
+		$this->assertStringContainsString( 'Author follow-up.', $html );
+		$this->assertStringNotContainsString( 'Seed Cove', $html );
+		$this->assertSame( 12, has_filter( 'get_comment_text', [ 'Geo_Data', 'location_comment' ] ) );
+	}
+
+	public function test_question_comment_feed_prints_no_place_for_a_commenter(): void {
+		$this->register_comment_location();
+		$id = $this->located_question();
+		$this->comment_on( $id, 'A01 feed answer.' );
+		$this->go_to( get_post_comments_feed_link( $id ) );
+		$this->assertTrue( is_feed() );
+
+		ob_start();
+		try {
+			@require ABSPATH . WPINC . '/feed-rss2-comments.php'; // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Core's template emits headers under the test runner.
+		} finally {
+			$feed = (string) ob_get_clean();
+		}
+
+		$this->assertStringContainsString( 'A01 feed answer.', $feed );
+		$this->assertStringNotContainsString( 'Seed Cove', $feed );
+		$this->assertSame( 12, has_filter( 'get_comment_text', [ 'Geo_Data', 'location_comment' ] ) );
+	}
+
+	public function test_comment_on_a_note_keeps_the_simple_location_comment_filter(): void {
+		$this->register_comment_location();
+		$comment = $this->comment_on( $this->post( 'note' ), 'Note comment.' );
+		$seen    = [];
+
+		Question_Location::gate_comment_text( 'x', $comment );
+		try {
+			$seen[] = has_filter( 'get_comment_text', [ 'Geo_Data', 'location_comment' ] );
+		} finally {
+			Question_Location::restore_comment_text( 'x' );
+		}
+
+		$this->assertSame( [ 12 ], $seen, 'A note comment keeps Simple Location output.' );
+		$this->assertSame( 12, has_filter( 'get_comment_text', [ 'Geo_Data', 'location_comment' ] ) );
+	}
+
+	public function test_nested_comment_passes_restore_only_what_each_pass_removed(): void {
+		$this->register_comment_location();
+		$question = $this->comment_on( $this->post( 'question' ), 'Q comment.' );
+		$note     = $this->comment_on( $this->post( 'note' ), 'N comment.' );
+		$seen     = [];
+
+		Question_Location::gate_comment_text( 'x', $question );
+		$seen[] = has_filter( 'get_comment_text', [ 'Geo_Data', 'location_comment' ] );
+		Question_Location::gate_comment_text( 'x', $note );
+		Question_Location::restore_comment_text( 'x' );
+		$seen[] = has_filter( 'get_comment_text', [ 'Geo_Data', 'location_comment' ] );
+		Question_Location::restore_comment_text( 'x' );
+		$seen[] = has_filter( 'get_comment_text', [ 'Geo_Data', 'location_comment' ] );
+
+		$this->assertSame( [ false, false, 12 ], $seen );
+	}
+
+	public function test_comment_gate_is_inert_without_simple_location(): void {
+		$comment = $this->comment_on( $this->post( 'question' ), 'No SL.' );
+
+		Question_Location::gate_comment_text( 'x', $comment );
+		Question_Location::restore_comment_text( 'x' );
+
+		$this->assertFalse( has_filter( 'get_comment_text', [ 'Geo_Data', 'location_comment' ] ) );
+	}
+
 	public function test_registering_twice_adds_no_duplicate_callbacks(): void {
 		( new Question_Location() )->register();
 		( new Question_Location() )->register();
@@ -463,6 +582,8 @@ final class QuestionLocationTest extends WP_UnitTestCase {
 		$this->assertSame( 11, has_filter( 'rss2_item', [ Question_Location::class, 'restore_feed_item' ] ) );
 		$this->assertSame( 11, has_filter( 'json_feed_item', [ Question_Location::class, 'strip_json_feed_geo' ] ) );
 		$this->assertSame( 10, has_filter( 'template_redirect', [ Question_Location::class, 'suppress_head_meta' ] ) );
+		$this->assertSame( 10, has_filter( 'get_comment_text', [ Question_Location::class, 'gate_comment_text' ] ) );
+		$this->assertSame( 13, has_filter( 'get_comment_text', [ Question_Location::class, 'restore_comment_text' ] ) );
 		$this->assertSame( 10, has_filter( 'pre_get_posts', [ Question_Location::class, 'exclude_from_place_listings' ] ) );
 	}
 }

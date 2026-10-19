@@ -42,6 +42,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * - head: `Geo_Base::meta_tags` comes off wp_head on a question single.
  * - REST: latitude, longitude, geo_address and timezone leave a post
  *   response outside the edit context.
+ * - comments: `Geo_Data::location_comment` comes off get_comment_text at 10 and
+ *   returns at 13 for every comment whose post is a question, wherever the
+ *   comment renders (comment feed, comments template, the Answers section).
  * - listings: the main query of Simple Location's map and geo endpoints, of
  *   its `location` archive and of a `pkiw_venue` archive leaves question
  *   posts out.
@@ -69,6 +72,13 @@ final class Question_Location {
 	private static array $feed_stack = [];
 
 	/**
+	 * Removed comment-text callbacks, one frame per get_comment_text pass.
+	 *
+	 * @var array<int, array<int, array{hook:string, callable:mixed, priority:int, accepted_args:int}>>
+	 */
+	private static array $comment_stack = [];
+
+	/**
 	 * Wire the gate. Every callback is static, so a second call adds nothing.
 	 *
 	 * @return void
@@ -76,6 +86,8 @@ final class Question_Location {
 	public function register(): void {
 		add_filter( 'the_content', [ self::class, 'gate_content' ], 10 );
 		add_filter( 'the_content', [ self::class, 'restore_content' ], 13 );
+		add_filter( 'get_comment_text', [ self::class, 'gate_comment_text' ], 10, 2 );
+		add_filter( 'get_comment_text', [ self::class, 'restore_comment_text' ], 13 );
 		foreach ( [ 'rss_item', 'rss2_item', 'atom_entry', 'rdf_item' ] as $hook ) {
 			add_action( $hook, [ self::class, 'gate_feed_item' ], 9 );
 			add_action( $hook, [ self::class, 'restore_feed_item' ], 11 );
@@ -94,6 +106,45 @@ final class Question_Location {
 	public static function reset(): void {
 		self::$content_stack = [];
 		self::$feed_stack    = [];
+		self::$comment_stack = [];
+	}
+
+	/**
+	 * Remove Simple Location's comment-location callback for one comment on a question.
+	 *
+	 * Simple Location appends a commenter's place to the comment text at priority 12
+	 * (`Geo_Data::location_comment`). The comment feed, the comments template and any
+	 * other caller of get_comment_text() would print it under a third party's name, so
+	 * the gate is keyed by the comment's post, not by the surface that renders it.
+	 *
+	 * @param mixed $text    Comment text.
+	 * @param mixed $comment Comment.
+	 * @return mixed Text unchanged.
+	 */
+	public static function gate_comment_text( $text, $comment = null ) {
+		$comment = $comment instanceof \WP_Comment ? $comment : get_comment( $comment );
+		$post    = $comment instanceof \WP_Comment ? get_post( (int) $comment->comment_post_ID ) : null;
+
+		self::$comment_stack[] = self::is_question( $post )
+			? self::remove( 'get_comment_text', 12, 'Geo_Data', 'location_comment' )
+			: [];
+
+		return $text;
+	}
+
+	/**
+	 * Re-add what gate_comment_text() removed in this pass, at its own priority.
+	 *
+	 * @param mixed $text Comment text.
+	 * @return mixed Text unchanged.
+	 */
+	public static function restore_comment_text( $text ) {
+		$removed = array_pop( self::$comment_stack );
+		foreach ( is_array( $removed ) ? $removed : [] as $entry ) {
+			add_filter( $entry['hook'], $entry['callable'], $entry['priority'], $entry['accepted_args'] );
+		}
+
+		return $text;
 	}
 
 	/**
