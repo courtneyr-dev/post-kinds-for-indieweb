@@ -335,7 +335,11 @@ final class SleepArchiveTest extends WP_UnitTestCase {
 			return (string) preg_replace( '/\s+/', ' ', $out );
 		};
 
-		$this->assertSame( $cell( 'Z01' ), $cell( 'X01' ) );
+		// A protected night names no author, so the open night's hidden author h-card is the one difference.
+		$author_card = '#<span hidden><span class="p-author h-card">.*?</span></span>#';
+		$this->assertStringContainsString( 'p-author h-card', $cell( 'Z01' ), 'The open night keeps its author h-card.' );
+		$this->assertStringNotContainsString( 'p-author', $cell( 'X01' ), 'The protected night names no author.' );
+		$this->assertSame( (string) preg_replace( $author_card, '', $cell( 'Z01' ) ), $cell( 'X01' ) );
 	}
 
 	public function test_the_kind_feed_orders_newest_first_and_drops_the_protected_night(): void {
@@ -430,13 +434,21 @@ final class SleepArchiveTest extends WP_UnitTestCase {
 		$items  = array_values( array_filter( $parsed['items'], static fn( array $item ): bool => in_array( 'h-entry', $item['type'], true ) ) );
 
 		$this->assertCount( 31, $items );
+		$protected_url = get_permalink( $this->ids['X01'] );
+		$protected_hit = 0;
 		foreach ( $items as $item ) {
 			$this->assertArrayNotHasKey( 'children', $item, 'No h-entry nests another.' );
 			$this->assertNotEmpty( $item['properties']['url'] ?? [] );
 			$this->assertNotEmpty( $item['properties']['published'] ?? [] );
-			$this->assertNotEmpty( $item['properties']['author'] ?? [] );
+			if ( ( $item['properties']['url'][0] ?? '' ) === $protected_url ) {
+				$this->assertEmpty( $item['properties']['author'] ?? [], 'The protected night names no author.' );
+				++$protected_hit;
+			} else {
+				$this->assertNotEmpty( $item['properties']['author'] ?? [] );
+			}
 			$this->assertMatchesRegularExpression( '/^\d{4}-\d{2}-\d{2}$/', (string) $item['properties']['published'][0], 'Date-only published.' );
 		}
+		$this->assertSame( 1, $protected_hit, 'The protected night is on page one.' );
 		$with_sleep = array_filter( $items, static fn( array $item ): bool => ! empty( $item['properties']['sleep'] ) );
 		$this->assertCount( 28, $with_sleep, 'Every night but the three with no public duration carries one.' );
 	}
