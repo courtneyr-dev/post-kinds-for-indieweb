@@ -44,6 +44,7 @@
 	const settings = window.pkiwKindTemplatePreview || {};
 	const perPage = settings.perPage || {};
 	const grouped = settings.grouped || [];
+	const views = Array.isArray( settings.views ) ? settings.views : [];
 	// Registered entry blocks: { name: { fixed } }. Without the list, the menu entry.
 	const entries = window.pkiwGroupedEntries || null;
 
@@ -76,11 +77,12 @@
 	}
 
 	// The REST `orderby` value for a menu's section order and empty-group setting.
-	function menuOrder( attributes ) {
+	function menuOrder( attributes, view ) {
 		return (
 			'pkiw_group' +
 			( 'desc' === attributes.sectionOrder ? '_desc' : '' ) +
-			( 'first' === attributes.emptyGroup ? '_empty_first' : '' )
+			( 'first' === attributes.emptyGroup ? '_empty_first' : '' ) +
+			( view ? '__' + view : '' )
 		);
 	}
 
@@ -88,6 +90,18 @@
 		return 'string' === typeof slug && 0 === slug.indexOf( PREFIX )
 			? slug.slice( PREFIX.length )
 			: '';
+	}
+
+	function resolveTemplate( slug ) {
+		const kind = kindFromTemplateSlug( slug );
+		for ( const filtered of views ) {
+			for ( const value of filtered.values || [] ) {
+				if ( kind === filtered.kind + '-' + value ) {
+					return { kind: filtered.kind, view: value };
+				}
+			}
+		}
+		return { kind, view: '' };
 	}
 
 	// The attributes to write for a Query Loop on a kind template: what the
@@ -120,10 +134,11 @@
 		function ( BlockEdit ) {
 			return function ( props ) {
 				const context = props.context;
+				const template = context
+					? resolveTemplate( context.templateSlug )
+					: { kind: '', view: '' };
 				const loopKind =
-					'core/query' === props.name && context
-						? kindFromTemplateSlug( context.templateSlug )
-						: '';
+					'core/query' === props.name && context ? template.kind : '';
 				const setAttributes = props.setAttributes;
 				const attributes = wp.element.useRef( props.attributes );
 				attributes.current = props.attributes;
@@ -146,10 +161,8 @@
 					'core/post-template' === props.name && context
 						? context.query
 						: null;
-				const kind =
-					query && query.inherit
-						? kindFromTemplateSlug( context.templateSlug )
-						: '';
+				const kind = query && query.inherit ? template.kind : '';
+				const view = query && query.inherit ? template.view : '';
 				const termId = wp.data.useSelect(
 					function ( select ) {
 						if ( ! kind ) {
@@ -207,8 +220,8 @@
 					sitePerPage ||
 					0;
 				const order =
-					! fixed && -1 !== grouped.indexOf( kind )
-						? menuOrder( menu || {} )
+					! fixed && ( view || -1 !== grouped.indexOf( kind ) )
+						? menuOrder( menu || {}, view )
 						: '';
 				const preview = wp.element.useMemo(
 					function () {

@@ -192,12 +192,12 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 * Added: the archive engine files replies and likes by the site they cite and bookmarks under tag drawers A to Z, with password-protected posts under Other. A theme supplies those three archive templates.
 * Added: reply and like cards copy their cited URL, title, author, description and image into post meta, and reply, like and bookmark Stream cards carry a hidden citation.
 * Added: review, reply and bookmark single pages carry microformats2 for the review body, the reply card and a bookmark's linked URL.
-* Changed: the card meta backfill runs once more, at version 8.
+* Changed: the card meta backfill runs once more, at version 9.
 * Changed: every play card is the entry's u-play-of h-cite, with the class on the card's root.
 * Fixed: kind feeds stay newest first when the kind archive is grouped.
 * Fixed: a listen card whose cover is in this site's media library prints it with core's srcset, sizes, width and height, and its src and u-photo are the library image's current file, which is the stored URL unless the image was edited in the Media Library.
 * Fixed: a play card switched from a video game to a board game drops the old video game ID, and a read card saved back to Currently Reading saves.
-* Fixed: the card meta backfill applies the play ID and read status rules and the stricter-wins privacy hold when it runs once, at version 8.
+* Fixed: the card meta backfill applies the play ID and read status rules and the stricter-wins privacy hold when it runs once, at version 9.
 * Fixed: Stream cards cite plays and reads, and a password-protected one prints only its title link.
 * Fixed: reply, like and bookmark cards with a URL and no title link to the URL's host, or print "Original link" when the URL has no host, and never print a query string as link text.
 * Fixed: /kind/bookmark/?tag=alpha shows that tag's drawer.
@@ -213,7 +213,7 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 * Added: a photo post warns before publish about images with empty alt text.
 * Changed: article Stream cards drop Read more, the thumbnail strip and "+N" and keep the hero caption.
 * Changed: a Micropub repost no longer copies its note into the repost card.
-* Changed: the repost card, and the exercise, sleep and craft cards, sync into post meta, and the card meta backfill runs once, at version 8.
+* Changed: the repost card, and the exercise, sleep and craft cards, sync into post meta, and the card meta backfill runs once, at version 9.
 * Fixed: a password-protected post's kind data no longer reaches REST, the get-post-meta ability, the check-in routes, block bindings, the check-in map or the dashboard block for someone who can't edit it.
 
 * Added: archives can page by year, month or whole week, so a kind's page count follows the posts that are public.
@@ -234,6 +234,25 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 * Fixed: weather posts no longer print Simple Location's map or location line, and their REST responses drop its coordinates, address and time zone.
 * Fixed: a search can't confirm a hidden exercise distance, sleep bedtime or acquisition cost with an exact-phrase guess.
 * Fixed: article archive columns use the wide width, and a static Stream card caption is no longer a live region.
+
+* Added: the video archive. /kind/video/ files videos in year sections, 12 a page, by the year of their local date, and a video single prints one hidden `u-video` and wraps the prose after the player in `e-content`.
+* Added: the audio archive. /kind/audio/ is a month log, 12 a page, and the Stream card prints a duration line from the media file's stored length.
+* Added: an audio transcript pattern, and a pre-publish notice when an audio post with a player has no filled transcript. The notice never stops you from saving.
+* Added: three filters, `pkiw_stream_card_before_date`, `pkiw_generic_card_cuts` and `pkiw_audio_embed_providers`.
+* Added: the jam archive. /kind/jam/ is in month sections, and page 1 opens with a "Now Playing" lead. The Archive sections block has Lead posts and Lead label settings for month kinds.
+* Added: a compact jam card for archives and the Stream, with a cover, title link and artist and no iframe, and a Date jammed field in the jam card editor.
+* Added: the podcast view. /kind/listen/?pkiw_listen_type=podcast lists podcast listens by show, A to Z, 12 a page, with a Listen types block for the All and Podcasts links and a Podcast episode block. The plain listen shelf is unchanged.
+* Added: a Media type setting (Music or Podcast) on the listen card, a `listen_media_type` field, and the command `wp postkind listen-media-type backfill [--dry-run] [--ids=<csv>]`. Podcast imports write Podcast, and the command refuses to write without `--ids`.
+* Added: the wish archive. /kind/wish/ is in sections by type, with media and movie wishes together as Movie/Show and every other type under Other, then High, Medium and Low priority inside a section.
+* Added: a Wished date field on the wish card, and wish card markup with one View item link, an empty alt text for a picture with no description, and Stream chips for type, priority and price.
+* Added: the question archive. /kind/question/ is in Answered and Waiting for an answer sections, and a question single prints its approved answers in a section of its own.
+* Added: a question's Stream card with its answer count, a cached answered or waiting status, a question pattern, and a Simple Location gate that hides a question's map, address and feed geo.
+* Changed: version 9 of the card meta backfill sets no podcast type on an existing listen; use the listen-media-type command for that.
+* Changed: a password-protected post's Stream card no longer names its author, and the jam card prints nothing for a password-protected post.
+* Changed: the Stream card for a jam drops the provider embed and prints the compact card.
+* Fixed: Simple Location's head tags, GeoRSS and JSON Feed geo are hidden for any kind whose location privacy is private or approximate, or whose post has a password. A post with no privacy choice keeps them.
+* Fixed: the Recent Kinds block no longer lists a password-protected post, and a password-protected post gets no derived ATmosphere title.
+* Fixed: a jam with no artist no longer gives its cover the alt text "Title by" with nothing after it.
 
 = 1.8.6 =
 * Added: checkin-dashboard and checkins-feed gained a headingLevel attribute (default 2, clamped 2–4), matching the Stream card block.

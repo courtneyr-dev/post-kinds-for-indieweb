@@ -252,6 +252,104 @@ describe( 'kind template preview', () => {
 		'post-kinds-indieweb/menu-entry': { fixed: false },
 		'post-kinds-indieweb/archive-sections': { fixed: false },
 	};
+	const listenView = {
+		perPage: {},
+		grouped: [],
+		views: [
+			{
+				kind: 'listen',
+				var: 'pkiw_listen_type',
+				values: [ 'podcast' ],
+			},
+		],
+	};
+
+	it.each( [
+		[ {}, 'pkiw_group__podcast' ],
+		[ { sectionOrder: 'desc' }, 'pkiw_group_desc__podcast' ],
+		[ { emptyGroup: 'first' }, 'pkiw_group_empty_first__podcast' ],
+		[
+			{ sectionOrder: 'desc', emptyGroup: 'first' },
+			'pkiw_group_desc_empty_first__podcast',
+		],
+	] )(
+		'resolves a filtered-view template to its base kind and order %s',
+		( attributes, orderBy ) => {
+			const state = editorState( {
+				settings: listenView,
+				entries: registeredEntries,
+				blocks: playTemplate( attributes ),
+			} );
+			const element = load( state )(
+				postTemplate( {
+					templateSlug: 'taxonomy-kind-listen-podcast',
+				} )
+			);
+
+			expect( state.termQueries[ 0 ][ 2 ].slug ).toBe( 'listen' );
+			expect( element.props.context.query.orderBy ).toBe( orderBy );
+		}
+	);
+
+	it( 'keeps the legacy compound kind slug when no filtered views are configured', () => {
+		const state = editorState( {
+			settings: { perPage: {}, grouped: [] },
+			entries: registeredEntries,
+			blocks: playTemplate( {} ),
+		} );
+		const element = load( state )(
+			postTemplate( {
+				templateSlug: 'taxonomy-kind-listen-podcast',
+			} )
+		);
+
+		expect( state.termQueries[ 0 ][ 2 ].slug ).toBe( 'listen-podcast' );
+		expect( element.props.context.query.orderBy ).toBe( 'date' );
+	} );
+
+	it( 'does not apply a view order to the base kind template', () => {
+		const element = load(
+			editorState( {
+				settings: listenView,
+				entries: registeredEntries,
+				blocks: playTemplate( {} ),
+			} )
+		)( postTemplate( { templateSlug: 'taxonomy-kind-listen' } ) );
+
+		expect( element.props.context.query.orderBy ).toBe( 'date' );
+	} );
+
+	it( 'previews a grouped video marker at its own page size', () => {
+		const element = load(
+			editorState( {
+				settings: { perPage: {}, grouped: [ 'video' ] },
+				entries: registeredEntries,
+				blocks: playTemplate( { linesPerPage: 12 } ),
+			} )
+		)( postTemplate( { templateSlug: 'taxonomy-kind-video' } ) );
+
+		expect( element.props.context.query.perPage ).toBe( 12 );
+		expect( element.props.context.query.orderBy ).toBe( 'pkiw_group' );
+	} );
+
+	it( 'keeps lead attributes out of the preview query', () => {
+		const element = load(
+			editorState( {
+				settings: { perPage: {}, grouped: [ 'video' ] },
+				entries: registeredEntries,
+				blocks: playTemplate( {
+					leadCount: 1,
+					leadLabel: 'Latest',
+					linesPerPage: 12,
+				} ),
+			} )
+		)( postTemplate( { templateSlug: 'taxonomy-kind-video' } ) );
+
+		expect( element.props.context.query.perPage ).toBe( 12 );
+		expect( element.props.context.query.orderBy ).toBe( 'pkiw_group' );
+		expect( element.props.context.query ).not.toHaveProperty( 'leadCount' );
+		expect( element.props.context.query ).not.toHaveProperty( 'leadLabel' );
+	} );
 
 	it( 'finds the archive-sections marker through pkiwGroupedEntries and pages by its linesPerPage', () => {
 		const state = editorState( {

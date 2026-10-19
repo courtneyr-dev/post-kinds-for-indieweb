@@ -43,9 +43,11 @@ interface Group_Source {
 	 * - rank: optional, sorts before LOWER(value) in the section order.
 	 * - tiebreak: optional, sorts after LOWER(value) so groups that collate
 	 *   equal stay contiguous.
+	 * - within: optional list of ORDER BY parts, each with its own direction,
+	 *   appended after the tiebreak and before the date and ID tail.
 	 *
 	 * @param \WP_Query $query Query being ordered.
-	 * @return array{value:string, last?:string, rank?:string, tiebreak?:string}|null
+	 * @return array{value:string, last?:string, rank?:string, tiebreak?:string, within?:string[]}|null
 	 */
 	public function sql( \WP_Query $query ): ?array;
 

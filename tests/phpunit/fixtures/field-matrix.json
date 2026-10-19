@@ -731,6 +731,10 @@
             "layout": {
                 "type": "string",
                 "sample": "horizontal"
+            },
+            "mediaType": {
+                "type": "string",
+                "sample": "Sample mediaType value"
             }
         }
     },

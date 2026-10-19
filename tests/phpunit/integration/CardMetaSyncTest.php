@@ -991,13 +991,11 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * #340 shipped version 3 on main, #349 took 4 and #358 took 5 with the
-	 * privacy hold, W2 took 6 for the reply and like maps and the review
-	 * fill. W3 adds the repost-card map, so its pass needs the next number
-	 * (X15: one bump per release).
+	 * W5 replays the listen media type and wish maps and adds the question
+	 * backfill hooks, so its pass needs the next number.
 	 */
-	public function test_the_backfill_version_is_7_with_the_repost_map(): void {
-		$this->assertSame( '8', \PKIW\Card_Meta_Sync::BACKFILL_VERSION );
+	public function test_the_backfill_version_is_9_with_the_phase_d_maps_and_hooks(): void {
+		$this->assertSame( '9', \PKIW\Card_Meta_Sync::BACKFILL_VERSION );
 	}
 
 	/**
@@ -1381,6 +1379,220 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 		\PKIW\Card_Meta_Sync::run_backfill_event();
 
 		$this->assertSame( 'Quill Primer', get_post_meta( $post_id, '_pkiw_read_title', true ) );
+	}
+
+	// --- Listen media type, wish map and card-less backfill hooks. ---
+
+	public function test_listen_media_type_follows_only_a_non_empty_card_attribute(): void {
+		( new \PKIW\Meta_Fields() )->register_meta_fields();
+		$id = $this->post_with_card( 'listen-card', [ 'trackTitle' => 'One', 'mediaType' => 'podcast' ] );
+
+		$this->assertSame( 'podcast', $this->row( $id, 'listen_media_type' ) );
+
+		$this->resave( $id, '<!-- wp:post-kinds-indieweb/listen-card {"trackTitle":"One"} /-->' );
+		$this->assertSame( 'podcast', $this->row( $id, 'listen_media_type' ), 'An absent attribute keeps the stored type.' );
+
+		$this->resave( $id, '<!-- wp:post-kinds-indieweb/listen-card {"trackTitle":"One","mediaType":"music"} /-->' );
+		$this->assertSame( 'music', $this->row( $id, 'listen_media_type' ) );
+
+		$this->resave( $id, '<!-- wp:post-kinds-indieweb/listen-card {"trackTitle":"One","mediaType":"banana"} /-->' );
+		$this->assertTrue( metadata_exists( 'post', $id, '_pkiw_listen_media_type' ) );
+		$this->assertSame( '', $this->row( $id, 'listen_media_type' ), 'The registered sanitizer stores an invalid type as empty.' );
+	}
+
+	public function test_a_wish_card_writes_only_its_five_mapped_values(): void {
+		( new \PKIW\Meta_Fields() )->register_meta_fields();
+		$id = $this->post_with_card(
+			'wish-card',
+			[
+				'title'    => 'A greenhouse',
+				'url'      => 'https://example.com/greenhouse',
+				'image'    => 'https://example.com/greenhouse.jpg',
+				'wishType' => 'experience',
+				'priority' => 'urgent',
+				'price'    => '$100',
+				'reason'   => 'Grow herbs',
+				'imageAlt' => 'A glass greenhouse',
+				'wishedAt' => '2026-10-18T12:00:00',
+				'rel'      => 'wishlist',
+			]
+		);
+
+		$this->assertSame( 'A greenhouse', $this->row( $id, 'wish_name' ) );
+		$this->assertSame( 'https://example.com/greenhouse', $this->row( $id, 'wish_url' ) );
+		$this->assertSame( 'https://example.com/greenhouse.jpg', $this->row( $id, 'wish_photo' ) );
+		$this->assertSame( 'experience', $this->row( $id, 'wish_type' ) );
+		$this->assertSame( 'medium', $this->row( $id, 'wish_priority' ), 'The registered sanitizer maps urgent to medium.' );
+		foreach ( [ 'wish_price', 'wish_reason', 'wish_image_alt', 'wish_wished_at', 'wish_rel' ] as $suffix ) {
+			$this->assertNull( $this->row( $id, $suffix ), "{$suffix} isn't part of the map." );
+		}
+	}
+
+	public function test_a_wish_save_writes_its_defaults_over_stale_rows(): void {
+		( new \PKIW\Meta_Fields() )->register_meta_fields();
+		$id = $this->post_with_card( 'wish-card', [ 'title' => 'A greenhouse', 'wishType' => 'tech', 'priority' => 'high' ] );
+		$this->assertSame( 'tech', $this->row( $id, 'wish_type' ) );
+
+		$this->resave( $id, '<!-- wp:post-kinds-indieweb/wish-card {"title":"A greenhouse"} /-->' );
+
+		$this->assertSame( 'item', $this->row( $id, 'wish_type' ) );
+		$this->assertSame( 'medium', $this->row( $id, 'wish_priority' ) );
+	}
+
+	public function test_the_wish_backfill_fills_defaults_without_replacing_non_empty_rows(): void {
+		( new \PKIW\Meta_Fields() )->register_meta_fields();
+		$content = '<!-- wp:post-kinds-indieweb/wish-card {"title":"A greenhouse"} /-->';
+		$id      = self::factory()->post->create( [ 'post_content' => $content ] );
+		delete_post_meta( $id, '_pkiw_wish_type' );
+		delete_post_meta( $id, '_pkiw_wish_priority' );
+
+		\PKIW\Card_Meta_Sync::sync_content( $id, $content );
+
+		$this->assertSame( 'item', $this->row( $id, 'wish_type' ) );
+		$this->assertSame( 'medium', $this->row( $id, 'wish_priority' ) );
+
+		update_post_meta( $id, '_pkiw_wish_type', 'tech' );
+		update_post_meta( $id, '_pkiw_wish_priority', 'high' );
+		\PKIW\Card_Meta_Sync::sync_content( $id, $content );
+
+		$this->assertSame( 'tech', $this->row( $id, 'wish_type' ), 'An explicit type wins during backfill.' );
+		$this->assertSame( 'high', $this->row( $id, 'wish_priority' ), 'An explicit priority wins during backfill.' );
+	}
+
+	public function test_empty_or_invalid_wish_urls_never_erase_stored_urls(): void {
+		$id = $this->post_with_card(
+			'wish-card',
+			[
+				'title' => 'A greenhouse',
+				'url'   => 'https://example.com/greenhouse',
+				'image' => 'https://example.com/greenhouse.jpg',
+			]
+		);
+
+		$this->resave( $id, '<!-- wp:post-kinds-indieweb/wish-card {"title":"A greenhouse","url":"javascript:alert(1)","image":""} /-->' );
+
+		$this->assertSame( 'https://example.com/greenhouse', $this->row( $id, 'wish_url' ) );
+		$this->assertSame( 'https://example.com/greenhouse.jpg', $this->row( $id, 'wish_photo' ) );
+	}
+
+	public function test_the_after_insert_pass_restores_every_wish_value_over_sidebar_meta(): void {
+		( new \PKIW\Meta_Fields() )->register_meta_fields();
+		$attrs = [
+			'title'    => 'Card greenhouse',
+			'url'      => 'https://card.example.com/greenhouse',
+			'image'    => 'https://card.example.com/greenhouse.jpg',
+			'wishType' => 'book',
+			'priority' => 'high',
+		];
+		$id = self::factory()->post->create( [ 'post_content' => '<!-- wp:paragraph --><p>Sidebar draft.</p><!-- /wp:paragraph -->' ] );
+		$this->resave( $id, '<!-- wp:post-kinds-indieweb/wish-card ' . serialize_block_attributes( $attrs ) . ' /-->' );
+
+		foreach ( [
+			'wish_name'     => 'Sidebar greenhouse',
+			'wish_url'      => 'https://sidebar.example.com/greenhouse',
+			'wish_photo'    => 'https://sidebar.example.com/greenhouse.jpg',
+			'wish_type'     => 'experience',
+			'wish_priority' => 'low',
+		] as $suffix => $value ) {
+			update_post_meta( $id, '_pkiw_' . $suffix, $value );
+		}
+
+		do_action( 'wp_after_insert_post', $id, get_post( $id ), true, null );
+
+		$this->assertSame( 'Card greenhouse', $this->row( $id, 'wish_name' ) );
+		$this->assertSame( 'https://card.example.com/greenhouse', $this->row( $id, 'wish_url' ) );
+		$this->assertSame( 'https://card.example.com/greenhouse.jpg', $this->row( $id, 'wish_photo' ) );
+		$this->assertSame( 'book', $this->row( $id, 'wish_type' ) );
+		$this->assertSame( 'high', $this->row( $id, 'wish_priority' ) );
+	}
+
+	public function test_a_post_without_a_wish_card_keeps_sidebar_wish_values(): void {
+		$id = self::factory()->post->create( [ 'post_content' => '<!-- wp:paragraph --><p>A note.</p><!-- /wp:paragraph -->' ] );
+		update_post_meta( $id, '_pkiw_wish_type', 'experience' );
+		update_post_meta( $id, '_pkiw_wish_url', 'https://sidebar.example.com/greenhouse' );
+
+		do_action( 'wp_after_insert_post', $id, get_post( $id ), true, null );
+
+		$this->assertSame( 'experience', $this->row( $id, 'wish_type' ) );
+		$this->assertSame( 'https://sidebar.example.com/greenhouse', $this->row( $id, 'wish_url' ) );
+	}
+
+	public function test_an_empty_backfill_kind_filter_keeps_the_shipped_select_byte_for_byte(): void {
+		global $wpdb;
+
+		$selected_sql = '';
+		$capture      = static function ( string $sql ) use ( &$selected_sql, $wpdb ): string {
+			if ( str_starts_with( $sql, "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'post'" ) ) {
+				$selected_sql = $sql;
+			}
+			return $sql;
+		};
+		$empty = static fn(): array => [];
+		add_filter( 'pkiw_card_meta_backfill_kinds', $empty );
+		add_filter( 'query', $capture );
+		try {
+			\PKIW\Card_Meta_Sync::backfill_batch( 123, 7 );
+		} finally {
+			remove_filter( 'query', $capture );
+			remove_filter( 'pkiw_card_meta_backfill_kinds', $empty );
+		}
+
+		$expected = $wpdb->remove_placeholder_escape(
+			$wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts} WHERE post_type = 'post' AND ID > %d AND post_content LIKE %s ORDER BY ID ASC LIMIT %d",
+				123,
+				'%' . $wpdb->esc_like( '<!-- wp:post-kinds-indieweb/' ) . '%',
+				7
+			)
+		);
+		$this->assertSame( $expected, $selected_sql );
+	}
+
+	public function test_filtered_backfill_selects_card_less_questions_and_fires_once_in_cursor_order(): void {
+		$this->ensure_kind_term( 'question' );
+		$question = self::factory()->post->create( [ 'post_content' => '<!-- wp:paragraph --><p>What should I read?</p><!-- /wp:paragraph -->' ] );
+		wp_set_object_terms( $question, 'question', 'kind' );
+		// A key Question_Archive does not own: once it is wired its action recomputes the status row itself.
+		update_post_meta( $question, '_pkiw_question_sentinel', 'kept' );
+		update_post_meta( $question, '_pkiw_exercise_pb', '1' );
+		$card = $this->post_with_card( 'listen-card', [ 'trackTitle' => 'One' ] );
+
+		$filter_calls = 0;
+		$seen         = [];
+		$kinds        = static function () use ( &$filter_calls ): array {
+			++$filter_calls;
+			return [ 'Question', '', [], 'question' ];
+		};
+		$after_post = static function ( int $post_id, WP_Post $post ) use ( &$seen ): void {
+			$seen[] = [ $post_id, $post->ID ];
+		};
+		add_filter( 'pkiw_card_meta_backfill_kinds', $kinds );
+		add_action( 'pkiw_card_meta_backfill_post', $after_post, 10, 2 );
+		try {
+			$first  = \PKIW\Card_Meta_Sync::backfill_batch( 0, 1 );
+			$second = \PKIW\Card_Meta_Sync::backfill_batch( $first['last_id'], 1 );
+			$third  = \PKIW\Card_Meta_Sync::backfill_batch( $second['last_id'], 1 );
+		} finally {
+			remove_action( 'pkiw_card_meta_backfill_post', $after_post, 10 );
+			remove_filter( 'pkiw_card_meta_backfill_kinds', $kinds );
+		}
+
+		$this->assertSame( [ 'processed' => 1, 'last_id' => $question, 'done' => false ], $first );
+		$this->assertSame( [ 'processed' => 1, 'last_id' => $card, 'done' => false ], $second );
+		$this->assertSame( [ 'processed' => 0, 'last_id' => $card, 'done' => true ], $third );
+		$this->assertSame( [ [ $question, $question ], [ $card, $card ] ], $seen );
+		$this->assertSame( 3, $filter_calls, 'The filter runs once per batch.' );
+		$this->assertSame( 'kept', $this->row( $question, 'question_sentinel' ), 'The card-less pass keeps non-toggle question meta.' );
+		$this->assertNull( $this->row( $question, 'exercise_pb' ), 'The ordinary toggle cleanup still runs.' );
+	}
+
+	public function test_the_version_9_docblock_names_all_three_issues(): void {
+		$doc = (string) ( new ReflectionClassConstant( \PKIW\Card_Meta_Sync::class, 'BACKFILL_HOOK' ) )->getDocComment();
+
+		$this->assertStringContainsString( 'Version 9', $doc );
+		$this->assertStringContainsString( 'issue 236', $doc );
+		$this->assertStringContainsString( 'issue 238', $doc );
+		$this->assertStringContainsString( 'issue 256', $doc );
 	}
 
 	// --- Exercise, sleep and craft: the card decides (issues 245, 247 and 249). ---

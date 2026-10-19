@@ -4,7 +4,7 @@
  * @package
  */
 
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import {
 	useBlockProps,
 	InspectorControls,
@@ -54,7 +54,9 @@ export default function Edit( { attributes, setAttributes } ) {
 		rating,
 		listenedAt,
 		layout,
+		mediaType,
 	} = attributes;
+	const isPodcast = 'podcast' === mediaType;
 
 	const [ showDatePicker, setShowDatePicker ] = useState( false );
 	const [ isSearching, setIsSearching ] = useState( false );
@@ -94,6 +96,43 @@ export default function Edit( { attributes, setAttributes } ) {
 	};
 
 	/**
+	 * Handle podcast search result selection
+	 *
+	 * @param {Object} item Selected PodcastIndex feed.
+	 */
+	const handlePodcastSelect = ( item ) => {
+		const resolvedCoverImage = item.image || item.artwork || '';
+		const update = {
+			mediaType: 'podcast',
+			albumTitle: item.title || '',
+			artistName: item.author || '',
+			coverImage: resolvedCoverImage,
+		};
+
+		if (
+			! listenUrl &&
+			typeof item.link === 'string' &&
+			item.link.trim()
+		) {
+			update.listenUrl = item.link;
+		}
+
+		if ( ! coverImageAlt && resolvedCoverImage && item.title ) {
+			update.coverImageAlt = sprintf(
+				/* translators: %s: podcast show title. */
+				__(
+					'Cover art for %s',
+					'post-kinds-for-indieweb-in-block-themes'
+				),
+				item.title
+			);
+		}
+
+		setAttributes( update );
+		setIsSearching( false );
+	};
+
+	/**
 	 * Handle cover image selection
 	 *
 	 * @param {Object} media Selected media object.
@@ -120,6 +159,32 @@ export default function Edit( { attributes, setAttributes } ) {
 						'post-kinds-for-indieweb-in-block-themes'
 					) }
 				>
+					<SelectControl
+						label={ __(
+							'Media type',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
+						value={ mediaType || 'music' }
+						options={ [
+							{
+								label: __(
+									'Music',
+									'post-kinds-for-indieweb-in-block-themes'
+								),
+								value: 'music',
+							},
+							{
+								label: __(
+									'Podcast',
+									'post-kinds-for-indieweb-in-block-themes'
+								),
+								value: 'podcast',
+							},
+						] }
+						onChange={ ( value ) =>
+							setAttributes( { mediaType: value } )
+						}
+					/>
 					<div className="post-kinds-card__url-prompt">
 						<TextControl
 							value={ listenUrl || '' }
@@ -141,12 +206,23 @@ export default function Edit( { attributes, setAttributes } ) {
 					{ isSearching ? (
 						<div className="search-mode">
 							<MediaSearch
-								type="music"
-								placeholder={ __(
-									'Search for a song or album…',
-									'post-kinds-for-indieweb-in-block-themes'
-								) }
-								onSelect={ handleSearchSelect }
+								type={ isPodcast ? 'podcast' : 'music' }
+								placeholder={
+									isPodcast
+										? __(
+												'Search for a podcast…',
+												'post-kinds-for-indieweb-in-block-themes'
+											)
+										: __(
+												'Search for a song or album…',
+												'post-kinds-for-indieweb-in-block-themes'
+											)
+								}
+								onSelect={
+									isPodcast
+										? handlePodcastSelect
+										: handleSearchSelect
+								}
 							/>
 							<Button
 								variant="link"
@@ -164,10 +240,15 @@ export default function Edit( { attributes, setAttributes } ) {
 								variant="primary"
 								onClick={ () => setIsSearching( true ) }
 							>
-								{ __(
-									'Search Music',
-									'post-kinds-for-indieweb-in-block-themes'
-								) }
+								{ isPodcast
+									? __(
+											'Search Podcasts',
+											'post-kinds-for-indieweb-in-block-themes'
+										)
+									: __(
+											'Search Music',
+											'post-kinds-for-indieweb-in-block-themes'
+										) }
 							</Button>
 							<Button
 								variant="secondary"
@@ -191,28 +272,49 @@ export default function Edit( { attributes, setAttributes } ) {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __(
-						'Search Music',
-						'post-kinds-for-indieweb-in-block-themes'
-					) }
+					title={
+						isPodcast
+							? __(
+									'Search Podcasts',
+									'post-kinds-for-indieweb-in-block-themes'
+								)
+							: __(
+									'Search Music',
+									'post-kinds-for-indieweb-in-block-themes'
+								)
+					}
 					initialOpen={ false }
 				>
 					<MediaSearch
-						type="music"
-						placeholder={ __(
-							'Search for a song or album…',
-							'post-kinds-for-indieweb-in-block-themes'
-						) }
-						onSelect={ handleSearchSelect }
+						type={ isPodcast ? 'podcast' : 'music' }
+						placeholder={
+							isPodcast
+								? __(
+										'Search for a podcast…',
+										'post-kinds-for-indieweb-in-block-themes'
+									)
+								: __(
+										'Search for a song or album…',
+										'post-kinds-for-indieweb-in-block-themes'
+									)
+						}
+						onSelect={
+							isPodcast ? handlePodcastSelect : handleSearchSelect
+						}
 					/>
 					<p
 						className="components-base-control__help"
 						style={ { marginTop: '8px' } }
 					>
-						{ __(
-							'Search MusicBrainz to auto-fill track details.',
-							'post-kinds-for-indieweb-in-block-themes'
-						) }
+						{ isPodcast
+							? __(
+									'Search PodcastIndex to auto-fill show details.',
+									'post-kinds-for-indieweb-in-block-themes'
+								)
+							: __(
+									'Search MusicBrainz to auto-fill track details.',
+									'post-kinds-for-indieweb-in-block-themes'
+								) }
 					</p>
 				</PanelBody>
 				<PanelBody
@@ -221,11 +323,44 @@ export default function Edit( { attributes, setAttributes } ) {
 						'post-kinds-for-indieweb-in-block-themes'
 					) }
 				>
-					<TextControl
+					<SelectControl
 						label={ __(
-							'Track Title',
+							'Media type',
 							'post-kinds-for-indieweb-in-block-themes'
 						) }
+						value={ mediaType || 'music' }
+						options={ [
+							{
+								label: __(
+									'Music',
+									'post-kinds-for-indieweb-in-block-themes'
+								),
+								value: 'music',
+							},
+							{
+								label: __(
+									'Podcast',
+									'post-kinds-for-indieweb-in-block-themes'
+								),
+								value: 'podcast',
+							},
+						] }
+						onChange={ ( value ) =>
+							setAttributes( { mediaType: value } )
+						}
+					/>
+					<TextControl
+						label={
+							isPodcast
+								? __(
+										'Episode',
+										'post-kinds-for-indieweb-in-block-themes'
+									)
+								: __(
+										'Track Title',
+										'post-kinds-for-indieweb-in-block-themes'
+									)
+						}
 						value={ trackTitle || '' }
 						onChange={ ( value ) =>
 							setAttributes( { trackTitle: value } )
@@ -242,10 +377,17 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<TextControl
-						label={ __(
-							'Album',
-							'post-kinds-for-indieweb-in-block-themes'
-						) }
+						label={
+							isPodcast
+								? __(
+										'Show',
+										'post-kinds-for-indieweb-in-block-themes'
+									)
+								: __(
+										'Album',
+										'post-kinds-for-indieweb-in-block-themes'
+									)
+						}
 						value={ albumTitle || '' }
 						onChange={ ( value ) =>
 							setAttributes( { albumTitle: value } )
@@ -453,10 +595,17 @@ export default function Edit( { attributes, setAttributes } ) {
 							onChange={ ( value ) =>
 								setAttributes( { trackTitle: value } )
 							}
-							placeholder={ __(
-								'Track title',
-								'post-kinds-for-indieweb-in-block-themes'
-							) }
+							placeholder={
+								isPodcast
+									? __(
+											'Episode title',
+											'post-kinds-for-indieweb-in-block-themes'
+										)
+									: __(
+											'Track title',
+											'post-kinds-for-indieweb-in-block-themes'
+										)
+							}
 						/>
 
 						<RichText
@@ -480,10 +629,17 @@ export default function Edit( { attributes, setAttributes } ) {
 								onChange={ ( value ) =>
 									setAttributes( { albumTitle: value } )
 								}
-								placeholder={ __(
-									'Album title',
-									'post-kinds-for-indieweb-in-block-themes'
-								) }
+								placeholder={
+									isPodcast
+										? __(
+												'Show title',
+												'post-kinds-for-indieweb-in-block-themes'
+											)
+										: __(
+												'Album title',
+												'post-kinds-for-indieweb-in-block-themes'
+											)
+								}
 							/>
 						) }
 

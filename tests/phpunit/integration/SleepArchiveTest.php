@@ -273,7 +273,7 @@ final class SleepArchiveTest extends WP_UnitTestCase {
 	 * @return string[]
 	 */
 	private function secret_strings(): array {
-		return [ 'Secret night', 'Secret excerpt', 'Protected', 'example-pass', '7 hr 10 min', 'PT7H10M', '430', '23:40', '06:30', '11:40 pm', '6:30 am', 'T23:40', 'T06:30' ];
+		return [ 'Secret night', 'Secret excerpt', 'Protected', 'example-pass', '7 hr 10 min', 'PT7H10M', '430 min', '>430<', '"430"', '23:40', '06:30', '11:40 pm', '6:30 am', 'T23:40', 'T06:30' ];
 	}
 
 	public function test_a_protected_night_prints_its_date_moon_and_phase_only_logged_out(): void {

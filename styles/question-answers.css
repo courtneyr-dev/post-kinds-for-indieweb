@@ -1,0 +1,6 @@
+.pkiw-answers__list,
+.pkiw-answer__replies {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}

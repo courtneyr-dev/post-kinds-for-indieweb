@@ -192,6 +192,13 @@
 	margin: 0;
 }
 
+/* The lead list uses the post template item's own layout. */
+.pkiw-lead__items {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
 /* The editor previews each line on its own: the line that opens a section
    holds the whole section, and the lines it already shows step aside. */
 .is-style-pkiw-menu > li:has(.pkiw-menu-entry--continued) {

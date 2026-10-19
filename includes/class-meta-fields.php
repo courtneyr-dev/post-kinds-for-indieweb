@@ -249,6 +249,12 @@ class Meta_Fields {
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
+			'listen_media_type'       => [
+				'type'        => 'string',
+				'description' => __( 'Listen type: music or podcast. Unset until chosen.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => [ $this, 'sanitize_listen_media_type' ],
+				'default'     => '',
+			],
 
 			// Watch Fields.
 			'watch_title'             => [
@@ -2571,6 +2577,18 @@ class Meta_Fields {
 	 */
 	public function sanitize_rsvp_location_privacy( mixed $value ): string {
 		return 'public' === $value ? 'public' : 'private';
+	}
+
+	/**
+	 * Sanitize a listen media type.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param mixed $value Value to sanitize.
+	 * @return string Sanitized value.
+	 */
+	public function sanitize_listen_media_type( mixed $value ): string {
+		return Listen_Media_Type::sanitize( $value );
 	}
 
 	/**

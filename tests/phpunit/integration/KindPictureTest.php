@@ -193,6 +193,9 @@ final class KindPictureTest extends WP_UnitTestCase {
 			[],
 			[ 'post_content' => '<!-- wp:post-kinds-indieweb/wish-card {"title":"Desk lamp","image":"https://shop.example.com/lamp.jpg"} /-->' ]
 		);
+		// Saving the card now mirrors its image into wish_photo (issue 238 map). Drop that row to
+		// prove kind_picture() itself still never reads the card's attributes.
+		delete_post_meta( $post_id, Meta_Fields::PREFIX . 'wish_photo' );
 
 		$this->assertSame( '', \PKIW\kind_picture( $post_id )['source'] );
 	}

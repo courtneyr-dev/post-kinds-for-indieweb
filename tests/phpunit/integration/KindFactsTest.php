@@ -110,7 +110,7 @@ final class KindFactsTest extends WP_UnitTestCase {
 	}
 
 	public function test_a_kind_with_no_reader_has_no_facts(): void {
-		$this->assertSame( [], \PKIW\kind_facts( $this->kind_post( 'listen' ) ) );
+		$this->assertSame( [], \PKIW\kind_facts( $this->kind_post( 'noreader' ) ) );
 	}
 
 	public function test_a_missing_post_has_no_facts(): void {
@@ -120,7 +120,7 @@ final class KindFactsTest extends WP_UnitTestCase {
 	public function test_a_registered_reader_answers_for_its_kind_only(): void {
 		Kind_Facts::register( 'jam', static fn( int $post_id ): array => [ 'title' => get_the_title( $post_id ) ] );
 		$jam    = $this->kind_post( 'jam', [ 'post_title' => 'Blue in Green' ] );
-		$listen = $this->kind_post( 'listen', [ 'post_title' => 'So What' ] );
+		$listen = $this->kind_post( 'noreader', [ 'post_title' => 'So What' ] );
 
 		$this->assertSame( [ 'title' => 'Blue in Green' ], \PKIW\kind_facts( $jam ) );
 		$this->assertSame( [], \PKIW\kind_facts( $listen ) );

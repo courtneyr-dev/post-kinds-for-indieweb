@@ -53,11 +53,14 @@ final class Grouped_Archive {
 	 * @var array<string, string>
 	 */
 	private const DEFAULT_CLASSES = [
-		'wrapper'     => 'pkiw-grouped',
-		'section'     => 'pkiw-group',
-		'heading'     => 'pkiw-group__heading',
-		'items'       => 'pkiw-group__items',
-		'placeholder' => 'pkiw-group-placeholder',
+		'wrapper'      => 'pkiw-grouped',
+		'section'      => 'pkiw-group',
+		'heading'      => 'pkiw-group__heading',
+		'items'        => 'pkiw-group__items',
+		'placeholder'  => 'pkiw-group-placeholder',
+		'lead'         => 'pkiw-lead',
+		'lead_heading' => 'pkiw-lead__heading',
+		'lead_items'   => 'pkiw-lead__items',
 	];
 
 	/**
@@ -110,6 +113,13 @@ final class Grouped_Archive {
 	private static string $preview_kind = '';
 
 	/**
+	 * Filtered view the editor previews (`pkiw_view` on the block-renderer request).
+	 *
+	 * @var string
+	 */
+	private static string $preview_view = '';
+
+	/**
 	 * How many sections the page of the last previewed entry holds.
 	 *
 	 * @var int
@@ -129,6 +139,20 @@ final class Grouped_Archive {
 	 * @var int[]
 	 */
 	private static array $preview_page = [];
+
+	/**
+	 * How many posts lead the newest preview page.
+	 *
+	 * @var int
+	 */
+	private static int $preview_lead_n = 0;
+
+	/**
+	 * The previewed post's position on its page.
+	 *
+	 * @var int
+	 */
+	private static int $preview_at = 0;
 
 	/**
 	 * Render state, one frame per Post Template render and per item.
@@ -187,7 +211,8 @@ final class Grouped_Archive {
 	 * - heading_ids: give each section heading an id, `pkiw-group-<slug>`,
 	 *   unique on the page. Default false.
 	 * - list: 'ul' (default) or 'ol', the element that holds a section's items.
-	 * - classes: wrapper, section, heading, items and placeholder classes.
+	 * - classes: wrapper, section, heading, items, placeholder, lead,
+	 *   lead_heading and lead_items classes.
 	 * - section_body: `callable( Archive_Group $group, array<int, string> $items_by_post_id, array $settings ): string`.
 	 *   Prints a section's body in place of the default list. The items are
 	 *   the engine's own `li` strings, keyed by post ID in query order, on
@@ -308,6 +333,15 @@ final class Grouped_Archive {
 	 */
 	public static function is_block_preview(): bool {
 		return self::$block_preview;
+	}
+
+	/**
+	 * Filtered view named by the current block-renderer request.
+	 *
+	 * @return string
+	 */
+	public static function preview_view(): string {
+		return self::$preview_view;
 	}
 
 	/**
@@ -517,6 +551,12 @@ final class Grouped_Archive {
 
 		$group = $source->group_of( $post );
 		if ( ! $line ) {
+			if ( self::$preview_at < self::$preview_lead_n ) {
+				return 0 === self::$preview_at && '' !== $settings['lead_label']
+					? self::heading( $entry['classes']['lead_heading'], $settings['level'], $settings['lead_label'] )
+					: sprintf( '<div class="%s" hidden></div>', esc_attr( $entry['classes']['placeholder'] ) );
+			}
+
 			return self::heading( $entry['classes']['heading'], $settings['level'], self::label( $source, $group, $settings ), $entry['heading_ids'] ? self::heading_id( $group ) : '' );
 		}
 
@@ -582,6 +622,9 @@ final class Grouped_Archive {
 		$parts[] = "LOWER({$value}) {$groups}";
 		if ( isset( $sql['tiebreak'] ) ) {
 			$parts[] = "{$sql['tiebreak']} {$groups}";
+		}
+		foreach ( (array) ( $sql['within'] ?? [] ) as $part ) {
+			$parts[] = (string) $part;
 		}
 		$parts[] = $tail;
 
@@ -665,11 +708,13 @@ final class Grouped_Archive {
 			}
 		}
 
-		$query    = $plan['query'];
-		$source   = $plan['source'];
-		$enhanced = ! empty( $block->context['enhancedPagination'] );
-		$sections = [];
-		$last     = null;
+		$query      = $plan['query'];
+		$source     = $plan['source'];
+		$enhanced   = ! empty( $block->context['enhancedPagination'] );
+		$lead_limit = $plan['settings']['lead'] > 0 && 1 === $plan['page'] ? $plan['settings']['lead'] : 0;
+		$lead       = [];
+		$sections   = [];
+		$last       = null;
 
 		try {
 			while ( $query->have_posts() ) {
@@ -699,6 +744,17 @@ final class Grouped_Archive {
 					array_pop( self::$frames );
 				}
 
+				$item = sprintf(
+					'<li%1$s class="%2$s">%3$s</li>',
+					$enhanced ? ' data-wp-key="post-template-item-' . $post_id . '"' : '',
+					esc_attr( implode( ' ', get_post_class( 'wp-block-post' ) ) ),
+					$inner
+				);
+				if ( count( $lead ) < $lead_limit ) {
+					$lead[ $post_id ] = $item;
+					continue;
+				}
+
 				if ( $group->key() !== $last ) {
 					$sections[] = [
 						'group' => $group,
@@ -706,18 +762,27 @@ final class Grouped_Archive {
 					];
 					$last       = $group->key();
 				}
-				$sections[ array_key_last( $sections ) ]['items'][ $post_id ] = sprintf(
-					'<li%1$s class="%2$s">%3$s</li>',
-					$enhanced ? ' data-wp-key="post-template-item-' . $post_id . '"' : '',
-					esc_attr( implode( ' ', get_post_class( 'wp-block-post' ) ) ),
-					$inner
-				);
+				$sections[ array_key_last( $sections ) ]['items'][ $post_id ] = $item;
 			}
 		} finally {
 			wp_reset_postdata();
 		}
 
 		$html = '';
+		if ( $lead ) {
+			$entry   = self::$entries[ $plan['entry'] ];
+			$heading = '' !== $plan['settings']['lead_label']
+				? self::heading( $entry['classes']['lead_heading'], $plan['settings']['level'], $plan['settings']['lead_label'], self::unique_heading_id( 'pkiw-lead' ) )
+				: '';
+			$html   .= sprintf(
+				'<section class="%1$s" data-pkiw-lead="%2$d">%3$s<ul class="%4$s">%5$s</ul></section>',
+				esc_attr( $entry['classes']['lead'] ),
+				count( $lead ),
+				$heading,
+				esc_attr( $entry['classes']['lead_items'] ),
+				implode( '', $lead )
+			);
+		}
 		foreach ( $sections as $section ) {
 			$html .= self::section( $plan['entry'], $source, $section['group'], $section['items'], $plan['settings'], count( $sections ) );
 		}
@@ -737,12 +802,16 @@ final class Grouped_Archive {
 	 */
 	public static function track_block_preview( $response, $handler, $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed
 		if ( $request instanceof \WP_REST_Request && str_starts_with( $request->get_route(), '/wp/v2/block-renderer/' ) ) {
-			self::$block_preview = 'rest_request_before_callbacks' === current_filter();
-			$kind                = $request->get_param( 'pkiw_kind' );
-			self::$preview_kind  = self::$block_preview && is_string( $kind ) ? sanitize_key( $kind ) : '';
-			self::$preview_order = [];
-			self::$preview_page  = [];
-			self::$heading_ids   = [];
+			self::$block_preview  = 'rest_request_before_callbacks' === current_filter();
+			$kind                 = $request->get_param( 'pkiw_kind' );
+			$view                 = $request->get_param( 'pkiw_view' );
+			self::$preview_kind   = self::$block_preview && is_string( $kind ) ? sanitize_key( $kind ) : '';
+			self::$preview_view   = self::$block_preview && is_string( $view ) ? sanitize_key( $view ) : '';
+			self::$preview_order  = [];
+			self::$preview_page   = [];
+			self::$preview_lead_n = 0;
+			self::$preview_at     = 0;
+			self::$heading_ids    = [];
 		}
 
 		return $response;
@@ -759,6 +828,7 @@ final class Grouped_Archive {
 	public static function rest_collection_params( $params ) {
 		if ( isset( $params['orderby']['enum'] ) && is_array( $params['orderby']['enum'] ) ) {
 			array_push( $params['orderby']['enum'], ...array_keys( Kind_Archive_Layouts::REST_MENU_ORDERS ) );
+			array_push( $params['orderby']['enum'], ...array_keys( Kind_Archive_Layouts::rest_view_orders() ) );
 		}
 
 		return $params;
@@ -777,7 +847,16 @@ final class Grouped_Archive {
 	 * @return array<string, mixed>
 	 */
 	public static function rest_order( $args, $request ) {
-		$order = Kind_Archive_Layouts::REST_MENU_ORDERS[ (string) $request['orderby'] ] ?? null;
+		$token = (string) $request['orderby'];
+		$order = Kind_Archive_Layouts::REST_MENU_ORDERS[ $token ] ?? null;
+		$view  = '';
+		if ( null === $order ) {
+			$view_order = Kind_Archive_Layouts::rest_view_orders()[ $token ] ?? null;
+			if ( null !== $view_order ) {
+				$order = [ $view_order[0], $view_order[1] ];
+				$view  = $view_order[2];
+			}
+		}
 		if ( null === $order ) {
 			return $args;
 		}
@@ -787,7 +866,9 @@ final class Grouped_Archive {
 
 		$term_ids = array_values( array_filter( array_map( 'intval', (array) $request[ Taxonomy::TAXONOMY ] ) ) );
 		$term     = 1 === count( $term_ids ) ? get_term( $term_ids[0], Taxonomy::TAXONOMY ) : null;
-		$source   = $term instanceof \WP_Term ? self::kind_source( $term->slug, null ) : null;
+		$active   = '' !== $view && $term instanceof \WP_Term ? Kind_Archive_Layouts::registered_view( $term->slug, $view ) : null;
+		Kind_Archive_Layouts::set_rest_view( null !== $active ? $view : '' );
+		$source = $term instanceof \WP_Term ? self::kind_source( $term->slug, null ) : null;
 		if ( null !== $source ) {
 			$args = array_merge(
 				$args,
@@ -799,6 +880,23 @@ final class Grouped_Archive {
 					]
 				)
 			);
+		}
+		if ( null !== $active ) {
+			if ( ! current_user_can( 'edit_others_posts' ) ) {
+				// A view's membership must not reveal which protected posts match it.
+				$args['pkiw_view_public'] = 1;
+			}
+			$clause = Kind_Archive_Layouts::filtered_view_meta_query( $term->slug, $view );
+			if ( [] !== $clause ) {
+				$existing           = $args['meta_query'] ?? [];
+				$args['meta_query'] = is_array( $existing ) && [] !== $existing
+					? [
+						'relation' => 'AND',
+						$existing,
+						$clause,
+					]
+					: [ $clause ];
+			}
 		}
 
 		return $args;
@@ -906,7 +1004,7 @@ final class Grouped_Archive {
 	 *
 	 * @param string               $block_name Block name.
 	 * @param array<string, mixed> $attrs      Attributes.
-	 * @return array{show:bool, level:int, per_page:int, weeks:int, order:string, empty:string, label:string, group_labels:array<string, string>, date_format:string}
+	 * @return array{show:bool, level:int, per_page:int, weeks:int, order:string, empty:string, label:string, group_labels:array<string, string>, date_format:string, lead:int, lead_label:string}
 	 */
 	private static function settings( string $block_name, array $attrs ): array {
 		$type = '' !== $block_name ? \WP_Block_Type_Registry::get_instance()->get_registered( $block_name ) : null;
@@ -926,6 +1024,8 @@ final class Grouped_Archive {
 			'label'        => self::text( $attrs['emptyLabel'] ?? '' ),
 			'group_labels' => self::group_labels( $attrs['groupLabels'] ?? [] ),
 			'date_format'  => self::text( $attrs['dateFormat'] ?? '' ),
+			'lead'         => max( 0, min( 3, (int) ( $attrs['leadCount'] ?? 0 ) ) ),
+			'lead_label'   => self::text( $attrs['leadLabel'] ?? '' ),
 		];
 	}
 
@@ -1059,8 +1159,17 @@ final class Grouped_Archive {
 		if ( '' === $slug ) {
 			$slug = $group->is_empty() ? 'empty' : 'group';
 		}
-		$base = 'pkiw-group-' . $slug;
-		$id   = $base;
+		return self::unique_heading_id( 'pkiw-group-' . $slug );
+	}
+
+	/**
+	 * A heading id unique among those this request printed.
+	 *
+	 * @param string $base Base id.
+	 * @return string
+	 */
+	private static function unique_heading_id( string $base ): string {
+		$id = $base;
 		for ( $n = 2; isset( self::$heading_ids[ $id ] ); $n++ ) {
 			$id = $base . '-' . $n;
 		}
@@ -1084,7 +1193,7 @@ final class Grouped_Archive {
 	 * What a Post Template needs to print sections, or null when it isn't grouped.
 	 *
 	 * @param \WP_Block $block Post Template block.
-	 * @return array{query:\WP_Query, source:Group_Source, settings:array<string, mixed>, entry:string}|null
+	 * @return array{query:\WP_Query, source:Group_Source, settings:array<string, mixed>, entry:string, page:int}|null
 	 */
 	private static function section_plan( \WP_Block $block ): ?array {
 		$entry = self::find_entry( (array) ( $block->parsed_block['innerBlocks'] ?? [] ) );
@@ -1097,6 +1206,7 @@ final class Grouped_Archive {
 			return null;
 		}
 
+		$page = 1;
 		if ( ! empty( $block->context['query']['inherit'] ) ) {
 			global $wp_query;
 			if ( ! $wp_query instanceof \WP_Query ) {
@@ -1108,6 +1218,7 @@ final class Grouped_Archive {
 				$query = clone $wp_query;
 				$query->rewind_posts();
 			}
+			$page = max( 1, (int) $query->get( 'paged' ) );
 		} else {
 			$kind = (string) ( $block->context['query']['pkiwGroupBy'] ?? '' );
 			if ( null === self::entry_source( $name ) && ( '' === $kind || null === self::kind_source( $kind, null ) ) ) {
@@ -1128,6 +1239,7 @@ final class Grouped_Archive {
 			'source'   => $source,
 			'settings' => $settings,
 			'entry'    => $name,
+			'page'     => $page,
 		];
 	}
 
@@ -1231,38 +1343,48 @@ final class Grouped_Archive {
 	 * @param array<string, mixed> $settings Entry settings.
 	 * @return int[]
 	 */
-	private static function preview_run( int $post_id, string $kind, Group_Source $source, array $settings ): array {
-		$vars  = self::query_vars( $source, $settings );
-		$cache = $kind . '|' . implode( '|', $vars );
+	private static function preview_run( int $post_id, string $kind, Group_Source $source, array $settings ): array { // phpcs:ignore Generic.Metrics.CyclomaticComplexity.TooHigh -- one pass computes the preview page, lead and section run.
+		self::$preview_lead_n = 0;
+		self::$preview_at     = 0;
+
+		$view   = Kind_Archive_Layouts::preview_view();
+		$clause = '' !== $view ? Kind_Archive_Layouts::filtered_view_meta_query( $kind, $view ) : [];
+		$vars   = self::query_vars( $source, $settings );
+		$cache  = $kind . '|' . implode( '|', $vars ) . ( [] !== $clause ? '|' . $view : '' );
 		if ( ! isset( self::$preview_order[ $cache ] ) ) {
-			$taxonomy                      = get_taxonomy( Taxonomy::TAXONOMY );
+			$taxonomy = get_taxonomy( Taxonomy::TAXONOMY );
+			$args     = [
+				'post_type'         => $taxonomy ? $taxonomy->object_type : 'post',
+				'post_status'       => 'publish',
+				'posts_per_page'    => -1,
+				'fields'            => 'ids',
+				'no_found_rows'     => true,
+				'suppress_filters'  => false,
+				'orderby'           => [
+					'date' => 'DESC',
+					'ID'   => 'DESC',
+				],
+				'pkiw_group_by'     => $vars['pkiw_group_by'] ?? '',
+				'pkiw_group_source' => $vars['pkiw_group_source'] ?? '',
+				'pkiw_group_order'  => $vars['pkiw_group_order'],
+				'pkiw_group_empty'  => $vars['pkiw_group_empty'],
+				'tax_query'         => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- the archive is a kind's posts.
+					[
+						'taxonomy' => Taxonomy::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => $kind,
+					],
+				],
+			];
+			if ( [] !== $clause ) {
+				$args['meta_query'] = [ $clause ]; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- the registered view limits the preview to its posts.
+				if ( ! current_user_can( 'edit_others_posts' ) ) {
+					$args['pkiw_view_public'] = 1;
+				}
+			}
 			self::$preview_order[ $cache ] = array_map(
 				'intval',
-				get_posts(
-					[
-						'post_type'         => $taxonomy ? $taxonomy->object_type : 'post',
-						'post_status'       => 'publish',
-						'posts_per_page'    => -1,
-						'fields'            => 'ids',
-						'no_found_rows'     => true,
-						'suppress_filters'  => false,
-						'orderby'           => [
-							'date' => 'DESC',
-							'ID'   => 'DESC',
-						],
-						'pkiw_group_by'     => $vars['pkiw_group_by'] ?? '',
-						'pkiw_group_source' => $vars['pkiw_group_source'] ?? '',
-						'pkiw_group_order'  => $vars['pkiw_group_order'],
-						'pkiw_group_empty'  => $vars['pkiw_group_empty'],
-						'tax_query'         => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- the archive is a kind's posts.
-							[
-								'taxonomy' => Taxonomy::TAXONOMY,
-								'field'    => 'slug',
-								'terms'    => $kind,
-							],
-						],
-					]
-				)
+				get_posts( $args )
 			);
 		}
 
@@ -1293,16 +1415,25 @@ final class Grouped_Archive {
 			$end      = $per_page > 0 ? min( count( $order ), $first + $per_page ) : count( $order );
 		}
 
-		self::$preview_page = array_slice( $order, $first, $end - $first );
-		if ( $later || ( $index > $first && $key === $group( $order[ $index - 1 ] ) ) ) {
+		$lead_n               = ( (int) $settings['lead'] > 0 && 0 === $first && ! $later ) ? min( (int) $settings['lead'], $end - $first ) : 0;
+		$at                   = $index - $first;
+		self::$preview_lead_n = $lead_n;
+		self::$preview_at     = $at;
+		self::$preview_page   = array_slice( $order, $first, $end - $first );
+
+		// A lead item prints the lead heading or nothing, never a section.
+		if ( $at < $lead_n ) {
+			return [ $post_id ];
+		}
+		if ( $later || ( $at > $lead_n && $key === $group( $order[ $index - 1 ] ) ) ) {
 			return [];
 		}
 
-		// The page's sections: one for each change of group across its items.
-		$page                   = array_map( $group, self::$preview_page );
+		// The page's sections: one for each change of group after the lead.
+		$page                   = array_map( $group, array_slice( self::$preview_page, $lead_n ) );
 		self::$preview_sections = 0;
-		foreach ( $page as $at => $name ) {
-			if ( 0 === $at || $name !== $page[ $at - 1 ] ) {
+		foreach ( $page as $page_at => $name ) {
+			if ( 0 === $page_at || $name !== $page[ $page_at - 1 ] ) {
 				++self::$preview_sections;
 			}
 		}

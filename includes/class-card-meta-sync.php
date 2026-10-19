@@ -126,6 +126,14 @@ class Card_Meta_Sync {
 			'rating'        => 'listen_rating',
 			'releaseDate'   => 'listen_release_date',
 			'listenedAt'    => 'listen_listened_at',
+			'mediaType'     => 'listen_media_type',
+		],
+		'post-kinds-indieweb/wish-card'    => [
+			'title'    => 'wish_name',
+			'url'      => 'wish_url',
+			'image'    => 'wish_photo',
+			'wishType' => 'wish_type',
+			'priority' => 'wish_priority',
 		],
 		'post-kinds-indieweb/watch-card'   => [
 			'mediaTitle'    => 'watch_title',
@@ -207,6 +215,10 @@ class Card_Meta_Sync {
 		'post-kinds-indieweb/comic-card' => [
 			'readStatus' => 'reading',
 		],
+		'post-kinds-indieweb/wish-card'  => [
+			'wishType' => 'item',
+			'priority' => 'medium',
+		],
 	];
 
 	/**
@@ -222,6 +234,10 @@ class Card_Meta_Sync {
 	public const SAVE_DEFAULTS = [
 		'post-kinds-indieweb/read-card' => [
 			'readStatus' => 'reading',
+		],
+		'post-kinds-indieweb/wish-card' => [
+			'wishType' => 'item',
+			'priority' => 'medium',
 		],
 	];
 
@@ -258,6 +274,7 @@ class Card_Meta_Sync {
 	public const AFTER_INSERT_ATTRS = [
 		'post-kinds-indieweb/read-card' => [ 'readStatus' ],
 		'post-kinds-indieweb/play-card' => [ 'bggId', 'rawgId', 'steamId' ],
+		'post-kinds-indieweb/wish-card' => [ 'wishType', 'priority', 'url', 'title', 'image' ],
 	];
 
 	/**
@@ -393,7 +410,7 @@ class Card_Meta_Sync {
 	 *
 	 * @var string[]
 	 */
-	private const URL_SUFFIXES = [ 'cite_url', 'cite_photo' ];
+	private const URL_SUFFIXES = [ 'cite_url', 'cite_photo', 'wish_url', 'wish_photo' ];
 
 	/**
 	 * Backfill cron hook, completion option and the version it records.
@@ -411,12 +428,14 @@ class Card_Meta_Sync {
 	 * (issue 255) replays every map with the repost map. Version 8
 	 * (issues 245, 247 and 249) replays every map with CARD_DECIDES_MAP, the
 	 * exercise, sleep and craft maps; the exercise and sleep toggles in
-	 * ATTR_TOGGLES join it.
+	 * ATTR_TOGGLES join it. Version 9 (issue 236, issue 238 and issue 256)
+	 * replays every map with the listen-card media type map and the wish map,
+	 * and adds the card-less question hooks. Issues 235, 242 and 243 add no map.
 	 */
 	public const BACKFILL_HOOK    = 'pkiw_card_meta_backfill';
 	public const BACKFILL_OPTION  = 'pkiw_card_meta_backfill';
 	public const BACKFILL_CURSOR  = 'pkiw_card_meta_backfill_cursor';
-	public const BACKFILL_VERSION = '8';
+	public const BACKFILL_VERSION = '9';
 	public const BACKFILL_BATCH   = 50;
 
 	/**
@@ -556,9 +575,10 @@ class Card_Meta_Sync {
 
 	/**
 	 * Re-sync card meta for one batch of posts that carry a Post Kinds
-	 * block, in ID order after a cursor. Reads post_content only; never
-	 * writes it, and never fires save_post, so modified dates stay put.
-	 * Idempotent: the same content always produces the same meta.
+	 * block or a filtered kind, in ID order after a cursor. Reads
+	 * post_content only; never writes it, and never fires save_post, so
+	 * modified dates stay put. Idempotent: the same content always produces
+	 * the same meta.
 	 *
 	 * @param int $after_id Process posts with an ID greater than this.
 	 * @param int $limit    Batch size.
@@ -569,15 +589,49 @@ class Card_Meta_Sync {
 
 		$limit = max( 1, $limit );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off batched maintenance scan.
-		$ids = $wpdb->get_col(
-			$wpdb->prepare(
-				"SELECT ID FROM {$wpdb->posts} WHERE post_type = 'post' AND ID > %d AND post_content LIKE %s ORDER BY ID ASC LIMIT %d",
-				$after_id,
-				'%' . $wpdb->esc_like( '<!-- wp:post-kinds-indieweb/' ) . '%',
-				$limit
-			)
-		);
+		/**
+		 * Add card-less post kinds to the card-meta backfill selection.
+		 *
+		 * @since 1.9.0
+		 *
+		 * @param string[] $kinds Kind slugs to select alongside card posts.
+		 */
+		$filtered_kinds = apply_filters( 'pkiw_card_meta_backfill_kinds', [] );
+		$kinds          = [];
+		if ( is_array( $filtered_kinds ) ) {
+			foreach ( $filtered_kinds as $kind ) {
+				if ( ! is_string( $kind ) ) {
+					continue;
+				}
+				$kind = sanitize_key( $kind );
+				if ( '' !== $kind && ! in_array( $kind, $kinds, true ) ) {
+					$kinds[] = $kind;
+				}
+			}
+		}
+
+		if ( [] === $kinds ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off batched maintenance scan.
+			$ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT ID FROM {$wpdb->posts} WHERE post_type = 'post' AND ID > %d AND post_content LIKE %s ORDER BY ID ASC LIMIT %d",
+					$after_id,
+					'%' . $wpdb->esc_like( '<!-- wp:post-kinds-indieweb/' ) . '%',
+					$limit
+				)
+			);
+		} else {
+			$placeholders = implode( ', ', array_fill( 0, count( $kinds ), '%s' ) );
+			$sql          = "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'post' AND ID > %d AND ( post_content LIKE %s OR ID IN ( SELECT tr.object_id FROM {$wpdb->term_relationships} tr INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id AND tt.taxonomy = 'kind' INNER JOIN {$wpdb->terms} t ON t.term_id = tt.term_id WHERE t.slug IN ( {$placeholders} ) ) ) ORDER BY ID ASC LIMIT %d";
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off batched maintenance scan; every value uses a placeholder.
+			$ids = $wpdb->get_col(
+				$wpdb->prepare(
+					$sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- The kind list contains placeholders only.
+					...array_merge( [ $after_id, '%' . $wpdb->esc_like( '<!-- wp:post-kinds-indieweb/' ) . '%' ], $kinds, [ $limit ] )
+				)
+			);
+		}
 
 		$last_id = $after_id;
 		foreach ( $ids as $id ) {
@@ -586,6 +640,16 @@ class Card_Meta_Sync {
 			if ( $post instanceof \WP_Post ) {
 				self::sync_content( $id, $post->post_content );
 				self::fill_review( $id, $post->post_content );
+
+				/**
+				 * Fires after one selected post completes the card-meta backfill pass.
+				 *
+				 * @since 1.9.0
+				 *
+				 * @param int      $post_id Post ID.
+				 * @param \WP_Post $post    Post object.
+				 */
+				do_action( 'pkiw_card_meta_backfill_post', $id, $post );
 			}
 			$last_id = $id;
 		}

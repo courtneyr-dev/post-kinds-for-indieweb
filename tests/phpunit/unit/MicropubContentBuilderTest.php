@@ -2393,7 +2393,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 					'artistName' => 'Sample artist',
 					'rating'     => 4,
 				),
-				array( 'albumTitle', 'releaseDate', 'coverImage', 'coverImageAlt', 'musicbrainzId', 'listenedAt' ),
+				array( 'albumTitle', 'releaseDate', 'coverImage', 'coverImageAlt', 'musicbrainzId', 'listenedAt', 'mediaType' ),
 			),
 			'watch'   => array(
 				array(

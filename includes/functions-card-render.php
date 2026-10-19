@@ -288,6 +288,281 @@ function card_clock_duration( int $seconds ): string {
 }
 
 /**
+ * Read the duration WordPress stored for an audio or video attachment.
+ *
+ * @since 1.9.0
+ *
+ * @param int $attachment_id Attachment ID.
+ * @return array{seconds: int, iso: string, clock: string, label: string}|null Duration facts, or null when unavailable.
+ */
+function attachment_duration( int $attachment_id ): ?array {
+	$attachment = get_post( $attachment_id );
+	$mime_type  = get_post_mime_type( $attachment_id );
+	if ( ! $attachment instanceof \WP_Post || 'attachment' !== $attachment->post_type || ! is_string( $mime_type ) || ( ! str_starts_with( $mime_type, 'audio/' ) && ! str_starts_with( $mime_type, 'video/' ) ) ) {
+		return null;
+	}
+
+	$metadata = wp_get_attachment_metadata( $attachment_id );
+	$length   = is_array( $metadata ) && array_key_exists( 'length', $metadata ) ? $metadata['length'] : null;
+	if ( is_int( $length ) ) {
+		$seconds = $length;
+	} elseif ( is_string( $length ) && strlen( $length ) <= 9 && ctype_digit( $length ) ) {
+		$seconds = (int) $length;
+	} else {
+		return null;
+	}
+
+	if ( $seconds <= 0 ) {
+		return null;
+	}
+
+	$clock = card_clock_duration( $seconds );
+
+	return [
+		'seconds' => $seconds,
+		'iso'     => card_duration_iso( $seconds ),
+		'clock'   => $clock,
+		'label'   => (string) human_readable_duration( $clock ),
+	];
+}
+
+/**
+ * Find the first named block in a post's stored block tree.
+ *
+ * @since 1.9.0
+ *
+ * @param \WP_Post $post        Post to inspect.
+ * @param string[] $block_names Block names to match.
+ * @return array{block: array<string, mixed>, index: int, top_level: bool}|null Match details, or null when none matches.
+ */
+function first_block_named( \WP_Post $post, array $block_names ): ?array {
+	$top_blocks          = parse_blocks( (string) $post->post_content );
+	$flat_blocks         = flatten_blocks( $top_blocks );
+	$top_level_positions = [];
+	$position            = 0;
+	foreach ( $top_blocks as $top_block ) {
+		$top_level_positions[ $position ] = true;
+		$position                        += count( flatten_blocks( [ $top_block ] ) );
+	}
+
+	$index = 0;
+	foreach ( $flat_blocks as $flat_position => $block ) {
+		$name = is_array( $block ) && is_string( $block['blockName'] ?? null ) ? $block['blockName'] : '';
+		if ( '' === $name ) {
+			continue;
+		}
+		if ( in_array( $name, $block_names, true ) ) {
+			return [
+				'block'     => $block,
+				'index'     => $index,
+				'top_level' => isset( $top_level_positions[ $flat_position ] ),
+			];
+		}
+		++$index;
+	}
+
+	return null;
+}
+
+/**
+ * Find an absolute u-audio anchor in a paragraph block.
+ *
+ * @since 1.9.0
+ *
+ * @param array<string, mixed> $block Parsed paragraph block.
+ * @return string Source URL, or an empty string when none qualifies.
+ */
+function paragraph_audio_url( array $block ): string {
+	$html      = is_string( $block['innerHTML'] ?? null ) ? $block['innerHTML'] : '';
+	$processor = new \WP_HTML_Tag_Processor( $html );
+	while ( $processor->next_tag( [ 'tag_name' => 'a' ] ) ) {
+		$href = $processor->get_attribute( 'href' );
+		if ( ! $processor->has_class( 'u-audio' ) || ! is_string( $href ) || 1 !== preg_match( '#^https?://#i', $href ) ) {
+			continue;
+		}
+
+		return $href;
+	}
+
+	return '';
+}
+
+/**
+ * Read the first media element's source, then the block source fallback.
+ *
+ * @since 1.9.0
+ *
+ * @param array<string, mixed> $block Parsed audio or video block.
+ * @param string               $media Media element name.
+ * @return string Stored source URL, or an empty string.
+ */
+function media_element_url( array $block, string $media ): string {
+	$html      = is_string( $block['innerHTML'] ?? null ) ? $block['innerHTML'] : '';
+	$processor = new \WP_HTML_Tag_Processor( $html );
+	if ( $processor->next_tag( [ 'tag_name' => $media ] ) ) {
+		$src = $processor->get_attribute( 'src' );
+
+		return is_string( $src ) ? $src : '';
+	}
+
+	$attrs = is_array( $block['attrs'] ?? null ) ? $block['attrs'] : [];
+
+	return is_string( $attrs['src'] ?? null ) ? $attrs['src'] : '';
+}
+
+/**
+ * Resolve one parsed block as an audio or video source.
+ *
+ * @since 1.9.0
+ *
+ * @param array<string, mixed> $block Parsed block.
+ * @param string               $media Audio or video.
+ * @return array{type: 'attachment'|'embed'|'url', block: string, attachment_id: int, url: string, provider: string}|null Media facts, or null when the block does not qualify.
+ */
+function media_block_result( array $block, string $media ): ?array {
+	$name     = is_string( $block['blockName'] ?? null ) ? $block['blockName'] : '';
+	$attrs    = is_array( $block['attrs'] ?? null ) ? $block['attrs'] : [];
+	$provider = is_string( $attrs['providerNameSlug'] ?? null ) ? $attrs['providerNameSlug'] : '';
+	$url      = '';
+
+	if ( 'core/embed' === $name ) {
+		$providers = apply_filters( 'pkiw_audio_embed_providers', [ 'soundcloud', 'spotify', 'mixcloud', 'pocket-casts', 'reverbnation' ] );
+		if ( 'video' !== $media && ( 'audio' !== $media || ! is_array( $providers ) || ! in_array( $provider, $providers, true ) ) ) {
+			return null;
+		}
+
+		return [
+			'type'          => 'embed',
+			'block'         => $name,
+			'attachment_id' => 0,
+			'url'           => is_string( $attrs['url'] ?? null ) ? $attrs['url'] : '',
+			'provider'      => $provider,
+		];
+	}
+
+	if ( 'core/' . $media === $name ) {
+		$url = media_element_url( $block, $media );
+	} elseif ( 'audio' === $media && 'core/paragraph' === $name ) {
+		$url = paragraph_audio_url( $block );
+		if ( '' === $url ) {
+			return null;
+		}
+	} else {
+		return null;
+	}
+
+	$stored_id = $attrs['id'] ?? null;
+	if ( is_int( $stored_id ) ) {
+		if ( wp_attachment_is( $media, $stored_id ) ) {
+			return [
+				'type'          => 'attachment',
+				'block'         => $name,
+				'attachment_id' => $stored_id,
+				'url'           => (string) wp_get_attachment_url( $stored_id ),
+				'provider'      => '',
+			];
+		}
+	} elseif ( '' !== $url ) {
+		$resolved_id = attachment_url_to_postid( $url );
+		if ( $resolved_id > 0 && wp_attachment_is( $media, $resolved_id ) ) {
+			return [
+				'type'          => 'attachment',
+				'block'         => $name,
+				'attachment_id' => $resolved_id,
+				'url'           => (string) wp_get_attachment_url( $resolved_id ),
+				'provider'      => '',
+			];
+		}
+	}
+
+	return [
+		'type'          => 'url',
+		'block'         => $name,
+		'attachment_id' => 0,
+		'url'           => $url,
+		'provider'      => '',
+	];
+}
+
+/**
+ * Find the first qualifying audio or video block in document order.
+ *
+ * @since 1.9.0
+ *
+ * @param int|\WP_Post $post  Post or post ID.
+ * @param string       $media Audio or video.
+ * @return array{type: 'attachment'|'embed'|'url', block: string, attachment_id: int, url: string, provider: string}|null Media facts, or null when none qualifies.
+ */
+function first_media_block( int|\WP_Post $post, string $media ): ?array {
+	if ( ! in_array( $media, [ 'audio', 'video' ], true ) ) {
+		return null;
+	}
+	$post = is_int( $post ) ? get_post( $post ) : $post;
+	if ( ! $post instanceof \WP_Post ) {
+		return null;
+	}
+
+	foreach ( flatten_blocks( parse_blocks( (string) $post->post_content ) ) as $block ) {
+		if ( ! is_array( $block ) ) {
+			continue;
+		}
+		$result = media_block_result( $block, $media );
+		if ( null !== $result ) {
+			return $result;
+		}
+	}
+
+	return null;
+}
+
+/**
+ * Count qualifying media blocks, capped for compact card decisions.
+ *
+ * @since 1.9.0
+ *
+ * @param int|\WP_Post $post  Post or post ID.
+ * @param string       $media Audio or video.
+ * @return int Media block count, capped at 99.
+ */
+function count_media_blocks( int|\WP_Post $post, string $media ): int {
+	if ( ! in_array( $media, [ 'audio', 'video' ], true ) ) {
+		return 0;
+	}
+	$post = is_int( $post ) ? get_post( $post ) : $post;
+	if ( ! $post instanceof \WP_Post ) {
+		return 0;
+	}
+
+	$count = 0;
+	foreach ( flatten_blocks( parse_blocks( (string) $post->post_content ) ) as $block ) {
+		if ( is_array( $block ) && null !== media_block_result( $block, $media ) ) {
+			++$count;
+			if ( 99 === $count ) {
+				return $count;
+			}
+		}
+	}
+
+	return $count;
+}
+
+/**
+ * Render an accessible duration from precomputed duration facts.
+ *
+ * @since 1.9.0
+ *
+ * @param array{iso?: string, clock?: string, label?: string} $duration Duration facts.
+ * @return string Duration time HTML, or an empty string when incomplete.
+ */
+function duration_time_html( array $duration ): string {
+	if ( ! isset( $duration['iso'], $duration['clock'], $duration['label'] ) ) {
+		return '';
+	}
+
+	return '<time class="pk-duration" datetime="' . esc_attr( $duration['iso'] ) . '"><span aria-hidden="true">' . esc_html( $duration['clock'] ) . '</span><span class="pk-sr-only">' . esc_html( $duration['label'] ) . '</span></time>';
+}
+
+/**
  * Minutes as an ISO 8601 duration: 45 is `PT45M`, 150 is `PT2H30M`.
  *
  * @since 1.9.0
