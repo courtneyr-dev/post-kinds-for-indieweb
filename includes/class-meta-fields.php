@@ -1381,13 +1381,31 @@ class Meta_Fields {
 			];
 		}
 
+		// The check-in syncs store a postal code that LOCATION_KEY_TIERS doesn't list.
+		$tiers = self::LOCATION_KEY_TIERS + [ 'checkin_postal_code' => 'postal_code' ];
+
 		$meta = [];
-		foreach ( self::LOCATION_KEY_TIERS as $key => $tier ) {
+		foreach ( $tiers as $key => $tier ) {
 			if ( empty( $visible[ $tier ] ) ) {
 				continue;
 			}
 
 			$value = get_metadata_raw( 'post', $post_id, self::PREFIX . $key, true );
+			if ( null === $value || '' === (string) $value ) {
+				continue;
+			}
+			$meta[ $key ] = (string) $value;
+		}
+
+		// Native Simple Location keys, under their own names. Where one shares
+		// a name with a Post Kinds field (geo_latitude, geo_longitude), the
+		// Post Kinds value read above wins.
+		foreach ( self::NATIVE_LOCATION_KEY_TIERS as $key => $tier ) {
+			if ( isset( $meta[ $key ] ) || empty( $visible[ $tier ] ) ) {
+				continue;
+			}
+
+			$value = get_metadata_raw( 'post', $post_id, $key, true );
 			if ( null === $value || '' === (string) $value ) {
 				continue;
 			}

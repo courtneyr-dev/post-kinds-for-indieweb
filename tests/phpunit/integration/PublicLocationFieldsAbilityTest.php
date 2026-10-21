@@ -299,6 +299,108 @@ final class PublicLocationFieldsAbilityTest extends WP_UnitTestCase {
 		$this->assertSame( $this->visible_all( false ), $missing['visible'] );
 	}
 
+	public function test_public_native_simple_location_keys_and_checkin_postal_code_are_reported(): void {
+		$post_id = $this->native_location_post( 'public' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_postal_code', '17013' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'subscriber' ] ) );
+
+		$result = $this->execute( $post_id );
+
+		$this->assertSame( $this->visible_all( true ), $result['visible'] );
+		$this->assertSame(
+			[
+				'checkin_postal_code' => '17013',
+				'geo_latitude'        => '40.20192',
+				'geo_longitude'       => '-77.19256',
+				'geo_address'         => '123 Sentinel St',
+				'geo_postal_code'     => '17013',
+				'geo_venue'           => 'Native Place',
+				'geo_locality'        => 'Carlisle',
+				'geo_region'          => 'PA',
+				'geo_country_name'    => 'US',
+			],
+			$result['location']
+		);
+	}
+
+	/**
+	 * @dataProvider approximate_privacy_values
+	 */
+	public function test_approximate_native_keys_and_checkin_postal_code_expose_only_place_text( ?string $privacy ): void {
+		$post_id = $this->native_location_post( $privacy );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_postal_code', '17013' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		$result = $this->execute( $post_id );
+
+		$this->assertSame( $this->visible_approximate(), $result['visible'] );
+		$this->assertSame(
+			[
+				'geo_venue'        => 'Native Place',
+				'geo_locality'     => 'Carlisle',
+				'geo_region'       => 'PA',
+				'geo_country_name' => 'US',
+			],
+			$result['location']
+		);
+		$this->assertNoSentinels( $result );
+		$this->assertStringNotContainsString( '17013', (string) wp_json_encode( $result ) );
+	}
+
+	public function test_native_keys_follow_simple_location_protected_and_private(): void {
+		$post_id = $this->native_location_post( 'public' );
+		update_post_meta( $post_id, 'geo_public', '2' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		$protected = $this->execute( $post_id );
+		$this->assertArrayNotHasKey( 'geo_latitude', $protected['location'] );
+		$this->assertArrayNotHasKey( 'geo_longitude', $protected['location'] );
+		$this->assertSame( '123 Sentinel St', $protected['location']['geo_address'] ?? null );
+
+		update_post_meta( $post_id, 'geo_public', '0' );
+		$private = $this->execute( $post_id );
+		$this->assertSame( [], $private['location'] );
+		$this->assertNoSentinels( $private );
+	}
+
+	public function test_post_kinds_value_wins_when_a_native_key_shares_its_name(): void {
+		[ $post_id ] = $this->location_post( 'public' );
+		update_post_meta( $post_id, 'geo_latitude', '41.00000' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		$result = $this->execute( $post_id );
+
+		$this->assertSame( '40.20192', $result['location']['geo_latitude'] );
+	}
+
+	/**
+	 * Create a published post that carries only native Simple Location keys.
+	 *
+	 * @param string|null $privacy Post Kinds privacy tier, or null for unset.
+	 * @return int Post ID.
+	 */
+	private function native_location_post( ?string $privacy ): int {
+		$post_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		$meta    = [
+			'geo_latitude'     => '40.20192',
+			'geo_longitude'    => '-77.19256',
+			'geo_address'      => '123 Sentinel St',
+			'geo_postal_code'  => '17013',
+			'geo_venue'        => 'Native Place',
+			'geo_locality'     => 'Carlisle',
+			'geo_region'       => 'PA',
+			'geo_country_name' => 'US',
+		];
+		foreach ( $meta as $key => $value ) {
+			update_post_meta( $post_id, $key, $value );
+		}
+		if ( null !== $privacy ) {
+			update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', $privacy );
+		}
+
+		return $post_id;
+	}
+
 	/**
 	 * Create a location-bearing check-in post.
 	 *
