@@ -74,8 +74,9 @@ final class StreamCardGoldenTest extends WP_UnitTestCase {
 		'checkin|generic-untitled'       => '50b03279fa27827056a5be6c501bcbc3fbeefceb',
 		'chicken|generic-titled'         => '1468d836a30317f8a28b7c9438a535325518be0c',
 		'chicken|generic-untitled'       => 'c045e01ba87bdceebdb208ec738a07721c5edffd',
-		'collection|generic-titled'      => 'd64c4fb49d4de546716cd26ecd7dd5ebef14475a',
-		'collection|generic-untitled'    => '59492e0839baa9bc3febc480224a172e82e94dd7',
+		// Recorded from the W6-P240 head: the collection rows change on purpose (the kind now draws its own card).
+		'collection|generic-titled'      => '031b4c99a144e2840fe40e73e84ccfc1f5091db8',
+		'collection|generic-untitled'    => '24e70bb9d29b796a7f3c83a5eeb41e4465f25995',
 		'comics|generic-titled'          => '55f07833f56b1d76870d55105b5b4b98b91713c5',
 		'comics|generic-untitled'        => '2d79a2a62c0edac0ad6f123b67aca43abe9ad5bd',
 		'craft|generic-titled'           => '55a82be0b2d726b4289bb051ff12992863492fc6',

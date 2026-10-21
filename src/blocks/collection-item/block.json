@@ -1,0 +1,56 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "post-kinds-indieweb/collection-item",
+	"title": "Collection item",
+	"category": "post-kinds-indieweb",
+	"description": "Add an internal post or external item to a collection cabinet.",
+	"keywords": ["collection", "item", "cabinet"],
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
+	"render": "file:./render.php",
+	"attributes": {
+		"postId": {
+			"type": "integer",
+			"default": 0
+		},
+		"title": {
+			"type": "string",
+			"default": ""
+		},
+		"date": {
+			"type": "string",
+			"default": ""
+		},
+		"source": {
+			"type": "string",
+			"default": ""
+		},
+		"url": {
+			"type": "string",
+			"default": ""
+		},
+		"mediaId": {
+			"type": "integer",
+			"default": 0
+		},
+		"addedAt": {
+			"type": "string",
+			"default": ""
+		},
+		"headingLevel": {
+			"type": "integer",
+			"default": 2
+		}
+	},
+	"supports": {
+		"html": false,
+		"reusable": false
+	},
+	"example": {
+		"attributes": {
+			"title": "Field recorder",
+			"date": "2026-09-21",
+			"source": "Personal archive"
+		}
+	}
+}

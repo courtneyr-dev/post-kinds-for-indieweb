@@ -1,0 +1,31 @@
+.pkiw-collection-item {
+	display: grid;
+	position: relative;
+}
+
+.pkiw-collection-item__media,
+.pkiw-collection-item__img {
+	width: 100%;
+	max-width: 100%;
+}
+
+.pkiw-collection-item__img {
+	display: block;
+	height: auto;
+}
+
+.pkiw-collection-item__label {
+	display: grid;
+}
+
+.pkiw-collection-item__title,
+.pkiw-collection-item__date,
+.pkiw-collection-item__source {
+	margin: 0;
+}
+
+.pkiw-collection-item__link::after {
+	position: absolute;
+	inset: 0;
+	content: "";
+}
