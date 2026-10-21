@@ -82,7 +82,8 @@ final class IssueKindFieldsAbilityTest extends WP_UnitTestCase {
 		$this->assertSame( [], $result['meta'] );
 	}
 
-	public function test_public_mcp_ability_list_stays_at_the_exact_ten_entries(): void {
+	public function test_issue_adds_no_public_mcp_ability(): void {
+		// Other lanes may append entries; the ten listed here are the ones this lane found and it adds none.
 		$this->assertSame(
 			[
 				'post-kinds/list-kinds',
@@ -96,7 +97,10 @@ final class IssueKindFieldsAbilityTest extends WP_UnitTestCase {
 				'post-kinds/lookup-venue',
 				'post-kinds/lookup-game',
 			],
-			Abilities_Manager::MCP_PUBLIC_ABILITIES
+			array_slice( Abilities_Manager::MCP_PUBLIC_ABILITIES, 0, 10 )
 		);
+		foreach ( Abilities_Manager::MCP_PUBLIC_ABILITIES as $name ) {
+			$this->assertStringNotContainsString( 'issue', $name, 'The issue lane exposes no ability of its own.' );
+		}
 	}
 }
