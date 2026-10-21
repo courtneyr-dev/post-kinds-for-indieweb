@@ -84,7 +84,7 @@ final class Quote_Abilities {
 		$initials = [];
 		foreach ( $index['initials'] as $letter => $data ) {
 			$initials[] = [
-				'letter' => $letter,
+				'letter' => (string) $letter,
 				'count'  => $data['count'],
 			];
 		}

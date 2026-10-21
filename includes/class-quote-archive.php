@@ -128,7 +128,9 @@ final class Quote_Archive {
 		$author  = self::sanitize_query_value( $query->get( self::VAR_AUTHOR ) );
 		$work    = self::sanitize_query_value( $query->get( self::VAR_WORK ) );
 		$initial = mb_strtoupper( mb_substr( self::sanitize_query_value( $query->get( self::VAR_INITIAL ) ), 0, 1 ) );
-		if ( '' === $author && '' === $work && '' === $initial ) {
+		// A work link for a quote with no stored author carries an empty author, so its page lists the same quotes its count does.
+		$no_author = '' === $author && array_key_exists( self::VAR_AUTHOR, $query->query_vars );
+		if ( '' === $author && ! $no_author && '' === $work && '' === $initial ) {
 			return;
 		}
 
@@ -138,6 +140,19 @@ final class Quote_Archive {
 				'key'     => '_pkiw_cite_author',
 				'value'   => $author,
 				'compare' => '=',
+			];
+		} elseif ( $no_author ) {
+			$meta_query[] = [
+				'relation' => 'OR',
+				[
+					'key'     => '_pkiw_cite_author',
+					'compare' => 'NOT EXISTS',
+				],
+				[
+					'key'     => '_pkiw_cite_author',
+					'value'   => '',
+					'compare' => '=',
+				],
 			];
 		}
 		if ( '' !== $work ) {
@@ -350,7 +365,7 @@ final class Quote_Archive {
 		if ( null !== $match ) {
 			[ $text, $block_cite ] = self::quote_block_text( (array) $match['block'] );
 		} else {
-			$text = self::collapse_text( wp_strip_all_tags( strip_shortcodes( (string) $post->post_content ) ) );
+			$text = self::collapse_text( wp_strip_all_tags( strip_shortcodes( (string) $post->post_content ) ), true );
 		}
 
 		$work       = self::stored_text( get_metadata_raw( 'post', $post_id, '_pkiw_cite_name', true ) );
@@ -540,7 +555,7 @@ final class Quote_Archive {
 		$html .= '<li><a href="' . esc_url( $base ) . '"' . ( $all ? ' aria-current="page"' : '' ) . '>' . esc_html__( 'All', 'post-kinds-for-indieweb-in-block-themes' ) . '</a></li>';
 		foreach ( $index['initials'] as $letter => $data ) {
 			$url   = add_query_arg( self::VAR_INITIAL, rawurlencode( (string) $letter ), $base );
-			$html .= '<li><a href="' . esc_url( $url ) . '"' . ( $letter === $initial ? ' aria-current="page"' : '' ) . '>' . esc_html( $letter ) . '</a></li>';
+			$html .= '<li><a href="' . esc_url( $url ) . '"' . ( (string) $letter === $initial ? ' aria-current="page"' : '' ) . '>' . esc_html( $letter ) . '</a></li>';
 		}
 
 		return $html . '</ul></nav></div>';
@@ -785,11 +800,14 @@ final class Quote_Archive {
 	/**
 	 * Normalize plain text without changing display spelling.
 	 *
-	 * @param string $text Plain text.
+	 * @param string $text   Plain text.
+	 * @param bool   $decode Whether the text still holds character references. The Tag Processor has decoded block text already, so decoding it again would turn a typed `&amp;lt;` into `<`.
 	 * @return string
 	 */
-	private static function collapse_text( string $text ): string {
-		$text = html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+	private static function collapse_text( string $text, bool $decode = false ): string {
+		if ( $decode ) {
+			$text = html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		}
 
 		return trim( (string) preg_replace( '/[\s\x{00A0}]+/u', ' ', $text ) );
 	}
