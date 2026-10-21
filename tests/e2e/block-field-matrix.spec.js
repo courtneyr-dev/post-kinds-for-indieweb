@@ -100,6 +100,18 @@ const RENDER_EXCEPTIONS = {
 		readStatus:
 			'status is mapped to a human label (Reading/Finished/…) and is never echoed raw',
 	},
+	'post-kinds-indieweb/collection-item': {
+		postId: 'the sample postId 4 does not resolve to a published, publicly viewable, password-free reference, so the internal item renders nothing',
+		title: 'an internal reference ignores the stored title and reads the referenced post title only after the reference passes its public gate',
+		date: 'an internal reference ignores the stored date and reads the referenced post date only after the reference passes its public gate',
+		source: 'source prints only on a resolved internal or non-empty external item, and the sample internal reference does not resolve',
+		url: 'an internal reference ignores the stored URL and reads the referenced permalink only after the reference passes its public gate',
+		mediaId:
+			'an internal reference ignores the stored mediaId and reads the referenced featured image only after the reference passes its public gate',
+		addedAt: 'addedAt is storage-only ordering data and is never printed',
+		headingLevel:
+			'headingLevel selects the heading tag name and is never printed as text',
+	},
 	'post-kinds-indieweb/comic-card': {
 		readStatus:
 			'status is mapped to a human label (Currently reading/Finished/…) and is never echoed raw',
