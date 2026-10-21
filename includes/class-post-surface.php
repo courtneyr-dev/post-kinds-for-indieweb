@@ -208,7 +208,17 @@ final class Post_Surface {
 	 * @return int Number of posts processed.
 	 */
 	public static function backfill(): int {
-		$ids = get_posts(
+		return self::backfill_report( false )['processed'];
+	}
+
+	/**
+	 * Report the surface changes a full backfill would make.
+	 *
+	 * @param bool $dry_run Whether to report changes without writing them.
+	 * @return array{processed:int,changed:int} Backfill counts.
+	 */
+	public static function backfill_report( bool $dry_run ): array {
+		$ids     = get_posts(
 			[
 				'post_type'   => 'post',
 				'post_status' => 'any',
@@ -216,10 +226,22 @@ final class Post_Surface {
 				'fields'      => 'ids',
 			]
 		);
+		$changed = 0;
 		foreach ( $ids as $id ) {
-			update_post_meta( (int) $id, '_pkiw_surface', self::get( (int) $id ) );
+			$id       = (int) $id;
+			$surface  = self::get( $id );
+			$stored   = (string) get_post_meta( $id, '_pkiw_surface', true );
+			$changed += $stored !== $surface ? 1 : 0;
+
+			if ( ! $dry_run ) {
+				update_post_meta( $id, '_pkiw_surface', $surface );
+			}
 		}
-		return count( $ids );
+
+		return [
+			'processed' => count( $ids ),
+			'changed'   => $changed,
+		];
 	}
 
 	/**
