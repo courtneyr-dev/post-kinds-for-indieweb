@@ -1,6 +1,6 @@
 <?php
 /**
- * MCP server abilities advertisement coverage.
+ * MCP exposure of the Post Kinds abilities.
  *
  * @package PKIW
  */
@@ -10,15 +10,11 @@ declare(strict_types=1);
 use PKIW\Abilities_Manager;
 
 /**
- * Verifies the wp_pinch_mcp_server_abilities filter only advertises
- * abilities that actually exist in the registry.
- *
- * WP Pinch's MCP adapter builds its tool list from the advertised names and
- * logs a "WordPress ability '<name>' does not exist" error for every name it
- * can't resolve. Under WP-CLI the adapter can run in a lifecycle where
- * wp_abilities_api_init never registered the Post Kinds abilities, so an
- * unconditional advertise produces one logged error per declared ability on
- * every wp invocation.
+ * The MCP Adapter's default server only lists abilities whose
+ * meta.mcp.public is true. Read abilities are public on every site with the
+ * mcp_integration flag on; the writes carry an explicit false, which also
+ * blocks MCP Adapter 0.6+'s fallback to a top-level meta.public. Nothing
+ * depends on WP Pinch any more.
  *
  * @group integration
  * @covers \PKIW\Abilities_Manager
@@ -29,7 +25,7 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 	 * Reset registry state so later tests rebuild it lazily.
 	 */
 	public function tear_down(): void {
-		remove_all_filters( 'wp_pinch_mcp_server_abilities' );
+		remove_all_filters( 'pkiw_feature_flag_mcp_integration' );
 		$this->reset_abilities_registry();
 		parent::tear_down();
 	}
@@ -60,74 +56,137 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Regression for the staging mcp-adapter errors: in a lifecycle where
-	 * wp_abilities_api_init never registered the Post Kinds abilities,
-	 * advertising the declared names makes the adapter log one "ability does
-	 * not exist" error per name. With no registered abilities, the filter
-	 * must return the incoming list untouched.
+	 * Read abilities exposed on the default server.
+	 *
+	 * @return array<string, array{0: string}>
 	 */
-	public function test_filter_advertises_nothing_when_no_abilities_registered(): void {
-		$this->skip_without_abilities_api();
+	public static function read_ability_names(): array {
+		$names = [
+			'post-kinds/list-kinds',
+			'post-kinds/list-kind-fields',
+			'post-kinds/get-kind',
+			'post-kinds/get-post-meta',
+			'post-kinds/lookup-music',
+			'post-kinds/lookup-video',
+			'post-kinds/lookup-book',
+			'post-kinds/lookup-podcast',
+			'post-kinds/lookup-venue',
+			'post-kinds/lookup-game',
+		];
 
-		$this->reset_abilities_registry();
-		remove_all_actions( 'wp_abilities_api_init' );
-
-		$result = Abilities_Manager::filter_mcp_server_abilities( [] );
-
-		$this->assertSame( [], $result );
+		return array_combine( $names, array_map( static fn( $name ) => [ $name ], $names ) );
 	}
 
 	/**
-	 * Existing non-Post-Kinds entries pass through unchanged when the Post
-	 * Kinds abilities never registered.
+	 * Write abilities kept off the default server.
+	 *
+	 * @return array<string, array{0: string}>
 	 */
-	public function test_filter_preserves_existing_entries_when_no_abilities_registered(): void {
-		$this->skip_without_abilities_api();
+	public static function write_ability_names(): array {
+		$names = [ 'post-kinds/create-post', 'post-kinds/set-kind', 'post-kinds/update-post-meta' ];
 
-		$this->reset_abilities_registry();
-		remove_all_actions( 'wp_abilities_api_init' );
-
-		$result = Abilities_Manager::filter_mcp_server_abilities( [ 'other/ability' ] );
-
-		$this->assertSame( [ 'other/ability' ], $result );
+		return array_combine( $names, array_map( static fn( $name ) => [ $name ], $names ) );
 	}
 
 	/**
-	 * Once the registry initializes and the plugin's wp_abilities_api_init
-	 * listener registers the abilities, the filter advertises all of them.
+	 * The exposure filter is hooked without WP Pinch, and the old WP Pinch
+	 * server-list filter is gone.
 	 */
-	public function test_filter_advertises_registered_abilities(): void {
+	public function test_ability_args_filter_hooked_without_wp_pinch(): void {
+		$this->skip_without_abilities_api();
+		$this->assertFalse( class_exists( 'WP_Pinch\\Abilities' ) );
+
+		remove_all_filters( 'wp_register_ability_args' );
+		Abilities_Manager::reset();
+		Abilities_Manager::instance();
+
+		$this->assertSame( 10, has_filter( 'wp_register_ability_args', [ Abilities_Manager::class, 'filter_ability_args' ] ) );
+		$this->assertFalse( has_filter( 'wp_pinch_mcp_server_abilities' ) );
+	}
+
+	/**
+	 * With the mcp_integration flag off, nothing is exposed.
+	 */
+	public function test_filter_not_hooked_when_mcp_integration_disabled(): void {
 		$this->skip_without_abilities_api();
 
+		add_filter( 'pkiw_feature_flag_mcp_integration', '__return_false' );
+		remove_all_filters( 'wp_register_ability_args' );
+		Abilities_Manager::reset();
+		Abilities_Manager::instance();
+
+		$this->assertFalse( has_filter( 'wp_register_ability_args', [ Abilities_Manager::class, 'filter_ability_args' ] ) );
+	}
+
+	/**
+	 * @dataProvider read_ability_names
+	 */
+	public function test_read_abilities_are_public( string $name ): void {
+		$result = Abilities_Manager::filter_ability_args( [ 'label' => 'Test' ], $name );
+
+		$this->assertTrue( $result['meta']['mcp']['public'] );
+	}
+
+	/**
+	 * @dataProvider write_ability_names
+	 */
+	public function test_write_abilities_are_explicitly_private( string $name ): void {
+		$result = Abilities_Manager::filter_ability_args( [ 'label' => 'Test' ], $name );
+
+		$this->assertFalse( $result['meta']['mcp']['public'] );
+	}
+
+	/**
+	 * A write registered with public: true still ends up private, and its
+	 * other mcp meta survives.
+	 */
+	public function test_write_cannot_opt_in_through_registration_args(): void {
+		$args = [
+			'label' => 'Test',
+			'meta'  => [
+				'show_in_rest' => true,
+				'mcp'          => [
+					'public' => true,
+					'type'   => 'tool',
+				],
+			],
+		];
+
+		$result = Abilities_Manager::filter_ability_args( $args, 'post-kinds/update-post-meta' );
+
+		$this->assertFalse( $result['meta']['mcp']['public'] );
+		$this->assertSame( 'tool', $result['meta']['mcp']['type'] );
+		$this->assertTrue( $result['meta']['show_in_rest'] );
+	}
+
+	public function test_other_namespaces_are_untouched(): void {
+		$args = [ 'label' => 'Test' ];
+
+		$this->assertSame( $args, Abilities_Manager::filter_ability_args( $args, 'other/ability' ) );
+	}
+
+	/**
+	 * End to end: the registered abilities carry the exposure the filter set.
+	 */
+	public function test_registered_abilities_carry_mcp_exposure(): void {
+		$this->skip_without_abilities_api();
+
+		// The plugin's own instance hooked the filter at load; rebuild only the registry.
 		$this->reset_abilities_registry();
+		wp_get_abilities();
 
-		$result = Abilities_Manager::filter_mcp_server_abilities( [ 'other/ability' ] );
-
-		$this->assertContains( 'other/ability', $result );
+		$public = [];
 		foreach ( Abilities_Manager::get_ability_names() as $name ) {
-			$this->assertContains( $name, $result );
-			$this->assertTrue( wp_has_ability( $name ), sprintf( 'Ability "%s" should be registered.', $name ) );
-		}
-	}
-
-	/**
-	 * When only part of the declared set is registered, the filter advertises
-	 * exactly that registered subset.
-	 */
-	public function test_filter_advertises_only_registered_subset(): void {
-		$this->skip_without_abilities_api();
-
-		$this->reset_abilities_registry();
-		wp_get_abilities(); // Force lazy registry init so the abilities register.
-
-		$missing = [ 'post-kinds/lookup-venue', 'post-kinds/lookup-game' ];
-		foreach ( $missing as $name ) {
-			wp_unregister_ability( $name );
+			$ability = wp_get_ability( $name );
+			$this->assertNotNull( $ability, sprintf( 'Ability "%s" should be registered.', $name ) );
+			if ( true === ( $ability->get_meta()['mcp']['public'] ?? null ) ) {
+				$public[] = $name;
+			}
 		}
 
-		$result = Abilities_Manager::filter_mcp_server_abilities( [] );
-
-		$expected = array_values( array_diff( Abilities_Manager::get_ability_names(), $missing ) );
-		$this->assertSame( $expected, $result );
+		$expected = array_keys( self::read_ability_names() );
+		sort( $expected );
+		sort( $public );
+		$this->assertSame( $expected, $public );
 	}
 }
