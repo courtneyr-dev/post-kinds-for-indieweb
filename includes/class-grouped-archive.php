@@ -85,6 +85,13 @@ final class Grouped_Archive {
 	private static array $entries = [];
 
 	/**
+	 * Section bodies by source id.
+	 *
+	 * @var array<string, callable>
+	 */
+	private static array $source_bodies = [];
+
+	/**
 	 * Section heading ids printed in this request, so each is unique on the page.
 	 *
 	 * @var array<string, true>
@@ -194,6 +201,19 @@ final class Grouped_Archive {
 	 */
 	public static function source( string $id ): ?Group_Source {
 		return self::$sources[ $id ] ?? null;
+	}
+
+	/**
+	 * Register the body used by sections from one source.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string   $source_id Source id.
+	 * @param callable $body      Section body callback.
+	 * @return void
+	 */
+	public static function register_section_body( string $source_id, callable $body ): void {
+		self::$source_bodies[ $source_id ] = $body;
 	}
 
 	/**
@@ -1113,7 +1133,7 @@ final class Grouped_Archive {
 		$entry   = self::$entries[ $block_name ] ?? null;
 		$classes = null !== $entry ? $entry['classes'] : self::DEFAULT_CLASSES;
 		$list    = null !== $entry && 'ol' === $entry['list'] ? 'ol' : 'ul';
-		$body    = null !== $entry ? $entry['section_body'] : null;
+		$body    = ( null !== $entry ? $entry['section_body'] : null ) ?? self::$source_bodies[ $source->id() ] ?? null;
 		$link    = null !== $entry ? $entry['heading_link'] : null;
 		$url     = null !== $link ? (string) call_user_func( $link, $group ) : '';
 
