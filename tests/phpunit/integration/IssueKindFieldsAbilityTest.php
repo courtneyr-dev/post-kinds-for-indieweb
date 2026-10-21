@@ -88,22 +88,20 @@ final class IssueKindFieldsAbilityTest extends WP_UnitTestCase {
 	}
 
 	public function test_issue_adds_no_public_mcp_ability(): void {
-		// Other lanes may append entries; the ten listed here are the ones this lane found and it adds none.
-		$this->assertSame(
-			[
-				'post-kinds/list-kinds',
-				'post-kinds/list-kind-fields',
-				'post-kinds/get-kind',
-				'post-kinds/get-post-meta',
-				'post-kinds/lookup-music',
-				'post-kinds/lookup-video',
-				'post-kinds/lookup-book',
-				'post-kinds/lookup-podcast',
-				'post-kinds/lookup-venue',
-				'post-kinds/lookup-game',
-			],
-			array_slice( Abilities_Manager::MCP_PUBLIC_ABILITIES, 0, 10 )
-		);
+		// Other lanes add entries anywhere in the list; the ten listed here are the ones this lane found and it adds none.
+		$original = [
+			'post-kinds/list-kinds',
+			'post-kinds/list-kind-fields',
+			'post-kinds/get-kind',
+			'post-kinds/get-post-meta',
+			'post-kinds/lookup-music',
+			'post-kinds/lookup-video',
+			'post-kinds/lookup-book',
+			'post-kinds/lookup-podcast',
+			'post-kinds/lookup-venue',
+			'post-kinds/lookup-game',
+		];
+		$this->assertSame( $original, array_values( array_intersect( Abilities_Manager::MCP_PUBLIC_ABILITIES, $original ) ) );
 		foreach ( Abilities_Manager::MCP_PUBLIC_ABILITIES as $name ) {
 			$this->assertStringNotContainsString( 'issue', $name, 'The issue lane exposes no ability of its own.' );
 		}
