@@ -37,6 +37,7 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 
 	public function tear_down(): void {
 		\PKIW\Kind_Archive_Layouts::unregister_filtered_view( 'listen', 'pkiw_listen_type' );
+		\PKIW\Kind_Archive_Layouts::unregister_filtered_view( 'comics', 'pkiw_comic_view' );
 		\PKIW\Kind_Archive_Layouts::set_rest_view( '' );
 		remove_filter( 'query_vars', [ $this, 'listen_view_query_var' ] );
 		switch_theme( $this->original_stylesheet );
@@ -497,6 +498,7 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 			'podcast listens archive' => [ 'taxonomy-kind-listen-podcast', 'Podcast Listens Archive' ],
 			'wish archive'           => [ 'taxonomy-kind-wish', 'Wish Archive' ],
 			'question archive'       => [ 'taxonomy-kind-question', 'Question Archive' ],
+			'drawn comics archive'   => [ 'taxonomy-kind-comics-drawn', 'Comics Drawn Archive' ],
 			'quote archive'          => [ 'taxonomy-kind-quote', 'Quote Archive' ],
 		];
 	}

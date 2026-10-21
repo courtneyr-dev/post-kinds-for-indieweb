@@ -11,6 +11,11 @@ jest.mock( '@wordpress/data', () => ( {
 	useDispatch: jest.fn(),
 } ) );
 jest.mock( '@wordpress/api-fetch', () => jest.fn() );
+// KindFields imports useEntityProp for the comics fields; loading the real
+// core-data store needs TextEncoder, which jsdom lacks.
+jest.mock( '@wordpress/core-data', () => ( {
+	useEntityProp: jest.fn(),
+} ) );
 jest.mock( '@wordpress/icons', () => ( { search: 'search', link: 'link' } ) );
 jest.mock( '../../../src/editor/stores/post-kinds', () => ( {
 	STORE_NAME: 'post-kinds',

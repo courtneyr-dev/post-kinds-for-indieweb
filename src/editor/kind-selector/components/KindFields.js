@@ -12,6 +12,7 @@
  */
 import { __ } from '@wordpress/i18n';
 import { useSelect, useDispatch } from '@wordpress/data';
+import { useEntityProp } from '@wordpress/core-data';
 import {
 	TextControl,
 	TextareaControl,
@@ -33,6 +34,7 @@ import apiFetch from '@wordpress/api-fetch';
  */
 import { STORE_NAME } from '../../stores/post-kinds';
 import SyndicationControls from './SyndicationControls';
+import hasComicCard from '../has-comic-card';
 import {
 	MoodSuggestions,
 	moodDisplayLabel,
@@ -83,6 +85,8 @@ export default function KindFields( { kind } ) {
 			return <AcquisitionFields />;
 		case 'recipe':
 			return <RecipeFields />;
+		case 'comics':
+			return <ComicsFields />;
 		case 'quote':
 			return <CitationFields showSummary={ false } />;
 		case 'reply':
@@ -94,6 +98,71 @@ export default function KindFields( { kind } ) {
 		default:
 			return null;
 	}
+}
+
+/**
+ * Comics Fields Component
+ *
+ * Series and issue fields for a comic the author drew. Comic Card posts keep
+ * managing those values through the card instead.
+ *
+ * @return {JSX.Element|null} Comic strip fields, or null for a Comic Card.
+ */
+function ComicsFields() {
+	const blocks = useSelect(
+		( select ) => select( 'core/block-editor' ).getBlocks(),
+		[]
+	);
+	const postType = useSelect(
+		( select ) => select( 'core/editor' ).getCurrentPostType(),
+		[]
+	);
+	const [ meta, setMeta ] = useEntityProp( 'postType', postType, 'meta' );
+
+	if ( hasComicCard( blocks ) ) {
+		return null;
+	}
+
+	const updateMeta = ( key, value ) => {
+		setMeta( { ...meta, [ key ]: value } );
+	};
+
+	return (
+		<Flex
+			direction="column"
+			gap={ 4 }
+			className="post-kinds-indieweb-kind-fields"
+		>
+			<TextControl
+				label={ __(
+					'Series',
+					'post-kinds-for-indieweb-in-block-themes'
+				) }
+				value={ meta?._pkiw_comic_series ?? '' }
+				onChange={ ( value ) =>
+					updateMeta( '_pkiw_comic_series', value )
+				}
+				help={ __(
+					'For a comic you drew. Leave both empty for a standalone strip.',
+					'post-kinds-for-indieweb-in-block-themes'
+				) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
+			<TextControl
+				label={ __(
+					'Number',
+					'post-kinds-for-indieweb-in-block-themes'
+				) }
+				value={ meta?._pkiw_comic_issue ?? '' }
+				onChange={ ( value ) =>
+					updateMeta( '_pkiw_comic_issue', value )
+				}
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
+		</Flex>
+	);
 }
 
 /**
