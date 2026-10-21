@@ -66,6 +66,8 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 			'post-kinds/list-kind-fields',
 			'post-kinds/get-kind',
 			'post-kinds/get-post-meta',
+			'post-kinds/get-quote-index',
+			'post-kinds/get-collection-items',
 			'post-kinds/lookup-music',
 			'post-kinds/lookup-video',
 			'post-kinds/lookup-book',

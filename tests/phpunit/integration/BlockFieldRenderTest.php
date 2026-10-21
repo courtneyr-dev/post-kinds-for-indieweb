@@ -90,6 +90,16 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 			'post-kinds-indieweb/acquisition-card'  => [
 				'cost' => 'private by default (issue 239): prints only when showCostPublicly is on and Card_Meta_Sync has written _pkiw_acquisition_cost_public for the post, which needs a saved post holding the card; this matrix renders a bare comment against a post with no card. AcquisitionCostPrivacyTest covers both states',
 			],
+			'post-kinds-indieweb/collection-item'   => [
+				'postId'       => 'the sample postId 4 does not resolve to a published, publicly viewable, password-free reference, so the internal item renders nothing',
+				'title'        => 'an internal reference ignores the stored title and reads the referenced post title only after the reference passes its public gate',
+				'date'         => 'an internal reference ignores the stored date and reads the referenced post date only after the reference passes its public gate',
+				'source'       => 'source prints only on a resolved internal or non-empty external item, and the sample internal reference does not resolve',
+				'url'          => 'an internal reference ignores the stored URL and reads the referenced permalink only after the reference passes its public gate',
+				'mediaId'      => 'an internal reference ignores the stored mediaId and reads the referenced featured image only after the reference passes its public gate',
+				'addedAt'      => 'addedAt is storage-only ordering data and is never printed',
+				'headingLevel' => 'headingLevel selects the heading tag name and is never printed as text',
+			],
 			'post-kinds-indieweb/drink-card'        => [
 				'venueUrl'        => 'privacy-aware by design: the venue link renders only when the post\'s geo_privacy resolves to public (or the viewer can edit_post); the url tier of Meta_Fields::get_visible_location_fields()',
 				'locationAddress' => 'privacy-aware by design: renders only when geo_privacy is public, same gate as venueUrl (the street tier)',

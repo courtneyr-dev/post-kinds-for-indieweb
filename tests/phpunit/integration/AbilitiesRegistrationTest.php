@@ -84,10 +84,20 @@ final class AbilitiesRegistrationTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * The declared set is 13 core+lookup abilities plus 8 operations and reads.
+	 * The declared set is 13 core+lookup abilities, 8 operations and reads, the quote index, and 1 collection read.
 	 */
 	public function test_declared_ability_count(): void {
-		$this->assertCount( 21, Abilities_Manager::get_ability_names() );
+		$this->assertCount( 23, Abilities_Manager::get_ability_names() );
+	}
+
+	public function test_quote_index_ability_has_the_public_aggregate_schema(): void {
+		$this->skip_without_abilities_api();
+		$ability = wp_get_ability( 'post-kinds/get-quote-index' );
+		$this->assertNotNull( $ability );
+		$schema = $ability->get_output_schema();
+		$this->assertSame( [ 'authors', 'initials', 'works', 'total' ], array_keys( $schema['properties'] ?? [] ) );
+		$this->assertSame( 'integer', $schema['properties']['total']['type'] ?? null );
+		$this->assertTrue( $ability->get_meta()['show_in_rest'] ?? false );
 	}
 
 	/**

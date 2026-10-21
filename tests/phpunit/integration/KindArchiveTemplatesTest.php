@@ -499,6 +499,7 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 			'wish archive'           => [ 'taxonomy-kind-wish', 'Wish Archive' ],
 			'question archive'       => [ 'taxonomy-kind-question', 'Question Archive' ],
 			'drawn comics archive'   => [ 'taxonomy-kind-comics-drawn', 'Comics Drawn Archive' ],
+			'quote archive'          => [ 'taxonomy-kind-quote', 'Quote Archive' ],
 		];
 	}
 
@@ -565,7 +566,7 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 		$method = strpos( $source, 'private function init_media_archives(): void {' );
 		$this->assertNotFalse( $method );
 		$previous = $method;
-		foreach ( [ 'Video_Archive', 'Audio_Archive', 'Audio_Transcript', 'Jam_Archive', 'Listen_Archive', 'Wish_Archive', 'Question_Archive', 'Question_Answers', 'Question_Location' ] as $class ) {
+		foreach ( [ 'Video_Archive', 'Audio_Archive', 'Audio_Transcript', 'Jam_Archive', 'Listen_Archive', 'Wish_Archive', 'Question_Archive', 'Question_Answers', 'Question_Location', 'Quote_Archive' ] as $class ) {
 			$at = strpos( $source, "class_exists( __NAMESPACE__ . '\\\\{$class}' )", $previous );
 			$this->assertNotFalse( $at, $class );
 			$this->assertStringContainsString( "( new {$class}() )->register();", substr( $source, $at, 140 ), $class );

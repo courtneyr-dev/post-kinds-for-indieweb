@@ -244,6 +244,43 @@
             }
         }
     },
+    "post-kinds-indieweb/collection-item": {
+        "render": "dynamic",
+        "attributes": {
+            "postId": {
+                "type": "integer",
+                "sample": 4
+            },
+            "title": {
+                "type": "string",
+                "sample": "Sample title value"
+            },
+            "date": {
+                "type": "string",
+                "sample": "Sample date value"
+            },
+            "source": {
+                "type": "string",
+                "sample": "Sample source value"
+            },
+            "url": {
+                "type": "string",
+                "sample": "https://example.com/sample-url"
+            },
+            "mediaId": {
+                "type": "integer",
+                "sample": 4
+            },
+            "addedAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "headingLevel": {
+                "type": "integer",
+                "sample": 4
+            }
+        }
+    },
     "post-kinds-indieweb/comic-card": {
         "render": "dynamic",
         "attributes": {

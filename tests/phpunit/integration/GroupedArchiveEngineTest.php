@@ -33,6 +33,7 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	private const PAIRS  = 'pkiw-test/two-a-page';
 	private const MONTHS = 'pkiw-test/month-marker';
 	private const IDS    = 'pkiw-test/id-marker';
+	private const LINK   = 'pkiw-test/link-marker';
 	private const BODY   = 'pkiw-test/body-line';
 	private const WEEKS  = 'pkiw-test/weeks-line';
 	private const LEAD   = 'pkiw-test/lead-marker';
@@ -160,6 +161,13 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			]
 		);
 		$this->entry_block(
+			self::LINK,
+			[
+				'expose_key'  => true,
+				'heading_link' => static fn( Archive_Group $group ): string => $group->is_empty() ? '' : 'https://example.org/authors/' . rawurlencode( $group->raw() ),
+			]
+		);
+		$this->entry_block(
 			self::BODY,
 			[
 				'shape'        => Grouped_Archive::ENTRY_LINE,
@@ -199,7 +207,7 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 		Kind_Archive_Layouts::unregister_filtered_view( 'comics', 'pkiw_comic_view' );
 		Kind_Archive_Layouts::set_rest_view( '' );
 		$GLOBALS['wp_rest_server'] = null;
-		foreach ( [ self::MARKER, self::LINE, self::OL_LINE, self::PAIRS, self::MONTHS, self::IDS, self::BODY, self::WEEKS, self::LEAD ] as $name ) {
+		foreach ( [ self::MARKER, self::LINE, self::OL_LINE, self::PAIRS, self::MONTHS, self::IDS, self::LINK, self::BODY, self::WEEKS, self::LEAD ] as $name ) {
 			Grouped_Archive::unregister_entry_block( $name );
 			if ( WP_Block_Type_Registry::get_instance()->is_registered( $name ) ) {
 				unregister_block_type( $name );
@@ -2417,6 +2425,27 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	public function test_a_section_body_must_be_callable(): void {
 		$this->expectException( InvalidArgumentException::class );
 		Grouped_Archive::register_entry_block( 'pkiw-test/bad-body', [ 'section_body' => 'no_such_function_pkiw' ] );
+	}
+
+	public function test_a_heading_link_must_be_callable(): void {
+		$this->expectException( InvalidArgumentException::class );
+		Grouped_Archive::register_entry_block( 'pkiw-test/bad-heading-link', [ 'heading_link' => 'no_such_function_pkiw' ] );
+	}
+
+	public function test_heading_link_wraps_only_the_non_empty_heading_with_an_accessibility_hidden_arrow(): void {
+		$this->make( 'shelfkind', 'Named', '2026-09-02 10:00:00', [ '_pkiw_test_status' => 'reading' ] );
+		$this->make( 'shelfkind', 'Other', '2026-09-01 10:00:00' );
+
+		$html = $this->serve( 'shelfkind', $this->loop( self::LINK ) );
+
+		$this->assertStringContainsString( '<h2 class="pkiw-group__heading"><a href="https://example.org/authors/reading">Currently reading<span aria-hidden="true"> →</span></a></h2>', $html );
+		$this->assertStringContainsString( '<h2 class="pkiw-group__heading">Other</h2>', $html );
+	}
+
+	public function test_an_entry_without_heading_link_keeps_the_existing_heading_markup(): void {
+		$this->make( 'shelfkind', 'Named', '2026-09-02 10:00:00', [ '_pkiw_test_status' => 'reading' ] );
+
+		$this->assertStringContainsString( '<h2 class="pkiw-group__heading">Currently reading</h2>', $this->serve( 'shelfkind', $this->loop( self::MARKER ) ) );
 	}
 
 	public function test_the_weeks_setting_is_the_entrys_weeks_per_page_clamped_to_twelve(): void {

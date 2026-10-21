@@ -635,7 +635,7 @@ final class Plugin {
 	}
 
 	/**
-	 * Wire the video, audio, jam, listen, wish and question classes (issues 235, 236, 238, 242, 243 and 256).
+	 * Wire the video, audio, jam, listen, wish, question and issue classes.
 	 *
 	 * Each class arrives with its own lane, so each is wired only when it
 	 * exists. The PKIW\ autoloader loads them.
@@ -672,6 +672,15 @@ final class Plugin {
 		}
 		if ( class_exists( __NAMESPACE__ . '\\Question_Location' ) ) {
 			( new Question_Location() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Collection_Items' ) ) {
+			( new Collection_Items() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Issue_Archive' ) ) {
+			( new Issue_Archive() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Quote_Archive' ) ) {
+			( new Quote_Archive() )->register();
 		}
 	}
 
@@ -1033,6 +1042,7 @@ final class Plugin {
 			'wish-card',
 			'mood-card',
 			'acquisition-card',
+			'collection-item',
 			'checkin-dashboard',
 			'checkins-feed',
 			'venue-detail',
@@ -1452,6 +1462,21 @@ final class Plugin {
 			'taxonomy-kind-comics-drawn'   => [
 				'title'       => __( 'Comics Drawn Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Drawn comics in sections by series, a view of the comics archive.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-collection'     => [
+				'title'       => __( 'Collection Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Collection archive: one cabinet per collection with its item count.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-issue'          => [
+				'title'       => __( 'Issue Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Issue archive in sections by repository, with waiting issues before picked-up ones.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-quote'          => [
+				'title'       => __( 'Quote Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Quote archive as a commonplace book: quotes by author, with a source-work index.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 		];
