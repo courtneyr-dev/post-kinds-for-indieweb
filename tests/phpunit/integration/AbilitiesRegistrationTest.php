@@ -66,9 +66,9 @@ final class AbilitiesRegistrationTest extends WP_UnitTestCase {
 	/**
 	 * Nothing registers under post-kinds/ without being declared.
 	 *
-	 * Abilities_Manager::get_ability_names() is what feeds the WP Pinch MCP
-	 * server list, so an ability that registers but isn't declared is invisible
-	 * to MCP callers.
+	 * Abilities_Manager::get_ability_names() is the declared list the MCP
+	 * exposure tests check against, so an ability that registers without being
+	 * declared would escape them.
 	 */
 	public function test_registered_abilities_are_all_declared(): void {
 		$this->skip_without_abilities_api();
