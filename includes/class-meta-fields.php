@@ -114,6 +114,19 @@ class Meta_Fields {
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
+			'issue_number'            => [
+				'type'        => 'string',
+				'description' => __( 'Issue number in the repository, digits only.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => [ $this, 'sanitize_issue_number' ],
+				'default'     => '',
+			],
+			'issue_status'            => [
+				'type'        => 'string',
+				'description' => __( 'Issue status: open or closed. Empty when the post sets none.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => [ $this, 'sanitize_issue_status' ],
+				'default'     => '',
+				'enum'        => [ '', 'open', 'closed' ],
+			],
 
 			// RSVP Fields.
 			'rsvp_status'             => [
@@ -2637,6 +2650,45 @@ class Meta_Fields {
 		$value = sanitize_text_field( (string) $value );
 
 		return in_array( $value, $valid, true ) ? $value : '';
+	}
+
+	/**
+	 * Sanitize an issue number.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param mixed $value Value to sanitize.
+	 * @return string One to nine ASCII digits, or ''.
+	 */
+	public function sanitize_issue_number( mixed $value ): string {
+		if ( ! is_scalar( $value ) || is_bool( $value ) ) {
+			return '';
+		}
+
+		$value = trim( (string) $value );
+		if ( str_starts_with( $value, '#' ) ) {
+			$value = trim( substr( $value, 1 ) );
+		}
+
+		return 1 === preg_match( '/^[0-9]{1,9}$/', $value ) ? $value : '';
+	}
+
+	/**
+	 * Sanitize an issue status.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param mixed $value Value to sanitize.
+	 * @return string Open, closed, or ''.
+	 */
+	public function sanitize_issue_status( mixed $value ): string {
+		if ( ! is_scalar( $value ) ) {
+			return '';
+		}
+
+		$value = strtolower( trim( (string) $value ) );
+
+		return in_array( $value, [ 'open', 'closed' ], true ) ? $value : '';
 	}
 
 	/**

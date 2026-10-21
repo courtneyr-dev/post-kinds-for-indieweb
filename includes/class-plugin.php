@@ -635,7 +635,7 @@ final class Plugin {
 	}
 
 	/**
-	 * Wire the video, audio, jam, listen, wish and question classes (issues 235, 236, 238, 242, 243 and 256).
+	 * Wire the video, audio, jam, listen, wish, question and issue classes.
 	 *
 	 * Each class arrives with its own lane, so each is wired only when it
 	 * exists. The PKIW\ autoloader loads them.
@@ -669,6 +669,9 @@ final class Plugin {
 		}
 		if ( class_exists( __NAMESPACE__ . '\\Question_Location' ) ) {
 			( new Question_Location() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Issue_Archive' ) ) {
+			( new Issue_Archive() )->register();
 		}
 	}
 
@@ -1444,6 +1447,11 @@ final class Plugin {
 			'taxonomy-kind-question'       => [
 				'title'       => __( 'Question Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Question archive in sections: answered, then waiting for an answer.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-issue'          => [
+				'title'       => __( 'Issue Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Issue archive in sections by repository, with waiting issues before picked-up ones.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 		];
