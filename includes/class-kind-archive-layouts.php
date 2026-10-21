@@ -1647,7 +1647,7 @@ final class Kind_Archive_Layouts {
 	<div class="<?php echo esc_attr( $root_class ); ?>">
 		<div class="pkiw-menu-entry__line">
 			<h<?php echo (int) $level; ?> class="pkiw-menu-entry__title"><a class="pkiw-menu-entry__name p-name" href="<?php echo esc_url( get_permalink( $post ) ); ?>"><?php echo esc_html( $name ); ?></a></h<?php echo (int) $level; ?>>
-			<span class="pkiw-menu-entry__leader" aria-hidden="true"></span>
+			<span class="pkiw-menu-entry__leader" aria-hidden="true" role="presentation"></span>
 			<?php if ( $rating > 0 ) : ?>
 				<span class="pkiw-menu-entry__rating">
 				<?php

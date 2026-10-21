@@ -1378,6 +1378,60 @@ class Meta_Fields {
 	}
 
 	/**
+	 * What a logged-out visitor may see of a post's location, for output that leaves the request.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array{visible: array<string,bool>, meta: array<string,string>}
+	 */
+	public static function get_public_location_view( int $post_id ): array {
+		$visible = self::get_public_location_fields( $post_id );
+		$post    = get_post( $post_id );
+
+		if ( ! $post instanceof \WP_Post || 'publish' !== $post->post_status || '' !== (string) $post->post_password ) {
+			return [
+				'visible' => array_fill_keys( array_keys( $visible ), false ),
+				'meta'    => [],
+			];
+		}
+
+		// The check-in syncs store a postal code that LOCATION_KEY_TIERS doesn't list.
+		$tiers = self::LOCATION_KEY_TIERS + [ 'checkin_postal_code' => 'postal_code' ];
+
+		$meta = [];
+		foreach ( $tiers as $key => $tier ) {
+			if ( empty( $visible[ $tier ] ) ) {
+				continue;
+			}
+
+			$value = get_metadata_raw( 'post', $post_id, self::PREFIX . $key, true );
+			if ( null === $value || '' === (string) $value ) {
+				continue;
+			}
+			$meta[ $key ] = (string) $value;
+		}
+
+		// Native Simple Location keys, under their own names. Where one shares
+		// a name with a Post Kinds field (geo_latitude, geo_longitude), the
+		// Post Kinds value read above wins.
+		foreach ( self::NATIVE_LOCATION_KEY_TIERS as $key => $tier ) {
+			if ( isset( $meta[ $key ] ) || empty( $visible[ $tier ] ) ) {
+				continue;
+			}
+
+			$value = get_metadata_raw( 'post', $post_id, $key, true );
+			if ( null === $value || '' === (string) $value ) {
+				continue;
+			}
+			$meta[ $key ] = (string) $value;
+		}
+
+		return [
+			'visible' => $visible,
+			'meta'    => $meta,
+		];
+	}
+
+	/**
 	 * Whether precise location detail may be shown for a post to the current requester.
 	 *
 	 * Kept for existing call sites (functions-checkin.php,

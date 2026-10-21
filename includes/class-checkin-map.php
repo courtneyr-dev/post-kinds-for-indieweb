@@ -332,11 +332,14 @@ class Checkin_Map {
 		<div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 			<?php if ( $has_map ) : ?>
 				<?php $tiles = self::tile_layer(); ?>
-				<div
+				<?php
+				// A figure named by its figcaption: Accessibility Checker Pro passes
+				// Leaflet's alt="" tiles only inside a <figure> with a <figcaption>,
+				// and a figure with a figcaption takes no role.
+				?>
+				<figure
 					class="pkiw-checkin-archive__map"
 					id="<?php echo esc_attr( $map_id ); ?>"
-					role="region"
-					aria-label="<?php esc_attr_e( 'Map of the check-ins on this page', 'post-kinds-for-indieweb-in-block-themes' ); ?>"
 					aria-describedby="<?php echo esc_attr( $sum_id ); ?>"
 					data-pins="<?php echo esc_attr( (string) wp_json_encode( $pins ) ); ?>"
 					data-tile-url="<?php echo esc_attr( $tiles['url'] ); ?>"
@@ -347,7 +350,7 @@ class Checkin_Map {
 						data-pkiw-consent="required"
 					<?php endif; ?>
 					hidden
-				></div>
+				><figcaption class="pkiw-checkin-archive__map-caption screen-reader-text"><?php esc_html_e( 'Map of the check-ins on this page', 'post-kinds-for-indieweb-in-block-themes' ); ?></figcaption></figure>
 			<?php endif; ?>
 
 			<div class="pkiw-checkin-archive__list">
