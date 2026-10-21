@@ -12,13 +12,13 @@
 /**
  * Kinds whose posts get the missing-alt notice.
  *
- * Another kind joins by adding its slug here. Craft joins for its steps:
- * each step holds a photo, and the walk below reaches it through the
- * steps and step blocks (issue 249).
+ * Another kind joins by adding its slug here. Craft joins for its steps,
+ * where each step can hold a photo (issue 249). Comics joins because a drawn
+ * strip stores its panels as gallery images (issue 266).
  *
  * @type {Array<string>}
  */
-export const MISSING_ALT_KINDS = [ 'photo', 'craft' ];
+export const MISSING_ALT_KINDS = [ 'photo', 'craft', 'comics' ];
 
 /**
  * Whether a value holds no alt text.

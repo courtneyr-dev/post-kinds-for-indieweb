@@ -83,6 +83,7 @@ const KINDS = [
 	{ id: 4, slug: 'note' },
 	{ id: 9, slug: 'photo' },
 	{ id: 11, slug: 'craft' },
+	{ id: 15, slug: 'comics' },
 ];
 
 const createNotice = jest.fn();
@@ -212,8 +213,8 @@ describe( 'findImagesMissingAlt', () => {
 		expect( findImagesMissingAlt( null ) ).toEqual( [] );
 	} );
 
-	it( 'names photo and craft as the kinds it checks, in a list other kinds can join', () => {
-		expect( MISSING_ALT_KINDS ).toEqual( [ 'photo', 'craft' ] );
+	it( 'names photo, craft, and comics as the kinds it checks', () => {
+		expect( MISSING_ALT_KINDS ).toEqual( [ 'photo', 'craft', 'comics' ] );
 	} );
 
 	it( 'finds the image of a step inside a steps list', () => {
@@ -294,6 +295,37 @@ describe( 'Missing alt notice', () => {
 			expect.objectContaining( { id: NOTICE_ID, isDismissible: true } )
 		);
 		expectNoBlockWrites();
+	} );
+
+	it( 'lists a gallery image with no alt for a comics post', () => {
+		mockKindIds = [ 15 ];
+		mockBlocks = [ gallery( 'comic', [ image( 'panel-one', '' ) ] ) ];
+
+		render( <MissingAltNotice /> );
+
+		expect( screen.getByRole( 'region' ) ).toBeTruthy();
+		expect( screen.getByRole( 'button' ) ).toBeTruthy();
+		expect( createNotice ).toHaveBeenCalledWith(
+			'warning',
+			expect.stringContaining( '1 image' ),
+			expect.objectContaining( { id: NOTICE_ID, isDismissible: true } )
+		);
+		expectNoBlockWrites();
+	} );
+
+	it( 'shows nothing when every comics gallery image has alt text', () => {
+		mockKindIds = [ 15 ];
+		mockBlocks = [
+			gallery( 'comic', [
+				image( 'panel-one', 'A character opens a door' ),
+				image( 'panel-two', 'The room is empty' ),
+			] ),
+		];
+
+		const { container } = render( <MissingAltNotice /> );
+
+		expect( container.innerHTML ).toBe( '' );
+		expect( createNotice ).not.toHaveBeenCalled();
 	} );
 
 	it( 'lists nothing for a note, even one holding the same steps', () => {

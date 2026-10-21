@@ -658,6 +658,9 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Listen_Archive' ) ) {
 			( new Listen_Archive() )->register();
 		}
+		if ( class_exists( __NAMESPACE__ . '\\Comic_Strip' ) ) {
+			( new Comic_Strip() )->register();
+		}
 		if ( class_exists( __NAMESPACE__ . '\\Wish_Archive' ) ) {
 			( new Wish_Archive() )->register();
 		}
@@ -1444,6 +1447,11 @@ final class Plugin {
 			'taxonomy-kind-question'       => [
 				'title'       => __( 'Question Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Question archive in sections: answered, then waiting for an answer.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-comics-drawn'   => [
+				'title'       => __( 'Comics Drawn Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Drawn comics in sections by series, a view of the comics archive.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 		];

@@ -196,6 +196,7 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 
 	public function tear_down(): void {
 		Kind_Archive_Layouts::unregister_filtered_view( 'listen', 'pkiw_listen_type' );
+		Kind_Archive_Layouts::unregister_filtered_view( 'comics', 'pkiw_comic_view' );
 		Kind_Archive_Layouts::set_rest_view( '' );
 		$GLOBALS['wp_rest_server'] = null;
 		foreach ( [ self::MARKER, self::LINE, self::OL_LINE, self::PAIRS, self::MONTHS, self::IDS, self::BODY, self::WEEKS, self::LEAD ] as $name ) {

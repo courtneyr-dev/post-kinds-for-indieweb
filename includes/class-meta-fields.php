@@ -454,8 +454,8 @@ class Meta_Fields {
 				'default'     => '',
 			],
 
-			// Comic Fields: a comic someone read (comic-card). A comics post with
-			// no card, a strip its author drew, stores none of these.
+			// Comic Fields: a comic someone read (comic-card). A drawn strip may
+			// store series and number, but never title or status.
 			'comic_title'             => [
 				'type'        => 'string',
 				'description' => __( 'Title of the comic.', 'post-kinds-for-indieweb-in-block-themes' ),
@@ -470,7 +470,7 @@ class Meta_Fields {
 			],
 			'comic_series'            => [
 				'type'        => 'string',
-				'description' => __( 'Series the comic belongs to.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Series the comic belongs to, including a drawn strip.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
@@ -482,7 +482,7 @@ class Meta_Fields {
 			],
 			'comic_issue'             => [
 				'type'        => 'string',
-				'description' => __( 'Issue number within the series or volume.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Issue or strip number within the series or volume.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
