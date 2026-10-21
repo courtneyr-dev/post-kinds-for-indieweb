@@ -84,10 +84,10 @@ final class AbilitiesRegistrationTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * The declared set is the full 13 — 7 core plus 6 lookups.
+	 * The declared set is 13 core+lookup abilities plus 8 operations and reads.
 	 */
 	public function test_declared_ability_count(): void {
-		$this->assertCount( 13, Abilities_Manager::get_ability_names() );
+		$this->assertCount( 21, Abilities_Manager::get_ability_names() );
 	}
 
 	/**
