@@ -116,6 +116,27 @@ final class Collection_Items {
 	}
 
 	/**
+	 * An attachment ID that may print: an image whose parent post is none or a public reference.
+	 *
+	 * An attachment inherits its parent's visibility, so a picture uploaded to a draft,
+	 * private, password-protected or trashed post never crosses into a collection surface.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return int The ID, or 0 when it is not a public image.
+	 */
+	private static function public_image_id( int $attachment_id ): int {
+		if ( $attachment_id < 1 || ! wp_attachment_is_image( $attachment_id ) ) {
+			return 0;
+		}
+
+		$parent = (int) wp_get_post_parent_id( $attachment_id );
+
+		return 0 === $parent || self::is_public_reference( $parent ) ? $attachment_id : 0;
+	}
+
+	/**
 	 * Resolve one stored item into public display fields.
 	 *
 	 * @since 1.9.0
@@ -154,18 +175,13 @@ final class Collection_Items {
 			$url                         = (string) get_permalink( $post );
 			[ $date_iso, $date_display ] = \PKIW\card_calendar_date( (string) get_the_date( 'Y-m-d', $post ) );
 			$thumbnail                   = (int) get_post_thumbnail_id( $post );
-			if ( $thumbnail > 0 && wp_attachment_is_image( $thumbnail ) ) {
-				$media_id = $thumbnail;
-			}
+			$media_id                    = self::public_image_id( $thumbnail );
 		} else {
 			$title                       = self::plain( $attributes['title'] ?? '' );
 			$title_is_name               = '' !== $title;
 			[ $date_iso, $date_display ] = \PKIW\card_calendar_date( self::string_value( $attributes['date'] ?? '' ) );
 			$url                         = \PKIW\web_url( self::string_value( $attributes['url'] ?? '' ) );
-			$candidate_media             = max( 0, (int) ( $attributes['mediaId'] ?? 0 ) );
-			if ( $candidate_media > 0 && wp_attachment_is_image( $candidate_media ) ) {
-				$media_id = $candidate_media;
-			}
+			$media_id                    = self::public_image_id( (int) ( $attributes['mediaId'] ?? 0 ) );
 
 			if ( '' === $title && '' === $date_iso && '' === $source && '' === $url && 0 === $media_id ) {
 				return null;
