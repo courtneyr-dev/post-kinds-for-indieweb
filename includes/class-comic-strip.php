@@ -83,6 +83,16 @@ final class Comic_Strip {
 	private static ?array $series_cache = null;
 
 	/**
+	 * Request-local series index in the order of the archive's section headings.
+	 *
+	 * Keyed by the lowercase group key. `label` is the spelling the heading
+	 * prints (the newest strip's); `values` lists every stored spelling.
+	 *
+	 * @var array<string, array{label:string, values:string[]}>|null
+	 */
+	private static ?array $series_index = null;
+
+	/**
 	 * Register drawn comic contracts.
 	 *
 	 * Every hooked callback is static, so a second call adds nothing.
@@ -98,6 +108,7 @@ final class Comic_Strip {
 
 		add_filter( 'query_vars', [ self::class, 'add_query_vars' ] );
 		add_action( 'pre_get_posts', [ self::class, 'filter_main_query' ] );
+		add_filter( 'posts_where', [ self::class, 'drawn_where' ], 10, 2 );
 		add_filter( 'pkiw_filtered_view_meta_query', [ self::class, 'filtered_view_meta_query' ], 10, 3 );
 		add_filter( 'pkiw_archive_group_source', [ self::class, 'group_source' ], 10, 3 );
 		add_action( 'save_post', [ self::class, 'reset_series_cache' ] );
@@ -296,27 +307,51 @@ final class Comic_Strip {
 	/**
 	 * Public series values used by the archive filter and navigation.
 	 *
+	 * One entry per group the drawn view prints a heading for, in the order
+	 * of those headings: the grouped archive engine sorts the posts, and this
+	 * reads the groups off that same query. Spellings that differ only by case
+	 * are one group, labeled as its heading is.
+	 *
 	 * @since 1.9.0
 	 *
 	 * @return string[]
 	 */
 	public static function series_values(): array {
-		if ( null !== self::$series_cache ) {
-			return self::$series_cache;
+		if ( null === self::$series_cache ) {
+			self::$series_cache = array_values( array_column( self::series_index(), 'label' ) );
 		}
 
-		$query = new \WP_Query(
+		return self::$series_cache;
+	}
+
+	/**
+	 * Public series, grouped and ordered as the drawn view's headings are.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @return array<string, array{label:string, values:string[]}>
+	 */
+	private static function series_index(): array {
+		if ( null !== self::$series_index ) {
+			return self::$series_index;
+		}
+
+		$taxonomy = get_taxonomy( Taxonomy::TAXONOMY );
+		$query    = new \WP_Query(
 			[
-				'post_type'              => 'any',
+				'post_type'              => $taxonomy ? $taxonomy->object_type : 'post',
 				'post_status'            => 'publish',
-				'has_password'           => false,
 				'posts_per_page'         => -1,
-				'orderby'                => 'ID',
-				'order'                  => 'ASC',
 				'no_found_rows'          => true,
 				'ignore_sticky_posts'    => true,
+				'suppress_filters'       => false,
 				'update_post_meta_cache' => true,
 				'update_post_term_cache' => true,
+				// The view_where() filter keeps out every post with a password, a password of spaces included.
+				'pkiw_view_public'       => 1,
+				'pkiw_group_source'      => self::SOURCE,
+				'pkiw_group_order'       => 'ASC',
+				'pkiw_group_empty'       => 'last',
 				'tax_query'              => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- The kind taxonomy defines archive membership.
 					[
 						'taxonomy' => Taxonomy::TAXONOMY,
@@ -336,31 +371,31 @@ final class Comic_Strip {
 			]
 		);
 
-		$values = [];
 		// Full post objects prime the post, meta and term caches, so the checks below add no queries per strip.
+		$index = [];
 		foreach ( $query->posts as $post ) {
-			if ( ! $post instanceof \WP_Post || ! self::is_drawn( $post ) ) {
+			if ( ! $post instanceof \WP_Post || '' !== (string) $post->post_password || ! self::is_drawn( $post ) ) {
 				continue;
 			}
 			$value = trim( (string) get_post_meta( $post->ID, self::SERIES_META, true ) );
-			if ( '' !== $value ) {
-				$values[] = $value;
-			}
-		}
-
-		usort( $values, 'strnatcasecmp' );
-		$seen               = [];
-		self::$series_cache = [];
-		foreach ( $values as $value ) {
-			$key = mb_strtolower( $value );
-			if ( isset( $seen[ $key ] ) ) {
+			if ( '' === $value ) {
 				continue;
 			}
-			$seen[ $key ]         = true;
-			self::$series_cache[] = $value;
+			$key = mb_strtolower( $value );
+			if ( ! isset( $index[ $key ] ) ) {
+				$index[ $key ] = [
+					'label'  => $value,
+					'values' => [],
+				];
+			}
+			if ( ! in_array( $value, $index[ $key ]['values'], true ) ) {
+				$index[ $key ]['values'][] = $value;
+			}
 		}
 
-		return self::$series_cache;
+		self::$series_index = $index;
+
+		return $index;
 	}
 
 	/**
@@ -372,6 +407,7 @@ final class Comic_Strip {
 	 */
 	public static function reset_series_cache(): void {
 		self::$series_cache = null;
+		self::$series_index = null;
 	}
 
 	/**
@@ -430,16 +466,16 @@ final class Comic_Strip {
 			return;
 		}
 
-		$clause = self::drawn_meta_clause();
-		$series = self::validated_series( (string) $query->get( self::SERIES_VAR ) );
-		if ( '' !== $series ) {
+		$clause   = self::drawn_meta_clause();
+		$variants = self::series_variants( (string) $query->get( self::SERIES_VAR ) );
+		if ( [] !== $variants ) {
 			$clause = [
 				'relation' => 'AND',
 				$clause,
 				[
 					'key'     => self::SERIES_META,
-					'value'   => $series,
-					'compare' => '=',
+					'value'   => 1 === count( $variants ) ? $variants[0] : $variants,
+					'compare' => 1 === count( $variants ) ? '=' : 'IN',
 				],
 			];
 		}
@@ -726,16 +762,86 @@ final class Comic_Strip {
 	}
 
 	/**
-	 * Return a request value only when it exactly matches a public series.
+	 * Return a request value only when it names a public series.
+	 *
+	 * Any case variant of a series names the same merged group the headings
+	 * print, so the match ignores case and edge whitespace.
 	 *
 	 * @since 1.9.0
 	 *
 	 * @param string $value Raw query value.
-	 * @return string Stored series spelling, or empty when invalid.
+	 * @return string The group's label, or empty when invalid.
 	 */
 	private static function validated_series( string $value ): string {
 		$value = trim( $value );
+		if ( '' === $value ) {
+			return '';
+		}
 
-		return in_array( $value, self::series_values(), true ) ? $value : '';
+		return self::series_index()[ mb_strtolower( $value ) ]['label'] ?? '';
+	}
+
+	/**
+	 * Every stored spelling of the public series a request value names.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string $value Raw query value.
+	 * @return string[] Spellings, or [] when the value names no public series.
+	 */
+	private static function series_variants( string $value ): array {
+		return self::series_index()[ mb_strtolower( trim( $value ) ) ]['values'] ?? [];
+	}
+
+	/**
+	 * Keep comic read cards out of the drawn view.
+	 *
+	 * The drawn clause admits a post with no status row, which includes a
+	 * card post whose meta was never written. is_drawn() rejects any post
+	 * that holds the card, so every drawn query (main, feed, REST and editor
+	 * preview, the series index) rejects them in SQL as well. The query is
+	 * recognized by carrying the drawn clause.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param mixed $where Where clause.
+	 * @param mixed $query Query.
+	 * @return mixed
+	 */
+	public static function drawn_where( $where, $query ) {
+		if ( ! is_string( $where ) || ! $query instanceof \WP_Query || ! self::has_drawn_clause( $query->get( 'meta_query' ) ) ) {
+			return $where;
+		}
+
+		global $wpdb;
+
+		// Same test as has_block(): the opening comment of the block, name then a space.
+		$like = '%' . $wpdb->esc_like( '<!-- wp:' . self::CARD_BLOCK . ' ' ) . '%';
+
+		return $where . $wpdb->prepare( " AND {$wpdb->posts}.post_content NOT LIKE %s", $like );
+	}
+
+	/**
+	 * Whether a meta query carries the drawn clause, at any depth.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param mixed $meta Meta query.
+	 * @return bool
+	 */
+	private static function has_drawn_clause( $meta ): bool {
+		if ( ! is_array( $meta ) ) {
+			return false;
+		}
+		if ( self::drawn_meta_clause() === $meta ) {
+			return true;
+		}
+		foreach ( $meta as $part ) {
+			if ( is_array( $part ) && self::has_drawn_clause( $part ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

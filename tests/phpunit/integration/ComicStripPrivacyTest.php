@@ -192,4 +192,88 @@ final class ComicStripPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'post-password-form', $html );
 		$this->assertStringNotContainsString( 'Secret transcript sentinel', $html );
 	}
+
+	public function test_a_whitespace_only_password_keeps_a_strip_out_of_the_view_nav_index_and_feed(): void {
+		$this->strip( 'Public Series', 'Public caption' );
+		$id = $this->strip( 'Unannounced Project', 'Whitespace caption sentinel', [ 'post_password' => '   ' ] );
+		$this->assertSame( '   ', get_post( $id )->post_password );
+		$this->assertTrue( post_password_required( $id ) );
+
+		$this->assertSame( [ 'Public Series' ], Comic_Strip::series_values() );
+
+		$this->go_to( $this->drawn_url() );
+		$this->assertNotContains( $id, array_map( 'intval', wp_list_pluck( $GLOBALS['wp_query']->posts, 'ID' ) ) );
+		$nav = render_block(
+			[
+				'blockName'    => Comic_Strip::SERIES_BLOCK,
+				'attrs'        => [],
+				'innerBlocks'  => [],
+				'innerHTML'    => '',
+				'innerContent' => [],
+			]
+		);
+		$this->assertStringContainsString( 'Public Series', $nav );
+		$this->assertStringNotContainsString( 'Unannounced Project', $nav );
+
+		$term = get_term_by( 'slug', Comic_Strip::KIND, Taxonomy::TAXONOMY );
+		$feed = $this->render_feed( add_query_arg( Comic_Strip::VIEW_VAR, Comic_Strip::VIEW_DRAWN, get_term_feed_link( $term->term_id, Taxonomy::TAXONOMY ) ) );
+		$this->assertStringNotContainsString( 'Whitespace caption sentinel', $feed );
+	}
+
+	public function test_a_card_post_with_no_stored_status_is_absent_from_view_feed_nav_index_and_rest_clause(): void {
+		$this->strip( 'Public Series', 'Public caption' );
+		$card = $this->strip( 'Card Series', 'Card caption' );
+		wp_update_post(
+			[
+				'ID'           => $card,
+				'post_content' => '<!-- wp:post-kinds-indieweb/comic-card {"title":"Card sentinel"} /-->',
+			]
+		);
+		delete_post_meta( $card, Comic_Strip::STATUS_META );
+		update_post_meta( $card, Comic_Strip::SERIES_META, 'Card Series' );
+		Comic_Strip::reset_series_cache();
+		$this->assertFalse( Comic_Strip::is_drawn( get_post( $card ) ) );
+
+		$this->assertSame( [ 'Public Series' ], Comic_Strip::series_values() );
+
+		$this->go_to( $this->drawn_url() );
+		$this->assertNotContains( $card, array_map( 'intval', wp_list_pluck( $GLOBALS['wp_query']->posts, 'ID' ) ) );
+		$this->assertSame( 1, (int) $GLOBALS['wp_query']->found_posts );
+		$nav = render_block(
+			[
+				'blockName'    => Comic_Strip::SERIES_BLOCK,
+				'attrs'        => [],
+				'innerBlocks'  => [],
+				'innerHTML'    => '',
+				'innerContent' => [],
+			]
+		);
+		$this->assertStringNotContainsString( 'Card Series', $nav );
+
+		$term = get_term_by( 'slug', Comic_Strip::KIND, Taxonomy::TAXONOMY );
+		$feed = $this->render_feed( add_query_arg( Comic_Strip::VIEW_VAR, Comic_Strip::VIEW_DRAWN, get_term_feed_link( $term->term_id, Taxonomy::TAXONOMY ) ) );
+		$this->assertStringNotContainsString( 'Card sentinel', $feed );
+		$this->assertStringContainsString( 'Public caption', $feed );
+
+		// The REST and editor preview route builds its own query from the view's clause.
+		$ids = get_posts(
+			[
+				'post_type'        => 'post',
+				'post_status'      => 'publish',
+				'fields'           => 'ids',
+				'posts_per_page'   => -1,
+				'suppress_filters' => false,
+				'tax_query'        => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- Test fixture query.
+					[
+						'taxonomy' => Taxonomy::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => Comic_Strip::KIND,
+					],
+				],
+				'meta_query'       => [ \PKIW\Kind_Archive_Layouts::filtered_view_meta_query( Comic_Strip::KIND, Comic_Strip::VIEW_DRAWN ) ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Test fixture query.
+			]
+		);
+		$this->assertNotContains( $card, array_map( 'intval', $ids ) );
+		$this->assertCount( 1, $ids );
+	}
 }

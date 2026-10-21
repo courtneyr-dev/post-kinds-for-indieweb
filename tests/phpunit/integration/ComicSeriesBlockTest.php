@@ -124,11 +124,11 @@ final class ComicSeriesBlockTest extends WP_UnitTestCase {
 		return $links;
 	}
 
-	public function test_nav_lists_public_series_in_natural_order_with_custom_labels(): void {
+	public function test_nav_lists_public_series_in_heading_order_with_custom_labels(): void {
 		$this->strip( 'Series 10' );
 		$this->strip( 'Series 2' );
-		$this->strip( 'Field Notes' );
-		$this->strip( 'field notes' );
+		$this->strip( 'Field Notes', [ 'post_date' => '2026-10-01 10:00:00' ] );
+		$this->strip( 'field notes', [ 'post_date' => '2026-10-02 10:00:00' ] );
 		$this->strip( 'Secret Series', [ 'post_password' => 'secret' ] );
 		$this->strip( 'Private Series', [ 'post_status' => 'private' ] );
 		$this->strip( 'Draft Series', [ 'post_status' => 'draft' ] );
@@ -137,10 +137,10 @@ final class ComicSeriesBlockTest extends WP_UnitTestCase {
 		$links = $this->links( $html );
 
 		$this->assertStringContainsString( 'aria-label="Browse series"', $html );
-		$this->assertSame( [ 'Every strip', 'Field Notes', 'Series 2', 'Series 10' ], wp_list_pluck( $links, 'label' ) );
+		$this->assertSame( [ 'Every strip', 'field notes', 'Series 10', 'Series 2' ], wp_list_pluck( $links, 'label' ) );
 		$this->assertSame( [ 'Every strip' ], wp_list_pluck( wp_list_filter( $links, [ 'current' => 'page' ] ), 'label' ) );
 		$this->assertStringNotContainsString( Comic_Strip::SERIES_VAR, $links[0]['href'] );
-		foreach ( [ 'Secret Series', 'Private Series', 'Draft Series', 'field notes' ] as $hidden ) {
+		foreach ( [ 'Secret Series', 'Private Series', 'Draft Series', 'Field Notes' ] as $hidden ) {
 			$this->assertNotContains( $hidden, wp_list_pluck( $links, 'label' ) );
 		}
 	}
@@ -236,5 +236,24 @@ final class ComicSeriesBlockTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( '>Tom &amp; Jerry &quot;quoted&quot;</a>', $html );
 		$this->assertStringNotContainsString( '>Tom & Jerry "quoted"</a>', $html );
+	}
+
+	public function test_any_case_variant_of_the_series_var_selects_the_merged_series(): void {
+		$old   = $this->strip( 'Field Notes', [ 'post_date' => '2026-10-01 10:00:00' ] );
+		$new   = $this->strip( 'field notes', [ 'post_date' => '2026-10-02 10:00:00' ] );
+		$other = $this->strip( 'Small Web Stories', [ 'post_date' => '2026-10-03 10:00:00' ] );
+
+		foreach ( [ 'field notes', 'FIELD NOTES', 'Field Notes', '  Field notes ' ] as $requested ) {
+			$this->go_to( $this->drawn_url( $requested ) );
+			$ids = array_map( 'intval', wp_list_pluck( $GLOBALS['wp_query']->posts, 'ID' ) );
+			$this->assertEqualsCanonicalizing( [ $old, $new ], $ids, $requested );
+			$this->assertNotContains( $other, $ids, $requested );
+
+			$links = $this->links( $this->render() );
+			$this->assertSame( [ 'field notes' ], array_values( wp_list_pluck( wp_list_filter( $links, [ 'current' => 'page' ] ), 'label' ) ), $requested );
+		}
+
+		$this->go_to( $this->drawn_url( 'Not a series' ) );
+		$this->assertCount( 3, $GLOBALS['wp_query']->posts );
 	}
 }

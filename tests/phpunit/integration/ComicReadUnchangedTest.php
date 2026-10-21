@@ -81,16 +81,15 @@ final class ComicReadUnchangedTest extends WP_UnitTestCase {
 		return (int) $post_id;
 	}
 
-	private function normalize( string $markup ): string {
-		return trim( (string) preg_replace( [ '/>\s+</', '/\s+/' ], [ '><', ' ' ], $markup ) );
-	}
-
 	private function golden( string $name ): string {
 		return dirname( __DIR__ ) . '/fixtures/' . $name;
 	}
 
+	/**
+	 * Compare the exact bytes: whitespace, attribute order and every number count.
+	 */
 	private function assert_golden( string $name, string $actual ): void {
-		$this->assertSame( $this->normalize( (string) file_get_contents( $this->golden( $name ) ) ), $this->normalize( $actual ), $name );
+		$this->assertSame( (string) file_get_contents( $this->golden( $name ) ), $actual . "\n", $name );
 	}
 
 	public function test_the_comic_card_render_is_unchanged(): void {
@@ -139,7 +138,8 @@ final class ComicReadUnchangedTest extends WP_UnitTestCase {
 		$this->go_to( (string) get_term_link( $term ) );
 		global $wp_query;
 
-		$sql = (string) preg_replace( [ '/\b\d+\b/', '/' . preg_quote( $GLOBALS['wpdb']->prefix, '/' ) . '/' ], [ 'N', 'wp_' ], (string) $wp_query->request );
+		// Only what differs between runs is replaced: the table prefix and the kind term's taxonomy ID.
+		$sql = (string) preg_replace( [ '/\bIN \(\d+\)/', '/\b' . preg_quote( $GLOBALS['wpdb']->prefix, '/' ) . '(?=\w)/' ], [ 'IN (TERM_TAXONOMY_ID)', 'wp_' ], (string) $wp_query->request );
 		$this->assertEmpty( $wp_query->get( 'meta_query' ) );
 		$this->assertSame( '', (string) $wp_query->get( 'pkiw_group_source' ) );
 		$this->assert_golden( 'comic-read-archive-query.golden.sql', $sql );

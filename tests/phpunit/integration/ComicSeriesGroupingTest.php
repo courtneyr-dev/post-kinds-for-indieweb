@@ -198,4 +198,36 @@ final class ComicSeriesGroupingTest extends WP_UnitTestCase {
 		$this->assertSame( 'other', apply_filters( 'pkiw_archive_group_source', 'other', 'listen', $drawn ) );
 		$this->assertNull( apply_filters( 'pkiw_archive_group_source', null, Comic_Strip::KIND, null ) );
 	}
+
+	public function test_series_tabs_follow_the_order_of_the_section_headings(): void {
+		foreach ( [ 'Series 2', 'Series 10', 'Zeta', 'alpha', 'Beta' ] as $at => $series ) {
+			$this->strip( 'Strip ' . $series, $series, sprintf( '2026-10-%02d 10:00:00', $at + 1 ) );
+		}
+		$headings = array_column( $this->sections( $this->serve() ), 0 );
+
+		$this->assertSame( [ 'alpha', 'Beta', 'Series 10', 'Series 2', 'Zeta' ], $headings );
+
+		$this->go_to( $this->drawn_url() );
+		$nav = render_block(
+			[
+				'blockName'    => Comic_Strip::SERIES_BLOCK,
+				'attrs'        => [],
+				'innerBlocks'  => [],
+				'innerHTML'    => '',
+				'innerContent' => [],
+			]
+		);
+		$dom = new DOMDocument();
+		libxml_use_internal_errors( true );
+		$dom->loadHTML( '<?xml encoding="utf-8"?><div>' . $nav . '</div>' );
+		libxml_clear_errors();
+		$tabs = [];
+		foreach ( ( new DOMXPath( $dom ) )->query( '//nav/ul/li/a' ) as $link ) {
+			$tabs[] = trim( $link->textContent );
+		}
+		array_shift( $tabs );
+
+		$this->assertSame( $headings, $tabs );
+		$this->assertSame( $headings, Comic_Strip::series_values() );
+	}
 }
