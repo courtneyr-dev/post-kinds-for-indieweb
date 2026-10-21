@@ -673,6 +673,9 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Issue_Archive' ) ) {
 			( new Issue_Archive() )->register();
 		}
+		if ( class_exists( __NAMESPACE__ . '\\Quote_Archive' ) ) {
+			( new Quote_Archive() )->register();
+		}
 	}
 
 	/**
@@ -1452,6 +1455,11 @@ final class Plugin {
 			'taxonomy-kind-issue'          => [
 				'title'       => __( 'Issue Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Issue archive in sections by repository, with waiting issues before picked-up ones.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-quote'          => [
+				'title'       => __( 'Quote Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Quote archive as a commonplace book: quotes by author, with a source-work index.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 		];

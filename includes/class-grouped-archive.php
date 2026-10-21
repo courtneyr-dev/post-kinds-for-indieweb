@@ -80,7 +80,7 @@ final class Grouped_Archive {
 	/**
 	 * Registered entry blocks by block name.
 	 *
-	 * @var array<string, array{shape:string, source:?string, expose_key:bool, heading_ids:bool, list:string, classes:array<string, string>, section_body:?callable}>
+	 * @var array<string, array{shape:string, source:?string, expose_key:bool, heading_ids:bool, list:string, classes:array<string, string>, section_body:?callable, heading_link:?callable}>
 	 */
 	private static array $entries = [];
 
@@ -238,6 +238,9 @@ final class Grouped_Archive {
 	 *   the engine's own `li` strings, keyed by post ID in query order, on
 	 *   the front end and in a block-renderer request alike. The heading is
 	 *   still the engine's. Default none: the engine prints its list.
+	 * - heading_link: `callable( Archive_Group $group ): string`. A non-empty
+	 *   return links the section heading; the empty group can return an empty
+	 *   string to keep its heading plain.
 	 *
 	 * @param string               $block_name Block name, `namespace/name`.
 	 * @param array<string, mixed> $args       Args.
@@ -264,6 +267,10 @@ final class Grouped_Archive {
 		if ( null !== $body && ! is_callable( $body ) ) {
 			throw new \InvalidArgumentException( sprintf( 'Entry block "%s" section_body must be callable.', esc_html( $block_name ) ) );
 		}
+		$link = $args['heading_link'] ?? null;
+		if ( null !== $link && ! is_callable( $link ) ) {
+			throw new \InvalidArgumentException( sprintf( 'Entry block "%s" heading_link must be callable.', esc_html( $block_name ) ) );
+		}
 		$classes = self::DEFAULT_CLASSES;
 		foreach ( (array) ( $args['classes'] ?? [] ) as $part => $class ) {
 			if ( isset( $classes[ $part ] ) && is_string( $class ) ) {
@@ -279,6 +286,7 @@ final class Grouped_Archive {
 			'list'         => $list,
 			'classes'      => $classes,
 			'section_body' => $body,
+			'heading_link' => $link,
 		];
 	}
 
@@ -577,7 +585,9 @@ final class Grouped_Archive {
 					: sprintf( '<div class="%s" hidden></div>', esc_attr( $entry['classes']['placeholder'] ) );
 			}
 
-			return self::heading( $entry['classes']['heading'], $settings['level'], self::label( $source, $group, $settings ), $entry['heading_ids'] ? self::heading_id( $group ) : '' );
+			$url = null !== $entry['heading_link'] ? (string) call_user_func( $entry['heading_link'], $group ) : '';
+
+			return self::heading( $entry['classes']['heading'], $settings['level'], self::label( $source, $group, $settings ), $entry['heading_ids'] ? self::heading_id( $group ) : '', $url );
 		}
 
 		$items = [];
@@ -1124,6 +1134,8 @@ final class Grouped_Archive {
 		$classes = null !== $entry ? $entry['classes'] : self::DEFAULT_CLASSES;
 		$list    = null !== $entry && 'ol' === $entry['list'] ? 'ol' : 'ul';
 		$body    = ( null !== $entry ? $entry['section_body'] : null ) ?? self::$source_bodies[ $source->id() ] ?? null;
+		$link    = null !== $entry ? $entry['heading_link'] : null;
+		$url     = null !== $link ? (string) call_user_func( $link, $group ) : '';
 
 		// The entry's own body replaces the list; the heading stays the engine's.
 		$inner = null !== $body
@@ -1135,7 +1147,7 @@ final class Grouped_Archive {
 			esc_attr( $classes['section'] ),
 			max( 1, $count ),
 			null !== $entry && $entry['expose_key'] ? ' data-pkiw-group="' . esc_attr( $group->slug() ) . '"' : '',
-			self::heading( $classes['heading'], (int) ( $settings['level'] ?? 2 ), self::label( $source, $group, $settings ), null !== $entry && $entry['heading_ids'] ? self::heading_id( $group ) : '' ),
+			self::heading( $classes['heading'], (int) ( $settings['level'] ?? 2 ), self::label( $source, $group, $settings ), null !== $entry && $entry['heading_ids'] ? self::heading_id( $group ) : '', $url ),
 			$inner
 		);
 	}
@@ -1147,17 +1159,21 @@ final class Grouped_Archive {
 	 * @param int    $level   Heading level.
 	 * @param string $label   Heading text.
 	 * @param string $id      Heading id, or '' for none.
+	 * @param string $url     Heading URL, or '' for plain text.
 	 * @return string
 	 */
-	private static function heading( string $classes, int $level, string $label, string $id = '' ): string {
+	private static function heading( string $classes, int $level, string $label, string $id = '', string $url = '' ): string {
 		$level = max( 2, min( 4, $level ) );
+		$inner = '' !== $url
+			? '<a href="' . esc_url( $url ) . '">' . esc_html( $label ) . '<span aria-hidden="true"> →</span></a>'
+			: esc_html( $label );
 
 		return sprintf(
 			'<h%1$d%2$s class="%3$s">%4$s</h%1$d>',
 			$level,
 			'' !== $id ? ' id="' . esc_attr( $id ) . '"' : '',
 			esc_attr( $classes ),
-			esc_html( $label )
+			$inner
 		);
 	}
 

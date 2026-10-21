@@ -83,6 +83,8 @@ export default function KindFields( { kind } ) {
 			return <AcquisitionFields />;
 		case 'recipe':
 			return <RecipeFields />;
+		case 'quote':
+			return <CitationFields showSummary={ false } />;
 		case 'reply':
 		case 'like':
 		case 'repost':
@@ -99,9 +101,11 @@ export default function KindFields( { kind } ) {
  *
  * Fields for reply, like, repost, and bookmark kinds.
  *
+ * @param {Object}  props             Component props.
+ * @param {boolean} props.showSummary Whether to show the summary field.
  * @return {JSX.Element} Citation fields.
  */
-function CitationFields() {
+function CitationFields( { showSummary = true } ) {
 	const { citeName, citeUrl, citeAuthor, citeSummary } = useSelect(
 		( select ) => {
 			const getKindMeta = select( STORE_NAME ).getKindMeta;
@@ -152,18 +156,20 @@ function CitationFields() {
 				__nextHasNoMarginBottom
 				__next40pxDefaultSize
 			/>
-			<TextareaControl
-				label={ __(
-					'Summary',
-					'post-kinds-for-indieweb-in-block-themes'
-				) }
-				value={ citeSummary }
-				onChange={ ( value ) =>
-					updateKindMeta( 'cite_summary', value )
-				}
-				rows={ 3 }
-				__nextHasNoMarginBottom
-			/>
+			{ showSummary && (
+				<TextareaControl
+					label={ __(
+						'Summary',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
+					value={ citeSummary }
+					onChange={ ( value ) =>
+						updateKindMeta( 'cite_summary', value )
+					}
+					rows={ 3 }
+					__nextHasNoMarginBottom
+				/>
+			) }
 		</Flex>
 	);
 }
