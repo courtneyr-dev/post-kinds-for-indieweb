@@ -704,6 +704,11 @@ class Microformats {
 			return $content;
 		}
 
+		// wp_trim_excerpt() runs the_content on singular requests; the hidden spans would leak into the excerpt text.
+		if ( doing_filter( 'get_the_excerpt' ) ) {
+			return $content;
+		}
+
 		$post_id = get_the_ID();
 
 		if ( ! $post_id || ! is_singular() || get_queried_object_id() !== $post_id ) {
@@ -841,6 +846,11 @@ class Microformats {
 		// Hidden markers belong to the HTML page, not to ATmosphere's
 		// ?atproto record projection — see wrap_singular_content().
 		if ( null !== get_query_var( 'atproto', null ) ) {
+			return $content;
+		}
+
+		// Hidden data carries text (the review item, the check-in h-card) that must stay out of automatic excerpts.
+		if ( doing_filter( 'get_the_excerpt' ) ) {
 			return $content;
 		}
 

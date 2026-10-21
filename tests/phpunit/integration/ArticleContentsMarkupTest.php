@@ -72,7 +72,8 @@ final class ArticleContentsMarkupTest extends WP_UnitTestCase {
 		$html    = $this->contents_item_html( $post_id );
 
 		$this->assertStringContainsString( 'Article, August 19, 2026', $html );
-		$this->assertNoEntryNameOutsideTheHiddenAuthor( $html );
+		$this->assertNoEntryNameOutsideTheHiddenAuthor( $html, 0 );
+		$this->assertStringNotContainsString( 'p-author', $html, 'A protected article names no author.' );
 		$this->assertStringNotContainsString( 'Protected', $html );
 	}
 
@@ -220,12 +221,16 @@ final class ArticleContentsMarkupTest extends WP_UnitTestCase {
 	 * No element outside the hidden author h-card carries p-name.
 	 *
 	 * The hidden `p-author h-card` has its own p-name (the author's name), which
-	 * is not the entry's name, so a bare substring check would be wrong.
+	 * is not the entry's name, so a bare substring check would be wrong. A
+	 * password-protected article prints no author h-card, so it expects none.
+	 *
+	 * @param string $html  Item markup.
+	 * @param int    $cards Hidden author h-cards expected.
 	 */
-	private function assertNoEntryNameOutsideTheHiddenAuthor( string $html ): void {
+	private function assertNoEntryNameOutsideTheHiddenAuthor( string $html, int $cards = 1 ): void {
 		$xpath = $this->xpath( $html );
 		$this->assertSame( 0, $xpath->query( '//*[contains(concat(" ", normalize-space(@class), " "), " p-name ")][not(ancestor::*[@hidden])]' )->length, 'An untitled item has no entry p-name.' );
-		$this->assertSame( 1, $xpath->query( '//*[@hidden]//*[contains(concat(" ", normalize-space(@class), " "), " h-card ")]' )->length, 'The hidden author h-card stays.' );
+		$this->assertSame( $cards, $xpath->query( '//*[@hidden]//*[contains(concat(" ", normalize-space(@class), " "), " h-card ")]' )->length, 'The hidden author h-card count.' );
 	}
 
 	private function register_article_archive(): void {

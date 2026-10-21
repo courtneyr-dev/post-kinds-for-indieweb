@@ -41,6 +41,28 @@ final class Abilities_Manager {
 	const CATEGORY_SLUG = 'post-kinds';
 
 	/**
+	 * Read abilities exposed on the MCP Adapter's default server.
+	 *
+	 * The get-post-meta ability applies the same password, location and cost
+	 * redaction REST does; the lookups need edit_posts and mirror the /lookup/
+	 * routes.
+	 *
+	 * @var string[]
+	 */
+	const MCP_PUBLIC_ABILITIES = [
+		'post-kinds/list-kinds',
+		'post-kinds/list-kind-fields',
+		'post-kinds/get-kind',
+		'post-kinds/get-post-meta',
+		'post-kinds/lookup-music',
+		'post-kinds/lookup-video',
+		'post-kinds/lookup-book',
+		'post-kinds/lookup-podcast',
+		'post-kinds/lookup-venue',
+		'post-kinds/lookup-game',
+	];
+
+	/**
 	 * Registered ability providers.
 	 *
 	 * @var array<string, object>
@@ -110,8 +132,8 @@ final class Abilities_Manager {
 		add_action( 'wp_abilities_api_categories_init', [ $this, 'register_category' ] );
 		add_action( 'wp_abilities_api_init', [ $this, 'register_abilities' ] );
 
-		if ( Feature_Flags::is_enabled( 'mcp_integration' ) && class_exists( 'WP_Pinch\\Abilities' ) ) {
-			self::register_mcp_hooks();
+		if ( Feature_Flags::is_enabled( 'mcp_integration' ) ) {
+			add_filter( 'wp_register_ability_args', [ self::class, 'filter_ability_args' ], 10, 2 );
 		}
 	}
 
@@ -222,42 +244,11 @@ final class Abilities_Manager {
 	}
 
 	/**
-	 * Register WP Pinch MCP server integration hooks.
+	 * Set each Post Kinds ability's exposure on the MCP Adapter's default server.
 	 *
-	 * @since 1.1.0
-	 */
-	public static function register_mcp_hooks(): void {
-		add_filter( 'wp_pinch_mcp_server_abilities', [ self::class, 'filter_mcp_server_abilities' ] );
-		add_filter( 'wp_register_ability_args', [ self::class, 'filter_ability_args' ], 10, 2 );
-	}
-
-	/**
-	 * Append registered Post Kinds abilities to the MCP server abilities list.
-	 *
-	 * Only names present in the abilities registry are advertised. In
-	 * lifecycles where wp_abilities_api_init never registered the Post Kinds
-	 * abilities (e.g. WP-CLI building the MCP tool list before init), an
-	 * advertised-but-unregistered name makes the mcp-adapter log an error
-	 * per name, so unregistered names must stay off the list.
-	 *
-	 * @since 1.1.0
-	 *
-	 * @param array $abilities Existing ability name strings.
-	 * @return array Modified ability name strings.
-	 */
-	public static function filter_mcp_server_abilities( array $abilities ): array {
-		if ( ! function_exists( 'wp_has_ability' ) || ! did_action( 'init' ) ) {
-			return $abilities;
-		}
-
-		return array_merge(
-			$abilities,
-			array_values( array_filter( self::get_ability_names(), 'wp_has_ability' ) )
-		);
-	}
-
-	/**
-	 * Add MCP public meta to Post Kinds abilities.
+	 * Abilities in MCP_PUBLIC_ABILITIES are public; the writes get an
+	 * explicit false, which also stops MCP Adapter 0.6+ from falling back to
+	 * a top-level meta.public flag. Permission callbacks still apply.
 	 *
 	 * @since 1.1.0
 	 *
@@ -273,10 +264,10 @@ final class Abilities_Manager {
 		if ( ! isset( $args['meta'] ) ) {
 			$args['meta'] = [];
 		}
-		if ( ! isset( $args['meta']['mcp'] ) ) {
+		if ( ! isset( $args['meta']['mcp'] ) || ! is_array( $args['meta']['mcp'] ) ) {
 			$args['meta']['mcp'] = [];
 		}
-		$args['meta']['mcp']['public'] = true;
+		$args['meta']['mcp']['public'] = in_array( $name, self::MCP_PUBLIC_ABILITIES, true );
 
 		return $args;
 	}
