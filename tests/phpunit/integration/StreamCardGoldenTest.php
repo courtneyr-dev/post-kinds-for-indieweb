@@ -156,6 +156,13 @@ final class StreamCardGoldenTest extends WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		add_filter( 'pre_http_request', '__return_empty_array' );
+
+		// The fixtures use fixed IDs from FIRST_ID up. Earlier tests in a full run can have rooted a post with the same ID as an entry, and the Microformats instance and the Stream card remember that for the whole process.
+		unset( $GLOBALS['pkiw_stream_card_root_seen'] );
+		$microformats = \PKIW\Plugin::get_instance()->get_microformats();
+		if ( null !== $microformats ) {
+			( new ReflectionProperty( $microformats, 'post_class_seen' ) )->setValue( $microformats, [] );
+		}
 	}
 
 	public function test_every_public_card_and_three_singles_match_their_recorded_hashes(): void {

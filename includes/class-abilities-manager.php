@@ -54,6 +54,7 @@ final class Abilities_Manager {
 		'post-kinds/list-kind-fields',
 		'post-kinds/get-kind',
 		'post-kinds/get-post-meta',
+		'post-kinds/get-quote-index',
 		'post-kinds/get-collection-items',
 		'post-kinds/lookup-music',
 		'post-kinds/lookup-video',
@@ -194,6 +195,12 @@ final class Abilities_Manager {
 			$operations->register();
 		}
 
+		if ( class_exists( __NAMESPACE__ . '\\Abilities\\Quote_Abilities' ) ) {
+			$quote                    = Abilities\Quote_Abilities::instance();
+			$this->providers['quote'] = $quote;
+			$quote->register();
+		}
+
 		/**
 		 * Fires after all post kind abilities are registered.
 		 *
@@ -246,6 +253,7 @@ final class Abilities_Manager {
 			'post-kinds/get-kind',
 			'post-kinds/update-post-meta',
 			'post-kinds/get-post-meta',
+			'post-kinds/get-quote-index',
 			'post-kinds/get-collection-items',
 			'post-kinds/lookup-music',
 			'post-kinds/lookup-video',

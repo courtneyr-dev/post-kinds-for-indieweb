@@ -74,6 +74,7 @@ final class Core_Abilities {
 		'event'       => [ 'event_' ],
 		'review'      => [ 'review_', 'cite_' ],
 		'favorite'    => [ 'favorite_' ],
+		'issue'       => [ 'cite_', 'issue_' ],
 		'jam'         => [ 'jam_' ],
 		'wish'        => [ 'wish_' ],
 		'mood'        => [ 'mood_' ],
