@@ -296,7 +296,6 @@ final class Issue_Archive {
 			|| ! $post instanceof \WP_Post
 			|| get_the_ID() !== get_queried_object_id()
 			|| is_feed()
-			|| wp_is_serving_rest_request()
 			|| null !== get_query_var( 'atproto', null )
 			|| '' !== (string) get_query_var( 'markdown_request', '' )
 			|| 'markdown' === get_query_var( 'format', '' )

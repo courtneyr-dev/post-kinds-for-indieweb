@@ -59,7 +59,19 @@ final class IssueLanesTest extends WP_UnitTestCase {
 		];
 
 		$html = Issue_Archive::lanes( new Archive_Group( 'repo', 'Repo' ), $items, $this->settings() );
-		$this->assertMatchesRegularExpression( '/data-pkiw-status="open".*data-pkiw-status="closed".*data-pkiw-status="none"/s', $html );
+		$xpath = $this->xpath( $html );
+		$order = [];
+		foreach ( $xpath->query( '//div[contains(concat(" ", normalize-space(@class), " "), " pkiw-issue-lane ")]' ) as $lane ) {
+			$order[] = $lane->getAttribute( 'data-pkiw-status' );
+		}
+		$this->assertSame( [ 'open', 'closed', 'none' ], $order );
+		foreach ( [ 'open', 'closed', 'none' ] as $status ) {
+			$tickets = [];
+			foreach ( $xpath->query( '//div[@data-pkiw-status="' . $status . '"]/ul[contains(concat(" ", normalize-space(@class), " "), " pkiw-issue-lane__items ")]/li' ) as $li ) {
+				$tickets[] = $li->getAttribute( 'data-ticket' );
+			}
+			$this->assertSame( [ $status ], $tickets, 'Each ticket sits in the lane list for its own status.' );
+		}
 		foreach ( $items as $item ) {
 			$this->assertStringContainsString( $item, $html );
 		}
@@ -106,5 +118,15 @@ final class IssueLanesTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'data-pkiw-status="open"', $html );
 		$this->assertStringContainsString( 'data-pkiw-status="none"', $html );
 		$this->assertStringContainsString( '>Issue</h3>', $html );
+	}
+
+	private function xpath( string $html ): DOMXPath {
+		$dom      = new DOMDocument();
+		$previous = libxml_use_internal_errors( true );
+		$dom->loadHTML( '<?xml encoding="utf-8"?><div id="root">' . $html . '</div>' );
+		libxml_clear_errors();
+		libxml_use_internal_errors( $previous );
+
+		return new DOMXPath( $dom );
 	}
 }

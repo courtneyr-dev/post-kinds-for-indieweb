@@ -107,28 +107,37 @@
 	}
 
 	function render() {
-		const editor = wp.data.select( 'core/editor' );
-		const termId = Number( localized.termId || 0 );
-		const kinds = editor
-			? editor.getEditedPostAttribute( 'kind' ) || []
-			: [];
-		const kindStore = wp.data.select( 'post-kinds-indieweb/post-kinds' );
-		const selectedKind =
-			kindStore && 'function' === typeof kindStore.getSelectedKind
-				? kindStore.getSelectedKind()
-				: '';
-		if (
-			! (
+		// Subscribe through useSelect so the panel appears when the kind
+		// changes after mount.
+		const isIssue = wp.data.useSelect( ( select ) => {
+			const termId = Number( localized.termId || 0 );
+			const editor = select( 'core/editor' );
+			const kinds = editor
+				? editor.getEditedPostAttribute( 'kind' ) || []
+				: [];
+			if (
 				termId > 0 &&
 				Array.isArray( kinds ) &&
 				kinds.includes( termId )
-			) &&
-			'issue' !== selectedKind
-		) {
-			return null;
-		}
+			) {
+				return true;
+			}
 
-		return el( IssueFieldsPanel );
+			let kindStore;
+			try {
+				kindStore = select( 'post-kinds-indieweb/post-kinds' );
+			} catch {
+				kindStore = null;
+			}
+
+			return (
+				!! kindStore &&
+				'function' === typeof kindStore.getSelectedKind &&
+				'issue' === kindStore.getSelectedKind()
+			);
+		}, [] );
+
+		return isIssue ? el( IssueFieldsPanel ) : null;
 	}
 
 	wp.plugins.registerPlugin( 'pkiw-issue-fields', { render } );

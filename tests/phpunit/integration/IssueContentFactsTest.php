@@ -79,10 +79,31 @@ final class IssueContentFactsTest extends WP_UnitTestCase {
 		);
 	}
 
+	/**
+	 * The fact labels in document order, read from the parsed list rather than the raw string.
+	 *
+	 * @return string[]
+	 */
+	private function row_labels( string $html ): array {
+		$dom      = new DOMDocument();
+		$previous = libxml_use_internal_errors( true );
+		$dom->loadHTML( '<?xml encoding="utf-8"?><div id="root">' . $html . '</div>' );
+		libxml_clear_errors();
+		libxml_use_internal_errors( $previous );
+
+		$labels = [];
+		$xpath  = new DOMXPath( $dom );
+		foreach ( $xpath->query( '//div[contains(concat(" ", normalize-space(@class), " "), " pkiw-issue-facts ")]/dl/div/dt' ) as $dt ) {
+			$labels[] = trim( $dt->textContent );
+		}
+
+		return $labels;
+	}
+
 	public function test_rows_are_repository_issue_status_date_then_the_wrapped_body(): void {
 		$html = $this->singular( $this->full_issue() );
 
-		$this->assertMatchesRegularExpression( '/<dt>Repository<\/dt>.*<dt>Issue<\/dt>.*<dt>Status<\/dt>.*<dt>Date<\/dt>/s', $html );
+		$this->assertSame( [ 'Repository', 'Issue', 'Status', 'Date' ], $this->row_labels( $html ) );
 		$this->assertStringNotContainsString( '>Updated<', $html );
 		$this->assertStringNotContainsString( '>Source<', $html );
 		$this->assertStringContainsString( '<div class="pkiw-issue-body e-content"><p>Ticket body.</p>', $html );
@@ -168,6 +189,20 @@ final class IssueContentFactsTest extends WP_UnitTestCase {
 		add_action( 'wp_head', $head );
 		do_action( 'wp_head' );
 		$this->assertSame( $content, $seen );
+	}
+
+	public function test_a_request_without_a_singular_main_query_leaves_content_unchanged(): void {
+		// A REST request has no singular main query, so is_singular() keeps the list out. The wp_is_serving_rest_request() guard Question_Answers carries is therefore unreachable and this class does not repeat it.
+		$post_id = $this->full_issue();
+		$content = '<p>Rest body.</p>';
+		$this->go_to( home_url( '/' ) );
+		$GLOBALS['post'] = get_post( $post_id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$this->assertFalse( is_singular( 'post' ) );
+		$this->assertSame( $content, Issue_Archive::decorate_content( $content ) );
+
+		$response = rest_do_request( new WP_REST_Request( 'GET', '/wp/v2/posts/' . $post_id ) );
+		$this->assertStringNotContainsString( 'pkiw-issue-facts', (string) $response->get_data()['content']['rendered'] );
 	}
 
 	public function test_decoration_is_idempotent_and_does_not_nest_an_existing_e_content(): void {

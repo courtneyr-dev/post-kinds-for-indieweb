@@ -2,6 +2,11 @@
  * Issue fields document panel.
  */
 
+const { createRegistry, RegistryProvider, useSelect, useDispatch } =
+	jest.requireActual( '@wordpress/data' );
+const { createElement } = jest.requireActual( '@wordpress/element' );
+import { act, render as renderReact } from '@testing-library/react';
+
 const SCRIPT = '../../../assets/js/issue-fields-editor.js';
 
 function component( name ) {
@@ -169,5 +174,69 @@ describe( 'issue fields editor', () => {
 			loaded = load( { plugins: false } );
 		} ).not.toThrow();
 		expect( loaded.registerPlugin ).not.toHaveBeenCalled();
+	} );
+
+	it( 'shows the panel when the kind changes to issue after mount, on a real data store', () => {
+		const registry = createRegistry();
+		registry.registerStore( 'core/editor', {
+			reducer: ( state = { kind: [] }, action ) =>
+				'SET_KIND' === action.type
+					? { ...state, kind: action.kind }
+					: state,
+			actions: {
+				setKind: ( kind ) => ( { type: 'SET_KIND', kind } ),
+				editPost: () => ( { type: 'NOOP' } ),
+			},
+			selectors: {
+				getEditedPostAttribute: ( state, attribute ) =>
+					'kind' === attribute ? state.kind : {},
+			},
+		} );
+
+		const registerPlugin = jest.fn();
+		window.pkiwIssueFields = { termId: 264 };
+		window.wp = {
+			plugins: { registerPlugin },
+			editor: {
+				PluginDocumentSettingPanel: ( { children } ) =>
+					createElement(
+						'div',
+						{ 'data-testid': 'issue-panel' },
+						children
+					),
+			},
+			element: { createElement },
+			components: {
+				TextControl: () => createElement( 'input' ),
+				SelectControl: () => createElement( 'select' ),
+			},
+			data: {
+				select: registry.select,
+				useSelect,
+				useDispatch,
+			},
+			i18n: { __: ( text ) => text },
+		};
+		jest.isolateModules( () => require( SCRIPT ) );
+		const Plugin = registerPlugin.mock.calls[ 0 ][ 1 ].render;
+
+		const { queryByTestId } = renderReact(
+			createElement(
+				RegistryProvider,
+				{ value: registry },
+				createElement( Plugin )
+			)
+		);
+		expect( queryByTestId( 'issue-panel' ) ).toBeNull();
+
+		act( () => {
+			registry.dispatch( 'core/editor' ).setKind( [ 264 ] );
+		} );
+		expect( queryByTestId( 'issue-panel' ) ).not.toBeNull();
+
+		act( () => {
+			registry.dispatch( 'core/editor' ).setKind( [ 18 ] );
+		} );
+		expect( queryByTestId( 'issue-panel' ) ).toBeNull();
 	} );
 } );

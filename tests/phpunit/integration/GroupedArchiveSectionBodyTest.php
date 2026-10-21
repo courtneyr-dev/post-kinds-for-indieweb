@@ -72,6 +72,30 @@ final class GroupedArchiveSectionBodyTest extends WP_UnitTestCase {
 		);
 	}
 
+	/**
+	 * The engine list element of a section, or null.
+	 */
+	private function items_list( string $html ): ?DOMElement {
+		$nodes = $this->query( $html, '//section/*[contains(concat(" ", normalize-space(@class), " "), " pkiw-group__items ")]' );
+		$node  = $nodes->item( 0 );
+
+		return $node instanceof DOMElement ? $node : null;
+	}
+
+	private function count_nodes( string $html, string $expression ): int {
+		return $this->query( $html, $expression )->length;
+	}
+
+	private function query( string $html, string $expression ): DOMNodeList {
+		$dom      = new DOMDocument();
+		$previous = libxml_use_internal_errors( true );
+		$dom->loadHTML( '<?xml encoding="utf-8"?><div id="root">' . $html . '</div>' );
+		libxml_clear_errors();
+		libxml_use_internal_errors( $previous );
+
+		return ( new DOMXPath( $dom ) )->query( $expression );
+	}
+
 	public function test_source_body_replaces_only_the_list_and_receives_the_section_contract(): void {
 		$source = Grouped_Archive::source( self::SOURCE );
 		$plain  = Grouped_Archive::source( self::PLAIN );
@@ -91,12 +115,17 @@ final class GroupedArchiveSectionBodyTest extends WP_UnitTestCase {
 		$html = $this->section( self::ENTRY, $source, $items );
 		$this->assertStringContainsString( '<h2 class="pkiw-group__heading">Rack</h2>', $html );
 		$this->assertStringContainsString( '<div class="source-body">', $html );
-		$this->assertStringNotContainsString( '<ul class="pkiw-group__items">', $html );
+		$this->assertNull( $this->items_list( $html ), 'The source body replaces the default list.' );
+		$this->assertSame( 2, $this->count_nodes( $html, '//div[@class="source-body"]/li' ), 'The source body carries the engine items.' );
 		$this->assertSame( 'rack', $this->received['group']->key() );
 		$this->assertSame( $items, $this->received['received'] );
 		$this->assertSame( 2, $this->received['settings']['level'] );
 
 		$this->assertStringContainsString( '<div class="own-body">Own</div>', $this->section( self::OWN_ENTRY, $source, $items ) );
 		$this->assertSame( $plain_before, $this->section( self::ENTRY, $plain, $items ) );
+		$list = $this->items_list( $plain_before );
+		$this->assertNotNull( $list, 'A source with no body keeps the engine list.' );
+		$this->assertSame( 'ul', $list->nodeName );
+		$this->assertSame( 2, $list->getElementsByTagName( 'li' )->length );
 	}
 }
