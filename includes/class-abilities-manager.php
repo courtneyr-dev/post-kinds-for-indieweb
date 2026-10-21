@@ -61,6 +61,10 @@ final class Abilities_Manager {
 		'post-kinds/lookup-podcast',
 		'post-kinds/lookup-venue',
 		'post-kinds/lookup-game',
+		'post-kinds/get-surface',
+		'post-kinds/get-public-location-fields',
+		'post-kinds/get-checkin-stats',
+		'post-kinds/list-venues',
 	];
 
 	/**
@@ -183,6 +187,13 @@ final class Abilities_Manager {
 			$lookup->register();
 		}
 
+		// Register operational abilities and reads.
+		if ( class_exists( __NAMESPACE__ . '\\Abilities\\Operations_Abilities' ) ) {
+			$operations                    = Abilities\Operations_Abilities::instance();
+			$this->providers['operations'] = $operations;
+			$operations->register();
+		}
+
 		/**
 		 * Fires after all post kind abilities are registered.
 		 *
@@ -201,7 +212,7 @@ final class Abilities_Manager {
 	 *
 	 * @since 1.1.0
 	 *
-	 * @param string $name Provider name (core, lookup).
+	 * @param string $name Provider name (core, lookup, operations).
 	 * @return object|null The provider instance or null if not registered.
 	 */
 	public function get_provider( string $name ): ?object {
@@ -242,6 +253,14 @@ final class Abilities_Manager {
 			'post-kinds/lookup-podcast',
 			'post-kinds/lookup-venue',
 			'post-kinds/lookup-game',
+			'post-kinds/backfill-surfaces',
+			'post-kinds/backfill-card-meta',
+			'post-kinds/backfill-listen-media-type',
+			'post-kinds/backfill-featured-artwork',
+			'post-kinds/get-surface',
+			'post-kinds/get-public-location-fields',
+			'post-kinds/get-checkin-stats',
+			'post-kinds/list-venues',
 		];
 	}
 

@@ -585,6 +585,43 @@ class Card_Meta_Sync {
 	 * @return array{processed:int,last_id:int,done:bool}
 	 */
 	public static function backfill_batch( int $after_id = 0, int $limit = self::BACKFILL_BATCH ): array {
+		$ids = self::backfill_ids( $after_id, $limit );
+
+		$last_id = $after_id;
+		foreach ( $ids as $id ) {
+			$post = get_post( $id );
+			if ( $post instanceof \WP_Post ) {
+				self::sync_content( $id, $post->post_content );
+				self::fill_review( $id, $post->post_content );
+
+				/**
+				 * Fires after one selected post completes the card-meta backfill pass.
+				 *
+				 * @since 1.9.0
+				 *
+				 * @param int      $post_id Post ID.
+				 * @param \WP_Post $post    Post object.
+				 */
+				do_action( 'pkiw_card_meta_backfill_post', $id, $post );
+			}
+			$last_id = $id;
+		}
+
+		return [
+			'processed' => count( $ids ),
+			'last_id'   => $last_id,
+			'done'      => count( $ids ) < max( 1, $limit ),
+		];
+	}
+
+	/**
+	 * Select one card-meta backfill batch without changing any post data.
+	 *
+	 * @param int $after_id Process posts with an ID greater than this.
+	 * @param int $limit    Batch size.
+	 * @return int[] Post IDs in ascending order.
+	 */
+	public static function backfill_ids( int $after_id, int $limit ): array {
 		global $wpdb;
 
 		$limit = max( 1, $limit );
@@ -633,32 +670,7 @@ class Card_Meta_Sync {
 			);
 		}
 
-		$last_id = $after_id;
-		foreach ( $ids as $id ) {
-			$id   = (int) $id;
-			$post = get_post( $id );
-			if ( $post instanceof \WP_Post ) {
-				self::sync_content( $id, $post->post_content );
-				self::fill_review( $id, $post->post_content );
-
-				/**
-				 * Fires after one selected post completes the card-meta backfill pass.
-				 *
-				 * @since 1.9.0
-				 *
-				 * @param int      $post_id Post ID.
-				 * @param \WP_Post $post    Post object.
-				 */
-				do_action( 'pkiw_card_meta_backfill_post', $id, $post );
-			}
-			$last_id = $id;
-		}
-
-		return [
-			'processed' => count( $ids ),
-			'last_id'   => $last_id,
-			'done'      => count( $ids ) < $limit,
-		];
+		return array_map( 'intval', $ids );
 	}
 
 	/**

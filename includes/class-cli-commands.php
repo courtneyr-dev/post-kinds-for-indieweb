@@ -17,11 +17,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Only load if WP-CLI is active.
-if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
-	return;
-}
-
 use WP_CLI;
 use WP_CLI\Utils;
 
@@ -50,7 +45,7 @@ class CLI_Commands {
 		if ( 'backfill' !== $sub ) {
 			WP_CLI::error( 'Usage: wp postkind surfaces backfill' );
 		}
-		$count = Post_Surface::backfill();
+		$count = Operations::backfill_surfaces( false )['processed'];
 		WP_CLI::success( sprintf( 'Recomputed _pkiw_surface for %d posts.', $count ) );
 	}
 
@@ -86,18 +81,8 @@ class CLI_Commands {
 			WP_CLI::error( 'Usage: wp postkind card-meta backfill [--batch=<size>]' );
 		}
 
-		$batch  = max( 1, (int) ( $assoc_args['batch'] ?? Card_Meta_Sync::BACKFILL_BATCH ) );
-		$cursor = 0;
-		$total  = 0;
-		do {
-			$result = Card_Meta_Sync::backfill_batch( $cursor, $batch );
-			$cursor = $result['last_id'];
-			$total += $result['processed'];
-		} while ( ! $result['done'] );
-
-		update_option( Card_Meta_Sync::BACKFILL_OPTION, Card_Meta_Sync::BACKFILL_VERSION, false );
-		delete_option( Card_Meta_Sync::BACKFILL_CURSOR );
-		wp_clear_scheduled_hook( Card_Meta_Sync::BACKFILL_HOOK );
+		$batch = max( 1, (int) ( $assoc_args['batch'] ?? Card_Meta_Sync::BACKFILL_BATCH ) );
+		$total = Operations::backfill_card_meta( false, $batch )['processed'];
 
 		WP_CLI::success( sprintf( 'Re-synced card meta for %d post(s).', $total ) );
 	}
@@ -267,7 +252,7 @@ class CLI_Commands {
 
 		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
 		if ( $dry_run ) {
-			$candidates = Listen_Media_Type::candidates();
+			$candidates = Operations::backfill_listen_media_type( true, null )['candidates'];
 			foreach ( $candidates as $row ) {
 				WP_CLI::log( Listen_Media_Type::report_line( $row ) );
 			}
@@ -279,9 +264,13 @@ class CLI_Commands {
 			WP_CLI::error( 'Refusing to write without --ids=<csv>. Run with --dry-run first.' );
 		}
 
-		$result = Listen_Media_Type::apply(
+		$result = Operations::backfill_listen_media_type(
+			false,
 			Listen_Media_Type::parse_ids( (string) $assoc_args['ids'] )
 		);
+		if ( is_wp_error( $result ) ) {
+			WP_CLI::error( $result->get_error_message() );
+		}
 		WP_CLI::success(
 			sprintf(
 				'Backfill: %d written, %d skipped.',
@@ -325,7 +314,7 @@ class CLI_Commands {
 		}
 
 		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
-		$stats   = ( new Featured_Artwork() )->backfill( $dry_run );
+		$stats   = Operations::backfill_featured_artwork( $dry_run );
 
 		if ( $dry_run ) {
 			WP_CLI::success(
@@ -362,21 +351,14 @@ class CLI_Commands {
 	 * @return void
 	 */
 	public function checkin_stats( array $args, array $assoc_args ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
-		$checkin_count = get_checkin_count();
-
-		$venue_terms = wp_count_terms(
-			[
-				'taxonomy'   => Venue_Taxonomy::TAXONOMY,
-				'hide_empty' => false,
-			]
-		);
+		$stats = Operations::checkin_stats();
 
 		WP_CLI::log( '' );
 		WP_CLI::log( WP_CLI::colorize( '%BCheck-in Statistics%n' ) );
 		WP_CLI::log( str_repeat( '─', 40 ) );
 		WP_CLI::log( '' );
-		WP_CLI::log( sprintf( 'Posts with checkin kind: %d', $checkin_count ) );
-		WP_CLI::log( sprintf( 'Venue terms: %d', is_wp_error( $venue_terms ) ? 0 : $venue_terms ) );
+		WP_CLI::log( sprintf( 'Posts with checkin kind: %d', $stats['checkin_posts'] ) );
+		WP_CLI::log( sprintf( 'Venue terms: %d', $stats['venue_terms'] ) );
 		WP_CLI::log( '' );
 	}
 
@@ -408,12 +390,7 @@ class CLI_Commands {
 	public function venues( array $args, array $assoc_args ): void {
 		$format = Utils\get_flag_value( $assoc_args, 'format', 'table' );
 
-		$terms = get_terms(
-			[
-				'taxonomy'   => Venue_Taxonomy::TAXONOMY,
-				'hide_empty' => false,
-			]
-		);
+		$terms = Operations::venues();
 
 		if ( is_wp_error( $terms ) ) {
 			WP_CLI::error( $terms->get_error_message() );
@@ -428,20 +405,15 @@ class CLI_Commands {
 		$data = [];
 
 		foreach ( $terms as $term ) {
-			$city      = get_term_meta( $term->term_id, 'city', true );
-			$country   = get_term_meta( $term->term_id, 'country', true );
-			$latitude  = get_term_meta( $term->term_id, 'latitude', true );
-			$longitude = get_term_meta( $term->term_id, 'longitude', true );
-
 			$data[] = [
-				'id'        => $term->term_id,
-				'name'      => $term->name,
-				'slug'      => $term->slug,
-				'city'      => $city ? $city : '-',
-				'country'   => $country ? $country : '-',
-				'latitude'  => $latitude ? $latitude : '-',
-				'longitude' => $longitude ? $longitude : '-',
-				'count'     => $term->count,
+				'id'        => $term['id'],
+				'name'      => $term['name'],
+				'slug'      => $term['slug'],
+				'city'      => $term['city'] ? $term['city'] : '-',
+				'country'   => $term['country'] ? $term['country'] : '-',
+				'latitude'  => $term['latitude'] ? $term['latitude'] : '-',
+				'longitude' => $term['longitude'] ? $term['longitude'] : '-',
+				'count'     => $term['count'],
 			];
 		}
 
@@ -515,5 +487,7 @@ class CLI_Commands {
 	}
 }
 
-// Register the command.
-WP_CLI::add_command( 'postkind', __NAMESPACE__ . '\\CLI_Commands' );
+// Register the command only when WP-CLI is running.
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	WP_CLI::add_command( 'postkind', __NAMESPACE__ . '\\CLI_Commands' );
+}
