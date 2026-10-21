@@ -102,7 +102,9 @@ async function measure( card, parts ) {
 				.filter( ( child ) => ! child.hidden )
 				.map(
 					( child ) =>
-						`${ child.tagName.toLowerCase() }.${ child.classList[ 0 ] }`
+						`${ child.tagName.toLowerCase() }.${
+							child.classList[ 0 ]
+						}`
 				),
 			card: { width: origin.width, height: origin.height },
 			text: text( element ),

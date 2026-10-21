@@ -212,11 +212,11 @@ export default function Edit( { attributes, setAttributes } ) {
 										? __(
 												'Search for a podcast…',
 												'post-kinds-for-indieweb-in-block-themes'
-											)
+										  )
 										: __(
 												'Search for a song or album…',
 												'post-kinds-for-indieweb-in-block-themes'
-											)
+										  )
 								}
 								onSelect={
 									isPodcast
@@ -244,11 +244,11 @@ export default function Edit( { attributes, setAttributes } ) {
 									? __(
 											'Search Podcasts',
 											'post-kinds-for-indieweb-in-block-themes'
-										)
+									  )
 									: __(
 											'Search Music',
 											'post-kinds-for-indieweb-in-block-themes'
-										) }
+									  ) }
 							</Button>
 							<Button
 								variant="secondary"
@@ -277,11 +277,11 @@ export default function Edit( { attributes, setAttributes } ) {
 							? __(
 									'Search Podcasts',
 									'post-kinds-for-indieweb-in-block-themes'
-								)
+							  )
 							: __(
 									'Search Music',
 									'post-kinds-for-indieweb-in-block-themes'
-								)
+							  )
 					}
 					initialOpen={ false }
 				>
@@ -292,11 +292,11 @@ export default function Edit( { attributes, setAttributes } ) {
 								? __(
 										'Search for a podcast…',
 										'post-kinds-for-indieweb-in-block-themes'
-									)
+								  )
 								: __(
 										'Search for a song or album…',
 										'post-kinds-for-indieweb-in-block-themes'
-									)
+								  )
 						}
 						onSelect={
 							isPodcast ? handlePodcastSelect : handleSearchSelect
@@ -310,11 +310,11 @@ export default function Edit( { attributes, setAttributes } ) {
 							? __(
 									'Search PodcastIndex to auto-fill show details.',
 									'post-kinds-for-indieweb-in-block-themes'
-								)
+							  )
 							: __(
 									'Search MusicBrainz to auto-fill track details.',
 									'post-kinds-for-indieweb-in-block-themes'
-								) }
+							  ) }
 					</p>
 				</PanelBody>
 				<PanelBody
@@ -355,11 +355,11 @@ export default function Edit( { attributes, setAttributes } ) {
 								? __(
 										'Episode',
 										'post-kinds-for-indieweb-in-block-themes'
-									)
+								  )
 								: __(
 										'Track Title',
 										'post-kinds-for-indieweb-in-block-themes'
-									)
+								  )
 						}
 						value={ trackTitle || '' }
 						onChange={ ( value ) =>
@@ -382,11 +382,11 @@ export default function Edit( { attributes, setAttributes } ) {
 								? __(
 										'Show',
 										'post-kinds-for-indieweb-in-block-themes'
-									)
+								  )
 								: __(
 										'Album',
 										'post-kinds-for-indieweb-in-block-themes'
-									)
+								  )
 						}
 						value={ albumTitle || '' }
 						onChange={ ( value ) =>
@@ -448,7 +448,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								: __(
 										'Set date/time',
 										'post-kinds-for-indieweb-in-block-themes'
-									) }
+								  ) }
 						</Button>
 						{ showDatePicker && (
 							<Popover
@@ -600,11 +600,11 @@ export default function Edit( { attributes, setAttributes } ) {
 									? __(
 											'Episode title',
 											'post-kinds-for-indieweb-in-block-themes'
-										)
+									  )
 									: __(
 											'Track title',
 											'post-kinds-for-indieweb-in-block-themes'
-										)
+									  )
 							}
 						/>
 
@@ -634,11 +634,11 @@ export default function Edit( { attributes, setAttributes } ) {
 										? __(
 												'Show title',
 												'post-kinds-for-indieweb-in-block-themes'
-											)
+										  )
 										: __(
 												'Album title',
 												'post-kinds-for-indieweb-in-block-themes'
-											)
+										  )
 								}
 							/>
 						) }

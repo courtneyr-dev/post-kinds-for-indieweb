@@ -47,7 +47,7 @@ export function DayField( { label, value, onChange } ) {
 					: __(
 							'Set date',
 							'post-kinds-for-indieweb-in-block-themes'
-						) }
+					  ) }
 			</Button>
 			{ day && (
 				<Button variant="tertiary" onClick={ () => onChange( '' ) }>
@@ -130,11 +130,11 @@ export function StarRating( {
 								? __(
 										'star',
 										'post-kinds-for-indieweb-in-block-themes'
-									)
+								  )
 								: __(
 										'stars',
 										'post-kinds-for-indieweb-in-block-themes'
-									)
+								  )
 						}` }
 						aria-pressed={ rating <= value }
 					>

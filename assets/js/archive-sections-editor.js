@@ -291,7 +291,7 @@
 								set( { groupLabels: next } );
 							},
 						} );
-					} )
+				  } )
 				: [];
 
 		return el(
@@ -317,7 +317,7 @@
 							),
 						},
 						...headings
-					)
+				  )
 				: null
 		);
 	}

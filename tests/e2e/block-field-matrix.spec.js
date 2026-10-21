@@ -257,7 +257,7 @@ for ( const [ name, def ] of Object.entries( matrix ) ) {
 					parents && parents.length > 0
 						? window.wp.blocks.createBlock( parents[ 0 ], {}, [
 								block,
-							] )
+						  ] )
 						: block;
 				window.wp.data
 					.dispatch( 'core/block-editor' )

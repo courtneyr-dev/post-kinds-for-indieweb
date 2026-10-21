@@ -75,7 +75,9 @@ async function createArticle( page, nonce, attrs ) {
 			title: attrs.title,
 			content:
 				attrs.content ||
-				`<!-- wp:paragraph --><p>${ words( 200 ) }</p><!-- /wp:paragraph -->`,
+				`<!-- wp:paragraph --><p>${ words(
+					200
+				) }</p><!-- /wp:paragraph -->`,
 			status: 'publish',
 			date: attrs.date,
 			kind: [ articleKind ],
@@ -151,7 +153,9 @@ test.describe( 'article contents archive', () => {
 				title: `Lead ${ RUN }`,
 				date: '2026-08-20T10:00:00',
 				image: true,
-				content: `<!-- wp:paragraph --><p>${ words( 1000 ) }</p><!-- /wp:paragraph -->`,
+				content: `<!-- wp:paragraph --><p>${ words(
+					1000
+				) }</p><!-- /wp:paragraph -->`,
 			},
 			{
 				slug: `long-${ RUN }`,

@@ -156,7 +156,7 @@ test.describe( 'Visual Regression', () => {
 						parents && parents.length > 0
 							? window.wp.blocks.createBlock( parents[ 0 ], {}, [
 									block,
-								] )
+							  ] )
 							: block;
 					window.wp.data
 						.dispatch( 'core/block-editor' )

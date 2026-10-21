@@ -60,7 +60,7 @@ final class CardRatingTest extends WP_UnitTestCase {
 	public function test_decorative_rating_hides_the_stars_and_keeps_p_rating(): void {
 		$html = \PKIW\card_rating_html( 3.5, 5, true );
 
-		$this->assertStringContainsString( '<div class="pk-stars" aria-hidden="true">', $html );
+		$this->assertStringContainsString( '<div class="pk-stars" aria-hidden="true" role="presentation">', $html );
 		$this->assertStringNotContainsString( 'role="img"', $html );
 		$this->assertStringNotContainsString( 'aria-label', $html );
 		$this->assertSame( 1, substr_count( $html, '<svg class="half"' ) );

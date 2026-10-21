@@ -103,7 +103,10 @@
 
 	wp.blocks.registerBlockType( NAME, {
 		apiVersion: 3,
-		title: __( 'Mood Year Grid', 'post-kinds-for-indieweb-in-block-themes' ),
+		title: __(
+			'Mood Year Grid',
+			'post-kinds-for-indieweb-in-block-themes'
+		),
 		description: __(
 			'A year of moods on a grid, one calendar year per page of the mood archive.',
 			'post-kinds-for-indieweb-in-block-themes'

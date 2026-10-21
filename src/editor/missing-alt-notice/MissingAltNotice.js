@@ -46,7 +46,7 @@ export default function MissingAltNotice() {
 			kindIds.length > 0
 				? select( 'core' ).getEntityRecords( 'taxonomy', 'kind', {
 						per_page: -1,
-					} )
+				  } )
 				: null;
 		const kind = ( kinds || [] ).find(
 			( item ) => item.id === kindIds[ 0 ]

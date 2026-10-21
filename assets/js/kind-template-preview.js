@@ -151,7 +151,7 @@
 											current,
 											next( current )
 										);
-									}
+								  }
 								: keepQuery( attributes.current, next )
 						);
 					},

@@ -324,11 +324,11 @@ export default function Edit( { attributes, setAttributes } ) {
 						>
 							{ eventStart
 								? parseDate( eventStart )?.toLocaleString() ||
-									eventStart
+								  eventStart
 								: __(
 										'Set start time',
 										'post-kinds-for-indieweb-in-block-themes'
-									) }
+								  ) }
 						</Button>
 						{ showStartPicker && (
 							<Popover
@@ -365,7 +365,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								: __(
 										'Set end time',
 										'post-kinds-for-indieweb-in-block-themes'
-									) }
+								  ) }
 						</Button>
 						{ showEndPicker && (
 							<Popover
@@ -421,7 +421,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								: __(
 										'Set time',
 										'post-kinds-for-indieweb-in-block-themes'
-									) }
+								  ) }
 						</Button>
 						{ showRsvpPicker && (
 							<Popover

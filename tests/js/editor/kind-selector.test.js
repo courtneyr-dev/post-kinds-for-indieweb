@@ -77,7 +77,7 @@ beforeEach( () => {
 					updatePostKind,
 					disableAutoDetection: jest.fn(),
 					updateKindMeta: jest.fn(),
-				}
+			  }
 	);
 	useSelect.mockImplementation( ( callback ) =>
 		callback( ( store ) => {

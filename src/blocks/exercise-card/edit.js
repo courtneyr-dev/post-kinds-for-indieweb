@@ -191,7 +191,7 @@ function ClockField( { label, value, onChange, help } ) {
 					? __(
 							'Use h:mm:ss or m:ss, such as 29:12.',
 							'post-kinds-for-indieweb-in-block-themes'
-						)
+					  )
 					: help
 			}
 		/>
@@ -226,7 +226,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						value,
 						label,
 					} )
-				)
+			  )
 			: FALLBACK_PB_CATEGORIES;
 
 	const setSplits = ( list ) =>

@@ -40,7 +40,9 @@ describe( 'buildLookupResultItem', () => {
 		} );
 
 		expect( el.querySelector( 'img' ) ).toBeNull();
-		expect( el.textContent ).toBe( 'A Track' + MALICIOUS_TITLE + ' (2020)' );
+		expect( el.textContent ).toBe(
+			'A Track' + MALICIOUS_TITLE + ' (2020)'
+		);
 	} );
 } );
 
@@ -49,9 +51,9 @@ describe( 'buildSearchResultItem', () => {
 		const el = buildSearchResultItem( { title: MALICIOUS_TITLE } );
 
 		expect( el.querySelector( 'img' ) ).toBeNull();
-		expect(
-			el.querySelector( '.search-result-title' ).textContent
-		).toBe( MALICIOUS_TITLE );
+		expect( el.querySelector( '.search-result-title' ).textContent ).toBe(
+			MALICIOUS_TITLE
+		);
 	} );
 
 	it( 'renders a legitimate image src attribute', () => {

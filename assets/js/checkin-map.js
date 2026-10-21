@@ -38,8 +38,8 @@
 		const more =
 			pin.numbers.length > 1
 				? '<span class="pkiw-pin__more" aria-hidden="true">+' +
-					( pin.numbers.length - 1 ) +
-					'</span>'
+				  ( pin.numbers.length - 1 ) +
+				  '</span>'
 				: '';
 
 		return L.divIcon( {
@@ -49,7 +49,7 @@
 				pin.numbers[ 0 ] +
 				'</span>' +
 				more +
-				'<span class="pkiw-pin__label">' +
+				'<span class="pkiw-pin__label screen-reader-text">' +
 				escapeHtml( pin.label ) +
 				'</span>',
 			iconSize: [ 44, 44 ],
@@ -63,7 +63,7 @@
 			html:
 				'<span class="pkiw-pin__num" aria-hidden="true">' +
 				count +
-				'</span><span class="pkiw-pin__label">' +
+				'</span><span class="pkiw-pin__label screen-reader-text">' +
 				escapeHtml( label.replace( '%d', count ) ) +
 				'</span>',
 			iconSize: [ 44, 44 ],

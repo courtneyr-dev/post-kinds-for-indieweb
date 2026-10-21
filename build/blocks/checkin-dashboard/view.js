@@ -137,8 +137,8 @@
 						'</strong>' +
 						( checkin.address
 							? '<br><span>' +
-								escapeHtml( checkin.address ) +
-								'</span>'
+							  escapeHtml( checkin.address ) +
+							  '</span>'
 							: '' ) +
 						'<br><a href="' +
 						escapeAttribute( checkin.permalink ) +
