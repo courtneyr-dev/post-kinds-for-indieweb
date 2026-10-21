@@ -276,7 +276,7 @@ final class Review_Archive {
 			. str_repeat( $empty, $counts['empty'] );
 
 		return sprintf(
-			'<p class="pkiw-review-rating"><span class="pkiw-review-rating__label">%1$s</span> <span class="pk-stars" aria-hidden="true">%2$s</span></p>',
+			'<p class="pkiw-review-rating"><span class="pkiw-review-rating__label">%1$s</span> <span class="pk-stars" aria-hidden="true" role="presentation">%2$s</span></p>',
 			esc_html( card_rating_label( $rating, $best ) ),
 			$stars
 		);

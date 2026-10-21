@@ -272,10 +272,13 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 		$this->assertFalse( wp_script_is( 'pkiw-checkin-map', 'enqueued' ), 'The map script, which pulls in Leaflet, loads only with a pin.' );
 	}
 
-	public function test_map_is_a_named_region_hidden_until_the_script_runs(): void {
+	public function test_map_is_a_captioned_figure_hidden_until_the_script_runs(): void {
 		$html = $this->render( [ $this->checkin( 'pubone', 'public', 40.111111, -75.111111 ) ] );
 
-		$this->assertMatchesRegularExpression( '/class="pkiw-checkin-archive__map"[^>]*role="region"[^>]*aria-label="Map of the check-ins on this page"[^>]*aria-describedby="(pkiw-checkin-map-\d+-summary)"[^>]*hidden/s', $html );
+		// A figure with a figcaption takes no role, and Accessibility Checker Pro passes
+		// Leaflet's alt="" tiles only inside one.
+		$this->assertMatchesRegularExpression( '/<figure\s+class="pkiw-checkin-archive__map"[^>]*aria-describedby="(pkiw-checkin-map-\d+-summary)"[^>]*hidden\s*><figcaption class="pkiw-checkin-archive__map-caption screen-reader-text">Map of the check-ins on this page<\/figcaption><\/figure>/s', $html );
+		$this->assertDoesNotMatchRegularExpression( '/class="pkiw-checkin-archive__map"[^>]*role=/s', $html );
 		$this->assertTrue( wp_script_is( 'pkiw-checkin-map', 'enqueued' ) );
 		$this->assertStringContainsString( 'data-label="Show Title pubone on map"', $html );
 	}
@@ -305,7 +308,7 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 		$post = $this->checkin( 'pubone', 'public', 40.111111, -75.111111 );
 		$html = $this->render( [ $post ] );
 
-		$this->assertMatchesRegularExpression( '/<div\s+class="pkiw-checkin-archive__map"[^>]*\sdata-pkiw-consent="required"[^>]*\shidden\s*>/s', $html );
+		$this->assertMatchesRegularExpression( '/<figure\s+class="pkiw-checkin-archive__map"[^>]*\sdata-pkiw-consent="required"[^>]*\shidden\s*>/s', $html );
 		$this->assertSame( 1, substr_count( $html, 'data-pkiw-consent' ), 'Only the map waits; the list does not.' );
 		$this->assertStringContainsString( 'href="' . esc_url( get_permalink( $post ) ) . '"', $html );
 		$this->assertStringContainsString( 'data-label="Show Title pubone on map"', $html );
