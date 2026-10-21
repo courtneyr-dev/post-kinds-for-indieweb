@@ -66,12 +66,18 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 			'post-kinds/list-kind-fields',
 			'post-kinds/get-kind',
 			'post-kinds/get-post-meta',
+			'post-kinds/get-quote-index',
+			'post-kinds/get-collection-items',
 			'post-kinds/lookup-music',
 			'post-kinds/lookup-video',
 			'post-kinds/lookup-book',
 			'post-kinds/lookup-podcast',
 			'post-kinds/lookup-venue',
 			'post-kinds/lookup-game',
+			'post-kinds/get-surface',
+			'post-kinds/get-public-location-fields',
+			'post-kinds/get-checkin-stats',
+			'post-kinds/list-venues',
 		];
 
 		return array_combine( $names, array_map( static fn( $name ) => [ $name ], $names ) );
@@ -83,7 +89,15 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 	 * @return array<string, array{0: string}>
 	 */
 	public static function write_ability_names(): array {
-		$names = [ 'post-kinds/create-post', 'post-kinds/set-kind', 'post-kinds/update-post-meta' ];
+		$names = [
+			'post-kinds/create-post',
+			'post-kinds/set-kind',
+			'post-kinds/update-post-meta',
+			'post-kinds/backfill-surfaces',
+			'post-kinds/backfill-card-meta',
+			'post-kinds/backfill-listen-media-type',
+			'post-kinds/backfill-featured-artwork',
+		];
 
 		return array_combine( $names, array_map( static fn( $name ) => [ $name ], $names ) );
 	}

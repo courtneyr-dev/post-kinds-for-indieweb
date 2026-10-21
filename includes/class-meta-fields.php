@@ -114,6 +114,19 @@ class Meta_Fields {
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
+			'issue_number'            => [
+				'type'        => 'string',
+				'description' => __( 'Issue number in the repository, digits only.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => [ $this, 'sanitize_issue_number' ],
+				'default'     => '',
+			],
+			'issue_status'            => [
+				'type'        => 'string',
+				'description' => __( 'Issue status: open or closed. Empty when the post sets none.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => [ $this, 'sanitize_issue_status' ],
+				'default'     => '',
+				'enum'        => [ '', 'open', 'closed' ],
+			],
 
 			// RSVP Fields.
 			'rsvp_status'             => [
@@ -454,8 +467,8 @@ class Meta_Fields {
 				'default'     => '',
 			],
 
-			// Comic Fields: a comic someone read (comic-card). A comics post with
-			// no card, a strip its author drew, stores none of these.
+			// Comic Fields: a comic someone read (comic-card). A drawn strip may
+			// store series and number, but never title or status.
 			'comic_title'             => [
 				'type'        => 'string',
 				'description' => __( 'Title of the comic.', 'post-kinds-for-indieweb-in-block-themes' ),
@@ -470,7 +483,7 @@ class Meta_Fields {
 			],
 			'comic_series'            => [
 				'type'        => 'string',
-				'description' => __( 'Series the comic belongs to.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Series the comic belongs to, including a drawn strip.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
@@ -482,7 +495,7 @@ class Meta_Fields {
 			],
 			'comic_issue'             => [
 				'type'        => 'string',
-				'description' => __( 'Issue number within the series or volume.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Issue or strip number within the series or volume.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
@@ -1362,6 +1375,60 @@ class Meta_Fields {
 			$visible[ $key ] = $pkiw_tier[ $key ] && $sl_tier[ $key ];
 		}
 		return $visible;
+	}
+
+	/**
+	 * What a logged-out visitor may see of a post's location, for output that leaves the request.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array{visible: array<string,bool>, meta: array<string,string>}
+	 */
+	public static function get_public_location_view( int $post_id ): array {
+		$visible = self::get_public_location_fields( $post_id );
+		$post    = get_post( $post_id );
+
+		if ( ! $post instanceof \WP_Post || 'publish' !== $post->post_status || '' !== (string) $post->post_password ) {
+			return [
+				'visible' => array_fill_keys( array_keys( $visible ), false ),
+				'meta'    => [],
+			];
+		}
+
+		// The check-in syncs store a postal code that LOCATION_KEY_TIERS doesn't list.
+		$tiers = self::LOCATION_KEY_TIERS + [ 'checkin_postal_code' => 'postal_code' ];
+
+		$meta = [];
+		foreach ( $tiers as $key => $tier ) {
+			if ( empty( $visible[ $tier ] ) ) {
+				continue;
+			}
+
+			$value = get_metadata_raw( 'post', $post_id, self::PREFIX . $key, true );
+			if ( null === $value || '' === (string) $value ) {
+				continue;
+			}
+			$meta[ $key ] = (string) $value;
+		}
+
+		// Native Simple Location keys, under their own names. Where one shares
+		// a name with a Post Kinds field (geo_latitude, geo_longitude), the
+		// Post Kinds value read above wins.
+		foreach ( self::NATIVE_LOCATION_KEY_TIERS as $key => $tier ) {
+			if ( isset( $meta[ $key ] ) || empty( $visible[ $tier ] ) ) {
+				continue;
+			}
+
+			$value = get_metadata_raw( 'post', $post_id, $key, true );
+			if ( null === $value || '' === (string) $value ) {
+				continue;
+			}
+			$meta[ $key ] = (string) $value;
+		}
+
+		return [
+			'visible' => $visible,
+			'meta'    => $meta,
+		];
 	}
 
 	/**
@@ -2637,6 +2704,45 @@ class Meta_Fields {
 		$value = sanitize_text_field( (string) $value );
 
 		return in_array( $value, $valid, true ) ? $value : '';
+	}
+
+	/**
+	 * Sanitize an issue number.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param mixed $value Value to sanitize.
+	 * @return string One to nine ASCII digits, or ''.
+	 */
+	public function sanitize_issue_number( mixed $value ): string {
+		if ( ! is_scalar( $value ) || is_bool( $value ) ) {
+			return '';
+		}
+
+		$value = trim( (string) $value );
+		if ( str_starts_with( $value, '#' ) ) {
+			$value = trim( substr( $value, 1 ) );
+		}
+
+		return 1 === preg_match( '/^[0-9]{1,9}$/', $value ) ? $value : '';
+	}
+
+	/**
+	 * Sanitize an issue status.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param mixed $value Value to sanitize.
+	 * @return string Open, closed, or ''.
+	 */
+	public function sanitize_issue_status( mixed $value ): string {
+		if ( ! is_scalar( $value ) ) {
+			return '';
+		}
+
+		$value = strtolower( trim( (string) $value ) );
+
+		return in_array( $value, [ 'open', 'closed' ], true ) ? $value : '';
 	}
 
 	/**

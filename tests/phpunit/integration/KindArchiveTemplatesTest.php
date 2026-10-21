@@ -37,6 +37,7 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 
 	public function tear_down(): void {
 		\PKIW\Kind_Archive_Layouts::unregister_filtered_view( 'listen', 'pkiw_listen_type' );
+		\PKIW\Kind_Archive_Layouts::unregister_filtered_view( 'comics', 'pkiw_comic_view' );
 		\PKIW\Kind_Archive_Layouts::set_rest_view( '' );
 		remove_filter( 'query_vars', [ $this, 'listen_view_query_var' ] );
 		switch_theme( $this->original_stylesheet );
@@ -497,6 +498,8 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 			'podcast listens archive' => [ 'taxonomy-kind-listen-podcast', 'Podcast Listens Archive' ],
 			'wish archive'           => [ 'taxonomy-kind-wish', 'Wish Archive' ],
 			'question archive'       => [ 'taxonomy-kind-question', 'Question Archive' ],
+			'drawn comics archive'   => [ 'taxonomy-kind-comics-drawn', 'Comics Drawn Archive' ],
+			'quote archive'          => [ 'taxonomy-kind-quote', 'Quote Archive' ],
 		];
 	}
 
@@ -563,7 +566,7 @@ final class KindArchiveTemplatesTest extends WP_UnitTestCase {
 		$method = strpos( $source, 'private function init_media_archives(): void {' );
 		$this->assertNotFalse( $method );
 		$previous = $method;
-		foreach ( [ 'Video_Archive', 'Audio_Archive', 'Audio_Transcript', 'Jam_Archive', 'Listen_Archive', 'Wish_Archive', 'Question_Archive', 'Question_Answers', 'Question_Location' ] as $class ) {
+		foreach ( [ 'Video_Archive', 'Audio_Archive', 'Audio_Transcript', 'Jam_Archive', 'Listen_Archive', 'Wish_Archive', 'Question_Archive', 'Question_Answers', 'Question_Location', 'Quote_Archive' ] as $class ) {
 			$at = strpos( $source, "class_exists( __NAMESPACE__ . '\\\\{$class}' )", $previous );
 			$this->assertNotFalse( $at, $class );
 			$this->assertStringContainsString( "( new {$class}() )->register();", substr( $source, $at, 140 ), $class );

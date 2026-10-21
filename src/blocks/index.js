@@ -67,6 +67,7 @@ import './jam-card';
 import './wish-card';
 import './mood-card';
 import './acquisition-card';
+import './collection-item';
 import './exercise-card';
 import './sleep-card';
 import './craft-card';
