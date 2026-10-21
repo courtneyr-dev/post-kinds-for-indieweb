@@ -670,6 +670,9 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Question_Location' ) ) {
 			( new Question_Location() )->register();
 		}
+		if ( class_exists( __NAMESPACE__ . '\\Collection_Items' ) ) {
+			( new Collection_Items() )->register();
+		}
 		if ( class_exists( __NAMESPACE__ . '\\Issue_Archive' ) ) {
 			( new Issue_Archive() )->register();
 		}
@@ -1036,6 +1039,7 @@ final class Plugin {
 			'wish-card',
 			'mood-card',
 			'acquisition-card',
+			'collection-item',
 			'checkin-dashboard',
 			'checkins-feed',
 			'venue-detail',
@@ -1450,6 +1454,11 @@ final class Plugin {
 			'taxonomy-kind-question'       => [
 				'title'       => __( 'Question Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Question archive in sections: answered, then waiting for an answer.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-collection'     => [
+				'title'       => __( 'Collection Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Collection archive: one cabinet per collection with its item count.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 			'taxonomy-kind-issue'          => [
