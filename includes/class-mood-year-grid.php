@@ -336,7 +336,7 @@ final class Mood_Year_Grid {
 		$items = '';
 		foreach ( $families as $family ) {
 			$items .= sprintf(
-				'<li data-family="%1$s"><span class="pkiw-mood-legend__swatch" aria-hidden="true"></span><span class="pkiw-mood-legend__code">%2$s</span> <span class="pkiw-mood-legend__label">%3$s</span></li>',
+				'<li data-family="%1$s"><span class="pkiw-mood-legend__swatch" aria-hidden="true" role="presentation"></span><span class="pkiw-mood-legend__code">%2$s</span> <span class="pkiw-mood-legend__label">%3$s</span></li>',
 				esc_attr( $family['key'] ),
 				esc_html( $family['code'] ),
 				esc_html( $family['label'] )
