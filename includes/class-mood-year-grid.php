@@ -388,7 +388,7 @@ final class Mood_Year_Grid {
 			}
 
 			$months .= sprintf(
-				'<li class="pkiw-mood-month"><h%1$d class="pkiw-mood-month__name"><span aria-hidden="true">%2$s</span><span class="pkiw-mood-year__sr">%3$s</span></h%1$d><div class="pkiw-mood-month__days">%4$s</div></li>',
+				'<li class="pkiw-mood-month"><h%1$d class="pkiw-mood-month__name"><span aria-hidden="true">%2$s</span><span class="pkiw-mood-year__sr screen-reader-text">%3$s</span></h%1$d><div class="pkiw-mood-month__days">%4$s</div></li>',
 				$level,
 				esc_html( (string) wp_date( 'M', $first->getTimestamp() ) ),
 				esc_html( (string) wp_date( 'F', $first->getTimestamp() ) ),
@@ -396,7 +396,7 @@ final class Mood_Year_Grid {
 			);
 		}
 
-		return '<div class="pkiw-mood-year__grid"><ol class="pkiw-mood-year__gutter" aria-hidden="true">' . $gutter . '</ol><ol class="pkiw-mood-year__months">' . $months . '</ol></div>';
+		return '<div class="pkiw-mood-year__grid"><ol class="pkiw-mood-year__gutter" aria-hidden="true" role="presentation">' . $gutter . '</ol><ol class="pkiw-mood-year__months">' . $months . '</ol></div>';
 	}
 
 	/**

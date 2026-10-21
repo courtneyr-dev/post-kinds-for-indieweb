@@ -183,8 +183,10 @@ function card_rating_html( $rating, int $best = 5, bool $decorative = false ): s
 	$half    = '<svg class="half" viewBox="0 0 24 24" fill="currentColor" focusable="false"><path class="off" d="' . $path . '"/><path d="' . $path . '" style="clip-path:' . $clip . '"/></svg>';
 	$machine = rtrim( rtrim( number_format( $counts['value'], 2, '.', '' ), '0' ), '.' );
 
+	// role="presentation" beside aria-hidden marks decorative stars as ornament,
+	// which is how Accessibility Checker Pro tells them from hidden content.
 	$name = $decorative
-		? ' aria-hidden="true"'
+		? ' aria-hidden="true" role="presentation"'
 		: ' role="img" aria-label="' . esc_attr( card_rating_label( $counts['value'], $counts['best'] ) ) . '"';
 
 	return '<div class="pk-stars"' . $name . '>'
