@@ -305,7 +305,8 @@ final class PlayCardTabletopTest extends WP_UnitTestCase {
 		$stars = $xpath->query( './/div[' . self::has_class( 'pk-stars' ) . ']', $pad )->item( 0 );
 		$this->assertInstanceOf( DOMElement::class, $stars );
 		$this->assertSame( 'true', $stars->getAttribute( 'aria-hidden' ) );
-		$this->assertFalse( $stars->hasAttribute( 'role' ) );
+		// Decorative beside the visible rating: no role="img" name, marked as ornament.
+		$this->assertSame( 'presentation', $stars->getAttribute( 'role' ) );
 		$this->assertSame( 1, $xpath->query( './/data[' . self::has_class( 'p-rating' ) . '][@value="4"][@hidden]', $pad )->length );
 	}
 
