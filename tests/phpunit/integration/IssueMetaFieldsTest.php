@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+require_once dirname( __DIR__ ) . '/fixtures/issue-render-state-reset.php';
+
 use PKIW\Issue_Archive;
 use PKIW\Meta_Fields;
 use PKIW\Taxonomy;
@@ -15,6 +17,8 @@ use PKIW\Taxonomy;
  * @group integration
  */
 final class IssueMetaFieldsTest extends WP_UnitTestCase {
+
+	use Issue_Render_State_Reset;
 
 	private Meta_Fields $fields;
 
@@ -26,6 +30,7 @@ final class IssueMetaFieldsTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down(): void {
+		$this->reset_render_state();
 		set_current_screen( 'front' );
 		wp_dequeue_script( Issue_Archive::SCRIPT_HANDLE );
 		wp_set_current_user( 0 );

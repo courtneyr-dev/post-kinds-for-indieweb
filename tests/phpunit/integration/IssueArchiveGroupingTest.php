@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+require_once dirname( __DIR__ ) . '/fixtures/issue-render-state-reset.php';
+
 use PKIW\Issue_Archive;
 use PKIW\Meta_Fields;
 use PKIW\Plugin;
@@ -16,6 +18,8 @@ use PKIW\Taxonomy;
  * @group integration
  */
 final class IssueArchiveGroupingTest extends WP_UnitTestCase {
+
+	use Issue_Render_State_Reset;
 
 	/** @var array<string, int> */
 	private array $ids = [];
@@ -37,6 +41,7 @@ final class IssueArchiveGroupingTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down(): void {
+		$this->reset_render_state();
 		$this->set_permalink_structure( '' );
 		wp_set_current_user( 0 );
 		switch_theme( $this->original_stylesheet );

@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+require_once dirname( __DIR__ ) . '/fixtures/issue-render-state-reset.php';
+
 use PKIW\Abilities\Core_Abilities;
 use PKIW\Issue_Archive;
 use PKIW\Meta_Fields;
@@ -16,6 +18,8 @@ use PKIW\Taxonomy;
  * @group integration
  */
 final class IssuePrivacyTest extends WP_UnitTestCase {
+
+	use Issue_Render_State_Reset;
 
 	public function set_up(): void {
 		parent::set_up();
@@ -27,6 +31,7 @@ final class IssuePrivacyTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down(): void {
+		$this->reset_render_state();
 		set_query_var( 'atproto', null );
 		wp_reset_postdata();
 		wp_set_current_user( 0 );

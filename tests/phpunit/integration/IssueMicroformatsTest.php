@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+require_once dirname( __DIR__ ) . '/fixtures/issue-render-state-reset.php';
+
 use PKIW\Issue_Archive;
 use PKIW\Meta_Fields;
 use PKIW\Taxonomy;
@@ -15,6 +17,8 @@ use PKIW\Taxonomy;
  * @group integration
  */
 final class IssueMicroformatsTest extends WP_UnitTestCase {
+
+	use Issue_Render_State_Reset;
 
 	private string $original_stylesheet = '';
 	private int $author_id = 0;
@@ -33,6 +37,7 @@ final class IssueMicroformatsTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down(): void {
+		$this->reset_render_state();
 		wp_reset_postdata();
 		$this->set_permalink_structure( '' );
 		switch_theme( $this->original_stylesheet );

@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+require_once dirname( __DIR__ ) . '/fixtures/issue-render-state-reset.php';
+
 use PKIW\Issue_Archive;
 use PKIW\Meta_Fields;
 use PKIW\Grouping\Archive_Group;
@@ -15,6 +17,8 @@ use PKIW\Grouping\Archive_Group;
  * @group integration
  */
 final class IssueLanesTest extends WP_UnitTestCase {
+
+	use Issue_Render_State_Reset;
 
 	/**
 	 * Create a post carrying one raw issue status.

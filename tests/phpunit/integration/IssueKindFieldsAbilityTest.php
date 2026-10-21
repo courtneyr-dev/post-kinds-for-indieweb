@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+require_once dirname( __DIR__ ) . '/fixtures/issue-render-state-reset.php';
+
 use PKIW\Abilities\Core_Abilities;
 use PKIW\Abilities_Manager;
 use PKIW\Meta_Fields;
@@ -16,6 +18,8 @@ use PKIW\Taxonomy;
  * @group integration
  */
 final class IssueKindFieldsAbilityTest extends WP_UnitTestCase {
+
+	use Issue_Render_State_Reset;
 
 	private Core_Abilities $abilities;
 
@@ -29,6 +33,7 @@ final class IssueKindFieldsAbilityTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down(): void {
+		$this->reset_render_state();
 		wp_set_current_user( 0 );
 		Core_Abilities::reset();
 		parent::tear_down();
