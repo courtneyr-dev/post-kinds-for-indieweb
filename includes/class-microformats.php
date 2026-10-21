@@ -1026,6 +1026,20 @@ class Microformats {
 				}
 				break;
 
+			case 'quote':
+				$facts  = Kind_Facts::get( $post_id );
+				$work   = (string) ( $facts['work'] ?? '' );
+				$author = (string) ( $facts['author'] ?? '' );
+				$url    = (string) ( $facts['url'] ?? '' );
+				if ( ( '' !== $work || '' !== $author || '' !== $url ) && ! $this->has_class_token( $content, 'u-quotation-of' ) ) {
+					$hidden_data .= '<span class="u-quotation-of h-cite">';
+					$hidden_data .= '' !== $work ? '<span class="p-name">' . esc_html( $work ) . '</span>' : '';
+					$hidden_data .= '' !== $author ? '<span class="p-author">' . esc_html( $author ) . '</span>' : '';
+					$hidden_data .= '' !== $url ? '<data class="u-url" value="' . esc_url( $url ) . '"></data>' : '';
+					$hidden_data .= '</span>';
+				}
+				break;
+
 			case 'event':
 				$start = get_post_meta( $post_id, $prefix . 'event_start', true );
 				$end   = get_post_meta( $post_id, $prefix . 'event_end', true );

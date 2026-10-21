@@ -1,0 +1,62 @@
+.pkiw-quote-tabs ul,
+.pkiw-quote-works ul,
+.pkiw-quote-section__items {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.pkiw-quote-tabs ul {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--wp--preset--spacing--20, 0.5rem);
+}
+
+.pkiw-quote-tabs a {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 44px;
+	min-width: 44px;
+}
+
+.pkiw-quote-works ul {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--wp--preset--spacing--30, 1rem);
+}
+
+.pkiw-quote-works.is-long ul {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.pkiw-quote-work {
+	display: grid;
+	gap: var(--wp--preset--spacing--10, 0.25rem);
+}
+
+.pkiw-quote-entry {
+	position: relative;
+}
+
+.pkiw-quote-entry__link {
+	position: absolute;
+	inset: 0;
+}
+
+.pkiw-quote-entry__link:focus-visible {
+	outline: 2px solid currentcolor;
+	outline-offset: 3px;
+}
+
+.pkiw-quote-entry [hidden],
+.pkiw-quote-entry__link[hidden] {
+	display: none !important;
+}
+
+@media (max-width: 40rem) {
+
+	.pkiw-quote-works ul {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
