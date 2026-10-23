@@ -66,6 +66,30 @@ final class QuoteFactsTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( '<', $facts['text'] . $facts['block_cite'] );
 	}
 
+	public function test_inline_markup_split_before_punctuation_keeps_the_authored_sentence(): void {
+		$content = '<!-- wp:quote {"className":"is-style-side-rule-editorial"} -->' . "\n"
+			. '<blockquote class="wp-block-quote is-style-side-rule-editorial"><!-- wp:paragraph -->' . "\n"
+			. '<p><span class="sme-highlighter">When the risk to feel embarrassed becomes more painful than the risk it takes to try</span>. </p>' . "\n"
+			. '<!-- /wp:paragraph -->' . "\n"
+			. '<!-- wp:paragraph -->' . "\n"
+			. '<p>Well, I know which risk I’d rather take.</p>' . "\n"
+			. '<!-- /wp:paragraph --><cite>Ted Lasso</cite></blockquote>' . "\n"
+			. '<!-- /wp:quote -->';
+		$facts   = Quote_Archive::facts( $this->quote( [ 'post_content' => $content ] ) );
+
+		$this->assertSame( 'When the risk to feel embarrassed becomes more painful than the risk it takes to try. Well, I know which risk I’d rather take.', $facts['text'] );
+		$this->assertStringNotContainsString( 'try .', $facts['text'] );
+		$this->assertSame( 'Ted Lasso', $facts['block_cite'] );
+	}
+
+	public function test_adjacent_paragraphs_and_line_breaks_still_separate_words(): void {
+		$content = '<!-- wp:quote --><blockquote class="wp-block-quote"><p>One<em>word</em>.</p><p>Two<br>lines.</p><cite>Some<br>Author</cite></blockquote><!-- /wp:quote -->';
+		$facts   = Quote_Archive::facts( $this->quote( [ 'post_content' => $content ] ) );
+
+		$this->assertSame( 'Oneword. Two lines.', $facts['text'] );
+		$this->assertSame( 'Some Author', $facts['block_cite'] );
+	}
+
 	public function test_no_quote_block_falls_back_to_plain_post_content(): void {
 		$id = $this->quote( [ 'post_content' => '<!-- wp:paragraph --><p>Fallback <em>body</em> text.</p><!-- /wp:paragraph -->[caption]removed[/caption]' ] );
 

@@ -55,6 +55,33 @@ final class Quote_Archive {
 	/** Cached aggregate key. */
 	public const INDEX_TRANSIENT = 'pkiw_quote_index_v1';
 
+	/**
+	 * Tags whose boundaries separate words when quote HTML becomes plain text.
+	 */
+	private const TEXT_BREAKS = [
+		'ADDRESS'    => true,
+		'BLOCKQUOTE' => true,
+		'BR'         => true,
+		'DD'         => true,
+		'DIV'        => true,
+		'DT'         => true,
+		'FIGCAPTION' => true,
+		'FIGURE'     => true,
+		'H1'         => true,
+		'H2'         => true,
+		'H3'         => true,
+		'H4'         => true,
+		'H5'         => true,
+		'H6'         => true,
+		'HR'         => true,
+		'LI'         => true,
+		'P'          => true,
+		'PRE'        => true,
+		'TD'         => true,
+		'TH'         => true,
+		'TR'         => true,
+	];
+
 	/** Query flag for the exact empty-password SQL guard. */
 	private const PUBLIC_QUERY_VAR = 'pkiw_quote_public';
 
@@ -783,10 +810,14 @@ final class Quote_Archive {
 				$in_cite  = max( 0, $in_cite );
 				continue;
 			}
-			if ( '#text' !== $name ) {
+			if ( '#text' === $name ) {
+				$value = $processor->get_modifiable_text();
+			} elseif ( isset( self::TEXT_BREAKS[ $name ] ) ) {
+				// Inline tags join their neighbours directly; block boundaries and line breaks separate words.
+				$value = ' ';
+			} else {
 				continue;
 			}
-			$value = $processor->get_modifiable_text();
 			if ( $in_cite > 0 ) {
 				$cite[] = $value;
 			} else {
@@ -794,7 +825,7 @@ final class Quote_Archive {
 			}
 		}
 
-		return [ self::collapse_text( implode( ' ', $text ) ), self::collapse_text( implode( ' ', $cite ) ) ];
+		return [ self::collapse_text( implode( '', $text ) ), self::collapse_text( implode( '', $cite ) ) ];
 	}
 
 	/**
