@@ -1430,8 +1430,13 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * The Bluesky post's text and link card description are ATmosphere's
-	 * excerpts of raw post_content, so they read the legacy card's HTML too.
+	 * The Bluesky post's text and link card description come from the post's
+	 * content, so the legacy card's HTML is in reach of them.
+	 *
+	 * ATmosphere 2.1.0 excerpts raw post_content, which carries the card's event
+	 * name. Trunk renders the post as a logged-out visitor (wordpress-atmosphere
+	 * #289), and that render prints no event name for a pre-#32 card (#430). The
+	 * post's own paragraph reaches the record either way, so it anchors the check.
 	 *
 	 * @group atmosphere
 	 */
@@ -1439,7 +1444,7 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		$id     = $this->legacy_rsvp_for_atmosphere();
 		$record = ( new \Atmosphere\Transformer\Post( get_post( $id ) ) )->transform();
 
-		$this->assertStringContainsString( self::EVENT, (string) wp_json_encode( $record ), 'The record holds the excerpt.' );
+		$this->assertStringContainsString( 'See you in the back room.', (string) wp_json_encode( $record ), 'The record holds the excerpt.' );
 		$this->assertStringNotContainsString( self::LOCATION, (string) wp_json_encode( $record ) );
 	}
 

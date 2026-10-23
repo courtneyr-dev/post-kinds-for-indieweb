@@ -99,7 +99,7 @@ final class QuoteEntryBlockTest extends WP_UnitTestCase {
 		$content = '<!-- wp:quote --><blockquote><p>Words <span class="sme-highlighter">stay plain</span>.</p><cite><a href="https://example.com/author">Linked Cite</a></cite></blockquote><!-- /wp:quote -->';
 		$html    = Quote_Archive::entry_html( get_post( $this->quote( [ 'post_content' => $content ] ) ) );
 
-		$this->assertStringContainsString( '<p>Words stay plain .</p>', $html );
+		$this->assertStringContainsString( '<p>Words stay plain.</p>', $html );
 		$this->assertStringContainsString( '>Linked Cite</cite>', $html );
 		$this->assertStringNotContainsString( 'sme-highlighter', $html );
 		$this->assertSame( 1, substr_count( $html, '<a ' ) );
