@@ -113,8 +113,8 @@ final class AiEnhancementsKindTest extends WP_UnitTestCase {
 	 * @param WP_AI_Client_Prompt_Builder $builder Builder core passed to the filter.
 	 */
 	private function prompt_text( WP_AI_Client_Prompt_Builder $builder ): string {
-		$inner    = ( new ReflectionProperty( $builder, 'builder' ) )->getValue( $builder );
-		$messages = ( new ReflectionProperty( $inner, 'messages' ) )->getValue( $inner );
+		$inner    = $this->private_value( $builder, 'builder' );
+		$messages = $this->private_value( $inner, 'messages' );
 
 		$text = '';
 		foreach ( $messages as $message ) {
@@ -123,6 +123,26 @@ final class AiEnhancementsKindTest extends WP_UnitTestCase {
 			}
 		}
 		return $text;
+	}
+
+	/**
+	 * Read a private property from whichever class in $object's hierarchy declares it.
+	 *
+	 * WordPress 7.2 moved the wrapped builder from WP_AI_Client_Prompt_Builder to
+	 * its new parent WP_AI_Client_Builder, and a ReflectionProperty built on the
+	 * child can't see a parent's private property (#420).
+	 *
+	 * @param object $object Object to read.
+	 * @param string $name   Property name.
+	 * @return mixed
+	 */
+	private function private_value( object $object, string $name ) {
+		for ( $class = new ReflectionClass( $object ); false !== $class; $class = $class->getParentClass() ) {
+			if ( $class->hasProperty( $name ) ) {
+				return $class->getProperty( $name )->getValue( $object );
+			}
+		}
+		$this->fail( sprintf( '%s has no %s property in its hierarchy.', get_class( $object ), $name ) );
 	}
 
 	/**
