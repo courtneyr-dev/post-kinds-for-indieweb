@@ -719,6 +719,9 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Sleep_Location' ) ) {
 			( new Sleep_Location() )->register();
 		}
+		if ( class_exists( __NAMESPACE__ . '\\Location_Timezone' ) ) {
+			( new Location_Timezone() )->register();
+		}
 		if ( class_exists( __NAMESPACE__ . '\\Craft_Archive' ) ) {
 			( new Craft_Archive() )->register();
 		}
