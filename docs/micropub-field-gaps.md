@@ -50,7 +50,7 @@ property today** (`—` = nothing maps) | **proposed property for Outpost**
 | `region` | — | h-adr `region` |
 | `country` | — | h-adr `country-name` |
 | `postalCode` | — | h-adr `postal-code` |
-| `locationPrivacy` | — | `mp-location-privacy` (vendor extension; no mf2 equivalent) |
+| `locationPrivacy` | `mp-location-privacy` (`public`/`approximate`/`private`), else Simple Location's `location-visibility` (`protected` reads as `approximate`); neither keeps the card default, approximate (#370) | no change needed |
 | `osmId` | — | `mp-osm-id` (vendor extension) |
 | `venueUrl` | — | h-card `url` from `location` |
 | `foursquareId` | — | `mp-foursquare-id` (vendor extension) |
