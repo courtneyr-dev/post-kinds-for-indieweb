@@ -989,6 +989,9 @@ final class Plugin {
 		// plain text. Idempotent — only writes the first time per post.
 		Micropub_Content_Builder::register();
 
+		// Micropub q=source shows a token what a visitor sees (issue 351).
+		Micropub_Source_Privacy::register();
+
 		// Register block templates for CPT and taxonomy archives.
 		add_filter( 'get_block_templates', [ $this, 'add_plugin_templates' ], 10, 3 );
 		add_filter( 'pre_get_block_file_template', [ $this, 'get_plugin_template' ], 10, 3 );

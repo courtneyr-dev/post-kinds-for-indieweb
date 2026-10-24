@@ -609,7 +609,11 @@ final class Micropub_Content_Builder {
 	 *
 	 * Recognizes Outpost's `mp-place-name` extension as the venue name and
 	 * parses `geo:lat,lon` URIs from `location` into latitude/longitude
-	 * attributes.
+	 * attributes. An `mp-location-privacy` or `location-visibility` property
+	 * sets the card's locationPrivacy (issue 370, see
+	 * location_privacy_from_request()), so a
+	 * public check-in isn't held at the card default by the stricter-wins
+	 * privacy sync.
 	 *
 	 * @param array<string, mixed> $properties h-entry properties bag.
 	 * @return string Block-comment markup for the checkin-card block.
@@ -617,8 +621,9 @@ final class Micropub_Content_Builder {
 	private static function checkin_card( array $properties ): string {
 		$attrs = self::filter_empty(
 			[
-				'venueName' => self::flatten_scalar( $properties, 'mp-place-name' ),
-				'note'      => self::flatten_scalar( $properties, 'content' ),
+				'venueName'       => self::flatten_scalar( $properties, 'mp-place-name' ),
+				'note'            => self::flatten_scalar( $properties, 'content' ),
+				'locationPrivacy' => self::location_privacy_from_request( $properties ),
 			]
 		);
 		$geo   = self::parse_geo_from_location( $properties );
@@ -627,6 +632,38 @@ final class Micropub_Content_Builder {
 			$attrs['longitude'] = $geo['lon'];
 		}
 		return self::self_closing_block( 'post-kinds-indieweb/checkin-card', $attrs );
+	}
+
+	/**
+	 * The check-in card's locationPrivacy from a request: the
+	 * `mp-location-privacy` vendor extension (public, approximate or
+	 * private, docs/micropub-field-gaps.md) when it holds one of those,
+	 * else Simple Location's `location-visibility` (public, protected or
+	 * private). Protected (text, no coordinates) maps to approximate, the
+	 * nearest card setting. Anything else, or neither property, gives '' so
+	 * the card keeps its default.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return string 'public', 'approximate', 'private' or ''.
+	 */
+	private static function location_privacy_from_request( array $properties ): string {
+		$map = [
+			'public'      => 'public',
+			'protected'   => 'approximate',
+			'approximate' => 'approximate',
+			'private'     => 'private',
+		];
+		foreach ( [ 'mp-location-privacy', 'location-visibility' ] as $key ) {
+			$value = strtolower( trim( self::flatten_scalar( $properties, $key ) ) );
+			if ( 'mp-location-privacy' === $key && 'protected' === $value ) {
+				continue;
+			}
+			if ( isset( $map[ $value ] ) ) {
+				return $map[ $value ];
+			}
+		}
+
+		return '';
 	}
 
 	/**

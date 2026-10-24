@@ -377,8 +377,8 @@ class Card_Meta_Sync {
 	 * 'values' runs loosest to strictest. 'default' is the block.json
 	 * default, the card's value when its comment leaves the attribute out,
 	 * and how any value outside 'values' reads, as Meta_Fields reads it.
-	 * The check-in setting follows the first mapped card, as ATTR_META_MAP
-	 * does; the RSVP setting follows the first RSVP card. Cost visibility
+	 * The check-in setting follows the post's first check-in card wherever
+	 * it sits (issue 369); the RSVP setting follows the first RSVP card. Cost visibility
 	 * isn't here: Meta_Fields::COST_PUBLIC_KEY has no writer but the card.
 	 *
 	 * @var array<string, array{attr: string, suffix: string, default: string, values: string[]}>
@@ -1269,25 +1269,48 @@ class Card_Meta_Sync {
 		foreach ( self::STRICTER_PRIVACY as $name => $setting ) {
 			$row  = $stored[ $setting['suffix'] ] ?? null;
 			$card = self::privacy_card( $blocks, $name );
-			if ( null !== $row && null !== $card ) {
+			if ( null === $card ) {
+				continue;
+			}
+			if ( null !== $row ) {
 				self::keep_stricter( $post_id, $setting, $card, $row );
+			} elseif ( ! self::card_synced_privacy( $blocks, $name, $card ) ) {
+				// No sync wrote this card's setting: a check-in card behind
+				// another mapped card (issue 369). Hold the row to it.
+				self::keep_stricter( $post_id, $setting, $card, get_metadata_raw( 'post', $post_id, Meta_Fields::PREFIX . $setting['suffix'], true ) );
 			}
 		}
 	}
 
 	/**
-	 * The card a STRICTER_PRIVACY setting follows: the check-in setting the
-	 * first mapped card, when it's a check-in card, as ATTR_META_MAP syncs
-	 * it; the RSVP setting the first RSVP card.
+	 * Whether sync_content() wrote a card's privacy setting itself: an
+	 * ATTR_META_MAP card only when it's the post's first mapped card.
+	 *
+	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
+	 * @param string                           $name   A STRICTER_PRIVACY block name.
+	 * @param array<string, mixed>             $card   The card privacy_card() found.
+	 * @return bool
+	 */
+	private static function card_synced_privacy( array $blocks, string $name, array $card ): bool {
+		if ( ! isset( self::ATTR_META_MAP[ $name ] ) ) {
+			return true;
+		}
+
+		return self::find_first_mapped_block( $blocks ) === $card;
+	}
+
+	/**
+	 * The card a STRICTER_PRIVACY setting follows: the post's first card of
+	 * that type, wherever it sits. Until issue 369 the check-in setting
+	 * followed only a check-in card that was the first mapped card, so a
+	 * Private check-in card behind a read card was never held.
 	 *
 	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
 	 * @param string                           $name   A STRICTER_PRIVACY block name.
 	 * @return array<string, mixed>|null The card, or null when the post has none.
 	 */
 	private static function privacy_card( array $blocks, string $name ): ?array {
-		$card = isset( self::ATTR_META_MAP[ $name ] )
-			? self::find_first_mapped_block( $blocks )
-			: self::find_first_mapped_block( $blocks, $name );
+		$card = self::find_first_mapped_block( $blocks, $name );
 
 		return null !== $card && $name === $card['blockName'] ? $card : null;
 	}
