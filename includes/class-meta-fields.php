@@ -2040,6 +2040,54 @@ class Meta_Fields {
 		'post-kinds-indieweb/acquisition-card',
 		'post-kinds-indieweb/exercise-card',
 		'post-kinds-indieweb/sleep-card',
+		'post-kinds-indieweb/rsvp-card',
+		'post-kinds-indieweb/checkin-card',
+		'post-kinds-indieweb/eat-card',
+		'post-kinds-indieweb/drink-card',
+	];
+
+	/**
+	 * Location attributes in each venue card's block comment, mapped to the
+	 * get_public_location_fields() tier render.php gates them on (issue
+	 * 350). An attribute whose tier is hidden must not decide search.
+	 *
+	 * @var array<string, array<string, string>>
+	 */
+	private const CARD_LOCATION_ATTR_TIERS = [
+		'post-kinds-indieweb/checkin-card' => [
+			'venueName'    => 'name',
+			'address'      => 'street',
+			'locality'     => 'locality',
+			'region'       => 'region',
+			'country'      => 'country',
+			'postalCode'   => 'postal_code',
+			'latitude'     => 'coordinates',
+			'longitude'    => 'coordinates',
+			'osmId'        => 'osm_id',
+			'venueUrl'     => 'url',
+			'foursquareId' => 'venue_id',
+		],
+		'post-kinds-indieweb/eat-card'     => [
+			'restaurant'       => 'name',
+			'locationName'     => 'name',
+			'locationAddress'  => 'street',
+			'locationLocality' => 'name',
+			'locationRegion'   => 'name',
+			'locationCountry'  => 'name',
+			'geoLatitude'      => 'coordinates',
+			'geoLongitude'     => 'coordinates',
+			'restaurantUrl'    => 'url',
+		],
+		'post-kinds-indieweb/drink-card'   => [
+			'locationName'     => 'name',
+			'locationAddress'  => 'street',
+			'locationLocality' => 'name',
+			'locationRegion'   => 'name',
+			'locationCountry'  => 'name',
+			'geoLatitude'      => 'coordinates',
+			'geoLongitude'     => 'coordinates',
+			'venueUrl'         => 'url',
+		],
 	];
 
 	/**
@@ -2314,6 +2362,84 @@ class Meta_Fields {
 	}
 
 	/**
+	 * $content with each hidden card location taken out of the RSVP,
+	 * check-in, eat and drink card comments (issue 350).
+	 *
+	 * Those cards keep their location in the block comment, which WP_Query
+	 * search matches, so a visitor could confirm a hidden street by
+	 * searching for it. Each attribute goes by the rule its render.php
+	 * follows: an RSVP's `eventLocation` unless the card's
+	 * `locationVisibility` is 'public' and rsvp_location_visible() agrees,
+	 * a venue card's location attributes by their
+	 * get_public_location_fields() tier, and a drink brand filled from the
+	 * venue by drink_brand_visible(). A hidden attribute is removed outright,
+	 * as strip_private_health() does, and the static HTML an RSVP card
+	 * saved before #32 loses its location (strip_private_rsvp_location()).
+	 * Search is the only caller: a display read that wrote its result back
+	 * would erase the stored attributes.
+	 *
+	 * @param string $content Post content.
+	 * @param int    $post_id Post the content belongs to.
+	 * @return string
+	 */
+	public static function strip_private_location( string $content, int $post_id ): string {
+		$names = array_merge( [ 'post-kinds-indieweb/rsvp-card' ], array_keys( self::CARD_LOCATION_ATTR_TIERS ) );
+		$found = array_values( array_filter( $names, static fn( string $name ): bool => str_contains( $content, 'wp:' . $name ) ) );
+		if ( [] === $found ) {
+			return $content;
+		}
+
+		$content = self::strip_private_rsvp_location( $content, $post_id );
+		$visible = self::get_public_location_fields( $post_id );
+		$rsvp    = self::rsvp_location_visible( $post_id );
+		$brand   = self::drink_brand_visible( $post_id );
+		foreach ( $found as $name ) {
+			$quoted   = preg_quote( $name, '#' );
+			$pattern  = '#(?P<head><!--\s+wp:' . $quoted . '\s+)(?P<attrs>\{(?:(?:[^}]+|\}+(?=\})|(?!\}\s+/?-->).)*+)?\}\s+)?(?P<tail>/-->|-->(?P<inner>.*?)<!--\s+/wp:' . $quoted . '\s+-->)#s';
+			$stripped = preg_replace_callback(
+				$pattern,
+				static function ( array $card ) use ( $name, $visible, $rsvp, $brand ): string {
+					$decoded = json_decode( (string) $card['attrs'], true );
+					if ( ! is_array( $decoded ) ) {
+						return $card[0];
+					}
+
+					$hidden = [];
+					if ( 'post-kinds-indieweb/rsvp-card' === $name ) {
+						if ( ! ( $rsvp && 'public' === ( $decoded['locationVisibility'] ?? null ) ) ) {
+							$hidden[] = 'eventLocation';
+						}
+					} else {
+						foreach ( self::CARD_LOCATION_ATTR_TIERS[ $name ] as $attr => $tier ) {
+							if ( empty( $visible[ $tier ] ) ) {
+								$hidden[] = $attr;
+							}
+						}
+						if ( 'post-kinds-indieweb/drink-card' === $name && ! $brand ) {
+							$hidden[] = 'brand';
+						}
+					}
+
+					$kept = array_diff_key( $decoded, array_flip( $hidden ) );
+					if ( count( $kept ) === count( $decoded ) ) {
+						return $card[0];
+					}
+
+					return $card['head'] . ( [] === $kept ? '' : serialize_block_attributes( $kept ) . ' ' ) . $card['tail'];
+				},
+				$content,
+				-1,
+				$count,
+				PREG_UNMATCHED_AS_NULL
+			);
+
+			$content = is_string( $stripped ) ? $stripped : $content;
+		}
+
+		return $content;
+	}
+
+	/**
 	 * One acquisition card's `cost` attribute as plain text.
 	 *
 	 * @param string|null $attrs The card's block comment attributes, JSON.
@@ -2374,7 +2500,10 @@ class Meta_Fields {
 	 * through cost leaves the results, and a post that an excluded term
 	 * dropped only through cost comes back. REST search runs on WP_Query,
 	 * so it follows. The same pass hides the opt-in values and key names of
-	 * an exercise or sleep card (strip_private_health(), issue 245 and 247).
+	 * an exercise or sleep card (strip_private_health(), issue 245 and 247),
+	 * a hidden RSVP, check-in, eat or drink card location
+	 * (strip_private_location(), issue 350), and a stored title generated
+	 * from a hidden location, which is matched as Title_Privacy::safe_title().
 	 *
 	 * @param mixed $search Search SQL from WP_Query::parse_search().
 	 * @param mixed $query  The query.
@@ -2398,7 +2527,9 @@ class Meta_Fields {
 		if ( [] === $columns ) {
 			$columns = self::SEARCH_COLUMNS;
 		}
-		if ( ! in_array( 'post_content', $columns, true ) ) {
+		$by_content = in_array( 'post_content', $columns, true );
+		$by_title   = in_array( 'post_title', $columns, true );
+		if ( ! $by_content && ! $by_title ) {
 			return $search;
 		}
 
@@ -2418,13 +2549,26 @@ class Meta_Fields {
 			return $search;
 		}
 
-		$term_clauses = implode( "\n\t\t\t\t\t\t\tOR ", array_fill( 0, count( $likes ), 'post_content LIKE %s' ) );
-		$card_clauses = implode( ' OR ', array_fill( 0, count( self::SEARCH_PRIVATE_CARDS ), 'post_content LIKE %s' ) );
-		$card_likes   = array_map(
-			static fn( string $card ): string => '%' . $wpdb->esc_like( 'wp:' . $card ) . '%',
-			self::SEARCH_PRIVATE_CARDS
-		);
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Per-search lookup; $card_clauses and $term_clauses hold only %s placeholders, filled from $card_likes and $likes.
+		// Candidates: a post whose content holds a card with private values
+		// and a term, or whose title holds a term and may be a title
+		// generated from a location (Title_Privacy, issue 350).
+		$branches = [];
+		$args     = [ $wpdb->posts, 'revision' ];
+		if ( $by_content ) {
+			$card_clauses = implode( ' OR ', array_fill( 0, count( self::SEARCH_PRIVATE_CARDS ), 'post_content LIKE %s' ) );
+			$term_clauses = implode( ' OR ', array_fill( 0, count( $likes ), 'post_content LIKE %s' ) );
+			$branches[]   = '( ( ' . $card_clauses . ' ) AND ( ' . $term_clauses . ' ) )';
+			foreach ( self::SEARCH_PRIVATE_CARDS as $card ) {
+				$args[] = '%' . $wpdb->esc_like( 'wp:' . $card ) . '%';
+			}
+			$args = array_merge( $args, $likes );
+		}
+		if ( $by_title ) {
+			$title_clauses = implode( ' OR ', array_fill( 0, count( $likes ), 'post_title LIKE %s' ) );
+			$branches[]    = '( ( ' . $title_clauses . ' ) AND ID IN ( SELECT post_id FROM %i WHERE meta_key IN ( %s, %s, %s ) ) )';
+			$args          = array_merge( $args, $likes, [ $wpdb->postmeta, Title_Privacy::META_KEY, self::PREFIX . 'checkin_name', self::PREFIX . 'checkin_venue' ] );
+		}
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Per-search lookup; $branches hold only %i and %s placeholders, filled from $args in order.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				'
@@ -2439,20 +2583,10 @@ class Meta_Fields {
 					WHERE
 						post_type <> %s
 						AND (
-							' . $card_clauses . '
-						)
-						AND (
-							' . $term_clauses . '
+							' . implode( ' OR ', $branches ) . '
 						)
 				',
-				array_merge(
-					[
-						$wpdb->posts,
-						'revision',
-					],
-					$card_likes,
-					$likes
-				)
+				$args
 			)
 		);
 		// phpcs:enable
@@ -2460,25 +2594,35 @@ class Meta_Fields {
 		$include = [];
 		$exclude = [];
 		foreach ( (array) $rows as $row ) {
-			$id      = (int) $row->ID;
-			$content = (string) $row->post_content;
-			$safe    = self::strip_private_health( self::strip_private_cost( $content, $id, true ), $id );
-			if ( $safe === $content || current_user_can( 'edit_post', $id ) ) {
+			$id         = (int) $row->ID;
+			$content    = (string) $row->post_content;
+			$title      = (string) $row->post_title;
+			$safe       = self::strip_private_location( self::strip_private_health( self::strip_private_cost( $content, $id, true ), $id ), $id );
+			$safe_title = Title_Privacy::safe_title( $id );
+			$safe_title = $safe_title === $title ? $title : wp_strip_all_tags( $safe_title );
+			if ( ( $safe === $content && $safe_title === $title ) || current_user_can( 'edit_post', $id ) ) {
 				continue;
 			}
 
 			$fields = array_intersect_key(
 				[
-					'post_title'   => (string) $row->post_title,
+					'post_title'   => $title,
 					'post_excerpt' => (string) $row->post_excerpt,
 					'post_content' => $content,
 				],
 				array_flip( $columns )
 			);
 
-			$before                 = self::search_matches( $terms, $fields, $exact );
-			$fields['post_content'] = $safe;
-			$after                  = self::search_matches( $terms, $fields, $exact );
+			$before = self::search_matches( $terms, $fields, $exact );
+			$fields = array_intersect_key(
+				[
+					'post_title'   => $safe_title,
+					'post_excerpt' => (string) $row->post_excerpt,
+					'post_content' => $safe,
+				],
+				array_flip( $columns )
+			);
+			$after  = self::search_matches( $terms, $fields, $exact );
 
 			if ( $before === $after ) {
 				continue;
