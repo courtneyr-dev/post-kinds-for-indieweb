@@ -1852,23 +1852,32 @@ class Meta_Fields {
 	}
 
 	/**
-	 * Blank this plugin's cost meta in $meta unless the requester may see it:
-	 * they can edit the post, or acquisition_cost_visible() says public.
-	 * Shared by redact_cost_meta() (REST) and the post-kinds/get-post-meta
-	 * ability.
+	 * This plugin's cost meta in $meta as the requester may see it. Someone
+	 * who can edit the post gets the stored value. Anyone else gets the
+	 * cost the post's acquisition card prints when the card shows it
+	 * (`showCostPublicly` on and acquisition_cost_visible()), and '' when it
+	 * doesn't, so REST and the card can't disagree when the sidebar Price
+	 * differs from the card's cost (issue 381). Shared by redact_cost_meta()
+	 * (REST) and the post-kinds/get-post-meta ability.
 	 *
 	 * @param array<string, mixed> $meta    Meta values keyed by the full `_pkiw_`-prefixed field name.
 	 * @param int                  $post_id Post the meta belongs to.
 	 * @return array<string, mixed>
 	 */
 	public static function redact_cost_array( array $meta, int $post_id ): array {
-		if ( current_user_can( 'edit_post', $post_id ) || self::acquisition_cost_visible( $post_id ) ) {
+		if ( current_user_can( 'edit_post', $post_id ) ) {
 			return $meta;
+		}
+
+		$cost = '';
+		$card = self::acquisition_cost_visible( $post_id ) ? Acquisition_Archive::card_attrs( $post_id ) : null;
+		if ( is_array( $card ) && true === ( $card['showCostPublicly'] ?? null ) && is_string( $card['cost'] ?? null ) ) {
+			$cost = trim( $card['cost'] );
 		}
 
 		foreach ( self::COST_KEYS as $key ) {
 			if ( array_key_exists( self::PREFIX . $key, $meta ) ) {
-				$meta[ self::PREFIX . $key ] = '';
+				$meta[ self::PREFIX . $key ] = $cost;
 			}
 		}
 
