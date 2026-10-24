@@ -222,9 +222,9 @@ final class LocationTimezonePrivacyTest extends WP_UnitTestCase {
 	public function rest_field_tiers(): array {
 		return [
 			'private'     => [ 'private', [] ],
-			'approximate' => [ 'approximate', [ 'timezone' ] ],
+			'approximate' => [ 'approximate', [ 'latitude', 'longitude', 'geo_address', 'timezone' ] ],
 			'public'      => [ 'public', [ 'latitude', 'longitude', 'geo_address', 'timezone' ] ],
-			'unset (#441)' => [ '', [ 'latitude', 'longitude', 'geo_address', 'timezone' ] ],
+			'unset (issue 441)' => [ '', [ 'latitude', 'longitude', 'geo_address', 'timezone' ] ],
 		];
 	}
 

@@ -35,7 +35,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * It also removes Simple Location's top-level REST `latitude`,
  * `longitude`, `geo_address` and `timezone` when an explicit Post Kinds
  * privacy hides them, since Simple Location gates those on `geo_public`
- * alone. An unset privacy keeps them, as #441 keeps the head tags.
+ * alone. An unset privacy keeps them, as issue 441 keeps the head tags.
  *
  * The REST edit context keeps Simple Location's values: it needs edit
  * rights, and the block editor reads them.
@@ -160,8 +160,9 @@ final class Location_Timezone {
 
 	/**
 	 * Remove Simple Location's top-level location fields from a REST
-	 * response when the post's explicit Post Kinds privacy (private or
-	 * approximate) hides them, outside the edit context. Simple Location
+	 * response when the post's Post Kinds privacy is explicitly private,
+	 * outside the edit context. Approximate and unset privacy keep them, as
+	 * WeatherLocationGateTest expects for an approximate note. Simple Location
 	 * already blanks them for its own private and protected. Sleep, weather, question and chicken posts already strip
 	 * these in their own classes; this covers every other kind.
 	 *
@@ -180,10 +181,10 @@ final class Location_Timezone {
 			return $response;
 		}
 
-		// Courtney's #422 answer (#441): an unset Post Kinds privacy keeps
-		// Simple Location's output; only an explicit choice hides it.
+		// Only an explicit private hides Simple Location's REST fields
+		// (Courtney, 2026-10-24); unset keeps them (issue 422, issue 441).
 		// The raw row: get_post_meta() reads a missing row as the registered default, approximate.
-		if ( ! in_array( (string) get_metadata_raw( 'post', $post->ID, Meta_Fields::PREFIX . 'geo_privacy', true ), [ 'private', 'approximate' ], true ) ) {
+		if ( 'private' !== (string) get_metadata_raw( 'post', $post->ID, Meta_Fields::PREFIX . 'geo_privacy', true ) ) {
 			return $response;
 		}
 
