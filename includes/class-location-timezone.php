@@ -32,8 +32,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  * already say more than an offset, so its dates keep Simple Location's
  * local time. Sleep posts keep their own, stricter gate (Sleep_Location).
  *
- * The REST edit context keeps Simple Location's value: it needs edit
- * rights, and the block editor reads it.
+ * It also removes Simple Location's top-level REST `latitude`,
+ * `longitude`, `geo_address` and `timezone` when an explicit Post Kinds
+ * privacy hides them, since Simple Location gates those on `geo_public`
+ * alone. An unset privacy keeps them, as #441 keeps the head tags.
+ *
+ * The REST edit context keeps Simple Location's values: it needs edit
+ * rights, and the block editor reads them.
  */
 final class Location_Timezone {
 
@@ -55,7 +60,24 @@ final class Location_Timezone {
 			add_filter( $hook, [ self::class, 'keep_site_timezone' ], 10, 3 );
 		}
 		add_filter( 'rest_prepare_post', [ self::class, 'rest_site_dates' ], 30, 3 );
+		add_filter( 'rest_prepare_post', [ self::class, 'rest_hidden_location_fields' ], 30, 3 );
 	}
+
+	/**
+	 * Simple Location's top-level REST fields (5.0.25 class-geo-base.php:
+	 * 676-722) and the get_public_location_fields() tier each needs. Simple
+	 * Location gates them on its own `geo_public` only, blind to
+	 * `_pkiw_geo_privacy`. The timezone goes with the name tier, as the
+	 * dates do.
+	 *
+	 * @var array<string, string>
+	 */
+	private const REST_FIELD_TIERS = [
+		'latitude'    => 'coordinates',
+		'longitude'   => 'coordinates',
+		'geo_address' => 'street',
+		'timezone'    => 'name',
+	];
 
 	/**
 	 * Whether a post has a stored timezone and a hidden location.
@@ -132,6 +154,51 @@ final class Location_Timezone {
 			}
 		}
 		$response->set_data( $data );
+
+		return $response;
+	}
+
+	/**
+	 * Remove Simple Location's top-level location fields from a REST
+	 * response when the post's explicit Post Kinds privacy (private or
+	 * approximate) hides them, outside the edit context. Simple Location
+	 * already blanks them for its own private and protected. Sleep, weather, question and chicken posts already strip
+	 * these in their own classes; this covers every other kind.
+	 *
+	 * @internal Hooked to `rest_prepare_post` at 30.
+	 *
+	 * @param mixed $response Response.
+	 * @param mixed $post     Post.
+	 * @param mixed $request  Request.
+	 * @return mixed
+	 */
+	public static function rest_hidden_location_fields( $response, $post, $request ) {
+		if ( ! $response instanceof \WP_REST_Response || ! $post instanceof \WP_Post || ! $request instanceof \WP_REST_Request ) {
+			return $response;
+		}
+		if ( 'edit' === $request->get_param( 'context' ) ) {
+			return $response;
+		}
+
+		// Courtney's #422 answer (#441): an unset Post Kinds privacy keeps
+		// Simple Location's output; only an explicit choice hides it.
+		// The raw row: get_post_meta() reads a missing row as the registered default, approximate.
+		if ( ! in_array( (string) get_metadata_raw( 'post', $post->ID, Meta_Fields::PREFIX . 'geo_privacy', true ), [ 'private', 'approximate' ], true ) ) {
+			return $response;
+		}
+
+		$data    = $response->get_data();
+		$visible = Meta_Fields::get_public_location_fields( $post->ID );
+		$changed = false;
+		foreach ( self::REST_FIELD_TIERS as $field => $tier ) {
+			if ( array_key_exists( $field, $data ) && empty( $visible[ $tier ] ) ) {
+				unset( $data[ $field ] );
+				$changed = true;
+			}
+		}
+		if ( $changed ) {
+			$response->set_data( $data );
+		}
 
 		return $response;
 	}

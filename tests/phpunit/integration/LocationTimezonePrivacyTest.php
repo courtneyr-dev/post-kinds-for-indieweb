@@ -188,4 +188,84 @@ final class LocationTimezonePrivacyTest extends WP_UnitTestCase {
 
 		$this->assertFalse( \PKIW\Location_Timezone::hides_timezone( get_post( $id ) ) );
 	}
+
+	/**
+	 * Simple Location's top-level REST fields (5.0.25 class-geo-base.php:676-722),
+	 * gated as it gates them: on `geo_public` alone. They don't register in this
+	 * test environment, so the stand-in registers them the same way.
+	 */
+	private function stand_in_rest_fields(): void {
+		$fields = [
+			'latitude'    => 'geo_latitude',
+			'longitude'   => 'geo_longitude',
+			'geo_address' => 'geo_address',
+			'timezone'    => 'geo_timezone',
+		];
+		foreach ( $fields as $field => $meta ) {
+			register_rest_field(
+				'post',
+				$field,
+				[
+					'get_callback' => static function ( $item ) use ( $meta ) {
+						return '0' === (string) get_post_meta( (int) $item['id'], 'geo_public', true ) ? '' : get_post_meta( (int) $item['id'], $meta, true );
+					},
+				]
+			);
+		}
+	}
+
+	/**
+	 * Post Kinds tier and the Simple Location REST fields a visitor may get.
+	 *
+	 * @return array<string, array{0: string, 1: string[]}>
+	 */
+	public function rest_field_tiers(): array {
+		return [
+			'private'     => [ 'private', [] ],
+			'approximate' => [ 'approximate', [ 'timezone' ] ],
+			'public'      => [ 'public', [ 'latitude', 'longitude', 'geo_address', 'timezone' ] ],
+			'unset (#441)' => [ '', [ 'latitude', 'longitude', 'geo_address', 'timezone' ] ],
+		];
+	}
+
+	/**
+	 * @dataProvider rest_field_tiers
+	 *
+	 * @param string   $privacy _pkiw_geo_privacy.
+	 * @param string[] $kept    Fields that keep their value.
+	 */
+	public function test_simple_location_rest_fields_follow_the_post_kinds_tier( string $privacy, array $kept ): void {
+		$this->stand_in_rest_fields();
+		$meta = [
+			'geo_public'  => '1',
+			'geo_address' => '1 Hidden Street, Tokyo',
+		];
+		if ( '' !== $privacy ) {
+			$meta['_pkiw_geo_privacy'] = $privacy;
+		}
+		$id = $this->tokyo_post( $meta );
+		$this->assertSame( '' !== $privacy, metadata_exists( 'post', $id, '_pkiw_geo_privacy' ), 'The privacy row is stored only when set.' );
+		$data = $this->rest( $id );
+
+		foreach ( [ 'latitude', 'longitude', 'geo_address', 'timezone' ] as $field ) {
+			if ( in_array( $field, $kept, true ) ) {
+				$this->assertNotEmpty( $data[ $field ] ?? null, $field . ' stays' );
+			} else {
+				$this->assertArrayNotHasKey( $field, $data, $field . ' goes' );
+			}
+		}
+	}
+
+	public function test_an_editor_s_edit_context_keeps_simple_location_s_rest_fields(): void {
+		$this->stand_in_rest_fields();
+		$id = $this->tokyo_post(
+			[
+				'geo_public'        => '1',
+				'_pkiw_geo_privacy' => 'private',
+			]
+		);
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$this->assertSame( 'Asia/Tokyo', $this->rest( $id, 'edit' )['timezone'] ?? null );
+	}
 }
