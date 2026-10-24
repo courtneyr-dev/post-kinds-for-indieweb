@@ -373,6 +373,43 @@ final class PhotoLocationTest extends WP_UnitTestCase {
 		$this->assertSame( 10, has_action( 'wp_head', 'Geo_Base::meta_tags' ), 'note without location' );
 	}
 
+	public function test_unset_privacy_keeps_head_tags_when_the_meta_default_is_registered(): void {
+		// Production registers geo_privacy with default 'approximate', so
+		// get_post_meta() reads a missing row as approximate. Unset privacy
+		// must still keep Simple Location's tags (issue 422, Courtney 2026-10-18).
+		register_post_meta(
+			'post',
+			Meta_Fields::PREFIX . 'geo_privacy',
+			[
+				'type'    => 'string',
+				'single'  => true,
+				'default' => 'approximate',
+			]
+		);
+		try {
+			$this->register_simple_location_callables();
+			$location = $this->location();
+			foreach ( [ 'note', 'article' ] as $kind ) {
+				remove_action( 'wp_head', 'Geo_Base::meta_tags', 10 );
+				add_action( 'wp_head', 'Geo_Base::meta_tags', 10 );
+				$unset = $this->located( $kind, null );
+				$this->assertSame( 'approximate', get_post_meta( $unset, Meta_Fields::PREFIX . 'geo_privacy', true ), 'registered default applies' );
+				$this->go_to( (string) get_permalink( $unset ) );
+				$location->gate_head();
+				$this->assertSame( 10, has_action( 'wp_head', 'Geo_Base::meta_tags' ), $kind . ' unset privacy' );
+			}
+
+			remove_action( 'wp_head', 'Geo_Base::meta_tags', 10 );
+			add_action( 'wp_head', 'Geo_Base::meta_tags', 10 );
+			$explicit = $this->located( 'note', 'approximate' );
+			$this->go_to( (string) get_permalink( $explicit ) );
+			$location->gate_head();
+			$this->assertFalse( has_action( 'wp_head', 'Geo_Base::meta_tags' ), 'note explicit approximate' );
+		} finally {
+			unregister_post_meta( 'post', Meta_Fields::PREFIX . 'geo_privacy' );
+		}
+	}
+
 	/**
 	 * Feed item hooks.
 	 *
