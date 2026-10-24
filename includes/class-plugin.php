@@ -719,6 +719,9 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Sleep_Location' ) ) {
 			( new Sleep_Location() )->register();
 		}
+		if ( class_exists( __NAMESPACE__ . '\\Location_Timezone' ) ) {
+			( new Location_Timezone() )->register();
+		}
 		if ( class_exists( __NAMESPACE__ . '\\Craft_Archive' ) ) {
 			( new Craft_Archive() )->register();
 		}
@@ -985,6 +988,9 @@ final class Plugin {
 		// front-end will render the corresponding card block instead of
 		// plain text. Idempotent — only writes the first time per post.
 		Micropub_Content_Builder::register();
+
+		// Micropub q=source shows a token what a visitor sees (issue 351).
+		Micropub_Source_Privacy::register();
 
 		// Register block templates for CPT and taxonomy archives.
 		add_filter( 'get_block_templates', [ $this, 'add_plugin_templates' ], 10, 3 );

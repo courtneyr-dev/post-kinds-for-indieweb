@@ -268,7 +268,9 @@ final class Photo_Location {
 			return false;
 		}
 
-		$privacy    = (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . 'geo_privacy', true );
+		// The raw row: get_post_meta() reads a missing row as the registered
+		// default, approximate, and unset privacy keeps Simple Location's output.
+		$privacy    = (string) get_metadata_raw( 'post', $post->ID, Meta_Fields::PREFIX . 'geo_privacy', true );
 		$geo_public = (string) get_post_meta( $post->ID, 'geo_public', true );
 
 		return in_array( $privacy, [ 'private', 'approximate' ], true )
