@@ -32,11 +32,46 @@ class Venue_Taxonomy {
 	public const TAXONOMY = 'pkiw_venue';
 
 	/**
+	 * Venue meta keys a REST client who can't manage venues doesn't get
+	 * (issue 488). Each pins the exact place a check-in happened, so a
+	 * private check-in would leak through its venue. The external ids
+	 * resolve to the same place through the Foursquare and OSM APIs. city,
+	 * region and country stay: they're the approximate tier's coarse fields,
+	 * no more precise than the venue name, which stays public.
+	 *
+	 * @var list<string>
+	 */
+	public const REST_HIDDEN_META = [ 'address', 'postal_code', 'latitude', 'longitude', 'phone', 'url', 'foursquare_id', 'osm_id' ];
+
+	/**
+	 * Venue meta keys mapped to the Meta_Fields::get_public_location_fields()
+	 * tier that shows them, in the style of the card attribute tiers. phone
+	 * has no tier of its own and takes street's: both name the exact
+	 * establishment.
+	 *
+	 * @var array<string, string>
+	 */
+	public const META_TIERS = [
+		'address'       => 'street',
+		'city'          => 'locality',
+		'region'        => 'region',
+		'country'       => 'country',
+		'postal_code'   => 'postal_code',
+		'latitude'      => 'coordinates',
+		'longitude'     => 'coordinates',
+		'url'           => 'url',
+		'phone'         => 'street',
+		'foursquare_id' => 'venue_id',
+		'osm_id'        => 'osm_id',
+	];
+
+	/**
 	 * Constructor.
 	 */
 	public function __construct() {
 		add_action( 'init', [ $this, 'register_taxonomy' ] );
 		add_action( 'init', [ $this, 'register_term_meta' ] );
+		add_filter( 'rest_prepare_' . self::TAXONOMY, [ self::class, 'redact_rest_location' ], 10, 3 );
 		add_action( 'venue_add_form_fields', [ $this, 'add_venue_fields' ] );
 		add_action( 'venue_edit_form_fields', [ $this, 'edit_venue_fields' ] );
 		add_action( 'created_venue', [ $this, 'save_venue_meta' ] );
@@ -379,6 +414,80 @@ class Venue_Taxonomy {
 		$parts = array_filter( [ $city, $country ] );
 
 		return ! empty( $parts ) ? esc_html( implode( ', ', $parts ) ) : '—';
+	}
+
+	/**
+	 * Drop a venue's precise location from a REST response for anyone who
+	 * can't manage venue terms (issue 488). The edit context keeps it: the
+	 * terms controller only grants that context to users with edit_terms.
+	 *
+	 * Runs for the single-term route and for each item of the collection.
+	 *
+	 * @param \WP_REST_Response $response Response.
+	 * @param \WP_Term          $term     Venue term.
+	 * @param \WP_REST_Request  $request  Request.
+	 * @return \WP_REST_Response
+	 */
+	public static function redact_rest_location( $response, $term, $request ) {
+		if ( ! $response instanceof \WP_REST_Response || 'edit' === ( $request['context'] ?? 'view' ) ) {
+			return $response;
+		}
+
+		$taxonomy = get_taxonomy( self::TAXONOMY );
+		if ( $taxonomy && current_user_can( $taxonomy->cap->manage_terms ) ) {
+			return $response;
+		}
+
+		$data = $response->get_data();
+		if ( is_array( $data ) && isset( $data['meta'] ) && is_array( $data['meta'] ) ) {
+			foreach ( self::REST_HIDDEN_META as $key ) {
+				unset( $data['meta'][ $key ] );
+			}
+			$response->set_data( $data );
+		}
+
+		return $response;
+	}
+
+	/**
+	 * Which location tiers a venue may show visitors: the loosest any of its
+	 * published, non-password-protected check-ins allows, per
+	 * Meta_Fields::get_public_location_fields() (issue 488). With no such
+	 * check-in, nothing. No editor override: the venue-detail block is
+	 * front-end output.
+	 *
+	 * @param int $term_id Venue term ID.
+	 * @return array<string, bool> Tier => visible.
+	 */
+	public static function public_location_fields( int $term_id ): array {
+		$visible = Meta_Fields::get_public_location_fields( 0 );
+		if ( $term_id <= 0 ) {
+			return $visible;
+		}
+
+		$ids = get_checkins_at_venue(
+			$term_id,
+			[
+				'posts_per_page' => -1,
+				'post_status'    => 'publish',
+				'has_password'   => false,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+			]
+		)->posts;
+		$ids = array_map( 'intval', $ids );
+		update_meta_cache( 'post', $ids );
+
+		foreach ( $ids as $post_id ) {
+			foreach ( Meta_Fields::get_public_location_fields( $post_id ) as $tier => $shown ) {
+				$visible[ $tier ] = $visible[ $tier ] || $shown;
+			}
+			if ( ! in_array( false, $visible, true ) ) {
+				break;
+			}
+		}
+
+		return $visible;
 	}
 
 	/**

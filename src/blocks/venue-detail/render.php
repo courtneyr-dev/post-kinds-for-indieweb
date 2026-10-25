@@ -40,15 +40,23 @@ if ( ! $pkiw_venue || is_wp_error( $pkiw_venue ) ) {
 	return;
 }
 
-// Get venue meta.
-$pkiw_latitude  = get_term_meta( $pkiw_venue_id, 'latitude', true );
-$pkiw_longitude = get_term_meta( $pkiw_venue_id, 'longitude', true );
-$pkiw_address   = get_term_meta( $pkiw_venue_id, 'address', true );
-$pkiw_city      = get_term_meta( $pkiw_venue_id, 'city', true );
-$pkiw_region    = get_term_meta( $pkiw_venue_id, 'region', true );
-$pkiw_country   = get_term_meta( $pkiw_venue_id, 'country', true );
-$pkiw_url       = get_term_meta( $pkiw_venue_id, 'url', true );
-$pkiw_phone     = get_term_meta( $pkiw_venue_id, 'phone', true );
+// Get venue meta. Each field prints only at the loosest tier the venue's
+// published check-ins allow, so a private check-in's venue doesn't print its
+// location (issue 488).
+$pkiw_tiers = Venue_Taxonomy::public_location_fields( $pkiw_venue_id );
+$pkiw_meta  = static function ( string $key ) use ( $pkiw_venue_id, $pkiw_tiers ): string {
+	return empty( $pkiw_tiers[ Venue_Taxonomy::META_TIERS[ $key ] ] ) ? '' : (string) get_term_meta( $pkiw_venue_id, $key, true );
+};
+
+$pkiw_latitude  = $pkiw_meta( 'latitude' );
+$pkiw_longitude = $pkiw_meta( 'longitude' );
+$pkiw_address   = $pkiw_meta( 'address' );
+$pkiw_city      = $pkiw_meta( 'city' );
+$pkiw_region    = $pkiw_meta( 'region' );
+$pkiw_country   = $pkiw_meta( 'country' );
+$pkiw_url       = $pkiw_meta( 'url' );
+$pkiw_phone     = $pkiw_meta( 'phone' );
+$pkiw_show_map  = $pkiw_show_map && ! empty( $pkiw_tiers['map'] );
 
 // Build address parts.
 $pkiw_address_parts = array_filter( [ $pkiw_address, $pkiw_city, $pkiw_region, $pkiw_country ] );
