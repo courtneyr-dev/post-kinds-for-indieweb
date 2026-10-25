@@ -118,14 +118,14 @@ final class Jam_Archive {
 			$name        = $title;
 			$name_source = 'track';
 		} elseif ( '' !== trim( (string) $post->post_title ) ) {
-			$name        = get_the_title( $post );
+			$name        = \PKIW\visitor_post_title( $post );
 			$name_source = 'title';
 		} else {
 			$name        = \PKIW\untitled_name( $post, false );
 			$name_source = 'untitled';
 		}
 
-		$post_title = self::plain( get_the_title( $post ) );
+		$post_title = self::plain( \PKIW\visitor_post_title( $post ) );
 
 		return [
 			'has_card'           => $has_card,
@@ -146,7 +146,8 @@ final class Jam_Archive {
 			'date_is_stored'     => '' !== $jammed,
 			'name'               => $name,
 			'name_source'        => $name_source,
-			'name_is_title'      => 'title' === $name_source,
+			// A hidden location title reads as its safe name, a synthetic one (X8).
+			'name_is_title'      => 'title' === $name_source && ! \PKIW\post_title_is_hidden( $post ),
 			'track_is_h1'        => '' !== $title && strtolower( trim( $title ) ) === strtolower( trim( $post_title ) ),
 		];
 	}
@@ -179,7 +180,7 @@ final class Jam_Archive {
 		$shape   = $listing ? 'pk-card--jam-listing' : 'pk-card--jam-stream';
 		$name    = (string) $facts['name'];
 		$artist  = (string) $facts['artist'];
-		$link    = 'u-url' . ( 'untitled' === $facts['name_source'] ? '' : ' p-name' );
+		$link    = 'u-url' . ( 'track' === $facts['name_source'] || $facts['name_is_title'] ? ' p-name' : '' );
 		$cite    = \PKIW\hidden_cite_html(
 			'u-jam-of',
 			[
