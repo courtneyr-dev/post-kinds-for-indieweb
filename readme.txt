@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.8.6
+Stable tag: 1.8.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -181,6 +181,11 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 == Changelog ==
 
 = Unreleased =
+* Changed: venue archives live at /venues/<slug>/. Simple Location's venue post type owns /venue/, so a venue archive there 404'd. An old /venue/<slug>/ link that would 404 now 301s to the venue's new link. The plugin version is 1.8.7, so upgraded sites rebuild their rewrite rules once.
+* Fixed: the plugin's venue archive template is named taxonomy-pkiw_venue, so WordPress picks it for venue archives. A theme or Site Editor taxonomy-pkiw_venue still wins.
+* Fixed: the Venue Detail and Check-ins Feed venue pickers list your venues again, and the Check-ins Feed preview filters by the chosen venue.
+* Fixed: the address, city, coordinates, website and phone fields and the Location column show on Posts > Venues, and the fields save, with a nonce and an edit_term check.
+
 * Added: a play kind archive template: Staff Picks, then plays at 12 a page in sections, video games, then board games, then plays with neither.
 * Added: the Staff Picks block lists up to three top-rated board game plays, one per BoardGameGeek game, on the first archive page only.
 * Added: a read kind archive template with shelves by status (Currently Reading, To Read, Finished, Abandoned) and a Read order block that switches to A–Z by author.
