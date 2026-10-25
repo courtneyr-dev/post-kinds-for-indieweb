@@ -64,7 +64,7 @@ class PluginTest extends WP_UnitTestCase {
 	/**
 	 * Regression: when WP resolves the single-post block-template hierarchy,
 	 * it queries get_block_templates(['slug__in' => ['singular']]). The
-	 * filter MUST NOT inject taxonomy-venue into that result, or
+	 * filter MUST NOT inject taxonomy-pkiw_venue into that result, or
 	 * resolve_block_template will return the venue template for ordinary
 	 * single posts and the post body never renders.
 	 */
@@ -83,14 +83,14 @@ class PluginTest extends WP_UnitTestCase {
 		);
 
 		$this->assertNotContains(
-			'taxonomy-venue',
+			'taxonomy-pkiw_venue',
 			$slugs,
-			'taxonomy-venue must not bleed into a slug__in => [singular] query.'
+			'taxonomy-pkiw_venue must not bleed into a slug__in => [singular] query.'
 		);
 	}
 
 	/**
-	 * Positive: when slug__in DOES contain taxonomy-venue, the template is
+	 * Positive: when slug__in DOES contain taxonomy-pkiw_venue, the template is
 	 * injected as expected.
 	 */
 	public function test_add_plugin_templates_injects_when_slug_requested(): void {
@@ -98,7 +98,7 @@ class PluginTest extends WP_UnitTestCase {
 
 		$result = $plugin->add_plugin_templates(
 			array(),
-			array( 'slug__in' => array( 'taxonomy-venue' ) ),
+			array( 'slug__in' => array( 'taxonomy-pkiw_venue' ) ),
 			'wp_template'
 		);
 
@@ -107,7 +107,7 @@ class PluginTest extends WP_UnitTestCase {
 			$result
 		);
 
-		$this->assertContains( 'taxonomy-venue', $slugs );
+		$this->assertContains( 'taxonomy-pkiw_venue', $slugs );
 	}
 
 	/**
@@ -128,7 +128,7 @@ class PluginTest extends WP_UnitTestCase {
 			$result
 		);
 
-		$this->assertContains( 'taxonomy-venue', $slugs );
+		$this->assertContains( 'taxonomy-pkiw_venue', $slugs );
 	}
 
 	/**

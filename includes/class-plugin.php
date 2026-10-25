@@ -1331,7 +1331,7 @@ final class Plugin {
 	private function get_plugin_template_definitions(): array {
 		return [
 			// Venue taxonomy template.
-			'taxonomy-venue'               => [
+			'taxonomy-pkiw_venue'          => [
 				'title'       => __( 'Venue Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Template for displaying venue taxonomy archives.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],

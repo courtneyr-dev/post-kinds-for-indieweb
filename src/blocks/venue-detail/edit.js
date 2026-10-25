@@ -39,7 +39,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 	// Fetch all venues.
 	useEffect( () => {
-		apiFetch( { path: '/wp/v2/venue?per_page=100' } )
+		apiFetch( { path: '/wp/v2/pkiw_venue?per_page=100' } )
 			.then( ( data ) => {
 				setVenues( data || [] );
 				setIsLoading( false );
@@ -53,7 +53,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	// Fetch selected venue details.
 	useEffect( () => {
 		if ( venueId > 0 ) {
-			apiFetch( { path: `/wp/v2/venue/${ venueId }` } )
+			apiFetch( { path: `/wp/v2/pkiw_venue/${ venueId }` } )
 				.then( ( data ) => {
 					setSelectedVenue( data );
 				} )
