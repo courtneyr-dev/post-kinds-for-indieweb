@@ -156,10 +156,17 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 
 			<div class="venue-detail__checkins-list h-feed">
 				<?php while ( $pkiw_checkins->have_posts() ) : ?>
-					<?php $pkiw_checkins->the_post(); ?>
+					<?php
+					$pkiw_checkins->the_post();
+					// Not the_title(): it keeps a hidden location title on an admin
+					// screen. Its safe name is synthetic, so no p-name (X8, issue 434).
+					$pkiw_item_post   = get_post();
+					$pkiw_item_title  = $pkiw_item_post instanceof WP_Post ? \PKIW\visitor_post_title( $pkiw_item_post ) : '';
+					$pkiw_title_class = $pkiw_item_post instanceof WP_Post && \PKIW\post_title_is_hidden( $pkiw_item_post ) ? 'venue-detail__checkin-title' : 'venue-detail__checkin-title p-name';
+					?>
 					<article class="venue-detail__checkin-item h-entry">
 						<a href="<?php the_permalink(); ?>" class="venue-detail__checkin-link u-url">
-							<span class="venue-detail__checkin-title p-name"><?php the_title(); ?></span>
+							<span class="<?php echo esc_attr( $pkiw_title_class ); ?>"><?php echo wp_kses_post( $pkiw_item_title ); ?></span>
 							<time class="venue-detail__checkin-date dt-published" datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
 								<?php echo esc_html( get_the_date() ); ?>
 							</time>

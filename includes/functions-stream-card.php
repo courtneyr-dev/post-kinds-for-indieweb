@@ -462,7 +462,9 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
  * Whether the stored title was generated from a location that is hidden.
  *
  * What a visitor reads in its place is a synthetic name, never the entry's
- * title, so it carries no p-name (X8).
+ * title, so it carries no p-name (X8). Judged on the object passed in, so a
+ * title a preview rewrote in memory isn't read as hidden because the
+ * database row differs.
  *
  * @since 1.9.0
  *
@@ -470,7 +472,7 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
  * @return bool True when the safe title replaces the stored one.
  */
 function post_title_is_hidden( \WP_Post $post ): bool {
-	return Title_Privacy::safe_title( $post->ID ) !== (string) $post->post_title;
+	return Title_Privacy::hides_title( $post );
 }
 
 /**

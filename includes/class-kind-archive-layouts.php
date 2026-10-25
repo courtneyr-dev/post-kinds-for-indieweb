@@ -946,7 +946,7 @@ final class Kind_Archive_Layouts {
 	private static function menu_special( \WP_Post $post, string $kind, int $level, bool $show_photos ): string {
 		$visible = Meta_Fields::get_visible_location_fields( $post->ID );
 		$f       = self::menu_fields( $post->ID, $kind, $visible );
-		$name    = '' !== $f['name'] ? $f['name'] : get_the_title( $post );
+		$name    = '' !== $f['name'] ? $f['name'] : visitor_post_title( $post );
 		$rating  = max( 0, min( 5, $f['rating'] ) );
 
 		$ts = $f['when'] ? strtotime( $f['when'] ) : false;
@@ -1620,8 +1620,14 @@ final class Kind_Archive_Layouts {
 		$when     = $f['when'];
 		$notes    = $f['notes'];
 
+		// A hidden location title reads as its safe name, a synthetic one
+		// that carries no p-name (X8).
+		$name_class = 'pkiw-menu-entry__name p-name';
 		if ( '' === $name ) {
-			$name = get_the_title( $post );
+			$name = visitor_post_title( $post );
+			if ( post_title_is_hidden( $post ) ) {
+				$name_class = 'pkiw-menu-entry__name';
+			}
 		}
 		$rating = max( 0, min( 5, $rating ) );
 
@@ -1646,7 +1652,7 @@ final class Kind_Archive_Layouts {
 <div class="pkiw-menu-entry">
 	<div class="<?php echo esc_attr( $root_class ); ?>">
 		<div class="pkiw-menu-entry__line">
-			<h<?php echo (int) $level; ?> class="pkiw-menu-entry__title"><a class="pkiw-menu-entry__name p-name" href="<?php echo esc_url( get_permalink( $post ) ); ?>"><?php echo esc_html( $name ); ?></a></h<?php echo (int) $level; ?>>
+			<h<?php echo (int) $level; ?> class="pkiw-menu-entry__title"><a class="<?php echo esc_attr( $name_class ); ?>" href="<?php echo esc_url( get_permalink( $post ) ); ?>"><?php echo esc_html( $name ); ?></a></h<?php echo (int) $level; ?>>
 			<span class="pkiw-menu-entry__leader" aria-hidden="true" role="presentation"></span>
 			<?php if ( $rating > 0 ) : ?>
 				<span class="pkiw-menu-entry__rating">

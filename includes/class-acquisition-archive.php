@@ -166,7 +166,9 @@ final class Acquisition_Archive {
 		$name          = trim( (string) $post->post_title );
 		$name_is_title = '' !== $name;
 		if ( $name_is_title ) {
-			$name = get_the_title( $post );
+			// A hidden location title reads as its safe name, a synthetic one (X8).
+			$name          = \PKIW\visitor_post_title( $post );
+			$name_is_title = ! \PKIW\post_title_is_hidden( $post );
 		} elseif ( '' !== $title ) {
 			$name = $title;
 		} else {

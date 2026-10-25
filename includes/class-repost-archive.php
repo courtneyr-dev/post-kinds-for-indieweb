@@ -84,8 +84,9 @@ final class Repost_Archive {
 		if ( '' !== $cited_title ) {
 			$archive_name = $cited_title;
 		} elseif ( '' !== trim( $post->post_title ) ) {
-			$archive_name  = get_the_title( $post );
-			$name_is_title = true;
+			// A hidden location title reads as its safe name, a synthetic one (X8).
+			$archive_name  = visitor_post_title( $post );
+			$name_is_title = ! post_title_is_hidden( $post );
 		} elseif ( '' !== $host ) {
 			$archive_name = $host;
 		} else {
