@@ -357,7 +357,7 @@ final class Review_Archive {
 			$facts = self::review_facts( $post->ID );
 			$name  = trim( (string) ( $facts['item_name'] ?? '' ) );
 			if ( '' === $name ) {
-				$name = trim( wp_strip_all_tags( get_the_title( $post ) ) );
+				$name = trim( wp_strip_all_tags( visitor_post_title( $post ) ) );
 			}
 			if ( '' === $name ) {
 				$name = untitled_name( $post );
@@ -469,9 +469,9 @@ final class Review_Archive {
 	 */
 	private static function entry_html( \WP_Post $post, array $attributes, bool $in_section ): string {
 		$level      = max( 2, min( 6, (int) ( $attributes['headingLevel'] ?? 2 ) + ( $in_section ? 1 : 0 ) ) );
-		$title      = trim( wp_strip_all_tags( get_the_title( $post ) ) );
-		$real_title = '' !== $title;
-		if ( ! $real_title ) {
+		$title      = trim( wp_strip_all_tags( visitor_post_title( $post ) ) );
+		$real_title = '' !== $title && ! post_title_is_hidden( $post );
+		if ( '' === $title ) {
 			$title = untitled_name( $post );
 		}
 

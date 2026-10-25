@@ -106,12 +106,33 @@ class Title_Privacy {
 	private const SYNC_FAILED = 'failed';
 
 	/**
+	 * Hooks a post save runs, in the order wp_insert_post() and
+	 * wp_publish_post() fire them. Code on them builds records from the
+	 * saved post: ActivityPub 9.3.1 builds and stores its activity on
+	 * wp_after_insert_post at priority 33 (includes/scheduler/class-post.php).
+	 */
+	private const SAVE_HOOKS = [ 'transition_post_status', 'edit_post', 'post_updated', 'save_post', 'wp_insert_post', 'wp_after_insert_post' ];
+
+	/**
+	 * How many save hooks are running.
+	 *
+	 * @var int
+	 */
+	private static int $saving = 0;
+
+	/**
 	 * Hooks.
 	 */
 	public function __construct() {
 		add_filter( 'the_title', [ $this, 'filter_the_title' ], 10, 2 );
 		add_filter( 'single_post_title', [ $this, 'filter_single_post_title' ], 10, 2 );
 		add_action( 'post_updated', [ $this, 'clear_marker_on_retitle' ], 10, 3 );
+
+		// A record built while a save runs is read by visitors (issue 434).
+		foreach ( self::SAVE_HOOKS as $hook ) {
+			add_action( $hook, [ self::class, 'begin_save' ], PHP_INT_MIN, 0 );
+			add_action( $hook, [ self::class, 'end_save' ], PHP_INT_MAX, 0 );
+		}
 
 		// Another plugin may set the oEmbed title from post_title after core.
 		add_filter( 'oembed_response_data', [ $this, 'scrub_oembed_title' ], 99, 2 );
@@ -657,6 +678,20 @@ class Title_Privacy {
 	}
 
 	/**
+	 * Whether the title on this post object was generated from a location
+	 * that is hidden. Reads the object's own post_title, so a title that a
+	 * preview or another filter rewrote in memory is judged as it stands.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param \WP_Post $post Post.
+	 * @return bool True when a visitor reads the safe title in its place.
+	 */
+	public static function hides_title( \WP_Post $post ): bool {
+		return self::names_hidden_location( $post );
+	}
+
+	/**
 	 * Whether the stored title was generated from a location that is hidden.
 	 *
 	 * @param \WP_Post $post Post.
@@ -731,10 +766,25 @@ class Title_Privacy {
 	}
 
 	/**
-	 * Admin screens list and edit the stored title.
+	 * Admin screens list and edit the stored title. A save's hooks don't:
+	 * what they build, a federated record or a ping, is read by visitors.
 	 */
 	private static function is_admin_screen(): bool {
-		return is_admin() && ! wp_doing_ajax() && ! wp_doing_cron();
+		return is_admin() && ! wp_doing_ajax() && ! wp_doing_cron() && 0 === self::$saving;
+	}
+
+	/**
+	 * A save hook starts.
+	 */
+	public static function begin_save(): void {
+		++self::$saving;
+	}
+
+	/**
+	 * A save hook ends.
+	 */
+	public static function end_save(): void {
+		self::$saving = max( 0, self::$saving - 1 );
 	}
 
 	/**

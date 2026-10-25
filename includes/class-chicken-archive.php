@@ -161,7 +161,7 @@ final class Chicken_Archive {
 
 		$title   = trim( wp_strip_all_tags( $post->post_title ) );
 		$named   = '' !== $title;
-		$display = trim( wp_strip_all_tags( get_the_title( $post ) ) );
+		$display = trim( wp_strip_all_tags( visitor_post_title( $post ) ) );
 		$label   = get_kind_label( stream_card_kind_label( $post ), self::KIND, 'archive-entry' );
 
 		return [
@@ -332,12 +332,13 @@ final class Chicken_Archive {
 		$level      = max( 2, min( 6, $base_level + ( $in_section ? 1 : 0 ) ) );
 		$title      = trim( wp_strip_all_tags( $post->post_title ) );
 		$named      = '' !== $title;
-		$link_text  = $named ? get_the_title( $post ) : get_kind_label( stream_card_kind_label( $post ), self::KIND, 'archive-entry' );
+		$link_text  = $named ? visitor_post_title( $post ) : get_kind_label( stream_card_kind_label( $post ), self::KIND, 'archive-entry' );
 		$link_id    = 'pkiw-chicken-t-' . $post->ID;
 		$date_id    = 'pkiw-chicken-d-' . $post->ID;
 		$classes    = [ 'u-url' ];
 		$format     = Plugin::get_instance()->get_microformats()?->get_kind_format( self::KIND );
-		if ( $named && in_array( 'p-name', array_values( (array) ( $format['properties'] ?? [] ) ), true ) ) {
+		// The safe name for a hidden location title is synthetic: no p-name (X8).
+		if ( $named && ! post_title_is_hidden( $post ) && in_array( 'p-name', array_values( (array) ( $format['properties'] ?? [] ) ), true ) ) {
 			$classes[] = 'p-name';
 		}
 
@@ -481,7 +482,7 @@ final class Chicken_Archive {
 			return '';
 		}
 
-		return mb_strtolower( trim( wp_strip_all_tags( get_the_title( $post ) ) ) );
+		return mb_strtolower( trim( wp_strip_all_tags( visitor_post_title( $post ) ) ) );
 	}
 
 	/**

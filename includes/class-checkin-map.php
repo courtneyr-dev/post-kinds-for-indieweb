@@ -138,10 +138,12 @@ class Checkin_Map {
 			}
 
 			// An untitled check-in still needs link text. That name is
-			// synthetic, so the list prints it without p-name (X8).
-			$title     = trim( get_the_title( $post ) );
-			$synthetic = '' === $title;
-			if ( $synthetic ) {
+			// synthetic, so the list prints it without p-name (X8). So is
+			// the safe name standing in for a hidden location title, which
+			// visitor_post_title() gives on every screen (issue 434).
+			$title     = trim( visitor_post_title( $post ) );
+			$synthetic = '' === $title || post_title_is_hidden( $post );
+			if ( '' === $title ) {
 				$title = untitled_name( $post );
 			}
 

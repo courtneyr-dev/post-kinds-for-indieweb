@@ -98,7 +98,7 @@ if ( $pkiw_tabletop ) {
 	$pkiw_review_heading = '<' . $pkiw_review_tag . ' class="pk-scorepad__heading">' . esc_html__( 'Review', 'post-kinds-for-indieweb-in-block-themes' ) . '</' . $pkiw_review_tag . '>';
 
 	// The box: the post's picture, featured image first, else the card's cover.
-	$pkiw_name      = '' !== $pkiw_title_plain ? $pkiw_title_plain : ( null !== $pkiw_post ? $pkiw_plain( get_the_title( $pkiw_post ) ) : '' );
+	$pkiw_name      = '' !== $pkiw_title_plain ? $pkiw_title_plain : ( null !== $pkiw_post ? $pkiw_plain( \PKIW\visitor_post_title( $pkiw_post ) ) : '' );
 	$pkiw_box_alt   = '' !== trim( $pkiw_cover_alt )
 		? $pkiw_cover_alt
 		: ( '' !== $pkiw_name ? sprintf( /* translators: %s: game title */ __( 'Box art for %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_name ) : '' );
@@ -239,7 +239,7 @@ ob_start();
 
 		<?php if ( $pkiw_cover ) : ?>
 			<div class="pk-media">
-				<img class="pk-thumb--poster u-photo" src="<?php echo esc_url( $pkiw_cover ); ?>" alt="<?php echo esc_attr( $pkiw_cover_alt ? $pkiw_cover_alt : sprintf( /* translators: %s: game title */ __( 'Box art for %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_title ? $pkiw_title : get_the_title() ) ); ?>" loading="lazy" />
+				<img class="pk-thumb--poster u-photo" src="<?php echo esc_url( $pkiw_cover ); ?>" alt="<?php echo esc_attr( $pkiw_cover_alt ? $pkiw_cover_alt : sprintf( /* translators: %s: game title */ __( 'Box art for %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_title ? $pkiw_title : ( get_post() instanceof WP_Post ? \PKIW\visitor_post_title( get_post() ) : '' ) ) ); ?>" loading="lazy" />
 			</div>
 		<?php endif; ?>
 

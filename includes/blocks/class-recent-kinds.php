@@ -173,8 +173,10 @@ final class Recent_Kinds {
 					$title = $this->get_display_title( $post->ID, $kind, $prefix );
 					$cover = $show_cover ? $this->get_cover_url( $post->ID, $kind, $prefix ) : '';
 
+					// Not get_the_title(): it keeps a hidden location title
+					// on an admin screen (issue 434).
 					if ( ! $title ) {
-						$title = get_the_title( $post );
+						$title = \PKIW\visitor_post_title( $post );
 					}
 					?>
 					<li class="pk-recent-kinds__item">
