@@ -638,7 +638,7 @@ final class Simple_Location_Weather {
 
 		// The title, else the reading, else the kind. A synthetic name never claims to be the title.
 		if ( $titled ) {
-			$name = trim( wp_strip_all_tags( get_the_title( $post ) ) );
+			$name = trim( wp_strip_all_tags( \PKIW\visitor_post_title( $post ) ) );
 		} elseif ( '' !== $text ) {
 			$name = $text;
 		} else {
@@ -661,7 +661,7 @@ final class Simple_Location_Weather {
 		return array_merge(
 			[
 				'name'                => $name,
-				'name_is_title'       => $titled,
+				'name_is_title'       => $titled && ! \PKIW\post_title_is_hidden( $post ),
 				'name_is_reading'     => ! $titled && '' !== $text,
 				'reading'             => $text,
 				'reading_source'      => null !== $reading ? $reading['source'] : '',
@@ -956,11 +956,14 @@ final class Simple_Location_Weather {
 		$level   = max( 2, min( 4, (int) $heading_level ) );
 		$reading = self::reading( $post->ID );
 		$text    = null !== $reading ? $reading['text'] : '';
-		$title   = '' !== trim( $post->post_title ) ? trim( wp_strip_all_tags( get_the_title( $post ) ) ) : '';
+		$title   = '' !== trim( $post->post_title ) ? trim( wp_strip_all_tags( \PKIW\visitor_post_title( $post ) ) ) : '';
 		$label   = \PKIW\get_kind_label( \PKIW\stream_card_kind_label( $post ), self::KIND, 'stream-card' );
 
-		if ( '' !== $title ) {
+		// A hidden location title prints its safe name without p-name (X8).
+		if ( '' !== $title && ! \PKIW\post_title_is_hidden( $post ) ) {
 			$link_text = '<span class="p-name">' . esc_html( $title ) . '</span>';
+		} elseif ( '' !== $title ) {
+			$link_text = esc_html( $title );
 		} elseif ( '' !== $text ) {
 			$link_text = '<span class="p-weather">' . esc_html( $text ) . '</span>';
 		} else {

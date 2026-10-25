@@ -328,17 +328,21 @@ final class Almanac_Month {
 	private static function entry( \WP_Post $post, int $heading_level ): string {
 		$reading = Simple_Location_Weather::reading( $post->ID );
 		$text    = null !== $reading ? $reading['text'] : '';
-		$title   = '' !== trim( $post->post_title ) ? trim( wp_strip_all_tags( get_the_title( $post ) ) ) : '';
+		$title   = '' !== trim( $post->post_title ) ? trim( wp_strip_all_tags( visitor_post_title( $post ) ) ) : '';
+		$named   = '' !== $title && ! post_title_is_hidden( $post );
 
 		$mark = '';
 		if ( null !== $reading && 'observation' === $reading['source'] && '' !== $reading['icon'] ) {
 			$mark = '<span class="pkiw-almanac__mark" data-pkiw-weather-icon="' . esc_attr( $reading['icon'] ) . '" aria-hidden="true"></span>';
 		}
 
-		// A real title is the entry's name. A reading names an untitled post but
-		// is not a name, and a post with neither is called by its kind (X8).
-		if ( '' !== $title ) {
+		// A real title is the entry's name. A hidden location title prints its
+		// safe name, and a reading names an untitled post, but neither is a
+		// name. A post with neither is called by its kind (X8).
+		if ( $named ) {
 			$label = '<span class="p-name">' . esc_html( $title ) . '</span>';
+		} elseif ( '' !== $title ) {
+			$label = esc_html( $title );
 		} elseif ( '' !== $text ) {
 			$label = '<span class="p-weather">' . esc_html( $text ) . '</span>';
 		} else {
