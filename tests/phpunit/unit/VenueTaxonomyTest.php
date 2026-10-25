@@ -45,9 +45,9 @@ class VenueTaxonomyTest extends WP_UnitTestCase {
 
 	public function test_taxonomy_rewrite_slug() {
 		$tax = get_taxonomy( Venue_Taxonomy::TAXONOMY );
-		// The registered taxonomy is prefixed, but the public rewrite slug
-		// deliberately stays 'venue' so archive URLs don't change.
-		$this->assertSame( 'venue', $tax->rewrite['slug'] );
+		// Simple Location's venue post type owns /venue/, so the archives
+		// live under /venues/ (issue 492). Old links 301 there.
+		$this->assertSame( 'venues', $tax->rewrite['slug'] );
 		$this->assertFalse( $tax->rewrite['with_front'] );
 	}
 
@@ -227,6 +227,7 @@ class VenueTaxonomyTest extends WP_UnitTestCase {
 		$result  = wp_insert_term( 'POST Venue', Venue_Taxonomy::TAXONOMY );
 		$term_id = $result['term_id'];
 
+		$this->as_venue_editor();
 		$_POST['venue_address'] = '789 Elm St';
 		$_POST['venue_city']    = 'Denver';
 
@@ -235,7 +236,7 @@ class VenueTaxonomyTest extends WP_UnitTestCase {
 		$this->assertSame( '789 Elm St', get_term_meta( $term_id, 'address', true ) );
 		$this->assertSame( 'Denver', get_term_meta( $term_id, 'city', true ) );
 
-		unset( $_POST['venue_address'], $_POST['venue_city'] );
+		unset( $_POST['venue_address'], $_POST['venue_city'], $_POST[ Venue_Taxonomy::NONCE_FIELD ] );
 	}
 
 	public function test_save_venue_meta_deletes_empty_values() {
@@ -243,11 +244,20 @@ class VenueTaxonomyTest extends WP_UnitTestCase {
 		$term_id = $result['term_id'];
 		update_term_meta( $term_id, 'city', 'OldCity' );
 
+		$this->as_venue_editor();
 		$_POST['venue_city'] = '';
 		$this->venue_taxonomy->save_venue_meta( $term_id );
 
 		$this->assertEmpty( get_term_meta( $term_id, 'city', true ) );
 
-		unset( $_POST['venue_city'] );
+		unset( $_POST['venue_city'], $_POST[ Venue_Taxonomy::NONCE_FIELD ] );
+	}
+
+	/**
+	 * The save handler needs the term screens' nonce and edit_term (issue 492).
+	 */
+	private function as_venue_editor(): void {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		$_POST[ Venue_Taxonomy::NONCE_FIELD ] = wp_create_nonce( Venue_Taxonomy::NONCE_ACTION );
 	}
 }

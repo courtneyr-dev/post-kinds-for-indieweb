@@ -32,6 +32,36 @@ class Venue_Taxonomy {
 	public const TAXONOMY = 'pkiw_venue';
 
 	/**
+	 * Rewrite slug for venue archives. Simple Location's venue post type
+	 * owns `venue`, and its rules land first, so the archives moved to
+	 * `/venues/<slug>/` (issue 492).
+	 *
+	 * @var string
+	 */
+	public const REWRITE_SLUG = 'venues';
+
+	/**
+	 * The archive path before 1.8.7. redirect_legacy_url() 301s it.
+	 *
+	 * @var string
+	 */
+	public const LEGACY_SLUG = 'venue';
+
+	/**
+	 * Nonce action and field for the venue fields on the term screens.
+	 *
+	 * @var string
+	 */
+	public const NONCE_ACTION = 'pkiw_venue_meta';
+
+	/**
+	 * Nonce field name.
+	 *
+	 * @var string
+	 */
+	public const NONCE_FIELD = 'pkiw_venue_meta_nonce';
+
+	/**
 	 * Venue meta keys a REST client who can't manage venues doesn't get
 	 * (issue 488). Each pins the exact place a check-in happened, so a
 	 * private check-in would leak through its venue. The external ids
@@ -72,12 +102,13 @@ class Venue_Taxonomy {
 		add_action( 'init', [ $this, 'register_taxonomy' ] );
 		add_action( 'init', [ $this, 'register_term_meta' ] );
 		add_filter( 'rest_prepare_' . self::TAXONOMY, [ self::class, 'redact_rest_location' ], 10, 3 );
-		add_action( 'venue_add_form_fields', [ $this, 'add_venue_fields' ] );
-		add_action( 'venue_edit_form_fields', [ $this, 'edit_venue_fields' ] );
-		add_action( 'created_venue', [ $this, 'save_venue_meta' ] );
-		add_action( 'edited_venue', [ $this, 'save_venue_meta' ] );
-		add_filter( 'manage_edit-venue_columns', [ $this, 'add_columns' ] );
-		add_filter( 'manage_venue_custom_column', [ $this, 'render_column' ], 10, 3 );
+		add_action( self::TAXONOMY . '_add_form_fields', [ $this, 'add_venue_fields' ] );
+		add_action( self::TAXONOMY . '_edit_form_fields', [ $this, 'edit_venue_fields' ] );
+		add_action( 'created_' . self::TAXONOMY, [ $this, 'save_venue_meta' ] );
+		add_action( 'edited_' . self::TAXONOMY, [ $this, 'save_venue_meta' ] );
+		add_filter( 'manage_edit-' . self::TAXONOMY . '_columns', [ $this, 'add_columns' ] );
+		add_filter( 'manage_' . self::TAXONOMY . '_custom_column', [ $this, 'render_column' ], 10, 3 );
+		add_action( 'template_redirect', [ self::class, 'redirect_legacy_url' ], 9 );
 	}
 
 	/**
@@ -118,7 +149,7 @@ class Venue_Taxonomy {
 			'show_tagcloud'     => true,
 			'show_in_rest'      => true,
 			'rewrite'           => [
-				'slug'       => 'venue',
+				'slug'       => self::REWRITE_SLUG,
 				'with_front' => false,
 			],
 		];
@@ -202,6 +233,7 @@ class Venue_Taxonomy {
 	 * @return void
 	 */
 	public function add_venue_fields(): void {
+		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
 		?>
 		<div class="form-field">
 			<label for="venue_address"><?php esc_html_e( 'Address', 'post-kinds-for-indieweb-in-block-themes' ); ?></label>
@@ -270,6 +302,7 @@ class Venue_Taxonomy {
 		$longitude   = get_term_meta( $term->term_id, 'longitude', true );
 		$url         = get_term_meta( $term->term_id, 'url', true );
 		$phone       = get_term_meta( $term->term_id, 'phone', true );
+		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
 		?>
 		<tr class="form-field">
 			<th scope="row"><label for="venue_address"><?php esc_html_e( 'Address', 'post-kinds-for-indieweb-in-block-themes' ); ?></label></th>
@@ -333,11 +366,19 @@ class Venue_Taxonomy {
 	/**
 	 * Save venue meta when term is created or updated.
 	 *
+	 * Only from the term screens: the forms carry this class's nonce, and
+	 * the user must be able to edit the term. wp_insert_term() calls from
+	 * elsewhere (create_or_get(), REST) fire the same hooks and are left
+	 * alone.
+	 *
 	 * @param int $term_id Term ID.
 	 * @return void
 	 */
 	public function save_venue_meta( int $term_id ): void {
-		// Verify nonce is checked by WordPress core for term operations.
+		$nonce = isset( $_POST[ self::NONCE_FIELD ] ) ? sanitize_text_field( wp_unslash( $_POST[ self::NONCE_FIELD ] ) ) : '';
+		if ( ! wp_verify_nonce( $nonce, self::NONCE_ACTION ) || ! current_user_can( 'edit_term', $term_id ) ) {
+			return;
+		}
 
 		$fields = [
 			'address'     => 'venue_address',
@@ -352,8 +393,8 @@ class Venue_Taxonomy {
 		];
 
 		foreach ( $fields as $meta_key => $post_key ) {
-			if ( isset( $_POST[ $post_key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
-				$value = sanitize_text_field( wp_unslash( $_POST[ $post_key ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			if ( isset( $_POST[ $post_key ] ) ) {
+				$value = sanitize_text_field( wp_unslash( $_POST[ $post_key ] ) );
 
 				// Handle numeric fields.
 				if ( in_array( $meta_key, [ 'latitude', 'longitude' ], true ) ) {
@@ -488,6 +529,69 @@ class Venue_Taxonomy {
 		}
 
 		return $visible;
+	}
+
+	/**
+	 * 301 a pre-1.8.7 venue archive URL, `/venue/<slug>/` or
+	 * `/venue/<slug>/page/N/`, to the term's link (issue 492).
+	 *
+	 * Only when the request 404s and a venue term has that slug: when
+	 * Simple Location's venue post type, or anything else, answers the URL,
+	 * it stays theirs. Runs before redirect_canonical() so its 404 guess
+	 * doesn't send the visitor somewhere else first.
+	 *
+	 * @return void
+	 */
+	public static function redirect_legacy_url(): void {
+		$location = self::legacy_redirect_location();
+		if ( null === $location ) {
+			return;
+		}
+
+		wp_safe_redirect( $location, 301 );
+		exit;
+	}
+
+	/**
+	 * The term link a 404'd pre-1.8.7 venue URL should go to.
+	 *
+	 * @return string|null Location, or null when there's nothing to redirect.
+	 */
+	public static function legacy_redirect_location(): ?string {
+		if ( ! is_404() || empty( $_SERVER['REQUEST_URI'] ) ) {
+			return null;
+		}
+
+		$path = (string) wp_parse_url( esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ), PHP_URL_PATH );
+		$home = trailingslashit( (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH ) );
+		if ( ! str_starts_with( $path, $home ) ) {
+			return null;
+		}
+
+		global $wp_rewrite;
+		$pattern = '#^' . preg_quote( self::LEGACY_SLUG, '#' ) . '/([^/]+)/?(?:' . preg_quote( $wp_rewrite->pagination_base, '#' ) . '/([0-9]+)/?)?$#';
+		if ( ! preg_match( $pattern, substr( $path, strlen( $home ) ), $matches ) ) {
+			return null;
+		}
+
+		$term = get_term_by( 'slug', rawurldecode( $matches[1] ), self::TAXONOMY );
+		if ( ! $term instanceof \WP_Term ) {
+			return null;
+		}
+
+		$link = get_term_link( $term );
+		if ( is_wp_error( $link ) ) {
+			return null;
+		}
+
+		$page = isset( $matches[2] ) ? (int) $matches[2] : 0;
+		if ( $page > 1 ) {
+			$link = $wp_rewrite->using_permalinks()
+				? user_trailingslashit( trailingslashit( $link ) . $wp_rewrite->pagination_base . '/' . $page, 'paged' )
+				: add_query_arg( 'paged', $page, $link );
+		}
+
+		return $link;
 	}
 
 	/**
