@@ -342,8 +342,10 @@ final class Collection_Items {
 			return [];
 		}
 
-		$name_is_title = '' !== trim( (string) $post->post_title );
-		$name          = $name_is_title ? get_the_title( $post ) : \PKIW\untitled_name( $post, false );
+		// A hidden location title reads as its safe name, a synthetic one (X8).
+		$titled        = '' !== trim( (string) $post->post_title );
+		$name          = $titled ? \PKIW\visitor_post_title( $post ) : \PKIW\untitled_name( $post, false );
+		$name_is_title = $titled && ! \PKIW\post_title_is_hidden( $post );
 		$count         = self::visible_count( $post_id );
 		$newest        = self::newest( $post_id );
 		/* translators: %s: localized number of visible collection items. */

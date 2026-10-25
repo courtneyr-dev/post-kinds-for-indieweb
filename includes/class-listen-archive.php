@@ -214,9 +214,11 @@ final class Listen_Archive {
 			return [];
 		}
 
+		// A hidden location title reads as its safe name, a synthetic one (X8).
 		$media_type    = Listen_Media_Type::stored( $post_id );
-		$name_is_title = '' !== trim( (string) $post->post_title );
-		$name          = $name_is_title ? get_the_title( $post ) : untitled_name( $post, false );
+		$titled        = '' !== trim( (string) $post->post_title );
+		$name          = $titled ? visitor_post_title( $post ) : untitled_name( $post, false );
+		$name_is_title = $titled && ! post_title_is_hidden( $post );
 		$episode       = trim( (string) get_post_meta( $post_id, Meta_Fields::PREFIX . 'listen_track', true ) );
 		$episode_text  = '' !== $episode ? $episode : $name;
 		$artist        = trim( (string) get_post_meta( $post_id, Meta_Fields::PREFIX . 'listen_artist', true ) );
@@ -753,7 +755,7 @@ final class Listen_Archive {
 		$published = esc_attr( (string) get_the_date( 'c', $post ) );
 
 		if ( [] === $facts ) {
-			$title = trim( wp_strip_all_tags( get_the_title( $post ) ) );
+			$title = trim( wp_strip_all_tags( visitor_post_title( $post ) ) );
 			$date  = (string) get_the_date( 'Y-m-d', $post );
 			$text  = (string) get_the_date( '', $post );
 
@@ -819,7 +821,9 @@ final class Listen_Archive {
 		$counts = [];
 		foreach ( $ids as $post_id ) {
 			$facts           = Kind_Facts::get( (int) $post_id );
-			$name            = [] !== $facts ? (string) ( $facts['episode_text'] ?? '' ) : (string) get_the_title( (int) $post_id );
+			$line_post       = get_post( (int) $post_id );
+			$fallback        = $line_post instanceof \WP_Post ? trim( wp_strip_all_tags( visitor_post_title( $line_post ) ) ) : '';
+			$name            = [] !== $facts ? (string) ( $facts['episode_text'] ?? '' ) : $fallback;
 			$name            = mb_strtolower( $name );
 			$counts[ $name ] = ( $counts[ $name ] ?? 0 ) + 1;
 		}
