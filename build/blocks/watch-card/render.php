@@ -76,6 +76,14 @@ $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 
 [ $pkiw_watched_iso, $pkiw_watched_display ] = \PKIW\card_wall_clock( (string) $pkiw_watched_at );
 
+// The post's title as a visitor reads it, on every screen (issue 434). The
+// Stream's long-form watch branch passes it as mediaTitle. When it stands in
+// for a hidden location title it is synthetic, so it gets no p-name, as on
+// the generic Stream card (X8).
+$pkiw_post        = get_post();
+$pkiw_post_name   = $pkiw_post instanceof WP_Post ? \PKIW\visitor_post_title( $pkiw_post ) : '';
+$pkiw_title_class = $pkiw_post instanceof WP_Post && \PKIW\post_title_is_hidden( $pkiw_post ) && $pkiw_media_title === $pkiw_post_name ? 'pk-title' : 'pk-title p-name';
+
 ob_start();
 ?>
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
@@ -85,7 +93,7 @@ ob_start();
 
 		<div class="pk-caption">
 			<?php if ( $pkiw_media_title ) : ?>
-				<h2 class="pk-title p-name">
+				<h2 class="<?php echo esc_attr( $pkiw_title_class ); ?>">
 					<?php if ( $pkiw_watch_url ) : ?>
 						<a class="u-url" href="<?php echo esc_url( $pkiw_watch_url ); ?>" target="_blank" rel="noopener noreferrer"<?php echo \PKIW\pkiw_new_tab_label_attr( $pkiw_media_title ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $pkiw_media_title ); ?></a>
 					<?php else : ?>
@@ -127,7 +135,7 @@ ob_start();
 			<div class="pk-embed pk-embed--video"><?php echo $pkiw_embed; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 		<?php elseif ( $pkiw_poster_image ) : ?>
 			<div class="pk-media">
-				<img class="pk-thumb--poster u-photo" src="<?php echo esc_url( $pkiw_poster_image ); ?>" alt="<?php echo esc_attr( $pkiw_poster_alt ? $pkiw_poster_alt : sprintf( /* translators: %s: movie/show title */ __( 'Poster for %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_media_title ? $pkiw_media_title : get_the_title() ) ); ?>" loading="lazy" />
+				<img class="pk-thumb--poster u-photo" src="<?php echo esc_url( $pkiw_poster_image ); ?>" alt="<?php echo esc_attr( $pkiw_poster_alt ? $pkiw_poster_alt : sprintf( /* translators: %s: movie/show title */ __( 'Poster for %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_media_title ? $pkiw_media_title : $pkiw_post_name ) ); ?>" loading="lazy" />
 			</div>
 		<?php endif; ?>
 

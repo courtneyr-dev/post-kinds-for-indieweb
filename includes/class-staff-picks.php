@@ -265,7 +265,7 @@ final class Staff_Picks {
 	 * @return string
 	 */
 	private static function item( \WP_Post $post, float $rating, int $level, bool $first ): string {
-		$title = trim( wp_strip_all_tags( get_the_title( $post ) ) );
+		$title = trim( wp_strip_all_tags( visitor_post_title( $post ) ) );
 		if ( '' === $title ) {
 			$title = untitled_name( $post );
 		}

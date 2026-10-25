@@ -81,7 +81,7 @@ if ( $pkiw_show_map && $pkiw_query->have_posts() ) {
 		if ( ! empty( $pkiw_location['latitude'] ) && ! empty( $pkiw_location['longitude'] ) ) {
 			$pkiw_map_markers[] = [
 				'id'        => $pkiw_checkin_post->ID,
-				'title'     => get_the_title( $pkiw_checkin_post ),
+				'title'     => \PKIW\visitor_post_title( $pkiw_checkin_post ),
 				'url'       => get_permalink( $pkiw_checkin_post ),
 				'latitude'  => floatval( $pkiw_location['latitude'] ),
 				'longitude' => floatval( $pkiw_location['longitude'] ),
@@ -126,7 +126,14 @@ $pkiw_map_id = 'checkins-map-' . wp_unique_id();
 		<div class="checkins-feed__list h-feed">
 			<?php while ( $pkiw_query->have_posts() ) : ?>
 				<?php $pkiw_query->the_post(); ?>
-				<?php $pkiw_location = get_checkin_location(); ?>
+				<?php
+				$pkiw_location = get_checkin_location();
+				// Not the_title(): it keeps a hidden location title on an admin
+				// screen. Its safe name is synthetic, so no p-name (X8, issue 434).
+				$pkiw_item_post   = get_post();
+				$pkiw_item_title  = $pkiw_item_post instanceof WP_Post ? \PKIW\visitor_post_title( $pkiw_item_post ) : '';
+				$pkiw_title_class = $pkiw_item_post instanceof WP_Post && \PKIW\post_title_is_hidden( $pkiw_item_post ) ? 'checkins-feed__title' : 'checkins-feed__title p-name';
+				?>
 
 				<article class="checkins-feed__item h-entry">
 					<?php if ( has_post_thumbnail() ) : ?>
@@ -138,9 +145,9 @@ $pkiw_map_id = 'checkins-map-' . wp_unique_id();
 					<?php endif; ?>
 
 					<div class="checkins-feed__content">
-						<?php echo '<h' . $pkiw_heading_level . ' class="checkins-feed__title p-name">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+						<?php echo '<h' . $pkiw_heading_level . ' class="' . esc_attr( $pkiw_title_class ) . '">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							<a href="<?php the_permalink(); ?>" class="u-url">
-								<?php the_title(); ?>
+								<?php echo wp_kses_post( $pkiw_item_title ); ?>
 							</a>
 						<?php echo '</h' . $pkiw_heading_level . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
