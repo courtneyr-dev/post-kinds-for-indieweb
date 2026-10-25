@@ -153,3 +153,56 @@ describe( 'Check-ins Feed editor outside an archive', () => {
 		} );
 	} );
 } );
+
+describe( 'Check-ins Feed editor venue filter (issue 492)', () => {
+	it( 'lists venues from the pkiw_venue route', async () => {
+		render(
+			<Edit
+				attributes={ { ...ATTRIBUTES, inherit: false } }
+				setAttributes={ jest.fn() }
+			/>
+		);
+
+		await waitFor( () =>
+			expect( apiFetch ).toHaveBeenCalledWith( {
+				path: '/wp/v2/pkiw_venue?per_page=100',
+			} )
+		);
+		const paths = apiFetch.mock.calls.map(
+			( [ options ] ) => options.path
+		);
+		expect(
+			paths.filter( ( path ) => path.startsWith( '/wp/v2/venue' ) )
+		).toEqual( [] );
+	} );
+
+	it( 'filters the preview by the pkiw_venue query param', async () => {
+		apiFetch.mockImplementation( ( { path } ) => {
+			if ( path.startsWith( '/wp/v2/checkin' ) ) {
+				return Promise.reject( new Error( 'No route' ) );
+			}
+			if ( path === '/wp/v2/kind?slug=checkin' ) {
+				return Promise.resolve( [ { id: 3 } ] );
+			}
+			return Promise.resolve(
+				path.startsWith( '/wp/v2/posts' ) ? CHECKINS : []
+			);
+		} );
+
+		render(
+			<Edit
+				attributes={ { ...ATTRIBUTES, inherit: false, venueId: 7 } }
+				setAttributes={ jest.fn() }
+			/>
+		);
+
+		await waitFor( () =>
+			expect( apiFetch ).toHaveBeenCalledWith( {
+				path: '/wp/v2/posts?per_page=24&kind=3&pkiw_venue=7&_embed',
+			} )
+		);
+		expect( apiFetch ).toHaveBeenCalledWith( {
+			path: '/wp/v2/checkin?per_page=24&pkiw_venue=7&_embed',
+		} );
+	} );
+} );

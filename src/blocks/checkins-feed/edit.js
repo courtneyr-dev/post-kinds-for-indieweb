@@ -121,7 +121,7 @@ function FeedEdit( { attributes, setAttributes } ) {
 
 	// Fetch venues for the filter dropdown.
 	useEffect( () => {
-		apiFetch( { path: '/wp/v2/venue?per_page=100' } )
+		apiFetch( { path: '/wp/v2/pkiw_venue?per_page=100' } )
 			.then( ( data ) => {
 				setVenues( data || [] );
 			} )
@@ -134,13 +134,12 @@ function FeedEdit( { attributes, setAttributes } ) {
 	useEffect( () => {
 		setIsLoading( true );
 
-		let path = `/wp/v2/checkin?per_page=${ count }&_embed`;
+		// The venue taxonomy's REST filter is named after it: pkiw_venue.
+		const venueFilter = venueId > 0 ? `&pkiw_venue=${ venueId }` : '';
 
-		if ( venueId > 0 ) {
-			path += `&venue=${ venueId }`;
-		}
-
-		apiFetch( { path } )
+		apiFetch( {
+			path: `/wp/v2/checkin?per_page=${ count }${ venueFilter }&_embed`,
+		} )
 			.then( ( data ) => {
 				setCheckins( data || [] );
 				setIsLoading( false );
@@ -158,7 +157,7 @@ function FeedEdit( { attributes, setAttributes } ) {
 						}
 
 						apiFetch( {
-							path: `/wp/v2/posts?per_page=${ count }&kind=${ terms[ 0 ].id }&_embed`,
+							path: `/wp/v2/posts?per_page=${ count }&kind=${ terms[ 0 ].id }${ venueFilter }&_embed`,
 						} )
 							.then( ( data ) => {
 								setCheckins( data || [] );
