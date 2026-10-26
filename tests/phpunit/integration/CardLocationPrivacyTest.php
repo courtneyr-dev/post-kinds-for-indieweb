@@ -350,18 +350,18 @@ final class CardLocationPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( self::FOURSQUARE_ID, $html );
 	}
 
-	// ─── Editor: full values regardless of privacy ───
+	// ─── Editor on the front end: the visitor's card ───
 
 	/**
 	 * @dataProvider card_builders
 	 */
-	public function test_editor_sees_full_location_on_private_post( string $builder ): void {
+	public function test_editor_on_the_front_end_gets_the_visitor_card_on_private_post( string $builder ): void {
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 		[ , $html ] = $this->render_card( $this->{$builder}(), 'private' );
 
-		$this->assertStringContainsString( self::VENUE_NAME, $html );
-		$this->assertStringContainsString( self::STREET, $html );
-		$this->assertStringContainsString( self::VENUE_URL, $html );
+		$this->assertStringNotContainsString( self::VENUE_NAME, $html );
+		$this->assertStringNotContainsString( self::STREET, $html );
+		$this->assertStringNotContainsString( self::VENUE_URL, $html );
 	}
 
 	// ─── microformats2: an approximate check-in keeps a p-location h-card
@@ -466,9 +466,10 @@ final class CardLocationPrivacyTest extends WP_UnitTestCase {
 	 * @param int $post_id Post ID.
 	 * @return array<string, mixed>
 	 */
-	private function rest_get( int $post_id ): array {
+	private function rest_get( int $post_id, string $context = 'view' ): array {
 		$GLOBALS['wp_rest_server'] = null;
 		$request                  = new WP_REST_Request( 'GET', '/wp/v2/posts/' . $post_id );
+		$request->set_param( 'context', $context );
 		return rest_get_server()->dispatch( $request )->get_data();
 	}
 
@@ -532,11 +533,11 @@ final class CardLocationPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( self::RESTAURANT, $html );
 	}
 
-	public function test_editor_sees_restaurant_on_private_eat_card(): void {
+	public function test_editor_on_the_front_end_gets_no_restaurant_on_private_eat_card(): void {
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 		[ , $html ] = $this->render_card( $this->eat_block(), 'private' );
 
-		$this->assertStringContainsString( self::RESTAURANT, $html );
+		$this->assertStringNotContainsString( self::RESTAURANT, $html );
 	}
 
 	public function test_rest_private_eat_strips_restaurant_meta(): void {
@@ -562,15 +563,15 @@ final class CardLocationPrivacyTest extends WP_UnitTestCase {
 		$this->assertSame( self::RESTAURANT, $data['meta']['_pkiw_eat_restaurant'] );
 	}
 
-	public function test_rest_editor_sees_full_meta_on_private_post(): void {
+	public function test_rest_editor_sees_full_meta_on_private_post_in_edit_context(): void {
 		$post_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_name', self::VENUE_NAME );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
 
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
-		$data = $this->rest_get( $post_id );
 
-		$this->assertSame( self::VENUE_NAME, $data['meta']['_pkiw_checkin_name'] );
+		$this->assertSame( self::VENUE_NAME, $this->rest_get( $post_id, 'edit' )['meta']['_pkiw_checkin_name'] );
+		$this->assertSame( '', $this->rest_get( $post_id )['meta']['_pkiw_checkin_name'], 'View context gets the visitor answer.' );
 	}
 
 	// ─── Block bindings source (post-kinds/kind-meta) stays safe ───
