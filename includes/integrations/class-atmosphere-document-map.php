@@ -144,11 +144,15 @@ class Atmosphere_Document_Map {
 	 * status transition and, for meta, only on its own share keys
 	 * (Atmosphere::on_share_meta_changed()), so a write with no save, such
 	 * as the update-post-meta ability's, left the record with the location.
-	 * This takes the gates and the cron on_share_meta_changed() uses:
-	 * connected, auto-publish on, and atmosphere_update_post once for the
-	 * post. Only a post with records ATmosphere published, by the keys its
-	 * has_post_records() reads, queues one, because the update would share
-	 * a post it never shared.
+	 * This takes the cron on_share_meta_changed() uses, atmosphere_update_post
+	 * once for the post, and one of its gates: the site is connected. It
+	 * doesn't take the auto-publish gate (issue 357). A site in
+	 * connection-only mode, with auto-publish off, still holds records it
+	 * published, and a record that keeps a location or health detail the post
+	 * now hides leaks it, so the update is queued either way. ATmosphere's
+	 * update worker doesn't check auto-publish. Only a post with records
+	 * ATmosphere published, by the keys its has_post_records() reads, queues
+	 * one, because the update would share a post it never shared.
 	 *
 	 * @param int|int[] $meta_id  Meta row ID or IDs; unused.
 	 * @param int       $post_id  Post the meta belongs to.
@@ -156,8 +160,8 @@ class Atmosphere_Document_Map {
 	 * @return void
 	 */
 	public function queue_update_on_privacy_change( $meta_id, $post_id, $meta_key ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed
-		if ( ! in_array( $meta_key, self::PRIVACY_META_KEYS, true ) || ! function_exists( '\Atmosphere\is_auto_publish_enabled' )
-			|| ! \Atmosphere\is_connected() || ! \Atmosphere\is_auto_publish_enabled() ) {
+		if ( ! in_array( $meta_key, self::PRIVACY_META_KEYS, true ) || ! function_exists( '\Atmosphere\is_connected' )
+			|| ! \Atmosphere\is_connected() ) {
 			return;
 		}
 

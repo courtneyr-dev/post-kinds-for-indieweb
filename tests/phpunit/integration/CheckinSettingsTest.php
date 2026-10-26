@@ -135,6 +135,31 @@ class CheckinSettingsTest extends WP_UnitTestCase {
 		);
 	}
 
+	/**
+	 * The Approximate option describes what Meta_Fields::get_public_location_fields()
+	 * does for an approximate post, venue or not (issue 342): venue name, city,
+	 * region and country show; street, postal code, coordinates and map don't.
+	 */
+	public function test_approximate_option_describes_what_approximate_hides(): void {
+		ob_start();
+		$this->page->render_privacy_field( [ 'id' => 'checkin_default_privacy' ] );
+		$html = (string) ob_get_clean();
+
+		$this->assertStringNotContainsString( 'the same as Public', $html );
+		$this->assertStringContainsString( 'Hides the street address, postal code, coordinates, map, venue URL and OpenStreetMap ID', $html );
+
+		$post_id = self::factory()->post->create();
+		update_post_meta( $post_id, \PKIW\Meta_Fields::PREFIX . 'geo_privacy', 'approximate' );
+		update_post_meta( $post_id, \PKIW\Meta_Fields::PREFIX . 'checkin_venue_name', 'Example Hall' );
+		$visible = \PKIW\Meta_Fields::get_public_location_fields( $post_id );
+		foreach ( [ 'name', 'locality', 'region', 'country' ] as $shown ) {
+			$this->assertTrue( $visible[ $shown ], "Approximate shows {$shown}." );
+		}
+		foreach ( [ 'street', 'postal_code', 'coordinates', 'map', 'url', 'osm_id' ] as $hidden ) {
+			$this->assertFalse( $visible[ $hidden ], "Approximate hides {$hidden}, venue or not." );
+		}
+	}
+
 	public function test_default_location_privacy_rejects_an_unknown_value(): void {
 		$this->save_through_settings_api(
 			[

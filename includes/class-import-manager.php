@@ -1609,21 +1609,22 @@ class Import_Manager {
 
 		$meta = [
 			// Checkin-specific fields for Post Kind editor.
-			'_pkiw_checkin_name'      => $venue,
-			'_pkiw_checkin_address'   => $address,
-			'_pkiw_checkin_locality'  => $item['locality'] ?? '',
-			'_pkiw_checkin_region'    => $item['region'] ?? '',
-			'_pkiw_checkin_country'   => $item['country'] ?? '',
-			'_pkiw_geo_latitude'      => $item['latitude'] ?? '',
-			'_pkiw_geo_longitude'     => $item['longitude'] ?? '',
+			'_pkiw_checkin_name'        => $venue,
+			'_pkiw_checkin_address'     => $address,
+			'_pkiw_checkin_locality'    => $item['locality'] ?? '',
+			'_pkiw_checkin_region'      => $item['region'] ?? '',
+			'_pkiw_checkin_country'     => $item['country'] ?? '',
+			'_pkiw_checkin_postal_code' => $item['postal_code'] ?? '',
+			'_pkiw_geo_latitude'        => $item['latitude'] ?? '',
+			'_pkiw_geo_longitude'       => $item['longitude'] ?? '',
 			// The check-in privacy default, as Foursquare_Checkin_Sync applies it.
-			'_pkiw_geo_privacy'       => $settings['checkin_default_privacy'] ?? 'approximate',
+			'_pkiw_geo_privacy'         => $settings['checkin_default_privacy'] ?? 'approximate',
 			// Legacy/internal fields.
-			'_pkiw_checkin_venue'     => $venue,
-			'_pkiw_checkin_latitude'  => $item['latitude'] ?? '',
-			'_pkiw_checkin_longitude' => $item['longitude'] ?? '',
-			'_pkiw_checkin_venue_id'  => $item['venue_id'] ?? '',
-			'_pkiw_checkin_shout'     => $item['shout'] ?? '',
+			'_pkiw_checkin_venue'       => $venue,
+			'_pkiw_checkin_latitude'    => $item['latitude'] ?? '',
+			'_pkiw_checkin_longitude'   => $item['longitude'] ?? '',
+			'_pkiw_checkin_venue_id'    => $item['venue_id'] ?? '',
+			'_pkiw_checkin_shout'       => $item['shout'] ?? '',
 		];
 
 		return [ $post_data, $meta, '' ];
