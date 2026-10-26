@@ -50,8 +50,9 @@ $pkiw_photo         = $attributes['photo'] ?? '';
 $pkiw_photo_alt     = $attributes['photoAlt'] ?? '';
 $pkiw_show_map      = isset( $attributes['showMap'] ) ? (bool) $attributes['showMap'] : true;
 
-// R-03: the post's own geo_privacy meta (and edit_post capability) decide
-// what's visible, not the block's saved locationPrivacy attribute.
+// R-03: the post's own geo_privacy meta decides what's visible, not the
+// block's saved locationPrivacy attribute. An editor gets more only in the
+// editor's preview (Meta_Fields::is_location_editing_context()).
 $pkiw_post_id = $block->context['postId'] ?? get_the_ID();
 $pkiw_visible = Meta_Fields::get_visible_location_fields( (int) $pkiw_post_id );
 

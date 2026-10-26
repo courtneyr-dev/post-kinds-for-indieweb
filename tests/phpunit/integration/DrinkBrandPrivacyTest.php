@@ -481,11 +481,16 @@ final class DrinkBrandPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( self::BRAND, $this->feed_content( $id ) );
 	}
 
-	public function test_an_editor_sees_a_location_derived_brand(): void {
+	public function test_an_editor_gets_a_location_derived_brand_only_in_edit_context(): void {
 		$id = $this->drink( 'private', true, brand: self::BRAND );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 
-		$this->assert_brand_shown( $id, self::BRAND );
+		$this->assertStringNotContainsString( self::BRAND, $this->render_card( $id ), 'The front end gets the visitor card.' );
+		$this->assertSame( '', $this->rest_meta( $id )['_pkiw_drink_brewery'], 'REST view context gets the visitor answer.' );
+
+		$request = new WP_REST_Request( 'GET', '/wp/v2/posts/' . $id );
+		$request->set_param( 'context', 'edit' );
+		$this->assertSame( self::BRAND, rest_do_request( $request )->get_data()['meta']['_pkiw_drink_brewery'], 'The block editor reads the stored brand.' );
 	}
 
 	public function test_retyping_the_brand_in_the_card_clears_the_marker(): void {

@@ -43,6 +43,21 @@ final class AbilityMetaRedactionTest extends WP_UnitTestCase {
 		update_post_meta( $this->post_id, Meta_Fields::PREFIX . 'checkin_address', '123 Sentinel St' );
 	}
 
+	/**
+	 * Run a callback on an admin screen, where editors get the full location.
+	 *
+	 * @param callable $callback Callback.
+	 * @return mixed What the callback returns.
+	 */
+	private function on_admin_screen( callable $callback ) {
+		set_current_screen( 'edit-post' );
+		try {
+			return $callback();
+		} finally {
+			$GLOBALS['current_screen'] = null;
+		}
+	}
+
 	public function test_subscriber_does_not_see_private_location_fields(): void {
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'subscriber' ] ) );
 
@@ -69,23 +84,33 @@ final class AbilityMetaRedactionTest extends WP_UnitTestCase {
 		$this->assertSame( '', $result['meta']['checkin_address'] );
 	}
 
-	public function test_author_sees_full_location(): void {
+	public function test_author_sees_full_location_on_an_admin_screen(): void {
 		wp_set_current_user( $this->author_id );
 
-		$result = $this->abilities->execute_get_post_meta( [ 'post_id' => $this->post_id ] );
+		$result = $this->on_admin_screen( fn() => $this->abilities->execute_get_post_meta( [ 'post_id' => $this->post_id ] ) );
 
 		$this->assertSame( '40.20192', $result['meta']['geo_latitude'] );
 		$this->assertSame( '-77.19256', $result['meta']['geo_longitude'] );
 		$this->assertSame( '123 Sentinel St', $result['meta']['checkin_address'] );
 	}
 
-	public function test_user_with_edit_post_sees_full_location(): void {
+	public function test_user_with_edit_post_sees_full_location_on_an_admin_screen(): void {
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 
-		$result = $this->abilities->execute_get_post_meta( [ 'post_id' => $this->post_id ] );
+		$result = $this->on_admin_screen( fn() => $this->abilities->execute_get_post_meta( [ 'post_id' => $this->post_id ] ) );
 
 		$this->assertSame( '40.20192', $result['meta']['geo_latitude'] );
 		$this->assertSame( '123 Sentinel St', $result['meta']['checkin_address'] );
+	}
+
+	public function test_user_with_edit_post_gets_the_visitor_location_outside_an_editing_context(): void {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		// The abilities run route and the MCP adapter carry no context=edit.
+		$result = $this->abilities->execute_get_post_meta( [ 'post_id' => $this->post_id ] );
+
+		$this->assertEquals( 0, $result['meta']['geo_latitude'] );
+		$this->assertSame( '', $result['meta']['checkin_address'] );
 	}
 
 	public function test_author_with_read_post_but_not_edit_post_gets_no_protected_kind_meta(): void {
@@ -124,7 +149,7 @@ final class AbilityMetaRedactionTest extends WP_UnitTestCase {
 		update_post_meta( $this->post_id, Meta_Fields::PREFIX . 'checkin_name', 'Hidden Venue' );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 
-		$result = $this->abilities->execute_get_post_meta( [ 'post_id' => $this->post_id ] );
+		$result = $this->on_admin_screen( fn() => $this->abilities->execute_get_post_meta( [ 'post_id' => $this->post_id ] ) );
 
 		$this->assertSame( 'Hidden Venue', $result['meta']['checkin_name'] );
 		$this->assertSame( '40.20192', $result['meta']['geo_latitude'] );

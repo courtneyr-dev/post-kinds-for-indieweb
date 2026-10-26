@@ -487,16 +487,24 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * An editor still sees everything on a private check-in.
+	 * An editor sees everything on a private check-in on an admin screen,
+	 * and the visitor's nothing on the front end.
 	 */
-	public function test_get_checkin_location_editor_sees_everything_when_private(): void {
+	public function test_get_checkin_location_editor_sees_everything_when_private_only_on_an_admin_screen(): void {
 		$post_id = $this->create_checkin_post();
 		update_post_meta( $post_id, '_pkiw_geo_privacy', 'private' );
 		update_post_meta( $post_id, '_pkiw_checkin_venue', 'Sentinel Place' );
 		update_post_meta( $post_id, '_pkiw_checkin_address', 'Sentinel Street' );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 
-		$location = get_checkin_location( $post_id );
+		$this->assertSame( [], get_checkin_location( $post_id ), 'The front end shows an editor what a visitor sees.' );
+
+		set_current_screen( 'edit-post' );
+		try {
+			$location = get_checkin_location( $post_id );
+		} finally {
+			$GLOBALS['current_screen'] = null;
+		}
 
 		$this->assertSame( 'Sentinel Place', $location['name'] );
 		$this->assertSame( 'Sentinel Street', $location['address'] );

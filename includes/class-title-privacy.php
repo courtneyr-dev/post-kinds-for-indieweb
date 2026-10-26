@@ -770,7 +770,16 @@ class Title_Privacy {
 	 * what they build, a federated record or a ping, is read by visitors.
 	 */
 	private static function is_admin_screen(): bool {
-		return is_admin() && ! wp_doing_ajax() && ! wp_doing_cron() && 0 === self::$saving;
+		return is_admin() && ! wp_doing_ajax() && ! wp_doing_cron() && ! self::is_saving();
+	}
+
+	/**
+	 * Whether a post save's hooks are running. What they build, a federated
+	 * record or a ping, is read by visitors, so code that shows editors more
+	 * on admin screens shows them the visitor's view here.
+	 */
+	public static function is_saving(): bool {
+		return self::$saving > 0;
 	}
 
 	/**

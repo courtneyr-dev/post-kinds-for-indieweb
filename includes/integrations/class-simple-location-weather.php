@@ -350,7 +350,9 @@ final class Simple_Location_Weather {
 	 * private: an empty per-post `geo_public` falls back to the site's
 	 * `geo_public` option the way Geo_Data::get_default_visibility() does
 	 * (class-geo-data.php:77-89, :494-500), and an unset option is private.
-	 * Anyone who can edit the post always sees it.
+	 * Someone who can edit the post sees it where they edit it, per
+	 * Meta_Fields::can_see_full_location(); on the front end they see what
+	 * a visitor sees.
 	 *
 	 * @param int $post_id Post ID.
 	 * @return bool
@@ -360,7 +362,7 @@ final class Simple_Location_Weather {
 			return false;
 		}
 
-		if ( current_user_can( 'edit_post', $post_id ) ) {
+		if ( Meta_Fields::can_see_full_location( $post_id ) ) {
 			return true;
 		}
 

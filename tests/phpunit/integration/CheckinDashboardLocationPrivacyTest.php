@@ -83,9 +83,11 @@ final class CheckinDashboardLocationPrivacyTest extends WP_UnitTestCase {
 			'public, anonymous'      => [ 'public', 'anonymous', true, true, true ],
 			'approximate, anonymous' => [ 'approximate', 'anonymous', true, false, false ],
 			'private, anonymous'     => [ 'private', 'anonymous', false, false, false ],
+			// The dashboard is front-end output, so an editor sees what a
+			// visitor sees.
 			'public, editor'         => [ 'public', 'editor', true, true, true ],
-			'approximate, editor'    => [ 'approximate', 'editor', true, true, true ],
-			'private, editor'        => [ 'private', 'editor', true, true, true ],
+			'approximate, editor'    => [ 'approximate', 'editor', true, false, false ],
+			'private, editor'        => [ 'private', 'editor', false, false, false ],
 		];
 	}
 
@@ -171,7 +173,7 @@ final class CheckinDashboardLocationPrivacyTest extends WP_UnitTestCase {
 	public function unique_venue_counts(): array {
 		return [
 			'anonymous' => [ 'anonymous', '1' ],
-			'editor'    => [ 'editor', '3' ],
+			'editor'    => [ 'editor', '1' ],
 		];
 	}
 

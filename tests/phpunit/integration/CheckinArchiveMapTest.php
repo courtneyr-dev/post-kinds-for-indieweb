@@ -409,11 +409,22 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'Title first', $html, 'Only the block renderer stands in the newest check-ins.' );
 	}
 
-	public function test_editor_sees_pins_for_private_checkins(): void {
+	public function test_editor_gets_a_pin_for_a_private_checkin_only_in_an_editing_context(): void {
 		$post = $this->checkin( 'secret', 'private', 42.333333, -77.333333 );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		$this->on_front_end();
 
-		$this->assertCount( 1, Checkin_Map::pins( Checkin_Map::entries( [ $post ] ) ) );
+		$this->assertCount( 0, Checkin_Map::pins( Checkin_Map::entries( [ $post ] ) ), 'The front end gets the visitor map.' );
+
+		// The editor's block preview: the REST block renderer in context=edit.
+		$request = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/post-kinds-indieweb/checkins-feed' );
+		$request->set_param( 'context', 'edit' );
+		Meta_Fields::track_rest_request( null, [], $request );
+		try {
+			$this->assertCount( 1, Checkin_Map::pins( Checkin_Map::entries( [ $post ] ) ) );
+		} finally {
+			Meta_Fields::untrack_rest_request( null, [], $request );
+		}
 	}
 
 	public function test_editor_canvas_gets_leaflet_and_the_watching_map_script(): void {

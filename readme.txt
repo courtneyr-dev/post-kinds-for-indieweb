@@ -181,6 +181,7 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 == Changelog ==
 
 = Unreleased =
+* Changed: a logged-in editor on the front end sees a check-in's location the way a visitor does, in cards, feeds, the dashboard, the check-in map, archives and the weather line. Editors still see the full location on admin screens and in the block editor.
 * Changed: venue archives live at /venues/<slug>/. Simple Location's venue post type owns /venue/, so a venue archive there 404'd. An old /venue/<slug>/ link that would 404 now 301s to the venue's new link. The plugin version is 1.8.7, so upgraded sites rebuild their rewrite rules once.
 * Fixed: the plugin's venue archive template is named taxonomy-pkiw_venue, so WordPress picks it for venue archives. A theme or Site Editor taxonomy-pkiw_venue still wins.
 * Fixed: the Venue Detail and Check-ins Feed venue pickers list your venues again, and the Check-ins Feed preview filters by the chosen venue.

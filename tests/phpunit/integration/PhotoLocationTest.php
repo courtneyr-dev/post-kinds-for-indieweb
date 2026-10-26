@@ -198,7 +198,7 @@ final class PhotoLocationTest extends WP_UnitTestCase {
 		$this->assertSame( 1, $this->callback_count( 'the_content', 12 ) );
 	}
 
-	public function test_editor_sees_content_location_but_head_and_feed_use_public_fields(): void {
+	public function test_editor_on_the_front_end_gets_the_public_fields_in_content_head_and_feed(): void {
 		$this->register_simple_location_callables();
 		$post_id = $this->photo( 'private' );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
@@ -206,8 +206,9 @@ final class PhotoLocationTest extends WP_UnitTestCase {
 		$location = $this->location();
 
 		$location->gate_content( 'x' );
-		$this->assertSame( 11, has_filter( 'the_content', 'Geo_Data::content_map' ) );
-		$this->assertSame( 12, has_filter( 'the_content', 'Geo_Data::location_content' ) );
+		$this->assertFalse( has_filter( 'the_content', 'Geo_Data::content_map' ) );
+		$this->assertFalse( has_filter( 'the_content', 'Geo_Data::location_content' ) );
+		$location->restore_content( 'x' );
 
 		$this->go_to( (string) get_permalink( $post_id ) );
 		$location->gate_head();
@@ -242,7 +243,8 @@ final class PhotoLocationTest extends WP_UnitTestCase {
 				'approximate' => [ 'approximate', '<p>x</p><p class="pkiw-photo-place">Example Hall, Sampletown, Example Region, Exampleland</p>' ],
 				'private'     => [ 'private', '<p>x</p>' ],
 				'public'      => [ 'public', '<p>x</p>' ],
-				'editor'      => [ 'editor', '<p>x</p>' ],
+				// The front end shows an editor what a visitor sees.
+				'editor'      => [ 'editor', '<p>x</p><p class="pkiw-photo-place">Example Hall, Sampletown, Example Region, Exampleland</p>' ],
 			] as $case => [ $privacy, $expected ]
 		) {
 			$this->unregister_simple_location_callables();

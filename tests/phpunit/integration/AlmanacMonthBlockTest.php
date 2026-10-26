@@ -524,12 +524,17 @@ final class AlmanacMonthBlockTest extends WP_UnitTestCase {
 		$this->assertSame( 'Weather', trim( explode( ',', $this->visible_text( $xp, $this->entry_of( $xp, 'A07' ) ) )[0] ) );
 	}
 
-	public function test_an_editor_sees_the_hidden_observation(): void {
+	public function test_an_editor_on_the_front_end_gets_the_visitor_skeleton_for_a_hidden_observation(): void {
 		$this->seed();
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
 		$xp = $this->xpath( $this->page_html() );
 
-		$this->assertSame( '22 °C', $xp->query( $this->cls( 'p-weather' ), $this->entry_of( $xp, 'A07' ) )->item( 0 )->textContent );
+		$this->assertSame(
+			$this->skeleton( $this->entry_of( $xp, 'A08' ) ),
+			$this->skeleton( $this->entry_of( $xp, 'A07' ) ),
+			'The front end shows an editor what a visitor sees.'
+		);
+		$this->assertStringNotContainsString( '22 °C', $this->visible_text( $xp, $this->entry_of( $xp, 'A07' ) ) );
 	}
 
 	public function test_a_mark_needs_a_stored_code(): void {

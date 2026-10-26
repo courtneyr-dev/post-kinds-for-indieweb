@@ -260,14 +260,21 @@ final class WeatherReadingTest extends WP_UnitTestCase {
 		$this->assertNull( Simple_Location_Weather::reading( $post_id ) );
 	}
 
-	public function test_an_editor_gets_the_observation_where_an_anonymous_viewer_cannot(): void {
+	public function test_an_editor_gets_the_observation_on_an_admin_screen_where_an_anonymous_viewer_cannot(): void {
 		$post_id = $this->weather_post( [ 'temperature' => 18 ], '0', [ 'post_content' => $this->authored( 'Chilly' ) ] );
 
 		$this->assertSame( 'authored', Simple_Location_Weather::reading( $post_id )['source'] ?? null );
 
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
-		$this->assertSame( 'observation', Simple_Location_Weather::reading( $post_id )['source'] ?? null );
-		$this->assertSame( '18 °C', Simple_Location_Weather::reading( $post_id )['text'] ?? null );
+		$this->assertSame( 'authored', Simple_Location_Weather::reading( $post_id )['source'] ?? null, 'The front end shows an editor what a visitor sees.' );
+
+		set_current_screen( 'edit-post' );
+		try {
+			$this->assertSame( 'observation', Simple_Location_Weather::reading( $post_id )['source'] ?? null );
+			$this->assertSame( '18 °C', Simple_Location_Weather::reading( $post_id )['text'] ?? null );
+		} finally {
+			$GLOBALS['current_screen'] = null;
+		}
 	}
 
 	public function test_a_stored_26_point_8_reads_27_celsius_and_80_fahrenheit(): void {

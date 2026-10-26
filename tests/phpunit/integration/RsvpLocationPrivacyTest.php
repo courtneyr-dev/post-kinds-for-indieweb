@@ -223,10 +223,12 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	 * @param int $id Post ID.
 	 * @return array<string, mixed>
 	 */
-	private function rest_post( int $id ): array {
+	private function rest_post( int $id, string $context = 'view' ): array {
 		$GLOBALS['wp_rest_server'] = null;
 
-		return (array) rest_do_request( new WP_REST_Request( 'GET', '/wp/v2/posts/' . $id ) )->get_data();
+		$request = new WP_REST_Request( 'GET', '/wp/v2/posts/' . $id );
+		$request->set_param( 'context', $context );
+		return (array) rest_do_request( $request )->get_data();
 	}
 
 	/**
@@ -688,9 +690,10 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		update_post_meta( $id, '_pkiw_event_location', self::LOCATION );
 		$this->as_editor();
 
-		$post = $this->rest_post( $id );
-		$this->assertSame( self::LOCATION, $post['meta']['_pkiw_event_location'], 'The editor reads the stored meta.' );
+		$post = $this->rest_post( $id, 'edit' );
+		$this->assertSame( self::LOCATION, $post['meta']['_pkiw_event_location'], 'The editor reads the stored meta in edit context.' );
 		$this->assertStringNotContainsString( self::LOCATION, $post['content']['rendered'], 'Rendered content leaves the request, so it gets the visitor answer.' );
+		$this->assertSame( '', $this->rest_post( $id )['meta']['_pkiw_event_location'], 'View context gets the visitor answer.' );
 	}
 
 	public function test_an_event_kind_post_keeps_its_event_location_in_rest(): void {
@@ -1907,15 +1910,21 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Assert an editor still reads the stored event location from REST meta
-	 * and the get-post-meta ability.
+	 * Assert an editor still reads the stored event location where they
+	 * edit: REST meta in edit context, and the get-post-meta ability on an
+	 * admin screen.
 	 *
 	 * @param int $id Post ID.
 	 */
 	private function assert_location_for_editors( int $id ): void {
 		$this->as_editor();
-		$this->assertSame( self::LOCATION, $this->rest_post( $id )['meta']['_pkiw_event_location'], 'The editor reads REST meta.' );
-		$this->assertSame( self::LOCATION, Core_Abilities::instance()->execute_get_post_meta( [ 'post_id' => $id ] )['meta']['event_location'], 'The editor reads the ability.' );
+		$this->assertSame( self::LOCATION, $this->rest_post( $id, 'edit' )['meta']['_pkiw_event_location'], 'The editor reads REST meta in edit context.' );
+		set_current_screen( 'edit-post' );
+		try {
+			$this->assertSame( self::LOCATION, Core_Abilities::instance()->execute_get_post_meta( [ 'post_id' => $id ] )['meta']['event_location'], 'The editor reads the ability on an admin screen.' );
+		} finally {
+			$GLOBALS['current_screen'] = null;
+		}
 		wp_set_current_user( 0 );
 	}
 

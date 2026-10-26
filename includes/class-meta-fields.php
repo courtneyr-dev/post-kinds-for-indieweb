@@ -49,6 +49,13 @@ class Meta_Fields {
 	private array $fields = [];
 
 	/**
+	 * REST requests whose callbacks are running, innermost last.
+	 *
+	 * @var \WP_REST_Request[]
+	 */
+	private static array $rest_requests = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * Sets up field definitions and hooks.
@@ -1103,6 +1110,9 @@ class Meta_Fields {
 		add_filter( 'rest_prepare_post', [ $this, 'redact_protected_kind_meta' ], 20, 3 );
 		add_filter( 'rest_prepare_' . Post_Type::POST_TYPE, [ $this, 'redact_protected_kind_meta' ], 20, 3 );
 		add_action( 'updated_post_meta', [ $this, 'clear_brand_source_on_rebrand' ], 10, 3 );
+		// Which REST request is running, for is_location_editing_context().
+		add_filter( 'rest_request_before_callbacks', [ self::class, 'track_rest_request' ], PHP_INT_MIN, 3 );
+		add_filter( 'rest_request_after_callbacks', [ self::class, 'untrack_rest_request' ], PHP_INT_MAX, 3 );
 	}
 
 	/**
@@ -1261,6 +1271,14 @@ class Meta_Fields {
 	 * Location / IndieBlocks keys), the /checkins routes, the dashboard,
 	 * and the theme all call this.
 	 *
+	 * Everyone gets get_public_location_fields(): front end, front-end AJAX,
+	 * cron, feeds and REST requests in view or embed context. A user who can
+	 * edit the post gets every field only where they edit it, which
+	 * is_location_editing_context() decides: an admin screen outside a save's
+	 * hooks, or a REST request with context=edit (the block editor loads
+	 * posts, meta and server-side block previews that way). So an editor
+	 * looking at the front end sees what a visitor sees.
+	 *
 	 * One rule for every post, venue posts included (issue 224):
 	 *
 	 * - `_pkiw_geo_privacy` 'private' or Simple Location `geo_public` '0':
@@ -1283,7 +1301,7 @@ class Meta_Fields {
 	 * @return array{name:bool,locality:bool,region:bool,country:bool,street:bool,postal_code:bool,coordinates:bool,map:bool,url:bool,osm_id:bool,venue_id:bool}
 	 */
 	public static function get_visible_location_fields( int $post_id ): array {
-		if ( $post_id > 0 && current_user_can( 'edit_post', $post_id ) ) {
+		if ( self::can_see_full_location( $post_id ) ) {
 			return array_fill_keys( array_keys( self::get_public_location_fields( 0 ) ), true );
 		}
 
@@ -1291,10 +1309,83 @@ class Meta_Fields {
 	}
 
 	/**
+	 * Whether the current user gets a post's full location: they can edit
+	 * the post and this request is an editing context.
+	 *
+	 * @param int                   $post_id Post ID.
+	 * @param \WP_REST_Request|null $request REST request to judge; defaults to the running one.
+	 * @return bool
+	 */
+	public static function can_see_full_location( int $post_id, ?\WP_REST_Request $request = null ): bool {
+		return $post_id > 0 && self::is_location_editing_context( $request ) && current_user_can( 'edit_post', $post_id );
+	}
+
+	/**
+	 * Whether this request is one where editors edit posts, so it may show
+	 * them a post's full location.
+	 *
+	 * Yes on an admin screen (the test Title_Privacy uses: is_admin(), not
+	 * AJAX, not cron), except while a post save's hooks run, because what
+	 * they build is read by visitors. Yes in a REST request whose `context`
+	 * is 'edit'. The request object is read when asked, so a save's response,
+	 * which the posts controller prepares after setting context=edit, counts.
+	 * Everything else is no.
+	 *
+	 * @param \WP_REST_Request|null $request REST request to judge; defaults to the running one.
+	 * @return bool
+	 */
+	public static function is_location_editing_context( ?\WP_REST_Request $request = null ): bool {
+		if ( Title_Privacy::is_saving() ) {
+			return false;
+		}
+
+		if ( null === $request && [] !== self::$rest_requests ) {
+			$request = self::$rest_requests[ array_key_last( self::$rest_requests ) ];
+		}
+		if ( $request instanceof \WP_REST_Request ) {
+			return 'edit' === $request->get_param( 'context' );
+		}
+
+		return is_admin() && ! wp_doing_ajax() && ! wp_doing_cron();
+	}
+
+	/**
+	 * Note the REST request that's about to run its callback.
+	 *
+	 * @param mixed            $response Response so far.
+	 * @param array            $handler  Route handler.
+	 * @param \WP_REST_Request $request  Request.
+	 * @return mixed $response, unchanged.
+	 */
+	public static function track_rest_request( $response, $handler, $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed
+		if ( $request instanceof \WP_REST_Request ) {
+			self::$rest_requests[] = $request;
+		}
+		return $response;
+	}
+
+	/**
+	 * Forget a REST request once its callback has run, along with any nested
+	 * request left behind by a callback that threw.
+	 *
+	 * @param mixed            $response Response.
+	 * @param array            $handler  Route handler.
+	 * @param \WP_REST_Request $request  Request.
+	 * @return mixed $response, unchanged.
+	 */
+	public static function untrack_rest_request( $response, $handler, $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed
+		$index = array_search( $request, self::$rest_requests, true );
+		if ( false !== $index ) {
+			self::$rest_requests = array_slice( self::$rest_requests, 0, (int) $index );
+		}
+		return $response;
+	}
+
+	/**
 	 * Which location fields a visitor who can't edit the post may see.
 	 *
 	 * The same rule as get_visible_location_fields(), without the editor
-	 * override. Use it for output that leaves the request it was built in: feeds, federated
+	 * override in editing contexts. Use it for output that leaves the request it was built in: feeds, federated
 	 * records, and titles.
 	 *
 	 * @param int $post_id Post ID.
@@ -1687,7 +1778,7 @@ class Meta_Fields {
 
 		// An RSVP's event location goes only to its editors unless it's public (issue 251).
 		$event_location = self::PREFIX . 'event_location';
-		if ( array_key_exists( $event_location, $meta ) && ! current_user_can( 'edit_post', $post_id )
+		if ( array_key_exists( $event_location, $meta ) && ! self::can_see_full_location( $post_id )
 			&& ! self::event_location_visible( $post_id ) ) {
 			$meta[ $event_location ] = '';
 		}
@@ -1721,13 +1812,15 @@ class Meta_Fields {
 		if ( ! $response instanceof \WP_REST_Response || ! $post instanceof \WP_Post ) {
 			return $response;
 		}
-		if ( current_user_can( 'edit_post', (int) $post->ID ) ) {
+		// Editors get full meta in context=edit, where the block editor loads
+		// and saves it; blanking it there would wipe the fields on save.
+		if ( self::can_see_full_location( (int) $post->ID, $request instanceof \WP_REST_Request ? $request : null ) ) {
 			return $response;
 		}
 
 		$data    = $response->get_data();
 		$changed = false;
-		$visible = self::get_visible_location_fields( (int) $post->ID );
+		$visible = self::get_public_location_fields( (int) $post->ID );
 
 		if ( ! empty( $data['meta'] ) && is_array( $data['meta'] ) ) {
 			$redacted = self::redact_location_array( $data['meta'], (int) $post->ID );

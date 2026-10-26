@@ -61,10 +61,11 @@ if ( ! is_string( $pkiw_drink_type ) || '' === $pkiw_drink_type ) {
 // A drink with no type prints no type: the line under its name is the brand alone.
 $pkiw_badge_label = $pkiw_drink_labels[ $pkiw_drink_type ] ?? $pkiw_drink_type;
 
-// R-03: the post's geo_privacy meta (and edit_post capability) decide what's
-// visible — see Meta_Fields::get_visible_location_fields(). Approximate keeps
+// R-03: the post's geo_privacy meta decides what's visible — see
+// Meta_Fields::get_visible_location_fields(). Approximate keeps
 // name/locality/region/country; street address, coordinates and the venue
-// URL are precise-tier and stay hidden until public or editor.
+// URL are precise-tier and stay hidden until public. An editor sees them
+// only in the editor's preview, never on the front end.
 $pkiw_visible      = Meta_Fields::get_visible_location_fields( (int) $pkiw_post_id );
 $pkiw_show_address = ! empty( $pkiw_visible['street'] ) && $pkiw_location_address;
 $pkiw_show_coords  = ! empty( $pkiw_visible['coordinates'] ) && ( 0.0 !== $pkiw_geo_lat || 0.0 !== $pkiw_geo_lon );
