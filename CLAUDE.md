@@ -3,7 +3,7 @@
 ## Project
 
 - **Slug:** post-kinds-for-indieweb
-- **Text Domain:** post-kinds-for-indieweb
+- **Text Domain:** post-kinds-for-indieweb-in-block-themes (the plugin header, main file name and every block.json use it; the repo slug differs)
 - **Prefix:** pk\_
 - **Min WP:** 7.0 | **Min PHP:** 8.2
 - **Repo:** https://github.com/courtneyr-dev/post-kinds-for-indieweb
@@ -16,7 +16,7 @@ Block editor support for IndieWeb post kinds (listen, watch, read, checkin, play
 
 - WordPress PHP + JS Coding Standards (tabs, Yoda conditions)
 - Security Trinity: sanitize input → validate data → escape output
-- All strings wrapped in `__()` / `_e()` with text domain `post-kinds-for-indieweb`
+- All strings wrapped in `__()` / `_e()` with text domain `post-kinds-for-indieweb-in-block-themes`
 - All blocks use `apiVersion: 3` (WP 7.0 iframes the editor)
 - Escape at render: `esc_html()`, `esc_attr()`, `esc_url()`, `wp_kses_post()`
 - DB queries via `$wpdb->prepare()` only
