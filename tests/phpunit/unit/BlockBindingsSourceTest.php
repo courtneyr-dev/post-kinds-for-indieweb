@@ -203,6 +203,55 @@ class BlockBindingsSourceTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A rating the card draws no stars for binds as no value, so a theme row
+	 * bound to it hides instead of printing "Rated 0 of 5" (courtneyr-child
+	 * issue 103). The rule is card_rating_html()'s: nothing at or below 0
+	 * after rounding.
+	 *
+	 * @dataProvider no_star_ratings
+	 *
+	 * @param string $stored Stored rating.
+	 */
+	public function test_get_value_rating_is_null_when_the_card_draws_no_stars( string $stored ): void {
+		$post_id = self::factory()->post->create();
+		$this->assign_kind( $post_id, 'listen' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'listen_rating', $stored );
+
+		$block = $this->make_block_instance( $post_id );
+
+		$this->assertSame( '', \PKIW\card_rating_html( (float) $stored ), "The card draws no stars for {$stored}." );
+		$this->assertNull( $this->source->get_value( [ 'key' => 'rating' ], $block, 'content' ) );
+	}
+
+	/**
+	 * Stored ratings the card shows no stars for.
+	 *
+	 * @return array<string, array{string}>
+	 */
+	public function no_star_ratings(): array {
+		return [
+			'zero'         => [ '0' ],
+			'zero decimal' => [ '0.0' ],
+			'negative'     => [ '-1' ],
+			'not a number' => [ 'none' ],
+		];
+	}
+
+	/**
+	 * A half star still binds, as the card draws it.
+	 */
+	public function test_get_value_rating_keeps_a_half_star(): void {
+		$post_id = self::factory()->post->create();
+		$this->assign_kind( $post_id, 'listen' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'listen_rating', '0.5' );
+
+		$block = $this->make_block_instance( $post_id );
+
+		$this->assertNotSame( '', \PKIW\card_rating_html( 0.5 ) );
+		$this->assertSame( '0.5', $this->source->get_value( [ 'key' => 'rating' ], $block, 'content' ) );
+	}
+
+	/**
 	 * Test get_value resolves rating for watch kind.
 	 */
 	public function test_get_value_rating_for_watch_kind(): void {
