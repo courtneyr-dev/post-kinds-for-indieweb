@@ -459,6 +459,7 @@ class Admin {
 			// Checkin settings.
 			'checkin_auto_import'        => false,
 			'checkin_privacy'            => 'public',
+			'checkin_default_privacy'    => 'approximate',
 			'checkin_include_coords'     => true,
 			'checkin_sync_to_foursquare' => false,
 
@@ -632,6 +633,24 @@ class Admin {
 			$sanitized['default_category'] = absint( $old_settings['default_category'] );
 		} else {
 			$sanitized['default_category'] = 0;
+		}
+
+		// Default location privacy for imported and synced check-ins. It is a
+		// three-value choice, so anything outside the list keeps the stored
+		// value, and with none stored falls to approximate, which is what every
+		// reader assumes when the key is missing.
+		$valid_privacy = [ 'public', 'approximate', 'private' ];
+		$posted        = isset( $input['checkin_default_privacy'] ) && is_string( $input['checkin_default_privacy'] )
+			? sanitize_key( $input['checkin_default_privacy'] )
+			: '';
+		$stored        = $old_settings['checkin_default_privacy'] ?? '';
+
+		if ( in_array( $posted, $valid_privacy, true ) ) {
+			$sanitized['checkin_default_privacy'] = $posted;
+		} elseif ( in_array( $stored, $valid_privacy, true ) ) {
+			$sanitized['checkin_default_privacy'] = $stored;
+		} else {
+			$sanitized['checkin_default_privacy'] = $defaults['checkin_default_privacy'];
 		}
 
 		// Mood label spelling. Survives saving a different tab like
