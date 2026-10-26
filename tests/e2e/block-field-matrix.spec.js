@@ -139,6 +139,10 @@ const RENDER_EXCEPTIONS = {
 			'privacy-aware by design: renders only when locationPrivacy=public, same gate as address',
 		osmId:
 			'privacy-aware by design: the osm_id tier is hidden at the approximate default, and since issue 496 the front end shows a logged-in editor what a visitor sees',
+		venueUrl:
+			'privacy-aware by design: the url tier is hidden at the approximate default, and since issue 496 the front end shows a logged-in editor what a visitor sees',
+		foursquareId:
+			'privacy-aware by design: the venue_id tier is hidden at the approximate default, and since issue 496 the front end shows a logged-in editor what a visitor sees',
 	},
 	'post-kinds-indieweb/checkins-feed': {
 		count: 'posts_per_page query arg, never echoed',
@@ -203,10 +207,14 @@ const RENDER_EXCEPTIONS = {
 	'post-kinds-indieweb/drink-card': {
 		venueUrl:
 			'privacy-aware by design: the url tier is hidden at the approximate default post privacy, and since issue 496 the front end shows a logged-in editor what a visitor sees',
+		locationAddress:
+			'privacy-aware by design: the street tier is hidden at the approximate default post privacy, and since issue 496 the front end shows a logged-in editor what a visitor sees',
 	},
 	'post-kinds-indieweb/eat-card': {
 		restaurantUrl:
 			'privacy-aware by design: the url tier is hidden at the approximate default post privacy, and since issue 496 the front end shows a logged-in editor what a visitor sees',
+		locationAddress:
+			'privacy-aware by design: the street tier is hidden at the approximate default post privacy, and since issue 496 the front end shows a logged-in editor what a visitor sees',
 	},
 	'post-kinds-indieweb/watch-card': {
 		mediaType:
