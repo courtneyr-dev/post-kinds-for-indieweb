@@ -731,4 +731,89 @@ class MetaFieldsTest extends WP_UnitTestCase {
 		$this->assertTrue( $visible['name'] );
 		$this->assertFalse( $visible['coordinates'] );
 	}
+	/**
+	 * Stand in for Simple Location's map_meta_cap at priority 1: a post's
+	 * location needs read_private_posts.
+	 */
+	private function map_simple_location_read_caps(): void {
+		add_filter(
+			'map_meta_cap',
+			static function ( $caps, $cap ) {
+				return in_array( $cap, Meta_Fields::SIMPLE_LOCATION_READ_CAPS, true ) ? [ 'read_private_posts' ] : $caps;
+			},
+			1,
+			2
+		);
+	}
+
+	/**
+	 * Issue 496 for Simple Location: on the front end an editor can't read
+	 * a non-public location, so its box doesn't print "Hidden: <address>"
+	 * and its location archives list only public posts.
+	 */
+	public function test_editor_cannot_read_simple_location_on_the_front_end() {
+		$this->map_simple_location_read_caps();
+		$post_id = self::factory()->post->create();
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		foreach ( Meta_Fields::SIMPLE_LOCATION_READ_CAPS as $cap ) {
+			$this->assertFalse( current_user_can( $cap, $post_id ), $cap );
+		}
+		// Location_Taxonomy::filter_location_posts() asks with no object.
+		$this->assertFalse( current_user_can( 'read_posts_location' ) );
+		$this->assertTrue( current_user_can( 'read_private_posts' ), 'Other capabilities are untouched.' );
+	}
+
+	/**
+	 * Admin screens keep Simple Location's own mapping.
+	 */
+	public function test_editor_reads_simple_location_on_an_admin_screen() {
+		$this->map_simple_location_read_caps();
+		$post_id = self::factory()->post->create();
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		set_current_screen( 'edit-post' );
+		try {
+			$this->assertTrue( current_user_can( 'read_posts_location', $post_id ) );
+		} finally {
+			$GLOBALS['current_screen'] = null;
+		}
+	}
+
+	/**
+	 * A REST request reads Simple Location's location only with context=edit.
+	 */
+	public function test_simple_location_read_cap_follows_rest_context() {
+		$this->map_simple_location_read_caps();
+		$post_id = self::factory()->post->create();
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		foreach ( [ 'edit' => true, 'view' => false ] as $context => $expected ) {
+			$request = new \WP_REST_Request( 'GET', '/wp/v2/posts/' . $post_id );
+			$request->set_param( 'context', $context );
+			Meta_Fields::track_rest_request( null, [], $request );
+			try {
+				$this->assertSame( $expected, current_user_can( 'read_posts_location', $post_id ), $context );
+			} finally {
+				Meta_Fields::untrack_rest_request( null, [], $request );
+			}
+		}
+	}
+
+	/**
+	 * A visitor never reads a non-public location, in any context.
+	 */
+	public function test_visitor_cannot_read_simple_location() {
+		$this->map_simple_location_read_caps();
+		$post_id = self::factory()->post->create();
+		wp_set_current_user( 0 );
+
+		$this->assertFalse( current_user_can( 'read_posts_location', $post_id ) );
+		set_current_screen( 'edit-post' );
+		try {
+			$this->assertFalse( current_user_can( 'read_posts_location', $post_id ) );
+		} finally {
+			$GLOBALS['current_screen'] = null;
+		}
+	}
 }

@@ -1113,6 +1113,8 @@ class Meta_Fields {
 		// Which REST request is running, for is_location_editing_context().
 		add_filter( 'rest_request_before_callbacks', [ self::class, 'track_rest_request' ], PHP_INT_MIN, 3 );
 		add_filter( 'rest_request_after_callbacks', [ self::class, 'untrack_rest_request' ], PHP_INT_MAX, 3 );
+		// Issue 496 for Simple Location's own output: after its mapping at 1.
+		add_filter( 'map_meta_cap', [ self::class, 'gate_simple_location_read_caps' ], 10, 2 );
 	}
 
 	/**
@@ -1347,6 +1349,39 @@ class Meta_Fields {
 		}
 
 		return is_admin() && ! wp_doing_ajax() && ! wp_doing_cron();
+	}
+
+	/**
+	 * Simple Location's capabilities for reading a non-public location.
+	 *
+	 * @var string[]
+	 */
+	public const SIMPLE_LOCATION_READ_CAPS = [
+		'read_posts_location',
+		'read_comments_location',
+		'read_terms_location',
+		'read_users_location',
+	];
+
+	/**
+	 * Deny Simple Location's read-location capabilities outside editing
+	 * contexts, so its front end shows an editor what a visitor sees.
+	 *
+	 * Simple Location grants them to anyone with read_private_posts. With
+	 * one, Geo_Data::get_location() prints a private or protected location
+	 * as "Hidden: <address>" with its map, and Location_Taxonomy lists
+	 * non-public posts on location archives. Admin screens and REST
+	 * context=edit keep Simple Location's own mapping.
+	 *
+	 * @param string[] $caps Primitive capabilities the check requires.
+	 * @param string   $cap  Capability being checked.
+	 * @return string[]
+	 */
+	public static function gate_simple_location_read_caps( $caps, $cap ) {
+		if ( ! in_array( $cap, self::SIMPLE_LOCATION_READ_CAPS, true ) || self::is_location_editing_context() ) {
+			return $caps;
+		}
+		return [ 'do_not_allow' ];
 	}
 
 	/**
