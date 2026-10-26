@@ -35,6 +35,12 @@ updates:
         dependency-type: "development"
         exclude-patterns:
           - "@wordpress/*"
+    ignore:
+      # @wordpress/babel-preset-default (and the Jest preset built on it)
+      # requires Babel 7; Babel 8 breaks every Jest suite. Lift this once
+      # the WordPress preset supports Babel 8.
+      - dependency-name: "@babel/core"
+        update-types: ["version-update:semver-major"]
     labels:
       - "dependencies"
       - "javascript"
