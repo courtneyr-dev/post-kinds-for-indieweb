@@ -175,4 +175,101 @@ class UntappdCheckinSyncTest extends ApiTestCase {
 		$this->assertArrayHasKey( 'untappd', $targets );
 		$this->assertSame( 'Untappd', $targets['untappd']['name'] );
 	}
+
+	/**
+	 * Serve one Untappd check-in from the mocked API.
+	 *
+	 * @param string               $created_at When Untappd says it happened.
+	 * @param array<string, mixed> $extra      More fields for the check-in.
+	 */
+	private function serve_checkin( string $created_at, array $extra = [] ): void {
+		$this->mock_http_response(
+			'api.untappd.com/v4/user/checkins/testuser',
+			[
+				'response' => [
+					'checkins' => [
+						'items' => [
+							array_merge(
+								[
+									'checkin_id' => 7001,
+									'created_at' => $created_at,
+									'beer'       => [ 'beer_name' => 'Test IPA' ],
+									'brewery'    => [ 'brewery_name' => 'Test Brewery' ],
+								],
+								$extra
+							),
+						],
+					],
+				],
+			]
+		);
+	}
+
+	/**
+	 * Import the served check-in and return its post.
+	 *
+	 * @return \WP_Post
+	 */
+	private function import_served_checkin(): \WP_Post {
+		wp_set_current_user( 0 );
+
+		$result = $this->sync->import_checkins( 10 );
+		$this->assertSame( 1, $result['imported'] );
+
+		$ids = get_posts(
+			[
+				'post_type'   => 'post',
+				'post_status' => 'any',
+				'meta_key'    => '_pkiw_untappd_checkin_id', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value'  => '7001', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'fields'      => 'ids',
+			]
+		);
+		$this->assertCount( 1, $ids );
+
+		$post = get_post( $ids[0] );
+		$this->assertInstanceOf( \WP_Post::class, $post );
+
+		return $post;
+	}
+
+	/**
+	 * An import stores site-local time in post_date and UTC in post_date_gmt.
+	 *
+	 * 20:00 UTC on 2026-09-12 is 16:00 in America/New_York (EDT).
+	 */
+	public function test_import_stores_local_date_and_utc_gmt_on_a_non_utc_site(): void {
+		update_option( 'timezone_string', 'America/New_York' );
+		$this->serve_checkin( 'Sat, 12 Sep 2026 20:00:00 +0000' );
+
+		$post = $this->import_served_checkin();
+
+		$this->assertSame( '2026-09-12 16:00:00', $post->post_date );
+		$this->assertSame( '2026-09-12 20:00:00', $post->post_date_gmt );
+	}
+
+	/**
+	 * Untappd sends the offset with the date; the moment still lands in UTC.
+	 */
+	public function test_import_converts_a_dated_offset_to_utc(): void {
+		update_option( 'timezone_string', 'America/New_York' );
+		$this->serve_checkin( 'Sat, 12 Sep 2026 16:00:00 -0400' );
+
+		$post = $this->import_served_checkin();
+
+		$this->assertSame( '2026-09-12 16:00:00', $post->post_date );
+		$this->assertSame( '2026-09-12 20:00:00', $post->post_date_gmt );
+	}
+
+	/**
+	 * On a UTC site both columns hold the same time.
+	 */
+	public function test_import_dates_match_on_a_utc_site(): void {
+		$this->serve_checkin( 'Sat, 12 Sep 2026 20:00:00 +0000' );
+
+		$post = $this->import_served_checkin();
+
+		$this->assertSame( '2026-09-12 20:00:00', $post->post_date );
+		$this->assertSame( '2026-09-12 20:00:00', $post->post_date_gmt );
+	}
 }

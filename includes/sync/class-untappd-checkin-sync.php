@@ -253,13 +253,20 @@ class Untappd_Checkin_Sync extends Checkin_Sync_Base {
 			$title .= ' by ' . $brewery_name;
 		}
 
+		// Untappd's created_at carries its UTC offset, so strtotime() gives the
+		// real moment. post_date_gmt takes it as UTC and post_date takes the
+		// same moment in the site's timezone.
+		$created_at    = strtotime( (string) ( $external_checkin['created_at'] ?? '' ) );
+		$post_date_gmt = gmdate( 'Y-m-d H:i:s', false === $created_at ? time() : $created_at );
+
 		$post_data = [
-			'post_title'   => sanitize_text_field( $title ),
-			'post_content' => $content,
-			'post_status'  => $post_status,
-			'post_type'    => 'post',
-			'post_author'  => $author_id,
-			'post_date'    => gmdate( 'Y-m-d H:i:s', strtotime( $external_checkin['created_at'] ?? 'now' ) ),
+			'post_title'    => sanitize_text_field( $title ),
+			'post_content'  => $content,
+			'post_status'   => $post_status,
+			'post_type'     => 'post',
+			'post_author'   => $author_id,
+			'post_date_gmt' => $post_date_gmt,
+			'post_date'     => get_date_from_gmt( $post_date_gmt ),
 		];
 
 		$post_id = wp_insert_post( $post_data );
