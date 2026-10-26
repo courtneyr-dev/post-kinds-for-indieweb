@@ -241,7 +241,7 @@ final class MenuSpecialsTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'card.jpg', $html );
 	}
 
-	public function test_a_private_post_shows_no_venue_to_a_visitor_and_shows_it_to_an_editor(): void {
+	public function test_a_private_post_shows_no_venue_to_a_visitor_or_to_an_editor(): void {
 		$id = $this->entry( 'eat', '2026-03-01 10:00:00', [ 'name' => 'Quiet dinner', 'restaurant' => 'Hidden Bistro' ] );
 		update_post_meta( $id, '_pkiw_geo_privacy', 'private' );
 		$this->go_to( get_term_link( 'eat', 'kind' ) );
@@ -249,7 +249,7 @@ final class MenuSpecialsTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'Hidden Bistro', $this->render() );
 
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
-		$this->assertStringContainsString( 'Hidden Bistro', $this->render() );
+		$this->assertStringNotContainsString( 'Hidden Bistro', $this->render(), 'The front end shows an editor what a visitor sees.' );
 	}
 
 	public function test_it_prints_nothing_past_the_first_page(): void {

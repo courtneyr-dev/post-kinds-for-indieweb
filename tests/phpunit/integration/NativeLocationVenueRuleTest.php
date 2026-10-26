@@ -95,9 +95,10 @@ final class NativeLocationVenueRuleTest extends WP_UnitTestCase {
 	 * @param int $post_id Post ID.
 	 * @return array<string, mixed>
 	 */
-	private function rest_get( int $post_id ): array {
+	private function rest_get( int $post_id, string $context = 'view' ): array {
 		$GLOBALS['wp_rest_server'] = null;
 		$request                  = new WP_REST_Request( 'GET', '/wp/v2/posts/' . $post_id );
+		$request->set_param( 'context', $context );
 		return rest_get_server()->dispatch( $request )->get_data();
 	}
 
@@ -324,15 +325,18 @@ final class NativeLocationVenueRuleTest extends WP_UnitTestCase {
 	/**
 	 * @dataProvider editor_scenarios
 	 */
-	public function test_editor_sees_full_location_regardless_of_privacy( array $extra_native, array $pkiw_meta, ?string $kind ): void {
+	public function test_editor_sees_full_location_in_edit_context_regardless_of_privacy( array $extra_native, array $pkiw_meta, ?string $kind ): void {
 		$native = array_merge( $this->full_native_fields(), $extra_native );
 		$post_id = $this->create_post( $native, $pkiw_meta, $kind );
 
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
-		$data = $this->rest_get( $post_id );
+		$data = $this->rest_get( $post_id, 'edit' );
 
 		$this->assertSame( self::LATITUDE, $data['meta']['geo_latitude'] );
 		$this->assertSame( self::STREET, $data['meta']['geo_address'] );
 		$this->assertSame( self::VENUE, $data['meta']['geo_venue'] );
+
+		// Every scenario hides the street from a visitor; view context gets that answer.
+		$this->assertSame( '', $this->rest_get( $post_id )['meta']['geo_address'] );
 	}
 }

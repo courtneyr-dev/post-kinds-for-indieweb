@@ -122,9 +122,10 @@ final class CheckinRestLocationPrivacyTest extends WP_UnitTestCase {
 			'public, contributor'      => [ 'public', 'contributor', true, true, true ],
 			'approximate, contributor' => [ 'approximate', 'contributor', true, false, false ],
 			'private, contributor'     => [ 'private', 'contributor', false, false, false ],
+			// View context gives an editor the visitor's tiers too.
 			'public, editor'           => [ 'public', 'editor', true, true, true ],
-			'approximate, editor'      => [ 'approximate', 'editor', true, true, true ],
-			'private, editor'          => [ 'private', 'editor', true, true, true ],
+			'approximate, editor'      => [ 'approximate', 'editor', true, false, false ],
+			'private, editor'          => [ 'private', 'editor', false, false, false ],
 		];
 	}
 
@@ -215,7 +216,7 @@ final class CheckinRestLocationPrivacyTest extends WP_UnitTestCase {
 		return [
 			'private, contributor'     => [ 'private', 'contributor', 0 ],
 			'approximate, contributor' => [ 'approximate', 'contributor', 1 ],
-			'private, editor'          => [ 'private', 'editor', 1 ],
+			'private, editor'          => [ 'private', 'editor', 0 ],
 		];
 	}
 
@@ -255,12 +256,16 @@ final class CheckinRestLocationPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'Sentinel Private Town', $json );
 	}
 
-	public function test_editor_stats_count_every_checkin(): void {
+	public function test_editor_stats_count_every_checkin_only_in_edit_context(): void {
 		$this->create_checkin( 'approximate', 'Sentinel Approx Venue', 'Sentinel Approx Town' );
 		$this->create_checkin( 'private', 'Sentinel Private Venue Kqp4', 'Sentinel Private Town' );
 		$this->become( 'editor' );
 
-		$data = $this->get( '/checkins/stats' )->get_data();
+		$view = $this->get( '/checkins/stats' )->get_data();
+		$this->assertSame( 1, $view['unique_venues'], 'View context counts what a visitor sees.' );
+		$this->assertSame( 1, $view['cities'] );
+
+		$data = $this->get( '/checkins/stats', [ 'context' => 'edit' ] )->get_data();
 
 		$this->assertSame( 2, $data['unique_venues'] );
 		$this->assertSame( 2, $data['cities'] );

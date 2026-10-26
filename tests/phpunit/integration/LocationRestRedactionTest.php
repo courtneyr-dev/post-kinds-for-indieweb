@@ -30,9 +30,10 @@ final class LocationRestRedactionTest extends WP_UnitTestCase {
 		wp_set_current_user( 0 );
 	}
 
-	private function response(): array {
+	private function response( string $context = 'view' ): array {
 		$GLOBALS['wp_rest_server'] = null;
 		$request = new WP_REST_Request( 'GET', '/wp/v2/posts/' . $this->post_id );
+		$request->set_param( 'context', $context );
 		return rest_get_server()->dispatch( $request )->get_data();
 	}
 
@@ -99,11 +100,11 @@ final class LocationRestRedactionTest extends WP_UnitTestCase {
 		$this->assertSame( 'Molly Pitcher Brewing Company, Carlisle, PA', $data['meta']['geo_address'] );
 	}
 
-	public function test_editor_sees_everything(): void {
+	public function test_editor_sees_everything_in_edit_context(): void {
 		update_post_meta( $this->post_id, 'geo_public', '0' );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
-		$data = $this->response();
-		$this->assertSame( '40.20192', $data['meta']['geo_latitude'] );
+		$this->assertSame( '40.20192', $this->response( 'edit' )['meta']['geo_latitude'] );
+		$this->assertSame( '', $this->response()['meta']['geo_latitude'], 'View context gets the visitor answer.' );
 	}
 
 	public function test_pkiw_osm_id_is_blank_for_non_public_location(): void {

@@ -544,10 +544,11 @@ final class SimpleLocationWeatherTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Location privacy per viewer: geo_public 0 hides weather from anyone
-	 * who can't edit the post, and editors always see it.
+	 * Location privacy per viewer: geo_public 0 hides weather on the front
+	 * end from everyone, editors included. An editor sees it on an admin
+	 * screen.
 	 */
-	public function test_private_geo_public_hides_weather_from_anonymous_only(): void {
+	public function test_private_geo_public_hides_weather_on_the_front_end_from_everyone(): void {
 		$post_id = $this->make_post( [ 'temperature' => 18 ], '0' );
 
 		$this->assertNull( Simple_Location_Weather::get_observation( $post_id ) );
@@ -555,8 +556,17 @@ final class SimpleLocationWeatherTest extends WP_UnitTestCase {
 		$this->assertSame( '', Simple_Location_Weather::render( $post_id ) );
 
 		$this->as_editor();
-		$this->assertSame( 18.0, Simple_Location_Weather::get_observation( $post_id )['temperature'] ?? null );
-		$this->assertSame( '18 °C', $this->binding( 'weather_temperature', $post_id ) );
+		$this->assertNull( Simple_Location_Weather::get_observation( $post_id ), 'The front end shows an editor what a visitor sees.' );
+		$this->assertNull( $this->binding( 'weather_temperature', $post_id ) );
+		$this->assertSame( '', Simple_Location_Weather::render( $post_id ) );
+
+		set_current_screen( 'edit-post' );
+		try {
+			$this->assertSame( 18.0, Simple_Location_Weather::get_observation( $post_id )['temperature'] ?? null );
+			$this->assertSame( '18 °C', $this->binding( 'weather_temperature', $post_id ) );
+		} finally {
+			$GLOBALS['current_screen'] = null;
+		}
 	}
 
 	/**

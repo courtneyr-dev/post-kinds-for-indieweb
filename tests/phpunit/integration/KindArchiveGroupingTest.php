@@ -380,7 +380,7 @@ final class KindArchiveGroupingTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Rated 4 of 5', $html );
 	}
 
-	public function test_private_venue_hidden_from_anonymous_but_shown_to_editor(): void {
+	public function test_private_venue_hidden_from_anonymous_and_from_an_editor_on_the_front_end(): void {
 		$id = $this->eat(
 			'Private dinner',
 			'2026-01-01 10:00:00',
@@ -400,7 +400,7 @@ final class KindArchiveGroupingTest extends WP_UnitTestCase {
 
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 		$editor = $this->render_entry( $id );
-		$this->assertStringContainsString( 'Secret Supper Club', $editor );
+		$this->assertStringNotContainsString( 'Secret Supper Club', $editor, 'The front end shows an editor what a visitor sees.' );
 
 		foreach ( [ $anon, $editor ] as $html ) {
 			$this->assertStringNotContainsString( '12 Hidden Lane', $html, 'A menu line never prints a street.' );

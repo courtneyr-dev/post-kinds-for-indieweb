@@ -266,13 +266,20 @@ final class WeatherFactsTest extends WP_UnitTestCase {
 		}
 	}
 
-	public function test_an_administrator_sees_every_log_row_but_only_the_public_tier_place(): void {
+	public function test_an_administrator_sees_every_log_row_on_an_admin_screen_but_only_the_public_tier_place(): void {
 		$post_id = $this->weather_post( [], null, [ '_pkiw_geo_privacy' => 'private' ] );
 
 		$this->assertSame( [], Kind_Facts::get( $post_id )['log'], 'An anonymous reader of a private post gets an empty log.' );
 
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
-		$facts = Kind_Facts::get( $post_id );
+		$this->assertSame( [], Kind_Facts::get( $post_id )['log'], 'The front end shows an administrator what a visitor sees.' );
+
+		set_current_screen( 'edit-post' );
+		try {
+			$facts = Kind_Facts::get( $post_id );
+		} finally {
+			$GLOBALS['current_screen'] = null;
+		}
 
 		$this->assertCount( 8, $facts['log'] );
 		$this->assertSame( 'observation', $facts['reading_source'] );
