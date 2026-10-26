@@ -190,13 +190,13 @@ final class WeatherMicroformatsTest extends WP_UnitTestCase {
 		$this->assertLessThan( strrpos( $html, '</div>' ), strpos( $html, '<data class="p-weather"' ) );
 	}
 
-	public function test_a_hidden_observation_adds_no_data_for_anonymous_but_an_editor_gets_one(): void {
+	public function test_a_hidden_observation_adds_no_data_for_anonymous_or_an_editor_on_the_front_end(): void {
 		$post_id = $this->weather( '<p>Out for a walk.</p>', true, '0' );
 
 		$this->assertStringNotContainsString( '<data class="p-weather"', $this->content_pass( $post_id ) );
 
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
-		$this->assertStringContainsString( '<data class="p-weather" value="Clear Sky, 27 °C" hidden></data>', $this->content_pass( $post_id ) );
+		$this->assertStringNotContainsString( '<data class="p-weather"', $this->content_pass( $post_id ), 'The front end shows an editor what a visitor sees.' );
 	}
 
 	public function test_a_protected_single_adds_nothing(): void {

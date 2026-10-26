@@ -613,16 +613,24 @@ class BlockBindingsTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Editors still see precise location while editing.
+	 * Editors still see precise location while editing, and the visitor's
+	 * answer on the front end.
 	 *
 	 * @dataProvider location_binding_keys
 	 *
 	 * @param string $key Binding key.
 	 */
-	public function test_location_binding_shown_to_editor( string $key ) {
+	public function test_location_binding_shown_to_editor_only_on_an_admin_screen( string $key ) {
 		$post_id = $this->location_post( 'private' );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
-		$this->assertNotNull( $this->block_bindings->get_binding_value( [ 'key' => $key ], $this->create_mock_block( $post_id ), 'content' ) );
+		$this->assertNull( $this->block_bindings->get_binding_value( [ 'key' => $key ], $this->create_mock_block( $post_id ), 'content' ) );
+
+		set_current_screen( 'edit-post' );
+		try {
+			$this->assertNotNull( $this->block_bindings->get_binding_value( [ 'key' => $key ], $this->create_mock_block( $post_id ), 'content' ) );
+		} finally {
+			$GLOBALS['current_screen'] = null;
+		}
 	}
 
 	/**
@@ -678,12 +686,20 @@ class BlockBindingsTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * checkin_name still resolves for an editor on a private post.
+	 * checkin_name still resolves for an editor on a private post on an
+	 * admin screen, and not on the front end.
 	 */
-	public function test_checkin_name_shown_to_editor_when_private() {
+	public function test_checkin_name_shown_to_editor_when_private_only_on_an_admin_screen() {
 		$post_id = $this->location_post( 'private' );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
-		$this->assertSame( 'Test Venue', $this->block_bindings->get_binding_value( [ 'key' => 'checkin_name' ], $this->create_mock_block( $post_id ), 'content' ) );
+		$this->assertNull( $this->block_bindings->get_binding_value( [ 'key' => 'checkin_name' ], $this->create_mock_block( $post_id ), 'content' ) );
+
+		set_current_screen( 'edit-post' );
+		try {
+			$this->assertSame( 'Test Venue', $this->block_bindings->get_binding_value( [ 'key' => 'checkin_name' ], $this->create_mock_block( $post_id ), 'content' ) );
+		} finally {
+			$GLOBALS['current_screen'] = null;
+		}
 	}
 
 	/**

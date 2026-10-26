@@ -662,14 +662,22 @@ class MetaFieldsTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Anyone who can edit_post sees everything, regardless of geo_privacy.
+	 * Anyone who can edit_post sees everything on an admin screen,
+	 * regardless of geo_privacy, and the visitor's fields elsewhere.
 	 */
-	public function test_visible_location_fields_editor_sees_everything_on_private_post() {
+	public function test_visible_location_fields_editor_sees_everything_on_private_post_on_an_admin_screen() {
 		$post_id = self::factory()->post->create();
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'private' );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 
-		$visible = Meta_Fields::get_visible_location_fields( $post_id );
+		$this->assertSame( Meta_Fields::get_public_location_fields( $post_id ), Meta_Fields::get_visible_location_fields( $post_id ), 'The front end shows an editor what a visitor sees.' );
+
+		set_current_screen( 'edit-post' );
+		try {
+			$visible = Meta_Fields::get_visible_location_fields( $post_id );
+		} finally {
+			$GLOBALS['current_screen'] = null;
+		}
 
 		foreach ( $visible as $tier => $is_visible ) {
 			$this->assertTrue( $is_visible, "Expected '{$tier}' visible to an editor." );
