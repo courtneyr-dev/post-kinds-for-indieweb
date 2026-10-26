@@ -21,6 +21,8 @@ $pkiw_show_stats    = $attributes['showStats'] ?? true;
 $pkiw_limit         = $attributes['limit'] ?? 12;
 $pkiw_show_filters  = $attributes['showFilters'] ?? false;
 $pkiw_heading_level = max( 2, min( 4, (int) ( $attributes['headingLevel'] ?? 2 ) ) );
+// Each dashboard instance needs its own map element ID; the page can hold several.
+$pkiw_map_id = wp_unique_id( 'checkin-frontend-map-' );
 
 // Enqueue Leaflet for map view.
 if ( $pkiw_show_map ) {
@@ -172,7 +174,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 		<?php if ( $pkiw_show_map ) : ?>
 		<!-- Map View -->
 		<div class="checkin-view-map <?php echo 'map' === $pkiw_layout ? 'active' : ''; ?>">
-			<div id="checkin-frontend-map" class="checkin-map" role="region" aria-label="<?php esc_attr_e( 'Check-in map', 'post-kinds-for-indieweb-in-block-themes' ); ?>" data-tile-url="<?php echo esc_attr( \PKIW\Checkin_Map::tile_layer()['url'] ); ?>" data-attribution="<?php echo esc_attr( \PKIW\Checkin_Map::tile_layer()['attribution'] ); ?>" data-checkins="
+			<div id="<?php echo esc_attr( $pkiw_map_id ); ?>" class="checkin-map" role="region" aria-label="<?php esc_attr_e( 'Check-in map', 'post-kinds-for-indieweb-in-block-themes' ); ?>" data-tile-url="<?php echo esc_attr( \PKIW\Checkin_Map::tile_layer()['url'] ); ?>" data-attribution="<?php echo esc_attr( \PKIW\Checkin_Map::tile_layer()['attribution'] ); ?>" data-checkins="
 			<?php
 			echo esc_attr(
 				wp_json_encode(
