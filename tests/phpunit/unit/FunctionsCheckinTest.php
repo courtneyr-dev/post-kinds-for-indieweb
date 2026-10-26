@@ -587,6 +587,24 @@ class FunctionsCheckinTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The microformat format keeps an h-geo at latitude or longitude 0 (the equator,
+	 * the prime meridian) and omits it when a coordinate is missing.
+	 */
+	public function test_format_location_microformat_keeps_a_zero_coordinate(): void {
+		$html = format_location( [ 'name' => 'Null Island', 'latitude' => '0', 'longitude' => '0' ], 'microformat' );
+		$this->assertStringContainsString( '<data class="p-latitude" value="0"></data>', $html );
+		$this->assertStringContainsString( '<data class="p-longitude" value="0"></data>', $html );
+
+		$html = format_location( [ 'name' => 'Accra', 'latitude' => '5.6', 'longitude' => 0.0 ], 'microformat' );
+		$this->assertStringContainsString( 'class="h-geo"', $html );
+
+		foreach ( [ [ '', '0' ], [ '0', '' ], [ null, '1' ], [ 'abc', '1' ] ] as [ $lat, $lon ] ) {
+			$html = format_location( [ 'name' => 'Somewhere', 'latitude' => $lat, 'longitude' => $lon ], 'microformat' );
+			$this->assertStringNotContainsString( 'h-geo', $html, 'A missing or non-numeric coordinate prints no h-geo.' );
+		}
+	}
+
+	/**
 	 * Test format_location medium format (default).
 	 */
 	public function test_format_location_medium(): void {
