@@ -68,7 +68,7 @@ Note: earlier versions showed an **Enabled Reaction Types** checkbox grid here. 
 | Setting | What it does | Default |
 | --- | --- | --- |
 | Auto-Sync Checkins | Automatically imports check-ins from Foursquare/Swarm. | Off |
-| Default Location Privacy | Default privacy level for new check-ins: **Public (exact location)** shows full address, venue name, and precise coordinates; **Approximate** shows the exact location on check-ins and posts with a venue, the same as Public, and only the place name, city, region and country on geotagged posts without a venue; **Private (hidden)** stores the location but never displays it publicly — for home, work, or other private places. | Public |
+| Default Location Privacy | Default privacy level for new check-ins: **Public (exact location)** shows full address, venue name, and precise coordinates; **Approximate** shows the venue name, city, region and country, and withholds the street address, postal code, coordinates, map, venue URL and OpenStreetMap ID, so an approximate check-in gets no map pin; **Private (hidden)** stores the location but never displays it publicly — for home, work, or other private places. | Approximate |
 | Venue Search Source | Which service powers venue search in the editor: OpenStreetMap (Nominatim), Foursquare (requires API key), or Both (Foursquare first, OSM fallback). | — |
 | Sync to Foursquare | Posts check-ins to Foursquare when publishing. Requires a Foursquare OAuth connection. The screen describes it as a POSSE approach — Publish on your Own Site, Syndicate Elsewhere. | Off |
 | Foursquare Connection | Connect/disconnect button for the Foursquare OAuth link used by import and sync. | Not connected |
