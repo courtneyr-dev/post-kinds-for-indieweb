@@ -23,13 +23,13 @@ const heartIcon = (
 // Register our custom block category before importing blocks
 const categories = getCategories();
 const hasCategory = categories.some(
-	( cat ) => cat.slug === 'post-kinds-for-indieweb-in-block-themes'
+	( cat ) => cat.slug === 'post-kinds-indieweb'
 );
 
 if ( ! hasCategory ) {
 	setCategories( [
 		{
-			slug: 'post-kinds-for-indieweb-in-block-themes',
+			slug: 'post-kinds-indieweb',
 			title: 'Post Kinds for IndieWeb in Block Themes',
 			icon: heartIcon,
 		},

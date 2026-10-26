@@ -1010,14 +1010,15 @@ final class Plugin {
 	 * @return void
 	 */
 	public function register_blocks(): void {
-		// Register block category.
+		// Register block category. The slug matches the category every block.json
+		// and editor script declares; saved content and patterns reference it.
 		add_filter(
 			'block_categories_all',
 			function ( array $categories ): array {
 				return array_merge(
 					[
 						[
-							'slug'  => 'post-kinds-for-indieweb-in-block-themes',
+							'slug'  => 'post-kinds-indieweb',
 							'title' => __( 'Post Kinds for IndieWeb in Block Themes', 'post-kinds-for-indieweb-in-block-themes' ),
 							'icon'  => 'heart',
 						],
