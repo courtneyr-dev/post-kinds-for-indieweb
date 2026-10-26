@@ -21,7 +21,7 @@ On uninstall (deleting the plugin from the Plugins screen), the uninstall routin
 Each check-in has a privacy level (per post, with a site default under Settings → Checkin), and the plugin enforces it in the public microformats markup:
 
 - **Public** — full venue name, street address, and exact coordinates appear in the markup.
-- **Approximate** — locality/region/country appear; street address and coordinates are withheld.
+- **Approximate** — the venue name, locality, region and country appear; the street address, postal code, coordinates, map, venue URL and OpenStreetMap ID are withheld, so the check-in gets no map pin.
 - **Private** — the location is stored in your database but venue, address, and coordinates are all withheld from the public page.
 
 ![Three published check-ins showing how each privacy level redacts location detail](../../assets/screenshots/frontend-checkin-privacy-levels.png)

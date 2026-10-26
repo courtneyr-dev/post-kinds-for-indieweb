@@ -350,7 +350,8 @@ function format_location( array $location, string $format = 'medium' ): string {
 				$html .= '<span class="p-country-name">' . esc_html( $location['country'] ) . '</span>';
 			}
 
-			if ( ! empty( $location['latitude'] ) && ! empty( $location['longitude'] ) ) {
+			// is_numeric(), not empty(): 0 is the equator or the prime meridian.
+			if ( is_numeric( $location['latitude'] ?? null ) && is_numeric( $location['longitude'] ?? null ) ) {
 				$html .= '<span class="h-geo">';
 				$html .= '<data class="p-latitude" value="' . esc_attr( $location['latitude'] ) . '"></data>';
 				$html .= '<data class="p-longitude" value="' . esc_attr( $location['longitude'] ) . '"></data>';

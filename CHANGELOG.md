@@ -166,6 +166,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Tightening a Post Kinds privacy setting on a post ATmosphere already shared now queues the record update when ATmosphere's auto-publish is off. The queue added for an RSVP's location, the post's location privacy, Simple Location's `geo_public` and the exercise and sleep toggles required auto-publish, so a site in connection-only mode kept the old location or health detail in its published record. It now needs only a connected site and a post with ATmosphere records; a post ATmosphere never shared still queues nothing (#357).
+
 - The venue archive template is `taxonomy-pkiw_venue` (was `taxonomy-venue`, a slug the block template hierarchy for the `pkiw_venue` taxonomy never asks for), so the plugin's template now serves venue archives. A theme file or Site Editor copy of `taxonomy-pkiw_venue` still wins (#492).
 - The Venue Detail and Check-ins Feed editors fetch venues from `/wp/v2/pkiw_venue`. They called `/wp/v2/venue`, which is Simple Location's post type route (an empty list) or a 404, so the venue pickers were empty. The Check-ins Feed preview filters by `pkiw_venue` instead of an unregistered `venue` param (#492).
 - The venue fields (address, city, region, postal code, country, coordinates, website, phone) and the Location column show on the venue term screens. The hooks used the old `venue` taxonomy name and never fired. Saving them now needs the forms' nonce and `edit_term` on the venue (#492).

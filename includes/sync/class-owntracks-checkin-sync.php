@@ -235,11 +235,15 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 	 * @return int|\WP_Error Post ID or error.
 	 */
 	private function create_checkin_from_location( array $payload ) {
+		// A coordinate of 0 is a real position (the equator, the prime
+		// meridian), so check the sent values before defaults fill the gaps.
+		if ( ! self::is_coordinate_pair( $payload['lat'] ?? null, $payload['lon'] ?? null ) ) {
+			return new \WP_Error( 'no_location', __( 'No location data.', 'post-kinds-for-indieweb-in-block-themes' ), [ 'status' => 400 ] );
+		}
+
 		$payload = wp_parse_args(
 			$payload,
 			[
-				'lat' => 0,
-				'lon' => 0,
 				'tst' => time(),
 				'poi' => '',
 				'tid' => '',
@@ -250,10 +254,6 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 		$lon = (float) $payload['lon'];
 		$tst = (int) $payload['tst'];
 		$poi = (string) $payload['poi'];
-
-		if ( empty( $lat ) || empty( $lon ) ) {
-			return new \WP_Error( 'no_location', __( 'No location data.', 'post-kinds-for-indieweb-in-block-themes' ), [ 'status' => 400 ] );
-		}
 
 		// Check for recent duplicate.
 		if ( $this->has_recent_checkin_at_location( $lat, $lon, $tst ) ) {
