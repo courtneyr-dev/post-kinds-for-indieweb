@@ -664,12 +664,12 @@ jobs:
 
       - name: Validate POT file generation
         run: |
-          mkdir -p languages
-          wp i18n make-pot . languages/post-kinds-for-indieweb-in-block-themes.pot --domain=post-kinds-for-indieweb-in-block-themes --skip-js
-          if [ -f languages/post-kinds-for-indieweb-in-block-themes.pot ]; then
-            echo "POT file generated successfully"
-            head -50 languages/post-kinds-for-indieweb-in-block-themes.pot
-          else
-            echo "Failed to generate POT file"
+          # Same command developers run (composer.json), so CI cannot drift from it (issue 353).
+          composer run-script i18n:make-pot
+          pot=languages/post-kinds-for-indieweb-in-block-themes.pot
+          if [ ! -f "$pot" ]; then
+            echo "Failed to generate $pot"
             exit 1
           fi
+          grep -q '"X-Domain: post-kinds-for-indieweb-in-block-themes' "$pot" || { echo "POT has the wrong X-Domain"; exit 1; }
+          head -50 "$pot"
