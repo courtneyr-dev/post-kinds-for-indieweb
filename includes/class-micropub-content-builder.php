@@ -1237,35 +1237,36 @@ final class Micropub_Content_Builder {
 	 * @return string Block-comment markup for one image or a gallery wrapper.
 	 */
 	private static function photo_card( array $properties ): string {
-		$photo_urls = self::flatten_string_array( $properties, 'photo' );
-		$alt_texts  = self::flatten_string_array( $properties, 'mp-photo-alt' );
-		if ( empty( $photo_urls ) ) {
-			return '';
-		}
-
-		// Deduplicate photo URLs while preserving alt-text alignment.
-		// The upstream Micropub plugin (`wordpress-micropub`)
-		// enriches `$input['photo']` post-sideload — when an Outpost
-		// gallery uploads 3 images and posts them as `photo[]=url1&...`,
-		// the plugin's processing produces a 6-entry array (the original
-		// URLs alongside the attached / canonical URLs, which on a
-		// single-server install resolve to the SAME local URL). Without
-		// dedupe, a 3-photo gallery rendered 6 image blocks: the first
-		// 3 with matching alts, the last 3 with empty alts because the
-		// `mp-photo-alt[]` array still had only 3 entries.
+		// One image per photo, shown as its local copy when Micropub made
+		// one. The Micropub plugin (`wordpress-micropub`) downloads every
+		// `photo` URL before PKIW runs and appends the local attachment
+		// URLs to `photo`, so a gallery of 3 arrives as 6 values: the 3
+		// originals, then the 3 copies. photo_values() ties each copy to
+		// its original and carries the original's alt, so the last value of
+		// an image is the one to show (issue 339: the remote URL and its
+		// copy both rendered). A JSON photo object (`{value, alt}`) reads
+		// the same way.
 		//
-		// Dedupe by URL — first occurrence wins (the occurrence that
-		// also has its aligned alt-text entry).
+		// When Micropub can't pair the values, the same URL can still
+		// repeat (originals and copies that resolve to one local URL, with
+		// `mp-photo-alt[]` holding only the first alts), so dedupe by URL
+		// too: first occurrence wins, along with its aligned alt.
+		$images = [];
+		foreach ( self::photo_values( $properties ) as $value ) {
+			if ( '' !== $value['url'] ) {
+				$images[ $value['image'] ] = $value;
+			}
+		}
 		$seen         = [];
 		$unique_urls  = [];
 		$aligned_alts = [];
-		foreach ( $photo_urls as $i => $url ) {
-			if ( '' === $url || isset( $seen[ $url ] ) ) {
+		foreach ( $images as $image ) {
+			if ( isset( $seen[ $image['url'] ] ) ) {
 				continue;
 			}
-			$seen[ $url ]   = true;
-			$unique_urls[]  = $url;
-			$aligned_alts[] = isset( $alt_texts[ $i ] ) ? $alt_texts[ $i ] : '';
+			$seen[ $image['url'] ] = true;
+			$unique_urls[]         = $image['url'];
+			$aligned_alts[]        = $image['alt'];
 		}
 		if ( empty( $unique_urls ) ) {
 			return '';

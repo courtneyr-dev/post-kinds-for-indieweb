@@ -16,6 +16,7 @@ use ReflectionMethod;
 use WP_UnitTestCase;
 use PKIW\Micropub_Content_Builder;
 use PKIW\Meta_Fields;
+use PKIW\Photo_Projector;
 use PKIW\Taxonomy;
 
 /**
@@ -1010,6 +1011,190 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertSame( 1, substr_count( $markup, '<!-- wp:image' ) );
 		$this->assertStringNotContainsString( '<!-- wp:gallery', $markup );
 		$this->assertStringContainsString( 'alt="one"', $markup );
+	}
+
+	// --- sideloaded photos: one image per photo (issue 339) -----------------
+
+	/**
+	 * Run a Micropub request through both PKIW hooks, as the Micropub plugin does.
+	 *
+	 * Micropub appends each downloaded copy to `photo` before either hook
+	 * fires, so the request reaches PKIW as [ remote, local ].
+	 *
+	 * @param array<string, mixed> $input Parsed Micropub request body.
+	 * @return array{filter: string, saved: string, id: int} Content the insert filter supplied, the saved post content, and the post ID.
+	 */
+	private function run_micropub_hooks( array $input ): array {
+		$filtered = (string) apply_filters( 'micropub_post_content', '', $input );
+		$post_id  = self::factory()->post->create(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_content' => 'placeholder',
+			)
+		);
+		do_action( 'after_micropub', $input, array( 'ID' => $post_id ) );
+		return array(
+			'filter' => $filtered,
+			'saved'  => (string) get_post_field( 'post_content', $post_id ),
+			'id'     => $post_id,
+		);
+	}
+
+	/** A photo post with a downloaded copy renders the local copy once, with the request's alt. */
+	public function test_a_photo_post_with_a_sideloaded_copy_shows_the_local_copy_once(): void {
+		$local = $this->local_upload_url( 'cat-copy.jpg' );
+		$input = array(
+			'h'            => 'entry',
+			'photo'        => array( 'https://remote.example/cat.jpg', $local ),
+			'mp-photo-alt' => array( 'A cat on a sofa' ),
+		);
+		$out   = $this->run_micropub_hooks( $input );
+
+		foreach ( array_intersect_key( $out, array( 'filter' => 1, 'saved' => 1 ) ) as $where => $content ) {
+			$this->assertSame(
+				array(
+					array(
+						'src' => $local,
+						'alt' => 'A cat on a sofa',
+					),
+				),
+				$this->images( $content ),
+				"{$where} content shows only the local copy"
+			);
+			$this->assertStringNotContainsString( 'remote.example', $content, "{$where} content drops the remote URL" );
+			$this->assertStringNotContainsString( '<!-- wp:gallery', $content );
+		}
+	}
+
+	/** A check-in's attached photo follows the same rule. */
+	public function test_a_checkin_photo_with_a_sideloaded_copy_shows_the_local_copy_once(): void {
+		$local = $this->local_upload_url( 'cafe-copy.jpg' );
+		$input = array(
+			'h'            => 'entry',
+			'checkin'      => array( 'https://cafe.example/' ),
+			'location'     => 'geo:42.0,-71.0',
+			'photo'        => array( 'https://remote.example/cafe.jpg', $local ),
+			'mp-photo-alt' => array( 'Latte art' ),
+		);
+		$out   = $this->run_micropub_hooks( $input );
+
+		$this->assertSame(
+			array(
+				array(
+					'src' => $local,
+					'alt' => 'Latte art',
+				),
+			),
+			$this->images( $out['saved'] )
+		);
+		$this->assertStringNotContainsString( 'remote.example', $out['saved'] );
+	}
+
+	/** Each of N downloaded photos keeps its own alt and shows once, in a gallery. */
+	public function test_a_gallery_with_sideloaded_copies_shows_each_local_copy_once(): void {
+		$one   = $this->local_upload_url( 'one-copy.jpg' );
+		$two   = $this->local_upload_url( 'two-copy.jpg' );
+		$input = array(
+			'h'            => 'entry',
+			'photo'        => array( 'https://remote.example/one.jpg', 'https://remote.example/two.jpg', $one, $two ),
+			'mp-photo-alt' => array( 'First', 'Second' ),
+		);
+		$out   = $this->run_micropub_hooks( $input );
+
+		$this->assertSame(
+			array(
+				array(
+					'src' => $one,
+					'alt' => 'First',
+				),
+				array(
+					'src' => $two,
+					'alt' => 'Second',
+				),
+			),
+			$this->images( $out['saved'] )
+		);
+		$this->assertStringNotContainsString( 'remote.example', $out['saved'] );
+	}
+
+	/** A JSON photo object with its downloaded copy renders the copy once and keeps the object's alt. */
+	public function test_a_json_photo_object_with_a_sideloaded_copy_shows_the_local_copy_once(): void {
+		$local = $this->local_upload_url( 'json-copy.jpg' );
+		$input = array(
+			'type'       => array( 'h-entry' ),
+			'properties' => array(
+				'photo' => array(
+					array(
+						'value' => 'https://remote.example/json.jpg',
+						'alt'   => 'From JSON',
+					),
+					$local,
+				),
+			),
+		);
+		$out   = $this->run_micropub_hooks( $input );
+
+		$this->assertSame(
+			array(
+				array(
+					'src' => $local,
+					'alt' => 'From JSON',
+				),
+			),
+			$this->images( $out['saved'] )
+		);
+	}
+
+	/** A JSON photo object on a kind other than comics renders instead of vanishing. */
+	public function test_a_json_photo_object_renders_on_a_checkin(): void {
+		$input = array(
+			'type'       => array( 'h-entry' ),
+			'properties' => array(
+				'checkin'  => array( 'https://cafe.example/' ),
+				'location' => array( 'geo:42.0,-71.0' ),
+				'photo'    => array(
+					array(
+						'value' => 'https://other-site.test/latte.jpg',
+						'alt'   => 'Latte art',
+					),
+				),
+			),
+		);
+		$out   = $this->run_micropub_hooks( $input );
+
+		$this->assertSame(
+			array(
+				array(
+					'src' => 'https://other-site.test/latte.jpg',
+					'alt' => 'Latte art',
+				),
+			),
+			$this->images( $out['saved'] )
+		);
+	}
+
+	/** The local copy is the only image carrying u-photo once the post renders. */
+	public function test_the_rendered_post_marks_one_image_as_u_photo(): void {
+		( new Taxonomy() )->create_default_terms();
+		Photo_Projector::reset();
+		$local = $this->local_upload_url( 'render-copy.jpg' );
+		$out   = $this->run_micropub_hooks(
+			array(
+				'h'            => 'entry',
+				'photo'        => array( 'https://remote.example/render.jpg', $local ),
+				'mp-photo-alt' => array( 'Rendered' ),
+			)
+		);
+
+		$this->go_to( (string) get_permalink( $out['id'] ) );
+		$this->assertTrue( have_posts() );
+		the_post();
+		$html = apply_filters( 'the_content', $out['saved'] );
+		$this->assertSame( 1, substr_count( $html, '<img ' ), 'one image in the rendered post' );
+		$this->assertSame( 1, substr_count( $html, 'u-photo' ), 'exactly one u-photo' );
+		$this->assertStringNotContainsString( 'remote.example', $html );
+		Photo_Projector::reset();
 	}
 
 	// --- kind term assignment ------------------------------------------------
