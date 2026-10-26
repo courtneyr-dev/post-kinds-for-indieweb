@@ -272,4 +272,19 @@ class UntappdCheckinSyncTest extends ApiTestCase {
 		$this->assertSame( '2026-09-12 20:00:00', $post->post_date );
 		$this->assertSame( '2026-09-12 20:00:00', $post->post_date_gmt );
 	}
+
+	/**
+	 * A venue on the equator and the prime meridian keeps its 0.0 coordinates.
+	 */
+	public function test_import_keeps_a_venue_at_zero_coordinates(): void {
+		$this->serve_checkin(
+			'Sat, 12 Sep 2026 20:00:00 +0000',
+			[ 'venue' => [ 'venue_name' => 'Null Island Taproom', 'location' => [ 'lat' => 0.0, 'lng' => 0.0 ] ] ]
+		);
+
+		$post = $this->import_served_checkin();
+
+		$this->assertSame( '0', get_post_meta( $post->ID, '_pkiw_geo_latitude', true ) );
+		$this->assertSame( '0', get_post_meta( $post->ID, '_pkiw_geo_longitude', true ) );
+	}
 }

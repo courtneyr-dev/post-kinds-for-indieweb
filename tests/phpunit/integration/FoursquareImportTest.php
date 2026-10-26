@@ -204,6 +204,123 @@ final class FoursquareImportTest extends ApiTestCase {
 		$this->assert_no_api_request( 'venues/search' );
 	}
 
+	/**
+	 * Serve the fixture check-in with its venue at the given coordinates.
+	 *
+	 * @param mixed $lat Venue latitude.
+	 * @param mixed $lng Venue longitude.
+	 */
+	private function serve_checkin_at( $lat, $lng ): void {
+		$checkin                         = $this->foursquare_checkin();
+		$checkin['venue']['location']['lat'] = $lat;
+		$checkin['venue']['location']['lng'] = $lng;
+
+		$this->mock_http_response(
+			'api.foursquare.com/v2/users/self/checkins',
+			[ 'response' => [ 'checkins' => [ 'items' => [ $checkin ] ] ] ]
+		);
+	}
+
+	/**
+	 * A venue on the equator or the prime meridian keeps its 0 coordinate.
+	 *
+	 * @dataProvider zero_coordinate_flow_provider
+	 *
+	 * @param string $flow sync or manager.
+	 * @param float  $lat  Venue latitude.
+	 * @param float  $lng  Venue longitude.
+	 */
+	public function test_an_import_keeps_a_coordinate_of_zero( string $flow, float $lat, float $lng ): void {
+		$this->serve_checkin_at( $lat, $lng );
+
+		$post = 'sync' === $flow ? $this->sync_post() : $this->import_manager_post();
+
+		$stored_lat = get_post_meta( $post->ID, '_pkiw_geo_latitude', true );
+		$stored_lng = get_post_meta( $post->ID, '_pkiw_geo_longitude', true );
+		$this->assertNotSame( '', $stored_lat );
+		$this->assertNotSame( '', $stored_lng );
+		$this->assertEqualsWithDelta( $lat, (float) $stored_lat, 0.0000001 );
+		$this->assertEqualsWithDelta( $lng, (float) $stored_lng, 0.0000001 );
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: float, 2: float}>
+	 */
+	public function zero_coordinate_flow_provider(): array {
+		return [
+			'sync equator'            => [ 'sync', 0.0, -122.27 ],
+			'sync prime meridian'     => [ 'sync', 51.5, 0.0 ],
+			'sync both zero'          => [ 'sync', 0.0, 0.0 ],
+			'manager equator'         => [ 'manager', 0.0, -122.27 ],
+			'manager prime meridian'  => [ 'manager', 51.5, 0.0 ],
+		];
+	}
+
+	/**
+	 * The sync import stores no position it can't trust.
+	 *
+	 * @dataProvider invalid_coordinate_provider
+	 *
+	 * @param mixed $lat Venue latitude.
+	 * @param mixed $lng Venue longitude.
+	 */
+	public function test_sync_import_drops_an_invalid_coordinate_pair( $lat, $lng ): void {
+		$this->serve_checkin_at( $lat, $lng );
+
+		$post = $this->sync_post();
+
+		$this->assertSame( '', get_post_meta( $post->ID, '_pkiw_geo_latitude', true ) );
+		$this->assertSame( '', get_post_meta( $post->ID, '_pkiw_geo_longitude', true ) );
+	}
+
+	/**
+	 * @return array<string, array{0: mixed, 1: mixed}>
+	 */
+	public function invalid_coordinate_provider(): array {
+		return [
+			'missing latitude'  => [ null, -122.27 ],
+			'missing longitude' => [ 37.8, null ],
+			'text latitude'     => [ 'north', -122.27 ],
+			'latitude too high' => [ 95.0, -122.27 ],
+			'longitude too far' => [ 37.8, 181.0 ],
+		];
+	}
+
+	/**
+	 * A site check-in on the equator, with no Foursquare venue ID, still
+	 * looks up a venue by position and goes out.
+	 *
+	 * @dataProvider zero_syndication_provider
+	 *
+	 * @param string $lat Stored latitude.
+	 * @param string $lng Stored longitude.
+	 */
+	public function test_a_site_checkin_at_a_zero_coordinate_syndicates( string $lat, string $lng ): void {
+		$this->enable_syndication();
+		$this->hook_a_connected_sync();
+
+		$post_id = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		wp_set_object_terms( $post_id, 'checkin', 'kind' );
+		update_post_meta( $post_id, '_pkiw_checkin_name', 'Blue Bottle Coffee' );
+		update_post_meta( $post_id, '_pkiw_geo_latitude', $lat );
+		update_post_meta( $post_id, '_pkiw_geo_longitude', $lng );
+
+		wp_publish_post( $post_id );
+
+		$this->assert_api_request_made( 'venues/search' );
+		$this->assert_api_request_made( 'checkins/add' );
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public function zero_syndication_provider(): array {
+		return [
+			'equator'        => [ '0', '-122.27' ],
+			'prime meridian' => [ '51.5', '0' ],
+		];
+	}
+
 	public function test_sync_import_keeps_the_venue_id_apart_from_the_checkin_id(): void {
 		$post = $this->sync_post();
 

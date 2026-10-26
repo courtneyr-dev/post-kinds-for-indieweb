@@ -409,4 +409,76 @@ class OwnTracksCheckinSyncTest extends WP_UnitTestCase {
 		$this->assertInstanceOf( \WP_Error::class, $second );
 		$this->assertSame( 'duplicate', $second->get_error_code() );
 	}
+
+	/**
+	 * A coordinate of exactly 0 is a real position.
+	 *
+	 * @dataProvider zero_coordinate_provider
+	 *
+	 * @param float $lat Latitude.
+	 * @param float $lon Longitude.
+	 */
+	public function test_location_checkin_keeps_a_coordinate_of_zero( float $lat, float $lon ): void {
+		$this->enable_checkin_creation();
+
+		$payload        = $this->location_payload();
+		$payload['lat'] = $lat;
+		$payload['lon'] = $lon;
+
+		$post = $this->create_post_through_webhook( $payload );
+
+		$this->assertEqualsWithDelta( $lat, (float) get_post_meta( $post->ID, '_pkiw_geo_latitude', true ), 0.0000001 );
+		$this->assertEqualsWithDelta( $lon, (float) get_post_meta( $post->ID, '_pkiw_geo_longitude', true ), 0.0000001 );
+		$this->assertNotSame( '', get_post_meta( $post->ID, '_pkiw_geo_latitude', true ) );
+		$this->assertNotSame( '', get_post_meta( $post->ID, '_pkiw_geo_longitude', true ) );
+	}
+
+	/**
+	 * @return array<string, array{0: float, 1: float}>
+	 */
+	public function zero_coordinate_provider(): array {
+		return [
+			'equator'        => [ 0.0, -74.006 ],
+			'prime meridian' => [ 51.5074, 0.0 ],
+			'both zero'      => [ 0.0, 0.0 ],
+		];
+	}
+
+	/**
+	 * A missing, non-numeric or out-of-range coordinate is not a location.
+	 *
+	 * @dataProvider invalid_coordinate_provider
+	 *
+	 * @param array<string, mixed> $override Fields to replace or remove (null removes).
+	 */
+	public function test_location_checkin_rejects_an_invalid_coordinate( array $override ): void {
+		$this->enable_checkin_creation();
+
+		$payload = array_merge( $this->location_payload(), $override );
+		foreach ( $override as $key => $value ) {
+			if ( null === $value ) {
+				unset( $payload[ $key ] );
+			}
+		}
+
+		$result = $this->send_webhook( $payload );
+
+		$this->assertInstanceOf( \WP_Error::class, $result );
+		$this->assertSame( 'no_location', $result->get_error_code() );
+	}
+
+	/**
+	 * @return array<string, array{0: array<string, mixed>}>
+	 */
+	public function invalid_coordinate_provider(): array {
+		return [
+			'missing latitude'  => [ [ 'lat' => null ] ],
+			'missing longitude' => [ [ 'lon' => null ] ],
+			'text latitude'     => [ [ 'lat' => 'north' ] ],
+			'empty longitude'   => [ [ 'lon' => '' ] ],
+			'latitude too high' => [ [ 'lat' => 90.5 ] ],
+			'latitude too low'  => [ [ 'lat' => -91 ] ],
+			'longitude too far' => [ [ 'lon' => 180.5 ] ],
+		];
+	}
 }
