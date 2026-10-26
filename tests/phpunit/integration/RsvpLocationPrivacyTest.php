@@ -1598,9 +1598,11 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	 * A public RSVP ATmosphere has shared, on a site connected with
 	 * auto-publish on, with no ATmosphere cron queued for it.
 	 *
+	 * @param bool $auto_publish Whether ATmosphere's auto-publish is on. Off
+	 *                           is connection-only mode.
 	 * @return int Post ID.
 	 */
-	private function shared_public_rsvp(): int {
+	private function shared_public_rsvp( bool $auto_publish = true ): int {
 		if ( ! defined( 'ATMOSPHERE_VERSION' ) ) {
 			$this->markTestSkipped( 'Set PKIW_TESTS_ATMOSPHERE_FILE to run ATmosphere\'s scheduling.' );
 		}
@@ -1608,8 +1610,9 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		update_option( 'atmosphere_identity', [ 'did' => 'did:plc:pkiwtest251' ] );
 		update_option( 'atmosphere_did', 'did:plc:pkiwtest251' );
 		update_option( 'atmosphere_connection', [ 'access_token' => 'test-token' ] );
-		add_filter( 'atmosphere_should_auto_publish', '__return_true' );
+		add_filter( 'atmosphere_should_auto_publish', $auto_publish ? '__return_true' : '__return_false' );
 		$this->assertTrue( \Atmosphere\is_connected(), 'ATmosphere is connected.' );
+		$this->assertSame( $auto_publish, \Atmosphere\is_auto_publish_enabled(), 'Auto-publish is set as asked.' );
 
 		$id = $this->rsvp( 'yes', 'future', 'public' );
 		update_post_meta( $id, \Atmosphere\Transformer\Post::META_TID, '3pkiwtest251' );
@@ -1709,6 +1712,132 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 		$this->assertSame( 'private', get_post_meta( $id, '_pkiw_rsvp_location_privacy', true ) );
 		$this->assertFalse( wp_next_scheduled( 'atmosphere_update_post', [ $id ] ) );
 		$this->assertFalse( wp_next_scheduled( 'atmosphere_publish_post', [ $id ] ) );
+	}
+
+	/**
+	 * Every privacy key and a write that tightens it: the RSVP location
+	 * setting, the post's location privacy, Simple Location's flag, and the
+	 * exercise and sleep toggles, whose deletion closes them. `null` as the
+	 * new value deletes the row.
+	 *
+	 * @return array<string, array{0: string, 1: string, 2: string|null}>
+	 */
+	public function tightening_privacy_writes(): array {
+		return [
+			'RSVP location setting' => [ '_pkiw_rsvp_location_privacy', 'public', 'private' ],
+			'location privacy'      => [ '_pkiw_geo_privacy', 'public', 'private' ],
+			'geo_public'            => [ 'geo_public', '1', '0' ],
+			'exercise details'      => [ Meta_Fields::EXERCISE_PUBLIC_KEY, '1', null ],
+			'sleep times'           => [ Meta_Fields::SLEEP_PUBLIC_KEY, '1', null ],
+		];
+	}
+
+	/**
+	 * Write a meta row as a tightening change does: set the open value,
+	 * clear the queue it may have caused, then close it.
+	 *
+	 * @param int         $id   Post ID.
+	 * @param string      $key  Meta key.
+	 * @param string      $open Value that leaves the detail public.
+	 * @param string|null $new  Value that tightens it, or null to delete the row.
+	 */
+	private function tighten_privacy_meta( int $id, string $key, string $open, ?string $new ): void {
+		update_post_meta( $id, $key, $open );
+		wp_clear_scheduled_hook( 'atmosphere_update_post', [ $id ] );
+		$this->assertFalse( wp_next_scheduled( 'atmosphere_update_post', [ $id ] ) );
+
+		if ( null === $new ) {
+			delete_post_meta( $id, $key );
+		} else {
+			update_post_meta( $id, $key, $new );
+		}
+	}
+
+	/**
+	 * With auto-publish off (connection-only mode), tightening any privacy
+	 * key on a post ATmosphere already shared queues its update, so the
+	 * record held on the PDS loses the detail. ATmosphere's own update
+	 * worker doesn't check auto-publish, so the queued update runs.
+	 *
+	 * @dataProvider tightening_privacy_writes
+	 * @group atmosphere
+	 *
+	 * @param string      $key  Meta key.
+	 * @param string      $open Value that leaves the detail public.
+	 * @param string|null $new  Value that tightens it, or null to delete the row.
+	 */
+	public function test_tightening_a_privacy_key_on_a_shared_post_queues_an_update_with_auto_publish_off( string $key, string $open, ?string $new ): void {
+		$id = $this->shared_public_rsvp( false );
+
+		$this->tighten_privacy_meta( $id, $key, $open, $new );
+
+		$this->assertNotFalse( wp_next_scheduled( 'atmosphere_update_post', [ $id ] ), 'ATmosphere\'s update is queued with auto-publish off.' );
+		$this->assertFalse( wp_next_scheduled( 'atmosphere_publish_post', [ $id ] ), 'Nothing is published.' );
+	}
+
+	/**
+	 * With auto-publish off, a post ATmosphere never shared queues nothing
+	 * for any privacy key, because the update would share it for the first
+	 * time.
+	 *
+	 * @dataProvider tightening_privacy_writes
+	 * @group atmosphere
+	 *
+	 * @param string      $key  Meta key.
+	 * @param string      $open Value that leaves the detail public.
+	 * @param string|null $new  Value that tightens it, or null to delete the row.
+	 */
+	public function test_tightening_a_privacy_key_on_an_unshared_post_queues_nothing_with_auto_publish_off( string $key, string $open, ?string $new ): void {
+		$id = $this->shared_public_rsvp( false );
+		delete_post_meta( $id, \Atmosphere\Transformer\Post::META_TID );
+
+		$this->tighten_privacy_meta( $id, $key, $open, $new );
+
+		$this->assertFalse( wp_next_scheduled( 'atmosphere_update_post', [ $id ] ) );
+		$this->assertFalse( wp_next_scheduled( 'atmosphere_publish_post', [ $id ] ) );
+	}
+
+	/**
+	 * With auto-publish off, a meta key outside the privacy list queues
+	 * nothing on a shared post.
+	 *
+	 * @group atmosphere
+	 */
+	public function test_a_non_privacy_meta_write_on_a_shared_post_queues_nothing_with_auto_publish_off(): void {
+		$id = $this->shared_public_rsvp( false );
+
+		update_post_meta( $id, '_pkiw_rsvp_status', 'no' );
+		update_post_meta( $id, 'pkiw_unrelated_key', 'value' );
+		delete_post_meta( $id, 'pkiw_unrelated_key' );
+
+		$this->assertFalse( wp_next_scheduled( 'atmosphere_update_post', [ $id ] ) );
+	}
+
+	/**
+	 * A disconnected site queues nothing for a shared post, with
+	 * auto-publish off, because ATmosphere can't reach the PDS.
+	 *
+	 * @group atmosphere
+	 */
+	public function test_a_disconnected_site_queues_nothing_with_auto_publish_off(): void {
+		$id = $this->shared_public_rsvp( false );
+		delete_option( 'atmosphere_connection' );
+		$this->assertFalse( \Atmosphere\is_connected(), 'ATmosphere is disconnected.' );
+
+		update_post_meta( $id, '_pkiw_rsvp_location_privacy', 'private' );
+
+		$this->assertFalse( wp_next_scheduled( 'atmosphere_update_post', [ $id ] ) );
+	}
+
+	/**
+	 * The provider's keys are the class's privacy list, so a key added to
+	 * the list without a test here fails.
+	 */
+	public function test_the_tightening_writes_cover_every_privacy_key(): void {
+		$keys    = ( new ReflectionClassConstant( \PKIW\Integrations\Atmosphere_Document_Map::class, 'PRIVACY_META_KEYS' ) )->getValue();
+		$covered = array_column( $this->tightening_privacy_writes(), 0 );
+
+		$this->assertEqualsCanonicalizing( $keys, $covered );
 	}
 
 	/**
