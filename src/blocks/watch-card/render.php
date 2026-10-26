@@ -84,6 +84,31 @@ $pkiw_post        = get_post();
 $pkiw_post_name   = $pkiw_post instanceof WP_Post ? \PKIW\visitor_post_title( $pkiw_post ) : '';
 $pkiw_title_class = $pkiw_post instanceof WP_Post && \PKIW\post_title_is_hidden( $pkiw_post ) && $pkiw_media_title === $pkiw_post_name ? 'pk-title' : 'pk-title p-name';
 
+// The poster prints as the media library copy when Featured_Artwork
+// sideloaded this same URL for the post, so a visitor's browser never
+// requests the remote host (issue 320). Only a URL with no local copy
+// prints as stored. The lookup reads post meta; it never fetches.
+$pkiw_poster_html = '';
+if ( ! $pkiw_embed && $pkiw_poster_image ) {
+	$pkiw_poster_alt_text = $pkiw_poster_alt ? $pkiw_poster_alt : sprintf( /* translators: %s: movie/show title */ __( 'Poster for %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_media_title ? $pkiw_media_title : $pkiw_post_name );
+	$pkiw_poster_id       = \PKIW\cover_local_copy( (int) get_the_ID(), (string) $pkiw_poster_image );
+	if ( $pkiw_poster_id > 0 ) {
+		$pkiw_poster_html = wp_get_attachment_image(
+			$pkiw_poster_id,
+			'full',
+			false,
+			[
+				'class'   => 'pk-thumb--poster u-photo',
+				'alt'     => $pkiw_poster_alt_text,
+				'loading' => 'lazy',
+			]
+		);
+	}
+	if ( '' === $pkiw_poster_html ) {
+		$pkiw_poster_html = '<img class="pk-thumb--poster u-photo" src="' . esc_url( $pkiw_poster_image ) . '" alt="' . esc_attr( $pkiw_poster_alt_text ) . '" loading="lazy" />';
+	}
+}
+
 ob_start();
 ?>
 <article <?php echo $pkiw_wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
@@ -133,9 +158,9 @@ ob_start();
 
 		<?php if ( $pkiw_embed ) : ?>
 			<div class="pk-embed pk-embed--video"><?php echo $pkiw_embed; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
-		<?php elseif ( $pkiw_poster_image ) : ?>
+		<?php elseif ( '' !== $pkiw_poster_html ) : ?>
 			<div class="pk-media">
-				<img class="pk-thumb--poster u-photo" src="<?php echo esc_url( $pkiw_poster_image ); ?>" alt="<?php echo esc_attr( $pkiw_poster_alt ? $pkiw_poster_alt : sprintf( /* translators: %s: movie/show title */ __( 'Poster for %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_media_title ? $pkiw_media_title : $pkiw_post_name ) ); ?>" loading="lazy" />
+				<?php echo $pkiw_poster_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 			</div>
 		<?php endif; ?>
 
