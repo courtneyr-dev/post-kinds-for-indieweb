@@ -88,6 +88,22 @@ final class FoursquareImportTest extends ApiTestCase {
 		$this->assertSame( 'venue-fsq-checkin-1', get_post_meta( $post->ID, '_pkiw_checkin_venue_id', true ) );
 	}
 
+	/**
+	 * The sync stores the venue's postal code and Meta_Fields reads it for
+	 * the postal_code tier. The importer dropped it though the normalizer had it.
+	 */
+	public function test_import_manager_keeps_the_postal_code(): void {
+		$post = $this->import_manager_post();
+
+		$this->assertSame( '94607', get_post_meta( $post->ID, '_pkiw_checkin_postal_code', true ) );
+	}
+
+	public function test_sync_import_keeps_the_postal_code(): void {
+		$post = $this->sync_post();
+
+		$this->assertSame( '94607', get_post_meta( $post->ID, '_pkiw_checkin_postal_code', true ) );
+	}
+
 	public function test_import_manager_dates_the_post_from_the_checkin_in_the_site_timezone(): void {
 		$post = $this->import_manager_post();
 
