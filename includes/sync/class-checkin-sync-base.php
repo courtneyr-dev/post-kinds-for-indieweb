@@ -343,6 +343,26 @@ abstract class Checkin_Sync_Base {
 	}
 
 	/**
+	 * Whether two values make a usable latitude and longitude.
+	 *
+	 * Tests presence and range, not truthiness: 0 is the equator and the prime
+	 * meridian, so empty() would drop real positions. Missing values (null, ''),
+	 * non-numbers and out-of-range numbers fail.
+	 *
+	 * @param mixed $lat Latitude, a number or a numeric string.
+	 * @param mixed $lon Longitude, a number or a numeric string.
+	 * @return bool True when both are numeric, latitude is -90 to 90 and longitude is -180 to 180.
+	 */
+	protected static function is_coordinate_pair( $lat, $lon ): bool {
+		if ( ! is_numeric( $lat ) || ! is_numeric( $lon ) ) {
+			return false;
+		}
+
+		return (float) $lat >= -90.0 && (float) $lat <= 90.0
+			&& (float) $lon >= -180.0 && (float) $lon <= 180.0;
+	}
+
+	/**
 	 * Check if an external checkin already exists as a post.
 	 *
 	 * @param array $external_checkin External checkin data.

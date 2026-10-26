@@ -349,7 +349,7 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 		// If we have a Foursquare venue ID, use it.
 		if ( ! empty( $checkin_data['foursquare_id'] ) ) {
 			$params['venueId'] = $checkin_data['foursquare_id'];
-		} elseif ( ! empty( $checkin_data['latitude'] ) && ! empty( $checkin_data['longitude'] ) ) {
+		} elseif ( self::is_coordinate_pair( $checkin_data['latitude'] ?? null, $checkin_data['longitude'] ?? null ) ) {
 			// Otherwise try to match venue by location.
 			$venue = $this->find_venue_for_checkin( $checkin_data );
 
@@ -371,7 +371,7 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 		}
 
 		// Add coordinates.
-		if ( ! empty( $checkin_data['latitude'] ) && ! empty( $checkin_data['longitude'] ) ) {
+		if ( self::is_coordinate_pair( $checkin_data['latitude'] ?? null, $checkin_data['longitude'] ?? null ) ) {
 			$params['ll'] = $checkin_data['latitude'] . ',' . $checkin_data['longitude'];
 		}
 
@@ -515,7 +515,7 @@ class Foursquare_Checkin_Sync extends Checkin_Sync_Base {
 		update_post_meta( $post_id, $prefix . 'checkin_country', $external_checkin['country'] ?? '' );
 		update_post_meta( $post_id, $prefix . 'checkin_postal_code', $external_checkin['postal_code'] ?? '' );
 
-		if ( ! empty( $external_checkin['latitude'] ) && ! empty( $external_checkin['longitude'] ) ) {
+		if ( self::is_coordinate_pair( $external_checkin['latitude'] ?? null, $external_checkin['longitude'] ?? null ) ) {
 			update_post_meta( $post_id, $prefix . 'geo_latitude', $external_checkin['latitude'] );
 			update_post_meta( $post_id, $prefix . 'geo_longitude', $external_checkin['longitude'] );
 		}
