@@ -1436,19 +1436,78 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 	 * The Bluesky post's text and link card description come from the post's
 	 * content, so the legacy card's HTML is in reach of them.
 	 *
-	 * ATmosphere 2.1.0 excerpts raw post_content, which carries the card's event
-	 * name. Trunk renders the post as a logged-out visitor (wordpress-atmosphere
-	 * #289), and that render prints no event name for a pre-#32 card (#430). The
-	 * post's own paragraph reaches the record either way, so it anchors the check.
+	 * ATmosphere 2.1.0 excerpts raw post_content, so the card's event name
+	 * reaches the record. ATmosphere trunk (commit 8af8dd9) builds the excerpt
+	 * with get_the_excerpt() as a logged-out visitor, and core's
+	 * excerpt_remove_blocks() drops dynamic blocks such as the RSVP card, so
+	 * the event name is gone. A visitor sees the same on an archive page: the
+	 * single post prints the card, the excerpt doesn't. The post's own
+	 * paragraph reaches the record on both, so it anchors the check. Trunk is
+	 * the one whose render_publishable_content() takes an $excerpt argument.
 	 *
 	 * @group atmosphere
 	 */
 	public function test_the_bluesky_post_of_a_legacy_rsvp_card_omits_a_private_location(): void {
 		$id     = $this->legacy_rsvp_for_atmosphere();
 		$record = ( new \Atmosphere\Transformer\Post( get_post( $id ) ) )->transform();
+		$json   = (string) wp_json_encode( $record );
 
-		$this->assertStringContainsString( 'See you in the back room.', (string) wp_json_encode( $record ), 'The record holds the excerpt.' );
-		$this->assertStringNotContainsString( self::LOCATION, (string) wp_json_encode( $record ) );
+		$this->assertStringContainsString( 'See you in the back room.', $json, 'The record holds the excerpt.' );
+
+		if ( $this->atmosphere_renders_excerpts_as_a_visitor() ) {
+			$this->assertStringNotContainsString( self::EVENT, $json, 'Trunk drops the dynamic card from the excerpt.' );
+			$this->assertStringNotContainsString( self::EVENT, $this->visitor_excerpt_of( $id ), 'A visitor\'s excerpt drops it too.' );
+			$this->assertStringContainsString( self::EVENT, $this->visitor_content_of( $id ), 'The post page itself still prints the card.' );
+		} else {
+			$this->assertStringContainsString( self::EVENT, $json, '2.1.0 excerpts raw post_content, card included.' );
+		}
+
+		$this->assertStringNotContainsString( self::LOCATION, $json );
+	}
+
+	/**
+	 * Whether the loaded ATmosphere builds derived excerpts as a logged-out
+	 * visitor. Trunk added an `$excerpt` parameter to
+	 * Atmosphere\render_publishable_content() with that change; 2.1.0 has no
+	 * such function.
+	 */
+	private function atmosphere_renders_excerpts_as_a_visitor(): bool {
+		if ( ! function_exists( '\Atmosphere\render_publishable_content' ) ) {
+			return false;
+		}
+
+		$names = array_map(
+			static fn( \ReflectionParameter $parameter ): string => $parameter->getName(),
+			( new \ReflectionFunction( '\Atmosphere\render_publishable_content' ) )->getParameters()
+		);
+
+		return in_array( 'excerpt', $names, true );
+	}
+
+	/**
+	 * What WordPress shows a logged-out visitor as the post's excerpt.
+	 *
+	 * @param int $id Post ID.
+	 */
+	private function visitor_excerpt_of( int $id ): string {
+		wp_set_current_user( 0 );
+
+		return get_the_excerpt( get_post( $id ) );
+	}
+
+	/**
+	 * What WordPress prints a logged-out visitor on the post's own page.
+	 *
+	 * @param int $id Post ID.
+	 */
+	private function visitor_content_of( int $id ): string {
+		wp_set_current_user( 0 );
+		$GLOBALS['post'] = get_post( $id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		setup_postdata( $GLOBALS['post'] );
+		$html = (string) apply_filters( 'the_content', (string) get_post_field( 'post_content', $id ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		unset( $GLOBALS['post'] );
+
+		return $html;
 	}
 
 	/**
