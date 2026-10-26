@@ -43,7 +43,7 @@
     "test:coverage": "phpunit --coverage-html coverage/php",
     "audit": "composer audit",
     "security": "@audit",
-    "i18n:make-pot": "wp i18n make-pot . languages/post-kinds-for-indieweb.pot --domain=post-kinds-for-indieweb",
+    "i18n:make-pot": "wp i18n make-pot . languages/post-kinds-for-indieweb-in-block-themes.pot --slug=post-kinds-for-indieweb-in-block-themes --domain=post-kinds-for-indieweb-in-block-themes --exclude=\"node_modules,.git,.github,.husky,.claude,.omc,vendor,tests,bin,scripts,src,stubs,docs,coverage,*.min.js\"",
     "check": [
       "@lint",
       "@analyze",
