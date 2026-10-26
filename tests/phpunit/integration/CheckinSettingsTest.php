@@ -33,6 +33,7 @@ class CheckinSettingsTest extends WP_UnitTestCase {
 		global $wp_settings_fields, $wp_settings_sections;
 		unset( $wp_settings_fields['pkiw_checkin'], $wp_settings_sections['pkiw_checkin'] );
 		delete_option( 'pkiw_settings' );
+		unregister_setting( 'pkiw_general', 'pkiw_settings' );
 		parent::tear_down();
 	}
 
@@ -70,5 +71,119 @@ class CheckinSettingsTest extends WP_UnitTestCase {
 		);
 
 		$this->assertArrayNotHasKey( 'checkin_coordinate_handling', $sanitized );
+	}
+
+	/**
+	 * Save settings the way options.php does: register the setting so its
+	 * sanitize callback is attached, then update_option() runs it.
+	 *
+	 * @param array<string, mixed> $input Posted pkiw_settings values.
+	 * @return void
+	 */
+	private function save_through_settings_api( array $input ): void {
+		( new Admin( Plugin::get_instance() ) )->register_settings();
+		update_option( 'pkiw_settings', $input );
+	}
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public function default_privacy_values(): array {
+		return [
+			'public'      => [ 'public' ],
+			'approximate' => [ 'approximate' ],
+			'private'     => [ 'private' ],
+		];
+	}
+
+	/**
+	 * @dataProvider default_privacy_values
+	 */
+	public function test_default_location_privacy_saves_and_reads_back( string $value ): void {
+		$this->save_through_settings_api(
+			[
+				'_active_tab'             => 'checkin',
+				'checkin_default_privacy' => $value,
+			]
+		);
+
+		$stored = get_option( 'pkiw_settings' );
+
+		$this->assertArrayHasKey( 'checkin_default_privacy', $stored );
+		$this->assertSame( $value, $stored['checkin_default_privacy'] );
+	}
+
+	public function test_saved_default_location_privacy_is_the_radio_that_renders_checked(): void {
+		$this->save_through_settings_api(
+			[
+				'_active_tab'             => 'checkin',
+				'checkin_default_privacy' => 'private',
+			]
+		);
+
+		ob_start();
+		$this->page->render_privacy_field( [ 'id' => 'checkin_default_privacy' ] );
+		$html = (string) ob_get_clean();
+
+		$this->assertMatchesRegularExpression(
+			'/<input type="radio" name="pkiw_settings\[checkin_default_privacy\]" value="private"\s+checked=\'checked\'>/',
+			$html
+		);
+		$this->assertDoesNotMatchRegularExpression(
+			'/value="approximate"\s+checked=/',
+			$html
+		);
+	}
+
+	public function test_default_location_privacy_rejects_an_unknown_value(): void {
+		$this->save_through_settings_api(
+			[
+				'_active_tab'             => 'checkin',
+				'checkin_default_privacy' => 'everyone',
+			]
+		);
+
+		$this->assertSame(
+			'approximate',
+			get_option( 'pkiw_settings' )['checkin_default_privacy']
+		);
+	}
+
+	public function test_default_location_privacy_keeps_the_stored_value_when_given_an_unknown_one(): void {
+		update_option( 'pkiw_settings', [ 'checkin_default_privacy' => 'private' ] );
+
+		$this->save_through_settings_api(
+			[
+				'_active_tab'             => 'checkin',
+				'checkin_default_privacy' => 'everyone',
+			]
+		);
+
+		$this->assertSame(
+			'private',
+			get_option( 'pkiw_settings' )['checkin_default_privacy']
+		);
+	}
+
+	public function test_saving_another_tab_keeps_the_stored_default_location_privacy(): void {
+		update_option( 'pkiw_settings', [ 'checkin_default_privacy' => 'public' ] );
+
+		$this->save_through_settings_api(
+			[
+				'_active_tab'         => 'general',
+				'default_post_status' => 'draft',
+			]
+		);
+
+		$this->assertSame(
+			'public',
+			get_option( 'pkiw_settings' )['checkin_default_privacy']
+		);
+	}
+
+	public function test_default_location_privacy_defaults_to_approximate(): void {
+		$defaults = ( new Admin( Plugin::get_instance() ) )->get_default_settings();
+
+		$this->assertSame( 'approximate', $defaults['checkin_default_privacy'] );
 	}
 }

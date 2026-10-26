@@ -266,15 +266,28 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 		// Build title.
 		$title = $this->build_location_checkin_title( $poi, $address, $lat, $lon );
 
+		// A webhook request has no logged-in user, so pick the author the
+		// way the other importers do.
+		[ $author_id ] = \PKIW\Import_Manager::resolve_author_for_post_type( 'post' );
+		if ( 0 === $author_id ) {
+			return new \WP_Error( 'no_author', __( 'No user can author imported posts. Set pkiw_default_author to a user who can create posts.', 'post-kinds-for-indieweb-in-block-themes' ), [ 'status' => 500 ] );
+		}
+
 		$settings    = get_option( 'pkiw_settings', [] );
 		$post_status = $settings['owntracks_post_status'] ?? 'publish';
 
+		// OwnTracks sends a UTC epoch. post_date_gmt takes it as is and
+		// post_date takes the same moment in the site's timezone.
+		$post_date_gmt = gmdate( 'Y-m-d H:i:s', $tst );
+
 		$post_data = [
-			'post_title'   => sanitize_text_field( $title ),
-			'post_content' => '',
-			'post_status'  => $post_status,
-			'post_type'    => 'post',
-			'post_date'    => gmdate( 'Y-m-d H:i:s', $tst ),
+			'post_title'    => sanitize_text_field( $title ),
+			'post_content'  => '',
+			'post_status'   => $post_status,
+			'post_type'     => 'post',
+			'post_author'   => $author_id,
+			'post_date_gmt' => $post_date_gmt,
+			'post_date'     => get_date_from_gmt( $post_date_gmt ),
 		];
 
 		$post_id = wp_insert_post( $post_data );
@@ -415,7 +428,7 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 		$desc = $payload['desc'] ?? '';
 		$lat  = $payload['lat'] ?? 0;
 		$lon  = $payload['lon'] ?? 0;
-		$tst  = $payload['tst'] ?? time();
+		$tst  = (int) ( $payload['tst'] ?? time() );
 
 		if ( empty( $desc ) ) {
 			return false;
@@ -426,15 +439,28 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 			return false;
 		}
 
+		// A webhook request has no logged-in user, so pick the author the
+		// way the other importers do.
+		[ $author_id ] = \PKIW\Import_Manager::resolve_author_for_post_type( 'post' );
+		if ( 0 === $author_id ) {
+			return false;
+		}
+
 		$settings    = get_option( 'pkiw_settings', [] );
 		$post_status = $settings['owntracks_post_status'] ?? 'publish';
 
+		// OwnTracks sends a UTC epoch. post_date_gmt takes it as is and
+		// post_date takes the same moment in the site's timezone.
+		$post_date_gmt = gmdate( 'Y-m-d H:i:s', $tst );
+
 		$post_data = [
-			'post_title'   => sanitize_text_field( $desc ),
-			'post_content' => '',
-			'post_status'  => $post_status,
-			'post_type'    => 'post',
-			'post_date'    => gmdate( 'Y-m-d H:i:s', $tst ),
+			'post_title'    => sanitize_text_field( $desc ),
+			'post_content'  => '',
+			'post_status'   => $post_status,
+			'post_type'     => 'post',
+			'post_author'   => $author_id,
+			'post_date_gmt' => $post_date_gmt,
+			'post_date'     => get_date_from_gmt( $post_date_gmt ),
 		];
 
 		$post_id = wp_insert_post( $post_data );
@@ -478,6 +504,8 @@ class OwnTracks_Checkin_Sync extends Checkin_Sync_Base {
 			'posts_per_page' => 1,
 			'date_query'     => [
 				[
+					// The window is UTC, so compare it to the UTC column.
+					'column' => 'post_date_gmt',
 					'after'  => gmdate( 'Y-m-d H:i:s', $timestamp - 300 ),
 					'before' => gmdate( 'Y-m-d H:i:s', $timestamp + 300 ),
 				],

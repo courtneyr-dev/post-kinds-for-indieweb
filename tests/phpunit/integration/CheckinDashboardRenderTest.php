@@ -205,4 +205,41 @@ final class CheckinDashboardRenderTest extends WP_UnitTestCase {
 		$this->assertTrue( array_is_list( $decoded ), 'map data must be a JSON list, not an object keyed by original index' );
 		$this->assertCount( 1, $decoded );
 	}
+
+	/**
+	 * Two dashboards on one page each print their own map container with a
+	 * distinct element ID and their own check-in data, so the page has no
+	 * duplicate IDs and the view script can tell the maps apart (issue 352).
+	 */
+	public function test_two_dashboards_on_one_page_get_distinct_map_ids(): void {
+		$this->create_checkin(
+			[
+				'_pkiw_checkin_name'  => 'Public Venue',
+				'_pkiw_geo_latitude'  => '12.345678',
+				'_pkiw_geo_longitude' => '-76.543219',
+				'_pkiw_geo_privacy'   => 'public',
+			]
+		);
+
+		$html = do_blocks(
+			'<!-- wp:post-kinds-indieweb/checkin-dashboard {"layout":"map"} /-->'
+			. '<!-- wp:post-kinds-indieweb/checkin-dashboard {"layout":"map"} /-->'
+		);
+
+		$this->assertSame( 2, substr_count( $html, 'class="checkin-map"' ), 'each dashboard prints one map container' );
+
+		preg_match_all( '/<div id="([^"]+)" class="checkin-map"/', $html, $map_ids );
+		$this->assertCount( 2, $map_ids[1], 'each map container carries an id' );
+		$this->assertNotSame( $map_ids[1][0], $map_ids[1][1], 'the two map containers need different ids' );
+		foreach ( $map_ids[1] as $map_id ) {
+			$this->assertMatchesRegularExpression( '/^checkin-frontend-map-\d+$/', $map_id );
+		}
+
+		// No id attribute repeats anywhere in the page output (HTML validity, WCAG 4.1.1).
+		preg_match_all( '/\sid="([^"]+)"/', $html, $all_ids );
+		$this->assertSame( $all_ids[1], array_values( array_unique( $all_ids[1] ) ), 'no duplicate ids in the rendered page' );
+
+		// Each map carries its own data-checkins payload.
+		$this->assertSame( 2, preg_match_all( '/data-checkins="/', $html ), 'each map carries its own check-in data' );
+	}
 }

@@ -66,17 +66,19 @@
 		}
 	}
 
-	let mapInitialized = false;
+	// Dashboards whose map is already drawn. Each dashboard on the page
+	// tracks its own state, so a second one still gets a map.
+	const initializedDashboards = new WeakSet();
 
 	function initMap( dashboard ) {
-		if ( mapInitialized ) {
+		if ( initializedDashboards.has( dashboard ) ) {
 			return;
 		}
 		if ( typeof L === 'undefined' ) {
 			return;
 		}
 
-		const mapContainer = dashboard.querySelector( '#checkin-frontend-map' );
+		const mapContainer = dashboard.querySelector( '.checkin-map' );
 		if ( ! mapContainer ) {
 			return;
 		}
@@ -162,7 +164,7 @@
 			map.fitBounds( bounds, { padding: [ 50, 50 ] } );
 		}
 
-		mapInitialized = true;
+		initializedDashboards.add( dashboard );
 	}
 
 	function escapeHtml( str ) {
