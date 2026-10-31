@@ -595,6 +595,7 @@ class Block_Bindings {
 					'no'         => __( 'Not attending', 'post-kinds-for-indieweb-in-block-themes' ),
 					'maybe'      => __( 'Maybe attending', 'post-kinds-for-indieweb-in-block-themes' ),
 					'interested' => __( 'Interested', 'post-kinds-for-indieweb-in-block-themes' ),
+					'remote'     => __( 'Attending Remotely', 'post-kinds-for-indieweb-in-block-themes' ),
 				];
 				return $labels[ $value ] ?? (string) $value;
 

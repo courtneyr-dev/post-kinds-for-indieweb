@@ -290,6 +290,7 @@ class Meta_Boxes {
 						'no'         => __( 'No', 'post-kinds-for-indieweb-in-block-themes' ),
 						'maybe'      => __( 'Maybe', 'post-kinds-for-indieweb-in-block-themes' ),
 						'interested' => __( 'Interested', 'post-kinds-for-indieweb-in-block-themes' ),
+						'remote'     => __( 'Attending Remotely', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 				'event_start'    => [

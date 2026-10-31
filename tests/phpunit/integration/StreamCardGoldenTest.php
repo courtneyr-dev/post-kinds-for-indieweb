@@ -63,7 +63,8 @@ final class StreamCardGoldenTest extends WP_UnitTestCase {
 		'block:read|card'                => 'a103d344ea0a3daa9c6afeb603c2717ef811353d',
 		'block:reply|card'               => '199db1be05a9309acb2422926d0947423a1bd11b',
 		'block:repost|card'              => 'ab51fce6695f7a5e7de636d365c52e3048350c51',
-		'block:rsvp|card'                => 'd6d6ee8d47e320c0dc6c9d0ada007851ab4dea65',
+		// Recorded from the W7-P251 head: the RSVP now draws its location-free Stream fallback.
+		'block:rsvp|card'                => 'bc845ef364f74eb3d9d9471858a5171007951fc1',
 		'block:sleep|card'               => 'c2e897e48c0afa125cfc331fde3e9fb44c0b1c8d',
 		'block:watch|card'               => '6dddfa9574216931da0d40d39f329ed722609bb3',
 		// Recorded from the W5-T238 fidelity fix: this row changes on purpose (Stream chips replace the price chip; the View item link gains an aria-hidden external-link icon).
@@ -131,8 +132,9 @@ final class StreamCardGoldenTest extends WP_UnitTestCase {
 		'repost|generic-untitled'        => '3a5758bb7ba13dc1d5573a37310253076619bd1c',
 		'review|generic-titled'          => '5057ecfe90362d4bcf258c0d5215f5c05263c158',
 		'review|generic-untitled'        => '2b8640893526a5ee15e2c5451bf05dd52f58c6c4',
-		'rsvp|generic-titled'            => '4774e878dfee1d0b5c6fc3f8ab61ea7c7804a419',
-		'rsvp|generic-untitled'          => 'f1c3d159b9de1707f243c727bcfec780bcc45c20',
+		// Recorded from the W7-P251 head: card-less RSVPs draw the location-free Stream card (name, day, status; untitled posts use untitled_name()).
+		'rsvp|generic-titled'            => 'eae659f5e126acf67fce31b48429566bd22aee9d',
+		'rsvp|generic-untitled'          => '22e83ec46c729af94082f62bbda0fba2545908ff',
 		'single:article'                 => '86e79fe1471775c3c04101100eb0469b933046a0',
 		// Recorded from the W5-P0C head: this row changes on purpose.
 		'single:audio'                   => '2b45041b262566480427a8a2c22f403fa783a3ae',

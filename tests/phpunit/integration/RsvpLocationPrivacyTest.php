@@ -616,7 +616,9 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 
 		$this->make_public( $id );
 		$GLOBALS['post'] = get_post( $id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
-		$this->assertStringContainsString( self::LOCATION, \PKIW\render_stream_card(), 'A public RSVP prints its location in the Stream card.' );
+		$html = \PKIW\render_stream_card();
+		$this->assertStringContainsString( self::EVENT, $html, 'The public RSVP remains present in the Stream card.' );
+		$this->assertStringNotContainsString( self::LOCATION, $html, 'The Stream surface never prints an RSVP location.' );
 	}
 
 	/**

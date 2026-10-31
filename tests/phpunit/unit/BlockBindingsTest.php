@@ -208,6 +208,7 @@ class BlockBindingsTest extends WP_UnitTestCase {
 			'no'         => [ 'no', 'Not attending' ],
 			'maybe'      => [ 'maybe', 'Maybe attending' ],
 			'interested' => [ 'interested', 'Interested' ],
+			'remote'     => [ 'remote', 'Attending Remotely' ],
 		];
 	}
 

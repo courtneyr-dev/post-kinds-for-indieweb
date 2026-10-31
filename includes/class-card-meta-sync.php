@@ -349,6 +349,29 @@ class Card_Meta_Sync {
 	];
 
 	/**
+	 * RSVP card attributes mirrored outside ATTR_META_MAP so other card maps
+	 * keep syncing regardless of document order.
+	 *
+	 * @var array<string, array<string, string>>
+	 */
+	public const RSVP_MAP = [
+		'post-kinds-indieweb/rsvp-card' => [
+			'eventName'  => 'cite_name',
+			'eventUrl'   => 'cite_url',
+			'rsvpStatus' => 'rsvp_status',
+			'eventStart' => 'event_start',
+			'eventEnd'   => 'event_end',
+		],
+	];
+
+	/**
+	 * RSVP rows whose card values may erase stored values.
+	 *
+	 * @var string[]
+	 */
+	private const RSVP_CARD_DECIDES = [ 'event_start', 'event_end' ];
+
+	/**
 	 * Privacy settings, as attribute => [ meta suffix, block.json default ],
 	 * whose default is written on every save when the card leaves the
 	 * attribute out. The editor drops an attribute that equals its default
@@ -498,6 +521,7 @@ class Card_Meta_Sync {
 		// lookup below returns for it. The REST controller wrote the
 		// request's craft meta after save_post, so the card decides again.
 		self::sync_card_decides( $post_id, $blocks );
+		self::sync_rsvp( $post_id, $blocks, true );
 
 		$block = self::find_first_mapped_block( $blocks );
 		if ( null === $block ) {
@@ -719,12 +743,60 @@ class Card_Meta_Sync {
 			}
 		}
 
+		self::sync_rsvp( $post_id, $blocks, $on_save );
+
 		// The writes above never leave a privacy row looser than it was (issue 358).
 		self::apply_stricter_privacy( $post_id, $blocks, $stored );
 
 		// An unchanged cover fires no meta hook, so a post stored before
 		// the cover map existed gets its map here, on save or backfill.
 		refresh_cover_attachments( $post_id );
+	}
+
+	/**
+	 * Mirror the first RSVP card without participating in ATTR_META_MAP.
+	 *
+	 * @param int                              $post_id Post ID.
+	 * @param array<int, array<string, mixed>> $blocks  Parsed blocks.
+	 * @param bool                             $on_save Whether a save called this.
+	 * @return void
+	 */
+	private static function sync_rsvp( int $post_id, array $blocks, bool $on_save ): void {
+		$card_name = (string) array_key_first( self::RSVP_MAP );
+		$map       = self::RSVP_MAP[ $card_name ];
+		$block     = self::find_first_mapped_block( $blocks, $card_name );
+		if ( null === $block ) {
+			return;
+		}
+
+		if ( ! $on_save ) {
+			if ( ! class_exists( __NAMESPACE__ . '\\Rsvp_Archive' ) ) {
+				return;
+			}
+			$keys = array_map( static fn( string $suffix ): string => Meta_Fields::PREFIX . $suffix, $map );
+			foreach ( Rsvp_Archive::backfill_plan( $post_id ) as $op ) {
+				if ( in_array( $op['key'], $keys, true ) ) {
+					add_post_meta( $post_id, $op['key'], $op['value'], true );
+				}
+			}
+			return;
+		}
+
+		foreach ( $map as $attr => $suffix ) {
+			if ( in_array( $suffix, self::RSVP_CARD_DECIDES, true ) ) {
+				$value = sanitize_text_field( (string) ( $block['attrs'][ $attr ] ?? '' ) );
+				if ( '' !== $value && '' !== card_wall_clock( $value )[0] ) {
+					update_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, $value );
+				} else {
+					delete_post_meta( $post_id, Meta_Fields::PREFIX . $suffix );
+				}
+				continue;
+			}
+			if ( 'rsvpStatus' === $attr && ! array_key_exists( $attr, $block['attrs'] ?? [] ) ) {
+				$block['attrs'][ $attr ] = 'yes';
+			}
+			self::sync_attr( $post_id, $block, $attr, $suffix, true );
+		}
 	}
 
 	/**
