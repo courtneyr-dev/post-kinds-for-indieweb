@@ -36,7 +36,7 @@ final class RsvpFactsTest extends WP_UnitTestCase {
 	}
 
 	private function card( array $attributes ): string {
-		return '<!-- wp:post-kinds-indieweb/rsvp-card ' . wp_json_encode( $attributes ) . ' /-->';
+		return '<!-- wp:post-kinds-indieweb/rsvp-card ' . serialize_block_attributes( $attributes ) . ' /-->';
 	}
 
 	private function rsvp( array $attributes = [], array $post = [] ): int {
@@ -45,7 +45,8 @@ final class RsvpFactsTest extends WP_UnitTestCase {
 				[
 					'post_status'  => 'publish',
 					'post_title'   => 'RSVP post title',
-					'post_content' => $this->card( $attributes ),
+					// wp_insert_post() unslashes content, so slash it as the editor's REST save does.
+					'post_content' => wp_slash( $this->card( $attributes ) ),
 					'post_date'    => '2026-10-01 09:00:00',
 				],
 				$post

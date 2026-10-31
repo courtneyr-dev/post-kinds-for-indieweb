@@ -66,6 +66,8 @@ final class RsvpArchivePrivacyTest extends WP_UnitTestCase {
 		$geo_private    = $this->rsvp( 'remote', '2027-10-09T18:00', 'public', 'public' );
 		update_post_meta( $geo_private, '_pkiw_geo_privacy', 'private' );
 		$missing_row = $this->rsvp( 'maybe', '2025-10-09T18:00', 'public', null );
+		delete_post_meta( $missing_row, '_pkiw_rsvp_location_privacy' );
+		$this->assertFalse( metadata_exists( 'post', $missing_row, '_pkiw_rsvp_location_privacy' ) );
 		$cardless = self::factory()->post->create( [ 'post_status' => 'publish', 'post_content' => '<p>Quick RSVP.</p>' ] );
 		wp_set_object_terms( $cardless, 'rsvp', Taxonomy::TAXONOMY );
 		update_post_meta( $cardless, '_pkiw_event_url', self::EVENT );
@@ -106,8 +108,11 @@ final class RsvpArchivePrivacyTest extends WP_UnitTestCase {
 
 		$this->assertSame( self::LOCATION, Rsvp_Archive::facts( $id )['location'] );
 		$this->assertSame( self::LOCATION, Rsvp_Abilities::instance()->execute_get_rsvp_facts( [ 'post_id' => $id ] )['location'] );
-		$this->assertStringContainsString( self::LOCATION, do_blocks( get_post_field( 'post_content', $id ) ) );
-		$this->assertStringNotContainsString( self::LOCATION, Rsvp_Archive::entry_html( get_post( $id ), [ 'headingLevel' => 2 ], true ) );
+		$parsed = parse_blocks( (string) get_post_field( 'post_content', $id ) );
+		$single = ( new WP_Block( $parsed[0], [ 'postId' => $id ] ) )->render();
+		$this->assertStringContainsString( self::LOCATION, $single );
+		$entry = Rsvp_Archive::entry_html( get_post( $id ), [ 'headingLevel' => 2 ], true );
+		$this->assertStringNotContainsString( self::LOCATION, $entry );
 		$this->assertStringNotContainsString( self::LOCATION, wp_json_encode( Operations::backfill_rsvp_meta( true, null ) ) );
 	}
 }

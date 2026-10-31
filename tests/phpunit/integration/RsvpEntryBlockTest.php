@@ -122,7 +122,7 @@ final class RsvpEntryBlockTest extends WP_UnitTestCase {
 		$local_url  = wp_get_attachment_url( $attachment );
 		$ids        = [];
 		foreach ( range( 9, 12 ) as $day ) {
-			$ids[] = $this->rsvp( [ 'eventName' => 'Poster ' . $day, 'eventStart' => '2026-10-' . $day . 'T18:00', 'eventImage' => $local_url ] );
+			$ids[] = $this->rsvp( [ 'eventName' => 'Poster ' . $day, 'eventStart' => sprintf( '2026-10-%02dT18:00', $day ), 'eventImage' => $local_url ] );
 		}
 		$paged = 1;
 		$wp_query = new WP_Query();
