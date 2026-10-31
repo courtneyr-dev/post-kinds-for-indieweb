@@ -182,7 +182,8 @@ final class Operations {
 					$gained_row = true;
 					continue;
 				}
-				$every_op_present = metadata_exists( 'post', $id, $op['key'] ) && $every_op_present;
+				// A unique add also fails when another writer added the key after the check above.
+				$every_op_present = [] !== get_post_meta( $id, $op['key'], false ) && $every_op_present;
 			}
 			if ( $gained_row ) {
 				$written[] = $id;

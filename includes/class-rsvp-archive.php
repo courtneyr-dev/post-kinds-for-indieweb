@@ -378,35 +378,39 @@ final class Rsvp_Archive {
 		if ( \WP_Block_Type_Registry::get_instance()->is_registered( self::ENTRY_BLOCK ) ) {
 			return;
 		}
-		register_block_type(
-			self::ENTRY_BLOCK,
-			[
-				'api_version'     => 3,
-				'title'           => __( 'RSVP entry', 'post-kinds-for-indieweb-in-block-themes' ),
-				'category'        => 'post-kinds-indieweb',
-				'render_callback' => [ self::class, 'render_entry_block' ],
-				'uses_context'    => [ 'postId', 'postType', 'queryId', 'templateSlug' ],
-				'attributes'      => Grouped_Archive::entry_attributes(
-					[
-						'linesPerPage' => [ 'default' => 9 ],
-						'headingLevel' => [ 'default' => 2 ],
-						'groupLabels'  => [
-							'type'    => 'object',
-							'default' => [],
-							'role'    => 'content',
-						],
-						'emptyLabel'   => [ 'role' => 'content' ],
-					]
-				),
-				'supports'        => [
-					'html'     => false,
-					'reusable' => false,
-				],
-				'editor_script'   => 'pkiw-rsvp-entry-editor',
-				'style'           => 'pkiw-kind-layouts',
-				'example'         => [ 'attributes' => [ 'linesPerPage' => 9 ] ],
-			]
-		);
+		// Core stores and compares the numeric API version; the WordPress stubs type this field as a string.
+		/**
+		 * Block type arguments.
+		 *
+		 * @var array<string, mixed> $args
+		 */
+		$args = [
+			'api_version'     => 3,
+			'title'           => __( 'RSVP entry', 'post-kinds-for-indieweb-in-block-themes' ),
+			'category'        => 'post-kinds-indieweb',
+			'render_callback' => [ self::class, 'render_entry_block' ],
+			'uses_context'    => [ 'postId', 'postType', 'queryId', 'templateSlug' ],
+			'attributes'      => Grouped_Archive::entry_attributes(
+				[
+					'linesPerPage' => [ 'default' => 9 ],
+					'headingLevel' => [ 'default' => 2 ],
+					'groupLabels'  => [
+						'type'    => 'object',
+						'default' => [],
+						'role'    => 'content',
+					],
+					'emptyLabel'   => [ 'role' => 'content' ],
+				]
+			),
+			'supports'        => [
+				'html'     => false,
+				'reusable' => false,
+			],
+			'editor_script'   => 'pkiw-rsvp-entry-editor',
+			'style'           => 'pkiw-kind-layouts',
+			'example'         => [ 'attributes' => [ 'linesPerPage' => 9 ] ],
+		];
+		register_block_type( self::ENTRY_BLOCK, $args );
 	}
 
 	/**
