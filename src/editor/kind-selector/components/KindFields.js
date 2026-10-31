@@ -530,6 +530,13 @@ function RSVPFields() {
 						),
 						value: 'interested',
 					},
+					{
+						label: __(
+							'Attending remotely',
+							'post-kinds-for-indieweb-in-block-themes'
+						),
+						value: 'remote',
+					},
 				] }
 				__nextHasNoMarginBottom
 				__next40pxDefaultSize

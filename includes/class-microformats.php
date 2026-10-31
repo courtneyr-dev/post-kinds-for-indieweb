@@ -872,11 +872,19 @@ class Microformats {
 		// Add kind-specific hidden data.
 		switch ( $kind ) {
 			case 'rsvp':
-				$rsvp_status = get_post_meta( $post_id, $prefix . 'rsvp_status', true );
-				if ( $rsvp_status ) {
+				$facts       = Kind_Facts::get( $post_id );
+				$rsvp_status = (string) ( $facts['status'] ?? '' );
+				$event_url   = (string) ( $facts['url'] ?? '' );
+				if ( '' !== $rsvp_status && ! $this->has_class_token( $content, 'p-rsvp' ) ) {
 					$hidden_data .= sprintf(
 						'<data class="p-rsvp" value="%s"></data>',
 						esc_attr( $rsvp_status )
+					);
+				}
+				if ( '' !== $event_url && ! $this->has_class_token( $content, 'u-in-reply-to' ) ) {
+					$hidden_data .= sprintf(
+						'<data class="u-in-reply-to" value="%s"></data>',
+						esc_url( $event_url )
 					);
 				}
 				break;

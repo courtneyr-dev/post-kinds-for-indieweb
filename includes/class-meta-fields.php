@@ -138,10 +138,10 @@ class Meta_Fields {
 			// RSVP Fields.
 			'rsvp_status'             => [
 				'type'        => 'string',
-				'description' => __( 'RSVP status: yes, no, maybe, or interested.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'RSVP status: yes, no, maybe, interested or remote.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_rsvp_status' ],
 				'default'     => '',
-				'enum'        => [ '', 'yes', 'no', 'maybe', 'interested' ],
+				'enum'        => [ '', 'yes', 'no', 'maybe', 'interested', 'remote' ],
 			],
 			'rsvp_location_privacy'   => [
 				'type'        => 'string',
@@ -2911,7 +2911,7 @@ class Meta_Fields {
 	 * @return string Sanitized value.
 	 */
 	public function sanitize_rsvp_status( mixed $value ): string {
-		$valid = [ 'yes', 'no', 'maybe', 'interested' ];
+		$valid = [ 'yes', 'no', 'maybe', 'interested', 'remote' ];
 		$value = sanitize_text_field( (string) $value );
 
 		return in_array( $value, $valid, true ) ? $value : '';

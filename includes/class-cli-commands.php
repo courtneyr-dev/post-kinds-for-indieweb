@@ -281,6 +281,42 @@ class CLI_Commands {
 	}
 
 	/**
+	 * Report or insert missing RSVP metadata.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <action>
+	 * : Must be 'backfill'.
+	 *
+	 * [--dry-run]
+	 * : Print candidate plans without writing.
+	 *
+	 * [--ids=<csv>]
+	 * : Comma-separated candidate post IDs for a write run.
+	 *
+	 * @subcommand rsvp-meta
+	 *
+	 * @param array $args       Positional arguments; expects 'backfill'.
+	 * @param array $assoc_args Associative arguments (dry-run and ids).
+	 * @return void
+	 */
+	public function rsvp_meta( array $args, array $assoc_args ): void {
+		if ( 'backfill' !== ( $args[0] ?? '' ) ) {
+			WP_CLI::error( 'Usage: wp postkind rsvp-meta backfill [--dry-run] [--ids=<ids>]' );
+		}
+		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$ids     = null;
+		if ( array_key_exists( 'ids', $assoc_args ) ) {
+			$ids = array_values( array_unique( array_filter( array_map( 'intval', explode( ',', (string) $assoc_args['ids'] ) ), static fn( int $id ): bool => $id > 0 ) ) );
+		}
+		$result = Operations::backfill_rsvp_meta( $dry_run, $ids );
+		if ( is_wp_error( $result ) ) {
+			WP_CLI::error( $result->get_error_message() );
+		}
+		WP_CLI::log( (string) wp_json_encode( $result ) );
+	}
+
+	/**
 	 * Set featured images from kind artwork for existing posts.
 	 *
 	 * New saves handle this automatically; this backfills posts created

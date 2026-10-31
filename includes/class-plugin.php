@@ -682,6 +682,9 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Quote_Archive' ) ) {
 			( new Quote_Archive() )->register();
 		}
+		if ( class_exists( __NAMESPACE__ . '\\Rsvp_Archive' ) ) {
+			( new Rsvp_Archive() )->register();
+		}
 	}
 
 	/**
@@ -1484,6 +1487,11 @@ final class Plugin {
 			'taxonomy-kind-quote'          => [
 				'title'       => __( 'Quote Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Quote archive as a commonplace book: quotes by author, with a source-work index.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-rsvp'           => [
+				'title'       => __( 'RSVP Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'RSVP archive in two groups: upcoming events soonest first, then past events latest first.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 		];

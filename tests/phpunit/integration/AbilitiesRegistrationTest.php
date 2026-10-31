@@ -84,10 +84,10 @@ final class AbilitiesRegistrationTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * The declared set is 13 core+lookup abilities, 8 operations and reads, the quote index, and 1 collection read.
+	 * The declared set includes the RSVP read and private backfill.
 	 */
 	public function test_declared_ability_count(): void {
-		$this->assertCount( 23, Abilities_Manager::get_ability_names() );
+		$this->assertCount( 25, Abilities_Manager::get_ability_names() );
 	}
 
 	public function test_quote_index_ability_has_the_public_aggregate_schema(): void {
