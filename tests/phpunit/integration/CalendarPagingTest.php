@@ -156,7 +156,7 @@ final class CalendarPagingTest extends WP_UnitTestCase {
 	 * @param string $entry An entry block for the Post Template.
 	 */
 	private function loop( string $extra = '', string $entry = '' ): string {
-		return '<!-- wp:query {"queryId":3,"query":{"inherit":true}} --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-title />' . $entry . '<!-- /wp:post-template --></div><!-- /wp:query -->' . $extra;
+		return '<!-- wp:query {"queryId":3,"query":{"inherit":true}} --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-title /-->' . $entry . '<!-- /wp:post-template --></div><!-- /wp:query -->' . $extra;
 	}
 
 	/**
