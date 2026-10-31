@@ -22,11 +22,15 @@ final class RsvpTimingSourceTest extends WP_UnitTestCase {
 		( new Taxonomy() )->create_default_terms();
 		( new Rsvp_Archive() )->register();
 		update_option( 'timezone_string', 'America/New_York' );
+		$this->set_permalink_structure( '/%postname%/' );
+		get_taxonomy( Taxonomy::TAXONOMY )->add_rewrite_rules();
+		flush_rewrite_rules( false );
 		add_filter( 'pkiw_rsvp_now', [ $this, 'fixed_now' ] );
 	}
 
 	public function tear_down(): void {
 		remove_filter( 'pkiw_rsvp_now', [ $this, 'fixed_now' ] );
+		$this->set_permalink_structure( '' );
 		parent::tear_down();
 	}
 
@@ -52,6 +56,35 @@ final class RsvpTimingSourceTest extends WP_UnitTestCase {
 		return (int) $id;
 	}
 
+	/**
+	 * Render the resolved RSVP archive with entry-attribute overrides.
+	 *
+	 * @param array<string, mixed> $attributes Entry attributes.
+	 */
+	private function archive( array $attributes ): string {
+		$marker      = '<!-- wp:post-kinds-indieweb/rsvp-entry {"linesPerPage":9} /-->';
+		$replacement = '<!-- wp:post-kinds-indieweb/rsvp-entry ' . wp_json_encode( array_merge( [ 'linesPerPage' => 9 ], $attributes ) ) . ' /-->';
+		$swap        = static function ( array $templates ) use ( $marker, $replacement ): array {
+			foreach ( $templates as $template ) {
+				if ( 'taxonomy-kind-rsvp' === $template->slug ) {
+					$template->content = str_replace( $marker, $replacement, (string) $template->content );
+				}
+			}
+			return $templates;
+		};
+		add_filter( 'get_block_templates', $swap );
+		$this->go_to( (string) get_term_link( 'rsvp', Taxonomy::TAXONOMY ) );
+		$template = resolve_block_template( 'taxonomy', [ 'taxonomy-kind-rsvp.php', 'taxonomy-kind.php', 'taxonomy.php', 'archive.php', 'index.php' ], '' );
+		remove_filter( 'get_block_templates', $swap );
+		$this->assertNotNull( $template );
+
+		global $_wp_current_template_id, $_wp_current_template_content;
+		$_wp_current_template_id      = $template->id;
+		$_wp_current_template_content = $template->content;
+
+		return get_the_block_template_html();
+	}
+
 	public function test_sort_value_handles_instants_days_and_malformed_times(): void {
 		$this->assertSame( '2026-10-08 22:00:00', Rsvp_Archive::sort_value( '2026-10-08T18:00' ) );
 		$this->assertSame( '2026-10-09 03:59:59', Rsvp_Archive::sort_value( '2026-10-08' ) );
@@ -60,26 +93,36 @@ final class RsvpTimingSourceTest extends WP_UnitTestCase {
 	}
 
 	public function test_sql_and_php_group_rules_agree_at_the_boundary_and_for_protected_posts(): void {
-		$past      = $this->rsvp( '2026-10-08T17:59', '2026-10-01 10:00:00' );
-		$boundary  = $this->rsvp( '2026-10-08T18:00', '2026-10-02 10:00:00' );
-		$future    = $this->rsvp( '2026-10-08T18:01', '2026-10-03 10:00:00' );
+		global $wpdb;
+
+		$source = new Rsvp_Timing_Source();
+		$sql    = $source->sql( new WP_Query() );
+		$ids    = [];
+		$now    = new DateTimeImmutable( '2026-10-08 22:00:00', new DateTimeZone( 'UTC' ) );
+		foreach ( range( 0, 19 ) as $index ) {
+			$offset = -60 + ( $index * 6 );
+			$start  = $now->modify( sprintf( '%+d seconds', $offset ) )->format( 'Y-m-d\TH:i:s\Z' );
+			$ids[]  = $this->rsvp( $start, sprintf( '2026-10-%02d 10:00:00', 1 + $index ) );
+		}
+		$placeholders = implode( ', ', array_fill( 0, count( $ids ), '%d' ) );
+		$rows         = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Contract probe of the source's real SQL expression.
+			$wpdb->prepare(
+				"SELECT ID, {$sql['value']} AS rsvp_group FROM {$wpdb->posts} WHERE ID IN ({$placeholders}) ORDER BY ID ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The source expression and core table are trusted; IDs are prepared.
+				...$ids
+			)
+		);
+		$this->assertCount( 20, $rows );
+		foreach ( $rows as $row ) {
+			$this->assertSame( $source->group_of( get_post( (int) $row->ID ) )->key(), $row->rsvp_group, 'SQL/PHP group mismatch for RSVP ' . $row->ID );
+		}
+
 		$date_only = $this->rsvp( '2026-10-08', '2026-10-04 10:00:00' );
 		$no_start  = $this->rsvp( '', '2026-10-05 10:00:00' );
 		$protected = $this->rsvp( '2026-10-09T18:00', '2026-09-01 10:00:00', 'pass' );
 
-		$source = new Rsvp_Timing_Source();
-		$this->assertSame( 'past', $source->group_of( get_post( $past ) )->key() );
-		$this->assertSame( 'upcoming', $source->group_of( get_post( $boundary ) )->key() );
-		$this->assertSame( 'upcoming', $source->group_of( get_post( $future ) )->key() );
 		$this->assertSame( 'upcoming', $source->group_of( get_post( $date_only ) )->key() );
 		$this->assertSame( 'past', $source->group_of( get_post( $no_start ) )->key() );
 		$this->assertSame( 'past', $source->group_of( get_post( $protected ) )->key() );
-
-		$query = new WP_Query();
-		$sql   = $source->sql( $query );
-		$this->assertStringContainsString( "THEN 'upcoming' ELSE 'past'", $sql['value'] );
-		$this->assertStringContainsString( 'ASC', $sql['within'][0] );
-		$this->assertStringContainsString( 'post_date_gmt', $sql['within'][1] );
 	}
 
 	public function test_grouped_query_orders_upcoming_ascending_then_past_descending_at_nine_per_page(): void {
@@ -136,14 +179,15 @@ final class RsvpTimingSourceTest extends WP_UnitTestCase {
 	}
 
 	public function test_labels_and_descending_section_order_use_the_engine_contract(): void {
-		$source = new Rsvp_Timing_Source();
-		$group  = $source->group_of( get_post( $this->rsvp( '2026-10-09T18:00', '2026-10-01 10:00:00' ) ) );
-		$this->assertSame( 'Upcoming', $source->label( $group, [] ) );
+		$this->rsvp( '2026-10-09T18:00', '2026-10-01 10:00:00' );
+		$this->rsvp( '2026-10-07T18:00', '2026-10-02 10:00:00' );
 
-		$query = new WP_Query();
-		$query->set( 'pkiw_group_source', Rsvp_Archive::SOURCE );
-		$query->set( 'pkiw_group_order', 'DESC' );
-		$orderby = Grouped_Archive::group_orderby( '', $query );
-		$this->assertStringContainsString( ' DESC', $orderby );
+		$html       = $this->archive( [ 'groupLabels' => [ 'upcoming' => 'Coming up' ], 'sectionOrder' => 'desc' ] );
+		$past       = strpos( $html, '>Past</h2>' );
+		$coming_up  = strpos( $html, '>Coming up</h2>' );
+		$this->assertNotFalse( $past );
+		$this->assertNotFalse( $coming_up );
+		$this->assertTrue( $past < $coming_up, 'sectionOrder desc must render Past before Coming up.' );
+		$this->assertStringNotContainsString( '>Upcoming</h2>', $html, 'groupLabels must replace the source label.' );
 	}
 }

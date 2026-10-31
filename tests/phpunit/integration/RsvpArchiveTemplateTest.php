@@ -7,10 +7,40 @@
 
 declare(strict_types=1);
 
+use PKIW\Rsvp_Archive;
+use PKIW\Taxonomy;
+
 /**
  * @group integration
  */
 final class RsvpArchiveTemplateTest extends WP_UnitTestCase {
+
+	public function set_up(): void {
+		parent::set_up();
+		( new Taxonomy() )->create_default_terms();
+		( new Rsvp_Archive() )->register();
+		$this->set_permalink_structure( '/%postname%/' );
+		get_taxonomy( Taxonomy::TAXONOMY )->add_rewrite_rules();
+		flush_rewrite_rules( false );
+	}
+
+	public function tear_down(): void {
+		$this->set_permalink_structure( '' );
+		parent::tear_down();
+	}
+
+	private function render_archive(): string {
+		$this->go_to( (string) get_term_link( 'rsvp', Taxonomy::TAXONOMY ) );
+		$template = resolve_block_template( 'taxonomy', [ 'taxonomy-kind-rsvp.php', 'taxonomy-kind.php', 'taxonomy.php', 'archive.php', 'index.php' ], '' );
+		$this->assertNotNull( $template );
+		$this->assertSame( 'post-kinds-for-indieweb//taxonomy-kind-rsvp', $template->id );
+
+		global $_wp_current_template_id, $_wp_current_template_content;
+		$_wp_current_template_id      = $template->id;
+		$_wp_current_template_content = $template->content;
+
+		return get_the_block_template_html();
+	}
 
 	public function test_template_is_offered_with_the_frozen_title_and_description(): void {
 		$file = PKIW_PATH . 'templates/taxonomy-kind-rsvp.html';
@@ -31,5 +61,14 @@ final class RsvpArchiveTemplateTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '<!-- wp:query-pagination ', $content );
 		$this->assertStringContainsString( '<!-- wp:query-no-results -->', $content );
 		$this->assertStringContainsString( 'Nothing here yet.', $content );
+	}
+
+	public function test_rendered_archive_with_no_rsvps_prints_header_and_no_results(): void {
+		$html = $this->render_archive();
+
+		$this->assertStringContainsString( '<h1', $html );
+		$this->assertStringContainsString( 'RSVP', $html );
+		$this->assertStringContainsString( 'Nothing here yet.', $html );
+		$this->assertStringNotContainsString( 'pkiw-rsvp-entry', $html );
 	}
 }

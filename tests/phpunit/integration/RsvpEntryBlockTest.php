@@ -24,11 +24,15 @@ final class RsvpEntryBlockTest extends WP_UnitTestCase {
 		( new Rsvp_Archive() )->register();
 		$this->author_id = self::factory()->user->create( [ 'display_name' => 'RSVP Author' ] );
 		update_option( 'timezone_string', 'America/New_York' );
+		$this->set_permalink_structure( '/%postname%/' );
+		get_taxonomy( Taxonomy::TAXONOMY )->add_rewrite_rules();
+		flush_rewrite_rules( false );
 		add_filter( 'pkiw_rsvp_now', [ $this, 'fixed_now' ] );
 	}
 
 	public function tear_down(): void {
 		remove_filter( 'pkiw_rsvp_now', [ $this, 'fixed_now' ] );
+		$this->set_permalink_structure( '' );
 		parent::tear_down();
 	}
 
@@ -61,6 +65,19 @@ final class RsvpEntryBlockTest extends WP_UnitTestCase {
 		libxml_clear_errors();
 
 		return new DOMXPath( $dom );
+	}
+
+	private function archive_page( int $page ): string {
+		$url = (string) get_term_link( 'rsvp', Taxonomy::TAXONOMY );
+		$this->go_to( $page > 1 ? trailingslashit( $url ) . 'page/' . $page . '/' : $url );
+		$template = resolve_block_template( 'taxonomy', [ 'taxonomy-kind-rsvp.php', 'taxonomy-kind.php', 'taxonomy.php', 'archive.php', 'index.php' ], '' );
+		$this->assertNotNull( $template );
+
+		global $_wp_current_template_id, $_wp_current_template_content;
+		$_wp_current_template_id      = $template->id;
+		$_wp_current_template_content = $template->content;
+
+		return get_the_block_template_html();
 	}
 
 	public function test_block_registers_with_the_frozen_schema_assets_and_example(): void {
@@ -164,12 +181,39 @@ final class RsvpEntryBlockTest extends WP_UnitTestCase {
 		}
 	}
 
-	public function test_card_render_uses_the_shared_labels_without_changing_output(): void {
-		foreach ( [ 'yes' => 'Going', 'no' => 'Not Going', 'maybe' => 'Maybe', 'interested' => 'Interested', 'remote' => 'Attending Remotely' ] as $status => $label ) {
+	public function test_card_render_uses_the_shared_labels_with_byte_identical_surrounding_output(): void {
+		$legacy_labels = [
+			'yes'        => 'Going',
+			'no'         => 'Not Going',
+			'maybe'      => 'Maybe',
+			'interested' => 'Interested',
+			'remote'     => 'Attending Remotely',
+		];
+		$this->assertSame( $legacy_labels, \PKIW\rsvp_status_labels(), 'The shared map must equal the 94b66f5 renderer labels.' );
+
+		$outputs = [];
+		foreach ( $legacy_labels as $status => $label ) {
 			$id      = $this->rsvp( [ 'eventName' => 'Card event', 'rsvpStatus' => $status ] );
-			$content = do_blocks( get_post_field( 'post_content', $id ) );
-			$this->assertStringContainsString( 'value="' . $status . '">' . $label . '</data>', $content );
+			$outputs[ $status ] = do_blocks( get_post_field( 'post_content', $id ) );
+			$this->assertSame( 1, substr_count( $outputs[ $status ], 'value="' . $status . '">' . $label . '</data>' ) );
 		}
+
+		foreach ( $legacy_labels as $status => $label ) {
+			$expected = str_replace( 'value="yes">Going</data>', 'value="' . $status . '">' . $label . '</data>', $outputs['yes'] );
+			$this->assertSame( $expected, $outputs[ $status ], 'Only the frozen status bytes may differ from the baseline card.' );
+		}
+	}
+
+	public function test_a_group_spanning_two_pages_repeats_its_heading(): void {
+		foreach ( range( 1, 10 ) as $day ) {
+			$this->rsvp( [ 'eventName' => 'Past event ' . $day, 'eventUrl' => 'https://events.example/past-' . $day, 'eventStart' => sprintf( '2026-09-%02dT18:00', $day ) ] );
+		}
+
+		$page_one = $this->archive_page( 1 );
+		$page_two = $this->archive_page( 2 );
+		$this->assertSame( 1, substr_count( $page_one, 'id="pkiw-group-past"' ) );
+		$this->assertSame( 1, substr_count( $page_two, 'id="pkiw-group-past"' ) );
+		$this->assertStringContainsString( 'pkiw-rsvp-entry', $page_two, 'Page 2 must contain the remainder of the Past group.' );
 	}
 
 	public function test_readable_item_parses_as_one_location_free_h_entry(): void {

@@ -150,10 +150,9 @@ final class Operations {
 			return new \WP_Error( 'pkiw_ids_required', __( 'Refusing to write without an ids list. Run with dry_run first.', 'post-kinds-for-indieweb-in-block-themes' ) );
 		}
 
-		$written  = [];
-		$skipped  = [];
-		$rsvp_map = array_values( Card_Meta_Sync::RSVP_MAP )[0];
-		$ids      = array_values( array_unique( array_filter( array_map( 'intval', $ids ), static fn( int $id ): bool => $id > 0 ) ) );
+		$written = [];
+		$skipped = [];
+		$ids     = array_values( array_unique( array_filter( array_map( 'intval', $ids ), static fn( int $id ): bool => $id > 0 ) ) );
 		foreach ( $ids as $id ) {
 			$post = get_post( $id );
 			$raw  = $post instanceof \WP_Post ? Rsvp_Archive::raw( $id ) : [];
@@ -172,25 +171,26 @@ final class Operations {
 				];
 				continue;
 			}
-			$exists = false;
-			foreach ( $rsvp_map as $suffix ) {
-				if ( ! empty( $raw['has_card'] ) && metadata_exists( 'post', $id, Meta_Fields::PREFIX . $suffix ) ) {
-					$exists = true;
-					break;
+			usort( $plan, static fn( array $left, array $right ): int => ( self::sort_op( $right ) <=> self::sort_op( $left ) ) );
+			$gained_row       = false;
+			$every_op_present = true;
+			foreach ( $plan as $op ) {
+				if ( metadata_exists( 'post', $id, $op['key'] ) ) {
+					continue;
 				}
+				if ( false !== add_post_meta( $id, $op['key'], $op['value'], true ) ) {
+					$gained_row = true;
+					continue;
+				}
+				$every_op_present = metadata_exists( 'post', $id, $op['key'] ) && $every_op_present;
 			}
-			if ( $exists ) {
+			if ( $gained_row ) {
+				$written[] = $id;
+			} elseif ( $every_op_present ) {
 				$skipped[] = [
 					'id'     => $id,
 					'reason' => 'exists',
 				];
-			}
-			usort( $plan, static fn( array $left, array $right ): int => ( self::sort_op( $right ) <=> self::sort_op( $left ) ) );
-			foreach ( $plan as $op ) {
-				add_post_meta( $id, $op['key'], $op['value'], true );
-			}
-			if ( ! $exists ) {
-				$written[] = $id;
 			}
 		}
 

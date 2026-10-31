@@ -32,6 +32,7 @@ final class Rsvp_Archive {
 		Kind_Facts::register( self::KIND, [ self::class, 'facts' ], [ 'location' => 'name' ] );
 		add_filter( 'pkiw_archive_sections_groups', [ self::class, 'section_groups' ] );
 		add_filter( 'pkiw_kind_archive_preview_per_page', [ self::class, 'preview_per_page' ], 10, 2 );
+		add_filter( 'pkiw_stream_card_kind_render', [ self::class, 'stream_card' ], 10, 4 );
 		if ( did_action( 'init' ) ) {
 			self::register_blocks();
 		} else {
@@ -312,12 +313,18 @@ final class Rsvp_Archive {
 		}
 		$plan = [];
 		if ( $raw['has_card'] ) {
+			$block  = self::first_card( parse_blocks( (string) $post->post_content ) );
+			$attrs  = is_array( $block ) && is_array( $block['attrs'] ?? null ) ? $block['attrs'] : [];
+			$status = (string) ( $attrs['rsvpStatus'] ?? 'yes' );
+			if ( ! array_key_exists( $status, rsvp_status_labels() ) ) {
+				$status = '';
+			}
 			$values = [
-				'cite_name'   => (string) $raw['name'],
-				'cite_url'    => (string) $raw['url'],
-				'rsvp_status' => (string) $raw['status'],
-				'event_start' => self::accepted_wall_clock( (string) $raw['start'] ),
-				'event_end'   => self::accepted_wall_clock( (string) $raw['end'] ),
+				'cite_name'   => sanitize_text_field( (string) ( $attrs['eventName'] ?? '' ) ),
+				'cite_url'    => web_url( (string) ( $attrs['eventUrl'] ?? '' ) ),
+				'rsvp_status' => $status,
+				'event_start' => self::accepted_wall_clock( (string) ( $attrs['eventStart'] ?? '' ) ),
+				'event_end'   => self::accepted_wall_clock( (string) ( $attrs['eventEnd'] ?? '' ) ),
 			];
 			foreach ( $values as $suffix => $value ) {
 				$key = Meta_Fields::PREFIX . $suffix;
@@ -471,6 +478,47 @@ final class Rsvp_Archive {
 			$html .= '<data class="u-in-reply-to" value="' . esc_url( (string) $facts['url'] ) . '" hidden></data>';
 		}
 		return $html . '</article>';
+	}
+
+	/**
+	 * Render the theme-independent RSVP Stream fallback without a location.
+	 *
+	 * A theme may replace this through render_block_post-kinds-indieweb/stream-card.
+	 * Password-protected posts are handled before the kind-render filter runs.
+	 *
+	 * @param string|null          $html          Existing kind card.
+	 * @param \WP_Post             $post          Stream post.
+	 * @param int                  $heading_level Heading level.
+	 * @param array<string, mixed> $attributes    Stream block attributes.
+	 * @return string|null
+	 */
+	public static function stream_card( ?string $html, \WP_Post $post, int $heading_level, array $attributes ): ?string { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		if ( null !== $html || self::KIND !== Kind_Facts::kind_of( $post ) ) {
+			return $html;
+		}
+		$facts = self::facts( $post->ID );
+		if ( [] === $facts ) {
+			return '';
+		}
+
+		$name_class = ! empty( $facts['name_is_title'] ) ? ' p-name' : '';
+		$out        = '<article class="pk-card pk-card--stream k-rsvp h-entry">';
+		$out       .= '<span class="pk-kindlabel">' . esc_html( get_kind_label( __( 'RSVP', 'post-kinds-for-indieweb-in-block-themes' ), self::KIND, 'stream-card' ) ) . '</span>';
+		$out       .= '<h' . $heading_level . ' class="pk-title' . $name_class . '"><a class="u-url" href="' . esc_url( (string) get_permalink( $post ) ) . '">' . esc_html( (string) $facts['name'] ) . '</a></h' . $heading_level . '>';
+		if ( '' !== $facts['start_day'] ) {
+			$out .= '<time class="pk-date" datetime="' . esc_attr( (string) $facts['start_day'] ) . '">' . esc_html( (string) $facts['day_display'] ) . '</time>';
+		}
+		if ( '' !== $facts['status'] ) {
+			$out .= '<data class="pk-chip p-rsvp" value="' . esc_attr( (string) $facts['status'] ) . '">' . esc_html( (string) $facts['status_label'] ) . '</data>';
+		}
+		$out   .= '<time class="dt-published" datetime="' . esc_attr( (string) $facts['date_iso'] ) . '" hidden></time>';
+		$props  = function_exists( __NAMESPACE__ . '\\entry_author_html' ) ? entry_author_html( $post ) : '';
+		$props .= '' !== $facts['url'] ? '<data class="u-in-reply-to" value="' . esc_url( (string) $facts['url'] ) . '"></data>' : '';
+		if ( '' !== $props ) {
+			$out .= '<span hidden>' . $props . '</span>';
+		}
+
+		return $out . '</article>';
 	}
 
 	/**

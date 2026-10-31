@@ -73,16 +73,39 @@ final class RsvpBackfillTest extends WP_UnitTestCase {
 
 	public function test_write_applies_only_candidates_and_reports_exists_and_not_candidate(): void {
 		$candidate = $this->post( [ 'eventName' => 'Write me', 'eventStart' => '2026-10-08T18:00' ] );
-		$exists    = $this->post( [ 'eventName' => 'Race' ] );
-		$plan      = Rsvp_Archive::backfill_plan( $exists );
+		$partial   = $this->post( [ 'eventName' => 'Race', 'eventUrl' => 'https://events.example/race' ] );
+		$exists    = $this->post( [ 'eventName' => 'Already won the race', 'eventUrl' => 'https://events.example/existing' ] );
+		$plan      = Rsvp_Archive::backfill_plan( $partial );
 		$outside   = self::factory()->post->create( [ 'post_status' => 'publish', 'post_content' => '<p>Not RSVP.</p>' ] );
+		$race      = null;
+		$race      = static function ( $check, int $object_id, string $meta_key, $meta_value, bool $unique ) use ( $exists, &$race ) {
+			if ( $exists !== $object_id ) {
+				return $check;
+			}
 
-		add_post_meta( $exists, $plan[0]['key'], 'Concurrent value', true );
-		$result = Operations::backfill_rsvp_meta( false, [ $candidate, $exists, $outside ] );
+			remove_filter( 'add_post_metadata', $race, 10 );
+			add_post_meta( $object_id, $meta_key, $meta_value, $unique );
+			add_filter( 'add_post_metadata', $race, 10, 5 );
 
-		$this->assertSame( [ $candidate ], $result['written'] );
+			return false;
+		};
+
+		add_post_meta( $partial, $plan[0]['key'], 'Concurrent value', true );
+		add_filter( 'add_post_metadata', $race, 10, 5 );
+		try {
+			$result = Operations::backfill_rsvp_meta( false, [ $candidate, $partial, $exists, $outside ] );
+		} finally {
+			remove_filter( 'add_post_metadata', $race, 10 );
+		}
+
+		$this->assertSame( [ $candidate, $partial ], $result['written'] );
+		$this->assertNotContains( [ 'id' => $partial, 'reason' => 'exists' ], $result['skipped'] );
 		$this->assertContains( [ 'id' => $exists, 'reason' => 'exists' ], $result['skipped'] );
 		$this->assertContains( [ 'id' => $outside, 'reason' => 'not_candidate' ], $result['skipped'] );
+		$this->assertSame( 'Concurrent value', get_post_meta( $partial, $plan[0]['key'], true ) );
+		foreach ( array_slice( $plan, 1 ) as $op ) {
+			$this->assertSame( $op['value'], get_post_meta( $partial, $op['key'], true ) );
+		}
 		$this->assertSame( [], Operations::backfill_rsvp_meta( true, null )['candidates'] );
 	}
 

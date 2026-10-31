@@ -14,7 +14,6 @@ use PKIW\Abilities_Manager;
 use PKIW\Kind_Facts;
 use PKIW\Operations;
 use PKIW\Rsvp_Archive;
-use PKIW\Taxonomy;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -121,17 +120,37 @@ final class Rsvp_Abilities {
 		if ( ! $post instanceof \WP_Post ) {
 			return new \WP_Error( 'invalid_post', __( 'RSVP post not found.', 'post-kinds-for-indieweb-in-block-themes' ), [ 'status' => 404 ] );
 		}
-		if ( ! has_term( Rsvp_Archive::KIND, Taxonomy::TAXONOMY, $post ) ) {
+		if ( Rsvp_Archive::KIND !== Kind_Facts::kind_of( $post ) ) {
 			return new \WP_Error( 'invalid_kind', __( 'The post is not an RSVP.', 'post-kinds-for-indieweb-in-block-themes' ), [ 'status' => 404 ] );
 		}
 		$facts = Kind_Facts::get( $post_id );
 		if ( [] === $facts ) {
 			return new \WP_Error( 'forbidden', __( 'The RSVP is not readable.', 'post-kinds-for-indieweb-in-block-themes' ), [ 'status' => 403 ] );
 		}
-		$keys = [ 'name', 'url', 'url_host', 'status', 'status_label', 'start_iso', 'start_day', 'day_display', 'time_display', 'end_iso', 'location', 'description', 'image', 'image_alt', 'group', 'name_is_title', 'all_day', 'has_card', 'image_local' ];
-		$out  = [ 'post_id' => $post_id ];
-		foreach ( $keys as $key ) {
-			$out[ $key ] = $facts[ $key ];
+		$defaults = [
+			'name'          => '',
+			'url'           => '',
+			'url_host'      => '',
+			'status'        => '',
+			'status_label'  => '',
+			'start_iso'     => '',
+			'start_day'     => '',
+			'day_display'   => '',
+			'time_display'  => '',
+			'end_iso'       => '',
+			'location'      => '',
+			'description'   => '',
+			'image'         => '',
+			'image_alt'     => '',
+			'group'         => 'past',
+			'name_is_title' => false,
+			'all_day'       => false,
+			'has_card'      => false,
+			'image_local'   => false,
+		];
+		$out      = [ 'post_id' => $post_id ];
+		foreach ( $defaults as $key => $default ) {
+			$out[ $key ] = $facts[ $key ] ?? $default;
 		}
 		return $out;
 	}

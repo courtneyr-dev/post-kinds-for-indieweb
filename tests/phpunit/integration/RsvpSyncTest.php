@@ -89,6 +89,9 @@ final class RsvpSyncTest extends WP_UnitTestCase {
 	public function test_backfill_only_adds_absent_rows_and_is_idempotent(): void {
 		$content = $this->card( [ 'eventName' => 'New name', 'eventUrl' => 'https://events.example/new', 'eventStart' => '2026-10-08T18:00' ] );
 		$id      = $this->post( $content );
+		foreach ( [ '_pkiw_cite_name', '_pkiw_cite_url', '_pkiw_rsvp_status', '_pkiw_event_start', '_pkiw_event_end', Rsvp_Archive::SORT_KEY ] as $key ) {
+			delete_post_meta( $id, $key );
+		}
 		update_post_meta( $id, '_pkiw_cite_name', 'Existing name' );
 
 		Card_Meta_Sync::sync_content( $id, $content, false );
@@ -98,6 +101,21 @@ final class RsvpSyncTest extends WP_UnitTestCase {
 		$this->assertSame( 'Existing name', get_post_meta( $id, '_pkiw_cite_name', true ) );
 		$this->assertSame( 'https://events.example/new', get_post_meta( $id, '_pkiw_cite_url', true ) );
 		$this->assertSame( $first, get_post_meta( $id ) );
+	}
+
+	public function test_backfill_never_copies_a_meta_box_name_when_the_card_name_is_empty(): void {
+		$content = $this->card( [ 'eventName' => '', 'eventUrl' => 'https://events.example/card-only' ] );
+		$id      = $this->post( $content );
+		delete_post_meta( $id, '_pkiw_cite_name' );
+		delete_post_meta( $id, '_pkiw_cite_url' );
+		delete_post_meta( $id, '_pkiw_rsvp_status' );
+		update_post_meta( $id, '_pkiw_event_name', 'Meta-box fallback' );
+
+		Card_Meta_Sync::sync_content( $id, $content, false );
+
+		$this->assertFalse( metadata_exists( 'post', $id, '_pkiw_cite_name' ) );
+		$this->assertSame( 'Meta-box fallback', get_post_meta( $id, '_pkiw_event_name', true ) );
+		$this->assertSame( 'https://events.example/card-only', get_post_meta( $id, '_pkiw_cite_url', true ) );
 	}
 
 	public function test_sort_follows_start_kind_changes_and_cardless_meta_writes(): void {

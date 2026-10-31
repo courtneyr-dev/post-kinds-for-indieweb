@@ -96,6 +96,38 @@ final class RsvpAbilitiesTest extends WP_UnitTestCase {
 		$this->assertSame( 403, $forbidden->get_error_data()['status'] ?? null );
 	}
 
+	public function test_read_rejects_a_multikind_post_whose_first_kind_is_not_rsvp(): void {
+		$id = $this->rsvp( [ 'eventName' => 'Wrong reader' ] );
+		wp_set_object_terms( $id, [ 'note', 'rsvp' ], Taxonomy::TAXONOMY );
+		$this->assertSame( 'note', \PKIW\Kind_Facts::kind_of( get_post( $id ) ) );
+
+		$result = Rsvp_Abilities::instance()->execute_get_rsvp_facts( [ 'post_id' => $id ] );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'invalid_kind', $result->get_error_code() );
+		$this->assertSame( 404, $result->get_error_data()['status'] ?? null );
+	}
+
+	public function test_read_defaults_every_output_key_when_a_facts_filter_drops_keys(): void {
+		$id     = $this->rsvp( [ 'eventName' => 'Filtered facts' ] );
+		$filter = static fn( array $facts ): array => [ 'name' => $facts['name'] ];
+		add_filter( 'pkiw_kind_facts', $filter );
+		try {
+			$result = Rsvp_Abilities::instance()->execute_get_rsvp_facts( [ 'post_id' => $id ] );
+		} finally {
+			remove_filter( 'pkiw_kind_facts', $filter );
+		}
+
+		$this->assertIsArray( $result );
+		$this->assertSame( 'Filtered facts', $result['name'] );
+		$this->assertSame( '', $result['url'] );
+		$this->assertSame( 'past', $result['group'] );
+		$this->assertFalse( $result['name_is_title'] );
+		$this->assertFalse( $result['all_day'] );
+		$this->assertFalse( $result['has_card'] );
+		$this->assertFalse( $result['image_local'] );
+	}
+
 	public function test_write_requires_manage_options(): void {
 		if ( ! function_exists( 'wp_get_ability' ) ) {
 			$this->markTestSkipped( 'Abilities API unavailable.' );
