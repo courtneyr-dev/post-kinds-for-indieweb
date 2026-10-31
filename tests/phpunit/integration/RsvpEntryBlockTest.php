@@ -17,9 +17,12 @@ use PKIW\Taxonomy;
 final class RsvpEntryBlockTest extends WP_UnitTestCase {
 
 	private int $author_id;
+	private string $original_stylesheet = '';
 
 	public function set_up(): void {
 		parent::set_up();
+		$this->original_stylesheet = get_stylesheet();
+		switch_theme( 'twentytwentyfive' );
 		( new Taxonomy() )->create_default_terms();
 		( new Rsvp_Archive() )->register();
 		$this->author_id = self::factory()->user->create( [ 'display_name' => 'RSVP Author' ] );
@@ -33,6 +36,7 @@ final class RsvpEntryBlockTest extends WP_UnitTestCase {
 	public function tear_down(): void {
 		remove_filter( 'pkiw_rsvp_now', [ $this, 'fixed_now' ] );
 		$this->set_permalink_structure( '' );
+		switch_theme( $this->original_stylesheet );
 		parent::tear_down();
 	}
 

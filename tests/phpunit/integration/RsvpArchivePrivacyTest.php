@@ -159,10 +159,22 @@ final class RsvpArchivePrivacyTest extends WP_UnitTestCase {
 		$this->assertInstanceOf( WP_Term::class, $term );
 		$this->go_to( get_term_feed_link( $term->term_id, Taxonomy::TAXONOMY ) );
 		$this->assertTrue( is_feed(), 'The RSVP kind feed context did not take.' );
-		while ( have_posts() ) {
-			the_post();
-			if ( get_the_ID() === $post_id ) {
-				return get_the_content_feed( 'rss2' );
+		ob_start();
+		try {
+			@require ABSPATH . WPINC . '/feed-rss2.php'; // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Core's test template emits headers.
+		} finally {
+			$feed = (string) ob_get_clean();
+		}
+
+		$document = new DOMDocument();
+		$this->assertTrue( $document->loadXML( $feed ), 'The RSVP kind feed must be valid XML.' );
+		$permalink = (string) get_permalink( $post_id );
+		foreach ( $document->getElementsByTagName( 'item' ) as $item ) {
+			$link = $item->getElementsByTagName( 'link' )->item( 0 );
+			if ( $link instanceof DOMElement && $permalink === trim( $link->textContent ) ) {
+				$xml = $document->saveXML( $item );
+				$this->assertIsString( $xml );
+				return $xml;
 			}
 		}
 		$this->fail( sprintf( 'RSVP %d never appeared in the kind feed.', $post_id ) );
@@ -181,6 +193,17 @@ final class RsvpArchivePrivacyTest extends WP_UnitTestCase {
 
 	private function assert_readable_markup( string $html, string $surface ): void {
 		$this->assertStringNotContainsString( self::LOCATION, $html, $surface . ' leaked the location.' );
+		$this->assertStringContainsString( self::EVENT, $html, $surface . ' did not render the RSVP.' );
+		$this->assertStringContainsString( 'u-in-reply-to', $html, $surface . ' lacks the presence-control property.' );
+	}
+
+	private function assert_feed_markup( string $html, string $surface, int $post_id, int $cardless_id ): void {
+		$this->assertStringNotContainsString( self::LOCATION, $html, $surface . ' leaked the location.' );
+		if ( $cardless_id === $post_id ) {
+			$this->assertStringContainsString( get_the_title( $post_id ), $html, $surface . ' did not render the RSVP title.' );
+			$this->assertStringContainsString( (string) get_permalink( $post_id ), $html, $surface . ' did not render the RSVP permalink.' );
+			return;
+		}
 		$this->assertStringContainsString( self::EVENT, $html, $surface . ' did not render the RSVP.' );
 		$this->assertStringContainsString( 'u-in-reply-to', $html, $surface . ' lacks the presence-control property.' );
 	}
@@ -214,7 +237,7 @@ final class RsvpArchivePrivacyTest extends WP_UnitTestCase {
 					$this->assertArrayHasKey( 'event_location', $meta['meta'] );
 					$this->assertSame( '', $meta['meta']['event_location'], $reader . ' card-less location redaction.' );
 				}
-				$this->assert_readable_markup( $this->kind_feed_entry( $post_id ), $reader . ' kind feed ' . $post_id );
+				$this->assert_feed_markup( $this->kind_feed_entry( $post_id ), $reader . ' kind feed ' . $post_id, $post_id, $fixtures['cardless'] );
 				$this->assert_readable_markup( $this->hidden_mf2( $post_id ), $reader . ' hidden mf2 ' . $post_id );
 			}
 			$this->assertStringNotContainsString( self::LOCATION, (string) wp_json_encode( Operations::backfill_rsvp_meta( true, null ) ), $reader . ' backfill dry run.' );
@@ -307,5 +330,16 @@ final class RsvpArchivePrivacyTest extends WP_UnitTestCase {
 			$this->assertStringNotContainsString( self::LOCATION, (string) wp_json_encode( $meta ) );
 		}
 		$this->assertStringNotContainsString( self::LOCATION, (string) wp_json_encode( Operations::backfill_rsvp_meta( true, null ) ) );
+	}
+
+	public function test_untitled_cardless_stream_card_has_an_accessible_name(): void {
+		$id = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => '', 'post_content' => '<p>Quick RSVP.</p>' ] );
+		wp_set_object_terms( $id, 'rsvp', Taxonomy::TAXONOMY );
+
+		$html = $this->stream_html( (int) $id );
+
+		$this->assertDoesNotMatchRegularExpression( '#<a class="u-url"[^>]*>\s*</a>#', $html, 'The Stream heading link is never empty.' );
+		$this->assertStringContainsString( '>' . esc_html( \PKIW\untitled_name( get_post( $id ), false ) ) . '</a>', $html );
+		$this->assertStringNotContainsString( 'pk-title p-name', $html, 'An untitled post has no p-name heading.' );
 	}
 }

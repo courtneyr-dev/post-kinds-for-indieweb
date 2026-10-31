@@ -501,10 +501,13 @@ final class Rsvp_Archive {
 			return '';
 		}
 
-		$name_class = ! empty( $facts['name_is_title'] ) ? ' p-name' : '';
+		// An untitled post with no card event name gets the archive entry's accessible fallback (kind label and date), not an empty link.
+		$name       = trim( (string) $facts['name'] );
+		$name_class = '' !== $name && ! empty( $facts['name_is_title'] ) ? ' p-name' : '';
+		$name       = '' !== $name ? $name : untitled_name( $post, false );
 		$out        = '<article class="pk-card pk-card--stream k-rsvp h-entry">';
 		$out       .= '<span class="pk-kindlabel">' . esc_html( get_kind_label( __( 'RSVP', 'post-kinds-for-indieweb-in-block-themes' ), self::KIND, 'stream-card' ) ) . '</span>';
-		$out       .= '<h' . $heading_level . ' class="pk-title' . $name_class . '"><a class="u-url" href="' . esc_url( (string) get_permalink( $post ) ) . '">' . esc_html( (string) $facts['name'] ) . '</a></h' . $heading_level . '>';
+		$out       .= '<h' . $heading_level . ' class="pk-title' . $name_class . '"><a class="u-url" href="' . esc_url( (string) get_permalink( $post ) ) . '">' . esc_html( $name ) . '</a></h' . $heading_level . '>';
 		if ( '' !== $facts['start_day'] ) {
 			$out .= '<time class="pk-date" datetime="' . esc_attr( (string) $facts['start_day'] ) . '">' . esc_html( (string) $facts['day_display'] ) . '</time>';
 		}

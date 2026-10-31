@@ -16,9 +16,12 @@ use PKIW\Taxonomy;
  * @group integration
  */
 final class RsvpTimingSourceTest extends WP_UnitTestCase {
+	private string $original_stylesheet = '';
 
 	public function set_up(): void {
 		parent::set_up();
+		$this->original_stylesheet = get_stylesheet();
+		switch_theme( 'twentytwentyfive' );
 		( new Taxonomy() )->create_default_terms();
 		( new Rsvp_Archive() )->register();
 		update_option( 'timezone_string', 'America/New_York' );
@@ -31,6 +34,7 @@ final class RsvpTimingSourceTest extends WP_UnitTestCase {
 	public function tear_down(): void {
 		remove_filter( 'pkiw_rsvp_now', [ $this, 'fixed_now' ] );
 		$this->set_permalink_structure( '' );
+		switch_theme( $this->original_stylesheet );
 		parent::tear_down();
 	}
 
