@@ -1062,6 +1062,18 @@ class Meta_Fields {
 				'sanitize'    => 'absint',
 				'default'     => 0,
 			],
+			'trip_stops'                     => [
+				'type'        => 'string',
+				'description' => __( 'Canonical JSON list of trip stops.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => [ '\\PKIW\\Travel', 'sanitize_stops' ],
+				'default'     => '',
+			],
+			'itinerary_legs'                 => [
+				'type'        => 'string',
+				'description' => __( 'Canonical JSON list of itinerary legs.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => [ '\\PKIW\\Travel', 'sanitize_legs' ],
+				'default'     => '',
+			],
 
 			// Syndication Opt-Out Fields.
 			'syndicate_lastfm'               => [
@@ -1853,6 +1865,14 @@ class Meta_Fields {
 	 * @return array<string, mixed> $meta with hidden fields zeroed (numeric) or blanked (string).
 	 */
 	public static function redact_location_array( array $meta, int $post_id ): array {
+		if ( ! self::can_see_full_location( $post_id ) ) {
+			foreach ( [ Travel::STOPS_KEY, Travel::LEGS_KEY ] as $key ) {
+				if ( array_key_exists( $key, $meta ) ) {
+					$meta[ $key ] = Travel::public_json( $post_id, $key );
+				}
+			}
+		}
+
 		$visible = self::get_visible_location_fields( $post_id );
 
 		// An RSVP's event location goes only to its editors unless it's public (issue 251).

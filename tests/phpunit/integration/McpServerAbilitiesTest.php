@@ -67,6 +67,8 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 			'post-kinds/get-kind',
 			'post-kinds/get-post-meta',
 			'post-kinds/get-quote-index',
+			'post-kinds/get-trip-facts',
+			'post-kinds/get-itinerary-facts',
 			'post-kinds/get-rsvp-facts',
 			'post-kinds/list-presentation-event-types',
 			'post-kinds/get-collection-items',
@@ -206,7 +208,7 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 		sort( $expected );
 		sort( $public );
 		$this->assertSame( $expected, $public );
-		$this->assertCount( 18, $public, 'P251 plus P262 expose 18 public reads on this branch.' );
-		$this->assertCount( 9, array_diff( Abilities_Manager::get_ability_names(), $public ), 'P251 plus P262 keep 9 writes private on this branch.' );
+		$this->assertCount( 20, $public, 'P244A adds two public travel reads to the P251 plus P262 total.' );
+		$this->assertCount( 9, array_diff( Abilities_Manager::get_ability_names(), $public ), 'P244A adds no write ability.' );
 	}
 }
