@@ -285,8 +285,8 @@ final class FoursquareImportTest extends ApiTestCase {
 
 		$post = $this->sync_post();
 
-		$this->assertSame( '', get_post_meta( $post->ID, '_pkiw_geo_latitude', true ) );
-		$this->assertSame( '', get_post_meta( $post->ID, '_pkiw_geo_longitude', true ) );
+		$this->assertFalse( metadata_exists( 'post', $post->ID, '_pkiw_geo_latitude' ) );
+		$this->assertFalse( metadata_exists( 'post', $post->ID, '_pkiw_geo_longitude' ) );
 	}
 
 	/**
