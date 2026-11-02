@@ -682,6 +682,12 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Quote_Archive' ) ) {
 			( new Quote_Archive() )->register();
 		}
+		if ( class_exists( __NAMESPACE__ . '\\Travel' ) ) {
+			( new Travel() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Travel_Location' ) ) {
+			( new Travel_Location() )->register();
+		}
 		if ( class_exists( __NAMESPACE__ . '\\Presentation' ) ) {
 			( new Presentation() )->register();
 		}

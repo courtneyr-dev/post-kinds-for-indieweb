@@ -54,6 +54,7 @@ final class StreamCardGoldenTest extends WP_UnitTestCase {
 		'block:event|card'               => 'aba562b4d317b335e7d67f9c8df0265442e9c794',
 		'block:exercise|card'            => '29913fd6883b345e57c0aaeefd345a9d429d1ce2',
 		'block:favorite|card'            => 'fd4dc9233d18eb80b8bb15cea09cfec64a77e5cc',
+		'block:itinerary|card'           => 'da39a3ee5e6b4b0d3255bfef95601890afd80709',
 		// Recorded from the W5-P235 head: this row changes on purpose.
 		'block:jam|card'                 => '9c1e62d034ef3fcf1e1e620219723d87d9cfa204',
 		'block:like|card'                => 'f7df746df2a5e3cf54977c55efc36ff7aebd6e6f',
@@ -66,6 +67,7 @@ final class StreamCardGoldenTest extends WP_UnitTestCase {
 		// Recorded from the W7-P251 head: the RSVP now draws its location-free Stream fallback.
 		'block:rsvp|card'                => 'bc845ef364f74eb3d9d9471858a5171007951fc1',
 		'block:sleep|card'               => 'c2e897e48c0afa125cfc331fde3e9fb44c0b1c8d',
+		'block:trip|card'                => 'da39a3ee5e6b4b0d3255bfef95601890afd80709',
 		'block:watch|card'               => '6dddfa9574216931da0d40d39f329ed722609bb3',
 		// Recorded from the W5-T238 fidelity fix: this row changes on purpose (Stream chips replace the price chip; the View item link gains an aria-hidden external-link icon).
 		'block:wish|card'                => 'cb7da01d6f0660daeaa44cbf67cb7e185271ccf9',
@@ -241,7 +243,22 @@ final class StreamCardGoldenTest extends WP_UnitTestCase {
 		$aliases = [ 'comic' => 'comics' ];
 		$blocks  = array_keys( WP_Block_Type_Registry::get_instance()->get_all_registered() );
 		sort( $blocks );
+		// Blocks added after the hashes were recorded take IDs after the singles, so every recorded row keeps its fixed ID.
+		$later = [ 'post-kinds-indieweb/itinerary-card', 'post-kinds-indieweb/trip-card' ];
+		$blocks = array_merge( array_values( array_diff( $blocks, $later ) ), [ '#singles' ], array_values( array_intersect( $later, $blocks ) ) );
 		foreach ( $blocks as $name ) {
+			if ( '#singles' === $name ) {
+				foreach ( [ 'review', 'article', 'audio' ] as $kind ) {
+					$post_id                    = $this->fixture(
+						$next_id++,
+						$kind,
+						'Golden single ' . $kind,
+						'<!-- wp:paragraph --><p>Single body for the ' . $kind . ' fixture.</p><!-- /wp:paragraph -->'
+					);
+					$rows[ 'single:' . $kind ] = sha1( $this->single( $post_id ) );
+				}
+				continue;
+			}
 			if ( 1 !== preg_match( '#^post-kinds-indieweb/([a-z-]+)-card$#', $name, $match ) || 'stream' === $match[1] ) {
 				continue;
 			}
@@ -256,16 +273,6 @@ final class StreamCardGoldenTest extends WP_UnitTestCase {
 				'<!-- wp:' . $name . ' {"title":"Golden item","url":"https://example.com/golden"} /-->'
 			);
 			$rows[ 'block:' . $match[1] . '|card' ] = sha1( $this->card( $post_id ) );
-		}
-
-		foreach ( [ 'review', 'article', 'audio' ] as $kind ) {
-			$post_id                    = $this->fixture(
-				$next_id++,
-				$kind,
-				'Golden single ' . $kind,
-				'<!-- wp:paragraph --><p>Single body for the ' . $kind . ' fixture.</p><!-- /wp:paragraph -->'
-			);
-			$rows[ 'single:' . $kind ] = sha1( $this->single( $post_id ) );
 		}
 
 		ksort( $rows );

@@ -37,6 +37,7 @@ use Atmosphere\Transformer\Document;
 use Atmosphere\Transformer\Post as Post_Record;
 use PKIW\Meta_Fields;
 use PKIW\Taxonomy;
+use PKIW\Travel;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -87,6 +88,8 @@ class Atmosphere_Document_Map {
 		'_pkiw_rsvp_location_privacy',
 		'_pkiw_geo_privacy',
 		'geo_public',
+		Travel::STOPS_KEY,
+		Travel::LEGS_KEY,
 		Meta_Fields::EXERCISE_PUBLIC_KEY,
 		Meta_Fields::SLEEP_PUBLIC_KEY,
 	];
