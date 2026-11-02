@@ -68,6 +68,7 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 			'post-kinds/get-post-meta',
 			'post-kinds/get-quote-index',
 			'post-kinds/get-rsvp-facts',
+			'post-kinds/list-presentation-event-types',
 			'post-kinds/get-collection-items',
 			'post-kinds/lookup-music',
 			'post-kinds/lookup-video',
@@ -98,6 +99,7 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 			'post-kinds/backfill-card-meta',
 			'post-kinds/backfill-listen-media-type',
 			'post-kinds/backfill-rsvp-meta',
+			'post-kinds/reclassify-presentations',
 			'post-kinds/backfill-featured-artwork',
 		];
 
@@ -204,5 +206,7 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 		sort( $expected );
 		sort( $public );
 		$this->assertSame( $expected, $public );
+		$this->assertCount( 18, $public, 'P251 plus P262 expose 18 public reads on this branch.' );
+		$this->assertCount( 9, array_diff( Abilities_Manager::get_ability_names(), $public ), 'P251 plus P262 keep 9 writes private on this branch.' );
 	}
 }
