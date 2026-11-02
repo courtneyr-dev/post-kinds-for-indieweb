@@ -73,61 +73,61 @@ class Meta_Fields {
 	private function define_fields(): void {
 		$this->fields = [
 			// Citation Fields (All Response Kinds).
-			'cite_name'               => [
+			'cite_name'                      => [
 				'type'        => 'string',
 				'description' => __( 'Title of the cited content.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'cite_url'                => [
+			'cite_url'                       => [
 				'type'        => 'string',
 				'description' => __( 'URL of the cited content.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'cite_author'             => [
+			'cite_author'                    => [
 				'type'        => 'string',
 				'description' => __( 'Author name of the cited content.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'cite_author_url'         => [
+			'cite_author_url'                => [
 				'type'        => 'string',
 				'description' => __( 'Author URL of the cited content.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'cite_photo'              => [
+			'cite_photo'                     => [
 				'type'        => 'string',
 				'description' => __( 'Featured image URL of the cited content.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'cite_summary'            => [
+			'cite_summary'                   => [
 				'type'        => 'string',
 				'description' => __( 'Summary or excerpt of the cited content.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_textarea_field',
 				'default'     => '',
 			],
-			'bookmark_embed_type'     => [
+			'bookmark_embed_type'            => [
 				'type'        => 'string',
 				'description' => __( 'Embed type for bookmarks: auto, oembed, bookmark-card, or none.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => 'auto',
 			],
-			'cite_published'          => [
+			'cite_published'                 => [
 				'type'        => 'string',
 				'description' => __( 'Publication date of the cited content (ISO 8601).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'issue_number'            => [
+			'issue_number'                   => [
 				'type'        => 'string',
 				'description' => __( 'Issue number in the repository, digits only.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_issue_number' ],
 				'default'     => '',
 			],
-			'issue_status'            => [
+			'issue_status'                   => [
 				'type'        => 'string',
 				'description' => __( 'Issue status: open or closed. Empty when the post sets none.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_issue_status' ],
@@ -136,14 +136,14 @@ class Meta_Fields {
 			],
 
 			// RSVP Fields.
-			'rsvp_status'             => [
+			'rsvp_status'                    => [
 				'type'        => 'string',
 				'description' => __( 'RSVP status: yes, no, maybe, interested or remote.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_rsvp_status' ],
 				'default'     => '',
 				'enum'        => [ '', 'yes', 'no', 'maybe', 'interested', 'remote' ],
 			],
-			'rsvp_location_privacy'   => [
+			'rsvp_location_privacy'          => [
 				'type'        => 'string',
 				'description' => __( 'Who sees the RSVP\'s event location: private (people who can edit the post) or public.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_rsvp_location_privacy' ],
@@ -152,62 +152,62 @@ class Meta_Fields {
 			],
 
 			// Check-in Fields.
-			'checkin_name'            => [
+			'checkin_name'                   => [
 				'type'        => 'string',
 				'description' => __( 'Venue or location name.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'checkin_url'             => [
+			'checkin_url'                    => [
 				'type'        => 'string',
 				'description' => __( 'Venue URL.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'checkin_address'         => [
+			'checkin_address'                => [
 				'type'        => 'string',
 				'description' => __( 'Street address.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'checkin_locality'        => [
+			'checkin_locality'               => [
 				'type'        => 'string',
 				'description' => __( 'City or locality.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'checkin_region'          => [
+			'checkin_region'                 => [
 				'type'        => 'string',
 				'description' => __( 'State, province, or region.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'checkin_country'         => [
+			'checkin_country'                => [
 				'type'        => 'string',
 				'description' => __( 'Country name.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'geo_latitude'            => [
+			'geo_latitude'                   => [
 				'type'        => 'number',
 				'description' => __( 'Geographic latitude.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_coordinate' ],
 				'default'     => 0,
 			],
-			'geo_longitude'           => [
+			'geo_longitude'                  => [
 				'type'        => 'number',
 				'description' => __( 'Geographic longitude.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_coordinate' ],
 				'default'     => 0,
 			],
-			'geo_privacy'             => [
+			'geo_privacy'                    => [
 				'type'        => 'string',
 				'description' => __( 'Location privacy level: public, approximate, or private.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_geo_privacy' ],
 				'default'     => 'approximate',
 				'enum'        => [ 'public', 'approximate', 'private' ],
 			],
-			'checkin_osm_id'          => [
+			'checkin_osm_id'                 => [
 				'type'        => 'string',
 				'description' => __( 'OpenStreetMap place ID.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
@@ -215,61 +215,61 @@ class Meta_Fields {
 			],
 
 			// Listen Fields.
-			'listen_track'            => [
+			'listen_track'                   => [
 				'type'        => 'string',
 				'description' => __( 'Track or episode name.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'listen_artist'           => [
+			'listen_artist'                  => [
 				'type'        => 'string',
 				'description' => __( 'Artist or creator name.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'listen_album'            => [
+			'listen_album'                   => [
 				'type'        => 'string',
 				'description' => __( 'Album or podcast name.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'listen_cover'            => [
+			'listen_cover'                   => [
 				'type'        => 'string',
 				'description' => __( 'Album or podcast cover art URL.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'listen_mbid'             => [
+			'listen_mbid'                    => [
 				'type'        => 'string',
 				'description' => __( 'MusicBrainz recording ID.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'listen_url'              => [
+			'listen_url'                     => [
 				'type'        => 'string',
 				'description' => __( 'URL to the track or episode.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'listen_rating'           => [
+			'listen_rating'                  => [
 				'type'        => 'integer',
 				'description' => __( 'Rating for the track (0-5).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_rating' ],
 				'default'     => 0,
 			],
-			'listen_release_date'     => [
+			'listen_release_date'            => [
 				'type'        => 'string',
 				'description' => __( 'Album release date.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'listen_listened_at'      => [
+			'listen_listened_at'             => [
 				'type'        => 'string',
 				'description' => __( 'When the track was listened to.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'listen_media_type'       => [
+			'listen_media_type'              => [
 				'type'        => 'string',
 				'description' => __( 'Listen type: music or podcast. Unset until chosen.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_listen_media_type' ],
@@ -277,104 +277,104 @@ class Meta_Fields {
 			],
 
 			// Watch Fields.
-			'watch_title'             => [
+			'watch_title'                    => [
 				'type'        => 'string',
 				'description' => __( 'Film or show title.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'watch_year'              => [
+			'watch_year'                     => [
 				'type'        => 'string',
 				'description' => __( 'Release year.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'watch_poster'            => [
+			'watch_poster'                   => [
 				'type'        => 'string',
 				'description' => __( 'Poster image URL.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'watch_tmdb_id'           => [
+			'watch_tmdb_id'                  => [
 				'type'        => 'string',
 				'description' => __( 'TMDB ID for the film or show.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'watch_status'            => [
+			'watch_status'                   => [
 				'type'        => 'string',
 				'description' => __( 'Watch status: watched, watching, or abandoned.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_watch_status' ],
 				'default'     => 'to-watch',
 				'enum'        => [ 'to-watch', 'watching', 'watched', 'rewatching', 'abandoned' ],
 			],
-			'watch_spoilers'          => [
+			'watch_spoilers'                 => [
 				'type'        => 'boolean',
 				'description' => __( 'Whether the post contains spoilers.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'rest_sanitize_boolean',
 				'default'     => false,
 			],
-			'watch_url'               => [
+			'watch_url'                      => [
 				'type'        => 'string',
 				'description' => __( 'URL to the film or show page.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'watch_rating'            => [
+			'watch_rating'                   => [
 				'type'        => 'number',
 				'description' => __( 'Rating out of 5.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_rating' ],
 				'default'     => 0,
 			],
-			'watch_review'            => [
+			'watch_review'                   => [
 				'type'        => 'string',
 				'description' => __( 'Review or notes about the film/show.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_textarea_field',
 				'default'     => '',
 			],
-			'watch_is_rewatch'        => [
+			'watch_is_rewatch'               => [
 				'type'        => 'boolean',
 				'description' => __( 'Whether this is a rewatch.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'rest_sanitize_boolean',
 				'default'     => false,
 			],
-			'watch_media_type'        => [
+			'watch_media_type'               => [
 				'type'        => 'string',
 				'description' => __( 'Media type: movie or tv.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => 'movie',
 			],
-			'watch_director'          => [
+			'watch_director'                 => [
 				'type'        => 'string',
 				'description' => __( 'Director name.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'watch_imdb_id'           => [
+			'watch_imdb_id'                  => [
 				'type'        => 'string',
 				'description' => __( 'IMDB ID for the film or show.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'watch_show_title'        => [
+			'watch_show_title'               => [
 				'type'        => 'string',
 				'description' => __( 'TV show title (for episodes).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'watch_season'            => [
+			'watch_season'                   => [
 				'type'        => 'number',
 				'description' => __( 'Season number.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'absint',
 				'default'     => 0,
 			],
-			'watch_episode'           => [
+			'watch_episode'                  => [
 				'type'        => 'number',
 				'description' => __( 'Episode number.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'absint',
 				'default'     => 0,
 			],
-			'watch_episode_title'     => [
+			'watch_episode_title'            => [
 				'type'        => 'string',
 				'description' => __( 'Episode title.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
@@ -382,92 +382,92 @@ class Meta_Fields {
 			],
 
 			// Read Fields.
-			'read_title'              => [
+			'read_title'                     => [
 				'type'        => 'string',
 				'description' => __( 'Book or article title.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'read_author'             => [
+			'read_author'                    => [
 				'type'        => 'string',
 				'description' => __( 'Book or article author.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'read_isbn'               => [
+			'read_isbn'                      => [
 				'type'        => 'string',
 				'description' => __( 'ISBN-13 of the book.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_isbn' ],
 				'default'     => '',
 			],
-			'read_cover'              => [
+			'read_cover'                     => [
 				'type'        => 'string',
 				'description' => __( 'Book cover image URL.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'read_status'             => [
+			'read_status'                    => [
 				'type'        => 'string',
 				'description' => __( 'Reading status: to-read, reading, finished, or abandoned.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_read_status' ],
 				'default'     => 'reading',
 				'enum'        => [ 'to-read', 'reading', 'finished', 'abandoned' ],
 			],
-			'read_progress'           => [
+			'read_progress'                  => [
 				'type'        => 'number',
 				'description' => __( 'Reading progress (percentage or page number).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'absint',
 				'default'     => 0,
 			],
-			'read_pages'              => [
+			'read_pages'                     => [
 				'type'        => 'number',
 				'description' => __( 'Total number of pages.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'absint',
 				'default'     => 0,
 			],
-			'read_url'                => [
+			'read_url'                       => [
 				'type'        => 'string',
 				'description' => __( 'URL to the book or article.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'read_publisher'          => [
+			'read_publisher'                 => [
 				'type'        => 'string',
 				'description' => __( 'Publisher name.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'read_publish_date'       => [
+			'read_publish_date'              => [
 				'type'        => 'string',
 				'description' => __( 'Publication date.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'read_asin'               => [
+			'read_asin'                      => [
 				'type'        => 'string',
 				'description' => __( 'Amazon Standard Identification Number.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'read_rating'             => [
+			'read_rating'                    => [
 				'type'        => 'integer',
 				'description' => __( 'Rating for the book (0-5).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_rating' ],
 				'default'     => 0,
 			],
-			'read_started_at'         => [
+			'read_started_at'                => [
 				'type'        => 'string',
 				'description' => __( 'Date started reading.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'read_finished_at'        => [
+			'read_finished_at'               => [
 				'type'        => 'string',
 				'description' => __( 'Date finished reading.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'read_review'             => [
+			'read_review'                    => [
 				'type'        => 'string',
 				'description' => __( 'Review or notes about the book.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'wp_kses_post',
@@ -476,86 +476,86 @@ class Meta_Fields {
 
 			// Comic Fields: a comic someone read (comic-card). A drawn strip may
 			// store series and number, but never title or status.
-			'comic_title'             => [
+			'comic_title'                    => [
 				'type'        => 'string',
 				'description' => __( 'Title of the comic.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'comic_creators'          => [
+			'comic_creators'                 => [
 				'type'        => 'string',
 				'description' => __( 'Writers and artists of the comic, as authored text.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'comic_series'            => [
+			'comic_series'                   => [
 				'type'        => 'string',
 				'description' => __( 'Series the comic belongs to, including a drawn strip.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'comic_volume'            => [
+			'comic_volume'                   => [
 				'type'        => 'string',
 				'description' => __( 'Volume of the series.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'comic_issue'             => [
+			'comic_issue'                    => [
 				'type'        => 'string',
 				'description' => __( 'Issue or strip number within the series or volume.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'comic_publisher'         => [
+			'comic_publisher'                => [
 				'type'        => 'string',
 				'description' => __( 'Publisher of the comic.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'comic_cover'             => [
+			'comic_cover'                    => [
 				'type'        => 'string',
 				'description' => __( 'Comic cover image URL.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'comic_cover_alt'         => [
+			'comic_cover_alt'                => [
 				'type'        => 'string',
 				'description' => __( 'Alt text stored for the comic cover.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'comic_url'               => [
+			'comic_url'                      => [
 				'type'        => 'string',
 				'description' => __( 'URL where the comic can be found or read.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'comic_status'            => [
+			'comic_status'                   => [
 				'type'        => 'string',
 				'description' => __( 'Reading status: to-read, reading, finished, or abandoned. Empty when the post has no comic card.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_comic_status' ],
 				'default'     => '',
 				'enum'        => [ '', 'to-read', 'reading', 'finished', 'abandoned' ],
 			],
-			'comic_rating'            => [
+			'comic_rating'                   => [
 				'type'        => 'integer',
 				'description' => __( 'Rating for the comic (0-5).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_rating' ],
 				'default'     => 0,
 			],
-			'comic_started_at'        => [
+			'comic_started_at'               => [
 				'type'        => 'string',
 				'description' => __( 'Date started reading the comic.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'comic_finished_at'       => [
+			'comic_finished_at'              => [
 				'type'        => 'string',
 				'description' => __( 'Date finished or set aside the comic.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'comic_review'            => [
+			'comic_review'                   => [
 				'type'        => 'string',
 				'description' => __( 'Review or notes about the comic.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'wp_kses_post',
@@ -563,25 +563,25 @@ class Meta_Fields {
 			],
 
 			// Event Fields.
-			'event_start'             => [
+			'event_start'                    => [
 				'type'        => 'string',
 				'description' => __( 'Event start datetime (ISO 8601).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'event_end'               => [
+			'event_end'                      => [
 				'type'        => 'string',
 				'description' => __( 'Event end datetime (ISO 8601).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'event_location'          => [
+			'event_location'                 => [
 				'type'        => 'string',
 				'description' => __( 'Event location name or address.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'event_url'               => [
+			'event_url'                      => [
 				'type'        => 'string',
 				'description' => __( 'Event URL or registration link.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
@@ -589,25 +589,25 @@ class Meta_Fields {
 			],
 
 			// Review Fields.
-			'review_rating'           => [
+			'review_rating'                  => [
 				'type'        => 'number',
 				'description' => __( 'Rating value (supports decimals like 3.5).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_rating' ],
 				'default'     => 0,
 			],
-			'review_best'             => [
+			'review_best'                    => [
 				'type'        => 'number',
 				'description' => __( 'Best possible rating (typically 5).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'absint',
 				'default'     => 5,
 			],
-			'review_item_name'        => [
+			'review_item_name'               => [
 				'type'        => 'string',
 				'description' => __( 'Name of the reviewed item.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'review_item_url'         => [
+			'review_item_url'                => [
 				'type'        => 'string',
 				'description' => __( 'URL of the reviewed item.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
@@ -615,13 +615,13 @@ class Meta_Fields {
 			],
 
 			// Recipe Fields.
-			'recipe_yield'            => [
+			'recipe_yield'                   => [
 				'type'        => 'string',
 				'description' => __( 'Recipe yield (e.g., "4 servings").', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'recipe_duration'         => [
+			'recipe_duration'                => [
 				'type'        => 'string',
 				'description' => __( 'Total recipe duration (ISO 8601 duration).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
@@ -629,19 +629,19 @@ class Meta_Fields {
 			],
 
 			// Favorite Fields.
-			'favorite_name'           => [
+			'favorite_name'                  => [
 				'type'        => 'string',
 				'description' => __( 'Name of the favorited item.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'favorite_url'            => [
+			'favorite_url'                   => [
 				'type'        => 'string',
 				'description' => __( 'URL of the favorited item.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'favorite_rating'         => [
+			'favorite_rating'                => [
 				'type'        => 'number',
 				'description' => __( 'Rating for the favorited item (0-5).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_rating' ],
@@ -649,31 +649,31 @@ class Meta_Fields {
 			],
 
 			// Jam Fields (extends listen with "highlight" flag).
-			'jam_track'               => [
+			'jam_track'                      => [
 				'type'        => 'string',
 				'description' => __( 'Track name for jam.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'jam_artist'              => [
+			'jam_artist'                     => [
 				'type'        => 'string',
 				'description' => __( 'Artist name for jam.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'jam_album'               => [
+			'jam_album'                      => [
 				'type'        => 'string',
 				'description' => __( 'Album name for jam.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'jam_cover'               => [
+			'jam_cover'                      => [
 				'type'        => 'string',
 				'description' => __( 'Cover art URL for jam.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'jam_url'                 => [
+			'jam_url'                        => [
 				'type'        => 'string',
 				'description' => __( 'URL to the track.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
@@ -681,31 +681,31 @@ class Meta_Fields {
 			],
 
 			// Wish Fields.
-			'wish_name'               => [
+			'wish_name'                      => [
 				'type'        => 'string',
 				'description' => __( 'Name of the wished item.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'wish_url'                => [
+			'wish_url'                       => [
 				'type'        => 'string',
 				'description' => __( 'URL of the wished item.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'wish_photo'              => [
+			'wish_photo'                     => [
 				'type'        => 'string',
 				'description' => __( 'Image URL of the wished item.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'wish_type'               => [
+			'wish_type'                      => [
 				'type'        => 'string',
 				'description' => __( 'Type of wish: book, movie, product, experience, etc.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'wish_priority'           => [
+			'wish_priority'                  => [
 				'type'        => 'string',
 				'description' => __( 'Priority level: low, medium, high.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_priority' ],
@@ -714,25 +714,25 @@ class Meta_Fields {
 			],
 
 			// Mood Fields.
-			'mood_emoji'              => [
+			'mood_emoji'                     => [
 				'type'        => 'string',
 				'description' => __( 'Emoji representing the mood.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'mood_label'              => [
+			'mood_label'                     => [
 				'type'        => 'string',
 				'description' => __( 'Text label for the mood (e.g., happy, tired, excited).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'mood_key'                => [
+			'mood_key'                       => [
 				'type'        => 'string',
 				'description' => __( 'Mood identity from the plugin mood vocabulary (e.g., energized); empty for a label typed by hand.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_key',
 				'default'     => '',
 			],
-			'mood_rating'             => [
+			'mood_rating'                    => [
 				'type'        => 'number',
 				'description' => __( 'Mood rating on 1-5 scale.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_mood_rating' ],
@@ -740,31 +740,31 @@ class Meta_Fields {
 			],
 
 			// Acquisition Fields.
-			'acquisition_name'        => [
+			'acquisition_name'               => [
 				'type'        => 'string',
 				'description' => __( 'Name of the acquired item.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'acquisition_url'         => [
+			'acquisition_url'                => [
 				'type'        => 'string',
 				'description' => __( 'URL of the acquired item.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'acquisition_photo'       => [
+			'acquisition_photo'              => [
 				'type'        => 'string',
 				'description' => __( 'Image URL of the acquired item.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'acquisition_price'       => [
+			'acquisition_price'              => [
 				'type'        => 'string',
 				'description' => __( 'Price paid for the item.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'acquisition_rating'      => [
+			'acquisition_rating'             => [
 				'type'        => 'number',
 				'description' => __( 'Rating for the acquired item (0-5).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_rating' ],
@@ -772,91 +772,91 @@ class Meta_Fields {
 			],
 
 			// Drink Fields.
-			'drink_name'              => [
+			'drink_name'                     => [
 				'type'        => 'string',
 				'description' => __( 'Name of the beverage.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'drink_type'              => [
+			'drink_type'                     => [
 				'type'        => 'string',
 				'description' => __( 'Type of drink: coffee, beer, wine, cocktail, tea, etc.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'drink_brewery'           => [
+			'drink_brewery'                  => [
 				'type'        => 'string',
 				'description' => __( 'Brewery, winery, or producer name.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'drink_photo'             => [
+			'drink_photo'                    => [
 				'type'        => 'string',
 				'description' => __( 'Photo URL of the drink.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'drink_rating'            => [
+			'drink_rating'                   => [
 				'type'        => 'number',
 				'description' => __( 'Rating for the drink (0-5).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_rating' ],
 				'default'     => 0,
 			],
-			'drink_location_name'     => [
+			'drink_location_name'            => [
 				'type'        => 'string',
 				'description' => __( 'Bar, cafe, or venue name.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'drink_location_address'  => [
+			'drink_location_address'         => [
 				'type'        => 'string',
 				'description' => __( 'Street address of the venue.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'drink_location_locality' => [
+			'drink_location_locality'        => [
 				'type'        => 'string',
 				'description' => __( 'City or locality.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'drink_location_region'   => [
+			'drink_location_region'          => [
 				'type'        => 'string',
 				'description' => __( 'State, province, or region.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'drink_location_country'  => [
+			'drink_location_country'         => [
 				'type'        => 'string',
 				'description' => __( 'Country name.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'drink_geo_latitude'      => [
+			'drink_geo_latitude'             => [
 				'type'        => 'number',
 				'description' => __( 'Geographic latitude of the venue.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_coordinate' ],
 				'default'     => 0,
 			],
-			'drink_geo_longitude'     => [
+			'drink_geo_longitude'            => [
 				'type'        => 'number',
 				'description' => __( 'Geographic longitude of the venue.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_coordinate' ],
 				'default'     => 0,
 			],
-			'drink_notes'             => [
+			'drink_notes'                    => [
 				'type'        => 'string',
 				'description' => __( 'Tasting notes for the drink.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_textarea_field',
 				'default'     => '',
 			],
-			'drink_drank_at'          => [
+			'drink_drank_at'                 => [
 				'type'        => 'string',
 				'description' => __( 'When the drink was had.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'drink_venue_url'         => [
+			'drink_venue_url'                => [
 				'type'        => 'string',
 				'description' => __( 'URL for the venue website.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
@@ -864,97 +864,97 @@ class Meta_Fields {
 			],
 
 			// Eat Fields.
-			'eat_name'                => [
+			'eat_name'                       => [
 				'type'        => 'string',
 				'description' => __( 'Name of the meal or dish.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'eat_type'                => [
+			'eat_type'                       => [
 				'type'        => 'string',
 				'description' => __( 'Type of meal: breakfast, lunch, dinner, snack.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'eat_restaurant'          => [
+			'eat_restaurant'                 => [
 				'type'        => 'string',
 				'description' => __( 'Restaurant or venue name (deprecated, use eat_location_name).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'eat_photo'               => [
+			'eat_photo'                      => [
 				'type'        => 'string',
 				'description' => __( 'Photo URL of the meal.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'eat_rating'              => [
+			'eat_rating'                     => [
 				'type'        => 'number',
 				'description' => __( 'Rating for the meal (0-5).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_rating' ],
 				'default'     => 0,
 			],
-			'eat_location_name'       => [
+			'eat_location_name'              => [
 				'type'        => 'string',
 				'description' => __( 'Restaurant or venue name.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'eat_location_address'    => [
+			'eat_location_address'           => [
 				'type'        => 'string',
 				'description' => __( 'Street address of the venue.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'eat_location_locality'   => [
+			'eat_location_locality'          => [
 				'type'        => 'string',
 				'description' => __( 'City or locality.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'eat_location_region'     => [
+			'eat_location_region'            => [
 				'type'        => 'string',
 				'description' => __( 'State, province, or region.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'eat_location_country'    => [
+			'eat_location_country'           => [
 				'type'        => 'string',
 				'description' => __( 'Country name.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'eat_geo_latitude'        => [
+			'eat_geo_latitude'               => [
 				'type'        => 'number',
 				'description' => __( 'Geographic latitude of the venue.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_coordinate' ],
 				'default'     => 0,
 			],
-			'eat_geo_longitude'       => [
+			'eat_geo_longitude'              => [
 				'type'        => 'number',
 				'description' => __( 'Geographic longitude of the venue.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_coordinate' ],
 				'default'     => 0,
 			],
-			'eat_cuisine'             => [
+			'eat_cuisine'                    => [
 				'type'        => 'string',
 				'description' => __( 'Cuisine type (american, italian, etc.).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'eat_notes'               => [
+			'eat_notes'                      => [
 				'type'        => 'string',
 				'description' => __( 'Notes about the meal.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_textarea_field',
 				'default'     => '',
 			],
-			'eat_ate_at'              => [
+			'eat_ate_at'                     => [
 				'type'        => 'string',
 				'description' => __( 'When the meal was eaten.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'eat_restaurant_url'      => [
+			'eat_restaurant_url'             => [
 				'type'        => 'string',
 				'description' => __( 'Restaurant website URL.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
@@ -962,86 +962,86 @@ class Meta_Fields {
 			],
 
 			// Play Fields (gaming).
-			'play_title'              => [
+			'play_title'                     => [
 				'type'        => 'string',
 				'description' => __( 'Game title.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'play_platform'           => [
+			'play_platform'                  => [
 				'type'        => 'string',
 				'description' => __( 'Platform: PC, PlayStation, Xbox, Nintendo, Mobile, Board Game, etc.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'play_status'             => [
+			'play_status'                    => [
 				'type'        => 'string',
 				'description' => __( 'Play status: playing, completed, abandoned, backlog.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_play_status' ],
 				'default'     => 'playing',
 				'enum'        => [ 'playing', 'completed', 'abandoned', 'backlog', 'wishlist' ],
 			],
-			'play_hours'              => [
+			'play_hours'                     => [
 				'type'        => 'number',
 				'description' => __( 'Hours played.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_float' ],
 				'default'     => 0,
 			],
-			'play_cover'              => [
+			'play_cover'                     => [
 				'type'        => 'string',
 				'description' => __( 'Game cover art URL.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'play_igdb_id'            => [
+			'play_igdb_id'                   => [
 				'type'        => 'string',
 				'description' => __( 'IGDB game ID.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'play_steam_id'           => [
+			'play_steam_id'                  => [
 				'type'        => 'string',
 				'description' => __( 'Steam app ID.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'play_bgg_id'             => [
+			'play_bgg_id'                    => [
 				'type'        => 'string',
 				'description' => __( 'BoardGameGeek game ID.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'play_rawg_id'            => [
+			'play_rawg_id'                   => [
 				'type'        => 'string',
 				'description' => __( 'RAWG.io game ID.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'play_rating'             => [
+			'play_rating'                    => [
 				'type'        => 'number',
 				'description' => __( 'Rating for the game (0-5).', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => [ $this, 'sanitize_rating' ],
 				'default'     => 0,
 			],
-			'play_official_url'       => [
+			'play_official_url'              => [
 				'type'        => 'string',
 				'description' => __( 'Official website URL for the game.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'play_purchase_url'       => [
+			'play_purchase_url'              => [
 				'type'        => 'string',
 				'description' => __( 'Purchase URL for the game.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
 				'default'     => '',
 			],
-			'play_review'             => [
+			'play_review'                    => [
 				'type'        => 'string',
 				'description' => __( 'Review or notes about the game.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_textarea_field',
 				'default'     => '',
 			],
-			'play_game_url'           => [
+			'play_game_url'                  => [
 				'type'        => 'string',
 				'description' => __( 'URL to the game page.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'esc_url_raw',
@@ -1050,13 +1050,13 @@ class Meta_Fields {
 
 			// Craft (issue 249). A craft card decides both rows, so a save
 			// with no craft type or no minutes deletes the row.
-			'craft_type'              => [
+			'craft_type'                     => [
 				'type'        => 'string',
 				'description' => __( 'What kind of craft the project is, in your own words.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'sanitize_text_field',
 				'default'     => '',
 			],
-			'craft_minutes'           => [
+			'craft_minutes'                  => [
 				'type'        => 'integer',
 				'description' => __( 'Minutes spent on the project.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'absint',
@@ -1064,17 +1064,61 @@ class Meta_Fields {
 			],
 
 			// Syndication Opt-Out Fields.
-			'syndicate_lastfm'        => [
+			'syndicate_lastfm'               => [
 				'type'        => 'boolean',
 				'description' => __( 'Whether to syndicate to Last.fm.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'rest_sanitize_boolean',
 				'default'     => true,
 			],
-			'syndicate_trakt'         => [
+			'syndicate_trakt'                => [
 				'type'        => 'boolean',
 				'description' => __( 'Whether to syndicate to Trakt.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'sanitize'    => 'rest_sanitize_boolean',
 				'default'     => true,
+			],
+
+			// Presentation fields (issue 262).
+			'presentation_slides_url'        => [
+				'type'        => 'string',
+				'description' => __( 'URL of the presentation slide deck.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			],
+			'presentation_recording_url'     => [
+				'type'        => 'string',
+				'description' => __( 'URL of the presentation recording.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			],
+			'presentation_event_name'        => [
+				'type'        => 'string',
+				'description' => __( 'Name of the event where the presentation appeared.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'sanitize_text_field',
+				'default'     => '',
+			],
+			'presentation_event_url'         => [
+				'type'        => 'string',
+				'description' => __( 'URL of the event where the presentation appeared.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'esc_url_raw',
+				'default'     => '',
+			],
+			'presentation_calendar_source'   => [
+				'type'        => 'string',
+				'description' => __( 'Calendar integration that supplies the presentation event.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => [ self::class, 'sanitize_presentation_calendar_source' ],
+				'default'     => '',
+			],
+			'presentation_calendar_event_id' => [
+				'type'        => 'integer',
+				'description' => __( 'Calendar event ID linked to the presentation.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'absint',
+				'default'     => 0,
+			],
+			'presentation_event_type'        => [
+				'type'        => 'string',
+				'description' => __( 'Type of presentation event.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => [ self::class, 'sanitize_presentation_event_type' ],
+				'default'     => '',
 			],
 		];
 
@@ -2925,6 +2969,27 @@ class Meta_Fields {
 	 */
 	public function sanitize_rsvp_location_privacy( mixed $value ): string {
 		return 'public' === $value ? 'public' : 'private';
+	}
+
+	/**
+	 * Accept only the two calendar integrations the facade supports.
+	 *
+	 * @param mixed $value Submitted source.
+	 */
+	public static function sanitize_presentation_calendar_source( mixed $value ): string {
+		$value = sanitize_key( (string) $value );
+		$valid = [ Integrations\Calendar_Events::SOURCE_THE_EVENTS_CALENDAR, Integrations\Calendar_Events::SOURCE_MY_CALENDAR ];
+		return in_array( $value, $valid, true ) ? $value : '';
+	}
+
+	/**
+	 * Accept only an event type present in the current filtered list.
+	 *
+	 * @param mixed $value Submitted type.
+	 */
+	public static function sanitize_presentation_event_type( mixed $value ): string {
+		$value = sanitize_key( (string) $value );
+		return array_key_exists( $value, Presentation::event_types() ) ? $value : '';
 	}
 
 	/**

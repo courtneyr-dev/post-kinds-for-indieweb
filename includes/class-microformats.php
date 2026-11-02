@@ -381,9 +381,11 @@ class Microformats {
 			'presentation' => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
-					'name'    => 'p-name',
-					'content' => 'e-content',
-					'date'    => 'dt-published',
+					'name'      => 'p-name',
+					'content'   => 'e-content',
+					'date'      => 'dt-published',
+					'slides'    => 'u-slides',
+					'recording' => 'u-recording',
 				],
 			],
 			'acquisition' => [
@@ -1045,6 +1047,19 @@ class Microformats {
 					$hidden_data .= '' !== $author ? '<span class="p-author">' . esc_html( $author ) . '</span>' : '';
 					$hidden_data .= '' !== $url ? '<data class="u-url" value="' . esc_url( $url ) . '"></data>' : '';
 					$hidden_data .= '</span>';
+				}
+				break;
+
+			case 'presentation':
+				$facts = Kind_Facts::get( $post_id );
+				foreach ( [
+					'slides_url'    => 'u-slides',
+					'recording_url' => 'u-recording',
+				] as $key => $class ) {
+					$url = (string) ( $facts[ $key ] ?? '' );
+					if ( '' !== $url && ! $this->has_class_token( $content, $class ) ) {
+						$hidden_data .= '<data class="' . esc_attr( $class ) . '" value="' . esc_url( $url ) . '"></data>';
+					}
 				}
 				break;
 

@@ -163,6 +163,12 @@ class CLI_Commands {
 	 * [--dry-run]
 	 * : List each candidate and its signals without writing anything.
 	 *
+	 * [--category=<slug>]
+	 * : Limit candidates to one category slug.
+	 *
+	 * [--ids=<list>]
+	 * : Limit candidates to a comma-separated post ID list.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     wp postkind presentation backfill --dry-run
@@ -174,7 +180,7 @@ class CLI_Commands {
 	 */
 	public function presentation( array $args, array $assoc_args ): void {
 		if ( 'backfill' !== ( $args[0] ?? '' ) ) {
-			WP_CLI::error( 'Usage: wp postkind presentation backfill [--dry-run]' );
+			WP_CLI::error( 'Usage: wp postkind presentation backfill [--dry-run] [--category=<slug>] [--ids=<list>]' );
 		}
 
 		$taxonomy = Plugin::get_instance()->get_taxonomy();
@@ -186,7 +192,18 @@ class CLI_Commands {
 		}
 
 		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
-		$report  = Presentation_Classifier::backfill( $taxonomy, $dry_run );
+		$scope   = [ 'category' => sanitize_title( (string) ( $assoc_args['category'] ?? '' ) ) ];
+		if ( array_key_exists( 'ids', $assoc_args ) ) {
+			$scope['ids'] = [];
+			foreach ( explode( ',', (string) $assoc_args['ids'] ) as $token ) {
+				$token = trim( $token );
+				if ( 1 !== preg_match( '/^[1-9][0-9]*$/', $token ) || (int) $token < 1 ) {
+					WP_CLI::error( '--ids must be a comma-separated list of positive integers.' );
+				}
+				$scope['ids'][] = (int) $token;
+			}
+		}
+		$report = Presentation_Classifier::backfill( $taxonomy, $dry_run, $scope );
 
 		foreach ( $report['rows'] as $row ) {
 			WP_CLI::log( Presentation_Classifier::backfill_line( $row ) );
