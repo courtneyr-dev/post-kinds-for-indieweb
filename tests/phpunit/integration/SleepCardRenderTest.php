@@ -490,6 +490,23 @@ final class SleepCardRenderTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'Waning gibbous', $excerpt );
 	}
 
+	public function test_a_card_less_classic_single_keeps_its_paragraphs_after_the_record(): void {
+		$html = $this->single( $this->sleep( '2026-08-04', [], [ 'post_content' => "Fictional line one.\n\nFictional line two." ] ) );
+
+		$this->assertSame( 1, substr_count( $html, 'pkiw-sleep__record' ) );
+		$this->assertStringContainsString( "<p>Fictional line one.</p>\n<p>Fictional line two.</p>", $html );
+		$this->assertLessThan( strpos( $html, 'Fictional line one.' ), strpos( $html, 'pkiw-sleep__record' ), 'The record comes first.' );
+	}
+
+	public function test_a_card_less_block_single_renders_its_blocks_unchanged_after_the_record(): void {
+		$html = $this->single( $this->sleep( '2026-08-04', [], [ 'post_content' => '<!-- wp:paragraph --><p>Fictional block body.</p><!-- /wp:paragraph -->' ] ) );
+
+		$this->assertSame( 1, substr_count( $html, 'pkiw-sleep__record' ) );
+		$this->assertSame( 1, preg_match_all( '#<p(?: [^>]*)?>Fictional block body\.</p>#', $html ) );
+		$this->assertDoesNotMatchRegularExpression( '#<p>\s*<(?:div|section|article|dl|span)#', $html );
+		$this->assertStringNotContainsString( '<br', $html );
+	}
+
 	public function test_a_post_that_already_holds_a_card_gets_no_second_record(): void {
 		$html = $this->single( $this->sleep( '2026-08-19', [ 'durationMinutes' => 462 ] ) );
 

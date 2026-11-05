@@ -238,7 +238,8 @@ final class Sleep_Archive {
 	 * still gets its moon phase and date ahead of its own text. A feed and an
 	 * archive keep the stored content, a REST request is never a singular one,
 	 * and an auto-excerpt never shows the record, because core unhooks
-	 * do_blocks() while it builds one.
+	 * do_blocks() while it builds one. Classic text gets its paragraphs here,
+	 * because the card comment makes do_blocks() skip wpautop() for the pass.
 	 *
 	 * @internal Hooked to `the_content` at 8, before do_blocks().
 	 *
@@ -256,6 +257,9 @@ final class Sleep_Archive {
 		}
 		if ( ! \WP_Block_Type_Registry::get_instance()->is_registered( self::CARD ) || str_contains( $content, 'wp:' . self::CARD ) ) {
 			return $content;
+		}
+		if ( doing_filter( 'the_content' ) && ! has_blocks( $content ) ) {
+			$content = wpautop( $content );
 		}
 
 		return '<!-- wp:' . self::CARD . ' /-->' . "\n\n" . $content;
