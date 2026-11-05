@@ -1790,6 +1790,8 @@ final class RsvpLocationPrivacyTest extends WP_UnitTestCase {
 			'geo_public'            => [ 'geo_public', '1', '0' ],
 			'exercise details'      => [ Meta_Fields::EXERCISE_PUBLIC_KEY, '1', null ],
 			'sleep times'           => [ Meta_Fields::SLEEP_PUBLIC_KEY, '1', null ],
+			'trip stops'            => [ '_pkiw_trip_stops', '[{"name":"Public stop","privacy":"public"}]', '[{"name":"Private stop","privacy":"private"}]' ],
+			'itinerary legs'        => [ '_pkiw_itinerary_legs', '[{"from":{"name":"Public origin"},"to":{"name":"Public destination"},"privacy":"public"}]', '[{"from":{"name":"Private origin"},"to":{"name":"Private destination"},"privacy":"private"}]' ],
 		];
 	}
 

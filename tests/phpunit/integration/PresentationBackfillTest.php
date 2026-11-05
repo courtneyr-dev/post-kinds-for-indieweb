@@ -90,6 +90,9 @@ class PresentationBackfillTest extends WP_UnitTestCase {
 
 		wp_delete_object_term_relationships( $post_id, Taxonomy::TAXONOMY );
 		delete_post_meta( $post_id, Taxonomy::AUTO_KIND_META_KEY );
+		foreach ( array_merge( Presentation_Classifier::PRESENTATION_META_KEYS, [ Presentation_Classifier::CALENDAR_SOURCE_META_KEY, Presentation_Classifier::CALENDAR_EVENT_META_KEY, '_pkiw_presentation_recording_url' ] ) as $meta_key ) {
+			delete_post_meta( $post_id, $meta_key );
+		}
 		if ( null !== $kind ) {
 			wp_set_object_terms( $post_id, $kind, Taxonomy::TAXONOMY );
 		}
@@ -245,5 +248,16 @@ class PresentationBackfillTest extends WP_UnitTestCase {
 		$this->assertSame( [], $report['rows'] );
 		$this->assertNull( term_exists( 'presentation', Taxonomy::TAXONOMY ), 'the backfill must not create the term' );
 		$this->assertSame( [], $this->kind_slugs( $this->ids['talk'] ) );
+	}
+
+	public function test_explicit_empty_or_non_positive_ids_scope_never_widens_to_all_posts(): void {
+		foreach ( [ [], [ 0 ] ] as $ids ) {
+			$report = Presentation_Classifier::backfill( $this->taxonomy, false, [ 'ids' => $ids ] );
+			$this->assertSame( 0, $report['scanned'] );
+			$this->assertSame( 0, $report['changed'] );
+			$this->assertSame( [], $report['rows'] );
+			$this->assertSame( [], $this->kind_slugs( $this->ids['talk'] ) );
+			$this->assertSame( [ 'note' ], $this->kind_slugs( $this->ids['note'] ) );
+		}
 	}
 }

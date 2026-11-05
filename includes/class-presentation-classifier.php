@@ -169,11 +169,12 @@ final class Presentation_Classifier {
 	 * nothing, when the `presentation` term is missing, because
 	 * wp_set_post_terms() would create it.
 	 *
-	 * @param Taxonomy $taxonomy Taxonomy instance that holds the guard.
-	 * @param bool     $dry_run  Report without writing.
+	 * @param Taxonomy             $taxonomy Taxonomy instance that holds the guard.
+	 * @param bool                 $dry_run  Report without writing.
+	 * @param array<string, mixed> $scope Optional category slug and post IDs.
 	 * @return array{scanned: int, would_change: int, changed: int, protected: int, unchanged: int, failed: int, rows: list<array{post_id: int, title: string, kind: string, auto_marker: string, status: string, signals: array{deck: list<string>, talk_recording: list<string>, recording: list<string>, presentation_meta: bool, listen: bool}}>}
 	 */
-	public static function backfill( Taxonomy $taxonomy, bool $dry_run = true ): array {
+	public static function backfill( Taxonomy $taxonomy, bool $dry_run = true, array $scope = [] ): array {
 		$report = [
 			'scanned'      => 0,
 			'would_change' => 0,
@@ -187,25 +188,39 @@ final class Presentation_Classifier {
 		if ( ! $taxonomy->is_valid_kind( self::KIND ) ) {
 			return $report;
 		}
+		$category = sanitize_title( (string) ( $scope['category'] ?? '' ) );
+		$term     = '' !== $category ? get_term_by( 'slug', $category, 'category' ) : null;
+		if ( '' !== $category && ! $term instanceof \WP_Term ) {
+			return $report;
+		}
+		$ids = self::scope_ids( $scope );
+		if ( [] === $ids ) {
+			return $report;
+		}
 
 		$paged = 1;
 		do {
-			$query = new \WP_Query(
-				[
-					'post_type'           => $taxonomy->get_post_types(),
-					'post_status'         => 'any',
-					'posts_per_page'      => 100,
-					'paged'               => $paged,
-					'orderby'             => 'ID',
-					'order'               => 'ASC',
-					'fields'              => 'ids',
-					'ignore_sticky_posts' => true,
-				]
-			);
+			$query_args = [
+				'post_type'           => $taxonomy->get_post_types(),
+				'post_status'         => 'any',
+				'posts_per_page'      => 100,
+				'paged'               => $paged,
+				'orderby'             => 'ID',
+				'order'               => 'ASC',
+				'fields'              => 'ids',
+				'ignore_sticky_posts' => true,
+			];
+			if ( null !== $ids ) {
+				$query_args['post__in'] = $ids;
+			}
+			$query = new \WP_Query( $query_args );
 
 			foreach ( $query->posts as $post_id ) {
 				$post = get_post( (int) $post_id );
 				if ( ! $post instanceof \WP_Post ) {
+					continue;
+				}
+				if ( $term instanceof \WP_Term && ! has_term( $term->term_id, 'category', $post ) ) {
 					continue;
 				}
 				++$report['scanned'];
@@ -248,6 +263,27 @@ final class Presentation_Classifier {
 		} while ( $paged <= (int) $query->max_num_pages );
 
 		return $report;
+	}
+
+	/**
+	 * Normalize an explicitly supplied ID scope without turning it into all posts.
+	 *
+	 * @param array<string, mixed> $scope Optional backfill scope.
+	 * @return list<int>|null Null when no ID scope was supplied.
+	 */
+	private static function scope_ids( array $scope ): ?array {
+		if ( ! array_key_exists( 'ids', $scope ) ) {
+			return null;
+		}
+
+		$ids = [];
+		foreach ( (array) $scope['ids'] as $id ) {
+			if ( ( is_int( $id ) && $id > 0 ) || ( is_string( $id ) && 1 === preg_match( '/^[1-9][0-9]*$/', $id ) ) ) {
+				$ids[] = (int) $id;
+			}
+		}
+
+		return array_values( array_unique( $ids ) );
 	}
 
 	/**

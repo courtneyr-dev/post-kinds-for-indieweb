@@ -55,7 +55,10 @@ final class Abilities_Manager {
 		'post-kinds/get-kind',
 		'post-kinds/get-post-meta',
 		'post-kinds/get-quote-index',
+		'post-kinds/get-trip-facts',
+		'post-kinds/get-itinerary-facts',
 		'post-kinds/get-rsvp-facts',
+		'post-kinds/list-presentation-event-types',
 		'post-kinds/get-collection-items',
 		'post-kinds/lookup-music',
 		'post-kinds/lookup-video',
@@ -202,6 +205,18 @@ final class Abilities_Manager {
 			$quote->register();
 		}
 
+		if ( class_exists( __NAMESPACE__ . '\\Abilities\\Travel_Abilities' ) ) {
+			$travel                    = Abilities\Travel_Abilities::instance();
+			$this->providers['travel'] = $travel;
+			$travel->register();
+		}
+
+		if ( class_exists( __NAMESPACE__ . '\\Abilities\\Presentation_Abilities' ) ) {
+			$presentation                    = Abilities\Presentation_Abilities::instance();
+			$this->providers['presentation'] = $presentation;
+			$presentation->register();
+		}
+
 		if ( class_exists( __NAMESPACE__ . '\\Abilities\\Rsvp_Abilities' ) ) {
 			$rsvp                    = Abilities\Rsvp_Abilities::instance();
 			$this->providers['rsvp'] = $rsvp;
@@ -261,7 +276,11 @@ final class Abilities_Manager {
 			'post-kinds/update-post-meta',
 			'post-kinds/get-post-meta',
 			'post-kinds/get-quote-index',
+			'post-kinds/get-trip-facts',
+			'post-kinds/get-itinerary-facts',
 			'post-kinds/get-rsvp-facts',
+			'post-kinds/list-presentation-event-types',
+			'post-kinds/reclassify-presentations',
 			'post-kinds/get-collection-items',
 			'post-kinds/lookup-music',
 			'post-kinds/lookup-video',

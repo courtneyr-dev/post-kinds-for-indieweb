@@ -89,6 +89,8 @@ export default function KindFields( { kind } ) {
 			return <ComicsFields />;
 		case 'quote':
 			return <CitationFields showSummary={ false } />;
+		case 'presentation':
+			return <PresentationFields />;
 		case 'reply':
 		case 'like':
 		case 'repost':
@@ -98,6 +100,176 @@ export default function KindFields( { kind } ) {
 		default:
 			return null;
 	}
+}
+
+/**
+ * Presentation Fields Component
+ *
+ * @return {JSX.Element} Presentation fields.
+ */
+function PresentationFields() {
+	const postType = useSelect(
+		( select ) => select( 'core/editor' ).getCurrentPostType(),
+		[]
+	);
+	const [ meta = {}, setMeta ] = useEntityProp(
+		'postType',
+		postType,
+		'meta'
+	);
+	const updateMeta = ( key, value ) => {
+		setMeta( { ...meta, [ key ]: value } );
+	};
+	const eventTypes = Array.isArray( window.pkiwPresentationEventTypes )
+		? window.pkiwPresentationEventTypes
+		: [];
+	const calendar = meta._pkiw_presentation_calendar_source ?? '';
+
+	return (
+		<Flex
+			direction="column"
+			gap={ 4 }
+			className="post-kinds-indieweb-kind-fields"
+		>
+			<SelectControl
+				label={ __(
+					'Event type',
+					'post-kinds-for-indieweb-in-block-themes'
+				) }
+				value={ meta._pkiw_presentation_event_type ?? '' }
+				onChange={ ( value ) =>
+					updateMeta( '_pkiw_presentation_event_type', value )
+				}
+				options={ [
+					{
+						label: __(
+							'None',
+							'post-kinds-for-indieweb-in-block-themes'
+						),
+						value: '',
+					},
+					...eventTypes.map( ( type ) => ( {
+						label: type.label,
+						value: type.slug,
+					} ) ),
+				] }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
+			<TextControl
+				label={ __(
+					'Event name',
+					'post-kinds-for-indieweb-in-block-themes'
+				) }
+				value={ meta._pkiw_presentation_event_name ?? '' }
+				onChange={ ( value ) =>
+					updateMeta( '_pkiw_presentation_event_name', value )
+				}
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
+			<TextControl
+				label={ __(
+					'Event link',
+					'post-kinds-for-indieweb-in-block-themes'
+				) }
+				value={ meta._pkiw_presentation_event_url ?? '' }
+				onChange={ ( value ) =>
+					updateMeta( '_pkiw_presentation_event_url', value )
+				}
+				type="url"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
+			<TextControl
+				label={ __(
+					'Slides link',
+					'post-kinds-for-indieweb-in-block-themes'
+				) }
+				value={ meta._pkiw_presentation_slides_url ?? '' }
+				onChange={ ( value ) =>
+					updateMeta( '_pkiw_presentation_slides_url', value )
+				}
+				type="url"
+				help={ __(
+					"Filled from the post's first deck or recording when empty.",
+					'post-kinds-for-indieweb-in-block-themes'
+				) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
+			<TextControl
+				label={ __(
+					'Recording link',
+					'post-kinds-for-indieweb-in-block-themes'
+				) }
+				value={ meta._pkiw_presentation_recording_url ?? '' }
+				onChange={ ( value ) =>
+					updateMeta( '_pkiw_presentation_recording_url', value )
+				}
+				type="url"
+				help={ __(
+					"Filled from the post's first deck or recording when empty.",
+					'post-kinds-for-indieweb-in-block-themes'
+				) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
+			<SelectControl
+				label={ __(
+					'Calendar',
+					'post-kinds-for-indieweb-in-block-themes'
+				) }
+				value={ calendar }
+				onChange={ ( value ) =>
+					updateMeta( '_pkiw_presentation_calendar_source', value )
+				}
+				options={ [
+					{
+						label: __(
+							'None',
+							'post-kinds-for-indieweb-in-block-themes'
+						),
+						value: '',
+					},
+					{
+						label: __(
+							'The Events Calendar',
+							'post-kinds-for-indieweb-in-block-themes'
+						),
+						value: 'the-events-calendar',
+					},
+					{
+						label: __(
+							'My Calendar',
+							'post-kinds-for-indieweb-in-block-themes'
+						),
+						value: 'my-calendar',
+					},
+				] }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
+			{ calendar && (
+				<TextControl
+					label={ __(
+						'Calendar event ID',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
+					value={ meta._pkiw_presentation_calendar_event_id ?? 0 }
+					onChange={ ( value ) =>
+						updateMeta(
+							'_pkiw_presentation_calendar_event_id',
+							parseInt( value, 10 ) || 0
+						)
+					}
+					type="number"
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+			) }
+		</Flex>
+	);
 }
 
 /**
