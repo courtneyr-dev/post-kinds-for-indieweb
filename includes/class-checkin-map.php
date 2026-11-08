@@ -256,7 +256,7 @@ class Checkin_Map {
 		wp_enqueue_script( 'leaflet', PKIW_URL . 'assets/vendor/leaflet/leaflet.js', [], '1.9.4', true );
 		wp_enqueue_style( 'leaflet-markercluster', PKIW_URL . 'assets/vendor/leaflet-markercluster/MarkerCluster.css', [ 'leaflet' ], '1.4.1' );
 		wp_enqueue_script( 'leaflet-markercluster', PKIW_URL . 'assets/vendor/leaflet-markercluster/leaflet.markercluster.js', [ 'leaflet' ], '1.4.1', true );
-		wp_enqueue_script( 'pkiw-checkin-map', PKIW_URL . 'assets/js/checkin-map.js', [ 'leaflet', 'leaflet-markercluster' ], PKIW_VERSION, true );
+		wp_enqueue_script( 'pkiw-checkin-map', PKIW_URL . 'assets/js/map-view.js', [ 'leaflet', 'leaflet-markercluster' ], PKIW_VERSION, true );
 	}
 
 	/**

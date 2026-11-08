@@ -1,5 +1,5 @@
 /**
- * Check-in archive map and site consent tools (assets/js/checkin-map.js).
+ * Check-in archive map and site consent tools (assets/js/map-view.js).
  *
  * When the server marks the map data-pkiw-consent="required", the script
  * draws nothing, so no tile request leaves the page, until the
@@ -7,7 +7,7 @@
  * The list stays as the server printed it meanwhile.
  */
 
-const SCRIPT = '../../assets/js/checkin-map.js';
+const SCRIPT = '../../assets/js/map-view.js';
 
 /**
  * A Leaflet stand-in that records which calls the script made.
