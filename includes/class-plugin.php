@@ -684,6 +684,8 @@ final class Plugin {
 		}
 		if ( class_exists( __NAMESPACE__ . '\\Travel' ) ) {
 			( new Travel() )->register();
+			( new Travel_Archive() )->register();
+			( new Travel_Map() )->register();
 		}
 		if ( class_exists( __NAMESPACE__ . '\\Travel_Location' ) ) {
 			( new Travel_Location() )->register();
@@ -1499,6 +1501,16 @@ final class Plugin {
 			'taxonomy-kind-quote'          => [
 				'title'       => __( 'Quote Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Quote archive as a commonplace book: quotes by author, with a source-work index.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-trip'           => [
+				'title'       => __( 'Trip Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Trip archive: a route map and trips by year.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-itinerary'      => [
+				'title'       => __( 'Itinerary Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Itinerary archive: a route map and itineraries by year.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 			'taxonomy-kind-presentation'   => [

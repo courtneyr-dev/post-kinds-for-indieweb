@@ -268,26 +268,28 @@ final class RecipeCoursesBlockTest extends WP_UnitTestCase {
 		};
 		add_filter( 'pkiw_kind_archive_preview_per_page', $sizes, 10, 2 );
 
-		// The quote (W6-P257) and RSVP (W7-P251) archives set their own sizes; this test is about a site's filter.
+		// Travel (W7-P244M), quote (W6-P257), and RSVP (W7-P251) archives set their own sizes; this test is about a site's filter.
 		$this->assertSame(
 			[
+				'itinerary'    => 12,
 				'presentation' => 12,
 				'quote'        => 8,
 				'recipe'       => 4,
 				'rsvp'         => 9,
+				'trip'         => 12,
 			],
 			\PKIW\Kind_Archive_Layouts::preview_page_sizes()
 		);
 
 		do_action( 'enqueue_block_editor_assets' );
-		$this->assert_preview_settings( '{"presentation":12,"quote":8,"recipe":4,"rsvp":9}' );
+		$this->assert_preview_settings( '{"itinerary":12,"presentation":12,"quote":8,"recipe":4,"rsvp":9,"trip":12}' );
 	}
 
 	public function test_with_no_page_size_set_the_preview_keeps_the_editors_own(): void {
-		// Presentation (W7-P262), quote (W6-P257) and RSVP (W7-P251) set their own sizes.
-		$this->assertSame( [ 'presentation' => 12, 'quote' => 8, 'rsvp' => 9 ], \PKIW\Kind_Archive_Layouts::preview_page_sizes() );
+		// Travel (W7-P244M), presentation (W7-P262), quote (W6-P257), and RSVP (W7-P251) set their own sizes.
+		$this->assertSame( [ 'itinerary' => 12, 'presentation' => 12, 'quote' => 8, 'rsvp' => 9, 'trip' => 12 ], \PKIW\Kind_Archive_Layouts::preview_page_sizes() );
 
 		do_action( 'enqueue_block_editor_assets' );
-		$this->assert_preview_settings( '{"presentation":12,"quote":8,"rsvp":9}' );
+		$this->assert_preview_settings( '{"itinerary":12,"presentation":12,"quote":8,"rsvp":9,"trip":12}' );
 	}
 }

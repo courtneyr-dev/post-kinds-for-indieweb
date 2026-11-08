@@ -1,5 +1,5 @@
 /**
- * Check-in archive map in the block editor (assets/js/checkin-map.js).
+ * Check-in archive map in the block editor (assets/js/map-view.js).
  *
  * The editor previews the Check-ins Feed through the block renderer, so the
  * archive markup lands in the canvas after the map script has run, and again
@@ -8,7 +8,7 @@
  * the same consent rule as on the front end.
  */
 
-const SCRIPT = '../../assets/js/checkin-map.js';
+const SCRIPT = '../../assets/js/map-view.js';
 
 // Every observer the script starts, so each test can stop them.
 const observers = [];

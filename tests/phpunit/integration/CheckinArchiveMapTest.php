@@ -437,14 +437,14 @@ final class CheckinArchiveMapTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'assets/vendor/leaflet/leaflet.js', $scripts );
 		$this->assertStringContainsString( 'assets/vendor/leaflet-markercluster/leaflet.markercluster.js', $scripts );
-		$this->assertStringContainsString( 'assets/js/checkin-map.js', $scripts );
+		$this->assertStringContainsString( 'assets/js/map-view.js', $scripts );
 		$this->assertStringContainsString( 'assets/vendor/leaflet/leaflet.css', $styles );
 		$this->assertStringContainsString( 'assets/vendor/leaflet-markercluster/MarkerCluster.css', $styles );
 
 		// The preview's markup arrives after load, so the script watches for it.
 		$flag = 'window.pkiwCheckinMapWatch = true;';
 		$this->assertSame( 1, substr_count( $scripts, $flag ) );
-		$this->assertLessThan( strpos( $scripts, 'assets/js/checkin-map.js' ), strpos( $scripts, $flag ) );
+		$this->assertLessThan( strpos( $scripts, 'assets/js/map-view.js' ), strpos( $scripts, $flag ) );
 	}
 
 	public function test_editor_page_and_canvas_print_the_watch_flag_once(): void {
