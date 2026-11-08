@@ -27,12 +27,12 @@ final class MicropubPromoteTest extends WP_UnitTestCase {
 	public function test_absent_property_leaves_meta_unset(): void {
 		$id = self::factory()->post->create();
 		\PKIW\Micropub_Content_Builder::apply_promote( $id, [] );
-		$this->assertSame( '', get_post_meta( $id, 'pkiw_promote', true ) );
+		$this->assertFalse( metadata_exists( 'post', $id, 'pkiw_promote' ) );
 	}
 
 	public function test_falsey_property_leaves_meta_unset(): void {
 		$id = self::factory()->post->create();
 		\PKIW\Micropub_Content_Builder::apply_promote( $id, [ 'pkiw-promote' => [ 'false' ] ] );
-		$this->assertSame( '', get_post_meta( $id, 'pkiw_promote', true ) );
+		$this->assertFalse( metadata_exists( 'post', $id, 'pkiw_promote' ) );
 	}
 }
