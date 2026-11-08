@@ -254,7 +254,7 @@ final class KindFeedOrderTest extends WP_UnitTestCase {
 			$ids[] = $id;
 		}
 
-		$this->template = '<!-- wp:query {"queryId":3,"query":{"inherit":true}} --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-title />'
+		$this->template = '<!-- wp:query {"queryId":3,"query":{"inherit":true}} --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-title /-->'
 			. ( $entry ? '<!-- wp:post-kinds-indieweb/archive-sections {"linesPerPage":20} /-->' : '' )
 			. '<!-- /wp:post-template --></div><!-- /wp:query --><!-- wp:pkiw-test/calendar /-->';
 		$plan           = static fn( $found, $term, $content ) => str_contains( $content, 'wp:pkiw-test/calendar' )
