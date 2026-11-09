@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.8.7
+Stable tag: 1.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -180,7 +180,18 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 
 == Changelog ==
 
-= Unreleased =
+= 1.9.0 =
+* Added: RSVP archive at /kind/rsvp/ with an "Attending Remotely" status and two abilities; an event location prints only when the card and its stored privacy are both public.
+* Added: presentations archive grouped by year, a record block on the single, and `wp post-kinds reclassify-presentations` (dry run by default).
+* Added: trip and itinerary cards with per-stop privacy and date embargo, a map, and year-grouped archives at /kind/trip/ and /kind/itinerary/.
+* Added: event calendar block and archive template. Requires the My Calendar plugin; two settings show the calendar and hide every event location.
+* Added: comic lookup from Metron (add a token in Settings > APIs), with credits and a sideloaded cover.
+* Added: watch posters retry at 1, 6 and 24 hours under Sideload; `wp postkind featured-artwork retry` runs one by hand.
+* Added: the Stream card picks a photo for posts without one. Remove the `cr-stream-card-photo.php` mu-plugin if you run it.
+* Added: block examples for the inserter and seven Query Loop variations for kind archives.
+* Changed: RSVP Stream cards omit the location; the event card shows public My Calendar events only; watch posters follow Image Handling.
+* Fixed: an unknown event ID no longer resolves to another event; classic sleep posts keep their paragraphs.
+* Security: watch poster fetches pass an SSRF guard, and the API settings page masks every password field.
 * Changed: a logged-in editor on the front end sees a check-in's location the way a visitor does, in cards, feeds, the dashboard, the check-in map, archives and the weather line. Editors still see the full location on admin screens and in the block editor.
 * Changed: venue archives live at /venues/<slug>/. Simple Location's venue post type owns /venue/, so a venue archive there 404'd. An old /venue/<slug>/ link that would 404 now 301s to the venue's new link. The plugin version is 1.8.7, so upgraded sites rebuild their rewrite rules once.
 * Fixed: the plugin's venue archive template is named taxonomy-pkiw_venue, so WordPress picks it for venue archives. A theme or Site Editor taxonomy-pkiw_venue still wins.

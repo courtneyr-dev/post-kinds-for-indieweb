@@ -29,7 +29,11 @@ test.describe( 'Accessibility', () => {
 
 		const accessibilityScanResults = await new AxeBuilder( { page } )
 			.withTags( [ 'wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa' ] )
-			.exclude( '#wpadminbar' ) // Exclude WordPress admin bar
+			// Scan the plugin's page, not core's admin chrome: the admin bar,
+			// the admin menu (its Collapse Menu button) and core's update nag.
+			.exclude( '#wpadminbar' )
+			.exclude( '#adminmenumain' )
+			.exclude( '.update-nag' )
 			.analyze();
 
 		// Filter to only critical and serious issues

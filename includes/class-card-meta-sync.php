@@ -456,11 +456,13 @@ class Card_Meta_Sync {
 	 * ATTR_TOGGLES join it. Version 9 (issue 236, issue 238 and issue 256)
 	 * replays every map with the listen-card media type map and the wish map,
 	 * and adds the card-less question hooks. Issues 235, 242 and 243 add no map.
+	 * Version 10 (issues 251 and 331) replays every map with the RSVP map and
+	 * the comic card's Metron ID and ISBN; issues 262, 244 and 231 add no map.
 	 */
 	public const BACKFILL_HOOK    = 'pkiw_card_meta_backfill';
 	public const BACKFILL_OPTION  = 'pkiw_card_meta_backfill';
 	public const BACKFILL_CURSOR  = 'pkiw_card_meta_backfill_cursor';
-	public const BACKFILL_VERSION = '9';
+	public const BACKFILL_VERSION = '10';
 	public const BACKFILL_BATCH   = 50;
 
 	/**
