@@ -244,6 +244,8 @@ function activate(): void {
 function deactivate(): void {
 	// Flush rewrite rules on deactivation.
 	flush_rewrite_rules();
+
+	wp_clear_scheduled_hook( Trakt_Token_Refresher::CRON_HOOK );
 }
 
 // Register activation and deactivation hooks.
