@@ -40,13 +40,14 @@ class ApiSettingsTest extends WP_UnitTestCase {
 	// ─── get_oauth_redirect_uri ───
 
 	/**
-	 * Test get_oauth_redirect_uri returns admin-post URL.
+	 * Test get_oauth_redirect_uri returns bare admin-post URL for Trakt.
+	 *
+	 * Trakt rejects redirect URIs that contain a query string.
 	 */
 	public function test_get_oauth_redirect_uri_trakt(): void {
 		$uri = $this->settings->get_oauth_redirect_uri( 'trakt' );
 
-		$this->assertStringContainsString( 'admin-post.php', $uri );
-		$this->assertStringContainsString( 'action=pkiw_trakt_oauth', $uri );
+		$this->assertSame( admin_url( 'admin-post.php' ), $uri );
 	}
 
 	/**

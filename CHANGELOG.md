@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Saving Settings → API Connections now keeps the BoardGameGeek API token and the RAWG API key. The screen showed both fields, but the save handler's provider list left them out, so every save discarded them and the game lookup (and Outpost's Play lookup) answered "BoardGameGeek API is not configured". The Test button now works for both providers too.
+- Trakt can now connect. Trakt's developer portal changed in two ways that blocked it:
+  - It rejects a redirect URI with a query string, so the old `admin-post.php?action=pkiw_trakt_oauth` couldn't be registered. The Trakt redirect URI is now the bare `wp-admin/admin-post.php`; PKIW picks up the callback on the generic `admin_post` hook and acts only when the request's `state` matches one it issued. Simkl and Foursquare keep their existing redirect URIs.
+  - New apps sign users in with PKCE and get no client secret ("Not issued"). Connect no longer asks for a Client Secret. PKIW sends an S256 code challenge to `auth.trakt.tv/oauth/authorize` and the matching single-use code verifier, without a secret, to `/oauth/token`. If Trakt refuses the exchange, its `error_description` now shows in the settings notice.
+  - Create the app at developer.trakt.tv with the redirect URI shown in API Connections, paste its Client ID, and click Connect.
 
 ## [1.8.7] - 2026-10-26
 
