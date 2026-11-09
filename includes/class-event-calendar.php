@@ -178,7 +178,10 @@ final class Event_Calendar {
 
 		self::$rendered = true;
 		self::enqueue_my_calendar_assets();
-		$wrapper = get_block_wrapper_attributes( [ 'class' => 'pkiw-event-calendar' ] );
+		// WordPress 7.0's block supports read the block being rendered; a direct call has none.
+		$wrapper = null !== \WP_Block_Supports::$block_to_render
+			? get_block_wrapper_attributes( [ 'class' => 'pkiw-event-calendar' ] )
+			: 'class="pkiw-event-calendar"';
 
 		return '<section ' . $wrapper . ' aria-label="' . esc_attr( $label ) . '">'
 			. do_shortcode( '[my_calendar format="' . $format . '"]' )
