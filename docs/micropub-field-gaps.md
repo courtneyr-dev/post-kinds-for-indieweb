@@ -143,7 +143,9 @@ the two cover URLs together, so the local one follows the card.
 The cover isn't repeated below the card: the builder drops every value of
 the image that holds the cover URL, plus any other copy of that URL, and
 appends the remaining photos with their alts aligned. Every comic-card
-attribute maps, so `wire_matrix()` lists no gaps for comics.
+attribute maps except `metronId` and `isbn` (added in #331 for the Metron
+lookup), which no Micropub property carries, so `wire_matrix()` lists those
+two as the comics gaps.
 
 ## acquisition
 

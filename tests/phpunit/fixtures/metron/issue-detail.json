@@ -1,0 +1,60 @@
+{
+  "id": 101,
+  "series": {
+    "id": 501,
+    "name": "Sentinel Comics",
+    "volume": 2,
+    "year_began": 2026,
+    "sort_name": "Sentinel Comics",
+    "series_type": {
+      "id": 3,
+      "name": "Mini-Series"
+    },
+    "genres": [],
+    "alt_names": [],
+    "language": "en"
+  },
+  "number": "7",
+  "issue": "Sentinel Comics (2026) #7",
+  "cover_date": "2026-11-01",
+  "store_date": "2026-09-02",
+  "image": "https://static.metron.cloud/media/issue/2026/11/15/sentinel-07.jpg",
+  "cover_hash": "a1b2c3d4e5f60708",
+  "modified": "2026-10-30T13:27:10Z",
+  "desc": "A fictional issue used for an offline test.",
+  "desc_is_solicitation": false,
+  "sku": "EXAMPLE-101",
+  "isbn": "9798368809267",
+  "upc": "75960601234500111",
+  "page_count": 32,
+  "credits": [
+    {
+      "creator": {
+        "id": 701,
+        "name": "Ada Example"
+      },
+      "role": [
+        {
+          "id": 1,
+          "name": "Writer"
+        }
+      ]
+    },
+    {
+      "creator": {
+        "id": 702,
+        "name": "Grace Example"
+      },
+      "role": [
+        {
+          "id": 2,
+          "name": "Artist"
+        }
+      ]
+    }
+  ],
+  "variants": [],
+  "reprints": [],
+  "resource_url": "https://metron.cloud/issue/sentinel-comics-7/",
+  "attribution": []
+}

@@ -2,7 +2,7 @@
 /**
  * Lookup Abilities Provider for Post Kinds for IndieWeb in Block Themes
  *
- * Registers 6 lookup abilities that proxy to existing REST API endpoints.
+ * Registers 7 lookup abilities that proxy to existing REST API endpoints.
  *
  * @package PKIW
  * @since   1.1.0
@@ -82,7 +82,7 @@ final class Lookup_Abilities {
 	}
 
 	/**
-	 * Register all 6 lookup abilities.
+	 * Register all 7 lookup abilities.
 	 *
 	 * @since 1.1.0
 	 */
@@ -114,7 +114,7 @@ final class Lookup_Abilities {
 	}
 
 	/**
-	 * Get lookup definitions for all 6 lookup types.
+	 * Get lookup definitions for all 7 lookup types.
 	 *
 	 * @since 1.1.0
 	 *
@@ -226,6 +226,32 @@ final class Lookup_Abilities {
 						],
 					],
 					'required'   => [ 'query' ],
+				],
+			],
+			'comic'   => [
+				'label'        => __( 'Lookup Comic', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description'  => __( 'Search Metron for a comic issue by series and number, UPC, or Metron ID.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'rest_route'   => '/' . REST_API::NAMESPACE . '/lookup/comic',
+				'input_schema' => [
+					'type'       => 'object',
+					'properties' => [
+						'query'  => [
+							'type'        => 'string',
+							'description' => __( 'Comic series name.', 'post-kinds-for-indieweb-in-block-themes' ),
+						],
+						'number' => [
+							'type'        => 'string',
+							'description' => __( 'Issue number used with a series search.', 'post-kinds-for-indieweb-in-block-themes' ),
+						],
+						'upc'    => [
+							'type'        => 'string',
+							'description' => __( 'UPC for direct issue lookup.', 'post-kinds-for-indieweb-in-block-themes' ),
+						],
+						'id'     => [
+							'type'        => 'string',
+							'description' => __( 'Metron issue ID for direct lookup.', 'post-kinds-for-indieweb-in-block-themes' ),
+						],
+					],
 				],
 			],
 		];

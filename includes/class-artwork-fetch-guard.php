@@ -1,6 +1,6 @@
 <?php
 /**
- * Guard remote watch-poster sideloads.
+ * Guard remote poster and comic-cover sideloads.
  *
  * @package PKIW
  */
@@ -38,12 +38,13 @@ final class Artwork_Fetch_Guard {
 	}
 
 	/**
-	 * Validate a watch-poster URL and resolve its pinned IPv4 address.
+	 * Validate an artwork URL and resolve its pinned IPv4 address.
 	 *
-	 * @param string $url Poster URL.
+	 * @param string $url  Artwork URL.
+	 * @param string $kind Kind slug.
 	 * @return array{ok:bool,retryable:bool,code:string,ip:string}
 	 */
-	public static function check( string $url ): array {
+	public static function check( string $url, string $kind = 'watch' ): array {
 		$parts = wp_parse_url( $url );
 		if ( ! is_array( $parts )
 			|| 'https' !== strtolower( (string) ( $parts['scheme'] ?? '' ) )
@@ -58,12 +59,16 @@ final class Artwork_Fetch_Guard {
 			return self::refused();
 		}
 
-		$hosts = (array) apply_filters(
+		$defaults = [
+			'watch'  => [ 'image.tmdb.org', 'static.tvmaze.com', 'simkl.in' ],
+			'comics' => [ 'static.metron.cloud' ],
+		];
+		$hosts    = (array) apply_filters(
 			'pkiw_artwork_sideload_hosts',
-			[ 'image.tmdb.org', 'static.tvmaze.com', 'simkl.in' ],
-			'watch'
+			$defaults[ $kind ] ?? [],
+			$kind
 		);
-		$hosts = array_values(
+		$hosts    = array_values(
 			array_filter(
 				array_map(
 					static fn( $allowed ): string => strtolower( trim( is_string( $allowed ) ? $allowed : '' ) ),

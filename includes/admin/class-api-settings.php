@@ -200,6 +200,21 @@ class API_Settings {
 					],
 				],
 			],
+			'metron'       => [
+				'name'        => 'Metron',
+				'description' => __( 'Comic issue metadata from Metron.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'category'    => 'books',
+				'docs_url'    => 'https://metron.cloud/',
+				'signup_url'  => 'https://metron.cloud/',
+				'auth_type'   => 'bearer',
+				'fields'      => [
+					'api_token' => [
+						'label'    => __( 'API Token', 'post-kinds-for-indieweb-in-block-themes' ),
+						'type'     => 'password',
+						'required' => true,
+					],
+				],
+			],
 			'google_books' => [
 				'name'        => 'Google Books',
 				'description' => __( 'Book metadata fallback. Optional API key for higher rate limits.', 'post-kinds-for-indieweb-in-block-themes' ),
@@ -515,7 +530,10 @@ class API_Settings {
 	 * @return void
 	 */
 	private function render_field( string $api_id, string $field_id, array $field, array $credentials ): void {
-		$value    = $credentials[ $field_id ] ?? '';
+		$value = $credentials[ $field_id ] ?? '';
+		if ( 'password' === $field['type'] && '' !== $value ) {
+			$value = '************';
+		}
 		$name     = "pkiw_api_credentials[{$api_id}][{$field_id}]";
 		$id       = "api_{$api_id}_{$field_id}";
 		$required = ! empty( $field['required'] ) ? 'required' : '';

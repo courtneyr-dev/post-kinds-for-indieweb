@@ -18,6 +18,7 @@ final class FeaturedArtworkRetryTest extends WP_UnitTestCase {
 
 	private const URL_1 = 'https://image.tmdb.org/t/p/w342/one.jpg';
 	private const URL_2 = 'https://image.tmdb.org/t/p/w342/two.jpg';
+	private const COMIC_URL = 'https://static.metron.cloud/media/issue/one.jpg';
 
 	/** @var string[] */
 	private array $responses = [];
@@ -93,6 +94,25 @@ final class FeaturedArtworkRetryTest extends WP_UnitTestCase {
 			remove_filter( 'pkiw_set_featured_from_artwork', '__return_false' );
 		}
 		wp_set_object_terms( $post_id, 'watch', Taxonomy::TAXONOMY );
+
+		return $post_id;
+	}
+
+	private function comic_post( string $url = self::COMIC_URL, string $metron_id = '101', bool $allow_fetch = false ): int {
+		if ( ! $allow_fetch ) {
+			add_filter( 'pkiw_set_featured_from_artwork', '__return_false' );
+		}
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => 'Fixture Comic',
+				'post_excerpt' => '',
+				'post_content' => '<!-- wp:post-kinds-indieweb/comic-card {"title":"Fixture Comic","metronId":"' . $metron_id . '","coverImage":"' . $url . '"} /-->',
+			]
+		);
+		if ( ! $allow_fetch ) {
+			remove_filter( 'pkiw_set_featured_from_artwork', '__return_false' );
+		}
+		wp_set_object_terms( $post_id, 'comics', Taxonomy::TAXONOMY );
 
 		return $post_id;
 	}
@@ -218,6 +238,77 @@ final class FeaturedArtworkRetryTest extends WP_UnitTestCase {
 		$this->assertIsInt( $result );
 		$this->assertFalse( metadata_exists( 'post', $post_id, Featured_Artwork::RETRY_META ) );
 		$this->assertSame( 0, $this->cron_count( $post_id ) );
+	}
+
+	public function test_metron_comic_twin_retries_then_saves_a_local_cover(): void {
+		$post_id          = $this->comic_post();
+		$this->responses[] = 'failed';
+		$result            = Featured_Artwork::apply( $post_id, self::COMIC_URL );
+
+		$this->assertWPError( $result );
+		$this->assertSame( 'scheduled', $this->retry( $post_id )['state'] );
+		$this->assertSame( 1, $this->cron_count( $post_id ) );
+
+		$this->responses[] = 'success';
+		$result            = Featured_Artwork::apply( $post_id, self::COMIC_URL );
+		$this->assertIsInt( $result );
+		$this->assertSame( $result, get_post_thumbnail_id( $post_id ) );
+		$this->assertFalse( metadata_exists( 'post', $post_id, Featured_Artwork::RETRY_META ) );
+	}
+
+	public function test_metron_comic_save_fetches_a_static_cover(): void {
+		$this->responses[] = 'success';
+
+		$post_id = $this->comic_post( self::COMIC_URL, '101', true );
+
+		$this->assertSame( 1, $this->http_requests );
+		$this->assertGreaterThan( 0, get_post_thumbnail_id( $post_id ) );
+		$this->assertFalse( metadata_exists( 'post', $post_id, Featured_Artwork::RETRY_META ) );
+	}
+
+	public function test_backfill_includes_only_comics_with_a_digit_metron_id(): void {
+		$metron = $this->comic_post();
+		$legacy = $this->comic_post( self::COMIC_URL, '' );
+		$this->responses[] = 'success';
+
+		$stats = ( new Featured_Artwork() )->backfill();
+
+		$this->assertSame( 1, $stats['updated'] );
+		$this->assertSame( 1, $stats['skipped'] );
+		$this->assertSame( 1, $this->http_requests );
+		$this->assertGreaterThan( 0, get_post_thumbnail_id( $metron ) );
+		$this->assertSame( 0, get_post_thumbnail_id( $legacy ) );
+		$this->assertFalse( metadata_exists( 'post', $metron, Featured_Artwork::RETRY_META ) );
+	}
+
+	public function test_only_the_first_nested_comic_card_can_enable_metron_sideloading(): void {
+		$this->responses[] = 'success';
+		$post_id = self::factory()->post->create(
+			[
+				'post_title'   => 'Two Comic Cards',
+				'post_excerpt' => '',
+				'post_content' => '<!-- wp:group --><div class="wp-block-group"><!-- wp:post-kinds-indieweb/comic-card {"title":"Legacy First","coverImage":"' . self::COMIC_URL . '"} /--></div><!-- /wp:group --><!-- wp:post-kinds-indieweb/comic-card {"title":"Metron Second","metronId":"202","coverImage":"' . self::COMIC_URL . '"} /-->',
+			]
+		);
+		wp_set_object_terms( $post_id, 'comics', Taxonomy::TAXONOMY );
+
+		$this->assertSame( 0, $this->http_requests );
+		$this->assertSame( 0, get_post_thumbnail_id( $post_id ) );
+		$this->assertFalse( metadata_exists( 'post', $post_id, Featured_Artwork::RETRY_META ) );
+	}
+
+	public function test_metron_comic_twin_refuses_other_hosts_and_ignores_non_digit_ids(): void {
+		$refused = $this->comic_post( 'https://example.com/cover.jpg', '101', true );
+		$retry   = $this->retry( $refused );
+		$this->assertSame( 'permanent', $retry['state'] );
+		$this->assertSame( 'pkiw_artwork_refused', $retry['code'] );
+		$this->assertSame( 0, $this->http_requests );
+
+		$non_digit = $this->comic_post( self::COMIC_URL, '101x', true );
+		$this->assertSame( 0, $this->http_requests );
+		$this->assertSame( 0, get_post_thumbnail_id( $non_digit ) );
+		$this->assertFalse( metadata_exists( 'post', $non_digit, Featured_Artwork::RETRY_META ) );
+		$this->assertSame( 0, $this->cron_count( $non_digit ) );
 	}
 
 	public function test_unscheduled_failure_writes_no_retry_state_or_event(): void {

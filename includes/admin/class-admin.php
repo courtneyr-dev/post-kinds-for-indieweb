@@ -746,6 +746,7 @@ class Admin {
 			'tvmaze'       => [ 'api_key' ], // Optional premium key.
 			'openlibrary'  => [], // No auth needed.
 			'hardcover'    => [ 'api_token', 'username' ],
+			'metron'       => [ 'api_token' ],
 			'google_books' => [ 'api_key' ],
 			'foursquare'   => [ 'api_key', 'client_id', 'client_secret', 'access_token', 'username' ],
 			'nominatim'    => [ 'email' ],
@@ -1061,6 +1062,7 @@ class Admin {
 			'tvmaze'       => 'PKIW\\APIs\\TVmaze',
 			'openlibrary'  => 'PKIW\\APIs\\OpenLibrary',
 			'hardcover'    => 'PKIW\\APIs\\Hardcover',
+			'metron'       => 'PKIW\\APIs\\Metron',
 			'google_books' => 'PKIW\\APIs\\GoogleBooks',
 			'foursquare'   => 'PKIW\\APIs\\Foursquare',
 			'nominatim'    => 'PKIW\\APIs\\Nominatim',
