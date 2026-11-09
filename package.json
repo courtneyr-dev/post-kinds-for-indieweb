@@ -61,9 +61,9 @@
 	},
 	"devDependencies": {
 		"@axe-core/playwright": "^4.14.0",
-		"@babel/core": "^7.29.7",
-		"@lhci/cli": "^0.15.1",
-		"@playwright/test": "^1.64.1",
+		"@babel/core": "^7.29.13",
+		"@lhci/cli": "^0.16.0",
+		"@playwright/test": "^1.65.0",
 		"@testing-library/jest-dom": "^7.0.1",
 		"@testing-library/react": "^16.3.3",
 		"@wordpress/babel-preset-default": "^10.0.0",
