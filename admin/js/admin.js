@@ -345,11 +345,6 @@
 				)
 				.val();
 
-			if ( ! clientSecret && api === 'trakt' ) {
-				alert( 'Please enter your Client Secret first.' );
-				return;
-			}
-
 			// Save credentials first, then get OAuth URL
 			const $button = $( this );
 			$button.prop( 'disabled', true ).text( 'Connecting...' );

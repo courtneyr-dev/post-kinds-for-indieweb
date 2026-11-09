@@ -20,6 +20,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 class API_Settings {
 
 	/**
+	 * OAuth providers whose app registration rejects a redirect URI with a
+	 * query string (Trakt: "Redirect URIs cannot contain queries or
+	 * fragments"). They get bare admin-post.php instead of `?action=`.
+	 * Providers already registered with `?action=` URIs stay unchanged so
+	 * their existing apps keep working.
+	 *
+	 * @var string[]
+	 */
+	private const QUERY_FREE_REDIRECT_APIS = [ 'trakt' ];
+
+	/**
+	 * Trakt's sign-in page for the PKCE authorization code flow.
+	 *
+	 * @var string
+	 */
+	private const TRAKT_AUTHORIZE_URL = 'https://auth.trakt.tv/oauth/authorize';
+
+	/**
 	 * Admin instance.
 	 *
 	 * @var Admin
@@ -63,6 +81,10 @@ class API_Settings {
 		add_action( 'admin_post_pkiw_foursquare_oauth', [ $this, 'handle_foursquare_oauth_callback' ] );
 		add_action( 'admin_post_pkiw_lastfm_oauth', [ $this, 'handle_lastfm_oauth_callback' ] );
 		// Note: Untappd OAuth removed - API requires commercial agreement.
+
+		// Providers in QUERY_FREE_REDIRECT_APIS redirect to bare admin-post.php,
+		// which fires the generic `admin_post` hook; route those by OAuth state.
+		add_action( 'admin_post', [ $this, 'route_query_free_oauth_callback' ] );
 	}
 
 	/**
@@ -119,10 +141,10 @@ class API_Settings {
 				'name'        => 'Trakt',
 				'description' => __( 'Watch history tracking. Requires OAuth authentication.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'category'    => 'video',
-				'docs_url'    => 'https://trakt.docs.apiary.io/',
-				'signup_url'  => 'https://trakt.tv/oauth/applications',
+				'docs_url'    => 'https://developer.trakt.tv/docs/authentication-oauth',
+				'signup_url'  => 'https://developer.trakt.tv/apps',
 				'auth_type'   => 'oauth',
-				'oauth_url'   => 'https://trakt.tv/oauth/authorize',
+				'oauth_url'   => self::TRAKT_AUTHORIZE_URL,
 				'fields'      => [
 					'client_id'     => [
 						'label'    => __( 'Client ID', 'post-kinds-for-indieweb-in-block-themes' ),
@@ -132,7 +154,8 @@ class API_Settings {
 					'client_secret' => [
 						'label'    => __( 'Client Secret', 'post-kinds-for-indieweb-in-block-themes' ),
 						'type'     => 'password',
-						'required' => true,
+						'required' => false,
+						'help'     => __( 'Leave blank. Trakt sign-in uses PKCE, so new Trakt apps show "Not issued" here and Connect never sends a secret.', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 					'username'      => [
 						'label'    => __( 'Trakt Username', 'post-kinds-for-indieweb-in-block-themes' ),
@@ -886,6 +909,15 @@ class API_Settings {
 	 * @return array<string, mixed>|\WP_Error Token data or error.
 	 */
 	private function exchange_trakt_code( string $code, array $credentials ) {
+		// PKCE verifier issued in get_oauth_url(); single-use.
+		$verifier = get_transient( 'pkiw_admin_oauth_pkce_trakt' );
+		delete_transient( 'pkiw_admin_oauth_pkce_trakt' );
+		if ( ! is_string( $verifier ) || '' === $verifier ) {
+			return new \WP_Error( 'pkce_missing', __( 'The Trakt sign-in expired. Please click Connect again.', 'post-kinds-for-indieweb-in-block-themes' ) );
+		}
+
+		// No client_secret: Trakt's PKCE flow verifies the code_verifier
+		// instead, and a secret saved from an older app must not be sent.
 		$response = wp_remote_post(
 			'https://api.trakt.tv/oauth/token',
 			[
@@ -896,7 +928,7 @@ class API_Settings {
 					[
 						'code'          => $code,
 						'client_id'     => $credentials['client_id'] ?? '',
-						'client_secret' => $credentials['client_secret'] ?? '',
+						'code_verifier' => $verifier,
 						'redirect_uri'  => $this->get_oauth_redirect_uri( 'trakt' ),
 						'grant_type'    => 'authorization_code',
 					]
@@ -912,7 +944,14 @@ class API_Settings {
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( empty( $body['access_token'] ) ) {
-			return new \WP_Error( 'no_token', __( 'No access token received.', 'post-kinds-for-indieweb-in-block-themes' ) );
+			$detail = is_array( $body ) ? ( $body['error_description'] ?? $body['error'] ?? '' ) : '';
+			return new \WP_Error(
+				'no_token',
+				'' === $detail
+					? __( 'No access token received.', 'post-kinds-for-indieweb-in-block-themes' )
+					/* translators: %s: error description returned by Trakt. */
+					: sprintf( __( 'Trakt did not issue a token: %s', 'post-kinds-for-indieweb-in-block-themes' ), sanitize_text_field( (string) $detail ) )
+			);
 		}
 
 		// Save tokens.
@@ -1132,7 +1171,51 @@ class API_Settings {
 	 * @return string Redirect URI.
 	 */
 	public function get_oauth_redirect_uri( string $api ): string {
+		if ( in_array( $api, self::QUERY_FREE_REDIRECT_APIS, true ) ) {
+			return admin_url( 'admin-post.php' );
+		}
 		return admin_url( 'admin-post.php?action=pkiw_' . $api . '_oauth' );
+	}
+
+	/**
+	 * PKCE S256 code challenge: base64url(SHA-256(verifier)) without padding.
+	 *
+	 * @param string $verifier PKCE code verifier.
+	 * @return string Code challenge.
+	 */
+	private static function pkce_s256_challenge( string $verifier ): string {
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- RFC 7636 base64url encoding, not obfuscation.
+		return rtrim( strtr( base64_encode( hash( 'sha256', $verifier, true ) ), '+/', '-_' ), '=' );
+	}
+
+	/**
+	 * Route an OAuth callback that arrived at bare admin-post.php.
+	 *
+	 * Runs on the generic `admin_post` hook, which every plugin shares, so it
+	 * acts only when the request's `state` matches a pending state PKIW issued
+	 * for a query-free provider. process_oauth_callback() re-verifies and
+	 * consumes that state.
+	 *
+	 * @return void
+	 */
+	public function route_query_free_oauth_callback(): void {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- The OAuth state is the CSRF check.
+		if ( ! isset( $_GET['state'] ) || ! is_string( $_GET['state'] ) ) {
+			return;
+		}
+		$state = sanitize_text_field( wp_unslash( $_GET['state'] ) );
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		if ( '' === $state ) {
+			return;
+		}
+
+		foreach ( self::QUERY_FREE_REDIRECT_APIS as $api ) {
+			$expected = get_transient( 'pkiw_admin_oauth_state_' . $api );
+			if ( is_string( $expected ) && '' !== $expected && hash_equals( $expected, $state ) ) {
+				$this->process_oauth_callback( $api );
+				return;
+			}
+		}
 	}
 
 	/**
@@ -1156,14 +1239,22 @@ class API_Settings {
 				if ( empty( $api_creds['client_id'] ) ) {
 					return null;
 				}
+				// PKCE: a fresh 64-character verifier per sign-in (Trakt allows
+				// 43-128 of [A-Za-z0-9-._~]); only its S256 hash leaves the server.
+				$verifier = wp_generate_password( 64, false );
+				set_transient( 'pkiw_admin_oauth_pkce_trakt', $verifier, HOUR_IN_SECONDS );
 				return add_query_arg(
-					[
-						'response_type' => 'code',
-						'client_id'     => $api_creds['client_id'],
-						'redirect_uri'  => $redirect_uri,
-						'state'         => $state,
-					],
-					'https://trakt.tv/oauth/authorize'
+					rawurlencode_deep(
+						[
+							'response_type'         => 'code',
+							'client_id'             => $api_creds['client_id'],
+							'redirect_uri'          => $redirect_uri,
+							'state'                 => $state,
+							'code_challenge'        => self::pkce_s256_challenge( $verifier ),
+							'code_challenge_method' => 'S256',
+						]
+					),
+					self::TRAKT_AUTHORIZE_URL
 				);
 
 			case 'simkl':
