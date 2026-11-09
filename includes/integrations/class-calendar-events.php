@@ -2,7 +2,7 @@
 /**
  * Calendar Events integration facade.
  *
- * Resolves event data (name, start, end, location, url) for the event-card
+ * Resolves event data (name, start, end, location, url, status) for the event-card
  * block from an installed calendar plugin. Sources are feature-detected at
  * call time — both calendar plugins stay optional, and an inactive or
  * unknown source degrades to null so the block falls back to its own
@@ -47,7 +47,7 @@ class Calendar_Events {
 	 *
 	 * @param string $source   Calendar source slug.
 	 * @param int    $event_id Event ID within that source.
-	 * @return array{name: string, start: string, end: string, location: string, url: string}|null
+	 * @return array{name: string, start: string, end: string, location: string, url: string, status: string}|null
 	 *         Normalized event data, or null when the source is inactive,
 	 *         unknown, or the event cannot be found.
 	 */
@@ -60,7 +60,7 @@ class Calendar_Events {
 		 * Short-circuit calendar event resolution.
 		 *
 		 * Return an array with any of the keys name, start, end, location,
-		 * url to skip the plugin lookup entirely. Lets tests stub event data
+		 * url, status to skip the plugin lookup entirely. Lets tests stub event data
 		 * and lets sites wire up calendar plugins this integration doesn't
 		 * know about.
 		 *
@@ -91,15 +91,15 @@ class Calendar_Events {
 	}
 
 	/**
-	 * Coerce raw event data into the five normalized string fields.
+	 * Coerce raw event data into the six normalized string fields.
 	 *
 	 * @param array<string, mixed> $event Raw event data.
-	 * @return array{name: string, start: string, end: string, location: string, url: string}
+	 * @return array{name: string, start: string, end: string, location: string, url: string, status: string}
 	 */
 	private static function normalize( array $event ): array {
 		$normalized = [];
 
-		foreach ( [ 'name', 'start', 'end', 'location', 'url' ] as $key ) {
+		foreach ( [ 'name', 'start', 'end', 'location', 'url', 'status' ] as $key ) {
 			$value              = $event[ $key ] ?? '';
 			$normalized[ $key ] = is_scalar( $value ) ? trim( (string) $value ) : '';
 		}

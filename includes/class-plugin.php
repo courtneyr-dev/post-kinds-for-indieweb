@@ -682,6 +682,9 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Quote_Archive' ) ) {
 			( new Quote_Archive() )->register();
 		}
+		if ( class_exists( __NAMESPACE__ . '\\Event_Calendar' ) ) {
+			( new Event_Calendar() )->register();
+		}
 		if ( class_exists( __NAMESPACE__ . '\\Travel' ) ) {
 			( new Travel() )->register();
 			( new Travel_Archive() )->register();
@@ -1501,6 +1504,11 @@ final class Plugin {
 			'taxonomy-kind-quote'          => [
 				'title'       => __( 'Quote Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Quote archive as a commonplace book: quotes by author, with a source-work index.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-event'          => [
+				'title'       => __( 'Event Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Event archive showing the My Calendar calendar.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 			'taxonomy-kind-trip'           => [
