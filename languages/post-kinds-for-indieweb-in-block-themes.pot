@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Post Kinds for IndieWeb in Block Themes 1.8.7\n"
+"Project-Id-Version: Post Kinds for IndieWeb in Block Themes 1.8.8\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/post-kinds-for-indieweb-in-block-themes\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-26T21:21:15+00:00\n"
+"POT-Creation-Date: 2026-11-09T17:00:51+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: post-kinds-for-indieweb-in-block-themes\n"
@@ -62,7 +62,7 @@ msgid "Original link"
 msgstr ""
 
 #: build/blocks/bookmark-card/render.php:64
-#: includes/admin/class-admin.php:890
+#: includes/admin/class-admin.php:892
 #: includes/admin/class-settings-page.php:1590
 msgid "Bookmark"
 msgstr ""
@@ -307,7 +307,7 @@ msgid "Water"
 msgstr ""
 
 #: build/blocks/drink-card/render.php:35
-#: includes/admin/class-admin.php:878
+#: includes/admin/class-admin.php:880
 #: includes/admin/class-settings-page.php:1610
 #: includes/class-kind-archive-layouts.php:1535
 msgid "Drink"
@@ -341,7 +341,7 @@ msgid "%s event"
 msgstr ""
 
 #: build/blocks/exercise-card/render.php:57
-#: includes/admin/class-admin.php:942
+#: includes/admin/class-admin.php:944
 #: includes/class-exercise-medals.php:252
 msgid "Exercise"
 msgstr ""
@@ -363,20 +363,20 @@ msgid "Time"
 msgstr ""
 
 #: build/blocks/favorite-card/render.php:57
-#: includes/admin/class-admin.php:886
+#: includes/admin/class-admin.php:888
 msgid "Favorite"
 msgstr ""
 
 #: build/blocks/jam-card/render.php:77
 #: build/blocks/jam-card/render.php:118
-#: includes/admin/class-admin.php:906
+#: includes/admin/class-admin.php:908
 #: includes/admin/class-settings-page.php:1620
 #: includes/class-jam-archive.php:197
 msgid "Jam"
 msgstr ""
 
 #: build/blocks/like-card/render.php:111
-#: includes/admin/class-admin.php:882
+#: includes/admin/class-admin.php:884
 #: includes/admin/class-settings-page.php:1580
 msgid "Like"
 msgstr ""
@@ -387,7 +387,7 @@ msgstr ""
 
 #: build/blocks/listen-card/render.php:77
 #: build/blocks/listen-card/render.php:120
-#: includes/admin/class-admin.php:854
+#: includes/admin/class-admin.php:856
 #: includes/admin/class-settings-page.php:756
 #: includes/admin/class-settings-page.php:1615
 #: includes/class-listen-archive.php:262
@@ -396,7 +396,7 @@ msgstr ""
 
 #: build/blocks/mood-card/render.php:40
 #: build/blocks/mood-card/render.php:44
-#: includes/admin/class-admin.php:914
+#: includes/admin/class-admin.php:916
 #: includes/admin/class-settings-page.php:1655
 #: includes/class-mood-vocabulary.php:554
 #: includes/functions-stream-card.php:2072
@@ -461,13 +461,13 @@ msgid "Buy"
 msgstr ""
 
 #: build/blocks/play-card/render.php:202
-#: includes/admin/class-admin.php:866
+#: includes/admin/class-admin.php:868
 #: includes/admin/class-settings-page.php:1630
 msgid "Play"
 msgstr ""
 
 #: build/blocks/read-card/render.php:63
-#: includes/admin/class-admin.php:862
+#: includes/admin/class-admin.php:864
 #: includes/admin/class-settings-page.php:758
 #: includes/admin/class-settings-page.php:1635
 msgid "Read"
@@ -486,13 +486,13 @@ msgid "%1$d of %2$d pages (%3$d%%)"
 msgstr ""
 
 #: build/blocks/reply-card/render.php:65
-#: includes/admin/class-admin.php:894
+#: includes/admin/class-admin.php:896
 #: includes/admin/class-settings-page.php:1575
 msgid "Reply"
 msgstr ""
 
 #: build/blocks/repost-card/render.php:64
-#: includes/admin/class-admin.php:898
+#: includes/admin/class-admin.php:900
 #: includes/admin/class-settings-page.php:1585
 msgid "Repost"
 msgstr ""
@@ -528,7 +528,7 @@ msgid "Attending Remotely"
 msgstr ""
 
 #: build/blocks/rsvp-card/render.php:89
-#: includes/admin/class-admin.php:902
+#: includes/admin/class-admin.php:904
 #: includes/admin/class-meta-boxes.php:286
 #: includes/admin/class-settings-page.php:1595
 msgid "RSVP"
@@ -541,7 +541,7 @@ msgid "RSVPed %s"
 msgstr ""
 
 #: build/blocks/sleep-card/render.php:48
-#: includes/admin/class-admin.php:966
+#: includes/admin/class-admin.php:968
 msgid "Sleep"
 msgstr ""
 
@@ -592,7 +592,7 @@ msgid "Poster for %s"
 msgstr ""
 
 #: build/blocks/watch-card/render.php:117
-#: includes/admin/class-admin.php:858
+#: includes/admin/class-admin.php:860
 #: includes/admin/class-settings-page.php:757
 #: includes/admin/class-settings-page.php:1625
 msgid "Watch"
@@ -607,7 +607,7 @@ msgid "Rewatch"
 msgstr ""
 
 #: build/blocks/wish-card/render.php:77
-#: includes/admin/class-admin.php:910
+#: includes/admin/class-admin.php:912
 #: includes/admin/class-settings-page.php:1660
 msgid "Wish"
 msgstr ""
@@ -1006,7 +1006,7 @@ msgid "Testing connection..."
 msgstr ""
 
 #: includes/admin/class-admin.php:331
-#: includes/admin/class-admin.php:1027
+#: includes/admin/class-admin.php:1029
 #: includes/class-rest-api.php:2763
 msgid "Connection successful!"
 msgstr ""
@@ -1065,95 +1065,95 @@ msgid_plural "%1$d imports are currently running. <a href=\"%2$s\">View progress
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/admin/class-admin.php:870
+#: includes/admin/class-admin.php:872
 #: includes/admin/class-settings-page.php:759
 msgid "Checkin"
 msgstr ""
 
-#: includes/admin/class-admin.php:874
+#: includes/admin/class-admin.php:876
 #: includes/admin/class-settings-page.php:1605
 msgid "Eat"
 msgstr ""
 
-#: includes/admin/class-admin.php:918
+#: includes/admin/class-admin.php:920
 #: includes/admin/class-settings-page.php:1665
 msgid "Acquisition"
 msgstr ""
 
-#: includes/admin/class-admin.php:922
+#: includes/admin/class-admin.php:924
 msgid "Recipe"
 msgstr ""
 
-#: includes/admin/class-admin.php:926
+#: includes/admin/class-admin.php:928
 #: includes/admin/class-settings-page.php:1552
 msgid "Audio"
 msgstr ""
 
-#: includes/admin/class-admin.php:930
+#: includes/admin/class-admin.php:932
 #: includes/admin/class-settings-page.php:1557
 msgid "Quote"
 msgstr ""
 
-#: includes/admin/class-admin.php:934
+#: includes/admin/class-admin.php:936
 msgid "Tag"
 msgstr ""
 
-#: includes/admin/class-admin.php:938
+#: includes/admin/class-admin.php:940
 msgid "Weather"
 msgstr ""
 
-#: includes/admin/class-admin.php:946
+#: includes/admin/class-admin.php:948
 msgid "Trip"
 msgstr ""
 
-#: includes/admin/class-admin.php:950
+#: includes/admin/class-admin.php:952
 msgid "Itinerary"
 msgstr ""
 
-#: includes/admin/class-admin.php:954
+#: includes/admin/class-admin.php:956
 msgid "Follow"
 msgstr ""
 
-#: includes/admin/class-admin.php:958
+#: includes/admin/class-admin.php:960
 #: includes/class-issue-archive.php:113
 #: includes/class-issue-archive.php:328
 msgid "Issue"
 msgstr ""
 
-#: includes/admin/class-admin.php:962
+#: includes/admin/class-admin.php:964
 #: patterns/question.php:21
 msgid "Question"
 msgstr ""
 
-#: includes/admin/class-admin.php:970
+#: includes/admin/class-admin.php:972
 msgid "Craft"
 msgstr ""
 
-#: includes/admin/class-admin.php:974
+#: includes/admin/class-admin.php:976
 msgid "Chicken"
 msgstr ""
 
-#: includes/admin/class-admin.php:978
+#: includes/admin/class-admin.php:980
 #: includes/class-comic-strip.php:669
 msgid "Comics"
 msgstr ""
 
-#: includes/admin/class-admin.php:982
+#: includes/admin/class-admin.php:984
 #: includes/class-collection-items.php:357
 #: includes/class-collection-items.php:480
 msgid "Collection"
 msgstr ""
 
-#: includes/admin/class-admin.php:986
+#: includes/admin/class-admin.php:988
 msgid "Presentation"
 msgstr ""
 
-#: includes/admin/class-admin.php:1009
-#: includes/admin/class-admin.php:1118
-#: includes/admin/class-admin.php:1171
-#: includes/admin/class-admin.php:1253
-#: includes/admin/class-admin.php:1312
-#: includes/admin/class-admin.php:1357
+#: includes/admin/class-admin.php:1011
+#: includes/admin/class-admin.php:1122
+#: includes/admin/class-admin.php:1175
+#: includes/admin/class-admin.php:1257
+#: includes/admin/class-admin.php:1316
+#: includes/admin/class-admin.php:1361
 #: includes/admin/class-api-settings.php:819
 #: includes/admin/class-api-settings.php:1234
 #: includes/admin/class-api-settings.php:1308
@@ -1173,75 +1173,75 @@ msgstr ""
 msgid "Permission denied."
 msgstr ""
 
-#: includes/admin/class-admin.php:1015
+#: includes/admin/class-admin.php:1017
 msgid "No API specified."
 msgstr ""
 
-#: includes/admin/class-admin.php:1034
+#: includes/admin/class-admin.php:1036
 msgid "Server error: "
 msgstr ""
 
-#: includes/admin/class-admin.php:1049
+#: includes/admin/class-admin.php:1051
 msgid "API is not enabled."
 msgstr ""
 
-#: includes/admin/class-admin.php:1067
+#: includes/admin/class-admin.php:1071
 msgid "Unknown API."
 msgstr ""
 
-#: includes/admin/class-admin.php:1072
+#: includes/admin/class-admin.php:1076
 msgid "API class not found."
 msgstr ""
 
-#: includes/admin/class-admin.php:1084
+#: includes/admin/class-admin.php:1088
 msgid "Connection test failed. Please check your credentials."
 msgstr ""
 
 #. translators: 1: Error class name, 2: Error message, 3: File, 4: Line number
-#: includes/admin/class-admin.php:1099
+#: includes/admin/class-admin.php:1103
 #, php-format
 msgid "%1$s: %2$s in %3$s:%4$d"
 msgstr ""
 
 #. translators: %d: Number of cache entries cleared
-#: includes/admin/class-admin.php:1155
+#: includes/admin/class-admin.php:1159
 #, php-format
 msgid "Cleared %d cached entries."
 msgstr ""
 
-#: includes/admin/class-admin.php:1178
+#: includes/admin/class-admin.php:1182
 #: includes/admin/class-quick-post.php:1512
 msgid "Type and query are required."
 msgstr ""
 
-#: includes/admin/class-admin.php:1236
+#: includes/admin/class-admin.php:1240
 msgid "Location required for venue search."
 msgstr ""
 
-#: includes/admin/class-admin.php:1241
+#: includes/admin/class-admin.php:1245
 msgid "No API available for this media type."
 msgstr ""
 
-#: includes/admin/class-admin.php:1259
+#: includes/admin/class-admin.php:1263
 #: includes/admin/class-import-page.php:974
 msgid "Import ID required."
 msgstr ""
 
-#: includes/admin/class-admin.php:1318
+#: includes/admin/class-admin.php:1322
 msgid "Foursquare sync service not available."
 msgstr ""
 
-#: includes/admin/class-admin.php:1322
+#: includes/admin/class-admin.php:1326
 msgid "Foursquare not connected. Please authorize first."
 msgstr ""
 
 #. translators: %d: Number of checkins imported
-#: includes/admin/class-admin.php:1336
+#: includes/admin/class-admin.php:1340
 #, php-format
 msgid "Imported %d new checkins."
 msgstr ""
 
-#: includes/admin/class-admin.php:1369
+#: includes/admin/class-admin.php:1373
 msgid "Disconnected from Foursquare."
 msgstr ""
 
@@ -2018,7 +2018,7 @@ msgstr ""
 
 #: includes/admin/class-import-page.php:799
 #: includes/admin/class-import-page.php:1008
-#: includes/class-import-manager.php:2018
+#: includes/class-import-manager.php:2019
 msgid "Invalid import source."
 msgstr ""
 
@@ -4082,7 +4082,7 @@ msgid "Approximate"
 msgstr ""
 
 #: includes/admin/class-settings-page.php:1828
-msgid "Check-ins and posts with a venue show the exact location, the same as Public. Geotagged posts without a venue show only the place name, city, region and country."
+msgid "Shows the venue name, city, region and country. Hides the street address, postal code, coordinates, map, venue URL and OpenStreetMap ID, so the check-in gets no map pin."
 msgstr ""
 
 #: includes/admin/class-settings-page.php:1831
@@ -5248,12 +5248,12 @@ msgstr ""
 msgid "Personal bests"
 msgstr ""
 
-#: includes/class-import-manager.php:2053
+#: includes/class-import-manager.php:2054
 msgid "No imported posts found to re-sync."
 msgstr ""
 
 #. translators: 1: Updated count, 2: Skipped count
-#: includes/class-import-manager.php:2076
+#: includes/class-import-manager.php:2077
 #, php-format
 msgid "Re-synced %1$d posts, skipped %2$d."
 msgstr ""
@@ -7734,7 +7734,7 @@ msgstr ""
 msgid "No data received."
 msgstr ""
 
-#: includes/sync/class-owntracks-checkin-sync.php:255
+#: includes/sync/class-owntracks-checkin-sync.php:241
 msgid "No location data."
 msgstr ""
 
@@ -7750,11 +7750,11 @@ msgstr ""
 msgid "Failed to create post."
 msgstr ""
 
-#: includes/sync/class-untappd-checkin-sync.php:461
+#: includes/sync/class-untappd-checkin-sync.php:468
 msgid "No access token available."
 msgstr ""
 
-#: includes/sync/class-untappd-checkin-sync.php:492
+#: includes/sync/class-untappd-checkin-sync.php:499
 msgid "API request failed."
 msgstr ""
 
@@ -7895,30 +7895,30 @@ msgid "Log a film or TV show you watched."
 msgstr ""
 
 #. translators: 1: Required PHP version, 2: Current PHP version
-#: post-kinds-for-indieweb-in-block-themes.php:121
+#: post-kinds-for-indieweb-in-block-themes.php:120
 #, php-format
 msgid "Post Kinds for IndieWeb in Block Themes requires PHP %1$s or higher. You are running PHP %2$s. Please upgrade PHP to activate this plugin."
 msgstr ""
 
 #. translators: 1: Required WordPress version, 2: Current WordPress version
-#: post-kinds-for-indieweb-in-block-themes.php:145
+#: post-kinds-for-indieweb-in-block-themes.php:144
 #, php-format
 msgid "Post Kinds for IndieWeb in Block Themes requires WordPress %1$s or higher. You are running WordPress %2$s. Please upgrade WordPress to activate this plugin."
 msgstr ""
 
 #. translators: %s: Required PHP version
-#: post-kinds-for-indieweb-in-block-themes.php:211
+#: post-kinds-for-indieweb-in-block-themes.php:210
 #, php-format
 msgid "Post Kinds for IndieWeb in Block Themes requires PHP %s or higher."
 msgstr ""
 
-#: post-kinds-for-indieweb-in-block-themes.php:214
-#: post-kinds-for-indieweb-in-block-themes.php:228
+#: post-kinds-for-indieweb-in-block-themes.php:213
+#: post-kinds-for-indieweb-in-block-themes.php:227
 msgid "Plugin Activation Error"
 msgstr ""
 
 #. translators: %s: Required WordPress version
-#: post-kinds-for-indieweb-in-block-themes.php:225
+#: post-kinds-for-indieweb-in-block-themes.php:224
 #, php-format
 msgid "Post Kinds for IndieWeb in Block Themes requires WordPress %s or higher."
 msgstr ""
