@@ -994,8 +994,24 @@ final class CardMetaSyncTest extends WP_UnitTestCase {
 	 * W5 replays the listen media type and wish maps and adds the question
 	 * backfill hooks, so its pass needs the next number.
 	 */
-	public function test_the_backfill_version_is_9_with_the_phase_d_maps_and_hooks(): void {
-		$this->assertSame( '9', \PKIW\Card_Meta_Sync::BACKFILL_VERSION );
+	public function test_the_backfill_version_is_10_with_the_w7_maps(): void {
+		$this->assertSame( '10', \PKIW\Card_Meta_Sync::BACKFILL_VERSION );
+
+		$doc = (string) ( new ReflectionClassConstant( \PKIW\Card_Meta_Sync::class, 'BACKFILL_HOOK' ) )->getDocComment();
+		$this->assertMatchesRegularExpression( '/Version 10\b[^.]*RSVP map[^.]*Metron ID/s', $doc );
+	}
+
+	/**
+	 * A site that finished W6's backfill 9 runs W7's once.
+	 */
+	public function test_a_site_that_finished_backfill_9_runs_the_w7_backfill(): void {
+		update_option( \PKIW\Card_Meta_Sync::BACKFILL_OPTION, '9', false );
+		delete_option( \PKIW\Card_Meta_Sync::BACKFILL_CURSOR );
+		wp_clear_scheduled_hook( \PKIW\Card_Meta_Sync::BACKFILL_HOOK );
+
+		\PKIW\Card_Meta_Sync::maybe_schedule_backfill();
+
+		$this->assertNotFalse( wp_next_scheduled( \PKIW\Card_Meta_Sync::BACKFILL_HOOK ) );
 	}
 
 	/**
