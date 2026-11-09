@@ -8,6 +8,21 @@
 	"description": "A numbered list of the steps in a craft project, each with a photo and a note.",
 	"keywords": ["steps", "craft", "instructions", "how to", "process"],
 	"textdomain": "post-kinds-for-indieweb-in-block-themes",
+	"example": {
+		"innerBlocks": [
+			{
+				"name": "post-kinds-indieweb/step",
+				"innerBlocks": [
+					{
+						"name": "core/paragraph",
+						"attributes": {
+							"content": "Mix the dough."
+						}
+					}
+				]
+			}
+		]
+	},
 	"supports": {
 		"html": false
 	}

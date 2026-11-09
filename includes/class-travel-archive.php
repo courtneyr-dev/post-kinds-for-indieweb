@@ -122,6 +122,7 @@ final class Travel_Archive {
 				],
 				'editor_script'   => self::EDITOR_SCRIPT,
 				'style'           => self::STYLE,
+				'example'         => [ 'attributes' => [ 'linesPerPage' => 3 ] ],
 			];
 			register_block_type( $name, $args );
 		}

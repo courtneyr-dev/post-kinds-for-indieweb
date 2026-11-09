@@ -43,6 +43,15 @@
 			"padding": true
 		}
 	},
+	"example": {
+		"attributes": {
+			"showMap": false,
+			"showStats": true,
+			"showFilters": false,
+			"limit": 3
+		},
+		"viewportWidth": 800
+	},
 	"viewScript": "file:./view.js",
 	"render": "file:./render.php"
 }
