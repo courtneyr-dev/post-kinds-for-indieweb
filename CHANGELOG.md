@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Saving Settings → API Connections now keeps the BoardGameGeek API token and the RAWG API key. The screen showed both fields, but the save handler's provider list left them out, so every save discarded them and the game lookup (and Outpost's Play lookup) answered "BoardGameGeek API is not configured". The Test button now works for both providers too.
+
 ## [1.9.0] - 2026-11-09
 
 ### Added

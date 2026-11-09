@@ -751,6 +751,8 @@ class Admin {
 			'foursquare'   => [ 'api_key', 'client_id', 'client_secret', 'access_token', 'username' ],
 			'nominatim'    => [ 'email' ],
 			'readwise'     => [ 'access_token' ],
+			'bgg'          => [ 'api_token' ],
+			'rawg'         => [ 'api_key' ],
 		];
 
 		foreach ( $api_configs as $api => $fields ) {
@@ -1067,6 +1069,8 @@ class Admin {
 			'foursquare'   => 'PKIW\\APIs\\Foursquare',
 			'nominatim'    => 'PKIW\\APIs\\Nominatim',
 			'readwise'     => 'PKIW\\APIs\\Readwise',
+			'bgg'          => 'PKIW\\APIs\\BoardGameGeek',
+			'rawg'         => 'PKIW\\APIs\\RAWG',
 		];
 
 		if ( ! isset( $class_map[ $api ] ) ) {
