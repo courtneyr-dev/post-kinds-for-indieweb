@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.8.8
+Stable tag: 1.8.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -179,6 +179,9 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 9. Standard.site record panel on a Bookmark Card, showing the cited page's own title, publication, description, and tags read from AT Protocol
 
 == Changelog ==
+
+= 1.8.9 =
+* Fixed: Trakt connects again. Its developer portal now rejects redirect URIs with a query string and issues PKCE-only apps with no client secret, so the Trakt redirect URI is the bare wp-admin/admin-post.php and Connect sends an S256 PKCE challenge with no secret.
 
 = 1.8.8 =
 * Fixed: saving Settings → API Connections keeps the BoardGameGeek API token and the RAWG API key. Every save had discarded both, so the game lookup answered "BoardGameGeek API is not configured". The Test button works for both providers too.

@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Post Kinds for IndieWeb in Block Themes 1.8.8\n"
+"Project-Id-Version: Post Kinds for IndieWeb in Block Themes 1.8.9\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/post-kinds-for-indieweb-in-block-themes\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-09T17:00:51+00:00\n"
+"POT-Creation-Date: 2026-11-09T19:52:14+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: post-kinds-for-indieweb-in-block-themes\n"
@@ -1154,10 +1154,10 @@ msgstr ""
 #: includes/admin/class-admin.php:1257
 #: includes/admin/class-admin.php:1316
 #: includes/admin/class-admin.php:1361
-#: includes/admin/class-api-settings.php:819
-#: includes/admin/class-api-settings.php:1234
-#: includes/admin/class-api-settings.php:1308
-#: includes/admin/class-api-settings.php:1361
+#: includes/admin/class-api-settings.php:842
+#: includes/admin/class-api-settings.php:1325
+#: includes/admin/class-api-settings.php:1399
+#: includes/admin/class-api-settings.php:1452
 #: includes/admin/class-import-page.php:791
 #: includes/admin/class-import-page.php:968
 #: includes/admin/class-import-page.php:1000
@@ -1245,164 +1245,168 @@ msgstr ""
 msgid "Disconnected from Foursquare."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:78
+#: includes/admin/class-api-settings.php:100
 msgid "Scrobble service and music database. Requires API account and user authorization for scrobbling."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:85
-#: includes/admin/class-api-settings.php:212
-#: includes/admin/class-api-settings.php:305
+#: includes/admin/class-api-settings.php:107
+#: includes/admin/class-api-settings.php:235
+#: includes/admin/class-api-settings.php:328
 msgid "API Key"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:90
+#: includes/admin/class-api-settings.php:112
 msgid "Shared Secret"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:95
-#: includes/admin/class-api-settings.php:197
+#: includes/admin/class-api-settings.php:117
+#: includes/admin/class-api-settings.php:220
 msgid "Username"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:98
+#: includes/admin/class-api-settings.php:120
 msgid "For importing scrobbles. Will be set automatically after authorization."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:104
+#: includes/admin/class-api-settings.php:126
 msgid "The Movie Database. Comprehensive movie and TV metadata."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:111
+#: includes/admin/class-api-settings.php:133
 msgid "API Read Access Token"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:114
+#: includes/admin/class-api-settings.php:136
 msgid "Use the \"API Read Access Token\" (v4 auth), not the API Key."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:120
+#: includes/admin/class-api-settings.php:142
 msgid "Watch history tracking. Requires OAuth authentication."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:128
-#: includes/admin/class-api-settings.php:153
+#: includes/admin/class-api-settings.php:150
+#: includes/admin/class-api-settings.php:176
 msgid "Client ID"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:133
+#: includes/admin/class-api-settings.php:155
 msgid "Client Secret"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:138
-msgid "Trakt Username"
-msgstr ""
-
-#: includes/admin/class-api-settings.php:146
-msgid "Watch tracking for movies, TV, and anime."
+#: includes/admin/class-api-settings.php:158
+msgid "Leave blank. Trakt sign-in uses PKCE, so new Trakt apps show \"Not issued\" here and Connect never sends a secret."
 msgstr ""
 
 #: includes/admin/class-api-settings.php:161
+msgid "Trakt Username"
+msgstr ""
+
+#: includes/admin/class-api-settings.php:169
+msgid "Watch tracking for movies, TV, and anime."
+msgstr ""
+
+#: includes/admin/class-api-settings.php:184
 msgid "TV show database. Works without API key, but premium key gives higher rate limits."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:168
+#: includes/admin/class-api-settings.php:191
 msgid "API Key (Optional)"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:171
+#: includes/admin/class-api-settings.php:194
 msgid "Premium API key for higher rate limits. Free tier works without a key."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:177
+#: includes/admin/class-api-settings.php:200
 msgid "Book metadata from Internet Archive. Free, no API key required."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:185
+#: includes/admin/class-api-settings.php:208
 msgid "Book tracking service. Get your token from your settings."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:192
-#: includes/admin/class-api-settings.php:289
+#: includes/admin/class-api-settings.php:215
+#: includes/admin/class-api-settings.php:312
 msgid "API Token"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:205
+#: includes/admin/class-api-settings.php:228
 msgid "Book metadata fallback. Optional API key for higher rate limits."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:215
+#: includes/admin/class-api-settings.php:238
 msgid "Optional. Works without API key but with lower rate limits."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:222
+#: includes/admin/class-api-settings.php:245
 msgid "Venue search and bidirectional checkin sync. API key for venue lookup, OAuth for syncing checkins."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:230
+#: includes/admin/class-api-settings.php:253
 msgid "API Key (Places API)"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:233
+#: includes/admin/class-api-settings.php:256
 msgid "For venue search in the block editor. Get from Foursquare Developer Console."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:236
+#: includes/admin/class-api-settings.php:259
 msgid "Client ID (OAuth)"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:239
+#: includes/admin/class-api-settings.php:262
 msgid "For syncing checkins. Create an app at foursquare.com/developers/apps."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:242
+#: includes/admin/class-api-settings.php:265
 msgid "Client Secret (OAuth)"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:250
+#: includes/admin/class-api-settings.php:273
 msgid "OpenStreetMap geocoding. Free with usage policy."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:256
+#: includes/admin/class-api-settings.php:279
 msgid "Contact Email"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:259
+#: includes/admin/class-api-settings.php:282
 msgid "Required by Nominatim usage policy."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:265
+#: includes/admin/class-api-settings.php:288
 msgid "Import highlights from books, articles, podcasts (Snipd), tweets, and more."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:272
+#: includes/admin/class-api-settings.php:295
 msgid "Access Token"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:275
+#: includes/admin/class-api-settings.php:298
 msgid "Get your token from readwise.io/access_token"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:281
+#: includes/admin/class-api-settings.php:304
 msgid "Board game and video game database. As of January 2026, BGG requires API token registration for all API access."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:286
+#: includes/admin/class-api-settings.php:309
 msgid "Note: BGG application approval may take a week or more. While waiting, you can still use the Play Card block by manually pasting BGG URLs - the game ID will be extracted automatically."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:292
+#: includes/admin/class-api-settings.php:315
 msgid "Register your app, wait for approval, then create a token from your Applications page."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:298
+#: includes/admin/class-api-settings.php:321
 msgid "Video game database with 500,000+ games. Free tier: 20,000 requests/month."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:308
+#: includes/admin/class-api-settings.php:331
 msgid "Get your free API key from rawg.io/apidocs"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:352
+#: includes/admin/class-api-settings.php:375
 #: includes/admin/class-meta-boxes.php:653
 #: includes/admin/class-quick-post.php:925
 #: includes/admin/class-settings-page.php:1876
@@ -1413,21 +1417,21 @@ msgstr ""
 msgid "Music"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:353
+#: includes/admin/class-api-settings.php:376
 #: includes/admin/class-settings-page.php:1882
 msgid "Movies & TV"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:354
+#: includes/admin/class-api-settings.php:377
 #: includes/admin/class-settings-page.php:1885
 msgid "Books"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:355
+#: includes/admin/class-api-settings.php:378
 msgid "Games"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:356
+#: includes/admin/class-api-settings.php:379
 #: includes/admin/class-meta-boxes.php:304
 #: includes/admin/class-quick-post.php:613
 #: includes/class-venue-taxonomy.php:432
@@ -1437,163 +1441,173 @@ msgstr ""
 msgid "Location"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:357
+#: includes/admin/class-api-settings.php:380
 msgid "Aggregators"
 msgstr ""
 
 #. translators: %s: Error message
-#: includes/admin/class-api-settings.php:370
+#: includes/admin/class-api-settings.php:393
 #, php-format
 msgid "OAuth authentication failed: %s"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:380
+#: includes/admin/class-api-settings.php:403
 msgid "Successfully connected! You can now import your watch history."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:385
+#: includes/admin/class-api-settings.php:408
 msgid "Configure API connections for fetching media metadata and importing history."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:430
+#: includes/admin/class-api-settings.php:453
 msgid "Disabled"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:432
-#: includes/admin/class-api-settings.php:590
+#: includes/admin/class-api-settings.php:455
+#: includes/admin/class-api-settings.php:613
 msgid "Connected"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:434
+#: includes/admin/class-api-settings.php:457
 #: includes/admin/class-import-page.php:406
 msgid "Not Connected"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:467
+#: includes/admin/class-api-settings.php:490
 msgid "No configuration needed."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:485
+#: includes/admin/class-api-settings.php:508
 msgid "Test Connection"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:492
+#: includes/admin/class-api-settings.php:515
 #: includes/admin/class-webhooks-page.php:398
 msgid "Documentation"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:498
+#: includes/admin/class-api-settings.php:521
 msgid "Get API Key"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:543
+#: includes/admin/class-api-settings.php:566
 msgid "Toggle password visibility"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:585
+#: includes/admin/class-api-settings.php:608
 msgid "OAuth Connection"
 msgstr ""
 
 #. translators: %s: Username
-#: includes/admin/class-api-settings.php:597
-#: includes/admin/class-api-settings.php:695
+#: includes/admin/class-api-settings.php:620
+#: includes/admin/class-api-settings.php:718
 #, php-format
 msgid "as %s"
 msgstr ""
 
 #. translators: %s: Expiration date
-#: includes/admin/class-api-settings.php:609
+#: includes/admin/class-api-settings.php:632
 #, php-format
 msgid "(expires %s)"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:619
-#: includes/admin/class-api-settings.php:709
+#: includes/admin/class-api-settings.php:642
+#: includes/admin/class-api-settings.php:732
 #: includes/admin/class-settings-page.php:2173
 msgid "Disconnect"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:622
+#: includes/admin/class-api-settings.php:645
 msgid "Refresh Token"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:631
+#: includes/admin/class-api-settings.php:654
 msgid "Redirect URI:"
 msgstr ""
 
 #. translators: %s: Service name
-#: includes/admin/class-api-settings.php:638
+#: includes/admin/class-api-settings.php:661
 #, php-format
 msgid "Copy this URL to your %s app settings as the Redirect URI."
 msgstr ""
 
 #. translators: %s: Service name
-#: includes/admin/class-api-settings.php:647
+#: includes/admin/class-api-settings.php:670
 #, php-format
 msgid "Connect to %s"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:683
+#: includes/admin/class-api-settings.php:706
 msgid "Scrobbling Authorization"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:688
+#: includes/admin/class-api-settings.php:711
 msgid "Authorized"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:704
+#: includes/admin/class-api-settings.php:727
 msgid "You can scrobble listen posts to Last.fm."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:715
+#: includes/admin/class-api-settings.php:738
 msgid "To scrobble listen posts to Last.fm, you need to authorize this application."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:726
+#: includes/admin/class-api-settings.php:749
 msgid "Connect to Last.fm"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:730
+#: includes/admin/class-api-settings.php:753
 msgid "Please save your API Key and Shared Secret first, then you can connect."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:826
+#: includes/admin/class-api-settings.php:849
 msgid "Missing API or authorization code."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:859
+#: includes/admin/class-api-settings.php:882
 msgid "OAuth not supported for this API."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:897
-#: includes/admin/class-api-settings.php:947
-#: includes/admin/class-api-settings.php:990
-#: includes/admin/class-api-settings.php:1065
+#: includes/admin/class-api-settings.php:898
+msgid "The Trakt sign-in expired. Please click Connect again."
+msgstr ""
+
+#: includes/admin/class-api-settings.php:933
+#: includes/admin/class-api-settings.php:986
+#: includes/admin/class-api-settings.php:1029
+#: includes/admin/class-api-settings.php:1104
 msgid "No access token received."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:1240
+#. translators: %s: error description returned by Trakt.
+#: includes/admin/class-api-settings.php:935
+#, php-format
+msgid "Trakt did not issue a token: %s"
+msgstr ""
+
+#: includes/admin/class-api-settings.php:1331
 msgid "No token received from Last.fm."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:1254
-#: includes/admin/class-api-settings.php:1333
+#: includes/admin/class-api-settings.php:1345
+#: includes/admin/class-api-settings.php:1424
 msgid "OAuth state check failed. Please try connecting again."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:1264
+#: includes/admin/class-api-settings.php:1355
 msgid "Last.fm API credentials not configured."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:1274
+#: includes/admin/class-api-settings.php:1365
 msgid "Failed to get Last.fm session key."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:1369
+#: includes/admin/class-api-settings.php:1460
 msgid "Missing API or Client ID."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:1389
+#: includes/admin/class-api-settings.php:1480
 msgid "Could not generate OAuth URL."
 msgstr ""
 
