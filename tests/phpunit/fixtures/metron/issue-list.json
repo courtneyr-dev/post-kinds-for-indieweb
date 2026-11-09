@@ -1,0 +1,39 @@
+{
+  "count": 2,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 101,
+      "series": {
+        "id": 501,
+        "name": "Sentinel Comics",
+        "volume": 2,
+        "year_began": 2026
+      },
+      "number": "7",
+      "issue": "Sentinel Comics (2026) #7",
+      "cover_date": "2026-11-01",
+      "store_date": "2026-09-02",
+      "image": "https://static.metron.cloud/media/issue/2026/11/15/sentinel-07.jpg",
+      "cover_hash": "a1b2c3d4e5f60708",
+      "modified": "2026-10-30T13:27:10Z"
+    },
+    {
+      "id": 102,
+      "series": {
+        "id": 501,
+        "name": "Sentinel Comics",
+        "volume": 2,
+        "year_began": 2026
+      },
+      "number": "8",
+      "issue": "Sentinel Comics (2026) #8",
+      "cover_date": "2026-12-01",
+      "store_date": "2026-10-07",
+      "image": "https://static.metron.cloud/media/issue/2026/12/15/sentinel-08.jpg",
+      "cover_hash": "b2c3d4e5f6070819",
+      "modified": "2026-10-31T13:27:10Z"
+    }
+  ]
+}

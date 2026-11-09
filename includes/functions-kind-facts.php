@@ -159,7 +159,8 @@ function kind_picture( int $post_id ): array {
 		];
 	}
 
-	$source = kind_picture_sources()[ Kind_Facts::kind_of( $post ) ] ?? null;
+	$kind   = Kind_Facts::kind_of( $post );
+	$source = kind_picture_sources()[ $kind ] ?? null;
 	if ( null === $source ) {
 		return $picture;
 	}
@@ -171,7 +172,18 @@ function kind_picture( int $post_id ): array {
 
 	$alt = '' === $source['alt'] ? '' : trim( (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . $source['alt'], true ) );
 
-	$local_id = cover_local_copy( $post->ID, $url );
+	$uses_guarded_display = 'watch' === $kind
+		|| ( 'comics' === $kind && Featured_Artwork::comic_has_metron_id( $post->ID ) );
+	if ( $uses_guarded_display ) {
+		$display  = watch_poster_display( $post->ID, $url );
+		$url      = $display['url'];
+		$local_id = $display['attachment_id'];
+		if ( 0 === $local_id && '' === $url ) {
+			return $picture;
+		}
+	} else {
+		$local_id = cover_local_copy( $post->ID, $url );
+	}
 	if ( $local_id > 0 ) {
 		return array_merge(
 			$picture,
@@ -227,6 +239,43 @@ function cover_local_copy( int $post_id, string $url ): int {
 	}
 
 	return 0;
+}
+
+/**
+ * Resolve the watch poster that the current image-handling setting may print.
+ *
+ * @since 1.9.0
+ *
+ * @param int    $post_id Post ID.
+ * @param string $url     Stored watch-poster URL.
+ * @return array{attachment_id:int,url:string} Displayable local attachment and URL.
+ */
+function watch_poster_display( int $post_id, string $url ): array {
+	$settings = get_option( 'pkiw_settings', [] );
+	$handling = is_array( $settings ) ? (string) ( $settings['image_handling'] ?? 'sideload' ) : 'sideload';
+	if ( ! in_array( $handling, [ 'sideload', 'hotlink', 'none' ], true ) ) {
+		$handling = 'sideload';
+	}
+
+	if ( 'none' === $handling ) {
+		return [
+			'attachment_id' => 0,
+			'url'           => '',
+		];
+	}
+
+	$attachment_id = cover_local_copy( $post_id, $url );
+	if ( $attachment_id > 0 ) {
+		return [
+			'attachment_id' => $attachment_id,
+			'url'           => (string) wp_get_attachment_url( $attachment_id ),
+		];
+	}
+
+	return [
+		'attachment_id' => 0,
+		'url'           => 'hotlink' === $handling ? $url : '',
+	];
 }
 
 /**

@@ -46,6 +46,8 @@ export default function Edit( { attributes, setAttributes } ) {
 		startedAt,
 		finishedAt,
 		review,
+		metronId,
+		isbn,
 	} = attributes;
 
 	const blockProps = useBlockProps( {
@@ -151,6 +153,26 @@ export default function Edit( { attributes, setAttributes } ) {
 						value={ sourceUrl || '' }
 						onChange={ ( value ) =>
 							setAttributes( { sourceUrl: value } )
+						}
+					/>
+					<TextControl
+						label={ __(
+							'Metron ID',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
+						value={ metronId || '' }
+						onChange={ ( value ) =>
+							setAttributes( { metronId: value } )
+						}
+					/>
+					<TextControl
+						label={ __(
+							'ISBN',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
+						value={ isbn || '' }
+						onChange={ ( value ) =>
+							setAttributes( { isbn: value } )
 						}
 					/>
 				</PanelBody>

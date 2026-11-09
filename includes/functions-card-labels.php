@@ -103,3 +103,20 @@ function read_status_labels(): array {
 		'abandoned' => __( 'Abandoned', 'post-kinds-for-indieweb-in-block-themes' ),
 	];
 }
+
+/**
+ * Display labels for RSVP responses.
+ *
+ * @since 1.9.0
+ *
+ * @return array<string, string> Status => translated label.
+ */
+function rsvp_status_labels(): array {
+	return [
+		'yes'        => __( 'Going', 'post-kinds-for-indieweb-in-block-themes' ),
+		'no'         => __( 'Not Going', 'post-kinds-for-indieweb-in-block-themes' ),
+		'maybe'      => __( 'Maybe', 'post-kinds-for-indieweb-in-block-themes' ),
+		'interested' => __( 'Interested', 'post-kinds-for-indieweb-in-block-themes' ),
+		'remote'     => __( 'Attending Remotely', 'post-kinds-for-indieweb-in-block-themes' ),
+	];
+}

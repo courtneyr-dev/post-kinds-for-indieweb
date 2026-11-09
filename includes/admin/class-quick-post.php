@@ -599,6 +599,7 @@ class Quick_Post {
 							<option value="yes"><?php esc_html_e( 'Yes, attending', 'post-kinds-for-indieweb-in-block-themes' ); ?></option>
 							<option value="maybe"><?php esc_html_e( 'Maybe', 'post-kinds-for-indieweb-in-block-themes' ); ?></option>
 							<option value="interested"><?php esc_html_e( 'Interested', 'post-kinds-for-indieweb-in-block-themes' ); ?></option>
+							<option value="remote"><?php esc_html_e( 'Attending Remotely', 'post-kinds-for-indieweb-in-block-themes' ); ?></option>
 							<option value="no"><?php esc_html_e( 'No, not attending', 'post-kinds-for-indieweb-in-block-themes' ); ?></option>
 						</select>
 					</div>

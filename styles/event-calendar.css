@@ -1,0 +1,8 @@
+/**
+ * Structural guard for the Event archive calendar block.
+ * Site themes own calendar paint.
+ */
+.pkiw-event-calendar {
+	inline-size: 100%;
+	min-inline-size: 0;
+}

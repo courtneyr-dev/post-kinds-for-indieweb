@@ -3,8 +3,8 @@
  * My Calendar integration.
  *
  * Reads event data from My Calendar (my-calendar), which stores events in
- * its own mc_events table rather than a post type. All access goes through
- * My Calendar's own functions (mc_get_event_core / mc_get_event) — never
+ * its own mc_events table rather than a post type. Event reads go through
+ * My Calendar's event-ID function (mc_get_event_core) — never
  * direct table queries, since the table only exists while the plugin is
  * installed. Feature-detected: the plugin is optional and every lookup
  * degrades to null when it's inactive.
@@ -45,7 +45,7 @@ class My_Calendar {
 	 * Fetch an event's data by My Calendar event ID.
 	 *
 	 * @param int $event_id My Calendar event ID.
-	 * @return array{name: string, start: string, end: string, location: string, url: string}|null
+	 * @return array{name: string, start: string, end: string, location: string, url: string, status: string}|null
 	 *         Event data, or null when inactive or the event isn't found.
 	 */
 	public function get_event( int $event_id ): ?array {
@@ -59,10 +59,7 @@ class My_Calendar {
 			return null;
 		}
 
-		// Only approved (published) events resolve. My Calendar's
-		// event_approved column is 0 for draft and 2 for trash — neither may
-		// leak into a card rendered to anonymous visitors.
-		if ( isset( $event->event_approved ) && 1 !== (int) $event->event_approved ) {
+		if ( ! $this->is_public_event( $event ) ) {
 			return null;
 		}
 
@@ -72,30 +69,55 @@ class My_Calendar {
 			'end'      => $this->event_datetime( $event, 'event_end', 'event_endtime' ),
 			'location' => $this->location_name( $event ),
 			'url'      => $this->field( $event, 'event_link' ),
+			'status'   => 3 === (int) $event->event_approved ? 'cancelled' : '',
 		];
+	}
+
+	/**
+	 * Whether My Calendar may expose an event to an anonymous reader.
+	 *
+	 * @param object $event Event object.
+	 */
+	public function is_public_event( object $event ): bool {
+		$state = isset( $event->event_approved ) ? (string) $event->event_approved : '';
+		if ( function_exists( 'mc_event_states_type' ) ) {
+			$public = 'public' === \mc_event_states_type( $state );
+		} else {
+			$public = in_array( (int) $state, [ 1, 3 ], true );
+		}
+
+		$public = $public && 1 !== (int) ( $event->event_flagged ?? 0 );
+		$public = $public && 1 !== (int) ( $event->category_private ?? 0 );
+
+		if ( $public && isset( $event->categories ) && is_array( $event->categories ) ) {
+			foreach ( $event->categories as $category ) {
+				if ( is_object( $category ) && 1 === (int) ( $category->category_private ?? 0 ) ) {
+					$public = false;
+					break;
+				}
+			}
+		}
+
+		if ( $public && function_exists( 'mc_get_private_categories' ) ) {
+			$private_categories = array_map( 'intval', (array) \mc_get_private_categories() );
+			$public             = ! in_array( (int) ( $event->event_category ?? 0 ), $private_categories, true );
+		}
+
+		return ! (bool) apply_filters( 'mc_private_event', ! $public, $event ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- My Calendar's public privacy filter.
 	}
 
 	/**
 	 * Fetch the raw event object through My Calendar's own functions.
 	 *
-	 * The core lookup (mc_get_event_core) resolves by event ID and
-	 * mc_get_event() by occurrence ID; core is preferred since the block
-	 * stores the event ID.
+	 * The block stores an event ID, so occurrence lookups are never used.
 	 *
 	 * @param int $event_id My Calendar event ID.
 	 * @return object|null Event object, or null when unavailable.
 	 */
 	private function fetch_event( int $event_id ): ?object {
-		foreach ( [ 'mc_get_event_core', 'mc_get_event' ] as $helper ) {
-			if ( ! function_exists( $helper ) ) {
-				continue;
-			}
-
-			$event = call_user_func( $helper, $event_id );
-
-			if ( is_object( $event ) ) {
-				return $event;
-			}
+		if ( function_exists( 'mc_get_event_core' ) ) {
+			$event = \mc_get_event_core( $event_id );
+			return is_object( $event ) ? $event : null;
 		}
 
 		return null;

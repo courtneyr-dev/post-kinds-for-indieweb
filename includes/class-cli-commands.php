@@ -163,6 +163,12 @@ class CLI_Commands {
 	 * [--dry-run]
 	 * : List each candidate and its signals without writing anything.
 	 *
+	 * [--category=<slug>]
+	 * : Limit candidates to one category slug.
+	 *
+	 * [--ids=<list>]
+	 * : Limit candidates to a comma-separated post ID list.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     wp postkind presentation backfill --dry-run
@@ -174,7 +180,7 @@ class CLI_Commands {
 	 */
 	public function presentation( array $args, array $assoc_args ): void {
 		if ( 'backfill' !== ( $args[0] ?? '' ) ) {
-			WP_CLI::error( 'Usage: wp postkind presentation backfill [--dry-run]' );
+			WP_CLI::error( 'Usage: wp postkind presentation backfill [--dry-run] [--category=<slug>] [--ids=<list>]' );
 		}
 
 		$taxonomy = Plugin::get_instance()->get_taxonomy();
@@ -186,7 +192,18 @@ class CLI_Commands {
 		}
 
 		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
-		$report  = Presentation_Classifier::backfill( $taxonomy, $dry_run );
+		$scope   = [ 'category' => sanitize_title( (string) ( $assoc_args['category'] ?? '' ) ) ];
+		if ( array_key_exists( 'ids', $assoc_args ) ) {
+			$scope['ids'] = [];
+			foreach ( explode( ',', (string) $assoc_args['ids'] ) as $token ) {
+				$token = trim( $token );
+				if ( 1 !== preg_match( '/^[1-9][0-9]*$/', $token ) || (int) $token < 1 ) {
+					WP_CLI::error( '--ids must be a comma-separated list of positive integers.' );
+				}
+				$scope['ids'][] = (int) $token;
+			}
+		}
+		$report = Presentation_Classifier::backfill( $taxonomy, $dry_run, $scope );
 
 		foreach ( $report['rows'] as $row ) {
 			WP_CLI::log( Presentation_Classifier::backfill_line( $row ) );
@@ -281,7 +298,43 @@ class CLI_Commands {
 	}
 
 	/**
-	 * Set featured images from kind artwork for existing posts.
+	 * Report or insert missing RSVP metadata.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <action>
+	 * : Must be 'backfill'.
+	 *
+	 * [--dry-run]
+	 * : Print candidate plans without writing.
+	 *
+	 * [--ids=<csv>]
+	 * : Comma-separated candidate post IDs for a write run.
+	 *
+	 * @subcommand rsvp-meta
+	 *
+	 * @param array $args       Positional arguments; expects 'backfill'.
+	 * @param array $assoc_args Associative arguments (dry-run and ids).
+	 * @return void
+	 */
+	public function rsvp_meta( array $args, array $assoc_args ): void {
+		if ( 'backfill' !== ( $args[0] ?? '' ) ) {
+			WP_CLI::error( 'Usage: wp postkind rsvp-meta backfill [--dry-run] [--ids=<ids>]' );
+		}
+		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$ids     = null;
+		if ( array_key_exists( 'ids', $assoc_args ) ) {
+			$ids = array_values( array_unique( array_filter( array_map( 'intval', explode( ',', (string) $assoc_args['ids'] ) ), static fn( int $id ): bool => $id > 0 ) ) );
+		}
+		$result = Operations::backfill_rsvp_meta( $dry_run, $ids );
+		if ( is_wp_error( $result ) ) {
+			WP_CLI::error( $result->get_error_message() );
+		}
+		WP_CLI::log( (string) wp_json_encode( $result ) );
+	}
+
+	/**
+	 * Set featured images from kind artwork or retry failed watch posters.
 	 *
 	 * New saves handle this automatically; this backfills posts created
 	 * before the feature existed. Posts with a featured image are left
@@ -291,30 +344,65 @@ class CLI_Commands {
 	 * ## OPTIONS
 	 *
 	 * <action>
-	 * : Must be 'backfill'.
+	 * : Must be 'backfill' or 'retry'.
 	 *
 	 * [--dry-run]
 	 * : Report what would change without fetching or writing anything.
+	 *
+	 * [--ids=<list>]
+	 * : Limit retries to a comma-separated post ID list.
 	 *
 	 * ## EXAMPLES
 	 *
 	 *     wp postkind featured-artwork backfill
 	 *     wp postkind featured-artwork backfill --dry-run
+	 *     wp postkind featured-artwork retry --dry-run
+	 *     wp postkind featured-artwork retry --ids=123,456
 	 *
 	 * @subcommand featured-artwork
 	 *
-	 * @param array $args       Positional arguments; expects 'backfill'.
-	 * @param array $assoc_args Associative arguments (dry-run).
+	 * @param array $args       Positional arguments; expects 'backfill' or 'retry'.
+	 * @param array $assoc_args Associative arguments (dry-run and retry IDs).
 	 * @return void
 	 */
 	public function featured_artwork( array $args, array $assoc_args ): void {
 		$sub = $args[0] ?? '';
-		if ( 'backfill' !== $sub ) {
+		if ( ! in_array( $sub, [ 'backfill', 'retry' ], true ) ) {
 			WP_CLI::error( 'Usage: wp postkind featured-artwork backfill [--dry-run]' );
 		}
 
 		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
-		$stats   = Operations::backfill_featured_artwork( $dry_run );
+		if ( 'retry' === $sub ) {
+			$ids = [];
+			if ( array_key_exists( 'ids', $assoc_args ) ) {
+				foreach ( explode( ',', (string) $assoc_args['ids'] ) as $token ) {
+					$token = trim( $token );
+					if ( 1 !== preg_match( '/^[1-9][0-9]*$/', $token ) ) {
+						WP_CLI::error( '--ids must be a comma-separated list of positive integers.' );
+					}
+					$ids[] = (int) $token;
+				}
+				$ids = array_values( array_unique( $ids ) );
+			}
+
+			$result = Operations::retry_featured_artwork( $dry_run, $ids );
+			if ( $dry_run ) {
+				WP_CLI::success( sprintf( 'Dry run: %d retry candidate(s).', count( $result['candidates'] ) ) );
+				return;
+			}
+			WP_CLI::success(
+				sprintf(
+					'%d poster(s) fetched, %d succeeded, %d failed, %d skipped.',
+					$result['fetched'],
+					$result['succeeded'],
+					$result['failed'],
+					$result['skipped']
+				)
+			);
+			return;
+		}
+
+		$stats = Operations::backfill_featured_artwork( $dry_run );
 
 		if ( $dry_run ) {
 			WP_CLI::success(

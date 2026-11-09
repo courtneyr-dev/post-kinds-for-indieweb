@@ -682,6 +682,27 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Quote_Archive' ) ) {
 			( new Quote_Archive() )->register();
 		}
+		if ( class_exists( __NAMESPACE__ . '\\Event_Calendar' ) ) {
+			( new Event_Calendar() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Travel' ) ) {
+			( new Travel() )->register();
+			( new Travel_Archive() )->register();
+			( new Travel_Map() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Travel_Location' ) ) {
+			( new Travel_Location() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Presentation' ) ) {
+			( new Presentation() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Presentation_Archive' ) ) {
+			( new Presentation_Archive() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Rsvp_Archive' ) ) {
+			( new Rsvp_Archive() )->register();
+		}
+		( new Kind_Query_Variations() )->register();
 	}
 
 	/**
@@ -1010,14 +1031,15 @@ final class Plugin {
 	 * @return void
 	 */
 	public function register_blocks(): void {
-		// Register block category.
+		// Register block category. The slug matches the category every block.json
+		// and editor script declares; saved content and patterns reference it.
 		add_filter(
 			'block_categories_all',
 			function ( array $categories ): array {
 				return array_merge(
 					[
 						[
-							'slug'  => 'post-kinds-for-indieweb-in-block-themes',
+							'slug'  => 'post-kinds-indieweb',
 							'title' => __( 'Post Kinds for IndieWeb in Block Themes', 'post-kinds-for-indieweb-in-block-themes' ),
 							'icon'  => 'heart',
 						],
@@ -1483,6 +1505,31 @@ final class Plugin {
 			'taxonomy-kind-quote'          => [
 				'title'       => __( 'Quote Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'Quote archive as a commonplace book: quotes by author, with a source-work index.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-event'          => [
+				'title'       => __( 'Event Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Event archive showing the My Calendar calendar.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-trip'           => [
+				'title'       => __( 'Trip Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Trip archive: a route map and trips by year.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-itinerary'      => [
+				'title'       => __( 'Itinerary Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Itinerary archive: a route map and itineraries by year.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-presentation'   => [
+				'title'       => __( 'Presentation Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Presentation archive as a badge wall: talks grouped by year, with event and type.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-rsvp'           => [
+				'title'       => __( 'RSVP Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'RSVP archive in two groups: upcoming events soonest first, then past events latest first.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 		];

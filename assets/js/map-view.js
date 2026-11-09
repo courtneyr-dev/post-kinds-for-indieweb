@@ -1,5 +1,5 @@
 /**
- * Check-in archive map.
+ * Check-in and travel maps.
  *
  * Draws the pins the server printed on `.pkiw-checkin-archive__map` and
  * links each pin to its list entry. The list works without this script.
@@ -38,8 +38,8 @@
 		const more =
 			pin.numbers.length > 1
 				? '<span class="pkiw-pin__more" aria-hidden="true">+' +
-				  ( pin.numbers.length - 1 ) +
-				  '</span>'
+					( pin.numbers.length - 1 ) +
+					'</span>'
 				: '';
 
 		return L.divIcon( {
@@ -73,8 +73,10 @@
 
 	function initMap( el ) {
 		let pins;
+		let routes;
 		try {
 			pins = JSON.parse( el.dataset.pins || '[]' );
+			routes = JSON.parse( el.dataset.routes || '[]' );
 		} catch {
 			return;
 		}
@@ -82,7 +84,9 @@
 			return;
 		}
 
-		const root = el.closest( '.pkiw-checkin-archive' ) || document;
+		const root =
+			el.closest( '.pkiw-checkin-archive, .pkiw-travel-archive' ) ||
+			document;
 		const maxZoom = parseInt( el.dataset.maxZoom, 10 ) || 19;
 
 		el.hidden = false;
@@ -100,6 +104,21 @@
 			attribution: el.dataset.attribution,
 			maxZoom,
 		} ).addTo( map );
+
+		( Array.isArray( routes ) ? routes : [] ).forEach( ( route ) => {
+			if ( ! Array.isArray( route.points ) || route.points.length < 2 ) {
+				return;
+			}
+			const line = L.polyline( route.points, {
+				className: 'pkiw-route',
+				interactive: false,
+			} );
+			line.addTo( map );
+			const path = line.getElement && line.getElement();
+			if ( path ) {
+				path.setAttribute( 'aria-hidden', 'true' );
+			}
+		} );
 
 		// Zoom buttons sit at the top left, so they come first in tab order.
 		const controls = el.querySelector( '.leaflet-control-container' );
@@ -126,12 +145,13 @@
 			maxClusterRadius: 44,
 			animate: ! reducedMotion,
 			iconCreateFunction( cluster ) {
-				return clusterIcon(
-					cluster
-						.getAllChildMarkers()
-						.reduce( ( sum, m ) => sum + m.pkiwCount, 0 ),
-					el.dataset.clusterLabel || '%d'
-				);
+				const ids = new Set();
+				cluster
+					.getAllChildMarkers()
+					.forEach( ( marker ) =>
+						marker.pkiwClusterIds.forEach( ( id ) => ids.add( id ) )
+					);
+				return clusterIcon( ids.size, el.dataset.clusterLabel || '%d' );
 			},
 		} );
 
@@ -139,12 +159,15 @@
 		const markers = [];
 
 		function entryEl( id ) {
-			return document.getElementById( 'pkiw-checkin-entry-' + id );
+			return (
+				document.getElementById( 'pkiw-checkin-entry-' + id ) ||
+				document.getElementById( 'pkiw-travel-entry-' + id )
+			);
 		}
 
 		function markEntries( ids ) {
 			root.querySelectorAll(
-				'.pkiw-checkin-archive__entry.is-active'
+				'.pkiw-checkin-archive__entry.is-active, .pkiw-travel-entry.is-active'
 			).forEach( ( li ) => li.classList.remove( 'is-active' ) );
 			ids.forEach( ( id ) => {
 				const li = entryEl( id );
@@ -170,17 +193,26 @@
 				keyboard: true,
 				riseOnHover: true,
 			} );
-			marker.pkiwCount = pin.ids.length;
+			marker.pkiwClusterIds =
+				Array.isArray( pin.targets ) && pin.targets.length
+					? pin.targets
+					: pin.ids;
 			marker.pkiwNumber = pin.numbers[ 0 ];
 			markers.push( marker );
 
 			const goToEntry = () => {
 				markEntries( pin.ids );
 				markPin( marker );
-				const first = entryEl( pin.ids[ 0 ] );
+				const first =
+					Array.isArray( pin.targets ) && pin.targets.length
+						? document.getElementById( pin.targets[ 0 ] )
+						: entryEl( pin.ids[ 0 ] );
 				const link = first && first.querySelector( 'a' );
 				if ( link ) {
 					link.focus();
+				} else if ( first ) {
+					first.tabIndex = -1;
+					first.focus();
 				}
 			};
 
@@ -300,7 +332,11 @@
 
 		// Each list number becomes the control that moves the map to its pin.
 		root.querySelectorAll(
-			'.pkiw-checkin-archive__num[data-map="' + el.id + '"]'
+			'.pkiw-checkin-archive__num[data-map="' +
+				el.id +
+				'"], .pkiw-travel-map__num[data-map="' +
+				el.id +
+				'"]'
 		).forEach( ( span ) => {
 			const target = markerByEntry[ span.dataset.entry ];
 			if ( ! target ) {
@@ -330,7 +366,8 @@
 		} );
 	}
 
-	const MAP = '.pkiw-checkin-archive__map[data-pins]';
+	const MAP =
+		'.pkiw-checkin-archive__map[data-pins], .pkiw-travel-map[data-pins]';
 
 	// A consent tool can answer before the page finishes loading, so the
 	// listener goes on now. Maps found waiting draw when it fires.

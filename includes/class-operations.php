@@ -117,6 +117,125 @@ final class Operations {
 	}
 
 	/**
+	 * Report RSVP repair candidates or apply an explicit allowlist.
+	 *
+	 * @param bool       $dry_run Whether to report without writing.
+	 * @param array|null $ids     Explicit post IDs for a write run.
+	 * @return array{dry_run:bool,candidates:array<int,array{id:int,status:string,password:bool,ops:array<int,array{op:string,post_id:int,key:string,value:string}>}>,written:int[],skipped:array<int,array{id:int,reason:string}>}|\WP_Error
+	 */
+	public static function backfill_rsvp_meta( bool $dry_run, ?array $ids ): array|\WP_Error {
+		if ( $dry_run ) {
+			$candidates = [];
+			foreach ( self::rsvp_candidate_posts() as $post ) {
+				$plan = Rsvp_Archive::backfill_plan( $post->ID );
+				if ( [] === $plan ) {
+					continue;
+				}
+				$candidates[] = [
+					'id'       => $post->ID,
+					'status'   => $post->post_status,
+					'password' => '' !== (string) $post->post_password,
+					'ops'      => $plan,
+				];
+			}
+			return [
+				'dry_run'    => true,
+				'candidates' => $candidates,
+				'written'    => [],
+				'skipped'    => [],
+			];
+		}
+
+		if ( null === $ids ) {
+			return new \WP_Error( 'pkiw_ids_required', __( 'Refusing to write without an ids list. Run with dry_run first.', 'post-kinds-for-indieweb-in-block-themes' ) );
+		}
+
+		$written = [];
+		$skipped = [];
+		$ids     = array_values( array_unique( array_filter( array_map( 'intval', $ids ), static fn( int $id ): bool => $id > 0 ) ) );
+		foreach ( $ids as $id ) {
+			$post = get_post( $id );
+			$raw  = $post instanceof \WP_Post ? Rsvp_Archive::raw( $id ) : [];
+			if ( ! $post instanceof \WP_Post || 'post' !== $post->post_type || ( empty( $raw['has_card'] ) && ! has_term( Rsvp_Archive::KIND, Taxonomy::TAXONOMY, $post ) ) ) {
+				$skipped[] = [
+					'id'     => $id,
+					'reason' => 'not_candidate',
+				];
+				continue;
+			}
+			$plan = Rsvp_Archive::backfill_plan( $id );
+			if ( [] === $plan ) {
+				$skipped[] = [
+					'id'     => $id,
+					'reason' => 'not_candidate',
+				];
+				continue;
+			}
+			usort( $plan, static fn( array $left, array $right ): int => ( self::sort_op( $right ) <=> self::sort_op( $left ) ) );
+			$gained_row       = false;
+			$every_op_present = true;
+			foreach ( $plan as $op ) {
+				if ( metadata_exists( 'post', $id, $op['key'] ) ) {
+					continue;
+				}
+				if ( false !== add_post_meta( $id, $op['key'], $op['value'], true ) ) {
+					$gained_row = true;
+					continue;
+				}
+				// A unique add also fails when another writer added the key after the check above.
+				$every_op_present = [] !== get_post_meta( $id, $op['key'], false ) && $every_op_present;
+			}
+			if ( $gained_row ) {
+				$written[] = $id;
+			} elseif ( $every_op_present ) {
+				$skipped[] = [
+					'id'     => $id,
+					'reason' => 'exists',
+				];
+			}
+		}
+
+		return [
+			'dry_run'    => false,
+			'candidates' => [],
+			'written'    => $written,
+			'skipped'    => $skipped,
+		];
+	}
+
+	/**
+	 * Find possible RSVP repair posts in ID order.
+	 *
+	 * @return \WP_Post[] Candidate posts.
+	 */
+	private static function rsvp_candidate_posts(): array {
+		global $wpdb;
+
+		$like  = '%' . $wpdb->esc_like( '<!-- wp:post-kinds-indieweb/rsvp-card' ) . '%';
+		$ids   = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One explicit maintenance scan; callers need current rows.
+			$wpdb->prepare(
+				"SELECT DISTINCT p.ID FROM {$wpdb->posts} p LEFT JOIN {$wpdb->term_relationships} tr ON tr.object_id = p.ID LEFT JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id LEFT JOIN {$wpdb->terms} t ON t.term_id = tt.term_id WHERE p.post_type = 'post' AND (p.post_content LIKE %s OR (tt.taxonomy = %s AND t.slug = %s)) ORDER BY p.ID ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Core table names only; values are prepared.
+				$like,
+				Taxonomy::TAXONOMY,
+				Rsvp_Archive::KIND
+			)
+		);
+		$posts = array_map( 'get_post', array_map( 'intval', $ids ) );
+
+		return array_values( array_filter( $posts, static fn( $post ): bool => $post instanceof \WP_Post ) );
+	}
+
+	/**
+	 * Put the derived sort insert before event-start hooks can create it.
+	 *
+	 * @param array{key:string} $op Planned operation.
+	 * @return int
+	 */
+	private static function sort_op( array $op ): int {
+		return Rsvp_Archive::SORT_KEY === $op['key'] ? 1 : 0;
+	}
+
+	/**
 	 * Set featured artwork or report what would change.
 	 *
 	 * @param bool $dry_run Whether to report without writing.
@@ -131,6 +250,128 @@ final class Operations {
 			'updated' => $stats['updated'],
 			'skipped' => $stats['skipped'],
 			'failed'  => $stats['failed'],
+		];
+	}
+
+	/**
+	 * Retry failed watch-poster sideloads or report their candidates.
+	 *
+	 * @param bool  $dry_run Whether to report without fetching.
+	 * @param int[] $ids     Optional post ID scope.
+	 * @return array{dry_run:bool,candidates:array<int,array{id:int,state:string,attempts:int,host:string}>,fetched:int,succeeded:int,failed:int,skipped:int}
+	 */
+	public static function retry_featured_artwork( bool $dry_run, array $ids ): array {
+		$ids   = array_values( array_unique( array_filter( array_map( 'intval', $ids ), static fn( int $id ): bool => $id > 0 ) ) );
+		$posts = get_posts(
+			[
+				'post_type'        => 'post',
+				'post_status'      => [ 'publish', 'future', 'draft', 'pending', 'private' ],
+				'posts_per_page'   => -1,
+				'fields'           => 'ids',
+				'orderby'          => 'ID',
+				'order'            => 'ASC',
+				'post__in'         => [] === $ids ? null : $ids,
+				'no_found_rows'    => true,
+				'suppress_filters' => false,
+				'tax_query'        => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- Operator-only bounded retry discovery.
+					[
+						'taxonomy' => Taxonomy::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => [ 'watch' ],
+					],
+				],
+			]
+		);
+
+		$candidates = [];
+		foreach ( $posts as $post_id ) {
+			$candidate = self::featured_artwork_retry_candidate( (int) $post_id );
+			if ( null !== $candidate ) {
+				$candidates[] = $candidate;
+			}
+		}
+
+		$result = [
+			'dry_run'    => $dry_run,
+			'candidates' => $candidates,
+			'fetched'    => 0,
+			'succeeded'  => 0,
+			'failed'     => 0,
+			'skipped'    => 0,
+		];
+		if ( $dry_run ) {
+			return $result;
+		}
+
+		foreach ( array_slice( $candidates, 0, 10 ) as $candidate ) {
+			$token = Featured_Artwork::acquire_retry_lock( $candidate['id'] );
+			if ( null === $token ) {
+				++$result['skipped'];
+				continue;
+			}
+
+			try {
+				wp_cache_delete( $candidate['id'], 'post_meta' );
+				if ( null === self::featured_artwork_retry_candidate( $candidate['id'] ) ) {
+					++$result['skipped'];
+					continue;
+				}
+				$url = Featured_Artwork::artwork_url( $candidate['id'] );
+				if ( ! is_string( $url ) ) {
+					++$result['skipped'];
+					continue;
+				}
+				++$result['fetched'];
+				$applied = Featured_Artwork::apply( $candidate['id'], $url, false );
+				if ( is_wp_error( $applied ) ) {
+					++$result['failed'];
+				} else {
+					++$result['succeeded'];
+				}
+			} finally {
+				Featured_Artwork::release_retry_lock( $candidate['id'], $token );
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Return one current manual-retry candidate.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array{id:int,state:string,attempts:int,host:string}|null
+	 */
+	private static function featured_artwork_retry_candidate( int $post_id ): ?array {
+		if ( ! Featured_Artwork::is_watch_sideload( $post_id ) || get_post_thumbnail_id( $post_id ) > 0 ) {
+			return null;
+		}
+
+		$url       = Featured_Artwork::artwork_url( $post_id );
+		$retry     = get_post_meta( $post_id, Featured_Artwork::RETRY_META, true );
+		$has_retry = metadata_exists( 'post', $post_id, Featured_Artwork::RETRY_META );
+		$state     = '';
+		$attempts  = 0;
+		if ( is_array( $retry ) && in_array( (string) ( $retry['state'] ?? '' ), [ 'scheduled', 'exhausted' ], true )
+			&& is_string( $url ) && (string) ( $retry['url'] ?? '' ) === $url ) {
+			$state    = (string) $retry['state'];
+			$attempts = (int) ( $retry['attempts'] ?? 0 );
+		} elseif ( ! $has_retry
+			&& is_string( $url )
+			&& (string) get_post_meta( $post_id, Featured_Artwork::SOURCE_META, true ) === $url
+			&& ! metadata_exists( 'post', $post_id, Featured_Artwork::ATTACHMENT_META ) ) {
+			$state = 'legacy';
+		}
+
+		if ( '' === $state || ! is_string( $url ) ) {
+			return null;
+		}
+
+		return [
+			'id'       => $post_id,
+			'state'    => $state,
+			'attempts' => $attempts,
+			'host'     => (string) wp_parse_url( $url, PHP_URL_HOST ),
 		];
 	}
 

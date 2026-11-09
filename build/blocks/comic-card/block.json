@@ -51,6 +51,12 @@
         },
         "review": {
             "type": "string"
+        },
+        "metronId": {
+            "type": "string"
+        },
+        "isbn": {
+            "type": "string"
         }
     },
     "supports": {

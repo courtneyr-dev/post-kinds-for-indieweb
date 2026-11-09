@@ -84,10 +84,24 @@ final class AbilitiesRegistrationTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * The declared set is 13 core+lookup abilities, 8 operations and reads, the quote index, and 1 collection read.
+	 * The declared set includes the RSVP, presentation, and travel abilities.
 	 */
 	public function test_declared_ability_count(): void {
-		$this->assertCount( 23, Abilities_Manager::get_ability_names() );
+		$this->assertCount( 31, Abilities_Manager::get_ability_names() );
+	}
+
+	public function test_presentation_abilities_have_their_contract_schemas(): void {
+		$this->skip_without_abilities_api();
+		$read  = wp_get_ability( 'post-kinds/list-presentation-event-types' );
+		$write = wp_get_ability( 'post-kinds/reclassify-presentations' );
+		$this->assertNotNull( $read );
+		$this->assertNotNull( $write );
+		$this->assertTrue( $read->get_meta()['mcp']['public'] ?? false );
+		$this->assertTrue( $read->get_meta()['show_in_rest'] ?? false );
+		$this->assertSame( 'array', $read->get_output_schema()['properties']['types']['type'] ?? null );
+		$this->assertSame( [ 'slug', 'label' ], $read->get_output_schema()['properties']['types']['items']['required'] ?? [] );
+		$this->assertSame( true, $write->get_input_schema()['properties']['dry_run']['default'] ?? null );
+		$this->assertFalse( $write->get_meta()['mcp']['public'] ?? true );
 	}
 
 	public function test_quote_index_ability_has_the_public_aggregate_schema(): void {

@@ -1,0 +1,50 @@
+.pkiw-trip__summary,
+.pkiw-itinerary__summary {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.pkiw-trip__stops,
+.pkiw-itinerary__legs {
+	display: grid;
+	gap: 1rem;
+}
+
+.pkiw-trip__stop,
+.pkiw-itinerary__leg,
+.pkiw-travel-editor__item {
+	padding: 1rem;
+	border: 1px solid currentcolor;
+}
+
+.pkiw-trip__name,
+.pkiw-trip__place,
+.pkiw-trip__date,
+.pkiw-itinerary__name,
+.pkiw-itinerary__place {
+	display: block;
+}
+
+.pkiw-itinerary__pass {
+	display: grid;
+	grid-template-columns: max-content minmax(0, 1fr);
+	gap: 0.25rem 1rem;
+}
+
+.pkiw-itinerary__pass dd {
+	margin: 0;
+}
+
+.pkiw-travel-editor,
+.pkiw-travel-editor__item,
+.pkiw-travel-editor__place {
+	display: grid;
+	gap: 0.75rem;
+}
+
+.pkiw-travel-editor__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}

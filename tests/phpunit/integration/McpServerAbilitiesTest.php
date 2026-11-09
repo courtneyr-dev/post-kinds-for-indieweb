@@ -67,6 +67,10 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 			'post-kinds/get-kind',
 			'post-kinds/get-post-meta',
 			'post-kinds/get-quote-index',
+			'post-kinds/get-trip-facts',
+			'post-kinds/get-itinerary-facts',
+			'post-kinds/get-rsvp-facts',
+			'post-kinds/list-presentation-event-types',
 			'post-kinds/get-collection-items',
 			'post-kinds/lookup-music',
 			'post-kinds/lookup-video',
@@ -74,6 +78,7 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 			'post-kinds/lookup-podcast',
 			'post-kinds/lookup-venue',
 			'post-kinds/lookup-game',
+			'post-kinds/lookup-comic',
 			'post-kinds/get-surface',
 			'post-kinds/get-public-location-fields',
 			'post-kinds/get-checkin-stats',
@@ -96,7 +101,10 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 			'post-kinds/backfill-surfaces',
 			'post-kinds/backfill-card-meta',
 			'post-kinds/backfill-listen-media-type',
+			'post-kinds/backfill-rsvp-meta',
+			'post-kinds/reclassify-presentations',
 			'post-kinds/backfill-featured-artwork',
+			'post-kinds/retry-featured-artwork',
 		];
 
 		return array_combine( $names, array_map( static fn( $name ) => [ $name ], $names ) );
@@ -202,5 +210,7 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 		sort( $expected );
 		sort( $public );
 		$this->assertSame( $expected, $public );
+		$this->assertCount( 21, $public, 'S-P331 adds one public comic lookup ability.' );
+		$this->assertCount( 10, array_diff( Abilities_Manager::get_ability_names(), $public ), 'S-P320 adds one non-public write ability.' );
 	}
 }

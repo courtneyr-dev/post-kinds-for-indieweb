@@ -431,6 +431,8 @@ class Admin {
 			'enable_syndication'         => true,
 			'default_category'           => 0,
 			'mood_spelling'              => \PKIW\Mood_Vocabulary::SPELLING_SITE,
+			'event_calendar'             => true,
+			'event_hide_locations'       => false,
 
 			// Content settings.
 			'auto_fetch_metadata'        => true,
@@ -510,7 +512,7 @@ class Admin {
 		// Define which boolean fields belong to which tab.
 		// This is crucial for correctly handling unchecked checkboxes.
 		$tab_bool_fields = [
-			'general'     => [ 'enable_microformats', 'enable_syndication', 'sync_formats_to_kinds' ],
+			'general'     => [ 'enable_microformats', 'enable_syndication', 'sync_formats_to_kinds', 'event_calendar', 'event_hide_locations' ],
 			'content'     => [ 'auto_fetch_metadata' ],
 			'listen'      => [ 'listen_auto_import', 'listen_sync_to_lastfm' ],
 			'watch'       => [ 'watch_auto_import', 'watch_include_rewatches', 'watch_sync_to_trakt' ],
@@ -559,6 +561,8 @@ class Admin {
 			'checkin_sync_to_foursquare',
 			'enable_background_sync',
 			'sync_formats_to_kinds',
+			'event_calendar',
+			'event_hide_locations',
 		];
 
 		// Get fields that belong to the active tab (these should be processed).
@@ -742,6 +746,7 @@ class Admin {
 			'tvmaze'       => [ 'api_key' ], // Optional premium key.
 			'openlibrary'  => [], // No auth needed.
 			'hardcover'    => [ 'api_token', 'username' ],
+			'metron'       => [ 'api_token' ],
 			'google_books' => [ 'api_key' ],
 			'foursquare'   => [ 'api_key', 'client_id', 'client_secret', 'access_token', 'username' ],
 			'nominatim'    => [ 'email' ],
@@ -1057,6 +1062,7 @@ class Admin {
 			'tvmaze'       => 'PKIW\\APIs\\TVmaze',
 			'openlibrary'  => 'PKIW\\APIs\\OpenLibrary',
 			'hardcover'    => 'PKIW\\APIs\\Hardcover',
+			'metron'       => 'PKIW\\APIs\\Metron',
 			'google_books' => 'PKIW\\APIs\\GoogleBooks',
 			'foursquare'   => 'PKIW\\APIs\\Foursquare',
 			'nominatim'    => 'PKIW\\APIs\\Nominatim',

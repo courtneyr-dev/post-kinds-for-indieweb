@@ -30,5 +30,13 @@
 	"supports": {
 		"html": false
 	},
+	"example": {
+		"attributes": {
+			"durationMinutes": 450,
+			"bedtime": "23:00",
+			"wakeTime": "06:30",
+			"showTimesPublicly": false
+		}
+	},
 	"render": "file:./render.php"
 }

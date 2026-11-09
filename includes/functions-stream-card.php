@@ -79,6 +79,10 @@ function render_stream_card( array $attributes = [], string $content = '', ?\WP_
 		stream_card_render_depth( -1 );
 	}
 
+	if ( $block instanceof \WP_Block && ! empty( $block->context['postId'] ) ) {
+		$html = stream_card_fallback_media( $html, (int) $block->context['postId'] );
+	}
+
 	// 1.8.1: when the card carries its own h-entry root (the pk-card article,
 	// possibly inside an authored wrapper), register it so
 	// Microformats::add_post_classes() leaves the Query Loop <li> without a
@@ -91,6 +95,112 @@ function render_stream_card( array $attributes = [], string $content = '', ?\WP_
 	}
 
 	return $html;
+}
+
+/**
+ * Give a Stream card the first photo its post supplies when the card has none.
+ *
+ * @since 1.9.0
+ *
+ * @param string $html    Rendered Stream card HTML.
+ * @param int    $post_id Post the card represents.
+ * @return string Stream card HTML.
+ */
+function stream_card_fallback_media( string $html, int $post_id ): string {
+	if ( false !== strpos( $html, 'pk-media' ) ) {
+		return $html;
+	}
+
+	$anchor      = '<div class="pk-meta">';
+	$article_tag = '<article class="pk-card pk-card--stream k-article h-entry">';
+	$pos         = strpos( $html, $anchor );
+	if ( false === $pos && false !== strpos( $html, $article_tag ) ) {
+		$pos = strrpos( $html, '</div></article>' );
+	}
+	if ( false === $pos || ! $post_id ) {
+		return $html;
+	}
+
+	$post = get_post( $post_id );
+	if ( ! $post instanceof \WP_Post || post_password_required( $post ) ) {
+		return $html;
+	}
+
+	$img_id = 0;
+	$alt    = '';
+	foreach ( parse_blocks( (string) get_post_field( 'post_content', $post_id ) ) as $parsed_block ) {
+		if ( 'core/image' !== ( $parsed_block['blockName'] ?? '' ) ) {
+			continue;
+		}
+
+		$img_id = (int) ( $parsed_block['attrs']['id'] ?? 0 );
+		$tags   = new \WP_HTML_Tag_Processor( (string) $parsed_block['innerHTML'] );
+		if ( $tags->next_tag( [ 'tag_name' => 'IMG' ] ) ) {
+			$alt = (string) $tags->get_attribute( 'alt' );
+		}
+		break;
+	}
+
+	if ( ! $img_id ) {
+		$attachments = get_posts(
+			[
+				'post_type'      => 'attachment',
+				'post_mime_type' => 'image',
+				'post_parent'    => $post_id,
+				'posts_per_page' => 1,
+				'orderby'        => [
+					'menu_order' => 'ASC',
+					'ID'         => 'ASC',
+				],
+				'fields'         => 'ids',
+				'post_status'    => 'inherit',
+			]
+		);
+		if ( ! empty( $attachments ) ) {
+			$img_id = (int) $attachments[0];
+		}
+	}
+
+	$media = '';
+	if ( $img_id ) {
+		if ( '' === $alt ) {
+			$alt = (string) get_post_meta( $img_id, '_wp_attachment_image_alt', true );
+		}
+
+		$attr = [
+			'class'   => 'u-photo',
+			'loading' => 'lazy',
+			'alt'     => $alt,
+		];
+		if ( '' === $alt ) {
+			$attr['alt'] = wp_strip_all_tags( visitor_post_title( $post ) );
+		}
+
+		$img = wp_get_attachment_image( $img_id, 'medium', false, $attr );
+		if ( '' !== $img ) {
+			$media = '<div class="pk-media pk-media--stream">' . $img . '</div>';
+		}
+	}
+
+	/**
+	 * Filters the picture a Stream card gets when it has none of its own.
+	 *
+	 * Runs only for a card with a .pk-meta anchor (or the generic article
+	 * card's body end) and no .pk-media, on a post that isn't password
+	 * protected. Return '' for no picture. Callbacks return escaped markup.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param string   $media     Default markup: <div class="pk-media pk-media--stream"><img …></div>, or ''.
+	 * @param \WP_Post $post      Post the card is for.
+	 * @param string   $card_html The card before insertion.
+	 */
+	$media = (string) apply_filters( 'pkiw_stream_card_media', $media, $post, $html );
+	if ( '' === $media ) {
+		return $html;
+	}
+
+	return substr( $html, 0, $pos ) . $media . substr( $html, $pos );
 }
 
 /**

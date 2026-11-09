@@ -69,6 +69,8 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 			'post-kinds-indieweb/comic-card'        => [
 				'readStatus' => 'status mapped to a human label (Currently reading/Finished/…); an unknown value like the fixture sample maps to an empty label and is never echoed raw',
 				'finishedAt' => 'renders only when readStatus is finished or abandoned; the fixture status sample is neither, so no end date is shown (the same sample as startedAt would otherwise match by coincidence)',
+				'metronId'   => 'only a digit ID prints, and only as the Metron credit link (#331); the fixture sample is not digits, so nothing renders',
+				'isbn'       => 'stored as a fact for lookups and meta (#331); the card never prints it',
 			],
 			'post-kinds-indieweb/wish-card'         => [
 				'wishType' => 'mapped to a plugin label; an unknown value like the fixture sample prints Other and the raw value is never echoed',
@@ -186,6 +188,10 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 	 * @param array  $attributes Attribute definitions from the fixture.
 	 */
 	public function test_every_attribute_displays( string $block_name, array $attributes ): void {
+		if ( 'post-kinds-indieweb/watch-card' === $block_name ) {
+			// #320: under Sideload a remote poster with no local copy prints nothing; Hotlink prints it.
+			update_option( 'pkiw_settings', [ 'image_handling' => 'hotlink' ] );
+		}
 		$this->assertTrue(
 			WP_Block_Type_Registry::get_instance()->is_registered( $block_name ),
 			"$block_name: block is not registered in the test environment"

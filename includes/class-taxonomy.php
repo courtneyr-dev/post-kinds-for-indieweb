@@ -63,6 +63,8 @@ class Taxonomy {
 		'post-kinds-indieweb/exercise-card'    => 'exercise',
 		'post-kinds-indieweb/sleep-card'       => 'sleep',
 		'post-kinds-indieweb/craft-card'       => 'craft',
+		'post-kinds-indieweb/trip-card'        => 'trip',
+		'post-kinds-indieweb/itinerary-card'   => 'itinerary',
 	];
 
 	/**

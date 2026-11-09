@@ -46,6 +46,8 @@ final class MyCalendarIntegrationTest extends WP_UnitTestCase {
 	 */
 	public function tear_down(): void {
 		unset( $GLOBALS['pkiw_test_mc_events'] );
+		remove_all_filters( 'mc_private_event' );
+		wp_set_current_user( 0 );
 
 		parent::tear_down();
 	}
@@ -137,5 +139,34 @@ final class MyCalendarIntegrationTest extends WP_UnitTestCase {
 		$this->assertNull(
 			Calendar_Events::get_event( Calendar_Events::SOURCE_MY_CALENDAR, 999999 )
 		);
+	}
+
+	/**
+	 * My Calendar's privacy extension point can hide an otherwise public row.
+	 */
+	public function test_private_event_filter_blocks_resolution(): void {
+		$event_id = $this->seed_fixture_event();
+		add_filter( 'mc_private_event', '__return_true' );
+
+		$this->assertNull(
+			Calendar_Events::get_event( Calendar_Events::SOURCE_MY_CALENDAR, $event_id )
+		);
+
+		remove_filter( 'mc_private_event', '__return_true' );
+	}
+
+	/**
+	 * Provider privacy doesn't change when the current user is an administrator.
+	 */
+	public function test_logged_in_administrator_cannot_resolve_private_event(): void {
+		$event_id = $this->seed_fixture_event();
+		$GLOBALS['pkiw_test_mc_events'][ $event_id ]->event_approved = 4;
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		$this->assertNull(
+			Calendar_Events::get_event( Calendar_Events::SOURCE_MY_CALENDAR, $event_id )
+		);
+
+		wp_set_current_user( 0 );
 	}
 }

@@ -9,6 +9,16 @@
 	"keywords": ["step", "craft", "instruction", "process"],
 	"textdomain": "post-kinds-for-indieweb-in-block-themes",
 	"parent": ["post-kinds-indieweb/steps"],
+	"example": {
+		"innerBlocks": [
+			{
+				"name": "core/paragraph",
+				"attributes": {
+					"content": "Mix the dough."
+				}
+			}
+		]
+	},
 	"supports": {
 		"html": false,
 		"reusable": false

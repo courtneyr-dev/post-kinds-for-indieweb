@@ -1,0 +1,73 @@
+.pkiw-travel-archive {
+	display: grid;
+	gap: 2rem;
+	grid-template-areas:
+		"map"
+		"entries";
+}
+
+.pkiw-travel-archive__map-column {
+	grid-area: map;
+}
+
+.pkiw-travel-archive > .wp-block-post-template {
+	grid-area: entries;
+}
+
+.pkiw-travel-archive:not(:has(.pkiw-travel-map:not([hidden]))) {
+	grid-template-areas: "entries";
+}
+
+.pkiw-travel-archive:not(:has(.pkiw-travel-map:not([hidden]))) > .pkiw-travel-archive__map-column {
+	display: none;
+}
+
+.pkiw-travel-map {
+	min-height: 24rem;
+}
+
+.pkiw-travel-map__num {
+	align-items: center;
+	display: inline-flex;
+	justify-content: center;
+	min-height: 44px;
+	min-width: 44px;
+}
+
+.pkiw-travel-year__items {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.pkiw-route {
+	fill: none;
+	stroke: currentcolor;
+	stroke-width: 3;
+}
+
+@media (min-width: 60rem) {
+
+	.pkiw-travel-archive {
+		grid-template-areas: "map entries";
+		grid-template-columns: minmax(18rem, 2fr) minmax(20rem, 3fr);
+	}
+
+	.pkiw-travel-archive__map-column {
+		align-self: start;
+		position: sticky;
+		top: 1rem;
+	}
+
+	.pkiw-travel-archive:not(:has(.pkiw-travel-map:not([hidden]))) {
+		grid-template-areas: "entries";
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+@media (forced-colors: active) {
+
+	.pkiw-route {
+		stroke: CanvasText;
+	}
+}

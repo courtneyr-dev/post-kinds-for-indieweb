@@ -381,9 +381,11 @@ class Microformats {
 			'presentation' => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
-					'name'    => 'p-name',
-					'content' => 'e-content',
-					'date'    => 'dt-published',
+					'name'      => 'p-name',
+					'content'   => 'e-content',
+					'date'      => 'dt-published',
+					'slides'    => 'u-slides',
+					'recording' => 'u-recording',
 				],
 			],
 			'acquisition' => [
@@ -872,11 +874,19 @@ class Microformats {
 		// Add kind-specific hidden data.
 		switch ( $kind ) {
 			case 'rsvp':
-				$rsvp_status = get_post_meta( $post_id, $prefix . 'rsvp_status', true );
-				if ( $rsvp_status ) {
+				$facts       = Kind_Facts::get( $post_id );
+				$rsvp_status = (string) ( $facts['status'] ?? '' );
+				$event_url   = (string) ( $facts['url'] ?? '' );
+				if ( '' !== $rsvp_status && ! $this->has_class_token( $content, 'p-rsvp' ) ) {
 					$hidden_data .= sprintf(
 						'<data class="p-rsvp" value="%s"></data>',
 						esc_attr( $rsvp_status )
+					);
+				}
+				if ( '' !== $event_url && ! $this->has_class_token( $content, 'u-in-reply-to' ) ) {
+					$hidden_data .= sprintf(
+						'<data class="u-in-reply-to" value="%s"></data>',
+						esc_url( $event_url )
 					);
 				}
 				break;
@@ -1037,6 +1047,19 @@ class Microformats {
 					$hidden_data .= '' !== $author ? '<span class="p-author">' . esc_html( $author ) . '</span>' : '';
 					$hidden_data .= '' !== $url ? '<data class="u-url" value="' . esc_url( $url ) . '"></data>' : '';
 					$hidden_data .= '</span>';
+				}
+				break;
+
+			case 'presentation':
+				$facts = Kind_Facts::get( $post_id );
+				foreach ( [
+					'slides_url'    => 'u-slides',
+					'recording_url' => 'u-recording',
+				] as $key => $class ) {
+					$url = (string) ( $facts[ $key ] ?? '' );
+					if ( '' !== $url && ! $this->has_class_token( $content, $class ) ) {
+						$hidden_data .= '<data class="' . esc_attr( $class ) . '" value="' . esc_url( $url ) . '"></data>';
+					}
 				}
 				break;
 

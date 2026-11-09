@@ -42,6 +42,7 @@ $pkiw_event_description = $attributes['eventDescription'] ?? '';
 $pkiw_event_image       = $attributes['eventImage'] ?? '';
 $pkiw_event_image_alt   = $attributes['eventImageAlt'] ?? '';
 $pkiw_rel               = $attributes['rel'] ?? '';
+$pkiw_event_status      = '';
 
 // Pull live event data from a calendar plugin when one is referenced.
 // Calendar values win over the block's snapshot; missing values fall back
@@ -58,6 +59,7 @@ if ( '' !== $pkiw_calendar_source && $pkiw_calendar_id > 0 && class_exists( '\\P
 		$pkiw_event_end      = '' !== $pkiw_calendar_event['end'] ? $pkiw_calendar_event['end'] : $pkiw_event_end;
 		$pkiw_event_location = '' !== $pkiw_calendar_event['location'] ? $pkiw_calendar_event['location'] : $pkiw_event_location;
 		$pkiw_event_url      = '' !== $pkiw_calendar_event['url'] ? $pkiw_calendar_event['url'] : $pkiw_event_url;
+		$pkiw_event_status   = $pkiw_calendar_event['status'];
 	}
 }
 
@@ -119,7 +121,13 @@ ob_start();
 				</p>
 			<?php endif; ?>
 
-			<?php if ( $pkiw_event_location ) : ?>
+			<?php
+			if ( 'cancelled' === $pkiw_event_status ) {
+				// Keeps non-cancelled output byte-identical (StreamCardGoldenTest).
+				echo '<p class="pk-sub pk-event-status">' . esc_html__( 'Cancelled', 'post-kinds-for-indieweb-in-block-themes' ) . "</p>\n\n\t\t\t";
+			}
+			if ( $pkiw_event_location ) :
+				?>
 				<p class="pk-sub pk-event-location">
 					<span class="p-location"><?php echo esc_html( $pkiw_event_location ); ?></span>
 				</p>

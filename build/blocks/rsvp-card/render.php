@@ -44,13 +44,7 @@ if ( 'public' !== ( $attributes['locationVisibility'] ?? 'private' )
 	$pkiw_event_location = '';
 }
 
-$pkiw_status_labels = [
-	'yes'        => __( 'Going', 'post-kinds-for-indieweb-in-block-themes' ),
-	'no'         => __( 'Not Going', 'post-kinds-for-indieweb-in-block-themes' ),
-	'maybe'      => __( 'Maybe', 'post-kinds-for-indieweb-in-block-themes' ),
-	'interested' => __( 'Interested', 'post-kinds-for-indieweb-in-block-themes' ),
-	'remote'     => __( 'Attending Remotely', 'post-kinds-for-indieweb-in-block-themes' ),
-];
+$pkiw_status_labels = \PKIW\rsvp_status_labels();
 $pkiw_label         = $pkiw_status_labels[ $pkiw_rsvp_status ] ?? $pkiw_status_labels['yes'];
 
 // Always include noopener noreferrer for security.

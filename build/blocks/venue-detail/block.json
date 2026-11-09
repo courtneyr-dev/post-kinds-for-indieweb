@@ -46,5 +46,12 @@
 			"fontSize": true
 		}
 	},
+	"example": {
+		"attributes": {
+			"showMap": false,
+			"showAddress": true,
+			"showCheckins": false
+		}
+	},
 	"render": "file:./render.php"
 }

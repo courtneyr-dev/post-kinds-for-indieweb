@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 use PKIW\Issue_Archive;
 use PKIW\Meta_Fields;
+use PKIW\Presentation;
 use PKIW\Taxonomy;
 
 /**
@@ -51,5 +52,20 @@ final class ZzIssueActivityPubGuardTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'pkiw-issue-facts', Issue_Archive::decorate_content( $content ) );
 		$GLOBALS['pkiw_test_activitypub_request'] = true;
 		$this->assertSame( $content, Issue_Archive::decorate_content( $content ) );
+	}
+
+	public function test_a_presentation_activitypub_request_has_no_record(): void {
+		( new Taxonomy() )->create_default_terms();
+		Presentation::register_record_block();
+		$post_id = self::factory()->post->create( [ 'post_status' => 'publish', 'post_content' => 'Stored body.' ] );
+		wp_set_object_terms( $post_id, 'presentation', Taxonomy::TAXONOMY );
+		$this->go_to( (string) get_permalink( $post_id ) );
+		$GLOBALS['post'] = get_post( $post_id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		require_once dirname( __DIR__ ) . '/fixtures/activitypub-request-stub.php';
+		$GLOBALS['pkiw_test_activitypub_request'] = false;
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/presentation-record', Presentation::prepend_record( 'Stored body.' ) );
+		$GLOBALS['pkiw_test_activitypub_request'] = true;
+		$this->assertSame( 'Stored body.', Presentation::prepend_record( 'Stored body.' ) );
 	}
 }

@@ -126,8 +126,16 @@ class MetaFieldsTest extends WP_UnitTestCase {
 			'no'         => [ 'no', 'no' ],
 			'maybe'      => [ 'maybe', 'maybe' ],
 			'interested' => [ 'interested', 'interested' ],
+			'remote'     => [ 'remote', 'remote' ],
 			'empty'      => [ '', '' ],
 		];
+	}
+
+	public function test_rsvp_status_rest_schema_lists_remote(): void {
+		$field = $this->meta_fields->get_fields()['rsvp_status'];
+
+		$this->assertSame( [ '', 'yes', 'no', 'maybe', 'interested', 'remote' ], $field['enum'] );
+		$this->assertSame( 'RSVP status: yes, no, maybe, interested or remote.', $field['description'] );
 	}
 
 	/**

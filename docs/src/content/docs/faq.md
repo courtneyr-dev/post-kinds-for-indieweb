@@ -31,7 +31,7 @@ Partially. Basic kind assignment through the taxonomy box works, but the card bl
 
 ## Why does it require WordPress 7.0?
 
-The plugin header sets both "Requires at least" and "Tested up to" at 7.0 (with PHP 8.2+). Activation is blocked with a notice on older versions. If you're on WordPress 6.x, update WordPress before installing.
+The plugin header sets "Requires at least" to 7.0 and "Requires PHP" to 8.2; readme.txt carries "Tested up to". Activation is blocked with a notice on older versions. If you're on WordPress 6.x, update WordPress before installing.
 
 ## Which services work without API keys?
 

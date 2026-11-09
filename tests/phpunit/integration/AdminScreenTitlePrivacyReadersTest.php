@@ -416,6 +416,10 @@ final class AdminScreenTitlePrivacyReadersTest extends WP_UnitTestCase {
 	 * @param string               $expected Alt text the card prints.
 	 */
 	public function test_a_card_image_alt_never_falls_back_to_a_hidden_location_title( string $kind, string $name, array $attrs, string $expected ): void {
+		if ( 'post-kinds-indieweb/watch-card' === $name ) {
+			// #320: under Sideload a remote poster with no local copy prints nothing; Hotlink prints it.
+			update_option( 'pkiw_settings', [ 'image_handling' => 'hotlink' ] );
+		}
 		$content = '<!-- wp:' . $name . ' ' . wp_json_encode( $attrs ) . ' /-->';
 		$id      = $this->hidden_title_post( $kind, [], $content );
 

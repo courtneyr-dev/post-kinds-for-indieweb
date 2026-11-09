@@ -86,12 +86,13 @@ $pkiw_title_class = $pkiw_post instanceof WP_Post && \PKIW\post_title_is_hidden(
 
 // The poster prints as the media library copy when Featured_Artwork
 // sideloaded this same URL for the post, so a visitor's browser never
-// requests the remote host (issue 320). Only a URL with no local copy
-// prints as stored. The lookup reads post meta; it never fetches.
+// requests the remote host (issue 320). A URL with no local copy prints only
+// under Hotlink. The lookup reads post meta; it never fetches.
 $pkiw_poster_html = '';
 if ( ! $pkiw_embed && $pkiw_poster_image ) {
 	$pkiw_poster_alt_text = $pkiw_poster_alt ? $pkiw_poster_alt : sprintf( /* translators: %s: movie/show title */ __( 'Poster for %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_media_title ? $pkiw_media_title : $pkiw_post_name );
-	$pkiw_poster_id       = \PKIW\cover_local_copy( (int) get_the_ID(), (string) $pkiw_poster_image );
+	$pkiw_poster_display  = \PKIW\watch_poster_display( (int) get_the_ID(), (string) $pkiw_poster_image );
+	$pkiw_poster_id       = $pkiw_poster_display['attachment_id'];
 	if ( $pkiw_poster_id > 0 ) {
 		$pkiw_poster_html = wp_get_attachment_image(
 			$pkiw_poster_id,
@@ -104,8 +105,8 @@ if ( ! $pkiw_embed && $pkiw_poster_image ) {
 			]
 		);
 	}
-	if ( '' === $pkiw_poster_html ) {
-		$pkiw_poster_html = '<img class="pk-thumb--poster u-photo" src="' . esc_url( $pkiw_poster_image ) . '" alt="' . esc_attr( $pkiw_poster_alt_text ) . '" loading="lazy" />';
+	if ( '' === $pkiw_poster_html && '' !== $pkiw_poster_display['url'] ) {
+		$pkiw_poster_html = '<img class="pk-thumb--poster u-photo" src="' . esc_url( $pkiw_poster_display['url'] ) . '" alt="' . esc_attr( $pkiw_poster_alt_text ) . '" loading="lazy" />';
 	}
 }
 

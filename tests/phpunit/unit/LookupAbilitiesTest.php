@@ -41,11 +41,11 @@ class LookupAbilitiesTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test get_lookup_definitions returns six definitions.
+	 * Test get_lookup_definitions returns seven definitions.
 	 */
-	public function test_get_lookup_definitions_returns_six(): void {
+	public function test_get_lookup_definitions_returns_seven(): void {
 		$definitions = $this->provider->get_lookup_definitions();
-		$this->assertCount( 6, $definitions );
+		$this->assertCount( 7, $definitions );
 	}
 
 	/**
@@ -60,6 +60,7 @@ class LookupAbilitiesTest extends WP_UnitTestCase {
 		$this->assertContains( 'podcast', $slugs );
 		$this->assertContains( 'venue', $slugs );
 		$this->assertContains( 'game', $slugs );
+		$this->assertContains( 'comic', $slugs );
 	}
 
 	/**

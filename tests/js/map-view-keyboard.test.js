@@ -1,5 +1,5 @@
 /**
- * Keyboard use of the check-in archive map (assets/js/checkin-map.js).
+ * Keyboard use of the check-in archive map (assets/js/map-view.js).
  *
  * The vendored leaflet.markercluster 1.4.1 zooms a cluster on click only,
  * and Leaflet 1.9.4 delivers Enter or Space on a marker as `keypress`, which
@@ -7,7 +7,7 @@
  * in list order, whatever order markercluster adds their elements in.
  */
 
-const SCRIPT = '../../assets/js/checkin-map.js';
+const SCRIPT = '../../assets/js/map-view.js';
 
 /**
  * A Leaflet and markercluster stand-in. Each pin's element lands in the
@@ -127,6 +127,23 @@ function printArchive() {
 				data-pins='${ JSON.stringify( pins ) }'
 				data-tile-url="https://tiles.example/{z}/{x}/{y}.png"
 				data-max-zoom="19" hidden></div>
+		</div>`;
+}
+
+function printTravelMap(
+	pins,
+	list = '',
+	clusterLabel = '%d trips in this area. Zoom in.'
+) {
+	document.body.innerHTML = `
+		<div class="pkiw-travel-archive">
+			<figure class="pkiw-travel-map" id="pkiw-travel-map-1"
+				data-pins='${ JSON.stringify( pins ) }'
+				data-routes="[]"
+				data-cluster-label="${ clusterLabel }"
+				data-tile-url="https://tiles.example/{z}/{x}/{y}.png"
+				data-max-zoom="19" hidden></figure>
+			${ list }
 		</div>`;
 }
 
@@ -376,5 +393,92 @@ describe( 'pin tab order', () => {
 		stub.fireGroup( 'animationend' );
 
 		expect( paneOrder( stub ) ).toEqual( [ 1, 2, 3, 4, 5 ] );
+	} );
+} );
+
+describe( 'travel pin targets and counts', () => {
+	it( 'moves focus from a single-trip pin to its stop entry', () => {
+		printTravelMap(
+			[
+				{
+					lat: 45.5152,
+					lng: -122.6784,
+					ids: [ 244 ],
+					numbers: [ 2 ],
+					targets: [ 'pkiw-stop-244-2' ],
+					label: 'Contract Harbor',
+				},
+			],
+			'<ol><li id="pkiw-stop-244-2">Contract Harbor</li></ol>'
+		);
+		const stub = stubLeaflet();
+		loadScript();
+
+		const keypress = stub.markers[ 0 ].on.mock.calls.find(
+			( [ event ] ) => 'keypress' === event
+		)[ 1 ];
+		keypress( {
+			originalEvent: { key: 'Enter', preventDefault: jest.fn() },
+		} );
+
+		const stop = document.getElementById( 'pkiw-stop-244-2' );
+		expect( stop.tabIndex ).toBe( -1 );
+		expect( document.activeElement ).toBe( stop );
+	} );
+
+	it( 'counts each archive post once when several pins enter one cluster', () => {
+		printTravelMap( [
+			{
+				lat: 45.5152,
+				lng: -122.6784,
+				ids: [ 244 ],
+				numbers: [ 1 ],
+				label: '1: Coast trip. Go to its list entry.',
+			},
+			{
+				lat: 47.6062,
+				lng: -122.3321,
+				ids: [ 244 ],
+				numbers: [ 1 ],
+				label: '1: Coast trip. Go to its list entry.',
+			},
+		] );
+		const stub = stubLeaflet();
+		loadScript();
+
+		const options = window.L.markerClusterGroup.mock.calls[ 0 ][ 0 ];
+		options.iconCreateFunction( {
+			getAllChildMarkers: () => stub.markers,
+		} );
+		const icon = window.L.divIcon.mock.calls.at( -1 )[ 0 ];
+
+		expect( icon.html ).toContain( '>1</span>' );
+		expect( icon.html ).toContain( '1 trips in this area' );
+	} );
+
+	it( 'announces clustered single-trip pins as stops', () => {
+		printTravelMap(
+			[ 1, 2, 3 ].map( ( number ) => ( {
+				lat: 45 + number / 10,
+				lng: -122,
+				ids: [ 244 ],
+				numbers: [ number ],
+				targets: [ `pkiw-stop-244-${ number }` ],
+				label: `Stop ${ number }`,
+			} ) ),
+			'',
+			'%d stops in this area. Zoom in.'
+		);
+		const stub = stubLeaflet();
+		loadScript();
+
+		const options = window.L.markerClusterGroup.mock.calls[ 0 ][ 0 ];
+		options.iconCreateFunction( {
+			getAllChildMarkers: () => stub.markers,
+		} );
+		const icon = window.L.divIcon.mock.calls.at( -1 )[ 0 ];
+
+		expect( icon.html ).toContain( '>3</span>' );
+		expect( icon.html ).toContain( '3 stops in this area' );
 	} );
 } );

@@ -250,6 +250,11 @@ final class Recent_Kinds {
 			return '';
 		}
 
-		return (string) get_post_meta( $post_id, $prefix . $map[ $kind ], true );
+		$url = (string) get_post_meta( $post_id, $prefix . $map[ $kind ], true );
+		if ( 'watch' === $kind ) {
+			return \PKIW\watch_poster_display( $post_id, $url )['url'];
+		}
+
+		return $url;
 	}
 }
