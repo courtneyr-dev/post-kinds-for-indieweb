@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.8] - 2026-11-09
+
+### Fixed
+
+- Saving Settings → API Connections now keeps the BoardGameGeek API token and the RAWG API key. The screen showed both fields, but the save handler's provider list left them out, so every save discarded them and the game lookup (and Outpost's Play lookup) answered "BoardGameGeek API is not configured". The Test button now works for both providers too.
+
+## [1.8.7] - 2026-10-26
+
 ### Added
 
 - Check-in archive as a map and a list. The Check-ins Feed block has an archive mode (`inherit`): inside a Query Loop that inherits the main query it prints the page's check-ins as a linked list and, for the ones whose coordinates the visitor may see, a Leaflet map. `templates/taxonomy-kind-checkin.html` uses it at 24 a page, so page 2 lists and maps check-ins 25 to 48. A theme's own `taxonomy-kind` or `taxonomy-kind-checkin` template still wins (#224).
