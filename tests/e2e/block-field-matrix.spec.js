@@ -115,6 +115,9 @@ const RENDER_EXCEPTIONS = {
 	'post-kinds-indieweb/comic-card': {
 		readStatus:
 			'status is mapped to a human label (Currently reading/Finished/…) and is never echoed raw',
+		metronId:
+			'only a digit ID prints, and only as the Metron credit link (#331); the text sample is not digits, so nothing renders',
+		isbn: 'stored as a fact for lookups and meta (#331); the card never prints it',
 	},
 	'post-kinds-indieweb/mood-card': {
 		moodKey:
