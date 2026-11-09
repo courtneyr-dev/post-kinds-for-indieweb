@@ -49,13 +49,13 @@ class Featured_Artwork {
 	 */
 	public const ATTACHMENT_META = '_pkiw_featured_artwork_attachment';
 
-	/** Retry state for failed watch-poster sideloads. */
+	/** Retry state for failed guarded-artwork sideloads. */
 	public const RETRY_META = '_pkiw_featured_artwork_retry';
 
 	/** Prefix for the atomic per-post retry lock. */
 	public const RETRY_LOCK_PREFIX = 'pkiw_artwork_retry_lock_';
 
-	/** Cron hook for one scheduled watch-poster retry. */
+	/** Cron hook for one scheduled guarded-artwork retry. */
 	public const RETRY_HOOK = 'pkiw_retry_featured_artwork';
 
 	/**
@@ -147,7 +147,7 @@ class Featured_Artwork {
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param string $url     Validated artwork URL.
-	 * @param bool   $schedule Whether a failed watch sideload should schedule a retry.
+	 * @param bool   $schedule Whether a failed guarded sideload should schedule a retry.
 	 * @return int|\WP_Error Attachment ID, or the sideload error.
 	 */
 	public static function apply( int $post_id, string $url, bool $schedule = true ) {
@@ -160,7 +160,7 @@ class Featured_Artwork {
 
 		if ( is_wp_error( $attachment_id ) ) {
 			delete_post_meta( $post_id, self::ATTACHMENT_META );
-			if ( $schedule && self::is_watch_sideload( $post_id ) ) {
+			if ( $schedule && self::is_guarded_sideload( $post_id ) ) {
 				self::schedule_retry( $post_id, $url, $attachment_id );
 			}
 			return $attachment_id;
@@ -184,7 +184,7 @@ class Featured_Artwork {
 			);
 		}
 
-		if ( self::is_watch_sideload( $post_id ) ) {
+		if ( self::is_guarded_sideload( $post_id ) ) {
 			self::clear_retry( $post_id );
 		}
 
@@ -205,15 +205,16 @@ class Featured_Artwork {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 
-		if ( ! self::is_watch_post( $post_id ) ) {
+		$kind = self::guarded_artwork_kind( $post_id );
+		if ( '' === $kind ) {
 			return media_sideload_image( $url, $post_id, get_the_title( $post_id ), 'id' );
 		}
 
-		$check = Artwork_Fetch_Guard::check( $url );
+		$check = Artwork_Fetch_Guard::check( $url, $kind );
 		if ( ! $check['ok'] ) {
 			return new \WP_Error(
 				$check['code'],
-				__( 'The watch poster could not be fetched safely.', 'post-kinds-for-indieweb-in-block-themes' )
+				__( 'The artwork could not be fetched safely.', 'post-kinds-for-indieweb-in-block-themes' )
 			);
 		}
 
@@ -234,6 +235,27 @@ class Featured_Artwork {
 			return false;
 		}
 
+		return self::uses_sideload_setting();
+	}
+
+	/**
+	 * Whether a guarded watch or Metron comic uses Sideload.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	private static function is_guarded_sideload( int $post_id ): bool {
+		if ( '' === self::guarded_artwork_kind( $post_id ) ) {
+			return false;
+		}
+
+		return self::uses_sideload_setting();
+	}
+
+	/**
+	 * Whether Image Handling resolves to Sideload.
+	 */
+	private static function uses_sideload_setting(): bool {
+
 		$settings = get_option( 'pkiw_settings', [] );
 		$handling = is_array( $settings ) ? (string) ( $settings['image_handling'] ?? 'sideload' ) : 'sideload';
 
@@ -241,11 +263,11 @@ class Featured_Artwork {
 	}
 
 	/**
-	 * Resolve artwork without letting core DNS pre-empt the watch guard.
+	 * Resolve artwork without letting core DNS pre-empt the fetch guard.
 	 *
-	 * Non-watch kinds retain Kind_Artwork's existing validation. A saved watch
-	 * card is authoritative so removing its poster clears stale retry state;
-	 * cardless legacy posts fall back to normalized meta.
+	 * Other kinds retain Kind_Artwork's existing validation. Saved watch and
+	 * digit-tagged Metron comic cards are authoritative, so removing their
+	 * artwork clears stale retry state; cardless watch posts use normalized meta.
 	 *
 	 * @internal
 	 *
@@ -253,15 +275,22 @@ class Featured_Artwork {
 	 * @return string|null Artwork URL.
 	 */
 	public static function artwork_url( int $post_id ): ?string {
-		if ( ! self::is_watch_post( $post_id ) ) {
+		$kind = self::artwork_kind( $post_id );
+		if ( ! in_array( $kind, [ 'watch', 'comics' ], true ) ) {
 			return Kind_Artwork::get_representative_image_url( $post_id );
 		}
+		if ( 'comics' === $kind && ! self::comic_has_metron_id( $post_id ) ) {
+			return null;
+		}
 
-		$post = get_post( $post_id );
-		if ( $post instanceof \WP_Post && has_block( 'post-kinds-indieweb/watch-card', $post ) ) {
-			$url = self::watch_poster_from_blocks( parse_blocks( $post->post_content ) );
+		$post       = get_post( $post_id );
+		$block_name = 'watch' === $kind ? 'post-kinds-indieweb/watch-card' : 'post-kinds-indieweb/comic-card';
+		$attribute  = 'watch' === $kind ? 'posterImage' : 'coverImage';
+		$meta_key   = 'watch' === $kind ? 'watch_poster' : 'comic_cover';
+		if ( $post instanceof \WP_Post && has_block( $block_name, $post ) ) {
+			$url = (string) self::artwork_from_blocks( parse_blocks( $post->post_content ), $block_name, $attribute );
 		} else {
-			$url = (string) get_post_meta( $post_id, Meta_Fields::PREFIX . 'watch_poster', true );
+			$url = (string) get_post_meta( $post_id, Meta_Fields::PREFIX . $meta_key, true );
 		}
 
 		$url    = esc_url_raw( trim( $url ), [ 'http', 'https' ] );
@@ -277,40 +306,95 @@ class Featured_Artwork {
 	 * @param int $post_id Post ID.
 	 */
 	private static function is_watch_post( int $post_id ): bool {
+		return 'watch' === self::artwork_kind( $post_id );
+	}
+
+	/**
+	 * Resolve the guarded artwork kind, including the first save before kind sync.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string `watch`, `comics`, or an empty string.
+	 */
+	private static function artwork_kind( int $post_id ): string {
 		$terms = get_the_terms( $post_id, Taxonomy::TAXONOMY );
 		if ( is_array( $terms ) && [] !== $terms ) {
-			if ( 'watch' === $terms[0]->slug ) {
-				return true;
+			if ( in_array( $terms[0]->slug, [ 'watch', 'comics' ], true ) ) {
+				return $terms[0]->slug;
 			}
 			if ( (string) get_post_meta( $post_id, Taxonomy::AUTO_KIND_META_KEY, true ) !== $terms[0]->slug ) {
-				return false;
+				return '';
 			}
 		}
 
 		$post = get_post( $post_id );
+		if ( ! $post instanceof \WP_Post ) {
+			return '';
+		}
+		if ( has_block( 'post-kinds-indieweb/watch-card', $post ) ) {
+			return 'watch';
+		}
+		if ( has_block( 'post-kinds-indieweb/comic-card', $post ) ) {
+			return 'comics';
+		}
 
-		return $post instanceof \WP_Post && has_block( 'post-kinds-indieweb/watch-card', $post );
+		return '';
 	}
 
 	/**
-	 * Find the first stored watch-card poster attribute.
+	 * Kind accepted by the guard and retry pipeline.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string `watch`, `comics`, or an empty string.
+	 */
+	private static function guarded_artwork_kind( int $post_id ): string {
+		$kind = self::artwork_kind( $post_id );
+		if ( 'comics' === $kind && ! self::comic_has_metron_id( $post_id ) ) {
+			return '';
+		}
+
+		return in_array( $kind, [ 'watch', 'comics' ], true ) ? $kind : '';
+	}
+
+	/**
+	 * Whether the first comic card carries a digit-only Metron ID.
+	 *
+	 * @internal
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public static function comic_has_metron_id( int $post_id ): bool {
+		$post = get_post( $post_id );
+		if ( ! $post instanceof \WP_Post || ! has_block( 'post-kinds-indieweb/comic-card', $post ) ) {
+			return false;
+		}
+
+		$id = (string) self::artwork_from_blocks( parse_blocks( $post->post_content ), 'post-kinds-indieweb/comic-card', 'metronId' );
+
+		return 1 === preg_match( '/^[0-9]+$/', $id );
+	}
+
+	/**
+	 * Find the first stored artwork attribute on a named card.
 	 *
 	 * @param array<int,array<string,mixed>> $blocks Parsed blocks.
+	 * @param string                         $block_name Card block name.
+	 * @param string                         $attribute  Attribute name.
+	 * @return string|null Attribute value, or null when no matching card exists.
 	 */
-	private static function watch_poster_from_blocks( array $blocks ): string {
+	private static function artwork_from_blocks( array $blocks, string $block_name, string $attribute ): ?string {
 		foreach ( $blocks as $block ) {
-			if ( 'post-kinds-indieweb/watch-card' === ( $block['blockName'] ?? '' ) ) {
-				return is_string( $block['attrs']['posterImage'] ?? null ) ? $block['attrs']['posterImage'] : '';
+			if ( ( $block['blockName'] ?? '' ) === $block_name ) {
+				return is_string( $block['attrs'][ $attribute ] ?? null ) ? $block['attrs'][ $attribute ] : '';
 			}
 			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
-				$url = self::watch_poster_from_blocks( $block['innerBlocks'] );
-				if ( '' !== $url ) {
-					return $url;
+				$value = self::artwork_from_blocks( $block['innerBlocks'], $block_name, $attribute );
+				if ( null !== $value ) {
+					return $value;
 				}
 			}
 		}
 
-		return '';
+		return null;
 	}
 
 	/**
@@ -416,7 +500,7 @@ class Featured_Artwork {
 		if ( ! $post instanceof \WP_Post
 			|| 'post' !== $post->post_type
 			|| in_array( $post->post_status, [ 'trash', 'auto-draft' ], true )
-			|| ! self::is_watch_sideload( $post_id )
+			|| ! self::is_guarded_sideload( $post_id )
 			|| get_post_thumbnail_id( $post_id ) > 0 ) {
 			self::clear_retry( $post_id );
 			return;
@@ -568,7 +652,7 @@ class Featured_Artwork {
 					[
 						'taxonomy' => Taxonomy::TAXONOMY,
 						'field'    => 'slug',
-						'terms'    => array_keys( Kind_Artwork::KIND_IMAGE_META ),
+						'terms'    => array_values( array_unique( array_merge( array_keys( Kind_Artwork::KIND_IMAGE_META ), [ 'comics' ] ) ) ),
 					],
 				],
 			]
@@ -577,7 +661,7 @@ class Featured_Artwork {
 		foreach ( $post_ids as $post_id ) {
 			++$stats['scanned'];
 
-			$url = self::is_watch_post( $post_id )
+			$url = in_array( self::artwork_kind( $post_id ), [ 'watch', 'comics' ], true )
 				? self::artwork_url( $post_id )
 				: Kind_Artwork::get_representative_image_url( $post_id );
 			if ( null === $url

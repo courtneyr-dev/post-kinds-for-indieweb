@@ -561,6 +561,18 @@ class Meta_Fields {
 				'sanitize'    => 'wp_kses_post',
 				'default'     => '',
 			],
+			'comic_metron_id'                => [
+				'type'        => 'string',
+				'description' => __( 'Metron issue ID for the comic.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => [ $this, 'sanitize_metron_id' ],
+				'default'     => '',
+			],
+			'comic_isbn'                     => [
+				'type'        => 'string',
+				'description' => __( 'ISBN stored for the comic.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => [ $this, 'sanitize_isbn' ],
+				'default'     => '',
+			],
 
 			// Event Fields.
 			'event_start'                    => [
@@ -3156,14 +3168,21 @@ class Meta_Fields {
 	}
 
 	/**
-	 * Sanitize ISBN.
+	 * Normalize an ISBN without constructing this hook-registering class.
 	 *
 	 * @param mixed $value Value to sanitize.
 	 * @return string Sanitized ISBN.
 	 */
-	public function sanitize_isbn( mixed $value ): string {
+	public static function normalize_isbn( mixed $value ): string {
+		if ( ! is_scalar( $value ) || is_bool( $value ) ) {
+			return '';
+		}
+
 		// Remove all non-numeric characters except X (for ISBN-10 check digit).
 		$value = preg_replace( '/[^0-9X]/i', '', strtoupper( (string) $value ) );
+		if ( ! is_string( $value ) ) {
+			return '';
+		}
 
 		// Validate length (10 or 13 digits).
 		$length = strlen( $value );
@@ -3172,6 +3191,28 @@ class Meta_Fields {
 		}
 
 		return $value;
+	}
+
+	/**
+	 * Sanitize a Metron issue ID: digits only, else empty.
+	 *
+	 * @param mixed $value Value to sanitize.
+	 * @return string Digit string or ''.
+	 */
+	public function sanitize_metron_id( mixed $value ): string {
+		$value = is_scalar( $value ) && ! is_bool( $value ) ? trim( (string) $value ) : '';
+
+		return '' !== $value && ctype_digit( $value ) ? $value : '';
+	}
+
+	/**
+	 * Sanitize ISBN.
+	 *
+	 * @param mixed $value Value to sanitize.
+	 * @return string Sanitized ISBN.
+	 */
+	public function sanitize_isbn( mixed $value ): string {
+		return self::normalize_isbn( $value );
 	}
 
 	/**

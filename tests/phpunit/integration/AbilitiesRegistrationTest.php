@@ -87,7 +87,7 @@ final class AbilitiesRegistrationTest extends WP_UnitTestCase {
 	 * The declared set includes the RSVP, presentation, and travel abilities.
 	 */
 	public function test_declared_ability_count(): void {
-		$this->assertCount( 30, Abilities_Manager::get_ability_names() );
+		$this->assertCount( 31, Abilities_Manager::get_ability_names() );
 	}
 
 	public function test_presentation_abilities_have_their_contract_schemas(): void {

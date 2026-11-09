@@ -27,6 +27,7 @@ use PKIW\APIs\Foursquare;
 use PKIW\APIs\Nominatim;
 use PKIW\APIs\BoardGameGeek;
 use PKIW\APIs\RAWG;
+use PKIW\APIs\Metron;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -340,6 +341,43 @@ class REST_API {
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 						'description'       => __( 'Game ID for direct lookup', 'post-kinds-for-indieweb-in-block-themes' ),
+					],
+				],
+			]
+		);
+
+		// Comic lookup.
+		register_rest_route(
+			self::NAMESPACE,
+			'/lookup/comic',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'lookup_comic' ],
+				'permission_callback' => [ $this, 'can_edit_posts' ],
+				'args'                => [
+					'q'      => [
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+						'description'       => __( 'Comic series name.', 'post-kinds-for-indieweb-in-block-themes' ),
+					],
+					'number' => [
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+						'description'       => __( 'Issue number used with a series search.', 'post-kinds-for-indieweb-in-block-themes' ),
+					],
+					'upc'    => [
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+						'description'       => __( 'UPC for direct issue lookup.', 'post-kinds-for-indieweb-in-block-themes' ),
+					],
+					'id'     => [
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+						'description'       => __( 'Metron issue ID for direct lookup.', 'post-kinds-for-indieweb-in-block-themes' ),
 					],
 				],
 			]
@@ -2057,6 +2095,55 @@ class REST_API {
 				'lookup_failed',
 				esc_html( $e->getMessage() ),
 				[ 'status' => 500 ]
+			);
+		}
+	}
+
+	/**
+	 * Look up a comic issue in Metron.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function lookup_comic( \WP_REST_Request $request ) {
+		$query  = (string) $request->get_param( 'q' );
+		$number = (string) $request->get_param( 'number' );
+		$upc    = (string) $request->get_param( 'upc' );
+		$id     = (string) $request->get_param( 'id' );
+
+		if ( '' === $id && '' === $upc && '' === $query ) {
+			return new \WP_Error(
+				'pkiw_metron_missing_query',
+				__( 'Provide a Metron ID, UPC, or comic series name.', 'post-kinds-for-indieweb-in-block-themes' ),
+				[ 'status' => 400 ]
+			);
+		}
+
+		$api = new Metron();
+		if ( ! $api->is_configured() ) {
+			return new \WP_Error(
+				'pkiw_metron_not_configured',
+				__( 'Add a Metron API token in Settings → APIs.', 'post-kinds-for-indieweb-in-block-themes' ),
+				[ 'status' => 400 ]
+			);
+		}
+
+		try {
+			if ( '' !== $id ) {
+				$result  = $api->get_by_id( $id );
+				$results = null === $result ? [] : [ $result ];
+			} elseif ( '' !== $upc ) {
+				$results = $api->get_by_upc( $upc );
+			} else {
+				$results = $api->search( $query, $number );
+			}
+
+			return rest_ensure_response( $results );
+		} catch ( \Exception $error ) {
+			return new \WP_Error(
+				'lookup_failed',
+				__( 'Comic lookup failed.', 'post-kinds-for-indieweb-in-block-themes' ),
+				[ 'status' => 502 ]
 			);
 		}
 	}

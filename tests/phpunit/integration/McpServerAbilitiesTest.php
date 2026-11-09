@@ -78,6 +78,7 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 			'post-kinds/lookup-podcast',
 			'post-kinds/lookup-venue',
 			'post-kinds/lookup-game',
+			'post-kinds/lookup-comic',
 			'post-kinds/get-surface',
 			'post-kinds/get-public-location-fields',
 			'post-kinds/get-checkin-stats',
@@ -209,7 +210,7 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 		sort( $expected );
 		sort( $public );
 		$this->assertSame( $expected, $public );
-		$this->assertCount( 20, $public, 'P244A adds two public travel reads to the P251 plus P262 total.' );
+		$this->assertCount( 21, $public, 'S-P331 adds one public comic lookup ability.' );
 		$this->assertCount( 10, array_diff( Abilities_Manager::get_ability_names(), $public ), 'S-P320 adds one non-public write ability.' );
 	}
 }

@@ -35,10 +35,34 @@ $pkiw_issue       = $attributes['issueNumber'] ?? '';
 $pkiw_publisher   = $attributes['publisher'] ?? '';
 $pkiw_cover_image = $attributes['coverImage'] ?? '';
 $pkiw_cover_alt   = $attributes['coverImageAlt'] ?? '';
-$pkiw_source_url  = $attributes['sourceUrl'] ?? '';
+$pkiw_source_url  = is_string( $attributes['sourceUrl'] ?? null ) ? $attributes['sourceUrl'] : '';
 $pkiw_read_status = $attributes['readStatus'] ?? 'reading';
 $pkiw_rating      = (float) ( $attributes['rating'] ?? 0 );
 $pkiw_review      = $attributes['review'] ?? '';
+$pkiw_metron_id   = is_scalar( $attributes['metronId'] ?? null ) ? trim( (string) $attributes['metronId'] ) : '';
+$pkiw_is_metron   = 1 === preg_match( '/^[0-9]+$/', $pkiw_metron_id );
+
+$pkiw_facts_credit_html = '';
+$pkiw_cover_credit_html = '';
+if ( $pkiw_is_metron ) {
+	$pkiw_source_scheme     = wp_parse_url( (string) $pkiw_source_url, PHP_URL_SCHEME );
+	$pkiw_source_host       = strtolower( (string) wp_parse_url( (string) $pkiw_source_url, PHP_URL_HOST ) );
+	$pkiw_metron_url        = 'https' === $pkiw_source_scheme && 'metron.cloud' === $pkiw_source_host
+		? (string) $pkiw_source_url
+		: 'https://metron.cloud/issue/' . absint( $pkiw_metron_id ) . '/';
+	$pkiw_facts_credit_html = '<p class="pk-sub pk-credit pk-credit--facts">' . sprintf(
+		/* translators: 1: link to the CC BY-SA 4.0 license, 2: link to the Metron issue page. */
+		__( '%1$s, %2$s', 'post-kinds-for-indieweb-in-block-themes' ),
+		'<a href="' . esc_url( 'https://creativecommons.org/licenses/by-sa/4.0/' ) . '">' . esc_html__( 'CC BY-SA 4.0', 'post-kinds-for-indieweb-in-block-themes' ) . '</a>',
+		'<a href="' . esc_url( $pkiw_metron_url ) . '">' . esc_html__( 'Metron', 'post-kinds-for-indieweb-in-block-themes' ) . '</a>'
+	) . '</p>';
+	$pkiw_cover_credit_html = '<p class="pk-credit pk-credit--cover">' . esc_html__( 'Cover via Metron', 'post-kinds-for-indieweb-in-block-themes' ) . '</p>';
+
+	if ( $pkiw_cover_image ) {
+		$pkiw_cover_display = \PKIW\watch_poster_display( (int) get_the_ID(), (string) $pkiw_cover_image );
+		$pkiw_cover_image   = $pkiw_cover_display['url'];
+	}
+}
 
 $pkiw_status_labels = [
 	'to-read'   => __( 'To read', 'post-kinds-for-indieweb-in-block-themes' ),
@@ -112,7 +136,7 @@ ob_start();
 						<span class="pk-comic-publisher"><?php echo esc_html( $pkiw_publisher ); ?></span>
 					<?php endif; ?>
 				</p>
-			<?php endif; ?>
+			<?php endif; ?><?php echo $pkiw_facts_credit_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built from fixed translated text and escaped URLs. ?>
 		</div>
 
 		<?php echo \PKIW\card_rating_html( $pkiw_rating ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
@@ -120,7 +144,7 @@ ob_start();
 		<?php if ( $pkiw_cover_image ) : ?>
 			<div class="pk-media">
 				<img class="pk-thumb--poster u-photo" src="<?php echo esc_url( $pkiw_cover_image ); ?>" alt="<?php echo esc_attr( $pkiw_cover_alt ? $pkiw_cover_alt : sprintf( /* translators: %s: comic title */ __( 'Cover of %s', 'post-kinds-for-indieweb-in-block-themes' ), $pkiw_title ? $pkiw_title : ( get_post() instanceof WP_Post ? \PKIW\visitor_post_title( get_post() ) : '' ) ) ); ?>" loading="lazy" />
-			</div>
+			<?php echo $pkiw_cover_credit_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Fixed translated text with no dynamic markup. ?></div>
 		<?php endif; ?>
 
 		<?php if ( $pkiw_review ) : ?>

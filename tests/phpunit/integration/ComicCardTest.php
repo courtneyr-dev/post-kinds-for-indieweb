@@ -383,10 +383,13 @@ final class ComicCardTest extends WP_UnitTestCase {
 	}
 
 	public function test_saving_mirrors_the_card_into_comic_meta_and_writes_no_read_meta(): void {
+		$attributes             = $this->full_attributes();
+		$attributes['metronId'] = '101';
+		$attributes['isbn']     = '9798368809267';
 		$post_id = self::factory()->post->create(
 			[
 				'post_status'  => 'publish',
-				'post_content' => $this->block_comment( $this->full_attributes() ),
+				'post_content' => $this->block_comment( $attributes ),
 			]
 		);
 
@@ -405,6 +408,8 @@ final class ComicCardTest extends WP_UnitTestCase {
 			'comic_started_at'  => '2026-08-30',
 			'comic_finished_at' => '2026-09-02',
 			'comic_review'      => 'Lying Cat steals every page.',
+			'comic_metron_id'   => '101',
+			'comic_isbn'        => '9798368809267',
 		];
 		foreach ( $expected as $suffix => $value ) {
 			$this->assertSame( $value, (string) get_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, true ), "Meta {$suffix}." );

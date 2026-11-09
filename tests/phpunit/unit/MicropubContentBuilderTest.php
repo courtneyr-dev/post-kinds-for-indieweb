@@ -2653,7 +2653,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 					'finishedAt'    => '2026-07-05',
 					'review'        => 'Sample review',
 				),
-				array(),
+				array( 'metronId', 'isbn' ),
 			),
 			'play'    => array(
 				array(

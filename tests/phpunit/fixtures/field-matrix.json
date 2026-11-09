@@ -339,6 +339,14 @@
             "review": {
                 "type": "string",
                 "sample": "Sample review value"
+            },
+            "metronId": {
+                "type": "string",
+                "sample": "Sample metronId value"
+            },
+            "isbn": {
+                "type": "string",
+                "sample": "Sample isbn value"
             }
         }
     },

@@ -172,7 +172,9 @@ function kind_picture( int $post_id ): array {
 
 	$alt = '' === $source['alt'] ? '' : trim( (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . $source['alt'], true ) );
 
-	if ( 'watch' === $kind ) {
+	$uses_guarded_display = 'watch' === $kind
+		|| ( 'comics' === $kind && Featured_Artwork::comic_has_metron_id( $post->ID ) );
+	if ( $uses_guarded_display ) {
 		$display  = watch_poster_display( $post->ID, $url );
 		$url      = $display['url'];
 		$local_id = $display['attachment_id'];

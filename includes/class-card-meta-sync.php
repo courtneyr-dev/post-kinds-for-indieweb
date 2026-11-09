@@ -66,6 +66,8 @@ class Card_Meta_Sync {
 			'startedAt'     => 'comic_started_at',
 			'finishedAt'    => 'comic_finished_at',
 			'review'        => 'comic_review',
+			'metronId'      => 'comic_metron_id',
+			'isbn'          => 'comic_isbn',
 		],
 		'post-kinds-indieweb/checkin-card' => [
 			'venueName'       => 'checkin_name',
