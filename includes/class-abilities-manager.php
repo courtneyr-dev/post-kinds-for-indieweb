@@ -293,6 +293,7 @@ final class Abilities_Manager {
 			'post-kinds/backfill-listen-media-type',
 			'post-kinds/backfill-rsvp-meta',
 			'post-kinds/backfill-featured-artwork',
+			'post-kinds/retry-featured-artwork',
 			'post-kinds/get-surface',
 			'post-kinds/get-public-location-fields',
 			'post-kinds/get-checkin-stats',

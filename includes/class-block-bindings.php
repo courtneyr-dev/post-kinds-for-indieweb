@@ -452,6 +452,11 @@ class Block_Bindings {
 		// Get the meta value.
 		$meta_key = Meta_Fields::PREFIX . $binding['meta_key'];
 		$value    = get_post_meta( $post_id, $meta_key, true );
+		if ( 'watch_poster' === $key ) {
+			return is_string( $value ) && '' !== $value
+				? watch_poster_display( (int) $post_id, $value )['url']
+				: null;
+		}
 
 		if ( empty( $value ) ) {
 			return null;

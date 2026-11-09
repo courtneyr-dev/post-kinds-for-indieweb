@@ -144,6 +144,7 @@ final class Now_Playing {
 			$title = get_post_meta( $post_id, $prefix . 'watch_title', true );
 			$sub   = get_post_meta( $post_id, $prefix . 'watch_year', true );
 			$cover = get_post_meta( $post_id, $prefix . 'watch_poster', true );
+			$cover = \PKIW\watch_poster_display( $post_id, is_string( $cover ) ? $cover : '' )['url'];
 			$url   = get_post_meta( $post_id, $prefix . 'watch_url', true );
 			$icon  = '&#127916;';
 			$label = __( 'Watching', 'post-kinds-for-indieweb-in-block-themes' );

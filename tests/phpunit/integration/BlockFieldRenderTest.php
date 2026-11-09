@@ -186,6 +186,10 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 	 * @param array  $attributes Attribute definitions from the fixture.
 	 */
 	public function test_every_attribute_displays( string $block_name, array $attributes ): void {
+		if ( 'post-kinds-indieweb/watch-card' === $block_name ) {
+			// #320: under Sideload a remote poster with no local copy prints nothing; Hotlink prints it.
+			update_option( 'pkiw_settings', [ 'image_handling' => 'hotlink' ] );
+		}
 		$this->assertTrue(
 			WP_Block_Type_Registry::get_instance()->is_registered( $block_name ),
 			"$block_name: block is not registered in the test environment"

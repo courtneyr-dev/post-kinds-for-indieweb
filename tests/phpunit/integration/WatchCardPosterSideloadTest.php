@@ -17,6 +17,7 @@
 declare(strict_types=1);
 
 use PKIW\Featured_Artwork;
+use PKIW\Artwork_Fetch_Guard;
 
 /**
  * @group integration
@@ -45,6 +46,7 @@ final class WatchCardPosterSideloadTest extends WP_UnitTestCase {
 		$this->http_ok   = true;
 
 		update_option( 'pkiw_settings', [ 'image_handling' => 'sideload' ] );
+		Artwork_Fetch_Guard::use_resolver( static fn( string $host ): array => [ '93.184.216.34' ] );
 
 		add_filter(
 			'pre_http_request',
@@ -83,6 +85,11 @@ final class WatchCardPosterSideloadTest extends WP_UnitTestCase {
 			10,
 			3
 		);
+	}
+
+	public function tear_down(): void {
+		Artwork_Fetch_Guard::use_resolver( null );
+		parent::tear_down();
 	}
 
 	/**

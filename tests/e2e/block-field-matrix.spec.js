@@ -137,8 +137,7 @@ const RENDER_EXCEPTIONS = {
 			'privacy-aware by design: street address renders only when locationPrivacy=public, and enum validation forces the sample back to approximate',
 		postalCode:
 			'privacy-aware by design: renders only when locationPrivacy=public, same gate as address',
-		osmId:
-			'privacy-aware by design: the osm_id tier is hidden at the approximate default, and since issue 496 the front end shows a logged-in editor what a visitor sees',
+		osmId: 'privacy-aware by design: the osm_id tier is hidden at the approximate default, and since issue 496 the front end shows a logged-in editor what a visitor sees',
 		venueUrl:
 			'privacy-aware by design: the url tier is hidden at the approximate default, and since issue 496 the front end shows a logged-in editor what a visitor sees',
 		foursquareId:
@@ -227,6 +226,10 @@ const RENDER_EXCEPTIONS = {
 			'renders only when mediaType=episode as part of the SxE episode string, same gate as showTitle',
 		tmdbId: 'embedded in a canonical themoviedb.org URL via esc_url(), which percent-encodes the space-containing sample',
 		imdbId: 'embedded in a canonical imdb.com URL via esc_url(), which percent-encodes the space-containing sample',
+		posterImage:
+			'since #320 a remote poster with no local copy prints nothing under the default Image Handling (Sideload); the sample URL is never sideloaded in tests',
+		posterImageAlt:
+			'printed only with the poster image, which the default Sideload setting hides for a remote sample (#320)',
 	},
 };
 

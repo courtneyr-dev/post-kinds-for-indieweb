@@ -103,6 +103,7 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 			'post-kinds/backfill-rsvp-meta',
 			'post-kinds/reclassify-presentations',
 			'post-kinds/backfill-featured-artwork',
+			'post-kinds/retry-featured-artwork',
 		];
 
 		return array_combine( $names, array_map( static fn( $name ) => [ $name ], $names ) );
@@ -209,6 +210,6 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 		sort( $public );
 		$this->assertSame( $expected, $public );
 		$this->assertCount( 20, $public, 'P244A adds two public travel reads to the P251 plus P262 total.' );
-		$this->assertCount( 9, array_diff( Abilities_Manager::get_ability_names(), $public ), 'P244A adds no write ability.' );
+		$this->assertCount( 10, array_diff( Abilities_Manager::get_ability_names(), $public ), 'S-P320 adds one non-public write ability.' );
 	}
 }
