@@ -230,6 +230,32 @@ class Settings_Page {
 			]
 		);
 
+		add_settings_field(
+			'event_calendar',
+			__( 'Show the My Calendar calendar on the Event archive', 'post-kinds-for-indieweb-in-block-themes' ),
+			[ $this, 'render_checkbox_field' ],
+			'pkiw_general',
+			'pkiw_general_section',
+			[
+				'id'        => 'event_calendar',
+				'label_for' => 'event_calendar',
+				'desc'      => __( 'Show My Calendar on the first page of the Event archive when the My Calendar plugin is active.', 'post-kinds-for-indieweb-in-block-themes' ),
+			]
+		);
+
+		add_settings_field(
+			'event_hide_locations',
+			__( 'Hide every event location in the calendar', 'post-kinds-for-indieweb-in-block-themes' ),
+			[ $this, 'render_checkbox_field' ],
+			'pkiw_general',
+			'pkiw_general_section',
+			[
+				'id'        => 'event_hide_locations',
+				'label_for' => 'event_hide_locations',
+				'desc'      => __( 'Hide all My Calendar locations. To hide one event location, assign that event to the "Hide location" category.', 'post-kinds-for-indieweb-in-block-themes' ),
+			]
+		);
+
 		// The "Enabled Reaction Types" field is intentionally not registered:
 		// nothing at runtime consumes the enabled_kinds option yet, so the
 		// control promised behavior ("disabled types will not appear in the

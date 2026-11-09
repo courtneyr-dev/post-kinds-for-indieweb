@@ -200,4 +200,68 @@ final class EventCardRenderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Dateless Gathering', $html );
 		$this->assertStringNotContainsString( 'pk-event-date', $html );
 	}
+
+	/**
+	 * Cancelled provider events carry an explicit status after the date.
+	 */
+	public function test_cancelled_calendar_event_prints_status(): void {
+		add_filter(
+			'pkiw_pre_calendar_event',
+			static fn() => [
+				'name'   => 'Cancelled talk',
+				'start'  => '2026-11-12 18:00:00',
+				'status' => 'cancelled',
+			]
+		);
+
+		$html = $this->render_event_card(
+			[
+				'calendarSource'  => 'my-calendar',
+				'calendarEventId' => 231,
+			]
+		);
+
+		$this->assertStringContainsString( 'class="pk-sub pk-event-status"', $html );
+		$this->assertStringContainsString( '>Cancelled</p>', $html );
+	}
+
+	/**
+	 * An ordinary provider event doesn't print an empty status line.
+	 */
+	public function test_non_cancelled_calendar_event_prints_no_status(): void {
+		add_filter(
+			'pkiw_pre_calendar_event',
+			static fn() => [ 'name' => 'Public talk', 'status' => '' ]
+		);
+
+		$html = $this->render_event_card(
+			[
+				'calendarSource'  => 'my-calendar',
+				'calendarEventId' => 232,
+			]
+		);
+
+		$this->assertStringContainsString( 'Public talk', $html );
+		$this->assertStringNotContainsString( 'pk-event-status', $html );
+	}
+
+	/**
+	 * A hidden provider location falls back to the Event post's authored value.
+	 */
+	public function test_hidden_calendar_location_keeps_authored_location(): void {
+		add_filter(
+			'pkiw_pre_calendar_event',
+			static fn() => [ 'name' => 'Hidden-location event', 'location' => '' ]
+		);
+
+		$html = $this->render_event_card(
+			[
+				'eventLocation'   => 'Authored Venue',
+				'calendarSource'  => 'my-calendar',
+				'calendarEventId' => 233,
+			]
+		);
+
+		$this->assertStringContainsString( 'Authored Venue', $html );
+	}
 }
