@@ -67,5 +67,12 @@
 			"fontSize": true
 		}
 	},
+	"example": {
+		"attributes": {
+			"count": 3,
+			"showMap": false
+		},
+		"viewportWidth": 800
+	},
 	"render": "file:./render.php"
 }

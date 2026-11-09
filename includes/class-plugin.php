@@ -702,6 +702,7 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Rsvp_Archive' ) ) {
 			( new Rsvp_Archive() )->register();
 		}
+		( new Kind_Query_Variations() )->register();
 	}
 
 	/**

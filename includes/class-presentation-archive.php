@@ -94,6 +94,7 @@ final class Presentation_Archive {
 			],
 			'editor_script'   => 'pkiw-presentation-entry-editor',
 			'style'           => 'pkiw-presentation',
+			'example'         => [ 'attributes' => [ 'linesPerPage' => 3 ] ],
 		];
 		register_block_type( self::ENTRY_BLOCK, $args );
 	}
