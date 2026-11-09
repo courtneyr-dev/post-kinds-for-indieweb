@@ -287,6 +287,11 @@ final class Block_Bindings_Source {
 
 		$meta_key = Meta_Fields::PREFIX . $meta_suffix;
 		$value    = get_post_meta( (int) $post_id, $meta_key, true );
+		if ( 'cover_image' === $key && 'watch' === $kind ) {
+			return is_string( $value ) && '' !== $value
+				? watch_poster_display( (int) $post_id, $value )['url']
+				: null;
+		}
 
 		// A rating the card draws no stars for binds as no value, so a row
 		// bound to it hides the way the card's stars do.

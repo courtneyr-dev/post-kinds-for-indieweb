@@ -334,7 +334,7 @@ class CLI_Commands {
 	}
 
 	/**
-	 * Set featured images from kind artwork for existing posts.
+	 * Set featured images from kind artwork or retry failed watch posters.
 	 *
 	 * New saves handle this automatically; this backfills posts created
 	 * before the feature existed. Posts with a featured image are left
@@ -344,30 +344,65 @@ class CLI_Commands {
 	 * ## OPTIONS
 	 *
 	 * <action>
-	 * : Must be 'backfill'.
+	 * : Must be 'backfill' or 'retry'.
 	 *
 	 * [--dry-run]
 	 * : Report what would change without fetching or writing anything.
+	 *
+	 * [--ids=<list>]
+	 * : Limit retries to a comma-separated post ID list.
 	 *
 	 * ## EXAMPLES
 	 *
 	 *     wp postkind featured-artwork backfill
 	 *     wp postkind featured-artwork backfill --dry-run
+	 *     wp postkind featured-artwork retry --dry-run
+	 *     wp postkind featured-artwork retry --ids=123,456
 	 *
 	 * @subcommand featured-artwork
 	 *
-	 * @param array $args       Positional arguments; expects 'backfill'.
-	 * @param array $assoc_args Associative arguments (dry-run).
+	 * @param array $args       Positional arguments; expects 'backfill' or 'retry'.
+	 * @param array $assoc_args Associative arguments (dry-run and retry IDs).
 	 * @return void
 	 */
 	public function featured_artwork( array $args, array $assoc_args ): void {
 		$sub = $args[0] ?? '';
-		if ( 'backfill' !== $sub ) {
+		if ( ! in_array( $sub, [ 'backfill', 'retry' ], true ) ) {
 			WP_CLI::error( 'Usage: wp postkind featured-artwork backfill [--dry-run]' );
 		}
 
 		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
-		$stats   = Operations::backfill_featured_artwork( $dry_run );
+		if ( 'retry' === $sub ) {
+			$ids = [];
+			if ( array_key_exists( 'ids', $assoc_args ) ) {
+				foreach ( explode( ',', (string) $assoc_args['ids'] ) as $token ) {
+					$token = trim( $token );
+					if ( 1 !== preg_match( '/^[1-9][0-9]*$/', $token ) ) {
+						WP_CLI::error( '--ids must be a comma-separated list of positive integers.' );
+					}
+					$ids[] = (int) $token;
+				}
+				$ids = array_values( array_unique( $ids ) );
+			}
+
+			$result = Operations::retry_featured_artwork( $dry_run, $ids );
+			if ( $dry_run ) {
+				WP_CLI::success( sprintf( 'Dry run: %d retry candidate(s).', count( $result['candidates'] ) ) );
+				return;
+			}
+			WP_CLI::success(
+				sprintf(
+					'%d poster(s) fetched, %d succeeded, %d failed, %d skipped.',
+					$result['fetched'],
+					$result['succeeded'],
+					$result['failed'],
+					$result['skipped']
+				)
+			);
+			return;
+		}
+
+		$stats = Operations::backfill_featured_artwork( $dry_run );
 
 		if ( $dry_run ) {
 			WP_CLI::success(

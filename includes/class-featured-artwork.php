@@ -49,6 +49,15 @@ class Featured_Artwork {
 	 */
 	public const ATTACHMENT_META = '_pkiw_featured_artwork_attachment';
 
+	/** Retry state for failed watch-poster sideloads. */
+	public const RETRY_META = '_pkiw_featured_artwork_retry';
+
+	/** Prefix for the atomic per-post retry lock. */
+	public const RETRY_LOCK_PREFIX = 'pkiw_artwork_retry_lock_';
+
+	/** Cron hook for one scheduled watch-poster retry. */
+	public const RETRY_HOOK = 'pkiw_retry_featured_artwork';
+
 	/**
 	 * Constructor.
 	 *
@@ -57,6 +66,9 @@ class Featured_Artwork {
 	 */
 	public function __construct() {
 		add_action( 'save_post', [ $this, 'maybe_set_featured' ], 35, 2 );
+		add_action( self::RETRY_HOOK, [ self::class, 'run_retry' ], 10, 1 );
+		add_action( 'wp_trash_post', [ self::class, 'clear_retry' ] );
+		add_action( 'before_delete_post', [ self::class, 'clear_retry' ] );
 	}
 
 	/**
@@ -85,11 +97,14 @@ class Featured_Artwork {
 			return;
 		}
 
-		$url = Kind_Artwork::get_representative_image_url( $post_id );
+		$url   = self::artwork_url( $post_id );
+		$retry = get_post_meta( $post_id, self::RETRY_META, true );
+		if ( is_array( $retry ) && (string) ( $retry['url'] ?? '' ) !== (string) $url ) {
+			self::clear_retry( $post_id );
+		}
 		if ( null === $url ) {
 			return; // No real artwork — never invent or remove anything.
 		}
-
 		/**
 		 * Filters whether kind artwork may become the featured image.
 		 *
@@ -132,9 +147,10 @@ class Featured_Artwork {
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param string $url     Validated artwork URL.
+	 * @param bool   $schedule Whether a failed watch sideload should schedule a retry.
 	 * @return int|\WP_Error Attachment ID, or the sideload error.
 	 */
-	public static function apply( int $post_id, string $url ) {
+	public static function apply( int $post_id, string $url, bool $schedule = true ) {
 		update_post_meta( $post_id, self::SOURCE_META, $url );
 
 		$attachment_id = attachment_url_to_postid( $url );
@@ -144,6 +160,9 @@ class Featured_Artwork {
 
 		if ( is_wp_error( $attachment_id ) ) {
 			delete_post_meta( $post_id, self::ATTACHMENT_META );
+			if ( $schedule && self::is_watch_sideload( $post_id ) ) {
+				self::schedule_retry( $post_id, $url, $attachment_id );
+			}
 			return $attachment_id;
 		}
 
@@ -165,6 +184,10 @@ class Featured_Artwork {
 			);
 		}
 
+		if ( self::is_watch_sideload( $post_id ) ) {
+			self::clear_retry( $post_id );
+		}
+
 		return $attachment_id;
 	}
 
@@ -182,7 +205,337 @@ class Featured_Artwork {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 
-		return media_sideload_image( $url, $post_id, get_the_title( $post_id ), 'id' );
+		if ( ! self::is_watch_post( $post_id ) ) {
+			return media_sideload_image( $url, $post_id, get_the_title( $post_id ), 'id' );
+		}
+
+		$check = Artwork_Fetch_Guard::check( $url );
+		if ( ! $check['ok'] ) {
+			return new \WP_Error(
+				$check['code'],
+				__( 'The watch poster could not be fetched safely.', 'post-kinds-for-indieweb-in-block-themes' )
+			);
+		}
+
+		return Artwork_Fetch_Guard::with_pinned_request(
+			$url,
+			$check['ip'],
+			static fn() => media_sideload_image( $url, $post_id, get_the_title( $post_id ), 'id' )
+		);
+	}
+
+	/**
+	 * Whether a post is a watch whose poster setting is Sideload.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public static function is_watch_sideload( int $post_id ): bool {
+		if ( ! self::is_watch_post( $post_id ) ) {
+			return false;
+		}
+
+		$settings = get_option( 'pkiw_settings', [] );
+		$handling = is_array( $settings ) ? (string) ( $settings['image_handling'] ?? 'sideload' ) : 'sideload';
+
+		return ! in_array( $handling, [ 'hotlink', 'none' ], true );
+	}
+
+	/**
+	 * Resolve artwork without letting core DNS pre-empt the watch guard.
+	 *
+	 * Non-watch kinds retain Kind_Artwork's existing validation. A saved watch
+	 * card is authoritative so removing its poster clears stale retry state;
+	 * cardless legacy posts fall back to normalized meta.
+	 *
+	 * @internal
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string|null Artwork URL.
+	 */
+	public static function artwork_url( int $post_id ): ?string {
+		if ( ! self::is_watch_post( $post_id ) ) {
+			return Kind_Artwork::get_representative_image_url( $post_id );
+		}
+
+		$post = get_post( $post_id );
+		if ( $post instanceof \WP_Post && has_block( 'post-kinds-indieweb/watch-card', $post ) ) {
+			$url = self::watch_poster_from_blocks( parse_blocks( $post->post_content ) );
+		} else {
+			$url = (string) get_post_meta( $post_id, Meta_Fields::PREFIX . 'watch_poster', true );
+		}
+
+		$url    = esc_url_raw( trim( $url ), [ 'http', 'https' ] );
+		$scheme = strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) );
+		$host   = (string) wp_parse_url( $url, PHP_URL_HOST );
+
+		return '' !== $url && '' !== $host && in_array( $scheme, [ 'http', 'https' ], true ) ? $url : null;
+	}
+
+	/**
+	 * Whether the post is watch, including its first save before auto-kind assignment.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	private static function is_watch_post( int $post_id ): bool {
+		$terms = get_the_terms( $post_id, Taxonomy::TAXONOMY );
+		if ( is_array( $terms ) && [] !== $terms ) {
+			if ( 'watch' === $terms[0]->slug ) {
+				return true;
+			}
+			if ( (string) get_post_meta( $post_id, Taxonomy::AUTO_KIND_META_KEY, true ) !== $terms[0]->slug ) {
+				return false;
+			}
+		}
+
+		$post = get_post( $post_id );
+
+		return $post instanceof \WP_Post && has_block( 'post-kinds-indieweb/watch-card', $post );
+	}
+
+	/**
+	 * Find the first stored watch-card poster attribute.
+	 *
+	 * @param array<int,array<string,mixed>> $blocks Parsed blocks.
+	 */
+	private static function watch_poster_from_blocks( array $blocks ): string {
+		foreach ( $blocks as $block ) {
+			if ( 'post-kinds-indieweb/watch-card' === ( $block['blockName'] ?? '' ) ) {
+				return is_string( $block['attrs']['posterImage'] ?? null ) ? $block['attrs']['posterImage'] : '';
+			}
+			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
+				$url = self::watch_poster_from_blocks( $block['innerBlocks'] );
+				if ( '' !== $url ) {
+					return $url;
+				}
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Record a failed fetch and schedule its next retry when appropriate.
+	 *
+	 * @param int       $post_id Post ID.
+	 * @param string    $url     Failed poster URL.
+	 * @param \WP_Error $error   Fetch error.
+	 */
+	private static function schedule_retry( int $post_id, string $url, \WP_Error $error ): void {
+		$stored   = get_post_meta( $post_id, self::RETRY_META, true );
+		$attempts = is_array( $stored ) && (string) ( $stored['url'] ?? '' ) === $url
+			? (int) ( $stored['attempts'] ?? 0 ) + 1
+			: 1;
+		$code     = (string) $error->get_error_code();
+		$state    = self::is_retryable( $error ) ? 'scheduled' : 'permanent';
+		$next     = 0;
+
+		wp_clear_scheduled_hook( self::RETRY_HOOK, [ $post_id ] );
+		if ( 'scheduled' === $state && $attempts >= 4 ) {
+			$state = 'exhausted';
+		} elseif ( 'scheduled' === $state ) {
+			$delays = [
+				1 => HOUR_IN_SECONDS,
+				2 => 6 * HOUR_IN_SECONDS,
+				3 => DAY_IN_SECONDS,
+			];
+			$next   = time() + $delays[ $attempts ];
+			wp_schedule_single_event( $next, self::RETRY_HOOK, [ $post_id ] );
+		}
+
+		update_post_meta(
+			$post_id,
+			self::RETRY_META,
+			[
+				'url'      => $url,
+				'attempts' => min( 4, $attempts ),
+				'next'     => $next,
+				'state'    => $state,
+				'code'     => $code,
+			]
+		);
+	}
+
+	/**
+	 * Whether a fetch error can succeed later.
+	 *
+	 * @param \WP_Error $error Fetch error.
+	 */
+	private static function is_retryable( \WP_Error $error ): bool {
+		$code = (string) $error->get_error_code();
+		if ( in_array( $code, [ 'http_request_failed', 'pkiw_artwork_unresolved' ], true ) ) {
+			return true;
+		}
+		if ( 'http_404' !== $code ) {
+			return false;
+		}
+
+		$data   = $error->get_error_data( 'http_404' );
+		$status = is_array( $data ) ? (int) ( $data['code'] ?? 0 ) : 0;
+
+		return 429 === $status || ( $status >= 500 && $status <= 599 );
+	}
+
+	/**
+	 * Clear retry state, its lock and its scheduled event.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public static function clear_retry( int $post_id ): void {
+		global $wpdb;
+
+		if ( ! metadata_exists( 'post', $post_id, self::RETRY_META ) ) {
+			$has_lock = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Retry locks intentionally bypass the options cache.
+				$wpdb->prepare( "SELECT 1 FROM {$wpdb->options} WHERE option_name = %s", self::lock_name( $post_id ) )
+			);
+			if ( null === $has_lock ) {
+				return;
+			}
+		}
+
+		delete_post_meta( $post_id, self::RETRY_META );
+		wp_clear_scheduled_hook( self::RETRY_HOOK, [ $post_id ] );
+		$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Retry locks intentionally bypass the options cache.
+			$wpdb->options,
+			[ 'option_name' => self::lock_name( $post_id ) ],
+			[ '%s' ]
+		);
+	}
+
+	/**
+	 * Run one scheduled retry.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public static function run_retry( int $post_id ): void {
+		$retry = get_post_meta( $post_id, self::RETRY_META, true );
+		if ( ! is_array( $retry ) ) {
+			return;
+		}
+
+		$post = get_post( $post_id );
+		if ( ! $post instanceof \WP_Post
+			|| 'post' !== $post->post_type
+			|| in_array( $post->post_status, [ 'trash', 'auto-draft' ], true )
+			|| ! self::is_watch_sideload( $post_id )
+			|| get_post_thumbnail_id( $post_id ) > 0 ) {
+			self::clear_retry( $post_id );
+			return;
+		}
+
+		$url = self::artwork_url( $post_id );
+		if ( ! is_string( $url )
+			|| ! apply_filters( 'pkiw_set_featured_from_artwork', true, $post_id, $url )
+			|| (string) ( $retry['url'] ?? '' ) !== $url ) {
+			self::clear_retry( $post_id );
+			return;
+		}
+
+		if ( ! self::retry_is_due( $retry ) ) {
+			return;
+		}
+
+		$token = self::acquire_retry_lock( $post_id );
+		if ( null === $token ) {
+			return;
+		}
+
+		try {
+			wp_cache_delete( $post_id, 'post_meta' );
+			if ( get_post_thumbnail_id( $post_id ) > 0 ) {
+				self::clear_retry( $post_id );
+				return;
+			}
+			$retry = get_post_meta( $post_id, self::RETRY_META, true );
+			if ( ! is_array( $retry ) || ! self::retry_is_due( $retry ) ) {
+				return;
+			}
+			self::apply( $post_id, (string) $retry['url'], true );
+		} finally {
+			self::release_retry_lock( $post_id, $token );
+		}
+	}
+
+	/**
+	 * Take the atomic retry lock, including stale-lock takeover.
+	 *
+	 * @internal
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string|null Lock token, or null when another run owns it.
+	 */
+	public static function acquire_retry_lock( int $post_id ): ?string {
+		global $wpdb;
+
+		$name  = self::lock_name( $post_id );
+		$token = time() . ':' . wp_generate_password( 12, false );
+		$rows  = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- INSERT IGNORE on option_name is the atomic lock.
+			$wpdb->prepare(
+				"INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'off')",
+				$name,
+				$token
+			)
+		);
+		if ( 1 === $rows ) {
+			return $token;
+		}
+
+		$stored = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Retry locks intentionally bypass the options cache.
+			$wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name )
+		);
+		if ( ! is_string( $stored ) || (int) strtok( $stored, ':' ) >= time() - 300 ) {
+			return null;
+		}
+
+		$rows = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Token comparison makes stale-lock takeover atomic.
+			$wpdb->prepare(
+				"UPDATE {$wpdb->options} SET option_value = %s WHERE option_name = %s AND option_value = %s",
+				$token,
+				$name,
+				$stored
+			)
+		);
+
+		return 1 === $rows ? $token : null;
+	}
+
+	/**
+	 * Release only the lock token this run acquired.
+	 *
+	 * @internal
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $token   Owned lock token.
+	 */
+	public static function release_retry_lock( int $post_id, string $token ): void {
+		global $wpdb;
+
+		$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Retry locks intentionally bypass the options cache.
+			$wpdb->options,
+			[
+				'option_name'  => self::lock_name( $post_id ),
+				'option_value' => $token,
+			],
+			[ '%s', '%s' ]
+		);
+	}
+
+	/**
+	 * Whether retry state represents a due scheduled attempt.
+	 *
+	 * @param array<string,mixed> $retry Retry state.
+	 */
+	private static function retry_is_due( array $retry ): bool {
+		return 'scheduled' === (string) ( $retry['state'] ?? '' )
+			&& (int) ( $retry['next'] ?? 0 ) <= time() + 60;
+	}
+
+	/**
+	 * Lock option name for a post.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	private static function lock_name( int $post_id ): string {
+		return self::RETRY_LOCK_PREFIX . $post_id;
 	}
 
 	/**
@@ -224,7 +577,9 @@ class Featured_Artwork {
 		foreach ( $post_ids as $post_id ) {
 			++$stats['scanned'];
 
-			$url = Kind_Artwork::get_representative_image_url( $post_id );
+			$url = self::is_watch_post( $post_id )
+				? self::artwork_url( $post_id )
+				: Kind_Artwork::get_representative_image_url( $post_id );
 			if ( null === $url
 				|| get_post_thumbnail_id( $post_id ) > 0
 				|| (string) get_post_meta( $post_id, self::SOURCE_META, true ) === $url
@@ -238,7 +593,7 @@ class Featured_Artwork {
 				continue;
 			}
 
-			$result = self::apply( $post_id, $url );
+			$result = self::apply( $post_id, $url, false );
 			if ( is_wp_error( $result ) ) {
 				++$stats['failed'];
 			} else {

@@ -254,6 +254,128 @@ final class Operations {
 	}
 
 	/**
+	 * Retry failed watch-poster sideloads or report their candidates.
+	 *
+	 * @param bool  $dry_run Whether to report without fetching.
+	 * @param int[] $ids     Optional post ID scope.
+	 * @return array{dry_run:bool,candidates:array<int,array{id:int,state:string,attempts:int,host:string}>,fetched:int,succeeded:int,failed:int,skipped:int}
+	 */
+	public static function retry_featured_artwork( bool $dry_run, array $ids ): array {
+		$ids   = array_values( array_unique( array_filter( array_map( 'intval', $ids ), static fn( int $id ): bool => $id > 0 ) ) );
+		$posts = get_posts(
+			[
+				'post_type'        => 'post',
+				'post_status'      => [ 'publish', 'future', 'draft', 'pending', 'private' ],
+				'posts_per_page'   => -1,
+				'fields'           => 'ids',
+				'orderby'          => 'ID',
+				'order'            => 'ASC',
+				'post__in'         => [] === $ids ? null : $ids,
+				'no_found_rows'    => true,
+				'suppress_filters' => false,
+				'tax_query'        => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- Operator-only bounded retry discovery.
+					[
+						'taxonomy' => Taxonomy::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => [ 'watch' ],
+					],
+				],
+			]
+		);
+
+		$candidates = [];
+		foreach ( $posts as $post_id ) {
+			$candidate = self::featured_artwork_retry_candidate( (int) $post_id );
+			if ( null !== $candidate ) {
+				$candidates[] = $candidate;
+			}
+		}
+
+		$result = [
+			'dry_run'    => $dry_run,
+			'candidates' => $candidates,
+			'fetched'    => 0,
+			'succeeded'  => 0,
+			'failed'     => 0,
+			'skipped'    => 0,
+		];
+		if ( $dry_run ) {
+			return $result;
+		}
+
+		foreach ( array_slice( $candidates, 0, 10 ) as $candidate ) {
+			$token = Featured_Artwork::acquire_retry_lock( $candidate['id'] );
+			if ( null === $token ) {
+				++$result['skipped'];
+				continue;
+			}
+
+			try {
+				wp_cache_delete( $candidate['id'], 'post_meta' );
+				if ( null === self::featured_artwork_retry_candidate( $candidate['id'] ) ) {
+					++$result['skipped'];
+					continue;
+				}
+				$url = Featured_Artwork::artwork_url( $candidate['id'] );
+				if ( ! is_string( $url ) ) {
+					++$result['skipped'];
+					continue;
+				}
+				++$result['fetched'];
+				$applied = Featured_Artwork::apply( $candidate['id'], $url, false );
+				if ( is_wp_error( $applied ) ) {
+					++$result['failed'];
+				} else {
+					++$result['succeeded'];
+				}
+			} finally {
+				Featured_Artwork::release_retry_lock( $candidate['id'], $token );
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Return one current manual-retry candidate.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array{id:int,state:string,attempts:int,host:string}|null
+	 */
+	private static function featured_artwork_retry_candidate( int $post_id ): ?array {
+		if ( ! Featured_Artwork::is_watch_sideload( $post_id ) || get_post_thumbnail_id( $post_id ) > 0 ) {
+			return null;
+		}
+
+		$url       = Featured_Artwork::artwork_url( $post_id );
+		$retry     = get_post_meta( $post_id, Featured_Artwork::RETRY_META, true );
+		$has_retry = metadata_exists( 'post', $post_id, Featured_Artwork::RETRY_META );
+		$state     = '';
+		$attempts  = 0;
+		if ( is_array( $retry ) && in_array( (string) ( $retry['state'] ?? '' ), [ 'scheduled', 'exhausted' ], true )
+			&& is_string( $url ) && (string) ( $retry['url'] ?? '' ) === $url ) {
+			$state    = (string) $retry['state'];
+			$attempts = (int) ( $retry['attempts'] ?? 0 );
+		} elseif ( ! $has_retry
+			&& is_string( $url )
+			&& (string) get_post_meta( $post_id, Featured_Artwork::SOURCE_META, true ) === $url
+			&& ! metadata_exists( 'post', $post_id, Featured_Artwork::ATTACHMENT_META ) ) {
+			$state = 'legacy';
+		}
+
+		if ( '' === $state || ! is_string( $url ) ) {
+			return null;
+		}
+
+		return [
+			'id'       => $post_id,
+			'state'    => $state,
+			'attempts' => $attempts,
+			'host'     => (string) wp_parse_url( $url, PHP_URL_HOST ),
+		];
+	}
+
+	/**
 	 * Count published check-ins and venue terms.
 	 *
 	 * @return array{checkin_posts:int,venue_terms:int}

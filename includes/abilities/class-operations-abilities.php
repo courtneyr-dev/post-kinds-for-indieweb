@@ -65,6 +65,7 @@ final class Operations_Abilities {
 		$this->register_backfill_card_meta();
 		$this->register_backfill_listen_media_type();
 		$this->register_backfill_featured_artwork();
+		$this->register_retry_featured_artwork();
 		$this->register_get_checkin_stats();
 		$this->register_list_venues();
 		$this->register_get_surface();
@@ -214,6 +215,65 @@ final class Operations_Abilities {
 				'additionalProperties' => false,
 			],
 			[ $this, 'execute_backfill_featured_artwork' ],
+			false
+		);
+	}
+
+	/**
+	 * Register the featured-artwork retry.
+	 */
+	private function register_retry_featured_artwork(): void {
+		$this->register_write(
+			'post-kinds/retry-featured-artwork',
+			__( 'Retry Featured Artwork', 'post-kinds-for-indieweb-in-block-themes' ),
+			__( 'Reports or retries failed watch-poster sideloads.', 'post-kinds-for-indieweb-in-block-themes' ),
+			[
+				'type'                 => 'object',
+				'default'              => [ 'dry_run' => true ],
+				'properties'           => [
+					'dry_run' => [
+						'type'        => 'boolean',
+						'default'     => true,
+						'description' => __( 'Report candidates without fetching.', 'post-kinds-for-indieweb-in-block-themes' ),
+					],
+					'ids'     => [
+						'type'     => 'array',
+						'maxItems' => 20,
+						'items'    => [
+							'type'    => 'integer',
+							'minimum' => 1,
+						],
+					],
+				],
+				'additionalProperties' => false,
+			],
+			[
+				'type'                 => 'object',
+				'properties'           => [
+					'dry_run'    => [ 'type' => 'boolean' ],
+					'candidates' => [
+						'type'  => 'array',
+						'items' => [
+							'type'                 => 'object',
+							'properties'           => [
+								'id'       => [ 'type' => 'integer' ],
+								'state'    => [ 'type' => 'string' ],
+								'attempts' => [ 'type' => 'integer' ],
+								'host'     => [ 'type' => 'string' ],
+							],
+							'required'             => [ 'id', 'state', 'attempts', 'host' ],
+							'additionalProperties' => false,
+						],
+					],
+					'fetched'    => [ 'type' => 'integer' ],
+					'succeeded'  => [ 'type' => 'integer' ],
+					'failed'     => [ 'type' => 'integer' ],
+					'skipped'    => [ 'type' => 'integer' ],
+				],
+				'required'             => [ 'dry_run', 'candidates', 'fetched', 'succeeded', 'failed', 'skipped' ],
+				'additionalProperties' => false,
+			],
+			[ $this, 'execute_retry_featured_artwork' ],
 			false
 		);
 	}
@@ -534,6 +594,16 @@ final class Operations_Abilities {
 	 */
 	public function execute_backfill_featured_artwork( array $args ): array {
 		return Operations::backfill_featured_artwork( $this->is_dry_run( $args ) );
+	}
+
+	/**
+	 * Execute the featured-artwork retry.
+	 *
+	 * @param array $args Input arguments.
+	 * @return array Operation result.
+	 */
+	public function execute_retry_featured_artwork( array $args ): array {
+		return Operations::retry_featured_artwork( $this->is_dry_run( $args ), (array) ( $args['ids'] ?? [] ) );
 	}
 
 	/**
