@@ -448,7 +448,9 @@ class Microformats {
 		// the <li>; parsers otherwise see two entries per card. The kind class
 		// stays for styling. Core renders the inner blocks before it asks for
 		// the post classes, so the card has already registered itself here.
-		if ( ! empty( $GLOBALS['pkiw_stream_card_root_seen'][ $post_id ] ) ) {
+		// 1.9.0: archive entry blocks that print their own h-entry root (the
+		// presentation badge) register in pkiw_entry_root_seen the same way.
+		if ( ! empty( $GLOBALS['pkiw_stream_card_root_seen'][ $post_id ] ) || ! empty( $GLOBALS['pkiw_entry_root_seen'][ $post_id ] ) ) {
 			if ( $kind ) {
 				$classes[] = 'kind-' . $kind;
 			}

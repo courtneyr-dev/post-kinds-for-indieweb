@@ -122,6 +122,9 @@ final class Presentation_Archive {
 		$title_id = 'pkiw-presentation-' . $post->ID . '-title';
 		$date_iso = get_post_time( 'c', true, $post );
 		if ( '' !== (string) $post->post_password ) {
+			// The badge is the entry root, so the Query Loop <li> must not be one too.
+			$GLOBALS['pkiw_entry_root_seen'][ $post->ID ] = true;
+
 			$title = '' !== trim( (string) $post->post_title ) ? visitor_post_title( $post ) : untitled_name( $post, false );
 			return '<div class="pkiw-presentation-badge pkiw-presentation-badge--protected h-entry" data-pkiw-event-type=""><h' . $level . ' class="pkiw-presentation-badge__title" id="' . esc_attr( $title_id ) . '"><a class="u-url" href="' . esc_url( (string) get_permalink( $post ) ) . '">' . esc_html( $title ) . '</a></h' . $level . '><time class="dt-published" datetime="' . esc_attr( $date_iso ) . '" hidden></time></div>';
 		}
@@ -129,6 +132,8 @@ final class Presentation_Archive {
 		if ( [] === $facts ) {
 			return '';
 		}
+		$GLOBALS['pkiw_entry_root_seen'][ $post->ID ] = true;
+
 		$event_id = 'pkiw-presentation-' . $post->ID . '-event';
 		$labelled = self::title_repeats( (string) $facts['title'], $post->ID ) && '' !== $facts['event_name'] ? ' aria-labelledby="' . esc_attr( $title_id . ' ' . $event_id ) . '"' : '';
 		$html     = '<div class="pkiw-presentation-badge h-entry" data-pkiw-event-type="' . esc_attr( (string) $facts['event_type'] ) . '"><h' . $level . ' class="pkiw-presentation-badge__title" id="' . esc_attr( $title_id ) . '"><a class="u-url p-name pkiw-presentation-badge__link" href="' . esc_url( (string) get_permalink( $post ) ) . '"' . $labelled . '>' . esc_html( (string) $facts['title'] ) . '</a></h' . $level . '>';
