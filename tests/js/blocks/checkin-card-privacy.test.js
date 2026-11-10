@@ -173,4 +173,20 @@ describe( 'Check-in Card privacy control', () => {
 			'Your exact coordinates will be visible to everyone.'
 		);
 	} );
+
+	it( 'describes what Approximate shows, without a warning', () => {
+		// Issue 548: the notice said Approximate showed the exact location,
+		// the same as Public. Meta_Fields::get_visible_location_fields()
+		// gives an approximate check-in its venue name, city, region and
+		// country only, and the Settings page says so in these words.
+		open( { locationPrivacy: 'approximate' } );
+
+		expect( screen.queryByRole( 'note' ) ).toBeNull();
+		expect( screen.queryByText( /the same as Public/ ) ).toBeNull();
+		expect(
+			screen.getByText(
+				'Shows the venue name, city, region and country. Hides the street address, postal code, coordinates, map, venue URL and OpenStreetMap ID, so the check-in gets no map pin.'
+			)
+		).toBeInTheDocument();
+	} );
 } );

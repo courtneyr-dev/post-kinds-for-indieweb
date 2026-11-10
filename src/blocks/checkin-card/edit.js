@@ -708,7 +708,9 @@ export default function Edit( { attributes, setAttributes } ) {
 		if ( ! latitude || ! longitude ) {
 			return null;
 		}
-		// Check-ins show the exact location unless private, which hides the map.
+		// The editor shows the author this map unless the check-in is Private.
+		// Visitors see a map only when it is Public
+		// (Meta_Fields::get_visible_location_fields()).
 		const bbox = 0.01;
 		return `https://www.openstreetmap.org/export/embed.html?bbox=${
 			longitude - bbox
@@ -1065,12 +1067,12 @@ export default function Edit( { attributes, setAttributes } ) {
 							</Notice>
 						) }
 						{ locationPrivacy === 'approximate' && (
-							<Notice status="warning" isDismissible={ false }>
+							<p className="description">
 								{ __(
-									'Check-ins show the exact location to everyone, the same as Public. Choose Private to hide it.',
+									'Shows the venue name, city, region and country. Hides the street address, postal code, coordinates, map, venue URL and OpenStreetMap ID, so the check-in gets no map pin.',
 									'post-kinds-for-indieweb-in-block-themes'
 								) }
-							</Notice>
+							</p>
 						) }
 						{ locationPrivacy === 'private' && (
 							<p className="description">

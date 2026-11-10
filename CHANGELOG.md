@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The Check-in Card's Location Privacy panel no longer tells authors that Approximate shows the exact location, the same as Public. It now says what Approximate shows, in the Settings page's words: the venue name, city, region and country, with no street address, postal code, coordinates, map, venue URL or OpenStreetMap ID. The note is plain help text instead of a warning (#548).
 - Saving Settings → API Connections now keeps the BoardGameGeek API token and the RAWG API key. The screen showed both fields, but the save handler's provider list left them out, so every save discarded them and the game lookup (and Outpost's Play lookup) answered "BoardGameGeek API is not configured". The Test button now works for both providers too.
 - Trakt can now connect. Trakt's developer portal changed in two ways that blocked it:
   - It rejects a redirect URI with a query string, so the old `admin-post.php?action=pkiw_trakt_oauth` couldn't be registered. The Trakt redirect URI is now the bare `wp-admin/admin-post.php`; PKIW picks up the callback on the generic `admin_post` hook and acts only when the request's `state` matches one it issued. Simkl and Foursquare keep their existing redirect URIs.
