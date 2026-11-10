@@ -227,55 +227,29 @@ class Trakt extends API_Base {
 	}
 
 	/**
-	 * Refresh access token.
+	 * Refresh the access token now and reload the saved pair.
 	 *
-	 * @return array<string, mixed>|null New token data.
+	 * Delegates to Trakt_Token_Refresher, which holds the lock, sends no
+	 * client secret, and saves the new single-use refresh token.
+	 *
+	 * @return array<string, mixed>|null New token data, or null on failure.
 	 */
 	public function refresh_access_token(): ?array {
-		if ( ! $this->refresh_token ) {
+		if ( 'refreshed' !== ( new \PKIW\Trakt_Token_Refresher() )->refresh( true ) ) {
 			return null;
 		}
 
-		try {
-			$response = wp_remote_post(
-				'https://api.trakt.tv/oauth/token',
-				[
-					'timeout' => 30,
-					'headers' => [ 'Content-Type' => 'application/json' ],
-					'body'    => wp_json_encode(
-						[
-							'refresh_token' => $this->refresh_token,
-							'client_id'     => $this->client_id,
-							'client_secret' => $this->client_secret,
-							'grant_type'    => 'refresh_token',
-						]
-					),
-				]
-			);
+		$credentials         = get_option( 'pkiw_api_credentials', [] );
+		$trakt_creds         = $credentials['trakt'] ?? [];
+		$this->access_token  = $trakt_creds['access_token'] ?? '';
+		$this->refresh_token = $trakt_creds['refresh_token'] ?? '';
 
-			if ( is_wp_error( $response ) ) {
-				throw new \Exception( esc_html( $response->get_error_message() ) );
-			}
-
-			$body = json_decode( wp_remote_retrieve_body( $response ), true );
-
-			if ( isset( $body['access_token'] ) ) {
-				$this->access_token  = $body['access_token'];
-				$this->refresh_token = $body['refresh_token'] ?? $this->refresh_token;
-
-				return [
-					'access_token'  => $body['access_token'],
-					'refresh_token' => $body['refresh_token'] ?? $this->refresh_token,
-					'expires_in'    => $body['expires_in'] ?? 7776000,
-					'created_at'    => $body['created_at'] ?? time(),
-				];
-			}
-
-			return null;
-		} catch ( \Exception $e ) {
-			$this->log_error( 'Token refresh failed', [ 'error' => $e->getMessage() ] );
-			return null;
-		}
+		return [
+			'access_token'  => $this->access_token,
+			'refresh_token' => $this->refresh_token,
+			'expires_in'    => max( 0, (int) ( $trakt_creds['token_expires'] ?? 0 ) - time() ),
+			'created_at'    => time(),
+		];
 	}
 
 	/**

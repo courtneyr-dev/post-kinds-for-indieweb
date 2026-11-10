@@ -542,6 +542,8 @@ final class Plugin {
 			$this->scheduled_sync->init();
 		}
 
+		$this->init_trakt_token_refresher();
+
 		// Initialize third-party integrations.
 		$this->init_integrations();
 
@@ -549,6 +551,16 @@ final class Plugin {
 		if ( Feature_Flags::has_abilities_api() ) {
 			Abilities_Manager::instance();
 		}
+	}
+
+	/**
+	 * Keep Trakt connected past its 7-day access token. Registered outside
+	 * wp-admin too, because WP-Cron fires the refresh.
+	 *
+	 * @return void
+	 */
+	private function init_trakt_token_refresher(): void {
+		( new Trakt_Token_Refresher() )->init();
 	}
 
 	/**
