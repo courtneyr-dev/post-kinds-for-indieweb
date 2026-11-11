@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.9.0
+Stable tag: 1.9.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -181,6 +181,12 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 
 == Changelog ==
 
+= 1.9.1 =
+* Fixed: Trakt stays connected past 7 days. A twice-daily job refreshes the token before it expires, and the Refresh Token button refreshes on demand. If Trakt rejects the refresh, PKIW disconnects Trakt and API Connections asks you to Connect again.
+* Fixed: saving API Connections no longer writes back a spent Trakt token, and tokens no longer appear in the page source.
+* Fixed: the Check-in Card's privacy panel describes Approximate correctly: venue name, city, region and country, with no street address, coordinates or map. It had said Approximate showed the exact location.
+* Fixed: presentation archive items carry one h-entry instead of two.
+
 = 1.9.0 =
 * Added: RSVP archive at /kind/rsvp/ with an "Attending Remotely" status and two abilities; an event location prints only when the card and its stored privacy are both public.
 * Added: presentations archive grouped by year, a record block on the single, and `wp post-kinds reclassify-presentations` (dry run by default).
@@ -349,6 +355,9 @@ Security
 * Fixed: like, reply, repost, bookmark, favorite, listen, watch, and read posts expose the correct microformats2 markup, so webmention receivers and feed readers recognize them as their kind.
 
 == Upgrade Notice ==
+
+= 1.9.1 =
+Keeps Trakt connected past 7 days and corrects the Check-in Card's description of Approximate privacy. Coming from 1.8.9, you also get 1.9.0's RSVP, presentation, trip, itinerary and event archives and the Metron comic lookup.
 
 = 1.8.9 =
 Trakt connects again. Copy the Redirect URI from API Connections into your Trakt app, paste its Client ID, and click Connect. No client secret needed.

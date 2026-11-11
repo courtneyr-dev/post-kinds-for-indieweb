@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-11-10
+
 ### Fixed
 
 - The Check-in Card's Location Privacy panel no longer tells authors that Approximate shows the exact location, the same as Public. It now says what Approximate shows, in the Settings page's words: the venue name, city, region and country, with no street address, postal code, coordinates, map, venue URL or OpenStreetMap ID. The note is plain help text instead of a warning (#548).
@@ -19,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Create the app at developer.trakt.tv with the redirect URI shown in API Connections, paste its Client ID, and click Connect.
 - Trakt stays connected past 7 days. Trakt access tokens expire after 7 days and nothing refreshed them, so every connection died a week after Connect. A twice-daily WP-Cron job now refreshes the token when it expires within 2 days, and the Refresh Token button on API Connections refreshes on demand. Trakt refresh tokens are single-use, so PKIW saves the new access token, refresh token, and expiry in one write, and a lock stops two requests from spending the same refresh token. The refresh sends no client secret. When Trakt rejects the refresh (`invalid_grant`, for example "session not found" on a token issued before Trakt's migration), PKIW disconnects Trakt and API Connections says why and asks you to click Connect again.
 - Saving API Connections no longer drops Trakt's token expiry or writes back a stale token. The form posted the tokens it rendered, so a save after a background refresh would have replaced the new refresh token with the spent one. Token fields now post a placeholder that keeps the stored value, and tokens no longer appear in the page source.
+- Presentation archive items carry one h-entry. Every Query Loop item on /kind/presentation/ wrapped the badge's own `h-entry` in a second one, so 12 badges parsed as 24 entries. The badge registers itself in `pkiw_entry_root_seen`, and the list item keeps `kind-presentation` without `hentry` or `h-entry`.
+
+### Changed
+
+- The readme's description and changelog match what the plugin ships: 67 blocks, 40 kinds, and the audited 1.8.7 to 1.8.9 entries.
+- Development dependencies: npm overrides move the vulnerable copies behind 7 Dependabot alerts to patched releases (isomorphic-git 1.38.6, qs 6.16.2, serialize-javascript 7.1.3, minimatch 11.0.5, and re2js 2.8.7 in the docs site). None of these ship in the plugin.
 
 ## [1.9.0] - 2026-11-09
 
