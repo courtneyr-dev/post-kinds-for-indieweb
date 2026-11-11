@@ -238,6 +238,9 @@
 				this.disconnectOAuth
 			);
 
+			// OAuth token refresh (Trakt)
+			$( document ).on( 'click', '.oauth-refresh', this.refreshOAuth );
+
 			// Last.fm disconnect
 			$( document ).on(
 				'click',
@@ -404,7 +407,44 @@
 
 			$section.find( '.oauth-access-token' ).val( '' );
 			$section.find( '.oauth-refresh-token' ).val( '' );
+			$section.find( '.oauth-token-expires' ).val( '' );
 			$section.closest( 'form' ).submit();
+		},
+
+		/**
+		 * Refresh an OAuth access token now.
+		 * @param {Event} e Click event.
+		 */
+		refreshOAuth( e ) {
+			e.preventDefault();
+
+			const $button = $( this );
+			$button.prop( 'disabled', true );
+
+			$.ajax( {
+				url: pkiwAdmin.ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'pkiw_refresh_oauth_token',
+					nonce: pkiwAdmin.nonce,
+					api: $button.data( 'api' ),
+				},
+				success( response ) {
+					if ( response.success ) {
+						window.location.reload();
+						return;
+					}
+					alert(
+						( response.data && response.data.message ) ||
+							pkiwAdmin.strings.error
+					);
+					$button.prop( 'disabled', false );
+				},
+				error() {
+					alert( pkiwAdmin.strings.error );
+					$button.prop( 'disabled', false );
+				},
+			} );
 		},
 
 		/**

@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.9.0
+Stable tag: 1.9.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,7 +20,7 @@ The original Post Kinds plugin was built for the Classic Editor. This plugin is 
 
 = What you get =
 
-* **27 custom blocks** — 23 editor blocks (card blocks for most kinds, plus utilities like Star Rating, Media Lookup, Check-in Dashboard, Check-ins Feed, and Venue Detail), 3 server-rendered blocks (Now Playing, Media Stats, Recent Kinds), and the Stream Card, which is registered in PHP, hidden from the inserter, and stands in for Post Content inside the Stream query loop
+* **67 custom blocks** — card blocks for most kinds, blocks that build kind archives, utilities (Star Rating, Media Lookup, Check-in Dashboard, Check-ins Feed, Venue Detail), three server-rendered blocks (Now Playing, Media Stats, Recent Kinds), and the Stream Card, which is registered in PHP, hidden from the inserter, and stands in for Post Content inside the Stream query loop
 * **API-powered search** — find music, movies, books, games, and venues directly from the editor
 * **Bulk import** — pull in your history from Last.fm, Trakt, Hardcover, and more
 * **Real-time scrobbling** — webhooks for Plex, Jellyfin, Trakt, and ListenBrainz. Scrobbling means automatically logging each song or show as you play it.
@@ -35,7 +35,7 @@ The original Post Kinds plugin was built for the Classic Editor. This plugin is 
 * **Listen** — music, podcasts, and audio (MusicBrainz, ListenBrainz, Last.fm)
 * **Watch** — movies, TV shows, and videos (TMDB, Trakt, Simkl, TVMaze)
 * **Read** — books and articles (Open Library, Google Books, Hardcover)
-* **Checkin** — places and venues (Foursquare, OpenStreetMap), with per-post location privacy
+* **Checkin** — places and venues (Foursquare, OpenStreetMap), with per-post location privacy (public, approximate, or private)
 * **Play** — video games and board games (RAWG, BoardGameGeek)
 * **Eat / Drink** — food and beverages
 * **Jam** — music you love, with oEmbed previews
@@ -45,8 +45,9 @@ The original Post Kinds plugin was built for the Classic Editor. This plugin is 
 * **Favorite, Wish, Mood, Acquisition** — personal tracking
 * **Follow, Tag, Quote, Issue, Question** — more IndieWeb response types
 * **Audio, Weather, Exercise, Sleep, Trip, Itinerary, Craft** — logs and experimental kinds
+* **Chicken, Comics, Collection, Presentation** — a flock log, comics, collections, and talks
 
-Along with Note, Article, Photo, Video, Review, and Recipe, that's the full 36-kind vocabulary of the classic Post Kinds plugin. Kinds without a dedicated card block still render as cards on the Stream and carry correct microformats2 markup.
+Along with Note, Article, Photo, Video, Review, and Recipe, that's 40 kinds. Kinds without a dedicated card block still render as cards on the Stream and carry correct microformats2 markup.
 
 Each kind gets its own archive page (for example `/kind/listen/`), and the kind is set automatically from the first card block in a post — or pick it yourself in the Post Kind editor panel.
 
@@ -68,7 +69,7 @@ Each kind gets its own archive page (for example `/kind/listen/`), and the kind 
 * [The Events Calendar](https://wordpress.org/plugins/the-events-calendar/) and [My Calendar](https://wordpress.org/plugins/my-calendar/) — either one feeds the Event card. Event name, start, end, location, and URL are read from whichever is installed; with neither, the card falls back to its own fields.
 * [WP Recipe Maker](https://wordpress.org/plugins/wp-recipe-maker/) — a post containing a WPRM recipe is detected, and the recipe kind is suggested for it.
 * [ActivityPub](https://wordpress.org/plugins/activitypub/) — a recommendation only; this plugin contains no ActivityPub integration.
-* [RSS Chat](https://github.com/pfefferle/wordpress-rss-chat) — a recommendation only; this plugin contains no rss.chat integration, and RSS Chat is on GitHub rather than WordPress.org. It syndicates posts carrying the core **chat** post format, which is separate from kinds, so a note or a reply is not sent to rss.chat unless you also set that format on it. Whether that check could become filterable, so a kind could decide instead, is open upstream: [issue #6](https://github.com/pfefferle/wordpress-rss-chat/issues/6).
+* [RSS Chat](https://github.com/pfefferle/wordpress-rss-chat) — a recommendation only; this plugin contains no rss.chat integration, and RSS Chat is on GitHub rather than WordPress.org. It syndicates posts with the core **chat** post format, not kinds. A kind-aware check is open upstream: [issue #6](https://github.com/pfefferle/wordpress-rss-chat/issues/6).
 
 = Conflicts =
 
@@ -122,7 +123,7 @@ The panel itself only reads — checking a URL sends nothing about you or your s
 
 = Which posts publish to Standard.site? =
 
-Public content and public logs publish by default once ATmosphere is connected — notes, articles, photos, videos, reviews, recipes, events, and your listens, watches, reads, plays, eats, drinks, and jams, plus replies, bookmarks, and RSVPs. Thin signals (likes, reposts, favorites, follows) and privacy-sensitive kinds (check-ins, moods, wishes, acquisitions, and the health and travel logs) stay off by default; turn any kind on under Settings → Post Kinds → Integrations, or per post with ATmosphere's sharing toggle in the editor, which always has the final say. Posts published before you change a setting are never removed by it.
+Public content and public logs publish by default once ATmosphere is connected — notes, articles, photos, videos, reviews, recipes, events, and your listens, watches, reads, plays, eats, drinks, and jams, plus replies, bookmarks, and RSVPs. Thin signals (likes, reposts, favorites, follows) and privacy-sensitive kinds (check-ins, moods, wishes, acquisitions, and the health and travel logs) stay off by default; turn any kind on under Reactions → Settings → Integrations, or per post with ATmosphere's sharing toggle in the editor, which always has the final say. Posts published before you change a setting are never removed by it.
 
 = Do my posts also go to Bluesky? =
 
@@ -148,7 +149,7 @@ Yes. Go to **Reactions > Import** to import from Last.fm, Trakt, Hardcover, and 
 
 = Are my check-ins private? =
 
-Each check-in has a location privacy level: public (full address and coordinates), approximate (city and region only), or private (no location shown). The published markup redacts location details to match, and you can set a site-wide default in settings.
+Each check-in has a location privacy level: public (full address, coordinates, and map pin), approximate (venue name, city, region, and country, with no street address, postal code, coordinates, or map pin), or private (no location shown). The published markup and the REST API redact location details to match, and you can set a site-wide default under **Reactions → Settings → Checkin**. Signed-in editors see a check-in's location on the front end the way a visitor does; admin screens and the block editor show them the full location.
 
 = What data leaves my site? =
 
@@ -160,7 +161,7 @@ No. This plugin is built for block themes and the block editor — its card bloc
 
 = Can mood labels use American or British spelling? =
 
-Yes. On the General tab of the Post Kinds settings, "Mood label spelling" follows your Site Language by default, or you can choose English (United States) or English (United Kingdom). It changes the mood suggestions and the mood names Post Kinds generates. Labels you type yourself, notes and saved posts stay exactly as written.
+Yes. On the General tab of Reactions → Settings, "Mood label spelling" follows your Site Language by default, or you can choose English (United States) or English (United Kingdom). It changes the mood suggestions and the mood names Post Kinds generates. Labels you type yourself, notes and saved posts stay exactly as written.
 
 = Where can I read the full documentation? =
 
@@ -172,13 +173,19 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 2. Watch Card block showing a movie with poster and review
 3. Read Card block with book cover and reading progress
 4. Checkin Card with location and venue details
-5. API configuration settings for external services
-6. General settings page with plugin options
+5. API Connections screen with Last.fm, TMDB, and Trakt, where Trakt connects with a Client ID and no client secret
+6. General tab of Reactions → Settings with default category, mood label spelling, and plugin options
 7. Block inserter showing all post kind blocks
-8. Three published check-ins showing how each privacy level redacts location detail
+8. Three published check-ins: public shows the address and a map pin, approximate shows only the venue, city, region, and country, and private shows no location
 9. Standard.site record panel on a Bookmark Card, showing the cited page's own title, publication, description, and tags read from AT Protocol
 
 == Changelog ==
+
+= 1.9.1 =
+* Fixed: Trakt stays connected past 7 days. A twice-daily job refreshes the token before it expires, and the Refresh Token button refreshes on demand. If Trakt rejects the refresh, PKIW disconnects Trakt and API Connections asks you to Connect again.
+* Fixed: saving API Connections no longer writes back a spent Trakt token, and tokens no longer appear in the page source.
+* Fixed: the Check-in Card's privacy panel describes Approximate correctly: venue name, city, region and country, with no street address, coordinates or map. It had said Approximate showed the exact location.
+* Fixed: presentation archive items carry one h-entry instead of two.
 
 = 1.9.0 =
 * Added: RSVP archive at /kind/rsvp/ with an "Attending Remotely" status and two abilities; an event location prints only when the card and its stored privacy are both public.
@@ -192,84 +199,42 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 * Changed: RSVP Stream cards omit the location; the event card shows public My Calendar events only; watch posters follow Image Handling.
 * Fixed: an unknown event ID no longer resolves to another event; classic sleep posts keep their paragraphs.
 * Security: watch poster fetches pass an SSRF guard, and the API settings page masks every password field.
-* Changed: a logged-in editor on the front end sees a check-in's location the way a visitor does, in cards, feeds, the dashboard, the check-in map, archives and the weather line. Editors still see the full location on admin screens and in the block editor.
-* Changed: venue archives live at /venues/<slug>/. Simple Location's venue post type owns /venue/, so a venue archive there 404'd. An old /venue/<slug>/ link that would 404 now 301s to the venue's new link. The plugin version is 1.8.7, so upgraded sites rebuild their rewrite rules once.
-* Fixed: the plugin's venue archive template is named taxonomy-pkiw_venue, so WordPress picks it for venue archives. A theme or Site Editor taxonomy-pkiw_venue still wins.
-* Fixed: the Venue Detail and Check-ins Feed venue pickers list your venues again, and the Check-ins Feed preview filters by the chosen venue.
-* Fixed: the address, city, coordinates, website and phone fields and the Location column show on Posts > Venues, and the fields save, with a nonce and an edit_term check.
 
-* Added: a play kind archive template: Staff Picks, then plays at 12 a page in sections, video games, then board games, then plays with neither.
-* Added: the Staff Picks block lists up to three top-rated board game plays, one per BoardGameGeek game, on the first archive page only.
-* Added: a read kind archive template with shelves by status (Currently Reading, To Read, Finished, Abandoned) and a Read order block that switches to A–Z by author.
-* Added: the Archive sections block groups a kind archive's Post Template into headed sections, each with its group in data-pkiw-group and a unique heading id.
-* Added: a board game play card prints a tabletop (box, facts, links and a score pad with "Rated N of 5" and a Review heading one level below the card title, on the Stream too), the same markup on every theme and in feeds.
-* Added: a Micropub play-of on a boardgamegeek.com board game page sets the play card's BGG ID.
-* Added: a review kind archive template with reviews in sections by category, plus a Four Stars block that lists up to six reviews rated four on their own scale on the first page.
-* Added: a review's rating, best rating, item name and item link fill from its first Star Rating block when you save it. Editing the Star Rating block after that first fill doesn't change the stored rating.
-* Added: the archive engine files replies and likes by the site they cite and bookmarks under tag drawers A to Z, with password-protected posts under Other. A theme supplies those three archive templates.
-* Added: reply and like cards copy their cited URL, title, author, description and image into post meta, and reply, like and bookmark Stream cards carry a hidden citation.
-* Added: review, reply and bookmark single pages carry microformats2 for the review body, the reply card and a bookmark's linked URL.
-* Changed: the card meta backfill runs once more, at version 9.
-* Changed: every play card is the entry's u-play-of h-cite, with the class on the card's root.
-* Fixed: kind feeds stay newest first when the kind archive is grouped.
-* Fixed: a listen card whose cover is in this site's media library prints it with core's srcset, sizes, width and height, and its src and u-photo are the library image's current file, which is the stored URL unless the image was edited in the Media Library.
-* Fixed: a play card switched from a video game to a board game drops the old video game ID, and a read card saved back to Currently Reading saves.
-* Fixed: the card meta backfill applies the play ID and read status rules and the stricter-wins privacy hold when it runs once, at version 9.
-* Fixed: Stream cards cite plays and reads, and a password-protected one prints only its title link.
-* Fixed: reply, like and bookmark cards with a URL and no title link to the URL's host, or print "Original link" when the URL has no host, and never print a query string as link text.
-* Fixed: /kind/bookmark/?tag=alpha shows that tag's drawer.
-* Fixed: a private check-in's stored venue slug and guid become the date slug, and a venue old slug no longer redirects.
+= 1.8.9 =
+* Fixed: Trakt connects again. Its developer portal now rejects redirect URIs with a query string and issues PKCE-only apps with no client secret, so the Trakt redirect URI is the bare wp-admin/admin-post.php and Connect sends an S256 PKCE challenge with no secret.
 
-* Added: month archives for chicken, photo, favorite, acquisition, repost and article posts, each filed by the month of the post's local date, 12 a page (24 for chicken).
-* Added: the photo archive and a photo projector: a gallery on a photo single becomes a carousel with Previous and Next buttons, an "N of M" counter, captions and arrow keys.
-* Added: photo and chicken posts hide Simple Location's map, address, head meta and GeoRSS unless the post's location is public. Chicken posts hide it always and report REST dates in site time.
-* Added: favorite, acquisition and repost archives. A favorite or repost with a URL and no title prints the URL's host as its heading link.
-* Added: acquisition cards have an "Inherited" type and an editable acquired date, and cost never prints on the Stream or an archive.
-* Added: a Micropub acquisition builds an Acquisition Card with cost private by default. Local photos only.
-* Added: the article archive, a Reading time block (words divided by 200, never stored, hidden on protected posts), a Contents Post Template style and a Date format setting on the Archive sections block.
-* Added: a photo post warns before publish about images with empty alt text.
-* Changed: article Stream cards drop Read more, the thumbnail strip and "+N" and keep the hero caption.
-* Changed: a Micropub repost no longer copies its note into the repost card.
-* Changed: the repost card, and the exercise, sleep and craft cards, sync into post meta, and the card meta backfill runs once, at version 9.
-* Fixed: a password-protected post's kind data no longer reaches REST, the get-post-meta ability, the check-in routes, block bindings, the check-in map or the dashboard block for someone who can't edit it.
+= 1.8.8 =
+* Fixed: saving Settings → API Connections keeps the BoardGameGeek API token and the RAWG API key. Every save had discarded both, so the game lookup answered "BoardGameGeek API is not configured". The Test button works for both providers too.
 
-* Added: archives can page by year, month or whole week, so a kind's page count follows the posts that are public.
-* Added: mood families and a mood year grid. /kind/mood/ shows one year a page, a cell for each day, with the family code in every filled cell.
-* Added: weather posts have one reading, from Simple Location or the first p-weather text. /kind/weather/ is a month sheet with an almanac block, and the Stream card has one link and the reading once.
-* Added: exercise training log and medal row. /kind/exercise/ lists whole weeks with a bib for each workout, and a row of the newest personal bests sits above it.
-* Added: the exercise card prints on a single, the Stream and in listings. Distance, duration, splits and personal best print only when the card's toggle and the post's row both say yes.
-* Added: Micropub builds an Exercise Card from the exercise activity and a Sleep Card from the sleep answer's duration. Start, end, calories, heart rate and location never reach either card.
-* Added: the sleep kind. The card prints the duration, /kind/sleep/ is a monthly sheet with the moon phase for each night, and bedtime and wake time print only when the card and the post both opt in.
-* Added: a sleep post publishes at noon of its night, so its publish date never shows when you went to bed or woke up.
-* Added: exercise and sleep posts hide Simple Location's map, address, head meta and GeoRSS, and leave the map, location and venue listings. Weather posts follow the post's location privacy.
-* Added: the craft kind. /kind/craft/ files posts in sections by the craft type as you typed it, the craft card prints the type and time spent, and Steps and Step blocks and a project pattern record the work.
-* Added: editors for the exercise, sleep and craft cards, a craft entry in the kind selector, and craft step images in the missing-alt notice.
-* Added: the note archive. /kind/note/ is a board of notes in week sections, 12 a page, and the note-entry block prints a name, a 25-word thought and the date.
-* Changed: exercise and sleep Stream cards print the date without a time, and craft Stream cards print one link with no thumbnail strip, caption, button or "+N".
-* Changed: a post titled from a hidden location prints its safe name on admin screens too, on Stream cards and in craft facts.
-* Fixed: a mood card's intensity of 3 is no longer confused with no rating.
-* Fixed: weather posts no longer print Simple Location's map or location line, and their REST responses drop its coordinates, address and time zone.
-* Fixed: a search can't confirm a hidden exercise distance, sleep bedtime or acquisition cost with an exact-phrase guess.
-* Fixed: article archive columns use the wide width, and a static Stream card caption is no longer a live region.
-
-* Added: the video archive. /kind/video/ files videos in year sections, 12 a page, by the year of their local date, and a video single prints one hidden `u-video` and wraps the prose after the player in `e-content`.
-* Added: the audio archive. /kind/audio/ is a month log, 12 a page, and the Stream card prints a duration line from the media file's stored length.
-* Added: an audio transcript pattern, and a pre-publish notice when an audio post with a player has no filled transcript. The notice never stops you from saving.
-* Added: three filters, `pkiw_stream_card_before_date`, `pkiw_generic_card_cuts` and `pkiw_audio_embed_providers`.
-* Added: the jam archive. /kind/jam/ is in month sections, and page 1 opens with a "Now Playing" lead. The Archive sections block has Lead posts and Lead label settings for month kinds.
-* Added: a compact jam card for archives and the Stream, with a cover, title link and artist and no iframe, and a Date jammed field in the jam card editor.
-* Added: the podcast view. /kind/listen/?pkiw_listen_type=podcast lists podcast listens by show, A to Z, 12 a page, with a Listen types block for the All and Podcasts links and a Podcast episode block. The plain listen shelf is unchanged.
-* Added: a Media type setting (Music or Podcast) on the listen card, a `listen_media_type` field, and the command `wp postkind listen-media-type backfill [--dry-run] [--ids=<csv>]`. Podcast imports write Podcast, and the command refuses to write without `--ids`.
-* Added: the wish archive. /kind/wish/ is in sections by type, with media and movie wishes together as Movie/Show and every other type under Other, then High, Medium and Low priority inside a section.
-* Added: a Wished date field on the wish card, and wish card markup with one View item link, an empty alt text for a picture with no description, and Stream chips for type, priority and price.
-* Added: the question archive. /kind/question/ is in Answered and Waiting for an answer sections, and a question single prints its approved answers in a section of its own.
-* Added: a question's Stream card with its answer count, a cached answered or waiting status, a question pattern, and a Simple Location gate that hides a question's map, address and feed geo.
-* Changed: version 9 of the card meta backfill sets no podcast type on an existing listen; use the listen-media-type command for that.
-* Changed: a password-protected post's Stream card no longer names its author, and the jam card prints nothing for a password-protected post.
-* Changed: the Stream card for a jam drops the provider embed and prints the compact card.
-* Fixed: Simple Location's head tags, GeoRSS and JSON Feed geo are hidden for any kind whose location privacy is private or approximate, or whose post has a password. A post with no privacy choice keeps them.
-* Fixed: the Recent Kinds block no longer lists a password-protected post, and a password-protected post gets no derived ATmosphere title.
-* Fixed: a jam with no artist no longer gives its cover the alt text "Title by" with nothing after it.
+= 1.8.7 =
+Added
+* Archives for most kinds, each grouped to suit it: play (Staff Picks, video games, board games), read (shelves by status, A–Z by author), review (sections by category, Four Stars), reply and like (by cited site), bookmark (tag drawers), photo, article, repost, favorite, acquisition and chicken (by month), mood (year grid), weather (almanac month), exercise (weekly log, medal row), sleep (monthly sheet with moon phase), craft (by craft type), note (board), video (by year), audio and jam (month logs), listen (podcast view), wish, question, quote, comics, collection, issue, recipe, and eat and drink menus.
+* Blocks for those archives and cards: Archive sections, Staff Picks, Four Stars, Read order, Reading time, Recent Specials, Kind menu entry, Recipe courses, Mood year grid, Almanac month, Medal row, Sleep night, Steps and Step, Listen types, Podcast episode, Comic Card and Comic series, Collection item, Quote entry, and the Exercise, Sleep and Craft cards.
+* A check-in archive as a map and a list, through an archive mode on the Check-ins Feed block.
+* A board game play card prints a tabletop with facts, links and a score pad. Micropub builds Play, Acquisition, Exercise, Sleep and Comic cards from their properties, and a play-of on a boardgamegeek.com page sets the BGG ID.
+* Reply, like and bookmark cards copy their citation into post meta, Stream cards carry a hidden citation, and review, reply and bookmark singles carry microformats2.
+* A photo carousel, a pre-publish warning for photos with empty alt text, an audio transcript notice, and the `wp postkind listen-media-type backfill` command.
+* A post with a slide deck or talk recording gets the presentation kind on save. The read abilities work over MCP without WP Pinch, and operations such as the card meta backfill run as dry-run abilities.
+Changed
+* Location privacy has one rule for every post. An unset choice means approximate: venue name, city, region and country, with no street address, postal code, coordinates, map or pin. A hidden location prints the same markup as no location.
+* A logged-in editor on the front end sees a check-in's location the way a visitor does, in cards, feeds, the dashboard, the map, archives and the weather line. Admin screens and the block editor still show the full location.
+* An RSVP's event location and an acquisition card's cost are private until you turn on "Show event location publicly" or "Show cost publicly". Cost never prints on the Stream or an archive.
+* Venue archives live at /venues/<slug>/ because Simple Location's venue post type owns /venue/. An old /venue/<slug>/ link that would 404 now redirects. Upgraded sites rebuild their rewrite rules once.
+* The Coordinate Handling setting is gone because nothing read it. A drink saved without a type no longer defaults to Coffee. Every play card is the entry's u-play-of h-cite. The card meta backfill runs once more, at version 9.
+Fixed (location privacy)
+* Micropub q=source hides card values a visitor couldn't see, a Micropub check-in takes its privacy from the request, and a card's privacy holds wherever the card sits in the post.
+* Visitor search no longer matches hidden locations or location-derived titles, and a hidden location's time zone offset stays out of the post's dates. A private check-in's slug, venue term and drink brand name no venue.
+* Simple Location's REST fields, head tags, GeoRSS and JSON Feed geo follow the post's privacy, and its read-location capabilities are denied on the front end. Chicken, exercise, sleep, weather, question and photo posts hide its map and address unless the location is public.
+* The Default Location Privacy choice saves, and check-ins at latitude or longitude 0 keep their coordinates.
+* Changing a post's privacy after ATmosphere shared it queues the record update even when ATmosphere's auto-publish is off.
+Fixed (other)
+* Each Check-in Dashboard draws its own map, and its Grid, Map and Timeline buttons run because its map scripts ship in the plugin. The Venue Detail and Check-ins Feed venue pickers list your venues again, and the venue fields save, with a nonce and an edit_term check.
+* A listen card prints a media library cover with core's srcset and sizes. A play card switched to a board game drops the old video game ID. A watch card prints the downloaded poster. A Micropub photo shows once.
+* Foursquare imports keep the venue, date and postal code, Untappd check-in dates store as UTC, OwnTracks check-ins get an author and local date, and the Untappd sync no longer stops with a fatal error. Bookmark, check-in and note imports no longer duplicate on every scheduled run.
+* The translation template uses the plugin's real text domain, and a mood card's intensity of 3 is no longer confused with no rating.
+Security
+* A password-protected post's kind data no longer reaches REST, abilities, the check-in routes, bindings, the map or the dashboard for someone who can't edit it, and a search can't confirm a hidden distance, bedtime or cost with an exact-phrase guess.
+* Plex artwork downloads on the server, and the Plex token is never stored in a post or printed in a URL.
 
 = 1.8.6 =
 * Added: checkin-dashboard and checkins-feed gained a headingLevel attribute (default 2, clamped 2–4), matching the Stream card block.
@@ -295,6 +260,7 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 * Changed: .pk-kindlabel and .pk-link font sizes increased to 0.75rem and 0.875rem for legibility.
 * Fixed: Stream card captions keep their credit links instead of printing markup, and swapped thumbnail captions show plain text.
 * Fixed: Quick Post and scrobble approval only publish a post or mark it private for users with the publish_posts capability; everyone else gets a pending post.
+* Security: abilities write only registered, scalar Post Kinds meta, the get-post-meta ability returns only registered fields with the same location redaction as REST, and lookup results render as text with provider strings stripped on the server.
 
 = 1.8.4 =
 * Fixed: check-ins and posts with a venue show their location to visitors unless the author marks it private. Simple Location's "Protected" setting hides coordinates and the map but keeps the place name and address.
@@ -390,6 +356,21 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 
 == Upgrade Notice ==
 
+= 1.9.1 =
+Keeps Trakt connected past 7 days and corrects the Check-in Card's description of Approximate privacy. Coming from 1.8.9, you also get 1.9.0's RSVP, presentation, trip, itinerary and event archives and the Metron comic lookup.
+
+= 1.8.9 =
+Trakt connects again. Copy the Redirect URI from API Connections into your Trakt app, paste its Client ID, and click Connect. No client secret needed.
+
+= 1.8.8 =
+Saving API Connections now keeps your BoardGameGeek token and RAWG key. Re-enter them once if an earlier save cleared them.
+
+= 1.8.7 =
+Tightens location privacy: an unset choice now means approximate, and editors see a check-in's location on the front end as a visitor does. Venue archives move from /venue/ to /venues/. Adds archives for many more kinds.
+
+= 1.8.6 =
+Accessibility pass on every card, the Stream and the dashboards. Check-in dashboard and feed headings default to h2.
+
 = 1.8.5 =
 Generic webhook callers must send the site secret in an X-Webhook-Token header (the query string is no longer accepted). OwnTracks needs both a username and a password set.
 
@@ -411,6 +392,7 @@ This plugin integrates with external services for media metadata lookups, histor
 Each lookup sends your search text (a title, artist, venue name, or similar) plus your stored API key or credentials for that service, only at the moment you run a search or refresh metadata.
 
 * **MusicBrainz** — music metadata (albums, artists, recordings). Also sends the app name/contact you configure, per their API etiquette. [Terms](https://metabrainz.org/social-contract), [Privacy](https://metabrainz.org/privacy).
+* **Cover Art Archive** — album art for MusicBrainz results, requested by release ID. Same operator and policies as MusicBrainz.
 * **TMDB (The Movie Database)** — movie and TV metadata and artwork. [Terms](https://www.themoviedb.org/terms-of-use), [Privacy](https://www.themoviedb.org/privacy-policy). This product uses the TMDB API but is not endorsed or certified by TMDB.
 * **TVMaze** — TV show metadata. [Terms](https://www.tvmaze.com/site/tos), [Privacy](https://www.tvmaze.com/site/privacy).
 * **Google Books** — book metadata. [Terms](https://developers.google.com/terms), [Privacy](https://policies.google.com/privacy).
@@ -437,7 +419,7 @@ When you connect an account, the plugin stores your token and, on import, schedu
 
 * **Nominatim (OpenStreetMap Foundation)** — converts a check-in's coordinates or place text into an address (and back). Sends the location you're checking in to and the contact email you configure, only when you create or edit a check-in that needs geocoding. [Usage policy](https://operations.osmfoundation.org/policies/nominatim/), [Privacy](https://wiki.osmfoundation.org/wiki/Privacy_Policy).
 * **OpenStreetMap embeds** — when a published check-in shows a map, the visitor's browser loads an embedded map from openstreetmap.org containing that check-in's coordinates. Site visitors' browsers connect to OpenStreetMap when viewing those posts. [Terms](https://wiki.osmfoundation.org/wiki/Terms_of_Use), [Privacy](https://wiki.osmfoundation.org/wiki/Privacy_Policy).
-* **OpenStreetMap map tiles (tile.openstreetmap.org)** — the check-in archive map and the Check-in Dashboard block's map are drawn from OpenStreetMap Foundation tiles. Each visitor's browser requests the tile images from tile.openstreetmap.org, sending the visitor's IP address, user agent, the referrer your site's referrer policy allows, and the tile coordinates of the map area on screen. The archive map loads tiles only when a check-in on the page has a pin: a visitor gets pins for check-ins whose location is public, and a signed-in user who can edit a check-in gets its pin whatever its privacy. The Check-in Dashboard block loads tiles when its Map view is showing and one of the check-ins it lists has coordinates that viewer may see, by the same visitor and editor rule. With none, it draws no map and requests no tiles. The Reactions → Check-ins admin screen loads them in the signed-in user's browser when they open its Map view. The `pkiw_map_tile_url` and `pkiw_map_tile_attribution` filters point all three maps at another tile provider or your own tile cache. [Tile usage policy](https://operations.osmfoundation.org/policies/tiles/), [Privacy](https://osmfoundation.org/wiki/Privacy_Policy).
+* **OpenStreetMap map tiles (tile.openstreetmap.org)** — the check-in archive map and the Check-in Dashboard block's map are drawn from OpenStreetMap Foundation tiles. Each visitor's browser requests the tile images from tile.openstreetmap.org, sending the visitor's IP address, user agent, the referrer your site's referrer policy allows, and the tile coordinates of the map area on screen. The archive map loads tiles only when a check-in on the page has a pin: a visitor gets pins for check-ins whose location is public, and a signed-in editor sees the same pins on the front end. The Check-in Dashboard block loads tiles when its Map view is showing and one of the check-ins it lists has coordinates that viewer may see, by the same rule. With none, it draws no map and requests no tiles. The Reactions → Check-ins admin screen, which shows editors their own check-ins in full, loads them in the signed-in user's browser when they open its Map view. The `pkiw_map_tile_url` and `pkiw_map_tile_attribution` filters point all three maps at another tile provider or your own tile cache. [Tile usage policy](https://operations.osmfoundation.org/policies/tiles/), [Privacy](https://osmfoundation.org/wiki/Privacy_Policy).
 
 = Link identification =
 
@@ -457,9 +439,9 @@ Results are cached for a day, including pages that publish no record, so a page 
 
 * **Amazon Kindle previews** — when you paste an Amazon or Kindle book link into a read post (or a bulk import creates one), the post can embed that book's preview from read.amazon.com. The preview frame is loaded by the editor's and site visitors' browsers directly from Amazon, with only the book's ID in the URL; the plugin itself sends nothing to Amazon. [Conditions of Use](https://www.amazon.com/gp/help/customer/display.html?nodeId=GLSBYFE9MGKKQXXM), [Privacy Notice](https://www.amazon.com/gp/help/customer/display.html?nodeId=GX7NJQ4ZB8MHFRNJ).
 
-= Inbound webhooks (no data sent) =
+= Inbound webhooks =
 
-Plex, Jellyfin, Trakt, ListenBrainz, and OwnTracks scrobbling works through webhooks: those services send data *to* your site at the secret URL you configure. The plugin makes no outbound request to them for this feature.
+Plex, Jellyfin, Trakt, ListenBrainz, and OwnTracks scrobbling works through webhooks: those services send data *to* your site at the secret URL you configure. The plugin makes no outbound request to them for this feature. One optional exception: if you set the `pkiw_plex_url` and `pkiw_plex_token` options, a Plex scrobble downloads its artwork from that Plex server, with the token in a request header.
 
 = AI features =
 
@@ -472,12 +454,12 @@ This plugin:
 * Stores all post data locally in your WordPress database — no custom tables
 * Makes API calls to external services only when you search for media, paste a media URL, run imports, or receive a webhook
 * Does not track users or send analytics
-* Stores API keys and OAuth tokens in the WordPress options table; they are removed when you uninstall the plugin
+* Stores API keys and OAuth tokens saved on its settings screens in the WordPress options table; they are removed when you uninstall the plugin
 * Sends your activity to Last.fm, Trakt, or Foursquare only when you enable those syndication toggles
 
 External services contacted (when you use the matching feature):
 
-* MusicBrainz / ListenBrainz — music metadata (no API key required)
+* MusicBrainz / Cover Art Archive / ListenBrainz — music metadata and album art (no API key required)
 * Last.fm — music metadata and scrobbling history
 * TMDB — movie and TV show metadata
 * Trakt / Simkl / TVMaze — movie and TV tracking

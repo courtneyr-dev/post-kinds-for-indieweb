@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Post Kinds for IndieWeb in Block Themes 1.9.0\n"
+"Project-Id-Version: Post Kinds for IndieWeb in Block Themes 1.9.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/post-kinds-for-indieweb-in-block-themes\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-09T20:08:16+00:00\n"
+"POT-Creation-Date: 2026-11-11T00:13:23+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: post-kinds-for-indieweb-in-block-themes\n"
@@ -18,8 +18,8 @@ msgstr ""
 #: post-kinds-for-indieweb-in-block-themes.php
 #: includes/admin/class-admin.php:366
 #: includes/class-block-bindings.php:386
-#: includes/class-plugin.php:1043
-#: includes/class-plugin.php:1322
+#: includes/class-plugin.php:1055
+#: includes/class-plugin.php:1334
 msgid "Post Kinds for IndieWeb in Block Themes"
 msgstr ""
 
@@ -1257,10 +1257,11 @@ msgstr ""
 #: includes/admin/class-admin.php:1263
 #: includes/admin/class-admin.php:1322
 #: includes/admin/class-admin.php:1367
-#: includes/admin/class-api-settings.php:860
-#: includes/admin/class-api-settings.php:1343
-#: includes/admin/class-api-settings.php:1417
-#: includes/admin/class-api-settings.php:1470
+#: includes/admin/class-api-settings.php:886
+#: includes/admin/class-api-settings.php:1372
+#: includes/admin/class-api-settings.php:1446
+#: includes/admin/class-api-settings.php:1497
+#: includes/admin/class-api-settings.php:1534
 #: includes/admin/class-import-page.php:791
 #: includes/admin/class-import-page.php:968
 #: includes/admin/class-import-page.php:1000
@@ -1348,173 +1349,173 @@ msgstr ""
 msgid "Disconnected from Foursquare."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:100
+#: includes/admin/class-api-settings.php:101
 msgid "Scrobble service and music database. Requires API account and user authorization for scrobbling."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:107
-#: includes/admin/class-api-settings.php:250
-#: includes/admin/class-api-settings.php:343
+#: includes/admin/class-api-settings.php:108
+#: includes/admin/class-api-settings.php:251
+#: includes/admin/class-api-settings.php:344
 msgid "API Key"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:112
+#: includes/admin/class-api-settings.php:113
 msgid "Shared Secret"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:117
-#: includes/admin/class-api-settings.php:220
+#: includes/admin/class-api-settings.php:118
+#: includes/admin/class-api-settings.php:221
 msgid "Username"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:120
+#: includes/admin/class-api-settings.php:121
 msgid "For importing scrobbles. Will be set automatically after authorization."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:126
+#: includes/admin/class-api-settings.php:127
 msgid "The Movie Database. Comprehensive movie and TV metadata."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:133
+#: includes/admin/class-api-settings.php:134
 msgid "API Read Access Token"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:136
+#: includes/admin/class-api-settings.php:137
 msgid "Use the \"API Read Access Token\" (v4 auth), not the API Key."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:142
+#: includes/admin/class-api-settings.php:143
 msgid "Watch history tracking. Requires OAuth authentication."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:150
-#: includes/admin/class-api-settings.php:176
+#: includes/admin/class-api-settings.php:151
+#: includes/admin/class-api-settings.php:177
 msgid "Client ID"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:155
+#: includes/admin/class-api-settings.php:156
 msgid "Client Secret"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:158
+#: includes/admin/class-api-settings.php:159
 msgid "Leave blank. Trakt sign-in uses PKCE, so new Trakt apps show \"Not issued\" here and Connect never sends a secret."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:161
+#: includes/admin/class-api-settings.php:162
 msgid "Trakt Username"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:169
+#: includes/admin/class-api-settings.php:170
 msgid "Watch tracking for movies, TV, and anime."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:184
+#: includes/admin/class-api-settings.php:185
 msgid "TV show database. Works without API key, but premium key gives higher rate limits."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:191
+#: includes/admin/class-api-settings.php:192
 msgid "API Key (Optional)"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:194
+#: includes/admin/class-api-settings.php:195
 msgid "Premium API key for higher rate limits. Free tier works without a key."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:200
+#: includes/admin/class-api-settings.php:201
 msgid "Book metadata from Internet Archive. Free, no API key required."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:208
+#: includes/admin/class-api-settings.php:209
 msgid "Book tracking service. Get your token from your settings."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:215
-#: includes/admin/class-api-settings.php:235
-#: includes/admin/class-api-settings.php:327
+#: includes/admin/class-api-settings.php:216
+#: includes/admin/class-api-settings.php:236
+#: includes/admin/class-api-settings.php:328
 msgid "API Token"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:228
+#: includes/admin/class-api-settings.php:229
 msgid "Comic issue metadata from Metron."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:243
+#: includes/admin/class-api-settings.php:244
 msgid "Book metadata fallback. Optional API key for higher rate limits."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:253
+#: includes/admin/class-api-settings.php:254
 msgid "Optional. Works without API key but with lower rate limits."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:260
+#: includes/admin/class-api-settings.php:261
 msgid "Venue search and bidirectional checkin sync. API key for venue lookup, OAuth for syncing checkins."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:268
+#: includes/admin/class-api-settings.php:269
 msgid "API Key (Places API)"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:271
+#: includes/admin/class-api-settings.php:272
 msgid "For venue search in the block editor. Get from Foursquare Developer Console."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:274
+#: includes/admin/class-api-settings.php:275
 msgid "Client ID (OAuth)"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:277
+#: includes/admin/class-api-settings.php:278
 msgid "For syncing checkins. Create an app at foursquare.com/developers/apps."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:280
+#: includes/admin/class-api-settings.php:281
 msgid "Client Secret (OAuth)"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:288
+#: includes/admin/class-api-settings.php:289
 msgid "OpenStreetMap geocoding. Free with usage policy."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:294
+#: includes/admin/class-api-settings.php:295
 msgid "Contact Email"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:297
+#: includes/admin/class-api-settings.php:298
 msgid "Required by Nominatim usage policy."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:303
+#: includes/admin/class-api-settings.php:304
 msgid "Import highlights from books, articles, podcasts (Snipd), tweets, and more."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:310
+#: includes/admin/class-api-settings.php:311
 msgid "Access Token"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:313
+#: includes/admin/class-api-settings.php:314
 msgid "Get your token from readwise.io/access_token"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:319
+#: includes/admin/class-api-settings.php:320
 msgid "Board game and video game database. As of January 2026, BGG requires API token registration for all API access."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:324
+#: includes/admin/class-api-settings.php:325
 msgid "Note: BGG application approval may take a week or more. While waiting, you can still use the Play Card block by manually pasting BGG URLs - the game ID will be extracted automatically."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:330
+#: includes/admin/class-api-settings.php:331
 msgid "Register your app, wait for approval, then create a token from your Applications page."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:336
+#: includes/admin/class-api-settings.php:337
 msgid "Video game database with 500,000+ games. Free tier: 20,000 requests/month."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:346
+#: includes/admin/class-api-settings.php:347
 msgid "Get your free API key from rawg.io/apidocs"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:390
+#: includes/admin/class-api-settings.php:391
 #: includes/admin/class-meta-boxes.php:654
 #: includes/admin/class-quick-post.php:926
 #: includes/admin/class-settings-page.php:1902
@@ -1525,21 +1526,21 @@ msgstr ""
 msgid "Music"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:391
+#: includes/admin/class-api-settings.php:392
 #: includes/admin/class-settings-page.php:1908
 msgid "Movies & TV"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:392
+#: includes/admin/class-api-settings.php:393
 #: includes/admin/class-settings-page.php:1911
 msgid "Books"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:393
+#: includes/admin/class-api-settings.php:394
 msgid "Games"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:394
+#: includes/admin/class-api-settings.php:395
 #: includes/admin/class-meta-boxes.php:305
 #: includes/admin/class-quick-post.php:614
 #: includes/class-venue-taxonomy.php:432
@@ -1549,173 +1550,199 @@ msgstr ""
 msgid "Location"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:395
+#: includes/admin/class-api-settings.php:396
 msgid "Aggregators"
 msgstr ""
 
 #. translators: %s: Error message
-#: includes/admin/class-api-settings.php:408
+#: includes/admin/class-api-settings.php:409
 #, php-format
 msgid "OAuth authentication failed: %s"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:418
+#: includes/admin/class-api-settings.php:419
 msgid "Successfully connected! You can now import your watch history."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:423
+#: includes/admin/class-api-settings.php:424
 msgid "Configure API connections for fetching media metadata and importing history."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:468
+#: includes/admin/class-api-settings.php:469
 msgid "Disabled"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:470
-#: includes/admin/class-api-settings.php:631
+#: includes/admin/class-api-settings.php:471
+#: includes/admin/class-api-settings.php:632
 msgid "Connected"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:472
+#: includes/admin/class-api-settings.php:473
 #: includes/admin/class-import-page.php:406
 msgid "Not Connected"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:505
+#: includes/admin/class-api-settings.php:506
 msgid "No configuration needed."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:523
+#: includes/admin/class-api-settings.php:524
 msgid "Test Connection"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:530
+#: includes/admin/class-api-settings.php:531
 #: includes/admin/class-webhooks-page.php:398
 msgid "Documentation"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:536
+#: includes/admin/class-api-settings.php:537
 msgid "Get API Key"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:584
+#: includes/admin/class-api-settings.php:585
 msgid "Toggle password visibility"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:626
+#: includes/admin/class-api-settings.php:627
 msgid "OAuth Connection"
 msgstr ""
 
 #. translators: %s: Username
-#: includes/admin/class-api-settings.php:638
-#: includes/admin/class-api-settings.php:736
+#: includes/admin/class-api-settings.php:639
+#: includes/admin/class-api-settings.php:762
 #, php-format
 msgid "as %s"
 msgstr ""
 
 #. translators: %s: Expiration date
-#: includes/admin/class-api-settings.php:650
+#: includes/admin/class-api-settings.php:651
 #, php-format
 msgid "(expires %s)"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:660
-#: includes/admin/class-api-settings.php:750
+#: includes/admin/class-api-settings.php:661
+#: includes/admin/class-api-settings.php:776
 #: includes/admin/class-settings-page.php:2199
 msgid "Disconnect"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:663
+#: includes/admin/class-api-settings.php:665
 msgid "Refresh Token"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:672
+#. translators: %s: reason Trakt gave, such as "session not found".
+#: includes/admin/class-api-settings.php:681
+#, php-format
+msgid "Trakt ended this connection (%s). Click Connect to Trakt to sign in again."
+msgstr ""
+
+#: includes/admin/class-api-settings.php:689
 msgid "Redirect URI:"
 msgstr ""
 
 #. translators: %s: Service name
-#: includes/admin/class-api-settings.php:679
+#: includes/admin/class-api-settings.php:696
 #, php-format
 msgid "Copy this URL to your %s app settings as the Redirect URI."
 msgstr ""
 
 #. translators: %s: Service name
-#: includes/admin/class-api-settings.php:688
+#: includes/admin/class-api-settings.php:705
 #, php-format
 msgid "Connect to %s"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:724
+#: includes/admin/class-api-settings.php:750
 msgid "Scrobbling Authorization"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:729
+#: includes/admin/class-api-settings.php:755
 msgid "Authorized"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:745
+#: includes/admin/class-api-settings.php:771
 msgid "You can scrobble listen posts to Last.fm."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:756
+#: includes/admin/class-api-settings.php:782
 msgid "To scrobble listen posts to Last.fm, you need to authorize this application."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:767
+#: includes/admin/class-api-settings.php:793
 msgid "Connect to Last.fm"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:771
+#: includes/admin/class-api-settings.php:797
 msgid "Please save your API Key and Shared Secret first, then you can connect."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:867
+#: includes/admin/class-api-settings.php:893
 msgid "Missing API or authorization code."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:900
+#: includes/admin/class-api-settings.php:926
 msgid "OAuth not supported for this API."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:916
+#: includes/admin/class-api-settings.php:942
 msgid "The Trakt sign-in expired. Please click Connect again."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:951
-#: includes/admin/class-api-settings.php:1004
-#: includes/admin/class-api-settings.php:1047
-#: includes/admin/class-api-settings.php:1122
+#: includes/admin/class-api-settings.php:977
+#: includes/admin/class-api-settings.php:1033
+#: includes/admin/class-api-settings.php:1076
+#: includes/admin/class-api-settings.php:1151
 msgid "No access token received."
 msgstr ""
 
 #. translators: %s: error description returned by Trakt.
-#: includes/admin/class-api-settings.php:953
+#: includes/admin/class-api-settings.php:979
 #, php-format
 msgid "Trakt did not issue a token: %s"
 msgstr ""
 
-#: includes/admin/class-api-settings.php:1349
+#: includes/admin/class-api-settings.php:1378
 msgid "No token received from Last.fm."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:1363
-#: includes/admin/class-api-settings.php:1442
+#: includes/admin/class-api-settings.php:1392
+#: includes/admin/class-api-settings.php:1471
 msgid "OAuth state check failed. Please try connecting again."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:1373
+#: includes/admin/class-api-settings.php:1402
 msgid "Last.fm API credentials not configured."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:1383
+#: includes/admin/class-api-settings.php:1412
 msgid "Failed to get Last.fm session key."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:1478
+#: includes/admin/class-api-settings.php:1502
+msgid "Token refresh is not supported for this API."
+msgstr ""
+
+#: includes/admin/class-api-settings.php:1509
+msgid "Trakt token refreshed."
+msgstr ""
+
+#: includes/admin/class-api-settings.php:1512
+msgid "A refresh is already running. Reload the page in a minute."
+msgstr ""
+
+#: includes/admin/class-api-settings.php:1516
+msgid "Trakt needs you to sign in again. Reload the page and click Connect to Trakt."
+msgstr ""
+
+#: includes/admin/class-api-settings.php:1519
+msgid "Trakt did not answer. Your connection is unchanged; try again later."
+msgstr ""
+
+#: includes/admin/class-api-settings.php:1542
 msgid "Missing API or Client ID."
 msgstr ""
 
-#: includes/admin/class-api-settings.php:1498
+#: includes/admin/class-api-settings.php:1562
 msgid "Could not generate OAuth URL."
 msgstr ""
 
@@ -4251,6 +4278,7 @@ msgid "Approximate"
 msgstr ""
 
 #: includes/admin/class-settings-page.php:1854
+#: build/blocks.js:7
 msgid "Shows the venue name, city, region and country. Hides the street address, postal code, coordinates, map, venue URL and OpenStreetMap ID, so the check-in gets no map pin."
 msgstr ""
 
@@ -4865,7 +4893,7 @@ msgstr ""
 msgid "API request failed: %s"
 msgstr ""
 
-#: includes/apis/class-trakt.php:560
+#: includes/apis/class-trakt.php:534
 msgid "Trakt authentication required. Please reconnect your Trakt account in API Connections."
 msgstr ""
 
@@ -6629,298 +6657,298 @@ msgstr ""
 msgid "Refusing to write without an ids list. Run with dry_run first."
 msgstr ""
 
-#: includes/class-plugin.php:1323
+#: includes/class-plugin.php:1335
 msgid "Patterns for IndieWeb post kinds and reactions."
 msgstr ""
 
-#: includes/class-plugin.php:1357
+#: includes/class-plugin.php:1369
 msgid "Venue Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1358
+#: includes/class-plugin.php:1370
 msgid "Template for displaying venue taxonomy archives."
 msgstr ""
 
-#: includes/class-plugin.php:1364
+#: includes/class-plugin.php:1376
 msgid "Kind Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1365
+#: includes/class-plugin.php:1377
 msgid "Shelf layout for any post kind archive."
 msgstr ""
 
-#: includes/class-plugin.php:1369
+#: includes/class-plugin.php:1381
 msgid "Eat Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1370
+#: includes/class-plugin.php:1382
 msgid "Menu layout for the eat archive, grouped by cuisine."
 msgstr ""
 
-#: includes/class-plugin.php:1374
+#: includes/class-plugin.php:1386
 msgid "Check-in Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1375
+#: includes/class-plugin.php:1387
 msgid "Map and list of the check-ins on each archive page."
 msgstr ""
 
-#: includes/class-plugin.php:1379
+#: includes/class-plugin.php:1391
 msgid "Drink Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1380
+#: includes/class-plugin.php:1392
 msgid "Menu layout for the drink archive, grouped by drink type."
 msgstr ""
 
-#: includes/class-plugin.php:1384
+#: includes/class-plugin.php:1396
 msgid "Play Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1385
+#: includes/class-plugin.php:1397
 msgid "Play archive in sections: video games, board games, then other plays."
 msgstr ""
 
-#: includes/class-plugin.php:1389
+#: includes/class-plugin.php:1401
 msgid "Read Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1390
+#: includes/class-plugin.php:1402
 msgid "Read archive on shelves by reading status."
 msgstr ""
 
-#: includes/class-plugin.php:1394
+#: includes/class-plugin.php:1406
 msgid "Review Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1395
+#: includes/class-plugin.php:1407
 msgid "Review archive in sections by category."
 msgstr ""
 
-#: includes/class-plugin.php:1399
+#: includes/class-plugin.php:1411
 msgid "Chicken Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1400
+#: includes/class-plugin.php:1412
 msgid "Chicken archive in month sections, one line for each post."
 msgstr ""
 
-#: includes/class-plugin.php:1404
+#: includes/class-plugin.php:1416
 msgid "Photo Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1405
+#: includes/class-plugin.php:1417
 msgid "Photo archive in month sections."
 msgstr ""
 
-#: includes/class-plugin.php:1409
+#: includes/class-plugin.php:1421
 msgid "Favorite Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1410
+#: includes/class-plugin.php:1422
 msgid "Favorite archive in month sections."
 msgstr ""
 
-#: includes/class-plugin.php:1414
+#: includes/class-plugin.php:1426
 msgid "Acquisition Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1415
+#: includes/class-plugin.php:1427
 msgid "Acquisition archive in month sections."
 msgstr ""
 
-#: includes/class-plugin.php:1419
+#: includes/class-plugin.php:1431
 msgid "Repost Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1420
+#: includes/class-plugin.php:1432
 msgid "Repost archive in month sections."
 msgstr ""
 
-#: includes/class-plugin.php:1424
+#: includes/class-plugin.php:1436
 msgid "Article Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1425
+#: includes/class-plugin.php:1437
 msgid "Article archive as a contents page: month sections and reading time."
 msgstr ""
 
-#: includes/class-plugin.php:1430
+#: includes/class-plugin.php:1442
 msgid "Mood Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1431
+#: includes/class-plugin.php:1443
 msgid "A year of moods on a grid, one calendar year per page."
 msgstr ""
 
-#: includes/class-plugin.php:1435
+#: includes/class-plugin.php:1447
 msgid "Weather Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1436
+#: includes/class-plugin.php:1448
 msgid "One calendar month of weather per page."
 msgstr ""
 
-#: includes/class-plugin.php:1440
+#: includes/class-plugin.php:1452
 msgid "Exercise Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1441
+#: includes/class-plugin.php:1453
 msgid "Exercise archive as a training log: whole weeks of workouts on each page."
 msgstr ""
 
-#: includes/class-plugin.php:1445
+#: includes/class-plugin.php:1457
 msgid "Sleep Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1446
+#: includes/class-plugin.php:1458
 msgid "Sleep archive as one chart sheet per month."
 msgstr ""
 
-#: includes/class-plugin.php:1450
+#: includes/class-plugin.php:1462
 msgid "Craft Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1451
+#: includes/class-plugin.php:1463
 msgid "Craft archive on a pegboard, in sections by craft type."
 msgstr ""
 
-#: includes/class-plugin.php:1455
+#: includes/class-plugin.php:1467
 msgid "Note Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1456
+#: includes/class-plugin.php:1468
 msgid "Note archive as a board of notes, in sections by week."
 msgstr ""
 
-#: includes/class-plugin.php:1461
+#: includes/class-plugin.php:1473
 msgid "Video Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1462
+#: includes/class-plugin.php:1474
 msgid "Video archive in sections by year."
 msgstr ""
 
-#: includes/class-plugin.php:1466
+#: includes/class-plugin.php:1478
 msgid "Audio Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1467
+#: includes/class-plugin.php:1479
 msgid "Audio archive in month sections."
 msgstr ""
 
-#: includes/class-plugin.php:1471
+#: includes/class-plugin.php:1483
 msgid "Jam Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1472
+#: includes/class-plugin.php:1484
 msgid "Jam archive in month sections, with the newest jam featured on the first page."
 msgstr ""
 
-#: includes/class-plugin.php:1476
+#: includes/class-plugin.php:1488
 msgid "Podcast Listens Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1477
+#: includes/class-plugin.php:1489
 msgid "Podcast listens in sections by show, a view of the listen archive."
 msgstr ""
 
-#: includes/class-plugin.php:1481
+#: includes/class-plugin.php:1493
 msgid "Wish Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1482
+#: includes/class-plugin.php:1494
 msgid "Wish archive in sections by type, high priority first."
 msgstr ""
 
-#: includes/class-plugin.php:1486
+#: includes/class-plugin.php:1498
 msgid "Question Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1487
+#: includes/class-plugin.php:1499
 msgid "Question archive in sections: answered, then waiting for an answer."
 msgstr ""
 
-#: includes/class-plugin.php:1491
+#: includes/class-plugin.php:1503
 msgid "Comics Drawn Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1492
+#: includes/class-plugin.php:1504
 msgid "Drawn comics in sections by series, a view of the comics archive."
 msgstr ""
 
-#: includes/class-plugin.php:1496
+#: includes/class-plugin.php:1508
 msgid "Collection Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1497
+#: includes/class-plugin.php:1509
 msgid "Collection archive: one cabinet per collection with its item count."
 msgstr ""
 
-#: includes/class-plugin.php:1501
+#: includes/class-plugin.php:1513
 msgid "Issue Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1502
+#: includes/class-plugin.php:1514
 msgid "Issue archive in sections by repository, with waiting issues before picked-up ones."
 msgstr ""
 
-#: includes/class-plugin.php:1506
+#: includes/class-plugin.php:1518
 msgid "Quote Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1507
+#: includes/class-plugin.php:1519
 msgid "Quote archive as a commonplace book: quotes by author, with a source-work index."
 msgstr ""
 
-#: includes/class-plugin.php:1511
+#: includes/class-plugin.php:1523
 msgid "Event Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1512
+#: includes/class-plugin.php:1524
 msgid "Event archive showing the My Calendar calendar."
 msgstr ""
 
-#: includes/class-plugin.php:1516
+#: includes/class-plugin.php:1528
 msgid "Trip Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1517
+#: includes/class-plugin.php:1529
 msgid "Trip archive: a route map and trips by year."
 msgstr ""
 
-#: includes/class-plugin.php:1521
+#: includes/class-plugin.php:1533
 msgid "Itinerary Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1522
+#: includes/class-plugin.php:1534
 msgid "Itinerary archive: a route map and itineraries by year."
 msgstr ""
 
-#: includes/class-plugin.php:1526
+#: includes/class-plugin.php:1538
 msgid "Presentation Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1527
+#: includes/class-plugin.php:1539
 msgid "Presentation archive as a badge wall: talks grouped by year, with event and type."
 msgstr ""
 
-#: includes/class-plugin.php:1531
+#: includes/class-plugin.php:1543
 msgid "RSVP Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1532
+#: includes/class-plugin.php:1544
 msgid "RSVP archive in two groups: upcoming events soonest first, then past events latest first."
 msgstr ""
 
 #. translators: %s: Post Kinds plugin name
-#: includes/class-plugin.php:1694
+#: includes/class-plugin.php:1706
 #, php-format
 msgid "Post Kinds for IndieWeb in Block Themes cannot run while %s is active. These plugins provide the same functionality - Post Kinds for IndieWeb in Block Themes is the block editor successor to Post Kinds. Please deactivate one of them."
 msgstr ""
 
 #. translators: %s: IndieBlocks plugin link
-#: includes/class-plugin.php:1745
+#: includes/class-plugin.php:1757
 #, php-format
 msgid "Post Kinds for IndieWeb in Block Themes works best with %s installed. While not required, IndieBlocks provides essential blocks for bookmarks, likes, replies, and more."
 msgstr ""
@@ -9530,10 +9558,6 @@ msgstr ""
 
 #: build/blocks.js:7
 msgid "Your exact coordinates will be visible to everyone."
-msgstr ""
-
-#: build/blocks.js:7
-msgid "Check-ins show the exact location to everyone, the same as Public. Choose Private to hide it."
 msgstr ""
 
 #: build/blocks.js:7

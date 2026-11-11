@@ -70,6 +70,7 @@ class API_Settings {
 		add_action( 'admin_init', [ $this, 'register_settings' ] );
 		add_action( 'wp_ajax_pkiw_oauth_callback', [ $this, 'handle_oauth_callback' ] );
 		add_action( 'wp_ajax_pkiw_get_oauth_url', [ $this, 'ajax_get_oauth_url' ] );
+		add_action( 'wp_ajax_pkiw_refresh_oauth_token', [ $this, 'ajax_refresh_oauth_token' ] );
 
 		// OAuth callbacks via admin-post.php (cleaner URLs for OAuth redirect URIs).
 		// The action names MUST match get_oauth_redirect_uri(), which builds
@@ -659,15 +660,31 @@ class API_Settings {
 					<button type="button" class="button oauth-disconnect" data-api="<?php echo esc_attr( $api_id ); ?>">
 						<?php esc_html_e( 'Disconnect', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 					</button>
-					<button type="button" class="button oauth-refresh" data-api="<?php echo esc_attr( $api_id ); ?>">
-						<?php esc_html_e( 'Refresh Token', 'post-kinds-for-indieweb-in-block-themes' ); ?>
-					</button>
+					<?php if ( 'trakt' === $api_id ) : ?>
+						<button type="button" class="button oauth-refresh" data-api="<?php echo esc_attr( $api_id ); ?>">
+							<?php esc_html_e( 'Refresh Token', 'post-kinds-for-indieweb-in-block-themes' ); ?>
+						</button>
+					<?php endif; ?>
 				</p>
 			<?php else : ?>
 				<div class="oauth-disconnected">
 					<?php
-					$redirect_uri = $this->get_oauth_redirect_uri( $api_id );
+					$redirect_uri  = $this->get_oauth_redirect_uri( $api_id );
+					$reauth_reason = 'trakt' === $api_id ? \PKIW\Trakt_Token_Refresher::get_reauth_reason() : null;
 					?>
+					<?php if ( null !== $reauth_reason ) : ?>
+						<div class="notice notice-warning inline">
+							<p>
+								<?php
+								printf(
+									/* translators: %s: reason Trakt gave, such as "session not found". */
+									esc_html__( 'Trakt ended this connection (%s). Click Connect to Trakt to sign in again.', 'post-kinds-for-indieweb-in-block-themes' ),
+									esc_html( $reauth_reason )
+								);
+								?>
+							</p>
+						</div>
+					<?php endif; ?>
 					<p style="margin-bottom: 8px;">
 						<strong><?php esc_html_e( 'Redirect URI:', 'post-kinds-for-indieweb-in-block-themes' ); ?></strong><br>
 						<code style="user-select: all; cursor: text; padding: 4px 8px; display: inline-block; margin-top: 4px; word-break: break-all;"><?php echo esc_url( $redirect_uri ); ?></code>
@@ -693,15 +710,24 @@ class API_Settings {
 				</div>
 			<?php endif; ?>
 
-			<!-- Hidden fields for OAuth tokens -->
-			<input type="hidden"
-					name="pkiw_api_credentials[<?php echo esc_attr( $api_id ); ?>][access_token]"
-					value="<?php echo esc_attr( $credentials['access_token'] ?? '' ); ?>"
-					class="oauth-access-token">
-			<input type="hidden"
-					name="pkiw_api_credentials[<?php echo esc_attr( $api_id ); ?>][refresh_token]"
-					value="<?php echo esc_attr( $credentials['refresh_token'] ?? '' ); ?>"
-					class="oauth-refresh-token">
+			<?php
+			// Token fields post a placeholder, which the credentials sanitizer
+			// reads as "keep the stored value". Posting the real values would
+			// put tokens in the page source and, after a background refresh,
+			// write back a Trakt refresh token that is already spent.
+			// Disconnect blanks these fields, which clears the tokens.
+			$token_fields = [
+				'access_token'  => 'oauth-access-token',
+				'refresh_token' => 'oauth-refresh-token',
+				'token_expires' => 'oauth-token-expires',
+			];
+			foreach ( $token_fields as $token_field => $token_class ) :
+				?>
+				<input type="hidden"
+						name="pkiw_api_credentials[<?php echo esc_attr( $api_id ); ?>][<?php echo esc_attr( $token_field ); ?>]"
+						value="<?php echo empty( $credentials[ $token_field ] ) ? '' : '********'; ?>"
+						class="<?php echo esc_attr( $token_class ); ?>">
+			<?php endforeach; ?>
 		</div>
 		<?php
 	}
@@ -958,13 +984,16 @@ class API_Settings {
 		$all_credentials                           = get_option( 'pkiw_api_credentials', [] );
 		$all_credentials['trakt']['access_token']  = $body['access_token'];
 		$all_credentials['trakt']['refresh_token'] = $body['refresh_token'] ?? '';
-		$all_credentials['trakt']['token_expires'] = time() + ( $body['expires_in'] ?? 7776000 );
+		$all_credentials['trakt']['token_expires'] = time() + ( $body['expires_in'] ?? WEEK_IN_SECONDS );
 		update_option( 'pkiw_api_credentials', $all_credentials );
+
+		\PKIW\Trakt_Token_Refresher::clear_reauth_reason();
+		( new \PKIW\Trakt_Token_Refresher() )->ensure_scheduled();
 
 		return [
 			'success'      => true,
 			'access_token' => $body['access_token'],
-			'expires_in'   => $body['expires_in'] ?? 7776000,
+			'expires_in'   => $body['expires_in'] ?? WEEK_IN_SECONDS,
 		];
 	}
 
@@ -1454,6 +1483,41 @@ class API_Settings {
 			wp_safe_redirect( admin_url( 'admin.php?page=post-kinds-indieweb-apis&oauth_success=1' ) );
 		}
 		exit;
+	}
+
+	/**
+	 * AJAX handler for the Refresh Token button.
+	 *
+	 * @return void
+	 */
+	public function ajax_refresh_oauth_token(): void {
+		check_ajax_referer( 'pkiw_admin', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
+		}
+
+		$api = isset( $_POST['api'] ) ? sanitize_key( wp_unslash( $_POST['api'] ) ) : '';
+		if ( 'trakt' !== $api ) {
+			wp_send_json_error( [ 'message' => __( 'Token refresh is not supported for this API.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
+		}
+
+		$status = ( new \PKIW\Trakt_Token_Refresher() )->refresh( true );
+
+		switch ( $status ) {
+			case 'refreshed':
+				wp_send_json_success( [ 'message' => __( 'Trakt token refreshed.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
+				break;
+			case 'locked':
+				wp_send_json_error( [ 'message' => __( 'A refresh is already running. Reload the page in a minute.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
+				break;
+			case 'reauth_required':
+			case 'not_connected':
+				wp_send_json_error( [ 'message' => __( 'Trakt needs you to sign in again. Reload the page and click Connect to Trakt.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
+				break;
+			default:
+				wp_send_json_error( [ 'message' => __( 'Trakt did not answer. Your connection is unchanged; try again later.', 'post-kinds-for-indieweb-in-block-themes' ) ] );
+		}
 	}
 
 	/**

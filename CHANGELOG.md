@@ -9,13 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-11-10
+
 ### Fixed
 
+- The Check-in Card's Location Privacy panel no longer tells authors that Approximate shows the exact location, the same as Public. It now says what Approximate shows, in the Settings page's words: the venue name, city, region and country, with no street address, postal code, coordinates, map, venue URL or OpenStreetMap ID. The note is plain help text instead of a warning (#548).
 - Saving Settings → API Connections now keeps the BoardGameGeek API token and the RAWG API key. The screen showed both fields, but the save handler's provider list left them out, so every save discarded them and the game lookup (and Outpost's Play lookup) answered "BoardGameGeek API is not configured". The Test button now works for both providers too.
 - Trakt can now connect. Trakt's developer portal changed in two ways that blocked it:
   - It rejects a redirect URI with a query string, so the old `admin-post.php?action=pkiw_trakt_oauth` couldn't be registered. The Trakt redirect URI is now the bare `wp-admin/admin-post.php`; PKIW picks up the callback on the generic `admin_post` hook and acts only when the request's `state` matches one it issued. Simkl and Foursquare keep their existing redirect URIs.
   - New apps sign users in with PKCE and get no client secret ("Not issued"). Connect no longer asks for a Client Secret. PKIW sends an S256 code challenge to `auth.trakt.tv/oauth/authorize` and the matching single-use code verifier, without a secret, to `/oauth/token`. If Trakt refuses the exchange, its `error_description` now shows in the settings notice.
   - Create the app at developer.trakt.tv with the redirect URI shown in API Connections, paste its Client ID, and click Connect.
+- Trakt stays connected past 7 days. Trakt access tokens expire after 7 days and nothing refreshed them, so every connection died a week after Connect. A twice-daily WP-Cron job now refreshes the token when it expires within 2 days, and the Refresh Token button on API Connections refreshes on demand. Trakt refresh tokens are single-use, so PKIW saves the new access token, refresh token, and expiry in one write, and a lock stops two requests from spending the same refresh token. The refresh sends no client secret. When Trakt rejects the refresh (`invalid_grant`, for example "session not found" on a token issued before Trakt's migration), PKIW disconnects Trakt and API Connections says why and asks you to click Connect again.
+- Saving API Connections no longer drops Trakt's token expiry or writes back a stale token. The form posted the tokens it rendered, so a save after a background refresh would have replaced the new refresh token with the spent one. Token fields now post a placeholder that keeps the stored value, and tokens no longer appear in the page source.
+- Presentation archive items carry one h-entry. Every Query Loop item on /kind/presentation/ wrapped the badge's own `h-entry` in a second one, so 12 badges parsed as 24 entries. The badge registers itself in `pkiw_entry_root_seen`, and the list item keeps `kind-presentation` without `hentry` or `h-entry`.
+
+### Changed
+
+- The readme's description and changelog match what the plugin ships: 67 blocks, 40 kinds, and the audited 1.8.7 to 1.8.9 entries.
+- Development dependencies: npm overrides move the vulnerable copies behind 7 Dependabot alerts to patched releases (isomorphic-git 1.38.6, qs 6.16.2, serialize-javascript 7.1.3, minimatch 11.0.5, and re2js 2.8.7 in the docs site). None of these ship in the plugin.
 
 ## [1.9.0] - 2026-11-09
 
@@ -145,6 +156,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Metron lookup for comic cards (#331). Add a Metron API token in Settings → APIs. `GET post-kinds-indieweb/v1/lookup/comic` and the `post-kinds/lookup-comic` ability (MCP public, `edit_posts`) look up an issue by `id`, then `upc`, then `q` plus `number`; Metron has no ISBN lookup. The Comic Card gains `metronId` and `isbn` attributes, two editor fields and mirrors to `comic_metron_id` and `comic_isbn`. A card with a numeric `metronId` prints "CC BY-SA 4.0, Metron" and, beside a printed cover, "Cover via Metron". Its cover follows the watch poster rules: a guarded fetch from `static.metron.cloud`, retries under Sideload and the local copy only. Cards without `metronId` render as before.
 - The Stream card picks a photo for posts without one (N1). A card with no `.pk-media` gets the post's first top-level image block, else its first attached image, as a medium-size `u-photo` inside `div.pk-media.pk-media--stream`. Password-protected posts get none. The `pkiw_stream_card_media` filter changes the markup. The plugin now does what the site's `cr-stream-card-photo.php` mu-plugin did, so remove that mu-plugin to avoid running both.
 - Block examples and Query variations (N1). Every plugin block has an `example` for the inserter preview, and `acquisition-card` and `wish-card` declare `usesContext: ["postId"]`. `Kind_Query_Variations` adds seven `core/query` variations, each active on its `pkiw-kind-<kind>` namespace: quote, issue, comics drawn, RSVP, presentation, trip and itinerary. A variation is skipped when a block it needs isn't registered. The existing shelf, menu and lineup variations are unchanged.
+- Drawn comics. A `comics` post with no Comic Card is a comic you drew: `Comic_Strip` reads each panel's saved alt text and caption, /kind/comics/ has a drawn-only view grouped by series, and a Comic series block links a series' strips (#466).
+- Collection items. The Collection item block holds one item, a public post reference or typed fields, and a "Collection cabinet" group variation lays items out. A referenced post that is a draft, pending, private, scheduled, password-protected, trashed or missing doesn't print. Collection posts get facts, an archive and a Stream card (#467).
+- Issue posts as claim tickets: a facts reader, an archive grouped by repository with Waiting and Picked up lanes, a facts list on the single, and a hidden repository cite on the Stream card (#465).
+- Quote commonplace book. /kind/quote/ filters by author, work and initial from a cached index of public quotes, through the Quote entry, Quote authors and Quote works blocks, and a public `get-quote-index` read ability (#468).
 
 ### Changed
 
@@ -244,6 +259,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A jam card with no artist no longer gives its cover the alt text "<title> by " with nothing after "by". The alt text is the title alone (issue 235).
 - An unknown My Calendar event ID no longer resolves to another event's occurrence (#231). `fetch_event()` now reads through `mc_get_event_core()` only.
 - A classic-content sleep post with no sleep card keeps its paragraphs. The record prepended ahead of the text made core drop `wpautop`, so two paragraphs printed as bare text (#523).
+- Micropub `q=source` no longer returns card values a visitor can't see. The Micropub plugin answers `q=source` with raw `post_content` and every stored `mf2_*` value after checking only that the token is valid, so a subscriber's token got a private RSVP's event location, a private check-in's location, a hidden cost and sleep times.
+- A Micropub check-in takes its privacy from the request (`mp-location-privacy`: public, approximate or private). Every Micropub check-in had got the card default, approximate, and a public one needed an edit in the block editor.
+- Visitor search no longer matches a hidden location or a location-derived title. A logged-out search for a private RSVP's street address found the post, so a visitor could confirm the address; the same held for a private check-in's venue, street, locality and coordinates and an approximate check-in's street.
+- A hidden location's time zone offset stays out of the post's dates. Simple Location writes REST `date` and `modified` and the `get_the_date()` family in the post's stored time zone, so a private check-in's `dt-published` printed an offset such as `+09:00`.
+- Simple Location's REST `latitude`, `longitude`, `geo_address` and `timezone` drop out for a post whose location privacy is private; approximate keeps them. Its `geo.*` and ICBM head tags stay on posts with no privacy choice, and its `read_posts_location` capabilities are denied on the front end, so its location box no longer prints a private address to a logged-in editor.
+- Each Check-in Dashboard on a page gets its own map. Every instance printed `id="checkin-frontend-map"` and the script kept one page-wide flag, so a second dashboard never drew its map.
+- The translation template uses the plugin's text domain, `post-kinds-for-indieweb-in-block-themes`. `composer i18n:make-pot` now writes `languages/post-kinds-for-indieweb-in-block-themes.pot` from shipped files only, 2,554 strings, up from 1,709.
+- A Micropub post with a remote photo shows the photo once, as the copy the Micropub plugin downloaded, instead of the remote URL and the copy.
 
 ### Security
 

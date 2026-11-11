@@ -62,3 +62,6 @@ TESTING.md
 # CI-only checkout of the companion plugin for the live integration suite
 # (.github/workflows/ci.yml); never part of the distribution.
 /wordpress-atmosphere
+
+# npm-package-json-lint config; Plugin Check flags hidden files as an error.
+.npmpackagejsonlintignore

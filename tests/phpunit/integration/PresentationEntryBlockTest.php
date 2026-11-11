@@ -120,6 +120,49 @@ final class PresentationEntryBlockTest extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_rendered_archive_parses_one_h_entry_per_badge(): void {
+		$ids = [];
+		foreach ( [ 'First talk' => '2026-03-01 12:00:00', 'Second talk' => '2025-05-01 12:00:00' ] as $title => $date ) {
+			$id = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => $title, 'post_date' => $date ] );
+			wp_set_object_terms( $id, 'presentation', Taxonomy::TAXONOMY );
+			update_post_meta( $id, '_pkiw_presentation_event_name', 'Conference ' . $id );
+			$ids[] = $id;
+		}
+		$locked = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => 'Locked talk', 'post_password' => 'secret', 'post_date' => '2025-04-01 12:00:00' ] );
+		wp_set_object_terms( $locked, 'presentation', Taxonomy::TAXONOMY );
+		$ids[] = $locked;
+
+		$html = $this->render_archive();
+		$this->assertSame( 3, substr_count( $html, 'class="pkiw-presentation-badge ' ) );
+		$this->assertDoesNotMatchRegularExpression( '/<li\b[^>]*\bclass="[^"]*\bwp-block-post\b[^"]*\b(?:hentry|h-entry)\b/', $html, 'The Query Loop <li> is not a second entry root.' );
+		$this->assertMatchesRegularExpression( '/<li\b[^>]*\bclass="[^"]*\bkind-presentation\b/', $html, 'The kind class stays on the <li>.' );
+
+		$entries = [];
+		$collect = static function ( array $items ) use ( &$collect, &$entries ): void {
+			foreach ( $items as $item ) {
+				if ( in_array( 'h-entry', $item['type'] ?? [], true ) ) {
+					$entries[] = $item;
+				}
+				$collect( $item['children'] ?? [] );
+				foreach ( $item['properties'] ?? [] as $values ) {
+					$collect( array_filter( $values, 'is_array' ) );
+				}
+			}
+		};
+		$collect( \Mf2\parse( $html, (string) get_term_link( 'presentation', Taxonomy::TAXONOMY ) )['items'] ?? [] );
+
+		$this->assertCount( 3, $entries, 'One h-entry per badge, none nested.' );
+		$urls = array_map( static fn( array $entry ): string => (string) ( $entry['properties']['url'][0] ?? '' ), $entries );
+		sort( $urls );
+		$expected = array_map( static fn( int $id ): string => (string) get_permalink( $id ), $ids );
+		sort( $expected );
+		$this->assertSame( $expected, $urls );
+		foreach ( $entries as $entry ) {
+			$this->assertNotEmpty( $entry['properties']['name'] ?? [] );
+			$this->assertNotEmpty( $entry['properties']['published'] ?? [] );
+		}
+	}
+
 	public function test_archive_engine_orders_year_h2s_newest_first_and_repeats_a_continued_year_on_page_two(): void {
 		$newest = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => 'Newest year', 'post_date' => '2026-01-15 12:00:00' ] );
 		wp_set_object_terms( $newest, 'presentation', Taxonomy::TAXONOMY );

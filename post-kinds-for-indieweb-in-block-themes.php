@@ -14,7 +14,7 @@
  * Plugin Name:       Post Kinds for IndieWeb in Block Themes
  * Plugin URI:        https://github.com/courtneyr-dev/post-kinds-for-indieweb
  * Description:       Modern block editor support for IndieWeb post kinds and microformats. A successor to the classic IndieWeb Post Kinds plugin.
- * Version:           1.9.0
+ * Version:           1.9.1
  * Requires at least: 7.0
  * Requires PHP:      8.2
  * Author:            Courtney Robertson
@@ -39,7 +39,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @var string
  */
-define( 'PKIW_VERSION', '1.9.0' );
+define( 'PKIW_VERSION', '1.9.1' );
 
 /**
  * Plugin directory path constant.
@@ -244,6 +244,8 @@ function activate(): void {
 function deactivate(): void {
 	// Flush rewrite rules on deactivation.
 	flush_rewrite_rules();
+
+	wp_clear_scheduled_hook( Trakt_Token_Refresher::CRON_HOOK );
 }
 
 // Register activation and deactivation hooks.
