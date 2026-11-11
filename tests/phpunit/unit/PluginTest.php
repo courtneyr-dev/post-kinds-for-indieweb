@@ -46,6 +46,19 @@ class PluginTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test that "Tested up to" is declared only in the readme header.
+	 */
+	public function test_plugin_tested_up_to_is_only_in_readme(): void {
+		$plugin_file   = dirname( __DIR__, 3 ) . '/post-kinds-for-indieweb-in-block-themes.php';
+		$readme_file   = dirname( __DIR__, 3 ) . '/readme.txt';
+		$plugin_header = get_file_data( $plugin_file, array( 'TestedUpTo' => 'Tested up to' ) );
+		$readme_header = get_file_data( $readme_file, array( 'TestedUpTo' => 'Tested up to' ) );
+
+		$this->assertSame( '', $plugin_header['TestedUpTo'] );
+		$this->assertNotEmpty( $readme_header['TestedUpTo'] );
+	}
+
+	/**
 	 * Test that the kind taxonomy is registered.
 	 */
 	public function test_kind_taxonomy_exists() {

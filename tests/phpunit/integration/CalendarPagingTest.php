@@ -172,6 +172,7 @@ final class CalendarPagingTest extends WP_UnitTestCase {
 		if ( $page > 1 ) {
 			$args['paged'] = $page;
 		}
+		do_action( 'parse_request' );
 		$this->go_to( $args ? add_query_arg( $args, $url ) : $url );
 	}
 
