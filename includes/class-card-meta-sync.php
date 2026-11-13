@@ -27,6 +27,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Card_Meta_Sync {
 
+	/** Ordered tag-label row key. */
+	public const TAG_LABEL_KEY = '_pkiw_tag_label';
+
 	/**
 	 * Map of block name to attribute => meta suffix (appended to
 	 * Meta_Fields::PREFIX). Each supported card block is one entry here;
@@ -748,6 +751,7 @@ class Card_Meta_Sync {
 		}
 
 		self::sync_rsvp( $post_id, $blocks, $on_save );
+		Tag_Archive::sync_labels( $post_id, $blocks, $on_save );
 
 		// The writes above never leave a privacy row looser than it was (issue 358).
 		self::apply_stricter_privacy( $post_id, $blocks, $stored );

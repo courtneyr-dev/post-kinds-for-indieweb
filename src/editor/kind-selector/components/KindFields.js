@@ -24,6 +24,7 @@ import {
 	BaseControl,
 	ExternalLink,
 	Flex,
+	Notice,
 } from '@wordpress/components';
 import { useState, useCallback, useId } from '@wordpress/element';
 import { search as searchIcon, link as linkIcon } from '@wordpress/icons';
@@ -35,6 +36,7 @@ import apiFetch from '@wordpress/api-fetch';
 import { STORE_NAME } from '../../stores/post-kinds';
 import SyndicationControls from './SyndicationControls';
 import hasComicCard from '../has-comic-card';
+import hasTagCard from '../has-tag-card';
 import {
 	MoodSuggestions,
 	moodDisplayLabel,
@@ -89,6 +91,8 @@ export default function KindFields( { kind } ) {
 			return <ComicsFields />;
 		case 'quote':
 			return <CitationFields showSummary={ false } />;
+		case 'tag':
+			return <TagFields />;
 		case 'presentation':
 			return <PresentationFields />;
 		case 'reply':
@@ -344,9 +348,10 @@ function ComicsFields() {
  *
  * @param {Object}  props             Component props.
  * @param {boolean} props.showSummary Whether to show the summary field.
+ * @param {boolean} props.showAuthor  Whether to show the author field.
  * @return {JSX.Element} Citation fields.
  */
-function CitationFields( { showSummary = true } ) {
+function CitationFields( { showSummary = true, showAuthor = true } ) {
 	const { citeName, citeUrl, citeAuthor, citeSummary } = useSelect(
 		( select ) => {
 			const getKindMeta = select( STORE_NAME ).getKindMeta;
@@ -387,7 +392,7 @@ function CitationFields( { showSummary = true } ) {
 				__nextHasNoMarginBottom
 				__next40pxDefaultSize
 			/>
-			<TextControl
+			{ showAuthor && <TextControl
 				label={ __(
 					'Author',
 					'post-kinds-for-indieweb-in-block-themes'
@@ -396,7 +401,7 @@ function CitationFields( { showSummary = true } ) {
 				onChange={ ( value ) => updateKindMeta( 'cite_author', value ) }
 				__nextHasNoMarginBottom
 				__next40pxDefaultSize
-			/>
+			/> }
 			{ showSummary && (
 				<TextareaControl
 					label={ __(
@@ -413,6 +418,17 @@ function CitationFields( { showSummary = true } ) {
 			) }
 		</Flex>
 	);
+}
+
+export function TagFields() {
+	const blocks = useSelect(
+		( select ) => select( 'core/block-editor' ).getBlocks(),
+		[]
+	);
+	if ( hasTagCard( blocks ) ) {
+		return <Notice status="info" isDismissible={ false }>{ __( 'Edit the target and labels in the Tag Card block.', 'post-kinds-for-indieweb-in-block-themes' ) }</Notice>;
+	}
+	return <CitationFields showSummary={ true } showAuthor={ false } />;
 }
 
 /**

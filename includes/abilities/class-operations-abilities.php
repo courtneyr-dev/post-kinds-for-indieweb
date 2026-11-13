@@ -656,6 +656,9 @@ final class Operations_Abilities {
 				[ 'status' => 404 ]
 			);
 		}
+		if ( \PKIW\Public_Eligibility::hides( $post ) ) {
+			return new \WP_Error( 'invalid_post', __( 'Post not found.', 'post-kinds-for-indieweb-in-block-themes' ), [ 'status' => 404 ] );
+		}
 
 		if ( Meta_Fields::hides_kind_meta( $post ) ) {
 			return new \WP_Error(
@@ -689,7 +692,8 @@ final class Operations_Abilities {
 	 */
 	public function execute_get_public_location_fields( array $args ): array|\WP_Error {
 		$post_id = (int) ( $args['post_id'] ?? 0 );
-		if ( ! get_post( $post_id ) instanceof \WP_Post ) {
+		$post = get_post( $post_id );
+		if ( ! $post instanceof \WP_Post || \PKIW\Public_Eligibility::hides( $post ) ) {
 			return new \WP_Error(
 				'invalid_post',
 				__( 'Post not found.', 'post-kinds-for-indieweb-in-block-themes' ),

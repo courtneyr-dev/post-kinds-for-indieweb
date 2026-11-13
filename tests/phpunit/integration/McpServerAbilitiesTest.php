@@ -72,6 +72,7 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 			'post-kinds/get-rsvp-facts',
 			'post-kinds/list-presentation-event-types',
 			'post-kinds/get-collection-items',
+			'post-kinds/get-tag-facts',
 			'post-kinds/lookup-music',
 			'post-kinds/lookup-video',
 			'post-kinds/lookup-book',
@@ -105,6 +106,7 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 			'post-kinds/reclassify-presentations',
 			'post-kinds/backfill-featured-artwork',
 			'post-kinds/retry-featured-artwork',
+			'post-kinds/backfill-tag-labels',
 		];
 
 		return array_combine( $names, array_map( static fn( $name ) => [ $name ], $names ) );
@@ -210,7 +212,7 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 		sort( $expected );
 		sort( $public );
 		$this->assertSame( $expected, $public );
-		$this->assertCount( 21, $public, 'S-P331 adds one public comic lookup ability.' );
-		$this->assertCount( 10, array_diff( Abilities_Manager::get_ability_names(), $public ), 'S-P320 adds one non-public write ability.' );
+		$this->assertCount( 22, $public, 'W8-P261 adds one public tag-facts ability.' );
+		$this->assertCount( 11, array_diff( Abilities_Manager::get_ability_names(), $public ), 'W8-P261 adds one non-public label-repair ability.' );
 	}
 }

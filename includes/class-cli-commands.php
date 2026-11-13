@@ -334,6 +334,26 @@ class CLI_Commands {
 	}
 
 	/**
+	 * Report or insert missing tag-label rows.
+	 *
+	 * @subcommand tag-labels
+	 * @param array $args Positional arguments.
+	 * @param array $assoc_args Associative arguments.
+	 */
+	public function tag_labels( array $args, array $assoc_args ): void {
+		if ( 'backfill' !== ( $args[0] ?? '' ) ) {
+			WP_CLI::error( 'Usage: wp postkind tag-labels backfill [--dry-run] [--ids=<ids>]' );
+		}
+		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$ids     = array_key_exists( 'ids', $assoc_args ) ? array_map( 'intval', explode( ',', (string) $assoc_args['ids'] ) ) : null;
+		$result  = Operations::backfill_tag_labels( $dry_run, $ids );
+		if ( is_wp_error( $result ) ) {
+			WP_CLI::error( $result->get_error_message() );
+		}
+		WP_CLI::log( (string) wp_json_encode( $result ) );
+	}
+
+	/**
 	 * Set featured images from kind artwork or retry failed watch posters.
 	 *
 	 * New saves handle this automatically; this backfills posts created
