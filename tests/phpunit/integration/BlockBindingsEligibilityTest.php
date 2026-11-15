@@ -30,5 +30,15 @@ final class BlockBindingsEligibilityTest extends WP_UnitTestCase {
 		$this->assertSame( '', $legacy->get_value( [ 'key' => 'url' ], $block, 'content' ) );
 		$this->assertSame( '', $current->get_binding_value( [ 'key' => 'cite_name' ], $block, 'content' ) );
 		$this->assertSame( '', $current->get_binding_value( [ 'key' => 'cite_url' ], $block, 'content' ) );
+
+		$eligible = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_object_terms( $eligible, 'tag', Taxonomy::TAXONOMY );
+		update_post_meta( $eligible, '_pkiw_cite_name', 'Eligible sentinel name' );
+		update_post_meta( $eligible, '_pkiw_cite_url', 'https://eligible-sentinel.example/' );
+		$block->context = [ 'postId' => $eligible ];
+		$this->assertSame( 'Eligible sentinel name', $legacy->get_value( [ 'key' => 'title' ], $block, 'content' ) );
+		$this->assertSame( 'https://eligible-sentinel.example/', $legacy->get_value( [ 'key' => 'url' ], $block, 'content' ) );
+		$this->assertSame( 'Eligible sentinel name', $current->get_binding_value( [ 'key' => 'cite_name' ], $block, 'content' ) );
+		$this->assertSame( 'https://eligible-sentinel.example/', $current->get_binding_value( [ 'key' => 'cite_url' ], $block, 'content' ) );
 	}
 }

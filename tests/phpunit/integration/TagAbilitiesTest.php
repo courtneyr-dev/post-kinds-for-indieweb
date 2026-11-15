@@ -31,6 +31,14 @@ final class TagAbilitiesTest extends WP_UnitTestCase {
 			$this->assertSame( 'not_found', $result->get_error_code() );
 			$this->assertSame( 404, $result->get_error_data()['status'] );
 		}
+
+		$eligible = self::factory()->post->create( [ 'post_status' => 'publish', 'post_content' => '<!-- wp:post-kinds-indieweb/tag-card {"url":"https://positive.example/","title":"Positive target","labels":["Positive label"]} /-->' ] );
+		wp_set_object_terms( $eligible, 'tag', Taxonomy::TAXONOMY );
+		$result = $ability->execute_get_tag_facts( [ 'post_id' => $eligible ] );
+		$this->assertIsArray( $result );
+		$this->assertSame( $eligible, $result['post_id'] );
+		$this->assertSame( 'Positive target', $result['title'] );
+		$this->assertSame( [ 'Positive label' ], $result['labels'] );
 	}
 
 	public function test_public_and_private_ability_lists_have_the_frozen_delta(): void {

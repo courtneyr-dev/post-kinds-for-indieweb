@@ -632,7 +632,7 @@ final class Collection_Items {
 	private static function ability_permission( $input ): bool {
 		$post_id = is_array( $input ) ? (int) ( $input['post_id'] ?? 0 ) : 0;
 		$post    = get_post( $post_id );
-		if ( ! $post instanceof \WP_Post || ! current_user_can( 'read_post', $post_id ) ) {
+		if ( ! $post instanceof \WP_Post || Public_Eligibility::hides( $post ) || ! current_user_can( 'read_post', $post_id ) ) {
 			return false;
 		}
 

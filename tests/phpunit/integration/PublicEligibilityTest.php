@@ -35,32 +35,83 @@ final class PKIW_Test_Pantheon_Cache {
 
 /** @group integration */
 final class PublicEligibilityTest extends WP_UnitTestCase {
+	/** @var WP_REST_Server|null */
+	private $rest_server_before_test = null;
+
+	private bool $rest_server_replaced = false;
 
 	public function set_up(): void {
 		parent::set_up();
 		( new Taxonomy() )->create_default_terms();
 	}
 
+	public function tear_down(): void {
+		Public_Eligibility::override_cli_for_tests( null );
+		wp_set_current_user( 0 );
+		remove_role( 'pkiw_partial_editor' );
+		unset( $GLOBALS['pkiw_test_pantheon_cache'] );
+		$GLOBALS['current_screen'] = null;
+		if ( $this->rest_server_replaced ) {
+			$GLOBALS['wp_rest_server'] = $this->rest_server_before_test;
+		}
+		parent::tear_down();
+	}
+
+	private function initialize_rest_server( callable $register ): WP_REST_Server {
+		$this->rest_server_before_test = $GLOBALS['wp_rest_server'] ?? null;
+		$this->rest_server_replaced    = true;
+		add_action( 'rest_api_init', $register );
+		$GLOBALS['wp_rest_server'] = null;
+		try {
+			return rest_get_server();
+		} finally {
+			remove_action( 'rest_api_init', $register );
+		}
+	}
+
 	private function governed( string $status = 'publish', string $password = '', string $kind = 'tag' ): int {
-		$id = self::factory()->post->create( [ 'post_status' => $status, 'post_password' => $password ] );
+		$args = [ 'post_status' => $status, 'post_password' => $password ];
+		if ( 'future' === $status ) {
+			$args['post_date']     = gmdate( 'Y-m-d H:i:s', time() + WEEK_IN_SECONDS );
+			$args['post_date_gmt'] = $args['post_date'];
+		}
+		$id = self::factory()->post->create( $args );
 		wp_set_object_terms( $id, $kind, Taxonomy::TAXONOMY );
 		return (int) $id;
 	}
 
 	public function test_truth_table_and_helpers_are_user_independent(): void {
-		$public    = $this->governed();
-		$protected = $this->governed( 'publish', 'secret' );
-		$private   = $this->governed( 'private' );
-		$draft     = $this->governed( 'draft' );
+		$rows = [
+			'publish'   => $this->governed(),
+			'password'  => $this->governed( 'publish', 'secret' ),
+			'private'   => $this->governed( 'private' ),
+			'draft'     => $this->governed( 'draft' ),
+			'pending'   => $this->governed( 'pending' ),
+			'future'    => $this->governed( 'future' ),
+			'trash'     => $this->governed( 'trash' ),
+			'auto-draft' => $this->governed( 'auto-draft' ),
+			'inherit'   => $this->governed( 'inherit' ),
+		];
 
 		foreach ( [ 0, self::factory()->user->create( [ 'role' => 'administrator' ] ) ] as $user_id ) {
 			wp_set_current_user( $user_id );
-			$this->assertTrue( Public_Eligibility::is_eligible( $public ) );
-			$this->assertFalse( Public_Eligibility::is_eligible( $protected ) );
-			$this->assertFalse( Public_Eligibility::is_eligible( $private ) );
-			$this->assertFalse( Public_Eligibility::is_eligible( $draft ) );
-			$this->assertSame( [ $public ], Public_Eligibility::filter_ids( [ $private, $public, $protected ] ) );
+			foreach ( $rows as $name => $id ) {
+				$this->assertSame( 'publish' === $name, Public_Eligibility::is_eligible( $id ), $name );
+			}
+			$this->assertSame( [ $rows['publish'] ], Public_Eligibility::filter_ids( array_values( $rows ) ) );
 		}
+		$this->assertFalse( Public_Eligibility::is_eligible( null ) );
+		$this->assertFalse( Public_Eligibility::is_eligible( 0 ) );
+
+		register_post_type( 'pkiw_hidden_test', [ 'public' => false ] );
+		$hidden_type = self::factory()->post->create( [ 'post_type' => 'pkiw_hidden_test', 'post_status' => 'publish' ] );
+		$this->assertFalse( Public_Eligibility::is_eligible( $hidden_type ) );
+		unregister_post_type( 'pkiw_hidden_test' );
+
+		global $wpdb;
+		$ids = implode( ',', array_map( 'intval', array_values( $rows ) ) );
+		$sql_ids = array_map( 'intval', $wpdb->get_col( "SELECT p.ID FROM {$wpdb->posts} p WHERE p.ID IN ( {$ids} ) AND " . Public_Eligibility::sql( 'p' ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Frozen predicate agreement test over factory IDs.
+		$this->assertSame( [ $rows['publish'] ], $sql_ids );
 		$this->assertSame( "p.post_status = 'publish' AND p.post_password = ''", Public_Eligibility::sql( 'p' ) );
 	}
 
@@ -77,6 +128,17 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 		$this->assertSame( [], wp_list_pluck( $query->posts, 'ID' ) );
 	}
 
+	public function test_cron_path_runs_the_clause_while_interactive_cli_skips_it(): void {
+		$hidden = $this->governed( 'publish', 'secret' );
+		Public_Eligibility::override_cli_for_tests( true );
+		$interactive = new WP_Query( [ 'post__in' => [ $hidden ], 'fields' => 'ids' ] );
+		Public_Eligibility::override_cli_for_tests( false );
+		$cron = new WP_Query( [ 'post__in' => [ $hidden ], 'fields' => 'ids' ] );
+		Public_Eligibility::override_cli_for_tests( null );
+		$this->assertSame( [ $hidden ], array_map( 'intval', $interactive->posts ) );
+		$this->assertSame( [], $cron->posts );
+	}
+
 	public function test_query_filter_leaves_impossible_queries_byte_identical(): void {
 		$attachment_query = new WP_Query();
 		$attachment_query->set( 'post_type', 'attachment' );
@@ -84,7 +146,7 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 
 		$comic_query = new WP_Query();
 		$comic_query->set( Taxonomy::TAXONOMY, 'comics' );
-		$this->assertSame( ' WHERE 1=1', Public_Eligibility::filter_where( ' WHERE 1=1', $comic_query ) );
+		$this->assertStringContainsString( 'pkiw_public_tr', Public_Eligibility::filter_where( ' WHERE 1=1', $comic_query ) );
 
 		$tag_query = new WP_Query();
 		$tag_query->set( Taxonomy::TAXONOMY, 'tag' );
@@ -105,6 +167,27 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 		Public_Eligibility::filter_pre_ping( $links, $pung, $hidden );
 		$this->assertSame( [], $links );
 		$this->assertSame( [], Public_Eligibility::filter_enclosure_links( [ 'https://person.example/' ], $public ) );
+
+		$legacy = $this->governed();
+		wp_update_post( [ 'ID' => $legacy, 'post_content' => '<p>Tagged <a class="u-tag-of" href="https://tg261-anchor.example/p/x">target</a> and <a href="https://unrelated.example/y">other</a></p>' ] );
+		$this->assertSame( [ 'https://unrelated.example/y' ], Public_Eligibility::filter_enclosure_links( [ 'https://TG261-anchor.example/p/x/', 'https://unrelated.example/y' ], $legacy ) );
+
+		$note = self::factory()->post->create();
+		$unchanged = [ 'https://a.example/x y', 'https://a.example/x y', 'gopher://c.example/' ];
+		$this->assertSame( $unchanged, Public_Eligibility::filter_webmention_links( $unchanged, $note ) );
+	}
+
+	public function test_metadata_gate_accepts_null_callback_arguments_and_covers_every_hidden_status(): void {
+		$note = self::factory()->post->create();
+		$this->assertIsArray( get_post_meta( $note, null ) );
+		$this->assertNotNull( get_metadata( 'post', $note, 'x', null ) );
+		foreach ( [ 'private', 'draft', 'pending', 'future', 'trash' ] as $status ) {
+			$id = $this->governed( $status );
+			$this->assertSame( '1', get_post_meta( $id, 'webmentions_disabled_pings', true ), $status );
+		}
+		$this->assertSame( '1', get_post_meta( $this->governed( 'publish', 'secret' ), 'webmentions_disabled_pings', true ) );
+		$this->assertSame( '', get_post_meta( $this->governed(), 'webmentions_disabled_pings', true ) );
+		$this->assertSame( '', get_post_meta( $note, 'webmentions_disabled_pings', true ) );
 	}
 
 	public function test_rest_item_and_redirect_filters_match_a_missing_post(): void {
@@ -112,12 +195,15 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 		set_query_var( 'p', $hidden );
 		$request = new WP_REST_Request( 'GET', '/wp/v2/posts/' . $hidden );
 		$result  = Public_Eligibility::rest_request_before( null, null, $request );
-		$this->assertWPError( $result );
-		$this->assertSame( 'rest_post_invalid_id', $result->get_error_code() );
-		$this->assertSame( 404, $result->get_error_data()['status'] );
-		$this->assertFalse( Public_Eligibility::filter_redirect_canonical( 'https://example.test/leak', '' ) );
-		$this->assertSame( 0, Public_Eligibility::filter_old_slug_redirect( $hidden ) );
-		Public_Eligibility::rest_request_after( $result, null, $request );
+		try {
+			$this->assertWPError( $result );
+			$this->assertSame( 'rest_post_invalid_id', $result->get_error_code() );
+			$this->assertSame( 404, $result->get_error_data()['status'] );
+			$this->assertFalse( Public_Eligibility::filter_redirect_canonical( 'https://example.test/leak', '' ) );
+			$this->assertSame( 0, Public_Eligibility::filter_old_slug_redirect( $hidden ) );
+		} finally {
+			Public_Eligibility::rest_request_after( $result, null, $request );
+		}
 	}
 
 	public function test_webmention_reply_proxy_sends_only_for_the_eligible_post_and_survives_later_exceptions(): void {
@@ -152,9 +238,25 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 		remove_action( 'comment_post', $throw, 20 );
 		do_action( 'comment_post', $hidden_comment, 1, [] );
 		$this->assertSame( 2, PKIW_Test_Webmention_Sender::$calls );
+
+		foreach ( [ [ $public_comment, $hidden_comment ], [ $hidden_comment, $public_comment ] ] as [ $outer, $inner ] ) {
+			PKIW_Test_Webmention_Sender::$calls = 0;
+			$nested = static function ( int $comment_id ) use ( $outer, $inner ): void {
+				static $running = false;
+				if ( ! $running && $outer === $comment_id ) {
+					$running = true;
+					do_action( 'comment_post', $inner, 1, [] );
+					$running = false;
+				}
+			};
+			add_action( 'comment_post', $nested, 5, 1 );
+			do_action( 'comment_post', $outer, 1, [] );
+			remove_action( 'comment_post', $nested, 5 );
+			$this->assertSame( 1, PKIW_Test_Webmention_Sender::$calls, 'Only the eligible post sends in either nesting order.' );
+		}
 	}
 
-	public function test_rest_edit_skip_requires_all_three_row_capabilities_and_restores_nested_context(): void {
+	public function test_rest_edit_skip_requires_all_three_row_capabilities_and_restores_after_exceptions(): void {
 		$role = add_role(
 			'pkiw_partial_editor',
 			'Partial editor',
@@ -166,20 +268,77 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 			]
 		);
 		$this->assertInstanceOf( WP_Role::class, $role );
+		$server = $this->initialize_rest_server(
+			static function (): void {
+				register_rest_route(
+					'pkiw-test/v1',
+					'/context',
+					[
+						'methods'             => 'GET',
+						'permission_callback' => '__return_true',
+						'callback'            => static fn(): array => [ 'where' => Public_Eligibility::filter_where( '', new WP_Query() ) ],
+					]
+				);
+				register_rest_route(
+					'pkiw-test/v1',
+					'/throw',
+					[
+						'methods'             => 'GET',
+						'permission_callback' => '__return_true',
+						'callback'            => static function (): void {
+							throw new RuntimeException( 'REST callback failed.' );
+						},
+					]
+				);
+			}
+		);
+		$request = new WP_REST_Request( 'GET', '/pkiw-test/v1/context' );
+		$request->set_param( 'context', 'edit' );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'pkiw_partial_editor' ] ) );
-		$edit = new WP_REST_Request( 'GET', '/wp/v2/posts' );
-		$edit->set_param( 'context', 'edit' );
-		Public_Eligibility::rest_request_before( null, [], $edit );
-		$this->assertStringContainsString( 'term_relationships', Public_Eligibility::filter_where( '', new WP_Query() ) );
+		$response = $server->dispatch( $request );
+		$this->assertStringContainsString( 'term_relationships', (string) $response->get_data()['where'] );
 
-		$view = new WP_REST_Request( 'GET', '/wp/v2/posts' );
-		$view->set_param( 'context', 'view' );
-		Public_Eligibility::rest_request_before( null, [], $view );
-		Public_Eligibility::rest_request_after( null, [], $view );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
-		$this->assertSame( '', Public_Eligibility::filter_where( '', new WP_Query() ) );
-		Public_Eligibility::rest_request_after( null, [], $edit );
-		remove_role( 'pkiw_partial_editor' );
+		$response = $server->dispatch( $request );
+		$this->assertSame( '', $response->get_data()['where'] );
+
+		$throw = new WP_REST_Request( 'GET', '/pkiw-test/v1/throw' );
+		$throw->set_param( 'context', 'edit' );
+		try {
+			$server->dispatch( $throw );
+		} catch ( RuntimeException $exception ) {
+			$this->assertSame( 'REST callback failed.', $exception->getMessage() );
+		} finally {
+			apply_filters( 'rest_request_after_callbacks', null, [], $throw );
+		}
+		$this->assertStringContainsString( 'term_relationships', Public_Eligibility::filter_where( '', new WP_Query() ) );
+	}
+
+	public function test_public_only_overrides_admin_and_rest_edit_skips(): void {
+		$public = $this->governed();
+		$hidden = $this->governed( 'publish', 'secret' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		set_current_screen( 'edit-post' );
+		$query = new WP_Query( [ 'post__in' => [ $public, $hidden ], 'fields' => 'ids', 'pkiw_public_only' => true ] );
+		$this->assertSame( [ $public ], array_map( 'intval', $query->posts ) );
+		set_current_screen( 'front' );
+
+		$server = $this->initialize_rest_server(
+			static function () use ( $public, $hidden ): void {
+				register_rest_route(
+					'pkiw-test/v1',
+					'/public-only',
+					[
+						'methods'             => 'GET',
+						'permission_callback' => '__return_true',
+						'callback'            => static fn(): array => ( new WP_Query( [ 'post__in' => [ $public, $hidden ], 'fields' => 'ids', 'pkiw_public_only' => true ] ) )->posts,
+					]
+				);
+			}
+		);
+		$request = new WP_REST_Request( 'GET', '/pkiw-test/v1/public-only' );
+		$request->set_param( 'context', 'edit' );
+		$this->assertSame( [ $public ], array_map( 'intval', $server->dispatch( $request )->get_data() ) );
 	}
 
 	public function test_public_edit_purges_every_default_path_and_filter_addition(): void {
@@ -208,5 +367,23 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 		$this->assertContains( '^/kind/tag/page/', $cache->regex );
 		$this->assertContains( '^/stream/page/', $cache->regex );
 		$this->assertContains( '^/extra/page/', $cache->regex );
+	}
+
+	public function test_multi_kind_and_removed_kind_purge_the_governed_archives(): void {
+		if ( ! function_exists( 'Pantheon_Cache' ) ) {
+			function Pantheon_Cache(): object { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound -- Pantheon API test double.
+				$GLOBALS['pkiw_test_pantheon_cache'] ??= new PKIW_Test_Pantheon_Cache();
+				return $GLOBALS['pkiw_test_pantheon_cache'];
+			}
+		}
+		$GLOBALS['pkiw_test_pantheon_cache'] = new PKIW_Test_Pantheon_Cache();
+		$id = $this->governed();
+		wp_set_object_terms( $id, [ 'comics', 'tag' ], Taxonomy::TAXONOMY );
+		Public_Eligibility::purge_after_update( $id, get_post( $id ), get_post( $id ) );
+		$this->assertContains( home_url( '/kind/tag/' ), $GLOBALS['pkiw_test_pantheon_cache']->urls );
+
+		$GLOBALS['pkiw_test_pantheon_cache'] = new PKIW_Test_Pantheon_Cache();
+		wp_set_object_terms( $id, [ 'comics' ], Taxonomy::TAXONOMY );
+		$this->assertContains( home_url( '/kind/tag/' ), $GLOBALS['pkiw_test_pantheon_cache']->urls );
 	}
 }

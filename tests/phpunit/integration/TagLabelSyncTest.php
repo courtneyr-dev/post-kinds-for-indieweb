@@ -40,4 +40,14 @@ final class TagLabelSyncTest extends WP_UnitTestCase {
 		Tag_Archive::sync_labels( $existing, parse_blocks( get_post_field( 'post_content', $existing ) ), false );
 		$this->assertSame( [ 'Existing' ], get_post_meta( $existing, Tag_Archive::LABEL_KEY, false ) );
 	}
+
+	public function test_raw_reads_card_labels_before_stale_projection_rows(): void {
+		$id = self::factory()->post->create( [ 'post_content' => wp_slash( $this->card( [ 'Card first', 'Card second' ] ) ) ] );
+		add_post_meta( $id, Tag_Archive::LABEL_KEY, 'Stale row' );
+		$this->assertSame( [ 'Card first', 'Card second' ], Tag_Archive::raw( $id )['labels'] );
+
+		$cardless = self::factory()->post->create();
+		add_post_meta( $cardless, Tag_Archive::LABEL_KEY, 'Projected row' );
+		$this->assertSame( [ 'Projected row' ], Tag_Archive::raw( $cardless )['labels'] );
+	}
 }

@@ -131,6 +131,11 @@ final class Tag_Archive {
 		$url   = null === $card ? web_url( (string) get_post_meta( $post->ID, '_pkiw_cite_url', true ) ) : web_url( (string) ( $attrs['url'] ?? '' ) );
 		$title = null === $card ? sanitize_text_field( (string) get_post_meta( $post->ID, '_pkiw_cite_name', true ) ) : sanitize_text_field( (string) ( $attrs['title'] ?? '' ) );
 
+		$labels = null === $card ? [] : self::labels_from_card( $attrs );
+		if ( [] === $labels ) {
+			$labels = array_map( 'strval', get_post_meta( $post->ID, self::LABEL_KEY, false ) );
+		}
+
 		return [
 			'target_type' => $type,
 			'url'         => $url,
@@ -139,7 +144,7 @@ final class Tag_Archive {
 			'image_id'    => max( 0, (int) ( $attrs['imageId'] ?? 0 ) ),
 			'image_alt'   => sanitize_text_field( (string) ( $attrs['imageAlt'] ?? '' ) ),
 			'tagged_at'   => sanitize_text_field( (string) ( $attrs['taggedAt'] ?? '' ) ),
-			'labels'      => array_map( 'strval', get_post_meta( $post->ID, self::LABEL_KEY, false ) ),
+			'labels'      => $labels,
 			'has_card'    => null !== $card,
 		];
 	}
@@ -304,30 +309,34 @@ final class Tag_Archive {
 		if ( \WP_Block_Type_Registry::get_instance()->is_registered( self::ENTRY_BLOCK ) ) {
 			return;
 		}
-		register_block_type(
-			self::ENTRY_BLOCK,
-			[
-				'api_version'     => 3,
-				'title'           => __( 'Tag entry', 'post-kinds-for-indieweb-in-block-themes' ),
-				'category'        => 'post-kinds-indieweb',
-				'render_callback' => [ self::class, 'render_entry_block' ],
-				'uses_context'    => [ 'postId', 'postType', 'queryId', 'templateSlug' ],
-				'attributes'      => Grouped_Archive::entry_attributes(
-					[
-						'linesPerPage' => [ 'default' => 12 ],
-						'headingLevel' => [ 'default' => 2 ],
-						'emptyLabel'   => [ 'role' => 'content' ],
-					]
-				),
-				'supports'        => [
-					'html'     => false,
-					'reusable' => false,
-				],
-				'editor_script'   => 'pkiw-tag-entry-editor',
-				'style'           => 'pkiw-kind-layouts',
-				'example'         => [ 'attributes' => [ 'linesPerPage' => 12 ] ],
-			]
-		);
+		// Core stores and compares the numeric API version; the WordPress stubs type this field as a string.
+		/**
+		 * Block type arguments.
+		 *
+		 * @var array<string, mixed> $args
+		 */
+		$args = [
+			'api_version'     => 3,
+			'title'           => __( 'Tag entry', 'post-kinds-for-indieweb-in-block-themes' ),
+			'category'        => 'post-kinds-indieweb',
+			'render_callback' => [ self::class, 'render_entry_block' ],
+			'uses_context'    => [ 'postId', 'postType', 'queryId', 'templateSlug' ],
+			'attributes'      => Grouped_Archive::entry_attributes(
+				[
+					'linesPerPage' => [ 'default' => 12 ],
+					'headingLevel' => [ 'default' => 2 ],
+					'emptyLabel'   => [ 'role' => 'content' ],
+				]
+			),
+			'supports'        => [
+				'html'     => false,
+				'reusable' => false,
+			],
+			'editor_script'   => 'pkiw-tag-entry-editor',
+			'style'           => 'pkiw-kind-layouts',
+			'example'         => [ 'attributes' => [ 'linesPerPage' => 12 ] ],
+		];
+		register_block_type( self::ENTRY_BLOCK, $args );
 	}
 
 	/** Render a grouped tag entry. */
@@ -359,7 +368,7 @@ final class Tag_Archive {
 
 	/** Render the plugin Stream fallback for every tag post. */
 	public static function stream_card( ?string $html, \WP_Post $post, int $heading_level, array $attributes ): ?string { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
-		if ( null !== $html || self::KIND !== Kind_Facts::kind_of( $post ) ) {
+		if ( null !== $html || ! has_term( self::KIND, Taxonomy::TAXONOMY, $post ) ) {
 			return $html;
 		}
 		$facts = self::facts( $post->ID );
