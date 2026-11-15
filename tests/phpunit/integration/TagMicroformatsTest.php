@@ -35,7 +35,8 @@ final class TagMicroformatsTest extends WP_UnitTestCase {
 		$html = $this->hidden( $id, '<p>Body</p>' );
 		$this->assertSame( 1, substr_count( $html, 'class="u-tag-of"' ) );
 		$this->assertSame( 1, substr_count( $html, 'class="p-category"' ) );
-		$this->assertSame( '<p>Body</p>', $this->hidden( $id, '<div class="u-tag-of p-category">Already present</div>' ) );
+		$existing = '<div class="u-tag-of p-category">Already present</div>';
+		$this->assertSame( $existing, $this->hidden( $id, $existing ) );
 	}
 
 	public function test_card_and_ineligible_posts_add_nothing(): void {

@@ -77,6 +77,20 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 		$this->assertSame( [], wp_list_pluck( $query->posts, 'ID' ) );
 	}
 
+	public function test_query_filter_leaves_impossible_queries_byte_identical(): void {
+		$attachment_query = new WP_Query();
+		$attachment_query->set( 'post_type', 'attachment' );
+		$this->assertSame( ' WHERE 1=1', Public_Eligibility::filter_where( ' WHERE 1=1', $attachment_query ) );
+
+		$comic_query = new WP_Query();
+		$comic_query->set( Taxonomy::TAXONOMY, 'comics' );
+		$this->assertSame( ' WHERE 1=1', Public_Eligibility::filter_where( ' WHERE 1=1', $comic_query ) );
+
+		$tag_query = new WP_Query();
+		$tag_query->set( Taxonomy::TAXONOMY, 'tag' );
+		$this->assertStringContainsString( 'pkiw_public_tr', Public_Eligibility::filter_where( ' WHERE 1=1', $tag_query ) );
+	}
+
 	public function test_outbound_filters_block_hidden_posts_and_add_one_public_person_target(): void {
 		$hidden = $this->governed( 'publish', 'secret' );
 		$public = $this->governed();
@@ -97,19 +111,15 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 		$hidden  = $this->governed( 'private' );
 		set_query_var( 'p', $hidden );
 		$request = new WP_REST_Request( 'GET', '/wp/v2/posts/' . $hidden );
-		$result  = Public_Eligibility::rest_request_before( null, [], $request );
+		$result  = Public_Eligibility::rest_request_before( null, null, $request );
 		$this->assertWPError( $result );
 		$this->assertSame( 'rest_post_invalid_id', $result->get_error_code() );
 		$this->assertSame( 404, $result->get_error_data()['status'] );
 		$this->assertFalse( Public_Eligibility::filter_redirect_canonical( 'https://example.test/leak', '' ) );
 		$this->assertSame( 0, Public_Eligibility::filter_old_slug_redirect( $hidden ) );
-		Public_Eligibility::rest_request_after( $result, [], $request );
+		Public_Eligibility::rest_request_after( $result, null, $request );
 	}
 
-	/**
-	 * @runInSeparateProcess
-	 * @preserveGlobalState disabled
-	 */
 	public function test_webmention_reply_proxy_sends_only_for_the_eligible_post_and_survives_later_exceptions(): void {
 		if ( ! class_exists( 'Webmention\\Sender' ) ) {
 			class_alias( PKIW_Test_Webmention_Sender::class, 'Webmention\\Sender' );
@@ -172,13 +182,10 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 		remove_role( 'pkiw_partial_editor' );
 	}
 
-	/**
-	 * @runInSeparateProcess
-	 * @preserveGlobalState disabled
-	 */
 	public function test_public_edit_purges_every_default_path_and_filter_addition(): void {
 		if ( ! function_exists( 'Pantheon_Cache' ) ) {
 			function Pantheon_Cache(): object { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound -- Pantheon API test double.
+				$GLOBALS['pkiw_test_pantheon_cache'] ??= new PKIW_Test_Pantheon_Cache();
 				return $GLOBALS['pkiw_test_pantheon_cache'];
 			}
 		}

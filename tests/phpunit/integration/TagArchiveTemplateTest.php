@@ -14,7 +14,7 @@ use PKIW\Tag_Archive;
 final class TagArchiveTemplateTest extends WP_UnitTestCase {
 
 	public function test_template_uses_the_frozen_query_namespace_and_entry_block(): void {
-		$template = file_get_contents( PKIW_DIR . 'templates/taxonomy-kind-tag.html' );
+		$template = file_get_contents( PKIW_PATH . 'templates/taxonomy-kind-tag.html' );
 		$this->assertStringContainsString( '"namespace":"pkiw-kind-tag"', $template );
 		$this->assertStringContainsString( 'post-kinds-indieweb/tag-entry', $template );
 		$this->assertStringContainsString( '"linesPerPage":12', $template );

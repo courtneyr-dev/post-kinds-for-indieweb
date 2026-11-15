@@ -1083,6 +1083,7 @@ final class Plugin {
 			'like-card',
 			'repost-card',
 			'bookmark-card',
+			'tag-card',
 			'reply-card',
 			'wish-card',
 			'mood-card',

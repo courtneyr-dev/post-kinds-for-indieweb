@@ -72,6 +72,10 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 				'metronId'   => 'only a digit ID prints, and only as the Metron credit link (#331); the fixture sample is not digits, so nothing renders',
 				'isbn'       => 'stored as a fact for lookups and meta (#331); the card never prints it',
 			],
+			'post-kinds-indieweb/tag-card'          => [
+				'targetType' => 'block.json enum (content/person); core drops the invalid sample pre-render and the value only picks the content or person layout, never echoed (spec-261 C2)',
+				'imageAlt'   => 'printed only as the alt of a local media-library image via wp_get_attachment_image(); the fixture imageId names no attachment, so no image or alt renders (spec-261 C2, no remote images)',
+			],
 			'post-kinds-indieweb/wish-card'         => [
 				'wishType' => 'mapped to a plugin label; an unknown value like the fixture sample prints Other and the raw value is never echoed',
 				'priority' => 'mapped to High, Medium or Low; an unknown value like the fixture sample prints Medium and the raw value is never echoed',

@@ -60,7 +60,7 @@ final class TagCardRenderTest extends WP_UnitTestCase {
 		$owner = $this->owner();
 		$block = new WP_Block( [ 'blockName' => Tag_Archive::CARD_BLOCK, 'attrs' => [ 'title' => 'Other' ], 'innerBlocks' => [] ], [ 'postId' => $owner->ID ] );
 		$this->assertNull( Tag_Archive::resolve_owner( $block ) );
-		$this->assertStringContainsString( '"postId"', file_get_contents( PKIW_DIR . 'src/blocks/tag-card/block.json' ) );
-		$this->assertStringNotContainsString( "'tag'", substr( file_get_contents( PKIW_DIR . 'includes/functions-card-render.php' ), strpos( file_get_contents( PKIW_DIR . 'includes/functions-card-render.php' ), '$cite_kinds' ), 200 ) );
+		$this->assertStringContainsString( '"postId"', file_get_contents( PKIW_PATH . 'src/blocks/tag-card/block.json' ) );
+		$this->assertStringNotContainsString( "'tag'", substr( file_get_contents( PKIW_PATH . 'includes/functions-card-render.php' ), strpos( file_get_contents( PKIW_PATH . 'includes/functions-card-render.php' ), '$cite_kinds' ), 200 ) );
 	}
 }

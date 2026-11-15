@@ -1,0 +1,41 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "post-kinds-indieweb/tag-card",
+	"version": "1.0.0",
+	"title": "Tag Card",
+	"category": "post-kinds-indieweb",
+	"description": "Tag a page or person with ordered labels.",
+	"keywords": ["tag", "label", "person"],
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
+	"usesContext": ["postId", "postType"],
+	"attributes": {
+		"targetType": { "type": "string", "enum": ["content", "person"], "default": "content" },
+		"url": { "type": "string" },
+		"title": { "type": "string" },
+		"description": { "type": "string" },
+		"imageId": { "type": "integer", "default": 0 },
+		"imageAlt": { "type": "string" },
+		"taggedAt": { "type": "string" },
+		"labels": { "type": "array", "items": { "type": "string" }, "default": [] }
+	},
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"color": { "background": true, "text": true, "link": true },
+		"spacing": { "margin": true, "padding": true, "blockGap": true },
+		"typography": { "fontSize": true, "lineHeight": true },
+		"__experimentalBorder": { "color": true, "radius": true, "width": true, "style": true },
+		"shadow": true,
+		"dimensions": { "minHeight": true }
+	},
+	"example": {
+		"attributes": {
+			"targetType": "person",
+			"url": "https://example.com/",
+			"title": "Example Person",
+			"labels": ["IndieWeb"]
+		}
+	},
+	"render": "file:./render.php"
+}

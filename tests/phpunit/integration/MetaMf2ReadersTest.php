@@ -11,7 +11,7 @@ declare(strict_types=1);
 final class MetaMf2ReadersTest extends WP_UnitTestCase {
 
 	public function test_only_the_frozen_mf2_readers_exist(): void {
-		$files = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( PKIW_DIR . 'includes', FilesystemIterator::SKIP_DOTS ) );
+		$files = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( PKIW_PATH . 'includes', FilesystemIterator::SKIP_DOTS ) );
 		$hits  = [];
 		foreach ( $files as $file ) {
 			if ( 'php' !== $file->getExtension() ) {
@@ -19,7 +19,7 @@ final class MetaMf2ReadersTest extends WP_UnitTestCase {
 			}
 			$content = file_get_contents( $file->getPathname() );
 			if ( str_contains( $content, "'mf2_" ) || str_contains( $content, '"mf2_' ) || str_contains( $content, 'micropub_get_mf2' ) ) {
-				$hits[] = str_replace( PKIW_DIR, '', $file->getPathname() );
+				$hits[] = str_replace( PKIW_PATH, '', $file->getPathname() );
 			}
 		}
 		sort( $hits );

@@ -131,11 +131,20 @@ final class Public_Eligibility {
 
 	/** Exclude comments attached to hidden governed posts. */
 	public static function filter_comment_feed_where( string $where, \WP_Query $query ): string { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		if ( self::query_excludes_governed_posts( $query ) ) {
+			return $where;
+		}
+		if ( $query->is_singular() ) {
+			$post = self::requested_post();
+			if ( $post instanceof \WP_Post && ! self::has_governed_kind( $post ) ) {
+				return $where;
+			}
+		}
 		return $where . self::kind_clause( self::posts_table() );
 	}
 
 	/** Push the REST context and refuse hidden core post items in view context. */
-	public static function rest_request_before( $response, array $handler, \WP_REST_Request $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+	public static function rest_request_before( $response, $handler, \WP_REST_Request $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 		self::$rest_contexts[] = (string) $request->get_param( 'context' );
 		if ( 'edit' === (string) $request->get_param( 'context' ) ) {
 			return $response;
@@ -149,7 +158,7 @@ final class Public_Eligibility {
 	}
 
 	/** Restore the outer REST context after nested requests. */
-	public static function rest_request_after( $response, array $handler, \WP_REST_Request $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+	public static function rest_request_after( $response, $handler, \WP_REST_Request $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 		array_pop( self::$rest_contexts );
 		return $response;
 	}
@@ -286,6 +295,9 @@ final class Public_Eligibility {
 		if ( self::is_cli() ) {
 			return true;
 		}
+		if ( self::query_excludes_governed_posts( $query ) ) {
+			return true;
+		}
 		$context = end( self::$rest_contexts );
 		if ( 'edit' !== $context ) {
 			return false;
@@ -295,6 +307,29 @@ final class Public_Eligibility {
 			&& current_user_can( $type->cap->edit_others_posts )
 			&& current_user_can( $type->cap->edit_private_posts )
 			&& current_user_can( $type->cap->edit_published_posts );
+	}
+
+	/** Whether query constraints make a tag or follow post impossible. */
+	private static function query_excludes_governed_posts( \WP_Query $query ): bool {
+		$post_types = $query->get( 'post_type' );
+		if ( ! empty( $post_types ) && 'any' !== $post_types ) {
+			$taxonomy = get_taxonomy( Taxonomy::TAXONOMY );
+			$governed = $taxonomy instanceof \WP_Taxonomy ? (array) $taxonomy->object_type : [ 'post' ];
+			if ( [] === array_intersect( $governed, (array) $post_types ) ) {
+				return true;
+			}
+		}
+
+		$kind = $query->get( Taxonomy::TAXONOMY );
+		if ( ! is_string( $kind ) || '' === trim( $kind ) ) {
+			return false;
+		}
+		$slugs = preg_split( '/[,+]/', $kind );
+		if ( ! is_array( $slugs ) ) {
+			return false;
+		}
+		$slugs = array_values( array_filter( array_map( 'sanitize_key', $slugs ) ) );
+		return [] !== $slugs && [] === array_intersect( self::KINDS, $slugs );
 	}
 
 	/** The governed-kind SQL wrapper, or an empty string when no term exists. */
