@@ -194,7 +194,9 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 		$hidden  = $this->governed( 'private' );
 		set_query_var( 'p', $hidden );
 		$request = new WP_REST_Request( 'GET', '/wp/v2/posts/' . $hidden );
-		$result  = Public_Eligibility::rest_request_before( null, null, $request );
+		$request->set_param( 'id', $hidden );
+		$handler = [ 'callback' => [ new WP_REST_Posts_Controller( 'post' ), 'get_item' ] ];
+		$result  = Public_Eligibility::rest_request_before( null, $handler, $request );
 		try {
 			$this->assertWPError( $result );
 			$this->assertSame( 'rest_post_invalid_id', $result->get_error_code() );
@@ -202,7 +204,7 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 			$this->assertFalse( Public_Eligibility::filter_redirect_canonical( 'https://example.test/leak', '' ) );
 			$this->assertSame( 0, Public_Eligibility::filter_old_slug_redirect( $hidden ) );
 		} finally {
-			Public_Eligibility::rest_request_after( $result, null, $request );
+			Public_Eligibility::rest_request_after( $result, $handler, $request );
 		}
 	}
 
@@ -385,5 +387,19 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 		$GLOBALS['pkiw_test_pantheon_cache'] = new PKIW_Test_Pantheon_Cache();
 		wp_set_object_terms( $id, [ 'comics' ], Taxonomy::TAXONOMY );
 		$this->assertContains( home_url( '/kind/tag/' ), $GLOBALS['pkiw_test_pantheon_cache']->urls );
+	}
+
+	public function test_resetting_same_governed_term_does_not_purge(): void {
+		if ( ! function_exists( 'Pantheon_Cache' ) ) {
+			function Pantheon_Cache(): object { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound -- Pantheon API test double.
+				$GLOBALS['pkiw_test_pantheon_cache'] ??= new PKIW_Test_Pantheon_Cache();
+				return $GLOBALS['pkiw_test_pantheon_cache'];
+			}
+		}
+		$id = $this->governed();
+		$GLOBALS['pkiw_test_pantheon_cache'] = new PKIW_Test_Pantheon_Cache();
+		wp_set_object_terms( $id, [ 'tag' ], Taxonomy::TAXONOMY );
+		$this->assertSame( [], $GLOBALS['pkiw_test_pantheon_cache']->urls );
+		$this->assertSame( [], $GLOBALS['pkiw_test_pantheon_cache']->regex );
 	}
 }

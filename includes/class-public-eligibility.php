@@ -27,6 +27,13 @@ final class Public_Eligibility {
 	private static array $rest_contexts = [];
 
 	/**
+	 * REST requests refused by the item gate, retained until post-dispatch headers run.
+	 *
+	 * @var \WeakMap<\WP_REST_Request, bool>|null
+	 */
+	private static ?\WeakMap $rest_refusals = null;
+
+	/**
 	 * True while a redirect target resolves, so the list filter can't hide the post being checked.
 	 *
 	 * @var bool
@@ -65,6 +72,7 @@ final class Public_Eligibility {
 		add_filter( 'comments_clauses', [ self::class, 'filter_comment_clauses' ], 20, 2 );
 		add_filter( 'rest_request_before_callbacks', [ self::class, 'rest_request_before' ], 10, 3 );
 		add_filter( 'rest_request_after_callbacks', [ self::class, 'rest_request_after' ], 10, 3 );
+		add_filter( 'rest_post_dispatch', [ self::class, 'filter_rest_refusal_headers' ], 11, 3 );
 		add_action( 'template_redirect', [ self::class, 'refuse_hidden_request' ], 1 );
 		add_filter( 'redirect_canonical', [ self::class, 'filter_redirect_canonical' ], 1, 2 );
 		add_filter( 'old_slug_redirect_post_id', [ self::class, 'filter_old_slug_redirect' ], 1 );
@@ -102,6 +110,10 @@ final class Public_Eligibility {
 
 	/** Whether the predicate hides this post because it has a governed kind. */
 	public static function hides( \WP_Post|int|null $post ): bool {
+		// An empty ID would make get_post() return the global post; it never names a post here.
+		if ( null === $post || ( is_int( $post ) && $post < 1 ) ) {
+			return false;
+		}
 		$post = get_post( $post );
 		return $post instanceof \WP_Post && self::has_governed_kind( $post ) && ! self::is_eligible( $post );
 	}
@@ -177,11 +189,11 @@ final class Public_Eligibility {
 			return $clauses;
 		}
 
-		$alias = 'pkiw_comment_post';
-		if ( ! str_contains( (string) $clauses['join'], " {$alias} " ) ) {
-			$clauses['join'] .= ' INNER JOIN ' . self::posts_table() . " {$alias} ON {$alias}.ID = {$GLOBALS['wpdb']->comments}.comment_post_ID";
+		$alias     = 'pkiw_comment_post';
+		$condition = self::hidden_condition( $alias, self::editable_hidden_ids() );
+		if ( '' !== $condition ) {
+			$clauses['where'] .= " AND {$GLOBALS['wpdb']->comments}.comment_post_ID NOT IN ( SELECT {$alias}.ID FROM " . self::posts_table() . " {$alias} WHERE {$condition} )";
 		}
-		$clauses['where'] .= self::kind_clause( $alias, self::editable_hidden_ids() );
 		return $clauses;
 	}
 
@@ -192,23 +204,27 @@ final class Public_Eligibility {
 			'context' => (string) $request->get_param( 'context' ),
 		];
 
-		$post_id = self::rest_item_post_id( $request );
-		if ( $post_id > 0 && self::hides( $post_id ) && ! current_user_can( 'edit_post', $post_id ) ) {
-			return new \WP_Error( 'rest_post_invalid_id', __( 'Invalid post ID.', 'default' ), [ 'status' => 404 ] ); // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Exact core missing-ID response.
+		$post_id        = self::rest_item_post_id( $handler, $request );
+		$parent_post_id = self::rest_parent_post_id( $handler, $request );
+		$target_id      = $post_id > 0 ? self::hidden_target_id( $post_id ) : self::hidden_target_id( $parent_post_id );
+		if ( $target_id > 0 && ! current_user_can( 'edit_post', $target_id ) ) {
+			self::rest_refusals()[ $request ] = true;
+			return self::invalid_post_error();
 		}
 
-		if ( 'GET' === $request->get_method() && '/wp/v2/comments' === $request->get_route() ) {
-			$comment_post_id = (int) $request->get_param( 'post' );
-			if ( $comment_post_id > 0 && self::hides( $comment_post_id ) && ! current_user_can( 'edit_post', $comment_post_id ) ) {
-				return new \WP_REST_Response(
-					[],
-					200,
-					[
-						'X-WP-Total'      => 0,
-						'X-WP-TotalPages' => 0,
-					]
-				);
+		if ( self::rest_handler_is( $handler, \WP_REST_Comments_Controller::class, [ 'get_items' ] ) ) {
+			self::filter_rest_parent_ids( $request, 'post' );
+		}
+
+		if ( self::rest_handler_is( $handler, \WP_REST_Comments_Controller::class, [ 'get_item' ] ) ) {
+			$comment = get_comment( (int) $request['id'] );
+			if ( $comment instanceof \WP_Comment && self::hides( (int) $comment->comment_post_ID ) && ! current_user_can( 'edit_post', (int) $comment->comment_post_ID ) ) {
+				return new \WP_Error( 'rest_comment_invalid_id', __( 'Invalid comment ID.', 'default' ), [ 'status' => 404 ] ); // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Exact core missing-ID response.
 			}
+		}
+
+		if ( self::rest_handler_is( $handler, \WP_REST_Attachments_Controller::class, [ 'get_items' ] ) ) {
+			self::filter_rest_parent_ids( $request, 'parent' );
 		}
 		return $response;
 	}
@@ -225,12 +241,29 @@ final class Public_Eligibility {
 		return $response;
 	}
 
+	/** Remove core's Allow header only from an item refusal produced by this gate. */
+	public static function filter_rest_refusal_headers( $response, $server, $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		if ( ! $response instanceof \WP_REST_Response || ! $request instanceof \WP_REST_Request || ! isset( self::rest_refusals()[ $request ] ) ) {
+			return $response;
+		}
+		unset( self::rest_refusals()[ $request ] );
+		$headers = $response->get_headers();
+		foreach ( array_keys( $headers ) as $name ) {
+			if ( 0 === strcasecmp( (string) $name, 'Allow' ) ) {
+				unset( $headers[ $name ] );
+			}
+		}
+		$response->set_headers( $headers );
+		return $response;
+	}
+
 	/** Refuse hidden singles and singular comment feeds before templates run. */
 	public static function refuse_hidden_request(): void {
 		global $wp_query;
 
-		$post = self::requested_post();
-		if ( ! $post instanceof \WP_Post || ! self::hides( $post ) || current_user_can( 'edit_post', $post->ID ) ) {
+		$post      = self::requested_post();
+		$target_id = self::hidden_target_id( $post );
+		if ( $target_id < 1 || current_user_can( 'edit_post', $target_id ) ) {
 			return;
 		}
 		$wp_query->set_404();
@@ -243,8 +276,8 @@ final class Public_Eligibility {
 
 	/** Stop canonical redirects from revealing a hidden slug. */
 	public static function filter_redirect_canonical( $redirect_url, string $requested_url ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
-		$requested = self::requested_post();
-		if ( self::hides( $requested ) && ! self::can_edit( $requested ) ) {
+		$requested_id = self::hidden_target_id( self::requested_post() );
+		if ( $requested_id > 0 && ! current_user_can( 'edit_post', $requested_id ) ) {
 			return false;
 		}
 		$target_id = 0;
@@ -256,7 +289,8 @@ final class Public_Eligibility {
 				self::$resolving_target = false;
 			}
 		}
-		return $target_id > 0 && self::hides( $target_id ) && ! current_user_can( 'edit_post', $target_id ) ? false : $redirect_url;
+		$hidden_target_id = self::hidden_target_id( $target_id );
+		return $hidden_target_id > 0 && ! current_user_can( 'edit_post', $hidden_target_id ) ? false : $redirect_url;
 	}
 
 	/** Stop old-slug redirects from revealing a hidden post. */
@@ -373,6 +407,8 @@ final class Public_Eligibility {
 		if ( ! $post instanceof \WP_Post ) {
 			return;
 		}
+		$term_taxonomy_ids     = array_map( 'intval', $term_taxonomy_ids );
+		$old_term_taxonomy_ids = array_map( 'intval', $old_term_taxonomy_ids );
 		foreach ( self::KINDS as $kind ) {
 			$term = get_term_by( 'slug', $kind, Taxonomy::TAXONOMY );
 			if ( $term instanceof \WP_Term && in_array( (int) $term->term_taxonomy_id, $old_term_taxonomy_ids, true ) && ! in_array( (int) $term->term_taxonomy_id, $term_taxonomy_ids, true ) ) {
@@ -399,11 +435,32 @@ final class Public_Eligibility {
 		if ( 'edit' !== $context ) {
 			return false;
 		}
-		$type = get_post_type_object( 'post' );
-		return $type instanceof \WP_Post_Type
-			&& current_user_can( $type->cap->edit_others_posts )
-			&& current_user_can( $type->cap->edit_private_posts )
-			&& current_user_can( $type->cap->edit_published_posts );
+		foreach ( self::queried_governed_post_types( $query ) as $post_type ) {
+			$type = get_post_type_object( $post_type );
+			if ( ! $type instanceof \WP_Post_Type
+				|| ! current_user_can( $type->cap->edit_others_posts )
+				|| ! current_user_can( $type->cap->edit_private_posts )
+				|| ! current_user_can( $type->cap->edit_published_posts ) ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/** Governed post types the current query can return. @return string[] */
+	private static function queried_governed_post_types( \WP_Query $query ): array {
+		$taxonomy = get_taxonomy( Taxonomy::TAXONOMY );
+		if ( ! $taxonomy instanceof \WP_Taxonomy ) {
+			return [];
+		}
+		$governed   = array_map( 'strval', (array) $taxonomy->object_type );
+		$post_types = $query->get( 'post_type' );
+		if ( empty( $post_types ) ) {
+			$post_types = [ 'post' ];
+		} elseif ( 'any' === $post_types ) {
+			$post_types = $governed;
+		}
+		return array_values( array_intersect( $governed, array_map( 'strval', (array) $post_types ) ) );
 	}
 
 	/** Whether query constraints make a tag or follow post impossible. */
@@ -422,6 +479,12 @@ final class Public_Eligibility {
 
 	/** The governed-kind SQL wrapper, or an empty string when no term exists. */
 	private static function kind_clause( string $alias, array $editable_ids = [] ): string {
+		$condition = self::hidden_condition( $alias, $editable_ids );
+		return '' === $condition ? '' : " AND NOT ( {$condition} )";
+	}
+
+	/** SQL condition selecting hidden governed rows. */
+	private static function hidden_condition( string $alias, array $editable_ids = [] ): string {
 		global $wpdb;
 
 		$ids = self::term_taxonomy_ids();
@@ -430,7 +493,7 @@ final class Public_Eligibility {
 		}
 		$id_list  = implode( ',', array_map( 'intval', $ids ) );
 		$editable = [] === $editable_ids ? '' : " AND {$alias}.ID NOT IN ( " . implode( ',', array_map( 'intval', $editable_ids ) ) . ' )';
-		return " AND NOT ( {$alias}.ID IN ( SELECT pkiw_public_tr.object_id FROM {$wpdb->term_relationships} pkiw_public_tr WHERE pkiw_public_tr.term_taxonomy_id IN ( {$id_list} ) ) AND NOT ( " . self::sql( $alias ) . " ){$editable} )";
+		return "{$alias}.ID IN ( SELECT pkiw_public_tr.object_id FROM {$wpdb->term_relationships} pkiw_public_tr WHERE pkiw_public_tr.term_taxonomy_id IN ( {$id_list} ) ) AND NOT ( " . self::sql( $alias ) . " ){$editable}";
 	}
 
 	/** Hidden governed post IDs the current caller may edit. @return int[] */
@@ -612,27 +675,109 @@ final class Public_Eligibility {
 		}
 	}
 
-	/** Resolve a governed core REST item route without assuming the post type. */
-	private static function rest_item_post_id( \WP_REST_Request $request ): int {
-		$route = $request->get_route();
-		if ( 1 !== preg_match( '#/([0-9]+)$#', $route, $matches ) ) {
+	/** Resolve the item ID the dispatched posts controller will use. */
+	private static function rest_item_post_id( $handler, \WP_REST_Request $request ): int {
+		$callback = self::rest_handler_callback( $handler );
+		if ( null === $callback || ! $callback[0] instanceof \WP_REST_Posts_Controller || ! in_array( $callback[1], [ 'get_item', 'update_item', 'delete_item' ], true ) ) {
 			return 0;
 		}
-		$post = get_post( (int) $matches[1] );
+		$item_id = (int) $request['id'];
+		$post    = $item_id > 0 ? get_post( $item_id ) : null;
 		if ( ! $post instanceof \WP_Post ) {
 			return 0;
 		}
+		if ( $callback[0] instanceof \WP_REST_Attachments_Controller ) {
+			return 'attachment' === $post->post_type ? $post->ID : 0;
+		}
 		$taxonomy = get_taxonomy( Taxonomy::TAXONOMY );
-		if ( ! $taxonomy instanceof \WP_Taxonomy || ! in_array( $post->post_type, (array) $taxonomy->object_type, true ) ) {
+		return $taxonomy instanceof \WP_Taxonomy && in_array( $post->post_type, (array) $taxonomy->object_type, true ) ? $post->ID : 0;
+	}
+
+	/** Resolve the governed parent used by revisions and autosaves controllers. */
+	private static function rest_parent_post_id( $handler, \WP_REST_Request $request ): int {
+		$callback = self::rest_handler_callback( $handler );
+		if ( null === $callback || ! $callback[0] instanceof \WP_REST_Revisions_Controller || ! in_array( $callback[1], [ 'get_items', 'get_item', 'create_item', 'update_item', 'delete_item' ], true ) ) {
 			return 0;
 		}
-		$type = get_post_type_object( $post->post_type );
-		if ( ! $type instanceof \WP_Post_Type || ! $type->show_in_rest ) {
+		$parameter = $callback[0] instanceof \WP_REST_Autosaves_Controller && in_array( $callback[1], [ 'get_items', 'create_item' ], true ) ? 'id' : 'parent';
+		$parent_id = (int) $request[ $parameter ];
+		$post      = $parent_id > 0 ? get_post( $parent_id ) : null;
+		$taxonomy  = get_taxonomy( Taxonomy::TAXONOMY );
+		return $post instanceof \WP_Post && $taxonomy instanceof \WP_Taxonomy && in_array( $post->post_type, (array) $taxonomy->object_type, true ) ? $post->ID : 0;
+	}
+
+	/** Whether a matched handler belongs to one of the named controller methods. */
+	private static function rest_handler_is( $handler, string $controller_class, array $methods ): bool {
+		$callback = self::rest_handler_callback( $handler );
+		return null !== $callback && $callback[0] instanceof $controller_class && in_array( $callback[1], $methods, true );
+	}
+
+	/** Return a normalized object-method REST callback. @return array{0: object, 1: string}|null */
+	private static function rest_handler_callback( $handler ): ?array {
+		$callback = is_array( $handler ) ? ( $handler['callback'] ?? null ) : null;
+		if ( ! is_array( $callback ) || 2 !== count( $callback ) || ! is_object( $callback[0] ) || ! is_string( $callback[1] ) ) {
+			return null;
+		}
+		return [ $callback[0], $callback[1] ];
+	}
+
+	/** Remove hidden governed parent IDs from a REST collection parameter. */
+	private static function filter_rest_parent_ids( \WP_REST_Request $request, string $parameter ): void {
+		$post_ids = wp_parse_id_list( $request->get_param( $parameter ) );
+		if ( [] === $post_ids ) {
+			return;
+		}
+		$kept    = [];
+		$removed = false;
+		foreach ( $post_ids as $post_id ) {
+			if ( self::hides( $post_id ) && ! current_user_can( 'edit_post', $post_id ) ) {
+				$removed = true;
+				continue;
+			}
+			$kept[] = $post_id;
+		}
+		if ( ! $removed ) {
+			return;
+		}
+		if ( [] === $kept ) {
+			// Core runs the permission callback and the route callback even when this filter returns a
+			// response, so point the query at an ID no post can have: core then answers exactly as it does
+			// for a missing post (200, empty list, X-WP-Total 0).
+			$kept = [ PHP_INT_MAX ];
+		}
+		$request->set_param( $parameter, $kept );
+	}
+
+
+	/** Core's missing-post error shape. */
+	private static function invalid_post_error(): \WP_Error {
+		return new \WP_Error( 'rest_post_invalid_id', __( 'Invalid post ID.', 'default' ), [ 'status' => 404 ] ); // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Exact core missing-ID response.
+	}
+
+	/** Weak request map used to distinguish this gate's REST refusals. */
+	private static function rest_refusals(): \WeakMap {
+		self::$rest_refusals ??= new \WeakMap();
+		return self::$rest_refusals;
+	}
+
+	/** Return the governed post whose privacy controls this requested item. */
+	private static function hidden_target_id( \WP_Post|int|null $post ): int {
+		// get_post( 0 ) and get_post( null ) return the global post, so an empty ID would inherit
+		// whatever page is rendering. An empty ID never names a target.
+		if ( null === $post || ( is_int( $post ) && $post < 1 ) ) {
 			return 0;
 		}
-		$namespace = '' !== (string) $type->rest_namespace ? (string) $type->rest_namespace : 'wp/v2';
-		$base      = '' !== (string) $type->rest_base ? (string) $type->rest_base : $type->name;
-		return '/' . trim( $namespace, '/' ) . '/' . trim( $base, '/' ) . '/' . $post->ID === $route ? $post->ID : 0;
+		$post = get_post( $post );
+		if ( ! $post instanceof \WP_Post ) {
+			return 0;
+		}
+		if ( self::hides( $post ) ) {
+			return $post->ID;
+		}
+		if ( 'attachment' !== $post->post_type || $post->post_parent < 1 || ! self::hides( $post->post_parent ) ) {
+			return 0;
+		}
+		return (int) $post->post_parent;
 	}
 
 	/** Return the active REST context. */

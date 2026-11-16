@@ -78,6 +78,13 @@ final class TagPrivacyTest extends WP_UnitTestCase {
 		return rest_get_server()->dispatch( $request );
 	}
 
+	private function served_rest( string $method, string $route, array $params = [] ): WP_REST_Response {
+		$request = new WP_REST_Request( $method, $route );
+		$request->set_query_params( $params );
+		$response = rest_get_server()->dispatch( $request );
+		return apply_filters( 'rest_post_dispatch', $response, rest_get_server(), $request );
+	}
+
 	private function comment_feed( string $url ): string {
 		$this->go_to( $url );
 		do_action( 'template_redirect' );
@@ -202,6 +209,39 @@ final class TagPrivacyTest extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_rest_post_item_gate_uses_dispatched_id_for_route_variants_and_nested_parent_routes(): void {
+		$hidden = $this->hidden( 'publish', 'secret', 'tag', 'REST route-shape sentinel' );
+		$public = $this->hidden( 'publish', '', 'tag', 'REST route-shape control' );
+		$routes = [
+			[ 'GET', '/wp/v2/posts/0' . $hidden, [] ],
+			[ 'GET', '/wp/v2/Posts/' . $hidden, [] ],
+			[ 'GET', '/WP/V2/POSTS/' . $hidden, [] ],
+			[ 'GET', '/wp/v2/posts/' . $public, [ 'id' => $hidden ] ],
+			[ 'GET', '/wp/v2/posts/' . $public, [ 'id' => $hidden, 'password' => 'secret' ] ],
+			[ 'PUT', '/wp/v2/posts/0' . $hidden, [ 'title' => 'Must not save' ] ],
+			[ 'DELETE', '/wp/v2/Posts/' . $hidden, [] ],
+			[ 'GET', '/wp/v2/posts/' . $hidden . '/revisions', [] ],
+			[ 'GET', '/wp/v2/posts/' . $hidden . '/autosaves', [] ],
+		];
+		foreach ( $routes as [ $method, $route, $params ] ) {
+			$response = $this->rest( $method, $route, $params );
+			$this->assertSame( 404, $response->get_status(), $method . ' ' . $route );
+			$this->assertSame( 'rest_post_invalid_id', $response->get_data()['code'], $method . ' ' . $route );
+		}
+		$this->assertSame( 'REST route-shape sentinel', get_post_field( 'post_title', $hidden ) );
+		$this->assertSame( 'publish', get_post_status( $hidden ) );
+	}
+
+	public function test_rest_post_refusal_has_missing_id_headers(): void {
+		$hidden = $this->hidden();
+		$actual = $this->served_rest( 'GET', '/wp/v2/posts/' . $hidden );
+		$missing = $this->served_rest( 'GET', '/wp/v2/posts/987654321' );
+		$this->assertSame( $missing->get_status(), $actual->get_status() );
+		$this->assertSame( $missing->get_data(), $actual->get_data() );
+		$this->assertArrayNotHasKey( 'Allow', $actual->get_headers() );
+		$this->assertSame( $missing->get_headers(), $actual->get_headers() );
+	}
+
 	public function test_rest_item_gate_uses_the_governed_posts_own_rest_base(): void {
 		register_post_type( 'pkiw_governed_test', [ 'public' => true, 'show_in_rest' => true, 'rest_base' => 'governed-tests', 'supports' => [ 'title', 'editor' ] ] );
 		register_taxonomy_for_object_type( Taxonomy::TAXONOMY, 'pkiw_governed_test' );
@@ -290,6 +330,145 @@ final class TagPrivacyTest extends WP_UnitTestCase {
 		$this->assertSame( 200, $this->rest( 'GET', '/wp/v2/comments', [ 'post' => $hidden, 'context' => 'edit' ] )->get_status() );
 		$this->assertContains( $hidden_comment, array_map( 'intval', wp_list_pluck( get_comments( [ 'post_id' => $hidden, 'status' => 'approve' ] ), 'comment_ID' ) ) );
 		$this->assertContains( $hidden_comment, array_map( 'intval', wp_list_pluck( get_comments( [ 'status' => 'approve' ] ), 'comment_ID' ) ) );
+	}
+
+	public function test_empty_ids_never_inherit_a_hidden_global_post(): void {
+		$hidden = $this->hidden( 'publish', 'secret', 'tag', 'Global post sentinel' );
+		$public = $this->hidden( 'publish', '' );
+		$GLOBALS['post'] = get_post( $hidden ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- A hidden page is rendering.
+		try {
+			$this->assertFalse( Public_Eligibility::hides( 0 ) );
+			$this->assertFalse( Public_Eligibility::hides( null ) );
+			$this->assertTrue( Public_Eligibility::hides( $hidden ) );
+			$media = $this->rest( 'GET', '/wp/v2/media' );
+			$this->assertSame( 200, $media->get_status() );
+			$posts = $this->rest( 'GET', '/wp/v2/posts', [ 'include' => [ $public ] ] );
+			$this->assertSame( 200, $posts->get_status() );
+			$this->assertSame( [ $public ], array_map( 'intval', wp_list_pluck( $posts->get_data(), 'id' ) ) );
+		} finally {
+			unset( $GLOBALS['post'] );
+		}
+	}
+
+	public function test_rest_comments_hide_governed_posts_in_scalar_array_and_item_routes(): void {
+		$hidden = $this->hidden();
+		$public = $this->hidden( 'publish', '', 'tag', 'REST public comment control' );
+		$hidden_comment = self::factory()->comment->create( [ 'comment_post_ID' => $hidden, 'comment_approved' => 1, 'comment_content' => 'REST hidden comment sentinel' ] );
+		$public_comment = self::factory()->comment->create( [ 'comment_post_ID' => $public, 'comment_approved' => 1, 'comment_content' => 'REST public comment control' ] );
+
+		$missing = $this->rest( 'GET', '/wp/v2/comments', [ 'post' => 987654321 ] );
+		foreach ( [ $hidden, [ $hidden ] ] as $post_param ) {
+			$actual = $this->rest( 'GET', '/wp/v2/comments', [ 'post' => $post_param ] );
+			$this->assertSame( $missing->get_status(), $actual->get_status() );
+			$this->assertSame( $missing->get_data(), $actual->get_data() );
+			$this->assertSame( '0', (string) $actual->get_headers()['X-WP-Total'] );
+			$this->assertSame( '0', (string) $actual->get_headers()['X-WP-TotalPages'] );
+		}
+
+		$mixed = $this->rest( 'GET', '/wp/v2/comments', [ 'post' => [ $hidden, $public ] ] );
+		$this->assertSame( 200, $mixed->get_status() );
+		$this->assertSame( [ $public_comment ], array_map( static fn( array $row ): int => (int) $row['id'], $mixed->get_data() ) );
+
+		$missing_item = $this->rest( 'GET', '/wp/v2/comments/987654321' );
+		foreach ( [ [], [ 'password' => 'secret' ] ] as $params ) {
+			$actual = $this->rest( 'GET', '/wp/v2/comments/' . $hidden_comment, $params );
+			$this->assertSame( $missing_item->get_status(), $actual->get_status() );
+			$this->assertSame( $missing_item->get_data(), $actual->get_data() );
+			$this->assertSame( 'rest_comment_invalid_id', $actual->get_data()['code'] );
+		}
+		$this->assertSame( 200, $this->rest( 'GET', '/wp/v2/comments/' . $public_comment )->get_status() );
+	}
+
+	public function test_comment_filter_keeps_postless_comments(): void {
+		$comment_ids = [];
+		$comment_ids[] = (int) self::factory()->comment->create( [ 'comment_post_ID' => 0, 'comment_approved' => 1 ] );
+		for ( $index = 0; $index < 4; ++$index ) {
+			$post_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+			$comment_ids[] = (int) self::factory()->comment->create( [ 'comment_post_ID' => $post_id, 'comment_approved' => 1 ] );
+		}
+		$comments = get_comments(
+			[
+				'comment__in' => $comment_ids,
+				'orderby'     => 'comment_ID',
+				'order'       => 'ASC',
+				'status'      => 'approve',
+			]
+		);
+		$this->assertSame( $comment_ids, array_map( 'intval', wp_list_pluck( $comments, 'comment_ID' ) ) );
+	}
+
+	public function test_hidden_parent_gates_attachment_pages_redirects_and_rest_media(): void {
+		$hidden     = $this->hidden( 'publish', 'secret', 'tag', 'Hidden attachment parent sentinel' );
+		$attachment = (int) self::factory()->attachment->create_object(
+			'tg261-hidden-parent.jpg',
+			$hidden,
+			[
+				'post_mime_type' => 'image/jpeg',
+				'post_title'     => 'Hidden parent media sentinel',
+				'post_name'      => 'hidden-parent-media-sentinel',
+			]
+		);
+		$option_before = get_option( 'wp_attachment_pages_enabled', null );
+		try {
+			foreach ( [ '0', '1' ] as $enabled ) {
+				update_option( 'wp_attachment_pages_enabled', $enabled );
+				foreach ( [ home_url( '/?attachment_id=' . $attachment ), get_attachment_link( $attachment ) ] as $url ) {
+					$this->go_to( $url );
+					Public_Eligibility::refuse_hidden_request();
+					$this->assertTrue( is_404(), 'attachment pages=' . $enabled . ': ' . $url );
+					$this->assertEmpty( redirect_canonical( $url, false ), 'attachment pages=' . $enabled . ': ' . $url );
+				}
+			}
+		} finally {
+			if ( null === $option_before ) {
+				delete_option( 'wp_attachment_pages_enabled' );
+			} else {
+				update_option( 'wp_attachment_pages_enabled', $option_before );
+			}
+		}
+
+		$item = $this->rest( 'GET', '/wp/v2/media/' . $attachment );
+		$this->assertSame( 404, $item->get_status() );
+		$this->assertSame( 'rest_post_invalid_id', $item->get_data()['code'] );
+		$actual = $this->rest( 'GET', '/wp/v2/media', [ 'parent' => $hidden ] );
+		$missing = $this->rest( 'GET', '/wp/v2/media', [ 'parent' => 987654321 ] );
+		$this->assertSame( $missing->get_status(), $actual->get_status() );
+		$this->assertSame( $missing->get_data(), $actual->get_data() );
+		$this->assertSame( $missing->get_headers()['X-WP-Total'], $actual->get_headers()['X-WP-Total'] );
+		$this->assertSame( $missing->get_headers()['X-WP-TotalPages'], $actual->get_headers()['X-WP-TotalPages'] );
+
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		$this->assertSame( 200, $this->rest( 'GET', '/wp/v2/media/' . $attachment )->get_status() );
+	}
+
+	public function test_rest_edit_skip_uses_the_queried_governed_post_type_capabilities(): void {
+		register_post_type(
+			'pkiw_governed_test',
+			[
+				'public'          => true,
+				'show_in_rest'    => true,
+				'rest_base'       => 'governed-tests',
+				'capability_type' => [ 'governed_test', 'governed_tests' ],
+				'map_meta_cap'    => true,
+				'supports'        => [ 'title', 'editor' ],
+			]
+		);
+		register_taxonomy_for_object_type( Taxonomy::TAXONOMY, 'pkiw_governed_test' );
+		$hidden = self::factory()->post->create( [ 'post_type' => 'pkiw_governed_test', 'post_status' => 'publish', 'post_password' => 'secret' ] );
+		wp_set_object_terms( $hidden, 'tag', Taxonomy::TAXONOMY );
+		$this->initialize_rest_server();
+
+		$user_id = self::factory()->user->create( [ 'role' => 'editor' ] );
+		$user = get_user_by( 'id', $user_id );
+		$this->assertInstanceOf( WP_User::class, $user );
+		$user->add_cap( 'edit_governed_tests' );
+		wp_set_current_user( $user_id );
+		$actual = $this->rest( 'GET', '/wp/v2/governed-tests', [ 'context' => 'edit', 'include' => [ $hidden ], 'status' => 'any' ] );
+		$missing = $this->rest( 'GET', '/wp/v2/governed-tests', [ 'context' => 'edit', 'include' => [ 987654321 ], 'status' => 'any' ] );
+		$this->assertSame( 200, $actual->get_status() );
+		$this->assertSame( $missing->get_data(), $actual->get_data() );
+		$this->assertSame( $missing->get_headers()['X-WP-Total'], $actual->get_headers()['X-WP-Total'] );
+		$this->assertSame( $missing->get_headers()['X-WP-TotalPages'], $actual->get_headers()['X-WP-TotalPages'] );
 	}
 
 	public function test_six_status_matrix_hides_both_governed_kinds_and_keeps_positive_controls(): void {
