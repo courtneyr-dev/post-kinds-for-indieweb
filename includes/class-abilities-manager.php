@@ -58,6 +58,7 @@ final class Abilities_Manager {
 		'post-kinds/get-trip-facts',
 		'post-kinds/get-itinerary-facts',
 		'post-kinds/get-rsvp-facts',
+		'post-kinds/get-follow-index',
 		'post-kinds/get-tag-facts',
 		'post-kinds/list-presentation-event-types',
 		'post-kinds/get-collection-items',
@@ -225,6 +226,12 @@ final class Abilities_Manager {
 			$rsvp->register();
 		}
 
+		if ( class_exists( __NAMESPACE__ . '\\Abilities\\Follow_Abilities' ) ) {
+			$follow                    = Abilities\Follow_Abilities::instance();
+			$this->providers['follow'] = $follow;
+			$follow->register();
+		}
+
 		if ( class_exists( __NAMESPACE__ . '\\Abilities\\Tag_Abilities' ) ) {
 			$tag                    = Abilities\Tag_Abilities::instance();
 			$this->providers['tag'] = $tag;
@@ -287,6 +294,7 @@ final class Abilities_Manager {
 			'post-kinds/get-trip-facts',
 			'post-kinds/get-itinerary-facts',
 			'post-kinds/get-rsvp-facts',
+			'post-kinds/get-follow-index',
 			'post-kinds/get-tag-facts',
 			'post-kinds/list-presentation-event-types',
 			'post-kinds/reclassify-presentations',

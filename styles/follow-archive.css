@@ -1,0 +1,37 @@
+.pkiw-follow-letters ul {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.pkiw-follow-letters a {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-block-size: 2.75rem;
+	min-inline-size: 2.75rem;
+}
+
+.pkiw-follow-entry__initial {
+	display: grid;
+	place-items: center;
+	aspect-ratio: 1;
+}
+
+.pkiw-follow-entry__photo + .pkiw-follow-entry__initial {
+	position: absolute;
+	inline-size: 1px;
+	block-size: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+}
+
+.pkiw-follow-entry__photo:has(img[style*="display: none"]) + .pkiw-follow-entry__initial {
+	position: static;
+	inline-size: auto;
+	block-size: auto;
+	clip-path: none;
+}

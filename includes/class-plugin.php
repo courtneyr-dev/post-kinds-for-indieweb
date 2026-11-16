@@ -716,6 +716,9 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Rsvp_Archive' ) ) {
 			( new Rsvp_Archive() )->register();
 		}
+		if ( class_exists( __NAMESPACE__ . '\\Follow_Archive' ) ) {
+			( new Follow_Archive() )->register();
+		}
 		if ( class_exists( __NAMESPACE__ . '\\Tag_Archive' ) ) {
 			( new Tag_Archive() )->register();
 		}
@@ -1548,6 +1551,11 @@ final class Plugin {
 			'taxonomy-kind-rsvp'           => [
 				'title'       => __( 'RSVP Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'RSVP archive in two groups: upcoming events soonest first, then past events latest first.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-follow'         => [
+				'title'       => __( 'Follow Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Follows A to Z with a first-letter index and an OPML link.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 			'taxonomy-kind-tag'            => [

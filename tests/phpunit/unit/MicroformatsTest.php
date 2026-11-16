@@ -99,6 +99,7 @@ class MicroformatsTest extends WP_UnitTestCase {
 			'quote: u-quotation-of' => [ 'quote',    'quotation-of', 'u-quotation-of' ],
 			'tag: u-tag-of'         => [ 'tag',      'tag-of',       'u-tag-of' ],
 			'follow: u-follow-of'   => [ 'follow',   'follow-of',    'u-follow-of' ],
+			'follow: h-card'        => [ 'follow',   'card',         'h-card' ],
 			// Issues reply to a repository, so the kind reuses in-reply-to
 			// (matching classic Post Kinds) rather than a dedicated property.
 			'issue: u-in-reply-to'  => [ 'issue',    'reply-to',     'u-in-reply-to' ],

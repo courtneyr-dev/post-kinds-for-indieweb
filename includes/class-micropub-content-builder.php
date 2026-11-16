@@ -166,6 +166,7 @@ final class Micropub_Content_Builder {
 
 		$post_id = (int) $args['ID'];
 		self::strip_remote_photos( $post_id, 'tag-of' );
+		self::strip_remote_photos( $post_id, 'follow-of' );
 
 		// Idempotency — once we've written block content for this post, leave it alone.
 		// Users who manually edit the post in Gutenberg afterwards keep their changes.
@@ -186,6 +187,7 @@ final class Micropub_Content_Builder {
 		// must land even when the content path below returns early (builder
 		// yields empty markup or the kind is unrecognized).
 		self::assign_kind_term( $post_id, $properties );
+		self::fill_follow_cite( $post_id, $properties );
 
 		$block_content = self::build_block_content( $properties );
 		if ( null === $block_content ) {
@@ -1634,7 +1636,7 @@ final class Micropub_Content_Builder {
 	 * @return string Block-comment markup for the follow paragraph.
 	 */
 	private static function follow_paragraph( array $properties ): string {
-		$url = self::flatten_scalar( $properties, 'follow-of' );
+		$url = self::follow_target( $properties )['url'];
 		if ( '' === $url ) {
 			return '';
 		}
@@ -1642,6 +1644,54 @@ final class Micropub_Content_Builder {
 			. '<p>' . esc_html__( 'Followed', 'post-kinds-for-indieweb-in-block-themes' )
 			. ' <a class="u-follow-of" href="' . esc_url( $url ) . '">' . esc_html( $url ) . '</a></p>' . "\n"
 			. '<!-- /wp:paragraph -->';
+	}
+
+	/**
+	 * Read a scalar or h-card follow target.
+	 *
+	 * @param array<string, mixed> $properties Micropub properties.
+	 * @return array{url:string, name:string}
+	 */
+	private static function follow_target( array $properties ): array {
+		$target = self::first_value( $properties, 'follow-of' );
+		$url    = '';
+		$name   = '';
+		if ( is_scalar( $target ) ) {
+			$url = (string) $target;
+		} elseif ( is_array( $target ) && in_array( 'h-card', array_map( 'strval', (array) ( $target['type'] ?? [] ) ), true ) ) {
+			$card = is_array( $target['properties'] ?? null ) ? $target['properties'] : [];
+			$url  = (string) self::first_value( $card, 'url' );
+			if ( '' === $url && is_scalar( $target['value'] ?? null ) ) {
+				$url = (string) $target['value'];
+			}
+			$name = sanitize_text_field( (string) self::first_value( $card, 'name' ) );
+		}
+		return [
+			'url'  => web_url( $url ),
+			'name' => $name,
+		];
+	}
+
+	/**
+	 * Fill absent citation rows after assigning the follow term.
+	 *
+	 * @param int                  $post_id    Post ID.
+	 * @param array<string, mixed> $properties Micropub properties.
+	 */
+	private static function fill_follow_cite( int $post_id, array $properties ): void {
+		if ( ! has_term( 'follow', Taxonomy::TAXONOMY, $post_id ) ) {
+			return;
+		}
+		$target = self::follow_target( $properties );
+		$values = [ '_pkiw_cite_url' => $target['url'] ];
+		if ( '' !== $target['name'] && ! card_name_is_url( $target['name'], $target['url'] ) ) {
+			$values['_pkiw_cite_name'] = $target['name'];
+		}
+		foreach ( $values as $key => $value ) {
+			if ( '' !== $value && ! metadata_exists( 'post', $post_id, $key ) ) {
+				add_post_meta( $post_id, $key, $value, true );
+			}
+		}
 	}
 
 	/**
