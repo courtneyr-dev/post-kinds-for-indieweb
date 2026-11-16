@@ -593,7 +593,10 @@ final class Public_Eligibility {
 	}
 
 	/** Exclude hidden governed posts from core's padded-count relationship query. */
-	public static function filter_padded_term_query( string $query ): string {
+	public static function filter_padded_term_query( $query ) {
+		if ( ! is_string( $query ) ) {
+			return $query;
+		}
 		global $wpdb;
 
 		// Matches only the one relationship query core's _pad_term_counts() runs; every other query
@@ -645,8 +648,27 @@ final class Public_Eligibility {
 
 	/** Cron handler: recount every governed taxonomy once, then record completion. */
 	public static function run_recount_event(): void {
-		self::recount_governed_terms();
-		update_option( self::RECOUNT_OPTION, self::RECOUNT_VERSION, false );
+		// Before the kind taxonomy exists the count callbacks can't tell hidden posts apart, so a run
+		// now would store core's counts and record completion. Leave it scheduled for a later request.
+		if ( ! taxonomy_exists( Taxonomy::TAXONOMY ) ) {
+			return;
+		}
+		// One run at a time: add_option() fails while another run holds the lock. A crashed run's lock
+		// expires after an hour, and the event stays scheduled until a run completes.
+		$lock = self::RECOUNT_OPTION . '_lock';
+		if ( ! add_option( $lock, time(), '', false ) ) {
+			if ( time() - (int) get_option( $lock, 0 ) < HOUR_IN_SECONDS ) {
+				return;
+			}
+			update_option( $lock, time(), false );
+		}
+		try {
+			self::recount_governed_terms();
+			update_option( self::RECOUNT_OPTION, self::RECOUNT_VERSION, true );
+			wp_clear_scheduled_hook( self::RECOUNT_HOOK );
+		} finally {
+			delete_option( $lock );
+		}
 	}
 
 	/** Recount every term attached to a taxonomy on the governed post types. @return int[] */

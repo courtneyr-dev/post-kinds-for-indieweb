@@ -518,4 +518,47 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 			wp_clear_scheduled_hook( Public_Eligibility::RECOUNT_HOOK );
 		}
 	}
+
+	public function test_recount_skips_while_locked_and_clears_its_event_on_completion(): void {
+		$lock = Public_Eligibility::RECOUNT_OPTION . '_lock';
+		delete_option( Public_Eligibility::RECOUNT_OPTION );
+		wp_clear_scheduled_hook( Public_Eligibility::RECOUNT_HOOK );
+		try {
+			add_option( $lock, time(), '', false );
+			Public_Eligibility::run_recount_event();
+			$this->assertFalse( get_option( Public_Eligibility::RECOUNT_OPTION ), 'R8-S2: a second run must not run while another holds the lock.' );
+
+			update_option( $lock, time() - 2 * HOUR_IN_SECONDS, false );
+			wp_schedule_single_event( time() + 60, Public_Eligibility::RECOUNT_HOOK );
+			Public_Eligibility::run_recount_event();
+			$this->assertSame( Public_Eligibility::RECOUNT_VERSION, get_option( Public_Eligibility::RECOUNT_OPTION ), 'A stale lock is taken over.' );
+			$this->assertFalse( wp_next_scheduled( Public_Eligibility::RECOUNT_HOOK ), 'R8-S2: a queued duplicate event is cleared on completion.' );
+			$this->assertFalse( get_option( $lock ), 'The lock is released.' );
+		} finally {
+			delete_option( $lock );
+			delete_option( Public_Eligibility::RECOUNT_OPTION );
+			wp_clear_scheduled_hook( Public_Eligibility::RECOUNT_HOOK );
+		}
+	}
+
+	public function test_recount_waits_until_the_kind_taxonomy_exists(): void {
+		global $wp_taxonomies;
+
+		delete_option( Public_Eligibility::RECOUNT_OPTION );
+		$saved = $wp_taxonomies[ Taxonomy::TAXONOMY ] ?? null;
+		unset( $wp_taxonomies[ Taxonomy::TAXONOMY ] );
+		try {
+			Public_Eligibility::run_recount_event();
+			$this->assertFalse( get_option( Public_Eligibility::RECOUNT_OPTION ), 'R8-S3: completion is never recorded with core counts.' );
+		} finally {
+			if ( null !== $saved ) {
+				$wp_taxonomies[ Taxonomy::TAXONOMY ] = $saved; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Restores the registered taxonomy.
+			}
+			delete_option( Public_Eligibility::RECOUNT_OPTION );
+		}
+	}
+
+	public function test_padding_query_filter_passes_non_strings_through(): void {
+		$this->assertNull( Public_Eligibility::filter_padded_term_query( null ) );
+	}
 }
