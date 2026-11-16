@@ -139,10 +139,15 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 		$this->assertSame( [], $cron->posts );
 	}
 
-	public function test_query_filter_leaves_impossible_queries_byte_identical(): void {
+	public function test_query_filter_uses_attachment_parent_clause_without_the_kind_clause(): void {
+		global $wpdb;
+
 		$attachment_query = new WP_Query();
 		$attachment_query->set( 'post_type', 'attachment' );
-		$this->assertSame( ' WHERE 1=1', Public_Eligibility::filter_where( ' WHERE 1=1', $attachment_query ) );
+		$attachment_where = Public_Eligibility::filter_where( ' WHERE 1=1', $attachment_query );
+		$this->assertStringContainsString( 'post_parent NOT IN', $attachment_where );
+		$this->assertStringContainsString( 'pkiw_attachment_parent', $attachment_where );
+		$this->assertStringNotContainsString( "AND NOT ( {$wpdb->posts}.ID IN", $attachment_where );
 
 		$comic_query = new WP_Query();
 		$comic_query->set( Taxonomy::TAXONOMY, 'comics' );

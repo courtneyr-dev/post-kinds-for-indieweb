@@ -34,6 +34,20 @@ final class Public_Eligibility {
 	private static ?\WeakMap $rest_refusals = null;
 
 	/**
+	 * Original query parameters for REST collection requests this gate rewrote.
+	 *
+	 * @var \WeakMap<\WP_REST_Request, array<string, mixed>>|null
+	 */
+	private static ?\WeakMap $rest_original_queries = null;
+
+	/**
+	 * Count callbacks replaced on taxonomies attached to governed post types.
+	 *
+	 * @var array<string, callable|null>
+	 */
+	private static array $term_count_callbacks = [];
+
+	/**
 	 * True while a redirect target resolves, so the list filter can't hide the post being checked.
 	 *
 	 * @var bool
@@ -73,6 +87,9 @@ final class Public_Eligibility {
 		add_filter( 'rest_request_before_callbacks', [ self::class, 'rest_request_before' ], 10, 3 );
 		add_filter( 'rest_request_after_callbacks', [ self::class, 'rest_request_after' ], 10, 3 );
 		add_filter( 'rest_post_dispatch', [ self::class, 'filter_rest_refusal_headers' ], 11, 3 );
+		add_action( 'init', [ self::class, 'register_term_count_callbacks' ], 20 );
+		add_action( 'registered_taxonomy', [ self::class, 'register_taxonomy_count_callback' ], 10, 2 );
+		add_action( 'registered_taxonomy_for_object_type', [ self::class, 'refresh_term_count_callbacks' ], 10, 2 );
 		add_action( 'template_redirect', [ self::class, 'refuse_hidden_request' ], 1 );
 		add_filter( 'redirect_canonical', [ self::class, 'filter_redirect_canonical' ], 1, 2 );
 		add_filter( 'old_slug_redirect_post_id', [ self::class, 'filter_old_slug_redirect' ], 1 );
@@ -140,7 +157,13 @@ final class Public_Eligibility {
 	/** Apply the governed-kind clause to public list queries. */
 	public static function filter_where( string $where, \WP_Query $query ): string {
 		$forced = true === $query->get( 'pkiw_public_only' );
-		if ( self::$resolving_target || ( ! $forced && self::skip_query_filter( $query ) ) ) {
+		if ( self::$resolving_target ) {
+			return $where;
+		}
+		if ( self::query_includes_attachments( $query ) ) {
+			$where .= self::attachment_parent_clause( self::posts_table(), self::editable_hidden_ids() );
+		}
+		if ( ! $forced && self::skip_query_filter( $query ) ) {
 			return $where;
 		}
 		return $where . self::kind_clause( self::posts_table() );
@@ -209,7 +232,14 @@ final class Public_Eligibility {
 		$target_id      = $post_id > 0 ? self::hidden_target_id( $post_id ) : self::hidden_target_id( $parent_post_id );
 		if ( $target_id > 0 && ! current_user_can( 'edit_post', $target_id ) ) {
 			self::rest_refusals()[ $request ] = true;
-			return self::invalid_post_error();
+			return $parent_post_id > 0 ? self::invalid_parent_post_error() : self::invalid_post_error();
+		}
+
+		if ( self::rest_handler_is( $handler, \WP_REST_Terms_Controller::class, [ 'get_items' ] ) ) {
+			$term_post_id = (int) $request->get_param( 'post' );
+			if ( $term_post_id > 0 && self::hides( $term_post_id ) && ! current_user_can( 'edit_post', $term_post_id ) ) {
+				return self::invalid_term_post_error();
+			}
 		}
 
 		if ( self::rest_handler_is( $handler, \WP_REST_Comments_Controller::class, [ 'get_items' ] ) ) {
@@ -241,17 +271,26 @@ final class Public_Eligibility {
 		return $response;
 	}
 
-	/** Remove core's Allow header only from an item refusal produced by this gate. */
+	/** Restore collection links and remove Allow headers that reveal hidden item routes. */
 	public static function filter_rest_refusal_headers( $response, $server, $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
-		if ( ! $response instanceof \WP_REST_Response || ! $request instanceof \WP_REST_Request || ! isset( self::rest_refusals()[ $request ] ) ) {
+		if ( ! $response instanceof \WP_REST_Response || ! $request instanceof \WP_REST_Request ) {
 			return $response;
 		}
-		unset( self::rest_refusals()[ $request ] );
+		$strip_allow = isset( self::rest_refusals()[ $request ] ) || self::options_targets_hidden_post( $request );
+		if ( isset( self::rest_refusals()[ $request ] ) ) {
+			unset( self::rest_refusals()[ $request ] );
+		}
 		$headers = $response->get_headers();
 		foreach ( array_keys( $headers ) as $name ) {
-			if ( 0 === strcasecmp( (string) $name, 'Allow' ) ) {
+			if ( $strip_allow && 0 === strcasecmp( (string) $name, 'Allow' ) ) {
 				unset( $headers[ $name ] );
 			}
+			if ( isset( self::rest_original_queries()[ $request ] ) && 0 === strcasecmp( (string) $name, 'Link' ) ) {
+				$headers[ $name ] = self::restore_rest_collection_links( (string) $headers[ $name ], self::rest_original_queries()[ $request ] );
+			}
+		}
+		if ( isset( self::rest_original_queries()[ $request ] ) ) {
+			unset( self::rest_original_queries()[ $request ] );
 		}
 		$response->set_headers( $headers );
 		return $response;
@@ -386,6 +425,9 @@ final class Public_Eligibility {
 	public static function purge_after_transition( string $new_status, string $old_status, \WP_Post $post ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 		$before              = clone $post;
 		$before->post_status = $old_status;
+		if ( self::has_governed_kind( $post ) && $new_status !== $old_status ) {
+			self::recount_post_terms( $post );
+		}
 		if ( self::has_governed_kind( $post ) && ( self::is_eligible( $before ) || self::is_eligible( $post ) ) ) {
 			self::purge( $post );
 		}
@@ -393,6 +435,9 @@ final class Public_Eligibility {
 
 	/** Purge public edits and password flips with the real before image. */
 	public static function purge_after_update( int $post_id, \WP_Post $after, \WP_Post $before ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		if ( self::has_governed_kind( $after ) && $before->post_password !== $after->post_password ) {
+			self::recount_post_terms( $after );
+		}
 		if ( self::has_governed_kind( $after ) && ( self::is_eligible( $before ) || self::is_eligible( $after ) ) ) {
 			self::purge( $after );
 		}
@@ -409,10 +454,92 @@ final class Public_Eligibility {
 		}
 		$term_taxonomy_ids     = array_map( 'intval', $term_taxonomy_ids );
 		$old_term_taxonomy_ids = array_map( 'intval', $old_term_taxonomy_ids );
+		$governed_ids          = self::term_taxonomy_ids();
+		$old_governed_ids      = array_values( array_intersect( $governed_ids, $old_term_taxonomy_ids ) );
+		$new_governed_ids      = array_values( array_intersect( $governed_ids, $term_taxonomy_ids ) );
+		sort( $old_governed_ids, SORT_NUMERIC );
+		sort( $new_governed_ids, SORT_NUMERIC );
+		if ( $old_governed_ids !== $new_governed_ids ) {
+			self::recount_post_terms( $post );
+		}
 		foreach ( self::KINDS as $kind ) {
 			$term = get_term_by( 'slug', $kind, Taxonomy::TAXONOMY );
 			if ( $term instanceof \WP_Term && in_array( (int) $term->term_taxonomy_id, $old_term_taxonomy_ids, true ) && ! in_array( (int) $term->term_taxonomy_id, $term_taxonomy_ids, true ) ) {
 				self::purge( $post, [ $kind ] );
+			}
+		}
+	}
+
+	/** Wrap every taxonomy count callback attached to a governed post type. */
+	public static function register_term_count_callbacks(): void {
+		foreach ( get_taxonomies( [], 'objects' ) as $taxonomy ) {
+			if ( $taxonomy instanceof \WP_Taxonomy ) {
+				self::register_taxonomy_count_callback( $taxonomy->name, $taxonomy->object_type );
+			}
+		}
+	}
+
+	/** Wrap a newly registered taxonomy when it applies to a governed post type. */
+	public static function register_taxonomy_count_callback( string $taxonomy, array|string $object_type ): void {
+		if ( [] === array_intersect( self::governed_post_types(), array_map( 'strval', (array) $object_type ) ) ) {
+			return;
+		}
+		$taxonomy_object = get_taxonomy( $taxonomy );
+		if ( ! $taxonomy_object instanceof \WP_Taxonomy ) {
+			return;
+		}
+		$wrapper = [ self::class, 'update_term_count' ];
+		if ( $wrapper === $taxonomy_object->update_count_callback ) {
+			return;
+		}
+		self::$term_count_callbacks[ $taxonomy ] = is_callable( $taxonomy_object->update_count_callback ) ? $taxonomy_object->update_count_callback : null;
+		$taxonomy_object->update_count_callback  = $wrapper;
+	}
+
+	/** Refresh wrappers after a taxonomy or governed kind gains an object type. */
+	public static function refresh_term_count_callbacks( string $taxonomy, string $object_type ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		self::register_term_count_callbacks();
+	}
+
+	/** Run core's count callback, then subtract published hidden governed posts. */
+	public static function update_term_count( array $terms, \WP_Taxonomy $taxonomy ): void {
+		global $wpdb;
+
+		$terms    = array_values( array_unique( array_filter( array_map( 'intval', $terms ) ) ) );
+		$callback = self::$term_count_callbacks[ $taxonomy->name ] ?? null;
+		if ( is_callable( $callback ) ) {
+			call_user_func( $callback, $terms, $taxonomy );
+		} else {
+			$object_types     = array_map(
+				static fn( string $object_type ): string => explode( ':', $object_type, 2 )[0],
+				array_map( 'strval', (array) $taxonomy->object_type )
+			);
+			$default_callback = array_filter( $object_types, 'post_type_exists' ) === $object_types ? '_update_post_term_count' : '_update_generic_term_count';
+			call_user_func( $default_callback, $terms, $taxonomy );
+		}
+		if ( [] === $terms ) {
+			return;
+		}
+
+		$condition = self::hidden_condition( 'pkiw_counted_post' );
+		if ( '' === $condition ) {
+			return;
+		}
+		$term_list = implode( ',', $terms );
+		$sql       = "SELECT pkiw_counted_tr.term_taxonomy_id, COUNT(*) AS hidden_count FROM {$wpdb->term_relationships} pkiw_counted_tr INNER JOIN {$wpdb->posts} pkiw_counted_post ON pkiw_counted_post.ID = pkiw_counted_tr.object_id WHERE pkiw_counted_tr.term_taxonomy_id IN ( {$term_list} ) AND pkiw_counted_post.post_status = 'publish' AND {$condition} GROUP BY pkiw_counted_tr.term_taxonomy_id"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Internal integer IDs and SQL fragments from validated aliases only.
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The taxonomy callback must read the just-computed core counts before updating them.
+		$rows = $wpdb->get_results( $sql, OBJECT_K );
+		foreach ( $terms as $term_taxonomy_id ) {
+			$hidden_count = isset( $rows[ $term_taxonomy_id ] ) ? (int) $rows[ $term_taxonomy_id ]->hidden_count : 0;
+			if ( $hidden_count > 0 ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- This is the taxonomy's registered count updater.
+				$wpdb->query(
+					$wpdb->prepare(
+						"UPDATE {$wpdb->term_taxonomy} SET count = GREATEST( 0, count - %d ) WHERE term_taxonomy_id = %d",
+						$hidden_count,
+						$term_taxonomy_id
+					)
+				);
 			}
 		}
 	}
@@ -463,6 +590,12 @@ final class Public_Eligibility {
 		return array_values( array_intersect( $governed, array_map( 'strval', (array) $post_types ) ) );
 	}
 
+	/** Post types whose kind terms activate this policy. @return string[] */
+	private static function governed_post_types(): array {
+		$taxonomy = get_taxonomy( Taxonomy::TAXONOMY );
+		return $taxonomy instanceof \WP_Taxonomy ? array_map( 'strval', (array) $taxonomy->object_type ) : [ 'post' ];
+	}
+
 	/** Whether query constraints make a tag or follow post impossible. */
 	private static function query_excludes_governed_posts( \WP_Query $query ): bool {
 		$post_types = $query->get( 'post_type' );
@@ -475,6 +608,18 @@ final class Public_Eligibility {
 		}
 
 		return false;
+	}
+
+	/** Whether the query can return attachment rows. */
+	private static function query_includes_attachments( \WP_Query $query ): bool {
+		return in_array( 'attachment', array_map( 'strval', (array) $query->get( 'post_type' ) ), true );
+	}
+
+	/** Exclude attachments whose governed parent is hidden from this caller. */
+	private static function attachment_parent_clause( string $attachment_alias, array $editable_ids = [] ): string {
+		$parent_alias = 'pkiw_attachment_parent';
+		$condition    = self::hidden_condition( $parent_alias, $editable_ids );
+		return '' === $condition ? '' : " AND {$attachment_alias}.post_parent NOT IN ( SELECT {$parent_alias}.ID FROM " . self::posts_table() . " {$parent_alias} WHERE {$condition} )";
 	}
 
 	/** The governed-kind SQL wrapper, or an empty string when no term exists. */
@@ -546,6 +691,16 @@ final class Public_Eligibility {
 			'ids'          => $ids,
 		];
 		return $ids;
+	}
+
+	/** Recount every term currently attached to a post whose eligibility changed. */
+	private static function recount_post_terms( \WP_Post $post ): void {
+		foreach ( get_object_taxonomies( $post->post_type ) as $taxonomy ) {
+			$term_taxonomy_ids = wp_get_object_terms( $post->ID, $taxonomy, [ 'fields' => 'tt_ids' ] );
+			if ( ! is_wp_error( $term_taxonomy_ids ) && [] !== $term_taxonomy_ids ) {
+				wp_update_term_count( array_map( 'intval', $term_taxonomy_ids ), $taxonomy );
+			}
+		}
 	}
 
 	/** Whether a post carries tag or follow. */
@@ -745,19 +900,78 @@ final class Public_Eligibility {
 			// for a missing post (200, empty list, X-WP-Total 0).
 			$kept = [ PHP_INT_MAX ];
 		}
+		self::rest_original_queries()[ $request ] = $request->get_query_params();
 		$request->set_param( $parameter, $kept );
 	}
-
 
 	/** Core's missing-post error shape. */
 	private static function invalid_post_error(): \WP_Error {
 		return new \WP_Error( 'rest_post_invalid_id', __( 'Invalid post ID.', 'default' ), [ 'status' => 404 ] ); // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Exact core missing-ID response.
 	}
 
+	/** Core's missing revision-parent error shape. */
+	private static function invalid_parent_post_error(): \WP_Error {
+		return new \WP_Error( 'rest_post_invalid_parent', __( 'Invalid post parent ID.', 'default' ), [ 'status' => 404 ] ); // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Exact core missing-parent response.
+	}
+
+	/** Core's missing post error shape on term collections. */
+	private static function invalid_term_post_error(): \WP_Error {
+		return new \WP_Error( 'rest_post_invalid_id', __( 'Invalid post ID.', 'default' ), [ 'status' => 400 ] ); // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Exact core missing-ID response.
+	}
+
 	/** Weak request map used to distinguish this gate's REST refusals. */
 	private static function rest_refusals(): \WeakMap {
 		self::$rest_refusals ??= new \WeakMap();
 		return self::$rest_refusals;
+	}
+
+	/** Weak request map used to restore collection pagination links. */
+	private static function rest_original_queries(): \WeakMap {
+		self::$rest_original_queries ??= new \WeakMap();
+		return self::$rest_original_queries;
+	}
+
+	/** Rebuild each pagination URL from the caller's parameters and core's page number. */
+	private static function restore_rest_collection_links( string $header, array $query_params ): string {
+		$restored = preg_replace_callback(
+			'/<([^>]+)>/',
+			static function ( array $url_match ) use ( $query_params ): string {
+				$url  = (string) $url_match[1];
+				$page = null;
+				if ( 1 === preg_match( '/(?:\?|&)page=([^&]+)/', $url, $page_match ) ) {
+					$page = rawurldecode( (string) $page_match[1] );
+				}
+				$base = strtok( $url, '?' );
+				if ( false === $base ) {
+					return $url_match[0];
+				}
+				$url = add_query_arg( urlencode_deep( $query_params ), $base );
+				if ( null !== $page ) {
+					$url = add_query_arg( 'page', $page, $url );
+				}
+				return '<' . $url . '>';
+			},
+			$header
+		);
+		return is_string( $restored ) ? $restored : $header;
+	}
+
+	/** Whether an OPTIONS item route names a hidden post or attachment parent. */
+	private static function options_targets_hidden_post( \WP_REST_Request $request ): bool {
+		if ( 'OPTIONS' !== $request->get_method() ) {
+			return false;
+		}
+		$item_id = (int) $request['id'];
+		$item    = $item_id > 0 ? get_post( $item_id ) : null;
+		if ( ! $item instanceof \WP_Post ) {
+			return false;
+		}
+		$target_id = self::hidden_target_id( $item );
+		if ( $target_id < 1 || current_user_can( 'edit_post', $target_id ) ) {
+			return false;
+		}
+		$route = rest_get_route_for_post( $item );
+		return is_string( $route ) && 0 === strcasecmp( rtrim( $route, '/' ), rtrim( $request->get_route(), '/' ) );
 	}
 
 	/** Return the governed post whose privacy controls this requested item. */

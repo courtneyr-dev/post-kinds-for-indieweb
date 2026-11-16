@@ -19,16 +19,14 @@ final class TagPrivacyTest extends WP_UnitTestCase {
 	private const URL    = 'https://tg261-sentinel.example/people/sentinel';
 	private const LABEL  = 'tg261-sentinel-label';
 
-	/** @var WP_REST_Server|null */
-	private $rest_server_before_test = null;
-
-	private bool $rest_server_replaced = false;
-
 	public function set_up(): void {
 		parent::set_up();
 		( new Taxonomy() )->create_default_terms();
 		$this->set_permalink_structure( '/%postname%/' );
 		wp_set_current_user( 0 );
+		// Rebuild the REST server per test, as core's REST tests do: the hook restore between tests
+		// removes filters rest_api_init added (rest_handle_options_request among them).
+		$GLOBALS['wp_rest_server'] = null;
 	}
 
 	public function tear_down(): void {
@@ -39,18 +37,14 @@ final class TagPrivacyTest extends WP_UnitTestCase {
 		if ( post_type_exists( 'pkiw_governed_test' ) ) {
 			unregister_post_type( 'pkiw_governed_test' );
 		}
-		if ( $this->rest_server_replaced ) {
-			$GLOBALS['wp_rest_server'] = $this->rest_server_before_test;
-		}
+		$GLOBALS['wp_rest_server'] = null;
 		$wpdb->suppress_errors( false );
 		$this->set_permalink_structure( '' );
 		parent::tear_down();
 	}
 
 	private function initialize_rest_server(): WP_REST_Server {
-		$this->rest_server_before_test = $GLOBALS['wp_rest_server'] ?? null;
-		$this->rest_server_replaced    = true;
-		$GLOBALS['wp_rest_server']     = null;
+		$GLOBALS['wp_rest_server'] = null;
 		return rest_get_server();
 	}
 
@@ -220,8 +214,6 @@ final class TagPrivacyTest extends WP_UnitTestCase {
 			[ 'GET', '/wp/v2/posts/' . $public, [ 'id' => $hidden, 'password' => 'secret' ] ],
 			[ 'PUT', '/wp/v2/posts/0' . $hidden, [ 'title' => 'Must not save' ] ],
 			[ 'DELETE', '/wp/v2/Posts/' . $hidden, [] ],
-			[ 'GET', '/wp/v2/posts/' . $hidden . '/revisions', [] ],
-			[ 'GET', '/wp/v2/posts/' . $hidden . '/autosaves', [] ],
 		];
 		foreach ( $routes as [ $method, $route, $params ] ) {
 			$response = $this->rest( $method, $route, $params );
@@ -230,6 +222,19 @@ final class TagPrivacyTest extends WP_UnitTestCase {
 		}
 		$this->assertSame( 'REST route-shape sentinel', get_post_field( 'post_title', $hidden ) );
 		$this->assertSame( 'publish', get_post_status( $hidden ) );
+	}
+
+	public function test_hidden_revision_and_autosave_parents_match_missing_parent_with_public_control(): void {
+		$hidden = $this->hidden( 'publish', 'secret', 'tag', 'R3-S2 hidden parent' );
+		$public = $this->hidden( 'publish', '', 'tag', 'R3-S2 public control' );
+		foreach ( [ 'revisions', 'autosaves' ] as $child_route ) {
+			$actual  = $this->rest( 'GET', '/wp/v2/posts/' . $hidden . '/' . $child_route );
+			$missing = $this->rest( 'GET', '/wp/v2/posts/987654321/' . $child_route );
+			$this->assertSame( $missing->get_status(), $actual->get_status(), 'R3-S2: ' . $child_route );
+			$this->assertSame( $missing->get_data(), $actual->get_data(), 'R3-S2: ' . $child_route );
+			$this->assertSame( 'rest_post_invalid_parent', $actual->get_data()['code'], 'R3-S2: ' . $child_route );
+		}
+		$this->assertSame( 200, $this->rest( 'GET', '/wp/v2/posts/' . $public )->get_status() );
 	}
 
 	public function test_rest_post_refusal_has_missing_id_headers(): void {
@@ -563,5 +568,226 @@ final class TagPrivacyTest extends WP_UnitTestCase {
 		$this->assertSame( 'Collection eligible control', $item['title'] );
 		$this->assertSame( get_permalink( $eligible ), $item['url'] );
 		$this->assertNotSame( '', $item['date_iso'] );
+	}
+
+	public function test_hidden_parent_attachments_disappear_from_every_media_collection_with_public_controls(): void {
+		$hidden_parent = $this->hidden( 'publish', 'secret', 'tag', 'R3 hidden media parent' );
+		$public_parent = $this->hidden( 'publish', '', 'tag', 'R3 public media parent' );
+		$other_parent  = $this->hidden( 'publish', '', 'tag', 'R3 excluded media parent' );
+		$hidden_media  = (int) self::factory()->attachment->create_object(
+			'r3-hidden-media.jpg',
+			$hidden_parent,
+			[
+				'post_mime_type' => 'image/jpeg',
+				'post_name'      => 'r3-hidden-media',
+				'post_title'     => 'R3 shared media sentinel hidden',
+			]
+		);
+		$public_media  = (int) self::factory()->attachment->create_object(
+			'r3-public-media.jpg',
+			$public_parent,
+			[
+				'post_mime_type' => 'image/jpeg',
+				'post_name'      => 'r3-public-media',
+				'post_title'     => 'R3 shared media sentinel public',
+			]
+		);
+		self::factory()->attachment->create_object( 'r3-excluded-media.jpg', $other_parent, [ 'post_mime_type' => 'image/jpeg' ] );
+
+		$requests = [
+			'unfiltered'     => [],
+			'include'        => [ 'include' => [ $hidden_media, $public_media ] ],
+			'slug'           => [ 'slug' => [ 'r3-hidden-media', 'r3-public-media' ] ],
+			'search'         => [ 'search' => 'R3 shared media sentinel' ],
+			'parent_exclude' => [ 'parent_exclude' => [ $other_parent ] ],
+		];
+		foreach ( $requests as $label => $params ) {
+			$response = $this->rest( 'GET', '/wp/v2/media', $params );
+			$ids      = array_map( static fn( array $row ): int => (int) $row['id'], $response->get_data() );
+			$this->assertNotContains( $hidden_media, $ids, 'R3-B1/O-12: ' . $label );
+			$this->assertContains( $public_media, $ids, 'R3-B1/O-12 public control: ' . $label );
+		}
+
+		$query = new WP_Query(
+			[
+				'post_type'      => 'attachment',
+				'post_status'    => 'inherit',
+				'post__in'       => [ $hidden_media, $public_media ],
+				'fields'         => 'ids',
+				'posts_per_page' => 20,
+			]
+		);
+		$this->assertSame( [ $public_media ], array_map( 'intval', $query->posts ) );
+
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		$editor_ids = array_map( static fn( array $row ): int => (int) $row['id'], $this->rest( 'GET', '/wp/v2/media', [ 'include' => [ $hidden_media, $public_media ] ] )->get_data() );
+		$this->assertContains( $hidden_media, $editor_ids );
+		$this->assertContains( $public_media, $editor_ids );
+	}
+
+	public function test_term_routes_for_hidden_post_match_missing_post_and_keep_public_terms(): void {
+		$hidden = $this->hidden( 'publish', 'secret', 'tag', 'R3 hidden term route post' );
+		$private = $this->hidden( 'private', '', 'tag', 'R3 private term route post' );
+		$public = $this->hidden( 'publish', '', 'tag', 'R3 public term route post' );
+		$hidden_tag = wp_insert_term( 'R3 hidden route label', 'post_tag' );
+		$public_tag = wp_insert_term( 'R3 public route label', 'post_tag' );
+		$hidden_cat = wp_insert_term( 'R3 hidden route category', 'category' );
+		$public_cat = wp_insert_term( 'R3 public route category', 'category' );
+		$this->assertNotWPError( $hidden_tag );
+		$this->assertNotWPError( $public_tag );
+		$this->assertNotWPError( $hidden_cat );
+		$this->assertNotWPError( $public_cat );
+		wp_set_post_terms( $hidden, [ $hidden_tag['term_id'] ], 'post_tag', false );
+		wp_set_post_terms( $private, [ $hidden_tag['term_id'] ], 'post_tag', false );
+		wp_set_post_terms( $public, [ $public_tag['term_id'] ], 'post_tag', false );
+		wp_set_post_terms( $hidden, [ $hidden_cat['term_id'] ], 'category', false );
+		wp_set_post_terms( $private, [ $hidden_cat['term_id'] ], 'category', false );
+		wp_set_post_terms( $public, [ $public_cat['term_id'] ], 'category', false );
+		$kind = get_term_by( 'slug', 'tag', Taxonomy::TAXONOMY );
+		$this->assertInstanceOf( WP_Term::class, $kind );
+
+		foreach (
+			[
+				'/wp/v2/tags'       => (int) $public_tag['term_id'],
+				'/wp/v2/categories' => (int) $public_cat['term_id'],
+				'/wp/v2/kind'       => (int) $kind->term_id,
+			] as $route => $public_term_id
+		) {
+			$missing = $this->rest( 'GET', $route, [ 'post' => 987654321 ] );
+			foreach ( [ $hidden, $private ] as $hidden_post_id ) {
+				$actual = $this->rest( 'GET', $route, [ 'post' => $hidden_post_id ] );
+				$this->assertSame( $missing->get_status(), $actual->get_status(), $route );
+				$this->assertSame( $missing->get_data(), $actual->get_data(), $route );
+				$this->assertSame( 'rest_post_invalid_id', $actual->get_data()['code'], $route );
+			}
+
+			$public_response = $this->rest( 'GET', $route, [ 'post' => $public ] );
+			$this->assertSame( 200, $public_response->get_status(), $route );
+			$this->assertContains( $public_term_id, array_map( static fn( array $row ): int => (int) $row['id'], $public_response->get_data() ), $route . ' public control' );
+		}
+	}
+
+	public function test_term_counts_hide_hidden_only_terms_across_public_surfaces(): void {
+		register_taxonomy( 'pkiw_r3_label', 'post', [ 'public' => true ] );
+		try {
+			$hidden = $this->hidden( 'publish', 'secret', 'tag', 'R3 hidden count post' );
+			$public = $this->hidden( 'publish', '', 'tag', 'R3 public count post' );
+			$category = wp_insert_term( 'pkiw-r3-shared-category-count', 'category' );
+			$this->assertNotWPError( $category );
+			wp_set_post_tags( $hidden, [ 'pkiw-r3-hidden-count' ], false );
+			wp_set_post_tags( $public, [ 'pkiw-r3-public-count' ], false );
+			wp_set_post_categories( $hidden, [ $category['term_id'] ], false );
+			wp_set_post_categories( $public, [ $category['term_id'] ], false );
+			wp_set_object_terms( $hidden, [ 'pkiw-r3-custom-count' ], 'pkiw_r3_label' );
+			wp_set_object_terms( $public, [ 'pkiw-r3-custom-count' ], 'pkiw_r3_label' );
+
+			$hidden_term = get_term_by( 'slug', 'pkiw-r3-hidden-count', 'post_tag' );
+			$public_term = get_term_by( 'slug', 'pkiw-r3-public-count', 'post_tag' );
+			$custom_term = get_term_by( 'slug', 'pkiw-r3-custom-count', 'pkiw_r3_label' );
+			$category    = get_term( $category['term_id'], 'category' );
+			$kind        = get_term_by( 'slug', 'tag', Taxonomy::TAXONOMY );
+			$this->assertInstanceOf( WP_Term::class, $hidden_term );
+			$this->assertInstanceOf( WP_Term::class, $public_term );
+			$this->assertInstanceOf( WP_Term::class, $custom_term );
+			$this->assertInstanceOf( WP_Term::class, $category );
+			$this->assertInstanceOf( WP_Term::class, $kind );
+			$this->assertSame( 0, $hidden_term->count );
+			$this->assertSame( 1, $public_term->count );
+			$this->assertSame( 1, $custom_term->count );
+			$this->assertSame( 1, $category->count );
+			$this->assertSame( 1, $kind->count );
+
+			$visible_tags = get_terms( [ 'taxonomy' => 'post_tag', 'hide_empty' => true, 'slug' => [ 'pkiw-r3-hidden-count', 'pkiw-r3-public-count' ] ] );
+			$this->assertNotWPError( $visible_tags );
+			$this->assertSame( [ 'pkiw-r3-public-count' ], wp_list_pluck( $visible_tags, 'slug' ) );
+			// O-13 "like private": a label only hidden posts use stays listed by core's default
+			// hide_empty=false, with count 0, exactly like a label only a private post uses.
+			$rest_tags = $this->rest( 'GET', '/wp/v2/tags', [ 'search' => 'pkiw-r3-hidden-count' ] );
+			$this->assertSame( [ 0 ], array_map( static fn( array $row ): int => (int) $row['count'], $rest_tags->get_data() ) );
+			$rest_nonempty = $this->rest( 'GET', '/wp/v2/tags', [ 'search' => 'pkiw-r3-hidden-count', 'hide_empty' => true ] );
+			$this->assertSame( [], $rest_nonempty->get_data() );
+			$rest_public = $this->rest( 'GET', '/wp/v2/tags', [ 'slug' => [ 'pkiw-r3-public-count' ] ] );
+			$this->assertSame( 1, $rest_public->get_data()[0]['count'] );
+			$rest_kind = $this->rest( 'GET', '/wp/v2/kind', [ 'slug' => [ 'tag' ] ] );
+			$this->assertSame( 1, $rest_kind->get_data()[0]['count'] );
+			$cloud = (string) wp_tag_cloud( [ 'echo' => false, 'taxonomy' => 'post_tag' ] );
+			$this->assertStringNotContainsString( 'pkiw-r3-hidden-count', $cloud );
+			$this->assertStringContainsString( 'pkiw-r3-public-count', $cloud );
+			$block_cloud = render_block( [ 'blockName' => 'core/tag-cloud', 'attrs' => [], 'innerBlocks' => [], 'innerHTML' => '', 'innerContent' => [] ] );
+			$this->assertStringNotContainsString( 'pkiw-r3-hidden-count', $block_cloud );
+			$this->assertStringContainsString( 'pkiw-r3-public-count', $block_cloud );
+			// Core's term search passes hide_empty false, so it lists empty terms. "Like private" (O-13)
+			// means a label only hidden posts use is found exactly like a label only a private post uses.
+			$private_post = self::factory()->post->create( [ 'post_status' => 'private' ] );
+			wp_set_post_tags( $private_post, [ 'pkiw-r3-private-only' ] );
+			$hidden_search  = $this->rest( 'GET', '/wp/v2/search', [ 'search' => 'pkiw-r3-hidden-count', 'type' => 'term' ] );
+			$private_search = $this->rest( 'GET', '/wp/v2/search', [ 'search' => 'pkiw-r3-private-only', 'type' => 'term' ] );
+			$this->assertSame( count( $private_search->get_data() ), count( $hidden_search->get_data() ) );
+			$this->assertSame( 0, get_term_by( 'slug', 'pkiw-r3-private-only', 'post_tag' )->count );
+		} finally {
+			unregister_taxonomy( 'pkiw_r3_label' );
+		}
+	}
+
+	public function test_term_counts_recount_when_eligibility_or_governed_kind_changes(): void {
+		$post = self::factory()->post->create( [ 'post_status' => 'publish', 'post_password' => 'secret' ] );
+		wp_set_post_tags( $post, [ 'pkiw-r3-recount-control' ], false );
+		$term = get_term_by( 'slug', 'pkiw-r3-recount-control', 'post_tag' );
+		$this->assertInstanceOf( WP_Term::class, $term );
+		$this->assertSame( 1, $term->count, 'A plain password-protected post remains core-counted.' );
+
+		wp_set_object_terms( $post, [ 'tag' ], Taxonomy::TAXONOMY );
+		$this->assertSame( 0, get_term( $term->term_id, 'post_tag' )->count, 'Adding a governed kind hides the label.' );
+		wp_set_object_terms( $post, [], Taxonomy::TAXONOMY );
+		$this->assertSame( 1, get_term( $term->term_id, 'post_tag' )->count, 'Removing the governed kind restores the core count.' );
+		wp_set_object_terms( $post, [ 'tag' ], Taxonomy::TAXONOMY );
+		wp_update_post( [ 'ID' => $post, 'post_password' => '' ] );
+		$this->assertSame( 1, get_term( $term->term_id, 'post_tag' )->count, 'Removing the password restores the term.' );
+		wp_update_post( [ 'ID' => $post, 'post_password' => 'secret' ] );
+		$this->assertSame( 0, get_term( $term->term_id, 'post_tag' )->count, 'Adding the password hides the term.' );
+		wp_update_post( [ 'ID' => $post, 'post_password' => '', 'post_status' => 'draft' ] );
+		$this->assertSame( 0, get_term( $term->term_id, 'post_tag' )->count, 'Drafts remain outside core counts.' );
+		wp_update_post( [ 'ID' => $post, 'post_status' => 'publish' ] );
+		$this->assertSame( 1, get_term( $term->term_id, 'post_tag' )->count, 'Publishing the eligible post restores the public control.' );
+	}
+
+	public function test_rewritten_collection_link_headers_match_missing_ids_and_keep_public_controls(): void {
+		$hidden = $this->hidden( 'publish', 'secret', 'tag', 'R3 Link hidden post' );
+		$public = $this->hidden( 'publish', '', 'tag', 'R3 Link public post' );
+		$missing = 987654321;
+		$hidden_comment = (int) self::factory()->comment->create( [ 'comment_post_ID' => $hidden, 'comment_approved' => 1 ] );
+		$public_comment = (int) self::factory()->comment->create( [ 'comment_post_ID' => $public, 'comment_approved' => 1 ] );
+		$hidden_media = (int) self::factory()->attachment->create_object( 'r3-link-hidden.jpg', $hidden, [ 'post_mime_type' => 'image/jpeg' ] );
+		$public_media = (int) self::factory()->attachment->create_object( 'r3-link-public.jpg', $public, [ 'post_mime_type' => 'image/jpeg' ] );
+
+		foreach ( [ [ '/wp/v2/comments', 'post', $public_comment ], [ '/wp/v2/media', 'parent', $public_media ] ] as [ $route, $parameter, $public_item ] ) {
+			foreach ( [ [ $hidden ], [ $hidden, $public ] ] as $ids ) {
+				$params = [ $parameter => $ids, 'page' => 2, 'per_page' => 1 ];
+				$actual = $this->served_rest( 'GET', $route, $params );
+				$params[ $parameter ][0] = $missing;
+				$control = $this->served_rest( 'GET', $route, $params );
+				$actual_link  = $actual->get_headers()['Link'] ?? null;
+				$control_link = $control->get_headers()['Link'] ?? null;
+				// A page past the end answers 400 with no Link for the missing ID too; match it either way.
+				$this->assertSame( $control->get_status(), $actual->get_status(), $route );
+				$this->assertSame( $control_link, null === $actual_link ? null : str_replace( (string) $hidden, (string) $missing, (string) $actual_link ), 'R3-S1: ' . $route . ' ' . wp_json_encode( $ids ) );
+			}
+
+			$visible = $this->rest( 'GET', $route, [ $parameter => [ $hidden, $public ], 'per_page' => 100 ] );
+			$this->assertContains( $public_item, array_map( static fn( array $row ): int => (int) $row['id'], $visible->get_data() ), $route . ' public control' );
+		}
+		$this->assertGreaterThan( 0, $hidden_comment );
+		$this->assertGreaterThan( 0, $hidden_media );
+	}
+
+	public function test_options_for_hidden_post_has_missing_id_allow_header_and_public_control(): void {
+		$hidden = $this->hidden( 'publish', 'secret', 'tag', 'R3 OPTIONS hidden post' );
+		$public = $this->hidden( 'publish', '', 'tag', 'R3 OPTIONS public post' );
+		$actual = $this->served_rest( 'OPTIONS', '/wp/v2/posts/' . $hidden );
+		$missing = $this->served_rest( 'OPTIONS', '/wp/v2/posts/987654321' );
+		$positive = $this->served_rest( 'OPTIONS', '/wp/v2/posts/' . $public );
+		$this->assertSame( $missing->get_headers()['Allow'] ?? null, $actual->get_headers()['Allow'] ?? null );
+		$this->assertArrayNotHasKey( 'Allow', $actual->get_headers() );
+		$this->assertSame( 'GET', $positive->get_headers()['Allow'] ?? null );
 	}
 }
