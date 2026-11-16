@@ -82,13 +82,10 @@ final class TagPrivacyTest extends WP_UnitTestCase {
 	/** Return slug-to-count output with this plugin's padded-count hooks on or off. */
 	private function padded_term_snapshot( array $args, bool $with_filter ): array {
 		$hooks = [
-			[ 'get_terms_args', [ Public_Eligibility::class, 'arm_padded_term_query' ], 10, 1 ],
 			[ 'query', [ Public_Eligibility::class, 'filter_padded_term_query' ], 10, 1 ],
-			[ 'get_terms', [ Public_Eligibility::class, 'disarm_padded_term_query' ], 20, 1 ],
 		];
 		$registered = [];
 		if ( ! $with_filter ) {
-			Public_Eligibility::disarm_padded_term_query( [] );
 			foreach ( $hooks as $key => [ $hook, $callback, $priority ] ) {
 				$registered[ $key ] = false !== has_filter( $hook, $callback );
 				if ( $registered[ $key ] ) {
@@ -1113,12 +1110,59 @@ final class TagPrivacyTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( ' AND ID NOT IN ( SELECT pkiw_padded_post.ID ', $matches[0], 'O-15 query filter did not match core padding SQL.' );
 
 		$near_miss = $prefix . "1) AND post_type IN ('post') AND post_status = 'publish' ";
-		Public_Eligibility::arm_padded_term_query( [ 'pad_counts' => true ] );
-		try {
-			$this->assertSame( $near_miss, Public_Eligibility::filter_padded_term_query( $near_miss ), 'O-15 degradation guard must return changed core SQL byte for byte.' );
-		} finally {
-			Public_Eligibility::disarm_padded_term_query( [] );
+		$this->assertSame( $near_miss, Public_Eligibility::filter_padded_term_query( $near_miss ), 'O-15 degradation guard must return changed core SQL byte for byte.' );
+		foreach ( [ ',1', '1,', '1,,2', '' ] as $bad_ids ) {
+			$bad = $prefix . $bad_ids . ") AND post_type IN ('post') AND post_status = 'publish'";
+			$this->assertSame( $bad, Public_Eligibility::filter_padded_term_query( $bad ), 'Malformed ID list ' . $bad_ids );
 		}
+		$this->assertSame( 'SELECT 1', Public_Eligibility::filter_padded_term_query( 'SELECT 1' ) );
+	}
+
+	public function test_padding_query_matcher_handles_very_long_id_lists(): void {
+		global $wpdb;
+
+		$this->hidden( 'publish', 'secret', 'tag', 'R7 long list hidden' );
+		$prefix = "SELECT object_id, term_taxonomy_id FROM {$wpdb->term_relationships} INNER JOIN {$wpdb->posts} ON object_id = ID WHERE term_taxonomy_id IN (";
+		$query  = $prefix . implode( ',', range( 1, 10000 ) ) . ") AND post_type IN ('post', 'page') AND post_status = 'publish'";
+		$this->assertStringContainsString( ' AND ID NOT IN ( SELECT pkiw_padded_post.ID ', Public_Eligibility::filter_padded_term_query( $query ), 'R7-B2: a regex hit the PCRE JIT stack limit at 8,192 IDs.' );
+	}
+
+	public function test_nested_get_terms_and_list_exclusions_keep_padding_filtered(): void {
+		$parent = (int) self::factory()->category->create( [ 'slug' => 'r7-nest-parent', 'name' => 'R7 nest parent' ] );
+		$child  = (int) self::factory()->category->create( [ 'slug' => 'r7-nest-child', 'name' => 'R7 nest child', 'parent' => $parent ] );
+		$only   = (int) self::factory()->category->create( [ 'slug' => 'r7-nest-hidden-only', 'name' => 'R7 nest hidden only', 'parent' => $parent ] );
+		$public = (int) self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_post_categories( $public, [ $child ] );
+		$hidden = $this->hidden( 'publish', 'secret', 'tag', 'R7 nest hidden' );
+		wp_set_post_categories( $hidden, [ $child, $only ] );
+
+		// wp_list_categories() turns exclude into exclude_tree, which runs a nested get_terms() before padding.
+		$list = (string) wp_list_categories( [ 'echo' => 0, 'show_count' => 1, 'hide_empty' => 1, 'exclude' => 1, 'title_li' => '' ] );
+		$this->assertStringNotContainsString( 'R7 nest hidden only', $list, 'R7-B1: hidden-only category listed.' );
+		$this->assertStringContainsString( 'R7 nest parent</a> (1)', $list, 'R7-B1: parent counts the hidden post.' );
+		$this->assertStringContainsString( 'R7 nest child</a> (1)', $list, 'R7-B1: child counts the hidden post.' );
+
+		// A third-party callback running get_terms() inside the padded call must not switch filtering off.
+		$nested = static function ( $clauses ) {
+			static $running = false;
+			if ( ! $running ) {
+				$running = true;
+				get_term_by( 'slug', 'r7-nest-child', 'category' );
+				$running = false;
+			}
+			return $clauses;
+		};
+		add_filter( 'terms_clauses', $nested );
+		try {
+			$terms = get_terms( [ 'taxonomy' => 'category', 'pad_counts' => true, 'hide_empty' => true, 'cache_results' => false ] );
+		} finally {
+			remove_filter( 'terms_clauses', $nested );
+		}
+		$counts = wp_list_pluck( $terms, 'count', 'slug' );
+		$this->assertArrayNotHasKey( 'r7-nest-hidden-only', $counts );
+		$this->assertSame( 1, $counts['r7-nest-parent'] ?? null );
+		$this->assertSame( 1, $counts['r7-nest-child'] ?? null );
+		$this->assertGreaterThan( 0, $only );
 	}
 
 	public function test_padded_counts_ignore_stale_stored_count_for_public_category(): void {

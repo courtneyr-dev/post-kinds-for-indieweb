@@ -20,6 +20,14 @@ final class Public_Eligibility {
 	public const KINDS = [ 'tag', 'follow' ];
 
 	/**
+	 * One-time recount: counts stored before this release still include hidden posts, so every site
+	 * recounts once in cron. Bump RECOUNT_VERSION when a release changes what the count callback skips.
+	 */
+	public const RECOUNT_HOOK    = 'pkiw_public_eligibility_recount';
+	public const RECOUNT_OPTION  = 'pkiw_public_eligibility_recount';
+	public const RECOUNT_VERSION = '1';
+
+	/**
 	 * Active REST request contexts, including nested requests.
 	 *
 	 * @var array<int, array{id: int, context: string}>
@@ -47,12 +55,6 @@ final class Public_Eligibility {
 	 */
 	private static array $term_count_callbacks = [];
 
-	/**
-	 * Whether core's padded-count relationship query may be filtered.
-	 *
-	 * @var bool
-	 */
-	private static bool $padding_query_armed = false;
 
 	/**
 	 * True while a redirect target resolves, so the list filter can't hide the post being checked.
@@ -86,6 +88,8 @@ final class Public_Eligibility {
 		self::$registered = true;
 
 		add_filter( 'posts_where', [ self::class, 'filter_where' ], 20, 2 );
+		add_action( self::RECOUNT_HOOK, [ self::class, 'run_recount_event' ] );
+		add_action( 'init', [ self::class, 'maybe_schedule_recount' ], 20 );
 		add_filter( 'get_previous_post_where', [ self::class, 'filter_adjacent_where' ], 20 );
 		add_filter( 'get_next_post_where', [ self::class, 'filter_adjacent_where' ], 20 );
 		add_filter( 'comment_feed_where', [ self::class, 'filter_comment_feed_where' ], 20, 2 );
@@ -95,9 +99,7 @@ final class Public_Eligibility {
 		add_filter( 'rest_request_after_callbacks', [ self::class, 'rest_request_after' ], 10, 3 );
 		add_filter( 'rest_pre_dispatch', [ self::class, 'rewrite_options_term_post' ], 9, 3 );
 		add_filter( 'rest_post_dispatch', [ self::class, 'filter_rest_refusal_headers' ], 11, 3 );
-		add_filter( 'get_terms_args', [ self::class, 'arm_padded_term_query' ] );
 		add_filter( 'query', [ self::class, 'filter_padded_term_query' ] );
-		add_filter( 'get_terms', [ self::class, 'disarm_padded_term_query' ], 20 );
 		add_action( 'init', [ self::class, 'register_term_count_callbacks' ], 20 );
 		add_action( 'registered_taxonomy', [ self::class, 'register_taxonomy_count_callback' ], 10, 2 );
 		add_action( 'registered_taxonomy_for_object_type', [ self::class, 'refresh_term_count_callbacks' ], 10, 2 );
@@ -590,34 +592,25 @@ final class Public_Eligibility {
 		}
 	}
 
-	/** Arm SQL filtering for one normalized padded term query. */
-	public static function arm_padded_term_query( array $args ): array {
-		self::$padding_query_armed = false;
-		if ( ! empty( $args['pad_counts'] ) ) {
-			self::$padding_query_armed = true;
-		}
-		return $args;
-	}
-
-	/** Disarm SQL filtering after get_terms() finishes core's padding work. */
-	public static function disarm_padded_term_query( $terms ) {
-		self::$padding_query_armed = false;
-		return $terms;
-	}
-
 	/** Exclude hidden governed posts from core's padded-count relationship query. */
 	public static function filter_padded_term_query( string $query ): string {
 		global $wpdb;
 
-		if ( ! self::$padding_query_armed ) {
-			return $query;
-		}
+		// Matches only the one relationship query core's _pad_term_counts() runs; every other query
+		// returns unchanged. If core changes that SQL, nothing matches and counts fall back to core's.
 		$prefix = "SELECT object_id, term_taxonomy_id FROM {$wpdb->term_relationships} INNER JOIN {$wpdb->posts} ON object_id = ID WHERE term_taxonomy_id IN (";
 		if ( ! str_starts_with( $query, $prefix ) ) {
 			return $query;
 		}
 		$tail = substr( $query, strlen( $prefix ) );
-		if ( 1 !== preg_match( "/^[0-9]+(?:,[0-9]+)*\\) AND post_type IN \\('[^']+'(?:, '[^']+')*\\) AND post_status = 'publish'$/D", $tail ) ) {
+		// strspn() has no backtracking limit, so a list of any length parses (a regex hit PCRE's JIT
+		// stack limit at 8,192 IDs and silently fell back to unfiltered counts).
+		$id_length = strspn( $tail, '0123456789,' );
+		$id_list   = substr( $tail, 0, $id_length );
+		if ( '' === $id_list || ',' === $id_list[0] || str_ends_with( $id_list, ',' ) || str_contains( $id_list, ',,' ) ) {
+			return $query;
+		}
+		if ( 1 !== preg_match( "/^\\) AND post_type IN \\('[^']+'(?:, '[^']+')*\\) AND post_status = 'publish'$/D", substr( $tail, $id_length ) ) ) {
 			return $query;
 		}
 
@@ -638,6 +631,22 @@ final class Public_Eligibility {
 		if ( $post instanceof \WP_Post ) {
 			self::recount_post_terms( $post );
 		}
+	}
+
+	/** Schedule the one-time recount until it has completed for the current RECOUNT_VERSION. */
+	public static function maybe_schedule_recount(): void {
+		if ( self::RECOUNT_VERSION === get_option( self::RECOUNT_OPTION ) ) {
+			return;
+		}
+		if ( false === wp_next_scheduled( self::RECOUNT_HOOK ) ) {
+			wp_schedule_single_event( time() + 60, self::RECOUNT_HOOK );
+		}
+	}
+
+	/** Cron handler: recount every governed taxonomy once, then record completion. */
+	public static function run_recount_event(): void {
+		self::recount_governed_terms();
+		update_option( self::RECOUNT_OPTION, self::RECOUNT_VERSION, false );
 	}
 
 	/** Recount every term attached to a taxonomy on the governed post types. @return int[] */
@@ -664,7 +673,8 @@ final class Public_Eligibility {
 			$touched[]                                = $term_taxonomy_id;
 		}
 		foreach ( $by_taxonomy as $taxonomy => $term_taxonomy_ids ) {
-			wp_update_term_count( $term_taxonomy_ids, $taxonomy );
+			// _now: term-count deferral would otherwise turn this into a no-op until a flush.
+			wp_update_term_count_now( $term_taxonomy_ids, $taxonomy );
 		}
 		return $touched;
 	}

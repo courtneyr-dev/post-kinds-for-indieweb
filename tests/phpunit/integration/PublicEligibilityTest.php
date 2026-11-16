@@ -483,4 +483,39 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 		$this->assertSame( [], $GLOBALS['pkiw_test_pantheon_cache']->urls );
 		$this->assertSame( [], $GLOBALS['pkiw_test_pantheon_cache']->regex );
 	}
+
+	public function test_one_time_recount_schedules_runs_and_records_its_version(): void {
+		delete_option( Public_Eligibility::RECOUNT_OPTION );
+		wp_clear_scheduled_hook( Public_Eligibility::RECOUNT_HOOK );
+		try {
+			Public_Eligibility::maybe_schedule_recount();
+			$this->assertNotFalse( wp_next_scheduled( Public_Eligibility::RECOUNT_HOOK ) );
+
+			$term   = self::factory()->tag->create_and_get( [ 'slug' => 'pkiw-recount-stale' ] );
+			$hidden = self::factory()->post->create( [ 'post_status' => 'publish', 'post_password' => 'secret' ] );
+			wp_set_object_terms( $hidden, 'tag', Taxonomy::TAXONOMY );
+			wp_set_post_tags( $hidden, [ 'pkiw-recount-stale' ] );
+			$public = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+			wp_set_post_tags( $public, [ 'pkiw-recount-stale' ] );
+			global $wpdb;
+			$wpdb->update( $wpdb->term_taxonomy, [ 'count' => 2 ], [ 'term_taxonomy_id' => $term->term_taxonomy_id ] ); // A count stored before this release.
+			clean_term_cache( $term->term_id, 'post_tag' );
+
+			wp_defer_term_counting( true );
+			try {
+				Public_Eligibility::run_recount_event();
+			} finally {
+				wp_defer_term_counting( false );
+			}
+			$this->assertSame( 1, get_term( $term->term_id, 'post_tag' )->count, 'Recount runs even while counting is deferred.' );
+			$this->assertSame( Public_Eligibility::RECOUNT_VERSION, get_option( Public_Eligibility::RECOUNT_OPTION ) );
+
+			wp_clear_scheduled_hook( Public_Eligibility::RECOUNT_HOOK );
+			Public_Eligibility::maybe_schedule_recount();
+			$this->assertFalse( wp_next_scheduled( Public_Eligibility::RECOUNT_HOOK ), 'A completed version never reschedules.' );
+		} finally {
+			delete_option( Public_Eligibility::RECOUNT_OPTION );
+			wp_clear_scheduled_hook( Public_Eligibility::RECOUNT_HOOK );
+		}
+	}
 }
