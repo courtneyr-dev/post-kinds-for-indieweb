@@ -253,6 +253,9 @@ final class Block_Bindings_Source {
 		if ( ! $post_id ) {
 			return null;
 		}
+		if ( Public_Eligibility::hides( (int) $post_id ) ) {
+			return '';
+		}
 
 		if ( post_password_required( (int) $post_id ) ) {
 			return '';

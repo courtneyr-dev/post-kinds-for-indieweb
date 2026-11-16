@@ -142,7 +142,7 @@ final class Micropub_Source_Privacy {
 		if ( current_user_can( 'edit_post', $post_id ) ) {
 			return $item;
 		}
-		if ( 'publish' !== $post->post_status || '' !== (string) $post->post_password ) {
+		if ( ! Public_Eligibility::is_eligible( $post ) ) {
 			return $single ? new \WP_Error( 'forbidden', 'not found', [ 'status' => 403 ] ) : null;
 		}
 

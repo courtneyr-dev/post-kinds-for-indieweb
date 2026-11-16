@@ -51,6 +51,7 @@ class Taxonomy {
 		'post-kinds-indieweb/play-card'        => 'play',
 		'post-kinds-indieweb/checkin-card'     => 'checkin',
 		'post-kinds-indieweb/rsvp-card'        => 'rsvp',
+		'post-kinds-indieweb/tag-card'         => 'tag',
 		'post-kinds-indieweb/like-card'        => 'like',
 		'post-kinds-indieweb/repost-card'      => 'repost',
 		'post-kinds-indieweb/bookmark-card'    => 'bookmark',

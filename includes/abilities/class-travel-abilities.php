@@ -118,7 +118,7 @@ final class Travel_Abilities {
 	private function execute( array $input, string $kind ): array|\WP_Error {
 		$post_id = absint( $input['post_id'] ?? 0 );
 		$post    = get_post( $post_id );
-		if ( ! $post instanceof \WP_Post || 'publish' !== $post->post_status || '' !== (string) $post->post_password || Kind_Facts::kind_of( $post ) !== $kind ) {
+		if ( ! $post instanceof \WP_Post || \PKIW\Public_Eligibility::hides( $post ) || ! \PKIW\Public_Eligibility::is_eligible( $post ) || Kind_Facts::kind_of( $post ) !== $kind ) {
 			return new \WP_Error( 'pkiw_not_public', __( 'Travel facts are available only for public, unprotected posts of the requested kind.', 'post-kinds-for-indieweb-in-block-themes' ), [ 'status' => 404 ] );
 		}
 

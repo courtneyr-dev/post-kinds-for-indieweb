@@ -63,7 +63,7 @@ final class BlockExamplesTest extends WP_UnitTestCase {
 	public function test_all_thirty_source_blocks_have_examples_with_declared_attributes(): void {
 		$files = glob( PKIW_PATH . 'src/blocks/*/block.json' );
 		$this->assertIsArray( $files );
-		$this->assertCount( 30, $files );
+		$this->assertCount( 31, $files );
 
 		foreach ( $files as $file ) {
 			$slug     = basename( dirname( $file ) );

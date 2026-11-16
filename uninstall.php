@@ -24,6 +24,8 @@ delete_option( 'pkiw_terms_version' );
 delete_option( 'pkiw_active_imports' );
 delete_option( 'pkiw_import_history' );
 delete_option( 'pkiw_last_sync' );
+delete_option( 'pkiw_public_eligibility_recount' );
+delete_option( 'pkiw_public_eligibility_recount_lock' );
 delete_option( 'pkiw_webhook_secret' );
 delete_option( 'pkiw_webhook_token_plex' );
 delete_option( 'pkiw_webhook_token_jellyfin' );
@@ -89,3 +91,4 @@ delete_option( 'pkiw_activated' );
 // Unschedule cron events.
 wp_clear_scheduled_hook( 'pkiw_process_import' );
 wp_clear_scheduled_hook( 'pkiw_scheduled_sync' );
+wp_clear_scheduled_hook( 'pkiw_public_eligibility_recount' );

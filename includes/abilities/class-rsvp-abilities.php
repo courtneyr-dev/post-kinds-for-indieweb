@@ -120,6 +120,9 @@ final class Rsvp_Abilities {
 		if ( ! $post instanceof \WP_Post ) {
 			return new \WP_Error( 'invalid_post', __( 'RSVP post not found.', 'post-kinds-for-indieweb-in-block-themes' ), [ 'status' => 404 ] );
 		}
+		if ( \PKIW\Public_Eligibility::hides( $post ) ) {
+			return new \WP_Error( 'invalid_post', __( 'RSVP post not found.', 'post-kinds-for-indieweb-in-block-themes' ), [ 'status' => 404 ] );
+		}
 		if ( Rsvp_Archive::KIND !== Kind_Facts::kind_of( $post ) ) {
 			return new \WP_Error( 'invalid_kind', __( 'The post is not an RSVP.', 'post-kinds-for-indieweb-in-block-themes' ), [ 'status' => 404 ] );
 		}

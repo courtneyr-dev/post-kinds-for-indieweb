@@ -58,6 +58,7 @@ final class Abilities_Manager {
 		'post-kinds/get-trip-facts',
 		'post-kinds/get-itinerary-facts',
 		'post-kinds/get-rsvp-facts',
+		'post-kinds/get-tag-facts',
 		'post-kinds/list-presentation-event-types',
 		'post-kinds/get-collection-items',
 		'post-kinds/lookup-music',
@@ -224,6 +225,12 @@ final class Abilities_Manager {
 			$rsvp->register();
 		}
 
+		if ( class_exists( __NAMESPACE__ . '\\Abilities\\Tag_Abilities' ) ) {
+			$tag                    = Abilities\Tag_Abilities::instance();
+			$this->providers['tag'] = $tag;
+			$tag->register();
+		}
+
 		/**
 		 * Fires after all post kind abilities are registered.
 		 *
@@ -280,6 +287,7 @@ final class Abilities_Manager {
 			'post-kinds/get-trip-facts',
 			'post-kinds/get-itinerary-facts',
 			'post-kinds/get-rsvp-facts',
+			'post-kinds/get-tag-facts',
 			'post-kinds/list-presentation-event-types',
 			'post-kinds/reclassify-presentations',
 			'post-kinds/get-collection-items',
@@ -294,6 +302,7 @@ final class Abilities_Manager {
 			'post-kinds/backfill-card-meta',
 			'post-kinds/backfill-listen-media-type',
 			'post-kinds/backfill-rsvp-meta',
+			'post-kinds/backfill-tag-labels',
 			'post-kinds/backfill-featured-artwork',
 			'post-kinds/retry-featured-artwork',
 			'post-kinds/get-surface',

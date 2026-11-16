@@ -440,6 +440,8 @@ final class Plugin {
 	 * @return void
 	 */
 	private function init_components(): void {
+		Public_Eligibility::register();
+
 		// Core components - always loaded.
 		if ( class_exists( __NAMESPACE__ . '\\Taxonomy' ) ) {
 			$this->taxonomy = new Taxonomy();
@@ -713,6 +715,9 @@ final class Plugin {
 		}
 		if ( class_exists( __NAMESPACE__ . '\\Rsvp_Archive' ) ) {
 			( new Rsvp_Archive() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Tag_Archive' ) ) {
+			( new Tag_Archive() )->register();
 		}
 		( new Kind_Query_Variations() )->register();
 	}
@@ -1078,6 +1083,7 @@ final class Plugin {
 			'like-card',
 			'repost-card',
 			'bookmark-card',
+			'tag-card',
 			'reply-card',
 			'wish-card',
 			'mood-card',
@@ -1542,6 +1548,11 @@ final class Plugin {
 			'taxonomy-kind-rsvp'           => [
 				'title'       => __( 'RSVP Archive', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description' => __( 'RSVP archive in two groups: upcoming events soonest first, then past events latest first.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
+			'taxonomy-kind-tag'            => [
+				'title'       => __( 'Tag Archive', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Tag archive as label sheets: each post once, under its first label.', 'post-kinds-for-indieweb-in-block-themes' ),
 				'post_types'  => [],
 			],
 		];

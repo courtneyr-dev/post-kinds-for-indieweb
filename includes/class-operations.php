@@ -19,6 +19,87 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Operations {
 
 	/**
+	 * Report tag-label repair candidates or apply an explicit allowlist.
+	 *
+	 * @param bool       $dry_run Whether to report without writing.
+	 * @param array|null $ids     Explicit post IDs for a write run.
+	 * @return array|\WP_Error
+	 */
+	public static function backfill_tag_labels( bool $dry_run, ?array $ids ): array|\WP_Error {
+		$candidates = self::tag_label_candidates();
+		if ( $dry_run ) {
+			return [
+				'dry_run'    => true,
+				'candidates' => array_values( $candidates ),
+				'written'    => [],
+				'skipped'    => [],
+			];
+		}
+		if ( null === $ids ) {
+			return new \WP_Error( 'pkiw_ids_required', __( 'Refusing to write without an ids list. Run with dry_run first.', 'post-kinds-for-indieweb-in-block-themes' ) );
+		}
+
+		$written = [];
+		$skipped = [];
+		foreach ( array_values( array_unique( array_filter( array_map( 'intval', $ids ) ) ) ) as $id ) {
+			if ( ! isset( $candidates[ $id ] ) ) {
+				$skipped[] = [
+					'id'     => $id,
+					'reason' => metadata_exists( 'post', $id, Tag_Archive::LABEL_KEY ) ? 'exists' : 'not_candidate',
+				];
+				continue;
+			}
+			if ( metadata_exists( 'post', $id, Tag_Archive::LABEL_KEY ) ) {
+				$skipped[] = [
+					'id'     => $id,
+					'reason' => 'exists',
+				];
+				continue;
+			}
+			$gained = false;
+			foreach ( $candidates[ $id ]['ops'] as $op ) {
+				$gained = false !== add_post_meta( $id, $op['key'], $op['value'] ) || $gained;
+			}
+			if ( $gained ) {
+				$written[] = $id;
+			} else {
+				$skipped[] = [
+					'id'     => $id,
+					'reason' => 'exists',
+				];
+			}
+		}
+		return [
+			'dry_run'    => false,
+			'candidates' => [],
+			'written'    => $written,
+			'skipped'    => $skipped,
+		];
+	}
+
+	/** Return every post with an absent protected label projection. @return array<int, array{id:int,status:string,ops:array}> */
+	private static function tag_label_candidates(): array {
+		global $wpdb;
+		$like = '%' . $wpdb->esc_like( '<!-- wp:post-kinds-indieweb/tag-card' ) . '%';
+		$ids  = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Explicit repair scan.
+			$wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'post' AND post_content LIKE %s ORDER BY ID ASC", $like ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Core table name.
+		);
+		$out  = [];
+		foreach ( array_map( 'intval', $ids ) as $id ) {
+			$plan = Tag_Archive::backfill_plan( $id );
+			$post = get_post( $id );
+			if ( [] !== $plan && $post instanceof \WP_Post ) {
+				$out[ $id ] = [
+					'id'     => $id,
+					'status' => $post->post_status,
+					'ops'    => $plan,
+				];
+			}
+		}
+		return $out;
+	}
+
+	/**
 	 * Recompute cached post surfaces or report the pending changes.
 	 *
 	 * @param bool $dry_run Whether to report without writing.

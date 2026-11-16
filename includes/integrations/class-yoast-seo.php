@@ -20,6 +20,8 @@ declare(strict_types=1);
 namespace PKIW\Integrations;
 
 use PKIW\Kind_Artwork;
+use PKIW\Public_Eligibility;
+use PKIW\Taxonomy;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -47,6 +49,13 @@ class Yoast_SEO {
 	private const PRIMARY_IMAGE_HASH = '#primaryimage';
 
 	/**
+	 * Hidden governed post IDs for this request.
+	 *
+	 * @var int[]|null
+	 */
+	private ?array $hidden_kind_ids = null;
+
+	/**
 	 * Register hooks. No-op unless Yoast SEO is active.
 	 *
 	 * @return void
@@ -59,6 +68,7 @@ class Yoast_SEO {
 		// Priority 11: after Yoast's own pieces and default-priority
 		// third parties have shaped the graph.
 		add_filter( 'wpseo_schema_graph', [ $this, 'filter_schema_graph' ], 11, 2 );
+		add_filter( 'wpseo_exclude_from_sitemap_by_post_ids', [ $this, 'exclude_hidden_kind_posts' ] );
 
 		// Yoast builds the title tag, the Open Graph and X titles, its schema
 		// and the REST `yoast_head` fields from post_title, not from
@@ -72,6 +82,35 @@ class Yoast_SEO {
 		// which the importers fire before they write privacy, and its
 		// canonical, og:url, schema and sitemap read the stored one.
 		add_action( 'pkiw_derived_slug_replaced', [ $this, 'rebuild_post_indexable' ] );
+	}
+
+	/**
+	 * Exclude hidden tag and follow posts from Yoast's direct SQL sitemap.
+	 *
+	 * @param int[] $excluded Already excluded post IDs.
+	 */
+	public function exclude_hidden_kind_posts( array $excluded ): array {
+		global $wpdb;
+
+		if ( null !== $this->hidden_kind_ids ) {
+			return array_values( array_unique( array_merge( array_map( 'intval', $excluded ), $this->hidden_kind_ids ) ) );
+		}
+		$tt_ids = [];
+		foreach ( Public_Eligibility::KINDS as $slug ) {
+			$term = get_term_by( 'slug', $slug, Taxonomy::TAXONOMY );
+			if ( $term instanceof \WP_Term ) {
+				$tt_ids[] = (int) $term->term_taxonomy_id;
+			}
+		}
+		if ( [] === $tt_ids ) {
+			$this->hidden_kind_ids = [];
+			return $excluded;
+		}
+		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Request-cached by WordPress; Yoast asks once.
+			"SELECT DISTINCT p.ID FROM {$wpdb->posts} p INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = p.ID WHERE tr.term_taxonomy_id IN ( " . implode( ',', $tt_ids ) . ' ) AND NOT ( ' . Public_Eligibility::sql( 'p' ) . ' )' // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- IDs are integers and table names are core-owned.
+		);
+		$this->hidden_kind_ids = array_map( 'intval', $ids );
+		return array_values( array_unique( array_merge( array_map( 'intval', $excluded ), $this->hidden_kind_ids ) ) );
 	}
 
 	/**

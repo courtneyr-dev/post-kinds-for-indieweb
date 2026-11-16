@@ -1215,6 +1215,43 @@
         "render": "static",
         "attributes": []
     },
+    "post-kinds-indieweb/tag-card": {
+        "render": "dynamic",
+        "attributes": {
+            "targetType": {
+                "type": "string",
+                "sample": "Sample targetType value"
+            },
+            "url": {
+                "type": "string",
+                "sample": "https://example.com/sample-url"
+            },
+            "title": {
+                "type": "string",
+                "sample": "Sample title value"
+            },
+            "description": {
+                "type": "string",
+                "sample": "Sample description value"
+            },
+            "imageId": {
+                "type": "integer",
+                "sample": 4
+            },
+            "imageAlt": {
+                "type": "string",
+                "sample": "Sample imageAlt value"
+            },
+            "taggedAt": {
+                "type": "string",
+                "sample": "2026-07-04"
+            },
+            "labels": {
+                "type": "array",
+                "sample": "Sample labels value"
+            }
+        }
+    },
     "post-kinds-indieweb/venue-detail": {
         "render": "dynamic",
         "attributes": {

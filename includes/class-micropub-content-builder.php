@@ -165,6 +165,7 @@ final class Micropub_Content_Builder {
 		}
 
 		$post_id = (int) $args['ID'];
+		self::strip_remote_photos( $post_id, 'tag-of' );
 
 		// Idempotency — once we've written block content for this post, leave it alone.
 		// Users who manually edit the post in Gutenberg afterwards keep their changes.
@@ -526,6 +527,8 @@ final class Micropub_Content_Builder {
 				return self::play_card( $properties );
 			case 'rsvp':
 				return self::rsvp_card( $properties );
+			case 'tag':
+				return self::tag_card( $properties );
 			case 'like':
 				return self::like_card( $properties );
 			case 'repost':
@@ -580,8 +583,6 @@ final class Micropub_Content_Builder {
 					'u-wish-of',
 					__( 'Wishing for', 'post-kinds-for-indieweb-in-block-themes' )
 				);
-			case 'tag':
-				return self::typed_paragraph( $properties, 'tag-of', 'u-tag-of', __( 'Tagged', 'post-kinds-for-indieweb-in-block-themes' ) );
 			case 'issue':
 				// Legacy issue-of senders; canonical class stays u-in-reply-to
 				// (an issue is a reply to a repository — see class-microformats.php).
@@ -603,6 +604,137 @@ final class Micropub_Content_Builder {
 	}
 
 	// --- Per-kind block builders -------------------------------------------
+
+	/**
+	 * Build a tag card from the first tag-of value and ordered categories.
+	 *
+	 * @param array<string, mixed> $properties Micropub properties.
+	 */
+	private static function tag_card( array $properties ): string {
+		$target = self::first_value( $properties, 'tag-of' );
+		$attrs  = [ 'targetType' => 'content' ];
+		if ( is_array( $target ) ) {
+			$types = array_map( 'strval', (array) ( $target['type'] ?? [] ) );
+			$props = is_array( $target['properties'] ?? null ) ? $target['properties'] : [];
+			if ( in_array( 'h-card', $types, true ) ) {
+				$attrs['targetType'] = 'person';
+				$attrs['title']      = sanitize_text_field( (string) self::first_value( $props, 'name' ) );
+				$attrs['url']        = web_url( (string) self::first_value( $props, 'url' ) );
+				$photo               = web_url( (string) self::photo_value( self::first_value( $props, 'photo' ) ) );
+				if ( '' !== $photo && is_upload_url( $photo ) ) {
+					$image_id = (int) attachment_url_to_postid( $photo );
+					if ( $image_id > 0 ) {
+						$attrs['imageId'] = $image_id;
+					}
+				}
+			} elseif ( in_array( 'h-cite', $types, true ) ) {
+				$attrs['title'] = sanitize_text_field( (string) self::first_value( $props, 'name' ) );
+				$attrs['url']   = web_url( (string) self::first_value( $props, 'url' ) );
+			}
+		} elseif ( is_scalar( $target ) ) {
+			$value = trim( (string) $target );
+			if ( str_starts_with( $value, 'http://' ) || str_starts_with( $value, 'https://' ) ) {
+				$attrs['url'] = web_url( $value );
+			} else {
+				$attrs['title'] = sanitize_text_field( $value );
+			}
+		}
+		$labels = self::category_labels( $properties );
+		if ( [] !== $labels ) {
+			$attrs['labels'] = $labels;
+		}
+		$attrs = self::filter_empty( $attrs );
+		return empty( $attrs['url'] ) && empty( $attrs['title'] ) ? '' : self::self_closing_block( 'post-kinds-indieweb/tag-card', $attrs );
+	}
+
+	/**
+	 * Remove remote photos from Micropub's retained mf2 property row.
+	 *
+	 * @param int    $post_id  Post ID.
+	 * @param string $property Stored Micropub property.
+	 */
+	public static function strip_remote_photos( int $post_id, string $property ): void {
+		$key   = 'mf2_' . sanitize_key( $property );
+		$value = get_post_meta( $post_id, $key, true );
+		if ( ! is_array( $value ) ) {
+			return;
+		}
+		$original = $value;
+		$walk     = static function ( &$node ) use ( &$walk ): void {
+			if ( ! is_array( $node ) ) {
+				return;
+			}
+			$types = array_map( 'strval', (array) ( $node['type'] ?? [] ) );
+			if ( in_array( 'h-card', $types, true ) && is_array( $node['properties']['photo'] ?? null ) ) {
+				$node['properties']['photo'] = array_values(
+					array_filter(
+						$node['properties']['photo'],
+						static function ( $photo ): bool {
+							$url = is_array( $photo ) ? (string) ( $photo['value'] ?? '' ) : ( is_scalar( $photo ) ? (string) $photo : '' );
+							return '' !== $url && is_upload_url( $url );
+						}
+					)
+				);
+				if ( [] === $node['properties']['photo'] ) {
+					unset( $node['properties']['photo'] );
+				}
+			}
+			foreach ( $node as &$child ) {
+				$walk( $child );
+			}
+			unset( $child );
+		};
+		$walk( $value );
+		if ( $value !== $original ) {
+			update_post_meta( $post_id, $key, $value );
+		}
+	}
+
+	/**
+	 * First raw value of a Micropub property.
+	 *
+	 * @param array<string, mixed> $properties Micropub properties.
+	 * @param string               $key        Property name.
+	 */
+	private static function first_value( array $properties, string $key ): mixed {
+		if ( ! array_key_exists( $key, $properties ) ) {
+			return null;
+		}
+		$value = $properties[ $key ];
+		return is_array( $value ) && array_is_list( $value ) ? ( $value[0] ?? null ) : $value;
+	}
+
+	/**
+	 * Ordered non-URL category strings.
+	 *
+	 * @param array<string, mixed> $properties Micropub properties.
+	 * @return list<string>
+	 */
+	private static function category_labels( array $properties ): array {
+		$values = $properties['category'] ?? [];
+		$values = is_array( $values ) && array_is_list( $values ) ? $values : [ $values ];
+		$labels = [];
+		foreach ( $values as $value ) {
+			if ( ! is_scalar( $value ) ) {
+				continue;
+			}
+			$value = trim( (string) $value );
+			if ( str_starts_with( $value, 'http://' ) || str_starts_with( $value, 'https://' ) ) {
+				continue;
+			}
+			$labels[] = $value;
+		}
+		return Tag_Archive::labels_from_card( [ 'labels' => $labels ] );
+	}
+
+	/**
+	 * Extract a photo URL from a scalar or mf2 value object.
+	 *
+	 * @param mixed $value Micropub photo value.
+	 */
+	private static function photo_value( mixed $value ): string {
+		return is_array( $value ) ? (string) ( $value['value'] ?? '' ) : ( is_scalar( $value ) ? (string) $value : '' );
+	}
 
 	/**
 	 * Build a Checkin Card block from the h-entry property bag.
