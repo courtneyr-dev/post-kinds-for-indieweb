@@ -33,8 +33,12 @@ export default function Edit( { attributes, setAttributes } ) {
 		imageId = 0,
 		imageAlt = '',
 		taggedAt = '',
-		labels = [],
+		labels: rawLabels = [],
 	} = attributes;
+	// Saved or pasted markup can carry a non-array value; render it as no labels instead of crashing.
+	const labels = Array.isArray( rawLabels )
+		? rawLabels.filter( ( label ) => 'string' === typeof label )
+		: [];
 	const person = targetType === 'person';
 	const host = urlHost( url );
 	const initial = ( title || url || '?' ).trim().charAt( 0 ).toUpperCase();

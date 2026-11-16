@@ -392,16 +392,20 @@ function CitationFields( { showSummary = true, showAuthor = true } ) {
 				__nextHasNoMarginBottom
 				__next40pxDefaultSize
 			/>
-			{ showAuthor && <TextControl
-				label={ __(
-					'Author',
-					'post-kinds-for-indieweb-in-block-themes'
-				) }
-				value={ citeAuthor }
-				onChange={ ( value ) => updateKindMeta( 'cite_author', value ) }
-				__nextHasNoMarginBottom
-				__next40pxDefaultSize
-			/> }
+			{ showAuthor && (
+				<TextControl
+					label={ __(
+						'Author',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
+					value={ citeAuthor }
+					onChange={ ( value ) =>
+						updateKindMeta( 'cite_author', value )
+					}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+			) }
 			{ showSummary && (
 				<TextareaControl
 					label={ __(
@@ -426,7 +430,14 @@ export function TagFields() {
 		[]
 	);
 	if ( hasTagCard( blocks ) ) {
-		return <Notice status="info" isDismissible={ false }>{ __( 'Edit the target and labels in the Tag Card block.', 'post-kinds-for-indieweb-in-block-themes' ) }</Notice>;
+		return (
+			<Notice status="info" isDismissible={ false }>
+				{ __(
+					'Edit the target and labels in the Tag Card block.',
+					'post-kinds-for-indieweb-in-block-themes'
+				) }
+			</Notice>
+		);
 	}
 	return <CitationFields showSummary={ true } showAuthor={ false } />;
 }

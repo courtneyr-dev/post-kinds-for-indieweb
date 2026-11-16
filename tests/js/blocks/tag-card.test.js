@@ -86,6 +86,26 @@ describe( 'Tag Card editor', () => {
 		expect( apiFetch ).not.toHaveBeenCalled();
 	} );
 
+	it( 'renders a non-array labels value as no labels instead of crashing', () => {
+		render(
+			<Edit
+				attributes={ {
+					targetType: 'content',
+					url: 'https://content.example/story',
+					title: 'Tagged story',
+					labels: 'Sample labels value',
+				} }
+				setAttributes={ jest.fn() }
+			/>
+		);
+		expect(
+			screen.getByRole( 'link', { name: 'Tagged story' } )
+		).toBeInTheDocument();
+		expect(
+			screen.queryByText( 'Sample labels value' )
+		).not.toBeInTheDocument();
+	} );
+
 	it( 'shows Description only for a content target', () => {
 		render(
 			<Edit
