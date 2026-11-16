@@ -87,6 +87,7 @@ final class Public_Eligibility {
 		add_filter( 'rest_request_before_callbacks', [ self::class, 'rest_request_before' ], 10, 3 );
 		add_filter( 'rest_request_after_callbacks', [ self::class, 'rest_request_after' ], 10, 3 );
 		add_filter( 'rest_post_dispatch', [ self::class, 'filter_rest_refusal_headers' ], 11, 3 );
+		add_filter( 'get_terms', [ self::class, 'filter_padded_term_counts' ], 20, 3 );
 		add_action( 'init', [ self::class, 'register_term_count_callbacks' ], 20 );
 		add_action( 'registered_taxonomy', [ self::class, 'register_taxonomy_count_callback' ], 10, 2 );
 		add_action( 'registered_taxonomy_for_object_type', [ self::class, 'refresh_term_count_callbacks' ], 10, 2 );
@@ -102,6 +103,7 @@ final class Public_Eligibility {
 		add_action( 'transition_post_status', [ self::class, 'purge_after_transition' ], 30, 3 );
 		add_action( 'post_updated', [ self::class, 'purge_after_update' ], 30, 3 );
 		add_action( 'set_object_terms', [ self::class, 'purge_after_terms' ], 30, 6 );
+		add_action( 'deleted_term_relationships', [ self::class, 'recount_after_deleted_relationships' ], 30, 3 );
 	}
 
 	/** Whether a post may appear on any public surface. */
@@ -160,10 +162,14 @@ final class Public_Eligibility {
 		if ( self::$resolving_target ) {
 			return $where;
 		}
-		if ( self::query_includes_attachments( $query ) ) {
+		$includes_attachments = self::query_includes_attachments( $query );
+		if ( ! $forced && self::skip_query_filter( $query ) ) {
+			return $where;
+		}
+		if ( $includes_attachments ) {
 			$where .= self::attachment_parent_clause( self::posts_table(), self::editable_hidden_ids() );
 		}
-		if ( ! $forced && self::skip_query_filter( $query ) ) {
+		if ( self::query_excludes_governed_posts( $query ) ) {
 			return $where;
 		}
 		return $where . self::kind_clause( self::posts_table() );
@@ -238,6 +244,7 @@ final class Public_Eligibility {
 		if ( self::rest_handler_is( $handler, \WP_REST_Terms_Controller::class, [ 'get_items' ] ) ) {
 			$term_post_id = (int) $request->get_param( 'post' );
 			if ( $term_post_id > 0 && self::hides( $term_post_id ) && ! current_user_can( 'edit_post', $term_post_id ) ) {
+				self::rest_refusals()[ $request ] = true;
 				return self::invalid_term_post_error();
 			}
 		}
@@ -276,7 +283,7 @@ final class Public_Eligibility {
 		if ( ! $response instanceof \WP_REST_Response || ! $request instanceof \WP_REST_Request ) {
 			return $response;
 		}
-		$strip_allow = isset( self::rest_refusals()[ $request ] ) || self::options_targets_hidden_post( $request );
+		$strip_allow = isset( self::rest_refusals()[ $request ] ) || self::options_targets_hidden_post( $response, $server, $request );
 		if ( isset( self::rest_refusals()[ $request ] ) ) {
 			unset( self::rest_refusals()[ $request ] );
 		}
@@ -480,8 +487,12 @@ final class Public_Eligibility {
 	}
 
 	/** Wrap a newly registered taxonomy when it applies to a governed post type. */
-	public static function register_taxonomy_count_callback( string $taxonomy, array|string $object_type ): void {
-		if ( [] === array_intersect( self::governed_post_types(), array_map( 'strval', (array) $object_type ) ) ) {
+	public static function register_taxonomy_count_callback( string $taxonomy, $object_type ): void {
+		if ( null === $object_type ) {
+			return;
+		}
+		$object_types = array_map( 'strval', (array) $object_type );
+		if ( [] === array_intersect( self::governed_post_types(), $object_types ) ) {
 			return;
 		}
 		$taxonomy_object = get_taxonomy( $taxonomy );
@@ -544,6 +555,101 @@ final class Public_Eligibility {
 		}
 	}
 
+	/** Replace core's password-blind padded counts with stored public counts plus descendants. */
+	public static function filter_padded_term_counts( $terms, $taxonomies, $args ) {
+		global $wpdb;
+
+		if ( ! is_array( $terms ) || ! is_array( $args ) || empty( $args['pad_counts'] ) || 'all' !== ( $args['fields'] ?? 'all' ) ) {
+			return $terms;
+		}
+		foreach ( $terms as $term ) {
+			if ( ! $term instanceof \WP_Term ) {
+				return $terms;
+			}
+		}
+
+		$governed                = self::governed_post_types();
+		$hierarchical_taxonomies = [];
+		foreach ( (array) $taxonomies as $taxonomy_name ) {
+			$taxonomy = get_taxonomy( (string) $taxonomy_name );
+			if ( $taxonomy instanceof \WP_Taxonomy && $taxonomy->hierarchical && [] !== array_intersect( $governed, array_map( 'strval', (array) $taxonomy->object_type ) ) ) {
+				$hierarchical_taxonomies[] = $taxonomy->name;
+			}
+		}
+		if ( [] === $hierarchical_taxonomies ) {
+			return $terms;
+		}
+
+		$taxonomy_list = "'" . implode( "','", array_map( 'esc_sql', $hierarchical_taxonomies ) ) . "'";
+		$rows          = $wpdb->get_results( "SELECT term_id, taxonomy, parent, count FROM {$wpdb->term_taxonomy} WHERE taxonomy IN ( {$taxonomy_list} )" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Registered taxonomy names build one read for the final padded term list.
+		$counts        = [];
+		$children      = [];
+		foreach ( $rows as $row ) {
+			$taxonomy_name                        = (string) $row->taxonomy;
+			$term_id                              = (int) $row->term_id;
+			$counts[ $taxonomy_name ][ $term_id ] = (int) $row->count;
+			$children[ $taxonomy_name ][ (int) $row->parent ][] = $term_id;
+		}
+
+		$padded = [];
+		foreach ( $terms as $key => $term ) {
+			if ( ! in_array( $term->taxonomy, $hierarchical_taxonomies, true ) ) {
+				continue;
+			}
+			$padded[ $term->taxonomy ] ??= [];
+			$term->count                 = self::padded_term_count(
+				(int) $term->term_id,
+				$counts[ $term->taxonomy ] ?? [],
+				$children[ $term->taxonomy ] ?? [],
+				$padded[ $term->taxonomy ]
+			);
+			if ( ! empty( $args['hide_empty'] ) && 0 === $term->count ) {
+				unset( $terms[ $key ] );
+			}
+		}
+		return array_values( $terms );
+	}
+
+	/** Recount terms after wp_remove_object_terms() removes a governed kind. */
+	public static function recount_after_deleted_relationships( $object_id, $term_taxonomy_ids, $taxonomy ): void {
+		if ( Taxonomy::TAXONOMY !== (string) $taxonomy || [] === array_intersect( self::term_taxonomy_ids(), array_map( 'intval', (array) $term_taxonomy_ids ) ) ) {
+			return;
+		}
+		$post = get_post( (int) $object_id );
+		if ( $post instanceof \WP_Post ) {
+			self::recount_post_terms( $post );
+		}
+	}
+
+	/** Recount every term attached to a taxonomy on the governed post types. @return int[] */
+	public static function recount_governed_terms(): array {
+		global $wpdb;
+
+		self::register_term_count_callbacks();
+		$taxonomies = [];
+		foreach ( self::governed_post_types() as $post_type ) {
+			$taxonomies = array_merge( $taxonomies, get_object_taxonomies( $post_type ) );
+		}
+		$taxonomies = array_values( array_unique( array_map( 'strval', $taxonomies ) ) );
+		if ( [] === $taxonomies ) {
+			return [];
+		}
+
+		$taxonomy_list = "'" . implode( "','", array_map( 'esc_sql', $taxonomies ) ) . "'";
+		$rows          = $wpdb->get_results( "SELECT term_taxonomy_id, taxonomy FROM {$wpdb->term_taxonomy} WHERE taxonomy IN ( {$taxonomy_list} ) ORDER BY term_taxonomy_id" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Registered taxonomy names select the complete deploy-time recount set.
+		$by_taxonomy   = [];
+		$touched       = [];
+		foreach ( $rows as $row ) {
+			$term_taxonomy_id                         = (int) $row->term_taxonomy_id;
+			$by_taxonomy[ (string) $row->taxonomy ][] = $term_taxonomy_id;
+			$touched[]                                = $term_taxonomy_id;
+		}
+		foreach ( $by_taxonomy as $taxonomy => $term_taxonomy_ids ) {
+			wp_update_term_count( $term_taxonomy_ids, $taxonomy );
+		}
+		return $touched;
+	}
+
 	/** Whether a list query is an authenticated editor or maintenance query. */
 	private static function skip_query_filter( \WP_Query $query ): bool {
 		if ( is_admin() && ! wp_doing_ajax() ) {
@@ -553,9 +659,6 @@ final class Public_Eligibility {
 			return true;
 		}
 		if ( self::is_cli() ) {
-			return true;
-		}
-		if ( self::query_excludes_governed_posts( $query ) ) {
 			return true;
 		}
 		$context = self::current_rest_context();
@@ -612,7 +715,8 @@ final class Public_Eligibility {
 
 	/** Whether the query can return attachment rows. */
 	private static function query_includes_attachments( \WP_Query $query ): bool {
-		return in_array( 'attachment', array_map( 'strval', (array) $query->get( 'post_type' ) ), true );
+		$post_types = $query->get( 'post_type' );
+		return 'any' === $post_types || in_array( 'attachment', array_map( 'strval', (array) $post_types ), true );
 	}
 
 	/** Exclude attachments whose governed parent is hidden from this caller. */
@@ -701,6 +805,23 @@ final class Public_Eligibility {
 				wp_update_term_count( array_map( 'intval', $term_taxonomy_ids ), $taxonomy );
 			}
 		}
+	}
+
+	/** Sum corrected stored counts through one taxonomy's descendant tree. */
+	private static function padded_term_count( int $term_id, array $counts, array $children, array &$memo, array $ancestors = [] ): int {
+		if ( isset( $memo[ $term_id ] ) ) {
+			return $memo[ $term_id ];
+		}
+		if ( isset( $ancestors[ $term_id ] ) ) {
+			return 0;
+		}
+		$ancestors[ $term_id ] = true;
+		$count                 = (int) ( $counts[ $term_id ] ?? 0 );
+		foreach ( $children[ $term_id ] ?? [] as $child_id ) {
+			$count += self::padded_term_count( (int) $child_id, $counts, $children, $memo, $ancestors );
+		}
+		$memo[ $term_id ] = $count;
+		return $count;
 	}
 
 	/** Whether a post carries tag or follow. */
@@ -882,26 +1003,21 @@ final class Public_Eligibility {
 		if ( [] === $post_ids ) {
 			return;
 		}
-		$kept    = [];
-		$removed = false;
+		$rewritten = [];
+		$removed   = false;
 		foreach ( $post_ids as $post_id ) {
 			if ( self::hides( $post_id ) && ! current_user_can( 'edit_post', $post_id ) ) {
-				$removed = true;
-				continue;
+				$removed     = true;
+				$rewritten[] = PHP_INT_MAX;
+			} else {
+				$rewritten[] = $post_id;
 			}
-			$kept[] = $post_id;
 		}
 		if ( ! $removed ) {
 			return;
 		}
-		if ( [] === $kept ) {
-			// Core runs the permission callback and the route callback even when this filter returns a
-			// response, so point the query at an ID no post can have: core then answers exactly as it does
-			// for a missing post (200, empty list, X-WP-Total 0).
-			$kept = [ PHP_INT_MAX ];
-		}
 		self::rest_original_queries()[ $request ] = $request->get_query_params();
-		$request->set_param( $parameter, $kept );
+		$request->set_param( $parameter, $rewritten );
 	}
 
 	/** Core's missing-post error shape. */
@@ -934,22 +1050,18 @@ final class Public_Eligibility {
 	/** Rebuild each pagination URL from the caller's parameters and core's page number. */
 	private static function restore_rest_collection_links( string $header, array $query_params ): string {
 		$restored = preg_replace_callback(
-			'/<([^>]+)>/',
+			'/<(.+?)>; rel="/',
 			static function ( array $url_match ) use ( $query_params ): string {
 				$url  = (string) $url_match[1];
 				$page = null;
 				if ( 1 === preg_match( '/(?:\?|&)page=([^&]+)/', $url, $page_match ) ) {
 					$page = rawurldecode( (string) $page_match[1] );
 				}
-				$base = strtok( $url, '?' );
-				if ( false === $base ) {
-					return $url_match[0];
-				}
-				$url = add_query_arg( urlencode_deep( $query_params ), $base );
+				$url = add_query_arg( urlencode_deep( $query_params ), $url );
 				if ( null !== $page ) {
 					$url = add_query_arg( 'page', $page, $url );
 				}
-				return '<' . $url . '>';
+				return '<' . $url . '>; rel="';
 			},
 			$header
 		);
@@ -957,21 +1069,29 @@ final class Public_Eligibility {
 	}
 
 	/** Whether an OPTIONS item route names a hidden post or attachment parent. */
-	private static function options_targets_hidden_post( \WP_REST_Request $request ): bool {
-		if ( 'OPTIONS' !== $request->get_method() ) {
+	private static function options_targets_hidden_post( \WP_REST_Response $response, $server, \WP_REST_Request $request ): bool {
+		if ( 'OPTIONS' !== $request->get_method() || ! $server instanceof \WP_REST_Server ) {
 			return false;
 		}
-		$item_id = (int) $request['id'];
-		$item    = $item_id > 0 ? get_post( $item_id ) : null;
-		if ( ! $item instanceof \WP_Post ) {
+		$matched_route = $response->get_matched_route();
+		$routes        = $server->get_routes();
+		if ( ! is_string( $matched_route ) || ! isset( $routes[ $matched_route ] ) ) {
 			return false;
 		}
-		$target_id = self::hidden_target_id( $item );
-		if ( $target_id < 1 || current_user_can( 'edit_post', $target_id ) ) {
-			return false;
+
+		foreach ( $routes[ $matched_route ] as $handler ) {
+			$item_id = self::rest_item_post_id( $handler, $request );
+			if ( $item_id > 0 ) {
+				$target_id = self::hidden_target_id( $item_id );
+				return $target_id > 0 && ! current_user_can( 'edit_post', $target_id );
+			}
+			if ( self::rest_handler_is( $handler, \WP_REST_Comments_Controller::class, [ 'get_item', 'update_item', 'delete_item' ] ) ) {
+				$comment   = get_comment( (int) $request['id'] );
+				$target_id = $comment instanceof \WP_Comment ? self::hidden_target_id( (int) $comment->comment_post_ID ) : 0;
+				return $target_id > 0 && ! current_user_can( 'edit_post', $target_id );
+			}
 		}
-		$route = rest_get_route_for_post( $item );
-		return is_string( $route ) && 0 === strcasecmp( rtrim( $route, '/' ), rtrim( $request->get_route(), '/' ) );
+		return false;
 	}
 
 	/** Return the governed post whose privacy controls this requested item. */

@@ -667,6 +667,19 @@ final class TagPrivacyTest extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_term_route_refusal_headers_match_missing_id_and_keep_public_allow(): void {
+		$hidden = $this->hidden( 'publish', 'secret', 'tag', 'R4 hidden term route headers' );
+		$public = $this->hidden( 'publish', '', 'tag', 'R4 public term route headers' );
+		foreach ( [ '/wp/v2/tags', '/wp/v2/categories', '/wp/v2/kind' ] as $route ) {
+			$actual  = $this->served_rest( 'GET', $route, [ 'post' => $hidden ] );
+			$missing = $this->served_rest( 'GET', $route, [ 'post' => 987654321 ] );
+			$positive = $this->served_rest( 'GET', $route, [ 'post' => $public ] );
+			$this->assertSame( $missing->get_headers(), $actual->get_headers(), $route );
+			$this->assertArrayNotHasKey( 'Allow', $actual->get_headers(), $route );
+			$this->assertSame( 'GET', $positive->get_headers()['Allow'] ?? null, $route . ' public control' );
+		}
+	}
+
 	public function test_term_counts_hide_hidden_only_terms_across_public_surfaces(): void {
 		register_taxonomy( 'pkiw_r3_label', 'post', [ 'public' => true ] );
 		try {
@@ -729,6 +742,65 @@ final class TagPrivacyTest extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_padded_hierarchical_counts_hide_hidden_posts_across_category_surfaces(): void {
+		$parent = wp_insert_term( 'R4 padded parent', 'category', [ 'slug' => 'pkiw-r4-padded-parent' ] );
+		$this->assertNotWPError( $parent );
+		$child = wp_insert_term( 'R4 padded child', 'category', [ 'slug' => 'pkiw-r4-padded-child', 'parent' => $parent['term_id'] ] );
+		$this->assertNotWPError( $child );
+		$hidden_leaf = wp_insert_term( 'R4 padded hidden only', 'category', [ 'slug' => 'pkiw-r4-padded-hidden', 'parent' => $child['term_id'] ] );
+		$public_leaf = wp_insert_term( 'R4 padded public control', 'category', [ 'slug' => 'pkiw-r4-padded-public', 'parent' => $child['term_id'] ] );
+		$private_leaf = wp_insert_term( 'R4 padded private control', 'category', [ 'slug' => 'pkiw-r4-padded-private', 'parent' => $child['term_id'] ] );
+		$this->assertNotWPError( $hidden_leaf );
+		$this->assertNotWPError( $public_leaf );
+		$this->assertNotWPError( $private_leaf );
+
+		$hidden = $this->hidden( 'publish', 'secret', 'tag', 'R4 padded hidden post' );
+		$public = $this->hidden( 'publish', '', 'tag', 'R4 padded public post' );
+		$private = self::factory()->post->create( [ 'post_status' => 'private' ] );
+		wp_set_post_categories( $hidden, [ $hidden_leaf['term_id'] ], false );
+		wp_set_post_categories( $public, [ $public_leaf['term_id'] ], false );
+		wp_set_post_categories( $private, [ $private_leaf['term_id'] ], false );
+
+		$terms = get_terms( [ 'taxonomy' => 'category', 'hide_empty' => true, 'pad_counts' => true ] );
+		$this->assertNotWPError( $terms );
+		$counts = [];
+		foreach ( $terms as $term ) {
+			if ( str_starts_with( $term->slug, 'pkiw-r4-padded-' ) ) {
+				$counts[ $term->slug ] = (int) $term->count;
+			}
+		}
+		$this->assertSame(
+			[
+				'pkiw-r4-padded-child'  => 1,
+				'pkiw-r4-padded-parent' => 1,
+				'pkiw-r4-padded-public' => 1,
+			],
+			$counts
+		);
+
+		$list = (string) wp_list_categories( [ 'echo' => false, 'hide_empty' => true, 'hierarchical' => true, 'show_count' => true, 'title_li' => '' ] );
+		$this->assertStringContainsString( 'R4 padded parent', $list );
+		$this->assertStringContainsString( 'R4 padded child', $list );
+		$this->assertStringContainsString( 'R4 padded public control', $list );
+		$this->assertStringNotContainsString( 'R4 padded hidden only', $list );
+		$this->assertStringNotContainsString( 'R4 padded private control', $list );
+
+		foreach ( [ false, true ] as $dropdown ) {
+			$block = render_block(
+				[
+					'blockName'    => 'core/categories',
+					'attrs'        => [ 'displayAsDropdown' => $dropdown, 'showPostCounts' => true, 'showHierarchy' => true ],
+					'innerBlocks'  => [],
+					'innerHTML'    => '',
+					'innerContent' => [],
+				]
+			);
+			$this->assertStringContainsString( 'R4 padded public control', $block, $dropdown ? 'dropdown' : 'list' );
+			$this->assertStringNotContainsString( 'R4 padded hidden only', $block, $dropdown ? 'dropdown' : 'list' );
+			$this->assertStringNotContainsString( 'R4 padded private control', $block, $dropdown ? 'dropdown' : 'list' );
+		}
+	}
+
 	public function test_term_counts_recount_when_eligibility_or_governed_kind_changes(): void {
 		$post = self::factory()->post->create( [ 'post_status' => 'publish', 'post_password' => 'secret' ] );
 		wp_set_post_tags( $post, [ 'pkiw-r3-recount-control' ], false );
@@ -780,6 +852,74 @@ final class TagPrivacyTest extends WP_UnitTestCase {
 		$this->assertGreaterThan( 0, $hidden_media );
 	}
 
+	public function test_rewritten_collection_links_match_core_with_special_keys_and_plain_permalinks(): void {
+		$hidden = $this->hidden( 'publish', 'secret', 'tag', 'R4 Link hidden post' );
+		$public = $this->hidden( 'publish', '', 'tag', 'R4 Link public post' );
+		$missing = 987654321;
+		$timestamp = '2026-11-16 12:00:00';
+		self::factory()->comment->create( [ 'comment_post_ID' => $hidden, 'comment_approved' => 1, 'comment_date' => $timestamp, 'comment_date_gmt' => $timestamp ] );
+		$public_comments = [
+			(int) self::factory()->comment->create( [ 'comment_post_ID' => $public, 'comment_approved' => 1, 'comment_date' => $timestamp, 'comment_date_gmt' => $timestamp ] ),
+			(int) self::factory()->comment->create( [ 'comment_post_ID' => $public, 'comment_approved' => 1, 'comment_date' => $timestamp, 'comment_date_gmt' => $timestamp ] ),
+		];
+		self::factory()->attachment->create_object( 'r4-link-special-hidden.jpg', $hidden, [ 'post_mime_type' => 'image/jpeg', 'post_date' => $timestamp, 'post_date_gmt' => $timestamp ] );
+		$public_media = [
+			(int) self::factory()->attachment->create_object( 'r4-link-special-public-a.jpg', $public, [ 'post_mime_type' => 'image/jpeg', 'post_date' => $timestamp, 'post_date_gmt' => $timestamp ] ),
+			(int) self::factory()->attachment->create_object( 'r4-link-special-public-b.jpg', $public, [ 'post_mime_type' => 'image/jpeg', 'post_date' => $timestamp, 'post_date_gmt' => $timestamp ] ),
+		];
+
+		$structure_before = (string) get_option( 'permalink_structure' );
+		$server_before    = $GLOBALS['wp_rest_server'] ?? null;
+		try {
+			foreach ( [ '', '/%postname%/' ] as $structure ) {
+				$this->set_permalink_structure( $structure );
+				$GLOBALS['wp_rest_server'] = null;
+				foreach ( [ [ '/wp/v2/comments', 'post', $public_comments ], [ '/wp/v2/media', 'parent', $public_media ] ] as [ $route, $parameter, $positive_ids ] ) {
+					$params = [ $parameter => [ $hidden, $public ], 'page' => 2, 'per_page' => 1, 'x>y' => '1' ];
+					if ( '' === $structure ) {
+						$params['rest_route'] = $route;
+					}
+					$actual = $this->served_rest( 'GET', $route, $params );
+					$params[ $parameter ][0] = $missing;
+					$control = $this->served_rest( 'GET', $route, $params );
+					$actual_link = str_replace( (string) $hidden, (string) $missing, (string) ( $actual->get_headers()['Link'] ?? '' ) );
+					$this->assertSame( $control->get_headers()['Link'] ?? '', $actual_link, $structure . ' ' . $route );
+					$this->assertCount( 1, $actual->get_data(), $structure . ' ' . $route . ' public control count' );
+					$this->assertContains( (int) $actual->get_data()[0]['id'], $positive_ids, $structure . ' ' . $route . ' public control' );
+				}
+			}
+		} finally {
+			$this->set_permalink_structure( $structure_before );
+			$GLOBALS['wp_rest_server'] = $server_before;
+		}
+	}
+
+	public function test_mixed_hidden_parent_lists_match_missing_id_order_for_same_second_items(): void {
+		$hidden = $this->hidden( 'publish', 'secret', 'tag', 'R4 order hidden post' );
+		$public = $this->hidden( 'publish', '', 'tag', 'R4 order public post' );
+		$missing = 987654321;
+		$timestamp = '2026-11-16 12:00:00';
+		self::factory()->comment->create( [ 'comment_post_ID' => $hidden, 'comment_approved' => 1, 'comment_date' => $timestamp, 'comment_date_gmt' => $timestamp ] );
+		$public_comments = [
+			(int) self::factory()->comment->create( [ 'comment_post_ID' => $public, 'comment_approved' => 1, 'comment_date' => $timestamp, 'comment_date_gmt' => $timestamp ] ),
+			(int) self::factory()->comment->create( [ 'comment_post_ID' => $public, 'comment_approved' => 1, 'comment_date' => $timestamp, 'comment_date_gmt' => $timestamp ] ),
+		];
+		self::factory()->attachment->create_object( 'r4-order-hidden.jpg', $hidden, [ 'post_mime_type' => 'image/jpeg', 'post_date' => $timestamp, 'post_date_gmt' => $timestamp ] );
+		$public_media = [
+			(int) self::factory()->attachment->create_object( 'r4-order-public-a.jpg', $public, [ 'post_mime_type' => 'image/jpeg', 'post_date' => $timestamp, 'post_date_gmt' => $timestamp ] ),
+			(int) self::factory()->attachment->create_object( 'r4-order-public-b.jpg', $public, [ 'post_mime_type' => 'image/jpeg', 'post_date' => $timestamp, 'post_date_gmt' => $timestamp ] ),
+		];
+
+		foreach ( [ [ '/wp/v2/comments', 'post', $public_comments ], [ '/wp/v2/media', 'parent', $public_media ] ] as [ $route, $parameter, $positive_ids ] ) {
+			$actual = $this->rest( 'GET', $route, [ $parameter => [ $hidden, $public ], 'per_page' => 100 ] );
+			$control = $this->rest( 'GET', $route, [ $parameter => [ $missing, $public ], 'per_page' => 100 ] );
+			$actual_ids = array_map( static fn( array $row ): int => (int) $row['id'], $actual->get_data() );
+			$control_ids = array_map( static fn( array $row ): int => (int) $row['id'], $control->get_data() );
+			$this->assertEqualsCanonicalizing( $positive_ids, $actual_ids, $route . ' public controls' );
+			$this->assertSame( $control_ids, $actual_ids, $route . ' item order' );
+		}
+	}
+
 	public function test_options_for_hidden_post_has_missing_id_allow_header_and_public_control(): void {
 		$hidden = $this->hidden( 'publish', 'secret', 'tag', 'R3 OPTIONS hidden post' );
 		$public = $this->hidden( 'publish', '', 'tag', 'R3 OPTIONS public post' );
@@ -789,5 +929,29 @@ final class TagPrivacyTest extends WP_UnitTestCase {
 		$this->assertSame( $missing->get_headers()['Allow'] ?? null, $actual->get_headers()['Allow'] ?? null );
 		$this->assertArrayNotHasKey( 'Allow', $actual->get_headers() );
 		$this->assertSame( 'GET', $positive->get_headers()['Allow'] ?? null );
+	}
+
+	public function test_options_zero_padded_posts_media_and_hidden_comments_match_missing_allow_headers(): void {
+		$hidden = $this->hidden( 'publish', 'secret', 'tag', 'R4 OPTIONS hidden post' );
+		$public = $this->hidden( 'publish', '', 'tag', 'R4 OPTIONS public post' );
+		$hidden_media = (int) self::factory()->attachment->create_object( 'r4-options-hidden.jpg', $hidden, [ 'post_mime_type' => 'image/jpeg' ] );
+		$public_media = (int) self::factory()->attachment->create_object( 'r4-options-public.jpg', $public, [ 'post_mime_type' => 'image/jpeg' ] );
+		$hidden_comment = (int) self::factory()->comment->create( [ 'comment_post_ID' => $hidden, 'comment_approved' => 1 ] );
+		$public_comment = (int) self::factory()->comment->create( [ 'comment_post_ID' => $public, 'comment_approved' => 1 ] );
+
+		foreach (
+			[
+				[ '/wp/v2/posts/0' . $hidden, '/wp/v2/posts/987654321', '/wp/v2/posts/0' . $public, [] ],
+				[ '/wp/v2/media/0' . $hidden_media, '/wp/v2/media/987654321', '/wp/v2/media/0' . $public_media, [] ],
+				[ '/wp/v2/comments/' . $hidden_comment, '/wp/v2/comments/987654321', '/wp/v2/comments/' . $public_comment, [ 'password' => 'secret' ] ],
+			] as [ $hidden_route, $missing_route, $public_route, $params ]
+		) {
+			$actual = $this->served_rest( 'OPTIONS', $hidden_route, $params );
+			$missing = $this->served_rest( 'OPTIONS', $missing_route, $params );
+			$positive = $this->served_rest( 'OPTIONS', $public_route, $params );
+			$this->assertSame( $missing->get_headers()['Allow'] ?? null, $actual->get_headers()['Allow'] ?? null, $hidden_route );
+			$this->assertArrayNotHasKey( 'Allow', $actual->get_headers(), $hidden_route );
+			$this->assertSame( 'GET', $positive->get_headers()['Allow'] ?? null, $public_route . ' public control' );
+		}
 	}
 }

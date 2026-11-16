@@ -158,6 +158,82 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'pkiw_public_tr', Public_Eligibility::filter_where( ' WHERE 1=1', $tag_query ) );
 	}
 
+	public function test_null_object_type_taxonomy_wraps_after_it_is_attached_to_post(): void {
+		register_taxonomy( 'pkiw_r4_null', null, [ 'public' => true ] );
+		try {
+			$taxonomy = get_taxonomy( 'pkiw_r4_null' );
+			$this->assertInstanceOf( WP_Taxonomy::class, $taxonomy );
+			$this->assertSame( [], $taxonomy->object_type );
+
+			$this->assertTrue( register_taxonomy_for_object_type( 'pkiw_r4_null', 'post' ) );
+			$this->assertSame( [ Public_Eligibility::class, 'update_term_count' ], get_taxonomy( 'pkiw_r4_null' )->update_count_callback );
+		} finally {
+			unregister_taxonomy( 'pkiw_r4_null' );
+		}
+	}
+
+	public function test_attachment_filter_covers_any_and_skips_interactive_cli_unless_forced(): void {
+		$hidden_parent = $this->governed( 'publish', 'secret' );
+		$public_parent = $this->governed();
+		$hidden_media  = (int) self::factory()->attachment->create_object( 'r4-any-hidden.jpg', $hidden_parent, [ 'post_mime_type' => 'image/jpeg' ] );
+		$public_media  = (int) self::factory()->attachment->create_object( 'r4-any-public.jpg', $public_parent, [ 'post_mime_type' => 'image/jpeg' ] );
+		$query_args    = [
+			'post_status'    => 'inherit',
+			'post__in'       => [ $hidden_media, $public_media ],
+			'fields'         => 'ids',
+			'posts_per_page' => 10,
+		];
+
+		$any = new WP_Query( [ 'post_type' => 'any' ] + $query_args );
+		$this->assertSame( [ $public_media ], array_map( 'intval', $any->posts ) );
+		$mixed = new WP_Query( [ 'post_type' => [ 'post', 'attachment' ] ] + $query_args );
+		$this->assertSame( [ $public_media ], array_map( 'intval', $mixed->posts ) );
+
+		Public_Eligibility::override_cli_for_tests( true );
+		try {
+			$interactive = new WP_Query( [ 'post_type' => 'any' ] + $query_args );
+			$this->assertEqualsCanonicalizing( [ $hidden_media, $public_media ], array_map( 'intval', $interactive->posts ) );
+
+			$forced = new WP_Query( [ 'post_type' => 'any', 'pkiw_public_only' => true ] + $query_args );
+			$this->assertSame( [ $public_media ], array_map( 'intval', $forced->posts ) );
+		} finally {
+			Public_Eligibility::override_cli_for_tests( null );
+		}
+	}
+
+	public function test_removed_kind_relationships_and_bulk_recount_fix_term_counts(): void {
+		global $wpdb;
+
+		$post = self::factory()->post->create( [ 'post_status' => 'publish', 'post_password' => 'secret' ] );
+		wp_set_post_tags( $post, [ 'pkiw-r4-removed-kind' ] );
+		wp_set_object_terms( $post, [ 'follow' ], Taxonomy::TAXONOMY );
+		$removed_kind_term = get_term_by( 'slug', 'pkiw-r4-removed-kind', 'post_tag' );
+		$this->assertInstanceOf( WP_Term::class, $removed_kind_term );
+		$this->assertSame( 0, $removed_kind_term->count );
+		$this->assertTrue( wp_remove_object_terms( $post, 'follow', Taxonomy::TAXONOMY ) );
+		$this->assertSame( 1, get_term( $removed_kind_term->term_id, 'post_tag' )->count );
+
+		$hidden = $this->governed( 'publish', 'secret' );
+		$public = $this->governed();
+		wp_set_post_tags( $hidden, [ 'pkiw-r4-stale-hidden' ] );
+		wp_set_post_tags( $public, [ 'pkiw-r4-stale-public' ] );
+		$hidden_term = get_term_by( 'slug', 'pkiw-r4-stale-hidden', 'post_tag' );
+		$public_term = get_term_by( 'slug', 'pkiw-r4-stale-public', 'post_tag' );
+		$this->assertInstanceOf( WP_Term::class, $hidden_term );
+		$this->assertInstanceOf( WP_Term::class, $public_term );
+		$wpdb->update( $wpdb->term_taxonomy, [ 'count' => 1 ], [ 'term_taxonomy_id' => $hidden_term->term_taxonomy_id ] );
+		$wpdb->update( $wpdb->term_taxonomy, [ 'count' => 0 ], [ 'term_taxonomy_id' => $public_term->term_taxonomy_id ] );
+		clean_term_cache( [ $hidden_term->term_id, $public_term->term_id ], 'post_tag' );
+		$this->assertSame( 1, get_term( $hidden_term->term_id, 'post_tag' )->count );
+		$this->assertSame( 0, get_term( $public_term->term_id, 'post_tag' )->count );
+
+		$touched = Public_Eligibility::recount_governed_terms();
+		$this->assertContains( (int) $hidden_term->term_taxonomy_id, $touched );
+		$this->assertContains( (int) $public_term->term_taxonomy_id, $touched );
+		$this->assertSame( 0, get_term( $hidden_term->term_id, 'post_tag' )->count );
+		$this->assertSame( 1, get_term( $public_term->term_id, 'post_tag' )->count );
+	}
+
 	public function test_outbound_filters_block_hidden_posts_and_add_one_public_person_target(): void {
 		$hidden = $this->governed( 'publish', 'secret' );
 		$public = $this->governed();
