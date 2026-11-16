@@ -79,6 +79,38 @@ final class TagPrivacyTest extends WP_UnitTestCase {
 		return apply_filters( 'rest_post_dispatch', $response, rest_get_server(), $request );
 	}
 
+	/** Return slug-to-count output with this plugin's padded-count filter on or off. */
+	private function padded_term_snapshot( array $args, bool $with_filter ): array {
+		$callback   = [ Public_Eligibility::class, 'filter_padded_term_counts' ];
+		$registered = false !== has_filter( 'get_terms', $callback );
+		if ( ! $with_filter && $registered ) {
+			remove_filter( 'get_terms', $callback, 20 );
+		}
+		try {
+			$terms = get_terms(
+				array_merge(
+					[
+						'taxonomy'     => 'category',
+						'pad_counts'   => true,
+						'cache_results' => false,
+					],
+					$args
+				)
+			);
+			$this->assertNotWPError( $terms );
+			$snapshot = [];
+			foreach ( $terms as $term ) {
+				$snapshot[ $term->slug ] = (int) $term->count;
+			}
+			ksort( $snapshot );
+			return $snapshot;
+		} finally {
+			if ( ! $with_filter && $registered ) {
+				add_filter( 'get_terms', $callback, 20, 3 );
+			}
+		}
+	}
+
 	private function comment_feed( string $url ): string {
 		$this->go_to( $url );
 		do_action( 'template_redirect' );
@@ -801,6 +833,137 @@ final class TagPrivacyTest extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_padded_counts_match_core_for_public_post_in_sibling_categories(): void {
+		$parent = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-public-parent' ] );
+		$left   = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-public-left', 'parent' => $parent ] );
+		$right  = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-public-right', 'parent' => $parent ] );
+		$public = (int) self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_post_categories( $public, [ $left, $right ] );
+
+		$args   = [ 'include' => [ $parent, $left, $right ], 'hide_empty' => false ];
+		$core   = $this->padded_term_snapshot( $args, false );
+		$actual = $this->padded_term_snapshot( $args, true );
+		$this->assertSame( 1, $core['pkiw-r7-public-parent'] );
+		$this->assertSame( $core, $actual );
+	}
+
+	public function test_padded_counts_subtract_one_hidden_post_from_core_parent(): void {
+		$parent       = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-hidden-parent' ] );
+		$public_left  = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-hidden-public-left', 'parent' => $parent ] );
+		$public_right = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-hidden-public-right', 'parent' => $parent ] );
+		$hidden_leaf  = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-hidden-leaf', 'parent' => $parent ] );
+		$private_leaf = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-private-control', 'parent' => $parent ] );
+		$public       = (int) self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		$hidden       = $this->hidden( 'publish', 'secret', 'tag', 'R7 padded hidden post' );
+		$private      = (int) self::factory()->post->create( [ 'post_status' => 'private' ] );
+		wp_set_post_categories( $public, [ $public_left, $public_right ] );
+		wp_set_post_categories( $hidden, [ $hidden_leaf ] );
+		wp_set_post_categories( $private, [ $private_leaf ] );
+
+		$args   = [ 'include' => [ $parent, $public_left, $public_right, $hidden_leaf, $private_leaf ], 'hide_empty' => false ];
+		$core   = $this->padded_term_snapshot( $args, false );
+		$actual = $this->padded_term_snapshot( $args, true );
+		$this->assertSame( $core['pkiw-r7-hidden-parent'] - 1, $actual['pkiw-r7-hidden-parent'] );
+		$this->assertSame( 1, $actual['pkiw-r7-hidden-public-left'], 'Public category count remains visible.' );
+		$this->assertSame( $core['pkiw-r7-private-control'], $actual['pkiw-r7-private-control'], 'Private-only control remains core-equivalent.' );
+	}
+
+	public function test_padded_counts_deduplicate_hidden_post_across_siblings(): void {
+		$parent      = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-dedup-parent' ] );
+		$left        = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-dedup-left', 'parent' => $parent ] );
+		$right       = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-dedup-right', 'parent' => $parent ] );
+		$public_leaf = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-dedup-public', 'parent' => $parent ] );
+		$hidden      = $this->hidden( 'publish', 'secret', 'follow', 'R7 padded dedup post' );
+		$public      = (int) self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_post_categories( $hidden, [ $left, $right ] );
+		wp_set_post_categories( $public, [ $public_leaf ] );
+
+		$left_term  = get_term( $left, 'category' );
+		$right_term = get_term( $right, 'category' );
+		$taxonomy   = get_taxonomy( 'category' );
+		$this->assertInstanceOf( WP_Term::class, $left_term );
+		$this->assertInstanceOf( WP_Term::class, $right_term );
+		$this->assertInstanceOf( WP_Taxonomy::class, $taxonomy );
+		$tt_ids     = [ (int) $left_term->term_taxonomy_id, (int) $right_term->term_taxonomy_id ];
+		_update_post_term_count( $tt_ids, $taxonomy );
+		clean_term_cache( [ $parent, $left, $right, $public_leaf ], 'category' );
+		try {
+			$args   = [ 'include' => [ $parent, $left, $right, $public_leaf ], 'hide_empty' => false ];
+			$core   = $this->padded_term_snapshot( $args, false );
+			$actual = $this->padded_term_snapshot( $args, true );
+			$this->assertSame( 2, $core['pkiw-r7-dedup-parent'] );
+			$this->assertSame( $core['pkiw-r7-dedup-parent'] - 1, $actual['pkiw-r7-dedup-parent'] );
+			$this->assertSame( 1, $actual['pkiw-r7-dedup-public'], 'Public category count remains visible.' );
+		} finally {
+			wp_update_term_count_now( $tt_ids, 'category' );
+			clean_term_cache( [ $parent, $left, $right, $public_leaf ], 'category' );
+		}
+	}
+
+	public function test_padded_counts_respect_core_parent_and_include_scope(): void {
+		$parent       = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-scope-parent' ] );
+		$child        = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-scope-child', 'parent' => $parent ] );
+		$public       = (int) self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		$hidden       = $this->hidden( 'publish', 'secret', 'tag', 'R7 padded scoped post' );
+		$child_public = (int) self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_post_categories( $public, [ $parent ] );
+		wp_set_post_categories( $hidden, [ $parent ] );
+		wp_set_post_categories( $child_public, [ $child ] );
+
+		foreach ( [ [ 'parent' => 0 ], [ 'include' => [ $parent ] ] ] as $args ) {
+			$core   = $this->padded_term_snapshot( $args, false );
+			$actual = $this->padded_term_snapshot( $args, true );
+			$this->assertSame( $core['pkiw-r7-scope-parent'] - 1, $actual['pkiw-r7-scope-parent'], wp_json_encode( $args ) );
+			$this->assertSame( 1, $actual['pkiw-r7-scope-parent'], 'The unlisted child must not pad this query.' );
+		}
+	}
+
+	public function test_padded_counts_match_core_without_governed_posts_for_eight_query_shapes(): void {
+		$parent = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-shapes-parent' ] );
+		$left   = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-shapes-left', 'parent' => $parent ] );
+		$right  = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-shapes-right', 'parent' => $parent ] );
+		$empty  = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-shapes-empty', 'parent' => $parent ] );
+		$public = (int) self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_post_categories( $public, [ $left, $right ] );
+
+		$shapes = [
+			'child_of'          => [ 'child_of' => $parent ],
+			'parent'            => [ 'parent' => $parent ],
+			'include'           => [ 'include' => [ $parent, $left, $right, $empty ] ],
+			'exclude'           => [ 'exclude' => [ $empty ] ],
+			'hide_empty_true'   => [ 'hide_empty' => true ],
+			'hide_empty_false'  => [ 'hide_empty' => false ],
+			'hierarchical_true'  => [ 'hierarchical' => true ],
+			'hierarchical_false' => [ 'hierarchical' => false ],
+		];
+		foreach ( $shapes as $label => $args ) {
+			$this->assertSame( $this->padded_term_snapshot( $args, false ), $this->padded_term_snapshot( $args, true ), $label );
+		}
+	}
+
+	public function test_padded_counts_ignore_stale_stored_count_for_public_category(): void {
+		global $wpdb;
+
+		$parent = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-stale-parent' ] );
+		$child  = (int) self::factory()->category->create( [ 'slug' => 'pkiw-r7-stale-public', 'parent' => $parent ] );
+		$public = (int) self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_post_categories( $public, [ $child ] );
+		$term           = get_term( $child, 'category' );
+		$original_count = (int) $term->count;
+		try {
+			$wpdb->update( $wpdb->term_taxonomy, [ 'count' => 0 ], [ 'term_taxonomy_id' => (int) $term->term_taxonomy_id ] );
+			clean_term_cache( [ $parent, $child ], 'category' );
+			$core   = $this->padded_term_snapshot( [], false );
+			$actual = $this->padded_term_snapshot( [], true );
+			$this->assertSame( 1, $core['pkiw-r7-stale-public'] );
+			$this->assertSame( $core['pkiw-r7-stale-public'], $actual['pkiw-r7-stale-public'] );
+			$this->assertSame( $core['pkiw-r7-stale-parent'], $actual['pkiw-r7-stale-parent'] );
+		} finally {
+			$wpdb->update( $wpdb->term_taxonomy, [ 'count' => $original_count ], [ 'term_taxonomy_id' => (int) $term->term_taxonomy_id ] );
+			clean_term_cache( [ $parent, $child ], 'category' );
+		}
+	}
+
 	public function test_term_counts_recount_when_eligibility_or_governed_kind_changes(): void {
 		$post = self::factory()->post->create( [ 'post_status' => 'publish', 'post_password' => 'secret' ] );
 		wp_set_post_tags( $post, [ 'pkiw-r3-recount-control' ], false );
@@ -929,6 +1092,19 @@ final class TagPrivacyTest extends WP_UnitTestCase {
 		$this->assertSame( $missing->get_headers()['Allow'] ?? null, $actual->get_headers()['Allow'] ?? null );
 		$this->assertArrayNotHasKey( 'Allow', $actual->get_headers() );
 		$this->assertSame( 'GET', $positive->get_headers()['Allow'] ?? null );
+	}
+
+	public function test_options_term_routes_for_hidden_post_match_missing_headers_and_keep_public_allow(): void {
+		$hidden = $this->hidden( 'publish', 'secret', 'tag', 'R7 OPTIONS hidden term post' );
+		$public = $this->hidden( 'publish', '', 'tag', 'R7 OPTIONS public term post' );
+		foreach ( [ '/wp/v2/tags', '/wp/v2/categories', '/wp/v2/kind' ] as $route ) {
+			$actual   = $this->served_rest( 'OPTIONS', $route, [ 'post' => $hidden ] );
+			$missing  = $this->served_rest( 'OPTIONS', $route, [ 'post' => 987654321 ] );
+			$positive = $this->served_rest( 'OPTIONS', $route, [ 'post' => $public ] );
+			$this->assertSame( $missing->get_headers(), $actual->get_headers(), $route );
+			$this->assertArrayNotHasKey( 'Allow', $actual->get_headers(), $route );
+			$this->assertSame( 'GET', $positive->get_headers()['Allow'] ?? null, $route . ' public control' );
+		}
 	}
 
 	public function test_options_zero_padded_posts_media_and_hidden_comments_match_missing_allow_headers(): void {
