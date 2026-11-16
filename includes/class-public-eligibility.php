@@ -48,6 +48,13 @@ final class Public_Eligibility {
 	private static array $term_count_callbacks = [];
 
 	/**
+	 * Whether core's padded-count relationship query may be filtered.
+	 *
+	 * @var bool
+	 */
+	private static bool $padding_query_armed = false;
+
+	/**
 	 * True while a redirect target resolves, so the list filter can't hide the post being checked.
 	 *
 	 * @var bool
@@ -86,9 +93,11 @@ final class Public_Eligibility {
 		add_filter( 'comments_clauses', [ self::class, 'filter_comment_clauses' ], 20, 2 );
 		add_filter( 'rest_request_before_callbacks', [ self::class, 'rest_request_before' ], 10, 3 );
 		add_filter( 'rest_request_after_callbacks', [ self::class, 'rest_request_after' ], 10, 3 );
+		add_filter( 'rest_pre_dispatch', [ self::class, 'rewrite_options_term_post' ], 9, 3 );
 		add_filter( 'rest_post_dispatch', [ self::class, 'filter_rest_refusal_headers' ], 11, 3 );
-		// Direct WP_Term_Query calls bypass get_terms; core's public term surfaces use get_terms().
-		add_filter( 'get_terms', [ self::class, 'filter_padded_term_counts' ], 20, 3 );
+		add_filter( 'get_terms_args', [ self::class, 'arm_padded_term_query' ] );
+		add_filter( 'query', [ self::class, 'filter_padded_term_query' ] );
+		add_filter( 'get_terms', [ self::class, 'disarm_padded_term_query' ], 20 );
 		add_action( 'init', [ self::class, 'register_term_count_callbacks' ], 20 );
 		add_action( 'registered_taxonomy', [ self::class, 'register_taxonomy_count_callback' ], 10, 2 );
 		add_action( 'registered_taxonomy_for_object_type', [ self::class, 'refresh_term_count_callbacks' ], 10, 2 );
@@ -276,6 +285,31 @@ final class Public_Eligibility {
 				static fn( array $entry ): bool => $request_id !== $entry['id']
 			)
 		);
+		return $response;
+	}
+
+	/** Make hidden term-collection OPTIONS requests use core's missing-post permissions. */
+	public static function rewrite_options_term_post( $response, $server, $request ) {
+		if ( ! empty( $response ) || ! $server instanceof \WP_REST_Server || ! $request instanceof \WP_REST_Request || 'OPTIONS' !== $request->get_method() ) {
+			return $response;
+		}
+		$post_id = (int) $request->get_param( 'post' );
+		if ( $post_id < 1 || ! self::hides( $post_id ) || current_user_can( 'edit_post', $post_id ) ) {
+			return $response;
+		}
+
+		foreach ( $server->get_routes() as $route => $handlers ) {
+			if ( 1 !== preg_match( '@^' . $route . '$@i', $request->get_route() ) ) {
+				continue;
+			}
+			foreach ( $handlers as $handler ) {
+				if ( self::rest_handler_is( $handler, \WP_REST_Terms_Controller::class, [ 'get_items' ] ) ) {
+					$request->set_param( 'post', PHP_INT_MAX );
+					return $response;
+				}
+			}
+			break;
+		}
 		return $response;
 	}
 
@@ -556,67 +590,43 @@ final class Public_Eligibility {
 		}
 	}
 
-	/** Subtract distinct hidden governed posts from core's padded term counts. */
-	public static function filter_padded_term_counts( $terms, $taxonomies, $args ) {
-		if ( ! is_array( $terms ) || ! is_array( $args ) || empty( $args['pad_counts'] ) || 'all' !== ( $args['fields'] ?? 'all' ) ) {
-			return $terms;
+	/** Arm SQL filtering for one normalized padded term query. */
+	public static function arm_padded_term_query( array $args ): array {
+		self::$padding_query_armed = false;
+		if ( ! empty( $args['pad_counts'] ) ) {
+			self::$padding_query_armed = true;
 		}
-		foreach ( $terms as $term ) {
-			if ( ! $term instanceof \WP_Term ) {
-				return $terms;
-			}
+		return $args;
+	}
+
+	/** Disarm SQL filtering after get_terms() finishes core's padding work. */
+	public static function disarm_padded_term_query( $terms ) {
+		self::$padding_query_armed = false;
+		return $terms;
+	}
+
+	/** Exclude hidden governed posts from core's padded-count relationship query. */
+	public static function filter_padded_term_query( string $query ): string {
+		global $wpdb;
+
+		if ( ! self::$padding_query_armed ) {
+			return $query;
+		}
+		$prefix = "SELECT object_id, term_taxonomy_id FROM {$wpdb->term_relationships} INNER JOIN {$wpdb->posts} ON object_id = ID WHERE term_taxonomy_id IN (";
+		if ( ! str_starts_with( $query, $prefix ) ) {
+			return $query;
+		}
+		$tail = substr( $query, strlen( $prefix ) );
+		if ( 1 !== preg_match( "/^[0-9]+(?:,[0-9]+)*\\) AND post_type IN \\('[^']+'(?:, '[^']+')*\\) AND post_status = 'publish'$/D", $tail ) ) {
+			return $query;
 		}
 
-		$governed                = self::governed_post_types();
-		$hierarchical_taxonomies = [];
-		$taxonomy_object_types   = [];
-		foreach ( (array) $taxonomies as $taxonomy_name ) {
-			$taxonomy = get_taxonomy( (string) $taxonomy_name );
-			if ( $taxonomy instanceof \WP_Taxonomy && $taxonomy->hierarchical && [] !== array_intersect( $governed, array_map( 'strval', (array) $taxonomy->object_type ) ) ) {
-				$hierarchical_taxonomies[]                = $taxonomy->name;
-				$taxonomy_object_types[ $taxonomy->name ] = array_map( 'strval', (array) $taxonomy->object_type );
-			}
+		$alias     = 'pkiw_padded_post';
+		$condition = self::hidden_condition( $alias );
+		if ( '' === $condition ) {
+			return $query;
 		}
-		if ( [] === $hierarchical_taxonomies ) {
-			return $terms;
-		}
-
-		$terms_by_taxonomy = [];
-		$term_taxonomy_map = [];
-		$term_taxonomy_ids = [];
-		foreach ( $terms as $term ) {
-			if ( ! in_array( $term->taxonomy, $hierarchical_taxonomies, true ) ) {
-				continue;
-			}
-			$taxonomy_name = $term->taxonomy;
-			$term_id       = (int) $term->term_id;
-			$tt_id         = (int) $term->term_taxonomy_id;
-			$terms_by_taxonomy[ $taxonomy_name ][ $term_id ] = $term;
-			$term_taxonomy_map[ $tt_id ]                     = [ $taxonomy_name, $term_id ];
-			$term_taxonomy_ids[ $taxonomy_name ][]           = $tt_id;
-		}
-		if ( [] === $term_taxonomy_map ) {
-			return $terms;
-		}
-
-		$hidden_items = self::padded_hidden_items( $term_taxonomy_map, $term_taxonomy_ids, $taxonomy_object_types, $terms_by_taxonomy );
-		if ( [] === $hidden_items ) {
-			return $terms;
-		}
-		$nonempty_ancestors = self::subtract_hidden_padded_counts( $terms_by_taxonomy, $hidden_items );
-
-		$removed = false;
-		if ( ! empty( $args['hide_empty'] ) ) {
-			foreach ( $terms as $key => $term ) {
-				$hidden_count = count( $hidden_items[ $term->taxonomy ][ (int) $term->term_id ] ?? [] );
-				if ( $hidden_count > 0 && 0 === (int) $term->count && ! isset( $nonempty_ancestors[ $term->taxonomy ][ (int) $term->term_id ] ) ) {
-					// Core slices before this filter; dropping a hidden-only term may leave a short page (O-14).
-					unset( $terms[ $key ] );
-					$removed = true;
-				}
-			}
-		}
-		return $removed ? array_values( $terms ) : $terms;
+		return $query . " AND ID NOT IN ( SELECT {$alias}.ID FROM {$wpdb->posts} {$alias} WHERE {$condition} )";
 	}
 
 	/** Recount terms after wp_remove_object_terms() removes a governed kind. */
@@ -814,112 +824,6 @@ final class Public_Eligibility {
 				wp_update_term_count( array_map( 'intval', $term_taxonomy_ids ), $taxonomy );
 			}
 		}
-	}
-
-	/**
-	 * Query hidden relationships once, then mirror core's listed-ancestor walk.
-	 *
-	 * @param array<int, array{0: string, 1: int}> $term_taxonomy_map     Term-taxonomy lookup.
-	 * @param array<string, int[]>                 $term_taxonomy_ids     Listed IDs by taxonomy.
-	 * @param array<string, string[]>              $taxonomy_object_types Object types by taxonomy.
-	 * @param array<string, array<int, \WP_Term>>  $terms_by_taxonomy     Listed terms by taxonomy.
-	 * @return array<string, array<int, array<int, bool>>>
-	 */
-	private static function padded_hidden_items( array $term_taxonomy_map, array $term_taxonomy_ids, array $taxonomy_object_types, array $terms_by_taxonomy ): array {
-		global $wpdb;
-
-		$condition = self::hidden_condition( 'pkiw_padded_post' );
-		if ( '' === $condition ) {
-			return [];
-		}
-		$scope_conditions = [];
-		foreach ( $term_taxonomy_ids as $taxonomy_name => $tt_ids ) {
-			$post_types = $taxonomy_object_types[ $taxonomy_name ] ?? [];
-			if ( [] === $post_types ) {
-				continue;
-			}
-			$scope_conditions[] = sprintf(
-				"( pkiw_padded_tr.term_taxonomy_id IN ( %s ) AND pkiw_padded_post.post_type IN ( '%s' ) )",
-				implode( ',', array_map( 'intval', $tt_ids ) ),
-				implode( "','", array_map( 'esc_sql', $post_types ) )
-			);
-		}
-		if ( [] === $scope_conditions ) {
-			return [];
-		}
-
-		$sql = "SELECT DISTINCT pkiw_padded_tr.object_id, pkiw_padded_tr.term_taxonomy_id FROM {$wpdb->term_relationships} pkiw_padded_tr INNER JOIN {$wpdb->posts} pkiw_padded_post ON pkiw_padded_post.ID = pkiw_padded_tr.object_id WHERE ( " . implode( ' OR ', $scope_conditions ) . " ) AND pkiw_padded_post.post_status = 'publish' AND {$condition}"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Internal integer IDs, registered post types, and a validated table alias build this one query.
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Padding must inspect live relationships exactly as core does.
-		$rows         = $wpdb->get_results( $sql );
-		$hidden_items = [];
-		foreach ( $rows as $row ) {
-			$tt_id = (int) $row->term_taxonomy_id;
-			if ( ! isset( $term_taxonomy_map[ $tt_id ] ) ) {
-				continue;
-			}
-			[ $taxonomy_name, $term_id ] = $term_taxonomy_map[ $tt_id ];
-			$hidden_items[ $taxonomy_name ][ $term_id ][ (int) $row->object_id ] = true;
-		}
-
-		// _pad_term_counts() touches each listed ancestor with each distinct object ID.
-		foreach ( $terms_by_taxonomy as $taxonomy_name => $terms_by_id ) {
-			foreach ( array_keys( $terms_by_id ) as $term_id ) {
-				$child     = $term_id;
-				$ancestors = [];
-				while ( isset( $terms_by_id[ $child ] ) ) {
-					$parent = (int) $terms_by_id[ $child ]->parent;
-					if ( $parent < 1 ) {
-						break;
-					}
-					$ancestors[] = $child;
-					foreach ( array_keys( $hidden_items[ $taxonomy_name ][ $term_id ] ?? [] ) as $object_id ) {
-						$hidden_items[ $taxonomy_name ][ $parent ][ $object_id ] = true;
-					}
-					$child = $parent;
-					if ( in_array( $parent, $ancestors, true ) ) {
-						break;
-					}
-				}
-			}
-		}
-		return $hidden_items;
-	}
-
-	/**
-	 * Subtract each distinct hidden object once and find listed non-empty ancestors.
-	 *
-	 * @param array<string, array<int, \WP_Term>>         $terms_by_taxonomy Listed terms by taxonomy.
-	 * @param array<string, array<int, array<int, bool>>> $hidden_items      Hidden objects by term.
-	 * @return array<string, array<int, bool>>
-	 */
-	private static function subtract_hidden_padded_counts( array $terms_by_taxonomy, array $hidden_items ): array {
-		$nonempty_ancestors = [];
-		foreach ( $terms_by_taxonomy as $taxonomy_name => $terms_by_id ) {
-			foreach ( $terms_by_id as $term_id => $term ) {
-				$hidden_count = count( $hidden_items[ $taxonomy_name ][ $term_id ] ?? [] );
-				if ( $hidden_count > 0 ) {
-					$term->count = max( 0, (int) $term->count - $hidden_count );
-				}
-				if ( $term->count < 1 ) {
-					continue;
-				}
-				$child     = $term_id;
-				$ancestors = [];
-				while ( isset( $terms_by_id[ $child ] ) ) {
-					$parent = (int) $terms_by_id[ $child ]->parent;
-					if ( ! isset( $terms_by_id[ $parent ] ) ) {
-						break;
-					}
-					$nonempty_ancestors[ $taxonomy_name ][ $parent ] = true;
-					$ancestors[]                                     = $child;
-					$child = $parent;
-					if ( in_array( $parent, $ancestors, true ) ) {
-						break;
-					}
-				}
-			}
-		}
-		return $nonempty_ancestors;
 	}
 
 	/** Whether a post carries tag or follow. */
@@ -1178,12 +1082,6 @@ final class Public_Eligibility {
 		}
 
 		foreach ( $routes[ $matched_route ] as $handler ) {
-			if ( self::rest_handler_is( $handler, \WP_REST_Terms_Controller::class, [ 'get_items' ] ) ) {
-				$post_id = (int) $request->get_param( 'post' );
-				if ( $post_id > 0 && self::hides( $post_id ) && ! current_user_can( 'edit_post', $post_id ) ) {
-					return true;
-				}
-			}
 			$item_id = self::rest_item_post_id( $handler, $request );
 			if ( $item_id > 0 ) {
 				$target_id = self::hidden_target_id( $item_id );
