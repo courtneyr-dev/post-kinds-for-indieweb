@@ -436,7 +436,7 @@ final class FollowPrivacyTest extends WP_UnitTestCase {
 			foreach ( [ 'password', 'private', 'draft' ] as $case ) {
 				$id = $this->follow( $case, 'Fw260 Sentinel ' . $kind . ' title', self::NAME, self::URL, $kind );
 				$this->assertFalse( is_post_embeddable( $id ), $kind . ' ' . $case );
-				$this->assertFalse( get_oembed_response_data( $id ), $kind . ' ' . $case );
+				$this->assertFalse( get_oembed_response_data( $id, 600 ), $kind . ' ' . $case );
 				$response = $this->rest( 'GET', '/oembed/1.0/embed', [ 'url' => get_permalink( $id ) ] );
 				$this->assertSame( 404, $response->get_status(), $kind . ' ' . $case );
 				$this->assertSame( $missing_code, $response->as_error()->get_error_code(), $kind . ' ' . $case );
