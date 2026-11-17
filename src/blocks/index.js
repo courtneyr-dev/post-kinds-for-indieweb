@@ -55,6 +55,8 @@ import './comic-card';
 import './checkin-card';
 import './rsvp-card';
 import './tag-card';
+import './wrapped';
+import './wrapped-strip';
 import './event-card';
 import './play-card';
 import './eat-card';

@@ -31,6 +31,7 @@ import KindFields from './components/KindFields';
 import AutoDetectionNotice from './components/AutoDetectionNotice';
 import { getKindIcon } from './icons';
 import hasBookmarkBlock from './has-bookmark-block';
+import hasWrappedBlock from './has-wrapped-block';
 import { detectKindFromContent } from './detect-kind';
 
 /**
@@ -132,6 +133,7 @@ export default function KindSelectorPanel() {
 	} = useDispatch( STORE_NAME );
 
 	const { insertBlocks, replaceBlock } = useDispatch( blockEditorStore );
+	const isWrappedPost = hasWrappedBlock( blocks );
 
 	/**
 	 * Check if a card block for the given kind already exists in the post.
@@ -195,16 +197,22 @@ export default function KindSelectorPanel() {
 
 	// Initialize store on mount.
 	useEffect( () => {
+		if ( isWrappedPost ) {
+			return;
+		}
 		if ( ! isInitialized ) {
 			initialize();
 		}
-	}, [ isInitialized, initialize ] );
+	}, [ isInitialized, initialize, isWrappedPost ] );
 
 	// Track if we've already inserted an embed block for bookmark kind this session.
 	const hasInsertedBookmarkEmbedRef = useRef( false );
 
 	// Auto-insert embed block when bookmark kind is set (e.g., via post format).
 	useEffect( () => {
+		if ( isWrappedPost ) {
+			return;
+		}
 		// Only proceed after initialization and when kind is bookmark.
 		if ( ! isInitialized || selectedKind !== 'bookmark' ) {
 			return;
@@ -225,11 +233,11 @@ export default function KindSelectorPanel() {
 		const newBlock = createBlock( 'core/embed' );
 		insertBlocks( newBlock, 0 );
 		hasInsertedBookmarkEmbedRef.current = true;
-	}, [ isInitialized, selectedKind, blocks, insertBlocks ] );
+	}, [ isInitialized, selectedKind, blocks, insertBlocks, isWrappedPost ] );
 
 	// Auto-detect kind based on content.
 	useEffect( () => {
-		if ( ! isAutoDetectionEnabled || selectedKind ) {
+		if ( isWrappedPost || ! isAutoDetectionEnabled || selectedKind ) {
 			return;
 		}
 
@@ -241,6 +249,7 @@ export default function KindSelectorPanel() {
 		isAutoDetectionEnabled,
 		selectedKind,
 		setAutoDetectedKind,
+		isWrappedPost,
 	] );
 
 	// Sync Bookmark Card block attributes to citation post meta.
@@ -473,7 +482,13 @@ export default function KindSelectorPanel() {
 		}, 1500 ); // Wait 1.5 seconds for embed to try resolving.
 
 		return () => clearTimeout( timeoutId );
-	}, [ blocks, selectedKind, autoDetectedKind, replaceBlock ] );
+	}, [
+		blocks,
+		selectedKind,
+		autoDetectedKind,
+		replaceBlock,
+		isWrappedPost,
+	] );
 
 	/**
 	 * Insert an embed block for bookmark kind.
@@ -528,6 +543,10 @@ export default function KindSelectorPanel() {
 			// Auto-insert the corresponding card block if not already present
 			insertCardBlock( autoDetectedKind );
 		}
+	}
+
+	if ( isWrappedPost ) {
+		return null;
 	}
 
 	// Get the current kind (selected or auto-detected).

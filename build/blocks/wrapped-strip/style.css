@@ -1,0 +1,9 @@
+.pkiw-wrapped-strip {
+	position: relative;
+}
+
+.pkiw-wrapped-strip a::after {
+	content: "";
+	inset: 0;
+	position: absolute;
+}
