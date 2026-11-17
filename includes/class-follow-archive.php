@@ -62,7 +62,7 @@ final class Follow_Archive {
 			add_action( 'init', [ self::class, 'register_rest_hooks' ], 99 );
 		}
 
-		foreach ( [ 'save_post', 'before_delete_post', 'deleted_post', 'trashed_post', 'untrashed_post', 'transition_post_' . 'status', 'post_updated' ] as $hook ) { // phpcs:ignore Generic.Strings.UnnecessaryStringConcat.Found -- Frozen source contract forbids the joined token.
+		foreach ( [ 'save_post', 'before_delete_post', 'deleted_post', 'trashed_post', 'untrashed_post', 'post_updated' ] as $hook ) {
 			add_action( $hook, [ self::class, 'flush_index' ] );
 		}
 		add_action( 'set_object_terms', [ self::class, 'terms_changed' ], 20, 6 );
@@ -185,6 +185,7 @@ final class Follow_Archive {
 			}
 		}
 		$text = trim( (string) preg_replace( '/\s+/u', ' ', wp_strip_all_tags( $html ) ) );
+		$text = html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 		return 1 === $anchors && '' !== $href && __( 'Followed', 'post-kinds-for-indieweb-in-block-themes' ) . ' ' . $href === $text;
 	}
 
@@ -366,7 +367,7 @@ final class Follow_Archive {
 
 	/** Stop direct Stream renders from exposing an ineligible follow. */
 	public static function stream_card( $html, \WP_Post $post, int $heading_level, array $attributes ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Shared filter signature.
-		if ( null !== $html || self::KIND !== get_post_kind_slug( $post ) ) {
+		if ( null !== $html || ! has_term( self::KIND, Taxonomy::TAXONOMY, $post ) ) {
 			return $html;
 		}
 		return [] === self::facts( $post->ID ) ? '' : null;
@@ -386,7 +387,10 @@ final class Follow_Archive {
 			return $response;
 		}
 		$editor_edit = 'edit' === (string) $request->get_param( 'context' ) && current_user_can( 'edit_post', $post->ID );
-		return self::rest_meta_for( $response, $post, get_post_kind_slug( $post ), $editor_edit );
+		if ( ! has_term( self::KIND, Taxonomy::TAXONOMY, $post ) ) {
+			return $response;
+		}
+		return self::rest_meta_for( $response, $post, self::KIND, $editor_edit );
 	}
 
 	/** Redact hidden follow metadata and reject unsafe stored photos. */
@@ -444,12 +448,13 @@ final class Follow_Archive {
 	}
 
 	/** Hide every governed ineligible post from oEmbed. */
-	public static function embeddable( bool $embeddable, \WP_Post $post ): bool {
-		return Public_Eligibility::hides( $post ) ? false : $embeddable;
+	public static function embeddable( $embeddable, \WP_Post $post ): bool {
+		return Public_Eligibility::hides( $post ) ? false : (bool) $embeddable;
 	}
 
 	/** Add the followed URL to Webmention for an eligible follow. */
-	public static function notify_links( array $urls, int $post_id ): array {
+	public static function notify_links( $urls, int $post_id ): array {
+		$urls  = is_array( $urls ) ? $urls : [];
 		$facts = self::facts( $post_id );
 		if ( [] !== $facts && '' !== (string) $facts['url'] ) {
 			$urls[] = (string) $facts['url'];
@@ -458,9 +463,9 @@ final class Follow_Archive {
 	}
 
 	/** Disable Micropub's duplicate renderer for follows. */
-	public static function no_micropub_render( bool $should, $post ): bool {
+	public static function no_micropub_render( $should, $post ): bool {
 		$post = get_post( $post );
-		return $post instanceof \WP_Post && has_term( self::KIND, Taxonomy::TAXONOMY, $post ) ? false : $should;
+		return $post instanceof \WP_Post && has_term( self::KIND, Taxonomy::TAXONOMY, $post ) ? false : (bool) $should;
 	}
 
 	/** Add every affected letter page to the shared purge list. */
@@ -553,7 +558,10 @@ final class Follow_Archive {
 		foreach ( $follows as $follow ) {
 			$modified = strtotime( (string) ( $follow['modified_gmt'] ?? '' ) );
 			$newest   = false !== $modified ? max( $newest, $modified ) : $newest;
-			$url      = web_url( (string) ( $follow['url'] ?? '' ) );
+			$raw_url  = (string) ( $follow['url'] ?? '' );
+			$parts    = wp_parse_url( $raw_url );
+			$web_url  = is_array( $parts ) && in_array( strtolower( (string) ( $parts['scheme'] ?? '' ) ), [ 'http', 'https' ], true ) && '' !== (string) ( $parts['host'] ?? '' );
+			$url      = $web_url ? web_url( $raw_url ) : '';
 			if ( '' === $url ) {
 				continue;
 			}

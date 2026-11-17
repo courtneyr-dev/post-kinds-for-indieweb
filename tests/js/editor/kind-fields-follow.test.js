@@ -68,9 +68,18 @@ describe( 'follow kind fields', () => {
 		expect( screen.getByLabelText( 'Site URL' ) ).toHaveValue(
 			'https://ada.example/'
 		);
+		expect( screen.getByLabelText( 'Site URL' ) ).toHaveAttribute(
+			'type',
+			'url'
+		);
 		expect(
 			screen.getByText(
 				/set the featured image from your media library/i
+			)
+		).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				/the rolodex card shows on the site only once this follow is public/i
 			)
 		).toBeInTheDocument();
 		expect(

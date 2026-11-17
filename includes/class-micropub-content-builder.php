@@ -1683,12 +1683,15 @@ final class Micropub_Content_Builder {
 			return;
 		}
 		$target = self::follow_target( $properties );
+		if ( '' === $target['url'] ) {
+			return;
+		}
 		$values = [ '_pkiw_cite_url' => $target['url'] ];
 		if ( '' !== $target['name'] && ! card_name_is_url( $target['name'], $target['url'] ) ) {
 			$values['_pkiw_cite_name'] = $target['name'];
 		}
 		foreach ( $values as $key => $value ) {
-			if ( '' !== $value && ! metadata_exists( 'post', $post_id, $key ) ) {
+			if ( ! metadata_exists( 'post', $post_id, $key ) ) {
 				add_post_meta( $post_id, $key, $value, true );
 			}
 		}
