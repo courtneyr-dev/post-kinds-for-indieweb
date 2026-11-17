@@ -293,7 +293,10 @@ test.describe( 'printable zine export', () => {
 		);
 		expect( failures ).toBe( 0 );
 
-		const longPanel = panels.filter( { hasText: `Zine ${ RUN } 15` } );
+		// The contents page lists every title too, so match the entry's own heading.
+		const longPanel = panels.filter( {
+			has: page.locator( 'h2', { hasText: `Zine ${ RUN } 15` } ),
+		} );
 		const clipping = await longPanel.evaluate( ( node ) => {
 			const content = node.querySelector( '.pkiw-zine-page__content' );
 			return {
