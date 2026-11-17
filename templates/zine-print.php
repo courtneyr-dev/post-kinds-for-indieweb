@@ -8,6 +8,10 @@
 
 declare(strict_types=1);
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use PKIW\Zine_Export;
 
 $pkiw_zine_saved_user = get_current_user_id();

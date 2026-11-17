@@ -205,9 +205,10 @@ final class Zine_Manifest {
 			$query = self::run_query( $vars, $args, $capacity );
 		}
 
-		$raw_ids = array_map( 'intval', wp_list_pluck( (array) $query->posts, 'ID' ) );
-		if ( [] === $raw_ids && isset( $query->query_vars['fields'] ) && 'ids' === $query->query_vars['fields'] ) {
+		if ( isset( $query->query_vars['fields'] ) && 'ids' === $query->query_vars['fields'] ) {
 			$raw_ids = array_map( 'intval', (array) $query->posts );
+		} else {
+			$raw_ids = array_map( 'intval', wp_list_pluck( (array) $query->posts, 'ID' ) );
 		}
 		$ids      = Public_Listing::filter_ids( $raw_ids );
 		$ids      = array_values( array_filter( $ids, [ self::class, 'passes_narrowing' ] ) );

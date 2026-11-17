@@ -236,6 +236,14 @@ final class Zine_Export {
 			return;
 		}
 		self::send_header( 'X-Robots-Tag: noindex' );
+		if ( null !== self::$header_sink ) {
+			foreach ( wp_get_nocache_headers() as $name => $value ) {
+				if ( false !== $value ) {
+					self::send_header( $name . ': ' . $value );
+				}
+			}
+			return;
+		}
 		nocache_headers();
 	}
 
@@ -284,15 +292,20 @@ final class Zine_Export {
 		if ( is_array( $extra ) ) {
 			$allowed = array_merge( $allowed, array_map( 'sanitize_key', $extra ) );
 		}
-		$result = [];
+		// Archive filters rewrite the main query's orderby (an array with an ID tie-break), so read the request's own vars.
+		$request = $query->is_main_query() && isset( $GLOBALS['wp'] ) && $GLOBALS['wp'] instanceof \WP ? (array) $GLOBALS['wp']->query_vars : [];
+		$read    = static fn( string $name ): mixed => array_key_exists( $name, $request ) ? $request[ $name ] : $query->get( $name, null );
+		$result  = [];
 		foreach ( array_unique( $allowed ) as $name ) {
-			$value = $query->get( $name, null );
+			$value = $read( $name );
 			if ( null !== $value && is_scalar( $value ) && '' !== (string) $value ) {
 				$result[ $name ] = sanitize_text_field( (string) $value );
 			}
 		}
-		$orderby = strtolower( (string) $query->get( 'orderby' ) );
-		$order   = strtolower( (string) $query->get( 'order' ) );
+		$orderby = $read( 'orderby' );
+		$order   = $read( 'order' );
+		$orderby = is_scalar( $orderby ) ? strtolower( (string) $orderby ) : '';
+		$order   = is_scalar( $order ) ? strtolower( (string) $order ) : '';
 		if ( in_array( $orderby, [ 'date', 'title' ], true ) ) {
 			$result['orderby'] = $orderby;
 		}
