@@ -1,23 +1,37 @@
 /**
  * Post Kinds for IndieWeb in Block Themes - Webpack Configuration
  *
- * Extends the default @wordpress/scripts webpack config.
+ * Extends the default `@wordpress/scripts` webpack config.
  *
  * @package
  * @since   1.0.0
  */
 
-const defaultConfig = require( '@wordpress/scripts/config/webpack.config' );
+const [
+	scriptConfig,
+	moduleConfig,
+] = require( '@wordpress/scripts/config/webpack.config' );
 const path = require( 'path' );
+const buildPath = path.resolve( process.cwd(), 'build' );
 
-module.exports = {
-	...defaultConfig,
-	entry: {
-		index: path.resolve( process.cwd(), 'src/editor', 'index.js' ),
-		blocks: path.resolve( process.cwd(), 'src/blocks', 'index.js' ),
+module.exports = [
+	{
+		...scriptConfig,
+		name: 'scripts',
+		entry: {
+			index: path.resolve( process.cwd(), 'src/editor', 'index.js' ),
+			blocks: path.resolve( process.cwd(), 'src/blocks', 'index.js' ),
+		},
+		output: {
+			...scriptConfig.output,
+			path: buildPath,
+			clean: { keep: /^(fonts|images)\// },
+		},
 	},
-	output: {
-		...defaultConfig.output,
-		path: path.resolve( process.cwd(), 'build' ),
+	{
+		...moduleConfig,
+		name: 'modules',
+		dependencies: [ 'scripts' ],
+		output: { ...moduleConfig.output, path: buildPath },
 	},
-};
+];

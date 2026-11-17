@@ -17,6 +17,8 @@
 declare(strict_types=1);
 
 use PKIW\Meta_Fields;
+use PKIW\Public_Eligibility;
+use PKIW\Taxonomy;
 
 /**
  * @group integration
@@ -27,11 +29,24 @@ final class CheckinDashboardLocationPrivacyTest extends WP_UnitTestCase {
 	private const STREET     = '742 Sentinel Ave Qwrt';
 	private const LATITUDE   = '12.345678';
 	private const LONGITUDE  = '-76.543219';
+	private const HIDDEN_VENUE = 'Sentinel Hidden Venue Qx7';
+	private const HIDDEN_STREET = '9 Sentinel Way Qx7';
+	private const HIDDEN_LATITUDE = '12.987654';
+	private const HIDDEN_LONGITUDE = '-45.123456';
 
 	public function set_up(): void {
 		parent::set_up();
 		// The test framework wipes registered meta between tests.
 		( new Meta_Fields() )->register_meta_fields();
+		( new Taxonomy() )->create_default_terms();
+		$this->register_source_block();
+	}
+
+	public function tear_down(): void {
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+		Public_Eligibility::override_cli_for_tests( null );
+		$this->register_build_block();
+		parent::tear_down();
 	}
 
 	/**
@@ -190,5 +205,155 @@ final class CheckinDashboardLocationPrivacyTest extends WP_UnitTestCase {
 
 		$this->assertGreaterThanOrEqual( 2, preg_match_all( '/<span class="stat-value">([^<]*)<\/span>/', $html, $matches ) );
 		$this->assertSame( $expected, trim( $matches[1][1] ), "unique venues must count only names the {$viewer} viewer can see" );
+	}
+
+	public function test_frontend_checkin_only_cookie_set_hides_protected_row(): void {
+		$this->assert_protected_sentinel_hidden( false, 'frontend', true, 'n5k4-a' );
+	}
+
+	public function test_frontend_checkin_only_cookie_unset_hides_protected_row(): void {
+		$this->assert_protected_sentinel_hidden( false, 'frontend', false, 'n5k4-a' );
+	}
+
+	public function test_cli_checkin_only_cookie_set_hides_protected_row(): void {
+		$this->assert_protected_sentinel_hidden( false, 'cli', true, 'n5k4-a' );
+	}
+
+	public function test_cli_checkin_only_cookie_unset_hides_protected_row(): void {
+		$this->assert_protected_sentinel_hidden( false, 'cli', false, 'n5k4-a' );
+	}
+
+	public function test_rest_edit_checkin_only_cookie_set_hides_protected_row(): void {
+		$this->assert_protected_sentinel_hidden( false, 'rest', true, 'n5k4-a' );
+	}
+
+	public function test_rest_edit_checkin_only_cookie_unset_hides_protected_row(): void {
+		$this->assert_protected_sentinel_hidden( false, 'rest', false, 'n5k4-a' );
+	}
+
+	public function test_frontend_governed_cookie_set_hides_protected_row(): void {
+		$this->assert_protected_sentinel_hidden( true, 'frontend', true, 'n5k4-b' );
+	}
+
+	public function test_frontend_governed_cookie_unset_hides_protected_row(): void {
+		$this->assert_protected_sentinel_hidden( true, 'frontend', false, 'n5k4-b' );
+	}
+
+	public function test_cli_governed_cookie_set_hides_protected_row(): void {
+		$this->assert_protected_sentinel_hidden( true, 'cli', true, 'n5k4-b' );
+	}
+
+	public function test_cli_governed_cookie_unset_hides_protected_row(): void {
+		$this->assert_protected_sentinel_hidden( true, 'cli', false, 'n5k4-b' );
+	}
+
+	public function test_rest_edit_governed_cookie_set_hides_protected_row(): void {
+		$this->assert_protected_sentinel_hidden( true, 'rest', true, 'n5k4-b' );
+	}
+
+	public function test_rest_edit_governed_cookie_unset_hides_protected_row(): void {
+		$this->assert_protected_sentinel_hidden( true, 'rest', false, 'n5k4-b' );
+	}
+
+	public function test_dashboard_query_forces_the_shared_public_eligibility_clause(): void {
+		global $wpdb;
+
+		$captured = '';
+		$capture  = static function ( string $where, WP_Query $query ) use ( &$captured ): string {
+			foreach ( (array) $query->get( 'tax_query' ) as $clause ) {
+				if ( is_array( $clause ) && 'kind' === ( $clause['taxonomy'] ?? '' ) && in_array( 'checkin', (array) ( $clause['terms'] ?? [] ), true ) ) {
+					$captured = $where;
+				}
+			}
+			return $where;
+		};
+		Public_Eligibility::override_cli_for_tests( true );
+		add_filter( 'posts_where', $capture, PHP_INT_MAX, 2 );
+
+		try {
+			$this->render_dashboard();
+		} finally {
+			remove_filter( 'posts_where', $capture, PHP_INT_MAX );
+		}
+
+		$this->assertStringContainsString( Public_Eligibility::sql( $wpdb->posts ), $captured );
+	}
+
+	private function assert_protected_sentinel_hidden( bool $governed, string $context, bool $cookie_set, string $password ): void {
+		$this->create_checkin( 'public', 'Visible Venue N5K4', '1 Visible Way N5K4' );
+		$sentinel = $this->create_protected_sentinel( $governed, $password );
+
+		if ( $cookie_set ) {
+			require_once ABSPATH . WPINC . '/class-phpass.php';
+			$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( wp_unslash( $password ) );
+			$this->assertFalse( post_password_required( $sentinel ), 'The cookie-set control must unlock the protected post before the dashboard renders.' );
+		} else {
+			unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+			$this->assertTrue( post_password_required( $sentinel ), 'The cookie-unset control must leave the protected post locked.' );
+		}
+
+		$html = $this->render_in_context( $context );
+
+		$this->assertStringNotContainsString( self::HIDDEN_VENUE, $html );
+		$this->assertStringNotContainsString( self::HIDDEN_STREET, $html );
+		$this->assertStringNotContainsString( self::HIDDEN_LATITUDE, $html );
+		$this->assertStringNotContainsString( self::HIDDEN_LONGITUDE, $html );
+		$this->assertSame( 1, preg_match( '/<span class="stat-value">([^<]*)<\/span>/', $html, $matches ) );
+		$this->assertSame( '1', trim( $matches[1] ), 'The total must count only the public fixture.' );
+	}
+
+	private function create_protected_sentinel( bool $governed, string $password ): int {
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'   => 'publish',
+				'post_title'    => 'Protected sentinel check-in',
+				'post_password' => $password,
+			]
+		);
+		$terms = $governed ? [ 'checkin', 'follow' ] : [ 'checkin' ];
+		$this->assertNotWPError( wp_set_object_terms( $post_id, $terms, Taxonomy::TAXONOMY ) );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_name', self::HIDDEN_VENUE );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'checkin_address', self::HIDDEN_STREET );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_latitude', self::HIDDEN_LATITUDE );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_longitude', self::HIDDEN_LONGITUDE );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'geo_privacy', 'public' );
+		return $post_id;
+	}
+
+	private function render_in_context( string $context ): string {
+		if ( 'cli' === $context ) {
+			wp_set_current_user( 0 );
+			Public_Eligibility::override_cli_for_tests( true );
+			return $this->render_dashboard();
+		}
+		if ( 'rest' === $context ) {
+			wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+			$request = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/post-kinds-indieweb/checkin-dashboard' );
+			$request->set_param( 'context', 'edit' );
+			$request->set_param( 'attributes', [ 'showFilters' => true ] );
+			$response = rest_do_request( $request );
+			$this->assertSame( 200, $response->get_status() );
+			$data = $response->get_data();
+			$this->assertIsArray( $data );
+			return (string) ( $data['rendered'] ?? '' );
+		}
+		wp_set_current_user( 0 );
+		return $this->render_dashboard();
+	}
+
+	private function register_source_block(): void {
+		if ( WP_Block_Type_Registry::get_instance()->is_registered( 'post-kinds-indieweb/checkin-dashboard' ) ) {
+			unregister_block_type( 'post-kinds-indieweb/checkin-dashboard' );
+		}
+		wp_deregister_script( 'post-kinds-indieweb-checkin-dashboard-view-script' );
+		register_block_type( PKIW_PATH . 'src/blocks/checkin-dashboard' );
+	}
+
+	private function register_build_block(): void {
+		if ( WP_Block_Type_Registry::get_instance()->is_registered( 'post-kinds-indieweb/checkin-dashboard' ) ) {
+			unregister_block_type( 'post-kinds-indieweb/checkin-dashboard' );
+		}
+		wp_script_modules()->deregister( 'post-kinds-indieweb-checkin-dashboard-view-script-module' );
+		register_block_type( PKIW_PATH . 'build/blocks/checkin-dashboard' );
 	}
 }

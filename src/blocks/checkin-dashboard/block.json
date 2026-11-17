@@ -41,6 +41,10 @@
 		"spacing": {
 			"margin": true,
 			"padding": true
+		},
+		"interactivity": {
+			"interactive": true,
+			"clientNavigation": false
 		}
 	},
 	"example": {
@@ -52,6 +56,6 @@
 		},
 		"viewportWidth": 800
 	},
-	"viewScript": "file:./view.js",
+	"viewScriptModule": "file:./view.js",
 	"render": "file:./render.php"
 }
