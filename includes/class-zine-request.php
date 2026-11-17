@@ -77,6 +77,15 @@ final class Zine_Request {
 		return new self( $present, $pages, $from, $to, $errors );
 	}
 
+	/**
+	 * Whether the current request renders the print view.
+	 *
+	 * The theme's zine module checks this (spec C11) before enqueueing its print paint.
+	 */
+	public static function is_print(): bool {
+		return Zine_Export::is_print_mode();
+	}
+
 	/** Return whether the request contains a zine variable. */
 	public function is_present(): bool {
 		return $this->present;

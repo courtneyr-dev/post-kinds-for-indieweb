@@ -206,4 +206,15 @@ final class ZineRequestTest extends ZineTestCase {
 		}
 	}
 
+
+	public function test_theme_print_check_follows_the_print_view(): void {
+		$this->post( 'Print check control' );
+		$this->go_to( $this->archive_url() );
+		$this->assertFalse( Zine_Request::is_print(), 'A plain archive is not the print view.' );
+		$this->go_to( $this->archive_url( [ Zine_Request::VAR_PAGES => 8 ] ) );
+		$this->assertTrue( Zine_Request::is_print() );
+		$this->go_to( $this->archive_url( [ Zine_Request::VAR_PAGES => 8, Zine_Request::VAR_FROM => 'banana' ] ) );
+		$this->assertFalse( Zine_Request::is_print(), 'An error request re-renders the archive.' );
+	}
+
 }
