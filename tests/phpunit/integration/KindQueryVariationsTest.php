@@ -7,9 +7,12 @@
 
 declare(strict_types=1);
 
+use PKIW\Follow_Archive;
 use PKIW\Kind_Query_Variations;
 use PKIW\Grouped_Archive;
+use PKIW\Meta_Fields;
 use PKIW\Presentation_Archive;
+use PKIW\Tag_Archive;
 use PKIW\Taxonomy;
 use PKIW\Travel_Map;
 
@@ -25,6 +28,8 @@ final class KindQueryVariationsTest extends WP_UnitTestCase {
 		'pkiw-kind-presentation'  => 'taxonomy-kind-presentation',
 		'pkiw-kind-trip'          => 'taxonomy-kind-trip',
 		'pkiw-kind-itinerary'     => 'taxonomy-kind-itinerary',
+		'pkiw-kind-follow'        => 'taxonomy-kind-follow',
+		'pkiw-kind-tag'           => 'taxonomy-kind-tag',
 	];
 
 	/** @var array<string, array{title:string,icon:string}> */
@@ -36,6 +41,8 @@ final class KindQueryVariationsTest extends WP_UnitTestCase {
 		'pkiw-kind-presentation'  => [ 'title' => 'Speaking badges', 'icon' => 'megaphone' ],
 		'pkiw-kind-trip'          => [ 'title' => 'Trip map', 'icon' => 'location-alt' ],
 		'pkiw-kind-itinerary'     => [ 'title' => 'Itinerary map', 'icon' => 'location-alt' ],
+		'pkiw-kind-follow'        => [ 'title' => 'Follows A to Z', 'icon' => 'groups' ],
+		'pkiw-kind-tag'           => [ 'title' => 'Tag stickers', 'icon' => 'tag' ],
 	];
 
 	/** @var array<string, array{kind:string,marker:string}> */
@@ -47,6 +54,8 @@ final class KindQueryVariationsTest extends WP_UnitTestCase {
 		'pkiw-kind-presentation'  => [ 'kind' => 'presentation', 'marker' => 'pkiw-presentation-badge' ],
 		'pkiw-kind-trip'          => [ 'kind' => 'trip', 'marker' => 'pkiw-trip-entry' ],
 		'pkiw-kind-itinerary'     => [ 'kind' => 'itinerary', 'marker' => 'pkiw-itinerary-entry' ],
+		'pkiw-kind-follow'        => [ 'kind' => 'follow', 'marker' => 'pkiw-follow-entry' ],
+		'pkiw-kind-tag'           => [ 'kind' => 'tag', 'marker' => 'pkiw-tag-entry' ],
 	];
 
 	/** @var array<string, string> */
@@ -58,10 +67,28 @@ final class KindQueryVariationsTest extends WP_UnitTestCase {
 		'pkiw-kind-presentation'  => 'Nothing here yet.',
 		'pkiw-kind-trip'          => 'No trips yet.',
 		'pkiw-kind-itinerary'     => 'No itineraries yet.',
+		'pkiw-kind-follow'        => 'Nothing here yet.',
+		'pkiw-kind-tag'           => 'Nothing here yet.',
 	];
+
+	/** @var array<string, string> */
+	private const DESCRIPTIONS = [
+		'pkiw-kind-follow' => 'Shows follows A to Z with a first-letter index.',
+		'pkiw-kind-tag'    => 'Shows tag posts as name-tag stickers grouped by label.',
+	];
+
+	/** Hidden states every follow and tag privacy control covers (spec-n3 acceptance 15). */
+	private const HIDDEN_CASES = [ 'private', 'draft', 'future', 'password', 'trash' ];
+
+	private const SENTINEL_NAME = 'K7 Sentinel Person';
+	private const SENTINEL_URL  = 'https://k7-sentinel.example/person';
+	private const VISIBLE_NAME  = 'K7 Visible Person';
+	private const VISIBLE_URL   = 'https://k7-visible.example/person';
 
 	private bool $restore_presentation_entry = false;
 	private bool $restore_travel_map = false;
+	private bool $restore_follow_blocks = false;
+	private bool $restore_tag_entry = false;
 
 	public function tear_down(): void {
 		if ( $this->restore_presentation_entry ) {
@@ -70,6 +97,14 @@ final class KindQueryVariationsTest extends WP_UnitTestCase {
 		if ( $this->restore_travel_map ) {
 			Travel_Map::register_block();
 		}
+		if ( $this->restore_follow_blocks ) {
+			Follow_Archive::register_blocks();
+		}
+		if ( $this->restore_tag_entry ) {
+			Tag_Archive::register_blocks();
+		}
+		wp_set_current_user( 0 );
+		delete_transient( 'pkiw_follow_index_v1' );
 		wp_reset_postdata();
 		parent::tear_down();
 	}
@@ -190,7 +225,7 @@ final class KindQueryVariationsTest extends WP_UnitTestCase {
 		return do_blocks( serialize_block( $query ) );
 	}
 
-	public function test_seven_variations_have_the_permanent_names_and_query_contract(): void {
+	public function test_nine_variations_have_the_permanent_names_and_query_contract(): void {
 		$variations = $this->variations_by_name();
 
 		$this->assertSame( array_keys( self::TEMPLATES ), array_values( array_intersect( array_keys( $variations ), array_keys( self::TEMPLATES ) ) ) );
@@ -203,6 +238,9 @@ final class KindQueryVariationsTest extends WP_UnitTestCase {
 			$this->assertSame( $namespace, $variation['attributes']['namespace'], $namespace );
 			$this->assertSame( 'pkiw-kind-archive', $variation['attributes']['className'], $namespace );
 			$this->assertTrue( $variation['attributes']['query']['inherit'], $namespace );
+			if ( isset( self::DESCRIPTIONS[ $namespace ] ) ) {
+				$this->assertSame( self::DESCRIPTIONS[ $namespace ], $variation['description'], $namespace );
+			}
 		}
 	}
 
@@ -257,7 +295,7 @@ final class KindQueryVariationsTest extends WP_UnitTestCase {
 		$this->assertSame( 'quote-local quote-extra', $converted[0][1]['className'] ?? null );
 	}
 
-	public function test_a_missing_entry_block_omits_its_variation_and_keeps_the_other_six(): void {
+	public function test_a_missing_entry_block_omits_its_variation_and_keeps_the_other_eight(): void {
 		$before = $this->variations_by_name();
 		$this->assertArrayHasKey( 'pkiw-kind-presentation', $before );
 		$this->assertInstanceOf( WP_Block_Type::class, unregister_block_type( Presentation_Archive::ENTRY_BLOCK ) );
@@ -285,7 +323,7 @@ final class KindQueryVariationsTest extends WP_UnitTestCase {
 		}
 	}
 
-	public function test_existing_registry_variations_are_unchanged_and_only_seven_are_added(): void {
+	public function test_existing_registry_variations_are_unchanged_and_only_nine_are_added(): void {
 		$query = WP_Block_Type_Registry::get_instance()->get_registered( 'core/query' );
 		$this->assertInstanceOf( WP_Block_Type::class, $query );
 		$callback = [ Kind_Query_Variations::class, 'add' ];
@@ -308,7 +346,7 @@ final class KindQueryVariationsTest extends WP_UnitTestCase {
 
 		$new_names = array_values( array_diff( array_keys( $after_names ), array_keys( $before_names ) ) );
 		$this->assertSame( array_keys( self::TEMPLATES ), $new_names );
-		$this->assertCount( count( $before ) + 7, $after );
+		$this->assertCount( count( $before ) + 9, $after );
 	}
 
 	public function test_parsed_templates_are_cached_by_slug(): void {
@@ -341,14 +379,18 @@ final class KindQueryVariationsTest extends WP_UnitTestCase {
 
 	public function test_template_namespaces_do_not_change_query_rendering(): void {
 		foreach ( self::RENDER_CASES as $namespace => $case ) {
-			$post_id = self::factory()->post->create(
-				[
-					'post_status'  => 'publish',
-					'post_title'   => 'Variation render ' . $case['kind'],
-					'post_content' => '<!-- wp:quote --><blockquote class="wp-block-quote"><p>Variation quote text.</p></blockquote><!-- /wp:quote -->',
-				]
-			);
-			$this->assertNotWPError( wp_set_object_terms( $post_id, $case['kind'], Taxonomy::TAXONOMY ) );
+			if ( in_array( $case['kind'], [ 'follow', 'tag' ], true ) ) {
+				$post_id = $this->person_post( $case['kind'], 'publish', self::VISIBLE_NAME, self::VISIBLE_URL );
+			} else {
+				$post_id = self::factory()->post->create(
+					[
+						'post_status'  => 'publish',
+						'post_title'   => 'Variation render ' . $case['kind'],
+						'post_content' => '<!-- wp:quote --><blockquote class="wp-block-quote"><p>Variation quote text.</p></blockquote><!-- /wp:quote -->',
+					]
+				);
+				$this->assertNotWPError( wp_set_object_terms( $post_id, $case['kind'], Taxonomy::TAXONOMY ) );
+			}
 			$url = get_term_link( $case['kind'], Taxonomy::TAXONOMY );
 			$this->assertIsString( $url, $case['kind'] );
 			$this->go_to( $url );
@@ -371,6 +413,179 @@ final class KindQueryVariationsTest extends WP_UnitTestCase {
 			$this->assertStringContainsString( 'post-' . $post_id, $with, $slug );
 			$this->assertStringContainsString( $case['marker'], $with, $slug );
 			$this->assertSame( $without, $with, $slug );
+		}
+	}
+
+	/**
+	 * Create a follow or tag post that names one person.
+	 *
+	 * @param string $kind  'follow' or 'tag'.
+	 * @param string $state 'publish' or one of self::HIDDEN_CASES.
+	 */
+	private function person_post( string $kind, string $state, string $name, string $url ): int {
+		( new Taxonomy() )->create_default_terms();
+		( new Meta_Fields() )->register_meta_fields();
+		$content = 'follow' === $kind
+			? '<!-- wp:paragraph -->' . "\n" . '<p>Followed <a class="u-follow-of" href="' . esc_url( $url ) . '">' . esc_html( $url ) . '</a></p>' . "\n" . '<!-- /wp:paragraph -->'
+			: '<!-- wp:post-kinds-indieweb/tag-card ' . wp_json_encode(
+				[
+					'targetType' => 'person',
+					'url'        => $url,
+					'title'      => $name,
+				]
+			) . ' /-->';
+		$args    = [
+			'post_status'   => in_array( $state, [ 'password', 'trash' ], true ) ? 'publish' : $state,
+			'post_password' => 'password' === $state ? 'secret' : '',
+			'post_title'    => $name,
+			'post_content'  => wp_slash( $content ),
+		];
+		if ( 'future' === $state ) {
+			$args['post_date']     = gmdate( 'Y-m-d H:i:s', time() + WEEK_IN_SECONDS );
+			$args['post_date_gmt'] = $args['post_date'];
+		}
+		$id = (int) self::factory()->post->create( $args );
+		$this->assertNotWPError( wp_set_object_terms( $id, $kind, Taxonomy::TAXONOMY ) );
+		if ( 'follow' === $kind ) {
+			update_post_meta( $id, '_pkiw_cite_name', $name );
+			update_post_meta( $id, '_pkiw_cite_url', $url );
+		}
+		if ( 'trash' === $state ) {
+			wp_trash_post( $id );
+		}
+		delete_transient( 'pkiw_follow_index_v1' );
+
+		return $id;
+	}
+
+	/**
+	 * Turn variation tuples back into parsed blocks.
+	 *
+	 * @param array<int, array<mixed>> $tuples Variation tuples.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function tuples_to_blocks( array $tuples ): array {
+		$blocks = [];
+		foreach ( $tuples as $tuple ) {
+			$inner    = $this->tuples_to_blocks( (array) ( $tuple[2] ?? [] ) );
+			$blocks[] = [
+				'blockName'    => (string) $tuple[0],
+				'attrs'        => (array) ( $tuple[1] ?? [] ),
+				'innerBlocks'  => $inner,
+				'innerHTML'    => '',
+				'innerContent' => array_fill( 0, count( $inner ), null ),
+			];
+		}
+
+		return $blocks;
+	}
+
+	public function test_follow_variation_requires_the_entry_and_letters_blocks(): void {
+		foreach ( [ Follow_Archive::ENTRY_BLOCK, Follow_Archive::LETTERS_BLOCK ] as $block_name ) {
+			$before = $this->variations_by_name();
+			$this->assertArrayHasKey( 'pkiw-kind-follow', $before, $block_name );
+			$this->assertInstanceOf( WP_Block_Type::class, unregister_block_type( $block_name ) );
+			$this->restore_follow_blocks = true;
+
+			$after = $this->variations_by_name();
+			$this->assertArrayNotHasKey( 'pkiw-kind-follow', $after, $block_name );
+			foreach ( array_diff( array_keys( self::TEMPLATES ), [ 'pkiw-kind-follow' ] ) as $namespace ) {
+				$this->assertArrayHasKey( $namespace, $after, $block_name );
+			}
+			$this->assertCount( 8, array_intersect( array_keys( $after ), array_keys( self::TEMPLATES ) ), $block_name );
+
+			Follow_Archive::register_blocks();
+		}
+	}
+
+	public function test_tag_variation_requires_the_tag_entry_block(): void {
+		$before = $this->variations_by_name();
+		$this->assertArrayHasKey( 'pkiw-kind-tag', $before );
+		$this->assertInstanceOf( WP_Block_Type::class, unregister_block_type( Tag_Archive::ENTRY_BLOCK ) );
+		$this->restore_tag_entry = true;
+
+		$after = $this->variations_by_name();
+		$this->assertArrayNotHasKey( 'pkiw-kind-tag', $after );
+		foreach ( array_diff( array_keys( self::TEMPLATES ), [ 'pkiw-kind-tag' ] ) as $namespace ) {
+			$this->assertArrayHasKey( $namespace, $after );
+		}
+		$this->assertCount( 8, array_intersect( array_keys( $after ), array_keys( self::TEMPLATES ) ) );
+	}
+
+	public function test_reading_the_nine_templates_emits_no_php_warning(): void {
+		$cache = new ReflectionProperty( Kind_Query_Variations::class, 'template_cache' );
+		$read  = new ReflectionMethod( Kind_Query_Variations::class, 'template_inner_blocks' );
+		if ( PHP_VERSION_ID < 80100 ) {
+			$cache->setAccessible( true );
+			$read->setAccessible( true );
+		}
+		$original = $cache->getValue();
+		$query    = WP_Block_Type_Registry::get_instance()->get_registered( 'core/query' );
+		$this->assertInstanceOf( WP_Block_Type::class, $query );
+		try {
+			// Positive control: a missing template does leave a warning this check can see.
+			$cache->setValue( null, [] );
+			error_clear_last();
+			$this->assertSame( [], @$read->invoke( null, 'taxonomy-kind-k7-missing-control', false ) ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Positive control for the warning check.
+			$this->assertIsArray( error_get_last() );
+
+			$cache->setValue( null, [] );
+			error_clear_last();
+			$names = wp_list_pluck( $query->get_variations(), 'name' );
+			$this->assertNull( error_get_last() );
+			$this->assertContains( 'pkiw-kind-follow', $names );
+			$this->assertContains( 'pkiw-kind-tag', $names );
+			$this->assertSame( array_values( self::TEMPLATES ), array_keys( $cache->getValue() ) );
+		} finally {
+			$cache->setValue( null, $original );
+		}
+	}
+
+	public function test_follow_and_tag_variations_print_only_eligible_posts_with_inherit_off(): void {
+		$variations = $this->variations_by_name();
+
+		foreach ( [ 'follow', 'tag' ] as $kind ) {
+			$namespace = 'pkiw-kind-' . $kind;
+			$controls  = [];
+			foreach ( self::HIDDEN_CASES as $state ) {
+				$controls[ $state ] = $this->person_post( $kind, $state, self::SENTINEL_NAME, self::SENTINEL_URL );
+			}
+			$presence = $this->person_post( $kind, 'publish', self::VISIBLE_NAME, self::VISIBLE_URL );
+			$term     = get_term_by( 'slug', $kind, Taxonomy::TAXONOMY );
+			$this->assertInstanceOf( WP_Term::class, $term, $kind );
+
+			$query_attrs          = $variations[ $namespace ]['attributes'];
+			$query_attrs['query'] = array_merge(
+				$query_attrs['query'],
+				[
+					'inherit'  => false,
+					'perPage'  => 20,
+					'taxQuery' => [ Taxonomy::TAXONOMY => [ (int) $term->term_id ] ],
+				]
+			);
+			$inner = $this->tuples_to_blocks( $variations[ $namespace ]['innerBlocks'] );
+			$block = [
+				'blockName'    => 'core/query',
+				'attrs'        => $query_attrs,
+				'innerBlocks'  => $inner,
+				'innerHTML'    => '',
+				'innerContent' => array_fill( 0, count( $inner ), null ),
+			];
+
+			wp_set_current_user( 0 );
+			$this->go_to( home_url( '/' ) );
+			Grouped_Archive::forget_heading_ids();
+			$html = do_blocks( serialize_block( $block ) );
+
+			$this->assertStringContainsString( self::VISIBLE_NAME, $html, $kind . ' positive control' );
+			$this->assertStringContainsString( 'pkiw-' . $kind . '-entry', $html, $kind . ' positive control' );
+			$this->assertStringContainsString( (string) get_permalink( $presence ), $html, $kind . ' positive control' );
+			$this->assertStringNotContainsString( self::SENTINEL_NAME, $html, $kind );
+			$this->assertStringNotContainsString( 'k7-sentinel', $html, $kind );
+			foreach ( $controls as $state => $id ) {
+				$this->assertStringNotContainsString( 'post-' . $id . ' ', $html, $kind . ' ' . $state );
+				$this->assertStringNotContainsString( '?p=' . $id . '"', $html, $kind . ' ' . $state );
+			}
 		}
 	}
 }
