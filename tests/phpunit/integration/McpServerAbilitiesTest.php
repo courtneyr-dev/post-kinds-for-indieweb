@@ -71,6 +71,7 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 			'post-kinds/get-itinerary-facts',
 			'post-kinds/get-rsvp-facts',
 			'post-kinds/get-follow-index',
+			'post-kinds/get-on-this-day',
 			'post-kinds/list-presentation-event-types',
 			'post-kinds/get-collection-items',
 			'post-kinds/get-tag-facts',
@@ -213,7 +214,7 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 		sort( $expected );
 		sort( $public );
 		$this->assertSame( $expected, $public );
-		$this->assertCount( 23, $public, 'W8-P260 adds one public follow-index ability.' );
+		$this->assertCount( 24, $public, 'X-P268 adds one public On This Day ability.' );
 		$this->assertCount( 11, array_diff( Abilities_Manager::get_ability_names(), $public ), 'W8-P261 adds one non-public label-repair ability.' );
 	}
 }

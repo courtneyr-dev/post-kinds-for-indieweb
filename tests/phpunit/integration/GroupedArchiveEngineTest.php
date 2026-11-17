@@ -37,6 +37,7 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 	private const BODY   = 'pkiw-test/body-line';
 	private const WEEKS  = 'pkiw-test/weeks-line';
 	private const LEAD   = 'pkiw-test/lead-marker';
+	private const EMPTY  = 'pkiw-test/empty-line';
 
 	private const SOURCES = [ 'test_status', 'test_series', 'test_play', 'test_tags', 'test_cats', 'test_month', 'test_month_asc', 'test_year', 'test_week', 'test_flagged_tags', 'test_wish_type', 'test_listen_show' ];
 
@@ -151,6 +152,23 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 				],
 			]
 		);
+		Grouped_Archive::register_entry_block( self::EMPTY, [ 'shape' => Grouped_Archive::ENTRY_LINE ] );
+		register_block_type(
+			self::EMPTY,
+			[
+				'api_version'     => 3,
+				'uses_context'    => [ 'postId', 'postType', 'queryId' ],
+				'attributes'      => Grouped_Archive::entry_attributes( [ 'leadCount' => [ 'type' => 'integer', 'default' => 0 ] ] ),
+				'render_callback' => static function ( array $attributes, string $content, WP_Block $block ): string {
+					return Grouped_Archive::render_entry(
+						self::EMPTY,
+						$attributes,
+						$block,
+						static fn( WP_Post $post ): string => str_contains( get_the_title( $post ), 'Whitespace' ) ? " \n\t" : ''
+					);
+				},
+			]
+		);
 		$this->entry_block( self::PAIRS, [], [ 'linesPerPage' => [ 'default' => 2 ] ] );
 		$this->entry_block( self::MONTHS, [ 'source' => 'test_month' ] );
 		$this->entry_block(
@@ -207,7 +225,7 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 		Kind_Archive_Layouts::unregister_filtered_view( 'comics', 'pkiw_comic_view' );
 		Kind_Archive_Layouts::set_rest_view( '' );
 		$GLOBALS['wp_rest_server'] = null;
-		foreach ( [ self::MARKER, self::LINE, self::OL_LINE, self::PAIRS, self::MONTHS, self::IDS, self::LINK, self::BODY, self::WEEKS, self::LEAD ] as $name ) {
+		foreach ( [ self::MARKER, self::LINE, self::OL_LINE, self::PAIRS, self::MONTHS, self::IDS, self::LINK, self::BODY, self::WEEKS, self::LEAD, self::EMPTY ] as $name ) {
 			Grouped_Archive::unregister_entry_block( $name );
 			if ( WP_Block_Type_Registry::get_instance()->is_registered( $name ) ) {
 				unregister_block_type( $name );
@@ -1953,6 +1971,17 @@ final class GroupedArchiveEngineTest extends WP_UnitTestCase {
 			],
 			$this->sections( $html )
 		);
+	}
+
+	public function test_empty_and_whitespace_entry_callbacks_print_no_item_section_or_lead_count(): void {
+		$this->make( 'yearkind', 'Empty callback', '2026-01-02 10:00:00' );
+		$this->make( 'yearkind', 'Whitespace callback', '2025-01-02 10:00:00' );
+
+		$html = $this->serve( 'yearkind', $this->loop( self::EMPTY, [ 'leadCount' => 2 ], false ) );
+
+		$this->assertStringNotContainsString( '<li', $html, 'The base engine emitted an empty li for this callback.' );
+		$this->assertStringNotContainsString( '<section', $html, 'A group with no rendered items must have no heading or section.' );
+		$this->assertStringNotContainsString( 'data-pkiw-lead', $html, 'Skipped entries must not increment the lead count.' );
 	}
 
 	public function test_lead_count_clamps_to_three_and_uses_the_number_of_posts_actually_printed(): void {

@@ -441,6 +441,7 @@ final class Plugin {
 	 */
 	private function init_components(): void {
 		Public_Eligibility::register();
+		Public_Listing::register();
 
 		// Core components - always loaded.
 		if ( class_exists( __NAMESPACE__ . '\\Taxonomy' ) ) {
@@ -721,6 +722,9 @@ final class Plugin {
 		}
 		if ( class_exists( __NAMESPACE__ . '\\Tag_Archive' ) ) {
 			( new Tag_Archive() )->register();
+		}
+		if ( class_exists( __NAMESPACE__ . '\\On_This_Day' ) ) {
+			( new On_This_Day() )->register();
 		}
 		( new Kind_Query_Variations() )->register();
 	}
@@ -1373,6 +1377,11 @@ final class Plugin {
 	 */
 	private function get_plugin_template_definitions(): array {
 		return [
+			'on-this-day'                  => [
+				'title'       => __( 'On This Day', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Posts from earlier years on today’s month and day.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'post_types'  => [],
+			],
 			// Venue taxonomy template.
 			'taxonomy-pkiw_venue'          => [
 				'title'       => __( 'Venue Archive', 'post-kinds-for-indieweb-in-block-themes' ),

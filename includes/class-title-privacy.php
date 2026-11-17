@@ -54,6 +54,11 @@ class Title_Privacy {
 		self::META_KEY,
 	];
 
+	/** Return the meta keys that can change the visitor-safe title. */
+	public static function deciding_meta(): array {
+		return self::DECIDING_META;
+	}
+
 	/**
 	 * Posts whose slug WordPress derived from the title in this request,
 	 * keyed "<blog id>:<post id>".

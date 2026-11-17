@@ -773,6 +773,9 @@ final class Grouped_Archive {
 					remove_filter( 'render_block_context', $context, 1 );
 					array_pop( self::$frames );
 				}
+				if ( '' === trim( $inner ) ) {
+					continue;
+				}
 
 				$item = sprintf(
 					'<li%1$s class="%2$s">%3$s</li>',
@@ -797,6 +800,12 @@ final class Grouped_Archive {
 		} finally {
 			wp_reset_postdata();
 		}
+		$sections = array_values(
+			array_filter(
+				$sections,
+				static fn( array $section ): bool => [] !== $section['items']
+			)
+		);
 
 		$html = '';
 		if ( $lead ) {

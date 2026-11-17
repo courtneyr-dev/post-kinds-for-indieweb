@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- On This Day adds the `/on-this-day/` archive and its Stream card. The single-post card is built but stays off until the edge-purge filter is enabled. The public `post-kinds/get-on-this-day` ability and shared `PKIW\Public_Listing` helper keep every surface on the same public-listing rule.
+
 ## [1.9.1] - 2026-11-10
 
 ### Fixed

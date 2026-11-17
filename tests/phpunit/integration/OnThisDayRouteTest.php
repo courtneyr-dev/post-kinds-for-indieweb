@@ -1,0 +1,54 @@
+<?php
+/** On This Day route coverage. @package PKIW */
+declare(strict_types=1);
+
+use PKIW\On_This_Day;
+
+/** @group integration */
+final class OnThisDayRouteTest extends WP_UnitTestCase {
+	private string $permalinks = '';
+
+	public function set_up(): void {
+		parent::set_up();
+		$this->permalinks = (string) get_option( 'permalink_structure' );
+		$this->set_permalink_structure( '/%postname%/' );
+		On_This_Day::register_route();
+		flush_rewrite_rules( false );
+	}
+
+	public function tear_down(): void {
+		$this->set_permalink_structure( $this->permalinks );
+		parent::tear_down();
+	}
+
+	public function test_rewrite_rules_and_request_scrubbing_are_exact(): void {
+		$rules = (array) get_option( 'rewrite_rules' );
+		$this->assertSame( 'index.php?pkiw_on_this_day=1', $rules['^on-this-day/?$'] );
+		$this->assertSame( 'index.php?pkiw_on_this_day=1&paged=$matches[1]', $rules['^on-this-day/page/([0-9]{1,})/?$'] );
+		foreach ( [ 'p' => 4, 's' => 'x', 'cat' => 1, 'embed' => 1, 'feed' => 'rss2' ] as $key => $value ) {
+			$this->assertSame( [ On_This_Day::QUERY_VAR => 1, 'paged' => 2 ], On_This_Day::filter_request( [ On_This_Day::QUERY_VAR => 1, 'paged' => 2, $key => $value ] ) );
+		}
+	}
+
+	public function test_route_is_an_archive_and_empty_first_page_is_not_a_404(): void {
+		$this->go_to( home_url( '/on-this-day/' ) );
+		$this->assertTrue( is_archive() );
+		$this->assertFalse( is_home() );
+		$this->assertFalse( is_404() );
+		$this->assertSame( 'on-this-day.php', On_This_Day::template_hierarchy( [ 'archive.php' ] )[0] );
+		$this->assertTrue( On_This_Day::pre_handle_404( false, $GLOBALS['wp_query'] ) );
+	}
+
+	public function test_title_and_yoast_callbacks_are_route_only_and_page_aware(): void {
+		$off = [ 'title' => 'Control' ];
+		$this->assertSame( $off, On_This_Day::document_title_parts( $off ) );
+		$this->go_to( home_url( '/on-this-day/page/3/' ) );
+		$this->assertSame( 'On This Day', On_This_Day::document_title_parts( [ 'title' => 'Old' ] )['title'] );
+		$this->assertSame( home_url( '/on-this-day/page/3/' ), On_This_Day::route_url() );
+		if ( ! defined( 'WPSEO_VERSION' ) ) {
+			define( 'WPSEO_VERSION', 'test' );
+		}
+		$this->assertSame( 'On This Day - ' . get_bloginfo( 'name' ), On_This_Day::yoast_title( 'Old' ) );
+		$this->assertSame( home_url( '/on-this-day/page/3/' ), On_This_Day::yoast_url( 'old' ) );
+	}
+}
