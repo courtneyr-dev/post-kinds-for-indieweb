@@ -36,14 +36,24 @@
 }
 
 @media (max-width: 40rem) {
+
 	.pkiw-zine-export form {
 		display: grid;
 	}
 }
 
+/*
+ * A named page: this sheet also loads with the block on archives and
+ * /stream, whose own printouts keep their page box.
+ */
+@page pkiw-zine {
+	size: landscape;
+	margin: 0;
+}
+
 @media print {
-	@page {
-		size: landscape;
+
+	body.pkiw-zine-print {
 		margin: 0;
 	}
 
@@ -52,40 +62,41 @@
 	}
 
 	.pkiw-zine-pages {
+		page: pkiw-zine;
 		display: grid;
 		grid-template-columns: repeat(4, 25%);
 		grid-auto-rows: 50vh;
 	}
 
-	[data-side="1"][data-row="top"] {
+	.pkiw-zine-page[data-side="1"][data-row="top"] {
 		grid-row: 1;
 	}
 
-	[data-side="1"][data-row="bottom"] {
+	.pkiw-zine-page[data-side="1"][data-row="bottom"] {
 		grid-row: 2;
 	}
 
-	[data-side="2"][data-row="top"] {
+	.pkiw-zine-page[data-side="2"][data-row="top"] {
 		grid-row: 3;
 	}
 
-	[data-side="2"][data-row="bottom"] {
+	.pkiw-zine-page[data-side="2"][data-row="bottom"] {
 		grid-row: 4;
 	}
 
-	[data-col="1"] {
+	.pkiw-zine-page[data-col="1"] {
 		grid-column: 1;
 	}
 
-	[data-col="2"] {
+	.pkiw-zine-page[data-col="2"] {
 		grid-column: 2;
 	}
 
-	[data-col="3"] {
+	.pkiw-zine-page[data-col="3"] {
 		grid-column: 3;
 	}
 
-	[data-col="4"] {
+	.pkiw-zine-page[data-col="4"] {
 		grid-column: 4;
 	}
 
