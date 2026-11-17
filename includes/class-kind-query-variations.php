@@ -132,6 +132,21 @@ final class Kind_Query_Variations {
 				'entry'       => 'post-kinds-indieweb/itinerary-entry',
 				'required'    => [ 'post-kinds-indieweb/travel-map' ],
 			],
+			'pkiw-kind-follow'       => [
+				'title'       => __( 'Follows A to Z', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Shows follows A to Z with a first-letter index.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'        => 'groups',
+				'template'    => 'taxonomy-kind-follow',
+				'entry'       => 'post-kinds-indieweb/follow-entry',
+				'required'    => [ 'post-kinds-indieweb/follow-letters' ],
+			],
+			'pkiw-kind-tag'          => [
+				'title'       => __( 'Tag stickers', 'post-kinds-for-indieweb-in-block-themes' ),
+				'description' => __( 'Shows tag posts as name-tag stickers grouped by label.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'icon'        => 'tag',
+				'template'    => 'taxonomy-kind-tag',
+				'entry'       => 'post-kinds-indieweb/tag-entry',
+			],
 		];
 	}
 
