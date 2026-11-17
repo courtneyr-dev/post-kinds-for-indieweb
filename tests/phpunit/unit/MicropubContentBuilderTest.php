@@ -33,7 +33,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 	 */
 	public function set_up(): void {
 		parent::set_up();
-		foreach ( array( 'note', 'checkin', 'eat', 'drink', 'like', 'rsvp', 'jam', 'favorite', 'wish', 'exercise', 'event', 'video', 'quote', 'issue', 'listen', 'comics', 'read', 'acquisition', 'sleep' ) as $slug ) {
+		foreach ( array( 'note', 'article', 'reply', 'repost', 'bookmark', 'checkin', 'eat', 'drink', 'like', 'rsvp', 'jam', 'favorite', 'wish', 'exercise', 'event', 'video', 'quote', 'issue', 'listen', 'comics', 'read', 'acquisition', 'sleep' ) as $slug ) {
 			if ( ! term_exists( $slug, 'kind' ) ) {
 				wp_insert_term( ucfirst( $slug ), 'kind', array( 'slug' => $slug ) );
 			}
@@ -72,12 +72,12 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertSame( 'eat', $kind );
 	}
 
-	public function test_detect_kind_checkin_when_only_location(): void {
+	public function test_detect_kind_null_when_only_location(): void {
 		$kind = $this->invoke_private(
 			'detect_kind',
 			array( array( 'location' => 'geo:29.12,-103.24' ) )
 		);
-		$this->assertSame( 'checkin', $kind );
+		$this->assertNull( $kind );
 	}
 
 	public function test_detect_kind_returns_null_for_plain_note(): void {
@@ -528,6 +528,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		Micropub_Content_Builder::apply(
 			array(
 				'h'             => 'entry',
+				'pkiw-kind'     => 'checkin',
 				'mp-place-name' => 'St. Johns',
 				'location'      => 'geo:39.93,-77.66',
 				'content'       => 'plain text typed body',
@@ -554,6 +555,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		Micropub_Content_Builder::apply(
 			array(
 				'h'             => 'entry',
+				'pkiw-kind'     => 'checkin',
 				'mp-place-name' => 'Original Venue',
 				'location'      => 'geo:1,1',
 			),
@@ -574,6 +576,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		Micropub_Content_Builder::apply(
 			array(
 				'h'             => 'entry',
+				'pkiw-kind'     => 'checkin',
 				'mp-place-name' => 'Different Venue',
 				'location'      => 'geo:99,99',
 			),
@@ -605,6 +608,276 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$content = (string) get_post_field( 'post_content', $post_id );
 		$this->assertSame( 'just a note, no card kind', $content );
 		$this->assertSame( '', (string) get_post_meta( $post_id, '_pkiw_block_content_generated', true ) );
+	}
+
+	// --- post type discovery: note vs article -------------------------------
+
+	/**
+	 * Create a post the way the Micropub plugin's handle_create() does:
+	 * the content filter, wp_insert_post() with a null tax_input, then
+	 * after_micropub.
+	 *
+	 * @param array<string, mixed> $input            Parsed Micropub request body.
+	 * @param string|null          $insert_time_kind Kind another plugin writes during the insert, as Post Formats for Block Themes does from the post format.
+	 * @param array<string, mixed> $meta_input       Meta the Micropub plugin stores with the insert.
+	 * @return int Post ID.
+	 */
+	private function create_via_micropub( array $input, ?string $insert_time_kind = null, array $meta_input = array() ): int {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$guess = static function ( int $post_id ) use ( $insert_time_kind ): void {
+			wp_set_post_terms( $post_id, array( $insert_time_kind ), 'kind' );
+		};
+		if ( null !== $insert_time_kind ) {
+			add_action( 'save_post', $guess );
+		}
+
+		$properties = $input['properties'] ?? $input;
+		$content    = $properties['content'] ?? '';
+		$content    = is_array( $content ) ? (string) reset( $content ) : (string) $content;
+		$args       = array(
+			'post_type'    => 'post',
+			'tax_input'    => null,
+			'post_status'  => 'publish',
+			'post_content' => (string) apply_filters( 'micropub_post_content', $content, $input ),
+			'meta_input'   => $meta_input,
+		);
+		$args['ID'] = wp_insert_post( $args, true );
+		remove_action( 'save_post', $guess );
+		do_action( 'after_micropub', $input, $args );
+
+		return (int) $args['ID'];
+	}
+
+	private function kind_of( int $post_id ): string {
+		return implode( ',', wp_get_post_terms( $post_id, 'kind', array( 'fields' => 'slugs' ) ) );
+	}
+
+	public function test_json_entry_with_content_and_no_name_is_a_note(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => array(
+					'content' => array( 'Do I need to add to the template?Testing note without location.' ),
+				),
+			),
+			'article'
+		);
+
+		$this->assertSame( 'note', $this->kind_of( $post_id ) );
+		$this->assertSame( 'Do I need to add to the template?Testing note without location.', (string) get_post_field( 'post_content', $post_id ) );
+	}
+
+	public function test_form_encoded_entry_with_content_and_no_name_is_a_note(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'h'       => 'entry',
+				'content' => 'Testing note without location.',
+			),
+			'article'
+		);
+
+		$this->assertSame( 'note', $this->kind_of( $post_id ) );
+	}
+
+	public function test_entry_whose_name_prefixes_its_content_is_a_note(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => array(
+					'name'    => array( 'Testing note' ),
+					'content' => array( "Testing   note\nwithout location." ),
+				),
+			),
+			'article'
+		);
+
+		$this->assertSame( 'note', $this->kind_of( $post_id ) );
+	}
+
+	public function test_json_entry_with_a_name_is_an_article(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => array(
+					'name'    => array( 'A post with a title' ),
+					'content' => array( 'The body says something else.' ),
+				),
+			)
+		);
+
+		$this->assertSame( 'article', $this->kind_of( $post_id ) );
+	}
+
+	public function test_form_encoded_entry_with_a_name_is_an_article(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'h'       => 'entry',
+				'name'    => 'A post with a title',
+				'content' => 'The body says something else.',
+			)
+		);
+
+		$this->assertSame( 'article', $this->kind_of( $post_id ) );
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public static function response_kind_provider(): array {
+		return array(
+			'like'     => array( 'like-of', 'like' ),
+			'reply'    => array( 'in-reply-to', 'reply' ),
+			'repost'   => array( 'repost-of', 'repost' ),
+			'bookmark' => array( 'bookmark-of', 'bookmark' ),
+		);
+	}
+
+	/**
+	 * @dataProvider response_kind_provider
+	 */
+	public function test_response_kinds_keep_their_kind_with_content_and_no_name( string $property, string $kind ): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => array(
+					$property => array( 'https://example.test/post' ),
+					'content'  => array( 'My words about it.' ),
+				),
+			),
+			'article'
+		);
+
+		$this->assertSame( $kind, $this->kind_of( $post_id ) );
+	}
+
+	// --- location is not a check-in ------------------------------------------
+
+	public function test_quill_drank_entry_with_a_location_is_a_drink(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => array(
+					'published' => array( '2026-11-17T15:27:00-05:00' ),
+					'summary'   => array( 'Just drank: Diet coke' ),
+					'location'  => array( 'geo:40.78963,-77.85019;u=79' ),
+					'drank'     => array(
+						array(
+							'type'       => array( 'h-food' ),
+							'properties' => array( 'name' => array( 'Diet coke' ) ),
+						),
+					),
+				),
+			)
+		);
+
+		$content = (string) get_post_field( 'post_content', $post_id );
+		$this->assertSame( 'drink', $this->kind_of( $post_id ) );
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/drink-card {"name":"Diet coke"', $content );
+		$this->assertStringNotContainsString( 'checkin-card', $content );
+	}
+
+	public function test_ate_entry_is_an_eat(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => array(
+					'location' => array( 'geo:40.78963,-77.85019' ),
+					'ate'      => array( 'Pierogies' ),
+				),
+			)
+		);
+
+		$this->assertSame( 'eat', $this->kind_of( $post_id ) );
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/eat-card {"name":"Pierogies"', (string) get_post_field( 'post_content', $post_id ) );
+	}
+
+	public function test_json_note_with_a_geo_location_stays_a_note_and_keeps_its_location(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => array(
+					'content'  => array( 'Testing note with location.' ),
+					'location' => array( 'geo:40.78963,-77.85019;u=79' ),
+				),
+			),
+			null,
+			array(
+				'geo_latitude'  => '40.78963',
+				'geo_longitude' => '-77.85019',
+			)
+		);
+
+		$this->assertSame( 'note', $this->kind_of( $post_id ) );
+		$this->assertSame( 'Testing note with location.', (string) get_post_field( 'post_content', $post_id ) );
+		$this->assertSame( '40.78963', get_post_meta( $post_id, 'geo_latitude', true ) );
+		$this->assertSame( '-77.85019', get_post_meta( $post_id, 'geo_longitude', true ) );
+	}
+
+	public function test_form_encoded_note_with_a_geo_location_stays_a_note(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'h'        => 'entry',
+				'content'  => 'Testing note with location.',
+				'location' => 'geo:40.78963,-77.85019',
+			)
+		);
+
+		$this->assertSame( 'note', $this->kind_of( $post_id ) );
+		$this->assertSame( 'Testing note with location.', (string) get_post_field( 'post_content', $post_id ) );
+	}
+
+	public function test_outpost_note_with_a_geo_tag_stays_a_note(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'h'         => 'entry',
+				'content'   => 'Testing note with a geo tag.',
+				'location'  => 'geo:40.78963,-77.85019',
+				'pkiw-kind' => 'note',
+			)
+		);
+
+		$this->assertSame( 'note', $this->kind_of( $post_id ) );
+		$this->assertStringNotContainsString( 'checkin-card', (string) get_post_field( 'post_content', $post_id ) );
+	}
+
+	public function test_entry_with_a_checkin_venue_is_a_checkin(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => array(
+					'content' => array( 'Coffee stop.' ),
+					'checkin' => array(
+						array(
+							'type'       => array( 'h-card' ),
+							'properties' => array(
+								'name'      => array( 'Brass Lantern Cafe' ),
+								'latitude'  => array( '39.37' ),
+								'longitude' => array( '-77.37' ),
+							),
+						),
+					),
+				),
+			)
+		);
+
+		$this->assertSame( 'checkin', $this->kind_of( $post_id ) );
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/checkin-card', (string) get_post_field( 'post_content', $post_id ) );
+	}
+
+	public function test_outpost_checkin_hint_with_a_location_is_a_checkin(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'h'         => 'entry',
+				'location'  => 'geo:39.37,-77.37',
+				'name'      => 'Brass Lantern Cafe',
+				'pkiw-kind' => 'checkin',
+			)
+		);
+
+		$content = (string) get_post_field( 'post_content', $post_id );
+		$this->assertSame( 'checkin', $this->kind_of( $post_id ) );
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/checkin-card', $content );
+		$this->assertStringContainsString( '"latitude":39.37', $content );
 	}
 
 	// --- pkiw-kind explicit hint --------------------------------------------
@@ -738,8 +1011,8 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 			'detect_kind',
 			array(
 				array(
-					'location' => 'geo:42.0,-71.0',
-					'photo'    => array( 'https://example.test/uploads/place.jpg' ),
+					'checkin' => 'https://example.test/venue',
+					'photo'   => array( 'https://example.test/uploads/place.jpg' ),
 				),
 			)
 		);
@@ -1246,6 +1519,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		Micropub_Content_Builder::apply(
 			array(
 				'h'             => 'entry',
+				'pkiw-kind'     => 'checkin',
 				'mp-place-name' => 'Cafe Test',
 				'location'      => 'geo:39.93,-77.66',
 			),
@@ -2513,6 +2787,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		return array(
 			'checkin' => array(
 				array(
+					'pkiw-kind'     => array( 'checkin' ),
 					'mp-place-name' => array( 'Sample venue' ),
 					'location'      => array( 'geo:40.0379,-76.3055' ),
 					'content'       => array( 'Sample body' ),
