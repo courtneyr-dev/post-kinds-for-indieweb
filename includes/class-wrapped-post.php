@@ -204,7 +204,7 @@ final class Wrapped_Post {
 		if ( ! headers_sent() ) {
 			header( 'X-Robots-Tag: noindex' );
 		}
-		wp_redirect( get_permalink( $post ), 301 );
+		wp_safe_redirect( get_permalink( $post ), 301 );
 		exit;
 	}
 
