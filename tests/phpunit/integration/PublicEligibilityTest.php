@@ -28,8 +28,9 @@ final class PKIW_Test_Pantheon_Cache {
 		$this->urls = array_merge( $this->urls, $urls );
 	}
 
-	public function enqueue_regex( array $regex ): void {
-		$this->regex = array_merge( $this->regex, $regex );
+	/** Mirrors Pantheon_Cache::enqueue_regex(): one regex string per call, appended to the path list. */
+	public function enqueue_regex( string $regex ): void {
+		$this->regex[] = $regex;
 	}
 }
 
@@ -450,6 +451,8 @@ final class PublicEligibilityTest extends WP_UnitTestCase {
 		$this->assertContains( '^/kind/tag/page/', $cache->regex );
 		$this->assertContains( '^/stream/page/', $cache->regex );
 		$this->assertContains( '^/extra/page/', $cache->regex );
+		$this->assertContainsOnly( 'string', $cache->regex );
+		$this->assertSame( array_values( array_unique( $cache->regex ) ), $cache->regex );
 	}
 
 	public function test_multi_kind_and_removed_kind_purge_the_governed_archives(): void {
