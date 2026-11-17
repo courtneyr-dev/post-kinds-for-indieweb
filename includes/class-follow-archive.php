@@ -39,8 +39,10 @@ final class Follow_Archive {
 		add_action( 'pre_get_posts', [ self::class, 'filter_main_query' ] );
 		add_filter( 'posts_clauses', [ self::class, 'order_clauses' ], 10, 2 );
 		add_filter( 'render_block_core/paragraph', [ self::class, 'unclass_generated_paragraph' ], 10, 2 );
+		add_filter( 'get_post_metadata', [ self::class, 'filter_cite_photo' ], 10, 5 );
 		add_filter( 'add_post_metadata', [ self::class, 'guard_cite_photo' ], 10, 4 );
 		add_filter( 'update_post_metadata', [ self::class, 'guard_cite_photo' ], 10, 4 );
+		add_filter( 'update_post_metadata_by_mid', [ self::class, 'guard_cite_photo_by_mid' ], 10, 4 );
 		add_action( 'set_object_terms', [ self::class, 'photo_on_kind_change' ], 10, 6 );
 		add_filter( 'is_post_embeddable', [ self::class, 'embeddable' ], 20, 2 );
 		add_filter( 'webmention_links', [ self::class, 'notify_links' ], 30, 2 );
@@ -111,8 +113,10 @@ final class Follow_Archive {
 
 	/** Return public follow facts. */
 	public static function facts( int $post_id ): array {
-		$post = $post_id > 0 ? get_post( $post_id ) : null;
-		if ( ! $post instanceof \WP_Post || 'post' !== $post->post_type || ! has_term( self::KIND, Taxonomy::TAXONOMY, $post ) ) {
+		$post     = $post_id > 0 ? get_post( $post_id ) : null;
+		$taxonomy = get_taxonomy( Taxonomy::TAXONOMY );
+		$types    = $taxonomy ? $taxonomy->object_type : [ 'post' ];
+		if ( ! $post instanceof \WP_Post || ! in_array( $post->post_type, $types, true ) || ! has_term( self::KIND, Taxonomy::TAXONOMY, $post ) ) {
 			return [];
 		}
 		return self::facts_for( $post, self::KIND );
@@ -195,7 +199,8 @@ final class Follow_Archive {
 			return;
 		}
 		$query->set( 'pkiw_follow_az', 1 );
-		$value = trim( (string) $query->get( self::VAR_INITIAL ) );
+		$value = $query->get( self::VAR_INITIAL );
+		$value = is_scalar( $value ) ? trim( (string) $value ) : '';
 		if ( '' !== $value ) {
 			$letter = self::initial( $value );
 			$query->set( 'post__in', self::served_index()['letters'][ $letter ]['ids'] ?? [ 0 ] );
@@ -287,19 +292,32 @@ final class Follow_Archive {
 	/** Recheck every cached row immediately before serving it. */
 	public static function served_index(): array {
 		$index = self::index();
-		$ids   = array_map( static fn( array $row ): int => (int) ( $row['post_id'] ?? 0 ), (array) ( $index['follows'] ?? [] ) );
+		$rows  = array_values( array_filter( (array) ( $index['follows'] ?? [] ), 'is_array' ) );
+		$ids   = array_map( static fn( array $row ): int => (int) ( $row['post_id'] ?? 0 ), $rows );
 		if ( [] !== $ids ) {
-			_prime_post_caches( $ids, false, true );
+			_prime_post_caches( $ids, true, true );
 		}
 		$follows = [];
 		$letters = [];
-		foreach ( (array) ( $index['follows'] ?? [] ) as $row ) {
+		foreach ( $rows as $row ) {
 			$id   = (int) ( $row['post_id'] ?? 0 );
 			$post = $id > 0 ? get_post( $id ) : null;
 			if ( ! $post instanceof \WP_Post || ! has_term( self::KIND, Taxonomy::TAXONOMY, $post ) || Public_Eligibility::hides( $post ) ) {
 				continue;
 			}
-			$letter         = self::initial( (string) ( $row['name'] ?? '' ) );
+			$target = self::target( $post );
+			$name   = (string) $target['name'];
+			if ( '' === $name ) {
+				$name = trim( (string) \pkiw_get_safe_title( $post->ID ) );
+				if ( '' === $name ) {
+					$name = untitled_name( $post, false );
+				}
+			}
+			$letter         = self::initial( $name );
+			$row['post_id'] = $id;
+			$row['name']    = $name;
+			$row['url']     = (string) $target['url'];
+			$row['host']    = url_host( (string) $target['url'] );
 			$row['initial'] = $letter;
 			$follows[]      = $row;
 			if ( ! isset( $letters[ $letter ] ) ) {
@@ -320,7 +338,10 @@ final class Follow_Archive {
 	}
 
 	/** Remove the generated paragraph's duplicate follow-of class on singles. */
-	public static function unclass_generated_paragraph( string $html, array $block ): string {
+	public static function unclass_generated_paragraph( $html, array $block ) {
+		if ( ! is_string( $html ) ) {
+			return $html;
+		}
 		if ( ! is_singular() || ! self::is_generated_paragraph( $block ) ) {
 			return $html;
 		}
@@ -349,14 +370,11 @@ final class Follow_Archive {
 			return '';
 		}
 		$photo = (int) $facts['photo_id'] > 0 ? (string) wp_get_attachment_image_url( (int) $facts['photo_id'], 'medium' ) : '';
-		return hidden_cite_html(
-			'u-follow-of h-card',
-			[
-				'p-name'  => (string) $facts['name'],
-				'u-url'   => (string) $facts['url'],
-				'u-photo' => $photo,
-			]
-		);
+		$html  = '<span class="u-follow-of h-card" hidden><data class="p-name" value="' . esc_attr( (string) $facts['name'] ) . '"></data><data class="u-url" value="' . esc_url( (string) $facts['url'] ) . '"></data>';
+		if ( '' !== $photo ) {
+			$html .= '<data class="u-photo" value="' . esc_url( $photo ) . '"></data>';
+		}
+		return $html . '</span>';
 	}
 
 	/** Add follow to the generic Stream citation map. */
@@ -428,12 +446,37 @@ final class Follow_Archive {
 		return $attachment_id > 0 && Public_Eligibility::public_image_id( $attachment_id ) === $attachment_id;
 	}
 
+	/** Hide unsafe stored cite photos from every metadata reader. */
+	public static function filter_cite_photo( $check, $object_id, $meta_key, $single, $meta_type = 'post' ) {
+		if ( 'post' !== $meta_type || '_pkiw_cite_photo' !== $meta_key || (int) $object_id < 1 || ! has_term( self::KIND, Taxonomy::TAXONOMY, (int) $object_id ) ) {
+			return $check;
+		}
+		$url = self::raw_cite_photo( (int) $object_id );
+		return self::photo_ok( $url ) ? $check : ( $single ? '' : [] );
+	}
+
 	/** Refuse unsafe follow cite-photo writes without failing the request. */
 	public static function guard_cite_photo( $check, $object_id, $meta_key, $value ) {
-		if ( '_pkiw_cite_photo' !== $meta_key || (int) $object_id < 1 || ! has_term( self::KIND, Taxonomy::TAXONOMY, (int) $object_id ) || '' === (string) $value ) {
+		if ( '_pkiw_cite_photo' !== $meta_key || (int) $object_id < 1 || ! has_term( self::KIND, Taxonomy::TAXONOMY, (int) $object_id ) ) {
+			return $check;
+		}
+		if ( ! is_scalar( $value ) ) {
+			return true;
+		}
+		if ( '' === (string) $value ) {
 			return $check;
 		}
 		return self::photo_ok( (string) $value ) ? $check : true;
+	}
+
+	/** Refuse unsafe cite-photo updates addressed by metadata row ID. */
+	public static function guard_cite_photo_by_mid( $check, $meta_id, $value, $meta_key ) {
+		$meta = get_metadata_by_mid( 'post', (int) $meta_id );
+		if ( ! $meta ) {
+			return $check;
+		}
+		$key = false === $meta_key ? (string) $meta->meta_key : $meta_key;
+		return self::guard_cite_photo( $check, (int) $meta->post_id, $key, $value );
 	}
 
 	/** Drop an unsafe cite photo when a post becomes a follow. */
@@ -441,14 +484,17 @@ final class Follow_Archive {
 		if ( Taxonomy::TAXONOMY !== $taxonomy || ! has_term( self::KIND, Taxonomy::TAXONOMY, $object_id ) ) {
 			return;
 		}
-		$url = (string) get_post_meta( $object_id, '_pkiw_cite_photo', true );
+		$url = self::raw_cite_photo( $object_id );
 		if ( '' !== $url && ! self::photo_ok( $url ) ) {
 			delete_post_meta( $object_id, '_pkiw_cite_photo' );
 		}
 	}
 
 	/** Hide every governed ineligible post from oEmbed. */
-	public static function embeddable( $embeddable, \WP_Post $post ): bool {
+	public static function embeddable( $embeddable, $post ) {
+		if ( ! $post instanceof \WP_Post ) {
+			return $embeddable;
+		}
 		return Public_Eligibility::hides( $post ) ? false : (bool) $embeddable;
 	}
 
@@ -591,13 +637,19 @@ final class Follow_Archive {
 	/** Normalize a name to its public initial. */
 	public static function initial( string $name ): string {
 		$name = trim( $name );
+		if ( class_exists( '\\Normalizer' ) ) {
+			$normalized = \Normalizer::normalize( $name, \Normalizer::FORM_C );
+			$name       = is_string( $normalized ) ? $normalized : $name;
+		}
 		if ( '' === $name ) {
 			return self::OTHER_INITIAL;
 		}
-		$first  = function_exists( 'grapheme_substr' ) ? (string) grapheme_substr( $name, 0, 1 ) : mb_substr( $name, 0, 1 );
-		$first  = mb_strtoupper( $first );
-		$letter = class_exists( '\\IntlChar' ) ? \IntlChar::isalpha( $first ) : 1 === preg_match( '/\p{L}/u', $first );
-		return $letter ? $first : self::OTHER_INITIAL;
+		$first = function_exists( 'grapheme_substr' ) ? (string) grapheme_substr( $name, 0, 1 ) : mb_substr( $name, 0, 1 );
+		if ( 1 !== preg_match( '/^\p{L}/u', $first ) ) {
+			return self::OTHER_INITIAL;
+		}
+		$upper = mb_strtoupper( $first );
+		return mb_strlen( $upper ) === mb_strlen( $first ) ? $upper : $first;
 	}
 
 	/** Use eight items in archive previews. */
@@ -733,7 +785,8 @@ final class Follow_Archive {
 		if ( is_wp_error( $link ) ) {
 			return '';
 		}
-		$active = Grouped_Archive::is_block_preview() ? '' : trim( (string) get_query_var( self::VAR_INITIAL ) );
+		$active = Grouped_Archive::is_block_preview() ? '' : get_query_var( self::VAR_INITIAL );
+		$active = is_scalar( $active ) ? trim( (string) $active ) : '';
 		$active = '' !== $active ? self::initial( $active ) : '';
 		$label  = (string) ( $attributes['label'] ?? __( 'Follows by first letter', 'post-kinds-for-indieweb-in-block-themes' ) );
 		$html   = '<nav class="pkiw-follow-letters" aria-label="' . esc_attr( $label ) . '"><ul>';
@@ -811,7 +864,7 @@ final class Follow_Archive {
 				continue;
 			}
 			$facts = self::facts( $id );
-			if ( [] !== $facts && 0 === strcasecmp( (string) $facts['name'], $name ) ) {
+			if ( [] !== $facts && mb_strtolower( (string) $facts['name'] ) === mb_strtolower( $name ) ) {
 				++$count;
 			}
 		}
@@ -824,7 +877,21 @@ final class Follow_Archive {
 		if ( ! $query instanceof \WP_Query ) {
 			return false;
 		}
+		if ( (int) $query->get( 'paged' ) > 1 ) {
+			return false;
+		}
 		$ids = array_map( static fn( $post ): int => $post instanceof \WP_Post ? $post->ID : (int) $post, array_slice( (array) $query->posts, 0, 4 ) );
 		return in_array( $post_id, $ids, true );
+	}
+
+	/** Read the stored cite photo without the public metadata filter. */
+	private static function raw_cite_photo( int $post_id ): string {
+		remove_filter( 'get_post_metadata', [ self::class, 'filter_cite_photo' ], 10 );
+		try {
+			$value = get_metadata_raw( 'post', $post_id, '_pkiw_cite_photo', true );
+			return is_string( $value ) ? $value : '';
+		} finally {
+			add_filter( 'get_post_metadata', [ self::class, 'filter_cite_photo' ], 10, 5 );
+		}
 	}
 }

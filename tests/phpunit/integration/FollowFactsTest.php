@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use PKIW\Follow_Archive;
+use PKIW\Post_Type;
 use PKIW\Taxonomy;
 
 /** @group integration */
@@ -84,6 +85,48 @@ final class FollowFactsTest extends WP_UnitTestCase {
 
 		$post = self::factory()->post->create( [ 'post_status' => 'publish' ] );
 		$this->assertSame( [], Follow_Archive::facts( $post ), 'A post without the follow term is the positive non-follow control.' );
+	}
+
+	public function test_follow_on_the_plugin_storage_type_reaches_every_public_follow_surface(): void {
+		$settings       = get_option( 'pkiw_settings', [] );
+		$was_registered = post_type_exists( Post_Type::POST_TYPE );
+		update_option( 'pkiw_settings', array_merge( is_array( $settings ) ? $settings : [], [ 'import_storage_mode' => 'cpt' ] ) );
+		$storage = new Post_Type();
+		$storage->maybe_register_post_type();
+		register_taxonomy_for_object_type( Taxonomy::TAXONOMY, Post_Type::POST_TYPE );
+		try {
+			$public = self::factory()->post->create( [ 'post_type' => Post_Type::POST_TYPE, 'post_status' => 'publish', 'post_title' => 'Storage follow' ] );
+			wp_set_object_terms( $public, 'follow', Taxonomy::TAXONOMY );
+			update_post_meta( $public, '_pkiw_cite_name', 'Storage Person' );
+			update_post_meta( $public, '_pkiw_cite_url', 'https://storage-person.example/' );
+
+			$private = self::factory()->post->create( [ 'post_type' => Post_Type::POST_TYPE, 'post_status' => 'private', 'post_title' => 'Private storage follow' ] );
+			wp_set_object_terms( $private, 'follow', Taxonomy::TAXONOMY );
+			update_post_meta( $private, '_pkiw_cite_name', 'Private Storage Person' );
+			update_post_meta( $private, '_pkiw_cite_url', 'https://private-storage.example/' );
+			delete_transient( Follow_Archive::INDEX_TRANSIENT );
+
+			$entry   = ( new WP_Block( [ 'blockName' => Follow_Archive::ENTRY_BLOCK, 'attrs' => [], 'innerBlocks' => [], 'innerHTML' => '', 'innerContent' => [] ], [ 'postId' => $public, 'postType' => Post_Type::POST_TYPE ] ) )->render();
+			$letters = Follow_Archive::render_letters_block();
+			$opml    = Follow_Archive::opml_response( 'GET' )['body'];
+			wp_set_current_user( self::factory()->user->create( [ 'role' => 'subscriber' ] ) );
+			$ability = wp_get_ability( 'post-kinds/get-follow-index' )->execute( [] );
+
+			$this->assertStringContainsString( 'Storage Person', $entry, 'The eligible storage follow renders its entry.' );
+			$this->assertStringContainsString( 'pkiw_follow_initial=S', $letters, 'Its fresh initial appears in the letters.' );
+			$this->assertStringContainsString( 'Storage Person', $opml, 'It appears in OPML.' );
+			$this->assertIsArray( $ability );
+			$this->assertContains( $public, array_column( $ability['follows'], 'post_id' ), 'It appears in the public ability.' );
+			$this->assertStringNotContainsString( 'Private Storage Person', $entry . $letters . $opml . wp_json_encode( $ability ), 'The private storage follow appears nowhere.' );
+			$this->assertNotContains( $private, array_column( $ability['follows'], 'post_id' ) );
+		} finally {
+			unregister_taxonomy_for_object_type( Taxonomy::TAXONOMY, Post_Type::POST_TYPE );
+			if ( ! $was_registered && post_type_exists( Post_Type::POST_TYPE ) ) {
+				unregister_post_type( Post_Type::POST_TYPE );
+			}
+			update_option( 'pkiw_settings', $settings );
+			delete_transient( Follow_Archive::INDEX_TRANSIENT );
+		}
 	}
 
 	private function follow( array $post = [] ): int {

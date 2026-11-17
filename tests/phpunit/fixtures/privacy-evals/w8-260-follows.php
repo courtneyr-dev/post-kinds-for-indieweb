@@ -1,5 +1,6 @@
 $w8_260_result = 'RESULT PASS';
 $w8_260_writes = 0;
+$w8_260_user_id = get_current_user_id();
 $w8_260_query_guard = static function ( $sql ) use ( &$w8_260_writes ) {
 	$verb = strtoupper( strtok( ltrim( (string) $sql ), " \t\r\n" ) ?: '' );
 	if ( ! in_array( $verb, [ 'SELECT', 'SHOW' ], true ) ) {
@@ -309,6 +310,7 @@ try {
 	remove_filter( 'get_post_metadata', $w8_260_meta, PHP_INT_MIN );
 	remove_filter( 'terms_pre_query', $w8_260_terms, PHP_INT_MIN );
 	remove_filter( 'query', $w8_260_query_guard, PHP_INT_MIN );
+	wp_set_current_user( $w8_260_user_id );
 }
 
 if ( $w8_260_writes > 0 ) {

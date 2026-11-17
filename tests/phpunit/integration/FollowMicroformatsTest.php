@@ -75,4 +75,23 @@ final class FollowMicroformatsTest extends WP_UnitTestCase {
 		$archive = do_blocks( (string) get_post_field( 'post_content', $id ) );
 		$this->assertStringContainsString( 'class="u-follow-of"', $archive, 'Non-singular rendering keeps the generated paragraph property.' );
 	}
+
+	public function test_stream_follow_of_parses_as_only_an_h_card(): void {
+		$id = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => 'Stream follow' ] );
+		wp_set_object_terms( $id, 'follow', Taxonomy::TAXONOMY );
+		update_post_meta( $id, '_pkiw_cite_name', 'Stream Person' );
+		update_post_meta( $id, '_pkiw_cite_url', 'https://stream-person.example/' );
+		$GLOBALS['post'] = get_post( $id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Stream fixture.
+		setup_postdata( $GLOBALS['post'] );
+		$items     = \Mf2\parse( \PKIW\render_stream_card(), get_permalink( $id ) )['items'] ?? [];
+		$follow_of = $items[0]['properties']['follow-of'][0] ?? null;
+		$this->assertIsArray( $follow_of );
+		$this->assertSame( [ 'h-card' ], $follow_of['type'], 'The Stream follow-of must not inherit hidden_cite_html()\'s h-cite type.' );
+		wp_reset_postdata();
+	}
+
+	public function test_filter_callbacks_return_unexpected_values_unchanged(): void {
+		$this->assertNull( Follow_Archive::unclass_generated_paragraph( null, [] ), 'A third-party null paragraph value must pass through.' );
+		$this->assertSame( 'incoming', Follow_Archive::embeddable( 'incoming', null ), 'A non-post oEmbed callback value must pass through.' );
+	}
 }

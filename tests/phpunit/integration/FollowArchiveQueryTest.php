@@ -30,6 +30,12 @@ final class FollowArchiveQueryTest extends WP_UnitTestCase {
 		$this->assertSame( 1, $args['pkiw_follow_az'] );
 	}
 
+	public function test_initial_normalizes_decomposed_letters_and_keeps_expanding_graphemes(): void {
+		$this->assertSame( 'É', Follow_Archive::initial( "e\u{0301}clair" ), 'NFC normalization must turn the decomposed first grapheme into É.' );
+		$this->assertSame( 'ß', Follow_Archive::initial( 'ßeta' ), 'Uppercasing ß expands to SS, so the original grapheme must remain.' );
+		$this->assertSame( 'ﬁ', Follow_Archive::initial( 'ﬁle' ), 'Uppercasing the ﬁ ligature expands to FI, so the original grapheme must remain.' );
+	}
+
 	public function test_purge_urls_preserve_shape_and_add_the_affected_letter(): void {
 		$post_id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
 		wp_set_object_terms( $post_id, 'follow', Taxonomy::TAXONOMY );
@@ -102,6 +108,59 @@ final class FollowArchiveQueryTest extends WP_UnitTestCase {
 		} finally {
 			Public_Eligibility::rest_request_after( null, [], $request );
 		}
+	}
+
+	public function test_served_index_primes_terms_for_a_constant_query_count(): void {
+		global $wpdb;
+		foreach ( range( 1, 50 ) as $number ) {
+			$this->follow( sprintf( 'Follow %02d', $number ), 'https://follow-' . $number . '.example/' );
+		}
+		Follow_Archive::index();
+		wp_cache_flush();
+		$before = $wpdb->num_queries;
+		$served = Follow_Archive::served_index();
+		$queries = $wpdb->num_queries - $before;
+		$this->assertSame( 50, $served['total'] );
+		$this->assertLessThanOrEqual( 10, $queries, 'Priming posts without terms causes one has_term() query per cached follow.' );
+	}
+
+	public function test_array_initial_is_unset_without_warnings_or_filtering(): void {
+		$first  = $this->follow( 'Vera', 'https://vera.example/' );
+		$second = $this->follow( 'Zora', 'https://zora.example/' );
+		$warnings = [];
+		set_error_handler(
+			static function ( int $severity, string $message ) use ( &$warnings ): bool {
+				if ( E_WARNING === $severity ) {
+					$warnings[] = $message;
+				}
+				return true;
+			}
+		);
+		try {
+			$this->go_to( home_url( '/?kind=follow&pkiw_follow_initial[]=V' ) );
+			$html = Follow_Archive::render_letters_block();
+		} finally {
+			restore_error_handler();
+		}
+		$this->assertSame( [], $warnings, 'A non-scalar query value must never be cast to string.' );
+		$this->assertEmpty( $GLOBALS['wp_query']->query_vars['post__in'] ?? null, 'A non-scalar initial is unset, not a letter filter.' );
+		$this->assertEqualsCanonicalizing( [ $first, $second ], wp_list_pluck( $GLOBALS['wp_query']->posts, 'ID' ), 'The archive remains unfiltered.' );
+		$this->assertStringContainsString( 'pkiw-follow-letters', $html );
+	}
+
+	public function test_served_index_skips_malformed_transient_rows(): void {
+		$post_id = $this->follow( 'Valid row', 'https://valid-row.example/' );
+		set_transient(
+			Follow_Archive::INDEX_TRANSIENT,
+			[
+				'follows' => [ 'bad', 5, [ 'post_id' => 'not-an-id' ], [ 'post_id' => $post_id ] ],
+				'letters' => 'bad',
+			],
+			HOUR_IN_SECONDS
+		);
+		$served = Follow_Archive::served_index();
+		$this->assertSame( 1, $served['total'] );
+		$this->assertSame( [ $post_id ], array_column( $served['follows'], 'post_id' ), 'Only the valid cached row survives.' );
 	}
 
 	public function test_index_flushes_through_existing_post_and_term_hooks_only(): void {

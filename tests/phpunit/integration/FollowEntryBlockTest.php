@@ -63,6 +63,25 @@ final class FollowEntryBlockTest extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_names_differing_only_by_accented_case_share_the_accessible_label(): void {
+		$ids = [];
+		foreach ( [ 'Édith Piaf', 'édith piaf' ] as $offset => $name ) {
+			$id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+			wp_set_object_terms( $id, 'follow', Taxonomy::TAXONOMY );
+			update_post_meta( $id, '_pkiw_cite_name', $name );
+			update_post_meta( $id, '_pkiw_cite_url', 'https://edith-' . $offset . '.example/' );
+			$ids[] = $id;
+		}
+		$previous_query             = $GLOBALS['wp_query'] ?? null;
+		$GLOBALS['wp_query']        = new WP_Query();
+		$GLOBALS['wp_query']->posts = array_map( 'get_post', $ids );
+		try {
+			$this->assertStringContainsString( 'aria-labelledby="pkiw-follow-' . $ids[0] . '-name pkiw-follow-' . $ids[0] . '-host"', $this->render( $ids[0] ), 'Spec C4 compares repeat names with mb_strtolower().' );
+		} finally {
+			$GLOBALS['wp_query'] = $previous_query;
+		}
+	}
+
 	public function test_host_source_omits_the_host_until_the_name_repeats(): void {
 		$id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
 		wp_set_object_terms( $id, 'follow', Taxonomy::TAXONOMY );
@@ -93,6 +112,26 @@ final class FollowEntryBlockTest extends WP_UnitTestCase {
 			}
 			$this->assertStringContainsString( 'loading="lazy"', $this->render( $ids[4] ) );
 			$this->assertStringNotContainsString( 'fetchpriority="high"', $this->render( $ids[4] ) );
+		} finally {
+			$GLOBALS['wp_query'] = $previous_query;
+		}
+	}
+
+	public function test_first_photo_on_page_two_is_lazy(): void {
+		$image = self::factory()->attachment->create_upload_object( DIR_TESTDATA . '/images/canola.jpg' );
+		$id    = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		wp_set_object_terms( $id, 'follow', Taxonomy::TAXONOMY );
+		update_post_meta( $id, '_pkiw_cite_name', 'Page two photo' );
+		update_post_meta( $id, '_pkiw_cite_url', 'https://page-two.example/' );
+		set_post_thumbnail( $id, $image );
+		$previous_query             = $GLOBALS['wp_query'] ?? null;
+		$GLOBALS['wp_query']        = new WP_Query();
+		$GLOBALS['wp_query']->posts = [ get_post( $id ) ];
+		$GLOBALS['wp_query']->set( 'paged', 2 );
+		try {
+			$html = $this->render( $id );
+			$this->assertStringContainsString( 'loading="lazy"', $html, 'Only page 1 may mark its first four photos eager.' );
+			$this->assertStringNotContainsString( 'fetchpriority="high"', $html );
 		} finally {
 			$GLOBALS['wp_query'] = $previous_query;
 		}

@@ -40,6 +40,13 @@ final class FollowPrivacyEvalControlsTest extends WP_UnitTestCase {
 		$this->assertSame( 'RESULT PASS', $this->last_line( $this->fixture() ), 'The positive control proves the complete eval can pass.' );
 	}
 
+	public function test_unpatched_eval_restores_the_current_user(): void {
+		$user_id = self::factory()->user->create( [ 'role' => 'administrator' ] );
+		wp_set_current_user( $user_id );
+		$this->assertSame( 'RESULT PASS', $this->last_line( $this->fixture() ) );
+		$this->assertSame( $user_id, get_current_user_id(), 'The eval must restore the caller it replaced.' );
+	}
+
 	public function test_facts_gate_negative_control_fails_with_exact_leak_list(): void {
 		$replacement = '/*W8-260:F*/ static fn( \WP_Post $p, string $k ): array => \PKIW\Follow_Archive::facts_body( $p ) /*W8-260:/F*/';
 		$this->assertSame( 'RESULT FAIL facts_leak:private,draft,pending,future,password,trash', $this->last_line( $this->patched( self::FACTS_SPAN, $replacement ) ) );
