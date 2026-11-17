@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.9.1
+Stable tag: 1.9.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -181,6 +181,12 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 
 == Changelog ==
 
+= 1.9.2 =
+* Added: tag posts with a Tag Card block and a /kind/tag/ archive.
+* Added: follow posts with an A to Z archive at /kind/follow/ and a public OPML list at /kind/follow/opml/.
+* Changed: a tag or follow post that is private, draft, scheduled, password-protected or trashed shows up nowhere public: not in lists, feeds, search, sitemaps, REST, embeds, abilities or outbound requests.
+* Changed: Standard Site never fetches a tagged or followed person's site.
+
 = 1.9.1 =
 * Fixed: Trakt stays connected past 7 days. A twice-daily job refreshes the token before it expires, and the Refresh Token button refreshes on demand. If Trakt rejects the refresh, PKIW disconnects Trakt and API Connections asks you to Connect again.
 * Fixed: saving API Connections no longer writes back a spent Trakt token, and tokens no longer appear in the page source.
@@ -355,6 +361,9 @@ Security
 * Fixed: like, reply, repost, bookmark, favorite, listen, watch, and read posts expose the correct microformats2 markup, so webmention receivers and feed readers recognize them as their kind.
 
 == Upgrade Notice ==
+
+= 1.9.2 =
+Adds tag and follow posts with their archives and a public OPML list of follows. Hidden tag and follow posts stay off every public surface.
 
 = 1.9.1 =
 Keeps Trakt connected past 7 days and corrects the Check-in Card's description of Approximate privacy. Coming from 1.8.9, you also get 1.9.0's RSVP, presentation, trip, itinerary and event archives and the Metron comic lookup.
