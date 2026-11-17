@@ -114,7 +114,7 @@ final class Kind_Facts {
 	 */
 	public static function get( int $post_id ): array {
 		$post = get_post( $post_id );
-		if ( ! $post instanceof \WP_Post || ! self::can_show( $post ) ) {
+		if ( ! $post instanceof \WP_Post || Public_Eligibility::hides( $post ) || ! self::can_show( $post ) ) {
 			return [];
 		}
 

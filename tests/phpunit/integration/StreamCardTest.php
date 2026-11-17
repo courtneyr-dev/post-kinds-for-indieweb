@@ -230,6 +230,63 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'boardgamegeek', $html );
 	}
 
+	public function test_governed_password_cards_are_hidden_before_the_protected_card_path(): void {
+		$hidden = [];
+		foreach ( [ 'follow', 'tag' ] as $kind ) {
+			$this->ensure_kind_term( $kind );
+			foreach ( [ 'Titled password sentinel', '' ] as $title ) {
+				$post_id = self::factory()->post->create(
+					[
+						'post_status'   => 'publish',
+						'post_password' => 'secret',
+						'post_title'    => $title,
+					]
+				);
+				wp_set_object_terms( $post_id, $kind, 'kind' );
+				$hidden[] = $post_id;
+			}
+		}
+
+		$this->ensure_kind_term( 'collection' );
+		$collection = self::factory()->post->create( [ 'post_status' => 'private', 'post_title' => 'Private collection sentinel' ] );
+		wp_set_object_terms( $collection, [ 'collection', 'follow' ], 'kind' );
+
+		$eligible = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => 'Eligible follow control' ] );
+		wp_set_object_terms( $eligible, 'follow', 'kind' );
+		update_post_meta( $eligible, '_pkiw_cite_name', 'Eligible follow name' );
+		update_post_meta( $eligible, '_pkiw_cite_url', 'https://eligible-follow.example/' );
+
+		$note = self::factory()->post->create( [ 'post_status' => 'publish', 'post_password' => 'secret', 'post_title' => 'Protected note control' ] );
+		wp_set_object_terms( $note, 'note', 'kind' );
+
+		$admin = self::factory()->user->create( [ 'role' => 'administrator' ] );
+		foreach ( [ 0, $admin ] as $user_id ) {
+			wp_set_current_user( $user_id );
+			foreach ( array_merge( $hidden, [ $collection ] ) as $post_id ) {
+				$GLOBALS['post'] = get_post( $post_id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Stream fixture.
+				setup_postdata( $GLOBALS['post'] );
+				$this->assertSame( '', \PKIW\render_stream_card(), 'A governed hidden post must bypass core protected-card rendering for every caller.' );
+				$block = new WP_Block( [ 'blockName' => 'post-kinds-indieweb/stream-card', 'attrs' => [], 'innerBlocks' => [], 'innerHTML' => '', 'innerContent' => [] ], [ 'postId' => $post_id, 'postType' => 'post' ] );
+				$this->assertSame( '', $block->render(), 'The Stream block must apply the same gate.' );
+			}
+		}
+
+		wp_set_current_user( 0 );
+		$GLOBALS['post'] = get_post( $note ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Stream fixture.
+		$this->assertStringContainsString( 'pk-card--protected', \PKIW\render_stream_card(), 'A password-protected note keeps the core protected card.' );
+		$GLOBALS['post'] = get_post( $eligible ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Stream fixture.
+		$this->assertStringContainsString( 'Eligible follow name', \PKIW\render_stream_card(), 'An eligible follow still renders.' );
+
+		$list_html = '';
+		foreach ( get_posts( [ 'numberposts' => -1 ] ) as $post ) {
+			$list_html .= ( new WP_Block( [ 'blockName' => 'post-kinds-indieweb/stream-card', 'attrs' => [], 'innerBlocks' => [], 'innerHTML' => '', 'innerContent' => [] ], [ 'postId' => $post->ID, 'postType' => 'post' ] ) )->render();
+		}
+		$this->assertStringNotContainsString( 'Titled password sentinel', $list_html, 'A get_posts() list bypasses posts_where, so the block must gate each row.' );
+		$this->assertStringContainsString( 'Eligible follow name', $list_html );
+		$this->assertStringContainsString( 'Protected note control', $list_html );
+		wp_reset_postdata();
+	}
+
 	/**
 	 * @return array<string, array{0: string, 1: string, 2: string}>
 	 */

@@ -384,7 +384,8 @@ final class Operations_Abilities {
 				],
 				'execute_callback'    => [ $this, 'execute_get_surface' ],
 				'permission_callback' => static function ( $input ): bool {
-					return current_user_can( 'read_post', (int) ( $input['post_id'] ?? 0 ) );
+					$post_id = (int) ( $input['post_id'] ?? 0 );
+					return $post_id > 0 && ! \PKIW\Public_Eligibility::hides( $post_id ) && current_user_can( 'read_post', $post_id );
 				},
 				'meta'                => $this->read_meta(),
 			]
@@ -417,7 +418,8 @@ final class Operations_Abilities {
 				],
 				'execute_callback'    => [ $this, 'execute_get_public_location_fields' ],
 				'permission_callback' => static function ( $input ): bool {
-					return current_user_can( 'read_post', (int) ( $input['post_id'] ?? 0 ) );
+					$post_id = (int) ( $input['post_id'] ?? 0 );
+					return $post_id > 0 && ! \PKIW\Public_Eligibility::hides( $post_id ) && current_user_can( 'read_post', $post_id );
 				},
 				'meta'                => $this->read_meta(),
 			]

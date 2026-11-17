@@ -349,7 +349,8 @@ final class Core_Abilities {
 				],
 				'execute_callback'    => [ $this, 'execute_get_kind' ],
 				'permission_callback' => function ( $input ) {
-					return current_user_can( 'read_post', (int) ( $input['post_id'] ?? 0 ) );
+					$post_id = (int) ( $input['post_id'] ?? 0 );
+					return $post_id > 0 && ! \PKIW\Public_Eligibility::hides( $post_id ) && current_user_can( 'read_post', $post_id );
 				},
 				'meta'                => [ 'show_in_rest' => true ],
 			]
@@ -435,7 +436,8 @@ final class Core_Abilities {
 				],
 				'execute_callback'    => [ $this, 'execute_get_post_meta' ],
 				'permission_callback' => function ( $input ) {
-					return current_user_can( 'read_post', (int) ( $input['post_id'] ?? 0 ) );
+					$post_id = (int) ( $input['post_id'] ?? 0 );
+					return $post_id > 0 && ! \PKIW\Public_Eligibility::hides( $post_id ) && current_user_can( 'read_post', $post_id );
 				},
 				'meta'                => [ 'show_in_rest' => true ],
 			]

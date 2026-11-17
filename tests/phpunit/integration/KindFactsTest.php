@@ -205,6 +205,26 @@ final class KindFactsTest extends WP_UnitTestCase {
 		$this->assertSame( [], \PKIW\kind_facts( $post_id ) );
 	}
 
+	public function test_hidden_multi_kind_follow_has_no_kind_facts_for_visitors_or_administrators(): void {
+		$hidden = self::factory()->post->create( [ 'post_status' => 'private', 'post_title' => 'Hidden bookmark follow' ] );
+		wp_set_object_terms( $hidden, [ 'bookmark', 'follow' ], Taxonomy::TAXONOMY );
+		update_post_meta( $hidden, '_pkiw_cite_name', 'Hidden person' );
+		update_post_meta( $hidden, '_pkiw_cite_url', 'https://hidden-person.example/' );
+
+		wp_set_current_user( 0 );
+		$this->assertSame( [], Kind_Facts::get( $hidden ), 'The visitor must see no facts.' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		$this->assertSame( [], Kind_Facts::get( $hidden ), 'The front-end administrator gets the same public answer.' );
+
+		$eligible = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => 'Eligible bookmark follow' ] );
+		wp_set_object_terms( $eligible, [ 'bookmark', 'follow' ], Taxonomy::TAXONOMY );
+		update_post_meta( $eligible, '_pkiw_cite_name', 'Eligible bookmark' );
+		update_post_meta( $eligible, '_pkiw_cite_url', 'https://eligible-bookmark.example/' );
+		$facts = Kind_Facts::get( $eligible );
+		$this->assertNotSame( [], $facts, 'An eligible multi-kind post keeps the bookmark reader selected by its first term.' );
+		$this->assertSame( 'https://eligible-bookmark.example/', $facts['url'] );
+	}
+
 	public function test_a_draft_has_facts_only_for_someone_who_can_read_it(): void {
 		$post_id = $this->kind_post( 'recipe', [ 'post_status' => 'draft' ] );
 		update_post_meta( $post_id, '_pkiw_recipe_yield', '4 bowls' );

@@ -91,6 +91,8 @@ export default function KindFields( { kind } ) {
 			return <ComicsFields />;
 		case 'quote':
 			return <CitationFields showSummary={ false } />;
+		case 'follow':
+			return <FollowFields />;
 		case 'tag':
 			return <TagFields />;
 		case 'presentation':
@@ -420,6 +422,63 @@ function CitationFields( { showSummary = true, showAuthor = true } ) {
 					__nextHasNoMarginBottom
 				/>
 			) }
+		</Flex>
+	);
+}
+
+/** Follow identity fields. */
+export function FollowFields() {
+	const { citeName, citeUrl } = useSelect( ( select ) => {
+		const getKindMeta = select( STORE_NAME ).getKindMeta;
+		return {
+			citeName: getKindMeta( 'cite_name' ),
+			citeUrl: getKindMeta( 'cite_url' ),
+		};
+	}, [] );
+	const { updateKindMeta } = useDispatch( STORE_NAME );
+
+	return (
+		<Flex
+			direction="column"
+			gap={ 4 }
+			className="post-kinds-indieweb-kind-fields"
+		>
+			<TextControl
+				label={ __(
+					'Name',
+					'post-kinds-for-indieweb-in-block-themes'
+				) }
+				value={ citeName }
+				onChange={ ( value ) => updateKindMeta( 'cite_name', value ) }
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
+			<TextControl
+				label={ __(
+					'Site URL',
+					'post-kinds-for-indieweb-in-block-themes'
+				) }
+				value={ citeUrl }
+				onChange={ ( value ) => updateKindMeta( 'cite_url', value ) }
+				type="url"
+				placeholder="https://"
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+			/>
+			<BaseControl
+				id="pkiw-follow-photo-help"
+				help={ __(
+					'Photo: set the featured image from your media library. Without one, an initial-letter tile shows.',
+					'post-kinds-for-indieweb-in-block-themes'
+				) }
+			/>
+			<BaseControl
+				id="pkiw-follow-preview-help"
+				help={ __(
+					'The Rolodex card shows on the site only once this follow is public; preview shows the post without it.',
+					'post-kinds-for-indieweb-in-block-themes'
+				) }
+			/>
 		</Flex>
 	);
 }
