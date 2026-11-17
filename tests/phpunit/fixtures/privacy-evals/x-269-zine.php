@@ -18,19 +18,48 @@ if ( ! class_exists( '\PKIW\Zine_Manifest' ) || ! class_exists( '\PKIW\Zine_Requ
 
 /*X269:2*/
 if ( '' === $fail ) {
-	\PKIW\Zine_Manifest::override_narrowed_visibility_for_tests( [] );
-	$query_a = new WP_Query( \PKIW\Public_Listing::query_args( [ 'fields' => 'ids', 'posts_per_page' => 1, 'pkiw_zine_narrow_visibility' => true ] ) );
-	\PKIW\Zine_Manifest::override_narrowed_visibility_for_tests( [ 'private' ] );
-	$query_b = new WP_Query( \PKIW\Public_Listing::query_args( [ 'fields' => 'ids', 'posts_per_page' => 1, 'pkiw_zine_narrow_visibility' => true ] ) );
-	\PKIW\Zine_Manifest::override_narrowed_visibility_for_tests( null );
-	$sql = (string) $query_a->request;
-	$sql_b = (string) $query_b->request;
+	$kind_terms = get_terms( [ 'taxonomy' => \PKIW\Taxonomy::TAXONOMY, 'hide_empty' => false, 'orderby' => 'term_id' ] );
+	$probe_slug = '';
+	foreach ( is_array( $kind_terms ) ? $kind_terms : [] as $kind_term ) {
+		if ( $kind_term instanceof WP_Term && ! in_array( $kind_term->slug, \PKIW\Zine_Manifest::excluded_kinds(), true ) ) {
+			$probe_slug = $kind_term->slug;
+			break;
+		}
+	}
+	$captured = [];
+	$capture  = static function ( $sql, $query ) use ( &$captured ) {
+		if ( $query instanceof WP_Query && true === $query->get( 'pkiw_public_listing' ) ) {
+			$captured[] = (string) $sql;
+		}
+		return $sql;
+	};
+	add_filter( 'posts_request', $capture, PHP_INT_MAX, 2 );
+	try {
+		\PKIW\Zine_Manifest::build( [ 'source' => 'archive', 'kind' => $probe_slug, 'pages' => 8 ] );
+	} finally {
+		remove_filter( 'posts_request', $capture, PHP_INT_MAX );
+	}
+	$sql    = (string) ( $captured[0] ?? '' );
+	$narrow = \PKIW\Zine_Manifest::narrowed_visibility();
+	$checks = [ "post_status = 'publish'", "post_password = ''", 'NOT EXISTS', "'quiet_public'" ];
+	foreach ( \PKIW\Public_Eligibility::KINDS as $governed_slug ) {
+		// The forced governed-kind clause is empty until a governed kind term exists.
+		if ( term_exists( $governed_slug, \PKIW\Taxonomy::TAXONOMY ) ) {
+			$checks[] = 'pkiw_public_tr';
+		}
+	}
 	foreach ( \PKIW\Public_Listing::meta_keys() as $key ) {
-		if ( ! str_contains( $sql, $key ) || ! str_contains( $sql_b, $key ) ) {
+		$checks[] = "'" . $key . "'";
+	}
+	foreach ( $narrow as $value ) {
+		$checks[] = "'" . $value . "'";
+	}
+	foreach ( $checks as $needle ) {
+		if ( '' === $probe_slug || ! str_contains( $sql, $needle ) ) {
 			$fail = 'query_unfiltered';
 		}
 	}
-	if ( ! str_contains( $sql, 'NOT EXISTS' ) || ! str_contains( $sql, 'quiet_public' ) || str_contains( $sql, 'private' ) || ! str_contains( $sql, "post_status = 'publish'" ) || ! str_contains( $sql, "post_password = ''" ) || ! str_contains( $sql_b, 'quiet_public' ) || ! str_contains( $sql_b, 'private' ) ) {
+	if ( [] === $narrow && str_contains( $sql, "'private'" ) ) {
 		$fail = 'query_unfiltered';
 	}
 }
@@ -63,6 +92,13 @@ if ( '' === $fail && get_post( $page_id ) instanceof WP_Post && \PKIW\Zine_Manif
 		$b = \PKIW\Zine_Manifest::build( [ 'source' => 'stream', 'page_id' => $page_id, 'pages' => 8 ] );
 		if ( is_wp_error( $a ) || is_wp_error( $b ) || $a['included'] !== $b['included'] ) {
 			$fail = 'stream_parity_rows';
+		} else {
+			foreach ( $a['included'] as $id ) {
+				if ( ! \PKIW\Public_Listing::is_listable( $id ) ) {
+					$fail = 'stream_parity_rows:' . (int) $id;
+					break;
+				}
+			}
 		}
 	} finally {
 		$GLOBALS['wp_query'] = $prior;
@@ -75,7 +111,9 @@ if ( '' === $fail ) {
 	global $wpdb;
 	$keys = \PKIW\Public_Listing::meta_keys();
 	$key_marks = implode( ', ', array_fill( 0, count( $keys ), '%s' ) );
-	$terms = get_terms( [ 'taxonomy' => \PKIW\Taxonomy::TAXONOMY, 'hide_empty' => true ] );
+	$terms    = get_terms( [ 'taxonomy' => \PKIW\Taxonomy::TAXONOMY, 'hide_empty' => true ] );
+	$admins   = get_users( [ 'role' => 'administrator', 'number' => 1, 'orderby' => 'ID', 'order' => 'ASC', 'fields' => 'ID' ] );
+	$admin_id = (int) ( $admins[0] ?? 0 );
 	if ( is_array( $terms ) ) {
 		foreach ( $terms as $term ) {
 			if ( ! $term instanceof WP_Term || in_array( $term->slug, \PKIW\Zine_Manifest::excluded_kinds(), true ) ) {
@@ -97,6 +135,33 @@ if ( '' === $fail ) {
 			foreach ( $actual['included'] as $id ) {
 				if ( ! \PKIW\Public_Listing::is_listable( $id ) || ! \PKIW\Zine_Manifest::passes_narrowing( $id ) ) {
 					$fail = 'rows_real:' . $id;
+					break 2;
+				}
+			}
+			// Render the first two entries per kind as user 0 and as the first administrator (bounded for the gate's eval timeout).
+			foreach ( array_slice( $actual['entries'], 0, 2 ) as $entry ) {
+				$saved_user = get_current_user_id();
+				try {
+					wp_set_current_user( 0 );
+					$anonymous = \PKIW\Zine_Export::render_entry( $entry, (int) $entry['page'] );
+					wp_set_current_user( $admin_id );
+					$privileged = \PKIW\Zine_Export::render_entry( $entry, (int) $entry['page'] );
+				} finally {
+					wp_set_current_user( $saved_user );
+				}
+				$leak = $anonymous !== $privileged;
+				foreach ( [ '<iframe', '<script', '<video', '<audio', 'leaflet' ] as $needle ) {
+					$leak = $leak || false !== stripos( $anonymous, $needle );
+				}
+				$view = \PKIW\Meta_Fields::get_public_location_view( (int) $entry['id'] );
+				if ( empty( $view['visible']['coordinates'] ) ) {
+					foreach ( [ '_pkiw_geo_latitude', '_pkiw_geo_longitude', 'geo_latitude', 'geo_longitude' ] as $coordinate_key ) {
+						$coordinate = trim( (string) get_post_meta( (int) $entry['id'], $coordinate_key, true ) );
+						$leak       = $leak || ( strlen( $coordinate ) >= 4 && str_contains( $anonymous, $coordinate ) );
+					}
+				}
+				if ( $leak ) {
+					$fail = 'rows_real:' . (int) $entry['id'];
 					break 2;
 				}
 			}

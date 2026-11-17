@@ -116,21 +116,35 @@ final class ZineRequestTest extends ZineTestCase {
 		$this->assertSame( [ 'pkiw_recipe_course' => 'soup' ], $this->hidden_inputs( $html ) );
 	}
 
-	public function test_feed_embed_and_rest_main_queries_are_not_changed(): void {
-		foreach ( [ 'feed', 'embed', 'rest' ] as $case ) {
-			$query = new WP_Query();
-			$query->init();
-			$query->is_main_query = true;
-			$query->is_tax        = true;
-			$query->set( Zine_Request::VAR_PAGES, '8' );
-			if ( 'feed' === $case ) {
-				$query->is_feed = true;
-			} elseif ( 'embed' === $case ) {
-				$query->is_embed = true;
-			}
-			Zine_Export::filter_main_query( $query );
-			$this->assertSame( '', $query->get( 'pkiw_public_listing' ), $case );
+	public function test_feed_and_embed_requests_never_become_print_views(): void {
+		for ( $i = 1; $i <= 7; $i++ ) {
+			$this->post( 'Feed control ' . $i, [ 'post_date' => sprintf( '2025-03-%02d 12:00:00', 10 + $i ) ] );
 		}
+		$quiet = $this->post( 'Sentinel Embed Quiet Qx7', [ 'post_date' => '2024-01-01 12:00:00' ] );
+		add_post_meta( $quiet, \PKIW\Public_Listing::meta_keys()[0], 'quiet_public' );
+		$this->post( 'Sentinel Embed Password Qx7', [ 'post_date' => '2024-01-02 12:00:00', 'post_password' => 'secret' ] );
+		$this->go_to( add_query_arg( [ 'feed' => 'rss2', Zine_Request::VAR_PAGES => 8 ], $this->archive_url() ) );
+		$this->assertTrue( is_feed() );
+		$this->assertNotTrue( $GLOBALS['wp_query']->get( 'pkiw_public_listing' ), 'The feed keeps its own query.' );
+		$this->assertSame( [], Zine_Export::manifest() );
+
+		// Core keeps is_embed only on singular requests, so an archive ?embed=true is a plain archive request.
+		// The guard that matters: a print view never builds from a main query filter_main_query() didn't narrow.
+		remove_action( 'pre_get_posts', [ Zine_Export::class, 'filter_main_query' ], 999 );
+		$this->go_to( $this->archive_url( [ Zine_Request::VAR_PAGES => 8 ] ) );
+		$this->assertTrue( is_tax() );
+		$this->assertSame( [], Zine_Export::manifest(), 'An unnarrowed main query would count hidden posts past the capacity.' );
+		$this->assertNotSame( $this->print_template(), apply_filters( 'template_include', 'theme-template.php' ) );
+		// REST requests return through wp_is_serving_rest_request(), which needs the REST_REQUEST constant and can't be set per test.
+	}
+
+	public function test_array_page_input_is_an_error_without_a_php_warning(): void {
+		$this->post( 'Array input control' );
+		$query = new WP_Query();
+		$query->set( Zine_Request::VAR_PAGES, [ '8' ] );
+		$request = Zine_Request::from_query( $query );
+		$this->assertFalse( $request->is_valid() );
+		$this->assertSame( 'pages', $request->first_invalid() );
 	}
 
 	/** Read hidden form controls with core's HTML processor. */
@@ -149,4 +163,26 @@ final class ZineRequestTest extends ZineTestCase {
 
 		return $inputs;
 	}
+
+	public function test_a_site_date_clause_on_the_stream_loop_survives_the_zine_bounds(): void {
+		$early = $this->post( 'Before the site clause', [ 'post_date' => '2025-03-01 12:00:00' ] );
+		$late  = $this->post( 'After the site clause', [ 'post_date' => '2025-03-09 12:00:00' ] );
+		$page  = $this->stream_page();
+		$site  = static function ( array $vars ): array {
+			$vars['date_query'] = [ [ 'after' => '2025-03-05 00:00:00', 'column' => 'post_date' ] ]; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_date_query -- Test stand-in for a site filter.
+			return $vars;
+		};
+		add_filter( 'query_loop_block_query_vars', $site );
+		try {
+			foreach ( [ '', '2025-02-01' ] as $from ) {
+				$manifest = \PKIW\Zine_Manifest::build( [ 'source' => 'stream', 'page_id' => $page, 'pages' => 8, 'from' => $from ] );
+				$this->assertIsArray( $manifest );
+				$this->assertContains( $late, $manifest['included'], $from );
+				$this->assertNotContains( $early, $manifest['included'], 'The site\'s own date clause stays when From is "' . $from . '".' );
+			}
+		} finally {
+			remove_filter( 'query_loop_block_query_vars', $site );
+		}
+	}
+
 }

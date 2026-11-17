@@ -107,4 +107,20 @@ final class ZineBlockTest extends ZineTestCase {
 			}
 		}
 	}
+
+	public function test_editor_preview_renders_the_closed_panel_without_source_context(): void {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		$request = new WP_REST_Request( 'GET', '/wp/v2/block-renderer/post-kinds-indieweb/zine-export' );
+		$request->set_param( 'context', 'edit' );
+		$request->set_param( 'attributes', [ 'source' => 'stream' ] );
+		$response = rest_do_request( $request );
+		$this->assertSame( 200, $response->get_status() );
+		$html = (string) ( $response->get_data()['rendered'] ?? '' );
+		$tags = new WP_HTML_Tag_Processor( $html );
+		$this->assertTrue( $tags->next_tag( [ 'tag_name' => 'DETAILS', 'class_name' => 'pkiw-zine-export' ] ) );
+		$this->assertNull( $tags->get_attribute( 'open' ), 'The preview is closed.' );
+		$this->assertStringContainsString( 'Export as Zine', $html );
+		$this->assertStringNotContainsString( 'type="hidden"', $html );
+	}
+
 }

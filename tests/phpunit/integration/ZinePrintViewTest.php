@@ -53,6 +53,12 @@ final class ZinePrintViewTest extends ZineTestCase {
 
 	public function test_admin_and_logged_out_full_documents_are_identical_for_archive_and_stream(): void {
 		$this->post( 'Anonymous rendering control' );
+		// Posts an administrator could read through a default query; none may change the document.
+		$this->post( 'Sentinel Admin Private Qx7', [ 'post_status' => 'private' ] );
+		$this->post( 'Sentinel Admin Draft Qx7', [ 'post_status' => 'draft' ] );
+		$this->post( 'Sentinel Admin Password Qx7', [ 'post_password' => 'secret' ] );
+		$quiet = $this->post( 'Sentinel Admin Quiet Qx7' );
+		add_post_meta( $quiet, \PKIW\Public_Listing::meta_keys()[0], 'quiet_public' );
 		$page_id = $this->stream_page();
 		$admin   = self::factory()->user->create( [ 'role' => 'administrator' ] );
 		$urls    = [
@@ -66,6 +72,8 @@ final class ZinePrintViewTest extends ZineTestCase {
 			$this->assertSame( $public_document['html'], $admin_document['html'] );
 			$this->assertStringNotContainsString( 'admin-bar', $admin_document['html'] );
 			$this->assertStringNotContainsString( 'logged-in', $admin_document['html'] );
+			$this->assertStringNotContainsString( 'Sentinel Admin', $admin_document['html'] );
+			$this->assertStringContainsString( 'Anonymous rendering control', $admin_document['html'] );
 		}
 	}
 
@@ -171,13 +179,17 @@ final class ZinePrintViewTest extends ZineTestCase {
 
 	public function test_entry_renderer_skips_cross_post_blocks_and_forbidden_elements(): void {
 		self::factory()->post->create( [ 'post_title' => 'Other title', 'post_status' => 'publish', 'post_date' => '2025-03-08 12:00:00' ] );
-		$this->post( 'Context entry', [ 'post_content' => '<!-- wp:latest-posts /--><!-- wp:query {"query":{"perPage":1,"postType":"post","inherit":false}} --><!-- wp:post-template --><!-- wp:post-title /--><!-- /wp:post-template --><!-- /wp:query --><!-- wp:html --><iframe src="https://qx7.example/"></iframe><script>alert(1)</script><!-- /wp:html -->' ] );
+		// Save unfiltered, as an editor with unfiltered_html would; kses at save would otherwise strip the tags first.
+		kses_remove_filters();
+		$this->post( 'Context entry', [ 'post_content' => '<!-- wp:group --><div class="wp-block-group"><!-- wp:latest-posts /--></div><!-- /wp:group --><!-- wp:query {"query":{"perPage":1,"postType":"post","inherit":false}} --><!-- wp:post-template --><!-- wp:post-title /--><!-- /wp:post-template --><!-- /wp:query --><!-- wp:html --><iframe src="https://qx7.example/"></iframe><script>alert(1)</script><!-- /wp:html -->' ] );
+		kses_init_filters();
 		$this->go_to( add_query_arg( 'pkiw_zine_pages', '8', get_term_link( $this->recipe ) ) );
 		do_action( 'wp' );
 		$html = Zine_Export::render_booklet();
 		$this->assertStringNotContainsString( '<iframe', $html );
 		$this->assertStringNotContainsString( '<script', $html );
-		$this->assertSame( 0, substr_count( $html, 'Other title' ), 'The non-zine post must not leak through core/latest-posts.' );
+		$this->assertStringNotContainsString( 'alert(1)', $html, 'kses keeps a dropped element\'s text, so raw-text elements are emptied first.' );
+		$this->assertSame( 0, substr_count( $html, 'Other title' ), 'The non-zine post must not leak through a nested core/latest-posts or core/query.' );
 	}
 
 	public function test_entry_block_context_keeps_each_venue_and_cite_with_its_post(): void {
