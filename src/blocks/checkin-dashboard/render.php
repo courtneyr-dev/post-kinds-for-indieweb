@@ -35,18 +35,19 @@ if ( $pkiw_show_map ) {
 
 // Get check-ins.
 $pkiw_args = [
-	'post_type'      => 'post',
-	'posts_per_page' => $pkiw_limit,
-	'post_status'    => 'publish',
-	'tax_query'      => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+	'post_type'        => 'post',
+	'posts_per_page'   => $pkiw_limit,
+	'post_status'      => 'publish',
+	'tax_query'        => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 		[
 			'taxonomy' => 'kind',
 			'field'    => 'slug',
 			'terms'    => 'checkin',
 		],
 	],
-	'orderby'        => 'date',
-	'order'          => 'DESC',
+	'orderby'          => 'date',
+	'order'            => 'DESC',
+	'pkiw_public_only' => true,
 ];
 
 $pkiw_checkins_query = new WP_Query( $pkiw_args );
@@ -56,7 +57,7 @@ if ( $pkiw_checkins_query->have_posts() ) {
 	while ( $pkiw_checkins_query->have_posts() ) {
 		$pkiw_checkins_query->the_post();
 		$pkiw_post_id = get_the_ID();
-		if ( post_password_required( (int) $pkiw_post_id ) ) {
+		if ( ! \PKIW\Public_Eligibility::is_eligible( (int) $pkiw_post_id ) ) {
 			continue;
 		}
 		// Blank every field this viewer's privacy tier hides, before the grid,
@@ -98,15 +99,26 @@ $pkiw_stats['unique_venues'] = count( $pkiw_unique_venues );
 // Get wrapper attributes.
 $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 	[
-		'class'         => 'checkin-dashboard-frontend layout-' . esc_attr( $pkiw_layout ),
-		'data-layout'   => esc_attr( $pkiw_layout ),
-		'data-show-map' => $pkiw_show_map ? 'true' : 'false',
-		'data-limit'    => esc_attr( $pkiw_limit ),
+		'class'               => 'checkin-dashboard-frontend layout-' . esc_attr( $pkiw_layout ),
+		'data-layout'         => esc_attr( $pkiw_layout ),
+		'data-show-map'       => $pkiw_show_map ? 'true' : 'false',
+		'data-limit'          => esc_attr( $pkiw_limit ),
+		'data-wp-interactive' => 'post-kinds-indieweb/checkin-dashboard',
+	]
+);
+
+wp_interactivity_state(
+	'post-kinds-indieweb/checkin-dashboard',
+	[
+		'isSelected' => static function (): bool {
+			$context = wp_interactivity_get_context();
+			return isset( $context['view'], $context['name'] ) && $context['view'] === $context['name'];
+		},
 	]
 );
 ?>
 
-<div <?php echo $pkiw_wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+<div <?php echo $pkiw_wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?> <?php echo wp_interactivity_data_wp_context( [ 'view' => $pkiw_layout ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Core helper returns an escaped attribute. ?>>
 	<?php if ( $pkiw_show_stats ) : ?>
 	<div class="checkin-dashboard-stats">
 		<div class="stat-item">
@@ -122,15 +134,15 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 
 	<?php if ( $pkiw_show_filters ) : ?>
 	<div class="checkin-dashboard-filters">
-		<button type="button" class="view-btn<?php echo 'grid' === $pkiw_layout ? ' active' : ''; ?>" data-view="grid" aria-pressed="<?php echo 'grid' === $pkiw_layout ? 'true' : 'false'; ?>">
+		<button type="button" class="view-btn<?php echo 'grid' === $pkiw_layout ? ' active' : ''; ?>" data-view="grid" aria-pressed="<?php echo 'grid' === $pkiw_layout ? 'true' : 'false'; ?>" <?php echo wp_interactivity_data_wp_context( [ 'name' => 'grid' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Core helper returns an escaped attribute. ?> data-wp-on--click="actions.selectView" data-wp-class--active="state.isSelected" data-wp-bind--aria-pressed="state.isSelected">
 			<?php esc_html_e( 'Grid', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 		</button>
 		<?php if ( $pkiw_show_map ) : ?>
-		<button type="button" class="view-btn<?php echo 'map' === $pkiw_layout ? ' active' : ''; ?>" data-view="map" aria-pressed="<?php echo 'map' === $pkiw_layout ? 'true' : 'false'; ?>">
+		<button type="button" class="view-btn<?php echo 'map' === $pkiw_layout ? ' active' : ''; ?>" data-view="map" aria-pressed="<?php echo 'map' === $pkiw_layout ? 'true' : 'false'; ?>" <?php echo wp_interactivity_data_wp_context( [ 'name' => 'map' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Core helper returns an escaped attribute. ?> data-wp-on--click="actions.selectView" data-wp-class--active="state.isSelected" data-wp-bind--aria-pressed="state.isSelected">
 			<?php esc_html_e( 'Map', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 		</button>
 		<?php endif; ?>
-		<button type="button" class="view-btn<?php echo 'timeline' === $pkiw_layout ? ' active' : ''; ?>" data-view="timeline" aria-pressed="<?php echo 'timeline' === $pkiw_layout ? 'true' : 'false'; ?>">
+		<button type="button" class="view-btn<?php echo 'timeline' === $pkiw_layout ? ' active' : ''; ?>" data-view="timeline" aria-pressed="<?php echo 'timeline' === $pkiw_layout ? 'true' : 'false'; ?>" <?php echo wp_interactivity_data_wp_context( [ 'name' => 'timeline' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Core helper returns an escaped attribute. ?> data-wp-on--click="actions.selectView" data-wp-class--active="state.isSelected" data-wp-bind--aria-pressed="state.isSelected">
 			<?php esc_html_e( 'Timeline', 'post-kinds-for-indieweb-in-block-themes' ); ?>
 		</button>
 	</div>
@@ -138,7 +150,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 
 	<div class="checkin-dashboard-views">
 		<!-- Grid View -->
-		<div class="checkin-view-grid <?php echo 'grid' === $pkiw_layout ? 'active' : ''; ?>">
+		<div class="checkin-view-grid <?php echo 'grid' === $pkiw_layout ? 'active' : ''; ?>" <?php echo wp_interactivity_data_wp_context( [ 'name' => 'grid' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Core helper returns an escaped attribute. ?> data-wp-class--active="state.isSelected" data-wp-bind--hidden="!state.isSelected"<?php echo 'grid' !== $pkiw_layout ? ' hidden' : ''; ?>>
 			<?php if ( empty( $pkiw_checkins ) ) : ?>
 			<div class="checkin-empty">
 				<p><?php esc_html_e( 'No check-ins yet.', 'post-kinds-for-indieweb-in-block-themes' ); ?></p>
@@ -173,7 +185,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 
 		<?php if ( $pkiw_show_map ) : ?>
 		<!-- Map View -->
-		<div class="checkin-view-map <?php echo 'map' === $pkiw_layout ? 'active' : ''; ?>">
+		<div class="checkin-view-map <?php echo 'map' === $pkiw_layout ? 'active' : ''; ?>" <?php echo wp_interactivity_data_wp_context( [ 'name' => 'map' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Core helper returns an escaped attribute. ?> data-wp-class--active="state.isSelected" data-wp-bind--hidden="!state.isSelected" data-wp-watch="callbacks.drawMap"<?php echo 'map' !== $pkiw_layout ? ' hidden' : ''; ?>>
 			<div id="<?php echo esc_attr( $pkiw_map_id ); ?>" class="checkin-map" role="region" aria-label="<?php esc_attr_e( 'Check-in map', 'post-kinds-for-indieweb-in-block-themes' ); ?>" data-tile-url="<?php echo esc_attr( \PKIW\Checkin_Map::tile_layer()['url'] ); ?>" data-attribution="<?php echo esc_attr( \PKIW\Checkin_Map::tile_layer()['attribution'] ); ?>" data-checkins="
 			<?php
 			echo esc_attr(
@@ -194,7 +206,7 @@ $pkiw_wrapper_attributes = get_block_wrapper_attributes(
 		<?php endif; ?>
 
 		<!-- Timeline View -->
-		<div class="checkin-view-timeline <?php echo 'timeline' === $pkiw_layout ? 'active' : ''; ?>">
+		<div class="checkin-view-timeline <?php echo 'timeline' === $pkiw_layout ? 'active' : ''; ?>" <?php echo wp_interactivity_data_wp_context( [ 'name' => 'timeline' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Core helper returns an escaped attribute. ?> data-wp-class--active="state.isSelected" data-wp-bind--hidden="!state.isSelected"<?php echo 'timeline' !== $pkiw_layout ? ' hidden' : ''; ?>>
 			<?php
 			// Group by month.
 			$pkiw_grouped = [];
