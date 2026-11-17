@@ -179,10 +179,11 @@ final class On_This_Day {
 		Grouped_Archive::register_entry_block(
 			self::ENTRY_BLOCK,
 			[
-				'shape'       => Grouped_Archive::ENTRY_LINE,
-				'list'        => 'ul',
-				'heading_ids' => true,
-				'classes'     => [
+				'shape'          => Grouped_Archive::ENTRY_LINE,
+				'list'           => 'ul',
+				'heading_ids'    => true,
+				'heading_offset' => 1,
+				'classes'        => [
 					'wrapper'      => 'pkiw-otd-years',
 					'section'      => 'pkiw-otd-year',
 					'heading'      => 'pkiw-otd-year__heading',
