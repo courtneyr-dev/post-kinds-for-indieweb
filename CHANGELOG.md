@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Webmention for a public follow targets the followed URL (#562).
 - Development dependencies: 18 `@wordpress/*` packages (#534), `@lhci/cli` (#557), `fast-xml-parser` (#551) and `astro` in the docs site (#553). The committed `build/` is unchanged by them.
 
+### Fixed
+
+- On Pantheon, saving a tag or follow post queued its paginated archive purges as one nested list, which raised an "Array to string conversion" warning at shutdown and left the CDN purge with a malformed path. Each purge pattern now goes to `Pantheon_Cache::enqueue_regex()` on its own (#568).
+
 ## [1.9.1] - 2026-11-10
 
 ### Fixed

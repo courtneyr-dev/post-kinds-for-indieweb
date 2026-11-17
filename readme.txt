@@ -186,6 +186,7 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 * Added: follow posts with an A to Z archive at /kind/follow/ and a public OPML list at /kind/follow/opml/.
 * Changed: a tag or follow post that is private, draft, scheduled, password-protected or trashed shows up nowhere public: not in lists, feeds, search, sitemaps, REST, embeds, abilities or outbound requests.
 * Changed: Standard Site never fetches a tagged or followed person's site.
+* Fixed: on Pantheon, saving a tag or follow post no longer raises a PHP warning or sends a malformed cache purge.
 
 = 1.9.1 =
 * Fixed: Trakt stays connected past 7 days. A twice-daily job refreshes the token before it expires, and the Refresh Token button refreshes on demand. If Trakt rejects the refresh, PKIW disconnects Trakt and API Connections asks you to Connect again.
