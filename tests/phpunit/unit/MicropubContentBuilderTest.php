@@ -33,7 +33,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 	 */
 	public function set_up(): void {
 		parent::set_up();
-		foreach ( array( 'note', 'checkin', 'eat', 'drink', 'like', 'rsvp', 'jam', 'favorite', 'wish', 'exercise', 'event', 'video', 'quote', 'issue', 'listen', 'comics', 'read', 'acquisition', 'sleep' ) as $slug ) {
+		foreach ( array( 'note', 'article', 'reply', 'repost', 'bookmark', 'checkin', 'eat', 'drink', 'like', 'rsvp', 'jam', 'favorite', 'wish', 'exercise', 'event', 'video', 'quote', 'issue', 'listen', 'comics', 'read', 'acquisition', 'sleep' ) as $slug ) {
 			if ( ! term_exists( $slug, 'kind' ) ) {
 				wp_insert_term( ucfirst( $slug ), 'kind', array( 'slug' => $slug ) );
 			}
@@ -605,6 +605,146 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$content = (string) get_post_field( 'post_content', $post_id );
 		$this->assertSame( 'just a note, no card kind', $content );
 		$this->assertSame( '', (string) get_post_meta( $post_id, '_pkiw_block_content_generated', true ) );
+	}
+
+	// --- post type discovery: note vs article -------------------------------
+
+	/**
+	 * Create a post the way the Micropub plugin's handle_create() does:
+	 * the content filter, wp_insert_post() with a null tax_input, then
+	 * after_micropub.
+	 *
+	 * @param array<string, mixed> $input            Parsed Micropub request body.
+	 * @param string|null          $insert_time_kind Kind another plugin writes during the insert, as Post Formats for Block Themes does from the post format.
+	 * @param array<string, mixed> $meta_input       Meta the Micropub plugin stores with the insert.
+	 * @return int Post ID.
+	 */
+	private function create_via_micropub( array $input, ?string $insert_time_kind = null, array $meta_input = array() ): int {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$guess = static function ( int $post_id ) use ( $insert_time_kind ): void {
+			wp_set_post_terms( $post_id, array( $insert_time_kind ), 'kind' );
+		};
+		if ( null !== $insert_time_kind ) {
+			add_action( 'save_post', $guess );
+		}
+
+		$properties = $input['properties'] ?? $input;
+		$content    = $properties['content'] ?? '';
+		$content    = is_array( $content ) ? (string) reset( $content ) : (string) $content;
+		$args       = array(
+			'post_type'    => 'post',
+			'tax_input'    => null,
+			'post_status'  => 'publish',
+			'post_content' => (string) apply_filters( 'micropub_post_content', $content, $input ),
+			'meta_input'   => $meta_input,
+		);
+		$args['ID'] = wp_insert_post( $args, true );
+		remove_action( 'save_post', $guess );
+		do_action( 'after_micropub', $input, $args );
+
+		return (int) $args['ID'];
+	}
+
+	private function kind_of( int $post_id ): string {
+		return implode( ',', wp_get_post_terms( $post_id, 'kind', array( 'fields' => 'slugs' ) ) );
+	}
+
+	public function test_json_entry_with_content_and_no_name_is_a_note(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => array(
+					'content' => array( 'Do I need to add to the template?Testing note without location.' ),
+				),
+			),
+			'article'
+		);
+
+		$this->assertSame( 'note', $this->kind_of( $post_id ) );
+		$this->assertSame( 'Do I need to add to the template?Testing note without location.', (string) get_post_field( 'post_content', $post_id ) );
+	}
+
+	public function test_form_encoded_entry_with_content_and_no_name_is_a_note(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'h'       => 'entry',
+				'content' => 'Testing note without location.',
+			),
+			'article'
+		);
+
+		$this->assertSame( 'note', $this->kind_of( $post_id ) );
+	}
+
+	public function test_entry_whose_name_prefixes_its_content_is_a_note(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => array(
+					'name'    => array( 'Testing note' ),
+					'content' => array( "Testing   note\nwithout location." ),
+				),
+			),
+			'article'
+		);
+
+		$this->assertSame( 'note', $this->kind_of( $post_id ) );
+	}
+
+	public function test_json_entry_with_a_name_is_an_article(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => array(
+					'name'    => array( 'A post with a title' ),
+					'content' => array( 'The body says something else.' ),
+				),
+			)
+		);
+
+		$this->assertSame( 'article', $this->kind_of( $post_id ) );
+	}
+
+	public function test_form_encoded_entry_with_a_name_is_an_article(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'h'       => 'entry',
+				'name'    => 'A post with a title',
+				'content' => 'The body says something else.',
+			)
+		);
+
+		$this->assertSame( 'article', $this->kind_of( $post_id ) );
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public static function response_kind_provider(): array {
+		return array(
+			'like'     => array( 'like-of', 'like' ),
+			'reply'    => array( 'in-reply-to', 'reply' ),
+			'repost'   => array( 'repost-of', 'repost' ),
+			'bookmark' => array( 'bookmark-of', 'bookmark' ),
+		);
+	}
+
+	/**
+	 * @dataProvider response_kind_provider
+	 */
+	public function test_response_kinds_keep_their_kind_with_content_and_no_name( string $property, string $kind ): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => array(
+					$property => array( 'https://example.test/post' ),
+					'content'  => array( 'My words about it.' ),
+				),
+			),
+			'article'
+		);
+
+		$this->assertSame( $kind, $this->kind_of( $post_id ) );
 	}
 
 	// --- pkiw-kind explicit hint --------------------------------------------
