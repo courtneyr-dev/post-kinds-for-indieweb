@@ -812,7 +812,10 @@ This project uses Semantic Versioning:
 - [Issues](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues)
 - [IndieWeb Wiki](https://indieweb.org/)
 
-[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.8.6...HEAD
+[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.9.2...HEAD
+[1.9.2]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.9.1...v1.9.2
+[1.9.1]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.9.0...v1.9.1
+[1.9.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.8.6...v1.9.0
 [1.8.6]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.8.5...v1.8.6
 [1.8.5]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.7.1...v1.8.5
 [1.7.1]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.7.0...v1.7.1
@@ -820,6 +823,6 @@ This project uses Semantic Versioning:
 [1.6.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.2...v1.6.0
 [1.5.2]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.0...v1.5.1
-[1.5.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/1.0.0...v1.5.0
+[1.5.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.0.0...v1.5.0
 [1.2.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.1.0...v1.2.0
 [1.0.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/releases/tag/v1.0.0
