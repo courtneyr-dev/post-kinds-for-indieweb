@@ -61,7 +61,7 @@ final class Zine_Request {
 		$to        = is_scalar( $raw_to ) ? sanitize_text_field( (string) $raw_to ) : '';
 		$errors    = [];
 
-		if ( $present && ! in_array( (string) $raw_pages, [ '8', '16' ], true ) ) {
+		if ( $present && ( ! is_scalar( $raw_pages ) || ! in_array( (string) $raw_pages, [ '8', '16' ], true ) ) ) {
 			$errors['pages'] = __( 'Choose 8 or 16 pages.', 'post-kinds-for-indieweb-in-block-themes' );
 		}
 		if ( $present && '' !== $from && ! self::valid_date( $from ) ) {

@@ -132,7 +132,7 @@ final class Zine_Export {
 				'posts_per_page'              => $request->capacity(),
 				'no_found_rows'               => false,
 				'ignore_sticky_posts'         => 1,
-				'date_query'                  => $request->date_query(), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_date_query -- User-selected inclusive archive bounds.
+				'date_query'                  => array_merge( is_array( $query->get( 'date_query' ) ) ? $query->get( 'date_query' ) : [], $request->date_query() ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_date_query -- Existing clauses plus the user-selected inclusive bounds.
 				'pkiw_zine_narrow_visibility' => true,
 			]
 		);
@@ -162,13 +162,17 @@ final class Zine_Export {
 			return;
 		}
 		self::$request = Zine_Request::from_query( $wp_query );
-		if ( ! self::$request->is_valid() || is_404() ) {
+		if ( ! self::$request->is_valid() || is_404() || is_feed() || is_embed() || wp_is_serving_rest_request() ) {
 			return;
 		}
 
 		if ( is_tax( Taxonomy::TAXONOMY ) ) {
 			$term = get_queried_object();
 			if ( ! $term instanceof \WP_Term || in_array( $term->slug, Zine_Manifest::excluded_kinds(), true ) ) {
+				return;
+			}
+			// Only a main query that filter_main_query() narrowed may feed a print view: its found_posts is the count.
+			if ( true !== $wp_query->get( 'pkiw_public_listing' ) ) {
 				return;
 			}
 			$result = Zine_Manifest::build(
@@ -318,16 +322,17 @@ final class Zine_Export {
 
 	/** Render the closed export panel or an open error or zero state. */
 	public static function render_block( array $attributes ): string {
-		if ( self::$rendered ) {
-			return '';
-		}
 		$source = isset( $attributes['source'] ) && 'stream' === $attributes['source'] ? 'stream' : 'archive';
-		if ( ! self::source_matches( $source ) ) {
+		// The editor's ServerSideRender request has no archive or page context: preview the closed panel (C5).
+		$preview = Grouped_Archive::is_block_preview();
+		if ( ! $preview && ( self::$rendered || ! self::source_matches( $source ) ) ) {
 			return '';
 		}
-		self::$rendered = true;
-		$request        = self::$request;
-		if ( null === $request ) {
+		if ( ! $preview ) {
+			self::$rendered = true;
+		}
+		$request = $preview ? null : self::$request;
+		if ( null === $request && ! $preview ) {
 			global $wp_query;
 			$request = $wp_query instanceof \WP_Query ? Zine_Request::from_query( $wp_query ) : null;
 		}
@@ -339,9 +344,9 @@ final class Zine_Export {
 		$from    = $request instanceof Zine_Request ? $request->from() : '';
 		$to      = $request instanceof Zine_Request ? $request->to() : '';
 		$first   = $request instanceof Zine_Request ? $request->first_invalid() : null;
-		$action  = self::source_url( $source );
+		$action  = $preview ? home_url( '/' ) : self::source_url( $source );
 		$hidden  = '';
-		foreach ( self::filter_vars() as $name => $value ) {
+		foreach ( $preview ? [] : self::filter_vars() as $name => $value ) {
 			$hidden .= '<input type="hidden" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '">';
 		}
 		$pages_error = self::error_markup( 'pages', $errors );
@@ -385,7 +390,7 @@ final class Zine_Export {
 		$toolbar = '<div class="pkiw-zine-toolbar"><a href="' . esc_url( $back ) . '">' . esc_html( sprintf( __( 'Back to %s', 'post-kinds-for-indieweb-in-block-themes' ), $title ) ) . '</a>'
 			. '<p class="pkiw-zine-toolbar__count">' . esc_html( $line ) . '</p>'
 			. '<p>' . esc_html( 8 === (int) $manifest['pages'] ? __( 'Sides: one', 'post-kinds-for-indieweb-in-block-themes' ) : __( 'Sides: both, flip on short edge', 'post-kinds-for-indieweb-in-block-themes' ) ) . '</p>'
-			. '<p>' . esc_html__( 'Scale: 100%', 'post-kinds-for-indieweb-in-block-themes' ) . '</p><div data-pkiw-zine-print-button></div>'
+			. '<p>' . esc_html__( 'Scale: 100%', 'post-kinds-for-indieweb-in-block-themes' ) . '</p><div data-pkiw-zine-print-button data-label="' . esc_attr__( 'Print', 'post-kinds-for-indieweb-in-block-themes' ) . '"></div>'
 			. self::spread_preview( $manifest['imposition'] ) . '</div>';
 		$slots   = [];
 		foreach ( $manifest['imposition']['sides'] as $side ) {
@@ -428,6 +433,19 @@ final class Zine_Export {
 		if ( ! is_array( $entry ) ) {
 			return '<div class="pkiw-zine-page__content"></div>';
 		}
+
+		return self::render_entry( $entry, $page_number );
+	}
+
+	/**
+	 * Render one manifest entry as it prints: heading, meta, place line, image, content and footer.
+	 *
+	 * Public so the privacy eval can compare renderings across users.
+	 *
+	 * @param array<string, mixed> $entry       One `entries` row of a manifest.
+	 * @param int                  $page_number Folio.
+	 */
+	public static function render_entry( array $entry, int $page_number ): string {
 		$post = get_post( (int) $entry['id'] );
 		if ( ! $post instanceof \WP_Post ) {
 			return '<div class="pkiw-zine-page__content"></div>';
@@ -499,7 +517,14 @@ final class Zine_Export {
 			unset( $allowed[ $tag ] );
 		}
 		$allowed = apply_filters( 'pkiw_zine_allowed_html', $allowed );
-		$html    = wp_kses( $html, is_array( $allowed ) ? $allowed : [] );
+		// kses drops a disallowed element but keeps its text, so empty raw-text elements first.
+		$raw = new \WP_HTML_Tag_Processor( $html );
+		while ( $raw->next_tag() ) {
+			if ( in_array( $raw->get_tag(), [ 'SCRIPT', 'STYLE', 'TEXTAREA' ], true ) && ! $raw->is_tag_closer() ) {
+				$raw->set_modifiable_text( '' );
+			}
+		}
+		$html = wp_kses( $raw->get_updated_html(), is_array( $allowed ) ? $allowed : [] );
 		$tags    = new \WP_HTML_Tag_Processor( $html );
 		while ( $tags->next_tag() ) {
 			if ( 'IMG' === $tags->get_tag() ) {

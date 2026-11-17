@@ -104,11 +104,11 @@ final class Zine_Manifest {
 			$block   = new \WP_Block( $template, $context );
 			$prior   = $GLOBALS['wp_query'] ?? null;
 			$standin = new \WP_Query();
-			$standin->parse_query( [ 'page_id' => $page->ID ] );
-			$standin->queried_object    = $page;
-			$standin->queried_object_id = $page->ID;
 			try {
 				$GLOBALS['wp_query'] = $standin; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- The contract requires a temporary page context.
+				$standin->parse_query( [ 'page_id' => $page->ID ] );
+				$standin->queried_object    = $page;
+				$standin->queried_object_id = $page->ID;
 
 				return build_query_vars_from_query_block( $block, 1 );
 			} finally {
@@ -310,7 +310,7 @@ final class Zine_Manifest {
 				'no_found_rows'               => false,
 				'ignore_sticky_posts'         => 1,
 				'fields'                      => 'ids',
-				'date_query'                  => $dates, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_date_query -- User-selected inclusive archive bounds.
+				'date_query'                  => array_merge( isset( $vars['date_query'] ) && is_array( $vars['date_query'] ) ? $vars['date_query'] : [], $dates ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_date_query -- Existing clauses plus the user-selected inclusive bounds.
 				'tax_query'                   => $tax_query, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- Source and excluded kinds define the public selection.
 				'pkiw_zine_narrow_visibility' => true,
 			]

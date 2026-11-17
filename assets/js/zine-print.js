@@ -3,7 +3,7 @@ const target = document.querySelector( '[data-pkiw-zine-print-button]' );
 if ( target ) {
 	const button = document.createElement( 'button' );
 	button.type = 'button';
-	button.textContent = 'Print';
+	button.textContent = target.dataset.label || 'Print';
 	button.addEventListener( 'click', () => window.print() );
 	target.append( button );
 }
