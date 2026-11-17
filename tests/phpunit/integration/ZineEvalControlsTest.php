@@ -98,6 +98,14 @@ final class ZineEvalControlsTest extends WP_UnitTestCase {
 		$this->assertStringStartsWith( 'RESULT FAIL rows_real:', $this->run_eval( $code ) );
 	}
 
+	public function test_case_5_fails_when_no_administrator_can_be_compared(): void {
+		$this->seed();
+		foreach ( get_users( [ 'role' => 'administrator', 'fields' => 'ID' ] ) as $admin ) {
+			( new WP_User( (int) $admin ) )->set_role( 'editor' );
+		}
+		$this->assertSame( 'RESULT FAIL rows_real:no_admin', $this->run_eval( $this->fixture() ) );
+	}
+
 	/** Seed recipe rows, one with a frame in its content, and a stream page holding the block. */
 	private function seed(): array {
 		kses_remove_filters();

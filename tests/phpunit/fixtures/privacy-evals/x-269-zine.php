@@ -139,6 +139,10 @@ if ( '' === $fail ) {
 				}
 			}
 			// Render the first two entries per kind as user 0 and as the first administrator (bounded for the gate's eval timeout).
+			if ( 0 === $admin_id && [] !== $actual['entries'] ) {
+				$fail = 'rows_real:no_admin';
+				break;
+			}
 			foreach ( array_slice( $actual['entries'], 0, 2 ) as $entry ) {
 				$saved_user = get_current_user_id();
 				try {
@@ -155,7 +159,7 @@ if ( '' === $fail ) {
 				}
 				$view = \PKIW\Meta_Fields::get_public_location_view( (int) $entry['id'] );
 				if ( empty( $view['visible']['coordinates'] ) ) {
-					foreach ( [ '_pkiw_geo_latitude', '_pkiw_geo_longitude', 'geo_latitude', 'geo_longitude' ] as $coordinate_key ) {
+					foreach ( [ '_pkiw_geo_latitude', '_pkiw_geo_longitude', '_pkiw_drink_geo_latitude', '_pkiw_drink_geo_longitude', '_pkiw_eat_geo_latitude', '_pkiw_eat_geo_longitude', 'geo_latitude', 'geo_longitude' ] as $coordinate_key ) {
 						$coordinate = trim( (string) get_post_meta( (int) $entry['id'], $coordinate_key, true ) );
 						$leak       = $leak || ( strlen( $coordinate ) >= 4 && str_contains( $anonymous, $coordinate ) );
 					}

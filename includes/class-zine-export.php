@@ -132,7 +132,8 @@ final class Zine_Export {
 				'posts_per_page'              => $request->capacity(),
 				'no_found_rows'               => false,
 				'ignore_sticky_posts'         => 1,
-				'date_query'                  => array_merge( is_array( $query->get( 'date_query' ) ) ? $query->get( 'date_query' ) : [], $request->date_query() ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_date_query -- Existing clauses plus the user-selected inclusive bounds.
+				// Replace, don't merge: calendar paging (Kind_Archive_Layouts, pre_get_posts 10) sets a per-page window here, and the zine ignores paged (C2).
+				'date_query'                  => $request->date_query(), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_date_query -- User-selected inclusive archive bounds.
 				'pkiw_zine_narrow_visibility' => true,
 			]
 		);

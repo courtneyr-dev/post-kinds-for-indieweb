@@ -10,6 +10,10 @@ declare(strict_types=1);
 
 namespace PKIW;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /** Compute the fixed 8- and 16-page sheet layouts. */
 final class Zine_Imposition {
 

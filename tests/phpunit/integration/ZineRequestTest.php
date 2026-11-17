@@ -185,4 +185,25 @@ final class ZineRequestTest extends ZineTestCase {
 		}
 	}
 
+
+	public function test_a_paged_calendar_window_on_the_archive_never_narrows_the_zine(): void {
+		$early = $this->post( 'Early calendar unit', [ 'post_date' => '2025-01-15 12:00:00' ] );
+		$late  = $this->post( 'Late calendar unit', [ 'post_date' => '2025-03-15 12:00:00' ] );
+		// Stand-in for Kind_Archive_Layouts::maybe_group_main_query(): a per-page date window at pre_get_posts 10.
+		$window = static function ( WP_Query $query ): void {
+			if ( $query->is_main_query() && $query->is_tax() ) {
+				$query->set( 'date_query', [ [ 'after' => '2025-03-01 00:00:00', 'inclusive' => true ] ] ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_date_query -- Test stand-in.
+			}
+		};
+		add_action( 'pre_get_posts', $window, 10 );
+		try {
+			$this->go_to( $this->archive_url( [ Zine_Request::VAR_PAGES => 8 ] ) );
+			$manifest = Zine_Export::manifest();
+			$this->assertSame( 2, $manifest['total'], 'The zine covers the whole archive, not the paged window (C2, C4).' );
+			$this->assertSame( [ $late, $early ], $manifest['included'] );
+		} finally {
+			remove_action( 'pre_get_posts', $window, 10 );
+		}
+	}
+
 }
