@@ -1519,6 +1519,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		Micropub_Content_Builder::apply(
 			array(
 				'h'             => 'entry',
+				'pkiw-kind'     => 'checkin',
 				'mp-place-name' => 'Cafe Test',
 				'location'      => 'geo:39.93,-77.66',
 			),
@@ -2786,6 +2787,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		return array(
 			'checkin' => array(
 				array(
+					'pkiw-kind'     => array( 'checkin' ),
 					'mp-place-name' => array( 'Sample venue' ),
 					'location'      => array( 'geo:40.0379,-76.3055' ),
 					'content'       => array( 'Sample body' ),
