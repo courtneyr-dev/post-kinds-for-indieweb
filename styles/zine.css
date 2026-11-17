@@ -35,6 +35,18 @@
 	float: right;
 }
 
+/*
+ * A permalink has no natural break points; on a quarter-page panel it would
+ * run past the edge and be cut off on paper.
+ */
+.pkiw-zine-page footer {
+	min-width: 0;
+}
+
+.pkiw-zine-entry__permalink {
+	overflow-wrap: anywhere;
+}
+
 @media (max-width: 40rem) {
 
 	.pkiw-zine-export form {
