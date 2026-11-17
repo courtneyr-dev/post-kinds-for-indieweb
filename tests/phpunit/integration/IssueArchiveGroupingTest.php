@@ -107,7 +107,7 @@ final class IssueArchiveGroupingTest extends WP_UnitTestCase {
 		$this->ticket( 'N01', 'N01', '2026-07-04 10:00:00', [ 'issue_number' => '7', 'issue_status' => 'open' ] );
 		$this->ticket( 'N02', 'N02', '2026-07-03 10:00:00' );
 		$this->ticket( 'L01', 'L01', '2026-07-02 10:00:00', [], [ 'post_content' => '<p>Issue for <a class="u-in-reply-to" href="https://a.example.net/acorn-ledger">repo</a>.</p>' ] );
-		$this->ticket( 'X01', 'X01 protected', '2026-07-01 10:00:00', [ 'cite_url' => $repos['R1'][0], 'cite_name' => $repos['R1'][1], 'issue_number' => '110', 'issue_status' => 'open' ], [ 'post_password' => 'ticket-secret' ] );
+		$this->ticket( 'X01', 'X01 protected', '2026-07-01 10:00:00', [ 'cite_url' => $repos['R1'][0], 'cite_name' => $repos['R1'][1], 'issue_number' => '987654321', 'issue_status' => 'open' ], [ 'post_password' => 'ticket-secret' ] );
 		$this->ticket( 'P01', 'P01 private', '2026-06-03 10:00:00', [], [ 'post_status' => 'private' ] );
 		$this->ticket( 'D01', 'D01 draft', '2026-06-02 10:00:00', [], [ 'post_status' => 'draft' ] );
 		$this->ticket( 'K01', 'K01 note', '2026-06-01 10:00:00', [ 'cite_url' => $repos['R1'][0], 'issue_status' => 'open' ], [], 'note' );
@@ -219,9 +219,7 @@ final class IssueArchiveGroupingTest extends WP_UnitTestCase {
 		$this->assertSame( $expected, wp_list_pluck( $GLOBALS['wp_query']->posts, 'ID' ) );
 		$this->assertSame( [ 'birch-notes', 'cedar-kit-with-an-extraordinarily-long-repository-name', 'Other' ], $this->rack_headings( $page_two ) );
 		$this->assertStringContainsString( 'X01 protected', $page_two );
-		// The protected ticket's issue number prints as '#110' (Issue_Archive::facts() number_text); a bare
-		// '110' would also match a post ID once earlier tests push auto-increment IDs that high.
-		$this->assertStringNotContainsString( '#110', $page_two );
+		$this->assertStringNotContainsString( '987654321', $page_two );
 		$this->assertStringNotContainsString( 'acorn-ledger', $page_two );
 		$this->assertStringNotContainsString( 'P01 private', $page_one . $page_two );
 		$this->assertStringNotContainsString( 'D01 draft', $page_one . $page_two );
