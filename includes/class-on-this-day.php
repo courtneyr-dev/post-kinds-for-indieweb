@@ -702,7 +702,8 @@ final class On_This_Day {
 		$name_class = $data['stored'] ? 'u-url p-name' : 'u-url';
 		$html      .= '<h' . $level . ' class="pkiw-otd__title"><a class="' . esc_attr( $name_class ) . '" href="' . esc_url( $data['url'] ) . '">' . esc_html( $data['title'] ) . '</a></h' . $level . '>';
 		$html      .= '<time class="dt-published" datetime="' . esc_attr( $data['date'] ) . '">' . esc_html( $data['date_display'] ) . '</time>';
-		if ( $data['stored'] && has_excerpt( $post ) ) {
+		// A check-in whose title hides its venue prints no excerpt: author text can name the venue.
+		if ( $data['stored'] && has_excerpt( $post ) && ! Title_Privacy::hides_title( $post ) ) {
 			$excerpt = wp_trim_words( trim( wp_strip_all_tags( (string) $post->post_excerpt ) ), 25 );
 			if ( '' !== $excerpt ) {
 				$html .= '<p class="pkiw-otd__excerpt">' . esc_html( $excerpt ) . '</p>';
