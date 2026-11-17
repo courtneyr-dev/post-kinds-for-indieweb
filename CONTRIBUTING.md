@@ -232,7 +232,7 @@ Release checklist:
 
 1. Update version numbers in plugin header, `readme.txt`, and `package.json`
 2. Update CHANGELOG.md
-3. Create release tag
+3. Create the release tag as `vX.Y.Z` (for example `v1.9.2`), matching the plugin header version. Don't use other prefixes; tools that sort tags by version rely on one scheme.
 4. Deploy to WordPress.org
 
 ## Questions?
