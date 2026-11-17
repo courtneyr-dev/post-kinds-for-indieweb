@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Wrapped: a yearly summary post for one kind, built around the Wrapped block, whose numbers are computed when the page is viewed from published, password-free posts that ActivityPub doesn't mark quiet public. A strip block links the latest Wrapped from a kind archive's first page, and `/kind/<kind>/<year>/wrapped/` redirects to it. Feeds and federated copies never carry the numbers. The public `post-kinds/kind-year-stats` ability returns the same numbers, `post-kinds/create-wrapped-draft` creates drafts only, and the `post-kinds/wrapped` binding source lets themes lay out the strip in the Site Editor.
+- Export as Zine: an archive and Stream block opens an 8- or 16-page print view with optional From and To dates. The print view uses `pkiw_zine_pages`, `pkiw_zine_from`, and `pkiw_zine_to` in its URL.
 - On This Day: the `/on-this-day/` archive lists earlier years' posts from today's date, grouped by year, and a block puts one of them first in the Stream. The single-post card is built but stays off until the `pkiw_otd_edge_purge` filter returns true. The public `post-kinds/get-on-this-day` ability returns the same posts. Every surface lists only published, password-free posts that ActivityPub doesn't mark quiet public, through the new shared `PKIW\Public_Listing` helper.
 
 ## [1.9.1] - 2026-11-10
