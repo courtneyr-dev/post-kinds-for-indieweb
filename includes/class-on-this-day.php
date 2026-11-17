@@ -591,9 +591,16 @@ final class On_This_Day {
 		return $parts;
 	}
 
-	/** Return the Yoast title on the route. */
-	public static function yoast_title( string $title ): string {
-		if ( ! self::is_route() || ! defined( 'WPSEO_VERSION' ) ) {
+	/**
+	 * Return the Yoast title on the route.
+	 *
+	 * Yoast's own filters fire only while Yoast runs, so no version check is needed.
+	 *
+	 * @param mixed $title Title Yoast built; may be null on routes Yoast doesn't know.
+	 * @return mixed
+	 */
+	public static function yoast_title( mixed $title ): mixed {
+		if ( ! self::is_route() ) {
 			return $title;
 		}
 		$separator = '-';
@@ -606,9 +613,14 @@ final class On_This_Day {
 		return trim( __( 'On This Day', 'post-kinds-for-indieweb-in-block-themes' ) . ' ' . $separator . ' ' . get_bloginfo( 'name' ) );
 	}
 
-	/** Return the Yoast canonical or Open Graph URL on the route. */
-	public static function yoast_url( string $url ): string {
-		return self::is_route() && defined( 'WPSEO_VERSION' ) ? self::route_url() : $url;
+	/**
+	 * Return the Yoast canonical or Open Graph URL on the route.
+	 *
+	 * @param mixed $url URL Yoast built; Yoast passes null for the Open Graph URL of an unknown route.
+	 * @return mixed
+	 */
+	public static function yoast_url( mixed $url ): mixed {
+		return self::is_route() ? self::route_url() : $url;
 	}
 
 	/** Return the canonical route URL for the current page number. */

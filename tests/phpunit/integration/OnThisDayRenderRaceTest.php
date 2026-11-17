@@ -28,8 +28,9 @@ final class OnThisDayRenderRaceTest extends WP_UnitTestCase {
 
 	/** @dataProvider transition_provider */
 	public function test_post_hidden_after_query_has_no_item_heading_or_section_count( string $transition ): void {
-		$target = $this->post( 'RACE-' . $transition, '2025-11-17 10:00:00' );
+		$target = $this->post( 'RACE-' . $transition, '2025-11-17 10:00:00', 'listen' );
 		$this->post( 'Older control', '2024-11-17 10:00:00' );
+		$this->post( 'Oldest control', '2023-11-17 10:00:00' );
 		$this->install_query();
 		$changed = false;
 		add_action(
@@ -46,8 +47,11 @@ final class OnThisDayRenderRaceTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'post-' . $target, $html );
 		$this->assertStringNotContainsString( 'RACE-' . $transition, $html );
 		$this->assertStringNotContainsString( '2025</', $html );
-		$this->assertStringNotContainsString( '<li class="wp-block-post post-' . $target . '"></li>', $html );
-		$this->assertStringContainsString( 'data-pkiw-sections="1"', $html );
+		$this->assertStringNotContainsString( 'kind-listen', $html, 'No list item carries the hidden post\'s kind class.' );
+		// Every printed list item holds an entry title: no empty item survives.
+		$this->assertSame( 2, substr_count( $html, '<li' ) );
+		$this->assertSame( 2, substr_count( $html, 'pkiw-otd__title' ) );
+		$this->assertSame( 2, substr_count( $html, 'data-pkiw-sections="2"' ), 'Two printed sections, one fewer than the query\'s three years.' );
 	}
 
 	public function test_hiding_one_of_two_posts_keeps_the_shared_year_heading_and_one_item(): void {
@@ -89,9 +93,9 @@ final class OnThisDayRenderRaceTest extends WP_UnitTestCase {
 		return do_blocks( $markup );
 	}
 
-	private function post( string $title, string $date ): int {
+	private function post( string $title, string $date, string $kind = 'note' ): int {
 		$id = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => $title, 'post_date' => $date ] );
-		wp_set_object_terms( $id, 'note', Taxonomy::TAXONOMY );
+		wp_set_object_terms( $id, $kind, Taxonomy::TAXONOMY );
 		return $id;
 	}
 }

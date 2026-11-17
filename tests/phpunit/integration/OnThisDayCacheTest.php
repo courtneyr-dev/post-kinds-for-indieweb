@@ -317,6 +317,18 @@ final class OnThisDayCacheTest extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_midnight_event_drops_yesterday_and_schedules_the_next_local_midnight(): void {
+		$now = new DateTimeImmutable( '2026-07-12 00:00:05', wp_timezone() );
+		On_This_Day::override_now( $now );
+		set_transient( 'pkiw_otd_2026-07-11', [ 'kinds' => 'x', 'rows' => [] ], HOUR_IN_SECONDS );
+		wp_clear_scheduled_hook( On_This_Day::CRON_HOOK );
+		On_This_Day::midnight();
+		$this->assertFalse( get_transient( 'pkiw_otd_2026-07-11' ) );
+		$next = wp_next_scheduled( On_This_Day::CRON_HOOK );
+		$this->assertSame( ( new DateTimeImmutable( '2026-07-13 00:00:05', wp_timezone() ) )->getTimestamp(), $next );
+		wp_clear_scheduled_hook( On_This_Day::CRON_HOOK );
+	}
+
 	public function test_no_option_is_read_or_written_for_kinds(): void {
 		$this->assertFalse( get_option( 'pkiw_on_this_day_kinds', false ) );
 		On_This_Day::kinds();

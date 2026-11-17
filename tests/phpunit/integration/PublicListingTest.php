@@ -58,10 +58,15 @@ final class PublicListingTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( '%s', $where );
 		$this->assertStringNotContainsString( "'private'", $where );
 
-		$id = $this->post( [ '', self::HIDDEN ] );
-		$real = new WP_Query( Public_Listing::query_args( [ 'post__in' => [ $id ], 'posts_per_page' => 20 ] ) );
+		$hidden   = $this->post( [ '', self::HIDDEN ] );
+		$two_rows = $this->post( [ '', 'local' ] );
+		$no_rows  = $this->post();
+		$real     = new WP_Query( Public_Listing::query_args( [ 'post__in' => [ $hidden, $two_rows, $no_rows ], 'posts_per_page' => 20 ] ) );
 		$this->assertStringNotContainsString( 'JOIN ' . $wpdb->postmeta, $real->request );
+		// A listable post with two visibility rows would appear twice under a meta join.
+		$this->assertCount( 2, $real->posts );
 		$this->assertSame( count( array_unique( wp_list_pluck( $real->posts, 'ID' ) ) ), count( $real->posts ) );
+		$this->assertEqualsCanonicalizing( [ $two_rows, $no_rows ], wp_list_pluck( $real->posts, 'ID' ) );
 	}
 
 	public function test_query_args_readds_removed_where_filter(): void {

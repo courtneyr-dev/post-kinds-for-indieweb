@@ -38,6 +38,12 @@ final class OnThisDayAbilityTest extends WP_UnitTestCase {
 		foreach ( [ 'excerpt', 'content', 'meta', 'author' ] as $private ) {
 			$this->assertArrayNotHasKey( $private, $item );
 		}
+		$this->assertTrue( $ability->get_meta()['annotations']['readonly'] ?? false );
+		$writes = array_filter(
+			array_keys( wp_get_abilities() ),
+			static fn( string $name ): bool => str_contains( $name, 'on-this-day' ) && 'post-kinds/get-on-this-day' !== $name
+		);
+		$this->assertSame( [], array_values( $writes ), 'No other On This Day ability, write or read, is registered.' );
 	}
 
 	public function test_validation_rejects_bad_future_and_out_of_range_inputs(): void {
@@ -65,11 +71,15 @@ final class OnThisDayAbilityTest extends WP_UnitTestCase {
 	public function test_execute_returns_the_same_ids_for_visitor_admin_and_cli_contexts(): void {
 		$id = self::factory()->post->create( [ 'post_status' => 'publish', 'post_date' => '2025-04-05 10:00:00' ] );
 		wp_set_object_terms( $id, 'note', Taxonomy::TAXONOMY );
+		foreach ( [ 'private', 'draft' ] as $status ) {
+			$hidden = self::factory()->post->create( [ 'post_status' => $status, 'post_date' => '2024-04-05 10:00:00' ] );
+			wp_set_object_terms( $hidden, 'note', Taxonomy::TAXONOMY );
+		}
 		$ids = [];
 		foreach ( [ 0, self::factory()->user->create( [ 'role' => 'administrator' ] ) ] as $user ) {
 			wp_set_current_user( $user );
 			$result = On_This_Day_Abilities::instance()->execute();
-			$ids[] = array_column( $result['groups'][0]['items'], 'post_id' );
+			$ids[]  = array_merge( ...array_map( static fn( array $group ): array => array_column( $group['items'], 'post_id' ), $result['groups'] ) );
 		}
 		$this->assertSame( [ [ $id ], [ $id ] ], $ids );
 	}

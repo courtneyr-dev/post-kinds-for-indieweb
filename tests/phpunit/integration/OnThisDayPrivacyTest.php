@@ -110,6 +110,70 @@ final class OnThisDayPrivacyTest extends WP_UnitTestCase {
 		}
 	}
 
+	/**
+	 * Each hidden case is the newest, latest candidate, so the single and Stream cards would pick it if it leaked.
+	 *
+	 * @dataProvider newest_hidden_provider
+	 *
+	 * @param string            $hidden_case Case name.
+	 * @param string            $status      Post status.
+	 * @param string            $password    Post password.
+	 * @param string|array|null $visibility  Visibility meta rows.
+	 * @param string            $kind        Kind slug.
+	 * @param string            $date        Local post date.
+	 */
+	public function test_newest_hidden_candidate_never_reaches_the_single_or_stream_card( string $hidden_case, string $status, string $password, $visibility, string $kind, string $date ): void {
+		add_filter(
+			'pkiw_on_this_day_kinds',
+			static fn( array $kinds ): array => array_values( array_unique( array_merge( $kinds, [ 'follow', 'tag' ] ) ) )
+		);
+		$control = $this->make( 'older-control', 'publish', '', null, 'note', '2023-05-09 10:00:00' );
+		$hidden  = $this->make( 'newest-' . $hidden_case, $status, $password, $visibility, $kind, $date );
+		if ( 'sticky-other-date' === $hidden_case ) {
+			stick_post( $hidden );
+		}
+		$viewed = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => 'Viewed newest', 'post_date' => '2026-05-09 12:00:00' ] );
+		wp_set_object_terms( $viewed, 'note', Taxonomy::TAXONOMY );
+
+		$this->go_to( get_permalink( $viewed ) );
+		add_filter( 'pkiw_otd_edge_purge', '__return_true' );
+		$single = On_This_Day::render_block( [ 'context' => 'single' ] );
+		remove_filter( 'pkiw_otd_edge_purge', '__return_true' );
+
+		$page_html = $this->render_stream_page( $this->stream_page() );
+		$start     = strpos( $page_html, '<li class="wp-block-post pkiw-otd-stream-item"' );
+		$this->assertNotFalse( $start, 'The Stream page prints the On This Day card.' );
+		$card = substr( $page_html, (int) $start, (int) strpos( $page_html, '</li>', (int) $start ) + 5 - (int) $start );
+
+		$this->assertStringContainsString( $this->marker( $control ), $single, 'The next visible row takes the single card.' );
+		$this->assertStringContainsString( $this->marker( $control ), $card, 'The next visible row takes the Stream card.' );
+		$this->assertStringNotContainsString( $this->marker( $hidden ), $single . $card );
+	}
+
+	/**
+	 * Hidden cases dated as the newest-year, latest-time candidate.
+	 *
+	 * @return array<string, array<int, mixed>>
+	 */
+	public static function newest_hidden_provider(): array {
+		$newest = '2025-05-09 23:30:00';
+		return [
+			'private'               => [ 'private', 'private', '', null, 'note', $newest ],
+			'draft'                 => [ 'draft', 'draft', '', null, 'note', $newest ],
+			'pending'               => [ 'pending', 'pending', '', null, 'note', $newest ],
+			'future'                => [ 'future', 'future', '', null, 'note', $newest ],
+			'password'              => [ 'password', 'publish', 'secret', null, 'note', $newest ],
+			'trash'                 => [ 'trash', 'trash', '', null, 'note', $newest ],
+			'quiet-public'          => [ 'quiet-public', 'publish', '', 'quiet_public', 'note', $newest ],
+			'two-rows-empty-first'  => [ 'two-rows-empty-first', 'publish', '', [ '', 'quiet_public' ], 'note', $newest ],
+			'two-rows-hidden-first' => [ 'two-rows-hidden-first', 'publish', '', [ 'quiet_public', '' ], 'note', $newest ],
+			'kind-drink'            => [ 'kind-drink', 'publish', '', null, 'drink', $newest ],
+			'follow-hidden'         => [ 'follow-hidden', 'publish', 'secret', null, 'follow', $newest ],
+			'tag-hidden'            => [ 'tag-hidden', 'private', '', null, 'tag', $newest ],
+			'sticky-other-date'     => [ 'sticky-other-date', 'publish', '', null, 'note', '2025-05-08 23:30:00' ],
+		];
+	}
+
 	public function test_visibility_does_not_change_for_an_administrator(): void {
 		$id = $this->make( 'admin-private', 'private' );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );

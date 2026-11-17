@@ -70,13 +70,16 @@ final class OnThisDayRouteTest extends WP_UnitTestCase {
 	public function test_title_and_yoast_callbacks_are_route_only_and_page_aware(): void {
 		$off = [ 'title' => 'Control' ];
 		$this->assertSame( $off, On_This_Day::document_title_parts( $off ) );
+		$this->assertNull( On_This_Day::yoast_url( null ) );
+		$this->assertNull( On_This_Day::yoast_title( null ) );
 		$this->go_to( home_url( '/on-this-day/page/3/' ) );
 		$this->assertSame( 'On This Day', On_This_Day::document_title_parts( [ 'title' => 'Old' ] )['title'] );
 		$this->assertSame( home_url( '/on-this-day/page/3/' ), On_This_Day::route_url() );
-		if ( ! defined( 'WPSEO_VERSION' ) ) {
-			define( 'WPSEO_VERSION', 'test' );
-		}
 		$this->assertSame( 'On This Day - ' . get_bloginfo( 'name' ), On_This_Day::yoast_title( 'Old' ) );
 		$this->assertSame( home_url( '/on-this-day/page/3/' ), On_This_Day::yoast_url( 'old' ) );
+		// Yoast passes null for the Open Graph URL of a route it has no indexable for.
+		$this->assertSame( home_url( '/on-this-day/page/3/' ), apply_filters( 'wpseo_opengraph_url', null, null ) );
+		$this->assertSame( home_url( '/on-this-day/page/3/' ), apply_filters( 'wpseo_canonical', '', null ) );
+		$this->assertNotNull( apply_filters( 'wpseo_title', null, null ) );
 	}
 }
