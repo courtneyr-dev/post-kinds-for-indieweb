@@ -111,6 +111,9 @@ class Standard_Site {
 		if ( ! $post instanceof \WP_Post || wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
 			return;
 		}
+		if ( has_term( Public_Eligibility::KINDS, Taxonomy::TAXONOMY, $post ) ) {
+			return;
+		}
 
 		$cite_url = get_post_meta( $post_id, '_pkiw_cite_url', true );
 		if ( ! is_string( $cite_url ) || '' === $cite_url ) {
@@ -136,7 +139,11 @@ class Standard_Site {
 	 * @return void
 	 */
 	public static function resolve_post( $post_id ): void {
-		$post_id  = (int) $post_id;
+		$post_id = (int) $post_id;
+		$post    = get_post( $post_id );
+		if ( $post instanceof \WP_Post && has_term( Public_Eligibility::KINDS, Taxonomy::TAXONOMY, $post ) ) {
+			return;
+		}
 		$cite_url = get_post_meta( $post_id, '_pkiw_cite_url', true );
 
 		if ( ! is_string( $cite_url ) || '' === $cite_url ) {

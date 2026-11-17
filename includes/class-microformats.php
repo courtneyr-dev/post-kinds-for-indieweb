@@ -308,11 +308,11 @@ class Microformats {
 					'date'      => 'dt-published',
 				],
 			],
-			'follow'    => [
+			'follow'       => [
 				'root'       => [ 'h-entry' ],
 				'properties' => [
 					'follow-of' => 'u-follow-of',
-					'cite'      => 'h-cite',
+					'card'      => 'h-card',
 					'date'      => 'dt-published',
 				],
 			],
@@ -860,13 +860,13 @@ class Microformats {
 
 		$post_id = get_the_ID();
 
-		if ( ! $post_id || ! is_singular() ) {
+		if ( ! $post_id ) {
 			return $content;
 		}
 
 		$kind = $this->get_post_kind( $post_id );
 
-		if ( ! $kind ) {
+		if ( ! $kind || ( ! is_singular() && ( doing_filter( 'the_content' ) || 'follow' !== $kind ) ) ) {
 			return $content;
 		}
 
@@ -875,6 +875,28 @@ class Microformats {
 
 		// Add kind-specific hidden data.
 		switch ( $kind ) {
+			case 'tag':
+				$facts = Kind_Facts::get( $post_id );
+				if ( [] === $facts ) {
+					break;
+				}
+				if ( ! $this->has_class_token( $content, 'u-tag-of' ) ) {
+					if ( 'person' === ( $facts['target_type'] ?? '' ) ) {
+						$hidden_data .= '<span class="u-tag-of h-card">';
+						$hidden_data .= '' !== ( $facts['title'] ?? '' ) ? '<data class="p-name" value="' . esc_attr( (string) $facts['title'] ) . '"></data>' : '';
+						$hidden_data .= '' !== ( $facts['url'] ?? '' ) ? '<data class="u-url" value="' . esc_url( (string) $facts['url'] ) . '"></data>' : '';
+						$hidden_data .= '</span>';
+					} elseif ( '' !== ( $facts['url'] ?? '' ) ) {
+						$hidden_data .= '<data class="u-tag-of" value="' . esc_url( (string) $facts['url'] ) . '"></data>';
+					}
+				}
+				if ( ! $this->has_class_token( $content, 'p-category' ) ) {
+					foreach ( (array) ( $facts['labels'] ?? [] ) as $label ) {
+						$hidden_data .= '<data class="p-category" value="' . esc_attr( (string) $label ) . '"></data>';
+					}
+				}
+				break;
+
 			case 'rsvp':
 				$facts       = Kind_Facts::get( $post_id );
 				$rsvp_status = (string) ( $facts['status'] ?? '' );
@@ -1010,6 +1032,33 @@ class Microformats {
 							'p-author' => (string) ( $facts['show'] ?? '' ),
 						]
 					);
+				}
+				break;
+
+			case 'follow':
+				$facts = Follow_Archive::facts( $post_id );
+				if ( [] === $facts || '' === (string) $facts['url'] ) {
+					break;
+				}
+				$has_card  = false;
+				$processor = new \WP_HTML_Tag_Processor( $content );
+				while ( $processor->next_tag( [ 'class_name' => 'u-follow-of' ] ) ) {
+					if ( $processor->has_class( 'h-card' ) ) {
+						$has_card = true;
+						break;
+					}
+				}
+				if ( ! $has_card ) {
+					$hidden_data .= '<span class="u-follow-of h-card" hidden>';
+					$hidden_data .= '<data class="p-name" value="' . esc_attr( (string) $facts['name'] ) . '"></data>';
+					$hidden_data .= '<data class="u-url" value="' . esc_url( (string) $facts['url'] ) . '"></data>';
+					if ( (int) $facts['photo_id'] > 0 ) {
+						$photo = (string) wp_get_attachment_image_url( (int) $facts['photo_id'], 'medium' );
+						if ( '' !== $photo ) {
+							$hidden_data .= '<data class="u-photo" value="' . esc_url( $photo ) . '"></data>';
+						}
+					}
+					$hidden_data .= '</span>';
 				}
 				break;
 

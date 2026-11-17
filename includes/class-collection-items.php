@@ -107,12 +107,7 @@ final class Collection_Items {
 	 * @return bool
 	 */
 	public static function is_public_reference( int $post_id ): bool {
-		$post = get_post( $post_id );
-
-		return $post instanceof \WP_Post
-			&& 'publish' === $post->post_status
-			&& '' === (string) $post->post_password
-			&& is_post_publicly_viewable( $post );
+		return Public_Eligibility::is_eligible( $post_id );
 	}
 
 	/**
@@ -127,13 +122,7 @@ final class Collection_Items {
 	 * @return int The ID, or 0 when it is not a public image.
 	 */
 	private static function public_image_id( int $attachment_id ): int {
-		if ( $attachment_id < 1 || ! wp_attachment_is_image( $attachment_id ) ) {
-			return 0;
-		}
-
-		$parent = (int) wp_get_post_parent_id( $attachment_id );
-
-		return 0 === $parent || self::is_public_reference( $parent ) ? $attachment_id : 0;
+		return Public_Eligibility::public_image_id( $attachment_id );
 	}
 
 	/**
@@ -600,6 +589,7 @@ final class Collection_Items {
 		$post    = get_post( $post_id );
 		if (
 			! $post instanceof \WP_Post
+			|| Public_Eligibility::hides( $post )
 			|| self::KIND !== Kind_Facts::kind_of( $post )
 			|| ! Kind_Facts::can_show( $post )
 			|| Meta_Fields::hides_kind_meta( $post )
@@ -642,7 +632,7 @@ final class Collection_Items {
 	private static function ability_permission( $input ): bool {
 		$post_id = is_array( $input ) ? (int) ( $input['post_id'] ?? 0 ) : 0;
 		$post    = get_post( $post_id );
-		if ( ! $post instanceof \WP_Post || ! current_user_can( 'read_post', $post_id ) ) {
+		if ( ! $post instanceof \WP_Post || Public_Eligibility::hides( $post ) || ! current_user_can( 'read_post', $post_id ) ) {
 			return false;
 		}
 

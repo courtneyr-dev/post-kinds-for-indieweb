@@ -51,7 +51,7 @@ final class IssuePrivacyTest extends WP_UnitTestCase {
 		wp_set_object_terms( $post_id, 'issue', Taxonomy::TAXONOMY );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'cite_url', 'https://a.example.net/acorn-ledger' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'cite_name', 'acorn-ledger' );
-		update_post_meta( $post_id, Meta_Fields::PREFIX . 'issue_number', $protected ? '110' : '101' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'issue_number', $protected ? '987654321' : '101' );
 		update_post_meta( $post_id, Meta_Fields::PREFIX . 'issue_status', 'open' );
 
 		return (int) $post_id;
@@ -80,7 +80,7 @@ final class IssuePrivacyTest extends WP_UnitTestCase {
 		$single = $this->content( $post_id );
 		$this->assertStringNotContainsString( 'pkiw-issue-facts', $single );
 		$this->assertStringNotContainsString( 'acorn-ledger', $single );
-		$this->assertStringNotContainsString( '110', $single );
+		$this->assertStringNotContainsString( '987654321', $single );
 
 		$stream = $this->stream( $post_id );
 		$this->assertStringContainsString( 'pk-card--protected', $stream );
@@ -99,7 +99,7 @@ final class IssuePrivacyTest extends WP_UnitTestCase {
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
 		$admin = rest_do_request( new WP_REST_Request( 'GET', '/wp/v2/posts/' . $post_id ) )->get_data();
 		$this->assertSame( 'acorn-ledger', $admin['meta'][ Meta_Fields::PREFIX . 'cite_name' ] );
-		$this->assertSame( '110', $admin['meta'][ Meta_Fields::PREFIX . 'issue_number' ] );
+		$this->assertSame( '987654321', $admin['meta'][ Meta_Fields::PREFIX . 'issue_number' ] );
 	}
 
 	public function test_atproto_projection_and_all_issue_views_add_no_location_markup(): void {

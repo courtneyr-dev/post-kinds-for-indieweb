@@ -67,6 +67,8 @@ final class StreamCardGoldenTest extends WP_UnitTestCase {
 		// Recorded from the W7-P251 head: the RSVP now draws its location-free Stream fallback.
 		'block:rsvp|card'                => 'bc845ef364f74eb3d9d9471858a5171007951fc1',
 		'block:sleep|card'               => 'c2e897e48c0afa125cfc331fde3e9fb44c0b1c8d',
+		// Recorded from the W8-P261 head: the tag card added by spec-261 C2, drawn through Tag_Archive::stream_card() (C6).
+		'block:tag|card'                 => '40b7fc7c50889881173c915a75dea5cd84087082',
 		'block:trip|card'                => 'da39a3ee5e6b4b0d3255bfef95601890afd80709',
 		'block:watch|card'               => '6dddfa9574216931da0d40d39f329ed722609bb3',
 		// Recorded from the W5-T238 fidelity fix: this row changes on purpose (Stream chips replace the price chip; the View item link gains an aria-hidden external-link icon).
@@ -143,8 +145,9 @@ final class StreamCardGoldenTest extends WP_UnitTestCase {
 		'single:review'                  => '612cc619b964642925a55216dc0169255aa62b1c',
 		'sleep|generic-titled'           => '5328e2041759355a063f108ac80d36c61c314a92',
 		'sleep|generic-untitled'         => '8ce50ad93b1316288da5ec7653b7ca75a5e7c524',
-		'tag|generic-titled'             => '4fa9893d8947d068b71d1548df71979dc4b1f205',
-		'tag|generic-untitled'           => '8284ba090d865fc81cd9351b0abc7bd92371592d',
+		// Recorded for C6: every tag post uses Tag_Archive::stream_card().
+		'tag|generic-titled'             => 'd3d3a94be19e0dd68d9cd052a75083b955b68672',
+		'tag|generic-untitled'           => '033365c0646acb4a377a88137897e8802c1304e3',
 		'trip|generic-titled'            => '988f5b501afb2671e5e2b8f9e3a35a2eb3028881',
 		'trip|generic-untitled'          => 'c0796cae67e41fba9dc4f9ce4322e27ad87f741f',
 		'video|generic-titled'           => 'c6d0b26bfc6875f8c079fc6688b6804f0874b2c9',
@@ -244,7 +247,7 @@ final class StreamCardGoldenTest extends WP_UnitTestCase {
 		$blocks  = array_keys( WP_Block_Type_Registry::get_instance()->get_all_registered() );
 		sort( $blocks );
 		// Blocks added after the hashes were recorded take IDs after the singles, so every recorded row keeps its fixed ID.
-		$later = [ 'post-kinds-indieweb/itinerary-card', 'post-kinds-indieweb/trip-card' ];
+		$later = [ 'post-kinds-indieweb/itinerary-card', 'post-kinds-indieweb/trip-card', 'post-kinds-indieweb/tag-card' ];
 		$blocks = array_merge( array_values( array_diff( $blocks, $later ) ), [ '#singles' ], array_values( array_intersect( $later, $blocks ) ) );
 		foreach ( $blocks as $name ) {
 			if ( '#singles' === $name ) {

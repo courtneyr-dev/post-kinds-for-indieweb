@@ -79,6 +79,11 @@ const ROUND_TRIP_EXCEPTIONS = {
 		locationVisibility:
 			'block.json enum (private/public); "Sample locationVisibility value" is not a member, so core coerces it back to the schema default (private) on save. Matches the BlockFieldRenderTest.php exception for the same attribute.',
 	},
+	'post-kinds-indieweb/tag-card': {
+		targetType:
+			'block.json enum (content/person); "Sample targetType value" is not a member, so core coerces it back to the schema default (content) on save. Matches the BlockFieldRenderTest.php exception for the same attribute.',
+		labels: 'Typed "array" (ordered label strings); the sampler has no array rule, so sampleFor() returns a flat string that block attribute validation drops on reload. Covered by tests/js/blocks/tag-card.test.js with real labels.',
+	},
 	'post-kinds-indieweb/exercise-card': {
 		distanceUnit:
 			'block.json enum (km/mi); "Sample distanceUnit value" is not a member, so core coerces it back to the schema default (km) on save. Matches the BlockFieldRenderTest.php exception for the same attribute.',
@@ -99,6 +104,10 @@ const RENDER_EXCEPTIONS = {
 	'post-kinds-indieweb/read-card': {
 		readStatus:
 			'status is mapped to a human label (Reading/Finished/…) and is never echoed raw',
+	},
+	'post-kinds-indieweb/tag-card': {
+		imageAlt:
+			'printed only as the alt of a local media-library image through wp_get_attachment_image(); the sample imageId names no attachment, so no image or alt renders (spec-261 C2). Matches the BlockFieldRenderTest.php exception for the same attribute.',
 	},
 	'post-kinds-indieweb/collection-item': {
 		postId: 'the sample postId 4 does not resolve to a published, publicly viewable, password-free reference, so the internal item renders nothing',

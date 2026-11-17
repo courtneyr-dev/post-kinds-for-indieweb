@@ -714,6 +714,9 @@ function untitled_name( \WP_Post $post, bool $from_content = true ): string {
 	if ( post_password_required( $post ) ) {
 		return $fallback();
 	}
+	if ( Public_Eligibility::hides( $post ) ) {
+		return $fallback();
+	}
 
 	$cite_kinds = [ 'like', 'reply', 'repost', 'bookmark', 'favorite', 'quote', 'follow' ];
 	if ( in_array( $kind, $cite_kinds, true ) ) {

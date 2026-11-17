@@ -67,6 +67,7 @@ final class Core_Abilities {
 		'repost'       => [ 'cite_' ],
 		'bookmark'     => [ 'cite_', 'bookmark_' ],
 		'rsvp'         => [ 'cite_', 'rsvp_' ],
+		'tag'          => [ 'cite_' ],
 		'presentation' => [ 'presentation_' ],
 		'checkin'      => [ 'checkin_', 'geo_' ],
 		'listen'       => [ 'listen_' ],
@@ -348,7 +349,8 @@ final class Core_Abilities {
 				],
 				'execute_callback'    => [ $this, 'execute_get_kind' ],
 				'permission_callback' => function ( $input ) {
-					return current_user_can( 'read_post', (int) ( $input['post_id'] ?? 0 ) );
+					$post_id = (int) ( $input['post_id'] ?? 0 );
+					return $post_id > 0 && ! \PKIW\Public_Eligibility::hides( $post_id ) && current_user_can( 'read_post', $post_id );
 				},
 				'meta'                => [ 'show_in_rest' => true ],
 			]
@@ -434,7 +436,8 @@ final class Core_Abilities {
 				],
 				'execute_callback'    => [ $this, 'execute_get_post_meta' ],
 				'permission_callback' => function ( $input ) {
-					return current_user_can( 'read_post', (int) ( $input['post_id'] ?? 0 ) );
+					$post_id = (int) ( $input['post_id'] ?? 0 );
+					return $post_id > 0 && ! \PKIW\Public_Eligibility::hides( $post_id ) && current_user_can( 'read_post', $post_id );
 				},
 				'meta'                => [ 'show_in_rest' => true ],
 			]
@@ -626,6 +629,9 @@ final class Core_Abilities {
 				__( 'Post not found.', 'post-kinds-for-indieweb-in-block-themes' )
 			);
 		}
+		if ( \PKIW\Public_Eligibility::hides( $post ) ) {
+			return new \WP_Error( 'invalid_post', __( 'Post not found.', 'post-kinds-for-indieweb-in-block-themes' ) );
+		}
 
 		$terms = wp_get_post_terms( $post_id, Taxonomy::TAXONOMY );
 
@@ -727,6 +733,9 @@ final class Core_Abilities {
 				'invalid_post',
 				__( 'Post not found.', 'post-kinds-for-indieweb-in-block-themes' )
 			);
+		}
+		if ( \PKIW\Public_Eligibility::hides( $post ) ) {
+			return new \WP_Error( 'invalid_post', __( 'Post not found.', 'post-kinds-for-indieweb-in-block-themes' ) );
 		}
 
 		if ( Meta_Fields::hides_kind_meta( $post ) ) {

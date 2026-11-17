@@ -138,8 +138,20 @@ final class ComicReadUnchangedTest extends WP_UnitTestCase {
 		$this->go_to( (string) get_term_link( $term ) );
 		global $wp_query;
 
-		// Only what differs between runs is replaced: the table prefix and the kind term's taxonomy ID.
-		$sql = (string) preg_replace( [ '/\bIN \(\d+\)/', '/\b' . preg_quote( $GLOBALS['wpdb']->prefix, '/' ) . '(?=\w)/' ], [ 'IN (TERM_TAXONOMY_ID)', 'wp_' ], (string) $wp_query->request );
+		// C1 applies the governed-kind privacy clause even on another kind archive (O-8).
+		$sql = (string) preg_replace(
+			[
+				'/pkiw_public_tr\.term_taxonomy_id IN \( [0-9, ]+ \)/',
+				'/\bIN \(\d+\)/',
+				'/\b' . preg_quote( $GLOBALS['wpdb']->prefix, '/' ) . '(?=\w)/',
+			],
+			[
+				'pkiw_public_tr.term_taxonomy_id IN ( GOVERNED_TERM_TAXONOMY_IDS )',
+				'IN (TERM_TAXONOMY_ID)',
+				'wp_',
+			],
+			(string) $wp_query->request
+		);
 		$this->assertEmpty( $wp_query->get( 'meta_query' ) );
 		$this->assertSame( '', (string) $wp_query->get( 'pkiw_group_source' ) );
 		$this->assert_golden( 'comic-read-archive-query.golden.sql', $sql );

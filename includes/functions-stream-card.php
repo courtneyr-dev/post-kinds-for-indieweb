@@ -474,6 +474,10 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 	// it got rendered — shares one heading level in the outline.
 	$heading_level = max( 2, min( 4, (int) ( $attributes['headingLevel'] ?? 2 ) ) );
 
+	if ( Public_Eligibility::hides( $post ) ) {
+		return '';
+	}
+
 	// A password-protected post shows its title link and nothing else. Its
 	// card would otherwise print the review, rating, cover and links.
 	if ( post_password_required( $post ) ) {
