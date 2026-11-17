@@ -170,6 +170,29 @@ final class OnThisDayBlocksTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'aria-labelledby="pkiw-group-2024 pkiw-otd-title-' . $second . '"', $html );
 	}
 
+	/** @return array<string, array{0:string, 1:int, 2:int}> */
+	public static function heading_levels(): array {
+		return [
+			'default'  => [ '', 2, 3 ],
+			'level 2'  => [ ' {"headingLevel":2}', 2, 2 ],
+			'level 3'  => [ ' {"headingLevel":3}', 2, 3 ],
+			'level 4'  => [ ' {"headingLevel":4}', 3, 4 ],
+			'above 4'  => [ ' {"headingLevel":9}', 3, 4 ],
+			'below 2'  => [ ' {"headingLevel":1}', 2, 2 ],
+		];
+	}
+
+	/** @dataProvider heading_levels */
+	public function test_year_heading_sits_one_level_above_entry_titles( string $attrs, int $year_level, int $item_level ): void {
+		$this->post( 'Heading order entry', '2025-09-21 10:00:00' );
+		$GLOBALS['wp_query'] = new WP_Query( On_This_Day::query_args( $this->today, [ 'pkiw_group_source' => On_This_Day::SOURCE, 'pkiw_group_order' => 'DESC', 'posts_per_page' => 20 ] ) );
+		$markup = '<!-- wp:query {"queryId":8,"query":{"inherit":true}} --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:' . On_This_Day::ENTRY_BLOCK . $attrs . ' /--><!-- /wp:post-template --></div><!-- /wp:query -->';
+		$html   = do_blocks( $markup );
+
+		$this->assertMatchesRegularExpression( '/<h' . $year_level . ' id="pkiw-group-2025[^"]*"/', $html );
+		$this->assertMatchesRegularExpression( '/<h' . $item_level . ' id="pkiw-otd-title-\d+"/', $html );
+	}
+
 	private function post( string $title, string $date ): int {
 		$id = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => $title, 'post_date' => $date ] );
 		wp_set_object_terms( $id, 'note', Taxonomy::TAXONOMY );
