@@ -700,6 +700,9 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\Event_Calendar' ) ) {
 			( new Event_Calendar() )->register();
 		}
+		if ( class_exists( __NAMESPACE__ . '\\Zine_Export' ) ) {
+			( new Zine_Export() )->register();
+		}
 		if ( class_exists( __NAMESPACE__ . '\\Travel' ) ) {
 			( new Travel() )->register();
 			( new Travel_Archive() )->register();

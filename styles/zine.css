@@ -1,0 +1,130 @@
+.pkiw-zine-export form {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+	align-items: end;
+}
+
+.pkiw-zine-export fieldset {
+	border: 0;
+	margin: 0;
+	padding: 0;
+}
+
+.pkiw-zine-export label,
+.pkiw-zine-export button,
+.pkiw-zine-export summary {
+	min-height: 44px;
+}
+
+.pkiw-zine-export__error {
+	flex-basis: 100%;
+}
+
+.pkiw-zine-pages {
+	display: block;
+}
+
+.pkiw-zine-page {
+	box-sizing: border-box;
+	min-height: 100vh;
+	padding: 0.25in;
+}
+
+.pkiw-zine-entry__folio {
+	float: right;
+}
+
+/*
+ * A permalink has no natural break points; on a quarter-page panel it would
+ * run past the edge and be cut off on paper.
+ */
+.pkiw-zine-page footer {
+	min-width: 0;
+}
+
+.pkiw-zine-entry__permalink {
+	overflow-wrap: anywhere;
+}
+
+@media (max-width: 40rem) {
+
+	.pkiw-zine-export form {
+		display: grid;
+	}
+}
+
+/*
+ * A named page: this sheet also loads with the block on archives and
+ * /stream, whose own printouts keep their page box.
+ */
+@page pkiw-zine {
+	size: landscape;
+	margin: 0;
+}
+
+@media print {
+
+	body.pkiw-zine-print {
+		margin: 0;
+	}
+
+	.pkiw-zine-toolbar {
+		display: none;
+	}
+
+	.pkiw-zine-pages {
+		page: pkiw-zine;
+		display: grid;
+		grid-template-columns: repeat(4, 25%);
+		grid-auto-rows: 50vh;
+	}
+
+	.pkiw-zine-page[data-side="1"][data-row="top"] {
+		grid-row: 1;
+	}
+
+	.pkiw-zine-page[data-side="1"][data-row="bottom"] {
+		grid-row: 2;
+	}
+
+	.pkiw-zine-page[data-side="2"][data-row="top"] {
+		grid-row: 3;
+	}
+
+	.pkiw-zine-page[data-side="2"][data-row="bottom"] {
+		grid-row: 4;
+	}
+
+	.pkiw-zine-page[data-col="1"] {
+		grid-column: 1;
+	}
+
+	.pkiw-zine-page[data-col="2"] {
+		grid-column: 2;
+	}
+
+	.pkiw-zine-page[data-col="3"] {
+		grid-column: 3;
+	}
+
+	.pkiw-zine-page[data-col="4"] {
+		grid-column: 4;
+	}
+
+	.pkiw-zine-page {
+		display: grid;
+		grid-template-rows: auto minmax(0, 1fr) auto;
+		min-height: 0;
+		overflow: hidden;
+	}
+
+	.pkiw-zine-page[data-inverted="1"] {
+		transform: rotate(180deg);
+	}
+
+	.pkiw-zine-page__content {
+		min-height: 0;
+		overflow: hidden;
+	}
+}
