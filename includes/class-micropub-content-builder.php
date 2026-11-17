@@ -252,8 +252,8 @@ final class Micropub_Content_Builder {
 			return;
 		}
 
-		$kind = self::detect_kind( $properties ) ?? self::detect_term_only_kind( $properties );
-		if ( null === $kind || ! $taxonomy->is_valid_kind( $kind ) ) {
+		$kind = self::detect_kind( $properties ) ?? self::detect_term_only_kind( $properties ) ?? self::note_or_article( $properties );
+		if ( ! $taxonomy->is_valid_kind( $kind ) ) {
 			return;
 		}
 
@@ -308,6 +308,32 @@ final class Micropub_Content_Builder {
 			return 'reply';
 		}
 		return null;
+	}
+
+	/**
+	 * The last step of post type discovery for an entry with no kind
+	 * property: a name that isn't a prefix of the content makes an article,
+	 * anything else is a note (https://indieweb.org/post-type-discovery).
+	 *
+	 * Written explicitly rather than left to the taxonomy's default term,
+	 * because a kind another plugin guessed during the insert would stand.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return string 'article' or 'note'.
+	 */
+	private static function note_or_article( array $properties ): string {
+		$collapse = static fn( string $text ): string => trim( (string) preg_replace( '/\s+/u', ' ', $text ) );
+		$name     = $collapse( self::flatten_scalar( $properties, 'name' ) );
+		if ( '' === $name ) {
+			return 'note';
+		}
+
+		$content = self::first_value( $properties, 'content' );
+		if ( is_array( $content ) ) {
+			$content = $content['value'] ?? wp_strip_all_tags( (string) ( $content['html'] ?? '' ) );
+		}
+
+		return str_starts_with( $collapse( is_string( $content ) ? $content : '' ), $name ) ? 'note' : 'article';
 	}
 
 	/**
