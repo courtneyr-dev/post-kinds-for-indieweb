@@ -1,0 +1,57 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "post-kinds-indieweb/wrapped",
+	"version": "1.0.0",
+	"title": "Wrapped",
+	"category": "post-kinds-indieweb",
+	"description": "Show yearly public statistics for one post kind.",
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
+	"usesContext": [
+		"postId",
+		"postType"
+	],
+	"attributes": {
+		"kind": {
+			"type": "string",
+			"default": ""
+		},
+		"year": {
+			"type": "integer"
+		},
+		"metrics": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			},
+			"default": []
+		},
+		"topCount": {
+			"type": "integer",
+			"default": 3
+		},
+		"heading": {
+			"type": "string",
+			"default": ""
+		},
+		"headingLevel": {
+			"type": "integer",
+			"default": 2
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": [
+			"wide",
+			"full"
+		],
+		"spacing": {
+			"margin": true,
+			"padding": true
+		}
+	},
+	"example": {},
+	"render": "file:./render.php",
+	"style": "file:./style.css",
+	"editorStyle": "file:./editor.css"
+}

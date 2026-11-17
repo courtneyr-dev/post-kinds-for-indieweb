@@ -161,3 +161,21 @@ describe( 'Kind selector', () => {
 		expect( insertBlocks ).not.toHaveBeenCalled();
 	} );
 } );
+
+describe( 'Kind selector on a Wrapped post', () => {
+	it( 'renders nothing when the post holds a Wrapped block at any depth', () => {
+		mockBlocks = [
+			{
+				name: 'core/group',
+				innerBlocks: [
+					{ name: 'post-kinds-indieweb/wrapped', innerBlocks: [] },
+				],
+			},
+		];
+		const { container } = render( <KindSelectorPanel /> );
+
+		expect( container ).toBeEmptyDOMElement();
+		expect( insertBlocks ).not.toHaveBeenCalled();
+		expect( updatePostKind ).not.toHaveBeenCalled();
+	} );
+} );

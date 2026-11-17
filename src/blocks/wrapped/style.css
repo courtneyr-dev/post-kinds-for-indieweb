@@ -1,0 +1,7 @@
+.wp-block-post-kinds-indieweb-wrapped .pkiw-wrapped__metrics,
+.wp-block-post-kinds-indieweb-wrapped .pkiw-wrapped__top {
+	display: grid;
+	gap: var(--wp--preset--spacing--30);
+	list-style: none;
+	padding: 0;
+}

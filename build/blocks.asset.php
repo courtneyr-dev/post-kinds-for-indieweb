@@ -8,11 +8,12 @@
 		'wp-compose',
 		'wp-core-data',
 		'wp-data',
+		'wp-date',
 		'wp-editor',
 		'wp-element',
 		'wp-i18n',
 		'wp-primitives',
 		'wp-server-side-render'
 	),
-	'version' => '07d90c5cdf7229b541e7'
+	'version' => '17173be2eaeabb6896b4'
 );

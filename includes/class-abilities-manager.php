@@ -60,6 +60,8 @@ final class Abilities_Manager {
 		'post-kinds/get-rsvp-facts',
 		'post-kinds/get-follow-index',
 		'post-kinds/get-tag-facts',
+		'post-kinds/get-on-this-day',
+		'post-kinds/kind-year-stats',
 		'post-kinds/list-presentation-event-types',
 		'post-kinds/get-collection-items',
 		'post-kinds/lookup-music',
@@ -238,6 +240,18 @@ final class Abilities_Manager {
 			$tag->register();
 		}
 
+		if ( class_exists( __NAMESPACE__ . '\\Abilities\\On_This_Day_Abilities' ) ) {
+			$on_this_day                    = Abilities\On_This_Day_Abilities::instance();
+			$this->providers['on-this-day'] = $on_this_day;
+			$on_this_day->register();
+		}
+
+		if ( class_exists( __NAMESPACE__ . '\\Abilities\\Wrapped_Abilities' ) ) {
+			$wrapped                    = Abilities\Wrapped_Abilities::instance();
+			$this->providers['wrapped'] = $wrapped;
+			$wrapped->register();
+		}
+
 		/**
 		 * Fires after all post kind abilities are registered.
 		 *
@@ -296,6 +310,9 @@ final class Abilities_Manager {
 			'post-kinds/get-rsvp-facts',
 			'post-kinds/get-follow-index',
 			'post-kinds/get-tag-facts',
+			'post-kinds/get-on-this-day',
+			'post-kinds/kind-year-stats',
+			'post-kinds/create-wrapped-draft',
 			'post-kinds/list-presentation-event-types',
 			'post-kinds/reclassify-presentations',
 			'post-kinds/get-collection-items',

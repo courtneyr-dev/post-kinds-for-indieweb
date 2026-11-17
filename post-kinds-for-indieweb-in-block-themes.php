@@ -348,6 +348,7 @@ require_once PKIW_PATH . 'includes/functions-card-render.php';
 require_once PKIW_PATH . 'includes/functions-host.php';
 require_once PKIW_PATH . 'includes/functions-recipe.php';
 require_once PKIW_PATH . 'includes/functions-kind-facts.php';
+require_once PKIW_PATH . 'includes/functions-wrapped.php';
 require_once PKIW_PATH . 'includes/functions-play.php';
 require_once PKIW_PATH . 'includes/functions-stream-card.php';
 require_once PKIW_PATH . 'includes/functions-feed-mood.php';

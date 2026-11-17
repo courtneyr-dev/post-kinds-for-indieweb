@@ -1,0 +1,31 @@
+<!-- wp:template-part {"slug":"header","tagName":"header"} /-->
+
+<!-- wp:group {"tagName":"main","layout":{"type":"constrained"}} -->
+<main class="wp-block-group">
+	<!-- wp:heading {"level":1,"className":"pkiw-otd-archive__title"} -->
+	<h1 class="wp-block-heading pkiw-otd-archive__title">On This Day</h1>
+	<!-- /wp:heading -->
+
+	<!-- wp:query {"queryId":0,"query":{"inherit":true},"namespace":"pkiw-on-this-day","className":"pkiw-otd-archive"} -->
+	<div class="wp-block-query pkiw-otd-archive">
+		<!-- wp:post-template {"className":"is-style-pkiw-shelf"} -->
+			<!-- wp:post-kinds-indieweb/on-this-day-entry {"headingLevel":3} /-->
+		<!-- /wp:post-template -->
+
+		<!-- wp:query-pagination {"paginationArrow":"arrow","layout":{"type":"flex","justifyContent":"center"}} -->
+			<!-- wp:query-pagination-previous /-->
+			<!-- wp:query-pagination-numbers /-->
+			<!-- wp:query-pagination-next /-->
+		<!-- /wp:query-pagination -->
+
+		<!-- wp:query-no-results -->
+			<!-- wp:paragraph -->
+			<p>Nothing here yet.</p>
+			<!-- /wp:paragraph -->
+		<!-- /wp:query-no-results -->
+	</div>
+	<!-- /wp:query -->
+</main>
+<!-- /wp:group -->
+
+<!-- wp:template-part {"slug":"footer","tagName":"footer"} /-->
