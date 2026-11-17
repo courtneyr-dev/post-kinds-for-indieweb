@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- On This Day adds the `/on-this-day/` archive and its Stream card. The single-post card is built but stays off until the edge-purge filter is enabled. The public `post-kinds/get-on-this-day` ability and shared `PKIW\Public_Listing` helper keep every surface on the same public-listing rule.
+- On This Day: the `/on-this-day/` archive lists earlier years' posts from today's date, grouped by year, and a block puts one of them first in the Stream. The single-post card is built but stays off until the `pkiw_otd_edge_purge` filter returns true. The public `post-kinds/get-on-this-day` ability returns the same posts. Every surface lists only published, password-free posts that ActivityPub doesn't mark quiet public, through the new shared `PKIW\Public_Listing` helper.
 
 ## [1.9.1] - 2026-11-10
 
