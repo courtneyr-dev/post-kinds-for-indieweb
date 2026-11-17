@@ -1406,5 +1406,47 @@
                 "sample": "horizontal"
             }
         }
+    },
+    "post-kinds-indieweb/wrapped": {
+        "render": "dynamic",
+        "attributes": {
+            "kind": {
+                "type": "string",
+                "sample": "Sample kind value"
+            },
+            "year": {
+                "type": "integer",
+                "sample": 4
+            },
+            "metrics": {
+                "type": "array",
+                "sample": "Sample metrics value"
+            },
+            "topCount": {
+                "type": "integer",
+                "sample": 4
+            },
+            "heading": {
+                "type": "string",
+                "sample": "Sample heading value"
+            },
+            "headingLevel": {
+                "type": "integer",
+                "sample": 4
+            }
+        }
+    },
+    "post-kinds-indieweb/wrapped-strip": {
+        "render": "dynamic",
+        "attributes": {
+            "kind": {
+                "type": "string",
+                "sample": "Sample kind value"
+            },
+            "year": {
+                "type": "integer",
+                "sample": 4
+            }
+        }
     }
 }

@@ -247,7 +247,7 @@ final class StreamCardGoldenTest extends WP_UnitTestCase {
 		$blocks  = array_keys( WP_Block_Type_Registry::get_instance()->get_all_registered() );
 		sort( $blocks );
 		// Blocks added after the hashes were recorded take IDs after the singles, so every recorded row keeps its fixed ID.
-		$later = [ 'post-kinds-indieweb/itinerary-card', 'post-kinds-indieweb/trip-card', 'post-kinds-indieweb/tag-card' ];
+		$later = [ 'post-kinds-indieweb/itinerary-card', 'post-kinds-indieweb/trip-card', 'post-kinds-indieweb/tag-card', 'post-kinds-indieweb/wrapped', 'post-kinds-indieweb/wrapped-strip' ];
 		$blocks = array_merge( array_values( array_diff( $blocks, $later ) ), [ '#singles' ], array_values( array_intersect( $later, $blocks ) ) );
 		foreach ( $blocks as $name ) {
 			if ( '#singles' === $name ) {

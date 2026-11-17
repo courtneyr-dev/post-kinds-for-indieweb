@@ -28,8 +28,8 @@ final class PKIW_Test_Pantheon_Cache {
 		$this->urls = array_merge( $this->urls, $urls );
 	}
 
-	public function enqueue_regex( array $regex ): void {
-		$this->regex = array_merge( $this->regex, $regex );
+	public function enqueue_regex( array|string $regex ): void {
+		$this->regex = array_merge( $this->regex, (array) $regex );
 	}
 }
 

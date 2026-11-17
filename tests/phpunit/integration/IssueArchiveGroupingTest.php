@@ -219,7 +219,9 @@ final class IssueArchiveGroupingTest extends WP_UnitTestCase {
 		$this->assertSame( $expected, wp_list_pluck( $GLOBALS['wp_query']->posts, 'ID' ) );
 		$this->assertSame( [ 'birch-notes', 'cedar-kit-with-an-extraordinarily-long-repository-name', 'Other' ], $this->rack_headings( $page_two ) );
 		$this->assertStringContainsString( 'X01 protected', $page_two );
-		$this->assertStringNotContainsString( '110', $page_two );
+		// The protected ticket's issue number prints as '#110' (Issue_Archive::facts() number_text); a bare
+		// '110' would also match a post ID once earlier tests push auto-increment IDs that high.
+		$this->assertStringNotContainsString( '#110', $page_two );
 		$this->assertStringNotContainsString( 'acorn-ledger', $page_two );
 		$this->assertStringNotContainsString( 'P01 private', $page_one . $page_two );
 		$this->assertStringNotContainsString( 'D01 draft', $page_one . $page_two );

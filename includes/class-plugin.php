@@ -726,6 +726,11 @@ final class Plugin {
 		if ( class_exists( __NAMESPACE__ . '\\On_This_Day' ) ) {
 			( new On_This_Day() )->register();
 		}
+		if ( class_exists( __NAMESPACE__ . '\\Wrapped_Stats' ) ) {
+			( new Wrapped_Stats() )->register();
+			( new Wrapped_Post() )->register();
+			( new Wrapped_Blocks() )->register();
+		}
 		( new Kind_Query_Variations() )->register();
 	}
 
@@ -1090,6 +1095,8 @@ final class Plugin {
 			'like-card',
 			'repost-card',
 			'bookmark-card',
+			'wrapped',
+			'wrapped-strip',
 			'tag-card',
 			'reply-card',
 			'wish-card',

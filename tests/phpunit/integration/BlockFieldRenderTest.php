@@ -76,6 +76,18 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 				'targetType' => 'block.json enum (content/person); core drops the invalid sample pre-render and the value only picks the content or person layout, never echoed (spec-261 C2)',
 				'imageAlt'   => 'printed only as the alt of a local media-library image via wp_get_attachment_image(); the fixture imageId names no attachment, so no image or alt renders (spec-261 C2, no remote images)',
 			],
+			'post-kinds-indieweb/wrapped'           => [
+				'kind'         => 'renders nothing outside a listable Wrapped host',
+				'year'         => 'renders nothing outside a listable Wrapped host',
+				'metrics'      => 'renders nothing outside a listable Wrapped host',
+				'topCount'     => 'renders nothing outside a listable Wrapped host',
+				'heading'      => 'renders nothing outside a listable Wrapped host',
+				'headingLevel' => 'renders nothing outside a listable Wrapped host',
+			],
+			'post-kinds-indieweb/wrapped-strip'     => [
+				'kind' => 'renders nothing when no listable Wrapped post exists',
+				'year' => 'renders nothing when no listable Wrapped post exists',
+			],
 			'post-kinds-indieweb/wish-card'         => [
 				'wishType' => 'mapped to a plugin label; an unknown value like the fixture sample prints Other and the raw value is never echoed',
 				'priority' => 'mapped to High, Medium or Low; an unknown value like the fixture sample prints Medium and the raw value is never echoed',

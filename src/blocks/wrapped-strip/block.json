@@ -1,0 +1,29 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "post-kinds-indieweb/wrapped-strip",
+	"version": "1.0.0",
+	"title": "Wrapped strip",
+	"category": "post-kinds-indieweb",
+	"description": "Link to the latest yearly Wrapped post.",
+	"textdomain": "post-kinds-for-indieweb-in-block-themes",
+	"attributes": {
+		"kind": {
+			"type": "string"
+		},
+		"year": {
+			"type": "integer"
+		}
+	},
+	"providesContext": {
+		"post-kinds-indieweb/wrappedKind": "kind",
+		"post-kinds-indieweb/wrappedYear": "year"
+	},
+	"supports": {
+		"html": false
+	},
+	"example": {},
+	"render": "file:./render.php",
+	"style": "file:./style.css",
+	"editorStyle": "file:./editor.css"
+}

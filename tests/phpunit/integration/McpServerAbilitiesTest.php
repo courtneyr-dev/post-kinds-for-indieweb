@@ -72,6 +72,7 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 			'post-kinds/get-rsvp-facts',
 			'post-kinds/get-follow-index',
 			'post-kinds/get-on-this-day',
+			'post-kinds/kind-year-stats',
 			'post-kinds/list-presentation-event-types',
 			'post-kinds/get-collection-items',
 			'post-kinds/get-tag-facts',
@@ -214,7 +215,7 @@ final class McpServerAbilitiesTest extends WP_UnitTestCase {
 		sort( $expected );
 		sort( $public );
 		$this->assertSame( $expected, $public );
-		$this->assertCount( 24, $public, 'X-P268 adds one public On This Day ability.' );
-		$this->assertCount( 11, array_diff( Abilities_Manager::get_ability_names(), $public ), 'W8-P261 adds one non-public label-repair ability.' );
+		$this->assertCount( 25, $public, 'Wrapped adds one public kind-year statistics ability.' );
+		$this->assertCount( 12, array_diff( Abilities_Manager::get_ability_names(), $public ), 'Wrapped adds one non-public draft-creation ability.' );
 	}
 }
