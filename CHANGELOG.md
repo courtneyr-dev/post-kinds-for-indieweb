@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Follow posts with an A to Z archive. `/kind/follow/` uses the plugin's `taxonomy-kind-follow` template, the Follow entry and Follow letters blocks (`post-kinds-indieweb/follow-entry`, `post-kinds-indieweb/follow-letters`) and a first-letter index, sorted by stored name, then host. `pkiw_follow_initial` filters the letter. The `post-kinds/get-follow-index` ability returns the list. The editor has Name and Site URL fields for follows, and singles and Stream cards carry one hidden `u-follow-of h-card` (#260, #562).
 - Public OPML of follows at `/kind/follow/opml/` (`text/x-opml`, `Cache-Control: no-store`, `X-Robots-Tag: noindex`). `HEAD` answers 200 with no body and other methods 405. The archive links to it as "Follows as OPML", and the page head carries a matching `<link rel="alternate">`. The rewrite rule flushes on upgrade through the `PKIW_VERSION` change (#562).
 - Micropub `follow-of`, as a URL or an h-card, fills `_pkiw_cite_url` and `_pkiw_cite_name`. Remote h-card photos are dropped, and Micropub's own renderer is off for follows (#562).
+- Two Query Loop variations in the block inserter: "Follows A to Z" (`pkiw-kind-follow`) and "Tag stickers" (`pkiw-kind-tag`). Each matches its kind's archive template and keeps the plugin's visibility rule for tag and follow posts (#564).
 
 ### Changed
 
