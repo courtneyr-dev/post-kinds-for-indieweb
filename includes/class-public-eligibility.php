@@ -981,7 +981,10 @@ final class Public_Eligibility {
 		$cache = Pantheon_Cache();
 		if ( is_object( $cache ) ) {
 			$cache->enqueue_urls( array_values( array_unique( array_map( 'strval', (array) ( $paths['urls'] ?? [] ) ) ) ) );
-			$cache->enqueue_regex( array_values( array_unique( array_map( 'strval', (array) ( $paths['regex'] ?? [] ) ) ) ) );
+			// Pantheon_Cache::enqueue_regex() takes one regex string per call.
+			foreach ( array_unique( array_map( 'strval', (array) ( $paths['regex'] ?? [] ) ) ) as $regex ) {
+				$cache->enqueue_regex( $regex );
+			}
 		}
 	}
 
