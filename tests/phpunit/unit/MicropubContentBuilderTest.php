@@ -747,6 +747,82 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertSame( $kind, $this->kind_of( $post_id ) );
 	}
 
+	public function test_entry_created_with_an_explicit_create_action_gets_its_kind(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'action'     => 'create',
+				'type'       => array( 'h-entry' ),
+				'properties' => array(
+					'name'    => array( 'A post with a title' ),
+					'content' => array( 'The body says something else.' ),
+				),
+			),
+			'note'
+		);
+
+		$this->assertSame( 'article', $this->kind_of( $post_id ) );
+	}
+
+	// --- updates keep the post's kind ----------------------------------------
+
+	/**
+	 * @return array<string, array{0: string, 1: array<string, mixed>}>
+	 */
+	public static function update_body_provider(): array {
+		return array(
+			'article set in the editor, syndication added'   => array( 'article', array( 'add' => array( 'syndication' => array( 'https://example.test/1' ) ) ) ),
+			'article set in the editor, content replaced'    => array( 'article', array( 'replace' => array( 'content' => array( 'Edited body.' ) ) ) ),
+			'photo set by another plugin, category added'    => array( 'photo', array( 'add' => array( 'category' => array( 'travel' ) ) ) ),
+		);
+	}
+
+	/**
+	 * @dataProvider update_body_provider
+	 *
+	 * @param string               $kind Kind the post already has.
+	 * @param array<string, mixed> $body Micropub update operations.
+	 */
+	public function test_update_keeps_the_kind_the_post_already_has( string $kind, array $body ): void {
+		$post_id = self::factory()->post->create( array( 'post_content' => 'Body.' ) );
+		wp_set_post_terms( $post_id, array( $kind ), 'kind' );
+
+		do_action(
+			'after_micropub',
+			array(
+				'action' => 'update',
+				'url'    => get_permalink( $post_id ),
+			) + $body,
+			array( 'ID' => $post_id )
+		);
+
+		$this->assertSame( $kind, $this->kind_of( $post_id ) );
+	}
+
+	public function test_delete_and_undelete_keep_the_kind(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => array(
+					'name'    => array( 'A post with a title' ),
+					'content' => array( 'The body says something else.' ),
+				),
+			)
+		);
+
+		foreach ( array( 'delete', 'undelete' ) as $action ) {
+			do_action(
+				'after_micropub',
+				array(
+					'action' => $action,
+					'url'    => get_permalink( $post_id ),
+				),
+				array( 'ID' => $post_id )
+			);
+		}
+
+		$this->assertSame( 'article', $this->kind_of( $post_id ) );
+	}
+
 	// --- pkiw-kind explicit hint --------------------------------------------
 
 	public function test_apply_explicit_hint_overrides_property_inference(): void {
