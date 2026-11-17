@@ -49,6 +49,18 @@ function countPdfPages( buffer ) {
 	).length;
 }
 
+function zineUrl( sourceUrl, pages, from = '', to = '' ) {
+	const url = new URL( sourceUrl );
+	url.searchParams.set( 'pkiw_zine_pages', String( pages ) );
+	if ( from ) {
+		url.searchParams.set( 'pkiw_zine_from', from );
+	}
+	if ( to ) {
+		url.searchParams.set( 'pkiw_zine_to', to );
+	}
+	return url.toString();
+}
+
 test.describe( 'printable zine export', () => {
 	test.describe.configure( { mode: 'serial' } );
 	let sourceUrl;
@@ -58,9 +70,17 @@ test.describe( 'printable zine export', () => {
 		const recipe = await kindId( page, nonce, 'recipe' );
 		const follow = await kindId( page, nonce, 'follow' );
 		for ( let index = 1; index <= 15; index++ ) {
+			const body =
+				15 === index
+					? Array.from(
+							{ length: 120 },
+							( _, paragraph ) =>
+								`<!-- wp:paragraph --><p>Long entry line ${ paragraph + 1 } ${ RUN }</p><!-- /wp:paragraph -->`
+						).join( '' )
+					: `<!-- wp:paragraph --><p>Entry ${ index }</p><!-- /wp:paragraph -->`;
 			const post = await create( page, nonce, 'posts', {
 				title: `Zine ${ RUN } ${ String( index ).padStart( 2, '0' ) }`,
-				content: `<!-- wp:paragraph --><p>Entry ${ index }</p><!-- /wp:paragraph -->`,
+				content: body,
 				status: 'publish',
 				date: `2025-03-${ String( index ).padStart( 2, '0' ) }T12:00:00`,
 				kind: [ 2 === index ? follow : recipe ],
@@ -139,7 +159,12 @@ test.describe( 'printable zine export', () => {
 
 	test( '8 and 16 page views produce one and two sheet sides', async ( {
 		page,
+		browserName,
 	} ) => {
+		test.skip(
+			'chromium' !== browserName,
+			'PDF output is a Chromium Playwright API.'
+		);
 		const control = await page.context().newPage();
 		await control.setContent(
 			'<style>section{break-after:page}</style><section>1</section><section>2</section><section>3</section>'
@@ -179,7 +204,12 @@ test.describe( 'printable zine export', () => {
 
 	test( 'print rects match every Letter and A4 slot and top rows rotate', async ( {
 		page,
+		browserName,
 	} ) => {
+		test.skip(
+			'chromium' !== browserName,
+			'The frozen print geometry contract uses Chromium.'
+		);
 		for ( const sheet of [
 			{ width: 1056, height: 816 },
 			{ width: 1123, height: 794 },
@@ -220,6 +250,142 @@ test.describe( 'printable zine export', () => {
 					sheet
 				);
 			expect( mismatches ).toBe( 0 );
+		}
+	} );
+
+	test( 'entry content clips while footer, folio and font floor stay inside each panel', async ( {
+		page,
+	} ) => {
+		await page.setViewportSize( { width: 1056, height: 816 } );
+		await page.goto( zineUrl( sourceUrl, 8, '2025-03-10', '2025-03-15' ) );
+		await page.emulateMedia( { media: 'print' } );
+		const panels = page.locator( '[data-pkiw-zine-page]' );
+		const failures = await panels.evaluateAll(
+			( nodes ) =>
+				nodes
+					.filter( ( node ) => node.querySelector( 'footer' ) )
+					.filter( ( node ) => {
+						const panel = node.getBoundingClientRect();
+						const footer = node
+							.querySelector( 'footer' )
+							.getBoundingClientRect();
+						const permalink = node
+							.querySelector( '.pkiw-zine-entry__permalink' )
+							.getBoundingClientRect();
+						const folio = node
+							.querySelector( '.pkiw-zine-entry__folio' )
+							.getBoundingClientRect();
+						return [ footer, permalink, folio ].some(
+							( rect ) =>
+								rect.left < panel.left - 1 ||
+								rect.right > panel.right + 1 ||
+								rect.top < panel.top - 1 ||
+								rect.bottom > panel.bottom + 1
+						);
+					} ).length
+		);
+		expect( failures ).toBe( 0 );
+
+		const longPanel = panels.filter( { hasText: `Zine ${ RUN } 15` } );
+		const clipping = await longPanel.evaluate( ( node ) => {
+			const content = node.querySelector( '.pkiw-zine-page__content' );
+			return {
+				contentClips: content.scrollHeight > content.clientHeight,
+				panelOverflow:
+					node.ownerDocument.defaultView.getComputedStyle( node )
+						.overflow,
+			};
+		} );
+		expect( clipping.contentClips ).toBeTruthy();
+		expect( clipping.panelOverflow ).toBe( 'hidden' );
+
+		const font = await longPanel
+			.locator( '.pkiw-zine-page__content p' )
+			.first()
+			.evaluate( ( node ) => {
+				const view = node.ownerDocument.defaultView;
+				const floor = parseFloat(
+					view
+						.getComputedStyle( node.ownerDocument.documentElement )
+						.getPropertyValue( '--cr-text-floor' )
+				);
+				return {
+					actual: parseFloat(
+						view.getComputedStyle( node ).fontSize
+					),
+					minimum: Number.isFinite( floor ) ? floor : 12,
+				};
+			} );
+		expect( font.actual ).toBeGreaterThanOrEqual( font.minimum );
+	} );
+
+	test( 'capacity cases reserve a blank only for five entries', async ( {
+		page,
+	} ) => {
+		const cases = [
+			{ from: '2025-03-11', count: 5, line: '5 posts', blank: true },
+			{ from: '2025-03-10', count: 6, line: '6 posts', blank: false },
+			{
+				from: '2025-03-09',
+				count: 7,
+				line: '6 of 7 posts',
+				blank: false,
+			},
+			{
+				from: '2025-03-01',
+				count: 14,
+				line: '14 posts',
+				blank: false,
+				pages: 16,
+			},
+		];
+		for ( const fixture of cases ) {
+			await page.goto(
+				zineUrl(
+					sourceUrl,
+					fixture.pages || 8,
+					fixture.from,
+					'2025-03-15'
+				)
+			);
+			await expect(
+				page.locator( '.pkiw-zine-toolbar__count' )
+			).toHaveText( fixture.line );
+			await expect(
+				page.locator( '.pkiw-zine-page footer' )
+			).toHaveCount( Math.min( fixture.count, fixture.pages ? 14 : 6 ) );
+			const last = page.locator(
+				`[data-pkiw-zine-page="${ fixture.pages || 8 }"]`
+			);
+			await expect(
+				last.locator( '.pkiw-zine-entry__folio' )
+			).toHaveCount( fixture.blank ? 0 : 1 );
+		}
+	} );
+
+	test( 'forced colors keeps every imposed page measurable', async ( {
+		page,
+		browserName,
+	} ) => {
+		test.skip(
+			'chromium' !== browserName,
+			'Forced-colors print geometry is frozen against Chromium.'
+		);
+		await page.setViewportSize( { width: 1056, height: 816 } );
+		await page.goto( zineUrl( sourceUrl, 8, '2025-03-10', '2025-03-15' ) );
+		await page.emulateMedia( { media: 'print', forcedColors: 'active' } );
+		const rects = await page
+			.locator( '[data-pkiw-zine-page]' )
+			.evaluateAll( ( nodes ) =>
+				nodes.map( ( node ) => {
+					const rect = node.getBoundingClientRect();
+					return [ rect.width, rect.height ];
+				} )
+			);
+		expect( rects ).toHaveLength( 8 );
+		for ( const [ width, height ] of rects ) {
+			expect( width ).toBeGreaterThan( 0 );
+			expect( height ).toBeGreaterThan( 0 );
 		}
 	} );
 } );

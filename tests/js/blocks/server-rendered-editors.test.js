@@ -129,7 +129,10 @@ describe( 'zine export in the editor', () => {
 
 		expect( settings.apiVersion ).toBe( 3 );
 		expect( settings.save() ).toBeNull();
-		expect( settings.attributes.source.enum ).toEqual( [ 'archive', 'stream' ] );
+		expect( settings.attributes.source.enum ).toEqual( [
+			'archive',
+			'stream',
+		] );
 		expect( settings.attributes.defaultPages.enum ).toEqual( [ 8, 16 ] );
 	} );
 
