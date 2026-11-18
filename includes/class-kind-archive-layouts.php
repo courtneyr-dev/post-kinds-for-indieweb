@@ -977,7 +977,7 @@ final class Kind_Archive_Layouts {
 		$meta .= sprintf( '<time class="pkiw-menu-specials__date" datetime="%s">%s</time>', esc_attr( $iso ), esc_html( $display ) );
 
 		// With photos on, a special that has none says so, and a theme can draw its placeholder there.
-		$photo = $show_photos ? self::menu_special_photo( $post, $kind ) : '';
+		$photo = $show_photos && Kind_Facts::can_show( $post ) ? self::menu_special_photo( $post, $kind ) : '';
 		$out   = $show_photos && '' === $photo
 			? '<li class="pkiw-menu-specials__item pkiw-menu-specials__item--no-photo">'
 			: '<li class="pkiw-menu-specials__item">';
@@ -1717,6 +1717,12 @@ final class Kind_Archive_Layouts {
 			'when'     => '',
 			'notes'    => '',
 		];
+
+		// A locked post prints its title only: no rating, brand, venue or note.
+		$post = get_post( $post_id );
+		if ( ! $post instanceof \WP_Post || ! Kind_Facts::can_show( $post ) ) {
+			return $out;
+		}
 
 		if ( 'eat' === $kind ) {
 			$out['property'] = 'ate';

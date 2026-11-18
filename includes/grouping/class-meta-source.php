@@ -141,7 +141,7 @@ final class Meta_Source implements Group_Source {
 	 * @return self
 	 */
 	public static function legacy( string $meta_key, string $kind ): self {
-		$source         = new self( 'legacy', [ $meta_key ] );
+		$source         = new self( 'legacy', [ $meta_key ], [], null, '', true );
 		$source->legacy = true;
 		$source->kind   = $kind;
 
@@ -168,9 +168,12 @@ final class Meta_Source implements Group_Source {
 
 		if ( $this->legacy ) {
 			return [
-				'value' => $wpdb->prepare(
-					"COALESCE((SELECT pkiw_g.meta_value FROM {$wpdb->postmeta} pkiw_g WHERE pkiw_g.post_id = {$wpdb->posts}.ID AND pkiw_g.meta_key = %s ORDER BY pkiw_g.meta_id ASC LIMIT 1), '')",
-					$this->keys[0]
+				'value' => $this->guard_protected_sql(
+					$wpdb->prepare(
+						"COALESCE((SELECT pkiw_g.meta_value FROM {$wpdb->postmeta} pkiw_g WHERE pkiw_g.post_id = {$wpdb->posts}.ID AND pkiw_g.meta_key = %s ORDER BY pkiw_g.meta_id ASC LIMIT 1), '')",
+						$this->keys[0]
+					),
+					"''"
 				),
 			];
 		}
@@ -232,12 +235,12 @@ final class Meta_Source implements Group_Source {
 	 * @return Archive_Group
 	 */
 	public function group_of( \WP_Post $post, ?\WP_Query $query = null ): Archive_Group { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		if ( $this->is_protected( $post ) ) {
+			return new Archive_Group( '', '', '' );
+		}
 		if ( $this->legacy ) {
 			$raw = trim( self::stored( get_metadata_raw( 'post', (int) $post->ID, $this->keys[0], true ) ) );
 		} else {
-			if ( $this->is_protected( $post ) ) {
-				return new Archive_Group( '', '', '' );
-			}
 			$raw = '';
 			foreach ( $this->keys as $key ) {
 				$raw = trim( self::stored( get_metadata_raw( 'post', (int) $post->ID, $key, true ) ), ' ' );

@@ -83,7 +83,8 @@ function play_group_source(): Cases_Source {
 			PLAY_GROUP_META,
 			array_keys( PLAY_GROUP_META ),
 			Label_Mode::map( static fn(): array => play_group_labels() ),
-			''
+			'',
+			true
 		);
 	}
 

@@ -380,7 +380,7 @@ final class GroupedArchiveMenuParityTest extends WP_UnitTestCase {
 		global $wpdb;
 		$this->assertSame( 1, preg_match( '/ORDER BY (.*) LIMIT/s', $query->request, $found ) );
 		$this->assertSame(
-			"(COALESCE((SELECT pkiw_g.meta_value FROM wp_postmeta pkiw_g WHERE pkiw_g.post_id = wp_posts.ID AND pkiw_g.meta_key = '_pkiw_eat_cuisine' ORDER BY pkiw_g.meta_id ASC LIMIT 1), '') = '') DESC, LOWER(COALESCE((SELECT pkiw_g.meta_value FROM wp_postmeta pkiw_g WHERE pkiw_g.post_id = wp_posts.ID AND pkiw_g.meta_key = '_pkiw_eat_cuisine' ORDER BY pkiw_g.meta_id ASC LIMIT 1), '')) DESC, wp_posts.post_date DESC, wp_posts.ID DESC",
+			"(IF(LENGTH(wp_posts.post_password) > 0, '', COALESCE((SELECT pkiw_g.meta_value FROM wp_postmeta pkiw_g WHERE pkiw_g.post_id = wp_posts.ID AND pkiw_g.meta_key = '_pkiw_eat_cuisine' ORDER BY pkiw_g.meta_id ASC LIMIT 1), '')) = '') DESC, LOWER(IF(LENGTH(wp_posts.post_password) > 0, '', COALESCE((SELECT pkiw_g.meta_value FROM wp_postmeta pkiw_g WHERE pkiw_g.post_id = wp_posts.ID AND pkiw_g.meta_key = '_pkiw_eat_cuisine' ORDER BY pkiw_g.meta_id ASC LIMIT 1), ''))) DESC, wp_posts.post_date DESC, wp_posts.ID DESC",
 			str_replace( $wpdb->prefix, 'wp_', trim( $found[1] ) )
 		);
 		$this->assertSame( 6, (int) $query->found_posts, 'One row per post: grouping leaves the count alone.' );
