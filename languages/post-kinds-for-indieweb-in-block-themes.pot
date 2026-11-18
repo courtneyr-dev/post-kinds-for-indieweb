@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Post Kinds for IndieWeb in Block Themes 1.9.2\n"
+"Project-Id-Version: Post Kinds for IndieWeb in Block Themes 1.10.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/post-kinds-for-indieweb-in-block-themes\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-17T06:26:43+00:00\n"
+"POT-Creation-Date: 2026-11-18T14:18:51+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: post-kinds-for-indieweb-in-block-themes\n"
@@ -18,8 +18,8 @@ msgstr ""
 #: post-kinds-for-indieweb-in-block-themes.php
 #: includes/admin/class-admin.php:366
 #: includes/class-block-bindings.php:386
-#: includes/class-plugin.php:1063
-#: includes/class-plugin.php:1343
+#: includes/class-plugin.php:1075
+#: includes/class-plugin.php:1357
 msgid "Post Kinds for IndieWeb in Block Themes"
 msgstr ""
 
@@ -76,9 +76,9 @@ msgstr ""
 #. translators: %s: check-in date and time
 #: build/blocks/checkin-card/render.php:104
 #: build/blocks/checkin-card/render.php:112
-#: build/blocks/checkin-dashboard/render.php:152
-#: build/blocks/checkin-dashboard/render.php:158
-#: build/blocks/checkin-dashboard/render.php:218
+#: build/blocks/checkin-dashboard/render.php:164
+#: build/blocks/checkin-dashboard/render.php:170
+#: build/blocks/checkin-dashboard/render.php:230
 #: includes/admin/class-settings-page.php:1626
 #: includes/functions-card-render.php:655
 msgid "Check-in"
@@ -105,7 +105,7 @@ msgstr ""
 msgid "View larger map"
 msgstr ""
 
-#: build/blocks/checkin-dashboard/render.php:114
+#: build/blocks/checkin-dashboard/render.php:126
 #: includes/admin/class-admin.php:225
 #: includes/admin/class-admin.php:226
 #: includes/admin/class-checkin-dashboard.php:220
@@ -113,36 +113,36 @@ msgstr ""
 msgid "Check-ins"
 msgstr ""
 
-#: build/blocks/checkin-dashboard/render.php:118
+#: build/blocks/checkin-dashboard/render.php:130
 #: includes/admin/class-checkin-dashboard.php:224
 #: includes/class-venue-taxonomy.php:138
 #: build/blocks.js:10
 msgid "Venues"
 msgstr ""
 
-#: build/blocks/checkin-dashboard/render.php:126
+#: build/blocks/checkin-dashboard/render.php:138
 #: includes/admin/class-checkin-dashboard.php:155
 #: build/blocks.js:10
 msgid "Grid"
 msgstr ""
 
-#: build/blocks/checkin-dashboard/render.php:130
+#: build/blocks/checkin-dashboard/render.php:142
 #: includes/admin/class-checkin-dashboard.php:159
 #: build/blocks.js:10
 msgid "Map"
 msgstr ""
 
-#: build/blocks/checkin-dashboard/render.php:134
+#: build/blocks/checkin-dashboard/render.php:146
 #: includes/admin/class-checkin-dashboard.php:163
 #: build/blocks.js:10
 msgid "Timeline"
 msgstr ""
 
-#: build/blocks/checkin-dashboard/render.php:144
+#: build/blocks/checkin-dashboard/render.php:156
 msgid "No check-ins yet."
 msgstr ""
 
-#: build/blocks/checkin-dashboard/render.php:177
+#: build/blocks/checkin-dashboard/render.php:189
 msgid "Check-in map"
 msgstr ""
 
@@ -193,6 +193,7 @@ msgstr ""
 #: includes/admin/class-meta-boxes.php:209
 #: includes/admin/class-quick-post.php:327
 #: includes/admin/class-settings-page.php:561
+#: includes/class-wrapped-stats.php:846
 #: includes/functions-card-labels.php:102
 #: build/blocks.js:1
 #: build/blocks.js:2
@@ -908,6 +909,26 @@ msgstr ""
 msgid "Metron issue ID for direct lookup."
 msgstr ""
 
+#: includes/abilities/class-on-this-day-abilities.php:53
+msgid "Get On This Day"
+msgstr ""
+
+#: includes/abilities/class-on-this-day-abilities.php:54
+msgid "Gets public posts from earlier years on one calendar date."
+msgstr ""
+
+#: includes/abilities/class-on-this-day-abilities.php:64
+msgid "Site-local date in YYYY-MM-DD format."
+msgstr ""
+
+#: includes/abilities/class-on-this-day-abilities.php:97
+msgid "Date must be a valid YYYY-MM-DD date no later than today."
+msgstr ""
+
+#: includes/abilities/class-on-this-day-abilities.php:101
+msgid "Limit must be between 1 and 100."
+msgstr ""
+
 #: includes/abilities/class-operations-abilities.php:81
 msgid "Backfill Surfaces"
 msgstr ""
@@ -1087,6 +1108,78 @@ msgstr ""
 
 #: includes/abilities/class-travel-abilities.php:122
 msgid "Travel facts are available only for public, unprotected posts of the requested kind."
+msgstr ""
+
+#: includes/abilities/class-wrapped-abilities.php:48
+msgid "Get kind year statistics"
+msgstr ""
+
+#: includes/abilities/class-wrapped-abilities.php:49
+msgid "Gets public Wrapped statistics for one kind and year."
+msgstr ""
+
+#: includes/abilities/class-wrapped-abilities.php:68
+msgid "Create Wrapped draft"
+msgstr ""
+
+#: includes/abilities/class-wrapped-abilities.php:69
+msgid "Prepares or creates a draft Wrapped post."
+msgstr ""
+
+#: includes/abilities/class-wrapped-abilities.php:90
+#: includes/abilities/class-wrapped-abilities.php:94
+#: includes/abilities/class-wrapped-abilities.php:115
+msgid "Kind and year must identify a valid Wrapped scope."
+msgstr ""
+
+#: includes/abilities/class-zine-abilities.php:50
+msgid "Get Zine Manifest"
+msgstr ""
+
+#: includes/abilities/class-zine-abilities.php:51
+msgid "Gets the public entries and booklet layout for a kind archive or Stream zine."
+msgstr ""
+
+#: includes/abilities/class-zine-abilities.php:166
+#: includes/class-zine-manifest.php:173
+msgid "Invalid zine arguments."
+msgstr ""
+
+#: includes/abilities/class-zine-abilities.php:171
+#: includes/class-zine-manifest.php:324
+msgid "Zine source not found."
+msgstr ""
+
+#: includes/abilities/class-zine-abilities.php:182
+msgid "Select a kind archive or a Stream page."
+msgstr ""
+
+#: includes/abilities/class-zine-abilities.php:186
+msgid "Kind slug, required for an archive source."
+msgstr ""
+
+#: includes/abilities/class-zine-abilities.php:190
+msgid "Stream page ID, required for a stream source."
+msgstr ""
+
+#: includes/abilities/class-zine-abilities.php:195
+msgid "Booklet page count: 8 or 16."
+msgstr ""
+
+#: includes/abilities/class-zine-abilities.php:199
+msgid "Optional first date in YYYY-MM-DD format."
+msgstr ""
+
+#: includes/abilities/class-zine-abilities.php:203
+msgid "Optional last date in YYYY-MM-DD format."
+msgstr ""
+
+#: includes/abilities/class-zine-abilities.php:208
+msgid "Order archive entries by date or title."
+msgstr ""
+
+#: includes/abilities/class-zine-abilities.php:213
+msgid "Sort in asc or desc order."
 msgstr ""
 
 #: includes/admin/class-admin.php:153
@@ -2454,6 +2547,7 @@ msgstr ""
 #: includes/admin/class-quick-post.php:238
 #: includes/class-block-bindings.php:180
 #: build/blocks.js:2
+#: build/blocks.js:7
 #: build/index.js:1
 msgid "Year"
 msgstr ""
@@ -3068,7 +3162,7 @@ msgstr ""
 #: includes/admin/class-quick-post.php:782
 #: includes/admin/class-quick-post.php:929
 #: includes/class-acquisition-archive.php:75
-#: includes/class-grouped-archive.php:1109
+#: includes/class-grouped-archive.php:1134
 #: includes/class-issue-archive.php:232
 #: includes/class-kind-archive-layouts.php:1535
 #: includes/class-kind-archive-layouts.php:1550
@@ -4960,6 +5054,7 @@ msgid "All Time"
 msgstr ""
 
 #: includes/blocks/class-media-stats.php:136
+#: includes/class-wrapped-stats.php:854
 msgid "Listens"
 msgstr ""
 
@@ -4997,11 +5092,11 @@ msgstr ""
 msgid "Shows recent posts of a specific kind."
 msgstr ""
 
-#: includes/class-abilities-manager.php:166
+#: includes/class-abilities-manager.php:169
 msgid "Post Kinds"
 msgstr ""
 
-#: includes/class-abilities-manager.php:167
+#: includes/class-abilities-manager.php:170
 msgid "Abilities for managing IndieWeb post kinds, including notes, articles, bookmarks, likes, replies, and other interaction types."
 msgstr ""
 
@@ -5285,6 +5380,7 @@ msgid "Maybe attending"
 msgstr ""
 
 #: includes/class-block-bindings.php:612
+#: includes/class-wrapped-stats.php:856
 #: build/index.js:1
 msgid "Watched"
 msgstr ""
@@ -5503,7 +5599,7 @@ msgid "The artwork could not be fetched safely."
 msgstr ""
 
 #: includes/class-follow-archive.php:193
-#: includes/class-micropub-content-builder.php:1644
+#: includes/class-micropub-content-builder.php:1715
 msgid "Followed"
 msgstr ""
 
@@ -5574,6 +5670,7 @@ msgid "Menu"
 msgstr ""
 
 #: includes/class-kind-archive-layouts.php:578
+#: includes/class-zine-export.php:563
 msgid "Contents"
 msgstr ""
 
@@ -5690,6 +5787,22 @@ msgstr ""
 
 #: includes/class-kind-query-variations.php:129
 msgid "Shows itinerary posts beside their route map."
+msgstr ""
+
+#: includes/class-kind-query-variations.php:136
+msgid "Follows A to Z"
+msgstr ""
+
+#: includes/class-kind-query-variations.php:137
+msgid "Shows follows A to Z with a first-letter index."
+msgstr ""
+
+#: includes/class-kind-query-variations.php:144
+msgid "Tag stickers"
+msgstr ""
+
+#: includes/class-kind-query-variations.php:145
+msgid "Shows tag posts as name-tag stickers grouped by label."
 msgstr ""
 
 #: includes/class-kindle-embed-bridge.php:86
@@ -6374,24 +6487,24 @@ msgstr ""
 msgid "Type of presentation event."
 msgstr ""
 
-#: includes/class-micropub-content-builder.php:578
+#: includes/class-micropub-content-builder.php:628
 msgid "Jamming to"
 msgstr ""
 
-#: includes/class-micropub-content-builder.php:580
+#: includes/class-micropub-content-builder.php:630
 #: build/blocks.js:8
 msgid "Favorited"
 msgstr ""
 
-#: includes/class-micropub-content-builder.php:586
+#: includes/class-micropub-content-builder.php:636
 msgid "Wishing for"
 msgstr ""
 
-#: includes/class-micropub-content-builder.php:591
+#: includes/class-micropub-content-builder.php:641
 msgid "Issue for"
 msgstr ""
 
-#: includes/class-micropub-content-builder.php:593
+#: includes/class-micropub-content-builder.php:643
 msgid "Crafted"
 msgstr ""
 
@@ -6716,320 +6829,352 @@ msgstr ""
 msgid "One note for the current post: its name, a short thought and the date. Use inside a Query Loop."
 msgstr ""
 
+#: includes/class-on-this-day.php:217
+#: includes/class-on-this-day.php:590
+#: includes/class-on-this-day.php:614
+#: includes/class-plugin.php:1391
+#: assets/js/on-this-day-editor.js:65
+#: assets/js/on-this-day-editor.js:133
+msgid "On This Day"
+msgstr ""
+
+#: includes/class-on-this-day.php:256
+#: assets/js/on-this-day-editor.js:112
+#: assets/js/on-this-day-editor.js:153
+msgid "On This Day entry"
+msgstr ""
+
+#. translators: %d: Four-digit publication year.
+#: includes/class-on-this-day.php:711
+#, php-format
+msgid "On this day in %d"
+msgstr ""
+
+#. translators: %d: Number of years ago.
+#: includes/class-on-this-day.php:774
+msgid "A year ago today"
+msgid_plural "%d years ago today"
+msgstr[0] ""
+msgstr[1] ""
+
 #: includes/class-operations.php:39
 #: includes/class-operations.php:179
 #: includes/class-operations.php:231
 msgid "Refusing to write without an ids list. Run with dry_run first."
 msgstr ""
 
-#: includes/class-plugin.php:1344
+#: includes/class-plugin.php:1358
 msgid "Patterns for IndieWeb post kinds and reactions."
 msgstr ""
 
-#: includes/class-plugin.php:1378
+#: includes/class-plugin.php:1392
+msgid "Posts from earlier years on today’s month and day."
+msgstr ""
+
+#: includes/class-plugin.php:1397
 msgid "Venue Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1379
+#: includes/class-plugin.php:1398
 msgid "Template for displaying venue taxonomy archives."
 msgstr ""
 
-#: includes/class-plugin.php:1385
+#: includes/class-plugin.php:1404
 msgid "Kind Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1386
+#: includes/class-plugin.php:1405
 msgid "Shelf layout for any post kind archive."
 msgstr ""
 
-#: includes/class-plugin.php:1390
+#: includes/class-plugin.php:1409
 msgid "Eat Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1391
+#: includes/class-plugin.php:1410
 msgid "Menu layout for the eat archive, grouped by cuisine."
 msgstr ""
 
-#: includes/class-plugin.php:1395
+#: includes/class-plugin.php:1414
 msgid "Check-in Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1396
+#: includes/class-plugin.php:1415
 msgid "Map and list of the check-ins on each archive page."
 msgstr ""
 
-#: includes/class-plugin.php:1400
+#: includes/class-plugin.php:1419
 msgid "Drink Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1401
+#: includes/class-plugin.php:1420
 msgid "Menu layout for the drink archive, grouped by drink type."
 msgstr ""
 
-#: includes/class-plugin.php:1405
+#: includes/class-plugin.php:1424
 msgid "Play Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1406
+#: includes/class-plugin.php:1425
 msgid "Play archive in sections: video games, board games, then other plays."
 msgstr ""
 
-#: includes/class-plugin.php:1410
+#: includes/class-plugin.php:1429
 msgid "Read Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1411
+#: includes/class-plugin.php:1430
 msgid "Read archive on shelves by reading status."
 msgstr ""
 
-#: includes/class-plugin.php:1415
+#: includes/class-plugin.php:1434
 msgid "Review Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1416
+#: includes/class-plugin.php:1435
 msgid "Review archive in sections by category."
 msgstr ""
 
-#: includes/class-plugin.php:1420
+#: includes/class-plugin.php:1439
 msgid "Chicken Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1421
+#: includes/class-plugin.php:1440
 msgid "Chicken archive in month sections, one line for each post."
 msgstr ""
 
-#: includes/class-plugin.php:1425
+#: includes/class-plugin.php:1444
 msgid "Photo Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1426
+#: includes/class-plugin.php:1445
 msgid "Photo archive in month sections."
 msgstr ""
 
-#: includes/class-plugin.php:1430
+#: includes/class-plugin.php:1449
 msgid "Favorite Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1431
+#: includes/class-plugin.php:1450
 msgid "Favorite archive in month sections."
 msgstr ""
 
-#: includes/class-plugin.php:1435
+#: includes/class-plugin.php:1454
 msgid "Acquisition Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1436
+#: includes/class-plugin.php:1455
 msgid "Acquisition archive in month sections."
 msgstr ""
 
-#: includes/class-plugin.php:1440
+#: includes/class-plugin.php:1459
 msgid "Repost Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1441
+#: includes/class-plugin.php:1460
 msgid "Repost archive in month sections."
 msgstr ""
 
-#: includes/class-plugin.php:1445
+#: includes/class-plugin.php:1464
 msgid "Article Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1446
+#: includes/class-plugin.php:1465
 msgid "Article archive as a contents page: month sections and reading time."
 msgstr ""
 
-#: includes/class-plugin.php:1451
+#: includes/class-plugin.php:1470
 msgid "Mood Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1452
+#: includes/class-plugin.php:1471
 msgid "A year of moods on a grid, one calendar year per page."
 msgstr ""
 
-#: includes/class-plugin.php:1456
+#: includes/class-plugin.php:1475
 msgid "Weather Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1457
+#: includes/class-plugin.php:1476
 msgid "One calendar month of weather per page."
 msgstr ""
 
-#: includes/class-plugin.php:1461
+#: includes/class-plugin.php:1480
 msgid "Exercise Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1462
+#: includes/class-plugin.php:1481
 msgid "Exercise archive as a training log: whole weeks of workouts on each page."
 msgstr ""
 
-#: includes/class-plugin.php:1466
+#: includes/class-plugin.php:1485
 msgid "Sleep Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1467
+#: includes/class-plugin.php:1486
 msgid "Sleep archive as one chart sheet per month."
 msgstr ""
 
-#: includes/class-plugin.php:1471
+#: includes/class-plugin.php:1490
 msgid "Craft Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1472
+#: includes/class-plugin.php:1491
 msgid "Craft archive on a pegboard, in sections by craft type."
 msgstr ""
 
-#: includes/class-plugin.php:1476
+#: includes/class-plugin.php:1495
 msgid "Note Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1477
+#: includes/class-plugin.php:1496
 msgid "Note archive as a board of notes, in sections by week."
 msgstr ""
 
-#: includes/class-plugin.php:1482
+#: includes/class-plugin.php:1501
 msgid "Video Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1483
+#: includes/class-plugin.php:1502
 msgid "Video archive in sections by year."
 msgstr ""
 
-#: includes/class-plugin.php:1487
+#: includes/class-plugin.php:1506
 msgid "Audio Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1488
+#: includes/class-plugin.php:1507
 msgid "Audio archive in month sections."
 msgstr ""
 
-#: includes/class-plugin.php:1492
+#: includes/class-plugin.php:1511
 msgid "Jam Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1493
+#: includes/class-plugin.php:1512
 msgid "Jam archive in month sections, with the newest jam featured on the first page."
 msgstr ""
 
-#: includes/class-plugin.php:1497
+#: includes/class-plugin.php:1516
 msgid "Podcast Listens Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1498
+#: includes/class-plugin.php:1517
 msgid "Podcast listens in sections by show, a view of the listen archive."
 msgstr ""
 
-#: includes/class-plugin.php:1502
+#: includes/class-plugin.php:1521
 msgid "Wish Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1503
+#: includes/class-plugin.php:1522
 msgid "Wish archive in sections by type, high priority first."
 msgstr ""
 
-#: includes/class-plugin.php:1507
+#: includes/class-plugin.php:1526
 msgid "Question Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1508
+#: includes/class-plugin.php:1527
 msgid "Question archive in sections: answered, then waiting for an answer."
 msgstr ""
 
-#: includes/class-plugin.php:1512
+#: includes/class-plugin.php:1531
 msgid "Comics Drawn Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1513
+#: includes/class-plugin.php:1532
 msgid "Drawn comics in sections by series, a view of the comics archive."
 msgstr ""
 
-#: includes/class-plugin.php:1517
+#: includes/class-plugin.php:1536
 msgid "Collection Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1518
+#: includes/class-plugin.php:1537
 msgid "Collection archive: one cabinet per collection with its item count."
 msgstr ""
 
-#: includes/class-plugin.php:1522
+#: includes/class-plugin.php:1541
 msgid "Issue Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1523
+#: includes/class-plugin.php:1542
 msgid "Issue archive in sections by repository, with waiting issues before picked-up ones."
 msgstr ""
 
-#: includes/class-plugin.php:1527
+#: includes/class-plugin.php:1546
 msgid "Quote Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1528
+#: includes/class-plugin.php:1547
 msgid "Quote archive as a commonplace book: quotes by author, with a source-work index."
 msgstr ""
 
-#: includes/class-plugin.php:1532
+#: includes/class-plugin.php:1551
 msgid "Event Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1533
+#: includes/class-plugin.php:1552
 msgid "Event archive showing the My Calendar calendar."
 msgstr ""
 
-#: includes/class-plugin.php:1537
+#: includes/class-plugin.php:1556
 msgid "Trip Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1538
+#: includes/class-plugin.php:1557
 msgid "Trip archive: a route map and trips by year."
 msgstr ""
 
-#: includes/class-plugin.php:1542
+#: includes/class-plugin.php:1561
 msgid "Itinerary Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1543
+#: includes/class-plugin.php:1562
 msgid "Itinerary archive: a route map and itineraries by year."
 msgstr ""
 
-#: includes/class-plugin.php:1547
+#: includes/class-plugin.php:1566
 msgid "Presentation Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1548
+#: includes/class-plugin.php:1567
 msgid "Presentation archive as a badge wall: talks grouped by year, with event and type."
 msgstr ""
 
-#: includes/class-plugin.php:1552
+#: includes/class-plugin.php:1571
 msgid "RSVP Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1553
+#: includes/class-plugin.php:1572
 msgid "RSVP archive in two groups: upcoming events soonest first, then past events latest first."
 msgstr ""
 
-#: includes/class-plugin.php:1557
+#: includes/class-plugin.php:1576
 msgid "Follow Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1558
+#: includes/class-plugin.php:1577
 msgid "Follows A to Z with a first-letter index and an OPML link."
 msgstr ""
 
-#: includes/class-plugin.php:1562
+#: includes/class-plugin.php:1581
 msgid "Tag Archive"
 msgstr ""
 
-#: includes/class-plugin.php:1563
+#: includes/class-plugin.php:1582
 msgid "Tag archive as label sheets: each post once, under its first label."
 msgstr ""
 
 #. translators: %s: Post Kinds plugin name
-#: includes/class-plugin.php:1725
+#: includes/class-plugin.php:1744
 #, php-format
 msgid "Post Kinds for IndieWeb in Block Themes cannot run while %s is active. These plugins provide the same functionality - Post Kinds for IndieWeb in Block Themes is the block editor successor to Post Kinds. Please deactivate one of them."
 msgstr ""
 
 #. translators: %s: IndieBlocks plugin link
-#: includes/class-plugin.php:1776
+#: includes/class-plugin.php:1795
 #, php-format
 msgid "Post Kinds for IndieWeb in Block Themes works best with %s installed. While not required, IndieBlocks provides essential blocks for bookmarks, likes, replies, and more."
 msgstr ""
@@ -7706,7 +7851,7 @@ msgstr ""
 
 #. translators: %s: venue name
 #. translators: %s: venue name.
-#: includes/class-title-privacy.php:733
+#: includes/class-title-privacy.php:738
 #: includes/integrations/class-atmosphere-titles.php:147
 #: includes/sync/class-foursquare-checkin-sync.php:484
 #, php-format
@@ -7714,7 +7859,7 @@ msgid "Checked in at %s"
 msgstr ""
 
 #. translators: %s: the post's date
-#: includes/class-title-privacy.php:763
+#: includes/class-title-privacy.php:768
 #, php-format
 msgid "Check-in, %s"
 msgstr ""
@@ -7819,11 +7964,13 @@ msgid "Leg %d"
 msgstr ""
 
 #: includes/class-travel.php:423
+#: includes/class-zine-export.php:362
 #: assets/js/travel-card-editor.js:321
 msgid "From"
 msgstr ""
 
 #: includes/class-travel.php:424
+#: includes/class-zine-export.php:363
 #: assets/js/travel-card-editor.js:335
 msgid "To"
 msgstr ""
@@ -8027,6 +8174,168 @@ msgstr ""
 msgid "Low priority"
 msgstr ""
 
+#: includes/class-wrapped-blocks.php:61
+#: includes/class-wrapped-blocks.php:67
+msgid "Numbers show once this post is published and public."
+msgstr ""
+
+#: includes/class-wrapped-blocks.php:82
+msgid "Top reads"
+msgstr ""
+
+#: includes/class-wrapped-blocks.php:153
+msgid "Wrapped"
+msgstr ""
+
+#: includes/class-wrapped-stats.php:852
+msgid "Posts"
+msgstr ""
+
+#: includes/class-wrapped-stats.php:853
+msgid "Longest week streak"
+msgstr ""
+
+#: includes/class-wrapped-stats.php:855
+msgid "Artists"
+msgstr ""
+
+#: includes/class-wrapped-stats.php:857
+msgid "Rewatched"
+msgstr ""
+
+#: includes/class-wrapped-stats.php:858
+msgid "Drawn"
+msgstr ""
+
+#. translators: %d: number of finished posts with a page count.
+#: includes/class-wrapped-stats.php:866
+#, php-format
+msgid "Pages from %d finished"
+msgid_plural "Pages from %d finished"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: number of rated posts.
+#: includes/class-wrapped-stats.php:869
+#, php-format
+msgid "Average from %d rated"
+msgid_plural "Average from %d rated"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: number of posts with play hours.
+#: includes/class-wrapped-stats.php:872
+#, php-format
+msgid "Hours played from %d post"
+msgid_plural "Hours played from %d posts"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: number of exercise posts with public duration.
+#: includes/class-wrapped-stats.php:875
+#, php-format
+msgid "Exercise time from %d post"
+msgid_plural "Exercise time from %d posts"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: number of sleep posts with duration.
+#: includes/class-wrapped-stats.php:878
+#, php-format
+msgid "Sleep time from %d post"
+msgid_plural "Sleep time from %d posts"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-zine-export.php:91
+#: includes/class-zine-export.php:358
+#: assets/js/zine-export-editor.js:32
+msgid "Export as Zine"
+msgstr ""
+
+#: includes/class-zine-export.php:356
+msgid "0 posts"
+msgstr ""
+
+#: includes/class-zine-export.php:360
+msgid "Booklet pages"
+msgstr ""
+
+#: includes/class-zine-export.php:364
+msgid "Preview zine"
+msgstr ""
+
+#: includes/class-zine-export.php:389
+#, php-format
+msgid "%1$d of %2$d posts"
+msgstr ""
+
+#: includes/class-zine-export.php:390
+#, php-format
+msgid "%d post"
+msgid_plural "%d posts"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-zine-export.php:391
+#, php-format
+msgid "Back to %s"
+msgstr ""
+
+#: includes/class-zine-export.php:393
+msgid "Sides: one"
+msgstr ""
+
+#: includes/class-zine-export.php:393
+msgid "Sides: both, flip on short edge"
+msgstr ""
+
+#: includes/class-zine-export.php:394
+msgid "Scale: 100%"
+msgstr ""
+
+#: includes/class-zine-export.php:394
+msgid "Print"
+msgstr ""
+
+#: includes/class-zine-export.php:550
+#, php-format
+msgid "%1$s to %2$s"
+msgstr ""
+
+#: includes/class-zine-export.php:579
+#, php-format
+msgid "Sheet side %d"
+msgstr ""
+
+#: includes/class-zine-export.php:579
+msgid "Top row, printed upside down"
+msgstr ""
+
+#: includes/class-zine-export.php:579
+msgid "Bottom row"
+msgstr ""
+
+#: includes/class-zine-export.php:582
+msgid "Printer spread preview"
+msgstr ""
+
+#: includes/class-zine-request.php:65
+msgid "Choose 8 or 16 pages."
+msgstr ""
+
+#: includes/class-zine-request.php:68
+msgid "Enter a valid From date, like 2026-03-09."
+msgstr ""
+
+#: includes/class-zine-request.php:71
+msgid "Enter a valid To date, like 2026-03-09."
+msgstr ""
+
+#: includes/class-zine-request.php:74
+msgid "From must not be later than To."
+msgstr ""
+
 #: includes/functions-a11y.php:27
 #: includes/functions-a11y.php:48
 msgid " (opens in a new tab)"
@@ -8175,6 +8484,14 @@ msgstr ""
 msgctxt "last day of a week across two years"
 msgid "F j, Y"
 msgstr ""
+
+#. translators: 1: Number of years ago. 2: Four-digit year.
+#: includes/grouping/class-on-this-day-year-source.php:50
+#, php-format
+msgid "%1$d year ago · %2$s"
+msgid_plural "%1$d years ago · %2$s"
+msgstr[0] ""
+msgstr[1] ""
 
 #. translators: %s: track name.
 #: includes/integrations/class-atmosphere-titles.php:119
@@ -8589,6 +8906,12 @@ msgstr ""
 msgid "Post Kinds for IndieWeb in Block Themes requires WordPress %s or higher."
 msgstr ""
 
+#. translators: %s: zine source title.
+#: templates/zine-print.php:29
+#, php-format
+msgid "%s: zine"
+msgstr ""
+
 #: assets/js/almanac-month-editor.js:43
 msgid "No weather posts yet. The almanac prints nothing until a weather post is published."
 msgstr ""
@@ -8602,6 +8925,7 @@ msgstr ""
 #: assets/js/medal-row-editor.js:71
 #: assets/js/mood-year-grid-editor.js:55
 #: assets/js/note-entry-editor.js:48
+#: assets/js/on-this-day-editor.js:30
 #: assets/js/podcast-episode-editor.js:67
 #: assets/js/presentation-entry-editor.js:35
 #: assets/js/question-answers-editor.js:61
@@ -8611,6 +8935,7 @@ msgstr ""
 #: assets/js/staff-picks-editor.js:71
 #: assets/js/tag-entry-editor.js:20
 #: assets/js/travel-entry-editor.js:41
+#: build/blocks.js:7
 #: build/blocks.js:8
 msgid "Heading level"
 msgstr ""
@@ -8914,6 +9239,30 @@ msgstr ""
 
 #: assets/js/note-entry-editor.js:79
 msgid "Note entry: place this block inside a Query Loop’s Post Template."
+msgstr ""
+
+#: assets/js/on-this-day-editor.js:47
+msgid "On this day card for this post’s date"
+msgstr ""
+
+#: assets/js/on-this-day-editor.js:51
+msgid "On this day: appears first in the Stream list on page 1"
+msgstr ""
+
+#: assets/js/on-this-day-editor.js:71
+msgid "Context"
+msgstr ""
+
+#: assets/js/on-this-day-editor.js:78
+msgid "Stream"
+msgstr ""
+
+#: assets/js/on-this-day-editor.js:85
+msgid "Single post"
+msgstr ""
+
+#: assets/js/on-this-day-editor.js:123
+msgid "On this day archive entry"
 msgstr ""
 
 #: assets/js/photo-projector.js:35
@@ -9923,6 +10272,46 @@ msgstr ""
 
 #: build/blocks.js:7
 msgid "Person name"
+msgstr ""
+
+#: build/blocks.js:7
+msgid "Choose a kind"
+msgstr ""
+
+#: build/blocks.js:7
+msgid "Wrapped settings"
+msgstr ""
+
+#: build/blocks.js:7
+msgid "Kind"
+msgstr ""
+
+#: build/blocks.js:7
+msgid "Metric keys"
+msgstr ""
+
+#: build/blocks.js:7
+msgid "Comma-separated, in display order. Leave empty for the default order."
+msgstr ""
+
+#: build/blocks.js:7
+msgid "Top items"
+msgstr ""
+
+#: build/blocks.js:7
+msgid "Top items heading"
+msgstr ""
+
+#: build/blocks.js:7
+msgid "Leave empty for the default heading."
+msgstr ""
+
+#: build/blocks.js:7
+msgid "Wrapped strip"
+msgstr ""
+
+#: build/blocks.js:7
+msgid "Kind slug"
 msgstr ""
 
 #: build/blocks.js:7
@@ -12616,4 +13005,24 @@ msgstr ""
 #: build/blocks/wish-card/block.json
 msgctxt "block keyword"
 msgid "gift"
+msgstr ""
+
+#: build/blocks/wrapped-strip/block.json
+msgctxt "block title"
+msgid "Wrapped strip"
+msgstr ""
+
+#: build/blocks/wrapped-strip/block.json
+msgctxt "block description"
+msgid "Link to the latest yearly Wrapped post."
+msgstr ""
+
+#: build/blocks/wrapped/block.json
+msgctxt "block title"
+msgid "Wrapped"
+msgstr ""
+
+#: build/blocks/wrapped/block.json
+msgctxt "block description"
+msgid "Show yearly public statistics for one post kind."
 msgstr ""

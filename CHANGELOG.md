@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-11-18
+
 ### Added
 
 - Wrapped: a yearly summary post for one kind, built around the Wrapped block, whose numbers are computed when the page is viewed from published, password-free posts that ActivityPub doesn't mark quiet public. A strip block links the latest Wrapped from a kind archive's first page, and `/kind/<kind>/<year>/wrapped/` redirects to it. Feeds and federated copies never carry the numbers. The public `post-kinds/kind-year-stats` ability returns the same numbers, `post-kinds/create-wrapped-draft` creates drafts only, and the `post-kinds/wrapped` binding source lets themes lay out the strip in the Site Editor.
@@ -17,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On This Day: the `/on-this-day/` archive lists earlier years' posts from today's date, grouped by year, and a block puts one of them first in the Stream. The single-post card is built but stays off until the `pkiw_otd_edge_purge` filter returns true. The public `post-kinds/get-on-this-day` ability returns the same posts. Every surface lists only published, password-free posts that ActivityPub doesn't mark quiet public, through the new shared `PKIW\Public_Listing` helper.
 - Check-in Dashboard view switching and map setup now run through the Interactivity API module `post-kinds-indieweb-checkin-dashboard-view-script-module`; the classic `post-kinds-indieweb-checkin-dashboard-view-script` handle is gone. Inactive panels carry `hidden` in server HTML. The dashboard forces the shared public-eligibility query clause in every context and checks each row with `Public_Eligibility::is_eligible()`, so password-protected check-ins never reach its grid, timeline, map or stats, even after a visitor enters the password; the check-in archive map, Check-ins Feed and REST routes keep their existing password rule.
 - All 36 kind archive templates now print the Wrapped strip and the `zine-export` template part between the archive title block and the archive's own content. The strip prints on a kind archive's first page once that kind has a published, public Wrapped post. The part prints only when the active theme has a `zine-export` template part, from a theme file or the Site Editor. Without one it prints nothing, except that WordPress shows its "Template part has been deleted or is unavailable" notice when `WP_DEBUG` and `WP_DEBUG_DISPLAY` are on. A theme that ships its own kind templates keeps using them, so this changes only sites that fall back to the plugin's templates.
+
+### Fixed
+
+- Micropub posts get the kind post type discovery gives them. An h-entry with content and no name is a `note` and a named one is an `article`, so a Quill note on a site running Post Formats for Block Themes is no longer stored as an article (#578). A `location` alone no longer makes a check-in: the `checkin` property does, `ate` and `drank` make eat and drink posts with their cards, and a `pkiw-kind: checkin` hint still builds the check-in card (#579). A `location` with an `mp-place-name` and no `pkiw-kind` hint is still a check-in, ahead of photo, video and audio (#586). An update, delete or undelete never changes a post's kind (#580).
 
 ## [1.9.2] - 2026-11-17
 
@@ -821,7 +827,8 @@ This project uses Semantic Versioning:
 - [Issues](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues)
 - [IndieWeb Wiki](https://indieweb.org/)
 
-[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.9.2...HEAD
+[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.9.2...v1.10.0
 [1.9.2]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.9.1...v1.9.2
 [1.9.1]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.9.0...v1.9.1
 [1.9.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.8.6...v1.9.0
