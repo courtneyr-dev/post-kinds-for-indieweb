@@ -1,6 +1,7 @@
 # export-ignore keeps development files out of GitHub's source zips and
 # git archive. The list mirrors .distignore, which decides what ships to
-# WordPress.org.
+# WordPress.org. .distignore itself stays in archives: courtneyr.dev's
+# sync-pkiw.sh filters a git archive by it and stops when it's missing.
 /.git export-ignore
 /.github export-ignore
 /.claude export-ignore
@@ -12,7 +13,6 @@
 /bin export-ignore
 /src export-ignore
 /scripts export-ignore
-.distignore export-ignore
 .DS_Store export-ignore
 .editorconfig export-ignore
 .gitignore export-ignore
