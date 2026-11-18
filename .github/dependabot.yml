@@ -59,3 +59,18 @@ updates:
       - "github-actions"
     commit-message:
       prefix: "chore(deps)"
+
+  # Documentation site under docs/, built to static HTML.
+  - package-ecosystem: npm
+    directory: /docs
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    groups:
+      docs-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
