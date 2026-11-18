@@ -66,6 +66,24 @@ if ( $_pkiw_simple_location_file && file_exists( $_pkiw_simple_location_file ) )
 	);
 }
 
+// Optionally load the real Micropub plugin so MicropubUpdateKindTest can send
+// requests through its endpoint. Point PKIW_TESTS_MICROPUB_FILE at the
+// plugin's micropub.php; the test skips without it. The plugin starts only
+// when the IndieAuth plugin's version constant exists, so the constant stands
+// in for it.
+$_pkiw_micropub_file = getenv( 'PKIW_TESTS_MICROPUB_FILE' );
+if ( $_pkiw_micropub_file && file_exists( $_pkiw_micropub_file ) ) {
+	tests_add_filter(
+		'muplugins_loaded',
+		static function () use ( $_pkiw_micropub_file ) {
+			if ( ! defined( 'INDIEAUTH_PLUGIN_VERSION' ) ) {
+				define( 'INDIEAUTH_PLUGIN_VERSION', 'test' );
+			}
+			require $_pkiw_micropub_file;
+		}
+	);
+}
+
 tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 
 // Start up the WP testing environment.

@@ -956,6 +956,386 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertSame( 'article', $this->kind_of( $post_id ) );
 	}
 
+	// --- an update that names a kind changes it ------------------------------
+
+	/**
+	 * Store properties the way the Micropub plugin's store_mf2() does for a
+	 * create: every property but name, content, published, updated, summary,
+	 * visibility and the mp- extensions, as mf2_<property> post meta.
+	 *
+	 * @param array<string, mixed> $properties Micropub properties.
+	 * @return array<string, mixed> meta_input for wp_insert_post().
+	 */
+	private function stored_meta( array $properties ): array {
+		$meta = array();
+		foreach ( $properties as $key => $values ) {
+			if ( 'mp-' !== substr( $key, 0, 3 ) && ! in_array( $key, array( 'name', 'content', 'published', 'updated', 'summary', 'visibility' ), true ) ) {
+				$meta[ 'mf2_' . $key ] = $values;
+			}
+		}
+		return $meta;
+	}
+
+	/**
+	 * Create a post as the Micropub plugin does: stored properties, a title
+	 * from `name`, then the bridge.
+	 *
+	 * @param array<string, mixed> $properties Micropub properties.
+	 * @return int Post ID.
+	 */
+	private function create_stored( array $properties ): int {
+		$post_id = $this->create_via_micropub(
+			array(
+				'type'       => array( 'h-entry' ),
+				'properties' => $properties,
+			),
+			null,
+			$this->stored_meta( $properties )
+		);
+		if ( isset( $properties['name'] ) ) {
+			wp_update_post(
+				array(
+					'ID'         => $post_id,
+					'post_title' => $properties['name'][0],
+				)
+			);
+		}
+		return $post_id;
+	}
+
+	/**
+	 * Apply an update the way handle_update() does before it fires
+	 * after_micropub: store_mf2() writes replace, add and delete to the
+	 * mf2_ post meta, name and content land in the post.
+	 *
+	 * @param int                  $post_id Post ID.
+	 * @param array<string, mixed> $body    Micropub update operations.
+	 * @param string               $action  Micropub action.
+	 */
+	private function update_via_micropub( int $post_id, array $body, string $action = 'update' ): void {
+		$input = array(
+			'action' => $action,
+			'url'    => get_permalink( $post_id ),
+		) + $body;
+
+		foreach ( $input['replace'] ?? array() as $property => $values ) {
+			update_post_meta( $post_id, 'mf2_' . $property, $values );
+			if ( 'name' === $property ) {
+				wp_update_post(
+					array(
+						'ID'         => $post_id,
+						'post_title' => $values[0],
+					)
+				);
+			}
+			if ( 'content' === $property ) {
+				wp_update_post(
+					array(
+						'ID'           => $post_id,
+						'post_content' => $values[0],
+					)
+				);
+			}
+		}
+		foreach ( $input['add'] ?? array() as $property => $values ) {
+			$current = get_post_meta( $post_id, 'mf2_' . $property, true );
+			update_post_meta( $post_id, 'mf2_' . $property, array_merge( is_array( $current ) ? $current : array(), $values ) );
+		}
+		$delete = $input['delete'] ?? array();
+		if ( array_values( $delete ) === $delete ) {
+			foreach ( $delete as $property ) {
+				delete_post_meta( $post_id, 'mf2_' . $property );
+			}
+		} else {
+			foreach ( $delete as $property => $values ) {
+				$current = get_post_meta( $post_id, 'mf2_' . $property, true );
+				update_post_meta( $post_id, 'mf2_' . $property, array_diff( (array) $current, $values ) );
+			}
+		}
+
+		do_action( 'after_micropub', $input, array( 'ID' => $post_id ) );
+	}
+
+	/**
+	 * @return array<string, array{0: array<string, mixed>, 1: array<string, mixed>, 2: string}>
+	 */
+	public static function kind_naming_update_provider(): array {
+		return array(
+			'like-of replaced on a note'                  => array(
+				array( 'content' => array( 'Plain words.' ) ),
+				array( 'replace' => array( 'like-of' => array( 'https://example.test/liked' ) ) ),
+				'like',
+			),
+			'in-reply-to replaced on an article'          => array(
+				array(
+					'name'    => array( 'A titled post' ),
+					'content' => array( 'The body says something else.' ),
+				),
+				array( 'replace' => array( 'in-reply-to' => array( 'https://example.test/parent' ) ) ),
+				'reply',
+			),
+			'in-reply-to added to an article'             => array(
+				array(
+					'name'    => array( 'A titled post' ),
+					'content' => array( 'The body says something else.' ),
+				),
+				array( 'add' => array( 'in-reply-to' => array( 'https://example.test/parent' ) ) ),
+				'reply',
+			),
+			'pkiw-kind replaced with a kind that has no property' => array(
+				array( 'content' => array( 'Words by someone else.' ) ),
+				array( 'replace' => array( 'pkiw-kind' => array( 'quote' ) ) ),
+				'quote',
+			),
+			'pkiw-kind replaced over a like-of'           => array(
+				array( 'like-of' => array( 'https://example.test/liked' ) ),
+				array( 'replace' => array( 'pkiw-kind' => array( 'quote' ) ) ),
+				'quote',
+			),
+			'bookmark-of deleted, content only, a note'   => array(
+				array(
+					'bookmark-of' => array( 'https://example.test/saved' ),
+					'content'     => array( 'Why I saved it.' ),
+				),
+				array( 'delete' => array( 'bookmark-of' ) ),
+				'note',
+			),
+			'bookmark-of deleted, a title, an article'    => array(
+				array(
+					'name'        => array( 'A titled post' ),
+					'bookmark-of' => array( 'https://example.test/saved' ),
+					'content'     => array( 'Why I saved it.' ),
+				),
+				array( 'delete' => array( 'bookmark-of' ) ),
+				'article',
+			),
+			'bookmark-of replaced with like-of'           => array(
+				array( 'bookmark-of' => array( 'https://example.test/saved' ) ),
+				array(
+					'delete'  => array( 'bookmark-of' ),
+					'replace' => array( 'like-of' => array( 'https://example.test/liked' ) ),
+				),
+				'like',
+			),
+			'bookmark-of deleted, in-reply-to remains'    => array(
+				array(
+					'bookmark-of' => array( 'https://example.test/saved' ),
+					'in-reply-to' => array( 'https://example.test/parent' ),
+				),
+				array( 'delete' => array( 'bookmark-of' ) ),
+				'reply',
+			),
+			'pkiw-kind deleted, the properties decide'    => array(
+				array(
+					'like-of'   => array( 'https://example.test/liked' ),
+					'pkiw-kind' => array( 'quote' ),
+				),
+				array( 'delete' => array( 'pkiw-kind' ) ),
+				'like',
+			),
+			'a venue named on a note with a location'     => array(
+				array(
+					'content'  => array( 'Lunch.' ),
+					'location' => array( 'geo:40.78963,-77.85019' ),
+				),
+				array( 'replace' => array( 'mp-place-name' => array( 'Cafe Test' ) ) ),
+				'checkin',
+			),
+			'a location and a venue replaced on a note'   => array(
+				array( 'content' => array( 'Lunch.' ) ),
+				array(
+					'replace' => array(
+						'location'      => array( 'geo:40.78963,-77.85019' ),
+						'mp-place-name' => array( 'Cafe Test' ),
+					),
+				),
+				'checkin',
+			),
+			'a venue and a location replaced under a bogus hint' => array(
+				array(
+					'content'   => array( 'Lunch.' ),
+					'pkiw-kind' => array( 'not-a-kind' ),
+				),
+				array(
+					'replace' => array(
+						'location'      => array( 'geo:40.78963,-77.85019' ),
+						'mp-place-name' => array( 'Cafe Test' ),
+					),
+				),
+				'checkin',
+			),
+			'a venue replaced under a note hint'          => array(
+				array(
+					'content'   => array( 'Lunch.' ),
+					'location'  => array( 'geo:40.78963,-77.85019' ),
+					'pkiw-kind' => array( 'note' ),
+				),
+				array( 'replace' => array( 'mp-place-name' => array( 'Cafe Test' ) ) ),
+				'note',
+			),
+			'a photo added to a note'                     => array(
+				array( 'content' => array( 'Plain words.' ) ),
+				array( 'add' => array( 'photo' => array( 'https://example.test/uploads/pkiw-test-photo.jpg' ) ) ),
+				'photo',
+			),
+		);
+	}
+
+	/**
+	 * @dataProvider kind_naming_update_provider
+	 *
+	 * @param array<string, mixed> $created  Properties the post was created with.
+	 * @param array<string, mixed> $body     Micropub update operations.
+	 * @param string               $expected Kind the post has after the update.
+	 */
+	public function test_update_that_names_a_kind_sets_it( array $created, array $body, string $expected ): void {
+		$post_id = $this->create_stored( $created );
+
+		$this->update_via_micropub( $post_id, $body );
+
+		$this->assertSame( $expected, $this->kind_of( $post_id ) );
+	}
+
+	/**
+	 * @return array<string, array{0: array<string, mixed>}>
+	 */
+	public static function update_without_a_kind_provider(): array {
+		return array(
+			'content replaced'                       => array( array( 'replace' => array( 'content' => array( 'Edited body.' ) ) ) ),
+			'a title added by name'                  => array( array( 'replace' => array( 'name' => array( 'A new title' ) ) ) ),
+			'category added'                         => array( array( 'add' => array( 'category' => array( 'travel' ) ) ) ),
+			'syndication added'                      => array( array( 'add' => array( 'syndication' => array( 'https://example.test/1' ) ) ) ),
+			'category deleted'                       => array( array( 'delete' => array( 'category' => array( 'travel' ) ) ) ),
+			'every category deleted'                 => array( array( 'delete' => array( 'category' ) ) ),
+			'a bare location replaced'               => array( array( 'replace' => array( 'location' => array( 'geo:40.78963,-77.85019' ) ) ) ),
+			'a rating replaced'                      => array( array( 'replace' => array( 'rating' => array( '4' ) ) ) ),
+		);
+	}
+
+	/**
+	 * A post's own kind stands against stored properties that would infer
+	 * another one: only an update that names a kind property reads them.
+	 *
+	 * @dataProvider update_without_a_kind_provider
+	 *
+	 * @param array<string, mixed> $body Micropub update operations.
+	 */
+	public function test_update_that_names_no_kind_keeps_it( array $body ): void {
+		$post_id = $this->create_stored(
+			array(
+				'name'    => array( 'A titled post' ),
+				'content' => array( 'The body says something else.' ),
+				'like-of' => array( 'https://example.test/liked' ),
+			)
+		);
+		$this->assertSame( 'like', $this->kind_of( $post_id ) );
+		wp_set_post_terms( $post_id, array( 'article' ), 'kind' );
+
+		$this->update_via_micropub( $post_id, $body );
+
+		$this->assertSame( 'article', $this->kind_of( $post_id ) );
+	}
+
+	public function test_update_with_a_bare_location_does_not_make_a_checkin(): void {
+		$post_id = $this->create_stored( array( 'content' => array( 'Plain words.' ) ) );
+
+		$this->update_via_micropub( $post_id, array( 'replace' => array( 'location' => array( 'geo:40.78963,-77.85019' ) ) ) );
+
+		$this->assertSame( 'note', $this->kind_of( $post_id ) );
+	}
+
+	public function test_update_to_the_location_of_a_checkin_keeps_it_a_checkin(): void {
+		$post_id = $this->create_stored(
+			array(
+				'name'          => array( 'Cafe Test' ),
+				'location'      => array( 'geo:40.78963,-77.85019' ),
+				'mp-place-name' => array( 'Cafe Test' ),
+			)
+		);
+		$this->assertSame( 'checkin', $this->kind_of( $post_id ) );
+
+		$this->update_via_micropub( $post_id, array( 'replace' => array( 'location' => array( 'geo:40.79,-77.86' ) ) ) );
+
+		$this->assertSame( 'checkin', $this->kind_of( $post_id ) );
+	}
+
+	public function test_update_that_names_a_kind_beats_a_kind_set_in_the_editor(): void {
+		$post_id = $this->create_stored( array( 'content' => array( 'Plain words.' ) ) );
+		wp_set_post_terms( $post_id, array( 'article' ), 'kind' );
+
+		$this->update_via_micropub( $post_id, array( 'replace' => array( 'like-of' => array( 'https://example.test/liked' ) ) ) );
+
+		$this->assertSame( 'like', $this->kind_of( $post_id ) );
+	}
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public static function removal_action_provider(): array {
+		return array(
+			'delete'   => array( 'delete' ),
+			'undelete' => array( 'undelete' ),
+		);
+	}
+
+	/**
+	 * @dataProvider removal_action_provider
+	 *
+	 * @param string $action Micropub action.
+	 */
+	public function test_delete_and_undelete_never_write_a_kind_even_with_kind_operations( string $action ): void {
+		$post_id = $this->create_stored(
+			array(
+				'name'    => array( 'A titled post' ),
+				'content' => array( 'The body says something else.' ),
+				'like-of' => array( 'https://example.test/liked' ),
+			)
+		);
+		wp_set_post_terms( $post_id, array( 'article' ), 'kind' );
+
+		$this->update_via_micropub(
+			$post_id,
+			array( 'replace' => array( 'in-reply-to' => array( 'https://example.test/parent' ) ) ),
+			$action
+		);
+
+		$this->assertSame( 'article', $this->kind_of( $post_id ) );
+	}
+
+	public function test_update_that_names_a_kind_sets_it_on_a_post_the_bridge_generated(): void {
+		$post_id = $this->create_stored( array( 'like-of' => array( 'https://example.test/liked' ) ) );
+		$this->assertSame( 'like', $this->kind_of( $post_id ) );
+		$this->assertSame( '1', (string) get_post_meta( $post_id, Micropub_Content_Builder::GENERATED_META_KEY, true ) );
+		$content = (string) get_post_field( 'post_content', $post_id );
+
+		$this->update_via_micropub( $post_id, array( 'replace' => array( 'pkiw-kind' => array( 'quote' ) ) ) );
+
+		$this->assertSame( 'quote', $this->kind_of( $post_id ) );
+		$this->assertSame( $content, (string) get_post_field( 'post_content', $post_id ), 'An update leaves the generated content alone.' );
+	}
+
+	public function test_update_that_names_no_kind_keeps_the_kind_of_a_post_the_bridge_generated(): void {
+		$post_id = $this->create_stored( array( 'like-of' => array( 'https://example.test/liked' ) ) );
+
+		$this->update_via_micropub( $post_id, array( 'add' => array( 'syndication' => array( 'https://example.test/1' ) ) ) );
+
+		$this->assertSame( 'like', $this->kind_of( $post_id ) );
+	}
+
+	public function test_entry_with_a_venue_name_under_a_bogus_hint_is_a_checkin(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'h'             => 'entry',
+				'content'       => 'Lunch with the team.',
+				'location'      => 'geo:52.37,4.89',
+				'mp-place-name' => 'Cafe Test',
+				'pkiw-kind'     => 'not-a-kind',
+			)
+		);
+
+		$this->assertSame( 'checkin', $this->kind_of( $post_id ) );
+	}
+
 	public function test_location_with_a_venue_name_and_a_photo_is_a_checkin(): void {
 		$post_id = $this->create_via_micropub(
 			array(
