@@ -262,11 +262,11 @@ final class MicropubUpdateKindTest extends WP_UnitTestCase {
 		$post_id = url_to_postid( $url );
 		wp_set_post_terms( $post_id, array( 'article' ), 'kind' );
 
-		$this->assertSame( 200, $this->send( array( 'action' => 'delete', 'url' => $url ) )->get_status() );
+		$this->assertSame( 200, $this->send( array( 'action' => 'delete', 'url' => $url, 'replace' => array( 'like-of' => array( 'https://example.test/liked' ) ) ) )->get_status() );
 		$this->assertSame( 'article', implode( ',', wp_get_post_terms( $post_id, 'kind', array( 'fields' => 'slugs' ) ) ) );
 
 		$guid     = get_the_guid( $post_id );
-		$response = $this->send( array( 'action' => 'undelete', 'url' => $guid ) );
+		$response = $this->send( array( 'action' => 'undelete', 'url' => $guid, 'replace' => array( 'like-of' => array( 'https://example.test/liked' ) ) ) );
 		$this->assertSame( 200, $response->get_status(), wp_json_encode( $response->get_data() ) );
 		$this->assertSame( 'article', implode( ',', wp_get_post_terms( $post_id, 'kind', array( 'fields' => 'slugs' ) ) ) );
 	}

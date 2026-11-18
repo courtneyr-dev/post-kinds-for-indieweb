@@ -1214,6 +1214,45 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 				array( 'replace' => array( 'photo' => array() ) ),
 				'note',
 			),
+			'like-of swapped for bookmark-of in one request' => array(
+				array( 'like-of' => array( 'https://example.test/liked' ) ),
+				array(
+					'delete'  => array( 'like-of' ),
+					'replace' => array( 'bookmark-of' => array( 'https://example.test/saved' ) ),
+				),
+				'bookmark',
+			),
+			'like-of swapped for in-reply-to on a hinted like' => array(
+				array(
+					'like-of'   => array( 'https://example.test/liked' ),
+					'pkiw-kind' => array( 'like' ),
+				),
+				array(
+					'delete'  => array( 'like-of' ),
+					'replace' => array( 'in-reply-to' => array( 'https://example.test/parent' ) ),
+				),
+				'reply',
+			),
+			'like-of emptied while bookmark-of is replaced' => array(
+				array( 'like-of' => array( 'https://example.test/liked' ) ),
+				array(
+					'replace' => array(
+						'like-of'     => array(),
+						'bookmark-of' => array( 'https://example.test/saved' ),
+					),
+				),
+				'bookmark',
+			),
+			'drink-of and ate replaced together on a note' => array(
+				array( 'content' => array( 'Plain words.' ) ),
+				array(
+					'replace' => array(
+						'ate'      => array( 'Toast' ),
+						'drink-of' => array( 'Tea' ),
+					),
+				),
+				'drink',
+			),
 			'a photo added to a note'                     => array(
 				array( 'content' => array( 'Plain words.' ) ),
 				array( 'add' => array( 'photo' => array( 'https://example.test/uploads/pkiw-test-photo.jpg' ) ) ),
@@ -1392,6 +1431,34 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 				'review',
 				array( 'delete' => array( 'video' ) ),
 				'review',
+			),
+			'read-of replaced on a comic'                     => array(
+				array(
+					'read-of'   => array( 'https://example.test/book' ),
+					'pkiw-kind' => array( 'comics' ),
+				),
+				null,
+				array( 'replace' => array( 'read-of' => array( 'https://example.test/other-book' ) ) ),
+				'comics',
+			),
+			'a photo added to a comic'                        => array(
+				array(
+					'read-of'   => array( 'https://example.test/book' ),
+					'pkiw-kind' => array( 'comics' ),
+				),
+				null,
+				array( 'add' => array( 'photo' => array( 'https://example.test/uploads/pkiw-test-photo.jpg' ) ) ),
+				'comics',
+			),
+			'a list sent as replace'                          => array(
+				array(
+					'content'   => array( 'Plain words.' ),
+					'pkiw-kind' => array( 'note' ),
+					'photo'     => array( 'https://example.test/uploads/pkiw-test-photo.jpg' ),
+				),
+				null,
+				array( 'replace' => array( 'photo' ) ),
+				'note',
 			),
 			'bookmark-of replaced on a like'                  => array(
 				array( 'like-of' => array( 'https://example.test/liked' ) ),
