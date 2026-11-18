@@ -342,10 +342,19 @@ final class Micropub_Content_Builder {
 	 * Form-encoded Micropub puts properties at the top level of $input.
 	 * JSON Micropub nests them under `properties`. Try both.
 	 *
+	 * Only a create carries properties. The Micropub plugin fires
+	 * `after_micropub` and `micropub_post_content` for update, delete and
+	 * undelete too, and treats a missing `action` as create; an update body
+	 * holds operations (`replace`, `add`, `delete`) on a post that already
+	 * has its kind.
+	 *
 	 * @param array<string, mixed> $input Raw Micropub request body parsed to an array.
-	 * @return array<string, mixed> The h-entry properties bag.
+	 * @return array<string, mixed> The h-entry properties bag, empty for any action but create.
 	 */
 	private static function extract_properties( array $input ): array {
+		if ( 'create' !== ( $input['action'] ?? 'create' ) ) {
+			return [];
+		}
 		if ( isset( $input['properties'] ) && is_array( $input['properties'] ) ) {
 			return $input['properties'];
 		}
