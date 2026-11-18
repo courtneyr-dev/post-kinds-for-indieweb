@@ -114,6 +114,7 @@ final class Now_Playing {
 				'post_type'      => 'post',
 				'posts_per_page' => 1,
 				'post_status'    => 'publish',
+				'has_password'   => false,
 				'no_found_rows'  => true,
 				'tax_query'      => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 					[

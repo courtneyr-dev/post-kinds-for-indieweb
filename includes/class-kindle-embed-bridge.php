@@ -67,7 +67,7 @@ class Kindle_Embed_Bridge {
 		}
 
 		$post_id = $instance->context['postId'] ?? get_the_ID();
-		if ( ! $post_id ) {
+		if ( ! $post_id || post_password_required( (int) $post_id ) ) {
 			return $content;
 		}
 
