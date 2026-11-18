@@ -225,36 +225,86 @@ final class Micropub_Content_Builder {
 	}
 
 	/**
-	 * Set the kind after an update that names a kind property.
+	 * Set the kind after an update that names a property that decides one.
 	 *
 	 * The Micropub plugin writes an update's `replace`, `add` and `delete` to
 	 * the post before it fires `after_micropub`, so the post's own properties
-	 * are the state after the update. An update that names no kind property
-	 * leaves the kind alone, whatever the stored properties would infer.
+	 * are the state after the update. Only what the update names is evidence:
+	 * a `pkiw-kind` hint stored at create is read back only when the update
+	 * names the hint, because every Outpost post carries one and it would
+	 * outrank the property the update changes.
+	 *
+	 * - Naming the hint sets the kind as a create does, from the post as it
+	 *   stands.
+	 * - Adding or replacing kind properties sets the kind of the one that
+	 *   comes first in PROPERTY_KINDS, when it outranks the kind the post has.
+	 *   A photo added to a check-in leaves it a check-in, as it would on a
+	 *   create.
+	 * - Deleting the property the post's kind came from sets the kind the
+	 *   remaining properties and post type discovery give. Deleting anything
+	 *   else leaves the kind alone, since the post's kind may not come from
+	 *   stored properties at all (an editor pick, a venue name the Micropub
+	 *   plugin never stores).
 	 *
 	 * @param int                  $post_id Post ID.
 	 * @param array<string, mixed> $input   Micropub update request body.
 	 * @return void
 	 */
 	private static function assign_kind_after_update( int $post_id, array $input ): void {
-		if ( self::update_names_a_kind( $input ) ) {
-			self::assign_kind_term( $post_id, self::stored_properties( $post_id ) );
+		$named = self::properties_named_by( $input );
+		if ( [] === array_intersect( $named, array_merge( array_keys( self::PROPERTY_KINDS ), [ 'pkiw-kind', 'mp-place-name' ] ) ) ) {
+			return;
+		}
+
+		$properties = self::stored_properties( $post_id );
+		if ( in_array( 'pkiw-kind', $named, true ) ) {
+			self::assign_kind_term( $post_id, $properties );
+			return;
+		}
+
+		$taxonomy = Plugin::get_instance()->get_taxonomy();
+		if ( null === $taxonomy ) {
+			return;
+		}
+
+		$current = $taxonomy->get_post_kind( $post_id )?->slug;
+		$present = [];
+		$removed = [];
+		foreach ( $named as $name ) {
+			$kind = self::PROPERTY_KINDS[ $name ] ?? ( 'mp-place-name' === $name ? 'checkin' : null );
+			if ( null === $kind ) {
+				continue;
+			}
+			if ( self::names_kind( $properties, $name ) ) {
+				$present[] = $kind;
+			} elseif ( ! self::has_property( $properties, $name ) ) {
+				$removed[] = $kind;
+			}
+		}
+
+		if ( [] !== $present ) {
+			usort( $present, static fn( string $a, string $b ): int => self::kind_rank( $a ) <=> self::kind_rank( $b ) );
+			if ( self::kind_rank( $present[0] ) < self::kind_rank( $current ) && $taxonomy->is_valid_kind( $present[0] ) ) {
+				$taxonomy->set_post_kind( $post_id, $present[0] );
+			}
+			return;
+		}
+
+		if ( null !== $current && in_array( $current, $removed, true ) ) {
+			unset( $properties['pkiw-kind'] );
+			self::assign_kind_term( $post_id, $properties );
 		}
 	}
 
 	/**
-	 * Whether an update's `replace`, `add` or `delete` names a property that
-	 * decides a kind: one of PROPERTY_KINDS, the `pkiw-kind` hint, or the
-	 * `mp-place-name` venue that makes a location a check-in. A `location`
-	 * alone never does (detect_kind()).
-	 *
+	 * The property names an update's `replace`, `add` and `delete` carry.
 	 * `replace` and `add` are objects keyed by property name; `delete` is
 	 * either an object or a list of property names.
 	 *
 	 * @param array<string, mixed> $input Micropub update request body.
-	 * @return bool
+	 * @return string[]
 	 */
-	private static function update_names_a_kind( array $input ): bool {
+	private static function properties_named_by( array $input ): array {
 		$named = [];
 		foreach ( [ 'replace', 'add', 'delete' ] as $operation ) {
 			$body = $input[ $operation ] ?? null;
@@ -262,9 +312,38 @@ final class Micropub_Content_Builder {
 				$named = array_merge( $named, array_is_list( $body ) ? $body : array_keys( $body ) );
 			}
 		}
+		return array_values( array_filter( $named, 'is_string' ) );
+	}
 
-		$deciding = array_merge( array_keys( self::PROPERTY_KINDS ), [ 'pkiw-kind', 'mp-place-name' ] );
-		return [] !== array_intersect( $deciding, array_filter( $named, 'is_string' ) );
+	/**
+	 * Whether a named property makes a kind on the post as it stands: a
+	 * kind property with a value, or a venue name on a location that no
+	 * registered `pkiw-kind` hint overrides. A `location` alone never does
+	 * (detect_kind()).
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @param string               $name       Property name the update names.
+	 * @return bool
+	 */
+	private static function names_kind( array $properties, string $name ): bool {
+		if ( 'mp-place-name' === $name ) {
+			return self::has_property( $properties, 'location' )
+				&& self::has_property( $properties, 'mp-place-name' )
+				&& ! self::names_a_registered_kind( $properties );
+		}
+		return isset( self::PROPERTY_KINDS[ $name ] ) && self::has_property( $properties, $name );
+	}
+
+	/**
+	 * Where a kind sits in PROPERTY_KINDS, which is its precedence: lower
+	 * wins. A kind with no property (note, article) ranks last.
+	 *
+	 * @param string|null $kind Kind slug.
+	 * @return int
+	 */
+	private static function kind_rank( ?string $kind ): int {
+		$rank = array_search( $kind, array_values( self::PROPERTY_KINDS ), true );
+		return false === $rank ? PHP_INT_MAX : $rank;
 	}
 
 	/**
@@ -278,13 +357,14 @@ final class Micropub_Content_Builder {
 	private static function stored_properties( int $post_id ): array {
 		$properties = [];
 		foreach ( get_post_meta( $post_id ) as $key => $rows ) {
-			if ( str_starts_with( $key, 'mf2_' ) ) {
-				$properties[ substr( $key, 4 ) ] = maybe_unserialize( $rows[0] );
+			if ( str_starts_with( (string) $key, 'mf2_' ) ) {
+				$properties[ substr( (string) $key, 4 ) ] = maybe_unserialize( $rows[0] );
 			}
 		}
 
-		$properties['name']    = [ get_the_title( $post_id ) ];
-		$properties['content'] = [ wp_strip_all_tags( (string) get_post_field( 'post_content', $post_id ) ) ];
+		// The Micropub plugin writes `content` with htmlspecialchars().
+		$properties['name']    = [ (string) get_post_field( 'post_title', $post_id ) ];
+		$properties['content'] = [ wp_specialchars_decode( wp_strip_all_tags( (string) get_post_field( 'post_content', $post_id ) ), ENT_QUOTES ) ];
 		return $properties;
 	}
 
@@ -569,7 +649,7 @@ final class Micropub_Content_Builder {
 	 *     a video/audio post to a photo post.
 	 *
 	 * The keys are also the properties an update may name to change a kind
-	 * (update_names_a_kind()).
+	 * (assign_kind_after_update()).
 	 *
 	 * @var array<string, string>
 	 */
@@ -2050,7 +2130,7 @@ final class Micropub_Content_Builder {
 	 * @return bool True when the property exists and the first value is non-empty.
 	 */
 	private static function has_property( array $properties, string $key ): bool {
-		if ( ! isset( $properties[ $key ] ) ) {
+		if ( ! isset( $properties[ $key ] ) || [] === $properties[ $key ] ) {
 			return false;
 		}
 		$value = $properties[ $key ];
