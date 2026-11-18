@@ -1,0 +1,55 @@
+name: Composer diff
+
+# Posts a table of package changes when a pull request touches composer.lock,
+# so a reviewer sees what moved without reading the lock file. Dependabot and
+# fork PRs get the table in the run summary instead of a comment.
+on:
+  pull_request:
+    paths:
+      - composer.lock
+
+permissions: {}
+
+jobs:
+  diff:
+    name: Composer diff
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Diff composer.lock against the base branch
+        id: diff
+        uses: IonBazan/composer-diff-action@e2022e8718d05cc6e4e5990a06fc928c75837f76 # v2.0.0
+        with:
+          format: mdtable
+          with-links: true
+
+      - name: Write the summary
+        env:
+          DIFF: ${{ steps.diff.outputs.composer_diff }}
+        run: |
+          { echo '### Composer changes'; echo; echo "${DIFF:-No package changes.}"; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post or update the PR comment
+        if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DIFF: ${{ steps.diff.outputs.composer_diff }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          marker='<!-- composer-diff -->'
+          body=$(printf '%s\n### Composer changes\n\n%s\n' "$marker" "${DIFF:-No package changes.}")
+          id=$(gh api "repos/$REPO/issues/$PR/comments" --paginate \
+            --jq ".[] | select(.body | startswith(\"$marker\")) | .id" | head -n 1)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$id" -f body="$body" > /dev/null
+          else
+            gh api "repos/$REPO/issues/$PR/comments" -f body="$body" > /dev/null
+          fi
