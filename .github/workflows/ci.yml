@@ -79,10 +79,12 @@ jobs:
         run: composer analyze
 
   # ===== PHP Unit Tests (Matrix) =====
+  # Each leg splits the suite into 3 shards, one job per shard. Keep the 3 in
+  # the job name and the "Run PHPUnit" step in step with the shard list.
   phpunit:
-    name: PHP Tests (PHP ${{ matrix.php }}, WP ${{ matrix.wp }})
+    name: PHP Tests (PHP ${{ matrix.php }}, WP ${{ matrix.wp }}, shard ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 30
     services:
       mysql:
         image: mysql:8.0
@@ -99,10 +101,20 @@ jobs:
         php: ["8.2", "8.3", "8.4"]
         # 7.0 is the declared minimum and 7.1 the declared "Tested up to".
         # Gate both so neither header claim goes unverified.
-        wp: ["7.0", "7.1"]
-        include:
-          - php: "8.4"
+        wp: ["7.0", "7.1", "trunk"]
+        shard: [1, 2, 3]
+        exclude:
+          # Trunk runs on the newest PHP only.
+          - php: "8.2"
             wp: "trunk"
+          - php: "8.3"
+            wp: "trunk"
+        include:
+          # The only leg that uploads to Codecov, so the only one that pays
+          # for a coverage driver. Other legs discard their coverage output.
+          - php: "8.4"
+            wp: "7.0"
+            coverage: true
 
     steps:
       - name: Checkout
@@ -131,7 +143,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           tools: composer:v2
-          coverage: xdebug
+          coverage: ${{ matrix.coverage && 'xdebug' || 'none' }}
           extensions: mysqli
 
       - name: Get Composer cache directory
@@ -166,7 +178,9 @@ jobs:
           path: wordpress-atmosphere
 
       - name: Run PHPUnit
-        run: composer test
+        run: |
+          php bin/phpunit-shard.php ${{ matrix.shard }} 3 "$RUNNER_TEMP/phpunit-shard.xml"
+          composer test -- -c "$RUNNER_TEMP/phpunit-shard.xml" ${{ !matrix.coverage && '--no-coverage' || '' }}
         env:
           PKIW_TESTS_ATMOSPHERE_FILE: ${{ github.workspace }}/wordpress-atmosphere/atmosphere.php
 
@@ -181,12 +195,25 @@ jobs:
           PKIW_TESTS_MICROPUB_FILE: ${{ runner.temp }}/micropub-plugin/micropub/micropub.php
 
       - name: Upload coverage to Codecov
-        if: matrix.php == '8.4' && matrix.wp == '7.0'
+        if: matrix.coverage
         uses: codecov/codecov-action@v7
         with:
           files: ./coverage/clover.xml
           flags: php
-          name: php-coverage
+          name: php-coverage-shard-${{ matrix.shard }}
+
+  # The required check on main is named "PHP Tests (PHP 8.2, WP 7.0)", which no
+  # job carries since the matrix gained shards. This job keeps that name and
+  # passes only when every shard of every leg passes.
+  phpunit-gate:
+    name: PHP Tests (PHP 8.2, WP 7.0)
+    needs: phpunit
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every PHPUnit shard to pass
+        run: test "${{ needs.phpunit.result }}" = "success"
 
   # ===== ATmosphere trunk compatibility (non-gating) =====
   # Early warning when ATmosphere's next release would break the
