@@ -176,7 +176,7 @@ jobs:
         run: |
           curl -fsSL -o "$RUNNER_TEMP/micropub.zip" https://downloads.wordpress.org/plugin/micropub.2.5.3.zip
           unzip -q "$RUNNER_TEMP/micropub.zip" -d "$RUNNER_TEMP/micropub-plugin"
-          vendor/bin/phpunit --filter MicropubUpdateKindTest
+          vendor/bin/phpunit --filter MicropubUpdateKindTest --no-coverage --fail-on-skipped
         env:
           PKIW_TESTS_MICROPUB_FILE: ${{ runner.temp }}/micropub-plugin/micropub/micropub.php
 

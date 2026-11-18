@@ -240,11 +240,11 @@ final class Micropub_Content_Builder {
 	 *   comes first in PROPERTY_KINDS, when it outranks the kind the post has.
 	 *   A photo added to a check-in leaves it a check-in, as it would on a
 	 *   create.
-	 * - Deleting the property the post's kind came from sets the kind the
-	 *   remaining properties and post type discovery give. Deleting anything
-	 *   else leaves the kind alone, since the post's kind may not come from
-	 *   stored properties at all (an editor pick, a venue name the Micropub
-	 *   plugin never stores).
+	 * - Removing the property the post's kind came from, with or without a
+	 *   replacement in the same request, sets the kind the post's properties
+	 *   and post type discovery give. Removing anything else leaves the kind
+	 *   alone, since the post's kind may not come from stored properties at
+	 *   all (an editor pick, a venue name the Micropub plugin never stores).
 	 *
 	 * @param int                  $post_id Post ID.
 	 * @param array<string, mixed> $input   Micropub update request body.
@@ -271,35 +271,39 @@ final class Micropub_Content_Builder {
 		$present = [];
 		$removed = [];
 		foreach ( $named as $name ) {
-			$kind = self::PROPERTY_KINDS[ $name ] ?? ( 'mp-place-name' === $name ? 'checkin' : null );
-			if ( null === $kind ) {
+			$key = isset( self::PROPERTY_KINDS[ $name ] ) ? $name : ( 'mp-place-name' === $name ? 'checkin' : null );
+			if ( null === $key ) {
 				continue;
 			}
 			if ( self::names_kind( $properties, $name ) ) {
-				$present[] = $kind;
+				$present[] = $key;
 			} elseif ( ! self::has_property( $properties, $name ) ) {
-				$removed[] = $kind;
+				$removed[] = self::PROPERTY_KINDS[ $key ];
 			}
-		}
-
-		if ( [] !== $present ) {
-			usort( $present, static fn( string $a, string $b ): int => self::kind_rank( $a ) <=> self::kind_rank( $b ) );
-			if ( self::kind_rank( $present[0] ) < self::kind_rank( $current ) && $taxonomy->is_valid_kind( $present[0] ) ) {
-				$taxonomy->set_post_kind( $post_id, $present[0] );
-			}
-			return;
 		}
 
 		if ( null !== $current && in_array( $current, $removed, true ) ) {
 			unset( $properties['pkiw-kind'] );
 			self::assign_kind_term( $post_id, $properties );
+			return;
+		}
+
+		if ( [] === $present ) {
+			return;
+		}
+
+		usort( $present, static fn( string $a, string $b ): int => self::property_rank( $a ) <=> self::property_rank( $b ) );
+		$kind = self::PROPERTY_KINDS[ $present[0] ];
+		if ( self::kind_rank( $kind ) < self::kind_rank( $current ) && $taxonomy->is_valid_kind( $kind ) ) {
+			$taxonomy->set_post_kind( $post_id, $kind );
 		}
 	}
 
 	/**
 	 * The property names an update's `replace`, `add` and `delete` carry.
 	 * `replace` and `add` are objects keyed by property name; `delete` is
-	 * either an object or a list of property names.
+	 * either an object or a list of property names. A list sent as `replace`
+	 * or `add` names nothing.
 	 *
 	 * @param array<string, mixed> $input Micropub update request body.
 	 * @return string[]
@@ -309,7 +313,7 @@ final class Micropub_Content_Builder {
 		foreach ( [ 'replace', 'add', 'delete' ] as $operation ) {
 			$body = $input[ $operation ] ?? null;
 			if ( is_array( $body ) ) {
-				$named = array_merge( $named, array_is_list( $body ) ? $body : array_keys( $body ) );
+				$named = array_merge( $named, 'delete' === $operation && array_is_list( $body ) ? $body : array_keys( $body ) );
 			}
 		}
 		return array_values( array_filter( $named, 'is_string' ) );
@@ -336,13 +340,33 @@ final class Micropub_Content_Builder {
 
 	/**
 	 * Where a kind sits in PROPERTY_KINDS, which is its precedence: lower
-	 * wins. A kind with no property (note, article) ranks last.
+	 * wins. A kind a hint narrows another to (comics, for read) ranks as the
+	 * kind it narrows. A kind with no property (note, article) ranks last.
 	 *
 	 * @param string|null $kind Kind slug.
 	 * @return int
 	 */
 	private static function kind_rank( ?string $kind ): int {
-		$rank = array_search( $kind, array_values( self::PROPERTY_KINDS ), true );
+		$kinds = array_values( self::PROPERTY_KINDS );
+		$rank  = array_search( $kind, $kinds, true );
+		if ( false === $rank ) {
+			foreach ( self::HINT_REFINEMENTS as $base => $refined ) {
+				if ( in_array( $kind, $refined, true ) ) {
+					$rank = array_search( $base, $kinds, true );
+				}
+			}
+		}
+		return false === $rank ? PHP_INT_MAX : $rank;
+	}
+
+	/**
+	 * Where a property sits in PROPERTY_KINDS: the order detect_kind() reads.
+	 *
+	 * @param string $property Property name, a PROPERTY_KINDS key.
+	 * @return int
+	 */
+	private static function property_rank( string $property ): int {
+		$rank = array_search( $property, array_keys( self::PROPERTY_KINDS ), true );
 		return false === $rank ? PHP_INT_MAX : $rank;
 	}
 
