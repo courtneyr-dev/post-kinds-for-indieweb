@@ -180,7 +180,7 @@ jobs:
       - name: Run PHPUnit
         run: |
           php bin/phpunit-shard.php ${{ matrix.shard }} 3 "$RUNNER_TEMP/phpunit-shard.xml"
-          composer test -- -c "$RUNNER_TEMP/phpunit-shard.xml" ${{ matrix.coverage && '' || '--no-coverage' }}
+          composer test -- -c "$RUNNER_TEMP/phpunit-shard.xml" ${{ !matrix.coverage && '--no-coverage' || '' }}
         env:
           PKIW_TESTS_ATMOSPHERE_FILE: ${{ github.workspace }}/wordpress-atmosphere/atmosphere.php
 

@@ -11,7 +11,7 @@
  * unsharded suite, and every shard keeps the unsharded run's relative order
  * (some tests depend on the classes that run just before them). Everything
  * else in phpunit.xml.dist (bootstrap, coverage, constants) carries over, with
- * its paths made absolute because the config lives outside the plugin folder:
+ * its paths (bootstrap, coverage filters and reports) made absolute because the config lives outside the plugin folder:
  * a stray phpunit.shard.xml in it would fail DistributionManifestTest.
  *
  * @package PKIW
@@ -62,6 +62,9 @@ $pkiw_phpunit_shard = static function ( int $shard, int $total, string $root, st
 	$count = count( $range );
 
 	$config->documentElement->setAttribute( 'bootstrap', $root . '/' . $config->documentElement->getAttribute( 'bootstrap' ) );
+	foreach ( $xpath->query( '//coverage/include/* | //coverage/exclude/*' ) as $filter ) {
+		$filter->nodeValue = $root . '/' . $filter->nodeValue;
+	}
 	foreach ( $xpath->query( '//coverage/report/*' ) as $report ) {
 		foreach ( [ 'outputFile', 'outputDirectory' ] as $attribute ) {
 			if ( $report->hasAttribute( $attribute ) ) {
