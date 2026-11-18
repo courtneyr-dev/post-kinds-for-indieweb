@@ -103,6 +103,11 @@ jobs:
         include:
           - php: "8.4"
             wp: "trunk"
+          # The only leg that uploads to Codecov, so the only one that pays
+          # for a coverage driver. Other legs discard their coverage output.
+          - php: "8.4"
+            wp: "7.0"
+            coverage: true
 
     steps:
       - name: Checkout
@@ -131,7 +136,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           tools: composer:v2
-          coverage: xdebug
+          coverage: ${{ matrix.coverage && 'xdebug' || 'none' }}
           extensions: mysqli
 
       - name: Get Composer cache directory
@@ -166,12 +171,12 @@ jobs:
           path: wordpress-atmosphere
 
       - name: Run PHPUnit
-        run: composer test
+        run: composer test ${{ matrix.coverage && '' || '-- --no-coverage' }}
         env:
           PKIW_TESTS_ATMOSPHERE_FILE: ${{ github.workspace }}/wordpress-atmosphere/atmosphere.php
 
       - name: Upload coverage to Codecov
-        if: matrix.php == '8.4' && matrix.wp == '7.0'
+        if: matrix.coverage
         uses: codecov/codecov-action@v7
         with:
           files: ./coverage/clover.xml
