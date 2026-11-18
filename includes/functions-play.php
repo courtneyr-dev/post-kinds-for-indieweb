@@ -285,6 +285,32 @@ function play_card_attrs( int $post_id ): ?array {
 }
 
 /**
+ * The group a play post's provider IDs name, for facts a visitor may see.
+ *
+ * Unlike play_group(), this ignores the post password: play_facts() runs
+ * only after Kind_Facts::can_show(), so an unlocked visitor and an editor
+ * read the real group while a locked one never reaches it.
+ *
+ * @since 1.9.0
+ *
+ * @param int $post_id Post ID.
+ * @return string 'video', 'board' or ''.
+ */
+function play_facts_group( int $post_id ): string {
+	foreach ( PLAY_GROUP_META as $group => $keys ) {
+		foreach ( $keys as $key ) {
+			foreach ( (array) get_metadata_raw( 'post', $post_id, $key, false ) as $value ) {
+				if ( is_scalar( $value ) && '' !== trim( (string) $value, ' ' ) ) {
+					return (string) $group;
+				}
+			}
+		}
+	}
+
+	return '';
+}
+
+/**
  * The facts a theme prints for a play.
  *
  * Read from the meta Card_Meta_Sync mirrors from the card, never from
@@ -335,7 +361,7 @@ function play_facts( int $post_id ): array {
 		'bgg_id'         => $meta( 'play_bgg_id' ),
 		'rawg_id'        => $meta( 'play_rawg_id' ),
 		'steam_id'       => $meta( 'play_steam_id' ),
-		'group'          => play_group( $post_id ),
+		'group'          => play_facts_group( $post_id ),
 		'played_at'      => card_calendar_date( is_string( $card['playedAt'] ?? null ) ? $card['playedAt'] : '' ),
 		'cover_alt'      => is_string( $card['coverAlt'] ?? null ) ? trim( $card['coverAlt'] ) : '',
 	];

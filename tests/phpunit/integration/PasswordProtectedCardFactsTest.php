@@ -337,6 +337,8 @@ final class PasswordProtectedCardFactsTest extends WP_UnitTestCase {
 			$this->assertNotFalse( $at, 'The tested post is in the grouped list.' );
 			if ( 'public' !== $state ) {
 				$this->assertSame( count( $ids ) - 1, $at, "State {$state} sits in the empty group, last, not among its neighbors." );
+			} else {
+				$this->assertNotSame( count( $ids ) - 1, $at, 'A public post keeps its own group, so the locked check can tell the two apart.' );
 			}
 			foreach ( [ $first, $mid, $last ] as $id ) {
 				wp_delete_post( $id, true );
@@ -711,5 +713,130 @@ final class PasswordProtectedCardFactsTest extends WP_UnitTestCase {
 		);
 
 		$this->assert_facts( $state, (string) wp_json_encode( $result ), [ 'zq41-cover.jpg' ] );
+	}
+
+	/**
+	 * A play post's group fact follows the visitor's access to its facts,
+	 * unlike its archive heading, which follows the stored password.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_play_facts_group( string $state ): void {
+		$id    = $this->post_in_state( $state, 'play', 'Play Facts Zq42', [ 'play_rawg_id' => '4242', 'play_title' => 'Play Title Zq43' ] );
+		$facts = PKIW\Kind_Facts::get( $id );
+
+		if ( $this->facts_visible( $state ) ) {
+			$this->assertSame( 'video', $facts['group'] ?? null, "State {$state} reads its group." );
+			$this->assertSame( 'Play Title Zq43', $facts['title'] ?? null );
+		} else {
+			$this->assertSame( [], $facts );
+		}
+	}
+
+	/**
+	 * An editor without the post's cookie sees what a visitor does: core
+	 * asks every requester for the password, so the menu line is title-only.
+	 */
+	public function test_editor_without_the_cookie_sees_the_title_only_menu_line(): void {
+		$id = $this->post_in_state( 'locked', 'eat', 'Editor Eat Title', [ 'eat_notes' => 'Editor note Zq44' ] );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		$html = $this->menu_line( $id );
+
+		$this->assertStringContainsString( 'Editor Eat Title', $html );
+		$this->assertStringNotContainsString( 'Editor note Zq44', $html );
+	}
+
+	/**
+	 * Every kind, every registered plugin meta key set to a marker: a locked
+	 * post's singular content and feed item print none of them, and the same
+	 * fixture prints some when public, so the sweep can't pass vacuously.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_every_kind_singular_and_feed_print_no_meta_when_locked( string $state ): void {
+		( new PKIW\Taxonomy() )->create_default_terms();
+		$keys = [];
+		foreach ( array_keys( get_registered_meta_keys( 'post', 'post' ) ) as $key ) {
+			if ( str_starts_with( (string) $key, PKIW\Meta_Fields::PREFIX ) ) {
+				$keys[] = (string) $key;
+			}
+		}
+		$this->assertNotEmpty( $keys, 'The plugin registers post meta.' );
+
+		$printed = 0;
+		$leaks   = [];
+		$kinds   = get_terms(
+			[
+				'taxonomy'   => 'kind',
+				'hide_empty' => false,
+				'fields'     => 'slugs',
+			]
+		);
+		foreach ( $kinds as $kind ) {
+			$id = $this->post_in_state( $state, (string) $kind, "Sweep {$kind} Title", [], [ 'post_content' => "Sweep body {$kind}" ] );
+			foreach ( $keys as $key ) {
+				update_post_meta( $id, $key, "ZqMeta{$key}" );
+			}
+			// Meta that decides what shows: a public location tier.
+			update_post_meta( $id, PKIW\Meta_Fields::PREFIX . 'geo_privacy', 'public' );
+
+			$outputs = [ 'singular' => $this->singular_content( $id ) ];
+			$this->go_to( '/?feed=rss2' );
+			while ( have_posts() ) {
+				the_post();
+				if ( get_the_ID() === $id ) {
+					$outputs['feed content'] = get_the_content_feed( 'rss2' );
+					$outputs['feed excerpt'] = (string) apply_filters( 'the_excerpt_rss', get_the_excerpt() );
+					break;
+				}
+			}
+			foreach ( $outputs as $where => $html ) {
+				$found = [];
+				preg_match_all( '/ZqMeta[A-Za-z0-9_]+/', $html, $found );
+				if ( $this->facts_visible( $state ) ) {
+					$printed += count( $found[0] );
+				} elseif ( $found[0] ) {
+					$leaks[] = "{$kind} {$where}: " . implode( ',', array_unique( $found[0] ) );
+				}
+			}
+		}
+
+		$this->assertSame( [], $leaks, "State {$state} leaked meta." );
+		if ( $this->facts_visible( $state ) ) {
+			$this->assertGreaterThan( 0, $printed, 'The sweep prints meta in a visible state.' );
+		}
+	}
+
+	/**
+	 * The mood kind's whole RSS2 document: description and content:encoded.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_mood_kind_feed_document( string $state ): void {
+		$this->post_in_state(
+			$state,
+			'mood',
+			'Doc Mood Zq45',
+			[],
+			[
+				'post_excerpt' => '',
+				'post_content' => '<!-- wp:post-kinds-indieweb/mood-card {"emoji":"EmojiZq46","note":"Mood doc note Zq47"} /-->',
+			]
+		);
+		$this->go_to( '/?feed=rss2&kind=mood' );
+		$this->assertTrue( is_feed(), 'Feed context did not take.' );
+
+		ob_start();
+		try {
+			@require ABSPATH . WPINC . '/feed-rss2.php'; // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		} finally {
+			$xml = (string) ob_get_clean();
+		}
+
+		$this->assertStringContainsString( 'Doc Mood Zq45', $xml );
+		$this->assert_facts( $state, $xml, [ 'EmojiZq46', 'Mood doc note Zq47' ] );
 	}
 }
