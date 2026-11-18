@@ -880,6 +880,37 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '"latitude":39.37', $content );
 	}
 
+	public function test_location_with_a_venue_name_and_a_photo_is_a_checkin(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'h'             => 'entry',
+				'location'      => 'geo:52.37,4.89',
+				'mp-place-name' => 'Cafe Test',
+				'photo'         => 'https://example.test/uploads/pkiw-test-photo.jpg',
+			)
+		);
+
+		$content = (string) get_post_field( 'post_content', $post_id );
+		$this->assertSame( 'checkin', $this->kind_of( $post_id ) );
+		$this->assertStringContainsString( 'wp:post-kinds-indieweb/checkin-card {"venueName":"Cafe Test"', $content );
+		$this->assertStringContainsString( '<!-- wp:image', $content );
+	}
+
+	public function test_outpost_note_hint_with_a_venue_name_stays_a_note(): void {
+		$post_id = $this->create_via_micropub(
+			array(
+				'h'             => 'entry',
+				'content'       => 'Lunch with the team.',
+				'location'      => 'geo:40.78963,-77.85019',
+				'mp-place-name' => 'Cafe Test',
+				'pkiw-kind'     => 'note',
+			)
+		);
+
+		$this->assertSame( 'note', $this->kind_of( $post_id ) );
+		$this->assertStringNotContainsString( 'checkin-card', (string) get_post_field( 'post_content', $post_id ) );
+	}
+
 	// --- pkiw-kind explicit hint --------------------------------------------
 
 	public function test_apply_explicit_hint_overrides_property_inference(): void {
