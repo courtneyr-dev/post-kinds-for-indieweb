@@ -186,6 +186,7 @@ function recipe_archive_courses(): array {
 		[
 			'post_type'      => $kind_taxonomy ? $kind_taxonomy->object_type : 'post',
 			'post_status'    => 'publish',
+			'has_password'   => false,
 			'posts_per_page' => -1,
 			'fields'         => 'ids',
 			'no_found_rows'  => true,

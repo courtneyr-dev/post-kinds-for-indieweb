@@ -67,6 +67,9 @@ function get_checkins( array $args = [] ): \WP_Query {
 function get_checkins_at_venue( int $venue_id, array $args = [] ): \WP_Query {
 	$existing_tax_query = $args['tax_query'] ?? []; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 
+	// A venue's list names the venue of each post on it, so a protected check-in isn't on it.
+	$args['has_password'] = false;
+
 	$args['tax_query'] = array_merge( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 		$existing_tax_query,
 		[
@@ -200,7 +203,7 @@ function get_checkin_venue( $post = null ): ?\WP_Term {
 function get_checkin_location( $post = null ): array {
 	$post = get_post( $post );
 
-	if ( ! $post ) {
+	if ( ! $post || ! Kind_Facts::can_show( $post ) ) {
 		return [];
 	}
 
