@@ -127,6 +127,32 @@ final class MicropubUpdateKindTest extends WP_UnitTestCase {
 				array( 'delete' => array( 'bookmark-of' ) ),
 				'article',
 			),
+			'like-of replaced on a note hinted as a note' => array(
+				array(
+					'content'   => array( 'Plain words.' ),
+					'pkiw-kind' => array( 'note' ),
+				),
+				array( 'replace' => array( 'like-of' => array( 'https://example.test/liked' ) ) ),
+				'like',
+			),
+			'bookmark-of deleted from a hinted bookmark' => array(
+				array(
+					'bookmark-of' => array( 'https://example.test/saved' ),
+					'content'     => array( 'Why I saved it.' ),
+					'pkiw-kind'   => array( 'bookmark' ),
+				),
+				array( 'delete' => array( 'bookmark-of' ) ),
+				'note',
+			),
+			'a photo added to a venue check-in'       => array(
+				array(
+					'name'          => array( 'Cafe Test' ),
+					'location'      => array( 'geo:40.78963,-77.85019' ),
+					'mp-place-name' => array( 'Cafe Test' ),
+				),
+				array( 'add' => array( 'photo' => array( 'https://example.test/uploads/pkiw-test-photo.jpg' ) ) ),
+				'checkin',
+			),
 			'a venue and a location replaced'         => array(
 				array( 'content' => array( 'Lunch.' ) ),
 				array(
@@ -154,29 +180,6 @@ final class MicropubUpdateKindTest extends WP_UnitTestCase {
 				array( 'replace' => array( 'location' => array( 'geo:40.79,-77.86' ) ) ),
 				'checkin',
 			),
-			'a bare location replaced'                => array(
-				array( 'content' => array( 'Plain words.' ) ),
-				array( 'replace' => array( 'location' => array( 'geo:40.78963,-77.85019' ) ) ),
-				'note',
-			),
-			'content replaced on a like'              => array(
-				array( 'like-of' => array( 'https://example.test/liked' ) ),
-				array( 'replace' => array( 'content' => array( 'Edited body.' ) ) ),
-				'like',
-			),
-			'syndication added to a titled post'      => array(
-				array(
-					'name'    => array( 'A titled post' ),
-					'content' => array( 'The body says something else.' ),
-				),
-				array( 'add' => array( 'syndication' => array( 'https://example.test/1' ) ) ),
-				'article',
-			),
-			'category added to a note'                => array(
-				array( 'content' => array( 'Plain words.' ) ),
-				array( 'add' => array( 'category' => array( 'travel' ) ) ),
-				'note',
-			),
 		);
 	}
 
@@ -192,8 +195,39 @@ final class MicropubUpdateKindTest extends WP_UnitTestCase {
 
 		$response = $this->send( array( 'action' => 'update', 'url' => $url ) + $body );
 
-		$this->assertContains( $response->get_status(), array( 200, 201 ), wp_json_encode( $response->get_data() ) );
+		$this->assertSame( 200, $response->get_status(), wp_json_encode( $response->get_data() ) );
 		$this->assertSame( $expected, $this->kind_at( $url ) );
+	}
+
+	/**
+	 * @return array<string, array{0: array<string, mixed>}>
+	 */
+	public static function update_without_a_kind_provider(): array {
+		return array(
+			'content replaced'    => array( array( 'replace' => array( 'content' => array( 'Edited body.' ) ) ) ),
+			'category added'      => array( array( 'add' => array( 'category' => array( 'travel' ) ) ) ),
+			'syndication added'   => array( array( 'add' => array( 'syndication' => array( 'https://example.test/1' ) ) ) ),
+			'a bare location'     => array( array( 'replace' => array( 'location' => array( 'geo:40.78963,-77.85019' ) ) ) ),
+		);
+	}
+
+	/**
+	 * A kind set in the editor stands against stored properties that would
+	 * infer another one: only an update that names a kind property reads them.
+	 *
+	 * @dataProvider update_without_a_kind_provider
+	 *
+	 * @param array<string, mixed> $body Micropub update operations.
+	 */
+	public function test_update_that_names_no_kind_keeps_the_kind( array $body ): void {
+		$url     = $this->create( array( 'like-of' => array( 'https://example.test/liked' ) ) );
+		$post_id = url_to_postid( $url );
+		wp_set_post_terms( $post_id, array( 'article' ), 'kind' );
+
+		$response = $this->send( array( 'action' => 'update', 'url' => $url ) + $body );
+
+		$this->assertSame( 200, $response->get_status(), wp_json_encode( $response->get_data() ) );
+		$this->assertSame( 'article', $this->kind_at( $url ) );
 	}
 
 	public function test_the_plugin_rejects_adding_a_kind_property(): void {
@@ -233,7 +267,7 @@ final class MicropubUpdateKindTest extends WP_UnitTestCase {
 
 		$guid     = get_the_guid( $post_id );
 		$response = $this->send( array( 'action' => 'undelete', 'url' => $guid ) );
-		$this->assertContains( $response->get_status(), array( 200, 201 ), wp_json_encode( $response->get_data() ) );
+		$this->assertSame( 200, $response->get_status(), wp_json_encode( $response->get_data() ) );
 		$this->assertSame( 'article', implode( ',', wp_get_post_terms( $post_id, 'kind', array( 'fields' => 'slugs' ) ) ) );
 	}
 }

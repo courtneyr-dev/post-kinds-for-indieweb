@@ -33,7 +33,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 	 */
 	public function set_up(): void {
 		parent::set_up();
-		foreach ( array( 'note', 'article', 'reply', 'repost', 'bookmark', 'checkin', 'eat', 'drink', 'like', 'rsvp', 'jam', 'favorite', 'wish', 'exercise', 'event', 'video', 'quote', 'issue', 'listen', 'comics', 'read', 'acquisition', 'sleep' ) as $slug ) {
+		foreach ( array( 'note', 'article', 'reply', 'repost', 'bookmark', 'checkin', 'eat', 'drink', 'like', 'rsvp', 'jam', 'favorite', 'wish', 'exercise', 'event', 'video', 'quote', 'issue', 'listen', 'comics', 'read', 'acquisition', 'sleep', 'photo', 'review' ) as $slug ) {
 			if ( ! term_exists( $slug, 'kind' ) ) {
 				wp_insert_term( ucfirst( $slug ), 'kind', array( 'slug' => $slug ) );
 			}
@@ -1173,6 +1173,47 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 				array( 'replace' => array( 'mp-place-name' => array( 'Cafe Test' ) ) ),
 				'note',
 			),
+			'like-of replaced on a note hinted as a note'  => array(
+				array(
+					'content'   => array( 'Plain words.' ),
+					'pkiw-kind' => array( 'note' ),
+				),
+				array( 'replace' => array( 'like-of' => array( 'https://example.test/liked' ) ) ),
+				'like',
+			),
+			'bookmark-of deleted from a hinted bookmark'   => array(
+				array(
+					'bookmark-of' => array( 'https://example.test/saved' ),
+					'content'     => array( 'Why I saved it.' ),
+					'pkiw-kind'   => array( 'bookmark' ),
+				),
+				array( 'delete' => array( 'bookmark-of' ) ),
+				'note',
+			),
+			'bookmark-of swapped for like-of on a hinted bookmark' => array(
+				array(
+					'bookmark-of' => array( 'https://example.test/saved' ),
+					'pkiw-kind'   => array( 'bookmark' ),
+				),
+				array(
+					'delete'  => array( 'bookmark-of' ),
+					'replace' => array( 'like-of' => array( 'https://example.test/liked' ) ),
+				),
+				'like',
+			),
+			'like-of replaced with an empty list'          => array(
+				array(
+					'like-of' => array( 'https://example.test/liked' ),
+					'content' => array( 'Plain words.' ),
+				),
+				array( 'replace' => array( 'like-of' => array() ) ),
+				'note',
+			),
+			'photo replaced with an empty list'            => array(
+				array( 'photo' => array( 'https://example.test/uploads/pkiw-test-photo.jpg' ) ),
+				array( 'replace' => array( 'photo' => array() ) ),
+				'note',
+			),
 			'a photo added to a note'                     => array(
 				array( 'content' => array( 'Plain words.' ) ),
 				array( 'add' => array( 'photo' => array( 'https://example.test/uploads/pkiw-test-photo.jpg' ) ) ),
@@ -1234,14 +1275,6 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$this->update_via_micropub( $post_id, $body );
 
 		$this->assertSame( 'article', $this->kind_of( $post_id ) );
-	}
-
-	public function test_update_with_a_bare_location_does_not_make_a_checkin(): void {
-		$post_id = $this->create_stored( array( 'content' => array( 'Plain words.' ) ) );
-
-		$this->update_via_micropub( $post_id, array( 'replace' => array( 'location' => array( 'geo:40.78963,-77.85019' ) ) ) );
-
-		$this->assertSame( 'note', $this->kind_of( $post_id ) );
 	}
 
 	public function test_update_to_the_location_of_a_checkin_keeps_it_a_checkin(): void {
@@ -1318,6 +1351,120 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 		$post_id = $this->create_stored( array( 'like-of' => array( 'https://example.test/liked' ) ) );
 
 		$this->update_via_micropub( $post_id, array( 'add' => array( 'syndication' => array( 'https://example.test/1' ) ) ) );
+
+		$this->assertSame( 'like', $this->kind_of( $post_id ) );
+	}
+
+	/**
+	 * @return array<string, array{0: array<string, mixed>, 1: string|null, 2: array<string, mixed>, 3: string}>
+	 */
+	public static function update_that_cannot_outrank_provider(): array {
+		return array(
+			'a photo added to a venue check-in'               => array(
+				array(
+					'name'          => array( 'Cafe Test' ),
+					'location'      => array( 'geo:40.78963,-77.85019' ),
+					'mp-place-name' => array( 'Cafe Test' ),
+				),
+				null,
+				array( 'add' => array( 'photo' => array( 'https://example.test/uploads/pkiw-test-photo.jpg' ) ) ),
+				'checkin',
+			),
+			'the photo deleted from a venue check-in'         => array(
+				array(
+					'name'          => array( 'Cafe Test' ),
+					'location'      => array( 'geo:40.78963,-77.85019' ),
+					'mp-place-name' => array( 'Cafe Test' ),
+					'photo'         => array( 'https://example.test/uploads/pkiw-test-photo.jpg' ),
+				),
+				null,
+				array( 'delete' => array( 'photo' ) ),
+				'checkin',
+			),
+			'a photo added to a review set in the editor'     => array(
+				array( 'content' => array( 'Plain words.' ) ),
+				'review',
+				array( 'add' => array( 'photo' => array( 'https://example.test/uploads/pkiw-test-photo.jpg' ) ) ),
+				'review',
+			),
+			'a video deleted from a review with none'         => array(
+				array( 'content' => array( 'Plain words.' ) ),
+				'review',
+				array( 'delete' => array( 'video' ) ),
+				'review',
+			),
+			'bookmark-of replaced on a like'                  => array(
+				array( 'like-of' => array( 'https://example.test/liked' ) ),
+				null,
+				array( 'replace' => array( 'bookmark-of' => array( 'https://example.test/saved' ) ) ),
+				'like',
+			),
+		);
+	}
+
+	/**
+	 * A property that ranks below the one that made the post's kind, or that
+	 * the post never had, leaves the kind alone.
+	 *
+	 * @dataProvider update_that_cannot_outrank_provider
+	 *
+	 * @param array<string, mixed> $created  Properties the post was created with.
+	 * @param string|null          $set_kind Kind set after the create, as the editor or another plugin does.
+	 * @param array<string, mixed> $body     Micropub update operations.
+	 * @param string               $expected Kind after the update.
+	 */
+	public function test_update_that_cannot_outrank_the_kind_keeps_it( array $created, ?string $set_kind, array $body, string $expected ): void {
+		$post_id = $this->create_stored( $created );
+		if ( null !== $set_kind ) {
+			wp_set_post_terms( $post_id, array( $set_kind ), 'kind' );
+		}
+		$before = $this->kind_of( $post_id );
+
+		$this->update_via_micropub( $post_id, $body );
+
+		$this->assertSame( $expected, $this->kind_of( $post_id ) );
+		$this->assertSame( $before, $this->kind_of( $post_id ) );
+	}
+
+	public function test_deleting_the_photo_of_a_private_untitled_post_makes_a_note(): void {
+		$post_id = $this->create_stored( array( 'photo' => array( 'https://example.test/uploads/pkiw-test-photo.jpg' ) ) );
+		wp_update_post(
+			array(
+				'ID'          => $post_id,
+				'post_status' => 'private',
+			)
+		);
+
+		$this->update_via_micropub( $post_id, array( 'delete' => array( 'photo' ) ) );
+
+		$this->assertSame( 'note', $this->kind_of( $post_id ) );
+	}
+
+	public function test_update_reads_a_name_against_content_the_micropub_plugin_encoded(): void {
+		$post_id = $this->create_stored(
+			array(
+				'bookmark-of' => array( 'https://example.test/saved' ),
+				'content'     => array( 'Tom and Jerry went home.' ),
+			)
+		);
+		wp_update_post(
+			array(
+				'ID'           => $post_id,
+				'post_title'   => 'Tom & Jerry',
+				'post_content' => 'Tom &amp; Jerry went home.',
+			)
+		);
+
+		$this->update_via_micropub( $post_id, array( 'delete' => array( 'bookmark-of' ) ) );
+
+		$this->assertSame( 'note', $this->kind_of( $post_id ) );
+	}
+
+	public function test_update_tolerates_a_post_meta_key_that_is_a_number(): void {
+		$post_id = $this->create_stored( array( 'content' => array( 'Plain words.' ) ) );
+		add_post_meta( $post_id, '2024', 'x' );
+
+		$this->update_via_micropub( $post_id, array( 'replace' => array( 'like-of' => array( 'https://example.test/liked' ) ) ) );
 
 		$this->assertSame( 'like', $this->kind_of( $post_id ) );
 	}
