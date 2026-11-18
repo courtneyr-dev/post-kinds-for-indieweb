@@ -220,7 +220,7 @@ final class AudioArchiveTemplateTest extends WP_UnitTestCase {
 		$this->assertCount( 1, $none );
 		$this->assertSame( [ 'core/paragraph' ], array_column( $none[0]['innerBlocks'], 'blockName' ) );
 		$this->assertSame( 'No audio yet.', trim( wp_strip_all_tags( serialize_block( $none[0]['innerBlocks'][0] ) ) ) );
-		$this->assertSame( [ 'header', 'footer' ], array_column( array_map( static fn( array $block ): array => $block['attrs'], $this->of_type( $blocks, 'core/template-part' ) ), 'slug' ) );
+		$this->assertSame( [ 'header', 'zine-export', 'footer' ], array_column( array_map( static fn( array $block ): array => $block['attrs'], $this->of_type( $blocks, 'core/template-part' ) ), 'slug' ) );
 	}
 
 	public function test_template_contains_no_month_names_read_order_or_nested_query(): void {

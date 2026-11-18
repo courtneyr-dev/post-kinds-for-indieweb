@@ -170,7 +170,7 @@ final class AcquisitionArchiveTemplateTest extends WP_UnitTestCase {
 		$this->assertSame( 'No acquisitions yet.', trim( wp_strip_all_tags( $paragraphs[0]['innerHTML'] ) ) );
 
 		$parts = $this->of_type( $blocks, 'core/template-part' );
-		$this->assertSame( [ 'header', 'footer' ], array_column( array_column( $parts, 'attrs' ), 'slug' ) );
+		$this->assertSame( [ 'header', 'zine-export', 'footer' ], array_column( array_column( $parts, 'attrs' ), 'slug' ) );
 	}
 
 	public function test_the_rendered_archive_has_one_h1(): void {
