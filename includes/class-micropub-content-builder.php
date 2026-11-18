@@ -464,7 +464,10 @@ final class Micropub_Content_Builder {
 	 * Detection order matters — eat-of/drink-of takes precedence over
 	 * `checkin` because Eat/Drink posts may include both. The first match
 	 * wins. A `location` alone names where any post was made, so it never
-	 * implies a check-in; post type discovery reads `checkin` for that.
+	 * implies a check-in; post type discovery reads `checkin` for that. A
+	 * `location` with an `mp-place-name` venue is a check-in (issue 38)
+	 * unless the client named another kind through `pkiw-kind`, as
+	 * Outpost's note and photo composers do when they carry a venue.
 	 *
 	 * @param array<string, mixed> $properties h-entry properties bag.
 	 * @return string|null Kind slug ('eat'|'drink'|'listen'|...) or null when no kind matches.
@@ -526,8 +529,12 @@ final class Micropub_Content_Builder {
 			'photo'          => 'photo',
 		];
 
+		$names_a_venue = null === self::explicit_kind( $properties )
+			&& self::has_property( $properties, 'location' )
+			&& self::has_property( $properties, 'mp-place-name' );
+
 		foreach ( $property_kind_map as $property => $kind ) {
-			if ( self::has_property( $properties, $property ) ) {
+			if ( self::has_property( $properties, $property ) || ( 'checkin' === $property && $names_a_venue ) ) {
 				return $kind;
 			}
 		}
