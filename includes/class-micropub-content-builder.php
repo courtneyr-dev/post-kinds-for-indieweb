@@ -168,6 +168,13 @@ final class Micropub_Content_Builder {
 		self::strip_remote_photos( $post_id, 'tag-of' );
 		self::strip_remote_photos( $post_id, 'follow-of' );
 
+		// An update never rebuilds content; it changes the kind only when it
+		// names a property that decides one.
+		if ( 'update' === ( $input['action'] ?? 'create' ) ) {
+			self::assign_kind_after_update( $post_id, $input );
+			return;
+		}
+
 		// Idempotency — once we've written block content for this post, leave it alone.
 		// Users who manually edit the post in Gutenberg afterwards keep their changes.
 		if ( '' !== (string) get_post_meta( $post_id, self::GENERATED_META_KEY, true ) ) {
@@ -215,6 +222,174 @@ final class Micropub_Content_Builder {
 				'post_content' => wp_slash( $block_content ),
 			]
 		);
+	}
+
+	/**
+	 * Set the kind after an update that names a property that decides one.
+	 *
+	 * The Micropub plugin writes an update's `replace`, `add` and `delete` to
+	 * the post before it fires `after_micropub`, so the post's own properties
+	 * are the state after the update. Only what the update names is evidence:
+	 * a `pkiw-kind` hint stored at create is read back only when the update
+	 * names the hint, because every Outpost post carries one and it would
+	 * outrank the property the update changes.
+	 *
+	 * - Naming the hint sets the kind as a create does, from the post as it
+	 *   stands.
+	 * - Adding or replacing kind properties sets the kind of the one that
+	 *   comes first in PROPERTY_KINDS, when it outranks the kind the post has.
+	 *   A photo added to a check-in leaves it a check-in, as it would on a
+	 *   create.
+	 * - Removing the property the post's kind came from, with or without a
+	 *   replacement in the same request, sets the kind the post's properties
+	 *   and post type discovery give. Removing anything else leaves the kind
+	 *   alone, since the post's kind may not come from stored properties at
+	 *   all (an editor pick, a venue name the Micropub plugin never stores).
+	 *
+	 * @param int                  $post_id Post ID.
+	 * @param array<string, mixed> $input   Micropub update request body.
+	 * @return void
+	 */
+	private static function assign_kind_after_update( int $post_id, array $input ): void {
+		$named = self::properties_named_by( $input );
+		if ( [] === array_intersect( $named, array_merge( array_keys( self::PROPERTY_KINDS ), [ 'pkiw-kind', 'mp-place-name' ] ) ) ) {
+			return;
+		}
+
+		$properties = self::stored_properties( $post_id );
+		if ( in_array( 'pkiw-kind', $named, true ) ) {
+			self::assign_kind_term( $post_id, $properties );
+			return;
+		}
+
+		$taxonomy = Plugin::get_instance()->get_taxonomy();
+		if ( null === $taxonomy ) {
+			return;
+		}
+
+		$current = $taxonomy->get_post_kind( $post_id )?->slug;
+		$present = [];
+		$removed = [];
+		foreach ( $named as $name ) {
+			$key = isset( self::PROPERTY_KINDS[ $name ] ) ? $name : ( 'mp-place-name' === $name ? 'checkin' : null );
+			if ( null === $key ) {
+				continue;
+			}
+			if ( self::names_kind( $properties, $name ) ) {
+				$present[] = $key;
+			} elseif ( ! self::has_property( $properties, $name ) ) {
+				$removed[] = self::PROPERTY_KINDS[ $key ];
+			}
+		}
+
+		if ( null !== $current && in_array( $current, $removed, true ) ) {
+			unset( $properties['pkiw-kind'] );
+			self::assign_kind_term( $post_id, $properties );
+			return;
+		}
+
+		if ( [] === $present ) {
+			return;
+		}
+
+		usort( $present, static fn( string $a, string $b ): int => self::property_rank( $a ) <=> self::property_rank( $b ) );
+		$kind = self::PROPERTY_KINDS[ $present[0] ];
+		if ( self::kind_rank( $kind ) < self::kind_rank( $current ) && $taxonomy->is_valid_kind( $kind ) ) {
+			$taxonomy->set_post_kind( $post_id, $kind );
+		}
+	}
+
+	/**
+	 * The property names an update's `replace`, `add` and `delete` carry.
+	 * `replace` and `add` are objects keyed by property name; `delete` is
+	 * either an object or a list of property names. A list sent as `replace`
+	 * or `add` names nothing.
+	 *
+	 * @param array<string, mixed> $input Micropub update request body.
+	 * @return string[]
+	 */
+	private static function properties_named_by( array $input ): array {
+		$named = [];
+		foreach ( [ 'replace', 'add', 'delete' ] as $operation ) {
+			$body = $input[ $operation ] ?? null;
+			if ( is_array( $body ) ) {
+				$named = array_merge( $named, 'delete' === $operation && array_is_list( $body ) ? $body : array_keys( $body ) );
+			}
+		}
+		return array_values( array_filter( $named, 'is_string' ) );
+	}
+
+	/**
+	 * Whether a named property makes a kind on the post as it stands: a
+	 * kind property with a value, or a venue name on a location that no
+	 * registered `pkiw-kind` hint overrides. A `location` alone never does
+	 * (detect_kind()).
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @param string               $name       Property name the update names.
+	 * @return bool
+	 */
+	private static function names_kind( array $properties, string $name ): bool {
+		if ( 'mp-place-name' === $name ) {
+			return self::has_property( $properties, 'location' )
+				&& self::has_property( $properties, 'mp-place-name' )
+				&& ! self::names_a_registered_kind( $properties );
+		}
+		return isset( self::PROPERTY_KINDS[ $name ] ) && self::has_property( $properties, $name );
+	}
+
+	/**
+	 * Where a kind sits in PROPERTY_KINDS, which is its precedence: lower
+	 * wins. A kind a hint narrows another to (comics, for read) ranks as the
+	 * kind it narrows. A kind with no property (note, article) ranks last.
+	 *
+	 * @param string|null $kind Kind slug.
+	 * @return int
+	 */
+	private static function kind_rank( ?string $kind ): int {
+		$kinds = array_values( self::PROPERTY_KINDS );
+		$rank  = array_search( $kind, $kinds, true );
+		if ( false === $rank ) {
+			foreach ( self::HINT_REFINEMENTS as $base => $refined ) {
+				if ( in_array( $kind, $refined, true ) ) {
+					$rank = array_search( $base, $kinds, true );
+				}
+			}
+		}
+		return false === $rank ? PHP_INT_MAX : $rank;
+	}
+
+	/**
+	 * Where a property sits in PROPERTY_KINDS: the order detect_kind() reads.
+	 *
+	 * @param string $property Property name, a PROPERTY_KINDS key.
+	 * @return int
+	 */
+	private static function property_rank( string $property ): int {
+		$rank = array_search( $property, array_keys( self::PROPERTY_KINDS ), true );
+		return false === $rank ? PHP_INT_MAX : $rank;
+	}
+
+	/**
+	 * The post's microformats2 properties as they stand: the `mf2_` post meta
+	 * the Micropub plugin keeps, each a list of values, plus the post's title
+	 * and its content as text for post type discovery.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array<string, mixed> h-entry properties bag.
+	 */
+	private static function stored_properties( int $post_id ): array {
+		$properties = [];
+		foreach ( get_post_meta( $post_id ) as $key => $rows ) {
+			if ( str_starts_with( (string) $key, 'mf2_' ) ) {
+				$properties[ substr( (string) $key, 4 ) ] = maybe_unserialize( $rows[0] );
+			}
+		}
+
+		// The Micropub plugin writes `content` with htmlspecialchars().
+		$properties['name']    = [ (string) get_post_field( 'post_title', $post_id ) ];
+		$properties['content'] = [ wp_specialchars_decode( wp_strip_all_tags( (string) get_post_field( 'post_content', $post_id ) ), ENT_QUOTES ) ];
+		return $properties;
 	}
 
 	/**
@@ -279,6 +454,20 @@ final class Micropub_Content_Builder {
 		}
 		$slug = sanitize_key( $raw );
 		return '' === $slug ? null : $slug;
+	}
+
+	/**
+	 * Whether the request's `pkiw-kind` hint names a registered kind. A hint
+	 * that doesn't falls through to inference (assign_kind_term()), so it must
+	 * not suppress the venue rule either.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return bool
+	 */
+	private static function names_a_registered_kind( array $properties ): bool {
+		$hint     = self::explicit_kind( $properties );
+		$taxonomy = Plugin::get_instance()->get_taxonomy();
+		return null !== $hint && null !== $taxonomy && $taxonomy->is_valid_kind( $hint );
 	}
 
 	/**
@@ -468,6 +657,67 @@ final class Micropub_Content_Builder {
 	}
 
 	/**
+	 * Ordered property → kind map; the first present property wins, so array
+	 * order IS the precedence order. Notable orderings:
+	 *   - eat-of/drink-of before checkin (those posts carry a venue);
+	 *     ate/drank are the same kinds as Quill and the p-ate/p-drank
+	 *     markup this plugin renders spell them.
+	 *   - jam-of before listen-of (a jam is a deliberate highlight).
+	 *   - rsvp, issue-of, quotation-of, tag-of before in-reply-to
+	 *     (all of those shapes may also carry a reply target).
+	 *   - wishlist-of is a compat alias for wish-of (older senders).
+	 *   - start (h-event) and exercise before checkin — an event or
+	 *     workout with a venue must not read as a checkin.
+	 *   - item = flattened h-review; ingredient = h-recipe signature.
+	 *   - video/audio before photo — a poster image must not demote
+	 *     a video/audio post to a photo post.
+	 *
+	 * The keys are also the properties an update may name to change a kind
+	 * (assign_kind_after_update()).
+	 *
+	 * @var array<string, string>
+	 */
+	private const PROPERTY_KINDS = [
+		'eat-of'         => 'eat',
+		'drink-of'       => 'drink',
+		'ate'            => 'eat',
+		'drank'          => 'drink',
+		'jam-of'         => 'jam',
+		'listen-of'      => 'listen',
+		'watch-of'       => 'watch',
+		'read-of'        => 'read',
+		'play-of'        => 'play',
+		'rsvp'           => 'rsvp',
+		'favorite-of'    => 'favorite',
+		'like-of'        => 'like',
+		'repost-of'      => 'repost',
+		'wish-of'        => 'wish',
+		'wishlist-of'    => 'wish',
+		'bookmark-of'    => 'bookmark',
+		'quotation-of'   => 'quote',
+		'tag-of'         => 'tag',
+		'issue-of'       => 'issue',
+		'in-reply-to'    => 'reply',
+		'follow-of'      => 'follow',
+		'craft-of'       => 'craft',
+		'acquisition-of' => 'acquisition',
+		'exercise'       => 'exercise',
+		'sleep'          => 'sleep',
+		'trip'           => 'trip',
+		'itinerary'      => 'itinerary',
+		'question'       => 'question',
+		'mood'           => 'mood',
+		'weather'        => 'weather',
+		'start'          => 'event',
+		'item'           => 'review',
+		'ingredient'     => 'recipe',
+		'checkin'        => 'checkin',
+		'video'          => 'video',
+		'audio'          => 'audio',
+		'photo'          => 'photo',
+	];
+
+	/**
 	 * Identify which post kind a property bag represents.
 	 *
 	 * Detection order matters — eat-of/drink-of takes precedence over
@@ -475,74 +725,18 @@ final class Micropub_Content_Builder {
 	 * wins. A `location` alone names where any post was made, so it never
 	 * implies a check-in; post type discovery reads `checkin` for that. A
 	 * `location` with an `mp-place-name` venue is a check-in (issue 38)
-	 * unless the client named another kind through `pkiw-kind`, as
-	 * Outpost's note and photo composers do when they carry a venue.
+	 * unless the client named another registered kind through `pkiw-kind`,
+	 * as Outpost's note and photo composers do when they carry a venue.
 	 *
 	 * @param array<string, mixed> $properties h-entry properties bag.
 	 * @return string|null Kind slug ('eat'|'drink'|'listen'|...) or null when no kind matches.
 	 */
 	private static function detect_kind( array $properties ): ?string {
-		/*
-		 * Ordered property → kind map; the first present property wins,
-		 * so array order IS the precedence order. Notable orderings:
-		 *   - eat-of/drink-of before checkin (those posts carry a venue);
-		 *     ate/drank are the same kinds as Quill and the p-ate/p-drank
-		 *     markup this plugin renders spell them.
-		 *   - jam-of before listen-of (a jam is a deliberate highlight).
-		 *   - rsvp, issue-of, quotation-of, tag-of before in-reply-to
-		 *     (all of those shapes may also carry a reply target).
-		 *   - wishlist-of is a compat alias for wish-of (older senders).
-		 *   - start (h-event) and exercise before checkin — an event or
-		 *     workout with a venue must not read as a checkin.
-		 *   - item = flattened h-review; ingredient = h-recipe signature.
-		 *   - video/audio before photo — a poster image must not demote
-		 *     a video/audio post to a photo post.
-		 */
-		$property_kind_map = [
-			'eat-of'         => 'eat',
-			'drink-of'       => 'drink',
-			'ate'            => 'eat',
-			'drank'          => 'drink',
-			'jam-of'         => 'jam',
-			'listen-of'      => 'listen',
-			'watch-of'       => 'watch',
-			'read-of'        => 'read',
-			'play-of'        => 'play',
-			'rsvp'           => 'rsvp',
-			'favorite-of'    => 'favorite',
-			'like-of'        => 'like',
-			'repost-of'      => 'repost',
-			'wish-of'        => 'wish',
-			'wishlist-of'    => 'wish',
-			'bookmark-of'    => 'bookmark',
-			'quotation-of'   => 'quote',
-			'tag-of'         => 'tag',
-			'issue-of'       => 'issue',
-			'in-reply-to'    => 'reply',
-			'follow-of'      => 'follow',
-			'craft-of'       => 'craft',
-			'acquisition-of' => 'acquisition',
-			'exercise'       => 'exercise',
-			'sleep'          => 'sleep',
-			'trip'           => 'trip',
-			'itinerary'      => 'itinerary',
-			'question'       => 'question',
-			'mood'           => 'mood',
-			'weather'        => 'weather',
-			'start'          => 'event',
-			'item'           => 'review',
-			'ingredient'     => 'recipe',
-			'checkin'        => 'checkin',
-			'video'          => 'video',
-			'audio'          => 'audio',
-			'photo'          => 'photo',
-		];
-
-		$names_a_venue = null === self::explicit_kind( $properties )
+		$names_a_venue = ! self::names_a_registered_kind( $properties )
 			&& self::has_property( $properties, 'location' )
 			&& self::has_property( $properties, 'mp-place-name' );
 
-		foreach ( $property_kind_map as $property => $kind ) {
+		foreach ( self::PROPERTY_KINDS as $property => $kind ) {
 			if ( self::has_property( $properties, $property ) || ( 'checkin' === $property && $names_a_venue ) ) {
 				return $kind;
 			}
@@ -1960,7 +2154,7 @@ final class Micropub_Content_Builder {
 	 * @return bool True when the property exists and the first value is non-empty.
 	 */
 	private static function has_property( array $properties, string $key ): bool {
-		if ( ! isset( $properties[ $key ] ) ) {
+		if ( ! isset( $properties[ $key ] ) || [] === $properties[ $key ] ) {
 			return false;
 		}
 		$value = $properties[ $key ];

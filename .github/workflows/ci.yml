@@ -170,6 +170,16 @@ jobs:
         env:
           PKIW_TESTS_ATMOSPHERE_FILE: ${{ github.workspace }}/wordpress-atmosphere/atmosphere.php
 
+      # The Micropub plugin changes how other tests see headers and REST, so
+      # its update tests run alone, against the pinned release.
+      - name: Run Micropub update tests through Micropub 2.5.3
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/micropub.zip" https://downloads.wordpress.org/plugin/micropub.2.5.3.zip
+          unzip -q "$RUNNER_TEMP/micropub.zip" -d "$RUNNER_TEMP/micropub-plugin"
+          vendor/bin/phpunit --filter MicropubUpdateKindTest --no-coverage --fail-on-skipped
+        env:
+          PKIW_TESTS_MICROPUB_FILE: ${{ runner.temp }}/micropub-plugin/micropub/micropub.php
+
       - name: Upload coverage to Codecov
         if: matrix.php == '8.4' && matrix.wp == '7.0'
         uses: codecov/codecov-action@v7
