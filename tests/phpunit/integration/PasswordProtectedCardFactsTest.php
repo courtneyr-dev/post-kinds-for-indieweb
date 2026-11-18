@@ -569,4 +569,147 @@ final class PasswordProtectedCardFactsTest extends WP_UnitTestCase {
 
 		$this->assert_facts( $state, $html, [ 'Type Zq29' ] );
 	}
+
+	/**
+	 * The singular page's content as the theme prints it, through the_content.
+	 * For a locked post core's content is the password form.
+	 *
+	 * @param int $id Post ID.
+	 */
+	private function singular_content( int $id ): string {
+		$this->go_to( (string) get_permalink( $id ) );
+		$this->assertTrue( is_singular(), 'Singular context did not take.' );
+		the_post();
+
+		return (string) apply_filters( 'the_content', get_the_content() );
+	}
+
+	/**
+	 * Hidden mf2 data for a check-in: venue and place.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_singular_checkin_hidden_mf2( string $state ): void {
+		$id = $this->post_in_state(
+			$state,
+			'checkin',
+			'Singular Checkin Zq31',
+			[
+				'checkin_name'     => 'Singular Venue Zq32',
+				'checkin_locality' => 'Singular City Zq33',
+			]
+		);
+
+		$this->assert_facts( $state, $this->singular_content( $id ), [ 'Singular Venue Zq32', 'Singular City Zq33' ] );
+	}
+
+	/**
+	 * Hidden mf2 data for an event: start and end.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_singular_event_hidden_mf2( string $state ): void {
+		$id = $this->post_in_state(
+			$state,
+			'event',
+			'Singular Event Zq34',
+			[
+				'event_start' => '2031-05-04T10:11:12',
+				'event_end'   => '2031-05-04T13:14:15',
+			]
+		);
+
+		$this->assert_facts( $state, $this->singular_content( $id ), [ '2031-05-04T10:11:12', '2031-05-04T13:14:15' ] );
+	}
+
+	/**
+	 * The u-photo marker a non-h-entry root adds from the featured image.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_singular_u_photo( string $state ): void {
+		$id    = $this->post_in_state( $state, 'recipe', 'Singular Recipe Zq35' );
+		$thumb = self::factory()->attachment->create(
+			[
+				'post_parent'    => $id,
+				'post_mime_type' => 'image/jpeg',
+				'file'           => 'singular-photo-zq36.jpg',
+			]
+		);
+		set_post_thumbnail( $id, $thumb );
+
+		$this->assert_facts( $state, $this->singular_content( $id ), [ 'singular-photo-zq36.jpg' ] );
+	}
+
+	/**
+	 * A feed item for a mood post: the emoji and note ride on the item only
+	 * when its facts show.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_feed_mood_content_and_excerpt( string $state ): void {
+		$id = $this->post_in_state(
+			$state,
+			'mood',
+			'Feed Mood Zq37',
+			[],
+			[
+				'post_excerpt' => '',
+				'post_content' => '<!-- wp:post-kinds-indieweb/mood-card {"emoji":"EmojiZq39","note":"Mood note Zq38"} /-->',
+			]
+		);
+		$this->go_to( '/?feed=rss2' );
+		$this->assertTrue( is_feed(), 'Feed context did not take.' );
+		$found = false;
+		while ( have_posts() ) {
+			the_post();
+			if ( get_the_ID() === $id ) {
+				$found   = true;
+				$content = get_the_content_feed( 'rss2' );
+				$excerpt = apply_filters( 'the_excerpt_rss', get_the_excerpt() );
+				break;
+			}
+		}
+		$this->assertTrue( $found, 'The mood post is in the feed loop.' );
+
+		$this->assert_facts( $state, $content, [ 'EmojiZq39' ] );
+		$this->assert_facts( $state, (string) $excerpt, [ 'EmojiZq39', 'Mood note Zq38' ] );
+	}
+
+	/**
+	 * The Yoast schema graph gains the kind's cover only when its facts show.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_yoast_schema_cover( string $state ): void {
+		$id        = $this->post_in_state( $state, 'listen', 'Schema Listen Zq40', [ 'listen_cover' => 'https://example.com/zq41-cover.jpg' ] );
+		$permalink = (string) get_permalink( $id );
+		$this->go_to( $permalink );
+		$this->assertTrue( is_singular( 'post' ), 'Singular context did not take.' );
+
+		$graph  = [
+			[
+				'@type' => 'Article',
+				'@id'   => $permalink . '#article',
+			],
+			[
+				'@type' => 'WebPage',
+				'@id'   => $permalink,
+			],
+		];
+		$result = ( new PKIW\Integrations\Yoast_SEO() )->filter_schema_graph(
+			$graph,
+			(object) [
+				'main_image_url' => '',
+				'canonical'      => $permalink,
+			]
+		);
+
+		$this->assert_facts( $state, (string) wp_json_encode( $result ), [ 'zq41-cover.jpg' ] );
+	}
 }

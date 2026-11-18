@@ -160,7 +160,7 @@ class Yoast_SEO {
 		}
 
 		$post_id = get_queried_object_id();
-		if ( $post_id < 1 ) {
+		if ( $post_id < 1 || post_password_required( $post_id ) ) {
 			return $graph;
 		}
 

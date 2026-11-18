@@ -778,7 +778,7 @@ class Microformats {
 		// the featured image outside this wrapper, so the entry has none.
 		// An h-entry is left alone, because post type discovery reads a
 		// photo property there as "this is a photo post".
-		if ( ! in_array( 'h-entry', $root_classes, true ) && in_array( 'u-photo', $properties, true ) && ! str_contains( $content, 'u-photo' ) ) {
+		if ( ! in_array( 'h-entry', $root_classes, true ) && in_array( 'u-photo', $properties, true ) && ! str_contains( $content, 'u-photo' ) && ! post_password_required( $post_id ) ) {
 			$photo = $this->singular_photo_url( $post_id, $kind );
 			if ( '' !== $photo ) {
 				$entry_meta .= sprintf(
@@ -894,7 +894,8 @@ class Microformats {
 
 		$post_id = get_the_ID();
 
-		if ( ! $post_id ) {
+		// Core's content for a locked post is its password form; facts don't ride on it.
+		if ( ! $post_id || post_password_required( $post_id ) ) {
 			return $content;
 		}
 
