@@ -32,6 +32,53 @@ final class WrappedBlocksTest extends WrappedTestCase {
 		}
 	}
 
+	public function test_top_item_covers_sit_in_the_theme_fallback_container(): void {
+		$this->read_post( 2026, [ 'read_rating' => 5, 'read_author' => 'Avery Example', 'read_cover' => 'https://example.invalid/cover.jpg' ], [ 'post_title' => 'Covered read' ] );
+		$this->read_post( 2026, [ 'read_rating' => 4, 'read_author' => 'Jordan Example' ], [ 'post_title' => 'Uncovered read' ] );
+		$html      = $this->render_wrapped( $this->wrapped_post() );
+		$processor = new WP_HTML_Tag_Processor( $html );
+		$covers    = [];
+		while ( $processor->next_tag( [ 'tag_name' => 'SPAN', 'class_name' => 'pkiw-wrapped__cover' ] ) ) {
+			$this->assertTrue( $processor->get_attribute( 'data-cr-cover-fallback' ), 'site-ux.js marks a failed cover only inside data-cr-cover-fallback; html=' . $html );
+			$this->assertSame( 'true', $processor->get_attribute( 'aria-hidden' ) );
+			$covers[ (string) $processor->get_attribute( 'data-title' ) ] = [
+				'author' => (string) $processor->get_attribute( 'data-author' ),
+				'type'   => (bool) $processor->has_class( 'pkiw-wrapped__cover--type' ),
+			];
+		}
+		$this->assertSame(
+			[
+				'Covered read'   => [ 'author' => 'Avery Example', 'type' => false ],
+				'Uncovered read' => [ 'author' => 'Jordan Example', 'type' => true ],
+			],
+			$covers
+		);
+		$this->assertSame( 1, $this->tag_count( $html, 'IMG' ), 'Only the covered read prints an image.' );
+		$this->assertSame( 2, $this->tag_count( $html, 'A' ), 'The cover container adds no link.' );
+	}
+
+	public function test_wrapped_single_roots_as_h_entry_without_a_kind_property(): void {
+		$this->read_post( 2026, [ 'read_rating' => 5 ], [ 'post_title' => 'Counted read' ] );
+		$author  = (int) self::factory()->user->create( [ 'display_name' => 'Wrapped Author' ] );
+		$wrapped = $this->wrapped_post( 'read', 2026, [], [ 'post_author' => $author ] );
+		$this->assertSame( [], wp_get_object_terms( $wrapped, 'kind', [ 'fields' => 'ids' ] ) );
+		$this->go_to( get_permalink( $wrapped ) );
+		$this->assertTrue( have_posts() );
+		the_post();
+		$html = apply_filters( 'the_content', get_post_field( 'post_content', $wrapped ) );
+		$this->assertStringContainsString( 'pkiw-singular-entry', $html );
+		$items = \Mf2\parse( $html )['items'];
+		$this->assertCount( 1, $items, 'One root; html=' . $html );
+		$entry = $items[0];
+		$this->assertSame( [ 'h-entry' ], $entry['type'] );
+		$this->assertSame( [ get_the_title( $wrapped ) ], $entry['properties']['name'] ?? null );
+		$this->assertSame( [ get_permalink( $wrapped ) ], $entry['properties']['url'] ?? null );
+		$this->assertArrayHasKey( 'published', $entry['properties'] );
+		$this->assertArrayHasKey( 'author', $entry['properties'] );
+		$this->assertArrayNotHasKey( 'read-of', $entry['properties'] );
+		wp_reset_postdata();
+	}
+
 	public function test_metrics_follow_configured_order_and_drop_unknown_keys(): void {
 		for ( $index = 0; $index < 3; ++$index ) {
 			$this->read_post( 2026, [ 'read_pages' => 100, 'read_rating' => 4 ] );
