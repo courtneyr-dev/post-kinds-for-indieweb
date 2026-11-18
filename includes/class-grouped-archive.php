@@ -238,6 +238,9 @@ final class Grouped_Archive {
 	 *   the engine's own `li` strings, keyed by post ID in query order, on
 	 *   the front end and in a block-renderer request alike. The heading is
 	 *   still the engine's. Default none: the engine prints its list.
+	 * - heading_offset: levels the section heading sits above the block's
+	 *   `headingLevel`, which then names the item headings. The heading floors
+	 *   at h2. Default 0: the heading is at `headingLevel`.
 	 * - heading_link: `callable( Archive_Group $group ): string`. A non-empty
 	 *   return links the section heading; the empty group can return an empty
 	 *   string to keep its heading plain.
@@ -279,14 +282,15 @@ final class Grouped_Archive {
 		}
 
 		self::$entries[ $block_name ] = [
-			'shape'        => $shape,
-			'source'       => $source,
-			'expose_key'   => ! empty( $args['expose_key'] ),
-			'heading_ids'  => ! empty( $args['heading_ids'] ),
-			'list'         => $list,
-			'classes'      => $classes,
-			'section_body' => $body,
-			'heading_link' => $link,
+			'shape'          => $shape,
+			'source'         => $source,
+			'expose_key'     => ! empty( $args['expose_key'] ),
+			'heading_ids'    => ! empty( $args['heading_ids'] ),
+			'list'           => $list,
+			'classes'        => $classes,
+			'section_body'   => $body,
+			'heading_link'   => $link,
+			'heading_offset' => max( 0, min( 2, (int) ( $args['heading_offset'] ?? 0 ) ) ),
 		];
 	}
 
@@ -773,6 +777,9 @@ final class Grouped_Archive {
 					remove_filter( 'render_block_context', $context, 1 );
 					array_pop( self::$frames );
 				}
+				if ( '' === trim( $inner ) ) {
+					continue;
+				}
 
 				$item = sprintf(
 					'<li%1$s class="%2$s">%3$s</li>',
@@ -797,6 +804,12 @@ final class Grouped_Archive {
 		} finally {
 			wp_reset_postdata();
 		}
+		$sections = array_values(
+			array_filter(
+				$sections,
+				static fn( array $section ): bool => [] !== $section['items']
+			)
+		);
 
 		$html = '';
 		if ( $lead ) {
@@ -1030,6 +1043,18 @@ final class Grouped_Archive {
 	}
 
 	/**
+	 * The section heading level for an entry block's `headingLevel`, less its registered offset.
+	 *
+	 * @param string $block_name Block name.
+	 * @param int    $level      The block's `headingLevel`.
+	 * @return int
+	 */
+	private static function section_level( string $block_name, int $level ): int {
+		$offset = self::$entries[ $block_name ]['heading_offset'] ?? 0;
+		return $offset > 0 ? max( 2, max( 2, min( 4, $level ) ) - $offset ) : $level;
+	}
+
+	/**
 	 * An entry block's settings, its registered defaults under the given attributes.
 	 *
 	 * @param string               $block_name Block name.
@@ -1046,7 +1071,7 @@ final class Grouped_Archive {
 
 		return [
 			'show'         => (bool) ( $attrs['showSections'] ?? true ),
-			'level'        => (int) ( $attrs['headingLevel'] ?? 2 ),
+			'level'        => self::section_level( $block_name, (int) ( $attrs['headingLevel'] ?? 2 ) ),
 			'per_page'     => max( 0, min( 100, (int) ( $attrs['linesPerPage'] ?? 0 ) ) ),
 			'weeks'        => max( 0, min( 12, (int) ( $attrs['weeksPerPage'] ?? 0 ) ) ),
 			'order'        => 'desc' === ( $attrs['sectionOrder'] ?? 'asc' ) ? 'DESC' : 'ASC',

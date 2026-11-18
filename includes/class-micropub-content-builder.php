@@ -252,8 +252,8 @@ final class Micropub_Content_Builder {
 			return;
 		}
 
-		$kind = self::detect_kind( $properties ) ?? self::detect_term_only_kind( $properties );
-		if ( null === $kind || ! $taxonomy->is_valid_kind( $kind ) ) {
+		$kind = self::detect_kind( $properties ) ?? self::detect_term_only_kind( $properties ) ?? self::note_or_article( $properties );
+		if ( ! $taxonomy->is_valid_kind( $kind ) ) {
 			return;
 		}
 
@@ -311,15 +311,50 @@ final class Micropub_Content_Builder {
 	}
 
 	/**
+	 * The last step of post type discovery for an entry with no kind
+	 * property: a name that isn't a prefix of the content makes an article,
+	 * anything else is a note (https://indieweb.org/post-type-discovery).
+	 *
+	 * Written explicitly rather than left to the taxonomy's default term,
+	 * because a kind another plugin guessed during the insert would stand.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return string 'article' or 'note'.
+	 */
+	private static function note_or_article( array $properties ): string {
+		$collapse = static fn( string $text ): string => trim( (string) preg_replace( '/\s+/u', ' ', $text ) );
+		$name     = $collapse( self::flatten_scalar( $properties, 'name' ) );
+		if ( '' === $name ) {
+			return 'note';
+		}
+
+		$content = self::first_value( $properties, 'content' );
+		if ( is_array( $content ) ) {
+			$content = $content['value'] ?? wp_strip_all_tags( (string) ( $content['html'] ?? '' ) );
+		}
+
+		return str_starts_with( $collapse( is_string( $content ) ? $content : '' ), $name ) ? 'note' : 'article';
+	}
+
+	/**
 	 * Extract the `properties` array from the Micropub request shape.
 	 *
 	 * Form-encoded Micropub puts properties at the top level of $input.
 	 * JSON Micropub nests them under `properties`. Try both.
 	 *
+	 * Only a create carries properties. The Micropub plugin fires
+	 * `after_micropub` and `micropub_post_content` for update, delete and
+	 * undelete too, and treats a missing `action` as create; an update body
+	 * holds operations (`replace`, `add`, `delete`) on a post that already
+	 * has its kind.
+	 *
 	 * @param array<string, mixed> $input Raw Micropub request body parsed to an array.
-	 * @return array<string, mixed> The h-entry properties bag.
+	 * @return array<string, mixed> The h-entry properties bag, empty for any action but create.
 	 */
 	private static function extract_properties( array $input ): array {
+		if ( 'create' !== ( $input['action'] ?? 'create' ) ) {
+			return [];
+		}
 		if ( isset( $input['properties'] ) && is_array( $input['properties'] ) ) {
 			return $input['properties'];
 		}
@@ -389,11 +424,13 @@ final class Micropub_Content_Builder {
 	 * outside this map sets the kind term (assign_kind_term()) but never
 	 * changes the card, so `jam` on a `listen-of` entry still builds a
 	 * listen card. A photo-only entry hinted `acquisition` is an
-	 * acquisition whose one property is its picture (issue 239). Sleep is the
-	 * one exception, handled in card_kind() because it has no shape of its
-	 * own: a sleep card reads only `sleep`, `start` and `end`, so a hint
-	 * narrowing an event or check-in shape to sleep drops nothing the card
-	 * would print, and a hint with `content` alone must still build the card.
+	 * acquisition whose one property is its picture (issue 239). Sleep and
+	 * checkin are the exceptions, handled in card_kind() because neither has
+	 * a shape the request must carry: a sleep card reads only `sleep`,
+	 * `start` and `end`, so a hint narrowing an event shape to sleep drops
+	 * nothing the card would print, and a hint with `content` alone must
+	 * still build the card. Outpost's check-in sends `location` and a name
+	 * with no `checkin` property (issue 574), so its hint builds the card.
 	 *
 	 * @var array<string, string[]>
 	 */
@@ -403,18 +440,19 @@ final class Micropub_Content_Builder {
 	];
 
 	/**
-	 * The kind whose card the builder writes: detect_kind(), narrowed by a
-	 * valid `pkiw-kind` hint listed in HINT_REFINEMENTS.
+	 * The kind whose card the builder writes: a valid `sleep` or `checkin`
+	 * hint, else detect_kind() narrowed by a valid `pkiw-kind` hint listed
+	 * in HINT_REFINEMENTS.
 	 *
 	 * @param array<string, mixed> $properties h-entry properties bag.
 	 * @return string|null Kind slug, or null when no kind matches.
 	 */
 	private static function card_kind( array $properties ): ?string {
 		$hint = self::explicit_kind( $properties );
-		if ( 'sleep' === $hint ) {
+		if ( 'sleep' === $hint || 'checkin' === $hint ) {
 			$taxonomy = Plugin::get_instance()->get_taxonomy();
-			if ( null !== $taxonomy && $taxonomy->is_valid_kind( 'sleep' ) ) {
-				return 'sleep';
+			if ( null !== $taxonomy && $taxonomy->is_valid_kind( $hint ) ) {
+				return $hint;
 			}
 		}
 
@@ -433,8 +471,12 @@ final class Micropub_Content_Builder {
 	 * Identify which post kind a property bag represents.
 	 *
 	 * Detection order matters — eat-of/drink-of takes precedence over
-	 * `location` because Eat/Drink posts may include both. The first match
-	 * wins.
+	 * `checkin` because Eat/Drink posts may include both. The first match
+	 * wins. A `location` alone names where any post was made, so it never
+	 * implies a check-in; post type discovery reads `checkin` for that. A
+	 * `location` with an `mp-place-name` venue is a check-in (issue 38)
+	 * unless the client named another kind through `pkiw-kind`, as
+	 * Outpost's note and photo composers do when they carry a venue.
 	 *
 	 * @param array<string, mixed> $properties h-entry properties bag.
 	 * @return string|null Kind slug ('eat'|'drink'|'listen'|...) or null when no kind matches.
@@ -443,12 +485,14 @@ final class Micropub_Content_Builder {
 		/*
 		 * Ordered property → kind map; the first present property wins,
 		 * so array order IS the precedence order. Notable orderings:
-		 *   - eat-of/drink-of before location (those posts carry a venue).
+		 *   - eat-of/drink-of before checkin (those posts carry a venue);
+		 *     ate/drank are the same kinds as Quill and the p-ate/p-drank
+		 *     markup this plugin renders spell them.
 		 *   - jam-of before listen-of (a jam is a deliberate highlight).
 		 *   - rsvp, issue-of, quotation-of, tag-of before in-reply-to
 		 *     (all of those shapes may also carry a reply target).
 		 *   - wishlist-of is a compat alias for wish-of (older senders).
-		 *   - start (h-event) and exercise before location — an event or
+		 *   - start (h-event) and exercise before checkin — an event or
 		 *     workout with a venue must not read as a checkin.
 		 *   - item = flattened h-review; ingredient = h-recipe signature.
 		 *   - video/audio before photo — a poster image must not demote
@@ -457,6 +501,8 @@ final class Micropub_Content_Builder {
 		$property_kind_map = [
 			'eat-of'         => 'eat',
 			'drink-of'       => 'drink',
+			'ate'            => 'eat',
+			'drank'          => 'drink',
 			'jam-of'         => 'jam',
 			'listen-of'      => 'listen',
 			'watch-of'       => 'watch',
@@ -486,14 +532,18 @@ final class Micropub_Content_Builder {
 			'start'          => 'event',
 			'item'           => 'review',
 			'ingredient'     => 'recipe',
-			'location'       => 'checkin',
+			'checkin'        => 'checkin',
 			'video'          => 'video',
 			'audio'          => 'audio',
 			'photo'          => 'photo',
 		];
 
+		$names_a_venue = null === self::explicit_kind( $properties )
+			&& self::has_property( $properties, 'location' )
+			&& self::has_property( $properties, 'mp-place-name' );
+
 		foreach ( $property_kind_map as $property => $kind ) {
-			if ( self::has_property( $properties, $property ) ) {
+			if ( self::has_property( $properties, $property ) || ( 'checkin' === $property && $names_a_venue ) ) {
 				return $kind;
 			}
 		}
@@ -803,13 +853,13 @@ final class Micropub_Content_Builder {
 	/**
 	 * Build an Eat Card block from the h-entry property bag.
 	 *
-	 * @param array<string, mixed> $properties h-entry properties bag (uses `eat-of`, `mp-place-name`, `rating`, `content`, `location`).
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `eat-of` or `ate`, `mp-place-name`, `rating`, `content`, `location`).
 	 * @return string Block-comment markup for the eat-card block.
 	 */
 	private static function eat_card( array $properties ): string {
 		$attrs = self::filter_empty(
 			[
-				'name'         => self::flatten_scalar( $properties, 'eat-of' ),
+				'name'         => self::consumed_name( $properties, [ 'eat-of', 'ate' ] ),
 				'locationName' => self::flatten_scalar( $properties, 'mp-place-name' ),
 				'rating'       => self::flatten_numeric( $properties, 'rating' ),
 				'notes'        => self::flatten_scalar( $properties, 'content' ),
@@ -826,13 +876,13 @@ final class Micropub_Content_Builder {
 	/**
 	 * Build a Drink Card block from the h-entry property bag.
 	 *
-	 * @param array<string, mixed> $properties h-entry properties bag (uses `drink-of`, `mp-place-name`, `rating`, `content`, `location`).
+	 * @param array<string, mixed> $properties h-entry properties bag (uses `drink-of` or `drank`, `mp-place-name`, `rating`, `content`, `location`).
 	 * @return string Block-comment markup for the drink-card block.
 	 */
 	private static function drink_card( array $properties ): string {
 		$attrs = self::filter_empty(
 			[
-				'name'         => self::flatten_scalar( $properties, 'drink-of' ),
+				'name'         => self::consumed_name( $properties, [ 'drink-of', 'drank' ] ),
 				'locationName' => self::flatten_scalar( $properties, 'mp-place-name' ),
 				'rating'       => self::flatten_numeric( $properties, 'rating' ),
 				'notes'        => self::flatten_scalar( $properties, 'content' ),
@@ -844,6 +894,27 @@ final class Micropub_Content_Builder {
 			$attrs['geoLongitude'] = $geo['lon'];
 		}
 		return self::self_closing_block( 'post-kinds-indieweb/drink-card', $attrs );
+	}
+
+	/**
+	 * The first named food or drink among $keys. Quill sends `ate` and
+	 * `drank` as h-food objects, so a value may be a name or an h-food.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @param string[]             $keys       Property names in precedence order.
+	 * @return string The name, or '' when none is present.
+	 */
+	private static function consumed_name( array $properties, array $keys ): string {
+		foreach ( $keys as $key ) {
+			$value = self::first_value( $properties, $key );
+			if ( is_array( $value ) ) {
+				$value = $value['properties']['name'][0] ?? '';
+			}
+			if ( is_string( $value ) && '' !== $value ) {
+				return $value;
+			}
+		}
+		return '';
 	}
 
 	/**

@@ -161,7 +161,8 @@ final class NoteArchiveTemplateTest extends WP_UnitTestCase {
 		}
 		$this->assertCount( 1, $this->of_type( $blocks, 'core/query-no-results' ) );
 		$this->assertSame( 'header', $this->of_type( $blocks, 'core/template-part' )[0]['attrs']['slug'] ?? '' );
-		$this->assertSame( 'footer', $this->of_type( $blocks, 'core/template-part' )[1]['attrs']['slug'] ?? '' );
+		$this->assertSame( 'zine-export', $this->of_type( $blocks, 'core/template-part' )[1]['attrs']['slug'] ?? '' );
+		$this->assertSame( 'footer', $this->of_type( $blocks, 'core/template-part' )[2]['attrs']['slug'] ?? '' );
 	}
 
 	public function test_the_template_and_stylesheet_hold_no_hex_color_no_theme_class_and_no_theme_font(): void {

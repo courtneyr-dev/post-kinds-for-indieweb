@@ -120,6 +120,33 @@ describe( 'recipe courses in the editor', () => {
 	} );
 } );
 
+describe( 'zine export in the editor', () => {
+	const NAME = 'post-kinds-indieweb/zine-export';
+	const FILE = '../../../assets/js/zine-export-editor.js';
+
+	it( 'registers the dynamic block without saved markup', () => {
+		const settings = register( FILE )[ NAME ];
+
+		expect( settings.apiVersion ).toBe( 3 );
+		expect( settings.save() ).toBeNull();
+		expect( settings.attributes.source.enum ).toEqual( [
+			'archive',
+			'stream',
+		] );
+		expect( settings.attributes.defaultPages.enum ).toEqual( [ 8, 16 ] );
+	} );
+
+	it( 'previews the server form with the block attributes inside Disabled', () => {
+		const { edit } = register( FILE )[ NAME ];
+		const attributes = { source: 'stream', defaultPages: 16 };
+		const disabled = find( edit( { attributes } ), 'Disabled' );
+		const render = find( disabled, 'ServerSideRender' );
+
+		expect( render.props.block ).toBe( NAME );
+		expect( render.props.attributes ).toEqual( attributes );
+	} );
+} );
+
 describe( 'recent specials in the editor', () => {
 	const NAME = 'post-kinds-indieweb/menu-specials';
 	const FILE = '../../../assets/js/menu-specials-editor.js';

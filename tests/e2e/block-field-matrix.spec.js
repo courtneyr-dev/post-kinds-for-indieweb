@@ -60,6 +60,10 @@ function sampleFor( attr, def ) {
 // schema default on save — the same class of exception already documented
 // in tests/phpunit/integration/BlockFieldRenderTest.php.
 const ROUND_TRIP_EXCEPTIONS = {
+	'post-kinds-indieweb/wrapped': {
+		metrics:
+			'Typed "array"; the sampler supplies a string, which block validation drops. The edit component handles that value without crashing.',
+	},
 	'post-kinds-indieweb/media-lookup': {
 		selectedItem:
 			'Typed "object"; the locked sampler rule order has no object rule, so sampleFor() returns a flat string for an attribute the block schema types as object. WP block attribute validation coerces an invalid object-typed value back to its schema default ({}) on save, which is correct schema behavior, not a round-trip bug. Covered instead below with a real object sample.',
@@ -100,6 +104,18 @@ const ROUND_TRIP_EXCEPTIONS = {
 const RENDER_EXCEPTIONS = {
 	'*': {
 		layout: 'enum controls wrapper class, asserted separately',
+	},
+	'post-kinds-indieweb/wrapped': {
+		kind: 'renders nothing outside a listable Wrapped host',
+		year: 'renders nothing outside a listable Wrapped host',
+		metrics: 'renders nothing outside a listable Wrapped host',
+		topCount: 'renders nothing outside a listable Wrapped host',
+		heading: 'renders nothing outside a listable Wrapped host',
+		headingLevel: 'renders nothing outside a listable Wrapped host',
+	},
+	'post-kinds-indieweb/wrapped-strip': {
+		kind: 'renders nothing when no listable Wrapped post exists',
+		year: 'renders nothing when no listable Wrapped post exists',
 	},
 	'post-kinds-indieweb/read-card': {
 		readStatus:

@@ -1,0 +1,46 @@
+.pkiw-otd {
+	border: 2px solid currentcolor;
+	padding: 1rem;
+}
+
+.pkiw-otd__image img {
+	display: block;
+	height: auto;
+	max-width: 100%;
+}
+
+.pkiw-otd__title a {
+	color: inherit;
+}
+
+.pkiw-otd__title a:focus-visible {
+	outline: 3px solid currentcolor;
+	outline-offset: 4px;
+}
+
+.pkiw-otd-year__items {
+	display: grid;
+	gap: 1rem;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.pkiw-otd-stream-item {
+	list-style: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.pkiw-otd {
+		scroll-behavior: auto;
+	}
+}
+
+@media (forced-colors: active) {
+
+	.pkiw-otd {
+		border-color: CanvasText;
+	}
+}

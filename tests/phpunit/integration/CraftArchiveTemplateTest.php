@@ -245,7 +245,7 @@ final class CraftArchiveTemplateTest extends WP_UnitTestCase {
 		$blocks = $this->blocks();
 
 		$this->assertSame(
-			[ 'header', 'footer' ],
+			[ 'header', 'zine-export', 'footer' ],
 			array_column( array_map( static fn( array $b ): array => $b['attrs'], $this->of_type( $blocks, 'core/template-part' ) ), 'slug' )
 		);
 		$this->assertStringContainsString( 'pkiw-kind-archive', (string) ( $this->of_type( $blocks, 'core/query' )[0]['attrs']['className'] ?? '' ) );

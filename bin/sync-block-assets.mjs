@@ -15,7 +15,6 @@ const files = [
 	'render.php',
 	'style.css',
 	'editor.css',
-	'view.js',
 ];
 
 let copied = 0;
