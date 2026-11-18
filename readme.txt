@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.10.0
+Stable tag: 1.10.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -180,6 +180,11 @@ Long-form guides — installation, settings, common tasks, troubleshooting, priv
 9. Standard.site record panel on a Bookmark Card, showing the cited page's own title, publication, description, and tags read from AT Protocol
 
 == Changelog ==
+
+= 1.10.1 =
+* Fixed: Micropub updates can change a post's kind when they explicitly name it. An update that leaves the kind out keeps the existing one.
+* Fixed: Lists, feeds, and pages hide the card facts on password-protected posts until the visitor enters the password.
+* Fixed: Zine print views show links to embedded media and skip the player hooks.
 
 = 1.10.0 =
 * Added: On This Day. /on-this-day/ lists earlier years' posts from today's date, grouped by year, and a block puts one of them first in the Stream.
@@ -371,6 +376,9 @@ Security
 * Fixed: like, reply, repost, bookmark, favorite, listen, watch, and read posts expose the correct microformats2 markup, so webmention receivers and feed readers recognize them as their kind.
 
 == Upgrade Notice ==
+
+= 1.10.1 =
+Protects the card facts on locked posts, fixes explicit kind changes from Micropub clients, and prints links to embedded media in zines.
 
 = 1.10.0 =
 Adds On This Day, yearly Wrapped posts and printable zines, and fixes the kinds Micropub assigns. Visitors see only published, password-free posts on every new page.
