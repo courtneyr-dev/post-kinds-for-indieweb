@@ -85,6 +85,10 @@ jobs:
     name: PHP Tests (PHP ${{ matrix.php }}, WP ${{ matrix.wp }}, shard ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # A trunk shard that fails stays red on the PR but counts as success in
+    # needs.phpunit.result, so phpunit-gate ignores it. A failure on any other
+    # leg still makes the result "failure".
+    continue-on-error: ${{ matrix.wp == 'trunk' }}
     services:
       mysql:
         image: mysql:8.0
@@ -204,7 +208,9 @@ jobs:
 
   # The required check on main is named "PHP Tests (PHP 8.2, WP 7.0)", which no
   # job carries since the matrix gained shards. This job keeps that name and
-  # passes only when every shard of every leg passes.
+  # passes only when every non-trunk shard passes. A trunk shard's failure
+  # doesn't count (continue-on-error above), but its timeout does: a cancelled
+  # job reports "cancelled", which continue-on-error doesn't absorb.
   phpunit-gate:
     name: PHP Tests (PHP 8.2, WP 7.0)
     needs: phpunit
@@ -212,7 +218,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Require every PHPUnit shard to pass
+      - name: Require every non-trunk PHPUnit shard to pass
         run: test "${{ needs.phpunit.result }}" = "success"
 
   # ===== ATmosphere trunk compatibility (non-gating) =====
