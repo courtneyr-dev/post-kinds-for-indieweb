@@ -16,6 +16,7 @@ final class KindTemplateInsertionTest extends WrappedTestCase {
 		return $cases;
 	}
 
+	/** A new kind template must carry the two lines, so adding one means updating this count. */
 	public function test_the_36_kind_templates_are_covered(): void {
 		$this->assertCount( 36, self::templates() );
 	}
@@ -36,7 +37,8 @@ final class KindTemplateInsertionTest extends WrappedTestCase {
 		$this->assertIsInt( $at );
 		$this->assertSame( 'post-kinds-indieweb/wrapped-strip', $names[ $at + 1 ] ?? null );
 		$this->assertSame( 'core/template-part', $names[ $at + 2 ] ?? null );
-		$this->assertSame( 'zine-export', $children[ $at + 2 ]['attrs']['slug'] ?? null );
+		$this->assertSame( [], $children[ $at + 1 ]['attrs'] );
+		$this->assertSame( [ 'slug' => 'zine-export' ], $children[ $at + 2 ]['attrs'] );
 	}
 
 	public function test_read_archive_prints_no_strip_without_a_wrapped_post_and_one_with_it(): void {
