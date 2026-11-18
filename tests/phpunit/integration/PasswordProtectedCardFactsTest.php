@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+require_once dirname( __DIR__ ) . '/fixtures/wprm-stand-in.php';
+
 /**
  * Four states per path: public, locked with no cookie, locked with a wrong
  * cookie, and unlocked. The locked states print the post's title and none of
