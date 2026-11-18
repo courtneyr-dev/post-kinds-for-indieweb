@@ -18,6 +18,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Check-in Dashboard view switching and map setup now run through the Interactivity API module `post-kinds-indieweb-checkin-dashboard-view-script-module`; the classic `post-kinds-indieweb-checkin-dashboard-view-script` handle is gone. Inactive panels carry `hidden` in server HTML. The dashboard forces the shared public-eligibility query clause in every context and checks each row with `Public_Eligibility::is_eligible()`, so password-protected check-ins never reach its grid, timeline, map or stats, even after a visitor enters the password; the check-in archive map, Check-ins Feed and REST routes keep their existing password rule.
 - All 36 kind archive templates now print the Wrapped strip and the `zine-export` template part between the archive title block and the archive's own content. The strip prints on a kind archive's first page once that kind has a published, public Wrapped post. The part prints only when the active theme has a `zine-export` template part, from a theme file or the Site Editor. Without one it prints nothing, except that WordPress shows its "Template part has been deleted or is unavailable" notice when `WP_DEBUG` and `WP_DEBUG_DISPLAY` are on. A theme that ships its own kind templates keeps using them, so this changes only sites that fall back to the plugin's templates.
 
+## [1.9.2] - 2026-11-17
+
+### Added
+
+- Tag posts. The Tag Card block (`post-kinds-indieweb/tag-card`) names the person a post tags, with ordered labels kept in `_pkiw_tag_label` on save. `/kind/tag/` lists tag posts, the `post-kinds/get-tag-facts` ability reads one, and `wp postkind tag-labels backfill [--dry-run] [--ids=<ids>]` fills labels for posts saved before the card synced them. The card finds its owner from block context only and never prints a person for a post the visitor can't see (#261, #559).
+- Follow posts with an A to Z archive. `/kind/follow/` uses the plugin's `taxonomy-kind-follow` template, the Follow entry and Follow letters blocks (`post-kinds-indieweb/follow-entry`, `post-kinds-indieweb/follow-letters`) and a first-letter index, sorted by stored name, then host. `pkiw_follow_initial` filters the letter. The `post-kinds/get-follow-index` ability returns the list. The editor has Name and Site URL fields for follows, and singles and Stream cards carry one hidden `u-follow-of h-card` (#260, #562).
+- Public OPML of follows at `/kind/follow/opml/` (`text/x-opml`, `Cache-Control: no-store`, `X-Robots-Tag: noindex`). `HEAD` answers 200 with no body and other methods 405. The archive links to it as "Follows as OPML", and the page head carries a matching `<link rel="alternate">`. The rewrite rule flushes on upgrade through the `PKIW_VERSION` change (#562).
+- Micropub `follow-of`, as a URL or an h-card, fills `_pkiw_cite_url` and `_pkiw_cite_name`. Remote h-card photos are dropped, and Micropub's own renderer is off for follows (#562).
+- Two Query Loop variations in the block inserter: "Follows A to Z" (`pkiw-kind-follow`) and "Tag stickers" (`pkiw-kind-tag`). Each matches its kind's archive template and keeps the plugin's visibility rule for tag and follow posts (#564).
+
+### Changed
+
+- Tag and follow posts share one visibility rule, `PKIW\Public_Eligibility`: a post is public only when it's published, has no password and is publicly viewable. Lists, adjacent posts, feeds and comment feeds, search, sitemaps, REST (items, collections, comments, media, terms, revisions, OPTIONS), redirects and old slugs, embeds and REST oEmbed, abilities, block bindings, Standard Site fetches, Webmention sends and deletes, enclosures and cache purges all ask it. For anyone who can't `edit_post` it, a hidden tag or follow post answers exactly like a missing one: same status, code, body and headers, including `Allow` and pagination `Link`. Editors keep core's behavior, and a hidden post's attachments behave like a private post's (#559, #562).
+- Term counts skip hidden tag and follow posts. A one-time cron job, `pkiw_public_eligibility_recount`, corrects counts stored before this release (#559).
+- Standard Site never fetches a tagged or followed person's URL, in any post status (#559).
+- The `get-kind`, `get-post-meta`, `get-surface` and `get-public-location-fields` abilities refuse a hidden tag or follow post exactly like a missing post ID, for every caller (#562).
+- In REST outside `context=edit` with `edit_post`, a hidden follow returns no `_pkiw_*` meta and no `featured_media`. `_pkiw_cite_photo` holds only a public media-library image, on write and on read, block bindings included (#562).
+- Webmention for a public follow targets the followed URL (#562).
+- Development dependencies: 18 `@wordpress/*` packages (#534), `@lhci/cli` (#557), `fast-xml-parser` (#551) and `astro` in the docs site (#553). The committed `build/` is unchanged by them.
+
+### Fixed
+
+- On Pantheon, saving a tag or follow post queued its paginated archive purges as one nested list, which raised an "Array to string conversion" warning at shutdown and left the CDN purge with a malformed path. Each purge pattern now goes to `Pantheon_Cache::enqueue_regex()` on its own (#568).
+
 ## [1.9.1] - 2026-11-10
 
 ### Fixed
@@ -797,7 +821,10 @@ This project uses Semantic Versioning:
 - [Issues](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues)
 - [IndieWeb Wiki](https://indieweb.org/)
 
-[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.8.6...HEAD
+[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.9.2...HEAD
+[1.9.2]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.9.1...v1.9.2
+[1.9.1]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.9.0...v1.9.1
+[1.9.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.8.6...v1.9.0
 [1.8.6]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.8.5...v1.8.6
 [1.8.5]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.7.1...v1.8.5
 [1.7.1]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.7.0...v1.7.1
@@ -805,6 +832,6 @@ This project uses Semantic Versioning:
 [1.6.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.2...v1.6.0
 [1.5.2]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.5.0...v1.5.1
-[1.5.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/1.0.0...v1.5.0
+[1.5.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.0.0...v1.5.0
 [1.2.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.1.0...v1.2.0
 [1.0.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/releases/tag/v1.0.0
