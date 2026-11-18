@@ -158,8 +158,8 @@ final class NoteArchiveTest extends WP_UnitTestCase {
 		};
 		add_action( 'pre_get_posts', $count, 99 );
 
-		// Creating the notes stamps pkiw_wrapped_gen, and a second latest() call then reads the transient
-		// instead of querying. Clear it so every call to latest() shows up as a query.
+		// Test setup and note creation stamp pkiw_wrapped_gen, and a second latest() call then reads the
+		// transient instead of querying. Clear it so every call to latest() shows up as a query.
 		delete_option( 'pkiw_wrapped_gen' );
 		$html = $this->serve( $this->archive_url() );
 
@@ -167,7 +167,7 @@ final class NoteArchiveTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'pkiw-note-entry', $html );
 		$this->assertCount( 1, $queries, 'Only the main query reads posts; the render adds none besides the Wrapped strip lookup.' );
 		$this->assertTrue( $queries[0]->is_main_query() );
-		$this->assertCount( 1, $strip, 'The Wrapped strip runs exactly one lookup query per page.' );
+		$this->assertCount( 1, $strip, 'With no cached lookup and no Wrapped post, the strip runs exactly one lookup query.' );
 		$this->assertSame( 1, (int) $strip[0]->get( 'posts_per_page' ) );
 	}
 
