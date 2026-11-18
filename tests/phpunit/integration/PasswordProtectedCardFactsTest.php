@@ -335,8 +335,8 @@ final class PasswordProtectedCardFactsTest extends WP_UnitTestCase {
 			$ids    = array_map( 'intval', $query->posts );
 			$at     = array_search( $mid, $ids, true );
 			$this->assertNotFalse( $at, 'The tested post is in the grouped list.' );
-			if ( 'public' !== $state && ! in_array( $kind, [ 'play' ], true ) ) {
-				$this->assertTrue( 0 === $at || count( $ids ) - 1 === $at, "State {$state} sits in the empty group at an end of the list, not between its neighbors." );
+			if ( 'public' !== $state ) {
+				$this->assertSame( count( $ids ) - 1, $at, "State {$state} sits in the empty group, last, not among its neighbors." );
 			}
 			foreach ( [ $first, $mid, $last ] as $id ) {
 				wp_delete_post( $id, true );
