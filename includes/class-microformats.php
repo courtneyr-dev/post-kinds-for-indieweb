@@ -731,6 +731,12 @@ class Microformats {
 
 		$kind = $this->get_post_kind( $post_id );
 
+		// A Wrapped post carries no kind term (Wrapped_Post::enforce_no_kind()), so
+		// it roots as a plain h-entry with no kind property.
+		if ( ! $kind && '' !== (string) get_post_meta( $post_id, Wrapped_Post::KIND_META, true ) ) {
+			return $this->wrap_wrapped_entry( $content, $post_id );
+		}
+
 		if ( ! $kind ) {
 			return $content;
 		}
@@ -814,6 +820,34 @@ class Microformats {
 			$content,
 			$entry_meta
 		);
+	}
+
+	/**
+	 * Root a Wrapped single as an h-entry: name, URL, published date and author, no kind property.
+	 *
+	 * @param string $content Post content.
+	 * @param int    $post_id Wrapped post ID.
+	 * @return string Wrapped content.
+	 */
+	private function wrap_wrapped_entry( string $content, int $post_id ): string {
+		$entry_meta = sprintf(
+			'<a class="u-url" href="%s" hidden></a><time class="dt-published" datetime="%s" hidden></time>',
+			esc_url( get_permalink( $post_id ) ),
+			esc_attr( (string) get_the_date( 'c', $post_id ) )
+		);
+		$title      = get_the_title( $post_id );
+		if ( '' !== $title ) {
+			$entry_meta .= sprintf( '<span class="p-name" hidden>%s</span>', esc_html( $title ) );
+		}
+		$post = get_post( $post_id );
+		if ( $post instanceof \WP_Post && function_exists( __NAMESPACE__ . '\\entry_author_html' ) && ! $this->has_entry_author( $content ) ) {
+			$author_html = entry_author_html( $post );
+			if ( '' !== $author_html ) {
+				$entry_meta .= '<span hidden>' . $author_html . '</span>';
+			}
+		}
+
+		return sprintf( '<div class="h-entry pkiw-singular-entry">%s%s</div>', $content, $entry_meta );
 	}
 
 	/**

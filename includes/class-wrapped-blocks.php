@@ -88,11 +88,8 @@ final class Wrapped_Blocks {
 				$author = (string) get_post_meta( $id, '_pkiw_read_author', true );
 				$stars  = card_star_counts( (float) $row['rating'] );
 				$rating = card_rating_label( (float) $row['rating'] );
-				$html  .= '<li>';
-				if ( '' !== $cover ) {
-					$html .= '<img src="' . esc_url( $cover ) . '" alt="">';
-				}
-				$html .= '<a href="' . esc_url( get_permalink( $id ) ) . '">' . esc_html( get_the_title( $id ) ) . '</a>';
+				$html  .= '<li>' . self::cover_html( $id, $cover, $author );
+				$html  .= '<a href="' . esc_url( get_permalink( $id ) ) . '">' . esc_html( get_the_title( $id ) ) . '</a>';
 				if ( '' !== $author ) {
 					$html .= '<span>' . esc_html( $author ) . '</span>';
 				}
@@ -106,6 +103,18 @@ final class Wrapped_Blocks {
 		}
 
 		return $html . '</section>';
+	}
+
+	/**
+	 * One top item's cover. data-cr-cover-fallback lets a theme mark a cover that
+	 * fails to load and print the title and author in its place; with no cover the
+	 * container carries the --type class for the same typographic cover.
+	 */
+	private static function cover_html( int $id, string $cover, string $author ): string {
+		$class = '' === $cover ? 'pkiw-wrapped__cover pkiw-wrapped__cover--type' : 'pkiw-wrapped__cover';
+		$image = '' === $cover ? '' : '<img src="' . esc_url( $cover ) . '" alt="">';
+
+		return '<span class="' . esc_attr( $class ) . '" data-cr-cover-fallback aria-hidden="true" data-title="' . esc_attr( get_the_title( $id ) ) . '" data-author="' . esc_attr( $author ) . '">' . $image . '</span>';
 	}
 
 	/** Render the archive strip without touching the main query. */
