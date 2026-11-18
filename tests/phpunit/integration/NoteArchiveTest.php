@@ -142,13 +142,15 @@ final class NoteArchiveTest extends WP_UnitTestCase {
 	public function test_a_page_runs_exactly_one_posts_query(): void {
 		$this->seed_pages();
 		$queries = [];
-		$count   = static function ( WP_Query $query ) use ( &$queries ): void {
+		$strip   = [];
+		$count   = static function ( WP_Query $query ) use ( &$queries, &$strip ): void {
 			$type = $query->get( 'post_type' );
 			if ( in_array( $type, [ 'wp_navigation', 'wp_template', 'wp_template_part', 'wp_global_styles' ], true ) ) {
 				return;
 			}
 			foreach ( (array) $query->get( 'meta_query' ) as $clause ) {
 				if ( is_array( $clause ) && \PKIW\Wrapped_Post::KIND_META === ( $clause['key'] ?? null ) ) {
+					$strip[] = $query;
 					return;
 				}
 			}
@@ -156,12 +158,17 @@ final class NoteArchiveTest extends WP_UnitTestCase {
 		};
 		add_action( 'pre_get_posts', $count, 99 );
 
+		// Creating the notes stamps pkiw_wrapped_gen, and a second latest() call then reads the transient
+		// instead of querying. Clear it so every call to latest() shows up as a query.
+		delete_option( 'pkiw_wrapped_gen' );
 		$html = $this->serve( $this->archive_url() );
 
 		remove_action( 'pre_get_posts', $count, 99 );
 		$this->assertStringContainsString( 'pkiw-note-entry', $html );
 		$this->assertCount( 1, $queries, 'Only the main query reads posts; the render adds none besides the Wrapped strip lookup.' );
 		$this->assertTrue( $queries[0]->is_main_query() );
+		$this->assertCount( 1, $strip, 'The Wrapped strip runs exactly one lookup query per page.' );
+		$this->assertSame( 1, (int) $strip[0]->get( 'posts_per_page' ) );
 	}
 
 	public function test_private_and_draft_notes_are_absent_logged_out(): void {
