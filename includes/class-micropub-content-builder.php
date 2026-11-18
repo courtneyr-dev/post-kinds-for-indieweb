@@ -168,6 +168,13 @@ final class Micropub_Content_Builder {
 		self::strip_remote_photos( $post_id, 'tag-of' );
 		self::strip_remote_photos( $post_id, 'follow-of' );
 
+		// An update never rebuilds content; it changes the kind only when it
+		// names a property that decides one.
+		if ( 'update' === ( $input['action'] ?? 'create' ) ) {
+			self::assign_kind_after_update( $post_id, $input );
+			return;
+		}
+
 		// Idempotency — once we've written block content for this post, leave it alone.
 		// Users who manually edit the post in Gutenberg afterwards keep their changes.
 		if ( '' !== (string) get_post_meta( $post_id, self::GENERATED_META_KEY, true ) ) {
@@ -215,6 +222,70 @@ final class Micropub_Content_Builder {
 				'post_content' => wp_slash( $block_content ),
 			]
 		);
+	}
+
+	/**
+	 * Set the kind after an update that names a kind property.
+	 *
+	 * The Micropub plugin writes an update's `replace`, `add` and `delete` to
+	 * the post before it fires `after_micropub`, so the post's own properties
+	 * are the state after the update. An update that names no kind property
+	 * leaves the kind alone, whatever the stored properties would infer.
+	 *
+	 * @param int                  $post_id Post ID.
+	 * @param array<string, mixed> $input   Micropub update request body.
+	 * @return void
+	 */
+	private static function assign_kind_after_update( int $post_id, array $input ): void {
+		if ( self::update_names_a_kind( $input ) ) {
+			self::assign_kind_term( $post_id, self::stored_properties( $post_id ) );
+		}
+	}
+
+	/**
+	 * Whether an update's `replace`, `add` or `delete` names a property that
+	 * decides a kind: one of PROPERTY_KINDS, the `pkiw-kind` hint, or the
+	 * `mp-place-name` venue that makes a location a check-in. A `location`
+	 * alone never does (detect_kind()).
+	 *
+	 * `replace` and `add` are objects keyed by property name; `delete` is
+	 * either an object or a list of property names.
+	 *
+	 * @param array<string, mixed> $input Micropub update request body.
+	 * @return bool
+	 */
+	private static function update_names_a_kind( array $input ): bool {
+		$named = [];
+		foreach ( [ 'replace', 'add', 'delete' ] as $operation ) {
+			$body = $input[ $operation ] ?? null;
+			if ( is_array( $body ) ) {
+				$named = array_merge( $named, array_is_list( $body ) ? $body : array_keys( $body ) );
+			}
+		}
+
+		$deciding = array_merge( array_keys( self::PROPERTY_KINDS ), [ 'pkiw-kind', 'mp-place-name' ] );
+		return [] !== array_intersect( $deciding, array_filter( $named, 'is_string' ) );
+	}
+
+	/**
+	 * The post's microformats2 properties as they stand: the `mf2_` post meta
+	 * the Micropub plugin keeps, each a list of values, plus the post's title
+	 * and its content as text for post type discovery.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array<string, mixed> h-entry properties bag.
+	 */
+	private static function stored_properties( int $post_id ): array {
+		$properties = [];
+		foreach ( get_post_meta( $post_id ) as $key => $rows ) {
+			if ( str_starts_with( $key, 'mf2_' ) ) {
+				$properties[ substr( $key, 4 ) ] = maybe_unserialize( $rows[0] );
+			}
+		}
+
+		$properties['name']    = [ get_the_title( $post_id ) ];
+		$properties['content'] = [ wp_strip_all_tags( (string) get_post_field( 'post_content', $post_id ) ) ];
+		return $properties;
 	}
 
 	/**
@@ -468,6 +539,67 @@ final class Micropub_Content_Builder {
 	}
 
 	/**
+	 * Ordered property → kind map; the first present property wins, so array
+	 * order IS the precedence order. Notable orderings:
+	 *   - eat-of/drink-of before checkin (those posts carry a venue);
+	 *     ate/drank are the same kinds as Quill and the p-ate/p-drank
+	 *     markup this plugin renders spell them.
+	 *   - jam-of before listen-of (a jam is a deliberate highlight).
+	 *   - rsvp, issue-of, quotation-of, tag-of before in-reply-to
+	 *     (all of those shapes may also carry a reply target).
+	 *   - wishlist-of is a compat alias for wish-of (older senders).
+	 *   - start (h-event) and exercise before checkin — an event or
+	 *     workout with a venue must not read as a checkin.
+	 *   - item = flattened h-review; ingredient = h-recipe signature.
+	 *   - video/audio before photo — a poster image must not demote
+	 *     a video/audio post to a photo post.
+	 *
+	 * The keys are also the properties an update may name to change a kind
+	 * (update_names_a_kind()).
+	 *
+	 * @var array<string, string>
+	 */
+	private const PROPERTY_KINDS = [
+		'eat-of'         => 'eat',
+		'drink-of'       => 'drink',
+		'ate'            => 'eat',
+		'drank'          => 'drink',
+		'jam-of'         => 'jam',
+		'listen-of'      => 'listen',
+		'watch-of'       => 'watch',
+		'read-of'        => 'read',
+		'play-of'        => 'play',
+		'rsvp'           => 'rsvp',
+		'favorite-of'    => 'favorite',
+		'like-of'        => 'like',
+		'repost-of'      => 'repost',
+		'wish-of'        => 'wish',
+		'wishlist-of'    => 'wish',
+		'bookmark-of'    => 'bookmark',
+		'quotation-of'   => 'quote',
+		'tag-of'         => 'tag',
+		'issue-of'       => 'issue',
+		'in-reply-to'    => 'reply',
+		'follow-of'      => 'follow',
+		'craft-of'       => 'craft',
+		'acquisition-of' => 'acquisition',
+		'exercise'       => 'exercise',
+		'sleep'          => 'sleep',
+		'trip'           => 'trip',
+		'itinerary'      => 'itinerary',
+		'question'       => 'question',
+		'mood'           => 'mood',
+		'weather'        => 'weather',
+		'start'          => 'event',
+		'item'           => 'review',
+		'ingredient'     => 'recipe',
+		'checkin'        => 'checkin',
+		'video'          => 'video',
+		'audio'          => 'audio',
+		'photo'          => 'photo',
+	];
+
+	/**
 	 * Identify which post kind a property bag represents.
 	 *
 	 * Detection order matters — eat-of/drink-of takes precedence over
@@ -482,67 +614,11 @@ final class Micropub_Content_Builder {
 	 * @return string|null Kind slug ('eat'|'drink'|'listen'|...) or null when no kind matches.
 	 */
 	private static function detect_kind( array $properties ): ?string {
-		/*
-		 * Ordered property → kind map; the first present property wins,
-		 * so array order IS the precedence order. Notable orderings:
-		 *   - eat-of/drink-of before checkin (those posts carry a venue);
-		 *     ate/drank are the same kinds as Quill and the p-ate/p-drank
-		 *     markup this plugin renders spell them.
-		 *   - jam-of before listen-of (a jam is a deliberate highlight).
-		 *   - rsvp, issue-of, quotation-of, tag-of before in-reply-to
-		 *     (all of those shapes may also carry a reply target).
-		 *   - wishlist-of is a compat alias for wish-of (older senders).
-		 *   - start (h-event) and exercise before checkin — an event or
-		 *     workout with a venue must not read as a checkin.
-		 *   - item = flattened h-review; ingredient = h-recipe signature.
-		 *   - video/audio before photo — a poster image must not demote
-		 *     a video/audio post to a photo post.
-		 */
-		$property_kind_map = [
-			'eat-of'         => 'eat',
-			'drink-of'       => 'drink',
-			'ate'            => 'eat',
-			'drank'          => 'drink',
-			'jam-of'         => 'jam',
-			'listen-of'      => 'listen',
-			'watch-of'       => 'watch',
-			'read-of'        => 'read',
-			'play-of'        => 'play',
-			'rsvp'           => 'rsvp',
-			'favorite-of'    => 'favorite',
-			'like-of'        => 'like',
-			'repost-of'      => 'repost',
-			'wish-of'        => 'wish',
-			'wishlist-of'    => 'wish',
-			'bookmark-of'    => 'bookmark',
-			'quotation-of'   => 'quote',
-			'tag-of'         => 'tag',
-			'issue-of'       => 'issue',
-			'in-reply-to'    => 'reply',
-			'follow-of'      => 'follow',
-			'craft-of'       => 'craft',
-			'acquisition-of' => 'acquisition',
-			'exercise'       => 'exercise',
-			'sleep'          => 'sleep',
-			'trip'           => 'trip',
-			'itinerary'      => 'itinerary',
-			'question'       => 'question',
-			'mood'           => 'mood',
-			'weather'        => 'weather',
-			'start'          => 'event',
-			'item'           => 'review',
-			'ingredient'     => 'recipe',
-			'checkin'        => 'checkin',
-			'video'          => 'video',
-			'audio'          => 'audio',
-			'photo'          => 'photo',
-		];
-
 		$names_a_venue = null === self::explicit_kind( $properties )
 			&& self::has_property( $properties, 'location' )
 			&& self::has_property( $properties, 'mp-place-name' );
 
-		foreach ( $property_kind_map as $property => $kind ) {
+		foreach ( self::PROPERTY_KINDS as $property => $kind ) {
 			if ( self::has_property( $properties, $property ) || ( 'checkin' === $property && $names_a_venue ) ) {
 				return $kind;
 			}
