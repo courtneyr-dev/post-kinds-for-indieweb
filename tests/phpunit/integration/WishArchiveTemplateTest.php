@@ -315,7 +315,7 @@ final class WishArchiveTemplateTest extends WP_UnitTestCase {
 		$this->assertCount( 0, $this->of_type( $blocks, 'post-kinds-indieweb/staff-picks' ) );
 
 		$parts = $this->of_type( $blocks, 'core/template-part' );
-		$this->assertSame( [ 'header', 'footer' ], array_column( array_column( $parts, 'attrs' ), 'slug' ) );
+		$this->assertSame( [ 'header', 'zine-export', 'footer' ], array_column( array_column( $parts, 'attrs' ), 'slug' ) );
 	}
 
 	/**

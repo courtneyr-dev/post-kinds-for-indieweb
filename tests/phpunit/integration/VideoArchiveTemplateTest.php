@@ -166,7 +166,7 @@ final class VideoArchiveTemplateTest extends WP_UnitTestCase {
 		$blocks = $this->blocks();
 
 		$this->assertSame(
-			[ 'header', 'footer' ],
+			[ 'header', 'zine-export', 'footer' ],
 			array_column( array_map( static fn( array $block ): array => $block['attrs'], $this->of_type( $blocks, 'core/template-part' ) ), 'slug' )
 		);
 		$main = $this->of_type( $blocks, 'core/group' );

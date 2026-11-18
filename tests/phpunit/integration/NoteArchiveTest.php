@@ -147,6 +147,11 @@ final class NoteArchiveTest extends WP_UnitTestCase {
 			if ( in_array( $type, [ 'wp_navigation', 'wp_template', 'wp_template_part', 'wp_global_styles' ], true ) ) {
 				return;
 			}
+			foreach ( (array) $query->get( 'meta_query' ) as $clause ) {
+				if ( is_array( $clause ) && \PKIW\Wrapped_Post::KIND_META === ( $clause['key'] ?? null ) ) {
+					return;
+				}
+			}
 			$queries[] = $query;
 		};
 		add_action( 'pre_get_posts', $count, 99 );
@@ -155,7 +160,7 @@ final class NoteArchiveTest extends WP_UnitTestCase {
 
 		remove_action( 'pre_get_posts', $count, 99 );
 		$this->assertStringContainsString( 'pkiw-note-entry', $html );
-		$this->assertCount( 1, $queries, 'Only the main query reads posts; the render adds none.' );
+		$this->assertCount( 1, $queries, 'Only the main query reads posts; the render adds none besides the Wrapped strip lookup.' );
 		$this->assertTrue( $queries[0]->is_main_query() );
 	}
 
