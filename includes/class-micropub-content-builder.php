@@ -353,6 +353,20 @@ final class Micropub_Content_Builder {
 	}
 
 	/**
+	 * Whether the request's `pkiw-kind` hint names a registered kind. A hint
+	 * that doesn't falls through to inference (assign_kind_term()), so it must
+	 * not suppress the venue rule either.
+	 *
+	 * @param array<string, mixed> $properties h-entry properties bag.
+	 * @return bool
+	 */
+	private static function names_a_registered_kind( array $properties ): bool {
+		$hint     = self::explicit_kind( $properties );
+		$taxonomy = Plugin::get_instance()->get_taxonomy();
+		return null !== $hint && null !== $taxonomy && $taxonomy->is_valid_kind( $hint );
+	}
+
+	/**
 	 * Detect kinds that have taxonomy terms but no card builder.
 	 *
 	 * Historical fallback: like/reply/repost/bookmark now have card
@@ -607,14 +621,14 @@ final class Micropub_Content_Builder {
 	 * wins. A `location` alone names where any post was made, so it never
 	 * implies a check-in; post type discovery reads `checkin` for that. A
 	 * `location` with an `mp-place-name` venue is a check-in (issue 38)
-	 * unless the client named another kind through `pkiw-kind`, as
-	 * Outpost's note and photo composers do when they carry a venue.
+	 * unless the client named another registered kind through `pkiw-kind`,
+	 * as Outpost's note and photo composers do when they carry a venue.
 	 *
 	 * @param array<string, mixed> $properties h-entry properties bag.
 	 * @return string|null Kind slug ('eat'|'drink'|'listen'|...) or null when no kind matches.
 	 */
 	private static function detect_kind( array $properties ): ?string {
-		$names_a_venue = null === self::explicit_kind( $properties )
+		$names_a_venue = ! self::names_a_registered_kind( $properties )
 			&& self::has_property( $properties, 'location' )
 			&& self::has_property( $properties, 'mp-place-name' );
 
