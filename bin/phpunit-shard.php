@@ -4,8 +4,9 @@
  *
  * Usage: php bin/phpunit-shard.php <shard> <total> <output>
  *
- * The script sorts every test file that phpunit.xml.dist's test suites pick
- * up and cuts the list into <total> consecutive ranges. Each file lands in
+ * The script lists the test files of phpunit.xml.dist's test suites in the
+ * order an unsharded run takes them (suites in file order, files sorted within
+ * each) and cuts the list into <total> consecutive ranges. Each file lands in
  * exactly one shard, so the shards together run the same classes as the
  * unsharded suite, and every shard keeps the unsharded run's relative order
  * (some tests depend on the classes that run just before them). Everything
@@ -31,19 +32,20 @@ $pkiw_phpunit_shard = static function ( int $shard, int $total, string $root, st
 
 	foreach ( $xpath->query( '//testsuites/testsuite/directory' ) as $directory ) {
 		$suffix   = $directory->getAttribute( 'suffix' );
+		$found    = [];
 		$iterator = new RecursiveIteratorIterator(
 			new RecursiveDirectoryIterator( realpath( $root . '/' . $directory->nodeValue ), FilesystemIterator::SKIP_DOTS )
 		);
 
 		foreach ( $iterator as $file ) {
 			if ( str_ends_with( $file->getFilename(), $suffix ) ) {
-				$files[ $file->getPathname() ] = true;
+				$found[] = $file->getPathname();
 			}
 		}
-	}
 
-	$files = array_keys( $files );
-	sort( $files, SORT_STRING );
+		sort( $found, SORT_STRING );
+		$files = array_values( array_unique( array_merge( $files, $found ) ) );
+	}
 
 	$suites = $xpath->query( '//testsuites' )->item( 0 );
 	while ( $suites->firstChild ) {
