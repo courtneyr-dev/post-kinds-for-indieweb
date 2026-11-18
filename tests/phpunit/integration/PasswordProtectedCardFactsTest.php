@@ -783,7 +783,7 @@ final class PasswordProtectedCardFactsTest extends WP_UnitTestCase {
 			update_post_meta( $id, PKIW\Meta_Fields::PREFIX . 'geo_privacy', 'public' );
 
 			$outputs = [ 'singular' => $this->singular_content( $id ) ];
-			$this->go_to( '/?feed=rss2' );
+			$this->go_to( '/?feed=rss2&kind=' . $kind );
 			while ( have_posts() ) {
 				the_post();
 				if ( get_the_ID() === $id ) {
@@ -792,11 +792,14 @@ final class PasswordProtectedCardFactsTest extends WP_UnitTestCase {
 					break;
 				}
 			}
+			if ( 'public' === $state ) {
+				$this->assertArrayHasKey( 'feed content', $outputs, "The public {$kind} post is in its feed." );
+			}
 			foreach ( $outputs as $where => $html ) {
 				$found = [];
 				preg_match_all( '/ZqMeta[A-Za-z0-9_]+/', $html, $found );
 				if ( $this->facts_visible( $state ) ) {
-					$printed += count( $found[0] );
+					$printed += 'singular' === $where ? count( $found[0] ) : 0;
 				} elseif ( $found[0] ) {
 					$leaks[] = "{$kind} {$where}: " . implode( ',', array_unique( $found[0] ) );
 				}
@@ -805,7 +808,7 @@ final class PasswordProtectedCardFactsTest extends WP_UnitTestCase {
 
 		$this->assertSame( [], $leaks, "State {$state} leaked meta." );
 		if ( $this->facts_visible( $state ) ) {
-			$this->assertGreaterThan( 0, $printed, 'The sweep prints meta in a visible state.' );
+			$this->assertGreaterThan( 0, $printed, 'Singular pages print meta in a visible state.' );
 		}
 	}
 
@@ -838,5 +841,21 @@ final class PasswordProtectedCardFactsTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'Doc Mood Zq45', $xml );
 		$this->assert_facts( $state, $xml, [ 'EmojiZq46', 'Mood doc note Zq47' ] );
+	}
+
+	/**
+	 * REST post meta for a post as an anonymous client.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_rest_post_meta( string $state ): void {
+		$id = $this->post_in_state( $state, 'eat', 'Rest Eat Zq48', [ 'eat_notes' => 'Rest note Zq49' ] );
+		$GLOBALS['wp_rest_server'] = null;
+		$data = (array) rest_do_request( new WP_REST_Request( 'GET', '/wp/v2/posts/' . $id ) )->get_data();
+		$meta = wp_json_encode( $data['meta'] ?? [] );
+
+		// REST redaction keys on the stored password, not the cookie.
+		$this->assert_facts( $state, (string) $meta, [ 'Rest note Zq49' ], 'public' === $state );
 	}
 }

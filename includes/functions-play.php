@@ -297,6 +297,10 @@ function play_card_attrs( int $post_id ): ?array {
  * @return string 'video', 'board' or ''.
  */
 function play_facts_group( int $post_id ): string {
+	if ( ! has_term( 'play', Taxonomy::TAXONOMY, $post_id ) ) {
+		return '';
+	}
+
 	foreach ( PLAY_GROUP_META as $group => $keys ) {
 		foreach ( $keys as $key ) {
 			foreach ( (array) get_metadata_raw( 'post', $post_id, $key, false ) as $value ) {
@@ -326,7 +330,7 @@ function play_facts_group( int $post_id ): string {
  * - `hours_label`: play_hours_label(), the text a theme prints for hours.
  * - `rating`: the stored rating, at most 5, as the card's stars show it.
  * - `game_url_label`: play_game_url_label().
- * - `group`: play_group().
+ * - `group`: play_facts_group().
  * - `played_at`: card_calendar_date() of the card's playedAt, a machine
  *   date and a display date, or two empty strings.
  *
