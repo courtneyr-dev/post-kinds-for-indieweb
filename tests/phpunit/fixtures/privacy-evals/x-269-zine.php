@@ -108,6 +108,17 @@ if ( '' === $fail && get_post( $page_id ) instanceof WP_Post && \PKIW\Zine_Manif
 
 /*X269:5*/
 if ( '' === $fail ) {
+	$comparable_entry = static function ( string $html ): string {
+		$tags = new WP_HTML_Tag_Processor( $html );
+		while ( $tags->next_tag( [ 'tag_name' => 'FIGURE', 'class_name' => 'wp-block-gallery' ] ) ) {
+			foreach ( explode( ' ', (string) $tags->get_attribute( 'class' ) ) as $class ) {
+				if ( preg_match( '/^wp-block-gallery-[0-9]+$/D', $class ) ) {
+					$tags->remove_class( $class );
+				}
+			}
+		}
+		return $tags->get_updated_html();
+	};
 	global $wpdb;
 	$keys = \PKIW\Public_Listing::meta_keys();
 	$key_marks = implode( ', ', array_fill( 0, count( $keys ), '%s' ) );
@@ -145,15 +156,18 @@ if ( '' === $fail ) {
 			}
 			foreach ( array_slice( $actual['entries'], 0, 2 ) as $entry ) {
 				$saved_user = get_current_user_id();
+				$saved_priority = wp_high_priority_element_flag();
 				try {
 					wp_set_current_user( 0 );
 					$anonymous = \PKIW\Zine_Export::render_entry( $entry, (int) $entry['page'] );
 					wp_set_current_user( $admin_id );
+					wp_high_priority_element_flag( $saved_priority );
 					$privileged = \PKIW\Zine_Export::render_entry( $entry, (int) $entry['page'] );
 				} finally {
+					wp_high_priority_element_flag( $saved_priority );
 					wp_set_current_user( $saved_user );
 				}
-				$leak = $anonymous !== $privileged;
+				$leak = $comparable_entry( $anonymous ) !== $comparable_entry( $privileged );
 				foreach ( [ '<iframe', '<script', '<video', '<audio', 'leaflet' ] as $needle ) {
 					$leak = $leak || false !== stripos( $anonymous, $needle );
 				}
