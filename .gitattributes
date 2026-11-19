@@ -1,0 +1,50 @@
+# export-ignore keeps development files out of GitHub's source zips and
+# git archive. The list mirrors .distignore, which decides what ships to
+# WordPress.org. .distignore itself stays in archives: courtneyr.dev's
+# sync-pkiw.sh filters a git archive by it and stops when it's missing.
+/.git export-ignore
+/.github export-ignore
+/.claude export-ignore
+/.husky export-ignore
+/.omc export-ignore
+/node_modules export-ignore
+/vendor export-ignore
+/tests export-ignore
+/bin export-ignore
+/src export-ignore
+/scripts export-ignore
+.DS_Store export-ignore
+.editorconfig export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
+.gitkeep export-ignore
+.lintstagedrc.json export-ignore
+.stylelintignore export-ignore
+.phpcs.xml.dist export-ignore
+.phpcs.cache export-ignore
+.phpunit.result.cache export-ignore
+.wp-env.json export-ignore
+composer.json export-ignore
+composer.lock export-ignore
+package.json export-ignore
+package-lock.json export-ignore
+phpunit.xml.dist export-ignore
+phpstan.neon export-ignore
+webpack.config.js export-ignore
+eslint.config.js export-ignore
+jest.config.js export-ignore
+playwright.config.js export-ignore
+lighthouserc.js export-ignore
+phpstan-baseline.neon export-ignore
+/img export-ignore
+/.wordpress-org export-ignore
+CLAUDE.md export-ignore
+CODE_OF_CONDUCT.md export-ignore
+CONTRIBUTING.md export-ignore
+SECURITY.md export-ignore
+SUPPORT.md export-ignore
+TESTING.md export-ignore
+/stubs export-ignore
+/docs export-ignore
+/wordpress-atmosphere export-ignore
+.npmpackagejsonlintignore export-ignore
