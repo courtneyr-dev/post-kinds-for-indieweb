@@ -35,6 +35,7 @@ export default defineConfig( {
 			],
 			editLink: { baseUrl: `${ meta.github }/edit/main/docs/` },
 			lastUpdated: true,
+			customCss: [ './src/styles/search.css' ],
 			head: [
 				{
 					tag: 'meta',

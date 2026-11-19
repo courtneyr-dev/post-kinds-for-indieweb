@@ -12,15 +12,15 @@
     "check:a11y": "node scripts/a11y-check.mjs"
   },
   "dependencies": {
-    "@astrojs/starlight": "^0.41.3",
-    "astro": "^7.4.2",
+    "@astrojs/starlight": "^0.43.1",
+    "astro": "^7.4.12",
     "sharp": "^0.35.5"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.12.1",
-    "linkinator": "^7.6.1",
-    "markdownlint-cli2": "^0.24.0",
-    "playwright": "^1.61.1"
+    "@axe-core/playwright": "^4.14.0",
+    "linkinator": "^8.1.0",
+    "markdownlint-cli2": "^0.24.1",
+    "playwright": "^1.65.1"
   },
   "overrides": {
     "@expressive-code/core": {
