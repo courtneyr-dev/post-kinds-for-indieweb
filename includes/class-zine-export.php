@@ -467,8 +467,17 @@ final class Zine_Export {
 	private static function render_entry_content( \WP_Post $post ): string {
 		$prior            = $GLOBALS['post'] ?? null;
 		$prior_query_post = $GLOBALS['wp_query']->post ?? null;
-		$skip             = static function ( $pre_render, array $parsed ) {
-			return in_array( (string) ( $parsed['blockName'] ?? '' ), [ 'core/query', 'core/latest-posts', 'core/block', 'core/post-content' ], true ) ? '' : $pre_render;
+		$render_static    = static function ( $pre_render, array $parsed ) {
+			$name = $parsed['blockName'] ?? '';
+			if ( in_array( $name, [ 'core/query', 'core/latest-posts', 'core/block', 'core/post-content' ], true ) ) {
+				return '';
+			}
+			if ( 'core/embed' === $name ) {
+				$url  = $parsed['attrs']['url'] ?? '';
+				$href = is_string( $url ) ? esc_url( $url, [ 'http', 'https' ] ) : '';
+				return '' === $href ? '' : '<p><a href="' . $href . '">' . esc_html( $url ) . '</a></p>';
+			}
+			return $pre_render;
 		};
 		$html             = '';
 		try {
@@ -477,11 +486,13 @@ final class Zine_Export {
 				$GLOBALS['wp_query']->post = $post;
 			}
 			setup_postdata( $post );
-			add_filter( 'pre_render_block', $skip, 10, 2 );
+			add_filter( 'pre_render_block', $render_static, 10, 2 );
 			$thumbnail = get_post_thumbnail_id( $post );
 			foreach ( parse_blocks( $post->post_content ) as $parsed ) {
-				$name = (string) ( $parsed['blockName'] ?? '' );
-				if ( in_array( $name, [ 'core/query', 'core/latest-posts', 'core/block', 'core/post-content' ], true ) ) {
+				$name   = (string) ( $parsed['blockName'] ?? '' );
+				$static = $render_static( null, $parsed );
+				if ( null !== $static ) {
+					$html .= $static;
 					continue;
 				}
 				if ( 'core/image' === $name && 0 < $thumbnail && (int) ( $parsed['attrs']['id'] ?? 0 ) === $thumbnail ) {
@@ -496,7 +507,7 @@ final class Zine_Export {
 				) )->render();
 			}
 		} finally {
-			remove_filter( 'pre_render_block', $skip, 10 );
+			remove_filter( 'pre_render_block', $render_static, 10 );
 			if ( isset( $GLOBALS['wp_query'] ) && $GLOBALS['wp_query'] instanceof \WP_Query ) {
 				$GLOBALS['wp_query']->post = $prior_query_post;
 			}

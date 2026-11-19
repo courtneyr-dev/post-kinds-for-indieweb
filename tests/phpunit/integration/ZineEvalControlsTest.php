@@ -92,6 +92,14 @@ final class ZineEvalControlsTest extends WP_UnitTestCase {
 		$this->assertSame( 'RESULT FAIL rows_real:' . $ids['frame'], $this->run_eval( $code ) );
 	}
 
+	public function test_case_5_accepts_core_gallery_class_counters(): void {
+		$this->seed();
+		$gallery = '$pkiw_gallery_calls = 0; add_filter( "render_block", static function ( $html ) use ( &$pkiw_gallery_calls ) { ++$pkiw_gallery_calls; return $html . "<figure class=\"wp-block-gallery " . wp_unique_id( "wp-block-gallery-" ) . "\"></figure>"; } );';
+		$code = $this->insert_before( 5, $gallery );
+		$code = str_replace( '/*X269:/5*/', 'if ( $pkiw_gallery_calls < 2 ) { $fail = "control_not_exercised"; } /*X269:/5*/', $code );
+		$this->assertSame( 'RESULT PASS', $this->run_eval( $code ) );
+	}
+
 	public function test_case_5_detects_rendering_that_depends_on_the_user(): void {
 		$this->seed();
 		$code = $this->insert_before( 5, 'add_filter( "render_block", static fn( $html ) => $html . "<span>user-" . get_current_user_id() . "</span>" );' );

@@ -192,6 +192,37 @@ final class ZinePrintViewTest extends ZineTestCase {
 		$this->assertSame( 0, substr_count( $html, 'Other title' ), 'The non-zine post must not leak through a nested core/latest-posts or core/query.' );
 	}
 
+	public function test_entry_embeds_print_as_safe_links_without_invoking_player_hooks(): void {
+		$top_url    = 'https://example.org/top-video';
+		$nested_url = 'https://example.org/nested-video';
+		$embed      = static fn( string $url ): string => '<!-- wp:embed ' . wp_json_encode( [ 'url' => $url ] ) . ' --><figure class="wp-block-embed"><div class="wp-block-embed__wrapper">' . esc_html( $url ) . '</div></figure><!-- /wp:embed -->';
+		$this->post(
+			'Media entry',
+			[
+				'post_content' => $embed( $top_url ) . '<!-- wp:group --><div class="wp-block-group">' . $embed( $nested_url ) . '</div><!-- /wp:group -->' . $embed( 'javascript:alert(1)' ),
+			]
+		);
+		$this->go_to( add_query_arg( 'pkiw_zine_pages', '8', get_term_link( $this->recipe ) ) );
+		do_action( 'wp' );
+
+		$player_calls = 0;
+		$player       = static function ( string $html ) use ( &$player_calls ): string {
+			++$player_calls;
+			return $html . '<video src="https://example.org/player"></video>';
+		};
+		add_filter( 'render_block_core/embed', $player );
+		try {
+			$html = Zine_Export::render_booklet();
+		} finally {
+			remove_filter( 'render_block_core/embed', $player );
+		}
+
+		$this->assertSame( 0, $player_calls, 'Embed rendering must stop before any player hook can write.' );
+		$this->assertStringContainsString( '<a href="' . $top_url . '">' . $top_url . '</a>', $html );
+		$this->assertStringContainsString( '<a href="' . $nested_url . '">' . $nested_url . '</a>', $html );
+		$this->assertStringNotContainsString( 'javascript:alert(1)', $html );
+	}
+
 	public function test_entry_block_context_keeps_each_venue_and_cite_with_its_post(): void {
 		$binding = static fn( string $key, string $fallback ): string => '<!-- wp:paragraph {"metadata":{"bindings":{"content":{"source":"' . Block_Bindings::SOURCE_NAME . '","args":{"key":"' . $key . '"}}}}} --><p>' . $fallback . '</p><!-- /wp:paragraph -->';
 		$first   = $this->post( 'First context check-in', [ 'post_date' => '2025-03-09 12:00:00', 'post_content' => $binding( 'checkin_name', 'fallback first' ) ], 'checkin' );
