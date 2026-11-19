@@ -806,6 +806,11 @@ class Settings_Page {
 	 */
 	public function render_general_section(): void {
 		echo '<p>' . esc_html__( 'Configure general plugin behavior and defaults.', 'post-kinds-for-indieweb-in-block-themes' ) . '</p>';
+		printf(
+			'<p><a href="%s">%s</a></p>',
+			esc_url( 'https://github.com/courtneyr-dev/indieweb-test-data' ),
+			esc_html__( 'Download IndieWeb test data for a disposable WordPress site', 'post-kinds-for-indieweb-in-block-themes' )
+		);
 	}
 
 	/**

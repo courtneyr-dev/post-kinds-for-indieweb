@@ -167,6 +167,10 @@ Yes. On the General tab of Reactions → Settings, "Mood label spelling" follows
 
 Long-form guides — installation, settings, common tasks, troubleshooting, privacy — live at [courtneyr-dev.github.io/post-kinds-for-indieweb](https://courtneyr-dev.github.io/post-kinds-for-indieweb/).
 
+= Where can I get sample posts for testing? =
+
+Download [IndieWeb test data](https://github.com/courtneyr-dev/indieweb-test-data) for a disposable WordPress site. The small export covers 40 post kinds. You can also find the link under **Reactions → Settings → General**.
+
 == Screenshots ==
 
 1. Listen Card block displaying a song with album art and rating

@@ -19,6 +19,9 @@
 			"pluginData": {
 				"resource": "wordpress.org/plugins",
 				"slug": "post-kinds-for-indieweb-in-block-themes"
+			},
+			"options": {
+				"activate": true
 			}
 		},
 		{
@@ -37,8 +40,11 @@
 			}
 		},
 		{
-			"step": "runPHP",
-			"code": "<?php require_once '/wordpress/wp-load.php'; wp_insert_term('listen', 'kind', array('slug' => 'listen')); wp_insert_term('watch', 'kind', array('slug' => 'watch')); wp_insert_term('read', 'kind', array('slug' => 'read')); wp_insert_term('checkin', 'kind', array('slug' => 'checkin')); wp_insert_term('rsvp', 'kind', array('slug' => 'rsvp')); ?>"
+			"step": "importWxr",
+			"file": {
+				"resource": "url",
+				"url": "https://raw.githubusercontent.com/courtneyr-dev/indieweb-test-data/62a8dbc66bd0814ea720bd23f3893a16d499ff20/indieweb-test-data-small.xml"
+			}
 		}
 	]
 }

@@ -14,28 +14,42 @@ Try the plugin instantly in your browser:
 
 The main demo blueprint that:
 - Installs the latest WordPress with PHP 8.2 (the plugin requires WordPress 7.0+)
-- Installs Post Kinds for IndieWeb from the main branch
+- Installs Post Kinds for IndieWeb from WordPress.org
 - Installs IndieBlocks for complementary functionality
 - Pre-configures permalink structure
-- Seeds the listen, watch, read, checkin, and rsvp kind terms (the plugin creates the rest on init)
+- Imports the small IndieWeb test data export after PKIW registers the kind taxonomy
 - Opens directly to the new post screen
+
+Open **Posts → All Posts** to browse the imported posts.
 
 ### `.wordpress-org/blueprints/blueprint.json` - WordPress.org variant
 
-Same demo, minus the plugin-install step: in a WordPress.org Live Preview the
-plugin directory installs and activates the plugin itself. Once the plugin is
-listed, copy this file to `assets/blueprints/blueprint.json` in SVN to enable
-Live Preview.
+The directory Blueprint installs and activates PKIW before it imports the same
+sample posts. WordPress.org reads it from `assets/blueprints/blueprint.json` in SVN.
 
-This is also the blueprint to use for local runs with `--auto-mount`, since the
-mount already supplies the plugin — see [docs/playground.md](../docs/playground.md)
-for the one-line command and the reasoning.
+### `docs-screenshots.json` - Local checkout
 
-**Use this for:**
-- Quick demos
-- Testing new features
-- Bug reproduction
-- Screenshot generation
+This Blueprint activates the mounted checkout, creates the named screenshot
+fixtures, then imports the shared sample posts. From the plugin root, run:
+
+```sh
+wp-playground-cli server --blueprint=blueprints/docs-screenshots.json \
+  --mount="$PWD:/wordpress/wp-content/plugins/post-kinds-for-indieweb"
+```
+
+### Test data for disposable sites
+
+Use [IndieWeb test data](https://github.com/courtneyr-dev/indieweb-test-data) for
+content testing in Playground and disposable local, CI, or staging WordPress
+installs. Activate PKIW before importing. In a local install, use **Tools →
+Import → WordPress** to import the WXR file once.
+
+- Use the small export for 89 sample posts across 40 kinds.
+- Use the full export for all 400 post-format and kind combinations.
+- Use the extended export when the test needs PKIW cite, check-in, or geo metadata.
+
+Pin the fixture commit in automated previews. Keep test-specific fixtures for
+individual assertions, and keep the shared exports off the live site.
 
 ## Using Blueprints
 
