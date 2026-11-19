@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.1] - 2026-11-18
+
+### Fixed
+
+- A Micropub update changes the kind when it explicitly names one. Updates that leave the kind out preserve the existing kind (#594).
+- Lists, feeds, and pages hide card facts on password-protected posts until the visitor enters the password. Grouped archives also keep those facts out of group names and sort keys (#596).
+- Zine print views turn media embeds into links before player hooks run. The privacy check accounts for WordPress's generated gallery class and first-image priority while still rejecting private output and database writes (#597).
+
 ## [1.10.0] - 2026-11-18
 
 ### Added
@@ -827,7 +835,8 @@ This project uses Semantic Versioning:
 - [Issues](https://github.com/courtneyr-dev/post-kinds-for-indieweb/issues)
 - [IndieWeb Wiki](https://indieweb.org/)
 
-[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.10.1...HEAD
+[1.10.1]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.9.2...v1.10.0
 [1.9.2]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.9.1...v1.9.2
 [1.9.1]: https://github.com/courtneyr-dev/post-kinds-for-indieweb/compare/v1.9.0...v1.9.1

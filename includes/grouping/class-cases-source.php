@@ -54,10 +54,11 @@ final class Cases_Source implements Group_Source {
 	 * @param string[]                $order       Section order of case ids; unlisted cases follow, A to Z.
 	 * @param Label_Mode|null         $label       Label mode for case ids. Default verbatim.
 	 * @param string|\Closure         $empty_label Label for posts in no case; '' uses the engine's.
+	 * @param bool                    $protected_in_empty Whether protected posts file into the empty group.
 	 * @throws \InvalidArgumentException On a malformed id or case id, or an empty case map or key list.
 	 */
-	public function __construct( string $id, array $cases, array $order = [], ?Label_Mode $label = null, $empty_label = '' ) {
-		$this->init_basics( $id, $empty_label );
+	public function __construct( string $id, array $cases, array $order = [], ?Label_Mode $label = null, $empty_label = '', bool $protected_in_empty = false ) {
+		$this->init_basics( $id, $empty_label, $protected_in_empty );
 		if ( [] === $cases ) {
 			throw new \InvalidArgumentException( 'A cases group source needs at least one case.' );
 		}
@@ -92,7 +93,7 @@ final class Cases_Source implements Group_Source {
 				...array_merge( $keys, [ (string) $case ] )
 			);
 		}
-		$parts = [ 'value' => "(CASE{$when} ELSE '' END)" ];
+		$parts = [ 'value' => $this->guard_protected_sql( "(CASE{$when} ELSE '' END)", "''" ) ];
 
 		if ( [] !== $this->order ) {
 			$cases = '';
@@ -113,6 +114,9 @@ final class Cases_Source implements Group_Source {
 	 * @return Archive_Group
 	 */
 	public function group_of( \WP_Post $post, ?\WP_Query $query = null ): Archive_Group { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		if ( $this->is_protected( $post ) ) {
+			return new Archive_Group( '', '', '' );
+		}
 		foreach ( $this->cases as $case => $keys ) {
 			foreach ( $keys as $key ) {
 				foreach ( (array) get_metadata_raw( 'post', (int) $post->ID, $key, false ) as $value ) {

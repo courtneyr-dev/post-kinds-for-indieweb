@@ -133,10 +133,12 @@ $pkiw_map_id = 'checkins-map-' . wp_unique_id();
 				$pkiw_item_post   = get_post();
 				$pkiw_item_title  = $pkiw_item_post instanceof WP_Post ? \PKIW\visitor_post_title( $pkiw_item_post ) : '';
 				$pkiw_title_class = $pkiw_item_post instanceof WP_Post && \PKIW\post_title_is_hidden( $pkiw_item_post ) ? 'checkins-feed__title' : 'checkins-feed__title p-name';
+				// A protected check-in lists its title alone.
+				$pkiw_item_shows_facts = $pkiw_item_post instanceof WP_Post && \PKIW\Kind_Facts::can_show( $pkiw_item_post );
 				?>
 
 				<article class="checkins-feed__item h-entry">
-					<?php if ( has_post_thumbnail() ) : ?>
+					<?php if ( $pkiw_item_shows_facts && has_post_thumbnail() ) : ?>
 						<div class="checkins-feed__thumbnail">
 							<a href="<?php the_permalink(); ?>" class="u-url" tabindex="-1" aria-hidden="true">
 								<?php the_post_thumbnail( 'thumbnail', [ 'class' => 'u-photo' ] ); ?>

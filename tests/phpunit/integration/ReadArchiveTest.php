@@ -458,20 +458,21 @@ final class ReadArchiveTest extends WP_UnitTestCase {
 		update_post_meta( $locked, '_pkiw_read_title', 'Aardvark Secrets' );
 		$this->assertSame( $password, get_post( $locked )->post_password );
 
-		// The shelves: the protected read keeps its status shelf, as fixture
-		// P1 does, and prints its title link alone.
+		// The shelves: the protected read files in the empty shelf, so its
+		// status isn't named, and prints its title link alone.
 		$html    = $this->serve( $this->archive_url() );
 		$shelves = $this->shelves( $html );
-		$this->assertSame( [ 'finished' ], array_column( $shelves, 'group' ) );
+		$this->assertSame( [ 'finished', '' ], array_column( $shelves, 'group' ) );
 		$this->assertSame( 'h2:Finished', $shelves[0]['heading'] );
-		$this->assertSame( [ 'Harbor Weather', 'Protected: Locked Post' ], $shelves[0]['titles'] );
+		$this->assertSame( [ 'Harbor Weather' ], $shelves[0]['titles'] );
+		$this->assertSame( [ 'Protected: Locked Post' ], $shelves[1]['titles'] );
 		$this->assertSame( 1, $this->xpath( $html )->query( '//article[contains(concat(" ", normalize-space(@class), " "), " pk-card--protected ")]' )->length );
 		$this->assertStringContainsString( 'Carol Cole', $html, 'The open read prints its author, so the next two checks can fail.' );
 		$this->assertStringNotContainsString( 'Bob Baker', $html );
 		$this->assertStringNotContainsString( 'Aardvark Secrets', $html );
 
-		// REST in grouped order: both on the finished shelf, newest first,
-		// and the protected read's content and excerpt withheld. Its meta
+		// REST in grouped order: the open read on its shelf, then the
+		// protected read in the empty one, and the protected read's content and excerpt withheld. Its meta
 		// isn't checked: _pkiw_read_author and _pkiw_read_title still come
 		// back, since class-meta-fields.php shows them in REST with no
 		// password check.

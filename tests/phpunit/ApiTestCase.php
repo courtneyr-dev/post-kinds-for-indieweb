@@ -7,6 +7,8 @@
 
 namespace PKIW\Tests;
 
+use PKIW\APIs\API_Base;
+use ReflectionProperty;
 use WP_UnitTestCase;
 
 /**
@@ -35,6 +37,9 @@ abstract class ApiTestCase extends WP_UnitTestCase {
 		parent::set_up();
 		$this->mocked_responses = [];
 		$this->recorded_requests = [];
+		// The rate limiter's last-request times are static, so a request in the
+		// previous test would make this one sleep for the API's full interval.
+		( new ReflectionProperty( API_Base::class, 'last_request_times' ) )->setValue( null, [] );
 		add_filter( 'pre_http_request', [ $this, 'intercept_http_request' ], 10, 3 );
 	}
 

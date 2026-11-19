@@ -103,7 +103,9 @@ final class Read_Archive {
 			self::SOURCE,
 			[ Meta_Fields::PREFIX . 'read_status' ],
 			self::STATUSES,
-			Label_Mode::map( static fn(): array => read_status_labels() )
+			Label_Mode::map( static fn(): array => read_status_labels() ),
+			'',
+			true
 		);
 	}
 

@@ -1,0 +1,863 @@
+<?php
+/**
+ * A locked post prints none of its card facts on any list, feed or block.
+ *
+ * @package PKIW
+ */
+
+declare(strict_types=1);
+
+require_once dirname( __DIR__ ) . '/fixtures/wprm-stand-in.php';
+
+/**
+ * Four states per path: public, locked with no cookie, locked with a wrong
+ * cookie, and unlocked. The locked states print the post's title and none of
+ * its card facts. Each path's public state is its positive control: the same
+ * fixture must print its facts there, or the absence checks prove nothing.
+ *
+ * @group integration
+ */
+final class PasswordProtectedCardFactsTest extends WP_UnitTestCase {
+
+	private const PASSWORD = 'open-sesame-Zp1';
+
+	/**
+	 * Stylesheet active before each test.
+	 *
+	 * @var string
+	 */
+	private string $original_stylesheet = '';
+
+	public function set_up(): void {
+		parent::set_up();
+		( new PKIW\Meta_Fields() )->register_meta_fields();
+		$this->original_stylesheet = get_stylesheet();
+		switch_theme( 'twentytwentyfive' );
+		update_option( 'posts_per_page', 20 );
+		wp_set_current_user( 0 );
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+	}
+
+	public function tear_down(): void {
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+		wp_set_current_user( 0 );
+		switch_theme( $this->original_stylesheet );
+		parent::tear_down();
+	}
+
+	/**
+	 * The four states every path is tested in.
+	 *
+	 * @return array<string, array{0:string}>
+	 */
+	public static function states(): array {
+		return [
+			'public'               => [ 'public' ],
+			'locked, no cookie'    => [ 'locked' ],
+			'locked, wrong cookie' => [ 'wrong' ],
+			'unlocked'             => [ 'unlocked' ],
+		];
+	}
+
+	/**
+	 * Whether the state lets a post-level renderer print the post's facts.
+	 *
+	 * @param string $state State name.
+	 */
+	private function facts_visible( string $state ): bool {
+		return in_array( $state, [ 'public', 'unlocked' ], true );
+	}
+
+	/**
+	 * Set the visitor's post-password cookie for a state.
+	 *
+	 * @param string $state State name.
+	 */
+	private function apply_cookie( string $state ): void {
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+		if ( 'wrong' === $state ) {
+			$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'not-the-password' );
+		} elseif ( 'unlocked' === $state ) {
+			$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( self::PASSWORD );
+		}
+	}
+
+	/**
+	 * A published post of a kind in a state, with meta and its visitor cookie.
+	 *
+	 * @param string                $state State name.
+	 * @param string                $kind  Kind slug.
+	 * @param string                $title Title.
+	 * @param array<string, string> $meta  Meta keyed by field suffix, written under the plugin prefix.
+	 * @param array<string, mixed>  $extra Extra post fields.
+	 */
+	private function post_in_state( string $state, string $kind, string $title, array $meta = [], array $extra = [] ): int {
+		$id = self::factory()->post->create(
+			array_merge(
+				[
+					'post_status'   => 'publish',
+					'post_title'    => $title,
+					'post_password' => 'public' === $state ? '' : self::PASSWORD,
+				],
+				$extra
+			)
+		);
+		wp_set_object_terms( $id, $kind, 'kind' );
+		foreach ( $meta as $suffix => $value ) {
+			update_post_meta( $id, PKIW\Meta_Fields::PREFIX . $suffix, $value );
+		}
+		$this->apply_cookie( $state );
+
+		return $id;
+	}
+
+	/**
+	 * Assert markers print in a visible state and none print in a locked one.
+	 *
+	 * @param string   $state   State name.
+	 * @param string   $html    Rendered output.
+	 * @param string[] $markers Fact values that must follow the state.
+	 * @param bool     $visible Whether this state prints the facts; defaults to the post-level rule.
+	 */
+	private function assert_facts( string $state, string $html, array $markers, ?bool $visible = null ): void {
+		$visible = $visible ?? $this->facts_visible( $state );
+		foreach ( $markers as $marker ) {
+			if ( $visible ) {
+				$this->assertStringContainsString( $marker, $html, "State {$state} prints {$marker}." );
+			} else {
+				$this->assertStringNotContainsString( $marker, $html, "State {$state} leaked {$marker}." );
+			}
+		}
+	}
+
+	/**
+	 * The menu line block for a post.
+	 *
+	 * @param int $id Post ID.
+	 */
+	private function menu_line( int $id ): string {
+		$block = new WP_Block(
+			[
+				'blockName'    => PKIW\Kind_Archive_Layouts::MENU_ENTRY,
+				'attrs'        => [],
+				'innerBlocks'  => [],
+				'innerHTML'    => '',
+				'innerContent' => [],
+			],
+			[
+				'postId'   => $id,
+				'postType' => 'post',
+			]
+		);
+
+		return $block->render();
+	}
+
+	/**
+	 * Recent Specials for a kind.
+	 *
+	 * @param string $kind Kind slug.
+	 */
+	private function specials( string $kind ): string {
+		$this->go_to( get_term_link( $kind, 'kind' ) );
+
+		return render_block(
+			[
+				'blockName'    => PKIW\Kind_Archive_Layouts::MENU_SPECIALS,
+				'attrs'        => [ 'kind' => $kind ],
+				'innerBlocks'  => [],
+				'innerHTML'    => '',
+				'innerContent' => [],
+			]
+		);
+	}
+
+	/**
+	 * Menu line, eat kind.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_eat_menu_line( string $state ): void {
+		$id   = $this->post_in_state(
+			$state,
+			'eat',
+			'Menu Eat Title',
+			[
+				'eat_name'       => 'Menu Eat Card Name Zq1',
+				'eat_rating'     => '4',
+				'eat_restaurant' => 'Menu Eat Restaurant Zq2',
+				'eat_notes'      => 'Menu eat note Zq3',
+			]
+		);
+		$html = $this->menu_line( $id );
+
+		$this->assert_facts( $state, $html, [ 'Menu Eat Card Name Zq1', 'Rated 4 of 5', 'Menu Eat Restaurant Zq2', 'Menu eat note Zq3' ] );
+		if ( ! $this->facts_visible( $state ) ) {
+			$this->assertStringContainsString( 'Menu Eat Title', $html );
+			$this->assertStringNotContainsString( 'h-food', $html );
+		}
+	}
+
+	/**
+	 * Menu line, drink kind.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_drink_menu_line( string $state ): void {
+		$id   = $this->post_in_state(
+			$state,
+			'drink',
+			'Menu Drink Title',
+			[
+				'drink_name'    => 'Menu Drink Card Name Zq4',
+				'drink_rating'  => '5',
+				'drink_brewery' => 'Menu Drink Brewery Zq5',
+				'drink_notes'   => 'Menu drink note Zq6',
+			]
+		);
+		$html = $this->menu_line( $id );
+
+		$this->assert_facts( $state, $html, [ 'Menu Drink Card Name Zq4', 'Rated 5 of 5', 'Menu Drink Brewery Zq5', 'Menu drink note Zq6' ] );
+		if ( ! $this->facts_visible( $state ) ) {
+			$this->assertStringContainsString( 'Menu Drink Title', $html );
+			$this->assertStringNotContainsString( 'h-food', $html );
+		}
+	}
+
+	/**
+	 * Recent Specials.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_recent_specials( string $state ): void {
+		$id = $this->post_in_state(
+			$state,
+			'drink',
+			'Special Drink Title',
+			[
+				'drink_name'    => 'Special Card Name Zq7',
+				'drink_rating'  => '3',
+				'drink_brewery' => 'Special Brewery Zq8',
+				'drink_notes'   => 'Special note Zq9',
+				'drink_photo'   => 'https://example.com/special-photo-zq10.jpg',
+			]
+		);
+		$html = $this->specials( 'drink' );
+
+		$this->assert_facts( $state, $html, [ 'Special Card Name Zq7', 'Rated 3 of 5', 'Special Brewery Zq8', 'Special note Zq9', 'special-photo-zq10.jpg' ] );
+		$this->assertStringContainsString( (string) get_permalink( $id ), $html );
+		if ( ! $this->facts_visible( $state ) ) {
+			$this->assertStringContainsString( 'Special Drink Title', $html );
+		}
+	}
+
+	/**
+	 * Archive group sources whose heading names a card fact.
+	 *
+	 * @return array<string, array{0:string,1:string,2:string,3:string[]}>
+	 */
+	public static function group_cases(): array {
+		return [
+			'eat menu (legacy cuisine)'  => [ 'eat', 'legacy-eat', 'eat_cuisine', [ 'Aaa Cuisine', 'Mmm Cuisine', 'Zzz Cuisine' ] ],
+			'drink menu (legacy type)'   => [ 'drink', 'legacy-drink', 'drink_type', [ 'aaa-type', 'mmm-type', 'zzz-type' ] ],
+			'read status'                => [ 'read', 'read-status', 'read_status', [ 'reading', 'to-read', 'finished' ] ],
+			'play type'                  => [ 'play', 'play_type', '', [ 'board', 'video', 'board' ] ],
+		];
+	}
+
+	/**
+	 * The group source a case names.
+	 *
+	 * @param string $source Source id used by the case.
+	 */
+	private function group_source( string $source ): PKIW\Grouping\Group_Source {
+		if ( 'legacy-eat' === $source ) {
+			return PKIW\Grouping\Meta_Source::legacy( '_pkiw_eat_cuisine', 'eat' );
+		}
+		if ( 'legacy-drink' === $source ) {
+			return PKIW\Grouping\Meta_Source::legacy( '_pkiw_drink_type', 'drink' );
+		}
+		$registered = PKIW\Grouped_Archive::source( $source );
+		$this->assertNotNull( $registered, "Source {$source} is registered." );
+
+		return $registered;
+	}
+
+	/**
+	 * Meta that puts a play post in a group.
+	 *
+	 * @param string $group Group key.
+	 * @return array<string, string>
+	 */
+	private function play_meta( string $group ): array {
+		return [ 'play_' . ( 'video' === $group ? 'rawg_id' : 'bgg_id' ) => '777' ];
+	}
+
+	/**
+	 * A group heading never names a locked post's fact, and its place in the
+	 * grouped order matches its group, so its position names nothing either.
+	 * Group sources key on the stored password, not the cookie, so an
+	 * unlocked visitor sees the same filing as a locked one.
+	 *
+	 * @dataProvider group_cases
+	 * @param string   $kind   Kind slug.
+	 * @param string   $source Source id.
+	 * @param string   $key    Meta suffix, or '' for play.
+	 * @param string[] $values Values of the earlier, tested and later posts.
+	 */
+	public function test_group_heading_and_position( string $kind, string $source, string $key, array $values ): void {
+		foreach ( [ 'public', 'locked', 'wrong', 'unlocked' ] as $state ) {
+			$meta  = static fn( string $value ): array => '' === $key ? [] : [ $key => $value ];
+			$mk    = fn( string $s, string $value ): int => $this->post_in_state( $s, $kind, "{$kind} {$value} {$s}", '' === $key ? $this->play_meta( $value ) : $meta( $value ) );
+			$first = $mk( 'public', $values[0] );
+			$mid   = $mk( $state, $values[1] );
+			$last  = $mk( 'public', $values[2] );
+
+			$group = $this->group_source( $source )->group_of( get_post( $mid ) );
+			if ( 'public' === $state ) {
+				$this->assertNotSame( '', $group->key(), "Public {$kind} post files under its value." );
+			} else {
+				$this->assertSame( '', $group->key(), "State {$state} files in the empty group." );
+				$this->assertStringNotContainsString( strtolower( $values[1] ), strtolower( PKIW\Grouped_Archive::group_label_of_post( $kind, $mid ) ), "State {$state} heading names the value." );
+			}
+
+			$legacy = str_starts_with( $source, 'legacy' );
+			$query  = new WP_Query(
+				[
+					'post_type'      => 'post',
+					'posts_per_page' => -1,
+					'fields'         => 'ids',
+					'tax_query'      => [ [ 'taxonomy' => 'kind', 'field' => 'slug', 'terms' => $kind ] ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+				] + ( $legacy ? [ 'pkiw_group_by' => '_pkiw_' . $key ] : [ 'pkiw_group_source' => $source ] )
+			);
+			$ids    = array_map( 'intval', $query->posts );
+			$at     = array_search( $mid, $ids, true );
+			$this->assertNotFalse( $at, 'The tested post is in the grouped list.' );
+			if ( 'public' !== $state ) {
+				$this->assertSame( count( $ids ) - 1, $at, "State {$state} sits in the empty group, last, not among its neighbors." );
+			} else {
+				$this->assertNotSame( count( $ids ) - 1, $at, 'A public post keeps its own group, so the locked check can tell the two apart.' );
+			}
+			foreach ( [ $first, $mid, $last ] as $id ) {
+				wp_delete_post( $id, true );
+			}
+		}
+	}
+
+	/**
+	 * A published check-in in a state, with a venue, coordinates, an excerpt and a featured image.
+	 *
+	 * @param string $state State name.
+	 * @param string $title Title.
+	 */
+	private function checkin_in_state( string $state, string $title ): int {
+		$id = $this->post_in_state(
+			$state,
+			'checkin',
+			$title,
+			[
+				'geo_privacy'      => 'public',
+				'checkin_venue'    => 'Checkin Venue Zq11',
+				'checkin_city'     => 'Checkin City Zq12',
+				'checkin_latitude' => '41.123456',
+				'checkin_longitude' => '-87.654321',
+			],
+			[ 'post_excerpt' => 'Checkin excerpt Zq13' ]
+		);
+		$thumb = self::factory()->attachment->create(
+			[
+				'post_parent'    => $id,
+				'post_mime_type' => 'image/jpeg',
+				'file'           => 'checkin-thumb-zq14.jpg',
+			]
+		);
+		set_post_thumbnail( $id, $thumb );
+
+		return $id;
+	}
+
+	/**
+	 * The Check-ins Feed block in list mode.
+	 *
+	 * @param array<string, mixed> $attrs Block attributes.
+	 */
+	private function checkins_feed( array $attrs = [] ): string {
+		return render_block(
+			[
+				'blockName'    => 'post-kinds-indieweb/checkins-feed',
+				'attrs'        => $attrs + [
+					'showMap'     => true,
+					'showExcerpt' => true,
+				],
+				'innerBlocks'  => [],
+				'innerHTML'    => '',
+				'innerContent' => [],
+			]
+		);
+	}
+
+	/**
+	 * Check-ins Feed, list mode: the entry stays, as a title link, and the
+	 * venue, coordinates, map marker, picture and excerpt follow the state.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_checkins_feed_list_mode( string $state ): void {
+		$id   = $this->checkin_in_state( $state, 'Feed Checkin Title Zq15' );
+		$html = $this->checkins_feed();
+
+		$this->assertStringContainsString( 'Feed Checkin Title Zq15', $html );
+		$this->assertStringContainsString( (string) get_permalink( $id ), $html );
+		$this->assert_facts( $state, $html, [ 'Checkin Venue Zq11', '41.123456', 'checkin-thumb-zq14.jpg' ] );
+		$this->assert_facts( $state, $html, [ 'Checkin excerpt Zq13' ] );
+	}
+
+	/**
+	 * A check-in's venue is named by the venue list it sits in, so a locked
+	 * one is left out of every list at that venue, for locked and unlocked
+	 * visitors alike (the list query reads the stored password).
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_checkins_at_venue_list( string $state ): void {
+		$venue = self::factory()->term->create( [ 'taxonomy' => PKIW\Venue_Taxonomy::TAXONOMY, 'name' => 'Venue Zq16' ] );
+		$id    = $this->checkin_in_state( $state, 'Venue List Checkin Zq17' );
+		wp_set_object_terms( $id, [ $venue ], PKIW\Venue_Taxonomy::TAXONOMY );
+
+		$listed = wp_list_pluck( PKIW\get_checkins_at_venue( $venue )->posts, 'ID' );
+		$this->assertSame( 'public' === $state, in_array( $id, $listed, true ), "State {$state}." );
+	}
+
+	/**
+	 * The venue a check-in names, as the template function reads it.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_checkin_location_function( string $state ): void {
+		$id       = $this->checkin_in_state( $state, 'Location Checkin Zq18' );
+		$location = PKIW\get_checkin_location( $id );
+
+		if ( $this->facts_visible( $state ) ) {
+			$this->assertSame( 'Checkin Venue Zq11', $location['name'] ?? '' );
+		} else {
+			$this->assertSame( [], $location );
+		}
+	}
+
+	/**
+	 * Recipe courses nav: a course only a locked recipe carries isn't listed.
+	 * The recipe sits in a WP Recipe Maker course, which only its post's
+	 * embed ties to the kind archive, so the course is a card fact.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_recipe_courses_nav( string $state ): void {
+		pkiw_register_wprm_stand_in_types();
+		( new PKIW\Taxonomy() )->create_default_terms();
+		$recipe_id = self::factory()->post->create(
+			[
+				'post_type'   => 'wprm_recipe',
+				'post_title'  => 'Recipe Zq20',
+				'post_status' => 'publish',
+			]
+		);
+		wp_set_object_terms( $recipe_id, [ 'Course Zq19' ], 'wprm_course' );
+		$id = $this->post_in_state(
+			$state,
+			'recipe',
+			'Recipe Title Zq20',
+			[],
+			[ 'post_content' => '<!-- wp:wp-recipe-maker/recipe {"id":' . $recipe_id . '} -->[wprm-recipe id="' . $recipe_id . '"]<!-- /wp:wp-recipe-maker/recipe -->' ]
+		);
+		update_post_meta( $recipe_id, 'wprm_parent_post_id', $id );
+
+		$names = wp_list_pluck( PKIW\recipe_archive_courses(), 'name' );
+		$this->assertSame( 'public' === $state, in_array( 'Course Zq19', $names, true ), "State {$state}." );
+	}
+
+	/**
+	 * Render one block with a post in context, as a Query Loop or template does.
+	 *
+	 * @param string               $name    Block name.
+	 * @param array<string, mixed> $attrs   Block attributes.
+	 * @param int                  $post_id Post in context.
+	 * @param string               $html    Saved inner HTML.
+	 */
+	private function render_in_context( string $name, array $attrs, int $post_id, string $html = '' ): string {
+		if ( $post_id > 0 ) {
+			// A block that declares no postId context reads the loop's global post.
+			$GLOBALS['post'] = get_post( $post_id );
+			setup_postdata( $GLOBALS['post'] );
+		}
+		$block = new WP_Block(
+			[
+				'blockName'    => $name,
+				'attrs'        => $attrs,
+				'innerBlocks'  => [],
+				'innerHTML'    => $html,
+				'innerContent' => [ $html ],
+			],
+			[
+				'postId'   => $post_id,
+				'postType' => 'post',
+			]
+		);
+
+		return $block->render();
+	}
+
+	/**
+	 * Now Playing shows the newest public listen. A locked listen is skipped
+	 * for every visitor: the block reads the list query's stored password.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_now_playing( string $state ): void {
+		$this->post_in_state(
+			$state,
+			'listen',
+			'Now Playing Title Zq23',
+			[
+				'listen_track'  => 'Now Playing Track Zq24',
+				'listen_artist' => 'Now Playing Artist Zq25',
+			]
+		);
+		$html = $this->render_in_context( 'post-kinds/now-playing', [ 'kind' => 'listen' ], 0 );
+
+		$this->assert_facts( $state, $html, [ 'Now Playing Track Zq24', 'Now Playing Artist Zq25' ], 'public' === $state );
+	}
+
+	/**
+	 * The Kindle preview embed derives its iframe from the read post's ASIN.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_kindle_embed_bridge( string $state ): void {
+		new PKIW\Kindle_Embed_Bridge();
+		$id   = $this->post_in_state( $state, 'read', 'Kindle Title Zq26', [ 'read_asin' => 'B0ZQ27ASIN' ] );
+		$html = $this->render_in_context(
+			'core/embed',
+			[
+				'url'       => 'https://example.com/saved-embed',
+				'className' => PKIW\Kindle_Embed_Bridge::MARKER,
+			],
+			$id,
+			'<figure class="wp-block-embed pkiw-kindle-preview"><div class="wp-block-embed__wrapper">saved</div></figure>'
+		);
+
+		$this->assert_facts( $state, $html, [ 'B0ZQ27ASIN' ] );
+		if ( ! $this->facts_visible( $state ) ) {
+			$this->assertStringContainsString( 'saved', $html, 'A locked post keeps the embed as saved.' );
+		}
+	}
+
+	/**
+	 * A Drink card in a template falls back to the post's drink type.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_drink_card_meta_fallback( string $state ): void {
+		$id   = $this->post_in_state( $state, 'drink', 'Drink Card Title Zq28', [ 'drink_type' => 'Type Zq29' ] );
+		$html = $this->render_in_context( 'post-kinds-indieweb/drink-card', [], $id );
+
+		$this->assert_facts( $state, $html, [ 'Type Zq29' ] );
+	}
+
+	/**
+	 * The singular page's content as the theme prints it, through the_content.
+	 * For a locked post core's content is the password form.
+	 *
+	 * @param int $id Post ID.
+	 */
+	private function singular_content( int $id ): string {
+		$this->go_to( (string) get_permalink( $id ) );
+		$this->assertTrue( is_singular(), 'Singular context did not take.' );
+		the_post();
+
+		return (string) apply_filters( 'the_content', get_the_content() );
+	}
+
+	/**
+	 * Hidden mf2 data for a check-in: venue and place.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_singular_checkin_hidden_mf2( string $state ): void {
+		$id = $this->post_in_state(
+			$state,
+			'checkin',
+			'Singular Checkin Zq31',
+			[
+				'checkin_name'     => 'Singular Venue Zq32',
+				'checkin_locality' => 'Singular City Zq33',
+			]
+		);
+
+		$this->assert_facts( $state, $this->singular_content( $id ), [ 'Singular Venue Zq32', 'Singular City Zq33' ] );
+	}
+
+	/**
+	 * Hidden mf2 data for an event: start and end.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_singular_event_hidden_mf2( string $state ): void {
+		$id = $this->post_in_state(
+			$state,
+			'event',
+			'Singular Event Zq34',
+			[
+				'event_start' => '2031-05-04T10:11:12',
+				'event_end'   => '2031-05-04T13:14:15',
+			]
+		);
+
+		$this->assert_facts( $state, $this->singular_content( $id ), [ '2031-05-04T10:11:12', '2031-05-04T13:14:15' ] );
+	}
+
+	/**
+	 * The u-photo marker a non-h-entry root adds from the featured image.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_singular_u_photo( string $state ): void {
+		$id    = $this->post_in_state( $state, 'recipe', 'Singular Recipe Zq35' );
+		$thumb = self::factory()->attachment->create(
+			[
+				'post_parent'    => $id,
+				'post_mime_type' => 'image/jpeg',
+				'file'           => 'singular-photo-zq36.jpg',
+			]
+		);
+		set_post_thumbnail( $id, $thumb );
+
+		$this->assert_facts( $state, $this->singular_content( $id ), [ 'singular-photo-zq36.jpg' ] );
+	}
+
+	/**
+	 * A feed item for a mood post: the emoji and note ride on the item only
+	 * when its facts show.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_feed_mood_content_and_excerpt( string $state ): void {
+		$id = $this->post_in_state(
+			$state,
+			'mood',
+			'Feed Mood Zq37',
+			[],
+			[
+				'post_excerpt' => '',
+				'post_content' => '<!-- wp:post-kinds-indieweb/mood-card {"emoji":"EmojiZq39","note":"Mood note Zq38"} /-->',
+			]
+		);
+		$this->go_to( '/?feed=rss2' );
+		$this->assertTrue( is_feed(), 'Feed context did not take.' );
+		$found = false;
+		while ( have_posts() ) {
+			the_post();
+			if ( get_the_ID() === $id ) {
+				$found   = true;
+				$content = get_the_content_feed( 'rss2' );
+				$excerpt = apply_filters( 'the_excerpt_rss', get_the_excerpt() );
+				break;
+			}
+		}
+		$this->assertTrue( $found, 'The mood post is in the feed loop.' );
+
+		$this->assert_facts( $state, $content, [ 'EmojiZq39' ] );
+		$this->assert_facts( $state, (string) $excerpt, [ 'EmojiZq39', 'Mood note Zq38' ] );
+	}
+
+	/**
+	 * The Yoast schema graph gains the kind's cover only when its facts show.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_yoast_schema_cover( string $state ): void {
+		$id        = $this->post_in_state( $state, 'listen', 'Schema Listen Zq40', [ 'listen_cover' => 'https://example.com/zq41-cover.jpg' ] );
+		$permalink = (string) get_permalink( $id );
+		$this->go_to( $permalink );
+		$this->assertTrue( is_singular( 'post' ), 'Singular context did not take.' );
+
+		$graph  = [
+			[
+				'@type' => 'Article',
+				'@id'   => $permalink . '#article',
+			],
+			[
+				'@type' => 'WebPage',
+				'@id'   => $permalink,
+			],
+		];
+		$result = ( new PKIW\Integrations\Yoast_SEO() )->filter_schema_graph(
+			$graph,
+			(object) [
+				'main_image_url' => '',
+				'canonical'      => $permalink,
+			]
+		);
+
+		$this->assert_facts( $state, (string) wp_json_encode( $result ), [ 'zq41-cover.jpg' ] );
+	}
+
+	/**
+	 * A play post's group fact follows the visitor's access to its facts,
+	 * unlike its archive heading, which follows the stored password.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_play_facts_group( string $state ): void {
+		$id    = $this->post_in_state( $state, 'play', 'Play Facts Zq42', [ 'play_rawg_id' => '4242', 'play_title' => 'Play Title Zq43' ] );
+		$facts = PKIW\Kind_Facts::get( $id );
+
+		if ( $this->facts_visible( $state ) ) {
+			$this->assertSame( 'video', $facts['group'] ?? null, "State {$state} reads its group." );
+			$this->assertSame( 'Play Title Zq43', $facts['title'] ?? null );
+		} else {
+			$this->assertSame( [], $facts );
+		}
+	}
+
+	/**
+	 * An editor without the post's cookie sees what a visitor does: core
+	 * asks every requester for the password, so the menu line is title-only.
+	 */
+	public function test_editor_without_the_cookie_sees_the_title_only_menu_line(): void {
+		$id = $this->post_in_state( 'locked', 'eat', 'Editor Eat Title', [ 'eat_notes' => 'Editor note Zq44' ] );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		$html = $this->menu_line( $id );
+
+		$this->assertStringContainsString( 'Editor Eat Title', $html );
+		$this->assertStringNotContainsString( 'Editor note Zq44', $html );
+	}
+
+	/**
+	 * Every kind, every registered plugin meta key set to a marker: a locked
+	 * post's singular content and feed item print none of them, and the same
+	 * fixture prints some when public, so the sweep can't pass vacuously.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_every_kind_singular_and_feed_print_no_meta_when_locked( string $state ): void {
+		( new PKIW\Taxonomy() )->create_default_terms();
+		$keys = [];
+		foreach ( array_keys( get_registered_meta_keys( 'post', 'post' ) ) as $key ) {
+			if ( str_starts_with( (string) $key, PKIW\Meta_Fields::PREFIX ) ) {
+				$keys[] = (string) $key;
+			}
+		}
+		$this->assertNotEmpty( $keys, 'The plugin registers post meta.' );
+
+		$printed = 0;
+		$leaks   = [];
+		$kinds   = get_terms(
+			[
+				'taxonomy'   => 'kind',
+				'hide_empty' => false,
+				'fields'     => 'slugs',
+			]
+		);
+		foreach ( $kinds as $kind ) {
+			$id = $this->post_in_state( $state, (string) $kind, "Sweep {$kind} Title", [], [ 'post_content' => "Sweep body {$kind}" ] );
+			foreach ( $keys as $key ) {
+				update_post_meta( $id, $key, "ZqMeta{$key}" );
+			}
+			// Meta that decides what shows: a public location tier.
+			update_post_meta( $id, PKIW\Meta_Fields::PREFIX . 'geo_privacy', 'public' );
+
+			$outputs = [ 'singular' => $this->singular_content( $id ) ];
+			$this->go_to( '/?feed=rss2&kind=' . $kind );
+			while ( have_posts() ) {
+				the_post();
+				if ( get_the_ID() === $id ) {
+					$outputs['feed content'] = get_the_content_feed( 'rss2' );
+					$outputs['feed excerpt'] = (string) apply_filters( 'the_excerpt_rss', get_the_excerpt() );
+					break;
+				}
+			}
+			if ( 'public' === $state ) {
+				$this->assertArrayHasKey( 'feed content', $outputs, "The public {$kind} post is in its feed." );
+			}
+			foreach ( $outputs as $where => $html ) {
+				$found = [];
+				preg_match_all( '/ZqMeta[A-Za-z0-9_]+/', $html, $found );
+				if ( $this->facts_visible( $state ) ) {
+					$printed += 'singular' === $where ? count( $found[0] ) : 0;
+				} elseif ( $found[0] ) {
+					$leaks[] = "{$kind} {$where}: " . implode( ',', array_unique( $found[0] ) );
+				}
+			}
+		}
+
+		$this->assertSame( [], $leaks, "State {$state} leaked meta." );
+		if ( $this->facts_visible( $state ) ) {
+			$this->assertGreaterThan( 0, $printed, 'Singular pages print meta in a visible state.' );
+		}
+	}
+
+	/**
+	 * The mood kind's whole RSS2 document: description and content:encoded.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_mood_kind_feed_document( string $state ): void {
+		$this->post_in_state(
+			$state,
+			'mood',
+			'Doc Mood Zq45',
+			[],
+			[
+				'post_excerpt' => '',
+				'post_content' => '<!-- wp:post-kinds-indieweb/mood-card {"emoji":"EmojiZq46","note":"Mood doc note Zq47"} /-->',
+			]
+		);
+		$this->go_to( '/?feed=rss2&kind=mood' );
+		$this->assertTrue( is_feed(), 'Feed context did not take.' );
+
+		ob_start();
+		try {
+			@require ABSPATH . WPINC . '/feed-rss2.php'; // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		} finally {
+			$xml = (string) ob_get_clean();
+		}
+
+		$this->assertStringContainsString( 'Doc Mood Zq45', $xml );
+		$this->assert_facts( $state, $xml, [ 'EmojiZq46', 'Mood doc note Zq47' ] );
+	}
+
+	/**
+	 * REST post meta for a post as an anonymous client.
+	 *
+	 * @dataProvider states
+	 * @param string $state State name.
+	 */
+	public function test_rest_post_meta( string $state ): void {
+		$id = $this->post_in_state( $state, 'eat', 'Rest Eat Zq48', [ 'eat_notes' => 'Rest note Zq49' ] );
+		$GLOBALS['wp_rest_server'] = null;
+		$data = (array) rest_do_request( new WP_REST_Request( 'GET', '/wp/v2/posts/' . $id ) )->get_data();
+		$meta = wp_json_encode( $data['meta'] ?? [] );
+
+		// REST redaction keys on the stored password, not the cookie.
+		$this->assert_facts( $state, (string) $meta, [ 'Rest note Zq49' ], 'public' === $state );
+	}
+}

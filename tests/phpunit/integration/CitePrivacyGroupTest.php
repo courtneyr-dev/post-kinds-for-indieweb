@@ -322,7 +322,7 @@ final class CitePrivacyGroupTest extends WP_UnitTestCase {
 		return [ 'h2:alpha.example', 'h2:beta.example', 'h2:Other' ];
 	}
 
-	public function test_the_flag_is_off_by_default(): void {
+	public function test_the_flag_is_off_by_default_except_on_the_menu_path(): void {
 		$meta = new Meta_Source( 'default_meta', [ '_pkiw_default_group' ] );
 		$term = new Term_Source( 'default_terms', 'post_tag' );
 		$id   = $this->make(
@@ -345,9 +345,10 @@ final class CitePrivacyGroupTest extends WP_UnitTestCase {
 		$eat_id  = $this->make( 'eat', 'Default eat privacy', '2026-03-02 10:00:00', 'secret', [ $eat_key => 'Thai' ] );
 		$legacy  = Meta_Source::legacy( $eat_key, 'eat' );
 
-		$this->assertSame( 'thai', Grouped_Archive::group_of_post( 'eat', $eat_id )->key() );
-		$this->assertSame( 'thai', $legacy->group_of( get_post( $eat_id ) )->key() );
-		$this->assertStringNotContainsString( 'post_password', $legacy->sql( new WP_Query() )['value'] );
+		// The menu path files a protected post in the empty group: its heading never names the cuisine.
+		$this->assertSame( '', Grouped_Archive::group_of_post( 'eat', $eat_id )->key() );
+		$this->assertSame( '', $legacy->group_of( get_post( $eat_id ) )->key() );
+		$this->assertStringContainsString( 'post_password', $legacy->sql( new WP_Query() )['value'] );
 	}
 
 	/**

@@ -82,7 +82,7 @@ function feed_mood_content( $content ) {
 	}
 
 	$post = get_post();
-	if ( ! $post instanceof \WP_Post ) {
+	if ( ! $post instanceof \WP_Post || post_password_required( $post ) ) {
 		return $content;
 	}
 
@@ -133,7 +133,7 @@ function feed_mood_excerpt( $excerpt ) {
 	}
 
 	$post = get_post();
-	if ( ! $post instanceof \WP_Post ) {
+	if ( ! $post instanceof \WP_Post || post_password_required( $post ) ) {
 		return $excerpt;
 	}
 

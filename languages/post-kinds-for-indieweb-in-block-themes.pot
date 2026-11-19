@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Post Kinds for IndieWeb in Block Themes 1.10.0\n"
+"Project-Id-Version: Post Kinds for IndieWeb in Block Themes 1.10.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/post-kinds-for-indieweb-in-block-themes\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-18T14:18:51+00:00\n"
+"POT-Creation-Date: 2026-11-19T00:43:56+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: post-kinds-for-indieweb-in-block-themes\n"
@@ -151,7 +151,7 @@ msgstr ""
 msgid "Map requires JavaScript to display."
 msgstr ""
 
-#: build/blocks/checkins-feed/render.php:200
+#: build/blocks/checkins-feed/render.php:202
 #: includes/admin/class-checkin-dashboard.php:129
 msgid "No check-ins found."
 msgstr ""
@@ -336,12 +336,12 @@ msgstr ""
 msgid "Drink"
 msgstr ""
 
-#: build/blocks/drink-card/render.php:92
+#: build/blocks/drink-card/render.php:93
 msgid "Drank"
 msgstr ""
 
 #. translators: %s: food/drink name
-#: build/blocks/drink-card/render.php:146
+#: build/blocks/drink-card/render.php:147
 #: build/blocks/eat-card/render.php:124
 #, php-format
 msgid "Picture of %s"
@@ -2066,7 +2066,7 @@ msgstr ""
 #: includes/admin/class-import-page.php:193
 #: includes/admin/class-quick-post.php:672
 #: includes/class-block-bindings.php:534
-#: includes/functions-play.php:191
+#: includes/functions-play.php:192
 #: build/blocks.js:7
 #: build/index.js:1
 msgid "Completed"
@@ -2087,7 +2087,7 @@ msgstr ""
 #: includes/class-follow-archive.php:794
 #: includes/class-listen-archive.php:490
 #: includes/class-quote-archive.php:582
-#: includes/class-read-archive.php:276
+#: includes/class-read-archive.php:278
 #: includes/class-recipe-archive.php:178
 msgid "All"
 msgstr ""
@@ -2636,7 +2636,7 @@ msgstr ""
 #: includes/admin/class-settings-page.php:562
 #: includes/class-block-bindings.php:614
 #: includes/functions-card-labels.php:103
-#: includes/functions-play.php:192
+#: includes/functions-play.php:193
 #: build/blocks.js:2
 #: build/blocks.js:7
 #: build/index.js:1
@@ -3070,14 +3070,14 @@ msgid "Tabletop RPG"
 msgstr ""
 
 #: includes/admin/class-quick-post.php:671
-#: includes/functions-play.php:190
+#: includes/functions-play.php:191
 #: build/blocks.js:7
 #: build/index.js:1
 msgid "Playing"
 msgstr ""
 
 #: includes/admin/class-quick-post.php:674
-#: includes/functions-play.php:193
+#: includes/functions-play.php:194
 #: build/blocks.js:7
 #: build/index.js:1
 msgid "Backlog"
@@ -5075,11 +5075,11 @@ msgstr ""
 msgid "Shows the most recent listen or watch post."
 msgstr ""
 
-#: includes/blocks/class-now-playing.php:142
+#: includes/blocks/class-now-playing.php:143
 msgid "Listening"
 msgstr ""
 
-#: includes/blocks/class-now-playing.php:150
+#: includes/blocks/class-now-playing.php:151
 #: build/index.js:1
 msgid "Watching"
 msgstr ""
@@ -5599,7 +5599,7 @@ msgid "The artwork could not be fetched safely."
 msgstr ""
 
 #: includes/class-follow-archive.php:193
-#: includes/class-micropub-content-builder.php:1715
+#: includes/class-micropub-content-builder.php:1909
 msgid "Followed"
 msgstr ""
 
@@ -5670,7 +5670,7 @@ msgid "Menu"
 msgstr ""
 
 #: includes/class-kind-archive-layouts.php:578
-#: includes/class-zine-export.php:563
+#: includes/class-zine-export.php:574
 msgid "Contents"
 msgstr ""
 
@@ -6487,24 +6487,24 @@ msgstr ""
 msgid "Type of presentation event."
 msgstr ""
 
-#: includes/class-micropub-content-builder.php:628
+#: includes/class-micropub-content-builder.php:822
 msgid "Jamming to"
 msgstr ""
 
-#: includes/class-micropub-content-builder.php:630
+#: includes/class-micropub-content-builder.php:824
 #: build/blocks.js:8
 msgid "Favorited"
 msgstr ""
 
-#: includes/class-micropub-content-builder.php:636
+#: includes/class-micropub-content-builder.php:830
 msgid "Wishing for"
 msgstr ""
 
-#: includes/class-micropub-content-builder.php:641
+#: includes/class-micropub-content-builder.php:835
 msgid "Issue for"
 msgstr ""
 
-#: includes/class-micropub-content-builder.php:643
+#: includes/class-micropub-content-builder.php:837
 msgid "Crafted"
 msgstr ""
 
@@ -7379,18 +7379,18 @@ msgstr[1] ""
 msgid "Quote entry"
 msgstr ""
 
-#: includes/class-read-archive.php:237
-#: includes/class-read-archive.php:299
+#: includes/class-read-archive.php:239
+#: includes/class-read-archive.php:301
 #: assets/js/read-order-editor.js:39
 msgid "Read order"
 msgstr ""
 
-#: includes/class-read-archive.php:238
+#: includes/class-read-archive.php:240
 #: assets/js/read-order-editor.js:40
 msgid "Links that show the read archive on shelves by status, or A–Z by author."
 msgstr ""
 
-#: includes/class-read-archive.php:281
+#: includes/class-read-archive.php:283
 msgid "A–Z by author"
 msgstr ""
 
@@ -8298,25 +8298,25 @@ msgstr ""
 msgid "Print"
 msgstr ""
 
-#: includes/class-zine-export.php:550
+#: includes/class-zine-export.php:561
 #, php-format
 msgid "%1$s to %2$s"
 msgstr ""
 
-#: includes/class-zine-export.php:579
+#: includes/class-zine-export.php:590
 #, php-format
 msgid "Sheet side %d"
 msgstr ""
 
-#: includes/class-zine-export.php:579
+#: includes/class-zine-export.php:590
 msgid "Top row, printed upside down"
 msgstr ""
 
-#: includes/class-zine-export.php:579
+#: includes/class-zine-export.php:590
 msgid "Bottom row"
 msgstr ""
 
-#: includes/class-zine-export.php:582
+#: includes/class-zine-export.php:593
 msgid "Printer spread preview"
 msgstr ""
 
@@ -8375,39 +8375,39 @@ msgstr ""
 msgid "%1$d hr %2$d min"
 msgstr ""
 
-#: includes/functions-play.php:102
+#: includes/functions-play.php:103
 msgid "Video games"
 msgstr ""
 
-#: includes/functions-play.php:103
+#: includes/functions-play.php:104
 msgid "Board games"
 msgstr ""
 
-#: includes/functions-play.php:194
+#: includes/functions-play.php:195
 #: build/blocks.js:7
 #: build/index.js:1
 msgid "Wishlist"
 msgstr ""
 
 #. translators: %s: hours played, a number that may have decimals.
-#: includes/functions-play.php:223
+#: includes/functions-play.php:224
 #, php-format
 msgid "%s hour played"
 msgid_plural "%s hours played"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/functions-play.php:248
+#: includes/functions-play.php:249
 #: build/blocks.js:7
 msgid "View on BGG"
 msgstr ""
 
-#: includes/functions-play.php:249
+#: includes/functions-play.php:250
 #: build/blocks.js:7
 msgid "View on RAWG"
 msgstr ""
 
-#: includes/functions-play.php:250
+#: includes/functions-play.php:251
 #: build/blocks.js:7
 msgid "View on Steam"
 msgstr ""

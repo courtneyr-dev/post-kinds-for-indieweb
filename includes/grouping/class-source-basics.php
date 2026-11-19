@@ -91,7 +91,7 @@ trait Source_Basics {
 
 		global $wpdb;
 
-		return "IF(LENGTH({$wpdb->posts}.post_password) > 0, {$empty_value}, {$expr})";
+		return "CASE WHEN LENGTH({$wpdb->posts}.post_password) > 0 THEN {$empty_value} ELSE {$expr} END";
 	}
 
 	/**

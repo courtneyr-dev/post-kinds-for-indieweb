@@ -534,7 +534,8 @@ final class PlayGroupTest extends WP_UnitTestCase {
 
 	/**
 	 * Expected archive order: video, board, then no group (G4); date DESC
-	 * then ID DESC inside each.
+	 * then ID DESC inside each. B11 is password-protected, so it files in the
+	 * no-group section whatever its card names.
 	 */
 	private const ARCHIVE_ORDER = [
 		'V1',
@@ -556,7 +557,6 @@ final class PlayGroupTest extends WP_UnitTestCase {
 		'B8',
 		'B9',
 		'B10',
-		'B11',
 		'B13',
 		'B12',
 		'B14',
@@ -564,6 +564,7 @@ final class PlayGroupTest extends WP_UnitTestCase {
 		'B16',
 		'E1',
 		'E2',
+		'B11',
 	];
 
 	/**
@@ -609,7 +610,8 @@ final class PlayGroupTest extends WP_UnitTestCase {
 		foreach ( self::ARCHIVE_ORDER as $key ) {
 			$expected[ $key ] = str_starts_with( $key, 'V' ) ? 'video' : ( str_starts_with( $key, 'B' ) ? 'board' : '' );
 		}
-		$expected['D1'] = 'video';
+		$expected['D1']  = 'video';
+		$expected['B11'] = '';
 
 		foreach ( $expected as $key => $group ) {
 			$this->assertSame( $group, \PKIW\play_group( $ids[ $key ] ), "play_group() for {$key}." );

@@ -54,7 +54,8 @@ $pkiw_geo_lon           = isset( $attributes['geoLongitude'] ) ? (float) $attrib
 
 $pkiw_post_id = $block->context['postId'] ?? get_the_ID();
 
-if ( ! is_string( $pkiw_drink_type ) || '' === $pkiw_drink_type ) {
+$pkiw_card_post = get_post( (int) $pkiw_post_id );
+if ( ( ! is_string( $pkiw_drink_type ) || '' === $pkiw_drink_type ) && $pkiw_card_post instanceof WP_Post && \PKIW\Kind_Facts::can_show( $pkiw_card_post ) ) {
 	$pkiw_drink_type = (string) get_post_meta( (int) $pkiw_post_id, Meta_Fields::PREFIX . 'drink_type', true );
 }
 
