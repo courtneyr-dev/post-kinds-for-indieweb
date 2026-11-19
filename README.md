@@ -243,6 +243,8 @@ add_action( 'post_kinds_indieweb_import_complete', function ( $import_id, $stats
 
 ## Development
 
+Use [IndieWeb test data](https://github.com/courtneyr-dev/indieweb-test-data) for sample posts on disposable WordPress sites. The [Playground guide](blueprints/README.md) explains which export to use.
+
 ### Setup
 
 ```bash
