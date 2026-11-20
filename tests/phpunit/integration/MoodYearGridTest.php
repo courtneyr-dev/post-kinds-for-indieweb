@@ -215,7 +215,7 @@ final class MoodYearGridTest extends WP_UnitTestCase {
 		$this->assertSame( get_permalink( $id ), $link->getAttribute( 'href' ) );
 		$this->assertStringContainsString( 'u-url', $link->getAttribute( 'class' ) );
 		$this->assertStringContainsString( 'pkiw-cal__link', $link->getAttribute( 'class' ) );
-		$this->assertSame( 'September 3, 2026: Happy, intensity 4 of 5 (J4)', $link->getAttribute( 'aria-label' ) );
+		$this->assertSame( 'J4. September 3, 2026: Happy, intensity 4 of 5', $link->getAttribute( 'aria-label' ) );
 		$code = $xp->query( './/span[contains(@class, "pkiw-mood-day__code")]', $link )->item( 0 );
 		$this->assertSame( 'J4', $code->textContent );
 		$this->assertSame( 'true', $code->getAttribute( 'aria-hidden' ) );
@@ -228,7 +228,7 @@ final class MoodYearGridTest extends WP_UnitTestCase {
 		$xp   = $this->dom( $this->render() );
 		$link = $xp->query( self::cls( 'pkiw-cal__link', 'a' ) )->item( 0 );
 
-		$this->assertSame( 'September 3, 2026: Calm (C)', $link->getAttribute( 'aria-label' ) );
+		$this->assertSame( 'C. September 3, 2026: Calm', $link->getAttribute( 'aria-label' ) );
 		$this->assertSame( 'C', $xp->query( self::cls( 'pkiw-mood-day__code' ) )->item( 0 )->textContent );
 	}
 
@@ -239,7 +239,7 @@ final class MoodYearGridTest extends WP_UnitTestCase {
 		$cell = $this->cell( $xp, '2026-09-03' );
 
 		$this->assertSame( 'other', $cell->getAttribute( 'data-family' ) );
-		$this->assertSame( 'September 3, 2026: Mood (O)', $xp->query( './/a', $cell )->item( 0 )->getAttribute( 'aria-label' ) );
+		$this->assertSame( 'O. September 3, 2026: Mood', $xp->query( './/a', $cell )->item( 0 )->getAttribute( 'aria-label' ) );
 		$this->assertSame( 0, $xp->query( './/*[contains(@class, "p-name")]', $cell )->length, 'A synthetic name never gets p-name.' );
 	}
 
@@ -352,9 +352,10 @@ final class MoodYearGridTest extends WP_UnitTestCase {
 		$this->assertSame( '#mood-day-2026-09-08', $link->getAttribute( 'href' ) );
 		$this->assertSame( '', $link->getAttribute( 'id' ), 'The id belongs to the card.' );
 		$this->assertSame(
-			'September 8, 2026: Happy, intensity 4 of 5; Tired, intensity 2 of 5 (J4, P2)',
+			'J4 P2. September 8, 2026: Happy, intensity 4 of 5; Tired, intensity 2 of 5',
 			$link->getAttribute( 'aria-label' )
 		);
+		$this->assertSame( 'J4 P2', $link->textContent );
 		$segments = $xp->query( './/span[contains(@class, "pkiw-mood-day__seg")]', $link );
 		$this->assertSame( 2, $segments->length );
 		$this->assertSame( 'joy', $segments->item( 0 )->getAttribute( 'data-family' ) );

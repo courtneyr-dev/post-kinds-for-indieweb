@@ -6738,11 +6738,11 @@ msgstr ""
 msgid "Stripes: three or more moods that day"
 msgstr ""
 
-#. translators: 1: date, such as "September 3, 2026"; 2: the mood and its intensity; 3: the code printed in the cell, such as "J4".
+#. translators: 1: the visible mood code, such as "J4"; 2: the date; 3: the mood and its intensity. Put the code first, outside parentheses.
 #: includes/class-mood-year-grid.php:429
 #, php-format
 msgctxt "mood grid cell name"
-msgid "%1$s: %2$s (%3$s)"
+msgid "%1$s. %2$s: %3$s"
 msgstr ""
 
 #. translators: 1: date, such as "September 8, 2026"; 2: every mood that day, oldest first.
@@ -6757,11 +6757,11 @@ msgctxt "separator between the moods in a cell name"
 msgid "; "
 msgstr ""
 
-#. translators: 1: a cell name; 2: the codes printed in the cell, such as "J4, P2".
+#. translators: 1: the visible codes, such as "J4 P2"; 2: the date and mood details. Put the codes first, outside parentheses.
 #: includes/class-mood-year-grid.php:464
 #, php-format
 msgctxt "mood grid cell name with codes"
-msgid "%1$s (%2$s)"
+msgid "%1$s. %2$s"
 msgstr ""
 
 #. translators: 1: a mood and its intensity; 2: the time of day, which tells two identical entries apart.
