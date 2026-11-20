@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.2] - 2026-11-19
+
+### Fixed
+
+- Mood calendar links include their visible code in their accessible name so visitors can activate them by speech (#602).
+
 ## [1.10.1] - 2026-11-18
 
 ### Fixed
