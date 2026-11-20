@@ -425,11 +425,11 @@ final class Mood_Year_Grid {
 				esc_url( (string) get_permalink( $entry['post'] ) ),
 				esc_attr(
 					sprintf(
-						/* translators: 1: date, such as "September 3, 2026"; 2: the mood and its intensity; 3: the code printed in the cell, such as "J4". */
-						_x( '%1$s: %2$s (%3$s)', 'mood grid cell name', 'post-kinds-for-indieweb-in-block-themes' ),
+						/* translators: 1: the visible mood code, such as "J4"; 2: the date; 3: the mood and its intensity. Put the code first, outside parentheses. */
+						_x( '%1$s. %2$s: %3$s', 'mood grid cell name', 'post-kinds-for-indieweb-in-block-themes' ),
+						$code,
 						$date,
-						self::entry_text( $entry['facts'] ),
-						$code
+						self::entry_text( $entry['facts'] )
 					)
 				),
 				esc_html( $code ),
@@ -439,12 +439,12 @@ final class Mood_Year_Grid {
 
 		$names     = [];
 		$codes     = [];
-		$segments  = '';
+		$segments  = [];
 		$with_text = 2 === count( $entries );
 		foreach ( $entries as $entry ) {
-			$names[]   = self::entry_text( $entry['facts'] );
-			$codes[]   = self::code( $entry['facts'] );
-			$segments .= sprintf(
+			$names[]    = self::entry_text( $entry['facts'] );
+			$codes[]    = self::code( $entry['facts'] );
+			$segments[] = sprintf(
 				'<span class="pkiw-mood-day__seg" data-family="%1$s">%2$s</span>',
 				esc_attr( (string) $entry['facts']['family'] ),
 				$with_text ? '<span class="pkiw-mood-day__code" aria-hidden="true">' . esc_html( end( $codes ) ) . '</span>' : ''
@@ -460,10 +460,10 @@ final class Mood_Year_Grid {
 		if ( $with_text ) {
 			// The visible text of a split cell is part of its name (WCAG 2.5.3).
 			$name = sprintf(
-				/* translators: 1: a cell name; 2: the codes printed in the cell, such as "J4, P2". */
-				_x( '%1$s (%2$s)', 'mood grid cell name with codes', 'post-kinds-for-indieweb-in-block-themes' ),
-				$name,
-				implode( ', ', $codes )
+				/* translators: 1: the visible codes, such as "J4 P2"; 2: the date and mood details. Put the codes first, outside parentheses. */
+				_x( '%1$s. %2$s', 'mood grid cell name with codes', 'post-kinds-for-indieweb-in-block-themes' ),
+				implode( ' ', $codes ),
+				$name
 			);
 		}
 
@@ -474,7 +474,7 @@ final class Mood_Year_Grid {
 			esc_attr( $ymd ),
 			count( $entries ),
 			esc_attr( $name ),
-			$segments
+			implode( ' ', $segments )
 		);
 	}
 
