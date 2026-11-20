@@ -181,6 +181,16 @@ function recipe_archive_courses(): array {
 		return [];
 	}
 
+	// has_password false compares post_password = '', which a password of
+	// spaces also satisfies under the column's collation; LENGTH() tells
+	// them apart (the Recent_Kinds / calendar_where rule).
+	$no_password = static function ( $where ) {
+		global $wpdb;
+
+		return $where . " AND LENGTH( {$wpdb->posts}.post_password ) = 0";
+	};
+	add_filter( 'posts_where', $no_password );
+
 	$kind_taxonomy = get_taxonomy( Taxonomy::TAXONOMY );
 	$post_ids      = get_posts(
 		[
@@ -199,8 +209,15 @@ function recipe_archive_courses(): array {
 		]
 	);
 
+	remove_filter( 'posts_where', $no_password );
+
 	$courses = [];
 	foreach ( $post_ids as $post_id ) {
+		$post = get_post( (int) $post_id );
+		// recipe_facts() has no password gate of its own; Kind_Facts::get() does.
+		if ( ! $post instanceof \WP_Post || ! Kind_Facts::can_show( $post ) ) {
+			continue;
+		}
 		foreach ( recipe_facts( (int) $post_id )['courses'] as $course ) {
 			if ( ! isset( $courses[ $course['slug'] ] ) ) {
 				$courses[ $course['slug'] ] = [

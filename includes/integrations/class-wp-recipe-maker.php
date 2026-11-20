@@ -412,9 +412,20 @@ class WP_Recipe_Maker {
 		$post_ids = [];
 		foreach ( $recipe_ids as $recipe_id ) {
 			$parent = (int) get_post_meta( (int) $recipe_id, 'wprm_parent_post_id', true );
-			if ( $parent > 0 ) {
-				$post_ids[] = $parent;
+			if ( $parent < 1 ) {
+				continue;
 			}
+			// The public course filter must not list a locked parent: the
+			// courses nav hides courses only locked recipes use, and
+			// Listen_Archive sets pkiw_view_public so view membership cannot
+			// reveal a protected post's media type. Match that here in PHP
+			// (spaces included — LENGTH is for SQL; the string check is for
+			// the parent ID list).
+			$post = get_post( $parent );
+			if ( ! $post instanceof \WP_Post || '' !== (string) $post->post_password || 'publish' !== $post->post_status ) {
+				continue;
+			}
+			$post_ids[] = $parent;
 		}
 
 		return array_values( array_unique( $post_ids ) );

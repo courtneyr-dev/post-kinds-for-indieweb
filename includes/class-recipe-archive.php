@@ -254,6 +254,11 @@ final class Recipe_Archive {
 				];
 				$query->set( 'tax_query', $tax_query ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- the course filter is a taxonomy lookup.
 			}
+			// Kind_Archive_Layouts::view_where() keeps protected posts out
+			// (LENGTH), so course membership cannot reveal a locked recipe.
+			if ( ! current_user_can( 'edit_others_posts' ) ) {
+				$query->set( 'pkiw_view_public', 1 );
+			}
 		}
 
 		// Two recipes can share a title; without a tie-break they could swap pages.
