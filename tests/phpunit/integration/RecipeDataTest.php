@@ -514,6 +514,49 @@ final class RecipeDataTest extends WP_UnitTestCase {
 		$this->assertSame( [ false, true ], wp_list_pluck( \PKIW\recipe_archive_courses(), 'current' ) );
 	}
 
+	/**
+	 * A course only a password-protected recipe carries stays off the nav and
+	 * out of the public course filter (issue: course membership is a card fact).
+	 */
+	public function test_password_protected_recipe_course_stays_private(): void {
+		$public  = $this->recipe_post( $this->recipe( [ 'name' => 'Public Bisque', 'courses' => [ 'Soup' ] ] ) );
+		$locked  = $this->recipe_post(
+			$this->recipe( [ 'name' => 'Locked Tart', 'courses' => [ 'Secret Course Zq41' ] ] ),
+			[ 'post_password' => 'seed-recipe-zq41' ]
+		);
+		$spaces  = $this->recipe_post(
+			$this->recipe( [ 'name' => 'Spaces Tart', 'courses' => [ 'Spaces Course Zq41' ] ] )
+		);
+		global $wpdb;
+		$wpdb->update( $wpdb->posts, [ 'post_password' => '   ' ], [ 'ID' => $spaces ] );
+		clean_post_cache( $spaces );
+
+		$this->assertTrue( post_password_required( $locked ) );
+		$this->assertTrue( post_password_required( $spaces ) );
+		$this->assertSame( '   ', get_post( $spaces )->post_password );
+
+		$names = wp_list_pluck( \PKIW\recipe_archive_courses(), 'name' );
+		$this->assertContains( 'Soup', $names );
+		$this->assertNotContains( 'Secret Course Zq41', $names, 'A normal password must not feed the courses nav.' );
+		$this->assertNotContains( 'Spaces Course Zq41', $names, 'A spaces password must not feed the courses nav.' );
+
+		$this->assertNotContains(
+			$locked,
+			WP_Recipe_Maker::post_ids_in_course( 'secret-course-zq41' ),
+			'post_ids_in_course must drop locked parents.'
+		);
+		$this->assertNotContains(
+			$spaces,
+			WP_Recipe_Maker::post_ids_in_course( 'spaces-course-zq41' ),
+			'post_ids_in_course must drop spaces-password parents.'
+		);
+		$this->assertContains( $public, WP_Recipe_Maker::post_ids_in_course( 'soup' ) );
+
+		$this->assertSame( [], $this->main_query_ids( $this->archive_url( [ Recipe_Archive::QUERY_VAR => 'secret-course-zq41' ] ) ) );
+		$this->assertSame( [], $this->main_query_ids( $this->archive_url( [ Recipe_Archive::QUERY_VAR => 'spaces-course-zq41' ] ) ) );
+		$this->assertSame( [ $public ], $this->main_query_ids( $this->archive_url( [ Recipe_Archive::QUERY_VAR => 'soup' ] ) ) );
+	}
+
 	// Archive heading.
 
 	public function test_the_recipe_archive_heading_is_plural(): void {
