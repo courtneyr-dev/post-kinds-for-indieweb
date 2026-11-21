@@ -292,6 +292,33 @@ final class MixedKindArchiveTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Run a callback with a forged archive frame for a row, as the grouped loop pushes it.
+	 *
+	 * @param array<string, mixed> $frame Frame: sectioning, group, row, term.
+	 * @param callable             $run   Callback.
+	 * @return mixed Callback result.
+	 */
+	private function with_frame( array $frame, callable $run ) {
+		$property = new ReflectionProperty( Grouped_Archive::class, 'frames' );
+		$before = $property->getValue();
+		$property->setValue( null, [ $frame ] );
+		try {
+			return $run();
+		} finally {
+			$property->setValue( null, $before );
+		}
+	}
+
+	/**
+	 * Set the post-password cookie the way a visitor who entered a password holds it.
+	 *
+	 * @param string $password Password the cookie proves.
+	 */
+	private function enter_password( string $password ): void {
+		$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( $password );
+	}
+
+	/**
 	 * @return array<string, array{0: string}>
 	 */
 	public function kinds(): array {
@@ -652,5 +679,177 @@ final class MixedKindArchiveTest extends WP_UnitTestCase {
 
 		$this->assertSame( PKIW\stream_card_kind_cite( $post ), PKIW\stream_card_kind_cite( $post, null, '' ) );
 		$this->assertStringContainsString( self::TARGET, PKIW\stream_card_kind_cite( $post ) );
+	}
+
+	/**
+	 * @dataProvider kinds
+	 */
+	public function test_a_card_without_a_url_never_imports_shared_cite_meta( string $kind ): void {
+		$this->neighbors( $kind );
+		$attrs = 'jam' === $kind ? [
+			'title'  => 'Quiet Orchards',
+			'artist' => 'Marlowe Kite',
+		] : [ 'title' => 'A Cited Page' ];
+		$stale = static function ( int $id ): void {
+			update_post_meta( $id, '_pkiw_cite_url', self::OTHER );
+			update_post_meta( $id, '_pkiw_cite_name', 'Stale Cite Name' );
+			update_post_meta( $id, '_pkiw_cite_author', 'Stale Cite Author' );
+			update_post_meta( $id, '_pkiw_cite_summary', 'Stale cite summary' );
+			update_post_meta( $id, '_pkiw_cite_photo', 'https://other.example.test/stale-photo.jpg' );
+			update_post_meta( $id, '_pkiw_cite_host', 'other.example.test' );
+		};
+		$bare = $this->mixed( $kind, 'nourl-row', $this->card( $kind, $attrs ) . $this->checkin() );
+		$stale( $bare );
+		$own = $this->mixed( $kind, 'ownkey-row', $this->card( $kind, $attrs ) . $this->checkin() );
+		$stale( $own );
+		update_post_meta( $own, '_pkiw_' . [ 'like' => 'like_of', 'repost' => 'repost_of', 'favorite' => 'favorite_url', 'jam' => 'jam_url' ][ $kind ], self::TARGET );
+
+		$html = $this->serve( $kind );
+
+		$row = $this->one_card( $kind, 'nourl-row', $html );
+		if ( 'favorite' !== $kind ) {
+			$this->assertStringContainsString( 'jam' === $kind ? 'Quiet Orchards' : 'A Cited Page', $row, 'positive control: the card still prints its own title' );
+		}
+		$this->assertSame( [], array_filter( $this->urls( $row, $kind . '-of' ) ), 'no citation URL when only shared meta has one' );
+		foreach ( [ self::OTHER, 'other.example.test', 'Stale Cite', 'Stale cite', 'stale-photo' ] as $needle ) {
+			$this->assertStringNotContainsString( $needle, $row, $needle );
+		}
+		$owned = $this->one_card( $kind, 'ownkey-row', $html );
+		$this->assertSame( [ self::TARGET ], array_values( array_unique( $this->urls( $owned, $kind . '-of' ) ) ), 'the kind-owned key supplies the URL' );
+		foreach ( [ self::OTHER, 'Stale Cite', 'Stale cite', 'stale-photo' ] as $needle ) {
+			$this->assertStringNotContainsString( $needle, $owned, $needle );
+		}
+	}
+
+	public function test_the_facts_api_requires_both_the_queried_kind_and_checkin(): void {
+		$cases = [
+			'kind and check-in'    => [ [ 'like', 'checkin' ], true ],
+			'check-in only'        => [ [ 'checkin' ], false ],
+			'kind only'            => [ [ 'like' ], false ],
+			'other kind, check-in' => [ [ 'repost', 'checkin' ], false ],
+			'two kinds, no check-in' => [ [ 'like', 'repost' ], false ],
+		];
+		$count = 0;
+		foreach ( $cases as $label => [ $terms, $expect ] ) {
+			$id = $this->post( $terms, 'terms-' . ++$count, '2026-08-20 10:00:00', $this->target( 'like' ) . $this->checkin() );
+			$this->go_to( (string) get_term_link( 'like', Taxonomy::TAXONOMY ) );
+
+			$facts = $this->with_frame(
+				[
+					'sectioning' => true,
+					'group'      => null,
+					'row'        => $id,
+					'term'       => 'like',
+				],
+				static fn(): array => Kind_Facts::get_for_archive_kind( $id, 'like' )
+			);
+
+			$this->assertSame( $expect, [] !== $facts, $label );
+		}
+	}
+
+	public function test_a_stored_password_hides_the_facts_until_the_cookie_matches(): void {
+		$id = $this->mixed( 'like', 'locked-facts', '', [ 'post_password' => 'secret' ] );
+		$this->go_to( (string) get_term_link( 'like', Taxonomy::TAXONOMY ) );
+		$frame = [
+			'sectioning' => true,
+			'group'      => null,
+			'row'        => $id,
+			'term'       => 'like',
+		];
+		$read  = fn(): array => $this->with_frame( $frame, static fn(): array => Kind_Facts::get_for_archive_kind( $id, 'like' ) );
+
+		$this->assertFalse( Kind_Facts::can_show( get_post( $id ) ), 'no cookie' );
+		$this->assertSame( [], $read(), 'no cookie, no facts' );
+		$this->enter_password( 'wrong' );
+		$this->assertFalse( Kind_Facts::can_show( get_post( $id ) ), 'wrong cookie' );
+		$this->assertSame( [], $read(), 'wrong cookie, no facts' );
+		$this->enter_password( 'secret' );
+		$this->assertTrue( Kind_Facts::can_show( get_post( $id ) ), 'valid cookie' );
+		$this->assertSame( self::TARGET, $read()['url'] ?? '', 'positive control: the valid cookie opens the facts' );
+	}
+
+	public function test_a_jam_card_without_a_url_ignores_a_link_in_the_body(): void {
+		$this->neighbors( 'jam' );
+		$body = $this->card(
+			'jam',
+			[
+				'title'  => 'Quiet Orchards',
+				'artist' => 'Marlowe Kite',
+			]
+		) . $this->checkin() . '<!-- wp:paragraph --><p><a class="u-jam-of" href="' . self::PLACE . '">place</a> <a href="' . self::OTHER . '">other</a></p><!-- /wp:paragraph -->';
+		$id   = $this->mixed( 'jam', 'jam-body-link', $body );
+
+		$this->assertSame( self::PLACE, PKIW\Jam_Archive::facts( $id )['url'], 'positive control: the unscoped reader does scrape the body link' );
+
+		$row = $this->one_card( 'jam', 'jam-body-link', $this->serve( 'jam' ) );
+
+		$this->assertSame( [], array_filter( $this->urls( $row, 'jam-of' ) ) );
+		$this->assertStringNotContainsString( self::OTHER, $row );
+		$this->assertSame( '', Grouped_Archive::current_archive_kind(), 'the frame is gone after the render' );
+		$this->go_to( (string) get_term_link( 'jam', Taxonomy::TAXONOMY ) );
+		$facts = $this->with_frame(
+			[
+				'sectioning' => true,
+				'group'      => null,
+				'row'        => $id,
+				'term'       => 'jam',
+			],
+			static fn(): array => Kind_Facts::get_for_archive_kind( $id, 'jam' )
+		);
+		$this->assertSame( '', $facts['url'] ?? 'missing', 'the selected facts carry no body URL' );
+	}
+
+	public function test_a_first_term_audio_post_gets_no_foreign_media_on_a_mixed_row(): void {
+		$body = '<!-- wp:audio --><figure class="wp-block-audio"><audio controls src="http://example.org/wp-content/uploads/sentinel-mk91.mp3"></audio></figure><!-- /wp:audio -->' . $this->target( 'like' ) . $this->checkin();
+		$id   = $this->post( [ 'audio', 'like', 'checkin' ], 'audio-first', '2026-08-20 10:00:00', $body );
+		$this->assertSame( 'audio', Kind_Facts::kind_of( get_post( $id ) ), 'the first term is the foreign kind' );
+
+		$row = $this->one_card( 'like', 'audio-first', $this->serve( 'like' ) );
+
+		$this->assertStringNotContainsString( 'u-audio', $row );
+		$this->assertStringNotContainsString( 'sentinel-mk91.mp3', $row );
+	}
+
+	public function test_an_editor_gets_no_facts_for_a_private_mixed_peer_on_the_archive(): void {
+		$private   = $this->mixed( 'like', 'private-peer', '', [ 'post_status' => 'private' ] );
+		$published = $this->mixed( 'like', 'public-peer', '', [ 'post_date' => '2026-08-19 10:00:00' ] );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		$probe = [];
+		add_filter(
+			'render_block_post-kinds-indieweb/stream-card',
+			static function ( $html ) use ( &$probe, $private, $published ) {
+				$probe[] = [
+					'on_page' => in_array( $private, Grouped_Archive::current_page_ids(), true ),
+					'private' => Kind_Facts::get_for_archive_kind( $private, 'like' ),
+					'public'  => Kind_Facts::get_for_archive_kind( $published, 'like' ),
+				];
+
+				return $html;
+			}
+		);
+
+		$this->serve( 'like' );
+
+		$this->assertNotSame( [], $probe, 'the archive rendered a row' );
+		foreach ( $probe as $seen ) {
+			$this->assertTrue( $seen['on_page'], 'positive control: the editor query lists the private peer' );
+			$this->assertSame( [], $seen['private'], 'a private peer has no public facts' );
+		}
+		$this->assertNotSame( [], array_filter( array_column( $probe, 'public' ) ), 'positive control: a published peer has facts' );
+	}
+
+	/**
+	 * @dataProvider kinds
+	 */
+	public function test_a_mixed_rows_list_item_is_not_an_entry_because_the_card_is_the_root( string $kind ): void {
+		$this->neighbors( $kind );
+		$this->mixed( $kind, 'root-row' );
+
+		$row = $this->one_card( $kind, 'root-row', $this->serve( $kind ) );
+
+		$this->assertSame( 1, preg_match( '#^<li\b([^>]*)>#', $row, $li ) );
+		$this->assertDoesNotMatchRegularExpression( '#\b(hentry|h-entry)\b#', $li[1], 'the li carries no entry class' );
+		$this->assertSame( 1, preg_match( '#<article\b[^>]*\bh-entry\b#', $row ), 'the card is the h-entry root' );
 	}
 }

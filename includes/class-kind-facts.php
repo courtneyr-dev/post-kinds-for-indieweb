@@ -144,26 +144,15 @@ final class Kind_Facts {
 	}
 
 	/**
-	 * Meta key each mixed-kind archive kind owns for its target URL.
-	 *
-	 * @var array<string, string>
-	 */
-	private const OWN_TARGET_META = [
-		'like'     => 'like_of',
-		'repost'   => 'repost_of',
-		'favorite' => 'favorite_url',
-		'jam'      => 'jam_url',
-	];
-
-	/**
 	 * The selected kind's public facts for a row of a mixed-kind archive.
 	 *
 	 * Valid only inside the like, repost, favorite or jam archive loop, for the
 	 * row being rendered or a peer on its page, and only for a published post
 	 * that carries the queried kind and Check-in. It runs the kind's reader with
-	 * the same visibility guard, filter and location redaction as get(), then
-	 * drops what the Check-in could have supplied: a featured or shared cover,
-	 * shared cite metadata no card or kind-owned key backs, and a Jam URL
+	 * the same visibility guard, filter and location redaction as get(), with the
+	 * shared cite metadata hidden from the reader so only the selected card's
+	 * attributes and the kind's own meta keys supply a citation, then drops what
+	 * the Check-in could have supplied: a featured or shared cover and a Jam URL
 	 * scraped from the body.
 	 *
 	 * @since 1.10.3
@@ -185,7 +174,7 @@ final class Kind_Facts {
 			return [];
 		}
 
-		$facts = call_user_func( $entry['reader'], $post->ID );
+		$facts = self::read_without_shared_cite( $entry['reader'], $post->ID );
 		if ( ! is_array( $facts ) ) {
 			return [];
 		}
@@ -197,7 +186,38 @@ final class Kind_Facts {
 	}
 
 	/**
-	 * Keep only what the selected kind's card, or its own meta, supplies.
+	 * Run a reader with the shared cite metadata hidden from it.
+	 *
+	 * The like, repost and favorite readers fall back to `_pkiw_cite_*` meta (url,
+	 * name, author, summary, photo, host). On a mixed post that meta can come from
+	 * the Check-in, so it can't back the selected kind's citation. With it hidden,
+	 * every field the reader derives (url, host, cited_title, author, summary,
+	 * card_image, name) comes from the card or the kind's own key.
+	 *
+	 * @param callable $reader  Kind reader.
+	 * @param int      $post_id Post ID.
+	 * @return mixed Reader result.
+	 */
+	private static function read_without_shared_cite( callable $reader, int $post_id ) {
+		$prefix = Meta_Fields::PREFIX . 'cite_';
+		$hide   = static function ( $value, $object_id, $key, $single ) use ( $post_id, $prefix ) {
+			if ( null === $value && (int) $object_id === $post_id && is_string( $key ) && str_starts_with( $key, $prefix ) ) {
+				return $single ? '' : [];
+			}
+
+			return $value;
+		};
+
+		add_filter( 'get_post_metadata', $hide, 10, 4 );
+		try {
+			return call_user_func( $reader, $post_id );
+		} finally {
+			remove_filter( 'get_post_metadata', $hide, 10 );
+		}
+	}
+
+	/**
+	 * Layer the selected kind's card over its reader facts and drop Check-in leftovers.
 	 *
 	 * @param array<string, mixed> $facts Reader facts.
 	 * @param \WP_Post             $post  Post.
@@ -215,19 +235,7 @@ final class Kind_Facts {
 		}
 		$attr = static fn( string $key ): string => is_scalar( $card[ $key ] ?? null ) ? trim( (string) $card[ $key ] ) : '';
 
-		if ( null === $card ) {
-			// No card: shared cite metadata can't be told from the Check-in's, so only the kind's own URL key applies.
-			foreach ( [ 'url', 'host', 'cited_title', 'author', 'summary', 'card_image' ] as $key ) {
-				if ( array_key_exists( $key, $facts ) ) {
-					$facts[ $key ] = '';
-				}
-			}
-			$own = web_url( (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . self::OWN_TARGET_META[ $kind ], true ) );
-			if ( '' !== $own && array_key_exists( 'url', $facts ) ) {
-				$facts['url']  = $own;
-				$facts['host'] = url_host( $own );
-			}
-		} elseif ( in_array( $kind, [ 'like', 'repost' ], true ) ) {
+		if ( null !== $card && in_array( $kind, [ 'like', 'repost' ], true ) ) {
 			$facts = self::authored_cite( $facts, $attr );
 		}
 		if ( 'content' === ( $facts['url_source'] ?? '' ) ) {
