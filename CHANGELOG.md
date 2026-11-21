@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.3] - 2026-11-21
+
+### Fixed
+
+- The Like, Repost, Favorite and Jam archives show one card for a post that also carries Check-in: the card for the archive's own kind. A hidden post is still omitted, a draft or private post that carries both kinds is now omitted too, and a password-protected post still shows only its title. The plugin prints no label; themes can add one (#604).
+
 ## [1.10.2] - 2026-11-19
 
 ### Fixed

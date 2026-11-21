@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.10.2
+Stable tag: 1.10.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -184,6 +184,9 @@ Download [IndieWeb test data](https://github.com/courtneyr-dev/indieweb-test-dat
 9. Standard.site record panel on a Bookmark Card, showing the cited page's own title, publication, description, and tags read from AT Protocol
 
 == Changelog ==
+
+= 1.10.3 =
+* Fixed: Like, Repost, Favorite and Jam archives show one card for a post that also carries Check-in.
 
 = 1.10.2 =
 * Fixed: Mood calendar links include their visible code in their accessible name so speech input can activate them by the name shown on screen.
@@ -383,6 +386,9 @@ Security
 * Fixed: like, reply, repost, bookmark, favorite, listen, watch, and read posts expose the correct microformats2 markup, so webmention receivers and feed readers recognize them as their kind.
 
 == Upgrade Notice ==
+
+= 1.10.3 =
+Fixes a second card on the Like, Repost, Favorite and Jam archives for posts that also carry Check-in.
 
 = 1.10.2 =
 Fixes accessible link names in the Mood calendar.
