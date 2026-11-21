@@ -79,8 +79,9 @@ function render_stream_card( array $attributes = [], string $content = '', ?\WP_
 		stream_card_render_depth( -1 );
 	}
 
-	if ( $block instanceof \WP_Block && ! empty( $block->context['postId'] ) ) {
-		$html = stream_card_fallback_media( $html, (int) $block->context['postId'] );
+	$row = $block instanceof \WP_Block && ! empty( $block->context['postId'] ) ? get_post( (int) $block->context['postId'] ) : null;
+	if ( $row instanceof \WP_Post && '' === mixed_kind_archive_slug( $row, $block ) ) {
+		$html = stream_card_fallback_media( $html, $row->ID );
 	}
 
 	// 1.8.1: when the card carries its own h-entry root (the pk-card article,
@@ -231,7 +232,9 @@ function ensure_entry_properties_filter( string $html, array $block, $instance )
 		unset( $GLOBALS['pkiw_stream_card_root_seen'][ $post->ID ] );
 	}
 
-	return ensure_entry_properties( $html, $post, $card_rooted );
+	$selected = '' !== mixed_kind_archive_slug( $post, $instance );
+
+	return ensure_entry_properties( $html, $post, $card_rooted, $selected );
 }
 add_filter( 'render_block_post-kinds-indieweb/stream-card', __NAMESPACE__ . '\\ensure_entry_properties_filter', 99, 3 );
 
@@ -409,14 +412,15 @@ function entry_has_own_property( string $html, bool $card_rooted, string $class,
  * @param string   $html        Rendered card.
  * @param \WP_Post $post        The post.
  * @param bool     $card_rooted Whether the pk-card article is the h-entry root.
+ * @param bool     $selected    Whether a mixed-kind archive selected this row, so no foreign-kind media is inferred.
  * @return string
  */
-function ensure_entry_properties( string $html, \WP_Post $post, bool $card_rooted ): string {
+function ensure_entry_properties( string $html, \WP_Post $post, bool $card_rooted, bool $selected = false ): string {
 	// Only properties whose nearest microformats root is the entry count: a
 	// nested object (h-cite, h-event, h-card, h-food) owns its own u-url,
 	// dt-published and p-author even when they point at this post.
 	$permalink    = (string) get_permalink( $post );
-	$media        = entry_media_property_html( $post );
+	$media        = $selected ? '' : entry_media_property_html( $post );
 	$kind         = get_post_kind_slug( $post );
 	$media_class  = 'video' === $kind ? 'u-video' : ( 'audio' === $kind ? 'u-audio' : '' );
 	$needs_url    = ! entry_has_own_property( $html, $card_rooted, 'u-url', $permalink );
@@ -480,8 +484,15 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 
 	// A password-protected post shows its title link and nothing else. Its
 	// card would otherwise print the review, rating, cover and links.
+	$archive_kind = mixed_kind_archive_slug( $post, $block );
+	if ( '' !== $archive_kind && 'publish' !== $post->post_status ) {
+		return '';
+	}
 	if ( post_password_required( $post ) ) {
-		return render_protected_stream_card( $post, $heading_level );
+		return render_protected_stream_card( $post, $heading_level, $archive_kind );
+	}
+	if ( '' !== $archive_kind ) {
+		return render_mixed_kind_archive_card( $post, $archive_kind, $heading_level );
 	}
 
 	/**
@@ -625,6 +636,63 @@ function visitor_post_title( \WP_Post $post ): string {
 }
 
 /**
+ * The kind a mixed-kind archive row shows, or ''.
+ *
+ * A post carrying Check-in and the queried like, repost, favorite or jam kind
+ * shows one card for the queried kind on that kind's inherited archive loop.
+ * Independent loops, feeds, previews and REST never match.
+ *
+ * @since 1.10.3
+ *
+ * @param \WP_Post $post     Row post.
+ * @param mixed    $instance Rendered block instance.
+ * @return string Kind slug, or ''.
+ */
+function mixed_kind_archive_slug( \WP_Post $post, $instance = null ): string {
+	if ( ! $instance instanceof \WP_Block || (int) ( $instance->context['postId'] ?? 0 ) !== $post->ID ) {
+		return '';
+	}
+	$kind = Grouped_Archive::current_archive_kind( $post->ID );
+
+	return '' !== $kind && has_term( $kind, Taxonomy::TAXONOMY, $post ) && has_term( 'checkin', Taxonomy::TAXONOMY, $post ) ? $kind : '';
+}
+
+/**
+ * The one card a mixed-kind archive row prints for its queried kind.
+ *
+ * Reads the selected kind's facts only, never the post body or the Check-in.
+ *
+ * @since 1.10.3
+ *
+ * @param \WP_Post $post          Row post.
+ * @param string   $kind          Selected kind slug.
+ * @param int      $heading_level Clamped heading level (2-4).
+ * @return string Card HTML.
+ */
+function render_mixed_kind_archive_card( \WP_Post $post, string $kind, int $heading_level ): string {
+	$facts = Kind_Facts::get_for_archive_kind( $post->ID, $kind );
+	if ( 'jam' === $kind && [] !== $facts ) {
+		return Jam_Archive::render_archive_listing( $post, $facts, $heading_level );
+	}
+
+	$url      = (string) ( $facts['url'] ?? '' );
+	$title    = trim( visitor_post_title( $post ) );
+	$own_name = '' !== trim( (string) $post->post_title ) && '' !== $title && ! card_name_is_url( $title, $url ) && ! post_title_is_hidden( $post );
+	$name     = trim( (string) ( $facts['name'] ?? '' ) );
+	if ( '' === $name ) {
+		$name = $own_name ? $title : trim( (string) ( $facts['cited_title'] ?? '' ) );
+	}
+	if ( '' === $name ) {
+		$name = untitled_name( $post, false );
+	}
+	$name_class = $own_name && $name === $title ? 'u-url p-name' : 'u-url';
+
+	return '<article class="pk-card pk-card--stream k-' . esc_attr( $kind ) . ' h-entry"><div class="pk-caption">'
+		. '<h' . $heading_level . ' class="pk-title"><a class="' . $name_class . '" href="' . esc_url( (string) get_permalink( $post ) ) . '">' . esc_html( $name ) . '</a></h' . $heading_level . '>'
+		. '</div>' . stream_card_kind_cite( $post, $facts, $kind ) . '</article>';
+}
+
+/**
  * The Stream card for a password-protected post: its title, linked to the
  * post, and nothing from its body or its kind's facts.
  *
@@ -632,10 +700,11 @@ function visitor_post_title( \WP_Post $post ): string {
  *
  * @param \WP_Post $post          Protected post.
  * @param int      $heading_level Clamped heading level (2–4).
+ * @param string   $archive_kind  Kind the mixed-kind archive selected, else ''.
  * @return string Card HTML.
  */
-function render_protected_stream_card( \WP_Post $post, int $heading_level ): string {
-	$kind_slug = get_post_kind_slug( $post );
+function render_protected_stream_card( \WP_Post $post, int $heading_level, string $archive_kind = '' ): string {
+	$kind_slug = '' !== $archive_kind ? $archive_kind : get_post_kind_slug( $post );
 	// get_the_title() prefixes "Protected: " even to an empty title, so the
 	// stored title decides whether the post has a name of its own.
 	$has_title = '' !== trim( $post->post_title );
@@ -985,17 +1054,19 @@ function stream_card_kind_cite_map(): array {
  *
  * @since 1.9.0
  *
- * @param \WP_Post $post Post.
+ * @param \WP_Post   $post  Post.
+ * @param array|null $facts Facts a mixed-kind archive selected, else the post's own.
+ * @param string     $kind  Kind a mixed-kind archive selected, else the post's first kind.
  * @return string Hidden h-cite HTML, or '' when the kind has none or its facts are empty.
  */
-function stream_card_kind_cite( \WP_Post $post ): string {
-	$kind = get_post_kind_slug( $post );
+function stream_card_kind_cite( \WP_Post $post, ?array $facts = null, string $kind = '' ): string {
+	$kind = '' !== $kind ? $kind : get_post_kind_slug( $post );
 	$map  = stream_card_kind_cite_map();
 	if ( '' === $kind || ! isset( $map[ $kind ] ) || ! is_callable( $map[ $kind ] ) ) {
 		return '';
 	}
 
-	return (string) call_user_func( $map[ $kind ], kind_facts( $post->ID ), $post );
+	return (string) call_user_func( $map[ $kind ], $facts ?? kind_facts( $post->ID ), $post );
 }
 
 /**
