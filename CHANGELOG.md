@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.3] - 2026-11-21
+
+### Fixed
+
+- The Like, Repost, Favorite and Jam archives show one card for a post that also carries Check-in: the card for the archive's own kind. Posts that are hidden, not published or password protected keep their existing protection. The "Also a check-in" label comes from the courtneyr-child theme, not from this plugin. (#604)
+
 ## [1.10.2] - 2026-11-19
 
 ### Fixed
