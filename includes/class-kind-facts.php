@@ -144,6 +144,154 @@ final class Kind_Facts {
 	}
 
 	/**
+	 * Meta key each mixed-kind archive kind owns for its target URL.
+	 *
+	 * @var array<string, string>
+	 */
+	private const OWN_TARGET_META = [
+		'like'     => 'like_of',
+		'repost'   => 'repost_of',
+		'favorite' => 'favorite_url',
+		'jam'      => 'jam_url',
+	];
+
+	/**
+	 * The selected kind's public facts for a row of a mixed-kind archive.
+	 *
+	 * Valid only inside the like, repost, favorite or jam archive loop, for the
+	 * row being rendered or a peer on its page, and only for a published post
+	 * that carries the queried kind and Check-in. It runs the kind's reader with
+	 * the same visibility guard, filter and location redaction as get(), then
+	 * drops what the Check-in could have supplied: a featured or shared cover,
+	 * shared cite metadata no card or kind-owned key backs, and a Jam URL
+	 * scraped from the body.
+	 *
+	 * @since 1.10.3
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $kind    Queried kind slug.
+	 * @return array<string, mixed> Facts, or [] when the post isn't an eligible mixed row.
+	 */
+	public static function get_for_archive_kind( int $post_id, string $kind ): array {
+		$post  = get_post( $post_id );
+		$entry = self::reader( $kind );
+		if ( ! $post instanceof \WP_Post || null === $entry || ! in_array( $kind, Grouped_Archive::MIXED_ARCHIVE_KINDS, true )
+			|| Grouped_Archive::current_archive_kind() !== $kind
+			|| ! in_array( $post_id, array_merge( [ Grouped_Archive::current_archive_row() ], Grouped_Archive::current_page_ids() ), true )
+			|| 'publish' !== $post->post_status
+			|| ! has_term( $kind, Taxonomy::TAXONOMY, $post ) || ! has_term( 'checkin', Taxonomy::TAXONOMY, $post )
+			|| Public_Eligibility::hides( $post ) || ! self::can_show( $post )
+		) {
+			return [];
+		}
+
+		$facts = call_user_func( $entry['reader'], $post->ID );
+		if ( ! is_array( $facts ) ) {
+			return [];
+		}
+
+		/** This filter is documented in Kind_Facts::get(). */
+		$facts = (array) apply_filters( 'pkiw_kind_facts', self::own_kind_facts( $facts, $post, $kind ), $post->ID, $kind );
+
+		return self::hide_location( $facts, $entry['location'], $post->ID );
+	}
+
+	/**
+	 * Keep only what the selected kind's card, or its own meta, supplies.
+	 *
+	 * @param array<string, mixed> $facts Reader facts.
+	 * @param \WP_Post             $post  Post.
+	 * @param string               $kind  Selected kind.
+	 * @return array<string, mixed>
+	 */
+	private static function own_kind_facts( array $facts, \WP_Post $post, string $kind ): array {
+		$card_name = 'post-kinds-indieweb/' . $kind . '-card';
+		$card      = null;
+		foreach ( flatten_blocks( parse_blocks( (string) $post->post_content ) ) as $block ) {
+			if ( ( $block['blockName'] ?? '' ) === $card_name ) {
+				$card = is_array( $block['attrs'] ?? null ) ? $block['attrs'] : [];
+				break;
+			}
+		}
+		$attr = static fn( string $key ): string => is_scalar( $card[ $key ] ?? null ) ? trim( (string) $card[ $key ] ) : '';
+
+		if ( null === $card ) {
+			// No card: shared cite metadata can't be told from the Check-in's, so only the kind's own URL key applies.
+			foreach ( [ 'url', 'host', 'cited_title', 'author', 'summary', 'card_image' ] as $key ) {
+				if ( array_key_exists( $key, $facts ) ) {
+					$facts[ $key ] = '';
+				}
+			}
+			$own = web_url( (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . self::OWN_TARGET_META[ $kind ], true ) );
+			if ( '' !== $own && array_key_exists( 'url', $facts ) ) {
+				$facts['url']  = $own;
+				$facts['host'] = url_host( $own );
+			}
+		} elseif ( in_array( $kind, [ 'like', 'repost' ], true ) ) {
+			$facts = self::authored_cite( $facts, $attr );
+		}
+		if ( 'content' === ( $facts['url_source'] ?? '' ) ) {
+			$facts['url']        = '';
+			$facts['url_source'] = '';
+		}
+		$source = $facts['picture']['source'] ?? '';
+		if ( array_key_exists( 'picture', $facts ) && ( '' === $attr( 'jam' === $kind ? 'cover' : 'image' ) || ! in_array( $source, [ 'card', 'cover' ], true ) ) ) {
+			$facts['picture'] = [
+				'source'            => '',
+				'attachment_id'     => 0,
+				'url'               => '',
+				'alt'               => '',
+				'remote'            => false,
+				'suppress_featured' => false,
+			];
+		}
+
+		return $facts;
+	}
+
+	/**
+	 * A like or repost card's own attributes over the shared cite metadata.
+	 *
+	 * @param array<string, mixed> $facts Reader facts.
+	 * @param callable             $attr  Card attribute reader: key => trimmed string.
+	 * @return array<string, mixed>
+	 */
+	private static function authored_cite( array $facts, callable $attr ): array {
+		$url   = web_url( $attr( 'url' ) );
+		$title = $attr( 'title' );
+		if ( '' !== $url ) {
+			$facts['url']  = $url;
+			$facts['host'] = url_host( $url );
+		}
+		if ( '' !== $title && ! card_name_is_url( $title, $url ) ) {
+			$facts['cited_title'] = $title;
+			if ( isset( $facts['name'] ) ) {
+				$facts['name']          = $title;
+				$facts['name_is_title'] = false;
+			}
+		}
+		foreach ( [
+			'author'  => 'author',
+			'summary' => 'description',
+		] as $fact => $key ) {
+			$facts[ $fact ] = '' !== $attr( $key ) ? $attr( $key ) : ( $facts[ $fact ] ?? '' );
+		}
+		$image = web_url( $attr( 'image' ) );
+		if ( '' !== $image ) {
+			$facts['picture'] = [
+				'source'            => 'card',
+				'attachment_id'     => 0,
+				'url'               => $image,
+				'alt'               => $attr( 'imageAlt' ),
+				'remote'            => ! is_upload_url( $image ),
+				'suppress_featured' => false,
+			];
+		}
+
+		return $facts;
+	}
+
+	/**
 	 * A post's kind slug: its first kind term, as Kind_Artwork reads it.
 	 *
 	 * @since 1.9.0

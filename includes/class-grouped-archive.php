@@ -162,9 +162,21 @@ final class Grouped_Archive {
 	private static int $preview_at = 0;
 
 	/**
+	 * Kinds whose archive shows one card for a post that is also a Check-in.
+	 *
+	 * @since 1.10.3
+	 *
+	 * @var string[]
+	 */
+	public const MIXED_ARCHIVE_KINDS = [ 'like', 'repost', 'favorite', 'jam' ];
+
+	/**
 	 * Render state, one frame per Post Template render and per item.
 	 *
-	 * @var array<int, array{sectioning:bool, group:?Archive_Group}>
+	 * An item frame of an inherited archive-sections loop on a mixed-kind
+	 * archive also carries the row's post ID and the queried kind slug.
+	 *
+	 * @var array<int, array{sectioning:bool, group:?Archive_Group, row?:int, term?:string}>
 	 */
 	private static array $frames = [];
 
@@ -396,6 +408,58 @@ final class Grouped_Archive {
 		$frame = end( self::$frames );
 
 		return false !== $frame ? $frame['group'] : null;
+	}
+
+	/**
+	 * The queried kind of the archive row being rendered, or ''.
+	 *
+	 * Reads only the active item frame of an inherited archive-sections loop on
+	 * the like, repost, favorite or jam archive. Any other loop, feed, REST
+	 * request or editor preview has no such frame.
+	 *
+	 * @since 1.10.3
+	 *
+	 * @param int $post_id Row the caller renders; 0 skips the row check.
+	 * @return string Kind slug, or ''.
+	 */
+	public static function current_archive_kind( int $post_id = 0 ): string {
+		$frame = end( self::$frames );
+		if ( false === $frame || empty( $frame['term'] ) || ( $post_id > 0 && ( $frame['row'] ?? 0 ) !== $post_id ) ) {
+			return '';
+		}
+
+		return $frame['term'];
+	}
+
+	/**
+	 * The post ID of the archive row being rendered, or 0.
+	 *
+	 * @since 1.10.3
+	 *
+	 * @return int
+	 */
+	public static function current_archive_row(): int {
+		$frame = end( self::$frames );
+
+		return false !== $frame && ! empty( $frame['term'] ) ? (int) ( $frame['row'] ?? 0 ) : 0;
+	}
+
+	/**
+	 * The validated queried kind for an inherited archive-sections loop, or ''.
+	 *
+	 * @param \WP_Block            $block Post Template block.
+	 * @param array<string, mixed> $plan  Section plan.
+	 * @return string
+	 */
+	private static function archive_term( \WP_Block $block, array $plan ): string {
+		if ( self::$block_preview || is_admin() || is_feed() || wp_doing_ajax() || wp_is_serving_rest_request()
+			|| Kind_Archive_Layouts::ARCHIVE_SECTIONS !== $plan['entry'] || empty( $block->context['query']['inherit'] ) || ! is_tax( Taxonomy::TAXONOMY )
+		) {
+			return '';
+		}
+		$term = get_queried_object();
+
+		return $term instanceof \WP_Term && Taxonomy::TAXONOMY === $term->taxonomy && in_array( $term->slug, self::MIXED_ARCHIVE_KINDS, true ) ? $term->slug : '';
 	}
 
 	/**
@@ -749,6 +813,7 @@ final class Grouped_Archive {
 		$lead       = [];
 		$sections   = [];
 		$last       = null;
+		$term       = self::archive_term( $block, $plan );
 
 		try {
 			while ( $query->have_posts() ) {
@@ -769,6 +834,8 @@ final class Grouped_Archive {
 				self::$frames[]        = [
 					'sectioning' => true,
 					'group'      => $group,
+					'row'        => $post_id,
+					'term'       => $term,
 				];
 				add_filter( 'render_block_context', $context, 1 );
 				try {

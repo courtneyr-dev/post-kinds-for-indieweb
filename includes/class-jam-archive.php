@@ -177,11 +177,13 @@ final class Jam_Archive {
 		$listing = Grouped_Archive::is_sectioning()
 			|| Grouped_Archive::is_block_preview()
 			|| is_tax( Taxonomy::TAXONOMY, self::KIND );
-		$shape   = $listing ? 'pk-card--jam-listing' : 'pk-card--jam-stream';
-		$name    = (string) $facts['name'];
-		$artist  = (string) $facts['artist'];
-		$link    = 'u-url' . ( 'track' === $facts['name_source'] || $facts['name_is_title'] ? ' p-name' : '' );
-		$cite    = \PKIW\hidden_cite_html(
+		if ( $listing ) {
+			return self::render_archive_listing( $post, $facts, $level );
+		}
+		$name   = (string) $facts['name'];
+		$artist = (string) $facts['artist'];
+		$link   = 'u-url' . ( 'track' === $facts['name_source'] || $facts['name_is_title'] ? ' p-name' : '' );
+		$cite   = \PKIW\hidden_cite_html(
 			'u-jam-of',
 			[
 				'p-name'   => (string) $facts['title'],
@@ -190,20 +192,43 @@ final class Jam_Archive {
 			]
 		);
 
-		$out = '<article class="pk-card pk-card--stream pk-card--jam k-jam h-entry ' . $shape . '">';
-		if ( $listing ) {
-			$out .= self::listing_html( $post, $facts, $level, $link, $name, $artist );
-		} else {
-			$label = \PKIW\get_kind_label( __( 'Jam', 'post-kinds-for-indieweb-in-block-themes' ), self::KIND, 'jam-card' );
-			$out  .= '<span class="pk-kindlabel">' . esc_html( $label ) . '</span>';
-			$out  .= '<h' . $level . ' class="pk-title"><a class="' . esc_attr( $link ) . '" href="' . esc_url( (string) get_permalink( $post ) ) . '">' . esc_html( $name ) . '</a></h' . $level . '>';
-			if ( '' !== $artist ) {
-				$out .= '<p class="pk-sub">' . esc_html( $artist ) . '</p>';
-			}
-			$out .= '<p class="pk-sub pk-stream-date"><time datetime="' . esc_attr( (string) $facts['date'] ) . '">' . esc_html( (string) $facts['date_display'] ) . '</time></p>';
+		$out   = '<article class="pk-card pk-card--stream pk-card--jam k-jam h-entry pk-card--jam-stream">';
+		$label = \PKIW\get_kind_label( __( 'Jam', 'post-kinds-for-indieweb-in-block-themes' ), self::KIND, 'jam-card' );
+		$out  .= '<span class="pk-kindlabel">' . esc_html( $label ) . '</span>';
+		$out  .= '<h' . $level . ' class="pk-title"><a class="' . esc_attr( $link ) . '" href="' . esc_url( (string) get_permalink( $post ) ) . '">' . esc_html( $name ) . '</a></h' . $level . '>';
+		if ( '' !== $artist ) {
+			$out .= '<p class="pk-sub">' . esc_html( $artist ) . '</p>';
 		}
+		$out .= '<p class="pk-sub pk-stream-date"><time datetime="' . esc_attr( (string) $facts['date'] ) . '">' . esc_html( (string) $facts['date_display'] ) . '</time></p>';
 
 		return $out . $cite . '</article>';
+	}
+
+	/**
+	 * The listing card for a jam: the archive strip or the Now Playing lead.
+	 *
+	 * @since 1.10.3
+	 *
+	 * @param \WP_Post             $post  Post.
+	 * @param array<string, mixed> $facts Jam facts.
+	 * @param int                  $level Heading level, 2 to 4.
+	 * @return string Card HTML.
+	 */
+	public static function render_archive_listing( \WP_Post $post, array $facts, int $level ): string {
+		$name   = (string) $facts['name'];
+		$artist = (string) $facts['artist'];
+		$link   = 'u-url' . ( 'track' === $facts['name_source'] || $facts['name_is_title'] ? ' p-name' : '' );
+		$cite   = \PKIW\hidden_cite_html(
+			'u-jam-of',
+			[
+				'p-name'   => (string) $facts['title'],
+				'p-author' => $artist,
+				'u-url'    => (string) $facts['url'],
+			]
+		);
+
+		return '<article class="pk-card pk-card--stream pk-card--jam k-jam h-entry pk-card--jam-listing">'
+			. self::listing_html( $post, $facts, $level, $link, $name, $artist ) . $cite . '</article>';
 	}
 
 	/**
