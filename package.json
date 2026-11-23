@@ -119,7 +119,8 @@
 		"check": "npm run lint && npm run test:unit && npm run audit",
 		"screenshots:docs": "node scripts/capture-docs-screenshots.js",
 		"storybook": "storybook dev -p 6006",
-		"build-storybook": "storybook build -o storybook-static"
+		"build-storybook": "storybook build -o storybook-static",
+		"test:storybook-a11y": "node scripts/test-storybook-a11y.mjs"
 	},
 	"overrides": {
 		"@lhci/cli": {
