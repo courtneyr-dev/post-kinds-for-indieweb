@@ -62,3 +62,6 @@ test-results/
 # Docs site build output (docs/ is an Astro Starlight project)
 docs/dist/
 docs/.astro/
+
+# Storybook build output (`npm run build-storybook`)
+storybook-static/

@@ -1,0 +1,11 @@
+import './block-category.js';
+import '../src/blocks/shared/card-editor.css';
+import '../src/blocks/shared/pk-card.css';
+import '../src/blocks/listen-card/editor.css';
+import '../src/blocks/listen-card/index.js';
+import '../src/blocks/star-rating/style.css';
+import '../src/blocks/star-rating/editor.css';
+import '../src/blocks/star-rating/index.js';
+import '../src/blocks/media-lookup/style.css';
+import '../src/blocks/media-lookup/editor.css';
+import '../src/blocks/media-lookup/index.js';

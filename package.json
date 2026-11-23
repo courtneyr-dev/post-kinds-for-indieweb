@@ -66,6 +66,8 @@
 		"@babel/core": "^7.29.13",
 		"@lhci/cli": "^0.16.1",
 		"@playwright/test": "^1.65.1",
+		"@storybook/addon-a11y": "10.6.6",
+		"@storybook/react-vite": "10.6.6",
 		"@testing-library/jest-dom": "^7.0.1",
 		"@testing-library/react": "^16.3.3",
 		"@wordpress/babel-preset-default": "^10.1.0",
@@ -76,7 +78,9 @@
 		"husky": "^9.0.0",
 		"jest": "^30.5.2",
 		"jest-environment-jsdom": "^30.5.2",
-		"lint-staged": "^17.6.0"
+		"lint-staged": "^17.6.0",
+		"storybook": "10.6.6",
+		"vite": "8.3.8"
 	},
 	"scripts": {
 		"build": "wp-scripts build --experimental-modules && node bin/sync-block-assets.mjs",
@@ -113,7 +117,10 @@
 		"plugin-zip": "wp-scripts plugin-zip",
 		"prepare": "husky",
 		"check": "npm run lint && npm run test:unit && npm run audit",
-		"screenshots:docs": "node scripts/capture-docs-screenshots.js"
+		"screenshots:docs": "node scripts/capture-docs-screenshots.js",
+		"storybook": "storybook dev -p 6006",
+		"build-storybook": "storybook build -o storybook-static",
+		"test:storybook-a11y": "node scripts/test-storybook-a11y.mjs"
 	},
 	"overrides": {
 		"@lhci/cli": {
