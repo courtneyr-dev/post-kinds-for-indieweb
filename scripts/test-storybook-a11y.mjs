@@ -2,13 +2,17 @@
 import { createServer } from 'node:http';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { extname, join, normalize } from 'node:path';
+import { extname, join, normalize, resolve as resolvePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 import { AxeBuilder } from '@axe-core/playwright';
 import { WCAG_TAGS } from '../.storybook/a11y-rules.js';
 
-const ROOT = fileURLToPath( new URL( '../storybook-static', import.meta.url ) );
+// Defaults to `npm run build-storybook` output; the docs workflow passes
+// docs/dist/storybook, the copy it publishes.
+const ROOT = process.argv[ 2 ]
+	? resolvePath( process.argv[ 2 ] )
+	: fileURLToPath( new URL( '../storybook-static', import.meta.url ) );
 const TYPES = {
 	'.html': 'text/html',
 	'.js': 'text/javascript',
@@ -88,7 +92,7 @@ function serve() {
 
 if ( ! existsSync( join( ROOT, 'index.json' ) ) ) {
 	throw new Error(
-		'storybook-static/index.json is missing. Run `npm run build-storybook` first.'
+		`${ ROOT }/index.json is missing. Run \`npm run build-storybook\` first.`
 	);
 }
 
