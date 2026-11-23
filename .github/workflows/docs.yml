@@ -2,10 +2,30 @@ name: Docs
 
 on:
   pull_request:
-    paths: ['docs/**', '.github/workflows/docs.yml']
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+      # The Storybook published at /storybook/ and everything its build reads.
+      - '.storybook/**'
+      - 'stories/**'
+      - 'src/**'
+      - 'includes/class-taxonomy.php'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/test-storybook-a11y.mjs'
   push:
     branches: [main]
-    paths: ['docs/**', '.github/workflows/docs.yml']
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+      # The Storybook published at /storybook/ and everything its build reads.
+      - '.storybook/**'
+      - 'stories/**'
+      - 'src/**'
+      - 'includes/class-taxonomy.php'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/test-storybook-a11y.mjs'
   workflow_dispatch:
 
 env:
@@ -25,13 +45,24 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: docs/package-lock.json
+          cache-dependency-path: |
+            docs/package-lock.json
+            package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
       - name: Build site
         run: npm run build
+
+      # One Pages artifact per repo, so the Storybook ships inside docs/dist.
+      - name: Install Storybook dependencies
+        working-directory: .
+        run: npm ci
+
+      - name: Build Storybook into the site
+        working-directory: .
+        run: npx storybook build -o docs/dist/storybook
 
       - name: Markdown lint
         run: npm run lint:md
@@ -49,6 +80,10 @@ jobs:
 
       - name: Accessibility check (axe)
         run: npm run check:a11y
+
+      - name: Storybook accessibility check (axe, every story)
+        working-directory: .
+        run: npm run test:storybook-a11y -- docs/dist/storybook
 
       - name: Upload site artifact
         if: github.event_name != 'pull_request'
