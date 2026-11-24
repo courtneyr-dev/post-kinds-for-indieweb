@@ -69,10 +69,10 @@ export default function SyndicationControls( { kind } ) {
 			if ( connectedServices.length === 0 ) {
 				return {};
 			}
-			const getKindMeta = select( STORE_NAME ).getKindMeta;
+			const kindMeta = select( STORE_NAME ).getAllKindMeta();
 			const meta = {};
 			connectedServices.forEach( ( [ serviceId ] ) => {
-				meta[ serviceId ] = getKindMeta( `syndicate_${ serviceId }` );
+				meta[ serviceId ] = kindMeta[ `syndicate_${ serviceId }` ];
 			} );
 			return meta;
 		},

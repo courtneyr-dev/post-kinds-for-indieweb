@@ -1100,6 +1100,12 @@ class Meta_Fields {
 				'sanitize'    => 'rest_sanitize_boolean',
 				'default'     => true,
 			],
+			'syndicate_foursquare'           => [
+				'type'        => 'boolean',
+				'description' => __( 'Whether to syndicate to Foursquare.', 'post-kinds-for-indieweb-in-block-themes' ),
+				'sanitize'    => 'rest_sanitize_boolean',
+				'default'     => true,
+			],
 
 			// Presentation fields (issue 262).
 			'presentation_slides_url'        => [

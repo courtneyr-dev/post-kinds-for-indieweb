@@ -28,9 +28,7 @@ export default {
 				component:
 					'Source: `src/editor/kind-selector/components/SyndicationControls.js`, rendered by `KindFields` for listen, watch and check-in posts. ' +
 					'Services come from `window.pkiwAdminEditor.syndicationServices`, which `includes/class-plugin.php` fills from `get_available_syndication_services()`. ' +
-					'A connected service shows a toggle that writes `_pkiw_syndicate_<service>` post meta and defaults to on. A service without a token shows an authorization notice. ' +
-					"The toggle cannot show off: `getKindMeta` in `src/editor/stores/post-kinds.js` returns `meta[ key ] || ''`, so a stored `false` reads as an empty string, and the component treats every value except `false` as on. " +
-					'The Turn off and Stored off stories record that current behavior.',
+					'A connected service shows a toggle that writes `_pkiw_syndicate_<service>` post meta. The toggle defaults to on and stays off when a post saves an opt-out. A service without a token shows an authorization notice.',
 			},
 		},
 	},
@@ -59,21 +57,23 @@ export const ConnectedOn = {
 	},
 };
 
-export const TurnOffDoesNotStick = {
+export const TurnOffSticks = {
 	play: async ( { canvasElement } ) => {
 		const toggle = lastfmToggle( canvasElement );
 		await userEvent.click( toggle );
 		await within( canvasElement ).findByText( 'false', {
 			selector: 'output',
 		} );
-		expect( toggle ).toBeChecked();
+		expect( toggle ).not.toBeChecked();
+		within( canvasElement ).getByText( 'Will not sync' );
 	},
 };
 
-export const StoredOffShowsOn = {
+export const StoredOffShowsOff = {
 	args: { meta: { _pkiw_syndicate_lastfm: false } },
 	play: async ( { canvasElement } ) => {
-		expect( lastfmToggle( canvasElement ) ).toBeChecked();
+		expect( lastfmToggle( canvasElement ) ).not.toBeChecked();
+		within( canvasElement ).getByText( 'Will not sync' );
 	},
 };
 

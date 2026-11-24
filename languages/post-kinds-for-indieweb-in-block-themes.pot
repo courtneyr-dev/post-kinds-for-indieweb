@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Post Kinds for IndieWeb in Block Themes 1.10.3\n"
+"Project-Id-Version: Post Kinds for IndieWeb in Block Themes 1.10.4\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/post-kinds-for-indieweb-in-block-themes\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-19T00:43:56+00:00\n"
+"POT-Creation-Date: 2026-11-24T22:52:57+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: post-kinds-for-indieweb-in-block-themes\n"
@@ -63,7 +63,7 @@ msgstr ""
 
 #: build/blocks/bookmark-card/render.php:64
 #: includes/admin/class-admin.php:897
-#: includes/admin/class-settings-page.php:1616
+#: includes/admin/class-settings-page.php:1621
 msgid "Bookmark"
 msgstr ""
 
@@ -79,7 +79,7 @@ msgstr ""
 #: build/blocks/checkin-dashboard/render.php:164
 #: build/blocks/checkin-dashboard/render.php:170
 #: build/blocks/checkin-dashboard/render.php:230
-#: includes/admin/class-settings-page.php:1626
+#: includes/admin/class-settings-page.php:1631
 #: includes/functions-card-render.php:655
 msgid "Check-in"
 msgstr ""
@@ -161,7 +161,7 @@ msgstr ""
 #. translators: 1: kind name, 2: post date.
 #: build/blocks/comic-card/render.php:55
 #: includes/functions-card-render.php:662
-#: includes/functions-stream-card.php:912
+#: includes/functions-stream-card.php:981
 #, php-format
 msgid "%1$s, %2$s"
 msgstr ""
@@ -263,7 +263,7 @@ msgid "Craft type"
 msgstr ""
 
 #: build/blocks/craft-card/render.php:46
-#: includes/functions-stream-card.php:1574
+#: includes/functions-stream-card.php:1645
 msgid "Time spent"
 msgstr ""
 
@@ -331,7 +331,7 @@ msgstr ""
 
 #: build/blocks/drink-card/render.php:35
 #: includes/admin/class-admin.php:885
-#: includes/admin/class-settings-page.php:1636
+#: includes/admin/class-settings-page.php:1641
 #: includes/class-kind-archive-layouts.php:1535
 msgid "Drink"
 msgstr ""
@@ -352,7 +352,7 @@ msgid "Ate"
 msgstr ""
 
 #: build/blocks/event-card/render.php:102
-#: includes/admin/class-settings-page.php:1666
+#: includes/admin/class-settings-page.php:1671
 #: includes/class-presentation.php:222
 msgid "Event"
 msgstr ""
@@ -400,14 +400,14 @@ msgstr ""
 #: build/blocks/jam-card/render.php:77
 #: build/blocks/jam-card/render.php:118
 #: includes/admin/class-admin.php:913
-#: includes/admin/class-settings-page.php:1646
-#: includes/class-jam-archive.php:197
+#: includes/admin/class-settings-page.php:1651
+#: includes/class-jam-archive.php:196
 msgid "Jam"
 msgstr ""
 
 #: build/blocks/like-card/render.php:111
 #: includes/admin/class-admin.php:889
-#: includes/admin/class-settings-page.php:1606
+#: includes/admin/class-settings-page.php:1611
 msgid "Like"
 msgstr ""
 
@@ -419,7 +419,7 @@ msgstr ""
 #: build/blocks/listen-card/render.php:120
 #: includes/admin/class-admin.php:861
 #: includes/admin/class-settings-page.php:782
-#: includes/admin/class-settings-page.php:1641
+#: includes/admin/class-settings-page.php:1646
 #: includes/class-listen-archive.php:262
 msgid "Listen"
 msgstr ""
@@ -427,15 +427,15 @@ msgstr ""
 #: build/blocks/mood-card/render.php:40
 #: build/blocks/mood-card/render.php:44
 #: includes/admin/class-admin.php:921
-#: includes/admin/class-settings-page.php:1681
+#: includes/admin/class-settings-page.php:1686
 #: includes/class-mood-vocabulary.php:554
-#: includes/functions-stream-card.php:2186
+#: includes/functions-stream-card.php:2257
 #: build/blocks.js:8
 msgid "Mood"
 msgstr ""
 
 #: build/blocks/play-card/render.php:98
-#: includes/admin/class-settings-page.php:1696
+#: includes/admin/class-settings-page.php:1701
 #: build/blocks.js:7
 msgid "Review"
 msgstr ""
@@ -459,7 +459,7 @@ msgstr ""
 #: includes/admin/class-meta-boxes.php:204
 #: includes/admin/class-quick-post.php:324
 #: includes/admin/class-quick-post.php:669
-#: includes/admin/class-settings-page.php:1584
+#: includes/admin/class-settings-page.php:1589
 #: includes/admin/class-webhooks-page.php:672
 #: includes/class-issue-archive.php:332
 #: assets/js/issue-fields-editor.js:80
@@ -492,14 +492,14 @@ msgstr ""
 
 #: build/blocks/play-card/render.php:202
 #: includes/admin/class-admin.php:873
-#: includes/admin/class-settings-page.php:1656
+#: includes/admin/class-settings-page.php:1661
 msgid "Play"
 msgstr ""
 
 #: build/blocks/read-card/render.php:63
 #: includes/admin/class-admin.php:869
 #: includes/admin/class-settings-page.php:784
-#: includes/admin/class-settings-page.php:1661
+#: includes/admin/class-settings-page.php:1666
 msgid "Read"
 msgstr ""
 
@@ -517,20 +517,20 @@ msgstr ""
 
 #: build/blocks/reply-card/render.php:65
 #: includes/admin/class-admin.php:901
-#: includes/admin/class-settings-page.php:1601
+#: includes/admin/class-settings-page.php:1606
 msgid "Reply"
 msgstr ""
 
 #: build/blocks/repost-card/render.php:64
 #: includes/admin/class-admin.php:905
-#: includes/admin/class-settings-page.php:1611
+#: includes/admin/class-settings-page.php:1616
 msgid "Repost"
 msgstr ""
 
 #: build/blocks/rsvp-card/render.php:83
 #: includes/admin/class-admin.php:909
 #: includes/admin/class-meta-boxes.php:286
-#: includes/admin/class-settings-page.php:1621
+#: includes/admin/class-settings-page.php:1626
 #: includes/class-rsvp-archive.php:513
 msgid "RSVP"
 msgstr ""
@@ -597,7 +597,7 @@ msgstr ""
 #: build/blocks/watch-card/render.php:118
 #: includes/admin/class-admin.php:865
 #: includes/admin/class-settings-page.php:783
-#: includes/admin/class-settings-page.php:1651
+#: includes/admin/class-settings-page.php:1656
 msgid "Watch"
 msgstr ""
 
@@ -611,7 +611,7 @@ msgstr ""
 
 #: build/blocks/wish-card/render.php:77
 #: includes/admin/class-admin.php:917
-#: includes/admin/class-settings-page.php:1686
+#: includes/admin/class-settings-page.php:1691
 msgid "Wish"
 msgstr ""
 
@@ -1244,12 +1244,12 @@ msgid "Connection failed: "
 msgstr ""
 
 #: includes/admin/class-admin.php:333
-#: includes/admin/class-settings-page.php:2328
+#: includes/admin/class-settings-page.php:2333
 msgid "Importing..."
 msgstr ""
 
 #: includes/admin/class-admin.php:334
-#: includes/admin/class-settings-page.php:2329
+#: includes/admin/class-settings-page.php:2334
 msgid "Import complete!"
 msgstr ""
 
@@ -1299,12 +1299,12 @@ msgid "Checkin"
 msgstr ""
 
 #: includes/admin/class-admin.php:881
-#: includes/admin/class-settings-page.php:1631
+#: includes/admin/class-settings-page.php:1636
 msgid "Eat"
 msgstr ""
 
 #: includes/admin/class-admin.php:925
-#: includes/admin/class-settings-page.php:1691
+#: includes/admin/class-settings-page.php:1696
 msgid "Acquisition"
 msgstr ""
 
@@ -1313,12 +1313,12 @@ msgid "Recipe"
 msgstr ""
 
 #: includes/admin/class-admin.php:933
-#: includes/admin/class-settings-page.php:1578
+#: includes/admin/class-settings-page.php:1583
 msgid "Audio"
 msgstr ""
 
 #: includes/admin/class-admin.php:937
-#: includes/admin/class-settings-page.php:1583
+#: includes/admin/class-settings-page.php:1588
 msgid "Quote"
 msgstr ""
 
@@ -1647,7 +1647,7 @@ msgstr ""
 #: includes/admin/class-api-settings.php:391
 #: includes/admin/class-meta-boxes.php:654
 #: includes/admin/class-quick-post.php:926
-#: includes/admin/class-settings-page.php:1902
+#: includes/admin/class-settings-page.php:1907
 #: includes/class-wish-archive.php:186
 #: build/blocks.js:2
 #: build/blocks.js:10
@@ -1656,12 +1656,12 @@ msgid "Music"
 msgstr ""
 
 #: includes/admin/class-api-settings.php:392
-#: includes/admin/class-settings-page.php:1908
+#: includes/admin/class-settings-page.php:1913
 msgid "Movies & TV"
 msgstr ""
 
 #: includes/admin/class-api-settings.php:393
-#: includes/admin/class-settings-page.php:1911
+#: includes/admin/class-settings-page.php:1916
 msgid "Books"
 msgstr ""
 
@@ -1751,7 +1751,7 @@ msgstr ""
 
 #: includes/admin/class-api-settings.php:661
 #: includes/admin/class-api-settings.php:776
-#: includes/admin/class-settings-page.php:2199
+#: includes/admin/class-settings-page.php:2204
 msgid "Disconnect"
 msgstr ""
 
@@ -2189,7 +2189,7 @@ msgid "Import supplemental materials from Readwise (PDFs, notes, etc.)."
 msgstr ""
 
 #: includes/admin/class-import-page.php:380
-#: includes/admin/class-settings-page.php:1419
+#: includes/admin/class-settings-page.php:1424
 msgid "Active Imports"
 msgstr ""
 
@@ -2219,7 +2219,7 @@ msgid "Re-sync"
 msgstr ""
 
 #: includes/admin/class-import-page.php:435
-#: includes/admin/class-settings-page.php:2088
+#: includes/admin/class-settings-page.php:2093
 msgid "Configure API"
 msgstr ""
 
@@ -2856,7 +2856,7 @@ msgstr ""
 #: includes/admin/class-meta-boxes.php:605
 #: includes/admin/class-quick-post.php:1117
 #: includes/admin/class-quick-post.php:1141
-#: includes/admin/class-settings-page.php:2124
+#: includes/admin/class-settings-page.php:2129
 #: build/blocks.js:1
 msgid "Clear"
 msgstr ""
@@ -3162,7 +3162,7 @@ msgstr ""
 #: includes/admin/class-quick-post.php:782
 #: includes/admin/class-quick-post.php:929
 #: includes/class-acquisition-archive.php:75
-#: includes/class-grouped-archive.php:1134
+#: includes/class-grouped-archive.php:1201
 #: includes/class-issue-archive.php:232
 #: includes/class-kind-archive-layouts.php:1535
 #: includes/class-kind-archive-layouts.php:1550
@@ -3203,7 +3203,7 @@ msgid "Track"
 msgstr ""
 
 #: includes/admin/class-quick-post.php:885
-#: includes/admin/class-settings-page.php:1582
+#: includes/admin/class-settings-page.php:1587
 #: build/blocks.js:7
 #: build/index.js:1
 msgid "Link"
@@ -3386,7 +3386,7 @@ msgid "No reaction posts yet."
 msgstr ""
 
 #: includes/admin/class-quick-post.php:1191
-#: includes/admin/class-settings-page.php:1958
+#: includes/admin/class-settings-page.php:1963
 #: includes/admin/class-webhooks-page.php:619
 msgid "ago"
 msgstr ""
@@ -3778,7 +3778,7 @@ msgid "WP Recipe Maker"
 msgstr ""
 
 #: includes/admin/class-settings-page.php:780
-#: includes/admin/class-settings-page.php:1239
+#: includes/admin/class-settings-page.php:1244
 msgid "General"
 msgstr ""
 
@@ -3802,847 +3802,851 @@ msgstr ""
 msgid "Configure general plugin behavior and defaults."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:817
+#: includes/admin/class-settings-page.php:812
+msgid "Download IndieWeb test data for a disposable WordPress site"
+msgstr ""
+
+#: includes/admin/class-settings-page.php:822
 msgid "Configure how content and metadata is handled."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:826
+#: includes/admin/class-settings-page.php:831
 msgid "Configure settings for listen/scrobble posts."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:835
+#: includes/admin/class-settings-page.php:840
 msgid "Configure settings for watch posts (movies and TV shows)."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:844
+#: includes/admin/class-settings-page.php:849
 msgid "Configure settings for read/book posts."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:853
+#: includes/admin/class-settings-page.php:858
 msgid "Configure settings for location checkin posts."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:854
+#: includes/admin/class-settings-page.php:859
 msgid "What visitors see of a check-in's location, coordinates included, follows each post's Location Privacy setting in the block editor: Public (exact location), Approximate or Private (hidden)."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:863
+#: includes/admin/class-settings-page.php:868
 msgid "Configure performance and rate limiting settings."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:872
+#: includes/admin/class-settings-page.php:877
 msgid "Configure integration with third-party WordPress plugins."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1040
+#: includes/admin/class-settings-page.php:1045
 msgid "Core IndieWeb Plugins"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1048
-#: includes/admin/class-settings-page.php:1090
-#: includes/admin/class-settings-page.php:1122
-#: includes/admin/class-settings-page.php:1156
-#: includes/admin/class-settings-page.php:1223
-#: includes/admin/class-settings-page.php:1269
+#: includes/admin/class-settings-page.php:1053
+#: includes/admin/class-settings-page.php:1095
+#: includes/admin/class-settings-page.php:1127
+#: includes/admin/class-settings-page.php:1161
+#: includes/admin/class-settings-page.php:1228
+#: includes/admin/class-settings-page.php:1274
 msgid "Active"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1050
+#: includes/admin/class-settings-page.php:1055
 msgid "Recommended"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1053
+#: includes/admin/class-settings-page.php:1058
 msgid "IndieBlocks provides Gutenberg blocks for IndieWeb interactions - replies, likes, reposts, and bookmarks. It also registers the \"kind\" taxonomy that this plugin uses to categorize posts."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1055
+#: includes/admin/class-settings-page.php:1060
 msgid "Reply Block:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1055
+#: includes/admin/class-settings-page.php:1060
 msgid "Create reply posts that link to the original content with proper microformats."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1056
+#: includes/admin/class-settings-page.php:1061
 msgid "Like Block:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1056
+#: includes/admin/class-settings-page.php:1061
 msgid "Show a \"liked\" indicator linking to the original post."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1057
+#: includes/admin/class-settings-page.php:1062
 msgid "Repost Block:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1057
+#: includes/admin/class-settings-page.php:1062
 msgid "Share and quote content from other sites."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1058
+#: includes/admin/class-settings-page.php:1063
 msgid "Bookmark Block:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1058
+#: includes/admin/class-settings-page.php:1063
 msgid "Save and display links with proper IndieWeb markup."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1059
+#: includes/admin/class-settings-page.php:1064
 msgid "Context Block:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1059
+#: includes/admin/class-settings-page.php:1064
 msgid "Automatically fetches and displays context for the content you are responding to."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1064
+#: includes/admin/class-settings-page.php:1069
 msgid "Install IndieBlocks"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1068
+#: includes/admin/class-settings-page.php:1073
 msgid "IndieBlocks is active and providing core blocks."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1071
-#: includes/admin/class-settings-page.php:1111
-#: includes/admin/class-settings-page.php:1143
-#: includes/admin/class-settings-page.php:1177
-#: includes/admin/class-settings-page.php:1253
-#: includes/admin/class-settings-page.php:1291
+#: includes/admin/class-settings-page.php:1076
+#: includes/admin/class-settings-page.php:1116
+#: includes/admin/class-settings-page.php:1148
+#: includes/admin/class-settings-page.php:1182
+#: includes/admin/class-settings-page.php:1258
+#: includes/admin/class-settings-page.php:1296
 msgid "View on WordPress.org"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1092
-#: includes/admin/class-settings-page.php:1124
-#: includes/admin/class-settings-page.php:1158
-#: includes/admin/class-settings-page.php:1225
-#: includes/admin/class-settings-page.php:1271
+#: includes/admin/class-settings-page.php:1097
+#: includes/admin/class-settings-page.php:1129
+#: includes/admin/class-settings-page.php:1163
+#: includes/admin/class-settings-page.php:1230
+#: includes/admin/class-settings-page.php:1276
 msgid "Not Installed"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1095
+#: includes/admin/class-settings-page.php:1100
 msgid "Webmention enables cross-site conversations on the IndieWeb. When you reply to, like, or bookmark content on another site, Webmention notifies that site of your interaction."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1097
+#: includes/admin/class-settings-page.php:1102
 msgid "Send Webmentions:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1097
+#: includes/admin/class-settings-page.php:1102
 msgid "Automatically notify other sites when you link to them."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1098
+#: includes/admin/class-settings-page.php:1103
 msgid "Receive Webmentions:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1098
+#: includes/admin/class-settings-page.php:1103
 msgid "Accept notifications when others link to your content."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1099
+#: includes/admin/class-settings-page.php:1104
 msgid "Comment Display:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1099
+#: includes/admin/class-settings-page.php:1104
 msgid "Show webmentions as comments on your posts."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1104
+#: includes/admin/class-settings-page.php:1109
 msgid "Install Webmention"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1108
+#: includes/admin/class-settings-page.php:1113
 msgid "Webmention is active. Your reactions will notify other sites."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1127
+#: includes/admin/class-settings-page.php:1132
 msgid "Syndication Links helps you POSSE (Publish on your Own Site, Syndicate Elsewhere) by tracking where your content has been shared and displaying those links."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1129
+#: includes/admin/class-settings-page.php:1134
 msgid "Syndication Targets:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1129
+#: includes/admin/class-settings-page.php:1134
 msgid "Define where to syndicate content (Twitter/X, Mastodon, etc.)."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1130
+#: includes/admin/class-settings-page.php:1135
 msgid "Link Display:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1130
+#: includes/admin/class-settings-page.php:1135
 msgid "Show \"Also on:\" links to syndicated copies."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1131
+#: includes/admin/class-settings-page.php:1136
 msgid "Microformats:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1131
+#: includes/admin/class-settings-page.php:1136
 msgid "Proper u-syndication markup for IndieWeb compatibility."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1136
+#: includes/admin/class-settings-page.php:1141
 msgid "Install Syndication Links"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1140
+#: includes/admin/class-settings-page.php:1145
 msgid "Syndication Links is active."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1148
+#: includes/admin/class-settings-page.php:1153
 msgid "Content Enhancement Plugins"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1161
+#: includes/admin/class-settings-page.php:1166
 msgid "Bookmark Card creates beautiful link preview cards for your bookmarks. When installed, the Bookmark post kind can automatically insert rich preview cards that show the title, description, and image from bookmarked URLs."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1163
+#: includes/admin/class-settings-page.php:1168
 msgid "Rich Previews:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1163
+#: includes/admin/class-settings-page.php:1168
 msgid "Automatically fetches Open Graph and metadata to display link previews."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1164
+#: includes/admin/class-settings-page.php:1169
 msgid "Smart Fallback:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1164
+#: includes/admin/class-settings-page.php:1169
 msgid "When active, acts as a fallback when URLs don't support oEmbed."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1165
+#: includes/admin/class-settings-page.php:1170
 msgid "Metadata Sync:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1165
+#: includes/admin/class-settings-page.php:1170
 msgid "Card data automatically syncs to post meta for feeds and microformats."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1170
+#: includes/admin/class-settings-page.php:1175
 msgid "Install Bookmark Card"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1174
+#: includes/admin/class-settings-page.php:1179
 msgid "Bookmark Card is active. Rich link previews are available for bookmarks."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1182
+#: includes/admin/class-settings-page.php:1187
 msgid "Built-in WordPress Features"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1188
+#: includes/admin/class-settings-page.php:1193
 msgid "WordPress oEmbed"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1189
+#: includes/admin/class-settings-page.php:1194
 msgid "Built-in"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1191
+#: includes/admin/class-settings-page.php:1196
 msgid "WordPress includes native support for embedding content from many popular services. When you create a Bookmark post, the plugin can automatically check if the URL supports oEmbed and insert a rich embed."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1192
+#: includes/admin/class-settings-page.php:1197
 msgid "Supported providers include:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1208
+#: includes/admin/class-settings-page.php:1213
 msgid "For Bookmark posts, you can choose between Auto (tries oEmbed first, then Bookmark Card), oEmbed Only, Bookmark Card Only, or None."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1221
+#: includes/admin/class-settings-page.php:1226
 msgid "Post Formats for Block Themes"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1228
+#: includes/admin/class-settings-page.php:1233
 msgid "Restores Post Format support to block themes. Many modern block themes dropped Post Format support, but this plugin brings it back with a clean UI in the block editor sidebar."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1230
+#: includes/admin/class-settings-page.php:1235
 msgid "Block Editor UI:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1230
+#: includes/admin/class-settings-page.php:1235
 msgid "Adds a Post Format selector panel to the editor sidebar."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1231
+#: includes/admin/class-settings-page.php:1236
 msgid "Theme Compatibility:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1231
+#: includes/admin/class-settings-page.php:1236
 msgid "Enables Post Formats on any theme, even those that don't declare support."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1232
+#: includes/admin/class-settings-page.php:1237
 msgid "Kind Sync:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1232
+#: includes/admin/class-settings-page.php:1237
 msgid "Works with Post Kinds for IndieWeb in Block Themes's format-to-kind sync feature."
 msgstr ""
 
 #. translators: %s: link to settings
-#: includes/admin/class-settings-page.php:1238
+#: includes/admin/class-settings-page.php:1243
 #, php-format
 msgid "Configure format-to-kind mappings in the %s tab."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1246
-#: includes/admin/class-settings-page.php:1284
+#: includes/admin/class-settings-page.php:1251
+#: includes/admin/class-settings-page.php:1289
 msgid "Install Plugin"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1250
+#: includes/admin/class-settings-page.php:1255
 msgid "Post Formats for Block Themes is active."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1267
+#: includes/admin/class-settings-page.php:1272
 msgid "Link Extension for XFN"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1274
+#: includes/admin/class-settings-page.php:1279
 msgid "Adds XFN (XHTML Friends Network) relationship attributes to links in the block editor. Essential for IndieWeb interactions where you want to indicate your relationship with the person you're replying to or mentioning."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1276
+#: includes/admin/class-settings-page.php:1281
 msgid "Link Popover UI:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1276
+#: includes/admin/class-settings-page.php:1281
 msgid "Adds XFN options directly in the link editing popover."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1277
+#: includes/admin/class-settings-page.php:1282
 msgid "Identity Links:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1277
+#: includes/admin/class-settings-page.php:1282
 msgid "Easily add rel=\"me\" to links to your other profiles."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1278
+#: includes/admin/class-settings-page.php:1283
 msgid "Relationship Types:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1278
+#: includes/admin/class-settings-page.php:1283
 msgid "Friend, acquaintance, contact, colleague, family members, and more."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1279
+#: includes/admin/class-settings-page.php:1284
 msgid "IndieWeb Compatible:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1279
+#: includes/admin/class-settings-page.php:1284
 msgid "XFN attributes are recognized by microformats parsers for social graph discovery."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1288
+#: includes/admin/class-settings-page.php:1293
 msgid "Link Extension for XFN is active."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1296
+#: includes/admin/class-settings-page.php:1301
 msgid "Recipe & Content Plugins"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1310
+#: includes/admin/class-settings-page.php:1315
 msgid "Cache Management"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1311
+#: includes/admin/class-settings-page.php:1316
 msgid "Clear cached API responses and metadata."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1315
-#: includes/admin/class-settings-page.php:1318
+#: includes/admin/class-settings-page.php:1320
+#: includes/admin/class-settings-page.php:1323
 msgid "Clear API Cache"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1321
+#: includes/admin/class-settings-page.php:1326
 msgid "Clear cached responses from external APIs."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1326
-#: includes/admin/class-settings-page.php:1329
+#: includes/admin/class-settings-page.php:1331
+#: includes/admin/class-settings-page.php:1334
 msgid "Clear Metadata Cache"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1332
+#: includes/admin/class-settings-page.php:1337
 msgid "Clear cached media metadata."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1337
-#: includes/admin/class-settings-page.php:1340
+#: includes/admin/class-settings-page.php:1342
+#: includes/admin/class-settings-page.php:1345
 msgid "Clear All Caches"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1343
+#: includes/admin/class-settings-page.php:1348
 msgid "Clear all cached data."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1351
+#: includes/admin/class-settings-page.php:1356
 msgid "Export / Import Settings"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1352
+#: includes/admin/class-settings-page.php:1357
 msgid "Export or import plugin settings."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1356
-#: includes/admin/class-settings-page.php:1359
+#: includes/admin/class-settings-page.php:1361
+#: includes/admin/class-settings-page.php:1364
 msgid "Export Settings"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1362
+#: includes/admin/class-settings-page.php:1367
 msgid "Download settings as a JSON file (API keys excluded)."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1367
-#: includes/admin/class-settings-page.php:1371
+#: includes/admin/class-settings-page.php:1372
+#: includes/admin/class-settings-page.php:1376
 msgid "Import Settings"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1374
+#: includes/admin/class-settings-page.php:1379
 msgid "Import settings from a previously exported JSON file."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1382
+#: includes/admin/class-settings-page.php:1387
 msgid "Debug Information"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1383
+#: includes/admin/class-settings-page.php:1388
 msgid "Technical information for troubleshooting."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1387
+#: includes/admin/class-settings-page.php:1392
 msgid "Plugin Version"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1391
+#: includes/admin/class-settings-page.php:1396
 msgid "WordPress Version"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1395
+#: includes/admin/class-settings-page.php:1400
 msgid "PHP Version"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1399
+#: includes/admin/class-settings-page.php:1404
 msgid "IndieBlocks"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1411
+#: includes/admin/class-settings-page.php:1416
 msgid "Installed"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1414
+#: includes/admin/class-settings-page.php:1419
 msgid "Not installed"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1477
+#: includes/admin/class-settings-page.php:1482
 msgid "— None —"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1575
+#: includes/admin/class-settings-page.php:1580
 msgid "— No format —"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1576
+#: includes/admin/class-settings-page.php:1581
 #: includes/class-block-bindings-formats.php:218
 msgid "Standard"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1577
+#: includes/admin/class-settings-page.php:1582
 msgid "Aside"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1579
+#: includes/admin/class-settings-page.php:1584
 msgid "Chat"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1580
+#: includes/admin/class-settings-page.php:1585
 msgid "Gallery"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1581
+#: includes/admin/class-settings-page.php:1586
 msgid "Image"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1585
-#: includes/admin/class-settings-page.php:1676
+#: includes/admin/class-settings-page.php:1590
+#: includes/admin/class-settings-page.php:1681
 msgid "Video"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1591
-#: includes/functions-stream-card.php:1791
+#: includes/admin/class-settings-page.php:1596
+#: includes/functions-stream-card.php:1862
 #: build/blocks.js:8
 msgid "Note"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1592
+#: includes/admin/class-settings-page.php:1597
 msgid "Short posts, similar to tweets or status updates"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1596
+#: includes/admin/class-settings-page.php:1601
 msgid "Article"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1597
+#: includes/admin/class-settings-page.php:1602
 msgid "Long-form content with a title"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1602
+#: includes/admin/class-settings-page.php:1607
 msgid "Response to someone else's content"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1607
+#: includes/admin/class-settings-page.php:1612
 msgid "Indicate appreciation for external content"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1612
+#: includes/admin/class-settings-page.php:1617
 msgid "Share someone else's content on your site"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1617
+#: includes/admin/class-settings-page.php:1622
 msgid "Save and share links to interesting content"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1622
+#: includes/admin/class-settings-page.php:1627
 msgid "Respond to event invitations"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1627
+#: includes/admin/class-settings-page.php:1632
 msgid "Share your location at a venue or place"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1632
+#: includes/admin/class-settings-page.php:1637
 msgid "Food and meal check-ins"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1637
+#: includes/admin/class-settings-page.php:1642
 msgid "Beverage and drink check-ins"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1642
+#: includes/admin/class-settings-page.php:1647
 msgid "Music scrobbles, podcasts, audio content"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1647
+#: includes/admin/class-settings-page.php:1652
 msgid "Song of the moment or music highlight"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1652
+#: includes/admin/class-settings-page.php:1657
 msgid "Movies, TV shows, videos you've watched"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1657
+#: includes/admin/class-settings-page.php:1662
 msgid "Video games and gaming sessions"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1662
+#: includes/admin/class-settings-page.php:1667
 msgid "Books, articles, and reading progress"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1667
+#: includes/admin/class-settings-page.php:1672
 msgid "Create and share events"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1671
+#: includes/admin/class-settings-page.php:1676
 msgid "Photo"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1672
+#: includes/admin/class-settings-page.php:1677
 msgid "Image-focused posts"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1677
+#: includes/admin/class-settings-page.php:1682
 msgid "Video posts you create"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1682
+#: includes/admin/class-settings-page.php:1687
 msgid "Share how you're feeling"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1687
+#: includes/admin/class-settings-page.php:1692
 msgid "Items on your wishlist"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1692
+#: includes/admin/class-settings-page.php:1697
 msgid "Things you've acquired or purchased"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1697
+#: includes/admin/class-settings-page.php:1702
 msgid "Reviews with ratings"
 msgstr ""
 
 #. translators: %s: reaction type label, e.g. "Note".
-#: includes/admin/class-settings-page.php:1741
+#: includes/admin/class-settings-page.php:1746
 #, php-format
 msgid "Post format for %s"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1760
+#: includes/admin/class-settings-page.php:1765
 msgid "Enable All"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1761
+#: includes/admin/class-settings-page.php:1766
 msgid "Disable All"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1849
+#: includes/admin/class-settings-page.php:1854
 #: build/blocks.js:7
 msgid "Public (exact location)"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1850
+#: includes/admin/class-settings-page.php:1855
 msgid "Shows full address, venue name, and precise coordinates. Best for public venues like restaurants or parks where you want others to find the same place."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1853
+#: includes/admin/class-settings-page.php:1858
 #: assets/js/travel-card-editor.js:36
 #: build/blocks.js:7
 msgid "Approximate"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1854
+#: includes/admin/class-settings-page.php:1859
 #: build/blocks.js:7
 msgid "Shows the venue name, city, region and country. Hides the street address, postal code, coordinates, map, venue URL and OpenStreetMap ID, so the check-in gets no map pin."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1857
+#: includes/admin/class-settings-page.php:1862
 #: build/blocks.js:7
 msgid "Private (hidden)"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1858
+#: includes/admin/class-settings-page.php:1863
 msgid "Location is stored but never displayed publicly. Use this for home, work, or other private locations you want to log but not share."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1879
+#: includes/admin/class-settings-page.php:1884
 msgid "This setting determines the default for new checkins. You can override it per-post in the block editor."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1905
+#: includes/admin/class-settings-page.php:1910
 #: includes/class-listen-archive.php:493
 msgid "Podcasts"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1914
+#: includes/admin/class-settings-page.php:1919
 msgid "Articles"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1917
+#: includes/admin/class-settings-page.php:1922
 msgid "Checkins"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1934
+#: includes/admin/class-settings-page.php:1939
 msgid "Enable Automatic Sync"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1938
-#: includes/admin/class-settings-page.php:2074
+#: includes/admin/class-settings-page.php:1943
+#: includes/admin/class-settings-page.php:2079
 msgid "ON"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1938
-#: includes/admin/class-settings-page.php:2074
+#: includes/admin/class-settings-page.php:1943
+#: includes/admin/class-settings-page.php:2079
 msgid "OFF"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1944
+#: includes/admin/class-settings-page.php:1949
 msgid "When enabled, the plugin will automatically import new content from your connected services every hour using WordPress cron."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1951
+#: includes/admin/class-settings-page.php:1956
 msgid "Sync Status"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1954
+#: includes/admin/class-settings-page.php:1959
 msgid "Last sync:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1960
+#: includes/admin/class-settings-page.php:1965
 msgid "Never"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1964
+#: includes/admin/class-settings-page.php:1969
 msgid "Next sync:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1969
+#: includes/admin/class-settings-page.php:1974
 msgid "Pending (waiting for cron)"
 msgstr ""
 
 #. translators: %s: human time diff
-#: includes/admin/class-settings-page.php:1974
+#: includes/admin/class-settings-page.php:1979
 #, php-format
 msgid "in %s"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1980
+#: includes/admin/class-settings-page.php:1985
 msgid "Not scheduled"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1991
+#: includes/admin/class-settings-page.php:1996
 msgid "Active Auto-Imports"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:1997
+#: includes/admin/class-settings-page.php:2002
 msgid "Configure individual auto-imports in their respective tabs above."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2004
+#: includes/admin/class-settings-page.php:2009
 msgid "No auto-imports are enabled. Enable auto-import in the Listen, Watch, Read, or Checkin tabs for automatic sync to work."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2012
+#: includes/admin/class-settings-page.php:2017
 msgid "Automatic sync is disabled. Imports will only run when you manually trigger them from the Import page."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2044
+#: includes/admin/class-settings-page.php:2049
 msgid "Requires Readwise API token"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2047
+#: includes/admin/class-settings-page.php:2052
 msgid "Requires Foursquare connection"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2066
+#: includes/admin/class-settings-page.php:2071
 msgid "Enable Auto-Sync"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2093
+#: includes/admin/class-settings-page.php:2098
 msgid "Note: Main background sync is off."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2094
+#: includes/admin/class-settings-page.php:2099
 msgid "Enable in Performance tab"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2109
+#: includes/admin/class-settings-page.php:2114
 msgid "Sync Start Date"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2121
+#: includes/admin/class-settings-page.php:2126
 msgid "Set to Today"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2128
+#: includes/admin/class-settings-page.php:2133
 msgid "Only auto-sync items from this date forward. Leave empty to import all history."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2182
+#: includes/admin/class-settings-page.php:2187
 msgid "Connected to Foursquare"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2193
+#: includes/admin/class-settings-page.php:2198
 msgid "Import Checkins from Foursquare"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2205
+#: includes/admin/class-settings-page.php:2210
 msgid "With Foursquare connected, you can:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2208
+#: includes/admin/class-settings-page.php:2213
 msgid "POSSE: Publish checkins on your site first, automatically sync to Foursquare"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2209
+#: includes/admin/class-settings-page.php:2214
 msgid "PESOS: Import existing Foursquare checkins to your site"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2215
+#: includes/admin/class-settings-page.php:2220
 msgid "Foursquare app configured but not connected"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2220
+#: includes/admin/class-settings-page.php:2225
 msgid "Connect to Foursquare"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2227
+#: includes/admin/class-settings-page.php:2232
 msgid "Foursquare not configured"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2231
+#: includes/admin/class-settings-page.php:2236
 msgid "To enable bidirectional checkin sync with Foursquare:"
 msgstr ""
 
 #. translators: %s: URL to Foursquare developers
-#: includes/admin/class-settings-page.php:2237
+#: includes/admin/class-settings-page.php:2242
 #, php-format
 msgid "Create an app at <a href=\"%s\" target=\"_blank\" rel=\"noopener\">foursquare.com/developers/apps</a>"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2248
+#: includes/admin/class-settings-page.php:2253
 msgid "Copy the Client ID and Client Secret"
 msgstr ""
 
 #. translators: %s: URL to API settings page
-#: includes/admin/class-settings-page.php:2252
+#: includes/admin/class-settings-page.php:2257
 #, php-format
 msgid "Enter them in the <a href=\"%s\">API Settings</a> page"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2257
+#: includes/admin/class-settings-page.php:2262
 msgid "Click \"Connect to Foursquare\" to authorize"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2262
+#: includes/admin/class-settings-page.php:2267
 msgid "Go to API Settings"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2330
+#: includes/admin/class-settings-page.php:2335
 msgid "Import failed:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2331
+#: includes/admin/class-settings-page.php:2336
 msgid "Are you sure you want to disconnect from Foursquare? You can reconnect later."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2332
+#: includes/admin/class-settings-page.php:2337
 msgid "Disconnect failed:"
 msgstr ""
 
 #. translators: %s: plugin URL
-#: includes/admin/class-settings-page.php:2363
+#: includes/admin/class-settings-page.php:2368
 #, php-format
 msgid "WP Recipe Maker is not installed. %s to use this integration."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2364
+#: includes/admin/class-settings-page.php:2369
 msgid "Install it"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2380
+#: includes/admin/class-settings-page.php:2385
 msgid "Auto-detect recipes and set Recipe kind"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2383
+#: includes/admin/class-settings-page.php:2388
 msgid "Automatically sets the \"Recipe\" post kind when a WP Recipe Maker recipe is detected in a post."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2390
+#: includes/admin/class-settings-page.php:2395
 msgid "WP Recipe Maker is active and ready."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2394
+#: includes/admin/class-settings-page.php:2399
 msgid "When enabled, the plugin will:"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2397
+#: includes/admin/class-settings-page.php:2402
 msgid "Detect WPRM recipe blocks and shortcodes in posts"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2398
+#: includes/admin/class-settings-page.php:2403
 msgid "Automatically assign the \"Recipe\" kind to posts containing recipes"
 msgstr ""
 
-#: includes/admin/class-settings-page.php:2399
+#: includes/admin/class-settings-page.php:2404
 msgid "Sync recipe metadata (servings, prep time, cook time) to reaction fields"
 msgstr ""
 
@@ -6459,31 +6463,35 @@ msgstr ""
 msgid "Whether to syndicate to Trakt."
 msgstr ""
 
-#: includes/class-meta-fields.php:1107
-msgid "URL of the presentation slide deck."
+#: includes/class-meta-fields.php:1105
+msgid "Whether to syndicate to Foursquare."
 msgstr ""
 
 #: includes/class-meta-fields.php:1113
-msgid "URL of the presentation recording."
+msgid "URL of the presentation slide deck."
 msgstr ""
 
 #: includes/class-meta-fields.php:1119
-msgid "Name of the event where the presentation appeared."
+msgid "URL of the presentation recording."
 msgstr ""
 
 #: includes/class-meta-fields.php:1125
-msgid "URL of the event where the presentation appeared."
+msgid "Name of the event where the presentation appeared."
 msgstr ""
 
 #: includes/class-meta-fields.php:1131
-msgid "Calendar integration that supplies the presentation event."
+msgid "URL of the event where the presentation appeared."
 msgstr ""
 
 #: includes/class-meta-fields.php:1137
-msgid "Calendar event ID linked to the presentation."
+msgid "Calendar integration that supplies the presentation event."
 msgstr ""
 
 #: includes/class-meta-fields.php:1143
+msgid "Calendar event ID linked to the presentation."
+msgstr ""
+
+#: includes/class-meta-fields.php:1149
 msgid "Type of presentation event."
 msgstr ""
 
@@ -8412,25 +8420,25 @@ msgstr ""
 msgid "View on Steam"
 msgstr ""
 
-#: includes/functions-stream-card.php:1521
+#: includes/functions-stream-card.php:1592
 msgid "Read more"
 msgstr ""
 
 #. translators: 1: image position, 2: number of thumbnails.
 #. translators: 1: image number, 2: image count.
-#: includes/functions-stream-card.php:1636
+#: includes/functions-stream-card.php:1707
 #: assets/js/photo-projector.js:72
 #, php-format,js-format
 msgid "Show image %1$d of %2$d"
 msgstr ""
 
 #. translators: %d: number of further images on the post.
-#: includes/functions-stream-card.php:1653
+#: includes/functions-stream-card.php:1724
 #, php-format
 msgid "+%d"
 msgstr ""
 
-#: includes/functions-stream-card.php:1655
+#: includes/functions-stream-card.php:1726
 msgid " more images on this post"
 msgstr ""
 
@@ -9527,6 +9535,15 @@ msgstr ""
 msgid "Error"
 msgstr ""
 
+#: build/blocks.js:1
+#: build/blocks.js:7
+msgid "Searching…"
+msgstr ""
+
+#: build/blocks.js:1
+msgid "Search results available."
+msgstr ""
+
 #. translators: %s: podcast show title.
 #: build/blocks.js:2
 #, js-format
@@ -10037,10 +10054,6 @@ msgstr ""
 
 #: build/blocks.js:7
 msgid "e.g. Denim Coffee, Chambersburg PA"
-msgstr ""
-
-#: build/blocks.js:7
-msgid "Searching…"
 msgstr ""
 
 #: build/blocks.js:7
