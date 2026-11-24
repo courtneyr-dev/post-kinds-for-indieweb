@@ -25,31 +25,12 @@ const TYPES = {
 // Pre-existing violations in shipped components. Each entry must still occur,
 // so a fix forces its removal here.
 const KNOWN = [
-	// MediaSearch in src/blocks/shared/components.js swaps the Search label for
-	// a Spinner while a request runs, leaving the button without a name.
-	{
-		story: 'blocks-media-lookup--searching',
-		rule: 'button-name',
-		target: /^\.search-input-group > \.is-secondary\.components-button\[type="button"\]$/,
-	},
 	// MediaSearch result buttons have no stylesheet; a result without a cover
 	// image renders under 24px tall.
 	{
 		story: 'blocks-media-lookup--book-results',
 		rule: 'target-size',
 		target: /^li:nth-child\(2\) > \.search-result-item\[type="button"\]$/,
-	},
-	// The Numeric style in src/blocks/star-rating/edit.js renders a
-	// RangeControl with no label, so its slider and number input are unnamed.
-	{
-		story: 'blocks-star-rating--numeric',
-		rule: 'label',
-		target: /^#inspector-range-control-0$/,
-	},
-	{
-		story: 'blocks-star-rating--numeric',
-		rule: 'label',
-		target: /^#inspector-input-control-0$/,
 	},
 ];
 
