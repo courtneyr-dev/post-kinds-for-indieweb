@@ -6,3 +6,26 @@ body {
 	line-height: 1.4em;
 	color: #1e1e1e;
 }
+
+.pkiw-story-editor-frame {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 280px;
+	gap: 24px;
+	align-items: start;
+}
+
+.pkiw-story-editor-inspector {
+	border-inline-start: 1px solid #ddd;
+}
+
+@media (max-width: 640px) {
+
+	.pkiw-story-editor-frame {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.pkiw-story-editor-inspector {
+		border-inline-start: 0;
+		border-block-start: 1px solid #ddd;
+	}
+}
