@@ -73,14 +73,25 @@ abstract class Checkin_Sync_Base {
 	 * @return void
 	 */
 	public function init(): void {
-		// POSSE: Syndicate to external service on publish.
-		add_action( 'transition_post_status', [ $this, 'maybe_syndicate_checkin' ], 10, 3 );
+		add_action( 'wp_after_insert_post', [ $this, 'syndicate_after_insert' ], 10, 4 );
 
 		// Register REST routes for OAuth and webhooks.
 		add_action( 'rest_api_init', [ $this, 'register_routes' ] );
 
 		// Add syndication target to Syndication Links (if available).
 		add_filter( 'syn_syndication_targets', [ $this, 'add_syndication_target' ] );
+	}
+
+	/**
+	 * Syndicate after REST saves the per-post preference.
+	 *
+	 * @param int           $post_id Post ID.
+	 * @param \WP_Post      $post    Saved post.
+	 * @param bool          $update  Whether this is an update.
+	 * @param \WP_Post|null $before  Previous post, if any.
+	 */
+	public function syndicate_after_insert( int $post_id, \WP_Post $post, bool $update, ?\WP_Post $before ): void {
+		$this->maybe_syndicate_checkin( $post->post_status, $before->post_status ?? 'new', $post );
 	}
 
 	/**
@@ -298,10 +309,10 @@ abstract class Checkin_Sync_Base {
 
 		// Check post-level opt-out (meta field from editor sidebar).
 		$meta_key       = Meta_Fields::PREFIX . 'syndicate_' . $this->service_id;
-		$post_syndicate = get_post_meta( $post_id, $meta_key, true );
+		$post_syndicate = get_metadata_raw( 'post', $post_id, $meta_key, true );
 
-		// If explicitly set to false, don't syndicate.
-		if ( false === $post_syndicate || '0' === $post_syndicate ) {
+		// WordPress stores false as an empty string. An unset key returns null.
+		if ( null !== $post_syndicate && ! $post_syndicate ) {
 			return false;
 		}
 
