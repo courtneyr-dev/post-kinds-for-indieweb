@@ -54,7 +54,16 @@ export const BookResults = {
 	args: { routes: { [ BOOK ]: () => BOOK_RESULTS } },
 	play: async ( { canvasElement } ) => {
 		const canvas = await search( canvasElement, 'Le Guin' );
-		await canvas.findByText( 'The Dispossessed' );
+		await canvas.findByRole( 'button', {
+			name: 'The Dispossessed Ursula K. Le Guin (1974)',
+			exact: true,
+		} );
+		await expect(
+			canvas.getByRole( 'button', {
+				name: 'The Left Hand of Darkness Ursula K. Le Guin (1969)',
+				exact: true,
+			} )
+		).toBeVisible();
 		await expect( canvas.getByRole( 'status' ) ).toHaveTextContent(
 			'Search results available.'
 		);
