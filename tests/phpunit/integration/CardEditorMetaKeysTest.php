@@ -112,6 +112,7 @@ final class CardEditorMetaKeysTest extends WP_UnitTestCase {
 		$sync->method( "get_{$kind}_data_from_post" )->willReturn( [ 'track' => 'Track', 'artist' => 'Artist', 'title' => 'Title' ] );
 		$sync->expects( $this->once() )->method( "syndicate_{$kind}" )->with( $enabled )->willReturn( false );
 		$sync->init();
+		$sync->init();
 
 		foreach ( [ $disabled => false, $enabled => true ] as $post_id => $value ) {
 			$request = new WP_REST_Request( 'POST', '/wp/v2/posts/' . $post_id );
