@@ -137,6 +137,11 @@ export default function Edit( { attributes, setAttributes } ) {
 	const renderNumeric = () => (
 		<div className="rating-numeric">
 			<RangeControl
+				label={
+					label?.trim() ||
+					__( 'Rating', 'post-kinds-for-indieweb-in-block-themes' )
+				}
+				hideLabelFromVision
 				value={ rating }
 				onChange={ ( value ) => setAttributes( { rating: value } ) }
 				min={ 0 }

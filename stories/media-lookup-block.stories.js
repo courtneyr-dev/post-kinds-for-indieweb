@@ -37,7 +37,9 @@ export default {
 };
 
 const search = async ( canvasElement, query ) => {
-	const canvas = within( canvasElement );
+	const canvas = within(
+		canvasElement.querySelector( '.post-kinds-media-search' )
+	);
 	await userEvent.type(
 		canvas.getByPlaceholderText( 'Search by title, author, or ISBN…' ),
 		query
@@ -53,6 +55,9 @@ export const BookResults = {
 	play: async ( { canvasElement } ) => {
 		const canvas = await search( canvasElement, 'Le Guin' );
 		await canvas.findByText( 'The Dispossessed' );
+		await expect( canvas.getByRole( 'status' ) ).toHaveTextContent(
+			'Search results available.'
+		);
 	},
 };
 
@@ -60,9 +65,15 @@ export const Searching = {
 	args: { routes: { [ BOOK ]: never } },
 	play: async ( { canvasElement } ) => {
 		const canvas = await search( canvasElement, 'Le Guin' );
-		expect(
+		await expect(
 			canvas.getByPlaceholderText( 'Search by title, author, or ISBN…' )
 		).toBeDisabled();
+		await expect(
+			canvas.getByRole( 'button', { name: 'Search', exact: true } )
+		).toBeDisabled();
+		await expect( canvas.getByRole( 'status' ) ).toHaveTextContent(
+			'Searching…'
+		);
 	},
 };
 
@@ -71,6 +82,9 @@ export const NoResults = {
 	play: async ( { canvasElement } ) => {
 		const canvas = await search( canvasElement, 'zzzz' );
 		await canvas.findByText( 'No results found.' );
+		await expect( canvas.getByRole( 'status' ) ).toHaveTextContent(
+			'No results found.'
+		);
 	},
 };
 

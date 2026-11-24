@@ -15,6 +15,7 @@ import {
 	ExternalLink,
 	Popover,
 	DatePicker,
+	VisuallyHidden,
 } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import { calendarDay, displayDay } from '../comic-card/labels';
@@ -331,6 +332,20 @@ export function MediaSearch( { type, placeholder, onSelect } ) {
 		setQuery( '' );
 	};
 
+	const searchLabel = __(
+		'Search',
+		'post-kinds-for-indieweb-in-block-themes'
+	);
+	let status = '';
+	if ( isSearching ) {
+		status = __( 'Searching…', 'post-kinds-for-indieweb-in-block-themes' );
+	} else if ( results.length > 0 ) {
+		status = __(
+			'Search results available.',
+			'post-kinds-for-indieweb-in-block-themes'
+		);
+	}
+
 	return (
 		<div className="post-kinds-media-search">
 			<div className="search-input-group">
@@ -345,19 +360,23 @@ export function MediaSearch( { type, placeholder, onSelect } ) {
 					variant="secondary"
 					onClick={ doSearch }
 					disabled={ isSearching || ! query.trim() }
+					aria-label={ searchLabel }
 				>
 					{ isSearching ? (
-						<Spinner />
+						<Spinner aria-hidden="true" />
 					) : (
-						__(
-							'Search',
-							'post-kinds-for-indieweb-in-block-themes'
-						)
+						searchLabel
 					) }
 				</Button>
 			</div>
 
-			{ error && <p className="search-error">{ error }</p> }
+			<div role="status">
+				{ error ? (
+					<p className="search-error">{ error }</p>
+				) : (
+					<VisuallyHidden>{ status }</VisuallyHidden>
+				) }
+			</div>
 
 			{ results.length > 0 && (
 				<ul className="search-results">
