@@ -12,7 +12,7 @@ import {
 	ToggleControl,
 	Button,
 } from '@wordpress/components';
-import { useState } from '@wordpress/element';
+import { useCallback, useRef } from '@wordpress/element';
 import {
 	BlockPlaceholder,
 	CoverImage,
@@ -37,7 +37,13 @@ export default function Edit( { attributes, setAttributes } ) {
 		linkToSource,
 	} = attributes;
 
-	const [ , setIsSearching ] = useState( false );
+	const focusSelection = useRef( false );
+	const focusSelectedTitle = useCallback( ( heading ) => {
+		if ( heading && focusSelection.current ) {
+			focusSelection.current = false;
+			heading.focus();
+		}
+	}, [] );
 
 	const blockProps = useBlockProps( {
 		className: `media-lookup-block type-${ mediaType } style-${ displayStyle }`,
@@ -129,11 +135,11 @@ export default function Edit( { attributes, setAttributes } ) {
 	 * @param {Object} item Selected search result item.
 	 */
 	const handleSelect = ( item ) => {
+		focusSelection.current = true;
 		setAttributes( {
 			selectedItem: item,
 			searchQuery: '',
 		} );
-		setIsSearching( false );
 	};
 
 	/**
@@ -189,7 +195,11 @@ export default function Edit( { attributes, setAttributes } ) {
 				) }
 
 				<div className="media-info">
-					<h3 className="media-title">
+					<h3
+						className="media-title"
+						tabIndex={ -1 }
+						ref={ focusSelectedTitle }
+					>
 						{ linkToSource && url ? (
 							<a
 								href={ url }
