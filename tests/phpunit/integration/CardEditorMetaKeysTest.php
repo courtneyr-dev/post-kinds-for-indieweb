@@ -67,9 +67,9 @@ final class CardEditorMetaKeysTest extends WP_UnitTestCase {
 	/**
 	 * @dataProvider syndication_services
 	 */
-	public function test_rest_syndication_preferences_reach_the_publish_gate( string $setting, string $service, string $class ): void {
+	public function test_rest_syndication_preferences_reach_the_publish_gate( string $kind, string $service, string $class ): void {
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
-		update_option( 'pkiw_settings', [ $setting => true ] );
+		update_option( 'pkiw_settings', [ $kind . '_sync_to_' . $service => true ] );
 		$post_id  = self::factory()->post->create();
 		$meta_key = Meta_Fields::PREFIX . 'syndicate_' . $service;
 		$sync     = $this->getMockBuilder( $class )->disableOriginalConstructor()->onlyMethods( [ 'is_connected' ] )->getMock();
@@ -91,11 +91,44 @@ final class CardEditorMetaKeysTest extends WP_UnitTestCase {
 		}
 	}
 
+	/**
+	 * @dataProvider syndication_services
+	 */
+	public function test_rest_publish_uses_the_preference_from_that_request( string $kind, string $service, string $class ): void {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		update_option( 'pkiw_settings', [ $kind . '_sync_to_' . $service => true ] );
+		$term     = term_exists( $kind, 'kind' ) ?: wp_insert_term( ucfirst( $kind ), 'kind', [ 'slug' => $kind ] );
+		$this->assertIsArray( $term );
+		$disabled = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		$enabled  = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		wp_set_object_terms( $disabled, (int) $term['term_id'], 'kind' );
+		wp_set_object_terms( $enabled, (int) $term['term_id'], 'kind' );
+		$meta_key = Meta_Fields::PREFIX . 'syndicate_' . $service;
+		update_post_meta( $enabled, $meta_key, false );
+
+		$sync = $this->getMockBuilder( $class )
+			->onlyMethods( [ 'is_connected', "get_{$kind}_data_from_post", "syndicate_{$kind}" ] )->getMock();
+		$sync->method( 'is_connected' )->willReturn( true );
+		$sync->method( "get_{$kind}_data_from_post" )->willReturn( [ 'track' => 'Track', 'artist' => 'Artist', 'title' => 'Title' ] );
+		$sync->expects( $this->once() )->method( "syndicate_{$kind}" )->with( $enabled )->willReturn( false );
+		$sync->init();
+
+		foreach ( [ $disabled => false, $enabled => true ] as $post_id => $value ) {
+			$request = new WP_REST_Request( 'POST', '/wp/v2/posts/' . $post_id );
+			$request->set_body_params( [ 'status' => 'publish', 'meta' => [ $meta_key => $value ] ] );
+			$response = rest_do_request( $request );
+
+			$this->assertSame( 200, $response->get_status() );
+			$this->assertSame( 'publish', get_post_status( $post_id ) );
+			$this->assertSame( $value, $response->get_data()['meta'][ $meta_key ] ?? null );
+		}
+	}
+
 	public static function syndication_services(): array {
 		return [
-			'Last.fm'    => [ 'listen_sync_to_lastfm', 'lastfm', Lastfm_Listen_Sync::class ],
-			'Trakt'      => [ 'watch_sync_to_trakt', 'trakt', Trakt_Watch_Sync::class ],
-			'Foursquare' => [ 'checkin_sync_to_foursquare', 'foursquare', Foursquare_Checkin_Sync::class ],
+			'Last.fm'    => [ 'listen', 'lastfm', Lastfm_Listen_Sync::class ],
+			'Trakt'      => [ 'watch', 'trakt', Trakt_Watch_Sync::class ],
+			'Foursquare' => [ 'checkin', 'foursquare', Foursquare_Checkin_Sync::class ],
 		];
 	}
 }

@@ -72,8 +72,14 @@ abstract class Listen_Sync_Base {
 	 * @return void
 	 */
 	public function init(): void {
-		// POSSE: Syndicate to external service on publish.
-		add_action( 'transition_post_status', [ $this, 'maybe_syndicate_listen' ], 10, 3 );
+		// REST saves the per-post preference before firing this hook.
+		add_action(
+			'wp_after_insert_post',
+			fn ( int $post_id, \WP_Post $post, bool $update, ?\WP_Post $before ) =>
+				$this->maybe_syndicate_listen( $post->post_status, $before->post_status ?? 'new', $post ),
+			10,
+			4
+		);
 
 		// Add syndication target to Syndication Links (if available).
 		add_filter( 'syn_syndication_targets', [ $this, 'add_syndication_target' ] );

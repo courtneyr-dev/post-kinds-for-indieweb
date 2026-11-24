@@ -73,8 +73,14 @@ abstract class Checkin_Sync_Base {
 	 * @return void
 	 */
 	public function init(): void {
-		// POSSE: Syndicate to external service on publish.
-		add_action( 'transition_post_status', [ $this, 'maybe_syndicate_checkin' ], 10, 3 );
+		// REST saves the per-post preference before firing this hook.
+		add_action(
+			'wp_after_insert_post',
+			fn ( int $post_id, \WP_Post $post, bool $update, ?\WP_Post $before ) =>
+				$this->maybe_syndicate_checkin( $post->post_status, $before->post_status ?? 'new', $post ),
+			10,
+			4
+		);
 
 		// Register REST routes for OAuth and webhooks.
 		add_action( 'rest_api_init', [ $this, 'register_routes' ] );
