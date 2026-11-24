@@ -203,10 +203,10 @@ abstract class Watch_Sync_Base {
 
 		// Check post-level opt-out (meta field from editor sidebar).
 		$meta_key       = Meta_Fields::PREFIX . 'syndicate_' . $this->service_id;
-		$post_syndicate = get_post_meta( $post_id, $meta_key, true );
+		$post_syndicate = get_metadata_raw( 'post', $post_id, $meta_key, true );
 
-		// If explicitly set to false, don't syndicate.
-		if ( false === $post_syndicate || '0' === $post_syndicate ) {
+		// WordPress stores false as an empty string. An unset key returns null.
+		if ( null !== $post_syndicate && ! $post_syndicate ) {
 			return false;
 		}
 
