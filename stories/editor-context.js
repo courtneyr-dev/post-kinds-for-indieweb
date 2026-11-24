@@ -84,18 +84,11 @@ export function EditorFrame( { initialBlocks = NO_BLOCKS, sidebar } ) {
 			onInput={ setBlocks }
 			onChange={ setBlocks }
 		>
-			<div
-				style={ { display: 'flex', gap: '24px', alignItems: 'start' } }
-			>
-				<div className="editor-styles-wrapper" style={ { flex: 1 } }>
+			<div className="pkiw-story-editor-frame">
+				<div className="editor-styles-wrapper">
 					<BlockList />
 				</div>
-				<div
-					style={ {
-						width: '280px',
-						borderInlineStart: '1px solid #ddd',
-					} }
-				>
+				<div className="pkiw-story-editor-inspector">
 					{ sidebar ?? <BlockInspector /> }
 				</div>
 			</div>

@@ -400,28 +400,28 @@ export function MediaSearch( { type, placeholder, onSelect } ) {
 										className="result-image"
 									/>
 								) }
-								<div className="result-info">
+								<span className="result-info">
 									<strong className="result-title">
 										{ item.track ||
 											item.title ||
 											item.name }
-									</strong>
+									</strong>{ ' ' }
 									{ item.artist && (
 										<span className="result-artist">
 											{ item.artist }
 										</span>
-									) }
+									) }{ ' ' }
 									{ item.author && (
 										<span className="result-author">
 											{ item.author }
 										</span>
-									) }
+									) }{ ' ' }
 									{ item.year && (
 										<span className="result-year">
 											({ item.year })
 										</span>
 									) }
-								</div>
+								</span>
 							</button>
 						</li>
 					) ) }

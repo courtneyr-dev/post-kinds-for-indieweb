@@ -14,6 +14,52 @@
 
 /* stylelint-disable no-descending-specificity */
 
+.post-kinds-media-search .search-input-group {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: start;
+	gap: 0.5rem;
+}
+
+.post-kinds-media-search .search-input-group > .components-base-control {
+	flex: 1 1 12rem;
+	min-inline-size: 0;
+}
+
+.post-kinds-media-search .search-results {
+	display: grid;
+	gap: 0.25rem;
+	padding-inline-start: 0;
+	list-style: none;
+}
+
+.post-kinds-media-search .search-result-item {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	inline-size: 100%;
+	min-block-size: 24px;
+	padding: 0.25rem 0.5rem;
+	border: 1px solid currentcolor;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: start;
+}
+
+.post-kinds-media-search .result-image {
+	flex: none;
+	inline-size: 2.5rem;
+	block-size: 3rem;
+	object-fit: contain;
+}
+
+.post-kinds-media-search .result-info {
+	display: grid;
+	min-inline-size: 0;
+	overflow-wrap: anywhere;
+}
+
 /* Base card container - theme-aware styling */
 .post-kinds-card {
 	position: relative;
