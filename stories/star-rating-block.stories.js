@@ -51,7 +51,22 @@ export const HalfStarsOutOfTen = {
 
 export const Hearts = { args: { rating: 3, style: 'hearts' } };
 
-export const Numeric = { args: { rating: 8, maxRating: 10, style: 'numeric' } };
+export const Numeric = {
+	args: { rating: 8, maxRating: 10, style: 'numeric' },
+	play: async ( { canvasElement } ) => {
+		const canvas = within( canvasElement );
+		const slider = await canvas.findByRole( 'slider', {
+			name: 'Rating',
+			exact: true,
+		} );
+		const input = canvas.getByRole( 'spinbutton', {
+			name: 'Rating',
+			exact: true,
+		} );
+		await expect( slider ).toHaveValue( '8' );
+		await expect( input ).toHaveValue( 8 );
+	},
+};
 
 export const RatedItemLarge = {
 	args: {
