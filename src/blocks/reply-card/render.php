@@ -26,6 +26,7 @@ use function PKIW\get_kind_label;
 $pkiw_title       = $attributes['title'] ?? '';
 $pkiw_url         = $attributes['url'] ?? '';
 $pkiw_description = $attributes['description'] ?? '';
+$pkiw_quotation   = trim( (string) ( $attributes['quotation'] ?? '' ) );
 $pkiw_image       = $attributes['image'] ?? '';
 $pkiw_image_alt   = $attributes['imageAlt'] ?? '';
 $pkiw_author      = $attributes['author'] ?? '';
@@ -82,7 +83,13 @@ ob_start();
 			<?php endif; ?>
 		</div>
 
-		<?php if ( $pkiw_description ) : ?>
+		<?php if ( '' !== $pkiw_quotation ) : ?>
+			<blockquote class="pk-note p-content"
+				<?php if ( '' !== $pkiw_href ) : ?>
+					cite="<?php echo esc_url( $pkiw_href ); ?>"
+				<?php endif; ?>
+			><?php echo esc_html( $pkiw_quotation ); ?></blockquote>
+		<?php elseif ( $pkiw_description ) : ?>
 			<p class="pk-note p-content"><?php echo esc_html( $pkiw_description ); ?></p>
 		<?php endif; ?>
 

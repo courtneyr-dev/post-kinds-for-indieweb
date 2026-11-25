@@ -18,6 +18,9 @@
 		"description": {
 			"type": "string"
 		},
+		"quotation": {
+			"type": "string"
+		},
 		"image": {
 			"type": "string"
 		},

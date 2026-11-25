@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.6] - 2026-11-25
+
+### Added
+
+- Add an optional quoted excerpt to the Reply Card source panel (#621).
+
 ## [1.10.5] - 2026-11-25
 
 ### Fixed

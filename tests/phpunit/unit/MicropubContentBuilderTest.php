@@ -3735,7 +3735,7 @@ class MicropubContentBuilderTest extends WP_UnitTestCase {
 					'url'    => 'https://example.test/original',
 					'author' => 'Sample author',
 				),
-				array( 'description', 'image', 'imageAlt', 'repliedAt', 'rel' ),
+				array( 'description', 'quotation', 'image', 'imageAlt', 'repliedAt', 'rel' ),
 			),
 			'acquisition' => array(
 				array(

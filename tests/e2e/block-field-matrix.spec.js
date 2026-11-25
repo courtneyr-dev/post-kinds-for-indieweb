@@ -117,6 +117,10 @@ const RENDER_EXCEPTIONS = {
 		kind: 'renders nothing when no listable Wrapped post exists',
 		year: 'renders nothing when no listable Wrapped post exists',
 	},
+	'post-kinds-indieweb/reply-card': {
+		description:
+			'fallback shown when quotation is blank; this fixture populates both fields',
+	},
 	'post-kinds-indieweb/read-card': {
 		readStatus:
 			'status is mapped to a human label (Reading/Finished/…) and is never echoed raw',
