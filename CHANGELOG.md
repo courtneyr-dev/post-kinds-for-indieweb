@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.5] - 2026-11-25
+
+### Fixed
+
+- Show only the archive's own kind card when Watch, Listen, or Comics posts also carry Check-in (#619).
+
 ## [1.10.4] - 2026-11-24
 
 ### Fixed
