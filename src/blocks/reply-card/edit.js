@@ -14,13 +14,14 @@ import {
 	MediaUpload,
 	MediaUploadCheck,
 } from '@wordpress/block-editor';
-import { PanelBody, TextControl } from '@wordpress/components';
+import { PanelBody, TextareaControl, TextControl } from '@wordpress/components';
 import { useEffect } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
 import StandardSitePanel from '../../components/standard-site-panel';
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { title, url, description, image, imageAlt, author } = attributes;
+	const { title, url, description, quotation, image, imageAlt, author } =
+		attributes;
 
 	const blockProps = useBlockProps( {
 		className: 'reply-card-block pk-card k-reply',
@@ -139,6 +140,28 @@ export default function Edit( { attributes, setAttributes } ) {
 						) }
 					/>
 				</PanelBody>
+				<PanelBody
+					title={ __(
+						'Quotation',
+						'post-kinds-for-indieweb-in-block-themes'
+					) }
+					initialOpen={ false }
+				>
+					<TextareaControl
+						label={ __(
+							'Quoted excerpt (optional)',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
+						help={ __(
+							'When filled in, the quote appears in place of the source description.',
+							'post-kinds-for-indieweb-in-block-themes'
+						) }
+						value={ quotation || '' }
+						onChange={ ( value ) =>
+							setAttributes( { quotation: value } )
+						}
+					/>
+				</PanelBody>
 				<StandardSitePanel url={ url } />
 			</InspectorControls>
 
@@ -252,18 +275,24 @@ export default function Edit( { attributes, setAttributes } ) {
 							) }
 						/>
 
-						<RichText
-							tagName="p"
-							className="post-kinds-card__notes"
-							value={ description }
-							onChange={ ( value ) =>
-								setAttributes( { description: value } )
-							}
-							placeholder={ __(
-								'Context from the original post',
-								'post-kinds-for-indieweb-in-block-themes'
-							) }
-						/>
+						{ quotation?.trim() ? (
+							<blockquote className="post-kinds-card__notes pk-note">
+								{ quotation }
+							</blockquote>
+						) : (
+							<RichText
+								tagName="p"
+								className="post-kinds-card__notes"
+								value={ description }
+								onChange={ ( value ) =>
+									setAttributes( { description: value } )
+								}
+								placeholder={ __(
+									'Context from the original post',
+									'post-kinds-for-indieweb-in-block-themes'
+								) }
+							/>
+						) }
 					</div>
 				</div>
 			</div>

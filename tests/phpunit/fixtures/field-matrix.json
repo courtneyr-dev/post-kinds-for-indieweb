@@ -1006,6 +1006,10 @@
                 "type": "string",
                 "sample": "Sample description value"
             },
+            "quotation": {
+                "type": "string",
+                "sample": "Sample quotation value"
+            },
             "image": {
                 "type": "string",
                 "sample": "https://example.com/sample-image"

@@ -103,6 +103,38 @@ final class ReplyMicroformatsTest extends WP_UnitTestCase {
 		];
 	}
 
+	public function test_optional_quotation_stays_in_reply_context(): void {
+		$url         = 'https://example.org/notes/quoted';
+		$description = 'Automatically fetched description.';
+		$quotation   = 'Words <em>quoted</em> by the author.';
+		$body        = $this->paragraph( 'My response to the source.' );
+		$post_id     = $this->reply(
+			wp_slash( $this->reply_card( 'A cited note', $url, 'Cited Author', [ 'description' => $description, 'quotation' => $quotation ] ) . $body )
+		);
+
+		$html  = $this->render_single( $post_id );
+		$entry = $this->entry_for_post( $html, $post_id );
+		$cite  = $entry['properties']['in-reply-to'][0]['properties'] ?? [];
+
+		$this->assertCount( 1, $entry['properties']['in-reply-to'] ?? [] );
+		$this->assertSame( [ $url ], $cite['url'] ?? [] );
+		$this->assertSame( [ $quotation ], $cite['content'] ?? [] );
+		$this->assertSame( 'My response to the source.', $entry['properties']['content'][0]['value'] ?? '' );
+		$this->assertArrayNotHasKey( 'quotation-of', $entry['properties'] );
+
+		$tags = new WP_HTML_Tag_Processor( $html );
+		$this->assertTrue( $tags->next_tag( [ 'tag_name' => 'blockquote', 'class_name' => 'pk-note' ] ) );
+		$this->assertSame( $url, $tags->get_attribute( 'cite' ) );
+		$this->assertStringNotContainsString( $description, $html );
+
+		$blank_id   = $this->reply(
+			$this->reply_card( 'A cited note', $url, 'Cited Author', [ 'description' => $description, 'quotation' => ' ' ] ) . $body
+		);
+		$blank_html = $this->render_single( $blank_id );
+		$this->assertStringContainsString( '<p class="pk-note p-content">' . $description . '</p>', $blank_html );
+		$this->assertStringNotContainsString( '<blockquote class="pk-note', $blank_html );
+	}
+
 	public function test_card_only_reply_is_left_without_e_content_but_keeps_author_and_citation(): void {
 		$post_id = $this->reply( $this->reply_card( 'A cited note', 'https://example.org/notes/2', 'Cited Author' ) );
 
@@ -199,9 +231,9 @@ final class ReplyMicroformatsTest extends WP_UnitTestCase {
 		return $id;
 	}
 
-	private function reply_card( string $title, string $url, string $author ): string {
+	private function reply_card( string $title, string $url, string $author, array $context = [] ): string {
 		return '<!-- wp:post-kinds-indieweb/reply-card '
-			. wp_json_encode( [ 'title' => $title, 'url' => $url, 'author' => $author ], JSON_UNESCAPED_SLASHES )
+			. serialize_block_attributes( [ 'title' => $title, 'url' => $url, 'author' => $author ] + $context )
 			. ' /-->';
 	}
 

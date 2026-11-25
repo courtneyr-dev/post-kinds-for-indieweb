@@ -207,6 +207,7 @@ cited post's own description).
 | `likedAt` / `repostedAt` / `bookmarkedAt` / `repliedAt` | all four | — | `published` |
 | `rel` | all four | — | not an mf2 concept here — leave as a block default |
 | `description` | reply only | — (by design) | not a gap: the reply body is the author's own words and is already preserved in the `e-content` paragraph, never on the card |
+| `quotation` | reply only | — | editor-authored source excerpt. A future mapping could read content from a nested `in-reply-to` citation. The top-level reply body stays in `e-content`. |
 
 ## mood
 
