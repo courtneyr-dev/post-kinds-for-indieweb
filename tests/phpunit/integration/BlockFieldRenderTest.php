@@ -63,6 +63,9 @@ final class BlockFieldRenderTest extends WP_UnitTestCase {
 				'intensity' => 'dropped from the minimal mood card (emoji + note only) in the pk-card redesign',
 				'moodKey'   => 'mood vocabulary identity; it selects which label renders and is never echoed itself (the fixture sample names no known mood, so the authored mood text renders)',
 			],
+			'post-kinds-indieweb/reply-card'        => [
+				'description' => 'fallback shown when quotation is blank; this fixture populates both fields',
+			],
 			'post-kinds-indieweb/read-card'         => [
 				'readStatus' => 'free-string status mapped to a human label (Reading/Finished/…); an unknown value like the fixture sample maps to an empty label and is never echoed raw',
 			],
