@@ -170,13 +170,18 @@ final class Grouped_Archive {
 	 */
 	public const MIXED_ARCHIVE_KINDS = [ 'like', 'repost', 'favorite', 'jam' ];
 
+	private const NATIVE_MIXED_ARCHIVE_KINDS = [ 'watch', 'listen', 'comics' ];
+
 	/**
 	 * Render state, one frame per Post Template render and per item.
 	 *
 	 * An item frame of an inherited archive-sections loop on a mixed-kind
 	 * archive also carries the row's post ID and the queried kind slug.
 	 *
-	 * @var array<int, array{sectioning:bool, group:?Archive_Group, row?:int, term?:string}>
+	 * Native inherited loops use core's active post and carry their term
+	 * in the Post Template frame instead.
+	 *
+	 * @var array<int, array{sectioning:bool, group:?Archive_Group, row?:int, term?:string, native_term?:string}>
 	 */
 	private static array $frames = [];
 
@@ -442,6 +447,35 @@ final class Grouped_Archive {
 		$frame = end( self::$frames );
 
 		return false !== $frame && ! empty( $frame['term'] ) ? (int) ( $frame['row'] ?? 0 ) : 0;
+	}
+
+	/**
+	 * The queried kind for the row rendered by a native inherited archive.
+	 *
+	 * @param int $post_id The Stream Card's post context.
+	 * @return string Kind slug, or ''.
+	 */
+	public static function current_native_archive_kind( int $post_id ): string {
+		$frame = end( self::$frames );
+
+		return (int) get_the_ID() === $post_id ? ( $frame['native_term'] ?? '' ) : '';
+	}
+
+	/**
+	 * The queried kind for a Post Template rendered by core.
+	 *
+	 * @param mixed $block Post Template block.
+	 * @return string Kind slug, or ''.
+	 */
+	private static function native_archive_term( $block ): string {
+		if ( ! $block instanceof \WP_Block || empty( $block->context['query']['inherit'] ) || self::$block_preview
+			|| is_admin() || is_feed() || wp_doing_ajax() || wp_is_serving_rest_request() || ! is_tax( Taxonomy::TAXONOMY )
+		) {
+			return '';
+		}
+		$term = get_queried_object();
+
+		return $term instanceof \WP_Term && Taxonomy::TAXONOMY === $term->taxonomy && in_array( $term->slug, self::NATIVE_MIXED_ARCHIVE_KINDS, true ) ? $term->slug : '';
 	}
 
 	/**
@@ -796,8 +830,9 @@ final class Grouped_Archive {
 		$plan = $block instanceof \WP_Block ? self::section_plan( $block ) : null;
 		if ( null === $plan ) {
 			self::$frames[] = [
-				'sectioning' => false,
-				'group'      => null,
+				'sectioning'  => false,
+				'group'       => null,
+				'native_term' => self::native_archive_term( $block ),
 			];
 			try {
 				return is_callable( self::$core_post_template ) ? (string) call_user_func( self::$core_post_template, $attributes, $content, $block ) : '';

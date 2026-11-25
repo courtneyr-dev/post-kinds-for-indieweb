@@ -258,4 +258,43 @@ final class MixedKindArchiveScopeTest extends WP_UnitTestCase {
 		$this->stream_card( $mixed );
 		$this->assertSame( '', Grouped_Archive::current_archive_kind(), 'No frame outlives a render.' );
 	}
+
+	/**
+	 * @return array<string, array{string, string, array<string, string>}>
+	 */
+	public function native_kinds(): array {
+		return [
+			'watch'  => [ 'watch', 'watch', [ 'mediaTitle' => 'Native Film' ] ],
+			'listen' => [ 'listen', 'listen', [ 'trackTitle' => 'Native Song' ] ],
+			'comics' => [ 'comics', 'comic', [ 'title' => 'Native Comic' ] ],
+		];
+	}
+
+	/**
+	 * @dataProvider native_kinds
+	 * @param string                $kind Queried kind.
+	 * @param string                $card Card block suffix.
+	 * @param array<string, string> $attrs Card attributes.
+	 */
+	public function test_native_archive_selects_its_card_in_either_order_without_affecting_an_independent_loop( string $kind, string $card, array $attrs ): void {
+		$foreign = $this->card( 'checkin', [ 'venueName' => 'Native Archive Foreign Venue' ] );
+		$own     = $this->card( $card, $attrs );
+		$first   = $this->post( [ 'checkin', $kind ], 'native-checkin-first', '2026-08-20 10:00:00', $foreign . $own );
+		$this->post( [ 'checkin', $kind ], 'native-own-first', '2026-08-21 10:00:00', $own . $foreign );
+		$this->go_to( (string) get_term_link( $kind, Taxonomy::TAXONOMY ) );
+
+		$loop = '<!-- wp:query {"queryId":0,"query":{"inherit":%s,"postType":"post","perPage":10}} -->'
+			. '<!-- wp:post-template --><!-- wp:post-kinds-indieweb/stream-card {"headingLevel":3} /--><!-- /wp:post-template -->'
+			. '<!-- /wp:query -->';
+		$archive = do_blocks( sprintf( $loop, 'true' ) );
+		$this->assertSame( 2, substr_count( $archive, '<article ' ) );
+		$this->assertSame( 2, substr_count( $archive, 'pk-card k-' . $kind . ' ' ) );
+		$this->assertStringNotContainsString( 'Native Archive Foreign Venue', $archive );
+		$this->assertStringNotContainsString( 'Also a check-in', $archive );
+
+		$independent = do_blocks( sprintf( $loop, 'false' ) );
+		$this->assertSame( 4, substr_count( $independent, '<article ' ) );
+		$this->assertStringContainsString( 'Native Archive Foreign Venue', $independent );
+		$this->assertSame( '', Grouped_Archive::current_native_archive_kind( $first ), 'No native frame outlives its Post Template.' );
+	}
 }
