@@ -276,7 +276,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						/>
 
 						{ quotation?.trim() ? (
-							<blockquote className="post-kinds-card__notes">
+							<blockquote className="post-kinds-card__notes pk-note">
 								{ quotation }
 							</blockquote>
 						) : (
