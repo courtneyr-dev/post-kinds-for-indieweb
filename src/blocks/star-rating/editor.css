@@ -11,6 +11,8 @@
 .wp-block-post-kinds-indieweb-star-rating .rating-icon {
 	background: none;
 	border: none;
+	min-inline-size: 24px;
+	min-block-size: 24px;
 	padding: 0.125rem;
 	cursor: pointer;
 	transition: transform 0.1s ease;
