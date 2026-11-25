@@ -80,7 +80,7 @@ function render_stream_card( array $attributes = [], string $content = '', ?\WP_
 	}
 
 	$row = $block instanceof \WP_Block && ! empty( $block->context['postId'] ) ? get_post( (int) $block->context['postId'] ) : null;
-	if ( $row instanceof \WP_Post && '' === mixed_kind_archive_slug( $row, $block ) ) {
+	if ( $row instanceof \WP_Post && '' === mixed_kind_archive_slug( $row, $block ) && null === native_mixed_archive_card( $row, $block ) ) {
 		$html = stream_card_fallback_media( $html, $row->ID );
 	}
 
@@ -232,7 +232,7 @@ function ensure_entry_properties_filter( string $html, array $block, $instance )
 		unset( $GLOBALS['pkiw_stream_card_root_seen'][ $post->ID ] );
 	}
 
-	$selected = '' !== mixed_kind_archive_slug( $post, $instance );
+	$selected = '' !== mixed_kind_archive_slug( $post, $instance ) || null !== native_mixed_archive_card( $post, $instance );
 
 	return ensure_entry_properties( $html, $post, $card_rooted, $selected );
 }
@@ -495,6 +495,14 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 		return render_mixed_kind_archive_card( $post, $archive_kind, $heading_level );
 	}
 
+	$native_card = native_mixed_archive_card( $post, $block );
+	if ( null !== $native_card ) {
+		return apply_stream_heading_level(
+			inject_post_date_into_card( link_title_to_post( render_block( $native_card ), $post ), $post ),
+			$heading_level
+		);
+	}
+
 	/**
 	 * Filters a kind's Stream card before any built-in path renders it.
 	 *
@@ -655,6 +663,43 @@ function mixed_kind_archive_slug( \WP_Post $post, $instance = null ): string {
 	$kind = Grouped_Archive::current_archive_kind( $post->ID );
 
 	return '' !== $kind && has_term( $kind, Taxonomy::TAXONOMY, $post ) && has_term( 'checkin', Taxonomy::TAXONOMY, $post ) ? $kind : '';
+}
+
+/**
+ * Select the queried card from a card-only native archive row with a Check-in.
+ *
+ * Grouped archives use mixed_kind_archive_slug(). Native Watch, Listen and
+ * Comics loops keep their own card markup for the theme to decorate.
+ *
+ * @param \WP_Post $post     Row post.
+ * @param mixed    $instance Rendered block instance.
+ * @return array<string, mixed>|null Parsed card, or null.
+ */
+function native_mixed_archive_card( \WP_Post $post, $instance ): ?array {
+	if ( ! $instance instanceof \WP_Block || (int) ( $instance->context['postId'] ?? 0 ) !== $post->ID
+		|| 'publish' !== $post->post_status || post_password_required( $post )
+	) {
+		return null;
+	}
+	$kind = Grouped_Archive::current_native_archive_kind( $post->ID );
+	if ( '' === $kind || ! has_term( $kind, Taxonomy::TAXONOMY, $post ) || ! has_term( 'checkin', Taxonomy::TAXONOMY, $post )
+		|| ! content_is_kind_card_only( (string) $post->post_content )
+	) {
+		return null;
+	}
+
+	$name        = 'post-kinds-indieweb/' . ( 'comics' === $kind ? 'comic' : $kind ) . '-card';
+	$selected    = null;
+	$has_checkin = false;
+	foreach ( flatten_blocks( parse_blocks( (string) $post->post_content ) ) as $card ) {
+		$block_name = $card['blockName'] ?? '';
+		if ( $block_name === $name && null === $selected ) {
+			$selected = $card;
+		}
+		$has_checkin = $has_checkin || 'post-kinds-indieweb/checkin-card' === $block_name;
+	}
+
+	return $has_checkin ? $selected : null;
 }
 
 /**
