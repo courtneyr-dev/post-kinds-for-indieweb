@@ -198,11 +198,8 @@
 		 * theme palette. Themes override any of these per token. */
 		--pkiw-star-rating-fill: #ffc107;
 
-		/* Deviation from the C2 spec (`transparent`): star icons are font
-		 * glyphs, not SVG outlines, so transparent empty stars would be
-		 * invisible and misreport the rating. A muted mix of the current
-		 * text color stays palette-neutral while keeping them legible. */
-		--pkiw-star-rating-empty: #ddd;
+		/* Outlined stars use the canvas ink so their contrast follows the text. */
+		--pkiw-star-rating-empty: currentcolor;
 		--pkiw-star-rating-caption: var(--wp--preset--color--contrast, #666);
 		--pkiw-star-rating-border-radius: 0;
 

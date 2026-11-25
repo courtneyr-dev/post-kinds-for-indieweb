@@ -86,7 +86,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const getIcon = ( filled ) => {
 		const icons = {
 			stars: { filled: '★', empty: '☆' },
-			hearts: { filled: '❤️', empty: '🤍' },
+			hearts: { filled: '♥︎', empty: '♡' },
 			circles: { filled: '●', empty: '○' },
 			numeric: { filled: null, empty: null },
 		};

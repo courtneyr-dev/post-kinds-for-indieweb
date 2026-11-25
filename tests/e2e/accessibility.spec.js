@@ -2,9 +2,54 @@
  * Accessibility E2E tests using axe-core
  */
 
+const { readFileSync } = require( 'node:fs' );
+const { resolve } = require( 'node:path' );
 const { test, expect } = require( '@playwright/test' );
 const AxeBuilder = require( '@axe-core/playwright' ).default;
 const { openBlockInserter } = require( './utils' );
+
+test( 'empty rating glyphs inherit canvas ink with and without the token catalog', async ( {
+	page,
+} ) => {
+	const shippedStyle = readFileSync(
+		resolve( __dirname, '../../build/blocks/star-rating/style.css' ),
+		'utf8'
+	);
+	const tokens = readFileSync(
+		resolve( __dirname, '../../styles/kind-tokens.css' ),
+		'utf8'
+	);
+	await page.setContent( `
+		<style>${ shippedStyle }</style>
+		<div class="wp-block-post-kinds-indieweb-star-rating star-rating-block" style="color: #222; background: #fff">
+			<button type="button" class="rating-icon" aria-label="1 star">☆</button>
+			<span class="half-empty-part">☆</span>
+		</div>
+		<div class="star-rating-block" style="color: #eee; background: #222">
+			<span class="rating-icon">☆</span>
+			<span class="half-empty-part">☆</span>
+		</div>
+	` );
+	const glyphs = page.locator( '.rating-icon, .half-empty-part' );
+	const colors = () =>
+		glyphs.evaluateAll( ( elements ) =>
+			elements.map(
+				( element ) =>
+					element.ownerDocument.defaultView.getComputedStyle(
+						element
+					).color
+			)
+		);
+	const canvasInk = [
+		'rgb(34, 34, 34)',
+		'rgb(34, 34, 34)',
+		'rgb(238, 238, 238)',
+		'rgb(238, 238, 238)',
+	];
+	expect.soft( await colors(), 'fallback ink' ).toEqual( canvasInk );
+	await page.addStyleTag( { content: tokens } );
+	expect( await colors(), 'catalog ink' ).toEqual( canvasInk );
+} );
 
 test.describe( 'Accessibility', () => {
 	test.beforeEach( async ( { page } ) => {
