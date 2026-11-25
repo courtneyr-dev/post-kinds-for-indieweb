@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Post Kinds for IndieWeb in Block Themes 1.10.4\n"
+"Project-Id-Version: Post Kinds for IndieWeb in Block Themes 1.10.5\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/post-kinds-for-indieweb-in-block-themes\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-24T22:52:57+00:00\n"
+"POT-Creation-Date: 2026-11-25T12:58:03+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: post-kinds-for-indieweb-in-block-themes\n"
@@ -161,7 +161,7 @@ msgstr ""
 #. translators: 1: kind name, 2: post date.
 #: build/blocks/comic-card/render.php:55
 #: includes/functions-card-render.php:662
-#: includes/functions-stream-card.php:981
+#: includes/functions-stream-card.php:1026
 #, php-format
 msgid "%1$s, %2$s"
 msgstr ""
@@ -263,7 +263,7 @@ msgid "Craft type"
 msgstr ""
 
 #: build/blocks/craft-card/render.php:46
-#: includes/functions-stream-card.php:1645
+#: includes/functions-stream-card.php:1690
 msgid "Time spent"
 msgstr ""
 
@@ -429,7 +429,7 @@ msgstr ""
 #: includes/admin/class-admin.php:921
 #: includes/admin/class-settings-page.php:1686
 #: includes/class-mood-vocabulary.php:554
-#: includes/functions-stream-card.php:2257
+#: includes/functions-stream-card.php:2302
 #: build/blocks.js:8
 msgid "Mood"
 msgstr ""
@@ -3162,7 +3162,7 @@ msgstr ""
 #: includes/admin/class-quick-post.php:782
 #: includes/admin/class-quick-post.php:929
 #: includes/class-acquisition-archive.php:75
-#: includes/class-grouped-archive.php:1201
+#: includes/class-grouped-archive.php:1236
 #: includes/class-issue-archive.php:232
 #: includes/class-kind-archive-layouts.php:1535
 #: includes/class-kind-archive-layouts.php:1550
@@ -4283,7 +4283,7 @@ msgid "Video"
 msgstr ""
 
 #: includes/admin/class-settings-page.php:1596
-#: includes/functions-stream-card.php:1862
+#: includes/functions-stream-card.php:1907
 #: build/blocks.js:8
 msgid "Note"
 msgstr ""
@@ -8420,25 +8420,25 @@ msgstr ""
 msgid "View on Steam"
 msgstr ""
 
-#: includes/functions-stream-card.php:1592
+#: includes/functions-stream-card.php:1637
 msgid "Read more"
 msgstr ""
 
 #. translators: 1: image position, 2: number of thumbnails.
 #. translators: 1: image number, 2: image count.
-#: includes/functions-stream-card.php:1707
+#: includes/functions-stream-card.php:1752
 #: assets/js/photo-projector.js:72
 #, php-format,js-format
 msgid "Show image %1$d of %2$d"
 msgstr ""
 
 #. translators: %d: number of further images on the post.
-#: includes/functions-stream-card.php:1724
+#: includes/functions-stream-card.php:1769
 #, php-format
 msgid "+%d"
 msgstr ""
 
-#: includes/functions-stream-card.php:1726
+#: includes/functions-stream-card.php:1771
 msgid " more images on this post"
 msgstr ""
 
