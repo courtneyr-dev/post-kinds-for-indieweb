@@ -45,6 +45,32 @@ class Post_Type {
 	 */
 	private function register_hooks(): void {
 		add_action( 'init', [ $this, 'maybe_register_post_type' ], 5 );
+		add_filter( 'pre_wp_update_comment_count_now', [ self::class, 'count_reaction_comments' ], 4, 3 );
+	}
+
+	/**
+	 * Preserve Core's editorial exclusions when ATmosphere substitutes its count.
+	 *
+	 * @param int|null $count   An already calculated count, or null.
+	 * @param int      $old     Previous comment count.
+	 * @param int      $post_id Post ID.
+	 * @return int|null
+	 */
+	public static function count_reaction_comments( $count, $old, $post_id ) {
+		if ( null !== $count || self::POST_TYPE !== get_post_type( $post_id )
+			|| false === has_filter( 'pre_wp_update_comment_count_now', [ \Atmosphere\Reaction_Sync::class, 'exclude_reactions_from_count' ] ) ) {
+			return $count;
+		}
+
+		// Combine Core's editorial exclusions with ATmosphere's likes and reposts.
+		return (int) get_comments(
+			[
+				'post_id'      => $post_id,
+				'status'       => 'approve',
+				'count'        => true,
+				'type__not_in' => [ 'note', 'reaction', 'like', 'repost' ],
+			]
+		);
 	}
 
 	/**

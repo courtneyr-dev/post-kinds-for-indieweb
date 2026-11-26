@@ -175,6 +175,19 @@ class PostTypeTest extends WP_UnitTestCase {
 			$request = new \WP_REST_Request( 'GET', '/wp/v2/comments' );
 			$request->set_query_params( [ 'post' => [ $post_id ] ] );
 			$this->assertSame( [], rest_do_request( $request )->get_data() );
+
+			$this->factory->comment->create( [ 'comment_post_ID' => $post_id, 'comment_approved' => '1' ] );
+			$this->assertSame( 1, (int) get_comments_number( $post_id ) );
+			if ( false !== has_filter( 'pre_wp_update_comment_count_now', [ \Atmosphere\Reaction_Sync::class, 'exclude_reactions_from_count' ] ) ) {
+				$this->factory->comment->create(
+					[
+						'comment_post_ID'  => $post_id,
+						'comment_approved' => '1',
+						'comment_type'     => 'like',
+					]
+				);
+				$this->assertSame( 1, (int) get_comments_number( $post_id ) );
+			}
 		} finally {
 			wp_set_current_user( $previous_user );
 		}
