@@ -19,6 +19,15 @@ namespace {
 
 namespace Atmosphere {
 	/**
+	 * Comment-count override exposed by ATmosphere 2.1.0 (stub).
+	 */
+	class Reaction_Sync {
+		public static function exclude_reactions_from_count( $new_count, $old_count, $post_id ) {
+			return $new_count;
+		}
+	}
+
+	/**
 	 * Whether an AT Protocol account is connected and usable for writes.
 	 *
 	 * @return bool

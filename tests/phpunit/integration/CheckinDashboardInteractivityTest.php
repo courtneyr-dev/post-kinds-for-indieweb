@@ -12,7 +12,7 @@ use PKIW\Taxonomy;
 
 /** @group integration */
 final class CheckinDashboardInteractivityTest extends WP_UnitTestCase {
-	private const NAMESPACE = 'post-kinds-indieweb/checkin-dashboard';
+	private const DASHBOARD_NAMESPACE = 'post-kinds-indieweb/checkin-dashboard';
 	private const MODULE_ID = 'post-kinds-indieweb-checkin-dashboard-view-script-module';
 
 	private int $checkin_id;
@@ -80,9 +80,9 @@ final class CheckinDashboardInteractivityTest extends WP_UnitTestCase {
 		$data = apply_filters( 'script_module_data_@wordpress/interactivity', [] );
 		$this->assertIsArray( $data );
 		$this->assertArrayHasKey( 'state', $data );
-		$this->assertArrayHasKey( self::NAMESPACE, $data['state'] );
-		$this->assertSame( [ 'isSelected' ], array_keys( $data['state'][ self::NAMESPACE ] ) );
-		$this->assertSame( [ 'state.isSelected' ], $data['derivedStateClosures'][ self::NAMESPACE ] ?? null );
+		$this->assertArrayHasKey( self::DASHBOARD_NAMESPACE, $data['state'] );
+		$this->assertSame( [ 'isSelected' ], array_keys( $data['state'][ self::DASHBOARD_NAMESPACE ] ) );
+		$this->assertSame( [ 'state.isSelected' ], $data['derivedStateClosures'][ self::DASHBOARD_NAMESPACE ] ?? null );
 		$module_json = wp_json_encode( $data, JSON_UNESCAPED_SLASHES );
 		$this->assertIsString( $module_json );
 		$this->assertStringNotContainsString( 'Sentinel Hidden Venue Qx7', $module_json );
@@ -109,7 +109,7 @@ final class CheckinDashboardInteractivityTest extends WP_UnitTestCase {
 		$map_ids  = [];
 		$tags     = new WP_HTML_Tag_Processor( $html );
 		while ( $tags->next_tag() ) {
-			if ( self::NAMESPACE === $tags->get_attribute( 'data-wp-interactive' ) ) {
+			if ( self::DASHBOARD_NAMESPACE === $tags->get_attribute( 'data-wp-interactive' ) ) {
 				$context = json_decode( (string) $tags->get_attribute( 'data-wp-context' ), true, 512, JSON_THROW_ON_ERROR );
 				$this->assertIsArray( $context );
 				$contexts[] = $context;
@@ -155,7 +155,7 @@ final class CheckinDashboardInteractivityTest extends WP_UnitTestCase {
 		];
 		$tags = new WP_HTML_Tag_Processor( $html );
 		while ( $tags->next_tag() ) {
-			if ( self::NAMESPACE === $tags->get_attribute( 'data-wp-interactive' ) ) {
+			if ( self::DASHBOARD_NAMESPACE === $tags->get_attribute( 'data-wp-interactive' ) ) {
 				$context = json_decode( (string) $tags->get_attribute( 'data-wp-context' ), true, 512, JSON_THROW_ON_ERROR );
 				$this->assertIsArray( $context );
 				$state['wrapper_context'] = $context;
@@ -196,16 +196,16 @@ final class CheckinDashboardInteractivityTest extends WP_UnitTestCase {
 	}
 
 	private function register_source_block(): void {
-		if ( WP_Block_Type_Registry::get_instance()->is_registered( self::NAMESPACE ) ) {
-			unregister_block_type( self::NAMESPACE );
+		if ( WP_Block_Type_Registry::get_instance()->is_registered( self::DASHBOARD_NAMESPACE ) ) {
+			unregister_block_type( self::DASHBOARD_NAMESPACE );
 		}
 		wp_deregister_script( 'post-kinds-indieweb-checkin-dashboard-view-script' );
 		register_block_type( PKIW_PATH . 'src/blocks/checkin-dashboard' );
 	}
 
 	private function register_build_block(): void {
-		if ( WP_Block_Type_Registry::get_instance()->is_registered( self::NAMESPACE ) ) {
-			unregister_block_type( self::NAMESPACE );
+		if ( WP_Block_Type_Registry::get_instance()->is_registered( self::DASHBOARD_NAMESPACE ) ) {
+			unregister_block_type( self::DASHBOARD_NAMESPACE );
 		}
 		wp_script_modules()->deregister( self::MODULE_ID );
 		register_block_type( PKIW_PATH . 'build/blocks/checkin-dashboard' );

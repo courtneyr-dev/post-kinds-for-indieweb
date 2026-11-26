@@ -123,11 +123,11 @@ final class MetronCredentialsTest extends WP_UnitTestCase {
 		$administrator = self::factory()->user->create( [ 'role' => 'administrator' ] );
 		wp_set_current_user( $administrator );
 
-		$settings_response = rest_do_request( new WP_REST_Request( 'GET', '/' . REST_API::NAMESPACE . '/settings/apis' ) );
+		$settings_response = rest_do_request( new WP_REST_Request( 'GET', '/' . REST_API::REST_NAMESPACE . '/settings/apis' ) );
 		$this->assertSame( 200, $settings_response->get_status() );
 		$this->assertStringNotContainsString( self::TOKEN, wp_json_encode( $settings_response->get_data() ) );
 
-		$lookup = new WP_REST_Request( 'GET', '/' . REST_API::NAMESPACE . '/lookup/comic' );
+		$lookup = new WP_REST_Request( 'GET', '/' . REST_API::REST_NAMESPACE . '/lookup/comic' );
 		$lookup->set_param( 'q', 'Privacy REST Fixture' );
 		$response = rest_do_request( $lookup );
 		$this->assertSame( 200, $response->get_status() );

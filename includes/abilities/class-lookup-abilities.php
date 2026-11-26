@@ -125,7 +125,7 @@ final class Lookup_Abilities {
 			'music'   => [
 				'label'        => __( 'Lookup Music', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description'  => __( 'Search for music by artist, track, or album name.', 'post-kinds-for-indieweb-in-block-themes' ),
-				'rest_route'   => '/' . REST_API::NAMESPACE . '/lookup/music',
+				'rest_route'   => '/' . REST_API::REST_NAMESPACE . '/lookup/music',
 				'input_schema' => [
 					'type'       => 'object',
 					'properties' => [
@@ -146,7 +146,7 @@ final class Lookup_Abilities {
 			'video'   => [
 				'label'        => __( 'Lookup Video', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description'  => __( 'Search for movies or TV shows by title.', 'post-kinds-for-indieweb-in-block-themes' ),
-				'rest_route'   => '/' . REST_API::NAMESPACE . '/lookup/video',
+				'rest_route'   => '/' . REST_API::REST_NAMESPACE . '/lookup/video',
 				'input_schema' => [
 					'type'       => 'object',
 					'properties' => [
@@ -167,7 +167,7 @@ final class Lookup_Abilities {
 			'book'    => [
 				'label'        => __( 'Lookup Book', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description'  => __( 'Search for books by title, author, or ISBN.', 'post-kinds-for-indieweb-in-block-themes' ),
-				'rest_route'   => '/' . REST_API::NAMESPACE . '/lookup/book',
+				'rest_route'   => '/' . REST_API::REST_NAMESPACE . '/lookup/book',
 				'input_schema' => [
 					'type'       => 'object',
 					'properties' => [
@@ -182,7 +182,7 @@ final class Lookup_Abilities {
 			'podcast' => [
 				'label'        => __( 'Lookup Podcast', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description'  => __( 'Search for podcasts by name.', 'post-kinds-for-indieweb-in-block-themes' ),
-				'rest_route'   => '/' . REST_API::NAMESPACE . '/lookup/podcast',
+				'rest_route'   => '/' . REST_API::REST_NAMESPACE . '/lookup/podcast',
 				'input_schema' => [
 					'type'       => 'object',
 					'properties' => [
@@ -197,7 +197,7 @@ final class Lookup_Abilities {
 			'venue'   => [
 				'label'        => __( 'Lookup Venue', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description'  => __( 'Search for venues and places by name or location.', 'post-kinds-for-indieweb-in-block-themes' ),
-				'rest_route'   => '/' . REST_API::NAMESPACE . '/lookup/venue',
+				'rest_route'   => '/' . REST_API::REST_NAMESPACE . '/lookup/venue',
 				'input_schema' => [
 					'type'       => 'object',
 					'properties' => [
@@ -216,7 +216,7 @@ final class Lookup_Abilities {
 			'game'    => [
 				'label'        => __( 'Lookup Game', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description'  => __( 'Search for video games or board games by title.', 'post-kinds-for-indieweb-in-block-themes' ),
-				'rest_route'   => '/' . REST_API::NAMESPACE . '/lookup/game',
+				'rest_route'   => '/' . REST_API::REST_NAMESPACE . '/lookup/game',
 				'input_schema' => [
 					'type'       => 'object',
 					'properties' => [
@@ -231,7 +231,7 @@ final class Lookup_Abilities {
 			'comic'   => [
 				'label'        => __( 'Lookup Comic', 'post-kinds-for-indieweb-in-block-themes' ),
 				'description'  => __( 'Search Metron for a comic issue by series and number, UPC, or Metron ID.', 'post-kinds-for-indieweb-in-block-themes' ),
-				'rest_route'   => '/' . REST_API::NAMESPACE . '/lookup/comic',
+				'rest_route'   => '/' . REST_API::REST_NAMESPACE . '/lookup/comic',
 				'input_schema' => [
 					'type'       => 'object',
 					'properties' => [

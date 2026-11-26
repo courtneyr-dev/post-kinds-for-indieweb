@@ -6,7 +6,7 @@
  *
  * 1. Plugin classes excluded from analysis in phpstan.neon's excludePaths
  *    (memory-exhaustion guard). Code outside those classes still calls
- *    them (`new REST_API()`, `REST_API::NAMESPACE`, etc.) so we declare
+ *    them (`new REST_API()`, `REST_API::REST_NAMESPACE`, etc.) so we declare
  *    no-body stubs; PHPStan picks them up via `scanFiles`.
  *
  * 2. Plugin-defined constants from `post-kinds-for-indieweb-in-block-themes.php`. PHPStan
@@ -28,7 +28,7 @@
 // 1. Excluded plugin classes — only the methods/constants other code calls.
 namespace PKIW {
 	class REST_API {
-		public const NAMESPACE = 'post-kinds-indieweb/v1';
+		public const REST_NAMESPACE = 'post-kinds-indieweb/v1';
 		public function __construct() {}
 	}
 

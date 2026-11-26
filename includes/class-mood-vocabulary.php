@@ -69,7 +69,7 @@ final class Mood_Vocabulary {
 	public const SPELLING_UK = 'en_GB';
 
 	/**
-	 * REST route (under REST_API::NAMESPACE) that exposes the resolved vocabulary.
+	 * REST route (under REST_API::REST_NAMESPACE) that exposes the resolved vocabulary.
 	 *
 	 * @var string
 	 */
@@ -698,7 +698,7 @@ final class Mood_Vocabulary {
 	 */
 	public static function register_routes(): void {
 		register_rest_route(
-			REST_API::NAMESPACE,
+			REST_API::REST_NAMESPACE,
 			self::REST_ROUTE,
 			[
 				'methods'             => \WP_REST_Server::READABLE,

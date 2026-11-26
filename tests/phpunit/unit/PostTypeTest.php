@@ -119,6 +119,7 @@ class PostTypeTest extends WP_UnitTestCase {
 
 		$this->assertTrue( post_type_supports( 'pkiw_reaction', 'title' ) );
 		$this->assertTrue( post_type_supports( 'pkiw_reaction', 'editor' ) );
+		$this->assertSame( [ [ 'notes' => true ] ], get_all_post_type_supports( 'pkiw_reaction' )['editor'] );
 		$this->assertTrue( post_type_supports( 'pkiw_reaction', 'author' ) );
 		$this->assertTrue( post_type_supports( 'pkiw_reaction', 'thumbnail' ) );
 		$this->assertTrue( post_type_supports( 'pkiw_reaction', 'excerpt' ) );
@@ -134,6 +135,62 @@ class PostTypeTest extends WP_UnitTestCase {
 		$post_type = get_post_type_object( 'pkiw_reaction' );
 		$this->assertSame( 'post-kinds', $post_type->rewrite['slug'] );
 		$this->assertFalse( $post_type->rewrite['with_front'] );
+	}
+
+	public function test_reaction_notes_are_editorial() {
+		update_option( 'pkiw_settings', [ 'import_storage_mode' => 'cpt' ] );
+		( new Post_Type() )->maybe_register_post_type();
+
+		$previous_user = get_current_user_id();
+		$editor        = $this->factory->user->create( [ 'role' => 'editor' ] );
+		$contributor   = $this->factory->user->create( [ 'role' => 'contributor' ] );
+		$post_id       = $this->factory->post->create(
+			[
+				'post_type'   => Post_Type::POST_TYPE,
+				'post_author' => $editor,
+			]
+		);
+
+		try {
+			wp_set_current_user( $editor );
+			$request = new \WP_REST_Request( 'POST', '/wp/v2/comments' );
+			$request->set_body_params(
+				[
+					'post'    => $post_id,
+					'type'    => 'note',
+					'content' => 'Check the attribution.',
+				]
+			);
+			$response = rest_do_request( $request );
+			$this->assertSame( 201, $response->get_status() );
+			$note_id = $response->get_data()['id'];
+			$this->assertSame( 0, (int) get_comments_number( $post_id ) );
+
+			wp_set_current_user( $contributor );
+			$request = new \WP_REST_Request( 'GET', '/wp/v2/comments/' . $note_id );
+			$request->set_query_params( [ 'type' => 'note' ] );
+			$this->assertSame( 403, rest_do_request( $request )->get_status() );
+
+			wp_set_current_user( 0 );
+			$request = new \WP_REST_Request( 'GET', '/wp/v2/comments' );
+			$request->set_query_params( [ 'post' => [ $post_id ] ] );
+			$this->assertSame( [], rest_do_request( $request )->get_data() );
+
+			$this->factory->comment->create( [ 'comment_post_ID' => $post_id, 'comment_approved' => '1' ] );
+			$this->assertSame( 1, (int) get_comments_number( $post_id ) );
+			if ( false !== has_filter( 'pre_wp_update_comment_count_now', [ \Atmosphere\Reaction_Sync::class, 'exclude_reactions_from_count' ] ) ) {
+				$this->factory->comment->create(
+					[
+						'comment_post_ID'  => $post_id,
+						'comment_approved' => '1',
+						'comment_type'     => 'like',
+					]
+				);
+				$this->assertSame( 1, (int) get_comments_number( $post_id ) );
+			}
+		} finally {
+			wp_set_current_user( $previous_user );
+		}
 	}
 
 	public function test_post_type_has_kind_taxonomy() {
