@@ -125,7 +125,7 @@ final class Craft_Archive {
 			'duration_label'      => card_minutes_label( $minutes ),
 			'name'                => $name,
 			'name_is_title'       => $name_is_title,
-			'picture'             => kind_picture( $post->ID ),
+			'picture'             => kind_picture( $post->ID, self::KIND ),
 			'featured_in_content' => featured_in_content( $post->ID ),
 		];
 	}
