@@ -392,7 +392,7 @@ final class Wish_Archive {
 	 */
 	public static function facts( int $post_id ): array {
 		$post = get_post( $post_id );
-		if ( ! $post instanceof \WP_Post || ! Kind_Facts::can_show( $post ) || self::KIND !== Kind_Facts::kind_of( $post ) ) {
+		if ( ! $post instanceof \WP_Post || ! Kind_Facts::can_show( $post ) || ! has_term( self::KIND, Taxonomy::TAXONOMY, $post ) ) {
 			return [];
 		}
 

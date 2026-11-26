@@ -45,6 +45,20 @@ function kind_facts( int $post_id ): array {
 }
 
 /**
+ * Public Craft or Wish facts for a post carrying the selected kind.
+ *
+ * @param int    $post_id Post ID.
+ * @param string $kind    Craft or Wish kind slug.
+ * @return array<string, mixed> Selected facts, or [] when unavailable.
+ */
+function kind_facts_for_kind( int $post_id, string $kind ): array {
+	if ( '' === $kind ) {
+		return [];
+	}
+	return Kind_Facts::get( $post_id, $kind );
+}
+
+/**
  * Where each kind keeps its picture: kind slug => meta suffixes.
  *
  * `url` holds the cover or photo URL and `alt` its stored alt text ('' when
@@ -128,11 +142,12 @@ function kind_picture_sources(): array {
  *
  * @since 1.9.0
  *
- * @param int $post_id Post ID.
+ * @param int    $post_id Post ID.
+ * @param string $kind    Kind for cover metadata, or empty for the first term.
  * @return array{source: string, attachment_id: int, url: string, alt: string, remote: bool, suppress_featured: bool}
  *         `source` is 'featured', 'cover' or '' for no picture.
  */
-function kind_picture( int $post_id ): array {
+function kind_picture( int $post_id, string $kind = '' ): array {
 	$picture = [
 		'source'            => '',
 		'attachment_id'     => 0,
@@ -159,7 +174,7 @@ function kind_picture( int $post_id ): array {
 		];
 	}
 
-	$kind   = Kind_Facts::kind_of( $post );
+	$kind   = '' === $kind ? Kind_Facts::kind_of( $post ) : $kind;
 	$source = kind_picture_sources()[ $kind ] ?? null;
 	if ( null === $source ) {
 		return $picture;

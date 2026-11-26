@@ -109,16 +109,26 @@ final class Kind_Facts {
 	 *
 	 * @since 1.9.0
 	 *
-	 * @param int $post_id Post ID.
+	 * @param int    $post_id Post ID.
+	 * @param string $kind    Explicit Craft or Wish kind, or empty for the first term.
 	 * @return array<string, mixed> Facts, or [] when the post has no reader or can't be shown.
 	 */
-	public static function get( int $post_id ): array {
+	public static function get( int $post_id, string $kind = '' ): array {
+		if ( '' !== $kind && ( $post_id < 1 || ! in_array( $kind, [ 'craft', 'wish' ], true ) ) ) {
+			return [];
+		}
+
 		$post = get_post( $post_id );
 		if ( ! $post instanceof \WP_Post || Public_Eligibility::hides( $post ) || ! self::can_show( $post ) ) {
 			return [];
 		}
 
-		$kind  = self::kind_of( $post );
+		if ( '' === $kind ) {
+			$kind = self::kind_of( $post );
+		} elseif ( ! has_term( $kind, Taxonomy::TAXONOMY, $post ) ) {
+			return [];
+		}
+
 		$entry = '' === $kind ? null : self::reader( $kind );
 		if ( null === $entry ) {
 			return [];

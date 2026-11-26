@@ -518,6 +518,11 @@ function render_stream_card_inner( array $attributes = [], string $content = '',
 		return render_generic_stream_card( $post, $attributes );
 	}
 
+	$artifact_card = render_stream_card_artifact( $post, $attributes, $heading_level );
+	if ( null !== $artifact_card ) {
+		return $artifact_card;
+	}
+
 	// Micro-post: the body is nothing but Post Kinds card block(s). Render
 	// it exactly as it renders today — this is the Enola-Holmes shape.
 	if ( content_is_kind_card_only( (string) $post->post_content ) ) {
@@ -985,17 +990,19 @@ function stream_card_kind_cite_map(): array {
  *
  * @since 1.9.0
  *
- * @param \WP_Post $post Post.
+ * @param \WP_Post                 $post  Post.
+ * @param array<string,mixed>|null $facts Selected facts, or null to read the primary kind.
+ * @param string                   $kind  Selected kind slug, or empty to use the primary kind.
  * @return string Hidden h-cite HTML, or '' when the kind has none or its facts are empty.
  */
-function stream_card_kind_cite( \WP_Post $post ): string {
-	$kind = get_post_kind_slug( $post );
+function stream_card_kind_cite( \WP_Post $post, ?array $facts = null, string $kind = '' ): string {
+	$kind = '' !== $kind ? $kind : get_post_kind_slug( $post );
 	$map  = stream_card_kind_cite_map();
 	if ( '' === $kind || ! isset( $map[ $kind ] ) || ! is_callable( $map[ $kind ] ) ) {
 		return '';
 	}
 
-	return (string) call_user_func( $map[ $kind ], kind_facts( $post->ID ), $post );
+	return (string) call_user_func( $map[ $kind ], $facts ?? kind_facts( $post->ID ), $post );
 }
 
 /**
@@ -1264,6 +1271,58 @@ function stream_card_own_card( \WP_Post $post ): ?array {
 }
 
 /**
+ * Render the authored Craft or Wish card when it alone represents the post.
+ *
+ * @param \WP_Post            $post          Post.
+ * @param array<string,mixed> $attributes    Stream block attributes.
+ * @param int                 $heading_level Clamped heading level.
+ * @return string|null Card HTML, or null to use normal dispatch.
+ */
+function render_stream_card_artifact( \WP_Post $post, array $attributes, int $heading_level ): ?string {
+	$content = (string) $post->post_content;
+	if ( ! has_block( 'post-kinds-indieweb/craft-card', $content ) && ! has_block( 'post-kinds-indieweb/wish-card', $content ) ) {
+		return null;
+	}
+
+	$primary   = get_post_kind_slug( $post );
+	$top_level = parse_blocks( $content );
+	$first     = null;
+	foreach ( flatten_blocks( $top_level ) as $block ) {
+		$name = $block['blockName'] ?? '';
+		if ( ! str_starts_with( $name, 'post-kinds-indieweb/' ) ) {
+			continue;
+		}
+		if ( ! in_array( $name, [ 'post-kinds-indieweb/craft-card', 'post-kinds-indieweb/wish-card' ], true )
+			|| ( null !== $first && $name !== $first['blockName'] ) ) {
+			return null;
+		}
+		$first ??= $block;
+	}
+	if ( null === $first ) {
+		return null;
+	}
+
+	$kind = 'post-kinds-indieweb/craft-card' === $first['blockName'] ? 'craft' : 'wish';
+	if ( ! has_term( $kind, Taxonomy::TAXONOMY, $post ) ) {
+		return null;
+	}
+	$card_only = content_is_kind_card_only( $content );
+	if ( ! $card_only && ( $kind === $primary || ! in_array( $primary, [ 'note', 'article' ], true ) ) ) {
+		return null;
+	}
+	if ( $kind === $primary && in_array( $first, $top_level, true ) ) {
+		return null;
+	}
+	if ( 'craft' === $kind || ! $card_only ) {
+		return render_generic_stream_card( $post, $attributes, $kind );
+	}
+	return apply_stream_heading_level(
+		inject_post_date_into_card( link_title_to_post( render_block( $first ), $post ), $post ),
+		$heading_level
+	);
+}
+
+/**
  * Whether a response post's title is its cited URL rather than a name.
  *
  * Micropub and some imports store post_title = url for a nameless
@@ -1368,16 +1427,21 @@ function generic_card_cuts( string $kind_slug ): array {
  *                                        default 2, clamped 2–4) sets the title's
  *                                        heading tag, so the card matches the
  *                                        theme's heading outline wherever it sits.
+ * @param string              $selected_kind Authored artifact kind, or empty for the primary kind.
  * @return string Card HTML.
  */
-function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): string {
+function render_generic_stream_card( \WP_Post $post, array $attributes = [], string $selected_kind = '' ): string {
 	$heading_level = max( 2, min( 4, (int) ( $attributes['headingLevel'] ?? 2 ) ) );
 	$permalink     = esc_url( (string) get_permalink( $post ) );
-	$kind_slug     = get_post_kind_slug( $post );
+	$kind_slug     = '' === $selected_kind ? get_post_kind_slug( $post ) : $selected_kind;
 	$badge_kind    = '' !== $kind_slug ? $kind_slug : 'note';
 	$kind_label    = stream_card_kind_label( $post );
-	$excerpt       = trim( wp_strip_all_tags( get_the_excerpt( $post ) ) );
-	$cuts          = generic_card_cuts( $kind_slug );
+	if ( '' !== $selected_kind ) {
+		$term       = get_term_by( 'slug', $selected_kind, Taxonomy::TAXONOMY );
+		$kind_label = $term instanceof \WP_Term ? $term->name : $kind_label;
+	}
+	$excerpt = trim( wp_strip_all_tags( get_the_excerpt( $post ) ) );
+	$cuts    = generic_card_cuts( $kind_slug );
 
 	$title     = trim( visitor_post_title( $post ) );
 	$has_title = '' !== $title && ! stream_card_title_is_cited_url( $post, $title );
@@ -1486,8 +1550,9 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 		$out .= recipe_stream_card_facts( $recipe );
 	}
 
+	$selected_facts = '' === $selected_kind ? null : kind_facts_for_kind( $post->ID, $selected_kind );
 	if ( 'craft' === $kind_slug ) {
-		$out .= craft_stream_card_facts( kind_facts( $post->ID ) );
+		$out .= craft_stream_card_facts( $selected_facts ?? kind_facts( $post->ID ) );
 	}
 
 	$out .= '</div>';
@@ -1514,7 +1579,7 @@ function render_generic_stream_card( \WP_Post $post, array $attributes = [] ): s
 	}
 
 	// The kind's citation, which a card block would otherwise carry.
-	$out .= stream_card_kind_cite( $post );
+	$out .= stream_card_kind_cite( $post, $selected_facts, $selected_kind );
 
 	if ( ! in_array( 'meta', $cuts, true ) ) {
 		$out .= '<div class="pk-meta"><a class="pk-link" href="' . $permalink . '">'

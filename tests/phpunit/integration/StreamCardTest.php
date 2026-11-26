@@ -2613,6 +2613,67 @@ final class StreamCardTest extends WP_UnitTestCase {
 		$this->register_test_reader( 'craft', static fn(): array => $facts );
 	}
 
+	public function test_bookmark_first_with_only_a_craft_card_renders_one_named_craft_link(): void {
+		$id = $this->craft_post();
+		$this->ensure_kind_term( 'bookmark' );
+		wp_set_object_terms( $id, [ 'bookmark', 'craft' ], 'kind' );
+		$GLOBALS['post'] = get_post( $id );
+		$this->assertSame( 'bookmark', \PKIW\get_post_kind_slug( $GLOBALS['post'] ) );
+
+		$html = \PKIW\render_stream_card();
+		$this->assertStringContainsString( 'k-craft h-entry', $html );
+		$this->assertStringContainsString( esc_url( get_permalink( $id ) ), $html );
+		$this->assertStringNotContainsString( '<dl', $html );
+		$this->assertSame( 1, substr_count( $html, '<a ' ) );
+	}
+
+	public function test_secondary_wish_in_a_group_renders_one_link_and_its_own_citation(): void {
+		$id = self::factory()->post->create( [
+			'post_status'  => 'publish',
+			'post_content' => '<!-- wp:group --><div class="wp-block-group"><!-- wp:post-kinds-indieweb/wish-card {"title":"A desk lamp","url":"https://wish.example/lamp"} /--></div><!-- /wp:group -->',
+		] );
+		$this->ensure_kind_term( 'bookmark' );
+		$this->ensure_kind_term( 'wish' );
+		wp_set_object_terms( $id, [ 'bookmark', 'wish' ], 'kind' );
+		$GLOBALS['post'] = get_post( $id );
+
+		$html = \PKIW\render_stream_card();
+		$this->assertStringStartsWith( '<article', ltrim( $html ) );
+		$this->assertStringContainsString( 'k-wish', $html );
+		$this->assertStringContainsString( 'value="https://wish.example/lamp"', $html );
+		$this->assertStringContainsString( esc_url( get_permalink( $id ) ), $html );
+		$this->assertSame( 1, substr_count( $html, '<a ' ) );
+	}
+
+	public function test_wish_with_prose_and_a_note_term_uses_wish_facts(): void {
+		$id = self::factory()->post->create( [
+			'post_status'  => 'publish',
+			'post_title'   => 'A desk lamp',
+			'post_content' => '<!-- wp:paragraph --><p>A reading lamp.</p><!-- /wp:paragraph --><!-- wp:post-kinds-indieweb/wish-card {"url":"https://wish.example/lamp"} /-->',
+		] );
+		$this->ensure_kind_term( 'note' );
+		$this->ensure_kind_term( 'wish' );
+		wp_set_object_terms( $id, [ 'note', 'wish' ], 'kind' );
+		$GLOBALS['post'] = get_post( $id );
+		$this->assertSame( 'note', \PKIW\get_post_kind_slug( $GLOBALS['post'] ) );
+
+		$html = \PKIW\render_stream_card();
+		$this->assertStringContainsString( 'pk-card--stream k-wish h-entry', $html );
+		$this->assertStringContainsString( 'value="https://wish.example/lamp"', $html );
+		$this->assertStringNotContainsString( 'k-note', $html );
+	}
+
+	public function test_different_authored_card_kinds_keep_normal_stream_dispatch(): void {
+		$id = $this->craft_post( [
+			'post_content' => '<!-- wp:post-kinds-indieweb/craft-card {"craftType":"Knitting"} /--><!-- wp:post-kinds-indieweb/wish-card {"title":"A desk lamp"} /-->',
+		] );
+		$this->ensure_kind_term( 'bookmark' );
+		$this->ensure_kind_term( 'wish' );
+		wp_set_object_terms( $id, [ 'bookmark', 'craft', 'wish' ], 'kind' );
+
+		$this->assertNull( \PKIW\render_stream_card_artifact( get_post( $id ), [], 2 ) );
+	}
+
 	public function test_a_card_only_craft_post_renders_the_generic_card_with_one_link_and_no_card_facts_list(): void {
 		$id = $this->craft_post();
 
