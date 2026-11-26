@@ -49,7 +49,7 @@ class REST_API {
 	 *
 	 * @var string
 	 */
-	public const NAMESPACE = 'post-kinds-indieweb/v1';
+	public const REST_NAMESPACE = 'post-kinds-indieweb/v1';
 
 	/**
 	 * Constructor.
@@ -82,7 +82,7 @@ class REST_API {
 	private function register_lookup_routes(): void {
 		// Music URL parsing (Spotify, Apple Music, etc.).
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/lookup/music-url',
 			[
 				'methods'             => 'GET',
@@ -101,7 +101,7 @@ class REST_API {
 
 		// Standard.site document lookup for a cited URL.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/resolve/standard-site',
 			[
 				'methods'             => 'GET',
@@ -120,7 +120,7 @@ class REST_API {
 
 		// Music lookup.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/lookup/music',
 			[
 				'methods'             => 'GET',
@@ -152,7 +152,7 @@ class REST_API {
 
 		// Watch URL parsing (IMDB, TMDB, Trakt, Letterboxd).
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/lookup/watch-url',
 			[
 				'methods'             => 'GET',
@@ -171,7 +171,7 @@ class REST_API {
 
 		// Movie/TV lookup.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/lookup/video',
 			[
 				'methods'             => 'GET',
@@ -210,7 +210,7 @@ class REST_API {
 
 		// Book lookup.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/lookup/book',
 			[
 				'methods'             => 'GET',
@@ -248,7 +248,7 @@ class REST_API {
 
 		// Podcast lookup.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/lookup/podcast',
 			[
 				'methods'             => 'GET',
@@ -273,7 +273,7 @@ class REST_API {
 
 		// Venue/location lookup.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/lookup/venue',
 			[
 				'methods'             => 'GET',
@@ -309,7 +309,7 @@ class REST_API {
 
 		// Game lookup.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/lookup/game',
 			[
 				'methods'             => 'GET',
@@ -348,7 +348,7 @@ class REST_API {
 
 		// Comic lookup.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/lookup/comic',
 			[
 				'methods'             => 'GET',
@@ -385,7 +385,7 @@ class REST_API {
 
 		// Geocoding.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/geocode',
 			[
 				'methods'             => 'GET',
@@ -414,7 +414,7 @@ class REST_API {
 
 		// Get details by ID (for all types).
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/details/(?P<type>[a-z]+)/(?P<id>[a-zA-Z0-9-]+)',
 			[
 				'methods'             => 'GET',
@@ -449,7 +449,7 @@ class REST_API {
 	private function register_location_routes(): void {
 		// Location search (geocoding).
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/location/search',
 			[
 				'methods'             => 'GET',
@@ -468,7 +468,7 @@ class REST_API {
 
 		// Reverse geocoding.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/location/reverse',
 			[
 				'methods'             => 'GET',
@@ -491,7 +491,7 @@ class REST_API {
 
 		// Foursquare venue search.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/location/venues',
 			[
 				'methods'             => 'GET',
@@ -527,7 +527,7 @@ class REST_API {
 	private function register_import_routes(): void {
 		// Import from external service.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/import/(?P<service>[a-z]+)',
 			[
 				'methods'             => 'POST',
@@ -582,7 +582,7 @@ class REST_API {
 
 		// Get import status/progress.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/import/status/(?P<job_id>[a-zA-Z0-9]+)',
 			[
 				'methods'             => 'GET',
@@ -599,7 +599,7 @@ class REST_API {
 
 		// Cancel import.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/import/cancel/(?P<job_id>[a-zA-Z0-9]+)',
 			[
 				'methods'             => 'POST',
@@ -623,7 +623,7 @@ class REST_API {
 	private function register_webhook_routes(): void {
 		// ListenBrainz webhook.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/webhook/listenbrainz',
 			[
 				'methods'             => 'POST',
@@ -634,7 +634,7 @@ class REST_API {
 
 		// Trakt webhook (scrobble).
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/webhook/trakt',
 			[
 				'methods'             => 'POST',
@@ -645,7 +645,7 @@ class REST_API {
 
 		// Plex webhook.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/webhook/plex',
 			[
 				'methods'             => 'POST',
@@ -656,7 +656,7 @@ class REST_API {
 
 		// Jellyfin webhook.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/webhook/jellyfin',
 			[
 				'methods'             => 'POST',
@@ -667,7 +667,7 @@ class REST_API {
 
 		// Generic webhook (for custom integrations).
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/webhook/generic',
 			[
 				'methods'             => 'POST',
@@ -685,7 +685,7 @@ class REST_API {
 	private function register_oauth_routes(): void {
 		// OAuth callback handler.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/oauth/callback/(?P<service>[a-z]+)',
 			[
 				'methods'             => 'GET',
@@ -711,7 +711,7 @@ class REST_API {
 
 		// Get OAuth authorization URL.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/oauth/authorize/(?P<service>[a-z]+)',
 			[
 				'methods'             => 'GET',
@@ -729,7 +729,7 @@ class REST_API {
 
 		// Revoke OAuth token.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/oauth/revoke/(?P<service>[a-z]+)',
 			[
 				'methods'             => 'POST',
@@ -747,7 +747,7 @@ class REST_API {
 
 		// Check connection status.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/oauth/status/(?P<service>[a-z]+)',
 			[
 				'methods'             => 'GET',
@@ -772,7 +772,7 @@ class REST_API {
 	private function register_settings_routes(): void {
 		// Get API settings.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/settings/apis',
 			[
 				'methods'             => 'GET',
@@ -783,7 +783,7 @@ class REST_API {
 
 		// Update API settings.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/settings/apis',
 			[
 				'methods'             => 'POST',
@@ -794,7 +794,7 @@ class REST_API {
 
 		// Test API connection.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/settings/test/(?P<service>[a-z]+)',
 			[
 				'methods'             => 'POST',
@@ -811,7 +811,7 @@ class REST_API {
 
 		// Get webhook URLs.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/settings/webhooks',
 			[
 				'methods'             => 'GET',
@@ -822,7 +822,7 @@ class REST_API {
 
 		// Regenerate webhook secret.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/settings/webhooks/regenerate',
 			[
 				'methods'             => 'POST',
@@ -840,7 +840,7 @@ class REST_API {
 	private function register_checkin_routes(): void {
 		// Get check-ins with filters.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/checkins',
 			[
 				'methods'             => 'GET',
@@ -875,7 +875,7 @@ class REST_API {
 
 		// Get check-in statistics.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/checkins/stats',
 			[
 				'methods'             => 'GET',
@@ -898,7 +898,7 @@ class REST_API {
 	private function register_embed_routes(): void {
 		// Check oEmbed support for a URL.
 		register_rest_route(
-			self::NAMESPACE,
+			self::REST_NAMESPACE,
 			'/check-oembed',
 			[
 				'methods'             => 'GET',
@@ -2903,7 +2903,7 @@ class REST_API {
 			update_option( 'pkiw_webhook_secret', $secret );
 		}
 
-		$base_url   = rest_url( self::NAMESPACE . '/webhook/' );
+		$base_url   = rest_url( self::REST_NAMESPACE . '/webhook/' );
 		$plex_url   = $base_url . 'plex';
 		$plex_token = get_option( 'pkiw_webhook_token_plex' );
 

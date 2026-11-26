@@ -68,7 +68,7 @@ final class LookupComicAbilityTest extends WP_UnitTestCase {
 	private function request( array $params = [], int $user_id = 0 ): WP_REST_Response {
 		wp_set_current_user( $user_id );
 		( new ReflectionProperty( API_Base::class, 'last_request_times' ) )->setValue( null, [] );
-		$request = new WP_REST_Request( 'GET', '/' . REST_API::NAMESPACE . '/lookup/comic' );
+		$request = new WP_REST_Request( 'GET', '/' . REST_API::REST_NAMESPACE . '/lookup/comic' );
 		$request->set_query_params( $params );
 
 		return rest_do_request( $request );

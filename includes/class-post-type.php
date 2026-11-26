@@ -110,7 +110,7 @@ class Post_Type {
 			'menu_icon'          => 'dashicons-heart',
 			'supports'           => [
 				'title',
-				'editor',
+				'editor' => [ 'notes' => true ],
 				'author',
 				'thumbnail',
 				'excerpt',

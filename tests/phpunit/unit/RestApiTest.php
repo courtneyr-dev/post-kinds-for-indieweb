@@ -85,7 +85,7 @@ class RestApiTest extends WP_UnitTestCase {
 	 * Test that the REST API namespace is correct.
 	 */
 	public function test_namespace() {
-		$this->assertEquals( 'post-kinds-indieweb/v1', REST_API::NAMESPACE );
+		$this->assertEquals( 'post-kinds-indieweb/v1', REST_API::REST_NAMESPACE );
 	}
 
 	/**
@@ -93,7 +93,7 @@ class RestApiTest extends WP_UnitTestCase {
 	 */
 	public function test_routes_registered() {
 		$routes = $this->server->get_routes();
-		$namespace = '/' . REST_API::NAMESPACE;
+		$namespace = '/' . REST_API::REST_NAMESPACE;
 
 		// Check lookup routes exist.
 		$this->assertArrayHasKey( $namespace . '/lookup/music', $routes );
@@ -113,7 +113,7 @@ class RestApiTest extends WP_UnitTestCase {
 	 */
 	public function test_location_routes_registered() {
 		$routes    = $this->server->get_routes();
-		$namespace = '/' . REST_API::NAMESPACE;
+		$namespace = '/' . REST_API::REST_NAMESPACE;
 
 		$this->assertArrayHasKey( $namespace . '/geocode', $routes );
 		$this->assertArrayHasKey( $namespace . '/location/search', $routes );
@@ -129,7 +129,7 @@ class RestApiTest extends WP_UnitTestCase {
 	 */
 	public function test_import_routes_registered() {
 		$routes    = $this->server->get_routes();
-		$namespace = '/' . REST_API::NAMESPACE;
+		$namespace = '/' . REST_API::REST_NAMESPACE;
 
 		$this->assertArrayHasKey( $namespace . '/import/(?P<service>[a-z]+)', $routes );
 		$this->assertArrayHasKey( $namespace . '/import/status/(?P<job_id>[a-zA-Z0-9]+)', $routes );
@@ -141,7 +141,7 @@ class RestApiTest extends WP_UnitTestCase {
 	 */
 	public function test_webhook_routes_registered() {
 		$routes = $this->server->get_routes();
-		$namespace = '/' . REST_API::NAMESPACE;
+		$namespace = '/' . REST_API::REST_NAMESPACE;
 
 		$this->assertArrayHasKey( $namespace . '/webhook/plex', $routes );
 		$this->assertArrayHasKey( $namespace . '/webhook/jellyfin', $routes );
@@ -156,7 +156,7 @@ class RestApiTest extends WP_UnitTestCase {
 		// Make sure no user is logged in.
 		wp_set_current_user( 0 );
 
-		$request = new WP_REST_Request( 'GET', '/' . REST_API::NAMESPACE . '/lookup/music' );
+		$request = new WP_REST_Request( 'GET', '/' . REST_API::REST_NAMESPACE . '/lookup/music' );
 		$request->set_param( 'q', 'test query' );
 
 		$response = $this->server->dispatch( $request );
@@ -170,7 +170,7 @@ class RestApiTest extends WP_UnitTestCase {
 	public function test_lookup_requires_edit_posts_capability() {
 		wp_set_current_user( $this->subscriber_id );
 
-		$request = new WP_REST_Request( 'GET', '/' . REST_API::NAMESPACE . '/lookup/music' );
+		$request = new WP_REST_Request( 'GET', '/' . REST_API::REST_NAMESPACE . '/lookup/music' );
 		$request->set_param( 'q', 'test query' );
 
 		$response = $this->server->dispatch( $request );
@@ -184,7 +184,7 @@ class RestApiTest extends WP_UnitTestCase {
 	public function test_admin_can_access_lookup_endpoints() {
 		wp_set_current_user( $this->admin_id );
 
-		$request = new WP_REST_Request( 'GET', '/' . REST_API::NAMESPACE . '/lookup/music' );
+		$request = new WP_REST_Request( 'GET', '/' . REST_API::REST_NAMESPACE . '/lookup/music' );
 		$request->set_param( 'q', 'test query' );
 
 		$response = $this->server->dispatch( $request );
@@ -201,7 +201,7 @@ class RestApiTest extends WP_UnitTestCase {
 	public function test_import_requires_authentication() {
 		wp_set_current_user( 0 );
 
-		$request = new WP_REST_Request( 'POST', '/' . REST_API::NAMESPACE . '/import/listenbrainz' );
+		$request = new WP_REST_Request( 'POST', '/' . REST_API::REST_NAMESPACE . '/import/listenbrainz' );
 
 		$response = $this->server->dispatch( $request );
 
@@ -214,7 +214,7 @@ class RestApiTest extends WP_UnitTestCase {
 	public function test_import_requires_manage_options_capability() {
 		wp_set_current_user( $this->subscriber_id );
 
-		$request = new WP_REST_Request( 'POST', '/' . REST_API::NAMESPACE . '/import/listenbrainz' );
+		$request = new WP_REST_Request( 'POST', '/' . REST_API::REST_NAMESPACE . '/import/listenbrainz' );
 
 		$response = $this->server->dispatch( $request );
 
@@ -236,7 +236,7 @@ class RestApiTest extends WP_UnitTestCase {
 		wp_set_current_user( 0 );
 
 		$routes    = $this->server->get_routes();
-		$namespace = '/' . REST_API::NAMESPACE;
+		$namespace = '/' . REST_API::REST_NAMESPACE;
 
 		$this->assertArrayHasKey( $namespace . '/webhook/plex', $routes );
 
@@ -258,7 +258,7 @@ class RestApiTest extends WP_UnitTestCase {
 	public function test_music_lookup_requires_query() {
 		wp_set_current_user( $this->admin_id );
 
-		$request = new WP_REST_Request( 'GET', '/' . REST_API::NAMESPACE . '/lookup/music' );
+		$request = new WP_REST_Request( 'GET', '/' . REST_API::REST_NAMESPACE . '/lookup/music' );
 		// Not setting 'q' parameter.
 
 		$response = $this->server->dispatch( $request );
@@ -272,7 +272,7 @@ class RestApiTest extends WP_UnitTestCase {
 	public function test_video_lookup_validates_type() {
 		wp_set_current_user( $this->admin_id );
 
-		$request = new WP_REST_Request( 'GET', '/' . REST_API::NAMESPACE . '/lookup/video' );
+		$request = new WP_REST_Request( 'GET', '/' . REST_API::REST_NAMESPACE . '/lookup/video' );
 		$request->set_param( 'q', 'test' );
 		$request->set_param( 'type', 'invalid_type' );
 
@@ -288,7 +288,7 @@ class RestApiTest extends WP_UnitTestCase {
 	public function test_music_lookup_validates_source() {
 		wp_set_current_user( $this->admin_id );
 
-		$request = new WP_REST_Request( 'GET', '/' . REST_API::NAMESPACE . '/lookup/music' );
+		$request = new WP_REST_Request( 'GET', '/' . REST_API::REST_NAMESPACE . '/lookup/music' );
 		$request->set_param( 'q', 'test' );
 		$request->set_param( 'source', 'invalid_source' );
 
@@ -304,7 +304,7 @@ class RestApiTest extends WP_UnitTestCase {
 	public function test_music_url_lookup_sanitizes_url() {
 		wp_set_current_user( $this->admin_id );
 
-		$request = new WP_REST_Request( 'GET', '/' . REST_API::NAMESPACE . '/lookup/music-url' );
+		$request = new WP_REST_Request( 'GET', '/' . REST_API::REST_NAMESPACE . '/lookup/music-url' );
 		$request->set_param( 'url', 'javascript:alert(1)' );
 
 		$response = $this->server->dispatch( $request );
@@ -325,7 +325,7 @@ class RestApiTest extends WP_UnitTestCase {
 	public function test_watch_url_lookup_sanitizes_url() {
 		wp_set_current_user( $this->admin_id );
 
-		$request = new WP_REST_Request( 'GET', '/' . REST_API::NAMESPACE . '/lookup/watch-url' );
+		$request = new WP_REST_Request( 'GET', '/' . REST_API::REST_NAMESPACE . '/lookup/watch-url' );
 		$request->set_param( 'url', '<script>alert("xss")</script>' );
 
 		$response = $this->server->dispatch( $request );
@@ -358,7 +358,7 @@ class RestApiTest extends WP_UnitTestCase {
 
 		add_filter( 'pre_http_request', $interceptor, 10, 2 );
 
-		$request = new WP_REST_Request( 'GET', '/' . REST_API::NAMESPACE . '/lookup/watch-url' );
+		$request = new WP_REST_Request( 'GET', '/' . REST_API::REST_NAMESPACE . '/lookup/watch-url' );
 		$request->set_param( 'url', 'https://letterboxd.com/film/test-film/' );
 
 		try {
@@ -384,7 +384,7 @@ class RestApiTest extends WP_UnitTestCase {
 	public function test_settings_routes_require_admin() {
 		wp_set_current_user( $this->subscriber_id );
 
-		$request  = new WP_REST_Request( 'GET', '/' . REST_API::NAMESPACE . '/settings/apis' );
+		$request  = new WP_REST_Request( 'GET', '/' . REST_API::REST_NAMESPACE . '/settings/apis' );
 		$response = $this->server->dispatch( $request );
 
 		$this->assertContains(

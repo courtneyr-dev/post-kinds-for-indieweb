@@ -96,7 +96,7 @@ final class CheckinRestLocationPrivacyTest extends WP_UnitTestCase {
 		$server = rest_get_server();
 		remove_action( 'rest_api_init', [ $rest, 'register_routes' ] );
 
-		$request = new WP_REST_Request( 'GET', '/' . REST_API::NAMESPACE . $route );
+		$request = new WP_REST_Request( 'GET', '/' . REST_API::REST_NAMESPACE . $route );
 		$request->set_query_params( $params );
 
 		return $server->dispatch( $request );
