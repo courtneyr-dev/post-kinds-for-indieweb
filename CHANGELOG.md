@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.7] - 2026-11-26
+
+### Fixed
+
+- Render the authored Craft or Wish card for eligible mixed-kind posts in archives and the Stream (#623).
+
 ## [1.10.6] - 2026-11-25
 
 ### Added
