@@ -4,7 +4,7 @@ Tags: indieweb, post-kinds, microformats, block-editor, scrobbling
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.10.6
+Stable tag: 1.10.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -184,6 +184,9 @@ Download [IndieWeb test data](https://github.com/courtneyr-dev/indieweb-test-dat
 9. Standard.site record panel on a Bookmark Card, showing the cited page's own title, publication, description, and tags read from AT Protocol
 
 == Changelog ==
+
+= 1.10.7 =
+* Fix Craft and Wish card selection for mixed-kind posts in archives and the Stream.
 
 = 1.10.6 =
 * Added: Reply Cards can include an optional quoted excerpt in the source panel.
@@ -395,6 +398,9 @@ Security
 * Fixed: like, reply, repost, bookmark, favorite, listen, watch, and read posts expose the correct microformats2 markup, so webmention receivers and feed readers recognize them as their kind.
 
 == Upgrade Notice ==
+
+= 1.10.7 =
+Fixes mixed-kind Craft and Wish cards in archives and the Stream.
 
 = 1.10.6 =
 Adds an optional quoted excerpt to Reply Cards.

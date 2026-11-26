@@ -109,6 +109,35 @@ final class KindFactsTest extends WP_UnitTestCase {
 		$this->assertSame( [], \PKIW\kind_facts( $post_id ) );
 	}
 
+	public function test_explicit_kind_facts_on_a_bookmark_with_craft_and_wish(): void {
+		$post_id = $this->kind_post( 'bookmark', [
+			'post_title'   => 'Workshop reference',
+			'post_content' => '<!-- wp:post-kinds-indieweb/wish-card {"url":"https://wish.example/item"} /-->',
+		] );
+		wp_set_object_terms( $post_id, [ 'bookmark', 'craft', 'wish' ], Taxonomy::TAXONOMY );
+		update_post_meta( $post_id, '_pkiw_cite_url', 'https://bookmark.example/article' );
+		update_post_meta( $post_id, '_pkiw_cite_photo', 'https://bookmark.example/cover.jpg' );
+
+		$this->assertSame( 'https://bookmark.example/article', \PKIW\kind_facts( $post_id )['url'] );
+		$this->assertSame( 'https://wish.example/item', \PKIW\kind_facts_for_kind( $post_id, 'wish' )['url'] );
+		$craft = \PKIW\kind_facts_for_kind( $post_id, 'craft' );
+		$this->assertSame( 'Workshop reference', $craft['name'] );
+		$this->assertSame( '', $craft['picture']['url'] );
+		$this->assertSame( [], \PKIW\kind_facts_for_kind( $post_id, 'checkin' ) );
+
+		wp_set_object_terms( $post_id, 'bookmark', Taxonomy::TAXONOMY );
+		$this->assertSame( [], \PKIW\kind_facts_for_kind( $post_id, 'wish' ) );
+		$this->assertSame( [], \PKIW\kind_facts_for_kind( $post_id, 'craft' ) );
+	}
+
+	public function test_explicit_kind_facts_respect_the_post_password(): void {
+		$post_id = $this->kind_post( 'bookmark', [ 'post_password' => 'fixture-only' ] );
+		wp_set_object_terms( $post_id, [ 'bookmark', 'craft', 'wish' ], Taxonomy::TAXONOMY );
+
+		$this->assertSame( [], \PKIW\kind_facts_for_kind( $post_id, 'craft' ) );
+		$this->assertSame( [], \PKIW\kind_facts_for_kind( $post_id, 'wish' ) );
+	}
+
 	public function test_a_kind_with_no_reader_has_no_facts(): void {
 		$this->assertSame( [], \PKIW\kind_facts( $this->kind_post( 'noreader' ) ) );
 	}
