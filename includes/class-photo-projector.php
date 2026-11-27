@@ -592,14 +592,22 @@ final class Photo_Projector {
 			return false;
 		}
 
+		if ( ! function_exists( 'block_core_gallery_resolve_dynamic_source' ) ) {
+			return false;
+		}
+
 		/**
 		 * Filters whether Core resolves attached-media Galleries.
 		 *
+		 * Runs only when block_core_gallery_resolve_dynamic_source() exists, so
+		 * it can turn detection off but never on: without the resolver the
+		 * render guard cannot project the Gallery.
+		 *
 		 * @since 1.11.0
 		 *
-		 * @param bool $resolves True when block_core_gallery_resolve_dynamic_source() exists.
+		 * @param bool $resolves True; Core's resolver exists.
 		 */
-		return (bool) apply_filters( 'pkiw_photo_projector_core_resolves_attached_media', function_exists( 'block_core_gallery_resolve_dynamic_source' ) );
+		return (bool) apply_filters( 'pkiw_photo_projector_core_resolves_attached_media', true );
 	}
 
 	/**

@@ -86,6 +86,28 @@ final class PhotoProjectorAttachedGalleryFallbackTest extends WP_UnitTestCase {
 	}
 
 	public function test_attached_gallery_without_core_resolver_leaves_the_projector_to_a_static_gallery(): void {
+		$this->assert_static_gallery_gets_the_projector();
+	}
+
+	public function test_forcing_the_filter_on_without_core_resolver_still_projects_the_static_gallery(): void {
+		if ( function_exists( 'block_core_gallery_resolve_dynamic_source' ) ) {
+			$this->markTestSkipped( 'This core has block_core_gallery_resolve_dynamic_source(), so the filter is honored; the case needs WordPress 7.0.' );
+		}
+		remove_filter( 'pkiw_photo_projector_core_resolves_attached_media', '__return_false' );
+		add_filter( 'pkiw_photo_projector_core_resolves_attached_media', '__return_true' );
+
+		try {
+			$this->assert_static_gallery_gets_the_projector();
+		} finally {
+			remove_filter( 'pkiw_photo_projector_core_resolves_attached_media', '__return_true' );
+		}
+	}
+
+	/**
+	 * An attached-media Gallery followed by a static Gallery of two unattached
+	 * images: the static Gallery must become the projector.
+	 */
+	private function assert_static_gallery_gets_the_projector(): void {
 		$id = (int) self::factory()->post->create(
 			[
 				'post_status' => 'publish',
