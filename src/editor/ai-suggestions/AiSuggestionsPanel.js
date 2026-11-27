@@ -2,10 +2,14 @@
  * AI suggestions panel.
  *
  * Reads readiness from /post-kinds/v1/ai/status and announces it in a polite
- * live region. When a provider is ready it asks for typed citation
- * suggestions and offers each one with its own Apply button. Nothing is
- * written until the author applies a suggestion, and a filled field is never
- * overwritten. A site that hasn't opted in sees no panel.
+ * live region. The region mounts empty and gets its first message in a later
+ * render, so assistive technology already tracks it (WCAG 2.2 SC 4.1.3).
+ * When a provider is ready it asks for typed citation suggestions and offers
+ * each one with its own Apply button. Suggestions belong to the post and
+ * cited URL they were asked for; a change to either hides them and drops a
+ * late response. Nothing is written until the author applies a suggestion,
+ * and a filled field is never overwritten. A site that hasn't opted in sees
+ * no panel.
  *
  * @package
  * @since 1.11.0
@@ -49,10 +53,21 @@ export const errorMessage = ( error ) =>
 				'post-kinds-for-indieweb-in-block-themes'
 			);
 
+/**
+ * Key naming the post and cited URL a suggestion request belongs to.
+ *
+ * @param {number|string} postId  Post ID.
+ * @param {?string}       citeUrl Cited URL meta value.
+ * @return {string} Identity key.
+ */
+const identityOf = ( postId, citeUrl ) =>
+	JSON.stringify( [ postId ?? null, isFilled( citeUrl ) ? citeUrl : '' ] );
+
 export default function AiSuggestionsPanel() {
-	const { postType, meta } = useSelect(
+	const { postType, postId, meta } = useSelect(
 		( select ) => ( {
 			postType: select( 'core/editor' ).getCurrentPostType(),
+			postId: select( 'core/editor' ).getCurrentPostId(),
 			meta:
 				select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {},
 		} ),
@@ -62,10 +77,24 @@ export default function AiSuggestionsPanel() {
 
 	const [ status, setStatus ] = useState( null );
 	const [ announcement, setAnnouncement ] = useState( '' );
-	const [ plan, setPlan ] = useState( [] );
+	const [ regionReady, setRegionReady ] = useState( false );
+	const [ plan, setPlan ] = useState( { identity: '', items: [] } );
 	const [ applied, setApplied ] = useState( {} );
 	const [ busy, setBusy ] = useState( false );
 	const itemRefs = useRef( {} );
+
+	const citeUrl = meta[ META_PREFIX + 'cite_url' ];
+	const identity = identityOf( postId, citeUrl );
+	const identityRef = useRef( identity );
+	identityRef.current = identity;
+
+	const visible =
+		postType === 'post' && !! status && status.state !== 'disabled';
+
+	// The region renders empty first; its text arrives in the next commit.
+	useEffect( () => {
+		setRegionReady( visible );
+	}, [ visible ] );
 
 	useEffect( () => {
 		let live = true;
@@ -92,16 +121,17 @@ export default function AiSuggestionsPanel() {
 		};
 	}, [] );
 
-	if ( postType !== 'post' || ! status || status.state === 'disabled' ) {
+	if ( ! visible ) {
 		return null;
 	}
 
-	const citeUrl = meta[ META_PREFIX + 'cite_url' ];
 	const ready = status.state === 'ready';
+	const items = plan.identity === identity ? plan.items : [];
 
 	const requestSuggestions = () => {
+		const asked = identity;
 		setBusy( true );
-		setPlan( [] );
+		setPlan( { identity: '', items: [] } );
 		setApplied( {} );
 		setAnnouncement(
 			__(
@@ -115,8 +145,11 @@ export default function AiSuggestionsPanel() {
 			data: { url: citeUrl },
 		} )
 			.then( ( response ) => {
+				if ( identityRef.current !== asked ) {
+					return;
+				}
 				const next = planSuggestions( response?.suggestions, meta );
-				setPlan( next );
+				setPlan( { identity: asked, items: next } );
 				setAnnouncement(
 					next.length
 						? sprintf(
@@ -135,11 +168,24 @@ export default function AiSuggestionsPanel() {
 							)
 				);
 			} )
-			.catch( ( error ) => setAnnouncement( errorMessage( error ) ) )
+			.catch( ( error ) => {
+				if ( identityRef.current === asked ) {
+					setAnnouncement( errorMessage( error ) );
+				}
+			} )
 			.finally( () => setBusy( false ) );
 	};
 
 	const apply = ( suggestion ) => {
+		if ( plan.identity !== identityRef.current ) {
+			setAnnouncement(
+				__(
+					'The cited URL changed. Ask for suggestions again.',
+					'post-kinds-for-indieweb-in-block-themes'
+				)
+			);
+			return;
+		}
 		const edit = applyEdit( suggestion, meta );
 		if ( edit ) {
 			editPost( { meta: edit } );
@@ -184,7 +230,7 @@ export default function AiSuggestionsPanel() {
 				aria-live="polite"
 				aria-atomic="true"
 			>
-				{ announcement }
+				{ regionReady ? announcement : '' }
 			</p>
 			{ status.connectorsUrl ? (
 				<p>
@@ -225,9 +271,9 @@ export default function AiSuggestionsPanel() {
 					) }
 				</>
 			) : null }
-			{ plan.length ? (
+			{ items.length ? (
 				<ul className="pkiw-ai-suggestions__list">
-					{ plan.map( ( suggestion ) => {
+					{ items.map( ( suggestion ) => {
 						const outcome =
 							applied[ suggestion.field ] ||
 							( suggestion.keep ? 'kept' : '' );
