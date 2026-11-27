@@ -582,6 +582,9 @@ final class Plugin {
 			$this->kindle_embed_bridge = new Kindle_Embed_Bridge();
 		}
 
+		// Synced Reply pattern: instances override the Reply Card's display text.
+		Reply_Pattern_Overrides::register();
+
 		// PHP-only blocks.
 		if ( class_exists( __NAMESPACE__ . '\\Blocks\\Now_Playing' ) ) {
 			$this->now_playing_block = new Blocks\Now_Playing();

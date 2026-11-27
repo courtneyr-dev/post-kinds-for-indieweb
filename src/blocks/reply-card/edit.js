@@ -17,11 +17,60 @@ import {
 import { PanelBody, TextareaControl, TextControl } from '@wordpress/components';
 import { useEffect } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
+import { useInstanceId } from '@wordpress/compose';
 import StandardSitePanel from '../../components/standard-site-panel';
 
-export default function Edit( { attributes, setAttributes } ) {
-	const { title, url, description, quotation, image, imageAlt, author } =
-		attributes;
+const DISPLAY_TEXT = [ 'title', 'description', 'quotation' ];
+const FIELD_LABEL_STYLE = {
+	flexShrink: 0,
+	fontSize: 'var(--wp--preset--font-size--small, 0.875rem)',
+};
+
+export default function Edit( {
+	attributes,
+	setAttributes,
+	context,
+	clientId,
+} ) {
+	const inPatternInstance =
+		!! context?.[ 'pattern/overrides' ] &&
+		Object.values( attributes.metadata?.bindings ?? {} ).some(
+			( binding ) => binding?.source === 'core/pattern-overrides'
+		);
+	const storedAttributes = useSelect(
+		( select ) =>
+			select( 'core/block-editor' ).getBlockAttributes( clientId ),
+		[ clientId ]
+	);
+	const postMeta = useSelect(
+		( select ) =>
+			context?.postId && context?.postType
+				? select( 'core' ).getEditedEntityRecord(
+						'postType',
+						context.postType,
+						context.postId
+					)?.meta
+				: select( 'core/editor' ).getEditedPostAttribute( 'meta' ),
+		[ context?.postId, context?.postType ]
+	);
+	const displayText = Object.fromEntries(
+		DISPLAY_TEXT.map( ( key ) => [
+			key,
+			typeof attributes[ key ] === 'string' ||
+			attributes[ key ] === undefined
+				? attributes[ key ]
+				: storedAttributes?.[ key ],
+		] )
+	);
+	const { title, url, description, quotation, image, imageAlt, author } = {
+		...attributes,
+		...displayText,
+		...( inPatternInstance && {
+			url: postMeta?._pkiw_cite_url ?? '',
+			author: postMeta?._pkiw_cite_author ?? '',
+		} ),
+	};
+	const fieldId = useInstanceId( Edit, 'reply-card' );
 
 	const blockProps = useBlockProps( {
 		className: 'reply-card-block pk-card k-reply',
@@ -118,6 +167,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						) }
 					/>
 				</PanelBody>
+			</InspectorControls>
+			<InspectorControls
+				group={ inPatternInstance ? 'content' : 'default' }
+			>
 				<PanelBody
 					title={ __(
 						'Description',
@@ -162,6 +215,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 				</PanelBody>
+			</InspectorControls>
+			<InspectorControls>
 				<StandardSitePanel url={ url } />
 			</InspectorControls>
 
@@ -248,10 +303,22 @@ export default function Edit( { attributes, setAttributes } ) {
 							<span className="post-kinds-card__input-icon">
 								&#128279;
 							</span>
+							<label
+								className="post-kinds-card__field-label"
+								style={ FIELD_LABEL_STYLE }
+								htmlFor={ `${ fieldId }-url` }
+							>
+								{ __(
+									'Reply target URL',
+									'post-kinds-for-indieweb-in-block-themes'
+								) }
+							</label>
 							<input
+								id={ `${ fieldId }-url` }
 								type="url"
 								className="post-kinds-card__input post-kinds-card__input--url"
 								value={ url || '' }
+								readOnly={ inPatternInstance }
 								onChange={ ( e ) =>
 									setAttributes( { url: e.target.value } )
 								}
@@ -262,18 +329,40 @@ export default function Edit( { attributes, setAttributes } ) {
 							/>
 						</div>
 
-						<RichText
-							tagName="p"
-							className="post-kinds-card__subtitle"
-							value={ author }
-							onChange={ ( value ) =>
-								setAttributes( { author: value } )
-							}
-							placeholder={ __(
-								'By whom?',
-								'post-kinds-for-indieweb-in-block-themes'
+						<div className="post-kinds-card__input-row">
+							<span
+								id={ `${ fieldId }-author` }
+								className="post-kinds-card__field-label"
+								style={ FIELD_LABEL_STYLE }
+							>
+								{ __(
+									'Original author',
+									'post-kinds-for-indieweb-in-block-themes'
+								) }
+							</span>
+							{ inPatternInstance ? (
+								<output
+									className="post-kinds-card__subtitle"
+									aria-labelledby={ `${ fieldId }-author` }
+								>
+									{ author }
+								</output>
+							) : (
+								<RichText
+									tagName="p"
+									className="post-kinds-card__subtitle"
+									aria-labelledby={ `${ fieldId }-author` }
+									value={ author }
+									onChange={ ( value ) =>
+										setAttributes( { author: value } )
+									}
+									placeholder={ __(
+										'By whom?',
+										'post-kinds-for-indieweb-in-block-themes'
+									) }
+								/>
 							) }
-						/>
+						</div>
 
 						{ quotation?.trim() ? (
 							<blockquote className="post-kinds-card__notes pk-note">
