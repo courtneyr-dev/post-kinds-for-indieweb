@@ -176,12 +176,13 @@ final class AiReadinessTest extends WP_UnitTestCase {
 	/**
 	 * Run one outcome and check the post survived it.
 	 *
-	 * @param string $state       Expected readiness state.
-	 * @param int    $http_status Expected suggestion status code.
-	 * @param string $code        Expected error code, or '' for success.
+	 * @param string      $state       Expected readiness state.
+	 * @param int         $http_status Expected suggestion status code.
+	 * @param string      $code        Expected error code, or '' for success.
+	 * @param string|null $request     Expected request outcome in the error, or null for the readiness state.
 	 * @return WP_REST_Response Suggestion response.
 	 */
-	private function outcome( string $state, int $http_status, string $code ): WP_REST_Response {
+	private function outcome( string $state, int $http_status, string $code, ?string $request = null ): WP_REST_Response {
 		$before = $this->snapshot();
 
 		$status = $this->status();
@@ -194,7 +195,7 @@ final class AiReadinessTest extends WP_UnitTestCase {
 		$data = $response->get_data();
 		if ( '' !== $code ) {
 			$this->assertSame( $code, $data['code'] ?? null );
-			$this->assertSame( $state, $data['data']['state'] ?? null, 'The error names the readiness state.' );
+			$this->assertSame( $request ?? $state, $data['data']['state'] ?? null, 'The error names the request outcome.' );
 			$this->assertArrayNotHasKey( 'suggestions', $data );
 		}
 
@@ -258,6 +259,7 @@ final class AiReadinessTest extends WP_UnitTestCase {
 			'missing field'     => [ '{"title":"Example","summary":"One"}' ],
 			'unexpected field'  => [ '{"title":"Example","summary":"One","author":"Two","cite_url":"https://evil.example"}' ],
 			'JSON list'         => [ '["Example","One","Two"]' ],
+			'numeric-key object' => [ '{"0":"Example","1":"One","2":"Two"}' ],
 			'oversized title'   => [ '{"title":"' . str_repeat( 'x', 400 ) . '","summary":"One","author":"Two"}' ],
 		];
 	}
@@ -272,7 +274,7 @@ final class AiReadinessTest extends WP_UnitTestCase {
 		$this->registry->registerProvider( PKIW_Fake_Text_Provider::class );
 		PKIW_Fake_Text_Provider::$response = $body;
 
-		$this->outcome( 'ready', 502, 'pkiw_ai_malformed' );
+		$this->outcome( 'ready', 502, 'pkiw_ai_malformed', 'malformed' );
 		$this->assertCount( 1, PKIW_Fake_Text_Provider::$calls );
 	}
 
@@ -287,6 +289,9 @@ final class AiReadinessTest extends WP_UnitTestCase {
 
 		$expected = [
 			'state'       => 'ready',
+			'title'       => 'Suggested title',
+			'summary'     => 'A short summary.',
+			'author'      => 'Ada Example',
 			'suggestions' => [
 				[
 					'field'  => 'cite_name',
@@ -322,6 +327,7 @@ final class AiReadinessTest extends WP_UnitTestCase {
 		$data = $this->outcome( 'ready', 200, '' )->get_data();
 
 		$this->assertSame( [ 'cite_name' ], array_column( $data['suggestions'], 'field' ) );
+		$this->assertSame( [ 'Suggested title', '', '' ], [ $data['title'], $data['summary'], $data['author'] ], 'The legacy keys stay, empty when nothing came back.' );
 	}
 
 	public function test_provider_failure_never_echoes_provider_text(): void {
@@ -359,6 +365,14 @@ final class AiReadinessTest extends WP_UnitTestCase {
 		$this->assertSame( 502, $response->get_status() );
 		$this->assertSame( 'pkiw_ai_malformed', $response->get_data()['code'] );
 
+		foreach ( [ '{"tags":{"0":"indieweb","1":"reading"}}', '{"tags":{}}' ] as $object ) {
+			delete_transient( 'pkiw_ai_rate_suggest_tags_' . $this->admin );
+			PKIW_Fake_Text_Provider::$response = $object;
+			$response                          = rest_do_request( $request );
+			$this->assertSame( 502, $response->get_status(), 'A JSON object is not a list of tags: ' . $object );
+			$this->assertSame( 'pkiw_ai_malformed', $response->get_data()['code'] );
+		}
+
 		$this->assertSame( $before, $this->snapshot() );
 		$this->assertSame( 0, $this->http );
 	}
@@ -384,5 +398,50 @@ final class AiReadinessTest extends WP_UnitTestCase {
 
 		$this->assertSame( [ 'cite_name', 'cite_author', 'cite_summary' ], $schema['properties']['suggestions']['items']['properties']['field']['enum'] ?? null );
 		$this->assertSame( [ 'ai' ], $schema['properties']['suggestions']['items']['properties']['source']['enum'] ?? null );
+	}
+
+	/**
+	 * @return array<string, array{0:mixed}>
+	 */
+	public function bad_urls(): array {
+		return [
+			'array'      => [ [ 'https://example.org/' ] ],
+			'object'     => [ [ 'href' => 'https://example.org/' ] ],
+			'integer'    => [ 42 ],
+			'boolean'    => [ true ],
+			'ftp scheme' => [ 'ftp://example.org/file' ],
+			'javascript' => [ 'javascript:alert(1)' ],
+			'no scheme'  => [ 'example.org/article' ],
+		];
+	}
+
+	/**
+	 * A URL that isn't an http(s) string is a 400 before any permission or
+	 * AI check, even for a logged-out visitor on a site with AI off.
+	 *
+	 * @dataProvider bad_urls
+	 *
+	 * @param mixed $url URL parameter.
+	 */
+	public function test_non_http_url_is_a_rest_400_before_permissions( $url ): void {
+		wp_set_current_user( 0 );
+		$request = new WP_REST_Request( 'POST', self::PREFILL );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body( (string) wp_json_encode( [ 'url' => $url ] ) );
+
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'rest_invalid_param', $response->get_data()['code'] ?? null );
+		$this->assertSame( [], PKIW_Fake_Text_Provider::$calls );
+	}
+
+	public function test_auto_populate_schema_keeps_the_legacy_keys(): void {
+		$options = rest_get_server()->get_route_options( self::PREFILL );
+		$schema  = call_user_func( $options['schema'] );
+
+		foreach ( [ 'title', 'summary', 'author' ] as $key ) {
+			$this->assertSame( 'string', $schema['properties'][ $key ]['type'] ?? null, $key . ' stays in the response.' );
+		}
 	}
 }
