@@ -226,6 +226,7 @@ final class AI_Enhancements {
 							'required'          => true,
 							'type'              => 'string',
 							'format'            => 'uri',
+							'validate_callback' => [ self::class, 'validate_http_url' ],
 							'sanitize_callback' => 'esc_url_raw',
 						],
 					],
@@ -276,6 +277,30 @@ final class AI_Enhancements {
 	}
 
 	/**
+	 * Validate the cited URL: an http or https string with a host.
+	 *
+	 * Runs before the permission callback, so a non-string value is a REST
+	 * 400 instead of reaching esc_url_raw() and throwing a TypeError.
+	 *
+	 * @since 1.11.0
+	 *
+	 * @param mixed $value URL parameter.
+	 * @return true|\WP_Error True when valid.
+	 */
+	public static function validate_http_url( $value ) {
+		$parts = is_string( $value ) ? wp_parse_url( $value ) : false;
+		if ( ! is_array( $parts ) || ! in_array( strtolower( (string) ( $parts['scheme'] ?? '' ) ), [ 'http', 'https' ], true ) || '' === (string) ( $parts['host'] ?? '' ) ) {
+			return new \WP_Error(
+				'rest_invalid_param',
+				__( 'The URL must be an http or https address.', 'post-kinds-for-indieweb-in-block-themes' ),
+				[ 'status' => 400 ]
+			);
+		}
+
+		return true;
+	}
+
+	/**
 	 * Handle auto-populate from URL request.
 	 *
 	 * Extracts title, summary, and author from a given URL.
@@ -308,12 +333,14 @@ final class AI_Enhancements {
 			return $parsed;
 		}
 
+		$legacy      = [];
 		$suggestions = [];
 		foreach ( self::CITATION_FIELDS as $key => $field ) {
-			$value = 'summary' === $key
+			$value          = 'summary' === $key
 				? sanitize_textarea_field( (string) $parsed[ $key ] )
 				: sanitize_text_field( (string) $parsed[ $key ] );
-			if ( '' === trim( $value ) ) {
+			$legacy[ $key ] = trim( $value );
+			if ( '' === $legacy[ $key ] ) {
 				continue;
 			}
 			$suggestions[] = [
@@ -323,9 +350,14 @@ final class AI_Enhancements {
 			];
 		}
 
+		// title, summary and author are the 1.3.0 response keys; callers that
+		// predate typed suggestions still read them.
 		return rest_ensure_response(
 			[
 				'state'       => self::STATE_READY,
+				'title'       => $legacy['title'],
+				'summary'     => $legacy['summary'],
+				'author'      => $legacy['author'],
 				'suggestions' => $suggestions,
 			]
 		);
@@ -351,6 +383,9 @@ final class AI_Enhancements {
 					'type' => 'string',
 					'enum' => [ self::STATE_READY ],
 				],
+				'title'       => [ 'type' => 'string' ],
+				'summary'     => [ 'type' => 'string' ],
+				'author'      => [ 'type' => 'string' ],
 				'suggestions' => [
 					'type'  => 'array',
 					'items' => [
@@ -572,19 +607,23 @@ final class AI_Enhancements {
 	/**
 	 * Whether decoded JSON has the PHP types its schema names.
 	 *
-	 * Core's validator accepts a comma-separated string as an array and a
-	 * list as an object, so this checks the container types first.
+	 * Takes JSON decoded without the associative flag, so a JSON object is a
+	 * stdClass and a JSON array is a list. An associative decode would turn
+	 * {"0":"a","1":"b"} into a list and let it pass as an array. Core's
+	 * validator also accepts a comma-separated string as an array, so this
+	 * checks the container types first.
 	 *
-	 * @param mixed                $value  Decoded value.
+	 * @param mixed                $value  Value from json_decode( $text ).
 	 * @param array<string, mixed> $schema Schema.
 	 * @return bool
 	 */
 	private static function matches_shape( $value, array $schema ): bool {
 		$type = $schema['type'] ?? '';
 		if ( 'object' === $type ) {
-			if ( ! is_array( $value ) || ( [] !== $value && array_is_list( $value ) ) ) {
+			if ( ! $value instanceof \stdClass ) {
 				return false;
 			}
+			$value = get_object_vars( $value );
 			foreach ( (array) ( $schema['properties'] ?? [] ) as $key => $child ) {
 				if ( array_key_exists( $key, $value ) && ! self::matches_shape( $value[ $key ], (array) $child ) ) {
 					return false;
@@ -610,9 +649,10 @@ final class AI_Enhancements {
 	/**
 	 * Generate a JSON answer and validate it against its schema.
 	 *
-	 * Errors carry a fixed message and the readiness state. Provider error
-	 * text never reaches the response or the log, because it can quote a
-	 * request header or key.
+	 * Errors carry a fixed message and a state: the readiness state when the
+	 * request never reached a provider, or `malformed` when the provider
+	 * answered in the wrong shape. Provider error text never reaches the
+	 * response or the log, because it can quote a request header or key.
 	 *
 	 * @since 1.11.0
 	 *
@@ -658,17 +698,15 @@ final class AI_Enhancements {
 			return $failed;
 		}
 
-		$parsed = json_decode( (string) $text, true );
-		$valid  = self::matches_shape( $parsed, $schema )
-			? rest_validate_value_from_schema( $parsed, $schema, 'response' )
-			: false;
+		$parsed = self::matches_shape( json_decode( (string) $text ), $schema ) ? json_decode( (string) $text, true ) : null;
+		$valid  = is_array( $parsed ) ? rest_validate_value_from_schema( $parsed, $schema, 'response' ) : false;
 		if ( true !== $valid ) {
 			return new \WP_Error(
 				'pkiw_ai_malformed',
 				__( 'The AI provider answered in the wrong shape, so nothing was suggested.', 'post-kinds-for-indieweb-in-block-themes' ),
 				[
 					'status' => 502,
-					'state'  => $state,
+					'state'  => 'malformed',
 				]
 			);
 		}
