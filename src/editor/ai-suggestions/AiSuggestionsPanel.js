@@ -2,8 +2,11 @@
  * AI suggestions panel.
  *
  * Reads readiness from /post-kinds/v1/ai/status and announces it in a polite
- * live region. The region mounts empty and gets its first message in a later
- * render, so assistive technology already tracks it (WCAG 2.2 SC 4.1.3).
+ * live region. React always renders the region empty; an effect writes the
+ * message into it. A newly mounted region element (the panel opens, or its
+ * Slot mounts again) gets its first message REGION_SETTLE_MS later, in a
+ * separate task, so assistive technology already tracks the region when the
+ * text arrives (WCAG 2.2 SC 4.1.3).
  * When a provider is ready it asks for typed citation suggestions and offers
  * each one with its own Apply button. Suggestions belong to the post and
  * cited URL they were asked for; a change to either hides them and drops a
@@ -30,6 +33,7 @@ import {
 } from './plan-suggestions';
 
 export const STATUS_PATH = '/post-kinds/v1/ai/status';
+export const REGION_SETTLE_MS = 100;
 export const SUGGEST_PATH = '/post-kinds/v1/ai/auto-populate';
 
 /**
@@ -77,7 +81,8 @@ export default function AiSuggestionsPanel() {
 
 	const [ status, setStatus ] = useState( null );
 	const [ announcement, setAnnouncement ] = useState( '' );
-	const [ regionReady, setRegionReady ] = useState( false );
+	const [ regionNode, setRegionNode ] = useState( null );
+	const filledRegion = useRef( null );
 	const [ plan, setPlan ] = useState( { identity: '', items: [] } );
 	const [ applied, setApplied ] = useState( {} );
 	const [ busy, setBusy ] = useState( false );
@@ -91,10 +96,22 @@ export default function AiSuggestionsPanel() {
 	const visible =
 		postType === 'post' && !! status && status.state !== 'disabled';
 
-	// The region renders empty first; its text arrives in the next commit.
+	// A region element mounts empty; its first message waits for a later task.
 	useEffect( () => {
-		setRegionReady( visible );
-	}, [ visible ] );
+		if ( ! regionNode ) {
+			return;
+		}
+		const fill = () => {
+			regionNode.textContent = announcement;
+			filledRegion.current = regionNode;
+		};
+		if ( filledRegion.current === regionNode ) {
+			fill();
+			return;
+		}
+		const timer = setTimeout( fill, REGION_SETTLE_MS );
+		return () => clearTimeout( timer );
+	}, [ regionNode, announcement ] );
 
 	useEffect( () => {
 		let live = true;
@@ -128,6 +145,11 @@ export default function AiSuggestionsPanel() {
 	const ready = status.state === 'ready';
 	const items = plan.identity === identity ? plan.items : [];
 
+	const changedMessage = __(
+		'The cited URL changed. Ask for suggestions again.',
+		'post-kinds-for-indieweb-in-block-themes'
+	);
+
 	const requestSuggestions = () => {
 		const asked = identity;
 		setBusy( true );
@@ -146,6 +168,7 @@ export default function AiSuggestionsPanel() {
 		} )
 			.then( ( response ) => {
 				if ( identityRef.current !== asked ) {
+					setAnnouncement( changedMessage );
 					return;
 				}
 				const next = planSuggestions( response?.suggestions, meta );
@@ -168,22 +191,19 @@ export default function AiSuggestionsPanel() {
 							)
 				);
 			} )
-			.catch( ( error ) => {
-				if ( identityRef.current === asked ) {
-					setAnnouncement( errorMessage( error ) );
-				}
-			} )
+			.catch( ( error ) =>
+				setAnnouncement(
+					identityRef.current === asked
+						? errorMessage( error )
+						: changedMessage
+				)
+			)
 			.finally( () => setBusy( false ) );
 	};
 
 	const apply = ( suggestion ) => {
 		if ( plan.identity !== identityRef.current ) {
-			setAnnouncement(
-				__(
-					'The cited URL changed. Ask for suggestions again.',
-					'post-kinds-for-indieweb-in-block-themes'
-				)
-			);
+			setAnnouncement( changedMessage );
 			return;
 		}
 		const edit = applyEdit( suggestion, meta );
@@ -225,13 +245,12 @@ export default function AiSuggestionsPanel() {
 			) }
 		>
 			<p
+				ref={ setRegionNode }
 				className="pkiw-ai-suggestions__status"
 				role="status"
 				aria-live="polite"
 				aria-atomic="true"
-			>
-				{ regionReady ? announcement : '' }
-			</p>
+			/>
 			{ status.connectorsUrl ? (
 				<p>
 					<a href={ status.connectorsUrl }>

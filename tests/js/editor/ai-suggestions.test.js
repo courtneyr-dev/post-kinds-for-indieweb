@@ -193,7 +193,9 @@ describe( 'AiSuggestionsPanel readiness', () => {
 
 			const region = await screen.findByRole( 'status' );
 			expect( region ).toHaveAttribute( 'aria-live', 'polite' );
-			expect( region ).toHaveTextContent( `Message for ${ state }` );
+			await waitFor( () =>
+				expect( region ).toHaveTextContent( `Message for ${ state }` )
+			);
 			expect(
 				screen.queryByRole( 'button', {
 					name: 'Suggest citation details',
@@ -258,8 +260,10 @@ describe( 'AiSuggestionsPanel suggestions', () => {
 			method: 'POST',
 			data: { url: 'https://example.org/article' },
 		} );
-		expect( await screen.findByRole( 'status' ) ).toHaveTextContent(
-			'3 suggestions ready. Filled fields keep your entries.'
+		await waitFor( () =>
+			expect( screen.getByRole( 'status' ) ).toHaveTextContent(
+				'3 suggestions ready. Filled fields keep your entries.'
+			)
 		);
 		expect( editPost ).not.toHaveBeenCalled();
 		expect( screen.getByText( 'Kept your entry.' ) ).toBeInTheDocument();
@@ -304,8 +308,10 @@ describe( 'AiSuggestionsPanel suggestions', () => {
 		);
 
 		expect( editPost ).not.toHaveBeenCalled();
-		expect( screen.getByRole( 'status' ) ).toHaveTextContent(
-			'Summary kept your entry.'
+		await waitFor( () =>
+			expect( screen.getByRole( 'status' ) ).toHaveTextContent(
+				'Summary kept your entry.'
+			)
 		);
 	} );
 
@@ -544,8 +550,10 @@ describe( 'AiSuggestionsPanel citation identity', () => {
 		expect(
 			screen.queryByRole( 'button', { name: 'Apply suggested Author' } )
 		).not.toBeInTheDocument();
-		expect( screen.getByRole( 'status' ) ).not.toHaveTextContent(
-			'suggestions ready'
+		await waitFor( () =>
+			expect( screen.getByRole( 'status' ) ).toHaveTextContent(
+				'The cited URL changed. Ask for suggestions again.'
+			)
 		);
 		expect( editPost ).not.toHaveBeenCalled();
 	} );
