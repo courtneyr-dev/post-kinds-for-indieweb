@@ -209,11 +209,11 @@ export default function AiSuggestionsPanel() {
 		const edit = applyEdit( suggestion, meta );
 		if ( edit ) {
 			editPost( { meta: edit } );
+			setApplied( ( prior ) => ( {
+				...prior,
+				[ suggestion.field ]: 'applied',
+			} ) );
 		}
-		setApplied( ( prior ) => ( {
-			...prior,
-			[ suggestion.field ]: edit ? 'applied' : 'kept',
-		} ) );
 		setAnnouncement(
 			edit
 				? sprintf(
@@ -295,7 +295,9 @@ export default function AiSuggestionsPanel() {
 					{ items.map( ( suggestion ) => {
 						const outcome =
 							applied[ suggestion.field ] ||
-							( suggestion.keep ? 'kept' : '' );
+							( isFilled( meta[ META_PREFIX + suggestion.field ] )
+								? 'kept'
+								: '' );
 						return (
 							<li
 								key={ suggestion.field }

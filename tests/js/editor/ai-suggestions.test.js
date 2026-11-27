@@ -303,16 +303,45 @@ describe( 'AiSuggestionsPanel suggestions', () => {
 
 		mockMeta = { ...mockMeta, _pkiw_cite_summary: 'I wrote this myself.' };
 		rerender( <AiSuggestionsPanel /> );
+
+		expect(
+			screen.queryByRole( 'button', { name: 'Apply suggested Summary' } )
+		).not.toBeInTheDocument();
+		expect( screen.getAllByText( 'Kept your entry.' ) ).toHaveLength( 2 );
+		expect( editPost ).not.toHaveBeenCalled();
+	} );
+
+	it( 'offers Apply for a field the author cleared while the request was pending', async () => {
+		let resolve;
+		apiFetch.mockImplementation( ( { path } ) =>
+			path === STATUS_PATH
+				? Promise.resolve( status( 'ready' ) )
+				: new Promise( ( done ) => {
+						resolve = done;
+					} )
+		);
+		const { rerender } = render( <AiSuggestionsPanel /> );
 		fireEvent.click(
-			screen.getByRole( 'button', { name: 'Apply suggested Summary' } )
+			await screen.findByRole( 'button', {
+				name: 'Suggest citation details',
+			} )
 		);
 
-		expect( editPost ).not.toHaveBeenCalled();
-		await waitFor( () =>
-			expect( screen.getByRole( 'status' ) ).toHaveTextContent(
-				'Summary kept your entry.'
-			)
+		mockMeta = { ...mockMeta, _pkiw_cite_name: '' };
+		rerender( <AiSuggestionsPanel /> );
+		await act( async () => {
+			resolve( { state: 'ready', suggestions: SUGGESTIONS } );
+		} );
+
+		expect(
+			screen.queryByText( 'Kept your entry.' )
+		).not.toBeInTheDocument();
+		fireEvent.click(
+			screen.getByRole( 'button', { name: 'Apply suggested Title' } )
 		);
+		expect( editPost ).toHaveBeenCalledWith( {
+			meta: { _pkiw_cite_name: 'Suggested title' },
+		} );
 	} );
 
 	it.each( [
