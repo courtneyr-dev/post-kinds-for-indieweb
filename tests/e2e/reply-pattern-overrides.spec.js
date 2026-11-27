@@ -95,6 +95,16 @@ test( 'synced Reply pattern instances override text and show the post target', a
 					cards.nth( index ).locator( '.post-kinds-card__subtitle' )
 				)
 				.toHaveText( AUTHOR );
+			const author = cards.nth( index ).getByLabel( 'Original author' );
+			await expect( author ).toHaveText( AUTHOR );
+			await expect( author ).not.toHaveAttribute( 'contenteditable' );
+			await expect(
+				cards
+					.nth( index )
+					.locator(
+						'[contenteditable="true"]:not(.post-kinds-card__title):not(.post-kinds-card__notes), input:not([readonly]), textarea'
+					)
+			).toHaveCount( 0 );
 		}
 	};
 	await expectPostTarget();
@@ -287,6 +297,77 @@ test( "a synced Reply pattern in a Query Loop shows each post's target", async (
 		).toEqual( [ 'https://a.example/target', 'https://b.example/target' ] );
 	} finally {
 		for ( const path of created ) {
+			const response = await page.request.delete(
+				`/?rest_route=/wp/v2/${ path }&force=true`,
+				{ headers: { 'X-WP-Nonce': nonce } }
+			);
+			expect.soft( response.status() ).toBe( 200 );
+		}
+	}
+} );
+
+test( 'a standalone Reply card and the pattern itself edit their own author', async ( {
+	page,
+} ) => {
+	await logIn( page );
+	const { postId, patternId, nonce } = await page.evaluate(
+		async ( card ) => {
+			const pattern = await window.wp.apiFetch( {
+				path: '/wp/v2/blocks',
+				method: 'POST',
+				data: {
+					title: 'Author pattern',
+					status: 'draft',
+					content: card,
+				},
+			} );
+			const post = await window.wp.apiFetch( {
+				path: '/wp/v2/posts',
+				method: 'POST',
+				data: {
+					title: 'Standalone Reply card',
+					status: 'draft',
+					content: card.replace(
+						/,"metadata":\{.*\}\} \/-->$/,
+						'} /-->'
+					),
+				},
+			} );
+			return {
+				postId: post.id,
+				patternId: pattern.id,
+				nonce: window.wpApiSettings.nonce,
+			};
+		},
+		CARD
+	);
+
+	try {
+		const patternCanvas = await openEditor( page, patternId );
+		await expect(
+			patternCanvas.getByLabel( 'Original author' )
+		).toHaveAttribute( 'contenteditable', 'true', { timeout: 30000 } );
+
+		const canvas = await openEditor( page, postId );
+		const author = canvas.getByLabel( 'Original author' );
+		await expect( author ).toHaveText( 'Pattern Author', {
+			timeout: 30000,
+		} );
+		await author.click();
+		await page.keyboard.press( 'ControlOrMeta+a' );
+		await page.keyboard.type( 'Edited Author' );
+		await expect
+			.poll( () =>
+				page.evaluate(
+					() =>
+						window.wp.data
+							.select( 'core/block-editor' )
+							.getBlocks()[ 0 ].attributes.author
+				)
+			)
+			.toBe( 'Edited Author' );
+	} finally {
+		for ( const path of [ `blocks/${ patternId }`, `posts/${ postId }` ] ) {
 			const response = await page.request.delete(
 				`/?rest_route=/wp/v2/${ path }&force=true`,
 				{ headers: { 'X-WP-Nonce': nonce } }

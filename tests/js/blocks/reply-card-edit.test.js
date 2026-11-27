@@ -13,7 +13,6 @@ jest.mock( '@wordpress/block-editor', () => ( {
 		tagName: Tag,
 		className,
 		value,
-		readOnly,
 		placeholder,
 		'aria-labelledby': labelledBy,
 	} ) => (
@@ -22,7 +21,7 @@ jest.mock( '@wordpress/block-editor', () => ( {
 			aria-label={ placeholder }
 			aria-labelledby={ labelledBy }
 			className={ className }
-			contentEditable={ ! readOnly }
+			contentEditable
 			suppressContentEditableWarning
 		>
 			{ value }
@@ -156,10 +155,12 @@ describe( 'reply card in a synced pattern instance', () => {
 		const target = screen.getByPlaceholderText( 'https://example.com/…' );
 		expect( target ).toHaveValue( 'https://post.example/target' );
 		expect( target ).toHaveAttribute( 'readonly' );
-		expect( screen.getByText( 'Post Author' ) ).toHaveAttribute(
-			'contenteditable',
-			'false'
-		);
+		expect(
+			screen.getByRole( 'status', { name: 'Original author' } )
+		).not.toHaveAttribute( 'contenteditable' );
+		expect(
+			screen.queryByRole( 'textbox', { name: 'Original author' } )
+		).toBeNull();
 		expect( screen.queryByText( 'Pattern Author' ) ).toBeNull();
 	} );
 } );
@@ -256,13 +257,13 @@ describe.each( [
 		'a standalone card',
 		{ ...PATTERN_CARD, metadata: undefined },
 		{},
-		[ 'https://pattern.example/source', 'Pattern Author' ],
+		[ 'https://pattern.example/source', 'Pattern Author', 'textbox' ],
 	],
 	[
 		'a synced pattern instance',
 		PATTERN_CARD,
 		{ 'pattern/overrides': {} },
-		[ 'https://post.example/target', 'Post Author' ],
+		[ 'https://post.example/target', 'Post Author', 'status' ],
 	],
 ] )( 'reply card fields in %s', ( label, attributes, context, values ) => {
 	it( 'names the target URL and author by their visible labels', () => {
@@ -274,7 +275,7 @@ describe.each( [
 			screen.getByRole( 'textbox', { name: 'Reply target URL' } )
 		).toHaveValue( values[ 0 ] );
 		expect(
-			screen.getByRole( 'textbox', { name: 'Original author' } )
+			screen.getByRole( values[ 2 ], { name: 'Original author' } )
 		).toHaveTextContent( values[ 1 ] );
 	} );
 } );
