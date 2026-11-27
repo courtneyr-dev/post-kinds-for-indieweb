@@ -46,6 +46,8 @@ const DEFAULT_STATE = {
 	},
 	availableKinds: [],
 	isInitialized: false,
+	// Kind meta keys (without prefix) the author set in this session.
+	touchedKindMeta: [],
 };
 
 /**
@@ -64,6 +66,7 @@ const ACTION_TYPES = {
 	CLEAR_API_RESULTS: 'CLEAR_API_RESULTS',
 	SET_AVAILABLE_KINDS: 'SET_AVAILABLE_KINDS',
 	SET_INITIALIZED: 'SET_INITIALIZED',
+	TOUCH_KIND_META: 'TOUCH_KIND_META',
 };
 
 /**
@@ -226,10 +229,11 @@ const actions = {
 	 * @return {Function} Thunk action.
 	 */
 	updateKindMeta( key, value ) {
-		return async ( { registry } ) => {
+		return async ( { registry, dispatch } ) => {
 			const { editPost } = registry.dispatch( editorStore );
 			const metaKey = META_PREFIX + key;
 
+			dispatch( { type: ACTION_TYPES.TOUCH_KIND_META, key } );
 			await editPost( {
 				meta: {
 					[ metaKey ]: coerceMetaValue( key, value ),
@@ -396,6 +400,17 @@ function reducer( state = DEFAULT_STATE, action ) {
 				isInitialized: true,
 			};
 
+		case ACTION_TYPES.TOUCH_KIND_META:
+			return state.touchedKindMeta.includes( action.key )
+				? state
+				: {
+						...state,
+						touchedKindMeta: [
+							...state.touchedKindMeta,
+							action.key,
+						],
+					};
+
 		default:
 			return state;
 	}
@@ -509,6 +524,17 @@ const selectors = {
 			select( editorStore ).getEditedPostAttribute( 'meta' ) || {};
 		return meta[ META_PREFIX + key ] || '';
 	} ),
+
+	/**
+	 * Kind meta keys the author set in this session, even to the value
+	 * the field already showed.
+	 *
+	 * @param {Object} state Store state.
+	 * @return {Array<string>} Meta keys (without prefix).
+	 */
+	getTouchedKindMeta( state ) {
+		return state.touchedKindMeta;
+	},
 
 	/**
 	 * Get all kind meta values.

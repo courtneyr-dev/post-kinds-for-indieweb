@@ -4,5 +4,5 @@
 		'wp-blocks',
 		'wp-core-data'
 	),
-	'version' => '6b872816564bb9bc82c1'
+	'version' => '3011a2053092b789bb91'
 );

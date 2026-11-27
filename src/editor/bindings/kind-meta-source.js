@@ -12,6 +12,8 @@ import { store as blockEditorStore } from '@wordpress/block-editor';
 import { registerBlockBindingsSource } from '@wordpress/blocks';
 import { store as coreDataStore } from '@wordpress/core-data';
 
+import { isFieldPresent } from './field-presence';
+
 export const SOURCE_NAME = 'post-kinds-indieweb/kind-meta';
 
 /**
@@ -48,12 +50,6 @@ export function createKindMetaSource( fields ) {
 					)
 				: null;
 			const meta = record?.meta ?? {};
-			// REST fills unset meta with its registered default, and any meta
-			// edit copies the whole meta object into the edits, so a key
-			// counts as set only when it is stored or this session changed
-			// it from the saved value. Core's REST meta handler skips a
-			// write equal to the default, so an unchanged default never
-			// gets stored on save either.
 			const stored = record?.pkiw_stored_kind_fields;
 			const savedMeta = hasPost
 				? ( store.getEntityRecord?.(
@@ -70,11 +66,11 @@ export function createKindMetaSource( fields ) {
 					)?.meta ?? {} )
 				: {};
 			const isPresent = ( field ) =>
-				! Array.isArray( stored ) ||
-				stored.includes( field.key ) ||
-				( Object.hasOwn( editedMeta, field.metaKey ) &&
-					editedMeta[ field.metaKey ] !==
-						savedMeta[ field.metaKey ] );
+				isFieldPresent( field, {
+					stored,
+					savedMeta,
+					currentMeta: editedMeta,
+				} );
 			const termIds = Array.isArray( record?.kind ) ? record.kind : [];
 			const kinds = termIds.length
 				? (

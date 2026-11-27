@@ -49,6 +49,14 @@ class Block_Bindings {
 	public const STORED_FIELDS = 'pkiw_stored_kind_fields';
 
 	/**
+	 * REST request field naming the status meta keys the editor left
+	 * untouched, so a save drops only those defaults.
+	 *
+	 * @var string
+	 */
+	public const UNTOUCHED_STATUS_KEYS = 'pkiw_untouched_status_keys';
+
+	/**
 	 * Fields the editor's field picker offers, in picker order.
 	 *
 	 * Key => the kind the field belongs to and the status format whose
@@ -521,6 +529,38 @@ class Block_Bindings {
 				],
 			]
 		);
+		// Write-only: core validates it against this schema on save, and
+		// drop_untouched_default_statuses() reads it from the request.
+		register_rest_field(
+			$taxonomy->object_type,
+			self::UNTOUCHED_STATUS_KEYS,
+			[
+				'schema' => [
+					'description' => __( 'Status meta keys the editor left untouched; a save drops their defaults.', 'post-kinds-for-indieweb-in-block-themes' ),
+					'type'        => 'array',
+					'items'       => [
+						'type' => 'string',
+						'enum' => self::status_meta_keys(),
+					],
+					'context'     => [ 'edit' ],
+				],
+			]
+		);
+	}
+
+	/**
+	 * Meta keys of the summary fields that hold a status.
+	 *
+	 * @return array<int, string>
+	 */
+	public static function status_meta_keys(): array {
+		$keys = [];
+		foreach ( self::LIST_FIELDS as $key => $field ) {
+			if ( '' !== $field['format'] ) {
+				$keys[] = Meta_Fields::PREFIX . $key;
+			}
+		}
+		return $keys;
 	}
 
 	/**
@@ -551,9 +591,11 @@ class Block_Bindings {
 	 *
 	 * Any meta edit makes the block editor send the whole meta object, and
 	 * core stores a value equal to the registered default when no row
-	 * exists. A status still at its default on a post with no stored row
-	 * is the value the editor showed, not one the author chose, so it is
-	 * dropped before core writes meta.
+	 * exists. The editor names the statuses the author neither stored nor
+	 * chose in UNTOUCHED_STATUS_KEYS; a listed status still at its default
+	 * on a post with no stored row is dropped before core writes meta. A
+	 * request without the field, such as another REST client's explicit
+	 * write, is stored as sent.
 	 *
 	 * @param \stdClass|\WP_Error $prepared_post Post about to be saved.
 	 * @param \WP_REST_Request    $request       Save request.
@@ -561,16 +603,16 @@ class Block_Bindings {
 	 * @return \stdClass|\WP_Error
 	 */
 	public function drop_untouched_default_statuses( $prepared_post, \WP_REST_Request $request, string $post_type ) {
-		$meta = $request->get_param( 'meta' );
-		if ( ! is_array( $meta ) || ! $prepared_post instanceof \stdClass ) {
+		$meta      = $request->get_param( 'meta' );
+		$untouched = $request->get_param( self::UNTOUCHED_STATUS_KEYS );
+		if ( ! is_array( $meta ) || ! is_array( $untouched ) || ! $prepared_post instanceof \stdClass ) {
 			return $prepared_post;
 		}
 
 		$post_id    = (int) ( $prepared_post->ID ?? 0 );
 		$registered = get_registered_meta_keys( 'post', $post_type );
-		foreach ( self::LIST_FIELDS as $key => $field ) {
-			$meta_key = Meta_Fields::PREFIX . $key;
-			if ( '' === $field['format'] || ! array_key_exists( $meta_key, $meta ) || ! isset( $registered[ $meta_key ]['default'] ) ) {
+		foreach ( array_intersect( self::status_meta_keys(), $untouched ) as $meta_key ) {
+			if ( ! array_key_exists( $meta_key, $meta ) || ! isset( $registered[ $meta_key ]['default'] ) ) {
 				continue;
 			}
 			if ( $meta[ $meta_key ] === $registered[ $meta_key ]['default'] && ( ! $post_id || ! metadata_exists( 'post', $post_id, $meta_key ) ) ) {

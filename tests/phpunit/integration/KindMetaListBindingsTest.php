@@ -310,14 +310,16 @@ final class KindMetaListBindingsTest extends WP_UnitTestCase {
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
 
 		// The editor sends every meta key once any one changes, so the
-		// read_status default rides along with the new title.
+		// read_status default rides along with the new title, and names
+		// it as untouched.
 		$request = new WP_REST_Request( 'POST', "/wp/v2/posts/{$id}" );
 		$request->set_body_params(
 			[
-				'meta' => [
+				'meta'                                     => [
 					'_pkiw_read_title'  => 'Kindred, revised',
 					'_pkiw_read_status' => 'reading',
 				],
+				Block_Bindings::UNTOUCHED_STATUS_KEYS => [ '_pkiw_read_status' ],
 			]
 		);
 		$response = rest_do_request( $request );
@@ -328,14 +330,72 @@ final class KindMetaListBindingsTest extends WP_UnitTestCase {
 		$this->assertSame( [ 'read_title' ], $response->get_data()[ Block_Bindings::STORED_FIELDS ] );
 		$this->assertStringNotContainsString( 'Currently Reading', $this->render_pattern_for( 'post-kinds-indieweb/read-summary-list', $id ) );
 
-		// Positive controls: a changed status saves, and a stored row
-		// accepts the default value back.
-		$request->set_body_params( [ 'meta' => [ '_pkiw_read_status' => 'finished' ] ] );
+		// Positive controls: a changed status saves even when listed, and a
+		// stored row accepts the default value back.
+		$request->set_body_params(
+			[
+				'meta'                                => [ '_pkiw_read_status' => 'finished' ],
+				Block_Bindings::UNTOUCHED_STATUS_KEYS => [ '_pkiw_read_status' ],
+			]
+		);
 		rest_do_request( $request );
 		$this->assertSame( 'finished', get_post_meta( $id, '_pkiw_read_status', true ) );
-		$request->set_body_params( [ 'meta' => [ '_pkiw_read_status' => 'reading' ] ] );
+		$request->set_body_params(
+			[
+				'meta'                                => [ '_pkiw_read_status' => 'reading' ],
+				Block_Bindings::UNTOUCHED_STATUS_KEYS => [ '_pkiw_read_status' ],
+			]
+		);
 		rest_do_request( $request );
 		$this->assertSame( 'reading', get_post_meta( $id, '_pkiw_read_status', true ) );
+	}
+
+	public function test_an_explicit_rest_write_of_a_default_status_is_stored(): void {
+		$read  = $this->kind_post( 'read', [ 'read_title' => 'Kindred' ] );
+		$watch = $this->kind_post( 'watch', [ 'watch_title' => 'Arrival' ] );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		// A client that sends only the status, without the editor's
+		// untouched-keys field, means it.
+		foreach ( [ [ $read, '_pkiw_read_status', 'reading' ], [ $watch, '_pkiw_watch_status', 'to-watch' ] ] as [ $id, $key, $value ] ) {
+			$this->assertFalse( metadata_exists( 'post', $id, $key ), "Precondition: {$key} has no stored row." );
+			$request = new WP_REST_Request( 'POST', "/wp/v2/posts/{$id}" );
+			$request->set_body_params( [ 'meta' => [ $key => $value ] ] );
+			$this->assertSame( 200, rest_do_request( $request )->get_status() );
+			$this->assertTrue( metadata_exists( 'post', $id, $key ), "The explicit {$key} write is stored." );
+			$this->assertSame( $value, get_post_meta( $id, $key, true ) );
+		}
+	}
+
+	public function test_an_unknown_untouched_status_key_is_rejected(): void {
+		$id = $this->kind_post( 'read', [ 'read_title' => 'Kindred' ] );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		// read_title is a summary field but not a status, so the list
+		// can't be used to drop it.
+		foreach ( [ '_pkiw_read_title', '_pkiw_rsvp', 'read_status' ] as $bad ) {
+			$request = new WP_REST_Request( 'POST', "/wp/v2/posts/{$id}" );
+			$request->set_body_params(
+				[
+					'meta'                                => [ '_pkiw_read_title' => 'Kindred, revised' ],
+					Block_Bindings::UNTOUCHED_STATUS_KEYS => [ $bad ],
+				]
+			);
+			$response = rest_do_request( $request );
+			$this->assertSame( 400, $response->get_status(), "{$bad} is not an allowed status key." );
+			$this->assertSame( 'rest_invalid_param', $response->get_data()['code'] );
+		}
+		$this->assertSame( 'Kindred', get_post_meta( $id, '_pkiw_read_title', true ), 'A rejected save changes nothing.' );
+
+		// Positive control: an empty list is valid and the save goes through.
+		$request->set_body_params(
+			[
+				'meta'                                => [ '_pkiw_read_title' => 'Kindred, revised' ],
+				Block_Bindings::UNTOUCHED_STATUS_KEYS => [],
+			]
+		);
+		$this->assertSame( 200, rest_do_request( $request )->get_status() );
+		$this->assertSame( 'Kindred, revised', get_post_meta( $id, '_pkiw_read_title', true ) );
 	}
 
 	public function test_the_stored_fields_rest_field_needs_edit_post_even_in_a_delete_response(): void {
