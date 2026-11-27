@@ -66,22 +66,35 @@ final class Reply_Pattern_Overrides {
 	}
 
 	/**
-	 * The attributes a card renders. A card with Pattern Overrides takes
-	 * POST_DATA from the post that renders it, never from the pattern.
+	 * The attributes a card renders. A non-string bound value falls back to
+	 * the schema-validated attribute. A card with Pattern Overrides inside a
+	 * pattern takes POST_DATA from the post that renders it, never from the
+	 * pattern, and blank when the viewer may not see that post.
 	 *
 	 * @param array<string, mixed> $attributes Block attributes after bindings.
 	 * @param \WP_Block            $block      Block instance.
 	 * @return array<string, mixed>
 	 */
 	public static function render_attributes( array $attributes, \WP_Block $block ): array {
+		foreach ( self::DISPLAY_TEXT as $attribute ) {
+			if ( isset( $attributes[ $attribute ] ) && ! is_string( $attributes[ $attribute ] ) ) {
+				$attributes[ $attribute ] = $block->block_type->prepare_attributes_for_render( $block->parsed_block['attrs'] )[ $attribute ] ?? '';
+			}
+		}
+
 		$bindings = $attributes['metadata']['bindings'] ?? [];
-		if ( ! is_array( $bindings ) || ! in_array( 'core/pattern-overrides', array_column( $bindings, 'source' ), true ) ) {
+		if (
+			! is_array( $bindings )
+			|| ! in_array( 'core/pattern-overrides', array_column( $bindings, 'source' ), true )
+			|| ! array_key_exists( 'pattern/overrides', $block->context )
+		) {
 			return $attributes;
 		}
 
-		$post_id = (int) ( $block->context['postId'] ?? get_the_ID() );
+		$post    = get_post( (int) ( $block->context['postId'] ?? get_the_ID() ) );
+		$visible = $post instanceof \WP_Post && Kind_Facts::can_show( $post );
 		foreach ( self::POST_DATA as $attribute => $suffix ) {
-			$attributes[ $attribute ] = (string) get_post_meta( $post_id, Meta_Fields::PREFIX . $suffix, true );
+			$attributes[ $attribute ] = $visible ? (string) get_post_meta( $post->ID, Meta_Fields::PREFIX . $suffix, true ) : '';
 		}
 
 		return $attributes;

@@ -54,7 +54,7 @@ if ( $pkiw_synthetic ) {
 
 $pkiw_wrapper_attrs = get_block_wrapper_attributes(
 	[
-		'class' => 'pk-card k-reply h-cite u-in-reply-to',
+		'class' => '' !== $pkiw_href ? 'pk-card k-reply h-cite u-in-reply-to' : 'pk-card k-reply h-cite',
 	]
 );
 
