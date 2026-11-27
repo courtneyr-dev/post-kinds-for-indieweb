@@ -426,4 +426,141 @@ final class PhotoProjectorAttachedGalleryTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'u-photo', $loop );
 		$this->assert_no_control( $loop );
 	}
+
+	/**
+	 * A Gallery inside a Query Loop in the post body never wins the plan, so
+	 * the post's own Gallery after it still projects.
+	 *
+	 * @dataProvider gallery_kinds
+	 *
+	 * @param bool $dynamic Whether the post's own Gallery is attached-media.
+	 */
+	public function test_a_loop_gallery_before_the_posts_own_gallery_does_not_block_it( bool $dynamic ): void {
+		$id     = $this->photo( '' );
+		$order  = $this->attach_three( $id );
+		$others = [ $this->attachment( 0, '2026-08-06 09:00:00' ), $this->attachment( 0, '2026-08-07 09:00:00' ) ];
+		wp_update_post(
+			[
+				'ID'           => $id,
+				'post_content' => $this->query_loop( $this->static_gallery( $others ) ) . ( $dynamic ? $this->attached_gallery() : $this->static_gallery( $order ) ),
+			]
+		);
+
+		$html = $this->serve( $id );
+
+		$shape = $this->projector_shape( $html );
+		$this->assertSame( 1, $shape['projectors'], 'The post body Gallery projects.' );
+		$this->assertSame( $order, $shape['mounts'] );
+		$this->assertSame( 3, $shape['u_photo'] );
+	}
+
+	public function test_oldest_first_gallery_with_101_attachments_projects_cores_first_100(): void {
+		$id  = $this->photo( '<!-- wp:gallery {"dynamicContent":{"source":"core/attached-media","args":{"order":"asc"}},"linkTo":"none"} /-->' );
+		$ids = [];
+		for ( $i = 0; $i < 101; $i++ ) {
+			$ids[] = $this->attachment( $id, gmdate( 'Y-m-d H:i:s', strtotime( '2026-01-01 00:00:00' ) + $i * 3600 ) );
+		}
+
+		$html = $this->serve( $id );
+
+		$shape = $this->projector_shape( $html );
+		$this->assertSame( 1, $shape['projectors'], 'Core shows the oldest 100, and so does the allowlist.' );
+		$this->assertSame( array_slice( $ids, 0, 100 ), $shape['mounts'] );
+	}
+
+	/**
+	 * @return array<string, array{0:bool}>
+	 */
+	public function password_states(): array {
+		return [
+			'logged-out visitor'           => [ false ],
+			'visitor with the password'    => [ true ],
+		];
+	}
+
+	/**
+	 * Core's attached-media query inherits attachments without checking the
+	 * parent's password, so a template Gallery in a public loop must not list
+	 * a protected post's images until the visitor has the password.
+	 *
+	 * @dataProvider password_states
+	 *
+	 * @param bool $has_password Whether the visitor sent the post password.
+	 */
+	public function test_attached_gallery_in_a_loop_hides_a_protected_posts_media( bool $has_password ): void {
+		$page      = (int) self::factory()->post->create(
+			[
+				'post_type'   => 'page',
+				'post_status' => 'publish',
+			]
+		);
+		$protected = $this->photo( '<!-- wp:paragraph --><p>Secret.</p><!-- /wp:paragraph -->', [ 'post_password' => 'harbor' ] );
+		$hidden    = $this->attach_three( $protected );
+		wp_update_post(
+			[
+				'ID'         => $hidden[0],
+				'post_excerpt' => 'secret-caption',
+			]
+		);
+		if ( $has_password ) {
+			require_once ABSPATH . WPINC . '/class-phpass.php';
+			$_COOKIE[ 'wp-postpass_' . COOKIEHASH ] = ( new PasswordHash( 8, true ) )->HashPassword( 'harbor' );
+		}
+
+		$this->go_to( (string) get_permalink( $page ) );
+		$loop = do_blocks( $this->query_loop( $this->attached_gallery() ) );
+		unset( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
+
+		foreach ( $hidden as $attachment ) {
+			$url = (string) wp_get_attachment_url( $attachment );
+			if ( $has_password ) {
+				$this->assertStringContainsString( 'wp-image-' . $attachment . '"', $loop );
+			} else {
+				$this->assertStringNotContainsString( 'wp-image-' . $attachment . '"', $loop );
+				$this->assertStringNotContainsString( $url, $loop );
+			}
+		}
+		if ( $has_password ) {
+			$this->assertStringContainsString( 'secret-caption', $loop );
+		} else {
+			$this->assertStringNotContainsString( 'secret-caption', $loop );
+		}
+	}
+
+	/**
+	 * @return array<string, array{0:bool}>
+	 */
+	public function block_orders(): array {
+		return [
+			'Image then Gallery' => [ true ],
+			'Gallery then Image' => [ false ],
+		];
+	}
+
+	/**
+	 * One attached image shown by both a standalone Image and an
+	 * attached-media Gallery carries u-photo once.
+	 *
+	 * @dataProvider block_orders
+	 *
+	 * @param bool $image_first Whether the Image block comes first.
+	 */
+	public function test_one_image_in_an_image_block_and_an_attached_gallery_is_one_u_photo( bool $image_first ): void {
+		$id    = $this->photo( '' );
+		$a     = $this->attachment( $id, '2026-08-02 09:00:00' );
+		$image = '<!-- wp:image {"id":' . $a . '} --><figure class="wp-block-image"><img src="' . esc_url( (string) wp_get_attachment_url( $a ) ) . '" alt="" class="wp-image-' . $a . '"/></figure><!-- /wp:image -->';
+		wp_update_post(
+			[
+				'ID'           => $id,
+				'post_content' => $image_first ? $image . $this->attached_gallery() : $this->attached_gallery() . $image,
+			]
+		);
+
+		$html = $this->serve( $id );
+
+		$shape = $this->projector_shape( $html );
+		$this->assertSame( 1, $shape['u_photo'], 'One photo, one u-photo.' );
+		$this->assertSame( 1, $this->xpath( $html )->query( self::MOUNTS )->length );
+		$this->assertSame( 1, $this->xpath( $html )->query( '//figure[contains(concat(" ", normalize-space(@class), " "), " wp-block-gallery ")]' )->length, 'Core still renders the Gallery.' );
+	}
 }
