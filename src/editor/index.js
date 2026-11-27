@@ -22,6 +22,7 @@ import KindSelectorPanel from './kind-selector';
 import './promote-panel';
 import './missing-alt-notice';
 import './transcript';
+import './ai-suggestions';
 
 // Register the data store.
 register( postKindsStore );
