@@ -48,11 +48,32 @@ final class Photo_Projector {
 	public const LABELLEDBY_FILTER = 'pkiw_photo_projector_labelledby';
 
 	/**
+	 * Dynamic Gallery source that lists the post's attached media (WordPress 7.1+).
+	 *
+	 * @var string
+	 */
+	public const ATTACHED_MEDIA = 'core/attached-media';
+
+	/**
 	 * Per-post rendering plans.
 	 *
-	 * @var array<int, array{gallery:string,done:bool,image_count:int,has_gallery:bool,single_loose_image:bool,own_image:array{id:int,src:string},images:array<int,array<string,mixed>>}>
+	 * @var array<int, array{gallery:string,done:bool,image_count:int,has_gallery:bool,single_loose_image:bool,own_image:array{id:int,src:string},images:array<int,array<string,mixed>>,attached:int[]}>
 	 */
 	private static array $plans = [];
+
+	/**
+	 * Posts whose the_content pass is rendering right now.
+	 *
+	 * @var array<int, bool>
+	 */
+	private static array $in_content = [];
+
+	/**
+	 * How many Query Loop post templates are rendering right now.
+	 *
+	 * @var int
+	 */
+	private static int $loop_depth = 0;
 
 	/**
 	 * Last post planned during this request.
@@ -70,6 +91,9 @@ final class Photo_Projector {
 	 */
 	public function register(): void {
 		add_filter( 'the_content', [ $this, 'start_pass' ], 1 );
+		add_filter( 'the_content', [ $this, 'end_pass' ], PHP_INT_MAX );
+		add_filter( 'pre_render_block', [ $this, 'enter_loop' ], PHP_INT_MAX, 2 );
+		add_filter( 'render_block_core/post-template', [ $this, 'leave_loop' ], PHP_INT_MIN );
 		add_filter( 'render_block_core/gallery', [ $this, 'render_gallery' ], 10, 3 );
 		add_filter( 'render_block_core/image', [ $this, 'render_image' ], 10, 3 );
 		if ( did_action( 'init' ) ) {
@@ -116,6 +140,8 @@ final class Photo_Projector {
 	public static function reset(): void {
 		self::$plans        = [];
 		self::$last_post_id = 0;
+		self::$in_content   = [];
+		self::$loop_depth   = 0;
 	}
 
 	/**
@@ -131,8 +157,57 @@ final class Photo_Projector {
 		if ( isset( self::$plans[ $post_id ] ) ) {
 			self::$plans[ $post_id ]['done'] = false;
 		}
+		self::$in_content[ $post_id ] = true;
 
 		return $content;
+	}
+
+	/**
+	 * End a content render pass.
+	 *
+	 * @since 1.11.0
+	 *
+	 * @param string $content Rendered content.
+	 * @return string Unchanged content.
+	 */
+	public function end_pass( $content ): string {
+		unset( self::$in_content[ (int) get_the_ID() ] );
+
+		return (string) $content;
+	}
+
+	/**
+	 * Count a Query Loop post template starting to render.
+	 *
+	 * A projector belongs to the photo's own page, not to a listing, so
+	 * nothing inside a post template projects, even the photo's own content.
+	 *
+	 * @since 1.11.0
+	 *
+	 * @param string|null         $pre_render Short-circuit output, or null.
+	 * @param array<string,mixed> $block      Parsed block.
+	 * @return string|null Unchanged short-circuit value.
+	 */
+	public function enter_loop( $pre_render, $block ) {
+		if ( null === $pre_render && is_array( $block ) && 'core/post-template' === ( $block['blockName'] ?? '' ) ) {
+			++self::$loop_depth;
+		}
+
+		return $pre_render;
+	}
+
+	/**
+	 * Count a Query Loop post template finishing.
+	 *
+	 * @since 1.11.0
+	 *
+	 * @param string $html Rendered post template.
+	 * @return string Unchanged HTML.
+	 */
+	public function leave_loop( $html ): string {
+		self::$loop_depth = max( 0, self::$loop_depth - 1 );
+
+		return (string) $html;
 	}
 
 	/**
@@ -151,12 +226,16 @@ final class Photo_Projector {
 			return $html;
 		}
 
-		$plan = $this->plan( $post );
+		$plan     = $this->plan( $post );
+		$attached = $this->is_attached_media_gallery( $block );
 		if ( $plan['done'] || '' === $plan['gallery'] || $plan['gallery'] !== $this->signature( $block ) ) {
 			return $html;
 		}
+		if ( $attached && empty( self::$in_content[ $post->ID ] ) ) {
+			return $html;
+		}
 
-		$projector = $this->gallery_projector( $html, $block, $post );
+		$projector = $this->gallery_projector( $html, $block, $post, $attached ? $plan['attached'] : null );
 		if ( '' === $projector ) {
 			return $html;
 		}
@@ -211,7 +290,7 @@ final class Photo_Projector {
 	 * @return \WP_Post|null Photo post, or null outside the projector context.
 	 */
 	private function context_post( $instance ): ?\WP_Post {
-		if ( ! is_singular() || is_feed() ) {
+		if ( ! is_singular() || is_feed() || self::$loop_depth > 0 ) {
 			return null;
 		}
 
@@ -239,7 +318,7 @@ final class Photo_Projector {
 	 * The per-post rendering plan.
 	 *
 	 * @param \WP_Post $post Post.
-	 * @return array{gallery:string,done:bool,image_count:int,has_gallery:bool,single_loose_image:bool,own_image:array{id:int,src:string},images:array<int,array<string,mixed>>}
+	 * @return array{gallery:string,done:bool,image_count:int,has_gallery:bool,single_loose_image:bool,own_image:array{id:int,src:string},images:array<int,array<string,mixed>>,attached:int[]}
 	 */
 	private function plan( \WP_Post $post ): array {
 		if ( self::$last_post_id !== $post->ID ) {
@@ -251,10 +330,11 @@ final class Photo_Projector {
 			return self::$plans[ $post->ID ];
 		}
 
-		$blocks  = parse_blocks( (string) $post->post_content );
-		$gallery = $this->first_qualifying_gallery( $blocks );
-		$images  = collect_image_blocks( $blocks );
-		$single  = 1 === count( $images ) && 1 === $this->loose_image_count( $blocks );
+		$blocks   = parse_blocks( (string) $post->post_content );
+		$attached = str_contains( (string) $post->post_content, self::ATTACHED_MEDIA ) ? $this->attached_image_ids( $post->ID ) : [];
+		$gallery  = $this->first_qualifying_gallery( $blocks, count( $attached ) );
+		$images   = collect_image_blocks( $blocks );
+		$single   = 1 === count( $images ) && 1 === $this->loose_image_count( $blocks );
 
 		self::$plans[ $post->ID ] = [
 			'gallery'            => null === $gallery ? '' : $this->signature( $gallery ),
@@ -267,24 +347,32 @@ final class Photo_Projector {
 				'src' => '',
 			],
 			'images'             => $images,
+			'attached'           => $attached,
 		];
 
 		return self::$plans[ $post->ID ];
 	}
 
 	/**
-	 * First core/gallery block with two or more direct image children.
+	 * First core/gallery block that shows two or more images.
 	 *
-	 * @param array<int,array<string,mixed>> $blocks Parsed blocks.
+	 * A static Gallery counts its direct image children; an attached-media
+	 * Gallery counts the images attached to the post.
+	 *
+	 * @param array<int,array<string,mixed>> $blocks         Parsed blocks.
+	 * @param int                            $attached_count Images attached to the post.
 	 * @return array<string,mixed>|null Gallery block, or null.
 	 */
-	private function first_qualifying_gallery( array $blocks ): ?array {
+	private function first_qualifying_gallery( array $blocks, int $attached_count ): ?array {
 		foreach ( $blocks as $block ) {
-			if ( 'core/gallery' === ( $block['blockName'] ?? '' ) && $this->direct_image_count( $block ) >= 2 ) {
-				return $block;
+			if ( 'core/gallery' === ( $block['blockName'] ?? '' ) ) {
+				$count = $this->is_attached_media_gallery( $block ) ? $attached_count : $this->direct_image_count( $block );
+				if ( $count >= 2 ) {
+					return $block;
+				}
 			}
 			if ( ! empty( $block['innerBlocks'] ) ) {
-				$found = $this->first_qualifying_gallery( $block['innerBlocks'] );
+				$found = $this->first_qualifying_gallery( $block['innerBlocks'], $attached_count );
 				if ( null !== $found ) {
 					return $found;
 				}
@@ -368,12 +456,57 @@ final class Photo_Projector {
 	}
 
 	/**
+	 * Whether a parsed Gallery takes its images from the post's attached media.
+	 *
+	 * @param array<string,mixed> $block Parsed block.
+	 * @return bool
+	 */
+	private function is_attached_media_gallery( array $block ): bool {
+		$source = $block['attrs']['dynamicContent'] ?? null;
+
+		return is_array( $source ) && self::ATTACHED_MEDIA === ( $source['source'] ?? null );
+	}
+
+	/**
+	 * Image attachments of a post, the set Core's attached-media Gallery may show.
+	 *
+	 * Mirrors block_core_gallery_resolve_dynamic_source(): children of the
+	 * post with status inherit and an image MIME type, capped at 100. A
+	 * private or unrelated attachment is never in it.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return int[] Attachment IDs.
+	 */
+	private function attached_image_ids( int $post_id ): array {
+		$query = new \WP_Query(
+			[
+				'post_parent'    => $post_id,
+				'post_type'      => 'attachment',
+				'post_status'    => 'inherit',
+				'post_mime_type' => 'image',
+				'posts_per_page' => 100,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+			]
+		);
+
+		return array_map( 'intval', $query->posts );
+	}
+
+	/**
 	 * Stable signature for a parsed gallery block.
 	 *
 	 * @param array<string,mixed> $block Parsed gallery block.
 	 * @return string Signature.
 	 */
 	private function signature( array $block ): string {
+		if ( $this->is_attached_media_gallery( $block ) ) {
+			$args = (array) ( $block['attrs']['dynamicContent']['args'] ?? [] );
+			ksort( $args );
+
+			return md5( (string) wp_json_encode( [ (string) $block['blockName'], self::ATTACHED_MEDIA, $args ] ) );
+		}
+
 		$signature = [
 			'blockName' => (string) ( $block['blockName'] ?? '' ),
 			'images'    => [],
@@ -396,12 +529,13 @@ final class Photo_Projector {
 	/**
 	 * Build projector markup from a rendered core/gallery.
 	 *
-	 * @param string              $html  Rendered gallery HTML.
-	 * @param array<string,mixed> $block Parsed gallery block.
-	 * @param \WP_Post            $post  Post.
+	 * @param string              $html     Rendered gallery HTML.
+	 * @param array<string,mixed> $block    Parsed gallery block.
+	 * @param \WP_Post            $post     Post.
+	 * @param int[]|null          $attached For an attached-media Gallery, the only attachments it may show.
 	 * @return string Projector HTML, or '' when the gallery shape is not usable.
 	 */
-	private function gallery_projector( string $html, array $block, \WP_Post $post ): string {
+	private function gallery_projector( string $html, array $block, \WP_Post $post, ?array $attached = null ): string {
 		$parts = $this->gallery_parts( $html );
 		if ( null === $parts ) {
 			return '';
@@ -422,6 +556,9 @@ final class Photo_Projector {
 		foreach ( $figures as $index => $figure ) {
 			$inner = is_array( $inner_blocks[ $index ] ?? null ) ? $inner_blocks[ $index ] : [];
 			$id    = $this->image_attachment_id( $figure, $inner );
+			if ( null !== $attached && ! in_array( $id, $attached, true ) ) {
+				return '';
+			}
 
 			$mount = $this->mount_html( $figure, $id, $index, 0 === $index, true );
 			if ( '' === $mount ) {
