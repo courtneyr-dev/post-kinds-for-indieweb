@@ -22,9 +22,15 @@ import {
 	planSuggestions,
 } from '../../../src/editor/ai-suggestions/plan-suggestions';
 
+let mockPanelOpen = true;
+
 jest.mock( '@wordpress/editor', () => ( {
+	// Like a collapsed PanelBody or a Slot that mounts later, the panel can
+	// hide its children while the component itself stays mounted.
 	PluginDocumentSettingPanel: ( { title, children } ) => (
-		<section aria-label={ title }>{ children }</section>
+		<section aria-label={ title }>
+			{ mockPanelOpen ? children : null }
+		</section>
 	),
 } ) );
 
@@ -83,6 +89,7 @@ const routes = ( readiness, suggest = {}, reject = false ) => {
 
 beforeEach( () => {
 	jest.clearAllMocks();
+	mockPanelOpen = true;
 	mockPostType = 'post';
 	mockPostId = 12;
 	mockMeta = {
@@ -388,7 +395,66 @@ describe( 'AiSuggestionsPanel suggestions', () => {
 	} );
 } );
 
+/**
+ * Record DOM mutations and report whether the status region was inserted
+ * empty and filled by a later mutation.
+ *
+ * @param {() => Promise<void>} open Callback that renders or opens the panel.
+ * @param {string}              text Message the region must end up announcing.
+ * @return {Promise<boolean>} True when the message arrived after the region.
+ */
+const filledAfterMount = async ( open, text ) => {
+	const records = [];
+	const observer = new window.MutationObserver( ( list ) =>
+		records.push( ...list )
+	);
+	observer.observe( document.body, {
+		childList: true,
+		subtree: true,
+		characterData: true,
+	} );
+	await open();
+	const region = await screen.findByRole( 'status' );
+	await waitFor( () => expect( region ).toHaveTextContent( text ) );
+	records.push( ...observer.takeRecords() );
+	observer.disconnect();
+
+	const inserted = records.findIndex(
+		( record ) =>
+			record.type === 'childList' &&
+			[ ...record.addedNodes ].some(
+				( node ) => node === region || node.contains?.( region )
+			)
+	);
+	return (
+		inserted >= 0 &&
+		records.some(
+			( record, index ) =>
+				index > inserted &&
+				( record.target === region ||
+					region.contains( record.target ) ) &&
+				( record.type === 'characterData' ||
+					record.addedNodes.length > 0 )
+		)
+	);
+};
+
 describe( 'AiSuggestionsPanel live region', () => {
+	it( 'mounts the region empty when the panel opens after readiness arrived', async () => {
+		routes( status( 'missing' ) );
+		mockPanelOpen = false;
+		const { rerender } = render( <AiSuggestionsPanel /> );
+		await waitFor( () => expect( apiFetch ).toHaveBeenCalledTimes( 1 ) );
+		await act( async () => {} );
+
+		expect(
+			await filledAfterMount( async () => {
+				mockPanelOpen = true;
+				rerender( <AiSuggestionsPanel /> );
+			}, 'Message for missing' )
+		).toBe( true );
+	} );
+
 	it( 'mounts the polite region empty and adds the first message after mount', async () => {
 		routes( status( 'missing' ) );
 		const records = [];
