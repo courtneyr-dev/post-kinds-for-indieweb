@@ -252,10 +252,10 @@ final class Photo_Projector {
 	 * @return string Rendered HTML.
 	 */
 	public function render_gallery( string $html, array $block, $instance = null ): string {
-		$attached = $this->is_attached_media_gallery( $block );
-		if ( $attached && $this->attached_source_is_locked( $instance ) ) {
+		if ( $this->is_attached_media_gallery( $block ) && $this->attached_source_is_locked( $instance ) ) {
 			return '';
 		}
+		$attached = $this->is_dynamic_gallery( $block );
 
 		$post = $this->context_post( $instance );
 		if ( null === $post ) {
@@ -467,8 +467,8 @@ final class Photo_Projector {
 	/**
 	 * First core/gallery block that shows two or more images.
 	 *
-	 * A static Gallery counts its direct image children; an attached-media
-	 * Gallery counts the images attached to the post.
+	 * A static Gallery counts its direct image children; a dynamic
+	 * attached-media Gallery counts the images attached to the post.
 	 *
 	 * @param array<int,array<string,mixed>> $blocks         Parsed blocks.
 	 * @param int                            $attached_count Images attached to the post.
@@ -477,7 +477,7 @@ final class Photo_Projector {
 	private function first_qualifying_gallery( array $blocks, int $attached_count ): ?array {
 		foreach ( $blocks as $block ) {
 			if ( 'core/gallery' === ( $block['blockName'] ?? '' ) ) {
-				$count = $this->is_attached_media_gallery( $block ) ? $attached_count : $this->direct_image_count( $block );
+				$count = $this->is_dynamic_gallery( $block ) ? $attached_count : $this->direct_image_count( $block );
 				if ( $count >= 2 ) {
 					return $block;
 				}
@@ -579,6 +579,30 @@ final class Photo_Projector {
 	}
 
 	/**
+	 * Whether Core renders this Gallery from the post's attached media.
+	 *
+	 * Without Core's resolver (WordPress 7.0) an attached-media Gallery renders
+	 * its saved image children, so it is planned and signed as a static Gallery.
+	 *
+	 * @param array<string,mixed> $block Parsed block.
+	 * @return bool
+	 */
+	private function is_dynamic_gallery( array $block ): bool {
+		if ( ! $this->is_attached_media_gallery( $block ) ) {
+			return false;
+		}
+
+		/**
+		 * Filters whether Core resolves attached-media Galleries.
+		 *
+		 * @since 1.11.0
+		 *
+		 * @param bool $resolves True when block_core_gallery_resolve_dynamic_source() exists.
+		 */
+		return (bool) apply_filters( 'pkiw_photo_projector_core_resolves_attached_media', function_exists( 'block_core_gallery_resolve_dynamic_source' ) );
+	}
+
+	/**
 	 * Image attachments of a post, the set Core's attached-media Gallery may show.
 	 *
 	 * Mirrors block_core_gallery_resolve_dynamic_source(): children of the
@@ -613,7 +637,7 @@ final class Photo_Projector {
 	 * @return string Signature.
 	 */
 	private function signature( array $block ): string {
-		if ( $this->is_attached_media_gallery( $block ) ) {
+		if ( $this->is_dynamic_gallery( $block ) ) {
 			$args = (array) ( $block['attrs']['dynamicContent']['args'] ?? [] );
 			ksort( $args );
 
