@@ -9,8 +9,18 @@ jest.mock( '@wordpress/block-editor', () => ( {
 		<section aria-label={ `${ group } controls` }>{ children }</section>
 	),
 	useBlockProps: ( props ) => props,
-	RichText: ( { tagName: Tag, className, value, readOnly } ) => (
+	RichText: ( {
+		tagName: Tag,
+		className,
+		value,
+		readOnly,
+		placeholder,
+		'aria-labelledby': labelledBy,
+	} ) => (
 		<Tag
+			role="textbox"
+			aria-label={ placeholder }
+			aria-labelledby={ labelledBy }
 			className={ className }
 			contentEditable={ ! readOnly }
 			suppressContentEditableWarning
@@ -50,6 +60,21 @@ const POST_META = {
 	_pkiw_cite_author: 'Post Author',
 };
 
+const LOOP_POSTS = {
+	'post:41': {
+		meta: {
+			_pkiw_cite_url: 'https://loop.example/41',
+			_pkiw_cite_author: 'Loop Author 41',
+		},
+	},
+	'post:42': {
+		meta: {
+			_pkiw_cite_url: 'https://loop.example/42',
+			_pkiw_cite_author: 'Loop Author 42',
+		},
+	},
+};
+
 const PATTERN_CARD = {
 	title: 'Pattern title',
 	url: 'https://pattern.example/source',
@@ -69,6 +94,7 @@ function renderCard( { attributes, context } ) {
 			attributes={ attributes }
 			setAttributes={ setAttributes }
 			context={ context }
+			clientId="reply-card"
 		/>
 	);
 	return setAttributes;
@@ -86,10 +112,18 @@ function groupOf( name ) {
 
 beforeEach( () => {
 	const editedPost = { kind: [ 7 ], meta: POST_META };
-	useSelect.mockImplementation( ( selector ) =>
-		selector( () => ( {
+	const stores = {
+		'core/editor': {
 			getEditedPostAttribute: ( key ) => editedPost[ key ],
-		} ) )
+		},
+		'core/block-editor': { getBlockAttributes: () => PATTERN_CARD },
+		core: {
+			getEditedEntityRecord: ( kind, name, id ) =>
+				LOOP_POSTS[ `${ name }:${ id }` ],
+		},
+	};
+	useSelect.mockImplementation( ( selector ) =>
+		selector( ( store ) => stores[ store ] )
 	);
 } );
 
@@ -148,5 +182,99 @@ describe.each( [
 			'contenteditable',
 			'true'
 		);
+	} );
+} );
+
+describe( 'reply card with malformed bound text', () => {
+	it( "falls back to the block's own text for a non-string override", () => {
+		renderCard( {
+			attributes: {
+				...PATTERN_CARD,
+				title: { text: 'Bound title' },
+				description: 42,
+				quotation: { text: 'Bound quotation' },
+			},
+			context: { 'pattern/overrides': {} },
+		} );
+
+		expect(
+			screen.getByText( 'Pattern title', { selector: 'h3' } )
+		).toBeInTheDocument();
+		expect(
+			screen.getByText( 'Pattern quotation', { selector: 'blockquote' } )
+		).toBeInTheDocument();
+		expect( field( 'Description' ) ).toHaveValue( 'Pattern description' );
+	} );
+
+	it( 'keeps an explicitly cleared quotation cleared', () => {
+		renderCard( {
+			attributes: { ...PATTERN_CARD, quotation: undefined },
+			context: { 'pattern/overrides': {} },
+		} );
+
+		expect( screen.queryByText( 'Pattern quotation' ) ).toBeNull();
+		expect( field( QUOTATION ) ).toHaveValue( '' );
+		expect(
+			screen.getByText( 'Pattern description', { selector: 'p' } )
+		).toBeInTheDocument();
+	} );
+} );
+
+describe( 'reply card in a synced pattern inside a Query Loop', () => {
+	it( "shows each loop post's reply target and author", () => {
+		render(
+			<>
+				{ [ 41, 42 ].map( ( postId ) => (
+					<Edit
+						key={ postId }
+						attributes={ PATTERN_CARD }
+						setAttributes={ jest.fn() }
+						clientId={ `reply-card-${ postId }` }
+						context={ {
+							'pattern/overrides': {},
+							postId,
+							postType: 'post',
+						} }
+					/>
+				) ) }
+			</>
+		);
+
+		expect(
+			screen
+				.getAllByPlaceholderText( 'https://example.com/…' )
+				.map( ( input ) => input.value )
+		).toEqual( [ 'https://loop.example/41', 'https://loop.example/42' ] );
+		expect( screen.getByText( 'Loop Author 41' ) ).toBeInTheDocument();
+		expect( screen.getByText( 'Loop Author 42' ) ).toBeInTheDocument();
+		expect( screen.queryByText( 'Post Author' ) ).toBeNull();
+	} );
+} );
+
+describe.each( [
+	[
+		'a standalone card',
+		{ ...PATTERN_CARD, metadata: undefined },
+		{},
+		[ 'https://pattern.example/source', 'Pattern Author' ],
+	],
+	[
+		'a synced pattern instance',
+		PATTERN_CARD,
+		{ 'pattern/overrides': {} },
+		[ 'https://post.example/target', 'Post Author' ],
+	],
+] )( 'reply card fields in %s', ( label, attributes, context, values ) => {
+	it( 'names the target URL and author by their visible labels', () => {
+		renderCard( { attributes, context } );
+
+		expect( screen.getByText( 'Reply target URL' ) ).toBeVisible();
+		expect( screen.getByText( 'Original author' ) ).toBeVisible();
+		expect(
+			screen.getByRole( 'textbox', { name: 'Reply target URL' } )
+		).toHaveValue( values[ 0 ] );
+		expect(
+			screen.getByRole( 'textbox', { name: 'Original author' } )
+		).toHaveTextContent( values[ 1 ] );
 	} );
 } );
