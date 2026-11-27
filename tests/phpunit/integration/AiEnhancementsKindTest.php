@@ -29,6 +29,7 @@ final class AiEnhancementsKindTest extends WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		add_filter( 'wp_ai_client_prevent_prompt', '__return_true' );
+		update_option( 'pkiw_enable_ai', true );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 	}
 
@@ -37,6 +38,7 @@ final class AiEnhancementsKindTest extends WP_UnitTestCase {
 	 */
 	public function tear_down(): void {
 		remove_filter( 'wp_ai_client_prevent_prompt', '__return_true' );
+		delete_option( 'pkiw_enable_ai' );
 		parent::tear_down();
 	}
 
@@ -71,7 +73,7 @@ final class AiEnhancementsKindTest extends WP_UnitTestCase {
 		$result = AI_Enhancements::get_instance()->handle_content_summary( $this->request( $this->make_post( 'read' ) ) );
 
 		$this->assertWPError( $result );
-		$this->assertSame( 'prompt_prevented', $result->get_error_code() );
+		$this->assertSame( 'pkiw_ai_blocked', $result->get_error_code() );
 	}
 
 	/**
@@ -91,7 +93,7 @@ final class AiEnhancementsKindTest extends WP_UnitTestCase {
 		$result = AI_Enhancements::get_instance()->handle_suggest_tags( $this->request( $this->make_post( 'listen' ) ) );
 
 		$this->assertWPError( $result );
-		$this->assertSame( 'prompt_prevented', $result->get_error_code() );
+		$this->assertSame( 'pkiw_ai_blocked', $result->get_error_code() );
 	}
 
 	/**
@@ -101,7 +103,7 @@ final class AiEnhancementsKindTest extends WP_UnitTestCase {
 		$result = AI_Enhancements::get_instance()->handle_suggest_tags( $this->request( $this->make_post( null ) ) );
 
 		$this->assertWPError( $result );
-		$this->assertSame( 'prompt_prevented', $result->get_error_code() );
+		$this->assertSame( 'pkiw_ai_blocked', $result->get_error_code() );
 	}
 
 	/**

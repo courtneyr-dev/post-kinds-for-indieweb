@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Report AI readiness (disabled, missing, blocked, ready) at `GET /post-kinds/v1/ai/status`, with a link to Core's Settings > Connectors when no provider is connected, and an AI suggestions panel that offers typed citation suggestions one field at a time without overwriting filled fields.
+- Project a Photo post's Gallery when it lists the post's attached media (`core/attached-media`, WordPress 7.1+).
+
+### Changed
+
+- AI suggestion routes validate the provider's answer against a JSON schema and return fixed error messages; provider error text is no longer passed through.
+
+### Fixed
+
+- A Query Loop that renders a Photo post's content no longer prints a second projector and second set of `u-photo` images.
+
 ## [1.10.7] - 2026-11-26
 
 ### Fixed
