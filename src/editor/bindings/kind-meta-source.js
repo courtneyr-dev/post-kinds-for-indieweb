@@ -3,7 +3,8 @@
  *
  * The server registers the source and resolves values on the front end.
  * This half gives the editor's field picker the approved fields and shows
- * each bound block the post's current value. Fields come from PHP
+ * each bound block the post's current value. Loaded on every block editor,
+ * Site Editor included, as its own bundle. Fields come from PHP
  * (Block_Bindings::get_editor_fields()) so the allowlist lives in one place.
  */
 
@@ -11,6 +12,15 @@ import { registerBlockBindingsSource } from '@wordpress/blocks';
 import { store as coreDataStore } from '@wordpress/core-data';
 
 export const SOURCE_NAME = 'post-kinds-indieweb/kind-meta';
+
+/**
+ * Text as rich-text HTML: & and < escaped, as core's escapeHTML does.
+ *
+ * @param {string} text Plain text.
+ * @return {string} HTML that shows the text literally.
+ */
+const escapeHTML = ( text ) =>
+	text.replace( /&(?!#?\w+;)/g, '&amp;' ).replace( /</g, '&lt;' );
 
 /**
  * Build the client source for a list of fields.
@@ -36,6 +46,21 @@ export function createKindMetaSource( fields ) {
 						)
 					: null;
 			const meta = record?.meta ?? {};
+			// REST fills unset meta with its registered default, so presence
+			// comes from the stored-field list plus this session's edits.
+			const stored = record?.pkiw_stored_kind_fields;
+			const editedMeta =
+				context?.postId && context?.postType
+					? ( select( coreDataStore ).getEntityRecordEdits?.(
+							'postType',
+							context.postType,
+							context.postId
+						)?.meta ?? {} )
+					: {};
+			const isPresent = ( field ) =>
+				! Array.isArray( stored ) ||
+				stored.includes( field.key ) ||
+				Object.hasOwn( editedMeta, field.metaKey );
 			const termIds = Array.isArray( record?.kind ) ? record.kind : [];
 			const kinds = termIds.length
 				? (
@@ -54,19 +79,24 @@ export function createKindMetaSource( fields ) {
 			const values = {};
 			for ( const [ attribute, binding ] of Object.entries( bindings ) ) {
 				const field = byKey[ binding.args?.key ];
-				// As on the server: on a post with a kind, a field shows only for
-				// its own kind, so a registered meta default never fills another
-				// kind's row.
+				// As on the server: a field shows only for its own kind (or a
+				// post with no kind) and only from a stored value, so a
+				// registered meta default never fills a row.
 				const raw =
 					field &&
-					( ! termIds.length || kinds.includes( field.kind ) )
+					( ! termIds.length || kinds.includes( field.kind ) ) &&
+					isPresent( field )
 						? meta[ field.metaKey ]
 						: undefined;
 				const value =
 					raw === undefined || raw === null ? '' : String( raw );
 				// Empty stays empty so the block shows the field label as
 				// its placeholder; the front end drops the row.
-				values[ attribute ] = field?.labels?.[ value ] ?? value;
+				const text = field?.labels?.[ value ] ?? value;
+				// Rich-text content is HTML, so its text is escaped; other
+				// attributes take the plain string.
+				values[ attribute ] =
+					'content' === attribute ? escapeHTML( text ) : text;
 			}
 			return values;
 		},

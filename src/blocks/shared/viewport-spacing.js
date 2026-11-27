@@ -14,6 +14,12 @@ import * as blockEditor from '@wordpress/block-editor';
 const SIDES = [ 'top', 'right', 'bottom', 'left' ];
 
 /**
+ * Select value for padding the preset list can't show: mixed sides or a
+ * custom size. Never written; '' stays the option that clears padding.
+ */
+export const CUSTOM_PADDING = 'custom';
+
+/**
  * The public style-state helpers, or null on a core that doesn't export them.
  *
  * @param {Object} pkg The `@wordpress/block-editor` package.
@@ -45,23 +51,32 @@ export function spacingOptions( custom, theme, defaults ) {
 }
 
 /**
- * The card padding preset set for a style state, when all sides share it.
+ * The card padding a style state has, as a select value.
  *
- * @param {Object|undefined} style Block style attribute.
- * @param {Object}           state Selected style state.
- * @param {Object}           api   Helpers from getStyleStateApi().
- * @return {string} Preset reference, or '' when unset or mixed.
+ * @param {Object|undefined} style   Block style attribute.
+ * @param {Object}           state   Selected style state.
+ * @param {Object}           api     Helpers from getStyleStateApi().
+ * @param {Array<string>}    presets Preset references the select offers.
+ * @return {string} The shared preset, '' when unset, or CUSTOM_PADDING.
  */
-export function getCardPadding( style, state, api ) {
+export function getCardPadding( style, state, api, presets = [] ) {
 	const padding = api.getStyleForState( style ?? {}, state )?.spacing
 		?.padding;
-	if ( typeof padding === 'string' ) {
-		return padding;
+	if ( padding === undefined || padding === null || padding === '' ) {
+		return '';
 	}
-	const first = padding?.top;
-	return first && SIDES.every( ( side ) => padding[ side ] === first )
+	const sides =
+		typeof padding === 'string'
+			? [ padding ]
+			: SIDES.map( ( side ) => padding?.[ side ] );
+	if ( sides.every( ( side ) => side === undefined || side === '' ) ) {
+		return '';
+	}
+	const first = sides[ 0 ];
+	return sides.every( ( side ) => side === first ) &&
+		presets.includes( first )
 		? first
-		: '';
+		: CUSTOM_PADDING;
 }
 
 /**
@@ -77,6 +92,9 @@ export function getCardPadding( style, state, api ) {
  * @return {Object|undefined} New style attribute.
  */
 export function setCardPadding( style, state, value, api ) {
+	if ( CUSTOM_PADDING === value ) {
+		return style;
+	}
 	const current = api.getStyleForState( style ?? {}, state ) ?? {};
 	const spacing = { ...current.spacing };
 	if ( value ) {

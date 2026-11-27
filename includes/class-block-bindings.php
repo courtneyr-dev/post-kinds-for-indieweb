@@ -35,15 +35,30 @@ class Block_Bindings {
 	public const SOURCE_NAME = 'post-kinds-indieweb/kind-meta';
 
 	/**
+	 * Script handle of the editor half of the source.
+	 *
+	 * @var string
+	 */
+	public const EDITOR_HANDLE = 'post-kinds-indieweb-bindings';
+
+	/**
+	 * REST field listing the summary fields a post has stored.
+	 *
+	 * @var string
+	 */
+	public const STORED_FIELDS = 'pkiw_stored_kind_fields';
+
+	/**
 	 * Fields the editor's field picker offers, in picker order.
 	 *
 	 * Key => the kind the field belongs to and the status format whose
 	 * labels the editor needs ('' for a plain value). Only public Read and
 	 * Watch facts: no location field, nothing the location tiers govern.
-	 * On a post with a kind, a field resolves only when that kind is the
-	 * field's, because a registered meta default (read_status 'reading',
-	 * watch_status 'to-watch') would otherwise print on every post in a
-	 * Query Loop. A post with no kind term keeps the older behavior.
+	 * A List Item bound to kind meta resolves only these keys, only on a
+	 * post of the field's kind (or with no kind), and only from a stored
+	 * value: a registered meta default (read_status 'reading', watch_status
+	 * 'to-watch') would otherwise print on every post in a Query Loop.
+	 * Other block types keep the full registry and its older behavior.
 	 *
 	 * @var array<string, array{kind: string, format: string}>
 	 */
@@ -407,7 +422,8 @@ class Block_Bindings {
 	 */
 	private function register_hooks(): void {
 		add_action( 'init', [ $this, 'register_block_bindings_source' ] );
-		add_action( 'enqueue_block_editor_assets', [ $this, 'add_editor_fields' ], 20 );
+		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_editor_source' ] );
+		add_action( 'rest_api_init', [ $this, 'register_stored_fields' ] );
 		add_filter( 'render_block_core/list-item', [ $this, 'drop_empty_list_item' ], 10, 3 );
 		add_filter( 'render_block_core/list', [ $this, 'drop_emptied_list' ], 10, 2 );
 	}
@@ -451,26 +467,78 @@ class Block_Bindings {
 	}
 
 	/**
-	 * Give the editor script the field list its bindings source offers.
+	 * Load the editor half of the bindings source on every block editor.
+	 *
+	 * Its own small bundle, separate from the post-only panels, so the
+	 * field picker and previews work in the Site Editor too.
 	 *
 	 * @return void
 	 */
-	public function add_editor_fields(): void {
-		if ( ! wp_script_is( 'post-kinds-indieweb-editor', 'enqueued' ) ) {
+	public function enqueue_editor_source(): void {
+		$asset_file = \PKIW_PATH . 'build/bindings.asset.php';
+		if ( ! file_exists( $asset_file ) ) {
 			return;
 		}
+		$asset = require $asset_file;
+
+		wp_enqueue_script( self::EDITOR_HANDLE, \PKIW_URL . 'build/bindings.js', $asset['dependencies'], $asset['version'], true );
 		wp_add_inline_script(
-			'post-kinds-indieweb-editor',
+			self::EDITOR_HANDLE,
 			'window.pkiwKindMetaFields = ' . wp_json_encode( self::get_editor_fields(), JSON_HEX_TAG | JSON_HEX_AMP ) . ';',
 			'before'
 		);
 	}
 
 	/**
-	 * Drop a List Item bound to kind meta when its value is empty.
+	 * Tell the editor which summary fields a post has stored.
 	 *
-	 * Core keeps a block's saved HTML for a null value, which would print the
-	 * pattern's fallback label. A row with nothing to say renders nothing.
+	 * REST fills an unset registered meta key with its default, so the
+	 * editor can't otherwise tell a stored status from a default one.
+	 *
+	 * @return void
+	 */
+	public function register_stored_fields(): void {
+		$taxonomy = get_taxonomy( Taxonomy::TAXONOMY );
+		if ( ! $taxonomy ) {
+			return;
+		}
+		register_rest_field(
+			$taxonomy->object_type,
+			self::STORED_FIELDS,
+			[
+				'get_callback' => static fn( array $post ): array => self::stored_list_fields( (int) $post['id'] ),
+				'schema'       => [
+					'description' => __( 'Summary fields with a stored value.', 'post-kinds-for-indieweb-in-block-themes' ),
+					'type'        => 'array',
+					'items'       => [ 'type' => 'string' ],
+					'context'     => [ 'edit' ],
+					'readonly'    => true,
+				],
+			]
+		);
+	}
+
+	/**
+	 * Summary field keys the post has a stored value for.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array<int, string>
+	 */
+	public static function stored_list_fields( int $post_id ): array {
+		return array_values(
+			array_filter(
+				array_keys( self::LIST_FIELDS ),
+				static fn( string $key ): bool => metadata_exists( 'post', $post_id, Meta_Fields::PREFIX . $key )
+			)
+		);
+	}
+
+	/**
+	 * Drop a List Item bound to kind meta when it has nothing to show.
+	 *
+	 * Reads the value core resolved for the row (after any
+	 * block_bindings_source_value filter) and keeps a row that has a
+	 * nested list, so only a row with neither text nor child output goes.
 	 *
 	 * @param string               $content  Rendered List Item.
 	 * @param array<string, mixed> $block    Parsed block.
@@ -483,22 +551,12 @@ class Block_Bindings {
 			return $content;
 		}
 
-		$args  = is_array( $binding['args'] ?? null ) ? $binding['args'] : [];
-		$value = $this->get_binding_value( $args, $instance, 'content' );
-		if ( null === $value || '' === $value ) {
-			return '';
+		$value = $instance->attributes['content'] ?? null;
+		if ( is_string( $value ) && '' !== trim( wp_strip_all_tags( $value ) ) ) {
+			return $content;
 		}
 
-		// A post with no kind term has no kind to vouch for a registered
-		// meta default, so its summary row needs a stored value.
-		$key  = (string) ( $args['key'] ?? '' );
-		$post = get_post( (int) ( $instance->context['postId'] ?? get_the_ID() ) );
-		if ( isset( self::LIST_FIELDS[ $key ] ) && $post instanceof \WP_Post && '' === Kind_Facts::kind_of( $post )
-			&& ! metadata_exists( 'post', $post->ID, Meta_Fields::PREFIX . $key ) ) {
-			return '';
-		}
-
-		return $content;
+		return preg_match( '/<(?:ul|ol)[\s>]/i', $content ) ? $content : '';
 	}
 
 	/**
@@ -550,7 +608,18 @@ class Block_Bindings {
 	 * @return string|null The binding value or null if not found.
 	 */
 	public function get_binding_value( array $source_args, \WP_Block $block_instance, string $attribute_name ): ?string {
-		$value = $this->resolve_value( $source_args, $block_instance );
+		$summary = 'core/list-item' === $block_instance->name && 'content' === $attribute_name;
+		if ( $summary && ! isset( self::LIST_FIELDS[ (string) ( $source_args['key'] ?? '' ) ] ) ) {
+			return '';
+		}
+
+		$value = $this->resolve_value( $source_args, $block_instance, $summary );
+
+		// A summary row with no value resolves to empty, not null: core keeps
+		// a block's saved HTML for null, and that is the pattern's label.
+		if ( $summary && null === $value ) {
+			$value = '';
+		}
 
 		// Every kind-meta value is plain text. Core only runs bound rich text
 		// through kses, which keeps tags such as <img>, so text bound to a
@@ -563,9 +632,10 @@ class Block_Bindings {
 	 *
 	 * @param array<string, mixed> $source_args    Binding source arguments.
 	 * @param \WP_Block            $block_instance Block instance.
+	 * @param bool                 $summary        Whether a List Item summary row asks.
 	 * @return string|null The value, '' when the post hides it, or null when unset.
 	 */
-	private function resolve_value( array $source_args, \WP_Block $block_instance ): ?string {
+	private function resolve_value( array $source_args, \WP_Block $block_instance, bool $summary = false ): ?string {
 		// Get the binding key from source args.
 		$key = $source_args['key'] ?? '';
 
@@ -594,8 +664,15 @@ class Block_Bindings {
 			return '';
 		}
 
-		if ( isset( self::LIST_FIELDS[ $key ] ) && '' !== Kind_Facts::kind_of( $post ) && ! has_term( self::LIST_FIELDS[ $key ]['kind'], Taxonomy::TAXONOMY, $post ) ) {
-			return '';
+		// A summary row shows a field only on a post of the field's kind (or
+		// one with no kind) and only from a stored value, never a default.
+		if ( $summary ) {
+			if ( '' !== Kind_Facts::kind_of( $post ) && ! has_term( self::LIST_FIELDS[ $key ]['kind'], Taxonomy::TAXONOMY, $post ) ) {
+				return '';
+			}
+			if ( ! metadata_exists( 'post', $post->ID, Meta_Fields::PREFIX . $key ) ) {
+				return '';
+			}
 		}
 
 		$binding = $this->bindings[ $key ];

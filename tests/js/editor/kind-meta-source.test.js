@@ -32,11 +32,16 @@ const KIND_TERMS = [
 	{ id: 8, slug: 'note' },
 ];
 
-function selectWithMeta( meta, kind = [ 7 ] ) {
-	const getEditedEntityRecord = jest.fn( () => ( { meta, kind } ) );
+function selectWithMeta( meta, kind = [ 7 ], extra = {}, edits = {} ) {
+	const getEditedEntityRecord = jest.fn( () => ( { meta, kind, ...extra } ) );
 	const getEntityRecords = jest.fn( () => KIND_TERMS );
+	const getEntityRecordEdits = jest.fn( () => edits );
 	return {
-		select: () => ( { getEditedEntityRecord, getEntityRecords } ),
+		select: () => ( {
+			getEditedEntityRecord,
+			getEntityRecords,
+			getEntityRecordEdits,
+		} ),
 		getEditedEntityRecord,
 	};
 }
@@ -130,6 +135,64 @@ describe( 'kind-meta bindings source', () => {
 				bindings: { content: { args: { key: 'read_title' } } },
 			} )
 		).toEqual( { content: 'Legacy' } );
+	} );
+
+	it( 'escapes text bound to rich-text content and keeps other attributes plain', () => {
+		const source = createKindMetaSource( FIELDS );
+		const { select } = selectWithMeta( {
+			_pkiw_read_title: 'Kindred <img src=x onerror=alert(1)> & co',
+		} );
+		const values = source.getValues( {
+			select,
+			context: { postId: 6, postType: 'post' },
+			bindings: {
+				content: { args: { key: 'read_title' } },
+				alt: { args: { key: 'read_title' } },
+			},
+		} );
+		expect( values.content ).toBe(
+			'Kindred &lt;img src=x onerror=alert(1)> &amp; co'
+		);
+		expect( values.alt ).toBe(
+			'Kindred <img src=x onerror=alert(1)> & co'
+		);
+	} );
+
+	it( 'shows only stored values, so a registered default fills no row', () => {
+		const source = createKindMetaSource( FIELDS );
+		const bindings = {
+			content: { args: { key: 'read_title' } },
+			title: { args: { key: 'read_status' } },
+		};
+		const meta = {
+			_pkiw_read_title: 'Kindred',
+			_pkiw_read_status: 'reading',
+		};
+		const stored = { pkiw_stored_kind_fields: [ 'read_title' ] };
+
+		const { select } = selectWithMeta( meta, [ 7 ], stored );
+		expect(
+			source.getValues( {
+				select,
+				context: { postId: 9, postType: 'post' },
+				bindings,
+			} )
+		).toEqual( { content: 'Kindred', title: '' } );
+
+		// A status set in this session counts before the post is saved.
+		const edited = selectWithMeta(
+			{ ...meta, _pkiw_read_status: 'finished' },
+			[ 7 ],
+			stored,
+			{ meta: { _pkiw_read_status: 'finished' } }
+		);
+		expect(
+			source.getValues( {
+				select: edited.select,
+				context: { postId: 9, postType: 'post' },
+				bindings,
+			} )
+		).toEqual( { content: 'Kindred', title: 'Finished' } );
 	} );
 
 	it( 'never lets the editor write card data through a binding', () => {

@@ -41,6 +41,7 @@ import {
 	spacingOptions,
 	getCardPadding,
 	setCardPadding,
+	CUSTOM_PADDING,
 } from '../shared/viewport-spacing';
 
 const STYLE_STATE_API = getStyleStateApi();
@@ -103,7 +104,12 @@ function CardSpacingControl( { clientId, style, setAttributes } ) {
 		'Card spacing',
 		'post-kinds-for-indieweb-in-block-themes'
 	);
-	const value = getCardPadding( style, state, STYLE_STATE_API );
+	const value = getCardPadding(
+		style,
+		state,
+		STYLE_STATE_API,
+		options.map( ( option ) => option.value )
+	);
 
 	return (
 		// A plain child of the Dimensions tools panel; full grid width.
@@ -122,9 +128,22 @@ function CardSpacingControl( { clientId, style, setAttributes } ) {
 						),
 						value: '',
 					},
+					...( CUSTOM_PADDING === value
+						? [
+								{
+									label: __(
+										'Custom (set in Padding)',
+										'post-kinds-for-indieweb-in-block-themes'
+									),
+									value: CUSTOM_PADDING,
+									disabled: true,
+								},
+							]
+						: [] ),
 					...options,
 				] }
 				onChange={ ( next ) =>
+					CUSTOM_PADDING !== next &&
 					setAttributes( {
 						style: setCardPadding(
 							style,

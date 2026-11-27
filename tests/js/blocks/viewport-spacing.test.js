@@ -14,6 +14,7 @@ import {
 	spacingOptions,
 	getCardPadding,
 	setCardPadding,
+	CUSTOM_PADDING,
 } from '../../../src/blocks/shared/viewport-spacing';
 
 const path = ( state ) =>
@@ -35,6 +36,7 @@ const BASE = { viewport: 'default', pseudo: 'default' };
 const MOBILE = { viewport: '@mobile', pseudo: 'default' };
 const SM = 'var:preset|spacing|20';
 const LG = 'var:preset|spacing|50';
+const PRESETS = [ SM, LG ];
 
 describe( 'getStyleStateApi', () => {
 	it( 'finds the 7.2 exports', () => {
@@ -76,8 +78,8 @@ describe( 'setCardPadding', () => {
 		} );
 		expect( next.spacing ).toBe( style.spacing );
 		expect( next.color ).toBe( style.color );
-		expect( getCardPadding( next, MOBILE, api72 ) ).toBe( SM );
-		expect( getCardPadding( next, BASE, api72 ) ).toBe( LG );
+		expect( getCardPadding( next, MOBILE, api72, PRESETS ) ).toBe( SM );
+		expect( getCardPadding( next, BASE, api72, PRESETS ) ).toBe( LG );
 	} );
 
 	it( 'keeps the mobile value when the base changes', () => {
@@ -88,14 +90,35 @@ describe( 'setCardPadding', () => {
 		expect( next.color ).toEqual( style.color );
 	} );
 
-	it( 'reads mixed sides as no card value', () => {
+	it( 'reads mixed sides and custom sizes as custom, never as theme default', () => {
 		expect(
 			getCardPadding(
 				{ spacing: { padding: { top: SM, right: LG } } },
 				BASE,
-				api72
+				api72,
+				PRESETS
 			)
-		).toBe( '' );
-		expect( getCardPadding( undefined, MOBILE, api72 ) ).toBe( '' );
+		).toBe( CUSTOM_PADDING );
+		expect(
+			getCardPadding(
+				{ spacing: { padding: '20px' } },
+				BASE,
+				api72,
+				PRESETS
+			)
+		).toBe( CUSTOM_PADDING );
+		expect( getCardPadding( undefined, MOBILE, api72, PRESETS ) ).toBe(
+			''
+		);
+	} );
+
+	it( 'clears custom padding with the empty option and never writes the custom marker', () => {
+		const custom = { spacing: { padding: { top: '3px', left: LG } } };
+		expect( setCardPadding( custom, BASE, CUSTOM_PADDING, api72 ) ).toBe(
+			custom
+		);
+		const cleared = setCardPadding( custom, BASE, '', api72 );
+		expect( cleared.spacing.padding ).toBeUndefined();
+		expect( getCardPadding( cleared, BASE, api72, PRESETS ) ).toBe( '' );
 	} );
 } );

@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 use PKIW\Block_Bindings;
 use PKIW\Block_Bindings_Formats;
+use PKIW\Meta_Fields;
 use PKIW\Taxonomy;
 
 /** @group integration */
@@ -27,6 +28,9 @@ final class KindMetaListBindingsTest extends WP_UnitTestCase {
 			$this->markTestSkipped( 'List Item bindings need WordPress 7.1 or later.' );
 		}
 		( new Taxonomy() )->create_default_terms();
+		// The test framework wipes registered meta between tests; the
+		// read_status and watch_status defaults are what these tests guard.
+		( new Meta_Fields() )->register_meta_fields();
 		$this->formats_source = get_block_bindings_source( Block_Bindings_Formats::SOURCE_NAME );
 	}
 
@@ -38,7 +42,6 @@ final class KindMetaListBindingsTest extends WP_UnitTestCase {
 		if ( null !== $this->formats_source ) {
 			// Core keeps the callback private, so put the original object back.
 			$sources = new ReflectionProperty( WP_Block_Bindings_Registry::class, 'sources' );
-			$sources->setAccessible( true );
 			$all = $sources->getValue( $registry );
 			$all[ Block_Bindings_Formats::SOURCE_NAME ] = $this->formats_source;
 			$sources->setValue( $registry, $all );
@@ -245,5 +248,123 @@ final class KindMetaListBindingsTest extends WP_UnitTestCase {
 		foreach ( [ 'to-watch', 'watching', 'watched', 'rewatching', 'abandoned' ] as $status ) {
 			$this->assertArrayHasKey( $status, $watch_labels );
 		}
+	}
+
+	/**
+	 * Render one parsed block in the context of a post.
+	 *
+	 * @param string $markup  Block markup.
+	 * @param int    $post_id Post ID.
+	 * @return string Rendered HTML.
+	 */
+	private function render_for( string $markup, int $post_id ): string {
+		return ( new WP_Block( parse_blocks( $markup )[0], [ 'postId' => $post_id, 'postType' => 'post' ] ) )->render();
+	}
+
+	public function test_list_items_resolve_only_allowlisted_keys_even_for_public_locations(): void {
+		$id = $this->kind_post(
+			'checkin',
+			[
+				'checkin_name'    => 'Location sentinel',
+				'checkin_address' => '1 Sentinel Street',
+				'geo_privacy'     => 'public',
+				'read_title'      => 'Allowed title',
+			]
+		);
+		wp_delete_object_term_relationships( $id, Taxonomy::TAXONOMY );
+		$list = '<!-- wp:list --><ul class="wp-block-list">'
+			. '<!-- wp:list-item {"metadata":{"bindings":{"content":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"checkin_name"}}}}} --><li>Venue</li><!-- /wp:list-item -->'
+			. '<!-- wp:list-item {"metadata":{"bindings":{"content":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"checkin_address"}}}}} --><li>Address</li><!-- /wp:list-item -->'
+			. '<!-- wp:list-item {"metadata":{"bindings":{"content":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"read_title"}}}}} --><li>Book title</li><!-- /wp:list-item -->'
+			. '</ul><!-- /wp:list -->';
+		$html = $this->render_for( $list, $id );
+
+		$this->assertStringNotContainsString( 'Location sentinel', $html );
+		$this->assertStringNotContainsString( 'Sentinel Street', $html );
+		$this->assertStringNotContainsString( 'Venue', $html, 'An off-list row prints neither its value nor its label.' );
+		$this->assertRow( 'Allowed title', $html, 'Positive control: an allowlisted key still resolves.' );
+
+		// Positive control: the same location key still resolves for a paragraph.
+		$paragraph = '<!-- wp:paragraph {"metadata":{"bindings":{"content":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"checkin_name"}}}}} --><p>Venue</p><!-- /wp:paragraph -->';
+		$this->assertStringContainsString( 'Location sentinel', $this->render_for( $paragraph, $id ) );
+	}
+
+	public function test_a_matching_kind_summary_never_prints_a_default_status(): void {
+		$id = $this->kind_post( 'read', [ 'read_title' => 'Title only' ] );
+		$this->assertSame( 'reading', get_post_meta( $id, '_pkiw_read_status', true ), 'Precondition: the registered default is live.' );
+		$html = $this->render_pattern_for( 'post-kinds-indieweb/read-summary-list', $id );
+		$this->assertRow( 'Title only', $html );
+		$this->assertStringNotContainsString( 'Currently Reading', $html, 'The registered read_status default prints no row.' );
+
+		$watch = $this->kind_post( 'watch', [ 'watch_title' => 'Arrival' ] );
+		$this->assertStringNotContainsString( 'To Watch', $this->render_pattern_for( 'post-kinds-indieweb/watch-summary-list', $watch ) );
+
+		update_post_meta( $id, '_pkiw_read_status', 'reading' );
+		$this->assertRow( 'Currently Reading', $this->render_pattern_for( 'post-kinds-indieweb/read-summary-list', $id ), 'A stored status equal to the default still prints.' );
+
+		$this->assertSame( [ 'read_title', 'read_status' ], Block_Bindings::stored_list_fields( $id ), 'The editor learns the same presence rule.' );
+	}
+
+	public function test_legacy_paragraph_and_image_bindings_keep_explicit_values_on_any_kind(): void {
+		global $wpdb;
+		$note = $this->kind_post( 'note', [ 'watch_poster' => '' ] );
+		$wpdb->insert( $wpdb->postmeta, [ 'post_id' => $note, 'meta_key' => '_pkiw_read_title', 'meta_value' => 'Note <b>title</b>' ] );
+		update_post_meta( $note, '_pkiw_watch_title', 'Arrival alt' );
+		wp_cache_delete( $note, 'post_meta' );
+
+		$paragraph = $this->render_for( '<!-- wp:paragraph {"metadata":{"bindings":{"content":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"read_title"}}}}} --><p>Fallback</p><!-- /wp:paragraph -->', $note );
+		$this->assertStringContainsString( 'Note &lt;b&gt;title&lt;/b&gt;', $paragraph, 'A paragraph keeps its value on another kind, still escaped.' );
+
+		$heading = $this->render_for( '<!-- wp:heading {"metadata":{"bindings":{"content":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"watch_title"}}}}} --><h2 class="wp-block-heading">Fallback</h2><!-- /wp:heading -->', $note );
+		$this->assertStringContainsString( 'Arrival alt', $heading );
+
+		$image = $this->render_for( '<!-- wp:image {"metadata":{"bindings":{"alt":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"watch_title"}}}}} --><figure class="wp-block-image"><img src="https://example.com/a.jpg" alt=""/></figure><!-- /wp:image -->', $note );
+		$this->assertStringContainsString( 'alt="Arrival alt"', $image );
+
+		// The read gate still applies to every block type.
+		$private = $this->kind_post( 'note', [ 'read_title' => 'Private paragraph' ], [ 'post_status' => 'private' ] );
+		wp_set_current_user( 0 );
+		$this->assertStringNotContainsString( 'Private paragraph', $this->render_for( '<!-- wp:paragraph {"metadata":{"bindings":{"content":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"read_title"}}}}} --><p>Fallback</p><!-- /wp:paragraph -->', $private ) );
+	}
+
+	public function test_the_bindings_source_loads_in_the_site_editor(): void {
+		global $wp_scripts;
+		$saved      = $wp_scripts;
+		$wp_scripts = new WP_Scripts();
+		wp_default_scripts( $wp_scripts );
+		set_current_screen( 'site-editor' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		do_action( 'enqueue_block_editor_assets' );
+
+		$this->assertTrue( wp_script_is( Block_Bindings::EDITOR_HANDLE, 'enqueued' ), 'The field picker loads in the Site Editor.' );
+		$this->assertFalse( wp_script_is( 'post-kinds-indieweb-editor', 'enqueued' ), 'The post-only panels still stay out of the Site Editor.' );
+		$inline = implode( '', (array) $wp_scripts->get_data( Block_Bindings::EDITOR_HANDLE, 'before' ) );
+		$this->assertStringContainsString( 'window.pkiwKindMetaFields', $inline );
+		$this->assertStringContainsString( '"read_title"', $inline );
+		set_current_screen( 'front' );
+		// Later classes read blocks' registered editor scripts from the global.
+		$wp_scripts = $saved;
+	}
+
+	public function test_row_removal_uses_the_resolved_value_and_keeps_child_lists(): void {
+		$id = $this->kind_post( 'read', [ 'read_title' => 'Parent title' ] );
+
+		$filter = static function ( $value, $source, $args ) {
+			return Block_Bindings::SOURCE_NAME === $source && 'read_author' === ( $args['key'] ?? '' ) ? 'Filtered author' : $value;
+		};
+		add_filter( 'block_bindings_source_value', $filter, 10, 3 );
+		$html = $this->render_pattern_for( 'post-kinds-indieweb/read-summary-list', $id );
+		remove_filter( 'block_bindings_source_value', $filter, 10 );
+		$this->assertRow( 'Filtered author', $html, 'A source-value filter result is kept, not resolved again.' );
+
+		$nested = '<!-- wp:list --><ul class="wp-block-list">'
+			. '<!-- wp:list-item {"metadata":{"bindings":{"content":{"source":"post-kinds-indieweb/kind-meta","args":{"key":"read_author"}}}}} --><li>Book author'
+			. '<!-- wp:list --><ul class="wp-block-list"><!-- wp:list-item --><li>Child note</li><!-- /wp:list-item --></ul><!-- /wp:list -->'
+			. '</li><!-- /wp:list-item -->'
+			. '</ul><!-- /wp:list -->';
+		$html = $this->render_for( $nested, $id );
+		$this->assertStringContainsString( 'Child note', $html, 'An empty row with a nested list keeps the nested list.' );
+		$this->assertStringNotContainsString( 'Book author', $html, 'The fallback label still never prints.' );
 	}
 }
