@@ -305,6 +305,64 @@ final class KindMetaListBindingsTest extends WP_UnitTestCase {
 		$this->assertSame( [ 'read_title', 'read_status' ], Block_Bindings::stored_list_fields( $id ), 'The editor learns the same presence rule.' );
 	}
 
+	public function test_saving_a_title_only_edit_with_the_full_meta_object_stores_no_default_status(): void {
+		$id = $this->kind_post( 'read', [ 'read_title' => 'Kindred' ] );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		// The editor sends every meta key once any one changes, so the
+		// read_status default rides along with the new title.
+		$request = new WP_REST_Request( 'POST', "/wp/v2/posts/{$id}" );
+		$request->set_body_params(
+			[
+				'meta' => [
+					'_pkiw_read_title'  => 'Kindred, revised',
+					'_pkiw_read_status' => 'reading',
+				],
+			]
+		);
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 'Kindred, revised', get_post_meta( $id, '_pkiw_read_title', true ), 'Positive control: the edited title saved.' );
+		$this->assertFalse( metadata_exists( 'post', $id, '_pkiw_read_status' ), 'The untouched default status is not stored.' );
+		$this->assertSame( [ 'read_title' ], $response->get_data()[ Block_Bindings::STORED_FIELDS ] );
+		$this->assertStringNotContainsString( 'Currently Reading', $this->render_pattern_for( 'post-kinds-indieweb/read-summary-list', $id ) );
+
+		// Positive controls: a changed status saves, and a stored row
+		// accepts the default value back.
+		$request->set_body_params( [ 'meta' => [ '_pkiw_read_status' => 'finished' ] ] );
+		rest_do_request( $request );
+		$this->assertSame( 'finished', get_post_meta( $id, '_pkiw_read_status', true ) );
+		$request->set_body_params( [ 'meta' => [ '_pkiw_read_status' => 'reading' ] ] );
+		rest_do_request( $request );
+		$this->assertSame( 'reading', get_post_meta( $id, '_pkiw_read_status', true ) );
+	}
+
+	public function test_the_stored_fields_rest_field_needs_edit_post_even_in_a_delete_response(): void {
+		$id = $this->kind_post( 'read', [ 'read_title' => 'Kindred' ], [ 'post_author' => self::factory()->user->create( [ 'role' => 'author' ] ) ] );
+		add_role( 'pkiw_deleter', 'Deleter', [ 'read' => true, 'delete_posts' => true, 'delete_others_posts' => true, 'delete_published_posts' => true ] );
+		$deleter = self::factory()->user->create( [ 'role' => 'pkiw_deleter' ] );
+
+		try {
+			wp_set_current_user( $deleter );
+			$this->assertTrue( current_user_can( 'delete_post', $id ), 'Precondition: the role can delete this post.' );
+			$this->assertFalse( current_user_can( 'edit_post', $id ), 'Precondition: the role cannot edit it.' );
+
+			// Core prepares the trashed post in edit context after checking only delete_post.
+			$response = rest_do_request( new WP_REST_Request( 'DELETE', "/wp/v2/posts/{$id}" ) );
+			$this->assertSame( 200, $response->get_status() );
+			$this->assertSame( [], $response->get_data()[ Block_Bindings::STORED_FIELDS ] );
+
+			// Positive control: an editor of the post still sees the stored fields.
+			wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+			$request = new WP_REST_Request( 'GET', "/wp/v2/posts/{$id}" );
+			$request->set_param( 'context', 'edit' );
+			$this->assertSame( [ 'read_title' ], rest_do_request( $request )->get_data()[ Block_Bindings::STORED_FIELDS ] );
+		} finally {
+			remove_role( 'pkiw_deleter' );
+		}
+	}
+
 	public function test_legacy_paragraph_and_image_bindings_keep_explicit_values_on_any_kind(): void {
 		global $wpdb;
 		$note = $this->kind_post( 'note', [ 'watch_poster' => '' ] );

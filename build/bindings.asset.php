@@ -1,7 +1,8 @@
 <?php return array(
 	'dependencies' => array(
+		'wp-block-editor',
 		'wp-blocks',
 		'wp-core-data'
 	),
-	'version' => 'c679126640eb6fa8ca9f'
+	'version' => '6b872816564bb9bc82c1'
 );

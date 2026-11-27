@@ -424,6 +424,7 @@ class Block_Bindings {
 		add_action( 'init', [ $this, 'register_block_bindings_source' ] );
 		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_editor_source' ] );
 		add_action( 'rest_api_init', [ $this, 'register_stored_fields' ] );
+		add_action( 'init', [ $this, 'register_status_save_filters' ], 20 );
 		add_filter( 'render_block_core/list-item', [ $this, 'drop_empty_list_item' ], 10, 3 );
 		add_filter( 'render_block_core/list', [ $this, 'drop_emptied_list' ], 10, 2 );
 	}
@@ -506,7 +507,11 @@ class Block_Bindings {
 			$taxonomy->object_type,
 			self::STORED_FIELDS,
 			[
-				'get_callback' => static fn( array $post ): array => self::stored_list_fields( (int) $post['id'] ),
+				// Core prepares a delete response in edit context after
+				// checking only delete_post, so the meta read checks edit_post.
+				'get_callback' => static fn( array $post ): array => current_user_can( 'edit_post', (int) $post['id'] )
+					? self::stored_list_fields( (int) $post['id'] )
+					: [],
 				'schema'       => [
 					'description' => __( 'Summary fields with a stored value.', 'post-kinds-for-indieweb-in-block-themes' ),
 					'type'        => 'array',
@@ -516,6 +521,65 @@ class Block_Bindings {
 				],
 			]
 		);
+	}
+
+	/**
+	 * Filter REST saves of every kind post type for untouched status defaults.
+	 *
+	 * Runs on init, after the kind taxonomy registers, so the filters exist
+	 * before any REST route runs.
+	 *
+	 * @return void
+	 */
+	public function register_status_save_filters(): void {
+		$taxonomy = get_taxonomy( Taxonomy::TAXONOMY );
+		if ( ! $taxonomy ) {
+			return;
+		}
+		foreach ( (array) $taxonomy->object_type as $post_type ) {
+			add_filter(
+				"rest_pre_insert_{$post_type}",
+				fn( $prepared_post, \WP_REST_Request $request ) => $this->drop_untouched_default_statuses( $prepared_post, $request, $post_type ),
+				10,
+				2
+			);
+		}
+	}
+
+	/**
+	 * Keep an untouched status default out of a REST save.
+	 *
+	 * Any meta edit makes the block editor send the whole meta object, and
+	 * core stores a value equal to the registered default when no row
+	 * exists. A status still at its default on a post with no stored row
+	 * is the value the editor showed, not one the author chose, so it is
+	 * dropped before core writes meta.
+	 *
+	 * @param \stdClass|\WP_Error $prepared_post Post about to be saved.
+	 * @param \WP_REST_Request    $request       Save request.
+	 * @param string              $post_type     Post type the route serves.
+	 * @return \stdClass|\WP_Error
+	 */
+	public function drop_untouched_default_statuses( $prepared_post, \WP_REST_Request $request, string $post_type ) {
+		$meta = $request->get_param( 'meta' );
+		if ( ! is_array( $meta ) || ! $prepared_post instanceof \stdClass ) {
+			return $prepared_post;
+		}
+
+		$post_id    = (int) ( $prepared_post->ID ?? 0 );
+		$registered = get_registered_meta_keys( 'post', $post_type );
+		foreach ( self::LIST_FIELDS as $key => $field ) {
+			$meta_key = Meta_Fields::PREFIX . $key;
+			if ( '' === $field['format'] || ! array_key_exists( $meta_key, $meta ) || ! isset( $registered[ $meta_key ]['default'] ) ) {
+				continue;
+			}
+			if ( $meta[ $meta_key ] === $registered[ $meta_key ]['default'] && ( ! $post_id || ! metadata_exists( 'post', $post_id, $meta_key ) ) ) {
+				unset( $meta[ $meta_key ] );
+			}
+		}
+		$request->set_param( 'meta', $meta );
+
+		return $prepared_post;
 	}
 
 	/**

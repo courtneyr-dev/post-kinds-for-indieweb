@@ -8,6 +8,7 @@
  * (Block_Bindings::get_editor_fields()) so the allowlist lives in one place.
  */
 
+import { store as blockEditorStore } from '@wordpress/block-editor';
 import { registerBlockBindingsSource } from '@wordpress/blocks';
 import { store as coreDataStore } from '@wordpress/core-data';
 
@@ -36,56 +37,73 @@ export function createKindMetaSource( fields ) {
 	return {
 		name: SOURCE_NAME,
 		usesContext: [ 'postId', 'postType' ],
-		getValues( { select, context, bindings } ) {
-			const record =
-				context?.postId && context?.postType
-					? select( coreDataStore ).getEditedEntityRecord(
-							'postType',
-							context.postType,
-							context.postId
-						)
-					: null;
+		getValues( { select, context, clientId, bindings } ) {
+			const hasPost = Boolean( context?.postId && context?.postType );
+			const store = select( coreDataStore );
+			const record = hasPost
+				? store.getEditedEntityRecord(
+						'postType',
+						context.postType,
+						context.postId
+					)
+				: null;
 			const meta = record?.meta ?? {};
-			// REST fills unset meta with its registered default, so presence
-			// comes from the stored-field list plus this session's edits.
+			// REST fills unset meta with its registered default, and any meta
+			// edit copies the whole meta object into the edits, so a key
+			// counts as set only when it is stored or this session changed
+			// it from the saved value. Core's REST meta handler skips a
+			// write equal to the default, so an unchanged default never
+			// gets stored on save either.
 			const stored = record?.pkiw_stored_kind_fields;
-			const editedMeta =
-				context?.postId && context?.postType
-					? ( select( coreDataStore ).getEntityRecordEdits?.(
-							'postType',
-							context.postType,
-							context.postId
-						)?.meta ?? {} )
-					: {};
+			const savedMeta = hasPost
+				? ( store.getEntityRecord?.(
+						'postType',
+						context.postType,
+						context.postId
+					)?.meta ?? {} )
+				: {};
+			const editedMeta = hasPost
+				? ( store.getEntityRecordEdits?.(
+						'postType',
+						context.postType,
+						context.postId
+					)?.meta ?? {} )
+				: {};
 			const isPresent = ( field ) =>
 				! Array.isArray( stored ) ||
 				stored.includes( field.key ) ||
-				Object.hasOwn( editedMeta, field.metaKey );
+				( Object.hasOwn( editedMeta, field.metaKey ) &&
+					editedMeta[ field.metaKey ] !==
+						savedMeta[ field.metaKey ] );
 			const termIds = Array.isArray( record?.kind ) ? record.kind : [];
 			const kinds = termIds.length
 				? (
-						select( coreDataStore ).getEntityRecords(
-							'taxonomy',
-							'kind',
-							{
-								per_page: -1,
-							}
-						) ?? []
+						store.getEntityRecords( 'taxonomy', 'kind', {
+							per_page: -1,
+						} ) ?? []
 					)
 						.filter( ( term ) => termIds.includes( term.id ) )
 						.map( ( term ) => term.slug )
 				: [];
+			const isListItem =
+				clientId &&
+				'core/list-item' ===
+					select( blockEditorStore ).getBlockName?.( clientId );
 
 			const values = {};
 			for ( const [ attribute, binding ] of Object.entries( bindings ) ) {
 				const field = byKey[ binding.args?.key ];
-				// As on the server: a field shows only for its own kind (or a
-				// post with no kind) and only from a stored value, so a
-				// registered meta default never fills a row.
+				// As on the server: a List Item summary row shows a field only
+				// for its own kind (or a post with no kind) and only from a
+				// stored value, so a registered meta default never fills a
+				// row. Other blocks keep the plain meta value.
+				const summary = isListItem && 'content' === attribute;
 				const raw =
 					field &&
-					( ! termIds.length || kinds.includes( field.kind ) ) &&
-					isPresent( field )
+					( ! summary ||
+						( ( ! termIds.length ||
+							kinds.includes( field.kind ) ) &&
+							isPresent( field ) ) )
 						? meta[ field.metaKey ]
 						: undefined;
 				const value =
