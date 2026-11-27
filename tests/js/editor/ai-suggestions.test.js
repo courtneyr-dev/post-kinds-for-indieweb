@@ -3,7 +3,13 @@
  * never overwrite the author's citation fields.
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {
+	act,
+	render,
+	screen,
+	fireEvent,
+	waitFor,
+} from '@testing-library/react';
 import apiFetch from '@wordpress/api-fetch';
 import { useSelect, useDispatch } from '@wordpress/data';
 import AiSuggestionsPanel, {
@@ -45,6 +51,7 @@ const SUGGESTIONS = [
 const editPost = jest.fn();
 let mockMeta;
 let mockPostType;
+let mockPostId;
 
 const status = ( state, extra = {} ) => ( {
 	state,
@@ -77,6 +84,7 @@ const routes = ( readiness, suggest = {}, reject = false ) => {
 beforeEach( () => {
 	jest.clearAllMocks();
 	mockPostType = 'post';
+	mockPostId = 12;
 	mockMeta = {
 		_pkiw_cite_url: 'https://example.org/article',
 		_pkiw_cite_name: 'Title I corrected by hand',
@@ -87,6 +95,7 @@ beforeEach( () => {
 	useSelect.mockImplementation( ( callback ) =>
 		callback( () => ( {
 			getCurrentPostType: () => mockPostType,
+			getCurrentPostId: () => mockPostId,
 			getEditedPostAttribute: () => mockMeta,
 		} ) )
 	);
@@ -376,5 +385,123 @@ describe( 'AiSuggestionsPanel suggestions', () => {
 			.forEach( ( button ) =>
 				expect( button ).toHaveAttribute( 'type', 'button' )
 			);
+	} );
+} );
+
+describe( 'AiSuggestionsPanel live region', () => {
+	it( 'mounts the polite region empty and adds the first message after mount', async () => {
+		routes( status( 'missing' ) );
+		const records = [];
+		const observer = new window.MutationObserver( ( list ) =>
+			records.push( ...list )
+		);
+		observer.observe( document.body, {
+			childList: true,
+			subtree: true,
+			characterData: true,
+		} );
+
+		render( <AiSuggestionsPanel /> );
+		const region = await screen.findByRole( 'status' );
+		await waitFor( () =>
+			expect( region ).toHaveTextContent( 'Message for missing' )
+		);
+		records.push( ...observer.takeRecords() );
+		observer.disconnect();
+
+		const inserted = records.find(
+			( record ) =>
+				record.type === 'childList' &&
+				[ ...record.addedNodes ].some(
+					( node ) => node === region || node.contains?.( region )
+				)
+		);
+		expect( inserted ).toBeDefined();
+		const filledLater = records.some(
+			( record ) =>
+				records.indexOf( record ) > records.indexOf( inserted ) &&
+				( record.target === region ||
+					region.contains( record.target ) ) &&
+				( record.type === 'characterData' ||
+					record.addedNodes.length > 0 )
+		);
+		expect( filledLater ).toBe( true );
+	} );
+} );
+
+describe( 'AiSuggestionsPanel citation identity', () => {
+	it( 'stops offering suggestions for URL A once the URL changes to B', async () => {
+		routes( status( 'ready' ), {
+			state: 'ready',
+			suggestions: SUGGESTIONS,
+		} );
+		const { rerender } = render( <AiSuggestionsPanel /> );
+		fireEvent.click(
+			await screen.findByRole( 'button', {
+				name: 'Suggest citation details',
+			} )
+		);
+		await screen.findByRole( 'button', { name: 'Apply suggested Author' } );
+
+		mockMeta = { ...mockMeta, _pkiw_cite_url: 'https://example.org/other' };
+		rerender( <AiSuggestionsPanel /> );
+
+		expect(
+			screen.queryByRole( 'button', { name: 'Apply suggested Author' } )
+		).not.toBeInTheDocument();
+		expect( screen.queryByText( 'Ada Example' ) ).not.toBeInTheDocument();
+		expect( editPost ).not.toHaveBeenCalled();
+	} );
+
+	it( 'discards a response that arrives after the URL changed', async () => {
+		let resolve;
+		apiFetch.mockImplementation( ( { path } ) =>
+			path === STATUS_PATH
+				? Promise.resolve( status( 'ready' ) )
+				: new Promise( ( done ) => {
+						resolve = done;
+					} )
+		);
+		const { rerender } = render( <AiSuggestionsPanel /> );
+		fireEvent.click(
+			await screen.findByRole( 'button', {
+				name: 'Suggest citation details',
+			} )
+		);
+
+		mockMeta = { ...mockMeta, _pkiw_cite_url: 'https://example.org/other' };
+		rerender( <AiSuggestionsPanel /> );
+		await act( async () => {
+			resolve( { state: 'ready', suggestions: SUGGESTIONS } );
+		} );
+
+		expect(
+			screen.queryByRole( 'button', { name: 'Apply suggested Author' } )
+		).not.toBeInTheDocument();
+		expect( screen.getByRole( 'status' ) ).not.toHaveTextContent(
+			'suggestions ready'
+		);
+		expect( editPost ).not.toHaveBeenCalled();
+	} );
+
+	it( 'does not carry suggestions to another post with the same URL', async () => {
+		routes( status( 'ready' ), {
+			state: 'ready',
+			suggestions: SUGGESTIONS,
+		} );
+		const { rerender } = render( <AiSuggestionsPanel /> );
+		fireEvent.click(
+			await screen.findByRole( 'button', {
+				name: 'Suggest citation details',
+			} )
+		);
+		await screen.findByRole( 'button', { name: 'Apply suggested Author' } );
+
+		mockPostId = 13;
+		rerender( <AiSuggestionsPanel /> );
+
+		expect(
+			screen.queryByRole( 'button', { name: 'Apply suggested Author' } )
+		).not.toBeInTheDocument();
 	} );
 } );
