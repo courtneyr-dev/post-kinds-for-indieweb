@@ -23,6 +23,7 @@ import './promote-panel';
 import './missing-alt-notice';
 import './transcript';
 import './ai-suggestions';
+import './bindings/kind-meta-source';
 
 // Register the data store.
 register( postKindsStore );

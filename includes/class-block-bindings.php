@@ -35,6 +35,46 @@ class Block_Bindings {
 	public const SOURCE_NAME = 'post-kinds-indieweb/kind-meta';
 
 	/**
+	 * Fields the editor's field picker offers, in picker order.
+	 *
+	 * Key => the kind the field belongs to and the status format whose
+	 * labels the editor needs ('' for a plain value). Only public Read and
+	 * Watch facts: no location field, nothing the location tiers govern.
+	 * On a post with a kind, a field resolves only when that kind is the
+	 * field's, because a registered meta default (read_status 'reading',
+	 * watch_status 'to-watch') would otherwise print on every post in a
+	 * Query Loop. A post with no kind term keeps the older behavior.
+	 *
+	 * @var array<string, array{kind: string, format: string}>
+	 */
+	public const LIST_FIELDS = [
+		'read_title'   => [
+			'kind'   => 'read',
+			'format' => '',
+		],
+		'read_author'  => [
+			'kind'   => 'read',
+			'format' => '',
+		],
+		'read_status'  => [
+			'kind'   => 'read',
+			'format' => 'read_status',
+		],
+		'watch_title'  => [
+			'kind'   => 'watch',
+			'format' => '',
+		],
+		'watch_year'   => [
+			'kind'   => 'watch',
+			'format' => '',
+		],
+		'watch_status' => [
+			'kind'   => 'watch',
+			'format' => 'watch_status',
+		],
+	];
+
+	/**
 	 * Meta fields instance.
 	 *
 	 * @var Meta_Fields|null
@@ -367,6 +407,117 @@ class Block_Bindings {
 	 */
 	private function register_hooks(): void {
 		add_action( 'init', [ $this, 'register_block_bindings_source' ] );
+		add_action( 'enqueue_block_editor_assets', [ $this, 'add_editor_fields' ], 20 );
+		add_filter( 'render_block_core/list-item', [ $this, 'drop_empty_list_item' ], 10, 3 );
+		add_filter( 'render_block_core/list', [ $this, 'drop_emptied_list' ], 10, 2 );
+	}
+
+	/**
+	 * Whether this core lets a List Item bind its content (WordPress 7.1+).
+	 *
+	 * @return bool
+	 */
+	public static function list_items_bindable(): bool {
+		return function_exists( 'get_block_bindings_supported_attributes' )
+			&& in_array( 'content', get_block_bindings_supported_attributes( 'core/list-item' ), true );
+	}
+
+	/**
+	 * The fields the editor's field picker offers.
+	 *
+	 * @return array<int, array{key: string, label: string, kind: string, metaKey: string, labels: array<string, string>}>
+	 */
+	public static function get_editor_fields(): array {
+		$labels = [
+			'read_title'   => __( 'Book Title', 'post-kinds-for-indieweb-in-block-themes' ),
+			'read_author'  => __( 'Book Author', 'post-kinds-for-indieweb-in-block-themes' ),
+			'read_status'  => __( 'Reading Status', 'post-kinds-for-indieweb-in-block-themes' ),
+			'watch_title'  => __( 'Watch Title', 'post-kinds-for-indieweb-in-block-themes' ),
+			'watch_year'   => __( 'Watch Year', 'post-kinds-for-indieweb-in-block-themes' ),
+			'watch_status' => __( 'Watch Status', 'post-kinds-for-indieweb-in-block-themes' ),
+		];
+
+		$fields = [];
+		foreach ( self::LIST_FIELDS as $key => $field ) {
+			$fields[] = [
+				'key'     => $key,
+				'label'   => $labels[ $key ],
+				'kind'    => $field['kind'],
+				'metaKey' => Meta_Fields::PREFIX . $key,
+				'labels'  => '' === $field['format'] ? [] : self::format_labels( $field['format'] ),
+			];
+		}
+		return $fields;
+	}
+
+	/**
+	 * Give the editor script the field list its bindings source offers.
+	 *
+	 * @return void
+	 */
+	public function add_editor_fields(): void {
+		if ( ! wp_script_is( 'post-kinds-indieweb-editor', 'enqueued' ) ) {
+			return;
+		}
+		wp_add_inline_script(
+			'post-kinds-indieweb-editor',
+			'window.pkiwKindMetaFields = ' . wp_json_encode( self::get_editor_fields(), JSON_HEX_TAG | JSON_HEX_AMP ) . ';',
+			'before'
+		);
+	}
+
+	/**
+	 * Drop a List Item bound to kind meta when its value is empty.
+	 *
+	 * Core keeps a block's saved HTML for a null value, which would print the
+	 * pattern's fallback label. A row with nothing to say renders nothing.
+	 *
+	 * @param string               $content  Rendered List Item.
+	 * @param array<string, mixed> $block    Parsed block.
+	 * @param \WP_Block|null       $instance Block instance.
+	 * @return string
+	 */
+	public function drop_empty_list_item( string $content, array $block, $instance = null ): string {
+		$binding = $block['attrs']['metadata']['bindings']['content'] ?? null;
+		if ( ! is_array( $binding ) || self::SOURCE_NAME !== ( $binding['source'] ?? '' ) || ! $instance instanceof \WP_Block ) {
+			return $content;
+		}
+
+		$args  = is_array( $binding['args'] ?? null ) ? $binding['args'] : [];
+		$value = $this->get_binding_value( $args, $instance, 'content' );
+		if ( null === $value || '' === $value ) {
+			return '';
+		}
+
+		// A post with no kind term has no kind to vouch for a registered
+		// meta default, so its summary row needs a stored value.
+		$key  = (string) ( $args['key'] ?? '' );
+		$post = get_post( (int) ( $instance->context['postId'] ?? get_the_ID() ) );
+		if ( isset( self::LIST_FIELDS[ $key ] ) && $post instanceof \WP_Post && '' === Kind_Facts::kind_of( $post )
+			&& ! metadata_exists( 'post', $post->ID, Meta_Fields::PREFIX . $key ) ) {
+			return '';
+		}
+
+		return $content;
+	}
+
+	/**
+	 * Drop a list whose kind-meta rows all rendered empty.
+	 *
+	 * @param string               $content Rendered list.
+	 * @param array<string, mixed> $block   Parsed block.
+	 * @return string
+	 */
+	public function drop_emptied_list( string $content, array $block ): string {
+		$bound = false;
+		foreach ( $block['innerBlocks'] ?? [] as $inner ) {
+			if ( self::SOURCE_NAME === ( $inner['attrs']['metadata']['bindings']['content']['source'] ?? '' ) ) {
+				$bound = true;
+				break;
+			}
+		}
+
+		return $bound && ! preg_match( '/<li[\s>]/i', $content ) ? '' : $content;
 	}
 
 	/**
@@ -399,6 +550,22 @@ class Block_Bindings {
 	 * @return string|null The binding value or null if not found.
 	 */
 	public function get_binding_value( array $source_args, \WP_Block $block_instance, string $attribute_name ): ?string {
+		$value = $this->resolve_value( $source_args, $block_instance );
+
+		// Every kind-meta value is plain text. Core only runs bound rich text
+		// through kses, which keeps tags such as <img>, so text bound to a
+		// block's content is escaped here.
+		return null !== $value && 'content' === $attribute_name ? esc_html( $value ) : $value;
+	}
+
+	/**
+	 * Resolve a binding's raw value.
+	 *
+	 * @param array<string, mixed> $source_args    Binding source arguments.
+	 * @param \WP_Block            $block_instance Block instance.
+	 * @return string|null The value, '' when the post hides it, or null when unset.
+	 */
+	private function resolve_value( array $source_args, \WP_Block $block_instance ): ?string {
 		// Get the binding key from source args.
 		$key = $source_args['key'] ?? '';
 
@@ -417,6 +584,17 @@ class Block_Bindings {
 		}
 
 		if ( post_password_required( (int) $post_id ) ) {
+			return '';
+		}
+
+		// A post the viewer can't read (a private post in someone's Query
+		// Loop) prints nothing, the same door Kind_Facts uses.
+		$post = get_post( (int) $post_id );
+		if ( ! $post instanceof \WP_Post || ! Kind_Facts::can_show( $post ) ) {
+			return '';
+		}
+
+		if ( isset( self::LIST_FIELDS[ $key ] ) && '' !== Kind_Facts::kind_of( $post ) && ! has_term( self::LIST_FIELDS[ $key ]['kind'], Taxonomy::TAXONOMY, $post ) ) {
 			return '';
 		}
 
@@ -596,31 +774,41 @@ class Block_Bindings {
 	 * @return string Formatted value.
 	 */
 	private function format_value( mixed $value, string $format ): string {
+		$labels = self::format_labels( $format );
+		return $labels[ $value ] ?? (string) $value;
+	}
+
+	/**
+	 * Display labels for a status format.
+	 *
+	 * @param string $format Format name: rsvp, watch_status or read_status.
+	 * @return array<string, string> Stored value => label.
+	 */
+	private static function format_labels( string $format ): array {
 		switch ( $format ) {
 			case 'rsvp':
-				$labels = [
+				return [
 					'yes'        => __( 'Yes, attending', 'post-kinds-for-indieweb-in-block-themes' ),
 					'no'         => __( 'Not attending', 'post-kinds-for-indieweb-in-block-themes' ),
 					'maybe'      => __( 'Maybe attending', 'post-kinds-for-indieweb-in-block-themes' ),
 					'interested' => __( 'Interested', 'post-kinds-for-indieweb-in-block-themes' ),
 					'remote'     => __( 'Attending Remotely', 'post-kinds-for-indieweb-in-block-themes' ),
 				];
-				return $labels[ $value ] ?? (string) $value;
 
 			case 'watch_status':
-				$labels = [
-					'watched'   => __( 'Watched', 'post-kinds-for-indieweb-in-block-themes' ),
-					'watching'  => __( 'Currently Watching', 'post-kinds-for-indieweb-in-block-themes' ),
-					'abandoned' => __( 'Abandoned', 'post-kinds-for-indieweb-in-block-themes' ),
+				return [
+					'to-watch'   => __( 'To Watch', 'post-kinds-for-indieweb-in-block-themes' ),
+					'watching'   => __( 'Currently Watching', 'post-kinds-for-indieweb-in-block-themes' ),
+					'watched'    => __( 'Watched', 'post-kinds-for-indieweb-in-block-themes' ),
+					'rewatching' => __( 'Rewatching', 'post-kinds-for-indieweb-in-block-themes' ),
+					'abandoned'  => __( 'Abandoned', 'post-kinds-for-indieweb-in-block-themes' ),
 				];
-				return $labels[ $value ] ?? (string) $value;
 
 			case 'read_status':
-				$labels = read_status_labels();
-				return $labels[ $value ] ?? (string) $value;
+				return read_status_labels();
 
 			default:
-				return (string) $value;
+				return [];
 		}
 	}
 
