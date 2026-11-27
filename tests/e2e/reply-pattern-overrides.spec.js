@@ -185,7 +185,7 @@ test( "a synced Reply pattern in a Query Loop shows each post's target", async (
 } ) => {
 	await logIn( page );
 	const token = `p17loop${ Date.now() }`;
-	const { postId, link } = await page.evaluate(
+	const { postId, link, nonce, created } = await page.evaluate(
 		async ( { card, search } ) => {
 			const pattern = await window.wp.apiFetch( {
 				path: '/wp/v2/blocks',
@@ -213,8 +213,8 @@ test( "a synced Reply pattern in a Query Loop shows each post's target", async (
 						},
 					},
 				} );
-			await createPost( `${ search } A`, 'a', 'publish' );
-			await createPost( `${ search } B`, 'b', 'publish' );
+			const first = await createPost( `${ search } A`, 'a', 'publish' );
+			const second = await createPost( `${ search } B`, 'b', 'publish' );
 			const container = await createPost(
 				'Reply pattern in a Query Loop',
 				'container',
@@ -242,36 +242,56 @@ test( "a synced Reply pattern in a Query Loop shows each post's target", async (
 					} ) } --><div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-title /--><!-- wp:block {"ref":${ pattern.id }} /--><!-- /wp:post-template --></div><!-- /wp:query -->`,
 				},
 			} );
-			return { postId: post.id, link: post.link };
+			return {
+				postId: post.id,
+				link: post.link,
+				nonce: window.wpApiSettings.nonce,
+				created: [
+					`blocks/${ pattern.id }`,
+					`posts/${ first.id }`,
+					`posts/${ second.id }`,
+					`posts/${ post.id }`,
+				],
+			};
 		},
 		{ card: CARD, search: token }
 	);
 
-	const canvas = await openEditor( page, postId );
-	const items = canvas.locator( '.wp-block-post-template > li:visible' );
-	await expect( items ).toHaveCount( 2, { timeout: 30000 } );
-	for ( const [ index, letter ] of [ 'a', 'b' ].entries() ) {
-		const item = items.nth( index );
-		await expect( item.locator( '.wp-block-post-title' ) ).toHaveText(
-			`${ token } ${ letter.toUpperCase() }`
-		);
-		await expect
-			.soft( item.locator( '.post-kinds-card__input--url' ) )
-			.toHaveValue( `https://${ letter }.example/target` );
-		await expect
-			.soft( item.locator( '.post-kinds-card__subtitle' ) )
-			.toHaveText( `Author ${ letter }` );
-	}
+	try {
+		const canvas = await openEditor( page, postId );
+		const items = canvas.locator( '.wp-block-post-template > li:visible' );
+		await expect( items ).toHaveCount( 2, { timeout: 30000 } );
+		for ( const [ index, letter ] of [ 'a', 'b' ].entries() ) {
+			const item = items.nth( index );
+			await expect( item.locator( '.wp-block-post-title' ) ).toHaveText(
+				`${ token } ${ letter.toUpperCase() }`
+			);
+			await expect
+				.soft( item.locator( '.post-kinds-card__input--url' ) )
+				.toHaveValue( `https://${ letter }.example/target` );
+			await expect
+				.soft( item.locator( '.post-kinds-card__subtitle' ) )
+				.toHaveText( `Author ${ letter }` );
+		}
 
-	await page.goto( link );
-	const cites = page.locator( '.wp-block-post-content article.k-reply' );
-	await expect( cites.locator( '.p-author .p-name' ) ).toHaveText( [
-		'Author a',
-		'Author b',
-	] );
-	expect(
-		await cites
-			.locator( 'a.u-url' )
-			.evaluateAll( ( links ) => links.map( ( a ) => a.href ) )
-	).toEqual( [ 'https://a.example/target', 'https://b.example/target' ] );
+		await page.goto( link );
+		const cites = page.locator( '.wp-block-post-content article.k-reply' );
+		await expect( cites.locator( '.p-author .p-name' ) ).toHaveText( [
+			'Author a',
+			'Author b',
+		] );
+		expect(
+			await cites
+				.locator( 'a.u-url' )
+				.evaluateAll( ( links ) => links.map( ( a ) => a.href ) )
+		).toEqual( [ 'https://a.example/target', 'https://b.example/target' ] );
+	} finally {
+		for ( const path of created ) {
+			const response = await page.request.delete(
+				`/?rest_route=/wp/v2/${ path }&force=true`,
+				{ headers: { 'X-WP-Nonce': nonce } }
+			);
+			expect.soft( response.status() ).toBe( 200 );
+		}
+	}
 } );
