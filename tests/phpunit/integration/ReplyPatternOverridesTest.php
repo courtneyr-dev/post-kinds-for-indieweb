@@ -215,6 +215,83 @@ final class ReplyPatternOverridesTest extends WP_UnitTestCase {
 		$this->assertSame( [ 'Card Author' ], $cite['properties']['author'][0]['properties']['name'] );
 	}
 
+	public function test_a_query_loop_hides_a_protected_posts_target_and_author(): void {
+		$this->reply_post( 'https://alpha.example/notes/1', 'Alpha Author', [ 'title' => 'Alpha reply heading' ], '2026-01-01 10:00:00' );
+		$protected = $this->reply_post( 'https://secret.example/thread', 'Secret Author', [ 'title' => 'Protected reply heading' ], '2026-01-02 10:00:00' );
+		wp_update_post(
+			[
+				'ID'            => $protected,
+				'post_password' => 'hunter2',
+			]
+		);
+
+		$this->go_to( home_url( '/' ) );
+		$html = do_blocks(
+			'<!-- wp:query {"queryId":1,"query":{"perPage":10,"postType":"post","order":"desc","orderBy":"date","inherit":false}} -->'
+			. '<div class="wp-block-query"><!-- wp:post-template -->'
+			. $this->instance( [ 'title' => 'Loop heading' ] )
+			. '<!-- /wp:post-template --></div><!-- /wp:query -->'
+		);
+
+		$this->assertStringContainsString( 'https://alpha.example/notes/1', $html );
+		$this->assertStringNotContainsString( 'secret.example', $html );
+		$this->assertStringNotContainsString( 'Secret Author', $html );
+	}
+
+	public function test_a_card_without_a_usable_target_is_not_a_reply_context(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => $this->instance( [ 'title' => 'Targetless heading' ] ),
+			]
+		);
+		$this->assertNotWPError( wp_set_object_terms( $post_id, 'reply', Taxonomy::TAXONOMY ) );
+
+		$html  = $this->render( $post_id );
+		$entry = \Mf2\parse( '<div class="h-entry">' . $html . '</div>' )['items'][0] ?? [];
+
+		$this->assertStringContainsString( 'Targetless heading', $html );
+		$this->assertArrayNotHasKey( 'in-reply-to', $entry['properties'] ?? [] );
+	}
+
+	public function test_an_override_enabled_card_outside_a_pattern_keeps_its_target(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_status'  => 'publish',
+				'post_content' => $this->card(
+					[
+						'title'  => 'Standalone heading',
+						'url'    => 'https://card.example/own',
+						'author' => 'Card Author',
+					]
+				),
+			]
+		);
+		$this->assertNotWPError( wp_set_object_terms( $post_id, 'reply', Taxonomy::TAXONOMY ) );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'cite_url', 'https://meta.example/other' );
+		update_post_meta( $post_id, Meta_Fields::PREFIX . 'cite_author', 'Meta Author' );
+
+		$cite = $this->reply_cite( $post_id );
+		$this->assertSame( [ 'https://card.example/own' ], $cite['properties']['url'] );
+		$this->assertSame( [ 'Card Author' ], $cite['properties']['author'][0]['properties']['name'] );
+	}
+
+	public function test_a_non_string_override_keeps_the_patterns_text(): void {
+		$post_id = $this->reply_post(
+			'https://alpha.example/notes/1',
+			'Alpha Author',
+			[
+				'title'       => [ 'not', 'text' ],
+				'description' => 42,
+				'quotation'   => [ 'nested' => true ],
+			]
+		);
+
+		$cite = $this->reply_cite( $post_id );
+		$this->assertSame( [ 'Pattern default title' ], $cite['properties']['name'] );
+		$this->assertSame( [ 'Pattern default context' ], $cite['properties']['content'] );
+	}
+
 	/**
 	 * Reply Card markup with Pattern Overrides enabled.
 	 *
@@ -233,7 +310,7 @@ final class ReplyPatternOverridesTest extends WP_UnitTestCase {
 	/**
 	 * A core/block instance of the pattern with per-instance overrides.
 	 *
-	 * @param array<string, string> $overrides Override values keyed by attribute.
+	 * @param array<string, mixed> $overrides Override values keyed by attribute.
 	 * @return string
 	 */
 	private function instance( array $overrides ): string {
@@ -251,7 +328,7 @@ final class ReplyPatternOverridesTest extends WP_UnitTestCase {
 	 *
 	 * @param string                $target    The post's reply target.
 	 * @param string                $author    The post's cited author.
-	 * @param array<string, string> $overrides Instance display text.
+	 * @param array<string, mixed>  $overrides Instance display text.
 	 * @param string                $date      Optional post date.
 	 * @return int
 	 */
