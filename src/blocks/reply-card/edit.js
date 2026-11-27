@@ -340,20 +340,28 @@ export default function Edit( {
 									'post-kinds-for-indieweb-in-block-themes'
 								) }
 							</span>
-							<RichText
-								tagName="p"
-								className="post-kinds-card__subtitle"
-								aria-labelledby={ `${ fieldId }-author` }
-								value={ author }
-								readOnly={ inPatternInstance }
-								onChange={ ( value ) =>
-									setAttributes( { author: value } )
-								}
-								placeholder={ __(
-									'By whom?',
-									'post-kinds-for-indieweb-in-block-themes'
-								) }
-							/>
+							{ inPatternInstance ? (
+								<output
+									className="post-kinds-card__subtitle"
+									aria-labelledby={ `${ fieldId }-author` }
+								>
+									{ author }
+								</output>
+							) : (
+								<RichText
+									tagName="p"
+									className="post-kinds-card__subtitle"
+									aria-labelledby={ `${ fieldId }-author` }
+									value={ author }
+									onChange={ ( value ) =>
+										setAttributes( { author: value } )
+									}
+									placeholder={ __(
+										'By whom?',
+										'post-kinds-for-indieweb-in-block-themes'
+									) }
+								/>
+							) }
 						</div>
 
 						{ quotation?.trim() ? (
