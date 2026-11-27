@@ -23,6 +23,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 use function PKIW\get_kind_icon_svg;
 use function PKIW\get_kind_label;
 
+$attributes = \PKIW\Reply_Pattern_Overrides::render_attributes( $attributes, $block );
+
 $pkiw_title       = $attributes['title'] ?? '';
 $pkiw_url         = $attributes['url'] ?? '';
 $pkiw_description = $attributes['description'] ?? '';
