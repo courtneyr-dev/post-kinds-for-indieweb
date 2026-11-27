@@ -76,6 +76,13 @@ final class Photo_Projector {
 	private static int $loop_depth = 0;
 
 	/**
+	 * How many Gallery blocks are rendering right now.
+	 *
+	 * @var int
+	 */
+	private static int $gallery_depth = 0;
+
+	/**
 	 * Last post planned during this request.
 	 *
 	 * @var int
@@ -94,6 +101,7 @@ final class Photo_Projector {
 		add_filter( 'the_content', [ $this, 'end_pass' ], PHP_INT_MAX );
 		add_filter( 'pre_render_block', [ $this, 'enter_loop' ], PHP_INT_MAX, 2 );
 		add_filter( 'render_block_core/post-template', [ $this, 'leave_loop' ], PHP_INT_MIN );
+		add_filter( 'render_block_core/gallery', [ $this, 'leave_gallery' ], PHP_INT_MIN );
 		add_filter( 'render_block_core/gallery', [ $this, 'render_gallery' ], 10, 3 );
 		add_filter( 'render_block_core/image', [ $this, 'render_image' ], 10, 3 );
 		if ( did_action( 'init' ) ) {
@@ -138,10 +146,11 @@ final class Photo_Projector {
 	 * @return void
 	 */
 	public static function reset(): void {
-		self::$plans        = [];
-		self::$last_post_id = 0;
-		self::$in_content   = [];
-		self::$loop_depth   = 0;
+		self::$plans         = [];
+		self::$last_post_id  = 0;
+		self::$in_content    = [];
+		self::$loop_depth    = 0;
+		self::$gallery_depth = 0;
 	}
 
 	/**
@@ -177,10 +186,12 @@ final class Photo_Projector {
 	}
 
 	/**
-	 * Count a Query Loop post template starting to render.
+	 * Count a Query Loop post template or a Gallery starting to render.
 	 *
 	 * A projector belongs to the photo's own page, not to a listing, so
 	 * nothing inside a post template projects, even the photo's own content.
+	 * An image inside a Gallery, including one Core renders for an
+	 * attached-media Gallery, is never a standalone photo.
 	 *
 	 * @since 1.11.0
 	 *
@@ -189,8 +200,14 @@ final class Photo_Projector {
 	 * @return string|null Unchanged short-circuit value.
 	 */
 	public function enter_loop( $pre_render, $block ) {
-		if ( null === $pre_render && is_array( $block ) && 'core/post-template' === ( $block['blockName'] ?? '' ) ) {
+		if ( null !== $pre_render || ! is_array( $block ) ) {
+			return $pre_render;
+		}
+		$name = $block['blockName'] ?? '';
+		if ( 'core/post-template' === $name ) {
 			++self::$loop_depth;
+		} elseif ( 'core/gallery' === $name ) {
+			++self::$gallery_depth;
 		}
 
 		return $pre_render;
@@ -211,6 +228,20 @@ final class Photo_Projector {
 	}
 
 	/**
+	 * Count a Gallery finishing.
+	 *
+	 * @since 1.11.0
+	 *
+	 * @param string $html Rendered Gallery.
+	 * @return string Unchanged HTML.
+	 */
+	public function leave_gallery( $html ): string {
+		self::$gallery_depth = max( 0, self::$gallery_depth - 1 );
+
+		return (string) $html;
+	}
+
+	/**
 	 * Render the first qualifying gallery as a projector.
 	 *
 	 * @since 1.9.0
@@ -221,13 +252,17 @@ final class Photo_Projector {
 	 * @return string Rendered HTML.
 	 */
 	public function render_gallery( string $html, array $block, $instance = null ): string {
+		$attached = $this->is_attached_media_gallery( $block );
+		if ( $attached && $this->attached_source_is_locked( $instance ) ) {
+			return '';
+		}
+
 		$post = $this->context_post( $instance );
 		if ( null === $post ) {
 			return $html;
 		}
 
-		$plan     = $this->plan( $post );
-		$attached = $this->is_attached_media_gallery( $block );
+		$plan = $this->plan( $post );
 		if ( $plan['done'] || '' === $plan['gallery'] || $plan['gallery'] !== $this->signature( $block ) ) {
 			return $html;
 		}
@@ -235,7 +270,15 @@ final class Photo_Projector {
 			return $html;
 		}
 
-		$projector = $this->gallery_projector( $html, $block, $post, $attached ? $plan['attached'] : null );
+		$allowed = null;
+		if ( $attached ) {
+			$allowed = $this->resolved_attachment_ids( $block, $instance );
+			if ( null === $allowed ) {
+				return $html;
+			}
+		}
+
+		$projector = $this->gallery_projector( $html, $block, $post, $allowed );
 		if ( '' === $projector ) {
 			return $html;
 		}
@@ -263,6 +306,10 @@ final class Photo_Projector {
 			return $html;
 		}
 
+		if ( self::$gallery_depth > 0 ) {
+			return $html;
+		}
+
 		$plan = $this->plan( $post );
 		if ( 1 !== $plan['image_count'] || $plan['has_gallery'] || ! $plan['single_loose_image'] ) {
 			return $html;
@@ -281,6 +328,46 @@ final class Photo_Projector {
 		wp_enqueue_style( self::STYLE );
 
 		return $mount;
+	}
+
+	/**
+	 * Whether an attached-media Gallery's own post still needs a password.
+	 *
+	 * Core's attached-media query lists inherit-status children without
+	 * checking the parent's password, so a template Gallery in a public Query
+	 * Loop would otherwise show a protected post's images and captions.
+	 *
+	 * @param mixed $instance Block instance.
+	 * @return bool True when the Gallery's post is password protected for this visitor.
+	 */
+	private function attached_source_is_locked( $instance ): bool {
+		$post_id = $instance instanceof \WP_Block ? ( $instance->context['postId'] ?? get_the_ID() ) : get_the_ID();
+		$post_id = is_numeric( $post_id ) ? (int) $post_id : 0;
+		if ( $post_id <= 0 ) {
+			return false;
+		}
+
+		$post = get_post( $post_id );
+
+		return $post instanceof \WP_Post && post_password_required( $post );
+	}
+
+	/**
+	 * The attachments Core resolved for this attached-media Gallery.
+	 *
+	 * Asks Core's resolver with the Gallery's own arguments and post context,
+	 * so sort order and the 100-image cap match what Core rendered.
+	 *
+	 * @param array<string,mixed> $block    Parsed Gallery block.
+	 * @param mixed               $instance Block instance.
+	 * @return int[]|null Attachment IDs, or null when they can't be resolved.
+	 */
+	private function resolved_attachment_ids( array $block, $instance ): ?array {
+		if ( ! $instance instanceof \WP_Block || ! function_exists( 'block_core_gallery_resolve_dynamic_source' ) ) {
+			return null;
+		}
+
+		return array_map( 'intval', (array) block_core_gallery_resolve_dynamic_source( $block['attrs']['dynamicContent'] ?? null, $instance ) );
 	}
 
 	/**
@@ -330,7 +417,7 @@ final class Photo_Projector {
 			return self::$plans[ $post->ID ];
 		}
 
-		$blocks   = parse_blocks( (string) $post->post_content );
+		$blocks   = $this->without_loops( parse_blocks( (string) $post->post_content ) );
 		$attached = str_contains( (string) $post->post_content, self::ATTACHED_MEDIA ) ? $this->attached_image_ids( $post->ID ) : [];
 		$gallery  = $this->first_qualifying_gallery( $blocks, count( $attached ) );
 		$images   = collect_image_blocks( $blocks );
@@ -351,6 +438,30 @@ final class Photo_Projector {
 		];
 
 		return self::$plans[ $post->ID ];
+	}
+
+	/**
+	 * Parsed blocks with every Query Loop post template removed.
+	 *
+	 * Nothing inside a post template projects, so a Gallery or Image there
+	 * never belongs to the plan.
+	 *
+	 * @param array<int,array<string,mixed>> $blocks Parsed blocks.
+	 * @return array<int,array<string,mixed>> Blocks outside post templates.
+	 */
+	private function without_loops( array $blocks ): array {
+		$kept = [];
+		foreach ( $blocks as $block ) {
+			if ( 'core/post-template' === ( $block['blockName'] ?? '' ) ) {
+				continue;
+			}
+			if ( ! empty( $block['innerBlocks'] ) ) {
+				$block['innerBlocks'] = $this->without_loops( $block['innerBlocks'] );
+			}
+			$kept[] = $block;
+		}
+
+		return $kept;
 	}
 
 	/**
@@ -472,7 +583,9 @@ final class Photo_Projector {
 	 *
 	 * Mirrors block_core_gallery_resolve_dynamic_source(): children of the
 	 * post with status inherit and an image MIME type, capped at 100. A
-	 * private or unrelated attachment is never in it.
+	 * private or unrelated attachment is never in it. The plan uses it only to
+	 * count; the render allowlist comes from Core's resolver, which applies the
+	 * Gallery's sort order before the cap.
 	 *
 	 * @param int $post_id Post ID.
 	 * @return int[] Attachment IDs.
