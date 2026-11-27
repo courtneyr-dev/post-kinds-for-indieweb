@@ -19,9 +19,24 @@ import { useEffect } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
 import StandardSitePanel from '../../components/standard-site-panel';
 
-export default function Edit( { attributes, setAttributes } ) {
+export default function Edit( { attributes, setAttributes, context } ) {
+	const inPatternInstance =
+		!! context?.[ 'pattern/overrides' ] &&
+		Object.values( attributes.metadata?.bindings ?? {} ).some(
+			( binding ) => binding?.source === 'core/pattern-overrides'
+		);
+	const postMeta = useSelect(
+		( select ) => select( 'core/editor' ).getEditedPostAttribute( 'meta' ),
+		[]
+	);
 	const { title, url, description, quotation, image, imageAlt, author } =
-		attributes;
+		inPatternInstance
+			? {
+					...attributes,
+					url: postMeta?._pkiw_cite_url ?? '',
+					author: postMeta?._pkiw_cite_author ?? '',
+				}
+			: attributes;
 
 	const blockProps = useBlockProps( {
 		className: 'reply-card-block pk-card k-reply',
@@ -118,6 +133,10 @@ export default function Edit( { attributes, setAttributes } ) {
 						) }
 					/>
 				</PanelBody>
+			</InspectorControls>
+			<InspectorControls
+				group={ inPatternInstance ? 'content' : 'default' }
+			>
 				<PanelBody
 					title={ __(
 						'Description',
@@ -162,6 +181,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 				</PanelBody>
+			</InspectorControls>
+			<InspectorControls>
 				<StandardSitePanel url={ url } />
 			</InspectorControls>
 
@@ -252,6 +273,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								type="url"
 								className="post-kinds-card__input post-kinds-card__input--url"
 								value={ url || '' }
+								readOnly={ inPatternInstance }
 								onChange={ ( e ) =>
 									setAttributes( { url: e.target.value } )
 								}
@@ -266,6 +288,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							tagName="p"
 							className="post-kinds-card__subtitle"
 							value={ author }
+							readOnly={ inPatternInstance }
 							onChange={ ( value ) =>
 								setAttributes( { author: value } )
 							}
