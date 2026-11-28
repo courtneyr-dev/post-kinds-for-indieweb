@@ -13,6 +13,7 @@
  */
 import { registerPlugin } from '@wordpress/plugins';
 import { register, dispatch, select } from '@wordpress/data';
+import apiFetch from '@wordpress/api-fetch';
 
 /**
  * Internal dependencies
@@ -23,9 +24,14 @@ import './promote-panel';
 import './missing-alt-notice';
 import './transcript';
 import './ai-suggestions';
+import { createUntouchedStatusMiddleware } from './untouched-status-keys';
 
 // Register the data store.
 register( postKindsStore );
+
+// Name untouched status defaults on saves of this post so the server
+// drops only those.
+apiFetch.use( createUntouchedStatusMiddleware( select ) );
 
 // Register the plugin sidebar panel.
 registerPlugin( 'post-kinds-indieweb-kind-selector', {

@@ -21,6 +21,12 @@ module.exports = [
 		entry: {
 			index: path.resolve( process.cwd(), 'src/editor', 'index.js' ),
 			blocks: path.resolve( process.cwd(), 'src/blocks', 'index.js' ),
+			// Every block editor, Site Editor included; index is post-only.
+			bindings: path.resolve(
+				process.cwd(),
+				'src/editor/bindings',
+				'kind-meta-source.js'
+			),
 		},
 		output: {
 			...scriptConfig.output,

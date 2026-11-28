@@ -11,6 +11,8 @@ import {
 	RichText,
 	MediaUpload,
 	MediaUploadCheck,
+	useSettings,
+	store as blockEditorStore,
 } from '@wordpress/block-editor';
 import {
 	PanelBody,
@@ -34,6 +36,127 @@ import {
 	BlockPlaceholder,
 	ProgressBar,
 } from '../shared/components';
+import {
+	getStyleStateApi,
+	spacingOptions,
+	getCardPadding,
+	setCardPadding,
+	CUSTOM_PADDING,
+} from '../shared/viewport-spacing';
+
+const STYLE_STATE_API = getStyleStateApi();
+const DEFAULT_STYLE_STATE = { viewport: 'default', pseudo: 'default' };
+
+/**
+ * Card spacing preset for the viewport selected in the editor's View menu.
+ *
+ * Presentation only: writes style.spacing.padding inside the selected
+ * style state and nothing else. Lives in the Dimensions panel, which core
+ * keeps visible while editing a viewport. Rendered only when core exports
+ * the style-state helpers (WordPress 7.2+).
+ *
+ * @param {Object}                  props               Component props.
+ * @param {string}                  props.clientId      Block client ID.
+ * @param {Object}                  props.style         Block style attribute.
+ * @param {(attrs: Object) => void} props.setAttributes Attribute setter.
+ * @return {JSX.Element|null} The control, or null without spacing presets.
+ */
+function CardSpacingControl( { clientId, style, setAttributes } ) {
+	const [ custom, theme, defaults, defaultsEnabled ] = useSettings(
+		'spacing.spacingSizes.custom',
+		'spacing.spacingSizes.theme',
+		'spacing.spacingSizes.default',
+		'spacing.defaultSpacingSizes'
+	);
+	const state = useSelect(
+		( storeSelect ) =>
+			storeSelect( blockEditorStore ).getSelectedBlockStyleState?.(
+				clientId
+			) ?? DEFAULT_STYLE_STATE,
+		[ clientId ]
+	);
+	const options = spacingOptions(
+		custom,
+		theme,
+		false === defaultsEnabled ? [] : defaults
+	);
+	if ( ! options.length ) {
+		return null;
+	}
+
+	let help = __(
+		'Applies to every screen size. To set a mobile value, choose Mobile in the View menu, then turn on Responsive styles.',
+		'post-kinds-for-indieweb-in-block-themes'
+	);
+	if ( '@mobile' === state?.viewport ) {
+		help = __(
+			'Applies to the Mobile view only.',
+			'post-kinds-for-indieweb-in-block-themes'
+		);
+	} else if ( '@tablet' === state?.viewport ) {
+		help = __(
+			'Applies to the Tablet view only.',
+			'post-kinds-for-indieweb-in-block-themes'
+		);
+	}
+
+	const label = __(
+		'Card spacing',
+		'post-kinds-for-indieweb-in-block-themes'
+	);
+	const value = getCardPadding(
+		style,
+		state,
+		STYLE_STATE_API,
+		options.map( ( option ) => option.value )
+	);
+
+	return (
+		// A plain child of the Dimensions tools panel; full grid width.
+		<div style={ { gridColumn: '1 / -1' } }>
+			<SelectControl
+				__next40pxDefaultSize
+				__nextHasNoMarginBottom
+				label={ label }
+				help={ help }
+				value={ value }
+				options={ [
+					{
+						label: __(
+							'Theme default',
+							'post-kinds-for-indieweb-in-block-themes'
+						),
+						value: '',
+					},
+					...( CUSTOM_PADDING === value
+						? [
+								{
+									label: __(
+										'Custom (set in Padding)',
+										'post-kinds-for-indieweb-in-block-themes'
+									),
+									value: CUSTOM_PADDING,
+									disabled: true,
+								},
+							]
+						: [] ),
+					...options,
+				] }
+				onChange={ ( next ) =>
+					CUSTOM_PADDING !== next &&
+					setAttributes( {
+						style: setCardPadding(
+							style,
+							state,
+							next,
+							STYLE_STATE_API
+						),
+					} )
+				}
+			/>
+		</div>
+	);
+}
 
 // Token-boundary match, equivalent to the PHP bridge's regex
 // (Kindle_Embed_Bridge::render()) — .includes() would also match a class
@@ -67,6 +190,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		finishedAt,
 		review,
 		layout,
+		style,
 	} = attributes;
 
 	const [ showStartPicker, setShowStartPicker ] = useState( false );
@@ -620,6 +744,16 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 					/>
 				</PanelBody>
 			</InspectorControls>
+
+			{ STYLE_STATE_API && (
+				<InspectorControls group="dimensions">
+					<CardSpacingControl
+						clientId={ clientId }
+						style={ style }
+						setAttributes={ setAttributes }
+					/>
+				</InspectorControls>
+			) }
 
 			<div { ...blockProps }>
 				<div className="post-kinds-card h-cite">
